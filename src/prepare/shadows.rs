@@ -3,7 +3,7 @@
 //! from_unknown(Type)`, `content` for `let content = content.clone()`,
 //! where `n` holds that value wherever `n$1` is read.
 
-use std::collections::HashSet;
+use crate::collections::IndexSet;
 
 use crate::js::{self, Expr, ExprKind, Function, Pattern, Stmt, StmtKind};
 
@@ -25,8 +25,8 @@ pub(super) fn function(function: &mut Function) {
 /// The names a function or a closure of `params` and `body` declares: its
 /// parameters and each variable its blocks declare, a loop's, a `catch`'s
 /// and a function's too, which only it, and its closures, set.
-fn own_names(params: &[Pattern], body: &mut Vec<Stmt>) -> HashSet<String> {
-    let mut own: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
+fn own_names(params: &[Pattern], body: &mut Vec<Stmt>) -> IndexSet<String> {
+    let mut own: IndexSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
     js::each_block_mut(body, &mut |stmts| {
         for stmt in stmts.iter() {
             match &stmt.kind {
@@ -48,7 +48,7 @@ fn own_names(params: &[Pattern], body: &mut Vec<Stmt>) -> HashSet<String> {
 }
 
 /// Each `const n$1 = n;` of `body` that's `n` (`shadow`), `n` in its place.
-fn shadows(body: &mut Vec<Stmt>, own: &HashSet<String>) {
+fn shadows(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
     while let Some((alias, of)) = shadow(body, own) {
         // Not a closure's own of the name, its `catch_unwind`'s result
         // named `value$1` apart from the `value` it captures (#457).
@@ -74,7 +74,7 @@ fn shadows(body: &mut Vec<Stmt>, own: &HashSet<String>) {
 /// say, which a call may set out of its sight: only where each read of
 /// `n$1` is before anything that may run code (`read_before_code`, ADR
 /// 0277, amended).
-fn shadow(body: &[Stmt], own: &HashSet<String>) -> Option<(String, String)> {
+fn shadow(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, String)> {
     // What closures set, and what their parameters are named, which a
     // name read in them would mean instead.
     let mut in_closures = js::Writes::of(body).replaced_in_closures;
@@ -424,7 +424,7 @@ impl Walk {
 /// else sets `n` nor `n$1` in a closure, and each read of `n$1` is before
 /// anything that may run code since the `let` or the last write back, of
 /// `n` not the function's own.
-fn written_back(body: &mut Vec<Stmt>, own: &HashSet<String>) {
+fn written_back(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
     while let Some((alias, of)) = write_back(body, own) {
         js::each_block_mut(body, &mut |stmts| {
             stmts.retain(|s| match &s.kind {
@@ -447,7 +447,7 @@ fn written_back(body: &mut Vec<Stmt>, own: &HashSet<String>) {
 }
 
 /// A `let n$1 = n;` that `written_back` makes `n`, and `n`.
-fn write_back(body: &[Stmt], own: &HashSet<String>) -> Option<(String, String)> {
+fn write_back(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, String)> {
     let mut lets = Vec::new();
     js::each_list(body, &mut |list| {
         for stmt in list {

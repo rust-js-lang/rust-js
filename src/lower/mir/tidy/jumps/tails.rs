@@ -139,7 +139,7 @@ pub(in crate::lower::mir::tidy) fn returns_past_blocks(
     returns: &[js::Span],
     starts: &[u32],
 ) {
-    returns_past(stmts, written, returns, starts, &HashSet::new());
+    returns_past(stmts, written, returns, starts, &IndexSet::default());
 }
 
 /// `returns_past_blocks`, where a block labeled of `joined_past` is
@@ -150,7 +150,7 @@ fn returns_past(
     written: &crate::lower::mir::hints::Written,
     returns: &[js::Span],
     starts: &[u32],
-    joined_past: &HashSet<String>,
+    joined_past: &IndexSet<String>,
 ) {
     let mut i = 0;
     while i + 1 < stmts.len() {
@@ -196,7 +196,7 @@ fn returns_past(
         // theirs do: once it's a `return;`, theirs are each a `return` too,
         // React's Fizz renderNode's `if`s that return early in a `match`'s
         // arm, past a block of the arms (rd499).
-        let mut inner = HashSet::new();
+        let mut inner = IndexSet::default();
         js::each_list(body, &mut |list| {
             for pair in list.windows(2) {
                 if let [
@@ -1105,7 +1105,7 @@ pub(in crate::lower::mir::tidy) fn returned_values(
     stmts: &mut Vec<Stmt>,
     elses: &[(js::Span, js::Span, js::Span)],
     returns: &[js::Span],
-    booleans: &HashSet<String>,
+    booleans: &IndexSet<String>,
 ) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     let Some(at) = stmts.len().checked_sub(2) else {
@@ -1236,7 +1236,7 @@ pub(in crate::lower::mir::tidy) fn written_jumps_of_ifs(stmts: &mut Vec<Stmt>, t
 pub(in crate::lower::mir::tidy) fn returned_branches(
     stmts: &mut Vec<Stmt>,
     returns: &[js::Span],
-    booleans: &HashSet<String>,
+    booleans: &IndexSet<String>,
     program: &crate::lower::mir::hints::Written,
 ) {
     let (continues, elses) = (&program.continues, &program.elses);

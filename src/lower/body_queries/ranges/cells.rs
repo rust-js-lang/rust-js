@@ -10,6 +10,7 @@
 use super::empty::drop_runs_code;
 use super::known::{Below, CELL, Known, Range};
 use super::{Slice, Walk, root_var, type_range, var_of};
+use crate::collections::IndexMap;
 use crate::lower::bindings;
 use crate::lower::body_queries::strip;
 use crate::lower::fn_def;
@@ -20,7 +21,6 @@ use rustc_middle::thir::visit::{Visitor, walk_expr, walk_pat, walk_stmt};
 use rustc_middle::thir::{Expr, ExprId, ExprKind, Pat, PatKind, Stmt, StmtKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
-use std::collections::HashMap;
 
 /// Whether dropping a `ty` may run code that could change a cell's value:
 /// not a guard's, which gives its borrow back.
@@ -38,16 +38,16 @@ pub(super) fn scope_drops<'tcx>(
     typing_env: ty::TypingEnv<'tcx>,
     thir: &Thir<'tcx>,
     root: ExprId,
-) -> HashMap<ExprId, bool> {
+) -> IndexMap<ExprId, bool> {
     struct Drops<'a, 'tcx> {
         tcx: TyCtxt<'tcx>,
         typing_env: ty::TypingEnv<'tcx>,
         thir: &'a Thir<'tcx>,
-        ids: HashMap<*const Expr<'tcx>, ExprId>,
-        runs: HashMap<Ty<'tcx>, bool>,
+        ids: IndexMap<*const Expr<'tcx>, ExprId>,
+        runs: IndexMap<Ty<'tcx>, bool>,
         /// The scopes the walk is in, each whether it drops code so far.
         open: Vec<bool>,
-        found: HashMap<ExprId, bool>,
+        found: IndexMap<ExprId, bool>,
     }
     impl<'a, 'tcx> Drops<'a, 'tcx> {
         fn found(&mut self, ty: Ty<'tcx>) {
@@ -119,9 +119,9 @@ pub(super) fn scope_drops<'tcx>(
         typing_env,
         thir,
         ids,
-        runs: HashMap::new(),
+        runs: IndexMap::default(),
         open: Vec::new(),
-        found: HashMap::new(),
+        found: IndexMap::default(),
     };
     drops.visit_expr(&thir[root]);
     drops.found

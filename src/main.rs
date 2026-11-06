@@ -43,6 +43,7 @@ extern crate rustc_target;
 
 mod cargo;
 mod clippy;
+mod collections;
 mod command;
 mod comments;
 mod format;
@@ -70,6 +71,7 @@ mod std_sysroot;
 mod to_oxc;
 mod typescript;
 
+use crate::collections::IndexSet;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::sync::OnceLock;
@@ -300,7 +302,7 @@ impl Callbacks for RustJs {
         // module loads by a function of a module that may load after it,
         // made where it's first used then (ADR 0037, amended).
         let mut instances = lower::Instances::default();
-        let mut made_where_used = std::collections::HashSet::new();
+        let mut made_where_used = IndexSet::default();
         let lowered = loop {
             if tcx.dcx().has_errors().is_some() {
                 break None;

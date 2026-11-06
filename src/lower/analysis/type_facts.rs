@@ -4,6 +4,7 @@
 //! picks (ADR 0471), which a caller's type answers.
 
 use super::iterator_steps::{body_aggregates, body_fn_defs};
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::recognition::{
     StdItem, TypeFact, bound_by_any, debug_named, fact_specialization, map_of_param, phantom_named, pointer_target,
     points_at_dyn_any, points_at_dyn_debug, std_item, trait_method, type_facts, unstable_sort_items,
@@ -16,7 +17,6 @@ use rustc_middle::ty::TyCtxt;
 use rustc_middle::ty::TypeVisitableExt;
 use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 /// The facts each of the crate's generic functions asks of its type
 /// parameters, by their index, directly, in a closure of its own, or
@@ -34,12 +34,12 @@ use std::collections::{HashMap, HashSet};
 pub(super) fn type_fact_params<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
-    fns: &HashMap<DefId, FnInfo>,
+    fns: &IndexMap<DefId, FnInfo>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     given: Given<'_>,
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     drops: ItemDrops<'_, 'tcx>,
-) -> (HashMap<DefId, Vec<(u32, TypeFact)>>, BuiltSlots<'tcx>) {
+) -> (IndexMap<DefId, Vec<(u32, TypeFact)>>, BuiltSlots<'tcx>) {
     let iterator = std_item(tcx, StdItem::Iterator);
     // What `std_iterator_steps` steps a compiled std iterator's struct by.
     let steps = crate::lower::recognition::STRUCT_STEPS.map(|name| trait_method(tcx, iterator, name));
@@ -92,7 +92,7 @@ pub(super) fn type_fact_params<'tcx>(
         }
         // A maker of std's adapter made in place, `items.flatten()` stepped
         // where it's made: the recognizers', which ask nothing (ADR 0871).
-        let in_place: HashSet<ExprId> = (body.thir.exprs.iter())
+        let in_place: IndexSet<ExprId> = (body.thir.exprs.iter())
             .filter_map(|expr| match expr.kind {
                 ExprKind::Call { fun, fn_span, .. } if body.facts.in_place_adapters.contains(&fn_span) => Some(fun),
                 _ => None,
@@ -336,7 +336,7 @@ pub(super) fn type_fact_params<'tcx>(
             }
         }
     }
-    let mut params: HashMap<DefId, Vec<(u32, TypeFact)>> = HashMap::new();
+    let mut params: IndexMap<DefId, Vec<(u32, TypeFact)>> = IndexMap::default();
     for (id, index, fact) in asked {
         // A trait's method's of its own type parameters, and an impl's
         // method's, its caller's through the dictionary (ADR 0466); and of
@@ -362,7 +362,7 @@ pub(super) fn type_fact_params<'tcx>(
     }
     // Each one's built slots, after its associated types', in the order of
     // their types' names, which its callers read by index (`drop_slot`).
-    let mut built_slots: BuiltSlots<'tcx> = HashMap::new();
+    let mut built_slots: BuiltSlots<'tcx> = IndexMap::default();
     let mut each_built: Vec<_> = (built.into_iter())
         .map(|((id, ty), asked)| ((tcx.def_path_hash(id), format!("{ty:?}")), id, ty, asked))
         .collect();
@@ -393,7 +393,7 @@ pub(super) fn type_fact_params<'tcx>(
 #[derive(Clone, Copy)]
 pub(super) struct ItemDrops<'a, 'tcx> {
     pub(super) drops: &'a ItemsDrop<'a, 'tcx>,
-    pub(super) taken: &'a HashMap<DefId, Vec<u32>>,
+    pub(super) taken: &'a IndexMap<DefId, Vec<u32>>,
 }
 
 /// Whether a type held in a function, in a typing environment, given the
@@ -618,13 +618,13 @@ fn grown_asked<'tcx>(
 /// What the bodies ask, as they're read.
 #[derive(Default)]
 struct Asking<'tcx> {
-    asked: HashSet<(DefId, u32, TypeFact)>,
+    asked: IndexSet<(DefId, u32, TypeFact)>,
     /// The layouts each asks of a type built of its slots (`Asked::Built`).
     built: BuiltAsks<'tcx>,
     /// What a trait's dictionaries carry of its associated type, asked of
     /// `<A as Array>::Item` (ADR 0145), and a caller's projection passed on
     /// as a callee's type parameter.
-    carried: HashSet<(DefId, TypeFact)>,
+    carried: IndexSet<(DefId, TypeFact)>,
     passed_carried: Vec<(DefId, (DefId, u32))>,
     /// A caller's type parameter passed on as a callee's: `relay<U>` calling `describe::<U>`.
     passed: Vec<((DefId, u32), (DefId, u32))>,
@@ -636,11 +636,11 @@ struct Asking<'tcx> {
 
 /// Each function's built types it asks a layout of, by the type: the facts,
 /// and where they're read.
-type BuiltAsks<'tcx> = HashMap<(DefId, ty::Ty<'tcx>), (std::collections::BTreeSet<TypeFact>, Gates)>;
+type BuiltAsks<'tcx> = IndexMap<(DefId, ty::Ty<'tcx>), (std::collections::BTreeSet<TypeFact>, Gates)>;
 
 /// `caller` asks `asked`: whether that's new.
 fn ask<'tcx>(
-    (asked, built): (&mut HashSet<(DefId, u32, TypeFact)>, &mut BuiltAsks<'tcx>),
+    (asked, built): (&mut IndexSet<(DefId, u32, TypeFact)>, &mut BuiltAsks<'tcx>),
     caller: DefId,
     each: Asked<'tcx>,
 ) -> bool {
@@ -676,7 +676,7 @@ impl<'tcx> Asking<'tcx> {
         tcx: TyCtxt<'tcx>,
         foreign: &crate::lower::library::Foreign<'_, 'tcx>,
         given: Given<'_>,
-        fns: &HashMap<DefId, FnInfo>,
+        fns: &IndexMap<DefId, FnInfo>,
         typing_env: ty::TypingEnv<'tcx>,
         caller: DefId,
         callee: DefId,

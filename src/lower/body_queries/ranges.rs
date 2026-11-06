@@ -64,11 +64,11 @@ struct Target {
 /// integer already in its target's range, its value as it is.
 #[derive(Default)]
 pub(in crate::lower) struct Ranges {
-    pub(in crate::lower) in_bounds: HashSet<ExprId>,
-    pub(in crate::lower) exact: HashSet<Span>,
-    pub(in crate::lower) kept_casts: HashSet<ExprId>,
+    pub(in crate::lower) in_bounds: IndexSet<ExprId>,
+    pub(in crate::lower) exact: IndexSet<Span>,
+    pub(in crate::lower) kept_casts: IndexSet<ExprId>,
     /// The function of each `OnceCell::set` of a cell still empty there.
-    pub(in crate::lower) set_empty: HashSet<ExprId>,
+    pub(in crate::lower) set_empty: IndexSet<ExprId>,
 }
 
 /// A parameter of a function only calls reach, a variable its pattern
@@ -84,37 +84,37 @@ struct Walk<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
     /// Each site's judgement: in bounds, exact, or a cast that keeps its
     /// value, each time it's reached.
-    indexes: HashMap<ExprId, bool>,
-    ops: HashMap<ExprId, bool>,
-    casts: HashMap<ExprId, bool>,
+    indexes: IndexMap<ExprId, bool>,
+    ops: IndexMap<ExprId, bool>,
+    casts: IndexMap<ExprId, bool>,
     /// Each `OnceCell::set`'s, by its function: its cell empty there.
-    sets: HashMap<ExprId, bool>,
+    sets: IndexMap<ExprId, bool>,
     /// The reads of variables that give nothing their cells
     /// (`empty::quiet_reads`).
-    quiet: HashSet<ExprId>,
+    quiet: IndexSet<ExprId>,
     typing_env: ty::TypingEnv<'tcx>,
     /// The most each slice's length is whose `len()` the body asks, by
     /// what its items are (`SIZED_SLICE_LENGTH_MOST`).
-    length_most: HashMap<Slice, i128>,
+    length_most: IndexMap<Slice, i128>,
     /// Variables changed where the walk doesn't see it, by a raw pointer:
     /// never known.
-    volatile: HashSet<LocalVarId>,
-    changes: HashMap<LocalVarId, Vec<Span>>,
+    volatile: IndexSet<LocalVarId>,
+    changes: IndexMap<LocalVarId, Vec<Span>>,
     /// The most each integer variable's type holds.
-    most: HashMap<LocalVarId, i128>,
+    most: IndexMap<LocalVarId, i128>,
     targets: Vec<Target>,
     /// A jump the walk can't follow: nothing it found holds.
     lost: bool,
     /// The functions only calls reach, by their parameters, and what each
     /// is told of them where this body calls it.
-    callees: &'a HashMap<DefId, Vec<Option<Param>>>,
-    told: HashMap<DefId, Option<Known>>,
+    callees: &'a IndexMap<DefId, Vec<Option<Param>>>,
+    told: IndexMap<DefId, Option<Known>>,
     /// The closures told what's known where they're made (`closures`).
-    closures: &'a HashSet<DefId>,
+    closures: &'a IndexSet<DefId>,
     /// The body's root, and each scope's, whether what it drops where it
     /// ends may run code, once a scope's asked (`cells::scope_drops`).
     root: ExprId,
-    scope_drops: Option<HashMap<ExprId, bool>>,
+    scope_drops: Option<IndexMap<ExprId, bool>>,
     /// The crate's bodies, a closure's that a test calls (`present`).
     bodies: &'a present::Bodies<'a, 'tcx>,
 }
@@ -129,16 +129,16 @@ pub(in crate::lower) type Walked<'a, 'tcx> = (DefId, &'a Thir<'tcx>, ExprId);
 pub(in crate::lower) fn ranges<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &[Walked<'_, 'tcx>],
-    only_called: &HashMap<DefId, Vec<rustc_hir::HirId>>,
+    only_called: &IndexMap<DefId, Vec<rustc_hir::HirId>>,
 ) -> Vec<Ranges> {
     // A function only calls reach, each of whose calls is in a body here.
-    let mut counted: HashMap<DefId, usize> = HashMap::new();
+    let mut counted: IndexMap<DefId, usize> = IndexMap::default();
     for &(_, thir, _) in bodies {
         for callee in calls(thir) {
             *counted.entry(callee).or_default() += 1;
         }
     }
-    let callees: HashMap<DefId, Vec<Option<Param>>> = (bodies.iter())
+    let callees: IndexMap<DefId, Vec<Option<Param>>> = (bodies.iter())
         .filter(|(def_id, ..)| {
             only_called
                 .get(def_id)
@@ -165,11 +165,11 @@ pub(in crate::lower) fn ranges<'tcx>(
     let closures = closures::told_closures(bodies);
     // What each is told, `None` while no call of it, or where a closure is
     // made, is reached; each body's last walk, and what it told.
-    let mut entries: HashMap<DefId, Option<Known>> = (callees.keys().chain(&closures)).map(|&f| (f, None)).collect();
-    let mut changed: HashMap<DefId, usize> = HashMap::new();
+    let mut entries: IndexMap<DefId, Option<Known>> = (callees.keys().chain(&closures)).map(|&f| (f, None)).collect();
+    let mut changed: IndexMap<DefId, usize> = IndexMap::default();
     let mut found: Vec<Ranges> = bodies.iter().map(|_| Ranges::default()).collect();
-    let mut told: Vec<HashMap<DefId, Option<Known>>> = bodies.iter().map(|_| HashMap::new()).collect();
-    let index: HashMap<DefId, usize> = (bodies.iter().enumerate())
+    let mut told: Vec<IndexMap<DefId, Option<Known>>> = bodies.iter().map(|_| IndexMap::default()).collect();
+    let index: IndexMap<DefId, usize> = (bodies.iter().enumerate())
         .map(|(i, (def_id, ..))| (*def_id, i))
         .collect();
     let all: present::Bodies = bodies
@@ -188,20 +188,20 @@ pub(in crate::lower) fn ranges<'tcx>(
         let mut walk = Walk {
             tcx,
             thir,
-            indexes: HashMap::new(),
-            ops: HashMap::new(),
-            casts: HashMap::new(),
-            sets: HashMap::new(),
+            indexes: IndexMap::default(),
+            ops: IndexMap::default(),
+            casts: IndexMap::default(),
+            sets: IndexMap::default(),
             quiet: empty::quiet_reads(tcx, thir),
             typing_env: ty::TypingEnv::post_analysis(tcx, def_id),
-            length_most: HashMap::new(),
+            length_most: IndexMap::default(),
             volatile: volatile(thir),
             changes: changes(thir),
             most: most(thir),
             targets: Vec::new(),
             lost: false,
             callees: &callees,
-            told: HashMap::new(),
+            told: IndexMap::default(),
             closures: &closures,
             root,
             scope_drops: None,
@@ -227,7 +227,7 @@ pub(in crate::lower) fn ranges<'tcx>(
         let before = std::mem::replace(&mut told[i], now);
         // Each function told otherwise than it was: what all its calls tell
         // it, and walked again.
-        let affected: HashSet<DefId> = before.keys().chain(told[i].keys()).copied().collect();
+        let affected: IndexSet<DefId> = before.keys().chain(told[i].keys()).copied().collect();
         for callee in affected {
             let joined = (told.iter()).fold(None, |all, by| match by.get(&callee) {
                 Some(this) => either(all, this.clone()),
@@ -273,13 +273,13 @@ impl Walk<'_, '_> {
         // MIR writes the operator an assignment is of, `s = n - 1`'s, where
         // the assignment is.
         let thir = self.thir;
-        let assigned: HashMap<ExprId, Span> = (thir.exprs.iter())
+        let assigned: IndexMap<ExprId, Span> = (thir.exprs.iter())
             .filter_map(|e| match e.kind {
                 ExprKind::Assign { rhs, .. } => Some((strip(thir, rhs), e.span)),
                 _ => None,
             })
             .collect();
-        let mut exact: HashMap<Span, bool> = HashMap::new();
+        let mut exact: IndexMap<Span, bool> = IndexMap::default();
         for (&id, &ok) in &self.ops {
             for span in [Some(thir[id].span), assigned.get(&id).copied()].into_iter().flatten() {
                 *exact.entry(span).or_insert(true) &= ok && !span.from_expansion();
@@ -301,7 +301,7 @@ impl Walk<'_, '_> {
 }
 
 /// The most each integer variable the body reads holds, by its type.
-fn most(thir: &Thir<'_>) -> HashMap<LocalVarId, i128> {
+fn most(thir: &Thir<'_>) -> IndexMap<LocalVarId, i128> {
     (thir.exprs.iter())
         .filter_map(|expr| match expr.kind {
             ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } => {
@@ -750,7 +750,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             let cell = args.first().and_then(|&cell| empty::cell_place(self.tcx, thir, cell));
             let empty = match (cell, known.as_mut()) {
                 (Some((cell, _)), Some(k)) => {
-                    let empty = k.empty.remove(&cell);
+                    let empty = k.empty.swap_remove(&cell);
                     if !empty {
                         k.escaped(cell.1);
                     }
@@ -783,7 +783,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 // of it reads.
                 let slice = matches!(thir[strip(thir, arg)].ty.kind(), ty::Ref(_, inner, _) if inner.is_slice());
                 match slice || keeps {
-                    true => _ = k.vars.remove(&var),
+                    true => _ = k.vars.swap_remove(&var),
                     false => k.changed(var),
                 }
                 // Its rows, which any `&mut` but an index's may give to code
@@ -1074,7 +1074,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         initializer: Option<ExprId>,
         k: &mut Known,
     ) {
-        let of: HashSet<LocalVarId> = (made_of.iter())
+        let of: IndexSet<LocalVarId> = (made_of.iter())
             .flat_map(|v| k.reaches.get(v).into_iter().flatten().copied())
             .collect();
         if !of.is_empty() {

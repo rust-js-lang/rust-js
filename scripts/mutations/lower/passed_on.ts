@@ -612,7 +612,7 @@ export const mutations: Mutation[] = [
       "a `dyn Fn` parameter each of the crate's calls fills with its own function isn't one, `on(() => { onEnd(); })` where React Flight's Node client gives `stream.on('end', onEnd)` (rd616)",
     file: "src/lower/passed_on.rs",
     find: "        self.krate.own_callbacks.get_or_init(|| self.find_own_callbacks())\n",
-    replace: "        self.krate.own_callbacks.get_or_init(HashSet::new)\n",
+    replace: "        self.krate.own_callbacks.get_or_init(IndexSet::default)\n",
     tests: ownCallbacks,
     snapshots: true,
   },

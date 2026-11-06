@@ -20,41 +20,41 @@ pub(in crate::lower) struct RefCells<'tcx> {
     /// Each `RefCell` field of the crate's structs that's never lent, bound
     /// or moved, and whose every borrow is held only where nothing that may
     /// borrow it runs: none of its borrows can meet another.
-    quiet_fields: HashSet<DefId>,
+    quiet_fields: IndexSet<DefId>,
     /// Of each other of those fields, where it's first lent, bound or moved,
     /// or borrowed where another borrow of it may be: what a refusal of it
     /// points at (rd432).
-    loud_at: HashMap<DefId, rustc_span::Span>,
+    loud_at: IndexMap<DefId, rustc_span::Span>,
     /// Each a library's contract says is quiet, by its key, and the
     /// library that says so (ADR 0906).
-    library_quiet: HashMap<String, String>,
-    counted: HashSet<Ty<'tcx>>,
+    library_quiet: IndexMap<String, String>,
+    counted: IndexSet<Ty<'tcx>>,
     /// Each counted only as a thread-local's own cell, by its key, that no
     /// `&RefCell` can be (`CellBorrows::reached_only_by_key`): its key's
     /// own writes count it, not a borrow of any cell of its type (ADR
     /// 0960, amended).
-    key_counted: HashSet<Ty<'tcx>>,
+    key_counted: IndexSet<Ty<'tcx>>,
     /// Of those counted, each borrow's cell's class, where its flow says
     /// it's one only the crate's code reaches (`CellFlow`, ADR 0863,
     /// amended); and the types of those of a cell code rust-js can't see
     /// may reach, and of those whose class isn't known, which may be any
     /// of their type.
-    counted_classes: HashSet<u32>,
-    counted_reached: HashSet<Ty<'tcx>>,
-    counted_unknown: HashSet<Ty<'tcx>>,
+    counted_classes: IndexSet<u32>,
+    counted_reached: IndexSet<Ty<'tcx>>,
+    counted_unknown: IndexSet<Ty<'tcx>>,
     /// Each body's borrows of a callee written at a place whose classes
     /// its MIR says, as many as its THIR has, each of which `counted_in`
     /// read: by its body, where it's written and its callee.
-    classed: HashSet<(DefId, rustc_span::Span, DefId)>,
+    classed: IndexSet<(DefId, rustc_span::Span, DefId)>,
     /// Whether the crate is a library, whose consumers may hold a borrow
     /// of a cell it shares while its code runs: of one such, a class code
     /// rust-js can't see may reach itself, its contract counts by type.
     library: bool,
     /// Each the crate's bodies borrow of a cell code rust-js can't see may
     /// reach itself, or whose class isn't known: what a library shares.
-    borrowed: HashSet<Ty<'tcx>>,
+    borrowed: IndexSet<Ty<'tcx>>,
     /// Each its types' fields hold, and its exported functions take and give.
-    handed: HashSet<Ty<'tcx>>,
+    handed: IndexSet<Ty<'tcx>>,
     /// What each library it's compiled against does with its own (ADR 0863).
     libraries: Vec<(String, crate::library::RefCellFacts)>,
     /// Those of an object that are still `{ value }` (ADR 0863): every one,
@@ -62,11 +62,11 @@ pub(in crate::lower) struct RefCells<'tcx> {
     /// which may be any; and each made a `RefCell<dyn T>`, whose cell is
     /// its pair, and each that may be one of those.
     boxed_all: bool,
-    boxed: HashSet<Ty<'tcx>>,
+    boxed: IndexSet<Ty<'tcx>>,
     /// Whether each type's own `Clone`, `PartialEq`, `PartialOrd`, `Ord`
     /// and `Debug`, which hold a borrow of it while what it holds runs its
     /// own, may borrow it, found when it's first asked.
-    impls_ask: RefCell<HashMap<Ty<'tcx>, bool>>,
+    impls_ask: RefCell<IndexMap<Ty<'tcx>, bool>>,
 }
 
 impl<'tcx> RefCells<'tcx> {
@@ -131,13 +131,13 @@ impl<'tcx> RefCells<'tcx> {
         drops: &dyn Fn(Ty<'tcx>) -> bool,
     ) -> crate::library::RefCellFacts {
         let tcx = recognition.tcx;
-        let shapes = |tys: &HashSet<Ty<'tcx>>| crate::lower::library::shapes(tcx, tys.iter().copied());
+        let shapes = |tys: &IndexSet<Ty<'tcx>>| crate::lower::library::shapes(tcx, tys.iter().copied());
         // Of a cell that may be a consumer's, one it reaches itself: a borrow
         // of one only the library's code reaches is never one of the
         // consumer's, though code rust-js can't see runs it (#456). A
         // library's borrow of one is quiet only where its type is
         // (`quiet_class`), so its type says.
-        let unchecked: HashSet<Ty<'tcx>> = (self.borrowed.iter())
+        let unchecked: IndexSet<Ty<'tcx>> = (self.borrowed.iter())
             .filter(|&&ty| self.quiet(recognition, borrows, (ty, true), drops))
             .copied()
             .collect();
@@ -235,7 +235,7 @@ impl<'tcx> RefCells<'tcx> {
     ) -> bool {
         let tcx = recognition.tcx;
         let ty = tcx.erase_and_anonymize_regions(ty);
-        let may_be = |counted: &HashSet<Ty<'tcx>>| {
+        let may_be = |counted: &IndexSet<Ty<'tcx>>| {
             (counted.iter()).any(|&counted| crate::lower::analysis::may_be_cell(tcx, counted, ty))
         };
         let counted = match class {
@@ -285,7 +285,7 @@ impl<'tcx> RefCells<'tcx> {
     /// `dyn`; and no borrow of one a library borrows unchecked is held
     /// while code rust-js can't see runs, the library's own say, which
     /// doesn't check it.
-    fn agrees(&self, tcx: TyCtxt<'tcx>, seen: &HashSet<Ty<'tcx>>, unseen: &[(Ty<'tcx>, rustc_span::Span)]) {
+    fn agrees(&self, tcx: TyCtxt<'tcx>, seen: &IndexSet<Ty<'tcx>>, unseen: &[(Ty<'tcx>, rustc_span::Span)]) {
         for &ty in seen {
             let ty::Adt(_, args) = ty.kind() else { continue };
             if holds_itself(tcx, args.type_at(0))
@@ -417,17 +417,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let tcx = self.tcx;
         // Each struct's `RefCell` field a body lends, binds or moves, where
         // first; and each a borrow of which is counted (ADR 0863, amended).
-        let mut lent: HashMap<DefId, rustc_span::Span> = HashMap::new();
-        let mut counted_fields: HashMap<DefId, rustc_span::Span> = HashMap::new();
+        let mut lent: IndexMap<DefId, rustc_span::Span> = IndexMap::default();
+        let mut counted_fields: IndexMap<DefId, rustc_span::Span> = IndexMap::default();
         // Each a derive rust-js writes itself reads, `Clone`'s, `Debug`'s,
         // which borrows it while what it holds runs its own.
-        let mut derived: HashMap<DefId, rustc_span::Span> = HashMap::new();
-        let mut counted = HashSet::new();
-        let mut key_counted = HashSet::new();
-        let mut borrowed = HashSet::new();
+        let mut derived: IndexMap<DefId, rustc_span::Span> = IndexMap::default();
+        let mut counted = IndexSet::default();
+        let mut key_counted = IndexSet::default();
+        let mut borrowed = IndexSet::default();
         let (mut counted_classes, mut counted_reached, mut counted_unknown) =
-            (HashSet::new(), HashSet::new(), HashSet::new());
-        let mut classed = HashSet::new();
+            (IndexSet::default(), IndexSet::default(), IndexSet::default());
+        let mut classed = IndexSet::default();
         let flow = self.krate.cell_borrows.flow();
         let mut unseen: Vec<(Ty<'tcx>, rustc_span::Span)> = Vec::new();
         let bodies = (self.krate.bodies.values().copied()).chain(self.krate.closures.values().copied());
@@ -461,7 +461,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let founds = self.counted_in(&recognition, (thir, &places), &facts);
             // How many of a callee's borrows are written at each place: its
             // MIR's of as many there are its cells' classes (`CellFlow`).
-            let mut written: HashMap<(rustc_span::Span, DefId), usize> = HashMap::new();
+            let mut written: IndexMap<(rustc_span::Span, DefId), usize> = IndexMap::default();
             for found in &founds {
                 if let Some(callee) = found.callee {
                     *written.entry((found.span, callee)).or_default() += 1;
@@ -518,7 +518,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // that field, `self.internal_root()` of `self.internal_root()
             // .borrow()` (rd304); and the method's own `&self.internal_root`
             // no lending of it.
-            let mut borrowed_there = HashSet::new();
+            let mut borrowed_there = IndexSet::default();
             for expr in thir.exprs.iter() {
                 if let ExprKind::Call { fun, ref args, .. } = expr.kind
                     && crate::lower::fn_def(thir[fun].ty)
@@ -564,7 +564,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A binding that's a field's own place is the field: a use of it
             // that's no borrow of it, given on, `f(cleanup)`, or captured,
             // lends it, as `&x.f` does (#503).
-            let receivers: HashSet<rustc_middle::thir::ExprId> = (borrowed_there.iter())
+            let receivers: IndexSet<rustc_middle::thir::ExprId> = (borrowed_there.iter())
                 .filter_map(|&at| bound_place(thir, &places, at).map(|(read, _)| read))
                 .collect();
             for (id, expr) in thir.exprs.iter_enumerated() {
@@ -607,7 +607,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         // Each of its regions erased, as `quiet` asks.
-        let erased = |set: HashSet<Ty<'tcx>>| -> HashSet<Ty<'tcx>> {
+        let erased = |set: IndexSet<Ty<'tcx>>| -> IndexSet<Ty<'tcx>> {
             set.into_iter().map(|ty| tcx.erase_and_anonymize_regions(ty)).collect()
         };
         let counted = erased(counted);
@@ -734,7 +734,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The `RefCell` types the crate shares with its consumers (ADR 0863):
     /// each its types' fields hold, and each its exported functions take
     /// and give, each of its regions erased.
-    fn handed_ref_cells(&self) -> HashSet<Ty<'tcx>> {
+    fn handed_ref_cells(&self) -> IndexSet<Ty<'tcx>> {
         let tcx = self.tcx;
         let mut tys: Vec<Ty<'tcx>> = Vec::new();
         for id in tcx.hir_crate_items(()).definitions() {
@@ -772,7 +772,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// object, where it's `loud`, some borrow of it may meet another, so
     /// that its generic code's `$fieldCell` is the cell each of its reads
     /// borrows; of one none can, the object itself.
-    fn boxed_ref_cells(&self, loud: &dyn Fn(DefId) -> bool) -> (bool, HashSet<Ty<'tcx>>, HashSet<Ty<'tcx>>) {
+    fn boxed_ref_cells(&self, loud: &dyn Fn(DefId) -> bool) -> (bool, IndexSet<Ty<'tcx>>, IndexSet<Ty<'tcx>>) {
         let tcx = self.tcx;
         let recognition = self.recognition();
         let refcell = |ty: Ty<'tcx>| recognition.is_std_type(ty, StdItem::RefCell);
@@ -790,14 +790,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => false,
         };
-        let mut seen: HashSet<Ty<'tcx>> = HashSet::new();
+        let mut seen: IndexSet<Ty<'tcx>> = IndexSet::default();
         // Those a body has or a field is declared, which may be one boxed.
-        let mut candidates: HashSet<Ty<'tcx>> = HashSet::new();
-        let mut boxed: HashSet<Ty<'tcx>> = HashSet::new();
+        let mut candidates: IndexSet<Ty<'tcx>> = IndexSet::default();
+        let mut boxed: IndexSet<Ty<'tcx>> = IndexSet::default();
         let mut all = false;
         // Of a type made of a generic struct, `Cursor<Vec<u8>>`, each
         // `RefCell` of an object its loud generic field is made.
-        let of_objects = |ty: Ty<'tcx>, boxed: &mut HashSet<Ty<'tcx>>| {
+        let of_objects = |ty: Ty<'tcx>, boxed: &mut IndexSet<Ty<'tcx>>| {
             for part in ty.walk().filter_map(|part| part.as_type()) {
                 let ty::Adt(adt, args) = part.kind() else { continue };
                 if adt.is_union() {
@@ -907,7 +907,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         if all {
-            return (true, HashSet::new(), seen);
+            return (true, IndexSet::default(), seen);
         }
         loop {
             let more: Vec<Ty<'tcx>> = (candidates.iter())
@@ -951,7 +951,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             },
         };
-        let mut callees = HashSet::new();
+        let mut callees = IndexSet::default();
         let mut found = Vec::new();
         for (id, expr) in thir.exprs.iter_enumerated() {
             let ExprKind::Call { fun, ref args, .. } = expr.kind else {
@@ -1081,7 +1081,7 @@ struct BoundRefCells<'a, 'b, 'tcx> {
 }
 
 /// Each binding of a body that's a field's own place, of the field it is.
-type BoundPlaces = HashMap<rustc_middle::thir::LocalVarId, DefId>;
+type BoundPlaces = IndexMap<rustc_middle::thir::LocalVarId, DefId>;
 
 /// Of a body, each `RefCell` field of a struct or of an enum's variant its
 /// patterns bind, not as `_` (ADR 0362): one bound by reference, `cleanup`
@@ -1095,7 +1095,7 @@ fn bound_ref_cells<'tcx>(
     let mut bound = BoundRefCells {
         recognition,
         thir,
-        places: HashMap::new(),
+        places: IndexMap::default(),
         found: Vec::new(),
     };
     for expr in thir.exprs.iter() {
@@ -1376,7 +1376,7 @@ fn held_parts<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<Ty<'tcx>> {
 /// struct's or a variant's literal, each `RefCell` field's that holds its
 /// value by its declaration (`RefCells::holds_value`), `current: RefCell::new(value)`;
 /// and of a thread-local's `init`, what it gives, the thread-local's cell.
-fn made_places<'tcx>(tcx: TyCtxt<'tcx>, body: &crate::lower::Body<'tcx>) -> HashSet<rustc_middle::thir::ExprId> {
+fn made_places<'tcx>(tcx: TyCtxt<'tcx>, body: &crate::lower::Body<'tcx>) -> IndexSet<rustc_middle::thir::ExprId> {
     let thir = &body.thir;
     let mut made: Vec<rustc_middle::thir::ExprId> = Vec::new();
     for expr in thir.exprs.iter() {
@@ -1401,7 +1401,7 @@ fn made_places<'tcx>(tcx: TyCtxt<'tcx>, body: &crate::lower::Body<'tcx>) -> Hash
         made.push(body.expr);
     }
     // Each, and what it's the scope of, of the same value.
-    let mut places = HashSet::new();
+    let mut places = IndexSet::default();
     for mut at in made {
         loop {
             places.insert(at);
@@ -1430,7 +1430,7 @@ fn made_places<'tcx>(tcx: TyCtxt<'tcx>, body: &crate::lower::Body<'tcx>) -> Hash
 fn property_reads<'tcx>(
     tcx: TyCtxt<'tcx>,
     (thir, places): (&rustc_middle::thir::Thir<'tcx>, &BoundPlaces),
-) -> HashSet<rustc_middle::thir::ExprId> {
+) -> IndexSet<rustc_middle::thir::ExprId> {
     use crate::lower::body_queries::strip;
     let generic = |field: DefId| {
         let declared = tcx.type_of(field).instantiate_identity().skip_normalization();
@@ -1441,7 +1441,7 @@ fn property_reads<'tcx>(
             && object_field(tcx, field)
             && crate::lower::analysis::head(tcx, args.type_at(0)).is_none()
     };
-    let mut reads = HashSet::new();
+    let mut reads = IndexSet::default();
     for _ in 0..2 {
         for (id, expr) in thir.exprs.iter_enumerated() {
             let read = match expr.kind {

@@ -20,7 +20,7 @@ pub(super) fn logical_returns(
     stmts: &mut Vec<Stmt>,
     logicals: &[js::Span],
     returns: &[js::Span],
-    booleans: &HashSet<String>,
+    booleans: &IndexSet<String>,
 ) {
     let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi);
     // The `then`'s `if`s of no `else`, each the one before's only
@@ -102,7 +102,7 @@ pub(super) fn returned_logicals(
     body: &mut Vec<Stmt>,
     logicals: &[js::Span],
     returns: &[js::Span],
-    booleans: &HashSet<String>,
+    booleans: &IndexSet<String>,
 ) {
     let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi);
     // The tests of a chain of `if`s with no `else`, each the next's only
@@ -209,7 +209,7 @@ pub(super) fn logical_blocks(
     stmts: &mut Vec<Stmt>,
     logicals: &[js::Span],
     returns: &[js::Span],
-    booleans: &HashSet<String>,
+    booleans: &IndexSet<String>,
 ) {
     let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi);
     let [.., block, last] = stmts.as_slice() else { return };
@@ -227,7 +227,7 @@ pub(super) fn logical_blocks(
         fall: &Expr,
         (label, after): (&str, &Expr),
         returns: &[js::Span],
-        booleans: &HashSet<String>,
+        booleans: &IndexSet<String>,
     ) -> Option<Expr> {
         match stmts {
             [] => Some(fall.clone()),
@@ -275,7 +275,7 @@ pub(super) fn logical_blocks(
 
 /// `c ? yes : no` of booleans, as `conditional` folds it, and `c ? (p ||
 /// no) : no` as `(c && p) || no`, a value both end with taken out.
-fn folded(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<String>) -> Expr {
+fn folded(test: Expr, yes: Expr, no: Expr, booleans: &IndexSet<String>) -> Expr {
     // `p` of `p || no`, an `||` chain that ends with `no`.
     fn without(e: &Expr, tail: &Expr) -> Option<Expr> {
         match &e.kind {
@@ -435,7 +435,7 @@ pub(super) fn and_tests(
     stmts: &mut Vec<Stmt>,
     conditions: &[(js::Span, js::Span)],
     switches: &[Switch],
-    own_field: &HashSet<String>,
+    own_field: &IndexSet<String>,
     guards: &[super::super::hints::Guard],
 ) {
     guards_before_others(stmts, conditions);
@@ -521,7 +521,7 @@ pub(super) fn and_tests(
 /// is joined, `if (value && value[0] < 10)`, the test and the binding of
 /// one value.
 fn read_twice_apart(a: &Expr, bound: &[Stmt], b: &Expr, again: &dyn Fn(usize, &str) -> usize) -> bool {
-    let mut tested = HashSet::new();
+    let mut tested = IndexSet::default();
     a.visit_vars(&mut |v| {
         tested.insert(v.to_string());
     });
@@ -1121,10 +1121,10 @@ fn tests_of(e: &Expr, spans: &mut Vec<js::Span>) -> bool {
 /// count, and so does a remainder's, `n % 2 === 0`. Of a test whose truth alone is read,
 /// an `if`'s, a `while`'s or a conditional's, and the parts of an `&&`,
 /// `||` or `!` of one (ADR 0896, amended).
-pub(super) fn bit_tests(body: &mut Vec<Stmt>, numbers: &HashSet<String>, patterns: &[js::Span]) {
+pub(super) fn bit_tests(body: &mut Vec<Stmt>, numbers: &IndexSet<String>, patterns: &[js::Span]) {
     // Not a name a closure in the body declares too, which may be a
     // float's: the walk of a conditional goes into closures.
-    let mut declared = HashSet::new();
+    let mut declared = IndexSet::default();
     js::each_expr(body, &mut |e| match &e.kind {
         ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
             declared.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
@@ -1249,7 +1249,7 @@ pub(super) fn alike_branches(yes: &Expr, no: &Expr) -> bool {
 /// user's decision; other branches, `c ? false : b`, and a test or a branch
 /// that isn't a `bool`, an `Option<bool>`'s `c ? o : false`, as it wrote
 /// them (ADR 0879, amended).
-pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<String>, written_if: bool) -> Expr {
+pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &IndexSet<String>, written_if: bool) -> Expr {
     // Of branches alike, the value alone, where the test does nothing:
     // `value._0` of `value.TAG === "Continue" ? value._0 : value._0`. One
     // that does something keeps its `if` (`alike_branches`).

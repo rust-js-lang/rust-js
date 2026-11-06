@@ -12,15 +12,15 @@
 
 use super::known::{CELL, Known, either};
 use super::{Slice, Walk, Walked};
+use crate::collections::IndexSet;
 use rustc_middle::thir::{ExprKind, LocalVarId, Thir};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
-use std::collections::HashSet;
 
 /// Each closure a body of `bodies` makes that's walked here: told what's
 /// known where it's made, walked from that alone.
-pub(super) fn told_closures(bodies: &[Walked<'_, '_>]) -> HashSet<DefId> {
-    let walked: HashSet<DefId> = bodies.iter().map(|&(def_id, ..)| def_id).collect();
+pub(super) fn told_closures(bodies: &[Walked<'_, '_>]) -> IndexSet<DefId> {
+    let walked: IndexSet<DefId> = bodies.iter().map(|&(def_id, ..)| def_id).collect();
     (bodies.iter())
         .flat_map(|&(_, thir, _)| made(thir))
         .filter(|closure| walked.contains(closure))
@@ -81,9 +81,9 @@ fn told(tcx: TyCtxt<'_>, closure: DefId, known: &Known) -> Known {
 /// The variables `closure` captures that nothing changes while it lives:
 /// each of whose places it captures by shared reference, or by value
 /// without writing it.
-fn unchanged(tcx: TyCtxt<'_>, closure: DefId) -> HashSet<LocalVarId> {
+fn unchanged(tcx: TyCtxt<'_>, closure: DefId) -> IndexSet<LocalVarId> {
     let Some(local) = closure.as_local() else {
-        return HashSet::new();
+        return IndexSet::default();
     };
     let captures = tcx.closure_captures(local);
     let kept = |captured: &&&ty::CapturedPlace<'_>| match captured.info.capture_kind {
@@ -91,8 +91,8 @@ fn unchanged(tcx: TyCtxt<'_>, closure: DefId) -> HashSet<LocalVarId> {
         ty::UpvarCapture::ByValue => captured.mutability == ty::Mutability::Not,
         ty::UpvarCapture::ByUse => false,
     };
-    let all: HashSet<LocalVarId> = (captures.iter()).map(|c| LocalVarId(c.get_root_variable())).collect();
-    let changed: HashSet<LocalVarId> = (captures.iter())
+    let all: IndexSet<LocalVarId> = (captures.iter()).map(|c| LocalVarId(c.get_root_variable())).collect();
+    let changed: IndexSet<LocalVarId> = (captures.iter())
         .filter(|c| !kept(c))
         .map(|c| LocalVarId(c.get_root_variable()))
         .collect();

@@ -1,6 +1,7 @@
 //! Lower JSX bindings into the framework-independent JS tree.
 
 use super::{FnCx, R, Shape, camel_case, fn_def, js_ident};
+use crate::collections::IndexMap;
 use crate::js;
 use crate::js::{Expr, Prop, Stmt, StmtKind};
 
@@ -9,7 +10,6 @@ use rustc_middle::thir::{self, ExprId, ExprKind};
 use rustc_middle::ty;
 use rustc_middle::ty::Ty;
 use rustc_span::{BytePos, Span};
-use std::collections::HashMap;
 
 /// How a closure's body is its one call whose JS gives `undefined`
 /// (`closure_calls_for_nothing`): as the program wrote it.
@@ -377,12 +377,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // Where each prop is written, by its name: its value's place in the
         // source, a flattened struct made here followed in (ADR 0213).
-        let mut written = HashMap::new();
+        let mut written = IndexMap::default();
         if let Some(props) = props {
             self.written_at(props, ty, &mut written);
         }
         // What gives each prop, by its name, where the struct is made here.
-        let mut given = HashMap::new();
+        let mut given = IndexMap::default();
         if let Some(props) = props
             && let ExprKind::Adt(adt) = &self.frame.thir[super::body_queries::strip(self.frame.thir, props)].kind
             && let Some(types) = self.prop_types(ty)
@@ -586,7 +586,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Where each prop `props`, a struct of type `ty`, is given is written,
     /// by its name: a field's value's place, and a flattened struct's made
     /// here, each of its own (ADR 0213).
-    fn written_at(&self, props: ExprId, ty: Ty<'tcx>, written: &mut HashMap<String, BytePos>) {
+    fn written_at(&self, props: ExprId, ty: Ty<'tcx>, written: &mut IndexMap<String, BytePos>) {
         let ExprKind::Adt(adt) = &self.frame.thir[super::body_queries::strip(self.frame.thir, props)].kind else {
             return;
         };
@@ -608,7 +608,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .or_insert(self.frame.thir[field.expr].span.source_callsite().lo());
         }
         for field in adt.fields.iter().filter(|field| made_here(field)) {
-            let mut inner = HashMap::new();
+            let mut inner = IndexMap::default();
             self.written_at(field.expr, types[field.name.as_usize()].1, &mut inner);
             for (key, at) in inner {
                 written.entry(key).or_insert(at);

@@ -194,7 +194,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's generic function given `()`s, which may look like `None`, is compiled by its consumer, where it makes no `Some` of them and its export serves, as React DOM copied the reconciler's runWithFiberInDEV (ADR 0914, amended, gap rd75b)",
     file: "src/lower/instances.rs",
-    find: "                && body_may_box(calls, (callee, index), &mut HashSet::new()))",
+    find: "                && body_may_box(calls, (callee, index), &mut IndexSet::default()))",
     replace: "                && true)",
     tests: ["test/crates.test.ts", "-t", "given what may look like None"],
   },

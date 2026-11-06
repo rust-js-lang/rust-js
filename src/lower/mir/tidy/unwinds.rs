@@ -7,7 +7,7 @@
 //! that drops `x` first, `drop(x); return v;`, a way out of the `try`,
 //! whose `finally` drops it (ADR 0693).
 
-use std::collections::HashSet;
+use crate::collections::IndexSet;
 
 use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 
@@ -292,14 +292,14 @@ fn first_drop(stmts: &[Stmt]) -> Option<&Stmt> {
 /// .. } finally { .. }` (ADR 0693, amended).
 struct Run<'a> {
     drop: &'a Stmt,
-    declared: HashSet<String>,
-    set_by_closures: HashSet<String>,
+    declared: IndexSet<String>,
+    set_by_closures: IndexSet<String>,
     result: &'a str,
 }
 
 impl<'a> Run<'a> {
     fn of(stmts: &[Stmt], drop: &'a Stmt, result: &'a str) -> Run<'a> {
-        let mut declared = HashSet::new();
+        let mut declared = IndexSet::default();
         js::each_list(stmts, &mut |list| {
             for stmt in list {
                 if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {

@@ -3,6 +3,7 @@
 //! `ExactSizeIterator`'s (ADR 0487), each function steps by each: it's given
 //! a dictionary only then, as a parameter nothing steps by it needs none.
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::iterators::{given_as_it_is, given_by_its_trait};
 use crate::lower::recognition::{
     StdItem, is_extension_entry, is_iterator_extension, is_std_crate, is_std_def, std_item, trait_method,
@@ -12,7 +13,6 @@ use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 /// A function's, or an impl's, type parameter, by its index.
 type Param = (DefId, u32);
@@ -120,13 +120,13 @@ pub(super) fn body_fn_defs<'tcx>(body: &Body<'tcx>) -> Vec<(DefId, ty::GenericAr
 pub(in crate::lower) fn stepped_params<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
-    fns: &HashMap<DefId, FnInfo>,
+    fns: &IndexMap<DefId, FnInfo>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
-) -> HashSet<(DefId, u32, DefId)> {
+) -> IndexSet<(DefId, u32, DefId)> {
     let iterator = std_item(tcx, StdItem::Iterator);
     let next = trait_method(tcx, iterator, "next");
     let size_hint = trait_method(tcx, iterator, "size_hint");
-    let mut stepped: HashSet<(DefId, u32, DefId)> = HashSet::new();
+    let mut stepped: IndexSet<(DefId, u32, DefId)> = IndexSet::default();
     // What a trait's default steps of an associated type of its `Self`.
     let mut stepped_assoc: Vec<(DefId, DefId, DefId)> = Vec::new();
     // A caller's parameter given on as a callee's, which steps it if that does.
@@ -139,7 +139,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
         // a trait of its bounds, or a supertrait of one, `Iterator` of an
         // `I: DoubleEndedIterator`: stepped by it here.
         let steps_through =
-            |stepped: &mut HashSet<(DefId, u32, DefId)>, callee: DefId, args: ty::GenericArgsRef<'tcx>| {
+            |stepped: &mut IndexSet<(DefId, u32, DefId)>, callee: DefId, args: ty::GenericArgsRef<'tcx>| {
                 for (index, arg) in args.iter().enumerate() {
                     let Some(ty) = arg.as_type() else { continue };
                     let ty::Param(param) = ty.peel_refs().kind() else {

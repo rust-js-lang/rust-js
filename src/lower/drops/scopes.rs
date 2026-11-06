@@ -120,13 +120,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Put back what `lend_drop_param` replaced.
     pub(in crate::lower) fn return_drop_param(&mut self, lent: LentDrop<'tcx>) {
         if let Some(alias) = lent.alias {
-            self.drop_state.types.items.remove(&alias);
+            self.drop_state.types.items.swap_remove(&alias);
         } else if lent.before.is_none() {
-            self.drop_state.types.given.remove(&lent.index);
+            self.drop_state.types.given.swap_remove(&lent.index);
         }
         match lent.before {
             Some(name) => self.drop_state.param_drops.insert(lent.index, name),
-            None => self.drop_state.param_drops.remove(&lent.index),
+            None => self.drop_state.param_drops.swap_remove(&lent.index),
         };
     }
 
@@ -167,7 +167,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The type parameters whose drops the body being lowered has used.
-    pub(in crate::lower) fn used_drops(&self) -> HashSet<u32> {
+    pub(in crate::lower) fn used_drops(&self) -> IndexSet<u32> {
         self.drop_state.used_drops.clone()
     }
 

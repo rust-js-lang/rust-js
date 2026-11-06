@@ -7,12 +7,12 @@
 //! and its library's contract lists it, so a consumer's `{}` of it is in
 //! place too (rd730).
 
+use crate::collections::IndexMap;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, PatKind, StmtKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
-use std::collections::HashMap;
 
 use super::untagged_adt;
 use crate::lower::analysis::{FormatCall, format_calls};
@@ -56,7 +56,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// reaches it, and its contract lists the type (rd730).
 pub(in crate::lower) fn displaying_impls<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
-    bodies: &HashMap<DefId, &Body<'tcx>>,
+    bodies: &IndexMap<DefId, &Body<'tcx>>,
 ) -> Vec<(DefId, DefId)> {
     let tcx = recognition.tcx;
     let display = recognition.display_trait();

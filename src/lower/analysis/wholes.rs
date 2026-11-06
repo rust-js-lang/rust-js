@@ -15,8 +15,7 @@
 //! constant such, a `#[rust_js::whole]` binding's, or such a number and
 //! one, which past 2^53 is the same number. JS's text of each is Rust's.
 
-use std::collections::{HashMap, HashSet};
-
+use crate::collections::{IndexMap, IndexSet};
 use rustc_abi::FieldIdx;
 use rustc_hir::def::DefKind;
 use rustc_index::IndexVec;
@@ -36,8 +35,8 @@ use crate::lower::recognition::{
 /// its structs and closures each write of which is (`of_crate`).
 #[derive(Default)]
 pub(in crate::lower) struct Wholes {
-    returns: HashSet<DefId>,
-    fields: HashSet<Field>,
+    returns: IndexSet<DefId>,
+    fields: IndexSet<Field>,
 }
 
 /// A field a number is kept in: a struct's, or what a closure takes by
@@ -70,7 +69,7 @@ impl Wholes {
     pub(in crate::lower) fn of_crate<'tcx>(
         tcx: TyCtxt<'tcx>,
         bodies: &[&Body<'tcx>],
-        inits: &HashMap<LocalDefId, LocalDefId>,
+        inits: &IndexMap<LocalDefId, LocalDefId>,
         js_may_make: &dyn Fn(DefId) -> bool,
     ) -> Wholes {
         let mut wholes = Wholes::default();
@@ -136,8 +135,8 @@ impl Wholes {
         // none, `static SIGNED: Fixed = Fixed { n: -0.0 }`.
         let mut constant = Constants {
             tcx,
-            structs: HashSet::new(),
-            seen: HashSet::new(),
+            structs: IndexSet::default(),
+            seen: IndexSet::default(),
         };
         for id in tcx.hir_crate_items(()).definitions() {
             if matches!(
@@ -200,8 +199,8 @@ impl Wholes {
 /// and of each constant a body it visits reads.
 struct Constants<'tcx> {
     tcx: TyCtxt<'tcx>,
-    structs: HashSet<DefId>,
-    seen: HashSet<Ty<'tcx>>,
+    structs: IndexSet<DefId>,
+    seen: IndexSet<Ty<'tcx>>,
 }
 
 impl<'tcx> Constants<'tcx> {
@@ -310,9 +309,9 @@ fn field_of<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, place: mir::Place<'
 /// Each local of `body` written once, by a borrow of a struct's field,
 /// and the field: a mutable one, which no field a write makes whole has,
 /// too (`unwhole_writes`).
-fn field_borrows<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> HashMap<Local, Field> {
+fn field_borrows<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> IndexMap<Local, Field> {
     let counts = write_counts(body);
-    let mut found = HashMap::new();
+    let mut found = IndexMap::default();
     for statement in body.basic_blocks.iter().flat_map(|data| &data.statements) {
         if let StatementKind::Assign(assign) = &statement.kind
             && assign.0.projection.is_empty()
@@ -327,7 +326,7 @@ fn field_borrows<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> HashMap<Loc
 }
 
 /// The field whose `Cell` a call's receiver, `operand`, borrows.
-fn receiver_field(operand: &Operand<'_>, borrows: &HashMap<Local, Field>) -> Option<Field> {
+fn receiver_field(operand: &Operand<'_>, borrows: &IndexMap<Local, Field>) -> Option<Field> {
     let place = operand.place()?;
     place.projection.is_empty().then_some(())?;
     borrows.get(&place.local).copied()
@@ -348,7 +347,7 @@ fn whole_number(n: f64) -> bool {
 /// Whether `body`'s result, of its whole `locals` and each local's write
 /// `counts`, is a `Cell` of a whole number, its only write a `Cell::new`
 /// of one: a thread-local's `init` function's (rd707).
-fn made_whole<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, locals: &HashSet<Local>, counts: &[usize]) -> bool {
+fn made_whole<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, locals: &IndexSet<Local>, counts: &[usize]) -> bool {
     counts[RETURN_PLACE.as_usize()] == 1
         && body.basic_blocks.iter().any(|data| {
             matches!(&data.terminator().kind, TerminatorKind::Call { func, args, destination, .. }
@@ -360,7 +359,7 @@ fn made_whole<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, locals: &HashSet<
 
 /// What each of `body`'s locals written once, `counts` says, is assigned,
 /// where a statement assigns it whole.
-fn assigned_once<'b, 'tcx>(body: &'b mir::Body<'tcx>, counts: &[usize]) -> HashMap<Local, &'b Rvalue<'tcx>> {
+fn assigned_once<'b, 'tcx>(body: &'b mir::Body<'tcx>, counts: &[usize]) -> IndexMap<Local, &'b Rvalue<'tcx>> {
     (body.basic_blocks.iter().flat_map(|data| &data.statements))
         .filter_map(|statement| match &statement.kind {
             StatementKind::Assign(assign)
@@ -384,7 +383,7 @@ fn key_method<'tcx>(
     tcx: TyCtxt<'tcx>,
     (promoted, assigned): (
         &IndexVec<mir::Promoted, mir::Body<'tcx>>,
-        &HashMap<Local, &Rvalue<'tcx>>,
+        &IndexMap<Local, &Rvalue<'tcx>>,
     ),
     id: DefId,
     receiver: &Operand<'tcx>,
@@ -395,7 +394,7 @@ fn key_method<'tcx>(
 }
 
 /// Whether `operand` gives a whole number, of `locals`, `body`'s whole ones.
-fn whole_operand<'tcx>(tcx: TyCtxt<'tcx>, operand: &Operand<'tcx>, locals: &HashSet<Local>) -> bool {
+fn whole_operand<'tcx>(tcx: TyCtxt<'tcx>, operand: &Operand<'tcx>, locals: &IndexSet<Local>) -> bool {
     match operand {
         Operand::Constant(c) => whole_constant(tcx, c),
         Operand::Copy(place) | Operand::Move(place) => place.projection.is_empty() && locals.contains(&place.local),
@@ -419,12 +418,12 @@ pub(in crate::lower) fn whole_locals<'tcx>(
     (body, promoted): (&mir::Body<'tcx>, &IndexVec<mir::Promoted, mir::Body<'tcx>>),
     wholes: &Wholes,
     writes: &dyn Fn(Local) -> usize,
-) -> HashSet<Local> {
+) -> IndexSet<Local> {
     let borrows = field_borrows(tcx, body);
     let assigned = assigned_once(body, &write_counts(body));
     // What each write gives: a whole number, or another's.
-    let mut written: HashMap<Local, Vec<Option<Local>>> = HashMap::new();
-    let mut unknown: HashSet<Local> = HashSet::new();
+    let mut written: IndexMap<Local, Vec<Option<Local>>> = IndexMap::default();
+    let mut unknown: IndexSet<Local> = IndexSet::default();
     for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
         let assign = match &statement.kind {
             StatementKind::Assign(assign) => assign,
@@ -506,7 +505,7 @@ pub(in crate::lower) fn whole_locals<'tcx>(
     };
     // Each known, but those of a write of what isn't, until none is: a
     // counter's writes are of itself, whole where each is (rd266).
-    let mut found: HashSet<Local> = written.keys().copied().filter(|&local| known(local)).collect();
+    let mut found: IndexSet<Local> = written.keys().copied().filter(|&local| known(local)).collect();
     loop {
         let gone: Vec<Local> = (found.iter().copied())
             .filter(|local| {
@@ -519,7 +518,7 @@ pub(in crate::lower) fn whole_locals<'tcx>(
             return found;
         }
         for local in gone {
-            found.remove(&local);
+            found.swap_remove(&local);
         }
     }
 }
@@ -535,10 +534,10 @@ fn unwhole_key_writes<'tcx>(
     tcx: TyCtxt<'tcx>,
     (body, promoted): (&mir::Body<'tcx>, &IndexVec<mir::Promoted, mir::Body<'tcx>>),
     wholes: &Wholes,
-    locals: &HashSet<Local>,
+    locals: &IndexSet<Local>,
     counts: &[usize],
 ) -> Vec<Field> {
-    let keys: HashSet<DefId> = (wholes.fields.iter())
+    let keys: IndexSet<DefId> = (wholes.fields.iter())
         .filter_map(|&field| match field {
             Field::Key(key) => Some(key),
             _ => None,
@@ -552,8 +551,8 @@ fn unwhole_key_writes<'tcx>(
     let uses = uses_of(body);
     // How many times each local is a key's method's receiver, and each key
     // a constant one's.
-    let mut received: HashMap<Local, usize> = HashMap::new();
-    let mut accounted: HashMap<DefId, usize> = HashMap::new();
+    let mut received: IndexMap<Local, usize> = IndexMap::default();
+    let mut accounted: IndexMap<DefId, usize> = IndexMap::default();
     for data in body.basic_blocks.iter() {
         let TerminatorKind::Call { func, args, .. } = &data.terminator().kind else {
             continue;
@@ -580,7 +579,7 @@ fn unwhole_key_writes<'tcx>(
         }
     }
     // Each reborrow of a local, `_5 = &(*_23)`, by the local it's of.
-    let mut reborrows: HashMap<Local, Vec<Local>> = HashMap::new();
+    let mut reborrows: IndexMap<Local, Vec<Local>> = IndexMap::default();
     for (&local, rvalue) in &assigned {
         if let Rvalue::Ref(_, _, lent) = rvalue
             && lent.projection.as_slice() == [PlaceElem::Deref]
@@ -605,7 +604,7 @@ fn unwhole_key_writes<'tcx>(
     let mut mentions = Mentions {
         keys: &keys,
         promoted,
-        found: HashMap::new(),
+        found: IndexMap::default(),
     };
     mentions.visit_body(body);
     for (key, found) in mentions.found {
@@ -620,8 +619,8 @@ fn unwhole_key_writes<'tcx>(
 /// method's receiver, and reborrowed, `&*local`, by which.
 struct OnlyReceived<'r> {
     uses: &'r [usize],
-    received: &'r HashMap<Local, usize>,
-    reborrows: &'r HashMap<Local, Vec<Local>>,
+    received: &'r IndexMap<Local, usize>,
+    reborrows: &'r IndexMap<Local, Vec<Local>>,
 }
 
 impl OnlyReceived<'_> {
@@ -639,9 +638,9 @@ impl OnlyReceived<'_> {
 /// thread-local's key: itself, or within a promoted constant, `&KEY`
 /// (rd707).
 struct Mentions<'k, 'tcx> {
-    keys: &'k HashSet<DefId>,
+    keys: &'k IndexSet<DefId>,
     promoted: &'k IndexVec<mir::Promoted, mir::Body<'tcx>>,
-    found: HashMap<DefId, usize>,
+    found: IndexMap<DefId, usize>,
 }
 
 impl<'tcx> Visitor<'tcx> for Mentions<'_, 'tcx> {
@@ -658,7 +657,7 @@ impl<'tcx> Visitor<'tcx> for Mentions<'_, 'tcx> {
                     let mut within = Mentions {
                         keys: self.keys,
                         promoted: &IndexVec::new(),
-                        found: HashMap::new(),
+                        found: IndexMap::default(),
                     };
                     within.visit_body(promoted);
                     for (key, found) in within.found {
@@ -680,7 +679,7 @@ fn unwhole_writes<'tcx>(
     tcx: TyCtxt<'tcx>,
     (body, promoted): (&mir::Body<'tcx>, &IndexVec<mir::Promoted, mir::Body<'tcx>>),
     wholes: &Wholes,
-    locals: &HashSet<Local>,
+    locals: &IndexSet<Local>,
     counts: &[usize],
 ) -> Vec<Field> {
     let mut gone = Vec::new();
@@ -690,9 +689,9 @@ fn unwhole_writes<'tcx>(
     // Each local a `Cell::new` of a whole number makes, written once and
     // used once, moved where it's kept: never lent, to be set before then,
     // `let idx = Cell::new(1.0); idx.set(-0.0); move || ..` (rd653).
-    let mut cells: HashSet<Local> = HashSet::new();
+    let mut cells: IndexSet<Local> = IndexSet::default();
     // How many times each borrow of a field is a `Cell` method's receiver.
-    let mut received: HashMap<Local, usize> = HashMap::new();
+    let mut received: IndexMap<Local, usize> = IndexMap::default();
     for data in body.basic_blocks.iter() {
         let TerminatorKind::Call {
             func,

@@ -15,20 +15,20 @@ use super::*;
 pub struct Writes {
     /// `x = ..` and `x += ..`: each variable whose binding is replaced, in a
     /// closure too.
-    pub replaced: HashSet<String>,
+    pub replaced: IndexSet<String>,
     /// Those a closure, or a function declared in the tree, replaces.
-    pub replaced_in_closures: HashSet<String>,
+    pub replaced_in_closures: IndexSet<String>,
     /// `x.f = ..` and `x[0] += ..`: each variable whose object a write
     /// changes, the one at the root of what's written, in a closure too.
-    pub changed: HashSet<String>,
+    pub changed: IndexSet<String>,
     /// Those a closure, or a function declared in the tree, changes.
-    pub changed_in_closures: HashSet<String>,
+    pub changed_in_closures: IndexSet<String>,
     /// `&mut x`'s handle, a getter and a setter of `x`: each variable one is
     /// made on, which what it's given may replace (ADR 0099).
-    pub handled: HashSet<String>,
+    pub handled: IndexSet<String>,
     /// How many places set each variable's binding, a handle on it among
     /// them, in a closure too: `Writes::count`'s.
-    set: HashMap<String, usize>,
+    set: IndexMap<String, usize>,
 }
 
 impl Writes {
@@ -40,7 +40,7 @@ impl Writes {
 
     /// What a closure may write when it's called: each variable whose
     /// binding or object one writes.
-    pub fn by_closures(&self) -> HashSet<String> {
+    pub fn by_closures(&self) -> IndexSet<String> {
         self.replaced_in_closures
             .union(&self.changed_in_closures)
             .cloned()
@@ -157,7 +157,7 @@ mod tests {
         stmt(StmtKind::Assign(target, Expr::int(1)))
     }
 
-    fn names(set: &HashSet<String>) -> Vec<&str> {
+    fn names(set: &IndexSet<String>) -> Vec<&str> {
         let mut names: Vec<&str> = set.iter().map(String::as_str).collect();
         names.sort();
         names

@@ -11,7 +11,7 @@
 //! In JS that's one `await x`: the call gives `_y` and goes on to the
 //! `Ready` block. The loop is left as it is: nothing reaches it then.
 
-use std::collections::HashSet;
+use crate::collections::IndexSet;
 
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::{
@@ -23,8 +23,8 @@ use super::cfg::successors;
 
 /// Each `.await` in `body` made one call, `into_future`'s, that gives what's
 /// awaited: the blocks of those calls.
-pub(in crate::lower) fn awaits<'tcx>(tcx: TyCtxt<'tcx>, body: &mut mir::Body<'tcx>) -> HashSet<BasicBlock> {
-    let mut awaits = HashSet::new();
+pub(in crate::lower) fn awaits<'tcx>(tcx: TyCtxt<'tcx>, body: &mut mir::Body<'tcx>) -> IndexSet<BasicBlock> {
+    let mut awaits = IndexSet::default();
     for block in body.basic_blocks.indices() {
         let TerminatorKind::Call {
             func,

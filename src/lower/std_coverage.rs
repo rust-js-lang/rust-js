@@ -6,7 +6,7 @@
 //! 0561): whether rust-js could lower it from the MIR the
 //! toolchain ships, or it reaches what JS hasn't, addressable memory.
 
-use std::collections::HashMap;
+use crate::collections::IndexMap;
 use std::fmt::Write as _;
 
 use rustc_middle::mir::{self, Operand, RuntimeChecks, Rvalue, StatementKind, TerminatorKind};
@@ -155,7 +155,7 @@ pub fn report<'tcx>(tcx: TyCtxt<'tcx>, dependencies: &crate::library::Dependenci
 /// follows calls, so one function's answer is many methods'.
 #[derive(Default)]
 struct Bodies {
-    known: HashMap<DefId, Body>,
+    known: IndexMap<DefId, Body>,
 }
 
 impl Bodies {

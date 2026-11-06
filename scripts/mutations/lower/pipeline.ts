@@ -497,7 +497,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local made where it's first used is taken as code its module's load runs, so what it reads of another module's `const`s is their value, not their name",
     file: "src/lower/pipeline.rs",
-    find: "        .filter(|(_, key)| !lazy_locals.contains(key))\n",
+    find: "        .filter(|(_, key)| !lazy_locals.contains(*key))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_made_where_used.rs$"],
     snapshots: true,
@@ -761,7 +761,7 @@ export const mutations: Mutation[] = [
     breaks: "a program's contract says its dictionaries carry no constant, so a test that reads one its own generic code reads, of a type parameter, is refused (#597)",
     file: "src/lower/pipeline.rs",
     find: "    let tested = program.then(|| (&generic_consts, own_traits()));\n",
-    replace: "    let no_consts = HashSet::new();\n    let tested = program.then(|| (&no_consts, own_traits()));\n",
+    replace: "    let no_consts = IndexSet::default();\n    let tested = program.then(|| (&no_consts, own_traits()));\n",
     tests: ["test/rust-js-test-programs.test.ts", "-t", "as rust-js build does"],
   },
   {

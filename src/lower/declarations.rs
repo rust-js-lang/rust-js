@@ -6,7 +6,8 @@
 //! to less than Rust holds it to. They're the model of @rust-js/typescript
 //! (ADR 0206), which TypeScript prints (ADR 0207).
 
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use crate::collections::{IndexMap, IndexSet};
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::program::Reexport;
 use rustc_hir as hir;
@@ -53,19 +54,19 @@ pub(super) fn module<'tcx>(
     foreign: &super::library::Foreign<'_, 'tcx>,
     module: LocalModId,
     (default_export, default_declared): (Option<DefId>, bool),
-    files: &HashMap<LocalModId, Vec<String>>,
-    (reexports, forwarded): (&[Reexport], &HashMap<DefId, DefId>),
+    files: &IndexMap<LocalModId, Vec<String>>,
+    (reexports, forwarded): (&[Reexport], &IndexMap<DefId, DefId>),
     aliases: &[(DefId, (String, String))],
     (ref_cells, counted, null_fields, flattened): (
         &super::drops::RefCells<'tcx>,
         &super::analysis::Counted<'tcx>,
-        &HashSet<DefId>,
+        &IndexSet<DefId>,
         &super::bindings::Flattened,
     ),
     (fns, held, variables): (
-        &HashMap<DefId, super::FnInfo>,
+        &IndexMap<DefId, super::FnInfo>,
         &[super::bindings::HeldBinding],
-        &HashMap<DefId, bool>,
+        &IndexMap<DefId, bool>,
     ),
     representation: SignatureForms<'_, 'tcx>,
 ) -> Option<Value> {
@@ -87,7 +88,7 @@ pub(super) fn module<'tcx>(
         module_imports: BTreeSet::new(),
         namespaces: BTreeSet::new(),
         unexported: BTreeMap::new(),
-        erased: HashMap::new(),
+        erased: IndexMap::default(),
         named: Vec::new(),
         function_names: Vec::new(),
         filled: None,
@@ -104,8 +105,8 @@ pub(super) fn module<'tcx>(
     // is its default alone too, declared below (ADR 0611, amended).
     let named_default = default_export.filter(|&d| !default_declared && super::bindings::held_path(tcx, d).is_none());
     let mut items = Vec::new();
-    let mut objects = HashSet::new();
-    let mut left_out = HashSet::new();
+    let mut objects = IndexSet::default();
+    let mut left_out = IndexSet::default();
     for item in tcx.hir_module_free_items(module) {
         // The notes of what the item before left out, after it (#559).
         items.append(&mut out.notes);
@@ -281,7 +282,7 @@ pub(super) fn module<'tcx>(
 /// number;`, which a `.d.ts`, reading no global, may: but a word JS keeps,
 /// `delete`, which no declaration may be named, exported by its alias
 /// (#338).
-fn by_own_name(fns: &HashMap<DefId, super::FnInfo>, item: DefId, export: &str) -> bool {
+fn by_own_name(fns: &IndexMap<DefId, super::FnInfo>, item: DefId, export: &str) -> bool {
     fns.get(&item).and_then(|info| info.export.as_deref()) == Some(export) && !crate::names::kept_word(export)
 }
 
@@ -417,24 +418,24 @@ struct Declarations<'a, 'tcx> {
     module: LocalModId,
     /// Each function's and `const`'s JS name, as its JS has it: `new$` of a
     /// `new` (ADR 0546).
-    fns: &'a HashMap<DefId, super::FnInfo>,
+    fns: &'a IndexMap<DefId, super::FnInfo>,
     /// The thread-locals it exports as its variables, of what their cells
     /// hold, and whether it sets each, `export let`, or not, `export const`
     /// (ADR 0270, amended).
-    variables: &'a HashMap<DefId, bool>,
+    variables: &'a IndexMap<DefId, bool>,
     /// The `RefCell`s a field holds as their value (ADR 0362).
     ref_cells: &'a super::drops::RefCells<'tcx>,
     /// The `Rc`s counted, `{ value, strong, weak }`: every other, and its
     /// `Weak`, is the value it points at (ADRs 0320, 0843).
     counted: &'a super::analysis::Counted<'tcx>,
     /// The fields a `js::null()` is written to, `| null` (ADR 0935, amended).
-    null_fields: &'a HashSet<DefId>,
+    null_fields: &'a IndexSet<DefId>,
     /// The enums told by their keys, each variant an object of its own
     /// keys, no tag (#504).
     flattened: &'a super::bindings::Flattened,
     /// The crate's modules that have a file, by their path: those whose
     /// types another's declarations import (ADR 0210).
-    files: &'a HashMap<LocalModId, Vec<String>>,
+    files: &'a IndexMap<LocalModId, Vec<String>>,
     /// What a library's contract says its declarations export (ADR 0210,
     /// amended).
     foreign: &'a super::library::Foreign<'a, 'tcx>,
@@ -455,7 +456,7 @@ struct Declarations<'a, 'tcx> {
     unexported: BTreeMap<String, Option<Value>>,
     /// The type parameters of the item being declared that are a type of
     /// TypeScript's, by index: `C: ReactNode`'s `ReactNode`.
-    erased: HashMap<u32, Value>,
+    erased: IndexMap<u32, Value>,
     /// The aliases written in the type being declared, each by its type,
     /// rustc's, which has them expanded, and what TypeScript names it
     /// (`as_written`).
@@ -467,7 +468,7 @@ struct Declarations<'a, 'tcx> {
     function_names: Vec<(Ty<'tcx>, Vec<Option<String>>)>,
     /// Each function-typed field's parameters as every literal of the
     /// crate fills it, made once, when first asked (`filled_names`).
-    filled: Option<HashMap<DefId, Vec<Option<String>>>>,
+    filled: Option<IndexMap<DefId, Vec<Option<String>>>>,
     /// The notes of the members the declaration just made left out
     /// (`leave_out`), which the module's items take after it.
     notes: Vec<Value>,
@@ -506,10 +507,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
     /// An item's type parameters that are a type of TypeScript's, by index,
     /// as the trait each is bound by says (`#[rust_js::types]`): `C: ReactNode`
     /// is a `ReactNode`, as a person writes `children: ReactNode`.
-    fn erased(&mut self, def_id: DefId) -> HashMap<u32, Value> {
+    fn erased(&mut self, def_id: DefId) -> IndexMap<u32, Value> {
         // Of its own parameters alone, not the item before's by their index.
         let outer = std::mem::take(&mut self.erased);
-        let mut erased = HashMap::new();
+        let mut erased = IndexMap::default();
         for (index, bound) in erasures(self.tcx, def_id) {
             if !erased.contains_key(&index)
                 && let Some(declared) = written_types(self.tcx, bound)
@@ -522,7 +523,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
         // says, `(item: Item, index: number) => R`, as TypeScript writes a
         // callback (`JsSignature::callables`, #661).
         for callable in self.callables(def_id) {
-            if let std::collections::hash_map::Entry::Vacant(slot) = erased.entry(callable.index) {
+            if let indexmap::map::Entry::Vacant(slot) = erased.entry(callable.index) {
                 slot.insert(self.function_type(callable.inputs, callable.output, &[], true));
             }
         }

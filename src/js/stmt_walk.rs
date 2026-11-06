@@ -464,7 +464,7 @@ fn canonical(stmts: &[Stmt], facts: bool) -> Vec<Stmt> {
     unspan(&mut stmts);
     let mut declared = Vec::new();
     binders(&mut stmts, &mut declared);
-    let names: HashMap<String, String> = (declared.into_iter().enumerate())
+    let names: IndexMap<String, String> = (declared.into_iter().enumerate())
         .map(|(i, name)| (name, format!("${i}")))
         .collect();
     let rename = |name: &mut String| {
@@ -653,7 +653,7 @@ pub fn read_as_this(stmts: &mut [Stmt], name: &str) -> bool {
 /// apart from what the body names (#359, #449). Not a function nested in
 /// it, whose `this` is its own. Whether one did.
 pub fn this_outside_accessors(body: &mut Vec<Stmt>, name: &str) -> bool {
-    let mut taken = HashSet::new();
+    let mut taken = IndexSet::default();
     names_in(body, &mut taken);
     // Each nested function's body set aside, a mark of which in its place,
     // then put back where its mark is.
@@ -938,10 +938,10 @@ pub fn in_load_order(items: Vec<Item>) -> Vec<Item> {
 
     let order = {
         let items: Vec<&Item> = items.iter().flatten().collect();
-        let declaring: HashMap<&str, usize> = (items.iter().enumerate())
+        let declaring: IndexMap<&str, usize> = (items.iter().enumerate())
             .filter_map(|(i, item)| Some((item.declared()?, i)))
             .collect();
-        let called: HashMap<&str, &Item> = (items.iter())
+        let called: IndexMap<&str, &Item> = (items.iter())
             .filter_map(|item| match item {
                 Item::Function(function) => Some((function.name.as_str(), *item)),
                 Item::Namespace(namespace) => Some((namespace.name.as_str(), *item)),
@@ -950,7 +950,7 @@ pub fn in_load_order(items: Vec<Item>) -> Vec<Item> {
             .collect();
         // What each `const` holds, a function its value may be, which what
         // reads it may call (ADR 0306, amended).
-        let holds: HashMap<&str, Vec<&str>> = (items.iter())
+        let holds: IndexMap<&str, Vec<&str>> = (items.iter())
             .filter_map(|item| match item {
                 Item::Const(constant) => {
                     let mut held = Vec::new();
@@ -967,9 +967,9 @@ pub fn in_load_order(items: Vec<Item>) -> Vec<Item> {
         // The items each reads when it's loaded: what its value only holds,
         // `clz32Fallback`, made before it but not run; what it runs, and
         // what that reads, calls and holds, all of it.
-        let reads: Vec<HashSet<usize>> = (items.iter().enumerate())
+        let reads: Vec<IndexSet<usize>> = (items.iter().enumerate())
             .map(|(i, item)| {
-                let mut seen = HashSet::new();
+                let mut seen = IndexSet::default();
                 let mut work = Vec::new();
                 match item {
                     Item::Const(constant) => constant.value.visit_held_vars(&mut |v, only_held| match only_held {
@@ -979,7 +979,7 @@ pub fn in_load_order(items: Vec<Item>) -> Vec<Item> {
                     Item::Statements(stmts) => visit_stmts(stmts, &mut |v| work.push(v)),
                     Item::Namespace(_) | Item::Function(_) => {}
                 }
-                let mut ran = HashSet::new();
+                let mut ran = IndexSet::default();
                 while let Some(name) = work.pop() {
                     seen.insert(name);
                     if ran.insert(name) {

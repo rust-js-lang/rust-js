@@ -4,8 +4,8 @@
 //! empty (ADR 0847).
 
 use super::Slice;
+use crate::collections::{IndexMap, IndexSet};
 use rustc_middle::thir::{ExprId, LocalVarId};
-use std::collections::{HashMap, HashSet};
 
 /// The step of a slice's path into a `RefCell`, to the value it holds:
 /// `queue.borrow()`'s `Vec`, `([CELL], queue)` (ADR 0881).
@@ -272,30 +272,30 @@ impl Range {
 /// least length of each slice, and the test each `bool` variable holds.
 #[derive(Clone, PartialEq, Default, Debug)]
 pub(super) struct Known {
-    pub(super) vars: HashMap<LocalVarId, Range>,
-    pub(super) lengths: HashMap<Slice, i128>,
+    pub(super) vars: IndexMap<LocalVarId, Range>,
+    pub(super) lengths: IndexMap<Slice, i128>,
     /// Each `bool` variable made of a test that reads without changing
     /// anything, `let truncated = xs.len() > 3`: the test, and the
     /// variables it reads, while neither it nor they change, so a branch
     /// on it shows what the test does where it's taken (ADR 0806).
-    pub(super) tests: HashMap<LocalVarId, (ExprId, Vec<LocalVarId>)>,
+    pub(super) tests: IndexMap<LocalVarId, (ExprId, Vec<LocalVarId>)>,
     /// Each `OnceCell` the body made that's still empty, by the variable
     /// that made it and the fields to it: `payload.io_info` of `let payload
     /// = Rc::new(Payload { io_info: OnceCell::new(), .. })` (ADR 0847).
-    pub(super) empty: HashSet<Slice>,
+    pub(super) empty: IndexSet<Slice>,
     /// The variables whose cells each variable may reach: its own, of one
     /// that made some, and of what it's made of, a clone of their `Rc`.
-    pub(super) reaches: HashMap<LocalVarId, HashSet<LocalVarId>>,
+    pub(super) reaches: IndexMap<LocalVarId, IndexSet<LocalVarId>>,
     /// Each slice as long as another's length, or as an integer's value,
     /// while neither changes: `levels` of `let levels = vec![0.0;
     /// terraces.len()]`, `([], terraces)`, so an index below one is below
     /// the other (#362).
-    pub(super) same: HashMap<Slice, Slice>,
+    pub(super) same: IndexMap<Slice, Slice>,
     /// Each key a map holds, by the map, found as a slice is, and the
     /// variable whose value is the key, while neither changes:
     /// `(([CELL], errors), id)` of `errors.borrow().contains_key(id)`
     /// (`keys`).
-    pub(super) keys: HashSet<(Slice, LocalVarId)>,
+    pub(super) keys: IndexSet<(Slice, LocalVarId)>,
 }
 
 impl Known {
@@ -403,7 +403,7 @@ impl Known {
     /// holds a slice: nothing of it. Of the cells it reaches, its read where
     /// it's changed says (`escaped`).
     pub(super) fn changed(&mut self, var: LocalVarId) {
-        self.vars.remove(&var);
+        self.vars.swap_remove(&var);
         self.lengths.retain(|(_, v), _| *v != var);
         self.same.retain(|(_, v), (_, of)| *v != var && *of != var);
         self.keys.retain(|((_, map), key)| *map != var && *key != var);

@@ -36,6 +36,7 @@ mod trailing;
 use self::trailing::{
     Inside, Trailing, own_line_after_value, own_line_before_block, own_line_before_value, with_inside_comments,
 };
+use crate::collections::{IndexMap, IndexSet};
 
 use self::apart::apart;
 use self::arms::{Arm, arm_starts, else_if_starts};
@@ -237,7 +238,7 @@ pub fn emit(
     // A conditional's branch's comments, before its value on lines of their
     // own, `? // In modern browsers ..`, as oxc writes none before the
     // first (ADR 0658): its line split where its value's JS starts.
-    let mut splits: std::collections::HashMap<u32, Vec<(u32, &[String])>> = std::collections::HashMap::new();
+    let mut splits: IndexMap<u32, Vec<(u32, &[String])>> = IndexMap::default();
     if let Some(map) = &generated.map {
         // Where each line of the Rust starts, to read a token's place in it.
         let line_starts: Vec<u32> = std::iter::once(0)
@@ -296,10 +297,10 @@ pub fn emit(
         None => trailing::Placed::default(),
     };
     // Where each split line's pieces are: each from its column, on its line.
-    let mut pieces: std::collections::HashMap<u32, Vec<(u32, u32)>> = std::collections::HashMap::new();
+    let mut pieces: IndexMap<u32, Vec<(u32, u32)>> = IndexMap::default();
     // Where each line has a comment inside it: the piece it's in, where, and
     // how wide, what the JS after it there is moved by (ADR 0630, amended).
-    let mut widened: std::collections::HashMap<u32, Vec<(u32, u32, u32)>> = std::collections::HashMap::new();
+    let mut widened: IndexMap<u32, Vec<(u32, u32, u32)>> = IndexMap::default();
     let mut added = 0;
     for (i, line) in generated.code.lines().enumerate() {
         let i = i as u32;
@@ -404,7 +405,7 @@ pub fn emit(
                 .filter_map(|t| source_of(t.get_src_line())),
         )
         .collect();
-    let paths: std::collections::HashMap<usize, String> = used.into_iter().map(|i| (i, path_of(i))).collect();
+    let paths: IndexMap<usize, String> = used.into_iter().map(|i| (i, path_of(i))).collect();
     let map = restore_sources(&map, sources, &paths, primary);
     let last_shift = lines.last().map_or(0, |&last| last + 1 - lines.len() as u32);
     // Moved by the comments inside its piece of its line before it.
@@ -455,7 +456,7 @@ struct Commented {
     comments: Vec<oxc_ast::Comment>,
     trailing: Vec<Trailing>,
     arms: ArmComments,
-    tops: std::collections::HashMap<u32, u32>,
+    tops: IndexMap<u32, u32>,
     /// Each object literal's `}` and the comments before it (`closing::end_of`).
     closing: closing::Closing,
     /// The comments of each namespace thread-local's export list (`closing::exported`).
@@ -478,15 +479,15 @@ fn comments_of(
     let mut found = Vec::new();
     let mut after_own = Vec::new();
     // The cases whose comments the program wrote say they're fallen to.
-    let mut said_fallen = std::collections::HashSet::new();
-    let mut tops = std::collections::HashMap::new();
+    let mut said_fallen = IndexSet::default();
+    let mut tops = IndexMap::default();
     let mut trailing = Vec::new();
     let mut arm_comments = Vec::new();
     let mut inner: Vec<(crate::program::Comment, (u32, u32))> = Vec::new();
     let (spans, comment_ends, comments_before) = statement_spans(module);
     // Where each class's struct is, and its constructor function, which
     // what's before the struct is before.
-    let classes: std::collections::HashMap<u32, u32> = (module.items.iter())
+    let classes: IndexMap<u32, u32> = (module.items.iter())
         .filter_map(|item| match item {
             js::Item::Namespace(n) => declared_class(n),
             _ => None,
@@ -496,7 +497,7 @@ fn comments_of(
     // Where each function that's now a declaration elsewhere is, and that
     // declaration, which its comments are before (#535).
     // A re-export's, before the first statement of it (`header::commented_at`).
-    let taken_into: std::collections::HashMap<u32, u32> = (module.taken_into.iter())
+    let taken_into: IndexMap<u32, u32> = (module.taken_into.iter())
         .map(|&(function, declared)| (function.lo, *commented_at.get(&declared.lo).unwrap_or(&declared.lo)))
         .collect();
     let noinline = noinline_starts(module);
@@ -512,7 +513,7 @@ fn comments_of(
     // And each value of a case of more than one, which a comment between
     // an arm's patterns is before (rd139), or above the arm (rd143).
     let pattern_starts = cases::pattern_starts(module, &sources.text);
-    let case_values: std::collections::HashSet<u32> = pattern_starts.iter().copied().collect();
+    let case_values: IndexSet<u32> = pattern_starts.iter().copied().collect();
     // And a call's argument, and an object literal's field, whose comments
     // oxc writes before it, on lines of their own (ADR 0708).
     let parts = arguments::part_starts(module);
@@ -698,7 +699,7 @@ fn comments_of(
         // A line comment on a line of its own after a conditional's branch's
         // value, before its block's `}`, is after the value, as one on its
         // line is (ADR 0658, amended).
-        let value_ends: std::collections::HashSet<u32> = (arms.values())
+        let value_ends: IndexSet<u32> = (arms.values())
             .filter(|arm| matches!(arm.operator, "?" | ":"))
             .map(|arm| arm.hi)
             .collect();
@@ -1035,7 +1036,7 @@ fn comments_of(
         // match arm's of a `match` read as `prev?.types`: before the
         // statement it's in, the innermost, never lost (ADR 0444, amended);
         // not a module's item, a function's, far above where it's written.
-        let items: std::collections::HashSet<(u32, u32)> = (module.items.iter())
+        let items: IndexSet<(u32, u32)> = (module.items.iter())
             .flat_map(|item| match item {
                 js::Item::Function(f) => vec![f.span],
                 js::Item::Const(c) => vec![c.span],
@@ -1075,7 +1076,7 @@ fn comments_of(
             starts_and_end.push((sources.text.len() as u32, ends));
         }
         // The constructors a class's struct's comments are before.
-        let mut documented = std::collections::HashSet::new();
+        let mut documented = IndexSet::default();
         for (at, mut own) in starts_and_end {
             // Placed, but not written: a `// SAFETY:` comment (ADR 0444,
             // amended), whose blank line before is what's after it's.
@@ -1338,8 +1339,8 @@ fn owned(i: usize) -> u32 {
 /// Where each object literal's field's value starts whose struct's field
 /// has a doc comment, the crate's one literal of it, and its JSDoc
 /// (`ObjectLayout::docs`, ADR 0444, amended).
-fn field_docs(module: &Module) -> std::collections::HashMap<u32, String> {
-    let mut docs = std::collections::HashMap::new();
+fn field_docs(module: &Module) -> IndexMap<u32, String> {
+    let mut docs = IndexMap::default();
     let mut of = |mut stmts: Vec<js::Stmt>| {
         js::each_expr_mut(&mut stmts, &mut |e| {
             let ExprKind::Object(props, layout) = &e.kind else {
@@ -1379,17 +1380,17 @@ struct Cx<'a> {
     /// The objects made of those the source writes across lines, by where
     /// each is in the arena (ADR 0835): which a visit of the program tells
     /// the formatter of, in its order (`across_lines`).
-    across_lines: std::cell::RefCell<std::collections::HashSet<*const ObjectExpression<'a>>>,
+    across_lines: std::cell::RefCell<IndexSet<*const ObjectExpression<'a>>>,
     /// The template literals some of whose values the source writes across
     /// lines, by where each is in the arena, and which (ADR 0641, amended).
-    interpolations: std::cell::RefCell<std::collections::HashMap<*const TemplateLiteral<'a>, Vec<bool>>>,
+    interpolations: std::cell::RefCell<IndexMap<*const TemplateLiteral<'a>, Vec<bool>>>,
     /// Where a conditional's branch its comments are before starts (ADR
     /// 0658), whose first JS is placed there (`Cx::branch`).
-    commented_branches: std::collections::HashSet<u32>,
+    commented_branches: IndexSet<u32>,
     /// Where a statement that comments are before starts: an `if` that's an
     /// `else`'s only statement is in its block, not an `else if`, so they're
     /// there (ADR 0444, amended).
-    commented: std::collections::HashSet<u32>,
+    commented: IndexSet<u32>,
 }
 
 /// Of each object of `program`, in the order a visit meets them, as its

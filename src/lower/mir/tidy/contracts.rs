@@ -4,6 +4,7 @@
 //! jump, each label is one a jump names, no `if` is empty and none tests a
 //! constant. A check that fails names the first stage that broke it.
 
+use crate::collections::IndexSet;
 use crate::js::{ExprKind, Stmt, StmtKind};
 
 /// A property of a body, and why a body doesn't have it.
@@ -219,7 +220,7 @@ fn unlanded<'a>(stmts: &'a [Stmt], targets: &mut Vec<Target<'a>>) -> Option<Stri
 fn twice_declared(body: &[Stmt]) -> Option<String> {
     let mut found = None;
     crate::js::each_list(body, &mut |stmts| {
-        let mut seen = std::collections::HashSet::new();
+        let mut seen = IndexSet::default();
         for stmt in stmts {
             if let StmtKind::Let(name, _) | StmtKind::Const(name, _) = &stmt.kind
                 && !seen.insert(name.as_str())

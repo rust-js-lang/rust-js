@@ -3,8 +3,7 @@
 //! where each path ends, and what the structure needed to reach it, a
 //! labeled block or a `break`, goes. A closure's body is tidied as its own.
 
-use std::collections::{HashMap, HashSet};
-
+use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp, breaks, ends, names_break};
 
 use crate::lower::iterators::{self, eager_chains, eager_spreads, iterated};
@@ -46,30 +45,30 @@ use super::hints::{LabeledBlock, Switch};
 /// What a body's last passes ask of its locals, by name: those the program
 /// names, those a `let`'s `#[rust_js::name]` names, and its `String`s.
 pub(super) struct Named {
-    pub(super) user: HashSet<String>,
-    pub(super) given: HashSet<String>,
-    pub(super) text: HashSet<String>,
+    pub(super) user: IndexSet<String>,
+    pub(super) given: IndexSet<String>,
+    pub(super) text: IndexSet<String>,
 }
 
 /// What a body's `let`s bind, each by its name.
 pub(super) struct LetNames {
     /// What a struct or tuple pattern binds, `let Point { x, y } = p;`.
-    pub(super) patterns: HashSet<String>,
+    pub(super) patterns: IndexSet<String>,
     /// What a name alone binds, `let x = p.x;`.
-    pub(super) named: HashSet<String>,
+    pub(super) named: IndexSet<String>,
     /// Of those, `let mut`'s: what the program said it changes (rd226b).
-    pub(super) mutable: HashSet<String>,
+    pub(super) mutable: IndexSet<String>,
     /// Of those, one of a `RefCell` field's value cloned, named as the field, `let child =
     /// current.child.borrow().clone();`: a `let` that ends a borrow, which
     /// reads as its value written in the statement right after it where
     /// only that reads it (ADR 0866, amended).
-    pub(super) ends_borrow: HashSet<String>,
+    pub(super) ends_borrow: IndexSet<String>,
     /// Of those, one of a shared borrow, a `&T` or a `RefCell`'s `Ref<T>`,
     /// of a `T` with no cell of its own (`Freeze`), `let chunks =
     /// store.chunks.borrow();`: what it's to can't change while it's held,
     /// so a handle on its place reads, where it's made, what each of its
     /// uses would (rd658).
-    pub(super) frozen: HashSet<String>,
+    pub(super) frozen: IndexSet<String>,
     /// What an `if let`'s or a let chain's pattern binds of its scrutinee's
     /// whole payload, named as the field the scrutinee reads, by their Rust
     /// names: `debug_task` of `let Some(debug_task) =
@@ -77,7 +76,7 @@ pub(super) struct LetNames {
     /// so a chain's binding the test read is read again in its place
     /// (`moves::read_again`); `prev_state` of `current.memoized_state` is
     /// the program's name, which stays (ADR 0866, amended, rd706).
-    pub(super) own_field: HashSet<String>,
+    pub(super) own_field: IndexSet<String>,
     /// Where each `let` of a drop guard, a value of a type with a `Drop` of
     /// its own, is written, and where the block whose end drops it ends:
     /// the `try` its drop ends starts at the `let` (ADR 0865, amended).
@@ -89,14 +88,14 @@ pub(super) struct Hints<'h> {
     /// The name of the function's return place.
     pub(super) result: &'h str,
     /// The temporaries a function that skips what's falsy is given.
-    pub(super) falsy: &'h HashSet<String>,
+    pub(super) falsy: &'h IndexSet<String>,
     /// And the temporaries such a `test && value` tests.
-    pub(super) tested: &'h HashSet<String>,
+    pub(super) tested: &'h IndexSet<String>,
     /// Where the program writes its `if`s, loops, `&&`s, tables and
     /// comments (`hints::Written`).
     pub(super) written: &'h super::hints::Written,
     /// The closures a `let` names that a hook's function alone is (ADR 0297).
-    pub(super) callbacks: &'h HashSet<String>,
+    pub(super) callbacks: &'h IndexSet<String>,
     /// What the body's `let`s bind, by name.
     pub(super) lets: &'h LetNames,
     /// Whether the body is a closure's, tidied again in its function's.
@@ -108,17 +107,17 @@ pub(super) struct Hints<'h> {
     pub(super) clones: &'h crate::lower::mir::hints::Clones,
     /// Of a closure, the variables it captured by value, which its maker
     /// never assigns again from where it makes it (ADR 0879).
-    pub(super) kept: &'h HashSet<String>,
+    pub(super) kept: &'h IndexSet<String>,
     /// The variables of Rust's `bool`: JS's `true` and `false` alone.
-    pub(super) booleans: &'h HashSet<String>,
+    pub(super) booleans: &'h IndexSet<String>,
     /// The variables of Rust's integers: JS's numbers, which `++` steps.
-    pub(super) numbers: &'h HashSet<String>,
+    pub(super) numbers: &'h IndexSet<String>,
     /// The variables of Rust's floats: JS's numbers, never an object whose
     /// `valueOf` a comparison runs (ADR 0966).
-    pub(super) floats: &'h HashSet<String>,
+    pub(super) floats: &'h IndexSet<String>,
     /// The variables of plain values, which nothing changes, and `...items`
     /// of arrays whose items nothing changes (`Locals::plain`).
-    pub(super) plain: &'h HashSet<String>,
+    pub(super) plain: &'h IndexSet<String>,
     /// Each closure of one call, where it's written and what it passes its
     /// call on to (ADR 0605, amended).
     pub(super) forwarding: &'h [crate::lower::passed_on::Forwarding],
@@ -126,7 +125,7 @@ pub(super) struct Hints<'h> {
     /// a component's handler of one, `() => f()` (ADR 0040).
     pub(super) concise: &'h [(js::Span, crate::lower::jsx::OneCall)],
     /// Each drop flag, `noisy$live`: whether a value is there to drop.
-    pub(super) flags: &'h HashSet<String>,
+    pub(super) flags: &'h IndexSet<String>,
     /// What `Iterator::fuse`'s compiled body is called here, `iterator_fuse`,
     /// where the module imports it: a `Fuse` stepped till it ends is its
     /// source (ADR 0561).
@@ -136,7 +135,7 @@ pub(super) struct Hints<'h> {
     /// The function's parameters, which the `finish` stage takes apart.
     pub(super) params: &'h std::cell::RefCell<Vec<js::Pattern>>,
     /// The names MIR suggests of its temporaries, for `finish` to give.
-    pub(super) suggested: &'h HashMap<String, Vec<String>>,
+    pub(super) suggested: &'h IndexMap<String, Vec<String>>,
     /// The locals the program names, and its `String`s, by name.
     pub(super) named: &'h Named,
     /// Its stages run again (`Again`).
@@ -241,7 +240,7 @@ pub(crate) fn pass_names() -> Vec<String> {
 
 /// The function's return place, `let` first, where nothing reads it now.
 fn unread_result(body: &mut Vec<Stmt>, result: &str) {
-    let mut read = HashSet::new();
+    let mut read = IndexSet::default();
     js::visit_stmts(body, &mut |name| {
         read.insert(name.to_string());
     });
@@ -254,9 +253,9 @@ fn unread_result(body: &mut Vec<Stmt>, result: &str) {
 /// value`: one read there alone, which nothing else tells from
 /// `undefined`. A test of one read there alone is read for its truth:
 /// `!!a || b`'s, `a || b`.
-fn falsy_values(body: &mut Vec<Stmt>, falsy: &HashSet<String>, tested: &HashSet<String>) {
-    let falsy: HashSet<&String> = falsy.iter().filter(|name| js::mentions_in(body, name) == 1).collect();
-    let tested: HashSet<&String> = tested.iter().filter(|name| js::mentions_in(body, name) == 1).collect();
+fn falsy_values(body: &mut Vec<Stmt>, falsy: &IndexSet<String>, tested: &IndexSet<String>) {
+    let falsy: IndexSet<&String> = falsy.iter().filter(|name| js::mentions_in(body, name) == 1).collect();
+    let tested: IndexSet<&String> = tested.iter().filter(|name| js::mentions_in(body, name) == 1).collect();
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             if let StmtKind::Const(name, value) = &mut stmt.kind
@@ -279,7 +278,7 @@ fn falsy_values(body: &mut Vec<Stmt>, falsy: &HashSet<String>, tested: &HashSet<
 /// <b />`, as JSX writes it (ADR 0235), of a boolean test, whose `false`
 /// renders nothing as `undefined` does; of another, its truth, `!!href &&
 /// <a />`, as `""` or `0` would render.
-fn shown_children(e: &mut Expr, booleans: &HashSet<String>) {
+fn shown_children(e: &mut Expr, booleans: &IndexSet<String>) {
     if let ExprKind::Jsx(jsx) = &mut e.kind {
         for child in jsx.children.iter_mut() {
             if let ExprKind::Cond(test, shown, none) = &child.kind
@@ -469,7 +468,7 @@ fn written_first(stmts: &mut [Stmt], switches: &[Switch]) {
 /// change, as MIR's lowering reads it where it's read, or a builtin's
 /// function, `Object.fromEntries`; an element of such, a closure made, and a
 /// test or a choice of such, `selected ? "page" : undefined`.
-fn read_past_calls(e: &Expr, set: &HashSet<String>, plain: &HashSet<String>) -> bool {
+fn read_past_calls(e: &Expr, set: &IndexSet<String>, plain: &IndexSet<String>) -> bool {
     let past = |e: &Expr| read_past_calls(e, set, plain);
     let mut root = e;
     while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {
@@ -530,7 +529,7 @@ fn read_past_calls(e: &Expr, set: &HashSet<String>, plain: &HashSet<String>) -> 
                 && let [given] = args.as_slice() =>
         {
             let mut plain = plain.clone();
-            plain.remove(param);
+            plain.swap_remove(param);
             past(given) && read_past_calls(result, set, &plain)
         }
         _ => e.is_made_of_constants(),
@@ -540,7 +539,7 @@ fn read_past_calls(e: &Expr, set: &HashSet<String>, plain: &HashSet<String>) -> 
 /// Whether making `e` reads only what no call changes: an element, array or
 /// object of constants, of variables nothing sets again, of imports and of
 /// arrows, which capture what they read, and of such elements.
-fn inert_element(e: &Expr, changing: &HashSet<String>) -> bool {
+fn inert_element(e: &Expr, changing: &IndexSet<String>) -> bool {
     let props = |props: &[js::Prop]| {
         props.iter().all(|p| {
             let (js::Prop::Field(_, v)
@@ -574,7 +573,7 @@ fn inert_element(e: &Expr, changing: &HashSet<String>) -> bool {
 
 /// The variables what's called may set: a closure's, and a getter's and
 /// setter's handle's, `{ get value() { return n; }, set value(v) { n = v; } }`.
-fn set_elsewhere(body: &[Stmt]) -> HashSet<String> {
+fn set_elsewhere(body: &[Stmt]) -> IndexSet<String> {
     let writes = js::Writes::of(body);
     let mut set = writes.by_closures();
     set.extend(writes.handled);
@@ -583,7 +582,7 @@ fn set_elsewhere(body: &[Stmt]) -> HashSet<String> {
 
 /// The variables something may change: each `let`'s, each assigned, and
 /// each a handle's made on.
-fn changing(body: &mut Vec<Stmt>) -> HashSet<String> {
+fn changing(body: &mut Vec<Stmt>) -> IndexSet<String> {
     let writes = js::Writes::of(body);
     let mut changing = writes.replaced;
     changing.extend(writes.handled);
@@ -631,7 +630,7 @@ fn commented_jumps(body: &mut Vec<Stmt>, jumps: &[(js::Span, js::Span)]) {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
+    use crate::collections::IndexSet;
 
     use super::{
         MoveFacts, decided_tests, inlined, is_temporary, paired_temporaries, settle_jumps, shared_tails,
@@ -1036,7 +1035,7 @@ mod tests {
             StmtKind::If(present("option"), vec![call("drop")], None).at(js::Span::NONE),
             returns("x"),
         ];
-        decided_tests(&mut after, &HashSet::new(), &[]);
+        decided_tests(&mut after, &IndexSet::default(), &[]);
         assert!(matches!(
             after.as_slice(),
             [
@@ -1090,7 +1089,7 @@ mod tests {
             )
             .at(js::Span::NONE),
         ];
-        let changing: HashSet<String> = ["r".to_string()].into();
+        let changing: IndexSet<String> = IndexSet::from_iter(["r".to_string()]);
         js::statement_lists(&mut within, &mut |stmts| decided_tests(stmts, &changing, &[]));
         let [
             Stmt {
@@ -1140,8 +1139,8 @@ mod tests {
         body.extend(pair("b", "g"));
         let paired = paired_temporaries(&body);
         assert_eq!(paired, [t5.clone(), t6.clone()].into());
-        let changing: HashSet<String> = [t5.clone(), t6.clone()].into();
-        let none = HashSet::new();
+        let changing: IndexSet<String> = IndexSet::from_iter([t5.clone(), t6.clone()]);
+        let none = IndexSet::default();
         let facts = MoveFacts {
             changing: &changing,
             set: &none,
@@ -1249,7 +1248,7 @@ mod tests {
     #[test]
     fn a_test_of_an_integer_is_turned_not_a_floats() {
         let not_less = |x: &str| Expr::unary(UnaryOp::Not, Expr::bin(Op::Lt, Expr::var(x), Expr::int(5)));
-        let numbers: HashSet<String> = ["n".to_string()].into();
+        let numbers: IndexSet<String> = IndexSet::from_iter(["n".to_string()]);
         let mut of_int = not_less("n");
         turned(&mut of_int, &numbers);
         assert!(matches!(of_int.kind, ExprKind::Binary(Op::Ge, ..)));

@@ -4,16 +4,16 @@
 //! source and its state, so what's asked of a held one later, its size
 //! hint, its `Debug`, its back, is there.
 
+use crate::collections::IndexSet;
 use crate::lower::recognition::is_iter_adapter_def;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
-use std::collections::HashSet;
 
 /// Each adapter's definition, `Enumerate`'s, that a field of the crate's
 /// structs, enums or unions holds, through whatever holds it.
-pub(super) fn held_adapters(tcx: TyCtxt<'_>) -> HashSet<DefId> {
-    let mut held = HashSet::new();
+pub(super) fn held_adapters(tcx: TyCtxt<'_>) -> IndexSet<DefId> {
+    let mut held = IndexSet::default();
     for id in tcx.hir_crate_items(()).definitions() {
         if !matches!(tcx.def_kind(id), DefKind::Struct | DefKind::Enum | DefKind::Union) {
             continue;

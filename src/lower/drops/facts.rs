@@ -4,7 +4,7 @@
 //! 0328). A walk of the THIR that asks what types drop of a `DropQuery`,
 //! and sees nothing else of the function.
 
-use std::collections::{HashMap, HashSet};
+use crate::collections::{IndexMap, IndexSet};
 use std::iter::once;
 
 use rustc_hir::{BindingMode, ByRef};
@@ -36,15 +36,15 @@ pub(in crate::lower) struct Facts {
     /// Each borrow, by its call's `fun`, whose guard is held only while
     /// nothing can ask whether its cell is borrowed: checked, and not
     /// counted, nor dropped (ADR 0328).
-    pub(in crate::lower) momentary: HashSet<ExprId>,
+    pub(in crate::lower) momentary: IndexSet<ExprId>,
     /// Each borrow, by its call's `fun`, whose guard a `let` holds, never
     /// moved but into `drop`, while nothing after it in its block can ask
     /// whether its cell is borrowed: not counted (ADR 0863).
-    pub(in crate::lower) let_held: HashSet<ExprId>,
+    pub(in crate::lower) let_held: IndexSet<ExprId>,
     /// Each other, by its call's `fun`, whose guard is held only while code
     /// of the crate's or std's runs, which rust-js sees, while it's held: no
     /// library's code, nor JS's (ADR 0863).
-    pub(in crate::lower) held_while_seen: HashSet<ExprId>,
+    pub(in crate::lower) held_while_seen: IndexSet<ExprId>,
 }
 
 /// What a pattern takes of a value it's matched against.
@@ -77,8 +77,8 @@ pub(super) fn find_facts<'tcx>(
             .collect(),
         stack: Vec::new(),
         statements: Vec::new(),
-        lets: HashMap::new(),
-        owners: HashSet::new(),
+        lets: IndexMap::default(),
+        owners: IndexSet::default(),
         facts: Facts::default(),
     };
     for param in &thir.params {
@@ -101,7 +101,7 @@ struct Finder<'c, 'q, 'a, 'tcx> {
     thir: &'a Thir<'tcx>,
     /// The function or closure whose body this is.
     body_owner: DefId,
-    ids: HashMap<usize, ExprId>,
+    ids: IndexMap<usize, ExprId>,
     /// The expressions being walked, outermost first.
     stack: Vec<ExprId>,
     /// The statements being walked, each its temporaries' scope and what's
@@ -109,9 +109,9 @@ struct Finder<'c, 'q, 'a, 'tcx> {
     /// whose temporaries live while its body runs, one with a guard nothing.
     statements: Vec<(region::Scope, Option<ExprId>)>,
     /// Each `let` statement's value, and its pattern.
-    lets: HashMap<ExprId, &'a Pat<'tcx>>,
+    lets: IndexMap<ExprId, &'a Pat<'tcx>>,
     /// The variables that own one, bound by value.
-    owners: HashSet<LocalVarId>,
+    owners: IndexSet<LocalVarId>,
     facts: Facts,
 }
 
@@ -602,8 +602,8 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
     /// is made, so no borrow it makes meets it. None runs again while it's
     /// held: a loop's body ends the temporaries made in it, so a guard's
     /// extent is inside each loop around it.
-    fn ended_before(&self) -> HashSet<ExprId> {
-        let mut ended = HashSet::new();
+    fn ended_before(&self) -> IndexSet<ExprId> {
+        let mut ended = IndexSet::default();
         for pair in self.stack.windows(2) {
             let &[parent, child] = pair else { continue };
             let before: &[ExprId] = match self.thir[parent].kind {
@@ -764,7 +764,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                 moves.visit_expr(&self.thir[value]);
             }
         }
-        if !moves.moved && self.held_quietly((fun, cell), (rest, value.as_slice()), &HashSet::new()) {
+        if !moves.moved && self.held_quietly((fun, cell), (rest, value.as_slice()), &IndexSet::default()) {
             self.facts.let_held.insert(fun);
         }
     }
@@ -787,11 +787,11 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             own: fun,
             cell,
             quiet: true,
-            items: HashSet::new(),
+            items: IndexSet::default(),
             unmet: Vec::new(),
             seen_only: false,
             ids: &self.ids,
-            ended: &HashSet::new(),
+            ended: &IndexSet::default(),
         };
         quiet.items = quiet.items_of_own();
         quiet.visit_expr(&self.thir[receiver]);
@@ -811,7 +811,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
         &mut self,
         (fun, cell): (ExprId, Borrow<'tcx>),
         (stmts, exprs): (&[StmtId], &[ExprId]),
-        ended: &HashSet<ExprId>,
+        ended: &IndexSet<ExprId>,
     ) -> bool {
         let mut quiet = Quiet {
             cx: self.cx,
@@ -821,7 +821,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             own: fun,
             cell,
             quiet: true,
-            items: HashSet::new(),
+            items: IndexSet::default(),
             unmet: Vec::new(),
             seen_only: false,
             ids: &self.ids,
@@ -926,9 +926,9 @@ struct Seen<'c, 'a, 'tcx> {
     owner: DefId,
     seen: bool,
     /// Each expression's id, by where it is.
-    ids: &'c HashMap<usize, ExprId>,
+    ids: &'c IndexMap<usize, ExprId>,
     /// What ended before the guard was made (`Finder::ended_before`).
-    ended: &'c HashSet<ExprId>,
+    ended: &'c IndexSet<ExprId>,
 }
 
 impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Seen<'c, 'a, 'tcx> {
@@ -975,7 +975,7 @@ struct Quiet<'c, 'q, 'a, 'tcx> {
     /// The variables a `for` over what `own`'s guard holds binds each item
     /// to, `for t in types.borrow().iter()`'s `t`: a reference to an item
     /// of the cell `own` borrows, which stays there while it's held.
-    items: HashSet<LocalVarId>,
+    items: IndexSet<LocalVarId>,
     /// The variables, each a cell's handle, whose borrows can't meet
     /// `own`'s where they're asked: in the `then` of `if
     /// !v.borrow().contains(t)` of such an item `t` (`unmet_in`).
@@ -984,10 +984,10 @@ struct Quiet<'c, 'q, 'a, 'tcx> {
     /// run before `own`'s guard, its receiver, is held (ADR 0863, amended).
     seen_only: bool,
     /// Each expression's id, by where it is.
-    ids: &'c HashMap<usize, ExprId>,
+    ids: &'c IndexMap<usize, ExprId>,
     /// What ended before `own`'s guard was made, which can't meet it
     /// (`Finder::ended_before`).
-    ended: &'c HashSet<ExprId>,
+    ended: &'c IndexSet<ExprId>,
 }
 
 impl<'c, 'q, 'a, 'tcx> Quiet<'c, 'q, 'a, 'tcx> {
@@ -1026,7 +1026,7 @@ impl<'c, 'q, 'a, 'tcx> Quiet<'c, 'q, 'a, 'tcx> {
 
     /// `items`: each `for` of the body whose head reads `own`'s guard's
     /// items by reference, its pattern's variable.
-    fn items_of_own(&self) -> HashSet<LocalVarId> {
+    fn items_of_own(&self) -> IndexSet<LocalVarId> {
         let query = crate::lower::body_queries::BodyQuery {
             tcx: self.cx.recognition.tcx,
             thir: self.thir,
@@ -1245,7 +1245,7 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
 
 /// Whether `expr`, by its id among `ids`, is one of `ended`, which ran and
 /// ended before a guard was made (`Finder::ended_before`).
-fn ended(ids: &HashMap<usize, ExprId>, ended: &HashSet<ExprId>, expr: &ThirExpr<'_>) -> bool {
+fn ended(ids: &IndexMap<usize, ExprId>, ended: &IndexSet<ExprId>, expr: &ThirExpr<'_>) -> bool {
     (ids.get(&(std::ptr::from_ref(expr) as usize))).is_some_and(|id| ended.contains(id))
 }
 

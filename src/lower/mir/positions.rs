@@ -18,10 +18,10 @@ use crate::lower::recognition::{is_iterator_position, is_slice_items};
 /// and the `Option` each gives.
 #[derive(Default)]
 pub(super) struct FoundIndexes {
-    calls: HashSet<BasicBlock>,
+    calls: IndexSet<BasicBlock>,
     /// The block of each one's slice's `iter()`, the array itself.
-    items: HashSet<BasicBlock>,
-    locals: HashSet<Local>,
+    items: IndexSet<BasicBlock>,
+    locals: IndexSet<Local>,
 }
 
 impl FoundIndexes {

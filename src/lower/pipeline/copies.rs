@@ -2,8 +2,7 @@
 //! lowered (ADR 0051, amended): one its lowering made alike another, its
 //! own JS or an earlier copy, is that one, and what calls it calls that.
 
-use std::collections::{HashMap, HashSet};
-
+use crate::collections::{IndexMap, IndexSet};
 use rustc_span::def_id::{DefId, LocalModId};
 
 use super::super::analysis::JsGiven;
@@ -23,11 +22,11 @@ pub(super) type ThroughCopy = (DefId, usize, rustc_span::Span);
 /// each function's in the order they're numbered.
 pub(super) fn settle(
     js_given: &JsGiven,
-    fns: &HashMap<DefId, FnInfo>,
+    fns: &IndexMap<DefId, FnInfo>,
     items: &mut [(DefId, LoweredFn)],
     copies: Vec<((DefId, usize), LoweredFn)>,
     (tcx, through): (rustc_middle::ty::TyCtxt<'_>, &[ThroughCopy]),
-) -> HashMap<DefId, Vec<LoweredFn>> {
+) -> IndexMap<DefId, Vec<LoweredFn>> {
     let named = |id: DefId, copy: Option<usize>| -> Named {
         let info = &fns[&id];
         let name = match copy {
@@ -38,8 +37,8 @@ pub(super) fn settle(
     };
     // What each copy made alike another is: that one, its own JS (`None`) or
     // an earlier copy.
-    let mut same: HashMap<(DefId, usize), Option<usize>> = HashMap::new();
-    let settled = |same: &HashMap<(DefId, usize), Option<usize>>, id: DefId, mut copy: Option<usize>| {
+    let mut same: IndexMap<(DefId, usize), Option<usize>> = IndexMap::default();
+    let settled = |same: &IndexMap<(DefId, usize), Option<usize>>, id: DefId, mut copy: Option<usize>| {
         while let Some(at) = copy {
             match same.get(&(id, at)) {
                 Some(&to) => copy = to,
@@ -48,7 +47,7 @@ pub(super) fn settle(
         }
         copy
     };
-    let renames = |same: &HashMap<(DefId, usize), Option<usize>>| -> HashMap<Named, String> {
+    let renames = |same: &IndexMap<(DefId, usize), Option<usize>>| -> IndexMap<Named, String> {
         (same.keys())
             .map(|&(id, at)| (named(id, Some(at)), named(id, settled(same, id, Some(at))).2))
             .collect()
@@ -81,7 +80,7 @@ pub(super) fn settle(
         }
     }
     let renamed = renames(&same);
-    let mut kept: HashMap<DefId, Vec<LoweredFn>> = HashMap::new();
+    let mut kept: IndexMap<DefId, Vec<LoweredFn>> = IndexMap::default();
     let mut made = Vec::new();
     for ((id, at), copy) in copies {
         if !same.contains_key(&(id, at)) {
@@ -107,7 +106,7 @@ pub(super) fn settle(
     for (id, copy) in made {
         kept.entry(id).or_default().push(copy);
     }
-    let alike_own: HashSet<(DefId, usize)> = (same.keys())
+    let alike_own: IndexSet<(DefId, usize)> = (same.keys())
         .filter(|&&(id, at)| settled(&same, id, Some(at)).is_none())
         .copied()
         .collect();
@@ -120,7 +119,7 @@ pub(super) fn settle(
 /// own JS: refused where that copy isn't `alike` it, as the value has no
 /// other, and what the call gives that function, what may look like `None`,
 /// it would read as `None` (rd311, ADRs 0051, 1037).
-fn refuse_through_unlike(tcx: rustc_middle::ty::TyCtxt<'_>, through: &[ThroughCopy], alike: &HashSet<(DefId, usize)>) {
+fn refuse_through_unlike(tcx: rustc_middle::ty::TyCtxt<'_>, through: &[ThroughCopy], alike: &IndexSet<(DefId, usize)>) {
     for &(id, at, span) in through {
         if !alike.contains(&(id, at)) {
             crate::lower::classes::refuse_through(tcx, id, span, true);
@@ -130,7 +129,7 @@ fn refuse_through_unlike(tcx: rustc_middle::ty::TyCtxt<'_>, through: &[ThroughCo
 
 /// `function` as it reads apart from its name and its export, of a module's
 /// `module`, each copy `renamed` named as what it's alike.
-fn alike(function: &js::Function, module: LocalModId, renamed: &HashMap<Named, String>) -> js::Function {
+fn alike(function: &js::Function, module: LocalModId, renamed: &IndexMap<Named, String>) -> js::Function {
     let mut function = function.clone();
     rename(&mut function, module, renamed);
     function.name = String::new();
@@ -144,8 +143,8 @@ fn alike(function: &js::Function, module: LocalModId, renamed: &HashMap<Named, S
 /// `parseInternalUnboxed` (ADR 0569) before that became `parseInternal`,
 /// `const parseInternal = parseInternal(..)`, which threw where it's made
 /// (#467). One named apart is `parseInternal$1`, as tidy names one.
-fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &HashMap<Named, String>) {
-    let mut called = HashSet::new();
+fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &IndexMap<Named, String>) {
+    let mut called = IndexSet::default();
     js::function_exprs_mut(function, &mut |e| {
         if let ExprKind::Var(name) = &e.kind
             && let Some(to) = renamed.get(&(module, None, name.clone()))
@@ -153,10 +152,10 @@ fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &HashMap
             called.insert(to.clone());
         }
     });
-    let mut declared = HashSet::new();
+    let mut declared = IndexSet::default();
     (function.params.iter()).for_each(|p| declared.extend(p.names().into_iter().map(str::to_string)));
     js::each_declared(&function.body, &mut |name| _ = declared.insert(name.to_string()));
-    let mut taken: HashSet<String> = declared.clone();
+    let mut taken: IndexSet<String> = declared.clone();
     js::names_in(&function.body, &mut taken);
     taken.extend(renamed.values().cloned());
     let mut called: Vec<String> = called.into_iter().filter(|to| declared.contains(to)).collect();
@@ -176,7 +175,7 @@ fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &HashMap
 
 /// Each call of a copy in `function`, of a module's `module`, named as the
 /// copy's `renamed` says.
-fn rename(function: &mut js::Function, module: LocalModId, renamed: &HashMap<Named, String>) {
+fn rename(function: &mut js::Function, module: LocalModId, renamed: &IndexMap<Named, String>) {
     let mut each = |e: &mut Expr| match &mut e.kind {
         ExprKind::Var(name) => {
             if let Some(to) = renamed.get(&(module, None, name.clone())) {
@@ -222,9 +221,9 @@ fn rename(function: &mut js::Function, module: LocalModId, renamed: &HashMap<Nam
 /// function itself in `functions`, exported.
 pub(super) fn export(
     js_given: &JsGiven,
-    fns: &HashMap<DefId, FnInfo>,
-    references: &HashSet<(LocalModId, DefId, usize)>,
-    functions: &mut HashMap<LocalModId, Vec<js::Function>>,
+    fns: &IndexMap<DefId, FnInfo>,
+    references: &IndexSet<(LocalModId, DefId, usize)>,
+    functions: &mut IndexMap<LocalModId, Vec<js::Function>>,
 ) {
     for &(from, id, at) in references {
         let info = &fns[&id];
@@ -241,8 +240,8 @@ pub(super) fn export(
 /// from that module, by the copy's name.
 pub(super) fn imported(
     js_given: &JsGiven,
-    fns: &HashMap<DefId, FnInfo>,
-    references: &HashSet<(LocalModId, DefId, usize)>,
+    fns: &IndexMap<DefId, FnInfo>,
+    references: &IndexSet<(LocalModId, DefId, usize)>,
 ) -> Vec<(LocalModId, (LocalModId, String, String, String))> {
     (references.iter())
         .map(|&(from, id, at)| {
@@ -261,11 +260,11 @@ pub(super) fn gather(
 ) {
     let all = std::iter::once(&mut lowered.dependencies).chain(copies.iter_mut().map(|c| &mut c.dependencies));
     for dependencies in all {
-        pass.references.extend(dependencies.references.drain());
-        pass.package_uses.extend(dependencies.package_uses.drain());
-        pass.held.extend(dependencies.held.drain());
-        pass.reexporters.extend(dependencies.reexporters.drain());
-        pass.copy_references.extend(dependencies.copy_references.drain());
+        pass.references.extend(dependencies.references.drain(..));
+        pass.package_uses.extend(dependencies.package_uses.drain(..));
+        pass.held.extend(dependencies.held.drain(..));
+        pass.reexporters.extend(dependencies.reexporters.drain(..));
+        pass.copy_references.extend(dependencies.copy_references.drain(..));
     }
     if copies.iter().any(|copy| copy.jsx) {
         pass.jsx.insert(module);

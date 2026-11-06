@@ -5,7 +5,7 @@
 //! reads the generated code's lines and its source map, and gives where each
 //! comment goes in them.
 
-use std::collections::HashMap;
+use crate::collections::{IndexMap, IndexSet};
 
 use oxc_sourcemap::SourceMap;
 
@@ -98,8 +98,8 @@ pub(super) fn opened_on(text: &str, (line_start, at): (usize, usize)) -> Option<
 /// `use_state, // the hook`, the last's: after its name, before the list's
 /// `}` (rd338).
 pub(super) struct ParamStarts {
-    by_end: HashMap<u32, u32>,
-    names: HashMap<u32, u32>,
+    by_end: IndexMap<u32, u32>,
+    names: IndexMap<u32, u32>,
 }
 
 pub(super) fn param_starts(module: &crate::js::Module) -> ParamStarts {
@@ -219,24 +219,24 @@ pub(super) enum Inside {
 /// the `=` there; or ending it at a column, the rest of it on the next line.
 #[derive(Default)]
 pub(super) struct Placed<'a> {
-    pub(super) after: HashMap<u32, Vec<&'a str>>,
-    pub(super) inside: HashMap<u32, Vec<(u32, Inside, &'a str)>>,
-    pub(super) ends: HashMap<u32, Vec<(u32, &'a str)>>,
+    pub(super) after: IndexMap<u32, Vec<&'a str>>,
+    pub(super) inside: IndexMap<u32, Vec<(u32, Inside, &'a str)>>,
+    pub(super) ends: IndexMap<u32, Vec<(u32, &'a str)>>,
 }
 
 /// Where each of `trailing` goes in `generated_lines`, by the map of them.
 pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_lines: &[&str]) -> Placed<'a> {
     // A comment after code is after the last JS of its line (ADR 0444); of
     // a line no JS is of, a `}`'s, it's nobody's.
-    let mut after: HashMap<u32, Vec<&str>> = HashMap::new();
+    let mut after: IndexMap<u32, Vec<&str>> = IndexMap::default();
     // One inside an expression, after the JS of the code right before it,
     // or of an `=` it's after, its line's and column's (ADR 0630).
-    let mut inside: HashMap<u32, Vec<(u32, Inside, &str)>> = HashMap::new();
+    let mut inside: IndexMap<u32, Vec<(u32, Inside, &str)>> = IndexMap::default();
     // A line comment after code of its line that JS has before the code of
     // a line after it, `? "…" // ellipsis` of a conditional on one line:
     // after the code right before it, the rest of the JS's line on the next
     // (ADR 0733), so it's that code's, not all of it after the line's end.
-    let mut ends: HashMap<u32, Vec<(u32, &str)>> = HashMap::new();
+    let mut ends: IndexMap<u32, Vec<(u32, &str)>> = IndexMap::default();
     for comment in trailing {
         // One right after an `=`, before the value it gives: after the
         // `=` of the JS of its line, `NoMode = /* .. */ 0b0000000`,
@@ -743,7 +743,7 @@ pub(super) fn own_line_before_block(
 pub(super) fn own_line_after_value(
     text: &str,
     comments: &[crate::program::Comment],
-    value_ends: &std::collections::HashSet<u32>,
+    value_ends: &IndexSet<u32>,
     c: &crate::program::Comment,
 ) -> Option<(u32, u32)> {
     let written = text.get(c.lo as usize..c.hi as usize)?;

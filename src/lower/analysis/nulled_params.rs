@@ -28,6 +28,7 @@
 
 mod read_alike;
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::recognition::Recognition;
 use crate::lower::refusal::{Refused, refuse};
@@ -36,30 +37,29 @@ use rustc_middle::mir::{self, BasicBlock, visit::Visitor};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
 
 /// The crate's functions whose own nullable parameters may be such, and
 /// where the crate's MIR calls them or uses them otherwise.
 pub(in crate::lower) struct NulledParams {
     /// Each function's nullable parameters, by index, its `self` first.
-    candidates: HashMap<DefId, Vec<usize>>,
+    candidates: IndexMap<DefId, Vec<usize>>,
     /// Each call of one: the function calling and its block, and what it
     /// calls.
-    calls: HashMap<(DefId, BasicBlock), DefId>,
+    calls: IndexMap<(DefId, BasicBlock), DefId>,
     /// Each used but as a call's function, given or kept as a value.
-    as_values: HashSet<DefId>,
+    as_values: IndexSet<DefId>,
     /// What lowering sees of their calls (`record`).
     seen: RefCell<NulledCalls>,
     /// The parameters found so, once every body's calls are seen (`again`).
-    nulled: RefCell<HashSet<(DefId, usize)>>,
+    nulled: RefCell<IndexSet<(DefId, usize)>>,
     /// Each namespace's method that's the function it passes its parameters
     /// on to, and that function (`reached::forwarded`).
-    forwarded: HashMap<DefId, DefId>,
+    forwarded: IndexMap<DefId, DefId>,
     /// The functions found to return `null` or a value (`returns_nulled`).
     returns: RefCell<Returns>,
     /// The crate's nullable thread-locals nothing reads apart, `null` from
     /// `undefined` (`reads_alike`, #665).
-    alike: HashSet<DefId>,
+    alike: IndexSet<DefId>,
 }
 
 /// What lowering saw of the calls of the crate's functions with nullable
@@ -68,11 +68,11 @@ pub(in crate::lower) struct NulledParams {
 /// block, and each parameter one gave what may be `undefined`.
 #[derive(Default)]
 pub(in crate::lower) struct NulledCalls {
-    seen: HashSet<(DefId, (DefId, BasicBlock))>,
-    unnulled: HashSet<(DefId, (DefId, usize))>,
+    seen: IndexSet<(DefId, (DefId, BasicBlock))>,
+    unnulled: IndexSet<(DefId, (DefId, usize))>,
     /// Each parameter a call gave the caller's own nullable parameter, by
     /// index, which is `null` or a value only where that one is (rd624).
-    given_on: HashSet<(DefId, (Param, Param))>,
+    given_on: IndexSet<(DefId, (Param, Param))>,
 }
 
 /// A function's parameter, by index, its `self` first.
@@ -82,8 +82,8 @@ type Param = (DefId, usize);
 /// each it hasn't, the items whose lowering asked.
 #[derive(Default)]
 struct Returns {
-    found: HashSet<DefId>,
-    asked: HashMap<DefId, HashSet<DefId>>,
+    found: IndexSet<DefId>,
+    asked: IndexMap<DefId, IndexSet<DefId>>,
 }
 
 impl NulledParams {
@@ -99,11 +99,11 @@ impl NulledParams {
     pub(in crate::lower) fn scan<'tcx>(
         recognition: &Recognition<'_, 'tcx>,
         (bodies, everywhere): (&[&Body<'tcx>], &[&Body<'tcx>]),
-        forwarded: &HashMap<DefId, DefId>,
+        forwarded: &IndexMap<DefId, DefId>,
         foreign: &dyn Fn(DefId) -> bool,
     ) -> NulledParams {
         let tcx = recognition.tcx;
-        let mut candidates = HashMap::new();
+        let mut candidates = IndexMap::default();
         for body in bodies {
             let id = body.def_id;
             if let Some(params) = candidate(tcx, id).filter(|_| !forwarded.contains_key(&id)) {
@@ -116,8 +116,8 @@ impl NulledParams {
             forwarded,
             foreign,
             caller: None,
-            calls: HashMap::new(),
-            as_values: HashSet::new(),
+            calls: IndexMap::default(),
+            as_values: IndexSet::default(),
             refused: Vec::new(),
         };
         for body in bodies {
@@ -249,13 +249,13 @@ impl NulledParams {
     /// forgotten to be seen anew; the parameters are found only once none
     /// is (rd632).
     pub(in crate::lower) fn again<W: Clone>(&self, work: &mut Vec<W>, id: impl Fn(&W) -> DefId) -> bool {
-        let askers: HashSet<DefId> = {
+        let askers: IndexSet<DefId> = {
             let mut returns = self.returns.borrow_mut();
             let Returns { found, asked } = &mut *returns;
-            let newly: Vec<DefId> = asked.keys().filter(|callee| found.contains(callee)).copied().collect();
+            let newly: Vec<DefId> = asked.keys().filter(|callee| found.contains(*callee)).copied().collect();
             newly
                 .iter()
-                .flat_map(|callee| asked.remove(callee).unwrap_or_default())
+                .flat_map(|callee| asked.swap_remove(callee).unwrap_or_default())
                 .collect()
         };
         if !askers.is_empty() {
@@ -278,7 +278,7 @@ impl NulledParams {
         }
         let found = self.nulled(&self.seen.borrow());
         let mut nulled = self.nulled.borrow_mut();
-        let again: HashSet<DefId> = (found.iter().map(|&(id, _)| id))
+        let again: IndexSet<DefId> = (found.iter().map(|&(id, _)| id))
             .filter(|&id| !nulled.iter().any(|&(of, _)| of == id))
             .collect();
         nulled.extend(found);
@@ -291,7 +291,7 @@ impl NulledParams {
     /// The parameters found so, by function and index, which a library's
     /// contract says: of a namespace's method that's its function, the
     /// function's, each past its `self` (#601).
-    pub(in crate::lower) fn found(&self) -> HashSet<(DefId, usize)> {
+    pub(in crate::lower) fn found(&self) -> IndexSet<(DefId, usize)> {
         let nulled = self.nulled.borrow();
         let methods = (self.forwarded.iter()).flat_map(|(&method, &function)| {
             (nulled.iter())
@@ -311,15 +311,15 @@ impl NulledParams {
     /// The parameters, by function and index, `null` or a value at every
     /// call: each call of the function lowered, as `calls` says, each
     /// giving it so, and the function never used but to be called.
-    fn nulled(&self, calls: &NulledCalls) -> HashSet<(DefId, usize)> {
-        let seen: HashSet<(DefId, BasicBlock)> = calls.seen.iter().map(|&(_, site)| site).collect();
-        let unnulled: HashSet<(DefId, usize)> = calls.unnulled.iter().map(|&(_, key)| key).collect();
+    fn nulled(&self, calls: &NulledCalls) -> IndexSet<(DefId, usize)> {
+        let seen: IndexSet<(DefId, BasicBlock)> = calls.seen.iter().map(|&(_, site)| site).collect();
+        let unnulled: IndexSet<(DefId, usize)> = calls.unnulled.iter().map(|&(_, key)| key).collect();
         let all_seen = |id: DefId| {
             (self.calls.iter())
                 .filter(|&(_, &callee)| callee == id)
                 .all(|(site, _)| seen.contains(site))
         };
-        let mut nulled: HashSet<(DefId, usize)> = (self.candidates.iter())
+        let mut nulled: IndexSet<(DefId, usize)> = (self.candidates.iter())
             .filter(|&(&id, _)| !self.as_values.contains(&id) && all_seen(id))
             .flat_map(|(&id, params)| params.iter().map(move |&i| (id, i)))
             .filter(|key| !unnulled.contains(key))
@@ -336,7 +336,7 @@ impl NulledParams {
                 break nulled;
             }
             for key in loose {
-                nulled.remove(&key);
+                nulled.swap_remove(&key);
             }
         }
     }
@@ -393,14 +393,14 @@ pub(in crate::lower) fn may_return_nulled(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// What `scan` finds walking MIR.
 struct Found<'f, 'tcx> {
     tcx: TyCtxt<'tcx>,
-    candidates: &'f HashMap<DefId, Vec<usize>>,
+    candidates: &'f IndexMap<DefId, Vec<usize>>,
     /// Each namespace's method that's its function, and that function, a
     /// call or use of the method being one of the function (#601).
-    forwarded: &'f HashMap<DefId, DefId>,
+    forwarded: &'f IndexMap<DefId, DefId>,
     foreign: &'f dyn Fn(DefId) -> bool,
     caller: Option<DefId>,
-    calls: HashMap<(DefId, BasicBlock), DefId>,
-    as_values: HashSet<DefId>,
+    calls: IndexMap<(DefId, BasicBlock), DefId>,
+    as_values: IndexSet<DefId>,
     refused: Vec<rustc_span::Span>,
 }
 

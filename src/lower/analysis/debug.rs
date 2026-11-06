@@ -1,6 +1,7 @@
 //! What `Debug` takes, crate-wide: whether anything shows a value pretty,
 //! `{:#?}`, and which derives are shown (ADRs 0060, 0137).
 
+use crate::collections::IndexMap;
 use crate::lower::format_args::{Piece, decode_template};
 use crate::lower::recognition::{
     FormatterQuery, formatter_query, is_arguments_new, is_debug_argument, is_formatter_pad,
@@ -10,7 +11,6 @@ use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Thir};
 use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
-use std::collections::HashMap;
 
 /// A `format_args!`'s `Arguments::new` call, its placeholders, and the
 /// argument at each, `Argument::new_display(&x)` and the like, where they
@@ -27,7 +27,7 @@ pub(in crate::lower) fn format_calls(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<Fo
         }
     };
     // The `let`s a `format_args!` keeps its arguments' array in.
-    let lets: HashMap<LocalVarId, ExprId> = thir
+    let lets: IndexMap<LocalVarId, ExprId> = thir
         .stmts
         .iter()
         .filter_map(|stmt| match &stmt.kind {

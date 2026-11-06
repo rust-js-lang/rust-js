@@ -3,6 +3,7 @@
 //! 0879, amended).
 
 use super::*;
+use crate::collections::IndexSet;
 
 impl<'tcx> FnCx<'_, 'tcx> {
     /// The names of the locals a `clone()` makes, `let resolved =
@@ -11,7 +12,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
     /// tuple of clones gives a pattern of it, `let (chunk, resolved) =
     /// (Rc::clone(self), Rc::clone(&wrapper));`'s `chunk` (rd515).
     pub(in crate::lower::mir) fn clone_names(&self, mir_body: &mir::Body<'tcx>, state: &State<'_, 'tcx>) -> Clones {
-        let cloned: std::collections::HashSet<Local> = (mir_body.basic_blocks.iter())
+        let cloned: IndexSet<Local> = (mir_body.basic_blocks.iter())
             .filter_map(|block| match &block.terminator().kind {
                 mir::TerminatorKind::Call { func, destination, .. }
                     if destination.projection.is_empty()
@@ -26,7 +27,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
             .collect();
         // Each tuple's part that's a clone, by the tuple and its index.
         let statements = || (mir_body.basic_blocks.iter()).flat_map(|block| &block.statements);
-        let mut parts: std::collections::HashSet<(Local, usize)> = std::collections::HashSet::new();
+        let mut parts: IndexSet<(Local, usize)> = IndexSet::default();
         for statement in statements() {
             if let mir::StatementKind::Assign(assign) = &statement.kind
                 && let (place, mir::Rvalue::Aggregate(kind, operands)) = &**assign
@@ -57,7 +58,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
             _ => None,
         });
         let locals: Vec<Local> = cloned.iter().copied().chain(taken).collect();
-        let names = |locals: &mut dyn Iterator<Item = Local>| -> std::collections::HashSet<String> {
+        let names = |locals: &mut dyn Iterator<Item = Local>| -> IndexSet<String> {
             (locals.map(|local| state.locals.names[local].clone()))
                 .filter(|name| !name.is_empty())
                 .collect()
@@ -78,8 +79,8 @@ impl<'tcx> FnCx<'_, 'tcx> {
 /// uncounted `Rc`, the object itself, which a variable bound once is read
 /// as (the user's decision, rd616).
 pub(in crate::lower::mir) struct Clones {
-    pub all: std::collections::HashSet<String>,
-    pub rcs: std::collections::HashSet<String>,
+    pub all: IndexSet<String>,
+    pub rcs: IndexSet<String>,
 }
 
 /// A closure's captures it took by value, each a variable its maker never
@@ -92,7 +93,7 @@ pub(in crate::lower::mir) fn kept_captures(
     tcx: ty::TyCtxt<'_>,
     closure: rustc_span::def_id::DefId,
     state: &State<'_, '_>,
-) -> std::collections::HashSet<String> {
+) -> IndexSet<String> {
     let fixed = crate::lower::analysis::borrowed_fixed_bindings(tcx, closure);
     let fixed = (fixed.len() == state.facts.captures().len()).then_some(fixed);
     (state.facts.captures().iter().enumerate())

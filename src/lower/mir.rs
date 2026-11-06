@@ -13,6 +13,7 @@
 //! The function's THIR is beside it, for its shape: names and spans.
 
 mod made;
+use crate::collections::{IndexMap, IndexSet};
 pub(super) use made::Made;
 mod alternatives;
 mod assign;
@@ -57,8 +58,6 @@ mod writer;
 use self::queries::*;
 use super::analysis::{Called, Holder};
 
-use std::collections::{HashMap, HashSet};
-
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
@@ -97,11 +96,11 @@ pub struct Mir<'tcx> {
     pub(super) promoted: IndexVec<Promoted, mir::Body<'tcx>>,
     /// Of a coroutine's, an `async` body's: the blocks whose call is an
     /// `.await` (`awaits.rs`).
-    pub(super) awaits: std::collections::HashSet<BasicBlock>,
+    pub(super) awaits: IndexSet<BasicBlock>,
     /// Of each `match` of an enum its arms' `match` made (`threaded.rs`):
     /// each block an arm goes on to its case through, and where the
     /// `match` is written, whose comments are before the case.
-    pub(super) cases: HashMap<BasicBlock, Span>,
+    pub(super) cases: IndexMap<BasicBlock, Span>,
 }
 
 impl<'tcx> Mir<'tcx> {
@@ -211,7 +210,7 @@ impl<'tcx> Mir<'tcx> {
             body,
             promoted,
             awaits,
-            cases: HashMap::new(),
+            cases: IndexMap::default(),
         }
     }
 
@@ -461,12 +460,12 @@ pub(super) struct Found {
     /// borrowed, and of those of plain Rust data, whose fields don't change
     /// either, which `reads_alike` and `plain_value` ask of.
     /// And of the others' arrays, their items, `...items`.
-    pub(super) alike: HashSet<String>,
-    pub(super) plain: HashSet<String>,
+    pub(super) alike: IndexSet<String>,
+    pub(super) plain: IndexSet<String>,
     /// And those of plain Rust data written again, a `mut` parameter
     /// assigned after what it's read for: each the same until it's written
     /// (`written_before_read`, #121).
-    pub(super) settled: HashSet<String>,
+    pub(super) settled: IndexSet<String>,
     /// And the places that hold its cells, `&mut`s to what JS can't change
     /// in place: a box or a handle, whose `value` is what it points at,
     /// unlike a struct's field of that name. Its locals', by name, and a
@@ -476,20 +475,20 @@ pub(super) struct Found {
     /// leave exhausted, by name: each a `let` not `mut`, so never lent as a
     /// `&mut`, made only by `a..=b`, which `range_state` reads as it is
     /// (#418).
-    pub(super) fresh_ranges: HashSet<String>,
+    pub(super) fresh_ranges: IndexSet<String>,
     /// Of a body lowered from its MIR, the temporaries a function that skips
     /// what's falsy is given, whose `test ? value : undefined` is given as
     /// `test && value` (`#[rust_js::skips_falsy]`) where it's moved to.
-    pub(super) falsy: HashSet<String>,
+    pub(super) falsy: IndexSet<String>,
     /// And the temporaries such a `test && value` tests: read for their
     /// truth alone.
-    pub(super) tested: HashSet<String>,
+    pub(super) tested: IndexSet<String>,
     /// Of a body lowered from its MIR, the `const`s it made that tidy
     /// reads in place where it can, as its temporaries.
     pub(super) made: Made,
     /// Each name `spill_subject` gave a subject after its call, `nth`: another
     /// of it is `nth$1`, which tidy writes `nth` where their scopes are apart.
-    pub(in crate::lower) subjects: HashSet<String>,
+    pub(in crate::lower) subjects: IndexSet<String>,
 
     /// Of a body lowered from its MIR, each literal its patterns name by
     /// a `const`, named once tidy's done (`FnCx::named_text`, ADR 0590,
@@ -512,7 +511,7 @@ pub(super) struct Found {
     pub(super) concise: Vec<(js::Span, crate::lower::jsx::OneCall)>,
     /// Of a body lowered from its MIR, each field path it reads,
     /// `element.editable`, and whether it's a `bool` each time.
-    pub(super) paths: HashMap<String, bool>,
+    pub(super) paths: IndexMap<String, bool>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -615,7 +614,7 @@ struct Locals {
     text: IndexVec<Local, bool>,
     /// Each temporary a call the source writes by its name makes, by the
     /// name `temporaries_names` gives it (ADR 0569, #769).
-    called: std::collections::HashMap<Local, js::Held>,
+    called: IndexMap<Local, js::Held>,
 }
 
 impl Locals {
@@ -623,7 +622,7 @@ impl Locals {
     /// names (`user`), those it gives a JS name (`given`), and its
     /// `String`s (`text`).
     fn named(&self) -> tidy::Named {
-        let names = |of: &IndexVec<Local, bool>| -> HashSet<String> {
+        let names = |of: &IndexVec<Local, bool>| -> IndexSet<String> {
             (self.names.iter_enumerated())
                 .filter(|&(local, name)| of[local] && !name.is_empty())
                 .map(|(_, name)| name.clone())
@@ -649,41 +648,41 @@ struct OptionWrites {
     /// `#[rust_js::nullable]` fields, parameters and thread-locals: their
     /// `None` is `null` where it's made, `c ? v : null` (ADRs 0275, 0861,
     /// amended).
-    null_nones: std::collections::HashSet<Local>,
+    null_nones: IndexSet<Local>,
     /// The `Option`s whose `None` is only `undefined`, or only `null`, as
     /// each of their writes gives (`mir_nones`): each read of one says so,
     /// `Known::NoneUndefined`, and its test is `x !== undefined` (ADR 0298,
     /// amended).
-    nones: HashMap<Local, js::Known>,
+    nones: IndexMap<Local, js::Known>,
     /// The locals only ever `Some(..)`, and shared references to one: never
     /// `None`, so `==` to one is `===` (`strictly_equal`).
-    made_some: std::collections::HashSet<Local>,
+    made_some: IndexSet<Local>,
     /// The `Option`s of `Option`s made and read only where they're held,
     /// and the shared references to one an `==` compares (`mir_nested`):
     /// each its payload, `None` `undefined`, `Some(None)` `null` and
     /// `Some(Some(v))` `v`, never boxed (ADR 1017).
-    nested: std::collections::HashSet<Local>,
+    nested: IndexSet<Local>,
     /// The locals a `js::SymbolFor::from_value` gives whose value is only
     /// tested against the registry's symbols (`registered_reads`): the
     /// value read itself, a `Some` wherever it's tested, as each case
     /// compares it by `===` (ADR 0634).
-    registered: std::collections::HashSet<Local>,
+    registered: IndexSet<Local>,
     /// The locals a downcast of an unwind's payload to a `&JsError` gives,
     /// written once, and `?` of one: what was thrown, a `Some` wherever it's
     /// tested, a falsy one's too (`FnCx::finds_thrown`, ADR 0710); each its
     /// discriminant, `Some`'s, or `?`'s `Continue`'s.
-    thrown: HashMap<Local, u128>,
+    thrown: IndexMap<Local, u128>,
     /// The untagged enums a call gives of a `Some(..)`, `js::classify(Some(value))`'s
     /// (`body_queries::present_calls`): never `undefined` nor `null` (ADR 0676).
-    present: std::collections::HashSet<Local>,
+    present: IndexSet<Local>,
     /// Where each guard `if let Some(v) = value` is written that holds where
     /// its arm of `match js::classify(value)` is reached
     /// (`body_queries::held_guards`): its test of `value` a `Some`'s.
-    held: std::collections::HashSet<Span>,
+    held: IndexSet<Span>,
     /// The closures given to a thread-local's `with`, `with_borrow` or
     /// `with_borrow_mut` whose result a local of `nested` holds: each
     /// gives back its result held so (`mir_nested`, ADR 1017, amended).
-    held_results: std::collections::HashSet<rustc_span::def_id::DefId>,
+    held_results: IndexSet<rustc_span::def_id::DefId>,
 }
 
 /// What `.flatten()` reads as it is, the JS read itself.
@@ -692,7 +691,7 @@ struct Flattened {
     /// Each local holding a read whose `Option` only `.flatten()` reads,
     /// the JS read itself (ADR 0311), or a namespace's method's result
     /// through a value its function makes and returns (rd311).
-    locals: std::collections::HashSet<Local>,
+    locals: IndexSet<Local>,
     /// Of the namespace's method's call being lowered (ADR 1037): whether
     /// its `self` is the namespace as Rust names it
     /// (`classes::names_namespace`); and, of one through a value whose
@@ -711,7 +710,7 @@ struct State<'m, 'tcx> {
     naming: local_facts::NamingFacts,
     /// As its structure is made, the labeled block, of `facts`' jumps, each
     /// MIR block a `break` of one goes to ends (ADR 0742).
-    left: HashMap<BasicBlock, usize>,
+    left: IndexMap<BasicBlock, usize>,
     /// As its structure is made, each `break` or `continue` the program wrote
     /// with comments before it that a branch jumps by: where what it does
     /// last is, and where the jump is (rd109, `tidy::commented_jumps`).
@@ -726,13 +725,13 @@ struct State<'m, 'tcx> {
     labels: Vec<BasicBlock>,
     /// The names of the body's own locals: another variable, a static's, may
     /// change by any call.
-    own_names: std::collections::HashSet<String>,
+    own_names: IndexSet<String>,
     /// The cleanup the temporaries made and not yet used unwind to, if one
     /// that drops something: the statement that runs them is its `try`.
     unwind: Option<BasicBlock>,
     /// Each local that's a `&mut` to a number's place that's always the
     /// same, `COUNT.value`: the place, named where it's used.
-    refs: std::collections::HashMap<Local, Expr>,
+    refs: IndexMap<Local, Expr>,
     /// The boxes a call is given for its `&mut`s to numbers, each copied
     /// back to its place once the call returns (ADR 0074); an object's, in
     /// place, which each name for it sees (ADR 0147).
@@ -741,15 +740,15 @@ struct State<'m, 'tcx> {
     /// namespace's method's, what decides it (`Flattened`).
     flattened: Flattened,
     /// Each local holding what `?`'s `Try::branch` made (`Value::Branch`).
-    branches: std::collections::HashMap<Local, (Expr, Ty<'tcx>)>,
+    branches: IndexMap<Local, (Expr, Ty<'tcx>)>,
     /// Each local holding an update's derived `Default` base, its fields'
     /// defaults, each read where its field is (`default_base_at`).
-    defaults: std::collections::HashMap<Local, Vec<Expr>>,
+    defaults: IndexMap<Local, Vec<Expr>>,
     binding_var: bool,
     /// Values made, each written where it's read: a constant, or what the
     /// module names, which reads the same anywhere, and an element, inside another or given its props,
     /// as JSX writes it, what it's made of read where it was made (ADR 0040).
-    in_place: std::collections::HashMap<Local, Expr>,
+    in_place: IndexMap<Local, Expr>,
     /// Each value read in place assigned before a drop instead, whose `let`
     /// the function's body declares first (ADR 0451).
     settled: Vec<Local>,
@@ -757,18 +756,18 @@ struct State<'m, 'tcx> {
     iter_locals: temporaries::IterLocals,
     /// Each local read by its name already, a subject a branch tests: made
     /// as a variable, never written where it's read.
-    named: std::collections::HashSet<Local>,
+    named: IndexSet<Local>,
     /// Each local a parameter's pattern binds, and the parameter it's moved
     /// out of, which the pattern takes apart already.
-    parts: std::collections::HashMap<Local, Local>,
+    parts: IndexMap<Local, Local>,
     /// Each shared reference to a place written where it's read, and each
     /// tuple of them: the place, read as one, which a closure captures as it
     /// is, or the tuple's list of them.
-    places: std::collections::HashMap<Local, Value<'tcx>>,
+    places: IndexMap<Local, Value<'tcx>>,
     /// The indexes whose bounds check is where the element is read, `false`,
     /// `$index(xs, i)`, or written, `true`, `xs[$at(xs, i)]`
     /// (`deferred_check`).
-    deferred: std::collections::HashMap<Local, bool>,
+    deferred: IndexMap<Local, bool>,
     /// The block whose statements are being lowered, and the statement of
     /// it, its terminator's past the last.
     at: BasicBlock,
@@ -776,7 +775,7 @@ struct State<'m, 'tcx> {
     /// Each strip whose `Option` is read as a test and a cut (ADR 0642):
     /// its test, `s.startsWith(p)`, what it gives, `s.slice(1)`, and of
     /// which variant; and an integer's `try_from` so read (#366).
-    cuts: HashMap<Local, (Expr, Expr, VariantIdx)>,
+    cuts: IndexMap<Local, (Expr, Expr, VariantIdx)>,
     /// A writer's `Formatter` (ADR 0054): the locals that are it, and the
     /// string it writes to, which the writer gives back.
     writer: Option<(Vec<Local>, String)>,
@@ -790,8 +789,8 @@ struct State<'m, 'tcx> {
     thrown_writes: Option<(Ty<'tcx>, Option<super::std_types::result::Conversion>)>,
     /// A writer's `Debug` builders (ADR 0136): each local that's one, to
     /// the one its `Formatter` made, and what that's been given.
-    builders: HashMap<Local, Local>,
-    built: HashMap<Local, Built<'tcx>>,
+    builders: IndexMap<Local, Local>,
+    built: IndexMap<Local, Built<'tcx>>,
 }
 
 impl<'tcx> State<'_, 'tcx> {
@@ -966,7 +965,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // written after it (ADR 0308), and its `const`s (ADR 0031,
         // amended); a closure's in its own, where `mir_closure` put them,
         // unless it's lowered otherwise.
-        let mut placed = std::collections::HashSet::new();
+        let mut placed = IndexSet::default();
         js::each_expr_mut(&mut out, &mut |e| {
             if let js::ExprKind::ItemHole(index) = e.kind {
                 placed.insert(index);
@@ -1232,7 +1231,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let def_span = self.tcx.def_span(mir_body.source.def_id());
         self.check_signature_types(mir_body, (skip, formatter), def_span)?;
-        let mut boxes = HashSet::new();
+        let mut boxes = IndexSet::default();
         let mut params: Vec<js::Pattern> = mir_body
             .args_iter()
             .skip(skip)
@@ -1458,7 +1457,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The names of plain values, which nothing changes (`Locals::plain`),
     /// and the module's imports, whose fields JS's modules never change
     /// either, `HighlightStyle.define`, as `reads_alike` has them.
-    fn plain_names(&self) -> HashSet<String> {
+    fn plain_names(&self) -> IndexSet<String> {
         let mut plain = self.locals.mir.plain.clone();
         plain.extend(
             self.krate
@@ -1478,7 +1477,7 @@ fn drops_read(hoisted: Vec<Stmt>, body: &[Stmt]) -> Vec<Stmt> {
         StmtKind::Const(name, _) => Some(name.clone()),
         _ => None,
     };
-    let mut read: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut read: IndexSet<String> = IndexSet::default();
     js::visit_stmts(body, &mut |v| _ = read.insert(v.to_string()));
     loop {
         let before = read.len();

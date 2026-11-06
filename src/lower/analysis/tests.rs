@@ -11,12 +11,12 @@
 //! of its own; of a module with several, each is its own file, which its
 //! parent's test file registers the tests of.
 
+use crate::collections::{IndexMap, IndexSet};
 use rustc_ast::attr::data_structures::CfgEntry;
 use rustc_hir::find_attr;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::{CRATE_DEF_ID, DefId, LocalDefId, LocalModId};
 use rustc_span::{Symbol, sym};
-use std::collections::{HashMap, HashSet};
 
 use super::super::recognition::{StdItem, is_std_def};
 use super::super::{Body, FnInfo, module_path};
@@ -31,8 +31,8 @@ pub(super) fn collect_tests<'tcx>(
     tcx: TyCtxt<'tcx>,
     markers: &[(LocalDefId, Symbol)],
     bodies: &[&Body<'tcx>],
-    fns: &HashMap<DefId, FnInfo>,
-    exported: &mut HashSet<DefId>,
+    fns: &IndexMap<DefId, FnInfo>,
+    exported: &mut IndexSet<DefId>,
 ) -> Tests {
     let found: Vec<(LocalModId, Symbol, LocalDefId)> = markers
         .iter()
@@ -46,14 +46,14 @@ pub(super) fn collect_tests<'tcx>(
             Some((module, label, test))
         })
         .collect();
-    let with_tests: HashSet<LocalModId> = found.iter().map(|&(module, ..)| module).collect();
+    let with_tests: IndexSet<LocalModId> = found.iter().map(|&(module, ..)| module).collect();
     let of_tests = modules_of_tests(tcx, &with_tests);
     // Each parent's modules of tests: its one is its test file.
-    let mut by_parent: HashMap<LocalModId, Vec<LocalModId>> = HashMap::new();
+    let mut by_parent: IndexMap<LocalModId, Vec<LocalModId>> = IndexMap::default();
     for &module in &of_tests {
         by_parent.entry(parent(tcx, module)).or_default().push(module);
     }
-    let placed: HashSet<LocalModId> = (by_parent.values())
+    let placed: IndexSet<LocalModId> = (by_parent.values())
         .filter(|modules| modules.len() == 1)
         .flatten()
         .copied()
@@ -90,8 +90,8 @@ pub(super) fn collect_tests<'tcx>(
 
 /// The modules of tests among the modules with `#[test]`s of their own:
 /// each declared under a `cfg` that needs `test`, within no other such.
-fn modules_of_tests(tcx: TyCtxt<'_>, with_tests: &HashSet<LocalModId>) -> HashSet<LocalModId> {
-    let declared: HashSet<LocalModId> = (with_tests.iter())
+fn modules_of_tests(tcx: TyCtxt<'_>, with_tests: &IndexSet<LocalModId>) -> IndexSet<LocalModId> {
+    let declared: IndexSet<LocalModId> = (with_tests.iter())
         .copied()
         .filter(|&module| module.to_local_def_id() != CRATE_DEF_ID && declared_for_tests(tcx, module))
         .collect();
@@ -119,7 +119,7 @@ fn needs_test(cfg: &CfgEntry) -> bool {
 
 /// The module whose test file registers the tests of `module`: the parent of
 /// the module of tests it's in, or itself.
-fn home(tcx: TyCtxt<'_>, module: LocalModId, of_tests: &HashSet<LocalModId>) -> LocalModId {
+fn home(tcx: TyCtxt<'_>, module: LocalModId, of_tests: &IndexSet<LocalModId>) -> LocalModId {
     std::iter::once(module)
         .chain(ancestors(tcx, module))
         .find(|m| of_tests.contains(m))

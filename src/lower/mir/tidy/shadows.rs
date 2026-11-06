@@ -16,7 +16,7 @@ use super::*;
 /// one once it may be set (`set_after_last_read`). A loop's block is a
 /// block of its own, so a `let` there never shadows what's outside it,
 /// which each turn reads anew. Of a closure's body too, which is a body.
-pub(super) fn shadowed(params: &[js::Pattern], body: &mut Vec<Stmt>, user: &HashSet<String>) {
+pub(super) fn shadowed(params: &[js::Pattern], body: &mut Vec<Stmt>, user: &IndexSet<String>) {
     let heads: Vec<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
     let mut captured = captured(body);
     shadowed_block(body, &heads, user, &mut captured);
@@ -28,8 +28,8 @@ pub(super) fn shadowed(params: &[js::Pattern], body: &mut Vec<Stmt>, user: &Hash
 fn shadowed_block(
     stmts: &mut Vec<Stmt>,
     heads: &[String],
-    user: &HashSet<String>,
-    captured: &mut HashSet<String>,
+    user: &IndexSet<String>,
+    captured: &mut IndexSet<String>,
 ) -> bool {
     let mut heads_set = false;
     let mut i = 0;
@@ -116,8 +116,8 @@ fn shadow_of(
     stmts: &mut Vec<Stmt>,
     i: usize,
     heads: &[String],
-    user: &HashSet<String>,
-    captured: &mut HashSet<String>,
+    user: &IndexSet<String>,
+    captured: &mut IndexSet<String>,
 ) -> Option<Shadowed> {
     let (shadow, value, is_let) = match &stmts[i].kind {
         StmtKind::Const(shadow, value) => (shadow.clone(), Some(value), false),

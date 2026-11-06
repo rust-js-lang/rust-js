@@ -4,7 +4,7 @@
 //! 0840).
 
 use super::*;
-use std::collections::HashSet;
+use crate::collections::IndexSet;
 
 /// `((taskQueue) => { .. })(taskQueue);`, a closure called where it's made,
 /// as a statement whose value nothing reads: its body in its place, its
@@ -313,7 +313,7 @@ fn tested_of(stmts: &[Stmt], at: usize, whole: &[Stmt]) -> Option<Vec<Stmt>> {
     let beside = StmtKind::Const(name.clone(), Expr::undefined()).at(stmts[at].span);
     let inlined = in_place(&stmts[at], whole, &[beside], (params, args), body.clone(), true)?;
     // What the branches read, none of which a block of the body declares.
-    let mut read = HashSet::new();
+    let mut read = IndexSet::default();
     names_in(&[yes.as_slice(), no.as_slice()].concat(), &mut read);
     let mut shadows = false;
     each_declared(&inlined, &mut |declared| shadows |= read.contains(declared));
@@ -533,7 +533,7 @@ fn in_place(
     let names = || {
         let mut others = whole.to_vec();
         statement_lists(&mut others, &mut |stmts| stmts.retain(|s| s != stmt));
-        let mut names: HashSet<String> = given.into_iter().cloned().collect();
+        let mut names: IndexSet<String> = given.into_iter().cloned().collect();
         names_in(&others, &mut names);
         names_in(beside, &mut names);
         if held && let Some((_, arg)) = parameter {

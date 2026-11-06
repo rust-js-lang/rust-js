@@ -3,7 +3,7 @@
 //! and what it gives; and the names of a function type's parameters, as
 //! the Rust names them (#543).
 
-use std::collections::HashMap;
+use crate::collections::IndexMap;
 
 use rustc_hir as hir;
 use rustc_middle::ty::{self, Ty, TyCtxt};
@@ -43,7 +43,7 @@ fn literal_fillers<'tcx>(
     tcx: TyCtxt<'tcx>,
     typeck: &'tcx ty::TypeckResults<'tcx>,
     expr: &'tcx hir::Expr<'tcx>,
-    fillers: &mut HashMap<DefId, Vec<Option<DefId>>>,
+    fillers: &mut IndexMap<DefId, Vec<Option<DefId>>>,
 ) {
     if let hir::ExprKind::Struct(qpath, fields, _) = expr.kind
         && let ty::Adt(adt, _) = typeck.expr_ty(expr).kind()
@@ -225,7 +225,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
     fn filled_names(&mut self, field: DefId) -> Vec<Option<String>> {
         if self.filled.is_none() {
             let tcx = self.tcx;
-            let mut fillers = HashMap::new();
+            let mut fillers = IndexMap::default();
             super::super::aggregates::each_struct_literal(tcx, |typeck, expr| {
                 literal_fillers(tcx, typeck, expr, &mut fillers);
             });

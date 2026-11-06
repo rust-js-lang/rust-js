@@ -13,7 +13,8 @@
 //! parameter to is copied so in turn, where what it's given needs its
 //! `Some` otherwise than the function's own JS has it.
 
-use std::collections::{BTreeSet, HashMap, HashSet};
+use crate::collections::{IndexMap, IndexSet};
+use std::collections::BTreeSet;
 
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
@@ -37,15 +38,15 @@ pub(in crate::lower) struct Params {
 pub(in crate::lower) struct JsGiven {
     /// The generic functions only their callers call, whose calls each
     /// call the lowering that takes what they give as they give it.
-    routed: HashSet<DefId>,
+    routed: IndexSet<DefId>,
     /// Of those, the ones JS calls, whose own JS takes each type parameter
     /// as JS gives it.
-    facing: HashSet<DefId>,
+    facing: IndexSet<DefId>,
     /// The type parameters a `Some` of which is the value as Rust's calls
     /// give them (`unboxed_params`).
-    unboxed: HashSet<(DefId, u32)>,
+    unboxed: IndexSet<(DefId, u32)>,
     /// Each function's copies, by the order they were found, and their names.
-    copies: HashMap<DefId, Vec<(Params, String)>>,
+    copies: IndexMap<DefId, Vec<(Params, String)>>,
 }
 
 /// What a call gives one of its callee's type parameters, as the lowering
@@ -66,12 +67,12 @@ impl JsGiven {
     pub(in crate::lower) fn of_crate<'tcx>(
         recognition: &Recognition<'_, 'tcx>,
         all_bodies: &[&Body<'tcx>],
-        (items, unboxed): (&HashSet<DefId>, &HashSet<(DefId, u32)>),
+        (items, unboxed): (&IndexSet<DefId>, &IndexSet<(DefId, u32)>),
         copyable: &dyn Fn(DefId) -> bool,
         name: &mut dyn FnMut(DefId, &str) -> String,
     ) -> JsGiven {
         let tcx = recognition.tcx;
-        let routed: HashSet<DefId> = (items.iter().copied())
+        let routed: IndexSet<DefId> = (items.iter().copied())
             .filter(|&id| {
                 tcx.typeck_root_def_id(id) == id
                     && super::mutation::copies_by_callers(tcx, recognition.foreign, id)
@@ -85,10 +86,10 @@ impl JsGiven {
                 .collect(),
             routed,
             unboxed: unboxed.clone(),
-            copies: HashMap::new(),
+            copies: IndexMap::default(),
         };
         // What each function's bodies, its closures' too, call.
-        let mut calls: HashMap<DefId, Vec<(DefId, ty::GenericArgsRef<'tcx>)>> = HashMap::new();
+        let mut calls: IndexMap<DefId, Vec<(DefId, ty::GenericArgsRef<'tcx>)>> = IndexMap::default();
         for body in all_bodies {
             let caller = tcx.typeck_root_def_id(body.def_id);
             let called = crate::lower::instances::given_calls_of(tcx, body).into_iter();
@@ -264,7 +265,7 @@ pub(in crate::lower) fn flattened_alike<'tcx>(
     let given = args.get(p as usize)?.as_type()?;
     let ty::Adt(adt, _) = given.kind() else { return None };
     (tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option)
-        && made_and_returned(recognition, (callee, p), true, &mut HashSet::new()))
+        && made_and_returned(recognition, (callee, p), true, &mut IndexSet::default()))
     .then_some(p)
 }
 
@@ -368,7 +369,7 @@ fn made_and_returned<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     (id, p): (DefId, u32),
     returns: bool,
-    seen: &mut HashSet<(DefId, u32, bool)>,
+    seen: &mut IndexSet<(DefId, u32, bool)>,
 ) -> bool {
     use rustc_middle::mir::{self, visit::PlaceContext, visit::Visitor};
     let tcx = recognition.tcx;
@@ -394,7 +395,7 @@ fn made_and_returned<'tcx>(
         return false;
     }
     // Its `Option<P>`s, its result and what's moved to it, none given it.
-    let slots: HashSet<mir::Local> = (body.local_decls.iter_enumerated())
+    let slots: IndexSet<mir::Local> = (body.local_decls.iter_enumerated())
         .filter(|&(local, decl)| {
             returns && (local == mir::RETURN_PLACE || (local.as_usize() > body.arg_count && returned(decl.ty)))
         })
@@ -404,12 +405,12 @@ fn made_and_returned<'tcx>(
         return false;
     }
     // A closure, of what it's given or gives back, that reads none.
-    let closure_reads_none = |ty: Ty<'tcx>, seen: &mut HashSet<(DefId, u32, bool)>| match ty.kind() {
+    let closure_reads_none = |ty: Ty<'tcx>, seen: &mut IndexSet<(DefId, u32, bool)>| match ty.kind() {
         ty::Closure(closure, _) => !holds(ty) || made_and_returned(recognition, (*closure, p), false, seen),
         _ => !holds(ty) || matches!(ty.kind(), ty::Param(_)),
     };
     struct Slots<'s> {
-        slots: &'s HashSet<mir::Local>,
+        slots: &'s IndexSet<mir::Local>,
         read: bool,
     }
     impl<'tcx> Visitor<'tcx> for Slots<'_> {

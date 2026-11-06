@@ -26,8 +26,7 @@
 //! same drops, and each field read is of the value its variant's last write
 //! gave, as no read of a variant's field is of a value of another variant.
 
-use std::collections::{HashMap, HashSet};
-
+use crate::collections::{IndexMap, IndexSet};
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_middle::mir::visit::{MutVisitor, PlaceContext, Visitor};
 use rustc_middle::mir::{
@@ -130,7 +129,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
         // Each write: a whole variant, of at most one field, which its
         // block goes on from to the switch through blocks that only end the
         // first `match`; each variant made once, so each case is its arm's.
-        let mut seen = HashSet::new();
+        let mut seen = IndexSet::default();
         let mut between: Vec<BasicBlock> = Vec::new();
         let mut made = Vec::new();
         for &(block, index) in &writes {
@@ -178,7 +177,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
         // can't go on to what follows without a label: each ends the
         // function apart, through nothing but drops, as Flight's `then`
         // does, or it's left whole.
-        let mut makers: HashMap<BasicBlock, usize> = HashMap::new();
+        let mut makers: IndexMap<BasicBlock, usize> = IndexMap::default();
         for m in &made {
             *makers.entry(m.case).or_default() += 1;
         }
@@ -214,7 +213,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
         // Each field read is of a variant one arm makes, at a type it says;
         // one read only by a variable it's given to, `Err(reason) => ..`,
         // which is then written where the arm writes the field.
-        let mut parts: HashMap<(VariantIdx, FieldIdx), Part<'tcx>> = HashMap::new();
+        let mut parts: IndexMap<(VariantIdx, FieldIdx), Part<'tcx>> = IndexMap::default();
         for (variant, field, field_ty, at) in fields {
             if !seen.contains(&variant) {
                 return None;
@@ -268,10 +267,10 @@ struct Threading<'tcx> {
     /// Each write, a statement.
     writes: Vec<(BasicBlock, usize)>,
     /// Each variant's field read or written, and its type.
-    parts: HashMap<(VariantIdx, FieldIdx), Ty<'tcx>>,
+    parts: IndexMap<(VariantIdx, FieldIdx), Ty<'tcx>>,
     /// Each field read once, by a variable it's given to whole: that
     /// variable, and where it's given it.
-    taken_by: HashMap<(VariantIdx, FieldIdx), (Local, mir::Location)>,
+    taken_by: IndexMap<(VariantIdx, FieldIdx), (Local, mir::Location)>,
 }
 
 /// A write of the enum: its block, the blocks it goes on through to the
@@ -314,14 +313,14 @@ fn given_to(body: &mir::Body<'_>, part: &Part<'_>) -> Option<(Local, mir::Locati
 impl<'tcx> Threading<'tcx> {
     /// Of `body`, each block an arm goes on to its case through, and
     /// where the `match` is written, put in `cases`.
-    fn apply(self, tcx: ty::TyCtxt<'tcx>, body: &mut mir::Body<'tcx>, cases: &mut HashMap<BasicBlock, Span>) {
+    fn apply(self, tcx: ty::TyCtxt<'tcx>, body: &mut mir::Body<'tcx>, cases: &mut IndexMap<BasicBlock, Span>) {
         let written = body.basic_blocks[self.switch].terminator().source_info.span;
         let span = body.local_decls[self.local].source_info.span;
         // A local of each field, in place of the variant's: the variable
         // it's given to, its write gone, or one of its own.
         let mut parts: Vec<_> = self.parts.iter().map(|(&key, &ty)| (key, ty)).collect();
         parts.sort_by_key(|(key, _)| *key);
-        let mut locals: HashMap<(VariantIdx, FieldIdx), Local> = HashMap::new();
+        let mut locals: IndexMap<(VariantIdx, FieldIdx), Local> = IndexMap::default();
         for (key, ty) in parts {
             let local = match self.taken_by.get(&key) {
                 Some(&(to, at)) => {
@@ -362,7 +361,7 @@ impl<'tcx> Threading<'tcx> {
         // Each arm's way to its case: what's between, copied.
         let blocks = body.basic_blocks.as_mut();
         for &Made { block, ref path, case } in &self.made {
-            let mut copies: HashMap<BasicBlock, BasicBlock> = HashMap::new();
+            let mut copies: IndexMap<BasicBlock, BasicBlock> = IndexMap::default();
             let mut ending = blocks[self.switch].clone();
             ending.statements[self.read_at].kind = StatementKind::Nop;
             ending.terminator_mut().kind = TerminatorKind::Goto { target: case };
@@ -431,9 +430,9 @@ fn retarget(data: &mut mir::BasicBlockData<'_>, local: Local, next: &dyn Fn(Basi
 /// Whether what each of `cases` runs reaches nothing another reaches but
 /// the function's end: blocks of storage and drops alone, and its return.
 fn ends_apart(body: &mir::Body<'_>, cases: &[BasicBlock]) -> bool {
-    let mut reached: HashMap<BasicBlock, BasicBlock> = HashMap::new();
+    let mut reached: IndexMap<BasicBlock, BasicBlock> = IndexMap::default();
     for &case in cases {
-        let mut seen = HashSet::from([case]);
+        let mut seen = IndexSet::from_iter([case]);
         let mut stack = vec![case];
         while let Some(block) = stack.pop() {
             match reached.insert(block, case) {
@@ -613,7 +612,7 @@ impl<'tcx> Uses<'tcx> {
 struct Rewrite<'a, 'tcx> {
     tcx: ty::TyCtxt<'tcx>,
     local: Local,
-    locals: &'a HashMap<(VariantIdx, FieldIdx), Local>,
+    locals: &'a IndexMap<(VariantIdx, FieldIdx), Local>,
 }
 
 impl<'tcx> MutVisitor<'tcx> for Rewrite<'_, 'tcx> {
@@ -643,7 +642,7 @@ impl<'tcx> MutVisitor<'tcx> for Rewrite<'_, 'tcx> {
 /// Whether `from` reaches itself again without passing `past`: it's in a
 /// loop that `past` isn't in the way of.
 fn loops_back(body: &mir::Body<'_>, from: BasicBlock, past: BasicBlock) -> bool {
-    let mut seen = HashSet::new();
+    let mut seen = IndexSet::default();
     let mut pending: Vec<BasicBlock> = body.basic_blocks[from].terminator().successors().collect();
     while let Some(at) = pending.pop() {
         if at == from {

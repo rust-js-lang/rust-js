@@ -6,10 +6,11 @@ pub mod formatting;
 mod literals;
 mod parser;
 
+use crate::collections::{IndexMap, IndexSet};
 pub(crate) use parser::snake;
 
 use std::cell::RefCell;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -181,8 +182,8 @@ struct Expand<'a> {
 /// allowed of (ADR 0439, amended).
 #[derive(Clone, Default)]
 pub(super) struct TagNames {
-    names: HashMap<String, Option<String>>,
-    read: Rc<RefCell<HashSet<String>>>,
+    names: IndexMap<String, Option<String>>,
+    read: Rc<RefCell<IndexSet<String>>>,
 }
 
 impl TagNames {
@@ -190,7 +191,7 @@ impl TagNames {
         TagNames::default()
     }
 
-    pub(super) fn extend(&mut self, names: HashMap<String, Option<String>>) {
+    pub(super) fn extend(&mut self, names: IndexMap<String, Option<String>>) {
         self.names.extend(names);
     }
 
@@ -206,7 +207,7 @@ impl TagNames {
     }
 
     /// What JSX reads from now on, apart from what it read before.
-    fn reading(&mut self) -> Rc<RefCell<HashSet<String>>> {
+    fn reading(&mut self) -> Rc<RefCell<IndexSet<String>>> {
         self.read = Rc::default();
         self.read.clone()
     }
@@ -217,7 +218,7 @@ impl TagNames {
 /// `HeadingProps { r#as: Comp, .. }` (ADR 0220), and of `let Heading:
 /// fn(HProps<..>) -> JSX::Element` a component of `HProps` (ADR 0239). A
 /// function inside is its own.
-fn tags_of(kind: &FnKind<'_>) -> HashMap<String, Option<String>> {
+fn tags_of(kind: &FnKind<'_>) -> IndexMap<String, Option<String>> {
     let mut names = Tags::default();
     if let FnKind::Fn(_, _, function) = kind {
         visit::walk_fn_decl(&mut names, &function.sig.decl);
@@ -229,7 +230,7 @@ fn tags_of(kind: &FnKind<'_>) -> HashMap<String, Option<String>> {
 }
 
 #[derive(Default)]
-struct Tags(HashMap<String, Option<String>>);
+struct Tags(IndexMap<String, Option<String>>);
 
 impl Tags {
     /// What `pat` binds, of the type `ty` written: a component's props of
@@ -272,7 +273,7 @@ impl Expand<'_> {
     fn items(&mut self, items: &mut Vec<Box<ast::Item>>) {
         // A function only `js::export_default!` names is the module's
         // default export, which JS uses: not dead code to rustc (ADR 0222).
-        let exported: HashSet<Symbol> = (items.iter())
+        let exported: IndexSet<Symbol> = (items.iter())
             .filter_map(|item| match &item.kind {
                 ItemKind::MacCall(mac)
                     if mac
@@ -299,13 +300,13 @@ impl Expand<'_> {
         // The props structs the components here take, and their companions,
         // which build them from what JSX gives (ADR 0213).
         let classes = parser::classes(items);
-        let props: HashSet<String> = (items.iter())
+        let props: IndexSet<String> = (items.iter())
             .filter(|item| configured_attrs(self.sess, &item.attrs).is_some())
             .flat_map(|item| parser::props_names(self.sess, item, &classes))
             .collect();
         // What has a `Default` written for it, as a derived one does: React's
         // attributes, of any element (ADR 0208).
-        let written_default: HashSet<String> = (items.iter())
+        let written_default: IndexSet<String> = (items.iter())
             .filter(|item| configured_attrs(self.sess, &item.attrs).is_some())
             .filter_map(|item| match &item.kind {
                 ItemKind::Impl(imp)
@@ -327,7 +328,7 @@ impl Expand<'_> {
             })
             .collect();
         let mut companions = Vec::new();
-        let mut built = HashSet::new();
+        let mut built = IndexSet::default();
         for item in items.iter() {
             if configured_attrs(self.sess, &item.attrs).is_some()
                 && let Some(companion) = parser::props_companion(self.sess, item, &props, &written_default)
@@ -636,7 +637,7 @@ impl MutVisitor for Expand<'_> {
 /// inside is its own.
 struct AllowTags<'a> {
     sess: &'a Session,
-    read: &'a HashSet<String>,
+    read: &'a IndexSet<String>,
 }
 
 impl AllowTags<'_> {

@@ -17,8 +17,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic impl's dictionary given a drop that generic code asks twice, `slotRenew(TDefault, dropT)`, is written each time, as if the drop it's given weren't at its top (ADR 0979, amended, #691)",
     file: "src/lower/traits/given.rs",
-    find: "        let mut names: HashSet<String> = self.given_drops().into_iter().collect();\n",
-    replace: "        let mut names: HashSet<String> = HashSet::new();\n",
+    find: "        let mut names: IndexSet<String> = self.given_drops().into_iter().collect();\n",
+    replace: "        let mut names: IndexSet<String> = IndexSet::default();\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_dictionary_declared_once.rs$"],
     snapshots: true,
   },

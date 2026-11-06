@@ -266,8 +266,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if drops.is_empty() {
             return;
         }
-        let references: HashSet<&str> = match guard {
-            Some(guard) => HashSet::from([guard]),
+        let references: IndexSet<&str> = match guard {
+            Some(guard) => IndexSet::from_iter([guard]),
             None => (state.body.local_decls.iter_enumerated())
                 .filter(|(_, decl)| decl.ty.is_ref())
                 .map(|(local, _)| state.locals.names[local].as_str())
@@ -297,7 +297,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect();
         settled.sort();
         for local in settled {
-            let expr = state.in_place.remove(&local).expect("found");
+            let expr = state.in_place.swap_remove(&local).expect("found");
             // Assigned, its `let` where the function's are, as it may be
             // read past the block it's dropped in.
             let name = state.locals.names[local].clone();
@@ -857,7 +857,7 @@ pub(super) fn note_marks(state: &mut State<'_, '_>, local: Local, expr: &Expr) {
         false => js::Facts::NONE,
     };
     match marks == js::Facts::NONE {
-        true => state.iter_locals.marks.remove(&local),
+        true => state.iter_locals.marks.swap_remove(&local),
         false => state.iter_locals.marks.insert(local, marks),
     };
 }
@@ -867,7 +867,7 @@ pub(super) fn note_marks(state: &mut State<'_, '_>, local: Local, expr: &Expr) {
 pub(super) struct IterLocals {
     /// Each temporary a map of an array's items is made in, `$iter(v).map(f)`:
     /// that, which `next_back` steps from its source's end.
-    pub(super) maps: HashMap<Local, Expr>,
+    pub(super) maps: IndexMap<Local, Expr>,
     /// What `emit()` and its maker marked the value written to each local's
     /// variable (`iterators::held_marks`), given back where it's read by its name
     /// (`read_by_name`). Recorded wherever its value is written whole to
@@ -875,7 +875,7 @@ pub(super) struct IterLocals {
     /// `const`, `let` and assignment. A value read in place, through a
     /// reference or a place (`in_place`, `refs`, `places`), is the value's
     /// own JS, its marks on it.
-    pub(super) marks: HashMap<Local, js::Facts>,
+    pub(super) marks: IndexMap<Local, js::Facts>,
     /// Each local MIR writes whole once, by an assignment or as a call's
     /// destination: the one value its variable holds, so what its maker
     /// marked it is what each read of it reads. Not one written again,
@@ -883,7 +883,7 @@ pub(super) struct IterLocals {
     /// `rev().rfind(..)`'s receiver, writes nothing here: a value made in
     /// place is given only to what steps it, never writing it whole
     /// (`body_queries::in_place_adapters`).
-    once: HashSet<Local>,
+    once: IndexSet<Local>,
 }
 
 impl IterLocals {
@@ -909,8 +909,8 @@ impl IterLocals {
             .map(|(local, _)| local)
             .collect();
         IterLocals {
-            maps: HashMap::new(),
-            marks: HashMap::new(),
+            maps: IndexMap::default(),
+            marks: IndexMap::default(),
             once,
         }
     }

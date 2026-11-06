@@ -18,6 +18,7 @@
 //! JS calls a function it's given with, whose properties a getter may
 //! answer, each read as often as Rust reads it (ADR 1022).
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings::is_binding;
 use crate::lower::recognition::{CellMethod, Recognition, cell_own_method};
 use rustc_hir as hir;
@@ -26,22 +27,21 @@ use rustc_hir::intravisit::{self, Visitor};
 use rustc_middle::ty::adjustment::{Adjust, DerefAdjustKind, PointerCoercion};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable, TypeFolder, TypeVisitableExt, TypeckResults};
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 /// Of each fn pointer type, by `key`, what the crate makes one of; and
 /// which types a value of which may come from outside its code, which
 /// may be any function.
 #[derive(Default)]
 pub(in crate::lower) struct FnPointers<'tcx> {
-    made: HashMap<Ty<'tcx>, Vec<(DefId, ty::GenericArgsRef<'tcx>)>>,
-    open: HashSet<Ty<'tcx>>,
+    made: IndexMap<Ty<'tcx>, Vec<(DefId, ty::GenericArgsRef<'tcx>)>>,
+    open: IndexSet<Ty<'tcx>>,
     /// A value of a type rustc can't normalize may come from outside,
     /// which may hold any fn pointer.
     all_open: bool,
     /// The types whose values may be a library's own Rust functions, read
     /// of a field its contract says holds only those (ADR 0330, amended):
     /// what they run is the library's, not followed, but never JS's.
-    library_rust: HashSet<Ty<'tcx>>,
+    library_rust: IndexSet<Ty<'tcx>>,
     /// The crate's structs' fields a consumer may read whose fn pointers
     /// may only be Rust functions (`rust_only`), its contract's to say.
     rust_fields: Vec<DefId>,
@@ -50,7 +50,7 @@ pub(in crate::lower) struct FnPointers<'tcx> {
     /// lifetimes erased: the one kind of function that reads a `this` Rust
     /// gives, `None`, where a call through a field gives none (#402, the
     /// user's decision, #404).
-    with_this: HashSet<(Ty<'tcx>, Ty<'tcx>)>,
+    with_this: IndexSet<(Ty<'tcx>, Ty<'tcx>)>,
     /// Whether one is made in generic code, of what its callers give.
     with_this_generic: bool,
     /// What code that isn't the crate's gives, `made_outside`'s, each a type
@@ -69,22 +69,22 @@ pub(in crate::lower) struct FnPointers<'tcx> {
     /// program's own data, which a JS object of its type
     /// is taken to be, as a value given back through `Unknown` is (rd221;
     /// ADR 1022, amended).
-    built: HashSet<DefId>,
+    built: IndexSet<DefId>,
     /// The structs a value JS may give the crate's code is, or holds
     /// through its fields: what an exported function is called with, and
     /// what a binding calls a function it's given with (#519). It may
     /// leave a field out, whatever the crate builds of it.
-    js_given: HashSet<DefId>,
+    js_given: IndexSet<DefId>,
     /// Each field of a `dyn Fn` of the crate's structs, and whether each
     /// write of it the crate makes, a literal's or an assignment's, is of
     /// a closure or a function of its own, `Box::new(move || ..)`, never
     /// a with_this function's, and its place never lent mutably (#405).
-    own_fields: HashMap<DefId, bool>,
+    own_fields: IndexMap<DefId, bool>,
     /// The signatures, `dyn_key`'s, of each `dyn Fn` a value of which may
     /// be a JS function (rd579): one that may come from outside the crate's
     /// code, or one the crate makes of a binding's function or of what
     /// generic code is given.
-    js_dyns: HashSet<(Ty<'tcx>, Ty<'tcx>)>,
+    js_dyns: IndexSet<(Ty<'tcx>, Ty<'tcx>)>,
     /// Each `dyn Fn` the crate makes of a fn pointer, the pointer's type
     /// and the `dyn`'s signatures: a JS function where the pointer may be
     /// one, which only every body's coercions say.
@@ -98,7 +98,7 @@ pub(in crate::lower) struct FnPointers<'tcx> {
     /// The fn pointer types, `key`'s, a value of which may be a JS function
     /// (rd579): one that may come from outside the crate's code, or one
     /// generic code makes of a binding's function.
-    js_pointers: HashSet<Ty<'tcx>>,
+    js_pointers: IndexSet<Ty<'tcx>>,
     /// Whether the crate's code gives a binding's function as a value, which
     /// a generic `F` may be (rd579).
     binding_values: bool,
@@ -145,7 +145,7 @@ impl<'tcx> FnPointers<'tcx> {
                 recognition,
                 results: tcx.typeck(owner),
                 found: &mut found,
-                callees: HashSet::new(),
+                callees: IndexSet::default(),
             };
             made.visit_body(tcx.hir_body_owned_by(owner));
         }
@@ -181,11 +181,11 @@ impl<'tcx> FnPointers<'tcx> {
         let mut recast = std::mem::take(&mut found.recast);
         while !outside.is_empty() {
             for ty in outside.drain(..) {
-                made.walk(recognition, &own, ty, &mut HashSet::new());
+                made.walk(recognition, &own, ty, &mut IndexSet::default());
             }
             let (js, program): (Vec<_>, Vec<_>) = recast.into_iter().partition(|&(of, _)| {
                 let mut of_it = JsMade::default();
-                of_it.walk(recognition, &own, of, &mut HashSet::new());
+                of_it.walk(recognition, &own, of, &mut IndexSet::default());
                 of_it.any || of_it.structs.iter().any(|adt| made.structs.contains(adt))
             });
             recast = program;
@@ -465,7 +465,7 @@ impl<'tcx> FnPointers<'tcx> {
 /// (rd204, ADR 1022).
 #[derive(Default)]
 struct JsMade {
-    structs: HashSet<DefId>,
+    structs: IndexSet<DefId>,
     any: bool,
 }
 
@@ -478,7 +478,7 @@ impl JsMade {
         recognition: &Recognition<'_, 'tcx>,
         own: &dyn Fn(DefId) -> bool,
         ty: Ty<'tcx>,
-        seen: &mut HashSet<Ty<'tcx>>,
+        seen: &mut IndexSet<Ty<'tcx>>,
     ) {
         let tcx = recognition.tcx;
         if !seen.insert(ty) {
@@ -655,12 +655,12 @@ impl<'tcx> TypeFolder<TyCtxt<'tcx>> for Lifetimeless<'tcx> {
 /// of it says the type, whose result `Made::call` holds.
 #[derive(Default)]
 struct Held<'tcx> {
-    keys: HashSet<Ty<'tcx>>,
+    keys: IndexSet<Ty<'tcx>>,
     /// Those held only by a library's field its contract says holds only
     /// its own Rust functions (`FieldFact::RustFunctions`).
-    rust: HashSet<Ty<'tcx>>,
+    rust: IndexSet<Ty<'tcx>>,
     /// The signatures of the `dyn Fn`s it may hold (rd579).
-    dyns: HashSet<(Ty<'tcx>, Ty<'tcx>)>,
+    dyns: IndexSet<(Ty<'tcx>, Ty<'tcx>)>,
     any: bool,
 }
 
@@ -668,7 +668,7 @@ fn held<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> Held<'tcx> {
     fn walk<'tcx>(
         recognition: &Recognition<'_, 'tcx>,
         ty: Ty<'tcx>,
-        seen: &mut HashSet<Ty<'tcx>>,
+        seen: &mut IndexSet<Ty<'tcx>>,
         held: &mut Held<'tcx>,
     ) {
         let tcx = recognition.tcx;
@@ -725,14 +725,14 @@ fn held<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> Held<'tcx> {
         }
     }
     let mut found = Held::default();
-    walk(recognition, ty, &mut HashSet::new(), &mut found);
+    walk(recognition, ty, &mut IndexSet::default(), &mut found);
     found
 }
 
 /// Each struct a value of `ty` is or holds: through references, `Box`,
 /// `Option`, collections and any generic argument, and each struct's
 /// fields, into `found` (#519).
-fn structs_held<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, found: &mut HashSet<DefId>) {
+fn structs_held<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, found: &mut IndexSet<DefId>) {
     for part in ty.walk() {
         let Some(part) = part.as_type() else { continue };
         if let ty::Adt(adt, args) = *part.kind()
@@ -781,7 +781,7 @@ struct Made<'a, 'b, 'tcx> {
     results: &'tcx TypeckResults<'tcx>,
     found: &'a mut FnPointers<'tcx>,
     /// What each call calls, a path that's no value given.
-    callees: HashSet<hir::HirId>,
+    callees: IndexSet<hir::HirId>,
 }
 
 impl<'tcx> Made<'_, '_, 'tcx> {

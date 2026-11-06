@@ -6,10 +6,10 @@
 
 use super::super::Body;
 use super::super::library::Foreign;
+use crate::collections::{IndexMap, IndexSet};
 use crate::program::Reexport;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::{DefId, LocalModId};
-use std::collections::{HashMap, HashSet};
 
 /// Each function of the crate that only passes its parameters on to a
 /// plain function at one instantiation (`passed_on::forwarder`, rd575,
@@ -29,10 +29,10 @@ pub(super) fn found<'tcx>(
     (foreign, trait_impls): (&Foreign<'_, 'tcx>, &[DefId]),
     js_given: &super::super::analysis::JsGiven,
     (drop_params, reads_arguments): (
-        &HashMap<DefId, Vec<u32>>,
+        &IndexMap<DefId, Vec<u32>>,
         &super::super::analysis::arguments::ReadsArguments<'tcx>,
     ),
-) -> HashMap<DefId, DefId> {
+) -> IndexMap<DefId, DefId> {
     let recognition = super::super::recognition::Recognition {
         tcx,
         typing_env: ty::TypingEnv::fully_monomorphized(),
@@ -54,7 +54,7 @@ pub(super) fn found<'tcx>(
                     .is_some_and(|item| item.member.is_none() && item.calling.drop_params().is_empty())
         }
     };
-    let candidates: HashMap<DefId, DefId> = (bodies.iter())
+    let candidates: IndexMap<DefId, DefId> = (bodies.iter())
         .filter_map(|body| {
             let function = body.def_id;
             let (target, args) = super::super::passed_on::forwarder(tcx, function, &body.thir)?;
@@ -63,7 +63,7 @@ pub(super) fn found<'tcx>(
         .collect();
     // Of those, each no body of its own module names.
     let module = |id: DefId| id.as_local().map(|local| tcx.parent_module_from_def_id(local));
-    let mut named_at_home: HashSet<DefId> = HashSet::new();
+    let mut named_at_home: IndexSet<DefId> = IndexSet::default();
     for body in all_bodies {
         for expr in body.thir.exprs.iter() {
             if let (rustc_middle::thir::ExprKind::ZstLiteral { .. }, ty::FnDef(named, _)) = (&expr.kind, expr.ty.kind())
@@ -90,16 +90,16 @@ pub(super) fn found<'tcx>(
 fn in_place<'tcx>(
     tcx: TyCtxt<'tcx>,
     (module, functions): (LocalModId, &mut Vec<crate::js::Function>),
-    forwarders: &HashMap<DefId, DefId>,
+    forwarders: &IndexMap<DefId, DefId>,
     (fns, foreign, paths): (
-        &HashMap<DefId, super::super::FnInfo>,
+        &IndexMap<DefId, super::super::FnInfo>,
         &Foreign<'_, 'tcx>,
-        &HashMap<LocalModId, Vec<String>>,
+        &IndexMap<LocalModId, Vec<String>>,
     ),
     default_export: Option<DefId>,
     aliased: &[(DefId, (String, String))],
-) -> (HashMap<DefId, DefId>, HashSet<String>) {
-    let (mut confirmed, mut reads) = (HashMap::new(), HashSet::new());
+) -> (IndexMap<DefId, DefId>, IndexSet<String>) {
+    let (mut confirmed, mut reads) = (IndexMap::default(), IndexSet::default());
     for (&function, &target) in forwarders {
         if fns[&function].module != module
             || default_export == Some(function)
@@ -133,17 +133,17 @@ fn in_place<'tcx>(
 pub(super) struct InPlace {
     pub(super) reexports: Vec<Reexport>,
     pub(super) declared: Vec<Reexport>,
-    pub(super) reads: HashSet<String>,
+    pub(super) reads: IndexSet<String>,
 }
 
 pub(super) fn reexported<'tcx>(
     tcx: TyCtxt<'tcx>,
     (module, functions): (LocalModId, &mut Vec<crate::js::Function>),
-    forwarders: &HashMap<DefId, DefId>,
+    forwarders: &IndexMap<DefId, DefId>,
     (fns, foreign, paths): (
-        &HashMap<DefId, super::super::FnInfo>,
+        &IndexMap<DefId, super::super::FnInfo>,
         &Foreign<'_, 'tcx>,
-        &HashMap<LocalModId, Vec<String>>,
+        &IndexMap<LocalModId, Vec<String>>,
     ),
     default_export: Option<DefId>,
     aliased: &[(DefId, (String, String))],
@@ -173,11 +173,11 @@ pub(super) fn reexported<'tcx>(
 pub(super) fn reexported_from(
     tcx: TyCtxt<'_>,
     modules: &[LocalModId],
-    forwarders: &HashMap<DefId, DefId>,
+    forwarders: &IndexMap<DefId, DefId>,
     (fns, foreign, paths): (
-        &HashMap<DefId, super::super::FnInfo>,
+        &IndexMap<DefId, super::super::FnInfo>,
         &Foreign<'_, '_>,
-        &HashMap<LocalModId, Vec<String>>,
+        &IndexMap<LocalModId, Vec<String>>,
     ),
     sources: &super::super::sources::CapturedSources,
 ) -> Vec<super::load_cycles::ReexportFrom> {

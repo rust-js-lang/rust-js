@@ -1,6 +1,7 @@
 //! The types something changes in place, which a copy is made of where
 //! it's read (ADR 0052).
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::recognition::{flattens_mut, replaces_whole};
 use crate::lower::{Body, FnInfo, fn_def, strip};
 use rustc_ast::Mutability;
@@ -11,13 +12,12 @@ use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty;
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 /// The types whose JS objects get changed in place somewhere in the crate:
 /// `a.b.c = ..` changes the object `a.b`, so it's `a.b`'s type. Only these
 /// ever need copying (ADR 0020).
-pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> HashSet<Ty<'tcx>> {
-    let mut mutated = HashSet::new();
+pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> IndexSet<Ty<'tcx>> {
+    let mut mutated = IndexSet::default();
     for body in all_bodies {
         // A `let`'s pattern's too, `let (a, _) = &mut t;`.
         for stmt in body.thir.stmts.iter() {
@@ -199,7 +199,7 @@ fn object_like<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
 fn ref_mut_holders<'tcx>(
     tcx: TyCtxt<'tcx>,
     pat: &rustc_middle::thir::Pat<'tcx>,
-    mutated: &mut HashSet<Ty<'tcx>>,
+    mutated: &mut IndexSet<Ty<'tcx>>,
 ) -> bool {
     use rustc_middle::thir::PatKind;
     let mut holds = false;
@@ -247,9 +247,9 @@ fn ref_mut_holders<'tcx>(
 pub(in crate::lower) fn copied_params<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
-    fns: &HashMap<DefId, FnInfo>,
+    fns: &IndexMap<DefId, FnInfo>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
-) -> HashSet<(DefId, u32)> {
+) -> IndexSet<(DefId, u32)> {
     let bounded = |id| copy_bounded(tcx, id);
     given_params(
         tcx,
@@ -271,10 +271,10 @@ pub(in crate::lower) fn copied_params<'tcx>(
 pub(in crate::lower) fn cloned_params<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
-    items: &HashSet<DefId>,
+    items: &IndexSet<DefId>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     counted: &super::Counted<'tcx>,
-) -> HashSet<(DefId, u32)> {
+) -> IndexSet<(DefId, u32)> {
     let bounded = |id| clone_bounded(tcx, id);
     let itself = |ty| clones_itself(tcx, counted, ty);
     given_params(
@@ -298,8 +298,8 @@ pub(in crate::lower) fn cloned_params<'tcx>(
 pub(in crate::lower) fn unboxed_params<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
-    items: &HashSet<DefId>,
-) -> HashSet<(DefId, u32)> {
+    items: &IndexSet<DefId>,
+) -> IndexSet<(DefId, u32)> {
     let tcx = recognition.tcx;
     let foreign = recognition.foreign;
     let nullish = given_params(
@@ -345,8 +345,8 @@ fn given_params<'a, 'tcx>(
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     bounded: &dyn Fn(DefId) -> Vec<u32>,
     itself: &dyn Fn(Ty<'tcx>) -> bool,
-) -> HashSet<(DefId, u32)> {
-    let mut given = HashSet::new();
+) -> IndexSet<(DefId, u32)> {
+    let mut given = IndexSet::default();
     for &id in items {
         if !copies_by_callers(tcx, foreign, id) {
             given.extend(bounded(id).into_iter().map(|index| (id, index)));
@@ -392,7 +392,7 @@ fn given_params<'a, 'tcx>(
 pub(in crate::lower) fn clones_by_itself(
     tcx: TyCtxt<'_>,
     foreign: &crate::lower::library::Foreign<'_, '_>,
-    clones: &HashSet<(DefId, u32)>,
+    clones: &IndexSet<(DefId, u32)>,
     (id, index): (DefId, u32),
 ) -> bool {
     copies_by_callers(tcx, foreign, id) && !clones.contains(&(tcx.typeck_root_def_id(id), index))

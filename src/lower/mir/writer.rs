@@ -102,7 +102,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 typed.push((value, ty));
             }
-            let Some((kind, type_name, mut steps, parts)) = state.built.remove(&root) else {
+            let Some((kind, type_name, mut steps, parts)) = state.built.swap_remove(&root) else {
                 return Err(self.unsupported(span, "this `Debug` builder, from its MIR"));
             };
             match (step, parts) {
@@ -447,9 +447,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A writer's `Debug` builders, of its `Formatter`, `aliases` (ADR
     /// 0136): each local that's one, to the one `f.debug_struct(..)` made,
     /// of what a step gives back, `&mut` to it, or a reference to one.
-    pub(super) fn writer_builders(&self, body: &mir::Body<'tcx>, aliases: &[Local]) -> HashMap<Local, Local> {
-        let mut builders: HashMap<Local, Local> = HashMap::new();
-        let made = |builders: &HashMap<Local, Local>, from: &Place<'tcx>| {
+    pub(super) fn writer_builders(&self, body: &mir::Body<'tcx>, aliases: &[Local]) -> IndexMap<Local, Local> {
+        let mut builders: IndexMap<Local, Local> = IndexMap::default();
+        let made = |builders: &IndexMap<Local, Local>, from: &Place<'tcx>| {
             builders
                 .get(&from.local)
                 .copied()

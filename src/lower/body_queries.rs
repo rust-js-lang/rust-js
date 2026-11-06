@@ -4,6 +4,7 @@
 use super::bindings::named_callback;
 use super::fn_def;
 use super::recognition::{SliceLength, slice_length};
+use crate::collections::{IndexMap, IndexSet};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::{BindingMode, ByRef, Mutability};
 
@@ -13,7 +14,6 @@ use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::{DefId, LocalModId};
-use std::collections::{HashMap, HashSet};
 
 mod constants;
 mod getter_unwraps;
@@ -123,51 +123,51 @@ pub(super) struct BodyFacts<'tcx> {
     /// in bounds (`ranges`): each `a[i]`, and the function of each
     /// `Index::index(&v, i)`; and of each map's `m[k]` whose key its tests
     /// show the map holds (rd558).
-    pub(super) in_bounds: HashSet<ExprId>,
+    pub(super) in_bounds: IndexSet<ExprId>,
     /// Where each `+`, `-` and `*` of a small integer is written that the
     /// body's ranges show never leaves its type's range (`ranges`).
-    pub(super) exact: HashSet<Span>,
+    pub(super) exact: IndexSet<Span>,
     /// The closures a `let` names that a hook's function is, each written
     /// there, named (`named_callbacks`).
-    pub(super) named_callbacks: HashSet<LocalVarId>,
+    pub(super) named_callbacks: IndexSet<LocalVarId>,
     /// The casts whose value is what they cast as it is: of an `f64` known
     /// to be a whole number in the integer's range (`whole_casts`), of an
     /// integer the body's ranges show in its target's (`ranges`), and of a
     /// signed one that's the count of text's `repeat` (`repeat_counts`).
-    pub(super) kept_casts: HashSet<ExprId>,
+    pub(super) kept_casts: IndexSet<ExprId>,
     /// The function of each `OnceCell::set` whose cell the body's ranges
     /// show still empty there, every time it's reached (`ranges`, ADR 0847).
-    pub(super) set_empty: HashSet<ExprId>,
+    pub(super) set_empty: IndexSet<ExprId>,
     /// Where each read of a registered symbol is that's only tested against
     /// the registry's, `registered_reads`'s (ADR 0634).
-    pub(super) registered_reads: HashSet<Span>,
+    pub(super) registered_reads: IndexSet<Span>,
     /// Where each `==` or `!=` of such a read and a `Some(..)` is,
     /// `registered_equalities`'s (ADR 0771).
-    pub(super) registered_equalities: HashSet<Span>,
+    pub(super) registered_equalities: IndexSet<Span>,
     /// Where each guard is that holds where its arm matched,
     /// `held_guards`'s.
-    pub(super) held_guards: HashSet<Span>,
+    pub(super) held_guards: IndexSet<Span>,
     /// Where each call is whose value is told present, `present_calls`'s.
-    pub(super) present_calls: HashSet<Span>,
+    pub(super) present_calls: IndexSet<Span>,
     /// Where each `resume_unwind(x)` is of a payload as it was given,
     /// `resumed_as_given`'s (rd550).
-    pub(super) resumed_as_given: HashSet<Span>,
+    pub(super) resumed_as_given: IndexSet<Span>,
     /// Where each `unwrap` or `expect` is of a cell's `get` read right
     /// after it's set to a `Some`, `set_then_unwrapped`'s (rd331e).
-    pub(super) set_then_unwrapped: HashSet<Span>,
+    pub(super) set_then_unwrapped: IndexSet<Span>,
     /// Where each `unwrap()` is of a binding getter's function or object
     /// read only as the callee or the `this` of the call it's made for,
     /// `getter_unwraps`'s (rd519).
-    pub(super) getter_unwraps: HashSet<Span>,
+    pub(super) getter_unwraps: IndexSet<Span>,
     /// Where each `function::call` is of a `js::method` of one step whose
     /// `this` is the path's value, the method's call, and where each such
     /// `js::method` is, `method_calls`'s (rd334).
-    pub(super) method_calls: HashSet<Span>,
-    pub(super) called_methods: HashSet<Span>,
+    pub(super) method_calls: IndexSet<Span>,
+    pub(super) called_methods: IndexSet<Span>,
     /// Where each `rev()`, `enumerate()` or `map()` is whose adapter a std
     /// iterator's method steps where it's made, `in_place_adapters`'s: its
     /// maker marks what it makes so (`made_in_place`, #730).
-    pub(super) in_place_adapters: HashSet<Span>,
+    pub(super) in_place_adapters: IndexSet<Span>,
     /// Of a closure a `flat_map()` made in place is given, that what it
     /// gives is made in place too, `results_in_place`'s: its value's fact
     /// (`Known::IterResultInPlace`).
@@ -177,8 +177,8 @@ pub(super) struct BodyFacts<'tcx> {
     pub(super) constant_patterns: ConstantPatterns<'tcx>,
     /// The props given to the crate's components, and what's a base of
     /// them, `jsx_given_props`'s.
-    pub(super) jsx_given: HashSet<ExprId>,
-    pub(super) jsx_bases: HashSet<ExprId>,
+    pub(super) jsx_given: IndexSet<ExprId>,
+    pub(super) jsx_bases: IndexSet<ExprId>,
 }
 
 impl<'tcx> BodyFacts<'tcx> {
@@ -187,7 +187,7 @@ impl<'tcx> BodyFacts<'tcx> {
     /// looks its answer up, and a closure's are its own body's.
     pub(super) fn collect(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
         let (jsx_given, jsx_bases) = jsx_given_props(tcx, thir);
-        let in_place_adapters = in_place_adapters(tcx, thir, None, &HashSet::new());
+        let in_place_adapters = in_place_adapters(tcx, thir, None, &IndexSet::default());
         let (method_calls, called_methods) = method_calls::method_calls(tcx, thir);
         Self {
             kept_casts: whole_casts(tcx, thir)
@@ -216,8 +216,8 @@ impl<'tcx> BodyFacts<'tcx> {
 /// The closures a `let` names that are the function a
 /// `#[rust_js::named_callback]` hook is given: each written there, named,
 /// `useEffect(function createBundler() { .. }, [])` (ADR 0297).
-fn named_callbacks<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<LocalVarId> {
-    let closures: HashSet<LocalVarId> = thir
+fn named_callbacks<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<LocalVarId> {
+    let closures: IndexSet<LocalVarId> = thir
         .stmts
         .iter()
         .filter_map(|stmt| match stmt.kind {
@@ -241,7 +241,7 @@ fn named_callbacks<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<LocalV
             _ => None,
         })
         .collect();
-    let mut found = HashSet::new();
+    let mut found = IndexSet::default();
     for expr in thir.exprs.iter() {
         if let ExprKind::Call { fun, ref args, .. } = expr.kind
             && fn_def(thir[strip(thir, fun)].ty).is_some_and(|(def_id, _)| named_callback(tcx, def_id))
@@ -262,9 +262,9 @@ fn named_callbacks<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<LocalV
 /// variables held it before (rd550); `x` itself may be set again, which
 /// its JS says, a `let`. Its `fn_span`. One of a variable a closure
 /// captured is its family's, `resumes_as_given`'s.
-fn resumed_as_given<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
+fn resumed_as_given<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
     match lends_dyn_any(tcx, thir) {
-        true => HashSet::new(),
+        true => IndexSet::default(),
         false => resumes(tcx, thir, false),
     }
 }
@@ -275,7 +275,7 @@ fn resumed_as_given<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span>
 /// and changed, if anywhere (rd550). Before lowering, of the crate's
 /// bodies.
 fn resumes_as_given<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>]) {
-    let lending: HashSet<DefId> = (bodies.iter())
+    let lending: IndexSet<DefId> = (bodies.iter())
         .filter(|body| lends_dyn_any(tcx, &body.thir))
         .map(|body| tcx.typeck_root_def_id(body.def_id))
         .collect();
@@ -302,7 +302,7 @@ fn lends_dyn_any<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> bool {
 
 /// The `fn_span` of each `resume_unwind(x)` of a variable, of the body's own
 /// or, `captured`, one a closure captured.
-fn resumes<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, captured: bool) -> HashSet<Span> {
+fn resumes<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, captured: bool) -> IndexSet<Span> {
     use super::recognition::unwind_op;
     use super::std_types::unwind::UnwindOp;
     // A variable, as it is or as the payload's type, `dyn Any + Send +
@@ -339,7 +339,7 @@ fn resumes<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, captured: bool) -> HashSe
 /// Where each variable is changed, as the body's order has it: set or lent
 /// as `&mut`, in whole or in part. A variable of the
 /// enclosing function a closure captures is the closure's too.
-fn changes(thir: &Thir<'_>) -> HashMap<LocalVarId, Vec<Span>> {
+fn changes(thir: &Thir<'_>) -> IndexMap<LocalVarId, Vec<Span>> {
     let at = |span: Span| span.source_callsite();
     let root = |mut e: ExprId| loop {
         match thir[strip(thir, e)].kind {
@@ -348,7 +348,7 @@ fn changes(thir: &Thir<'_>) -> HashMap<LocalVarId, Vec<Span>> {
             _ => break None,
         }
     };
-    let mut changes: HashMap<LocalVarId, Vec<Span>> = HashMap::new();
+    let mut changes: IndexMap<LocalVarId, Vec<Span>> = IndexMap::default();
     for expr in thir.exprs.iter() {
         let changed = match expr.kind {
             ExprKind::Assign { lhs, .. } | ExprKind::AssignOp { lhs, .. } => Some(lhs),
@@ -383,7 +383,11 @@ pub(super) fn tail(thir: &Thir<'_>, e: ExprId) -> ExprId {
 /// what a closure given `flat_map` gives, made in place
 /// (`results_in_place`), and each resume of a payload a closure captured
 /// (`resumes_as_given`).
-pub(super) fn across_bodies<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>], cloned: &HashSet<ty::Ty<'tcx>>) {
+pub(super) fn across_bodies<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    bodies: &mut [super::Body<'tcx>],
+    cloned: &IndexSet<ty::Ty<'tcx>>,
+) {
     results_in_place(tcx, bodies, cloned);
     resumes_as_given(tcx, bodies);
 }
@@ -393,8 +397,8 @@ pub(super) fn across_bodies<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'
 /// (`in_place_adapters`), its facts made again so. Not one held, std's
 /// compiled `FlatMap`, which steps what it gives as std's struct, its
 /// `next_back` too (#726). Before lowering, of the crate's bodies.
-fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>], cloned: &HashSet<ty::Ty<'tcx>>) {
-    let mut given = HashSet::new();
+fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>], cloned: &IndexSet<ty::Ty<'tcx>>) {
+    let mut given = IndexSet::default();
     for body in bodies.iter() {
         for e in body.thir.exprs.iter() {
             if let ExprKind::Call {
@@ -431,7 +435,7 @@ fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>], c
 /// Whether `ty` is an adapter of two parts the crate clones apart, its
 /// `chain()`'s or `map()`'s cloned: made by a function of its parts, which
 /// holds them (ADR 0525).
-fn cloned_apart<'tcx>(tcx: TyCtxt<'tcx>, cloned: &HashSet<ty::Ty<'tcx>>, ty: ty::Ty<'tcx>) -> bool {
+fn cloned_apart<'tcx>(tcx: TyCtxt<'tcx>, cloned: &IndexSet<ty::Ty<'tcx>>, ty: ty::Ty<'tcx>) -> bool {
     super::recognition::cloned_parts(tcx, ty).is_some() && cloned.contains(&tcx.erase_and_anonymize_regions(ty))
 }
 
@@ -573,7 +577,7 @@ pub(super) fn null_written_fields(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId
                 if is_cell(e) && matches!(args[..], [arg] if is_null(arg)))
     };
     // What each variable is made of, `let slot = &mut fiber.name;`.
-    let made: HashMap<LocalVarId, ExprId> = (thir.stmts.iter())
+    let made: IndexMap<LocalVarId, ExprId> = (thir.stmts.iter())
         .filter_map(|stmt| match stmt.kind {
             thir::StmtKind::Let {
                 ref pattern,
@@ -691,7 +695,7 @@ pub(super) fn reads_statics(tcx: TyCtxt<'_>, thir: &Thir<'_>, module: LocalModId
 /// `2^31` or more as a `usize`, past `isize::MAX` bytes of text that isn't
 /// empty, which std panics of and JS's `repeat` throws its `RangeError` of,
 /// as it does of a negative count.
-fn repeat_counts<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<ExprId> {
+fn repeat_counts<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<ExprId> {
     let pointer_bits = tcx.data_layout.pointer_size().bits();
     // Text written, `"  "`, through each borrow of it.
     let text_of = |mut e: ExprId| loop {
@@ -730,7 +734,7 @@ fn repeat_counts<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<ExprId> 
 /// made there as structs or defaults: JSX takes them apart (ADR 0213); and
 /// what's a base of them, `..props.html`, where a flattened field read
 /// whole is the object its parent is, `{...props}`.
-fn jsx_given_props<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<ExprId>, HashSet<ExprId>) {
+fn jsx_given_props<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (IndexSet<ExprId>, IndexSet<ExprId>) {
     let mut made = Vec::new();
     for expr in thir.exprs.iter() {
         if let ExprKind::Call { fun, ref args, .. } = expr.kind
@@ -741,7 +745,7 @@ fn jsx_given_props<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<ExprI
             made.push(strip(thir, given));
         }
     }
-    let (mut props, mut bases) = (HashSet::new(), HashSet::new());
+    let (mut props, mut bases) = (IndexSet::default(), IndexSet::default());
     while let Some(e) = made.pop() {
         props.insert(e);
         if let ExprKind::Adt(ref adt) = thir[e].kind {
@@ -761,8 +765,8 @@ fn jsx_given_props<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<ExprI
 
 /// The `const`s `thir` names: read, `URGENT_LANES`, and tested, a
 /// pattern's, `IMMEDIATE_PRIORITY =>`, which a test names too (ADR 0590).
-pub(super) fn consts_named(thir: &Thir<'_>) -> HashSet<DefId> {
-    let mut named: HashSet<DefId> = (thir.exprs.iter())
+pub(super) fn consts_named(thir: &Thir<'_>) -> IndexSet<DefId> {
+    let mut named: IndexSet<DefId> = (thir.exprs.iter())
         .filter_map(|e| match e.kind {
             ExprKind::NamedConst { def_id, .. } => Some(def_id),
             _ => None,
@@ -836,7 +840,7 @@ pub(super) fn constant_integer<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty:
 }
 
 /// Each call `given_present` says is of what's there: its `fn_span`.
-fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
+fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
     (thir.exprs.indices())
         .filter_map(|e| given_present(tcx, thir, e))
         .collect()
@@ -859,8 +863,8 @@ fn in_place_adapters<'tcx>(
     tcx: TyCtxt<'tcx>,
     thir: &Thir<'tcx>,
     stepped_result: Option<ExprId>,
-    cloned: &HashSet<ty::Ty<'tcx>>,
-) -> HashSet<Span> {
+    cloned: &IndexSet<ty::Ty<'tcx>>,
+) -> IndexSet<Span> {
     use super::recognition::{StdItem, std_item};
     let iterator_traits = [std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator)];
     // `cycle()`, which holds what it's given and clones it, as std's
@@ -926,7 +930,7 @@ fn in_place_adapters<'tcx>(
     // `rev()` of a zip is, `$rev($zipEnds(..))`, whatever its source is
     // (#400, #740).
     let sized = |maker: DefId| super::recognition::sized_in_place(tcx, maker);
-    let steps_as_js = |callee: DefId, index: usize, in_place: &HashSet<Span>, at: Span, maker: DefId| {
+    let steps_as_js = |callee: DefId, index: usize, in_place: &IndexSet<Span>, at: Span, maker: DefId| {
         // Another of them, itself made in place, `enumerate().rev()`'s: in
         // place too.
         if super::recognition::makes_held_compiled(tcx, callee) {
@@ -949,7 +953,7 @@ fn in_place_adapters<'tcx>(
         super::iterators::bound_as_iterator(tcx, callee, param)
             && (std || callee.is_local() && !super::iterators::given_as_it_is(tcx, callee, param))
     };
-    let mut found = HashSet::new();
+    let mut found = IndexSet::default();
     // What a closure gives that's stepped where it's given, `flat_map`'s:
     // made in place, as one given to it would be.
     if let Some(result) = stepped_result.map(|e| tail(thir, e))
@@ -963,7 +967,7 @@ fn in_place_adapters<'tcx>(
     // a `for` loop's `into_iter`, a `by_ref()` whose `&mut` they step, or
     // `drop`, never given anywhere else: nothing tells what it is, so it's
     // what the recognizers make of it too, `s.entries()`.
-    let made: HashMap<LocalVarId, Span> = (thir.stmts.iter())
+    let made: IndexMap<LocalVarId, Span> = (thir.stmts.iter())
         .filter_map(|stmt| match stmt.kind {
             thir::StmtKind::Let {
                 ref pattern,
@@ -988,7 +992,7 @@ fn in_place_adapters<'tcx>(
         })
         .collect();
 
-    let mut reads: HashMap<LocalVarId, usize> = HashMap::new();
+    let mut reads: IndexMap<LocalVarId, usize> = IndexMap::default();
     for e in thir.exprs.iter() {
         if let ExprKind::VarRef { id } = e.kind
             && made.contains_key(&id)
@@ -1038,8 +1042,8 @@ fn in_place_adapters<'tcx>(
             }
         }
     }
-    let stepped_at: HashMap<ExprId, Span> = js_steps.iter().copied().collect();
-    let mut stepped: HashMap<LocalVarId, Vec<Span>> = HashMap::new();
+    let stepped_at: IndexMap<ExprId, Span> = js_steps.iter().copied().collect();
+    let mut stepped: IndexMap<LocalVarId, Vec<Span>> = IndexMap::default();
     let mut note = |e: ExprId, at: Span| {
         if let ExprKind::VarRef { id } = thir[e].kind
             && made.contains_key(&id)
@@ -1055,7 +1059,7 @@ fn in_place_adapters<'tcx>(
             note(arg, at);
         }
     }
-    let mut made_of: HashMap<LocalVarId, Vec<Span>> = HashMap::new();
+    let mut made_of: IndexMap<LocalVarId, Vec<Span>> = IndexMap::default();
     for &(arg, at) in &makers {
         if let ExprKind::VarRef { id } = thir[arg].kind
             && made.contains_key(&id)
@@ -1101,7 +1105,7 @@ fn in_place_adapters<'tcx>(
 /// `value`, read where it's bound: of a `value` the arm then sets, a copy
 /// of it there, `const value$1 = value;`, as any variable set again is
 /// read where it is (ADR 0853).
-fn held_guards<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
+fn held_guards<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
     // The variable a call of a binding that's its argument, giving an
     // untagged enum, reads: `classify(value)`'s `value`, an `Option` of a
     // reference, whose `None` is `undefined`.
@@ -1166,7 +1170,7 @@ fn held_guards<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
 /// `Some` of them, `Some(REACT_MEMO_TYPE | REACT_LAZY_TYPE)`, binding
 /// nothing. There, no other value is one of them, so the value itself
 /// answers each as its `Some` would (ADR 0634).
-fn registered_reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
+fn registered_reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
     (thir.exprs.indices())
         .filter_map(|e| match thir[e].kind {
             ExprKind::Match {
@@ -1186,7 +1190,7 @@ fn registered_reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span>
 
 /// Where each `==` or `!=` `registered_reads` reads one for is, its
 /// `fn_span`: compared by `===`, whatever the `Some` is (ADR 0771).
-fn registered_equalities<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
+fn registered_equalities<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
     (thir.exprs.indices())
         .filter_map(|e| registered_equality(tcx, thir, e).map(|(_, equality)| equality))
         .chain(

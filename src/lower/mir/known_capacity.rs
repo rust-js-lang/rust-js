@@ -15,10 +15,10 @@ use rustc_span::def_id::DefId;
 impl<'a, 'tcx> crate::lower::recognition::Recognition<'a, 'tcx> {
     /// Of `body`'s calls, each `extend` of a collection whose capacity is
     /// known where it's called, in this typing environment, the body's.
-    pub(in crate::lower) fn known_capacity_extends(&self, body: &mir::Body<'tcx>) -> HashSet<BasicBlock> {
-        let mut known = HashSet::new();
+    pub(in crate::lower) fn known_capacity_extends(&self, body: &mir::Body<'tcx>) -> IndexSet<BasicBlock> {
+        let mut known = IndexSet::default();
         // Each local assigned once by a statement, and what it's assigned.
-        let mut assigned: HashMap<Local, Option<&Rvalue<'tcx>>> = HashMap::new();
+        let mut assigned: IndexMap<Local, Option<&Rvalue<'tcx>>> = IndexMap::default();
         for data in body.basic_blocks.iter() {
             for statement in &data.statements {
                 if let StatementKind::Assign(assign) = &statement.kind
@@ -127,7 +127,7 @@ impl<'a, 'tcx> crate::lower::recognition::Recognition<'a, 'tcx> {
     /// `reserve` as what it's called on.
     fn lent_to_capacity_calls(&self, body: &mir::Body<'tcx>, reference: Local) -> bool {
         // The references, `reference` and what reborrows or copies one.
-        let mut refs: HashSet<Local> = HashSet::from([reference]);
+        let mut refs: IndexSet<Local> = IndexSet::from_iter([reference]);
         loop {
             let before = refs.len();
             for data in body.basic_blocks.iter() {

@@ -65,9 +65,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a default import is named as its item is, `import Memoized`, not as the importer's `use .. as Label` names it",
     file: "src/lower/pipeline/crate_imports.rs",
-    find: "                renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),",
+    find: "                renamed_in(tcx, from).swap_remove(&id).unwrap_or_else(|| name.clone()),",
     replace:
-      "                (crate::lower::default_exports::defaults(tcx).into_iter().any(|(_, item)| item == id)).then(|| name.clone()).unwrap_or_else(|| renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone())),",
+      "                (crate::lower::default_exports::defaults(tcx).into_iter().any(|(_, item)| item == id)).then(|| name.clone()).unwrap_or_else(|| renamed_in(tcx, from).swap_remove(&id).unwrap_or_else(|| name.clone())),",
     tests: [
       "test/declarations.test.ts",
       "-t",
@@ -79,9 +79,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `use` that renames another module's function imports it by its own name",
     file: "src/lower/pipeline/crate_imports.rs",
-    find: "                renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),",
+    find: "                renamed_in(tcx, from).swap_remove(&id).unwrap_or_else(|| name.clone()),",
     replace:
-      "                (!crate::lower::default_exports::defaults(tcx).into_iter().any(|(_, item)| item == id)).then(|| name.clone()).unwrap_or_else(|| renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone())),",
+      "                (!crate::lower::default_exports::defaults(tcx).into_iter().any(|(_, item)| item == id)).then(|| name.clone()).unwrap_or_else(|| renamed_in(tcx, from).swap_remove(&id).unwrap_or_else(|| name.clone())),",
     tests: ["test/modules.test.ts", "-t", "renames another module's function"],
   },
   {

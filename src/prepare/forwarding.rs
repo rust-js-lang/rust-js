@@ -3,8 +3,8 @@
 //! function: the variable by the function's name, or the value taken apart
 //! where it's made (ADR 0610, amended).
 
+use crate::collections::IndexSet;
 use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
-use std::collections::HashSet;
 
 /// `function getTime(n) { return GET_TIME(n); }`, a function that only
 /// calls a module variable's function with its parameters, a thread-local's
@@ -224,7 +224,7 @@ pub(super) fn fields(module: &mut js::Module) {
             None => by_value.push((value.clone(), vec![taken])),
         }
     }
-    let mut gone = HashSet::new();
+    let mut gone = IndexSet::default();
     for (value, fields) in by_value {
         let at = module
             .items
@@ -281,7 +281,7 @@ pub(super) fn fields(module: &mut js::Module) {
 /// { react_stack_bottom_frame: .. }`, data upstream keeps by its name
 /// (#584).
 pub(super) fn members(module: &mut js::Module) {
-    let mut names: HashSet<String> = HashSet::new();
+    let mut names: IndexSet<String> = IndexSet::default();
     for item in &module.items {
         match item {
             js::Item::Const(constant) => {

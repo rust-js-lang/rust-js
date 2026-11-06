@@ -3,6 +3,7 @@
 //! place knows where it's spilled (#769).
 
 use super::*;
+use crate::collections::IndexMap;
 
 impl<'tcx> FnCx<'_, 'tcx> {
     /// Each temporary a call the source writes by its name makes, `_5` of
@@ -13,9 +14,9 @@ impl<'tcx> FnCx<'_, 'tcx> {
     pub(in crate::lower::mir) fn calls_named_in_source(
         &self,
         mir_body: &mir::Body<'tcx>,
-    ) -> std::collections::HashMap<Local, rustc_span::def_id::DefId> {
+    ) -> IndexMap<Local, rustc_span::def_id::DefId> {
         let source = self.tcx.sess.source_map();
-        let mut called = std::collections::HashMap::new();
+        let mut called = IndexMap::default();
         for data in mir_body.basic_blocks.iter() {
             if let TerminatorKind::Call {
                 func,
@@ -43,10 +44,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
     /// `option`, as before #769. A binding read as a property, `get G`'s
     /// `g()`, `ReactSharedInternals.G` in JS, which calls nothing, is
     /// `read`: it names it only where no closure's parameter does (#784).
-    pub(in crate::lower::mir) fn named_by_their_call(
-        &self,
-        mir_body: &mir::Body<'tcx>,
-    ) -> std::collections::HashMap<Local, js::Held> {
+    pub(in crate::lower::mir) fn named_by_their_call(&self, mir_body: &mir::Body<'tcx>) -> IndexMap<Local, js::Held> {
         let tcx = self.tcx;
         let optional = |def_id| crate::lower::recognition::is_option_or_result_method(tcx, def_id);
         let read = |def_id| {

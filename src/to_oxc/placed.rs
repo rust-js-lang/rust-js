@@ -16,8 +16,7 @@
 //! own, not the outer one's, which oxc would print them before (rd630):
 //! at a place of its own, mapped to nothing, as the outer one maps its start.
 
-use std::collections::{HashMap, HashSet};
-
+use crate::collections::{IndexMap, IndexSet};
 use oxc_ast::AstKind;
 use oxc_ast::ast::{BlockStatement, Function, FunctionBody, Statement, SwitchCase};
 use oxc_ast_visit::{Visit, VisitMut};
@@ -31,7 +30,7 @@ use oxc_syntax::scope::ScopeFlags;
 /// none of `keys`, where comments are (`comments_of`), nor where a node
 /// starts, nor another's. Where each was written, the place of the first
 /// printed there, which its comments are at.
-pub(super) fn placed(body: &mut [Statement<'_>], keys: HashSet<u32>) -> HashMap<u32, u32> {
+pub(super) fn placed(body: &mut [Statement<'_>], keys: IndexSet<u32>) -> IndexMap<u32, u32> {
     let mut starts = Starts {
         keys,
         function: None,
@@ -42,8 +41,8 @@ pub(super) fn placed(body: &mut [Statement<'_>], keys: HashSet<u32>) -> HashMap<
         function: None,
         after: 0,
         keys: starts.keys,
-        here: HashMap::new(),
-        moved: HashMap::new(),
+        here: IndexMap::default(),
+        moved: IndexMap::default(),
     };
     if starts.copied {
         body.iter_mut().for_each(|statement| placing.visit_statement(statement));
@@ -54,7 +53,7 @@ pub(super) fn placed(body: &mut [Statement<'_>], keys: HashSet<u32>) -> HashMap<
 /// Where comments are and nodes start, whose comments oxc prints there;
 /// and whether a function has a statement written past it.
 struct Starts {
-    keys: HashSet<u32>,
+    keys: IndexSet<u32>,
     function: Option<Span>,
     copied: bool,
 }
@@ -91,9 +90,9 @@ fn past(function: Option<Span>, at: u32) -> bool {
 struct Placing {
     function: Option<Span>,
     after: u32,
-    keys: HashSet<u32>,
-    here: HashMap<u32, u32>,
-    moved: HashMap<u32, u32>,
+    keys: IndexSet<u32>,
+    here: IndexMap<u32, u32>,
+    moved: IndexMap<u32, u32>,
 }
 
 impl Placing {
@@ -169,7 +168,7 @@ impl<'a> VisitMut<'a> for Placing {
 /// Of `body`, each statement of `spans`, by its span, at a place of its
 /// own, none of `keys` nor where a node starts: what each was given, none
 /// where none is printed.
-pub(super) fn own_places(body: &mut [Statement<'_>], keys: HashSet<u32>, spans: &[(u32, u32)]) -> Vec<Option<u32>> {
+pub(super) fn own_places(body: &mut [Statement<'_>], keys: IndexSet<u32>, spans: &[(u32, u32)]) -> Vec<Option<u32>> {
     if spans.is_empty() {
         return Vec::new();
     }
@@ -191,7 +190,7 @@ pub(super) fn own_places(body: &mut [Statement<'_>], keys: HashSet<u32>, spans: 
 /// Where comments are and nodes start, the statements given places of
 /// their own, and what each was given.
 struct Owning<'s> {
-    keys: HashSet<u32>,
+    keys: IndexSet<u32>,
     spans: &'s [(u32, u32)],
     given: Vec<Option<u32>>,
 }

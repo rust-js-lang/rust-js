@@ -494,7 +494,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn hold_refs_through(&mut self, state: &mut State<'_, 'tcx>, local: Local, out: &mut Vec<Stmt>) -> R<()> {
         let name = state.locals.names[local].clone();
         let at = state.location();
-        let read: HashSet<Local> = (state.refs.iter())
+        let read: IndexSet<Local> = (state.refs.iter())
             .chain(state.in_place.iter())
             .filter(|(_, target)| root_var(target) == Some(name.as_str()))
             .map(|(&l, _)| l)

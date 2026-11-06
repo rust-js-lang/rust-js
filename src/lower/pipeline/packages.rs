@@ -6,11 +6,12 @@
 use super::super::analysis::UsesWritten;
 use super::super::bindings::Export;
 use super::super::library::Foreign;
+use crate::collections::{IndexMap, IndexSet};
 use crate::js;
 use crate::program::LoweredModule;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalModId};
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::BTreeMap;
 
 /// What `module` imports of each JS module, `imported`'s of it and what its
 /// lowering `used`, each by its local name in `names`, its `import` where
@@ -22,12 +23,12 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 pub(super) fn of_module(
     tcx: TyCtxt<'_>,
     module: LocalModId,
-    imported: &BTreeMap<Export, HashSet<LocalModId>>,
+    imported: &BTreeMap<Export, IndexSet<LocalModId>>,
     used: &dyn Fn(&Export) -> bool,
-    names: &HashMap<Export, String>,
+    names: &IndexMap<Export, String>,
     (uses, foreign): (&UsesWritten, &Foreign<'_, '_>),
     written: &dyn Fn(Option<rustc_span::Span>) -> js::Span,
-) -> (Vec<js::Package>, HashSet<String>) {
+) -> (Vec<js::Package>, IndexSet<String>) {
     type Use = Option<(rustc_span::BytePos, rustc_span::BytePos)>;
     let mut packages: BTreeMap<(&str, Use), js::Package> = BTreeMap::new();
     for export in imported
@@ -63,7 +64,7 @@ pub(super) fn of_module(
     // span the `js::import!`, as a `use`'s is its `use`, so the comments
     // above it are before its import (rd666, ADR 1069, amended); placed
     // nowhere, so it loads where ADR 1063 orders it, after what's named.
-    let mut loaded = HashSet::new();
+    let mut loaded = IndexSet::default();
     for attr in super::super::bindings::marks(tcx, module, "import") {
         let Some(from) = attr.value_str().map(|s| s.to_string()) else {
             tcx.dcx()
@@ -93,11 +94,11 @@ pub(super) fn of_module(
 /// it imports for its effects, `loaded`, stays.
 pub(super) fn unread(
     lowered: &mut LoweredModule,
-    (imported, module): (&BTreeMap<Export, HashSet<LocalModId>>, LocalModId),
-    loaded: &HashSet<String>,
-    forwarded: &HashSet<String>,
+    (imported, module): (&BTreeMap<Export, IndexSet<LocalModId>>, LocalModId),
+    loaded: &IndexSet<String>,
+    forwarded: &IndexSet<String>,
 ) {
-    let mut read = HashSet::new();
+    let mut read = IndexSet::default();
     for item in &lowered.items {
         item.visit_vars(&mut |name| {
             read.insert(name.to_string());
@@ -133,10 +134,10 @@ pub(super) fn unread(
 /// left of nothing is gone, but one imported for its effects, `loaded`.
 pub(super) fn through_reexports<'t>(
     packages: &mut Vec<js::Package>,
-    loaded: &HashSet<String>,
+    loaded: &IndexSet<String>,
     through: impl Iterator<Item = (Export, DefId, &'t super::super::reexports::Through)>,
 ) -> Vec<super::crate_imports::Reimported> {
-    let (mut moved, mut emptied) = (Vec::new(), HashSet::new());
+    let (mut moved, mut emptied) = (Vec::new(), IndexSet::default());
     for ((from, export), id, through) in through {
         // Of whichever of the file's imports has it, one of each `use`.
         let local =

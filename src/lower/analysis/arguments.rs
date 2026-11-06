@@ -23,25 +23,25 @@
 //! `function::call` and `function::apply`, which give it the `this` they're
 //! given, too.
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::refusal::{Refused, refuse};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 /// What reads `js::arguments()`: the functions, and of the closures
 /// `function::with_this` makes, each the tuple of its parameters, which
 /// the `dyn Fn` a call of one calls takes (rd509).
 #[derive(Default)]
 pub(in crate::lower) struct ReadsArguments<'tcx> {
-    pub functions: HashSet<DefId>,
-    pub with_this: HashSet<ty::Ty<'tcx>>,
+    pub functions: IndexSet<DefId>,
+    pub with_this: IndexSet<ty::Ty<'tcx>>,
     /// Each closure `function::with_this` makes that reads it.
-    pub made: HashSet<DefId>,
+    pub made: IndexSet<DefId>,
     /// The functions whose own body reads `js::this()` (rd683).
-    pub this: HashSet<DefId>,
+    pub this: IndexSet<DefId>,
 }
 
 impl<'tcx> ReadsArguments<'tcx> {
@@ -78,7 +78,7 @@ pub(in crate::lower) fn reads_arguments<'tcx>(
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
 ) -> ReadsArguments<'tcx> {
     // Each closure `function::with_this` makes, and its parameters' tuple.
-    let mut functions_made: HashMap<DefId, ty::Ty<'tcx>> = HashMap::new();
+    let mut functions_made: IndexMap<DefId, ty::Ty<'tcx>> = IndexMap::default();
     for body in all_bodies {
         for expr in body.thir.exprs.iter() {
             if let ExprKind::Call { fun, ref args, .. } = expr.kind
@@ -155,7 +155,7 @@ pub(in crate::lower) fn reads_arguments<'tcx>(
 fn this_values(tcx: TyCtxt<'_>, body: &Body<'_>, reads_this: &dyn Fn(DefId) -> bool) -> Vec<rustc_span::Span> {
     use crate::lower::body_queries::strip;
     let thir = &body.thir;
-    let mut called = HashSet::new();
+    let mut called = IndexSet::default();
     for expr in thir.exprs.iter() {
         let ExprKind::Call { fun, ref args, .. } = expr.kind else {
             continue;

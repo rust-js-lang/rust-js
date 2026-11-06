@@ -7,8 +7,7 @@
 //! library's private functions that one calls. One that reads the library's
 //! private state, which no other crate can reach, is refused.
 
-use std::collections::{HashMap, HashSet};
-
+use crate::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, TerminatorKind};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
@@ -22,7 +21,7 @@ use super::Body;
 /// to it with their bodies, until none more is needed.
 #[derive(Default)]
 pub struct Instances {
-    placed: HashMap<DefId, LocalModId>,
+    placed: IndexMap<DefId, LocalModId>,
 }
 
 impl Instances {
@@ -92,7 +91,7 @@ pub(super) fn asked(tcx: TyCtxt<'_>, asked: Vec<(DefId, LocalModId)>) -> Vec<(De
 pub(super) struct Copying<'a, 'tcx> {
     recognition: super::recognition::Recognition<'a, 'tcx>,
     changed: super::copies::Changed<'a, 'tcx>,
-    known: std::cell::RefCell<HashMap<DefId, bool>>,
+    known: std::cell::RefCell<IndexMap<DefId, bool>>,
     /// Those being asked, outermost first.
     asking: std::cell::RefCell<Vec<DefId>>,
 }
@@ -175,7 +174,7 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
         // What the crate changes that the body's library doesn't: what the
         // library changes too, its JS copies as Rust does (rd606).
         let library = body.source.def_id().krate;
-        let unshared = |changed: &HashSet<Ty<'tcx>>| -> HashSet<Ty<'tcx>> {
+        let unshared = |changed: &IndexSet<Ty<'tcx>>| -> IndexSet<Ty<'tcx>> {
             (changed.iter())
                 .filter(|&&ty| !self.recognition.foreign.changes(library, ty))
                 .copied()
@@ -323,7 +322,7 @@ pub(super) struct Analyzed<'a, 'tcx> {
         &'a super::analysis::ClosureFacts,
         &'a super::analysis::Counted<'tcx>,
     ),
-    pub(super) drop_params: &'a HashMap<DefId, Vec<u32>>,
+    pub(super) drop_params: &'a IndexMap<DefId, Vec<u32>>,
     /// The type parameters of its own functions given a copy, and a
     /// `Clone` dictionary (ADR 0914, amended).
     pub(super) given: super::traits::Given<'a>,
@@ -339,13 +338,13 @@ struct Calls<'a, 'tcx> {
     /// where it's dropped, as the crate drops it.
     runs: &'a dyn Fn(Ty<'tcx>) -> bool,
     /// The type parameters of the crate's own functions given a drop.
-    drop_params: &'a HashMap<DefId, Vec<u32>>,
+    drop_params: &'a IndexMap<DefId, Vec<u32>>,
     /// The type parameters of the crate's own functions given a copy.
-    copied: &'a HashSet<(DefId, u32)>,
+    copied: &'a IndexSet<(DefId, u32)>,
     /// And given a `Clone` dictionary (ADR 0914, amended).
-    clones: &'a HashSet<(DefId, u32)>,
+    clones: &'a IndexSet<(DefId, u32)>,
     /// And given nothing that may look like `None` (ADR 0051, amended).
-    unboxed: &'a HashSet<(DefId, u32)>,
+    unboxed: &'a IndexSet<(DefId, u32)>,
     /// Whether a value of a type is its own clone, as the crate counts its
     /// `Rc`s.
     clones_itself: &'a dyn Fn(Ty<'tcx>) -> bool,
@@ -389,7 +388,7 @@ pub(super) fn needed<'tcx>(
         clones_itself: &clones_itself,
     };
     let mut more: Vec<(DefId, LocalModId)> = Vec::new();
-    let mut may_drop: HashMap<(DefId, u32), bool> = HashMap::new();
+    let mut may_drop: IndexMap<(DefId, u32), bool> = IndexMap::default();
     for body in bodies {
         let Some(mir) = &body.mir else { continue };
         let caller = tcx.typeck_root_def_id(body.def_id);
@@ -633,7 +632,7 @@ fn gives_more<'tcx>(
     calls: &Calls<'_, 'tcx>,
     (caller, callee, args): (DefId, DefId, ty::GenericArgsRef<'tcx>),
     counted: &dyn Fn(u32) -> bool,
-    may_drop: &mut HashMap<(DefId, u32), bool>,
+    may_drop: &mut IndexMap<(DefId, u32), bool>,
 ) -> bool {
     use crate::library::ParamFact;
     let tcx = calls.tcx;
@@ -674,7 +673,7 @@ fn gives_more<'tcx>(
             || (nullish
                 && counted(index)
                 && takes(index, ParamFact::Unboxed)
-                && body_may_box(calls, (callee, index), &mut HashSet::new()))
+                && body_may_box(calls, (callee, index), &mut IndexSet::default()))
             || (copies && copied.contains(&index) && !takes(index, ParamFact::Copy))
             || (clones && cloned.contains(&index) && !takes(index, ParamFact::Clone))
     })
@@ -688,7 +687,7 @@ fn gives_more<'tcx>(
 fn body_may_drop<'tcx>(
     calls: &Calls<'_, 'tcx>,
     (id, index): (DefId, u32),
-    seen: &mut HashMap<(DefId, u32), bool>,
+    seen: &mut IndexMap<(DefId, u32), bool>,
 ) -> bool {
     if let Some(&known) = seen.get(&(id, index)) {
         return known;
@@ -699,7 +698,7 @@ fn body_may_drop<'tcx>(
     let body = tcx.optimized_mir(id);
     let holds = |ty: Ty<'tcx>| super::drops::owned_params(tcx, ty).contains(&index);
     // The cleanup it may unwind to: from what may throw where it runs.
-    let mut unwound: HashSet<mir::BasicBlock> = HashSet::new();
+    let mut unwound: IndexSet<mir::BasicBlock> = IndexSet::default();
     let mut work: Vec<mir::BasicBlock> = (body.basic_blocks.iter())
         .filter(|data| !data.is_cleanup)
         .filter_map(|data| {
@@ -774,7 +773,7 @@ fn body_may_drop<'tcx>(
 /// fn pointer, which takes it as its own maker's code gives it. So React's
 /// `runWithFiberInDEV(fiber, () => { .. })` of React DOM's, given `()`s,
 /// is the reconciler's export (gap rd75b).
-fn body_may_box<'tcx>(calls: &Calls<'_, 'tcx>, (id, index): (DefId, u32), seen: &mut HashSet<DefId>) -> bool {
+fn body_may_box<'tcx>(calls: &Calls<'_, 'tcx>, (id, index): (DefId, u32), seen: &mut IndexSet<DefId>) -> bool {
     if !seen.insert(id) {
         return false;
     }

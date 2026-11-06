@@ -4,6 +4,7 @@
 //! 0761) and a function kept out of line says so (ADR 0649).
 
 use super::*;
+use crate::collections::{IndexMap, IndexSet};
 
 /// The span of each of `list`'s statements that has one: a temporary
 /// rust-js made has the next's start when it's printed (`push_stmts`).
@@ -16,8 +17,8 @@ fn list_spans(list: &[js::Stmt]) -> impl Iterator<Item = (u32, u32)> + '_ {
 /// Where each of `module`'s functions marked `#[inline(never)]` starts: an
 /// item's, a method's, and one written in a body, `function inner() {
 /// .. }`, however deep (ADR 0649, amended).
-pub(super) fn noinline_starts(module: &Module) -> std::collections::HashSet<u32> {
-    let mut starts = std::collections::HashSet::new();
+pub(super) fn noinline_starts(module: &Module) -> IndexSet<u32> {
+    let mut starts = IndexSet::default();
     let mut note = |f: &js::Function| {
         if f.noinline && !f.span.is_none() {
             starts.insert(f.span.lo);
@@ -49,8 +50,8 @@ pub(super) fn noinline_starts(module: &Module) -> std::collections::HashSet<u32>
 /// after it but another such function (`Function::set_apart`, ADR 1043);
 /// and an ES class's first member after its field declarations, apart
 /// from them as upstream's and Prettier's are (rd731).
-pub(super) fn set_apart_starts(module: &Module) -> std::collections::HashSet<u32> {
-    let mut starts = std::collections::HashSet::new();
+pub(super) fn set_apart_starts(module: &Module) -> IndexSet<u32> {
+    let mut starts = IndexSet::default();
     for item in &module.items {
         if let js::Item::Namespace(n) = item
             && n.class.as_ref().is_some_and(|class| !class.fields.is_empty())
@@ -85,11 +86,7 @@ pub(super) fn set_apart_starts(module: &Module) -> std::collections::HashSet<u32
 /// What `statement_spans` gives: each statement's span, where the comments
 /// each block ends with are, and of those a block holds before a statement,
 /// where that one starts.
-pub(super) type Spans = (
-    Vec<(u32, u32)>,
-    std::collections::HashSet<u32>,
-    std::collections::HashMap<u32, u32>,
-);
+pub(super) type Spans = (Vec<(u32, u32)>, IndexSet<u32>, IndexMap<u32, u32>);
 
 pub(super) fn bodies(module: &Module) -> Vec<Vec<js::Stmt>> {
     (module.items.iter())

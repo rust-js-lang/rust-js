@@ -4,13 +4,13 @@
 
 use super::recognition::StdItem;
 use super::{FnCx, Shape};
+use crate::collections::IndexSet;
 use crate::js;
 use crate::js::{Expr, Op, Prop};
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty;
 use rustc_middle::ty::{Ty, TyCtxt};
-use std::collections::HashSet;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A fresh `ty` value equal to the one at `place`: `{ ...p }`, `[t[0], t[1]]`.
@@ -464,8 +464,8 @@ pub(super) fn instance_of<'tcx>(
 /// changes, and the `Vec`s.
 #[derive(Clone, Copy)]
 pub(super) struct Changed<'a, 'tcx> {
-    pub(super) mutated: &'a HashSet<Ty<'tcx>>,
-    pub(super) vecs: &'a HashSet<Ty<'tcx>>,
+    pub(super) mutated: &'a IndexSet<Ty<'tcx>>,
+    pub(super) vecs: &'a IndexSet<Ty<'tcx>>,
 }
 
 /// May a value of `ty` hold, by value, not behind a reference, what the

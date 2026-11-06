@@ -21,7 +21,7 @@ const layers = {
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
   owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs", "src/js/",
     "src/prepare.rs", "src/prepare/", "src/output.rs", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
-    "src/paths.rs", "src/packages.rs"],
+    "src/paths.rs", "src/packages.rs", "src/collections.rs"],
   printing: ["src/to_oxc.rs", "src/to_oxc/", "src/format.rs", "src/typescript.rs", "src/prettier.rs", "src/node_session.rs"],
 };
 const layerOf = (file: string) =>
@@ -207,8 +207,10 @@ test("the front end uses no phase after it", () => {
 });
 
 test("owned compiler output and downstream phases do not depend on rustc", () => {
+  // But rustc-hash, a crate of its own that rustc's crates use too, the
+  // hasher of the compiler's maps (ADR 1098).
   for (const file of sources.filter(file => layerOf(file) === "owned" || layerOf(file) === "printing")) {
-    expect(read(file), file).not.toMatch(/\brustc_\w+/);
+    expect(read(file), file).not.toMatch(/\brustc_(?!hash::)\w+/);
   }
 });
 
@@ -1175,7 +1177,7 @@ test("a type known by its bounds is one by known_by_bounds alone", () => {
 // `body_queries` gives no whole body's set or map but through `BodyFacts`.
 test("a whole body's facts are its BodyFacts, read once", () => {
   const source = read("src/lower/body_queries.rs");
-  const signature = /^(pub(?:\([^)]*\))? )?fn (\w+)<'tcx>\([^)]*thir: &Thir<'tcx>[^)]*\)\s*->\s*\(?Hash(?:Set|Map)/gm;
+  const signature = /^(pub(?:\([^)]*\))? )?fn (\w+)<'tcx>\([^)]*thir: &Thir<'tcx>[^)]*\)\s*->\s*\(?Index(?:Set|Map)/gm;
   const queries = [...source.matchAll(signature)];
   expect(queries.length).toBeGreaterThan(5);
   expect(queries.filter((query) => query[1]).map((query) => query[2])).toEqual([]);

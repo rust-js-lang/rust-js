@@ -8,6 +8,7 @@
 
 use super::super::strip;
 use super::Slice;
+use crate::collections::IndexSet;
 use crate::lower::fn_def;
 use crate::lower::recognition::{is_pointer_new, is_rc_clone, is_rc_deref, is_std_crate, once_method};
 use crate::lower::std_types::once::OnceOp;
@@ -15,14 +16,13 @@ use rustc_hir::{BindingMode, ByRef};
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, PatKind, StmtKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt};
-use std::collections::HashSet;
 
 /// The reads of variables that give nothing their cells: the variable a
 /// `get()` or a `set()` is of a cell of, and in a `let` that binds one
 /// variable, each variable it's made of (`made_of`), whose cells the one
 /// it binds then reaches.
-pub(super) fn quiet_reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<ExprId> {
-    let mut quiet = HashSet::new();
+pub(super) fn quiet_reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<ExprId> {
+    let mut quiet = IndexSet::default();
     for stmt in thir.stmts.iter() {
         if let StmtKind::Let {
             ref pattern,
@@ -177,7 +177,7 @@ pub(super) fn cell_place<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: Expr
 /// destructor of the crate's or a binding's, or one rust-js can't see, a
 /// `dyn`'s or a type parameter's. std's own run none but their items'.
 pub(super) fn drop_runs_code<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
-    let mut seen = HashSet::new();
+    let mut seen = IndexSet::default();
     let mut work = vec![ty];
     while let Some(ty) = work.pop() {
         if !ty.needs_drop(tcx, typing_env) || !seen.insert(ty) {

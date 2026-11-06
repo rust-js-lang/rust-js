@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     breaks:
       "whether a type is inside itself is read from answers cached where another was outermost, which say nothing of what they reach",
     file: "src/lower/drops/types.rs",
-    find: "            visited: Some(HashSet::new()),\n",
+    find: "            visited: Some(IndexSet::default()),\n",
     replace: "            visited: None,\n",
     tests: ["test/corpus.test.ts", "-t", "^trie_of_counted_rcs.rs$"],
   },

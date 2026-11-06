@@ -2,6 +2,7 @@
 //! body alone.
 
 use super::*;
+use crate::collections::IndexSet;
 
 /// Whether `local`, an enum, is written once, by the call that ends a
 /// block, and read only as its test and its `variant`'s payload: by its
@@ -68,7 +69,7 @@ pub(super) fn once_each_way(body: &mir::Body<'_>, local: Local) -> bool {
             at.push(block);
         }
     }
-    let mut seen = std::collections::HashSet::new();
+    let mut seen = IndexSet::default();
     for (i, &block) in at.iter().enumerate() {
         if at[i + 1..].contains(&block) {
             return false;
@@ -398,7 +399,7 @@ fn read_in(body: &mir::Body<'_>, from: BasicBlock, start: usize, local: Local) -
         }
     }
     // Each block from its start, `from`'s too where a way goes back to it.
-    let mut seen = std::collections::HashSet::new();
+    let mut seen = IndexSet::default();
     let mut next = vec![(from, start)];
     'blocks: while let Some((block, start)) = next.pop() {
         if !seen.insert((block, start)) {
@@ -475,14 +476,14 @@ pub(super) fn written_before_read(body: &mir::Body<'_>, at: mir::Location, root:
     };
     uses.visit_body(body);
     // The blocks reached from `at`, and those that reach a read.
-    let mut reached = std::collections::HashSet::new();
+    let mut reached = IndexSet::default();
     let mut next: Vec<BasicBlock> = body.basic_blocks[at.block].terminator().successors().collect();
     while let Some(block) = next.pop() {
         if reached.insert(block) {
             next.extend(body.basic_blocks[block].terminator().successors());
         }
     }
-    let mut reaching = std::collections::HashSet::new();
+    let mut reaching = IndexSet::default();
     let mut next: Vec<BasicBlock> = uses.reads.iter().map(|read| read.block).collect();
     while let Some(block) = next.pop() {
         if reaching.insert(block) {
@@ -535,7 +536,7 @@ pub(super) fn written_before_its_read(body: &mir::Body<'_>, at: mir::Location, r
         }
         (uses.reads, uses.writes)
     };
-    let mut seen = std::collections::HashSet::new();
+    let mut seen = IndexSet::default();
     let mut next = vec![(at.block, at.statement_index + 1, false)];
     while let Some((block, from, mut written)) = next.pop() {
         let data = &body.basic_blocks[block];
@@ -575,7 +576,7 @@ pub(super) fn through_held_reference<'tcx>(body: &mir::Body<'tcx>, tcx: ty::TyCt
 
 /// Whether `local` is assigned in `from`, or a block it goes on to.
 pub(super) fn written_from(body: &mir::Body<'_>, from: BasicBlock, local: Local) -> bool {
-    let mut seen = std::collections::HashSet::new();
+    let mut seen = IndexSet::default();
     let mut next = vec![from];
     while let Some(block) = next.pop() {
         if !seen.insert(block) {
@@ -640,7 +641,7 @@ pub(super) fn read_before_written<'tcx>(
         visit(&mut names);
         names.found
     };
-    let mut seen = HashSet::new();
+    let mut seen = IndexSet::default();
     let mut next = vec![(at.block, at.statement_index + 1)];
     while let Some((block, from)) = next.pop() {
         if !seen.insert((block, from)) {
@@ -756,7 +757,7 @@ fn written_within(body: &mir::Body<'_>, block: BasicBlock, depth: usize) -> Opti
 /// `match`'s arm of only that, `Params(_) => unsafe { unreachable_unchecked()
 /// }`, past the edge its test goes on by (ADR 0399, amended).
 pub(super) fn is_unreachable(body: &mir::Body<'_>, block: BasicBlock) -> bool {
-    let mut seen = HashSet::new();
+    let mut seen = IndexSet::default();
     let mut block = block;
     loop {
         let data = &body.basic_blocks[block];
@@ -1446,7 +1447,7 @@ pub(super) fn call_part(e: &Expr) -> &Expr {
 
 /// The locals `body`'s closures take by value where they're made,
 /// `{closure}(copy _5)`.
-pub(super) fn captured_by_closures(body: &mir::Body<'_>) -> std::collections::HashSet<Local> {
+pub(super) fn captured_by_closures(body: &mir::Body<'_>) -> IndexSet<Local> {
     (body.basic_blocks.iter())
         .flat_map(|block| &block.statements)
         .filter_map(|stmt| match &stmt.kind {

@@ -3,10 +3,10 @@
 //! (event,))`, JS's `listener.handleEvent(event)`, of a value of any shape
 //! and a key, or of a value and a binding's method.
 
+use crate::collections::IndexSet;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Thir};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
-use std::collections::HashSet;
 
 use super::strip;
 use crate::lower::bindings::{self, JsForm};
@@ -20,8 +20,8 @@ use crate::lower::recognition::is_function_call;
 /// the JS reads the method in place of the variable it's given
 /// (`Expr::own_method_call`); a key's read is what's read of it nowhere
 /// else (`mir_keyed_method`).
-pub(in crate::lower) fn method_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<Span>, HashSet<Span>) {
-    let (mut calls, mut methods) = (HashSet::new(), HashSet::new());
+pub(in crate::lower) fn method_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (IndexSet<Span>, IndexSet<Span>) {
+    let (mut calls, mut methods) = (IndexSet::default(), IndexSet::default());
     for expr in thir.exprs.iter() {
         let ExprKind::Call {
             fun, ref args, fn_span, ..

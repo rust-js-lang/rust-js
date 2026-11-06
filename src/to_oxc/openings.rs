@@ -2,7 +2,7 @@
 //! its own, so a comment before it is the statement's: whole statements,
 //! and a block's opening, an `unsafe`'s, a macro's or a `match`'s.
 
-use std::collections::HashSet;
+use crate::collections::IndexSet;
 
 /// The whole statements `code` starts with, each trimmed, each ending in a
 /// `;` outside its brackets, and what's after them: the next's start, or
@@ -62,7 +62,7 @@ pub(super) fn whole_arm(code: &str) -> bool {
 pub(super) fn arm_test_starts(
     text: &str,
     starts: &[u32],
-    (case_values, firsts): (&HashSet<u32>, &HashSet<u32>),
+    (case_values, firsts): (&IndexSet<u32>, &IndexSet<u32>),
     comments_only: impl Fn(u32, u32) -> bool,
 ) -> Option<usize> {
     let piece = |w: &[u32]| text.get(w[0] as usize..w[1] as usize);

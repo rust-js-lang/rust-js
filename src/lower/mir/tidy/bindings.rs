@@ -10,7 +10,7 @@ use super::*;
 /// the place it writes, a copy apart of it too, `$apart(dest.value)` (#527):
 /// `task.callback = next;`. Not another read, which may be a binding's
 /// getter, `el.offsetWidth`, which lays the page out.
-pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &HashMap<String, usize>) {
+pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &IndexMap<String, usize>) {
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::Const(name, value) = &stmts[i].kind
@@ -90,7 +90,7 @@ pub(super) fn only_read(stmts: &[Stmt], name: &str) -> bool {
 /// else so, `(value) => f(value)`, as JS's arrows shadow: once nothing's
 /// left to name. Not a name of the module's, which a closure's parameters
 /// stay apart from.
-pub(in crate::lower::mir) fn unsuffixed_params(body: &mut [Stmt], module: &HashSet<String>) {
+pub(in crate::lower::mir) fn unsuffixed_params(body: &mut [Stmt], module: &IndexSet<String>) {
     js::each_expr_mut(body, &mut |e| {
         let (ExprKind::Arrow(params, inner) | ExprKind::AsyncArrow(params, inner)) = &mut e.kind else {
             return;
@@ -101,7 +101,7 @@ pub(in crate::lower::mir) fn unsuffixed_params(body: &mut [Stmt], module: &HashS
                 let Some((base, _)) = crate::names::apart(&name) else {
                     continue;
                 };
-                let mut named = HashSet::new();
+                let mut named = IndexSet::default();
                 js::names_in(inner, &mut named);
                 named.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
                 if named.contains(base) || module.contains(base) {
@@ -156,7 +156,7 @@ pub(in crate::lower::mir) fn is_temporary(name: &str) -> bool {
 /// `let mut name`; one read nowhere, gone. A closure neither reads a
 /// temporary, its captures its own `const`s, nor sets what one's of between,
 /// which Rust's borrows forbid.
-pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &HashSet<String>) {
+pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<String>) {
     js::statement_lists(body, &mut |stmts| {
         let mut i = 0;
         while i < stmts.len() {
@@ -306,7 +306,7 @@ pub(super) fn last_assigns(stmts: &[Stmt], t: &str) -> bool {
 /// a temporary or what an element reads: `q.title` where `t` is read, each
 /// time. Not a read a getter may answer, which may give another value each
 /// time it's read (`Expr::reads_same`, #189).
-pub(super) fn plain_reads(stmts: &mut Vec<Stmt>, plain: &HashSet<String>, captured: &HashSet<String>) {
+pub(super) fn plain_reads(stmts: &mut Vec<Stmt>, plain: &IndexSet<String>, captured: &IndexSet<String>) {
     let mut i = 0;
     while i < stmts.len() {
         let read = match &stmts[i].kind {
@@ -345,7 +345,7 @@ pub(super) fn plain_reads(stmts: &mut Vec<Stmt>, plain: &HashSet<String>, captur
 /// where nothing else is named so: `const current = e;`, read by that name.
 pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
     // How often each name is declared, and read, in the whole body.
-    let mut declared: HashMap<String, usize> = HashMap::new();
+    let mut declared: IndexMap<String, usize> = IndexMap::default();
     js::each_list(body, &mut |stmts| {
         for stmt in stmts.iter() {
             let names = match &stmt.kind {
@@ -358,7 +358,7 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             }
         }
     });
-    let mut reads: HashMap<String, usize> = HashMap::new();
+    let mut reads: IndexMap<String, usize> = IndexMap::default();
     js::visit_stmts(body, &mut |name| *reads.entry(name.to_string()).or_default() += 1);
     js::statement_lists(body, &mut |stmts| {
         // What it takes goes from after it: the list shortens.
@@ -507,7 +507,7 @@ pub(super) fn dropping(stmts: &mut Vec<Stmt>, a: &str, b: &str) {
 /// `let c; if (t) { c = e; }`, what MIR made of an element only where its
 /// test holds, ahead of a later child, read once: `const c = t ? e :
 /// undefined;`, which reads as one, and is read in place as one.
-pub(super) fn guarded_lets(stmts: &mut Vec<Stmt>, captured: &HashSet<String>) {
+pub(super) fn guarded_lets(stmts: &mut Vec<Stmt>, captured: &IndexSet<String>) {
     let mut i = 0;
     while i + 2 < stmts.len() {
         let made = match (&stmts[i].kind, &stmts[i + 1].kind) {
@@ -603,9 +603,9 @@ pub(super) fn in_closure(stmts: &[Stmt], name: &str) -> bool {
 pub(super) fn readable_temporaries(
     params: &[js::Pattern],
     body: &mut Vec<Stmt>,
-    suggested: &HashMap<String, Vec<String>>,
+    suggested: &IndexMap<String, Vec<String>>,
 ) {
-    let mut taken: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
+    let mut taken: IndexSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
     js::names_in(body, &mut taken);
     // And the name each function another module gives this one is imported
     // by, which the link step keeps where no local takes it: a suggested
@@ -617,7 +617,7 @@ pub(super) fn readable_temporaries(
     });
     // What an element is given each as, `href={_5}` or a child, `{_6}`: the
     // prop's name, `href`, or `children`.
-    let mut given: HashMap<String, String> = HashMap::new();
+    let mut given: IndexMap<String, String> = IndexMap::default();
     js::each_expr(body, &mut |e| {
         // A trait object's, `_5.impl.add(_5.value)`: its `receiver`.
         if let ExprKind::Call(callee, _) = &e.kind
@@ -683,7 +683,7 @@ pub(super) fn readable_temporaries(
     // In the order they're first read, as the program reads: one made in a
     // `try` is named before a `let` the function declares first and sets
     // later, `let next; .. next = $next(z);` (ADR 0705).
-    let mut first = HashMap::new();
+    let mut first = IndexMap::default();
     let mut at = 0;
     js::visit_stmts(body, &mut |name| {
         first.entry(name.to_string()).or_insert(at);
@@ -732,9 +732,9 @@ pub(super) fn readable_temporaries(
 /// both (ADR 1009).
 pub(super) fn aliases(
     body: &mut Vec<Stmt>,
-    captured: &HashSet<String>,
-    (params, kept): (&[js::Pattern], &HashSet<String>),
-    (clones, given): (&crate::lower::mir::hints::Clones, &HashSet<String>),
+    captured: &IndexSet<String>,
+    (params, kept): (&[js::Pattern], &IndexSet<String>),
+    (clones, given): (&crate::lower::mir::hints::Clones, &IndexSet<String>),
 ) {
     clone_aliases(body, (params, kept), clones);
     js::statement_lists(body, &mut |stmts| {
@@ -787,10 +787,10 @@ pub(super) fn aliases(
 /// (rd515).
 pub(super) fn clone_aliases(
     body: &mut Vec<Stmt>,
-    (params, kept): (&[js::Pattern], &HashSet<String>),
+    (params, kept): (&[js::Pattern], &IndexSet<String>),
     clones: &crate::lower::mir::hints::Clones,
 ) {
-    let fixed: HashSet<String> = (params.iter())
+    let fixed: IndexSet<String> = (params.iter())
         .flat_map(|param| param.names())
         .chain(kept.iter().map(String::as_str))
         .filter(|name| !rebinds(body, name))
@@ -808,7 +808,7 @@ pub(super) fn clone_aliases(
 /// guard among them, `const old = current;` whose `current` is set again.
 pub(super) fn variable_clones(body: &mut Vec<Stmt>, clones: &crate::lower::mir::hints::Clones) {
     let writes = js::Writes::of(body);
-    let fixed: HashSet<String> = (cloned_from(body, &clones.rcs).into_iter())
+    let fixed: IndexSet<String> = (cloned_from(body, &clones.rcs).into_iter())
         .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace(a))
         .map(|(_, a)| a)
         .collect();
@@ -817,7 +817,7 @@ pub(super) fn variable_clones(body: &mut Vec<Stmt>, clones: &crate::lower::mir::
 
 /// Each `const b = a;` of `body`'s own lists, `b` one of `clones` and `a`
 /// one of `fixed`, gone, `b` read as `a` after it.
-fn clones_read_as(body: &mut Vec<Stmt>, fixed: &HashSet<String>, clones: &HashSet<String>) {
+fn clones_read_as(body: &mut Vec<Stmt>, fixed: &IndexSet<String>, clones: &IndexSet<String>) {
     js::statement_lists(body, &mut |stmts| {
         let mut i = 0;
         while i < stmts.len() {
@@ -845,7 +845,7 @@ fn clones_read_as(body: &mut Vec<Stmt>, fixed: &HashSet<String>, clones: &HashSe
 
 /// Each `const b = a;` of `body`'s own lists that a `clone()` made,
 /// `clones`: `b` and `a`.
-fn cloned_from(body: &mut Vec<Stmt>, clones: &HashSet<String>) -> Vec<(String, String)> {
+fn cloned_from(body: &mut Vec<Stmt>, clones: &IndexSet<String>) -> Vec<(String, String)> {
     let mut found = Vec::new();
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter() {
@@ -1155,12 +1155,12 @@ pub(super) fn declared(stmts: &[Stmt]) -> impl Iterator<Item = &str> {
 /// once, by the statement after it, and nowhere else: each is read where
 /// it's made, as a `const` read once is (`inlined`, ADR 0564). Optimized
 /// MIR's `bool`s are such, a test made and negated along each path to it.
-pub(super) fn paired_temporaries(body: &[Stmt]) -> HashSet<String> {
-    let mut mentions: HashMap<String, usize> = HashMap::new();
+pub(super) fn paired_temporaries(body: &[Stmt]) -> IndexSet<String> {
+    let mut mentions: IndexMap<String, usize> = IndexMap::default();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
-    let mut lets = HashSet::new();
-    let mut pairs: HashMap<String, usize> = HashMap::new();
-    let mut unpaired = HashSet::new();
+    let mut lets = IndexSet::default();
+    let mut pairs: IndexMap<String, usize> = IndexMap::default();
+    let mut unpaired = IndexSet::default();
     js::each_list(body, &mut |list| {
         for (k, stmt) in list.iter().enumerate() {
             match &stmt.kind {
@@ -1192,8 +1192,8 @@ pub(super) fn paired_temporaries(body: &[Stmt]) -> HashSet<String> {
 
 /// What `body`'s closures, the functions it declares and its `&mut`s'
 /// handles read or set: not where they're written, but whenever they run.
-pub(super) fn captured(body: &[Stmt]) -> HashSet<String> {
-    let mut captured = HashSet::new();
+pub(super) fn captured(body: &[Stmt]) -> IndexSet<String> {
+    let mut captured = IndexSet::default();
     let mut insert = |name: &str| _ = captured.insert(name.to_string());
     js::each_expr(body, &mut |e| match &e.kind {
         ExprKind::Arrow(_, stmts) | ExprKind::AsyncArrow(_, stmts) => js::visit_stmts(stmts, &mut insert),
@@ -1226,14 +1226,14 @@ pub(super) fn captured(body: &[Stmt]) -> HashSet<String> {
 /// `return () => listeners.delete(l)` after `listeners = new Set()`
 /// (rd105), unless a loop around both makes it again first.
 pub(super) fn given_last(params: &[js::Pattern], body: &mut Vec<Stmt>) {
-    let mut declared: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
+    let mut declared: IndexSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
     declared_in(body, &mut declared);
-    given_last_in(body, false, (&HashSet::new(), &declared));
+    given_last_in(body, false, (&IndexSet::default(), &declared));
 }
 
 /// What `stmts` declare, in their blocks too: not their closures', which
 /// are their own bodies.
-fn declared_in(stmts: &[Stmt], declared: &mut HashSet<String>) {
+fn declared_in(stmts: &[Stmt], declared: &mut IndexSet<String>) {
     for stmt in stmts {
         match &stmt.kind {
             StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => {
@@ -1271,7 +1271,7 @@ fn declared_in(stmts: &[Stmt], declared: &mut HashSet<String>) {
 /// `given_last` of `stmts`, and of each block in them: in a `try`'s, none.
 /// `made` is what's captured by what's made before `stmts` run, and of the
 /// statements around them, a loop's again before them.
-fn given_last_in(stmts: &mut Vec<Stmt>, in_try: bool, (made, declared): (&HashSet<String>, &HashSet<String>)) {
+fn given_last_in(stmts: &mut Vec<Stmt>, in_try: bool, (made, declared): (&IndexSet<String>, &IndexSet<String>)) {
     if !in_try {
         given_first(stmts, (made, declared));
     }
@@ -1306,7 +1306,7 @@ fn given_last_in(stmts: &mut Vec<Stmt>, in_try: bool, (made, declared): (&HashSe
 
 /// `given_last` of the block `stmts` itself: each variable given a binding
 /// made before it in the block, the binding named nowhere after.
-fn given_first(stmts: &mut Vec<Stmt>, (made, declared): (&HashSet<String>, &HashSet<String>)) {
+fn given_first(stmts: &mut Vec<Stmt>, (made, declared): (&IndexSet<String>, &IndexSet<String>)) {
     let mut given = 0;
     while given < stmts.len() {
         let Some((at, x, y)) = given_from(stmts, given, (made, declared)) else {
@@ -1332,7 +1332,7 @@ fn given_first(stmts: &mut Vec<Stmt>, (made, declared): (&HashSet<String>, &Hash
 fn given_from(
     stmts: &[Stmt],
     given: usize,
-    (made, declared): (&HashSet<String>, &HashSet<String>),
+    (made, declared): (&IndexSet<String>, &IndexSet<String>),
 ) -> Option<(usize, String, String)> {
     let StmtKind::Assign(target, value) = &stmts[given].kind else {
         return None;

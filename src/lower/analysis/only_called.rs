@@ -5,20 +5,20 @@
 //! where it's called: their ranges (ADR 0577), and a `dyn Fn` the crate's
 //! own function fills at each (`passed_on`'s `own_callbacks`, rd616).
 
+use crate::collections::{IndexMap, IndexSet};
 use rustc_hir as hir;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::intravisit::{self, Visitor};
 use rustc_middle::ty::{TyCtxt, TypeckResults};
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 /// Each function only calls reach, by its calls, each the call's
 /// expression, `f(..)` or `x.f(..)`.
-pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>) -> HashMap<DefId, Vec<hir::HirId>> {
+pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>) -> IndexMap<DefId, Vec<hir::HirId>> {
     struct Mentions<'tcx> {
         typeck: &'tcx TypeckResults<'tcx>,
-        calls: HashMap<DefId, Vec<hir::HirId>>,
-        values: HashSet<DefId>,
+        calls: IndexMap<DefId, Vec<hir::HirId>>,
+        values: IndexSet<DefId>,
     }
     impl<'tcx> Mentions<'tcx> {
         fn named(&self, qpath: &hir::QPath<'tcx>, id: hir::HirId) -> Option<DefId> {
@@ -54,8 +54,8 @@ pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>) -> HashMap<DefId, Vec<hir::
             intravisit::walk_expr(self, e);
         }
     }
-    let mut calls: HashMap<DefId, Vec<hir::HirId>> = HashMap::new();
-    let mut values: HashSet<DefId> = HashSet::new();
+    let mut calls: IndexMap<DefId, Vec<hir::HirId>> = IndexMap::default();
+    let mut values: IndexSet<DefId> = IndexSet::default();
     // Not a constant only rustc evaluates, whose calls JS never makes.
     for owner in tcx
         .hir_body_owners()
@@ -63,8 +63,8 @@ pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>) -> HashMap<DefId, Vec<hir::
     {
         let mut mentions = Mentions {
             typeck: tcx.typeck(owner),
-            calls: HashMap::new(),
-            values: HashSet::new(),
+            calls: IndexMap::default(),
+            values: IndexSet::default(),
         };
         mentions.visit_body(tcx.hir_body_owned_by(owner));
         for (def_id, at) in mentions.calls {
@@ -75,7 +75,7 @@ pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>) -> HashMap<DefId, Vec<hir::
     let visibilities = tcx.effective_visibilities(());
     // A module's default export JS imports, though Rust's `pub` doesn't
     // say so: `js::export_default!(page)` of a private `fn page`.
-    let defaults: HashSet<DefId> = (crate::lower::default_exports::defaults(tcx).into_iter())
+    let defaults: IndexSet<DefId> = (crate::lower::default_exports::defaults(tcx).into_iter())
         .map(|(_, item)| item)
         .collect();
     calls.retain(|&def_id, _| {

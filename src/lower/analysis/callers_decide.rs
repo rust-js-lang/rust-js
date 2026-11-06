@@ -17,13 +17,13 @@
 //! Each where stepping runs code: a closure or a function, or items with a
 //! destructor.
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::recognition::{
     Recognition, StdItem, TypeFact, fact_trait, std_item, trait_method, zip_folds_to_the_shorter, zipped_sources,
 };
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
-use std::collections::{HashMap, HashSet};
 
 /// What a body asks of std of types holding its type parameters.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -51,7 +51,7 @@ pub(super) fn refuse_what_callers_decide<'tcx>(
     let asks_nothing = ["size_hint", "by_ref"].map(|name| trait_method(tcx, iterator, name));
     // Each body's own, by its function: what it asks that holds its type
     // parameters, which each caller's call makes of its types.
-    let mut of_body: HashMap<rustc_span::def_id::DefId, HashSet<Asked<'tcx>>> = HashMap::new();
+    let mut of_body: IndexMap<rustc_span::def_id::DefId, IndexSet<Asked<'tcx>>> = IndexMap::default();
     for body in all_bodies {
         for expr in body.thir.exprs.iter() {
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
@@ -83,7 +83,7 @@ pub(super) fn refuse_what_callers_decide<'tcx>(
             .any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn()))
             || recognition.iterator_item(ty).is_some_and(&drops)
     };
-    let mut refused = HashSet::new();
+    let mut refused = IndexSet::default();
     // Through what calls each caller in turn, as far as 32 calls deep, as a
     // function calling itself with a type made of its own would go on.
     for _ in 0..32 {

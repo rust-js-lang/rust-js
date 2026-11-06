@@ -2,6 +2,7 @@
 
 use super::recognition::StdItem;
 use super::{FnCx, Num, Shape, bindings, without_refs};
+use crate::collections::IndexMap;
 use crate::js::{self, Expr};
 use rustc_ast::{LitKind, Mutability};
 
@@ -213,7 +214,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// amended).
 pub(super) fn gives_its_argument<'tcx>(
     tcx: rustc_middle::ty::TyCtxt<'tcx>,
-    bodies: &std::collections::HashMap<DefId, &super::Body<'tcx>>,
+    bodies: &IndexMap<DefId, &super::Body<'tcx>>,
     def_id: DefId,
 ) -> bool {
     {

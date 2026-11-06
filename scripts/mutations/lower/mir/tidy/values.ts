@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure's whole write through a flattened state's handle isn't seen, so the handle is its place and the write `chunk = ..` (#482)",
     file: "src/lower/mir/tidy/values.rs",
-    find: "    let mut written_whole = std::collections::HashSet::new();\n    js::each_block_mut(body, &mut |stmts| {\n",
-    replace: "    let mut written_whole = std::collections::HashSet::new();\n    js::each_list(body, &mut |stmts| {\n",
+    find: "    let mut written_whole = IndexSet::default();\n    js::each_block_mut(body, &mut |stmts| {\n",
+    replace: "    let mut written_whole = IndexSet::default();\n    js::each_list(body, &mut |stmts| {\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_closure_writes.rs$"],
   },
   {
@@ -26,8 +26,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a cell given whole, `bump(c)`, is a variable too, and what it's given reads `undefined`",
     file: "src/lower/mir/tidy/values.rs",
-    find: "    let plain: HashSet<&String> = (cells.iter()).filter(|c| reads.get(*c) == kept.get(*c)).collect();\n",
-    replace: "    let plain: HashSet<&String> = cells.iter().collect();\n",
+    find: "    let plain: IndexSet<&String> = (cells.iter()).filter(|c| reads.get(*c) == kept.get(*c)).collect();\n",
+    replace: "    let plain: IndexSet<&String> = cells.iter().collect();\n",
     tests: [
       "test/lowering-cells.test.ts",
       "-t",
@@ -476,8 +476,8 @@ export const mutations: Mutation[] = [
     name: "unread-map-assignment-kept",
     breaks: "MIR's `let` and assignment of a map nothing reads, a call's `try`'s, is kept, left declared after its `try` is gone (#805)",
     file: "src/lower/mir/tidy/values.rs",
-    find: "    let gone: HashSet<String> = (assigned.into_iter())\n        .filter(|name| js::mentions_in(body, name) == 1)\n        .collect();\n",
-    replace: "    let gone: HashSet<String> = HashSet::new();\n",
+    find: "    let gone: IndexSet<String> = (assigned.into_iter())\n        .filter(|name| js::mentions_in(body, name) == 1)\n        .collect();\n",
+    replace: "    let gone: IndexSet<String> = IndexSet::default();\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^unread_map_of_a_held_iterator.rs$"],
   },

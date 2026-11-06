@@ -1,7 +1,7 @@
 //! A `Drop` impl's body where it's dropped (ADRs 0589, 0608).
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, Expr, ExprKind, Item, Pattern, Prop, Stmt, StmtKind};
-use std::collections::{HashMap, HashSet};
 
 /// Of `items`, a module's, each function `drops` names, a `Drop` impl's
 /// `drop`, which isn't exported and that no other module calls: where each
@@ -18,7 +18,7 @@ use std::collections::{HashMap, HashSet};
 ///   currentPriorityLevel = previousPriorityLevel;
 /// }
 /// ```
-pub(in crate::lower) fn inlined_drops(items: &mut Vec<Item>, drops: &HashSet<String>) {
+pub(in crate::lower) fn inlined_drops(items: &mut Vec<Item>, drops: &IndexSet<String>) {
     // Each in turn, one no other drop left calls first, so a `Drop` impl's
     // body is where its value's dropped before the drops it calls are, each
     // guard taken apart where it's made; among those, in the module's order,
@@ -228,11 +228,11 @@ fn called_closure(body: &mut Vec<Stmt>, params: &[Pattern], name: &str) {
 /// other cases today: the sound reading, kept in case naming changes, as
 /// `alone`'s is.
 fn reads_where_made(body: &[Stmt], params: &[Pattern], name: &str, closure: &[Stmt]) -> bool {
-    let mut reads = HashSet::new();
+    let mut reads = IndexSet::default();
     js::visit_stmts(closure, &mut |n| _ = reads.insert(n.to_string()));
-    let mut inside: HashMap<String, usize> = HashMap::new();
+    let mut inside: IndexMap<String, usize> = IndexMap::default();
     js::each_declared(closure, &mut |n| *inside.entry(n.to_string()).or_default() += 1);
-    let mut all: HashMap<String, usize> = HashMap::new();
+    let mut all: IndexMap<String, usize> = IndexMap::default();
     js::each_declared(body, &mut |n| *all.entry(n.to_string()).or_default() += 1);
     for n in params.iter().flat_map(|p| p.names()) {
         *all.entry(n.to_string()).or_default() += 1;
@@ -313,7 +313,7 @@ fn unwrapped_tries(stmts: &mut Vec<Stmt>) {
             .filter(|&(k, _)| k != i)
             .map(|(_, s)| s.clone())
             .collect();
-        let mut named = HashSet::new();
+        let mut named = IndexSet::default();
         js::each_declared(&others, &mut |name| _ = named.insert(name.to_string()));
         let free = declared
             .iter()
@@ -335,7 +335,7 @@ fn unwrapped_tries(stmts: &mut Vec<Stmt>) {
 #[derive(Clone, Default)]
 struct GuardReads {
     whole: bool,
-    fields: HashSet<String>,
+    fields: IndexSet<String>,
 }
 
 impl GuardReads {
@@ -616,7 +616,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
         }
     });
     // Each field written through it, or lent `&mut`, a `let` of its own.
-    let mut written = HashSet::new();
+    let mut written = IndexSet::default();
     js::each_block_mut(&mut stmts, &mut |list| {
         for s in list.iter() {
             if let StmtKind::Assign(t, _) | StmtKind::Compound(_, t, _) = &s.kind
@@ -638,7 +638,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
     if reads != js::mentions_in(body, guard) {
         return Vec::new();
     }
-    let mut names = HashSet::new();
+    let mut names = IndexSet::default();
     js::names_in(body, &mut names);
     names.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
     // What each field reads as: the variable it was made of, where nothing
@@ -713,8 +713,8 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
 /// variable, wherever the guard is read. A copy of the field into one of
 /// its name, `const prevProps = guard.prevProps;`, a `match`'s binding in
 /// its `Drop`, declares no other.
-fn kept_variables(body: &[Stmt], params: &[Pattern], guard: &str, fields: &[(String, Expr)]) -> HashSet<String> {
-    let mut declared: HashMap<String, usize> = HashMap::new();
+fn kept_variables(body: &[Stmt], params: &[Pattern], guard: &str, fields: &[(String, Expr)]) -> IndexSet<String> {
+    let mut declared: IndexMap<String, usize> = IndexMap::default();
     js::each_declared(body, &mut |name| *declared.entry(name.to_string()).or_default() += 1);
     let mut copies = body.to_vec();
     js::each_block_mut(&mut copies, &mut |list| {
@@ -747,7 +747,7 @@ fn kept_variables(body: &[Stmt], params: &[Pattern], guard: &str, fields: &[(Str
         }
     });
     let Some(later) = later else {
-        return HashSet::new();
+        return IndexSet::default();
     };
     (declared.into_iter())
         .filter(|(name, count)| {
@@ -804,7 +804,7 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Option
         ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v) => Some(v.clone()),
         _ => None,
     };
-    let mut names = HashSet::new();
+    let mut names = IndexSet::default();
     js::names_in(body, &mut names);
     // Not a word JS keeps, `_in`'s `in`, nor a temporary's number, `_9`'s
     // `9`, which names nothing.

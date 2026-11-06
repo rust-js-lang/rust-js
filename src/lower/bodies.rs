@@ -1,13 +1,13 @@
 //! Function setup, captures and nested-body entry/exit. Context changes live here.
 
 use super::{Body, Enclosing, EnclosingKind, FnCx, ItemScope, Nested, R};
+use crate::collections::IndexSet;
 use crate::js::{Stmt, StmtKind};
 
 use rustc_middle::thir::{ExprId, ExprKind, Pat, PatKind};
 use rustc_middle::ty;
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
-use std::collections::HashSet;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The directives of a function's or a closure's body, `"use cache";`,
@@ -143,7 +143,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let names = |e: ExprId| matches!(self.frame.thir[e].kind, ExprKind::VarRef { id } if id == var);
         let facts = self.frame.facts;
-        let mut allowed: HashSet<ExprId> = facts.jsx_given.union(&facts.jsx_bases).copied().collect();
+        let mut allowed: IndexSet<ExprId> = facts.jsx_given.union(&facts.jsx_bases).copied().collect();
         for expr in self.frame.thir.exprs.iter() {
             if let ExprKind::Field { lhs, name, .. } = expr.kind
                 && names(self.strip(lhs))

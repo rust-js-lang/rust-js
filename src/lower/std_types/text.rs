@@ -3,7 +3,7 @@
 //! questions are regular expressions of the Unicode properties Rust uses:
 //! `c.is_whitespace()` is `/^\p{White_Space}$/u.test(c)`.
 
-use std::collections::HashSet;
+use crate::collections::IndexSet;
 
 use crate::js;
 use crate::js::result;
@@ -1067,7 +1067,7 @@ pub(in crate::lower) fn utf8_bytes(text: Expr) -> Expr {
 /// throws. Nothing else can see `s` before it's appended to: Rust lends it
 /// to nothing while it's changed. Two pieces of text written out are one,
 /// `t += "!?"`.
-pub(in crate::lower) fn appended(stmts: &mut Vec<Stmt>, text: &HashSet<String>) {
+pub(in crate::lower) fn appended(stmts: &mut Vec<Stmt>, text: &IndexSet<String>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         if let Some((s, a)) = append_of(&stmts[i], text)
@@ -1136,7 +1136,7 @@ fn values(e: &Expr) -> usize {
 }
 
 /// The `String` `stmt` appends to, `s = s + a`, and what it appends.
-fn append_of<'s>(stmt: &'s Stmt, text: &HashSet<String>) -> Option<(&'s str, &'s Expr)> {
+fn append_of<'s>(stmt: &'s Stmt, text: &IndexSet<String>) -> Option<(&'s str, &'s Expr)> {
     let StmtKind::Assign(target, value) = &stmt.kind else {
         return None;
     };

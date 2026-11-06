@@ -6,13 +6,13 @@
 //! write's result passes one on; a crate none of whose functions do is
 //! lowered as one whose writes never fail (ADRs 0054, 0132).
 
+use crate::collections::IndexSet;
 use crate::lower::Body;
 use crate::lower::library::Foreign;
 use crate::lower::recognition::{fmt_trait_called, is_err_variant, is_generic_fmt_result, is_write_result_type};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
-use std::collections::HashSet;
 
 /// What a body calls, as its typing environment resolves it.
 enum Callee {
@@ -26,8 +26,8 @@ pub(super) fn failing_fns<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
     foreign: &Foreign<'_, 'tcx>,
-) -> HashSet<DefId> {
-    let mut failing: HashSet<DefId> = HashSet::new();
+) -> IndexSet<DefId> {
+    let mut failing: IndexSet<DefId> = IndexSet::default();
     let mut calls: Vec<(DefId, Callee)> = Vec::new();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);

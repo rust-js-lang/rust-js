@@ -646,7 +646,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a value `{:?}` reads twice, given as it's made, stays a function called in place, `((result) => ..)(f())`, not `const value = f();`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("applied values", |b, h| {\n                let set = js::Writes::of(b).by_closures();\n                let mut taken = HashSet::new();\n                js::names_in(b, &mut taken);\n                js::statement_lists(b, &mut |s| applied_values(s, &set, h.plain, &mut taken))\n            }),\n',
+    find: '            pass("applied values", |b, h| {\n                let set = js::Writes::of(b).by_closures();\n                let mut taken = IndexSet::default();\n                js::names_in(b, &mut taken);\n                js::statement_lists(b, &mut |s| applied_values(s, &set, h.plain, &mut taken))\n            }),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^option_result_methods.rs$"],
     snapshots: true,
@@ -775,7 +775,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a tuple `let` in a guard's `try` stays its tuple read `[0]`, `[1]`, not `const [a, b] = f();`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "                js::statement_lists(b, &mut |s| {\n                    destructured(s, (&HashSet::new(), &h.lets.named, &h.named.user), false)\n                })\n",
+    find: "                js::statement_lists(b, &mut |s| {\n                    destructured(s, (&IndexSet::default(), &h.lets.named, &h.named.user), false)\n                })\n",
     replace: "                let _ = (b, h);\n",
     tests: ["test/lowering.test.ts", "-t", "a tuple let in a guard's try"],
   },

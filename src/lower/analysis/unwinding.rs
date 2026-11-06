@@ -4,6 +4,7 @@
 //! after it needs no `finally`, and an iterator whose closure stage it is
 //! steps without a panic (`steps_may_panic`, #701).
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::bindings::is_binding;
 use crate::lower::recognition::{Recognition, is_std_crate};
@@ -12,7 +13,6 @@ use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, TerminatorKind};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 /// The crate's functions and closures that never unwind: of no type parameters, no
 /// binding nor trait's method a dictionary may call another impl of, each
@@ -24,10 +24,10 @@ pub(super) fn never_unwinding<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     bodies: &[&Body<'tcx>],
     runs: &dyn Fn(Ty<'tcx>, DefId) -> bool,
-) -> HashSet<DefId> {
+) -> IndexSet<DefId> {
     // Each one's `Drop`s that drop nothing, of what JS drops nothing of or
     // of what's moved out by then (`mir::dead_drops`, #717).
-    let candidates: Vec<(DefId, &mir::Body<'tcx>, HashSet<mir::BasicBlock>)> = (bodies.iter())
+    let candidates: Vec<(DefId, &mir::Body<'tcx>, IndexSet<mir::BasicBlock>)> = (bodies.iter())
         .filter(|body| candidate(tcx, body.def_id))
         .filter_map(|body| {
             let mir = &body.mir.as_ref()?.body;
@@ -41,7 +41,7 @@ pub(super) fn never_unwinding<'tcx>(
             Some((body.def_id, mir, dead))
         })
         .collect();
-    let mut never: HashSet<DefId> = candidates.iter().map(|&(id, ..)| id).collect();
+    let mut never: IndexSet<DefId> = candidates.iter().map(|&(id, ..)| id).collect();
     loop {
         let unwinding: Vec<DefId> = (candidates.iter())
             .filter(|(id, mir, dead)| {
@@ -57,7 +57,7 @@ pub(super) fn never_unwinding<'tcx>(
             return never;
         }
         for id in unwinding {
-            never.remove(&id);
+            never.swap_remove(&id);
         }
     }
 }
@@ -73,7 +73,7 @@ pub(super) fn never_unwinding<'tcx>(
 /// coroutine; one that reaches itself again may unwind, as nothing is
 /// known of it yet.
 pub(in crate::lower) fn never_unwinds_given<'tcx>(
-    (recognition, never, bodies): (&Recognition<'_, 'tcx>, &HashSet<DefId>, &HashMap<DefId, &Body<'tcx>>),
+    (recognition, never, bodies): (&Recognition<'_, 'tcx>, &IndexSet<DefId>, &IndexMap<DefId, &Body<'tcx>>),
     (id, args, typing_env): (DefId, ty::GenericArgsRef<'tcx>, ty::TypingEnv<'tcx>),
     (drops, may_panic): (&dyn Fn(Ty<'tcx>) -> bool, &dyn Fn(Ty<'tcx>) -> bool),
 ) -> bool {
@@ -85,21 +85,21 @@ pub(in crate::lower) fn never_unwinds_given<'tcx>(
         drops,
         may_panic,
     };
-    judged.given(id, args, &mut Vec::new())
+    judged.never_unwinds(id, args, &mut Vec::new())
 }
 
 /// What `never_unwinds_given` asks of each function it reaches.
 struct Judged<'a, 'b, 'tcx> {
     recognition: &'a Recognition<'b, 'tcx>,
-    never: &'a HashSet<DefId>,
-    bodies: &'a HashMap<DefId, &'a Body<'tcx>>,
+    never: &'a IndexSet<DefId>,
+    bodies: &'a IndexMap<DefId, &'a Body<'tcx>>,
     typing_env: ty::TypingEnv<'tcx>,
     drops: &'a dyn Fn(Ty<'tcx>) -> bool,
     may_panic: &'a dyn Fn(Ty<'tcx>) -> bool,
 }
 
 impl<'tcx> Judged<'_, '_, 'tcx> {
-    fn given(
+    fn never_unwinds(
         &self,
         id: DefId,
         args: ty::GenericArgsRef<'tcx>,
@@ -144,7 +144,7 @@ impl<'tcx> Judged<'_, '_, 'tcx> {
                 return false;
             };
             match instance.def {
-                ty::InstanceKind::Item(def) => self.given(def, instance.args, seen),
+                ty::InstanceKind::Item(def) => self.never_unwinds(def, instance.args, seen),
                 _ => false,
             }
         });
@@ -178,7 +178,7 @@ fn candidate(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// Not an assert, a bound's or a divisor's, nor another drop, nor what's
 /// unreachable.
 fn steps_on<'tcx>(
-    (mir, dead): (&mir::Body<'tcx>, &HashSet<mir::BasicBlock>),
+    (mir, dead): (&mir::Body<'tcx>, &IndexSet<mir::BasicBlock>),
     called: &mut dyn FnMut(DefId, ty::GenericArgsRef<'tcx>) -> bool,
 ) -> bool {
     mir.basic_blocks

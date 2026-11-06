@@ -34,9 +34,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an import takes the name of the crate's own function, which is renamed, so JS calling it by its Rust name finds none",
     file: "src/lower/analysis/naming.rs",
-    find: "            let mut reserved: HashSet<String> = uses.globals.iter().chain(items).cloned().collect();",
+    find: "            let mut reserved: IndexSet<String> = uses.globals.iter().chain(items).cloned().collect();",
     replace:
-      "            let mut reserved: HashSet<String> = uses.globals.iter().cloned().collect();",
+      "            let mut reserved: IndexSet<String> = uses.globals.iter().cloned().collect();",
     tests: ["test/crates.test.ts", "-t", "two crates: same_name"],
   },
   {
@@ -851,7 +851,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `use .. as` of a binding through a library's module that holds it keeps the `const`'s name, react-markup's `import ReactSharedInternals` for `REACT_SHARED_INTERNALS as REACT_SHARED_INTERNALS_CLIENT` (rd651)",
     file: "src/lower/analysis/naming.rs",
-    find: "                        .or_else(|| held_uses.remove(&id))\n",
+    find: "                        .or_else(|| held_uses.swap_remove(&id))\n",
     replace: "",
     tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
   },

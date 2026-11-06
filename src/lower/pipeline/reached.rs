@@ -5,9 +5,9 @@
 
 use super::super::Body;
 use super::super::library::Foreign;
+use crate::collections::{IndexMap, IndexSet};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::{DefId, LocalModId};
-use std::collections::{HashMap, HashSet};
 
 /// The types equal only to themselves, by their `==`'s keyed form, and
 /// those whose `==` is their address's (ADR 0864, amended).
@@ -33,9 +33,9 @@ type Identities = (Vec<DefId>, Vec<DefId>);
 pub(super) fn written_where_reached<'tcx>(
     tcx: TyCtxt<'tcx>,
     (trait_impls, foreign): (&[DefId], &Foreign<'_, 'tcx>),
-    function_bodies: &HashMap<DefId, &Body<'tcx>>,
+    function_bodies: &IndexMap<DefId, &Body<'tcx>>,
     lowered: impl Iterator<Item = DefId>,
-) -> (Identities, HashSet<DefId>, Vec<DefId>) {
+) -> (Identities, IndexSet<DefId>, Vec<DefId>) {
     let recognition = super::super::recognition::Recognition {
         tcx,
         typing_env: ty::TypingEnv::fully_monomorphized(),
@@ -69,7 +69,7 @@ pub(super) fn written_where_reached<'tcx>(
     // The untagged enums whose `Display` each plain `{}` writes in place,
     // and their impls (rd730).
     let displaying = super::super::untagged::displayed::displaying_impls(&recognition, function_bodies);
-    let derived: HashSet<DefId> = trait_impls
+    let derived: IndexSet<DefId> = trait_impls
         .iter()
         .filter(|&&id| {
             let trait_id = trait_of(id);
@@ -101,7 +101,7 @@ pub(super) fn written_where_reached<'tcx>(
         // And an untagged enum's method that reads each variant's field,
         // each call of which is that read where its JS is (rd317).
         .chain(lowered.filter(|&id| {
-            let field_read = |id| {
+            let field_read = |id: DefId| {
                 (function_bodies.get(&id))
                     .is_some_and(|body| super::super::untagged::field_reads::reads_each_variants_field(tcx, body))
             };
@@ -129,7 +129,7 @@ pub(super) fn written_where_reached<'tcx>(
 /// the function it passes its parameters on to (`forwarded`, rd292b).
 pub(super) fn lowered_here(
     tcx: TyCtxt<'_>,
-    (foreign, forwarded): (&Foreign<'_, '_>, &HashMap<DefId, DefId>),
+    (foreign, forwarded): (&Foreign<'_, '_>, &IndexMap<DefId, DefId>),
     exports_reachable: bool,
     id: DefId,
 ) -> bool {
@@ -159,12 +159,12 @@ pub(super) fn forwarded<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &[&Body<'tcx>],
     (given, js_given): (super::super::traits::Given<'_>, &super::super::analysis::JsGiven),
-    (caller_locations, fns): (&HashSet<DefId>, &HashMap<DefId, super::super::FnInfo>),
+    (caller_locations, fns): (&IndexSet<DefId>, &IndexMap<DefId, super::super::FnInfo>),
     foreign: &Foreign<'_, 'tcx>,
-) -> (HashMap<DefId, DefId>, HashMap<DefId, DefId>) {
+) -> (IndexMap<DefId, DefId>, IndexMap<DefId, DefId>) {
     let bounds = |id: DefId| super::super::traits::bounds(tcx, foreign, given, id);
     let exported = |id: DefId| fns.get(&id).map(|info| info.exported().to_string());
-    let (namespaces, prototypes): (HashMap<DefId, DefId>, HashMap<DefId, DefId>) = (bodies.iter())
+    let (namespaces, prototypes): (IndexMap<DefId, DefId>, IndexMap<DefId, DefId>) = (bodies.iter())
         .filter_map(|body| {
             let method = body.def_id;
             let (target, args) = super::super::passed_on::forwarded_function(tcx, method, &body.thir, &exported)?;
@@ -200,7 +200,7 @@ pub(super) fn forwarded<'tcx>(
 pub(super) fn taken_into(
     tcx: TyCtxt<'_>,
     (module, lowered): (LocalModId, &crate::program::LoweredModule),
-    (of, fns): (&[&HashMap<DefId, DefId>], &HashMap<DefId, super::super::FnInfo>),
+    (of, fns): (&[&IndexMap<DefId, DefId>], &IndexMap<DefId, super::super::FnInfo>),
     sources: &super::super::sources::CapturedSources,
 ) -> Vec<(crate::js::Span, crate::js::Span)> {
     let mut taken: Vec<_> = (of.iter().flat_map(|map| map.iter()))
@@ -232,10 +232,10 @@ pub(super) fn taken_into(
 /// `arguments`, which JS gives all it's given, nor re-exported in its
 /// place, `forwarders` (rd575), so a declaration the module's load reads.
 pub(super) fn forwarding(
-    prototypes: HashMap<DefId, DefId>,
-    reads_arguments: &HashSet<DefId>,
-    forwarders: &HashMap<DefId, DefId>,
-) -> HashSet<DefId> {
+    prototypes: IndexMap<DefId, DefId>,
+    reads_arguments: &IndexSet<DefId>,
+    forwarders: &IndexMap<DefId, DefId>,
+) -> IndexSet<DefId> {
     (prototypes.into_iter())
         .filter(|(_, target)| !reads_arguments.contains(target) && !forwarders.contains_key(target))
         .map(|(method, _)| method)

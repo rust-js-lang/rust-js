@@ -14,10 +14,10 @@ use super::*;
 /// | Sphere(r)) if r > 1.0` (#523); read in the `if`s MIR nests of the
 /// guard too, or by nothing, `x$1 = s[0]; y$1 = s[1]; if (g(c, y$1))`
 /// (#771).
-pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> HashSet<String> {
-    let mut named: HashMap<&str, usize> = HashMap::new();
+pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> IndexSet<String> {
+    let mut named: IndexMap<&str, usize> = IndexMap::default();
     js::visit_stmts(body, &mut |name| *named.entry(name).or_default() += 1);
-    let mut given: HashMap<String, usize> = HashMap::new();
+    let mut given: IndexMap<String, usize> = IndexMap::default();
     let binding = |s: &Stmt| match &s.kind {
         StmtKind::Assign(target, value) => matches!(target.kind, ExprKind::Var(_)) && pure(value),
         StmtKind::Const(_, value) => pure(value),
@@ -305,7 +305,7 @@ pub(super) fn bound_where_read(body: &[Stmt], told: &Told) -> Option<Vec<Stmt>> 
             .sum();
         js::mentions_in(tree, name) == found.iter().map(at).sum::<usize>() + reads
     };
-    let read: HashSet<String> = (found.iter().flat_map(|site| &site.before))
+    let read: IndexSet<String> = (found.iter().flat_map(|site| &site.before))
         .map(|(name, _)| name)
         .filter(|name| given(name))
         .cloned()
@@ -318,7 +318,7 @@ pub(super) fn bound_where_read(body: &[Stmt], told: &Told) -> Option<Vec<Stmt>> 
             .filter(|site| site.arms.iter().any(|(a, _)| a == arm))
             .count()
     };
-    let many: HashSet<String> = (found.iter().flat_map(|site| &site.arms))
+    let many: IndexSet<String> = (found.iter().flat_map(|site| &site.arms))
         .map(|(arm, _)| arm)
         .filter(|arm| set_by(arm) > 1 && js::mentions_in(tree, arm) == set_by(arm))
         .cloned()
@@ -433,7 +433,7 @@ fn sites(list: &[Stmt], told: &Told, out: &mut Vec<Site>) {
 /// Each site in `list` each of whose bindings is one of `many`, and each of
 /// its guard's `read`'s, its test setting them, what its guard's are given
 /// gone.
-fn rewrite(list: &mut Vec<Stmt>, told: &Told, many: &HashSet<String>, read: &HashSet<String>) {
+fn rewrite(list: &mut Vec<Stmt>, told: &Told, many: &IndexSet<String>, read: &IndexSet<String>) {
     let mut i = 0;
     while i < list.len() {
         if let Some(site) = site(list, i, told)

@@ -4,6 +4,7 @@
 //! literal's field starts, which a comment before it is before (ADR 0708).
 
 use super::*;
+use crate::collections::IndexMap;
 
 /// Where each call and `new` of arguments that says starts and ends.
 pub(super) fn argument_ends(module: &Module) -> Vec<(u32, u32)> {
@@ -87,11 +88,7 @@ pub(super) fn before_parenthesis(
 /// writes an argument a line, `parts` being `part_starts`: inside the call,
 /// before the argument, as written, where oxc would write it on a line of
 /// its own (ADR 0708, amended, rd710).
-pub(super) fn before_argument(
-    c: &crate::program::Comment,
-    text: &str,
-    parts: &std::collections::HashMap<u32, (u32, bool)>,
-) -> bool {
+pub(super) fn before_argument(c: &crate::program::Comment, text: &str, parts: &IndexMap<u32, (u32, bool)>) -> bool {
     let written = &text[c.lo as usize..c.hi as usize];
     let rest = &text[c.hi as usize..];
     let at = c.hi as usize + (rest.len() - rest.trim_start_matches([' ', '\t']).len());
@@ -104,8 +101,8 @@ pub(super) fn before_argument(
 /// field's value, of those that say, and where what they're parts of
 /// starts: what a comment before one in the Rust, inside what it's part
 /// of, is before in the JS, as oxc writes it (ADR 0708); and whether it's a field.
-pub(super) fn part_starts(module: &Module) -> std::collections::HashMap<u32, (u32, bool)> {
-    let mut starts = std::collections::HashMap::new();
+pub(super) fn part_starts(module: &Module) -> IndexMap<u32, (u32, bool)> {
+    let mut starts = IndexMap::default();
     let mut of = |mut stmts: Vec<js::Stmt>| {
         js::each_expr_mut(&mut stmts, &mut |e| {
             let (spans, field): (Vec<js::Span>, bool) = match &e.kind {

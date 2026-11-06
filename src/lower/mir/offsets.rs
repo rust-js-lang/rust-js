@@ -28,6 +28,7 @@
 //! where it holds, which count nothing (`cut`).
 
 use super::*;
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::combinators::Comb;
 use rustc_span::def_id::DefId;
 
@@ -107,11 +108,11 @@ impl Fact {
 /// UTF-8 bytes and in UTF-16 units.
 #[derive(Clone, PartialEq, Default, Debug)]
 struct Known {
-    facts: HashMap<Local, Fact>,
-    parents: HashMap<Text, Text>,
-    literals: HashMap<Text, (u128, usize)>,
+    facts: IndexMap<Local, Fact>,
+    parents: IndexMap<Text, Text>,
+    literals: IndexMap<Text, (u128, usize)>,
     /// Each closure made, and the string each field it captured holds.
-    closures: HashMap<Local, (DefId, Vec<Option<Text>>)>,
+    closures: IndexMap<Local, (DefId, Vec<Option<Text>>)>,
 }
 
 impl Known {
@@ -135,8 +136,8 @@ impl Known {
             .filter(|&(_, &parent)| parent == text)
             .map(|(&child, _)| child)
             .collect();
-        self.parents.remove(&text);
-        self.literals.remove(&text);
+        self.parents.swap_remove(&text);
+        self.literals.swap_remove(&text);
         for child in children {
             self.forget(child);
         }
@@ -182,20 +183,20 @@ pub(super) struct Seed {
 /// lowering their operations needs.
 #[derive(Default)]
 pub(super) struct Offsets {
-    units: std::collections::HashSet<Local>,
+    units: IndexSet<Local>,
     /// What each closure given a place found is told of it.
-    seeds: HashMap<DefId, Seed>,
+    seeds: IndexMap<DefId, Seed>,
     /// Of a closure told so, the place found it gives back: of which field's
     /// string, and by what.
     gives: Option<(usize, Pattern)>,
     /// The calls of places in units: a find, a length, a slice.
-    calls: std::collections::HashSet<BasicBlock>,
+    calls: IndexSet<BasicBlock>,
     /// Each sum of a place a literal was found at and the literal's length,
     /// that length in units.
-    steps: HashMap<mir::Location, usize>,
-    cuts: HashMap<BasicBlock, Cut>,
+    steps: IndexMap<mir::Location, usize>,
+    cuts: IndexMap<BasicBlock, Cut>,
     /// Each local a cut is given to and read once, read in place.
-    taken_in_place: std::collections::HashSet<Local>,
+    taken_in_place: IndexSet<Local>,
 }
 
 impl Offsets {
@@ -283,7 +284,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let decls = &body.local_decls;
         // A local whose value may change through a `&mut` or a pointer, or
         // that is a `&mut`, holds nothing known.
-        let mut unseen: std::collections::HashSet<Local> = (decls.iter_enumerated())
+        let mut unseen: IndexSet<Local> = (decls.iter_enumerated())
             .filter(|(_, decl)| {
                 matches!(decl.ty.kind(), ty::Ref(_, _, ty::Mutability::Mut))
                     || crate::lower::pointers::raw_pointee(self.tcx, decl.ty).is_some()
@@ -308,7 +309,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             own && !unseen.contains(&local) && self.is_offset(decls[local].ty)
         };
         // Each strip's `Option`, by the block whose call makes it.
-        let strips: HashMap<Local, BasicBlock> = (body.basic_blocks.iter_enumerated())
+        let strips: IndexMap<Local, BasicBlock> = (body.basic_blocks.iter_enumerated())
             .filter(|(_, data)| self.strips(body, data))
             .filter_map(|(block, data)| match &data.terminator().kind {
                 TerminatorKind::Call { destination, .. } if destination.projection.is_empty() => {
@@ -326,7 +327,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let stripped = |local: Local| strips.contains_key(&local);
         // Each local a strip's cut is given to, by the strip's `Option`.
-        let taken: HashMap<Local, Local> = (body.basic_blocks.iter().flat_map(|data| &data.statements))
+        let taken: IndexMap<Local, Local> = (body.basic_blocks.iter().flat_map(|data| &data.statements))
             .filter_map(|statement| match &statement.kind {
                 StatementKind::Assign(assign) => (strips.keys())
                     .find(|&&local| cut_read(&assign.0, &assign.1, local) == Some(CutRead::Taken(assign.0.local)))
@@ -335,13 +336,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         let given_cut = |local: Local| taken.contains_key(&local);
-        let mut taken_at: HashMap<Local, Vec<TakenAt>> = HashMap::default();
+        let mut taken_at: IndexMap<Local, Vec<TakenAt>> = IndexMap::default();
         // Each operation of a candidate, and whether it's one of places; and
         // each read of a strip's `Option`, what's known there and the local
         // it gives the cut or the test, where that's all it does.
         let mut operations = Vec::new();
-        let mut reads: HashMap<Local, Vec<CutReadAt>> = HashMap::default();
-        let mut made: HashMap<Local, (Known, Text, Pattern)> = HashMap::default();
+        let mut reads: IndexMap<Local, Vec<CutReadAt>> = IndexMap::default();
+        let mut made: IndexMap<Local, (Known, Text, Pattern)> = IndexMap::default();
         let mut returns: Option<(usize, Pattern)> = None;
         let mut seeded: Vec<(BasicBlock, DefId, Seed)> = Vec::new();
         for (block, data) in body.basic_blocks.iter_enumerated() {
@@ -492,13 +493,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // The locals in units: each candidate, but one an operation touches
         // that isn't of places, or touches another that's not, till none.
-        let mut units: std::collections::HashSet<Local> = decls.indices().filter(|&l| candidate(l)).collect();
+        let mut units: IndexSet<Local> = decls.indices().filter(|&l| candidate(l)).collect();
         loop {
             let mut changed = false;
             for operation in &operations {
                 if !operation.accepted || operation.touched.iter().any(|l| !units.contains(l)) {
                     for local in &operation.touched {
-                        changed |= units.remove(local);
+                        changed |= units.swap_remove(local);
                     }
                 }
             }
@@ -507,7 +508,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         let in_units = |operation: &Operation| operation.touched.iter().all(|l| units.contains(l));
-        let calls: std::collections::HashSet<BasicBlock> = (operations.iter())
+        let calls: IndexSet<BasicBlock> = (operations.iter())
             .filter(|operation| in_units(operation))
             .filter_map(|operation| operation.call)
             .collect();
@@ -542,10 +543,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             held.sort();
             held
         };
-        let mut cuts = HashMap::default();
-        let mut in_place = std::collections::HashSet::default();
+        let mut cuts = IndexMap::default();
+        let mut in_place = IndexSet::default();
         for (local, (known, text, pattern)) in made {
-            let mut read = reads.remove(&local).unwrap_or_default();
+            let mut read = reads.swap_remove(&local).unwrap_or_default();
             if writes(local) != 1 || read.is_empty() || read.iter().any(|(_, read)| read.is_none()) {
                 continue;
             }
@@ -755,7 +756,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             StatementKind::SetDiscriminant { place, .. } => {
-                known.facts.remove(&place.local);
+                known.facts.swap_remove(&place.local);
             }
             _ => {}
         }
@@ -1234,8 +1235,8 @@ fn write(
     parent: Option<Text>,
     text: &dyn Fn(Local) -> bool,
 ) {
-    known.facts.remove(&place.local);
-    known.closures.remove(&place.local);
+    known.facts.swap_remove(&place.local);
+    known.closures.swap_remove(&place.local);
     if !place.projection.is_empty() {
         return;
     }
@@ -1259,7 +1260,7 @@ fn write(
 
 /// Whether the statement at `at`, which reads `given`, a strip's cut, gives
 /// it, or a reference to it, to another strip: `rest.strip_suffix(p)`.
-fn strips_again(body: &mir::Body<'_>, at: mir::Location, given: Local, strips: &HashMap<Local, BasicBlock>) -> bool {
+fn strips_again(body: &mir::Body<'_>, at: mir::Location, given: Local, strips: &IndexMap<Local, BasicBlock>) -> bool {
     let read = match body.basic_blocks[at.block].statements[at.statement_index].kind {
         StatementKind::Assign(ref assign) => assign.0.local,
         _ => return true,

@@ -10,8 +10,9 @@
 //! What this can't do yet is an error, found before any JS is written: a
 //! value with a destructor that nothing drops would be a wrong answer.
 
+use crate::collections::{IndexMap, IndexSet};
 use std::cell::RefCell;
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::BTreeSet;
 use std::rc::Rc;
 
 use rustc_hir::def::DefKind;
@@ -122,10 +123,10 @@ pub(super) type Path = Vec<(Option<u32>, usize)>;
 /// A copied default's drops: the drop functions of its trait's type
 /// parameters, by index, and those it can't make, with why (ADR 0098).
 pub(super) type DefaultDrops<'tcx> = (
-    HashMap<u32, String>,
-    HashMap<u32, (Ty<'tcx>, &'static str)>,
-    HashMap<ty::AliasTy<'tcx>, u32>,
-    HashSet<ty::AliasTy<'tcx>>,
+    IndexMap<u32, String>,
+    IndexMap<u32, (Ty<'tcx>, &'static str)>,
+    IndexMap<ty::AliasTy<'tcx>, u32>,
+    IndexSet<ty::AliasTy<'tcx>>,
 );
 
 /// What a body inside another, a closure's or a copied default's, takes
@@ -143,14 +144,14 @@ pub(super) struct EnclosingDrops<'tcx> {
 
 /// A function's drops while a copied default body has its own.
 struct SwappedDrops<'tcx> {
-    params: HashMap<u32, String>,
-    given: HashSet<u32>,
-    items: HashMap<ty::AliasTy<'tcx>, u32>,
-    slots: HashSet<ty::AliasTy<'tcx>>,
-    used: HashSet<u32>,
-    unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
-    cache: HashMap<Ty<'tcx>, Drops<'tcx>>,
-    sizes: HashMap<Ty<'tcx>, usize>,
+    params: IndexMap<u32, String>,
+    given: IndexSet<u32>,
+    items: IndexMap<ty::AliasTy<'tcx>, u32>,
+    slots: IndexSet<ty::AliasTy<'tcx>>,
+    used: IndexSet<u32>,
+    unsupported: IndexMap<u32, (Ty<'tcx>, &'static str)>,
+    cache: IndexMap<Ty<'tcx>, Drops<'tcx>>,
+    sizes: IndexMap<Ty<'tcx>, usize>,
 }
 
 /// A drop `lend_drop_param` lent: under which index, of which associated
@@ -166,20 +167,20 @@ pub(super) struct LentDrop<'tcx> {
 pub(super) struct DropState<'tcx> {
     /// What a type drops depends on, beside its types (ADR 0098).
     types: TypeDrops<'tcx>,
-    sizes: RefCell<HashMap<Ty<'tcx>, usize>>,
+    sizes: RefCell<IndexMap<Ty<'tcx>, usize>>,
     /// Each generic `Drop` impl's `drop`, as it's given its arguments, that
     /// never unwinds (`drop_never_unwinds`, #861).
-    never_unwinding: RefCell<HashMap<(DefId, GenericArgsRef<'tcx>), bool>>,
+    never_unwinding: RefCell<IndexMap<(DefId, GenericArgsRef<'tcx>), bool>>,
     /// Each body's facts, by the address of its THIR: a closure's is its own.
-    facts: HashMap<usize, Rc<Facts>>,
+    facts: IndexMap<usize, Rc<Facts>>,
     /// The function being lowered's drop functions, by the index of the
     /// type parameter each drops.
-    param_drops: HashMap<u32, String>,
+    param_drops: IndexMap<u32, String>,
     /// The type parameters whose drops the body has used.
-    used_drops: HashSet<u32>,
+    used_drops: IndexSet<u32>,
     /// Each closure made here that holds a value with a destructor: the body
     /// it's made in, and the variables it holds, which its drop drops.
-    closures: HashMap<DefId, (DefId, Vec<(Expr, Ty<'tcx>)>)>,
+    closures: IndexMap<DefId, (DefId, Vec<(Expr, Ty<'tcx>)>)>,
     /// The drop functions of the function or closure being lowered, each
     /// declared once at its top; `None` where each drop declares its own.
     hoisted: Option<Hoisted<'tcx>>,
@@ -188,7 +189,7 @@ pub(super) struct DropState<'tcx> {
     outer: Vec<SwappedDrops<'tcx>>,
     /// The drop functions made here whose body never throws, so a part
     /// dropped by one needs no `finally` for those after it (#416).
-    quiet: HashSet<String>,
+    quiet: IndexSet<String>,
 }
 
 /// A body's drop functions, each of a type inside itself or with a long
@@ -227,10 +228,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// or a closure's capture's; of a type parameter, a `dyn` or an alias,
     /// anyone's. The one answer, which what drops items it passes over asks.
     pub(in crate::lower) fn drop_may_panic(&self, ty: Ty<'tcx>) -> bool {
-        self.drop_may_panic_in(ty, &mut HashSet::new())
+        self.drop_may_panic_in(ty, &mut IndexSet::default())
     }
 
-    fn drop_may_panic_in(&self, ty: Ty<'tcx>, seen: &mut HashSet<Ty<'tcx>>) -> bool {
+    fn drop_may_panic_in(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
         if !seen.insert(ty) || self.drops(ty) == Drops::Nothing {
             return false;
         }
@@ -568,10 +569,10 @@ pub(super) struct DropCheck {
 /// any was an error.
 pub(super) fn check_no_drops(
     tcx: TyCtxt<'_>,
-    no_drops: &mut HashMap<DefId, BTreeSet<u32>>,
+    no_drops: &mut IndexMap<DefId, BTreeSet<u32>>,
     checks: &[DropCheck],
 ) -> bool {
-    let mut reported = HashSet::new();
+    let mut reported = IndexSet::default();
     let mut changed = true;
     while changed {
         changed = false;

@@ -80,10 +80,10 @@ pub(super) fn value_made<'tcx>(
     tcx: TyCtxt<'tcx>,
     (maker, body, uses): (DefId, &mir::Body<'tcx>, &Uses),
     cell: Local,
-    of: &HashMap<DefId, &mir::Body<'tcx>>,
+    of: &IndexMap<DefId, &mir::Body<'tcx>>,
 ) -> Option<OwnerHandle<'tcx>> {
     let pointee = value_cell(tcx, body.local_decls[cell].ty)?;
-    let mut made = HashSet::new();
+    let mut made = IndexSet::default();
     // What it's made of: `Rc::default()`, or `Rc::new(Cell::new(None))`.
     let at = uses.def(cell)?;
     made.insert(at);
@@ -263,8 +263,8 @@ pub(super) fn value_made<'tcx>(
     if !set_next(body, (after, set_at), &made, &[]) || reaches(body, set_at.block, set_at.block) {
         return None;
     }
-    let mut read = HashMap::new();
-    read.insert(executor, (clones, HashMap::new()));
+    let mut read = IndexMap::default();
+    read.insert(executor, (clones, IndexMap::default()));
     let mut closures = vec![(maker, executor, capture)];
     for (reader, index) in readers {
         let (at, own, _) = super::read(tcx, of.get(&reader)?, (index, Chain::Value))?;
@@ -301,7 +301,7 @@ fn made_in<'tcx>(
     body: &mir::Body<'tcx>,
     capture: usize,
     lends_local: &dyn Fn(usize) -> bool,
-) -> Option<(HashSet<Location>, HashSet<Local>, Readers)> {
+) -> Option<(IndexSet<Location>, IndexSet<Local>, Readers)> {
     let env = Local::from_usize(1);
     let uses = Uses::of(body);
     // A capture's field, and what's past it.
@@ -311,10 +311,10 @@ fn made_in<'tcx>(
         }
         _ => None,
     };
-    let mut clones = HashSet::new();
+    let mut clones = IndexSet::default();
     let mut lent = Vec::new();
     // Each place of the executor's captures, by where.
-    let mut stores: HashMap<usize, Vec<Location>> = HashMap::new();
+    let mut stores: IndexMap<usize, Vec<Location>> = IndexMap::default();
     for &at in uses.uses(env) {
         let data = &body.basic_blocks[at.block];
         let mut places = Vec::new();
@@ -342,7 +342,7 @@ fn made_in<'tcx>(
     // Each clone, captured by one reader; and each tuple holding one, how
     // many fields it has, and the clones it holds.
     let mut made: Vec<(DefId, usize, Local)> = Vec::new();
-    let mut tuples: HashMap<Location, (usize, Vec<Local>)> = HashMap::new();
+    let mut tuples: IndexMap<Location, (usize, Vec<Local>)> = IndexMap::default();
     let mut i = 0;
     while i < lent.len() {
         let borrow = lent[i];
@@ -424,7 +424,7 @@ fn made_in<'tcx>(
     }
     // Each reader moved, made an `Rc`, coerced and put in a `Some`, into a
     // capture's place, `*resolve = ..`.
-    let mut stored: HashMap<usize, Location> = HashMap::new();
+    let mut stored: IndexMap<usize, Location> = IndexMap::default();
     for &(_, _, mut value) in &made {
         loop {
             uses.def(value)?;
@@ -492,7 +492,7 @@ fn made_in<'tcx>(
             return None;
         }
     }
-    let mut unwritten = HashSet::new();
+    let mut unwritten = IndexSet::default();
     for (at, (fields, held)) in tuples {
         match held.len() == fields {
             true => {

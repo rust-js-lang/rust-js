@@ -1,6 +1,7 @@
 //! Each local's name and how it's used, and the locals `pin!` and `?` bind.
 
 use super::*;
+use crate::collections::IndexSet;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Each local `pin!` pins, and the local its `Pin` is.
@@ -109,7 +110,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         body: &mir::Body<'tcx>,
         drops: Option<&drops::Elaboration<'tcx>>,
         named: &[(Local, String)],
-        unreached: &HashSet<BasicBlock>,
+        unreached: &IndexSet<BasicBlock>,
     ) -> Locals {
         let n = body.local_decls.len();
         let mut locals = Locals {
@@ -290,7 +291,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The names of the closures a `let` names that a hook's function
     /// alone is (ADR 0297).
-    pub(super) fn callback_names(&self, state: &State<'_, 'tcx>) -> std::collections::HashSet<String> {
+    pub(super) fn callback_names(&self, state: &State<'_, 'tcx>) -> IndexSet<String> {
         let named: Vec<rustc_span::Span> = (self.frame.thir.stmts.iter())
             .filter_map(|stmt| match &stmt.kind {
                 thir::StmtKind::Let { pattern, .. }

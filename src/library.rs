@@ -2,9 +2,10 @@
 //! item another crate can reach is in JS, and what a consumer can't work out
 //! from the types alone. Versioned on its own, beside the host manifest.
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::manifest::{Compiler, Manifest};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::BTreeSet;
 use std::path::Path;
 
 /// 3: every `Rc` and `Weak` is counted, `{ value, strong, weak }`, in a
@@ -561,9 +562,9 @@ pub struct Exports {
     pub makes_dropping_fn_dyns: bool,
     /// A program's dictionaries' constants, by key; None of a library's,
     /// which carry every one (#597).
-    pub dictionary_consts: Option<HashSet<String>>,
+    pub dictionary_consts: Option<IndexSet<String>>,
     /// A program's own traits whose `dyn`s drop nothing, by key (#597).
-    pub dyns_drop_nothing: HashSet<String>,
+    pub dyns_drop_nothing: IndexSet<String>,
     /// What the `Rc`s it counts point at (ADR 0852).
     pub counted_rcs: Vec<RcShape>,
     /// The parameters' tuples of its `function::with_this` functions that
@@ -574,51 +575,51 @@ pub struct Exports {
     /// What it does with its `RefCell`s (ADR 0863).
     pub ref_cells: RefCellFacts,
     /// Its types equal only to themselves, by their keys (ADR 0864).
-    pub identities: HashSet<String>,
+    pub identities: IndexSet<String>,
     /// Its enums told apart by their keys, by their keys (ADR 1071).
-    pub keyed: HashSet<String>,
+    pub keyed: IndexSet<String>,
     /// Its types whose `==` is their address's, by their keys (ADR 0864,
     /// amended).
-    pub eq_by_address: HashSet<String>,
+    pub eq_by_address: IndexSet<String>,
     /// Its functions each call of which is what it's given, by their keys
     /// (ADR 0584, amended).
-    pub gives_argument: HashSet<String>,
+    pub gives_argument: IndexSet<String>,
     /// Its untagged enums whose `Display` writes each variant's value as
     /// it is, by their keys (rd730).
-    pub displays_value: HashSet<String>,
+    pub displays_value: IndexSet<String>,
     /// The structs its code makes values of, by their keys (ADR 1022,
     /// amended).
-    pub built: HashSet<String>,
+    pub built: IndexSet<String>,
     /// What it says of each of its structs' fields, by key (ADR 0906).
-    pub fields: HashMap<String, BTreeSet<FieldFact>>,
+    pub fields: IndexMap<String, BTreeSet<FieldFact>>,
     /// The facts its traits' dictionaries carry of each associated type, by
     /// key (ADR 0145, amended).
-    pub associated: HashMap<String, Vec<String>>,
-    pub items: HashMap<String, Imported>,
-    pub impls: HashSet<String>,
+    pub associated: IndexMap<String, Vec<String>>,
+    pub items: IndexMap<String, Imported>,
+    pub impls: IndexSet<String>,
     /// Each binding a module holds, by the module's key and the binding's
     /// name in it.
-    pub held: HashMap<(String, String), HeldImport>,
+    pub held: IndexMap<(String, String), HeldImport>,
     /// Each item a module re-exports, by the module's key and the name
     /// its `pub use` gives it: the item's key, and where it's imported from
     /// through it, by what (rd704).
-    pub reexported: HashMap<(String, String), (String, (String, String))>,
+    pub reexported: IndexMap<(String, String), (String, (String, String))>,
     /// Each type its declarations export, by key: the `.d.ts` that declares
     /// it, by its JS file's specifier, relative to the consumer's output,
     /// its name there, and whether it's its default (ADR 0210, amended).
     /// Not of a library written without declarations.
-    pub types: HashMap<String, (String, String, bool)>,
+    pub types: IndexMap<String, (String, String, bool)>,
     /// What each of its modules' JS files exports but `default`, as its
     /// manifest says, by the specifier a consumer imports it by: what a
     /// glob of the module is `export * from` of (#629).
-    pub files: HashMap<String, std::collections::BTreeSet<String>>,
+    pub files: IndexMap<String, std::collections::BTreeSet<String>>,
 }
 
 #[derive(Default)]
 pub struct Dependencies {
     /// Each library, by its crate's name; `@rust-js/std`'s, of std's
     /// crates, by `STD_PACKAGE`, which no crate is named.
-    pub libraries: HashMap<String, Exports>,
+    pub libraries: IndexMap<String, Exports>,
     pub inputs: Vec<std::path::PathBuf>,
 }
 

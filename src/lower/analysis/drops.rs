@@ -1,6 +1,7 @@
 //! What dropping takes, crate-wide: the generic parameters given a drop,
 //! and the derives that drop nothing (ADR 0098).
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::recognition::{StdItem, is_std_def, known_derive, serde_impl};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -8,7 +9,6 @@ use rustc_hir::def::DefKind;
 use rustc_middle::ty;
 use rustc_middle::ty::{Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 /// The type parameters of the crate's own generic functions that a caller
 /// gives a value with a destructor (ADR 0098), directly or through a
@@ -18,17 +18,17 @@ use std::collections::{HashMap, HashSet};
 pub(super) fn drop_params<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
-    fns: &HashSet<DefId>,
+    fns: &IndexSet<DefId>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     library: bool,
     runs: impl Fn(Ty<'tcx>, DefId) -> bool,
-) -> HashMap<DefId, Vec<u32>> {
-    let mut given: HashSet<(DefId, u32)> = HashSet::new();
+) -> IndexMap<DefId, Vec<u32>> {
+    let mut given: IndexSet<(DefId, u32)> = IndexSet::default();
     // A crate none of whose values drops anything, a destructor, a counted
     // `Rc`'s count or a guard's borrow, and none of a library's consumers,
     // gives generic code nothing to drop: what's below would give drops
     // nothing calls (ADR 0451).
-    let mut asked: HashSet<Ty<'tcx>> = HashSet::new();
+    let mut asked: IndexSet<Ty<'tcx>> = IndexSet::default();
     let drops_any = all_bodies.iter().any(|body| {
         body.thir
             .exprs
@@ -36,7 +36,7 @@ pub(super) fn drop_params<'tcx>(
             .any(|expr| !expr.ty.has_param() && asked.insert(expr.ty) && runs(expr.ty, body.def_id))
     });
     if !library && !drops_any {
-        return HashMap::new();
+        return IndexMap::default();
     }
     // A trait impl's methods are called through its dictionary, or resolved
     // where they're called, by callers the walk below can't see (ADRs 0098,
@@ -44,7 +44,7 @@ pub(super) fn drop_params<'tcx>(
     // a value to may, or a std method, or a default the trait wrote. So a
     // generic impl is given a drop for each type parameter that isn't `Copy`,
     // and so are its methods, unless it's a derive whose body drops none.
-    let impls: HashSet<DefId> = fns
+    let impls: IndexSet<DefId> = fns
         .iter()
         .filter_map(|&id| {
             tcx.trait_impl_of_assoc(id)
@@ -99,7 +99,7 @@ pub(super) fn drop_params<'tcx>(
     let mut passed: Vec<((DefId, u32), (DefId, u32))> = Vec::new();
     // Each function's std associated types given drops, after its type
     // parameters (ADR 0421).
-    let mut items: HashMap<DefId, Vec<Ty<'tcx>>> = HashMap::new();
+    let mut items: IndexMap<DefId, Vec<Ty<'tcx>>> = IndexMap::default();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
         for (callee, args, span) in crate::lower::instances::calls_of(body) {
@@ -204,7 +204,7 @@ pub(super) fn drop_params<'tcx>(
             }
         }
     }
-    let mut params: HashMap<DefId, Vec<u32>> = HashMap::new();
+    let mut params: IndexMap<DefId, Vec<u32>> = IndexMap::default();
     for (def, index) in given {
         params.entry(def).or_default().push(index);
     }

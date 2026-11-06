@@ -3,16 +3,16 @@
 //! written in a function's body (ADR 0308), and a `const` written there
 //! (ADR 0031, amended).
 
+use crate::collections::IndexMap;
 use crate::js::{self, Expr, StmtKind};
-use std::collections::HashMap;
 
 /// What fills each item's hole, by its item's index: a function a block
 /// makes and gives (ADR 0296), or one written in a function's body (ADR
 /// 0308); or a `const` written there (ADR 0031, amended).
 #[derive(Default)]
 pub(super) struct Holes {
-    pub(super) functions: HashMap<u32, js::Function>,
-    pub(super) consts: HashMap<u32, js::Const>,
+    pub(super) functions: IndexMap<u32, js::Function>,
+    pub(super) consts: IndexMap<u32, js::Const>,
 }
 
 /// Each hole in `stmts` filled with its function, and each in that (ADR 0296).
@@ -28,10 +28,10 @@ pub(super) fn fill_holes(stmts: &mut Vec<js::Stmt>, holes: &mut Holes) {
                 continue;
             };
             // Where it's written, which its comments are before.
-            if let Some(function) = holes.functions.remove(&index) {
+            if let Some(function) = holes.functions.swap_remove(&index) {
                 stmt.span = function.span;
                 stmt.kind = StmtKind::Function(Box::new(function));
-            } else if let Some(constant) = holes.consts.remove(&index) {
+            } else if let Some(constant) = holes.consts.swap_remove(&index) {
                 stmt.span = constant.span;
                 stmt.kind = StmtKind::Const(constant.name, constant.value);
             }
@@ -42,7 +42,7 @@ pub(super) fn fill_holes(stmts: &mut Vec<js::Stmt>, holes: &mut Holes) {
 
 pub(super) fn fill_hole(e: &mut Expr, holes: &mut Holes) {
     if let js::ExprKind::ItemHole(index) = e.kind
-        && let Some(mut function) = holes.functions.remove(&index)
+        && let Some(mut function) = holes.functions.swap_remove(&index)
     {
         fill_holes(&mut function.body, holes);
         e.kind = js::ExprKind::Function(Box::new(function));

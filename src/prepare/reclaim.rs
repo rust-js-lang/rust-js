@@ -5,9 +5,8 @@
 //! where every read in its item is of what it was before, as JS's scopes
 //! resolve them (ADR 0357): `const n` in a block beside another `n`.
 
-use std::collections::{HashMap, HashSet};
-
 use super::scopes;
+use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 
 pub(super) fn module(module: &mut js::Module) {
@@ -181,7 +180,7 @@ fn own_items(module: &mut js::Module) {
     // Not a module variable's, `let getTime`, which `export { getTime }`
     // exports.
     let own_name = |(local, exported): &(String, String)| local == exported;
-    let mut folded = HashSet::new();
+    let mut folded = IndexSet::default();
     for item in &mut module.items {
         let (name, export) = match item {
             js::Item::Function(function) => (&function.name, &mut function.export),
@@ -214,9 +213,9 @@ fn locals(item: &mut js::Item) {
         }
     });
     // Each name renamed, as it's written in the item, to what it is now.
-    let mut renamed: HashMap<String, String> = HashMap::new();
+    let mut renamed: IndexMap<String, String> = IndexMap::default();
     for local in declared {
-        let Some(base) = reclaimable(&local, &HashSet::new()) else {
+        let Some(base) = reclaimable(&local, &IndexSet::default()) else {
             continue;
         };
         let suffix: usize = local[base.len() + 1..].parse().unwrap_or(0);
@@ -247,7 +246,7 @@ fn locals(item: &mut js::Item) {
 
 /// The name `name`, `label$1` or `Error$`, was given apart from, where it
 /// may be that name: one none of `mentioned` is, nor a word JS keeps.
-fn reclaimable<'a>(name: &'a str, mentioned: &HashSet<String>) -> Option<&'a str> {
+fn reclaimable<'a>(name: &'a str, mentioned: &IndexSet<String>) -> Option<&'a str> {
     // `label$1`, given apart, or `Error$`, named apart for good.
     let base = match crate::names::apart(name) {
         Some((base, _)) => base,
@@ -265,8 +264,8 @@ fn reclaimable<'a>(name: &'a str, mentioned: &HashSet<String>) -> Option<&'a str
 
 /// Each name the module mentions: its items' own, what they declare and
 /// read, and its imports'.
-pub(super) fn mentions(module: &mut js::Module) -> HashSet<String> {
-    let mut names = HashSet::new();
+pub(super) fn mentions(module: &mut js::Module) -> IndexSet<String> {
+    let mut names = IndexSet::default();
     for item in &mut module.items {
         if let Some(name) = item.declared() {
             names.insert(name.to_string());

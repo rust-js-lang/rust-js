@@ -4,6 +4,7 @@
 //! names them by.
 
 use super::Pass;
+use crate::collections::{IndexMap, IndexSet};
 use crate::js;
 use crate::lower::analysis::renamed_in;
 use crate::lower::reexports::Through;
@@ -11,7 +12,7 @@ use crate::lower::{FnInfo, module_symbol};
 use crate::program::ImportRequest;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalModId};
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::BTreeMap;
 
 /// An import of another of the crate's modules' items: the module whose
 /// item it is, its name there, what it's imported as, the importer's name
@@ -33,11 +34,11 @@ pub(super) type Reimported = (LocalModId, String, String, DefId);
 /// And `copies`, each a copy of a function (ADR 0051, amended).
 pub(super) fn of_crate(
     tcx: TyCtxt<'_>,
-    (pass, fns): (&Pass, &HashMap<DefId, FnInfo>),
+    (pass, fns): (&Pass, &IndexMap<DefId, FnInfo>),
     copies: Vec<(LocalModId, (LocalModId, String, String, String))>,
-    through: &HashMap<(LocalModId, DefId), Through>,
-) -> HashMap<LocalModId, HashSet<ImportTarget>> {
-    let mut targets: HashMap<LocalModId, HashSet<ImportTarget>> = HashMap::new();
+    through: &IndexMap<(LocalModId, DefId), Through>,
+) -> IndexMap<LocalModId, IndexSet<ImportTarget>> {
+    let mut targets: IndexMap<LocalModId, IndexSet<ImportTarget>> = IndexMap::default();
     for &(from, id) in &pass.references {
         let info = &fns[&id];
         let name = info.owner.as_ref().unwrap_or(&info.name).clone();
@@ -46,13 +47,15 @@ pub(super) fn of_crate(
             // default (ADR 0761).
             Some(_) if let Some(class) = crate::lower::classes::class_of(tcx, id) => (
                 crate::lower::default_exports::exported_as(tcx, class, &name),
-                renamed_in(tcx, from).remove(&class).unwrap_or_else(|| name.clone()),
+                renamed_in(tcx, from)
+                    .swap_remove(&class)
+                    .unwrap_or_else(|| name.clone()),
                 Some(class),
             ),
             Some(_) => (name.clone(), name.clone(), None),
             None => (
                 crate::lower::default_exports::exported_as(tcx, id, info.exported()),
-                renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),
+                renamed_in(tcx, from).swap_remove(&id).unwrap_or_else(|| name.clone()),
                 Some(id),
             ),
         };
@@ -71,7 +74,9 @@ pub(super) fn of_crate(
     // And a binding it reads through another that holds it, by its export
     // there, named as the importer's `use` names it (ADR 0633).
     for (from, holder, name, default, binding) in &pass.held {
-        let local = renamed_in(tcx, *from).remove(binding).unwrap_or_else(|| name.clone());
+        let local = renamed_in(tcx, *from)
+            .swap_remove(binding)
+            .unwrap_or_else(|| name.clone());
         let export = if *default { "default".to_string() } else { name.clone() };
         let import = (*holder, name.clone(), export, local, *holder, Some(*binding));
         (targets.entry(*from).or_default()).insert(import);
@@ -93,8 +98,12 @@ pub(super) fn of_crate(
 pub(super) fn requests(
     tcx: TyCtxt<'_>,
     module: LocalModId,
-    (imports, reimported, reexporters): (HashSet<ImportTarget>, Vec<Reimported>, impl Iterator<Item = LocalModId>),
-    paths: &HashMap<LocalModId, Vec<String>>,
+    (imports, reimported, reexporters): (
+        IndexSet<ImportTarget>,
+        Vec<Reimported>,
+        impl Iterator<Item = LocalModId>,
+    ),
+    paths: &IndexMap<LocalModId, Vec<String>>,
     at: &dyn Fn(LocalModId, Option<DefId>) -> js::Span,
 ) -> Vec<ImportRequest> {
     let targets = imports.iter().map(|&(target, ..)| target).chain(reexporters);

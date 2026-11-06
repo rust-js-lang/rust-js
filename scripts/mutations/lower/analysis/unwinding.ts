@@ -96,8 +96,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic function judged for a use takes each call of a trait's method, a closure's `call_mut` of one that can't panic, for one that may, so `Defer(|| DEPTH.set(previous))` drops after its `try` and in a `$cleanup` (#861)",
     file: "src/lower/analysis/unwinding.rs",
-    find: "                ty::InstanceKind::Item(def) => self.given(def, instance.args, seen),\n",
-    replace: "                ty::InstanceKind::Item(def) => def == callee && self.given(def, instance.args, seen),\n",
+    find: "                ty::InstanceKind::Item(def) => self.never_unwinds(def, instance.args, seen),\n",
+    replace: "                ty::InstanceKind::Item(def) => def == callee && self.never_unwinds(def, instance.args, seen),\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_judged_per_use.rs$"],
     snapshots: true,
   },

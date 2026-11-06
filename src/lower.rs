@@ -15,8 +15,9 @@
 //! indexes. `body_queries` has no emission context; its cached facts belong
 //! to `Body`.
 
+use crate::collections::{IndexMap, IndexSet};
 use std::cell::{Cell, RefCell};
-use std::collections::{HashMap, HashSet};
+
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -268,10 +269,10 @@ struct Var {
 /// variable, by its `LocalVarId`, goes here, and so goes with it.
 #[derive(Default)]
 struct Locals {
-    vars: HashMap<LocalVarId, Var>,
+    vars: IndexMap<LocalVarId, Var>,
     /// A props pattern's rest, JS's `...props`, by its name: the keys the
     /// pattern names, which it never holds (ADRs 0195, 0205).
-    rests: HashMap<String, Vec<String>>,
+    rests: IndexMap<String, Vec<String>>,
     /// What lowering a body from its MIR found of its variables (ADR 0364),
     /// mir.rs's, which the rest ask of it.
     mir: mir::Found,
@@ -294,7 +295,7 @@ enum Shape<'tcx> {
 enum Nested<'tcx> {
     /// A closure's, an arrow: the enclosing `Locals` and captures, and
     /// these names to start from.
-    Closure { names: HashSet<String> },
+    Closure { names: IndexSet<String> },
     /// A trait's default body, copied into an impl (ADR 0049): `Locals` of
     /// its own, a copy of the names, and the impl's evidence, arguments,
     /// typing environment and drops.
@@ -304,13 +305,13 @@ enum Nested<'tcx> {
         /// The drop, by name, for each of its trait's type parameters the
         /// impl's argument for has one (ADR 0098), and those rust-js can't
         /// make one for, and why.
-        drops: HashMap<u32, String>,
-        unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
+        drops: IndexMap<u32, String>,
+        unsupported: IndexMap<u32, (Ty<'tcx>, &'static str)>,
         /// And of a std associated type of one, `Self::Item`, its slot's
         /// (`drop_slot`), the impl's (ADR 0421), and each it could be given
         /// (ADR 0489).
-        items: HashMap<ty::AliasTy<'tcx>, u32>,
-        slots: HashSet<ty::AliasTy<'tcx>>,
+        items: IndexMap<ty::AliasTy<'tcx>, u32>,
+        slots: IndexSet<ty::AliasTy<'tcx>>,
     },
 }
 
@@ -325,7 +326,7 @@ struct Enclosing<'a, 'tcx> {
 
 /// What each kind of nested body took, by `Nested`'s kinds.
 enum EnclosingKind<'tcx> {
-    Closure { names: HashSet<String> },
+    Closure { names: IndexSet<String> },
     Default(Box<ItemScope<'tcx>>),
 }
 
@@ -333,7 +334,7 @@ enum EnclosingKind<'tcx> {
 /// another body lowers with: the item's names, `Locals`, evidence, arguments,
 /// typing environment and drops.
 struct ItemScope<'tcx> {
-    names: HashSet<String>,
+    names: IndexSet<String>,
     locals: Locals,
     given: traits::GivenScope<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
@@ -346,7 +347,7 @@ struct CrateFacts<'a, 'tcx> {
     /// handle (#478), and the enums told by their keys (#504):
     /// `bindings::flattened`.
     flattened: &'a bindings::Flattened,
-    mutated: &'a HashSet<Ty<'tcx>>,
+    mutated: &'a IndexSet<Ty<'tcx>>,
     /// The `Rc`s counted (ADR 0320).
     counted: &'a analysis::Counted<'tcx>,
     /// Each closure's handle on itself that's no JS (ADR 0843, amended).
@@ -363,36 +364,36 @@ struct CrateFacts<'a, 'tcx> {
     /// Fn` (ADR 0521).
     closure_facts: &'a analysis::ClosureFacts,
     /// The types the crate clones (ADR 0525).
-    cloned: &'a HashSet<Ty<'tcx>>,
+    cloned: &'a IndexSet<Ty<'tcx>>,
     /// The kinds of std's adapters explicit wherever the crate makes one
     /// (ADR 0542): those its types hold, and those with a count it clones.
-    explicit_adapters: &'a HashSet<DefId>,
+    explicit_adapters: &'a IndexSet<DefId>,
     /// The map and filter types the crate steps from their back (ADR 0545).
     back_stepped: &'a analysis::BackStepped<'tcx>,
     /// The trait constants generic code reads (ADR 0106).
-    generic_consts: &'a HashSet<DefId>,
-    changed_vecs: &'a HashSet<Ty<'tcx>>,
+    generic_consts: &'a IndexSet<DefId>,
+    changed_vecs: &'a IndexSet<Ty<'tcx>>,
     /// Each generic function's type parameters it's given a drop for (ADR 0098).
-    drop_params: &'a HashMap<DefId, Vec<u32>>,
+    drop_params: &'a IndexMap<DefId, Vec<u32>>,
     /// The type parameters whose `Copy` bound takes a copy function (ADR
     /// 0289), and whose `Iterator` its dictionary (ADR 0411).
     given: traits::Given<'a>,
     /// Each generic function's type parameters it's given a fact of (ADR 0145).
-    type_facts: &'a HashMap<DefId, Vec<(u32, TypeFact)>>,
+    type_facts: &'a IndexMap<DefId, Vec<(u32, TypeFact)>>,
     /// The types built of each one's slots it's given a layout of (#737).
     built_slots: &'a traits::BuiltSlots<'tcx>,
     /// The functions that take their caller's location (ADR 0427).
-    caller_locations: &'a HashSet<DefId>,
+    caller_locations: &'a IndexSet<DefId>,
     /// The functions that may return `Err(fmt::Error)`, and whether any of
     /// the crate's or its libraries' may, as a generic `T`'s then may (ADR 0187).
-    failing: &'a HashSet<DefId>,
+    failing: &'a IndexSet<DefId>,
     any_failing: bool,
     /// The throwing functions, whose result is a throwing JS call's, each
     /// return its call's value (ADR 0644).
-    throwing: &'a HashSet<DefId>,
+    throwing: &'a IndexSet<DefId>,
     /// The functions that never unwind, whose call throws only where what
     /// it's given does (ADR 0902).
-    never_unwinding: &'a HashSet<DefId>,
+    never_unwinding: &'a IndexSet<DefId>,
     /// The functions that read `js::arguments()`, each call of which gives
     /// every argument the Rust does (rd332).
     reads_arguments: &'a analysis::arguments::ReadsArguments<'tcx>,
@@ -401,23 +402,23 @@ struct CrateFacts<'a, 'tcx> {
     keeps_capacity: bool,
     /// The functions that take only the drops they use (ADR 0300).
     takes_used_drops: &'a drops::TakesUsed,
-    closures: &'a HashMap<DefId, &'a Body<'tcx>>,
-    bodies: &'a HashMap<DefId, &'a Body<'tcx>>,
-    fns: &'a HashMap<DefId, FnInfo>,
-    imports: &'a HashMap<LocalModId, HashMap<Export, String>>,
+    closures: &'a IndexMap<DefId, &'a Body<'tcx>>,
+    bodies: &'a IndexMap<DefId, &'a Body<'tcx>>,
+    fns: &'a IndexMap<DefId, FnInfo>,
+    imports: &'a IndexMap<LocalModId, IndexMap<Export, String>>,
     /// The exports read through `require(module)`, not imported (ADR 0305).
-    required: &'a HashSet<Export>,
+    required: &'a IndexSet<Export>,
     /// Each library's function a module's `use` reads through
     /// `require(module)`, at each read, not imported (rd684, ADR 0305,
     /// amended).
-    required_uses: &'a HashSet<(LocalModId, DefId)>,
+    required_uses: &'a IndexSet<(LocalModId, DefId)>,
     /// Where a path reads a binding through the module that holds it, by
     /// the path's span (ADR 0633).
-    held_reads: &'a HashMap<Span, bindings::HeldRead>,
+    held_reads: &'a IndexMap<Span, bindings::HeldRead>,
     /// Where a path names a function through the module that has it, by
     /// the path's span and its call's: read through that module's
     /// namespace, `Plugin.extractEvents(..)` (rd114, ADR 1018).
-    module_paths: &'a HashMap<Span, analysis::Through>,
+    module_paths: &'a IndexMap<Span, analysis::Through>,
     /// What the crate's libraries export (ADR 0100).
     foreign: &'a library::Foreign<'a, 'tcx>,
     /// Whether the crate asked its panics to abort, `-C panic=abort`, which
@@ -458,45 +459,45 @@ struct CrateFacts<'a, 'tcx> {
     /// function that reads no `this` and none of what it's given more,
     /// found once the first is asked of (`passed_on`'s `own_callbacks`,
     /// rd616).
-    own_callbacks: &'a std::cell::OnceCell<HashSet<rustc_hir::HirId>>,
+    own_callbacks: &'a std::cell::OnceCell<IndexSet<rustc_hir::HirId>>,
     /// The thread-locals each `with_borrow` of which can't ask whether it's
     /// borrowed, their module's variables (ADRs 0270, 0580).
-    quiet_locals: &'a HashSet<rustc_span::def_id::LocalDefId>,
+    quiet_locals: &'a IndexSet<rustc_span::def_id::LocalDefId>,
     /// A library's thread-locals none of whose borrows here can meet
     /// another (`plain_locals::quiet_library_keys`, ADR 0863, amended).
-    quiet_library_keys: &'a HashSet<DefId>,
+    quiet_library_keys: &'a IndexSet<DefId>,
     /// The thread-locals made where they're first used, read by calling
     /// them (ADR 0037, amended).
-    lazy_locals: &'a HashSet<rustc_span::def_id::LocalDefId>,
+    lazy_locals: &'a IndexSet<rustc_span::def_id::LocalDefId>,
     /// The functions a block makes and gives, each a named function
     /// expression there (ADR 0296).
-    named_expressions: &'a HashSet<DefId>,
+    named_expressions: &'a IndexSet<DefId>,
     /// The functions written in a function's body, by the block they're
     /// in, each a function declaration there (ADR 0308).
-    local_functions: &'a HashMap<DefId, rustc_span::Span>,
+    local_functions: &'a IndexMap<DefId, rustc_span::Span>,
     /// Each namespace's method that's the function it passes its
     /// parameters on to, by that function (rd292b, ADR 1037 amended).
-    forwarded: &'a HashMap<DefId, DefId>,
+    forwarded: &'a IndexMap<DefId, DefId>,
     /// The `const`s written in a function's body, each a `const` there,
     /// by the block they're in and the bodies that read them (ADR 0031,
     /// amended).
     local_consts: &'a analysis::LocalConsts,
     /// How many literals the crate writes of each struct: one's fields'
     /// doc comments are its object's (ADR 0444, amended).
-    struct_literals: &'a HashMap<DefId, usize>,
+    struct_literals: &'a IndexMap<DefId, usize>,
     /// The nullable fields present, set first (`classes::set_where_constructed`).
-    constructed: &'a HashSet<DefId>,
+    constructed: &'a IndexSet<DefId>,
     /// Each body run where its module loads, a thread-local's value, a
     /// static's or constant's initializer lowered as code, a `js::on_load!`,
     /// that reads another of the crate's modules' `const` that may load
     /// after its own, an import cycle's: it reads their values
     /// (`FnCx::reads_by_name`, `pipeline::load_cycles`, ADR 0031, amended).
     /// Lowered again once it's known.
-    loads_in_cycles: std::cell::RefCell<HashSet<DefId>>,
+    loads_in_cycles: std::cell::RefCell<IndexSet<DefId>>,
     /// Each module's function of a recursive type's `==`, clone or order.
     module_fns: RefCell<recursive_fns::ModuleFns<'tcx>>,
     /// Each method that reads each variant's field, its JS's parameter and read (rd317).
-    field_reads: RefCell<HashMap<DefId, (String, Expr)>>,
+    field_reads: RefCell<IndexMap<DefId, (String, Expr)>>,
     /// The own nullable parameters each call gives `null` or a value, as
     /// lowering sees their calls (ADR 0861, amended, rd613).
     nulled_params: &'a analysis::nulled_params::NulledParams,
@@ -514,24 +515,24 @@ impl CrateFacts<'_, '_> {
 /// closures), returned with its JS. They never mutate the crate's inputs.
 #[derive(Default)]
 struct Dependencies {
-    references: HashSet<(LocalModId, DefId)>,
+    references: IndexSet<(LocalModId, DefId)>,
     /// Each copy of a function another module's calls name, by its index
     /// (ADR 0051, amended).
-    copy_references: HashSet<(LocalModId, DefId, usize)>,
+    copy_references: IndexSet<(LocalModId, DefId, usize)>,
     /// Each call of a namespace's method through a value whose call needs a
     /// copy of it, which calls the value's function, the module's own JS:
     /// refused where that copy isn't alike it (rd311, ADRs 0051, 1037).
     through_copies: Vec<(DefId, usize, rustc_span::Span)>,
-    package_uses: HashSet<(LocalModId, Export)>,
+    package_uses: IndexSet<(LocalModId, Export)>,
     uses: Vec<(DefId, DefId)>,
     /// Each binding a module reads through another of the crate's that
     /// holds it, by its `const`'s name there and whether it's that
     /// module's default (ADR 0633).
-    held: HashSet<(LocalModId, LocalModId, String, bool, DefId)>,
+    held: IndexSet<(LocalModId, LocalModId, String, bool, DefId)>,
     /// Each of the crate's modules a module reads a function through the
     /// namespace of, which re-exports it, `Plugin.registerEvents` (rd137):
     /// an import of that module, where the function's own is another's.
-    reexporters: HashSet<(LocalModId, LocalModId)>,
+    reexporters: IndexSet<(LocalModId, LocalModId)>,
     /// The class a `js::on_load!` body replaces the prototype of, where:
     /// set right after its constructor, before its methods (#448, ADR
     /// 0761 amended).
@@ -539,7 +540,7 @@ struct Dependencies {
     /// Each ES class whose prototype it reads as a value,
     /// `js::class::<T>().prototype()`, where an accessor may be defined of
     /// a field's name: its fields undeclared (#568).
-    prototypes_read: HashSet<DefId>,
+    prototypes_read: IndexSet<DefId>,
 }
 
 struct FnCx<'a, 'tcx> {
@@ -563,9 +564,9 @@ struct FnCx<'a, 'tcx> {
     /// What this body knows of its variables.
     locals: Locals,
     /// JS names already taken in this function.
-    names: HashSet<String>,
+    names: IndexSet<String>,
     /// Those taken by the module: its functions, imports and globals.
-    module_names: &'a HashSet<String>,
+    module_names: &'a IndexSet<String>,
     /// Whether this function makes JSX.
     jsx: bool,
     /// What writing to a `Formatter` knows (ADRs 0054, 0137).
@@ -581,15 +582,15 @@ struct FnCx<'a, 'tcx> {
     /// What walks of types found, each walked once, under each typing
     /// environment: what a type holds depends on the bounds in force, as a
     /// copied default's `T::Item` is a number and its sibling's a `Vec`.
-    walks: RefCell<HashMap<ty::TypingEnv<'tcx>, Rc<TypeWalks<'tcx>>>>,
+    walks: RefCell<IndexMap<ty::TypingEnv<'tcx>, Rc<TypeWalks<'tcx>>>>,
     /// What's dropped, and where (ADR 0098).
     drop_state: drops::DropState<'tcx>,
     /// Of a function whose scope struct's methods are functions declared
     /// in it, each method's function's name, which calls of it call (ADR
     /// 1043).
-    scope_functions: HashMap<DefId, String>,
+    scope_functions: IndexMap<DefId, String>,
     /// And the lowering of each this one declares, a copy or none (#500).
-    scope_copies: HashMap<DefId, Option<usize>>,
+    scope_copies: IndexMap<DefId, Option<usize>>,
     /// While one of them is lowered, the name of the variable it closes
     /// over, its `self`'s.
     scope_self: Option<String>,
@@ -654,24 +655,24 @@ struct Given<'tcx> {
 /// Foo0)` is walked once, not 2^n times.
 struct TypeWalks<'tcx> {
     /// What `unsupported_in` found of each struct and enum it looked into.
-    representable: RefCell<HashMap<Ty<'tcx>, Option<Ty<'tcx>>>>,
+    representable: RefCell<IndexMap<Ty<'tcx>, Option<Ty<'tcx>>>>,
     /// While `unsupported_in` walks a type: how far out, among the types it's
     /// inside, is the one a walk took as fine, being inside itself.
     assumed: Cell<usize>,
     /// What `contains_mutated` and `needs_clone_in` found of each type, and
     /// how far out `needs_clone_in` assumed.
-    mutated: RefCell<HashMap<Ty<'tcx>, bool>>,
-    clones: RefCell<HashMap<Ty<'tcx>, bool>>,
+    mutated: RefCell<IndexMap<Ty<'tcx>, bool>>,
+    clones: RefCell<IndexMap<Ty<'tcx>, bool>>,
     clone_assumed: Cell<usize>,
 }
 
 impl Default for TypeWalks<'_> {
     fn default() -> Self {
         TypeWalks {
-            representable: RefCell::new(HashMap::new()),
+            representable: RefCell::new(IndexMap::default()),
             assumed: Cell::new(usize::MAX),
-            mutated: RefCell::new(HashMap::new()),
-            clones: RefCell::new(HashMap::new()),
+            mutated: RefCell::new(IndexMap::default()),
+            clones: RefCell::new(IndexMap::default()),
             clone_assumed: Cell::new(usize::MAX),
         }
     }
@@ -1112,7 +1113,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// of `react#*.__CLIENT_INTERNALS..` by `import`'s name of the export it's
 /// in, or `require("eslint-plugin-react-hooks").rules` of one required
 /// (ADRs 0028, 0305).
-fn path_read(path: &str, required: &HashSet<Export>, import: impl FnOnce(&Export) -> String) -> Expr {
+fn path_read(path: &str, required: &IndexSet<Export>, import: impl FnOnce(&Export) -> String) -> Expr {
     match bindings::js_import(path) {
         Some((export, rest)) if required.contains(&export) => bindings::read_path(bindings::required(&export), rest),
         Some((export, rest)) => global(&format!("{}{rest}", import(&export))),

@@ -28,6 +28,7 @@
 //! nothing between the closure's `Rc` and the cell's setting, and in the
 //! closure, the cell captured read only by the chain that upgrades it.
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::recognition::{HandleStep, handle_step, weak_pointee};
 use crate::lower::{Body, fn_def};
 use rustc_middle::mir::{
@@ -36,7 +37,6 @@ use rustc_middle::mir::{
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 mod owners;
 mod value_cells;
@@ -60,12 +60,12 @@ pub(crate) struct SelfHandle<'tcx> {
     /// where nothing counts it.
     pointee: Ty<'tcx>,
     /// What the maker writes of the cell: nothing, at each.
-    made: HashSet<Location>,
+    made: IndexSet<Location>,
     /// What the closure writes of reading it: nothing, at each.
-    read: HashSet<Location>,
+    read: IndexSet<Location>,
     /// Each block whose call gives the closure's own `Rc`, the chain's
     /// `unwrap`, and the local it gives it to: the closure's name.
-    pub(crate) own: HashMap<BasicBlock, Local>,
+    pub(crate) own: IndexMap<BasicBlock, Local>,
     /// Where each `Weak::upgrade` of the chain is written, which asks no
     /// count.
     upgrades: Vec<Span>,
@@ -96,7 +96,7 @@ impl<'tcx> SelfHandles<'tcx> {
         let owned_by_return = OwnedByReturn::new(tcx, bodies, foreign);
         let owned = |id: DefId, index| owned_by_return.owns(id, index) || foreign(id, index);
         let owned: &dyn Fn(DefId, u32) -> bool = &owned;
-        let of: HashMap<DefId, &mir::Body<'tcx>> = (bodies.iter())
+        let of: IndexMap<DefId, &mir::Body<'tcx>> = (bodies.iter())
             .filter_map(|body| Some((body.def_id, &body.mir.as_ref()?.body)))
             .collect();
         let mut handles: Vec<SelfHandle<'tcx>> = Vec::new();
@@ -228,7 +228,7 @@ impl<'tcx> SelfHandles<'tcx> {
 
     /// Each block of `closure` whose call gives the `Rc` its handle names,
     /// its own or its owner's, to the local it gives it to, if any.
-    pub(crate) fn read_by(&self, closure: DefId) -> Option<&HashMap<BasicBlock, Local>> {
+    pub(crate) fn read_by(&self, closure: DefId) -> Option<&IndexMap<BasicBlock, Local>> {
         let own = self.handles.iter().find(|h| h.closure == closure);
         own.map(|h| &h.own).or_else(|| {
             self.owners
@@ -239,7 +239,7 @@ impl<'tcx> SelfHandles<'tcx> {
 
     /// The blocks of `body` whose call makes an owner handle's cell, each
     /// the `let` of the local of the `Rc` it's the variable of.
-    pub(crate) fn declared(&self, body: DefId) -> HashMap<BasicBlock, Local> {
+    pub(crate) fn declared(&self, body: DefId) -> IndexMap<BasicBlock, Local> {
         (self.owners.iter())
             .filter(|o| o.maker == body)
             .filter_map(|o| Some((o.declared?, o.handle)))
@@ -248,7 +248,7 @@ impl<'tcx> SelfHandles<'tcx> {
 
     /// The locals of `body` of no value, which a tuple holds where the
     /// clone of a value cell it's given is no JS (`value_cells`, #641).
-    pub(crate) fn unwritten(&self, body: DefId) -> HashSet<Local> {
+    pub(crate) fn unwritten(&self, body: DefId) -> IndexSet<Local> {
         (self.owners.iter())
             .flat_map(|o| &o.unwritten)
             .filter(|&&(of, _)| of == body)
@@ -258,8 +258,8 @@ impl<'tcx> SelfHandles<'tcx> {
 
     /// What `body` writes nothing of: its handles' cells' making and
     /// setting, and its reads of its own.
-    pub(crate) fn unlowered(&self, body: DefId) -> HashSet<Location> {
-        let mut at = HashSet::new();
+    pub(crate) fn unlowered(&self, body: DefId) -> IndexSet<Location> {
+        let mut at = IndexSet::default();
         for h in &self.handles {
             if h.maker == body {
                 at.extend(&h.made);
@@ -284,15 +284,15 @@ impl<'tcx> SelfHandles<'tcx> {
 /// through, of `body`: what says nothing, a storage marker, a fake read or
 /// a type's ascription, neither.
 pub(super) struct Uses {
-    defs: HashMap<Local, Vec<Location>>,
-    uses: HashMap<Local, Vec<Location>>,
+    defs: IndexMap<Local, Vec<Location>>,
+    uses: IndexMap<Local, Vec<Location>>,
 }
 
 impl Uses {
     pub(super) fn of(body: &mir::Body<'_>) -> Uses {
         let mut uses = Uses {
-            defs: HashMap::new(),
-            uses: HashMap::new(),
+            defs: IndexMap::default(),
+            uses: IndexMap::default(),
         };
         let used = |local: Local, at: Location, uses: &mut Uses| {
             let list = uses.uses.entry(local).or_default();
@@ -462,7 +462,7 @@ fn made<'tcx>(
 ) -> Option<SelfHandle<'tcx>> {
     // An `Rc<RefCell<Option<Weak<D>>>>`.
     let pointee = held_weak(tcx, body.local_decls[cell].ty)?;
-    let mut made = HashSet::new();
+    let mut made = IndexSet::default();
     // What it's made of: `Rc::new(RefCell::new(None))`.
     let at = uses.def(cell)?;
     let (HandleStep::RcNew, args, _) = call_at(tcx, body, at)? else {
@@ -641,15 +641,15 @@ fn made<'tcx>(
         capture: index,
         pointee,
         made,
-        read: HashSet::new(),
-        own: HashMap::new(),
+        read: IndexSet::default(),
+        own: IndexMap::default(),
         upgrades: Vec::new(),
     })
 }
 
 /// Whether each use of `local` is one of `made`, or a drop of it where it
 /// unwinds, which then is too.
-fn only_made(body: &mir::Body<'_>, uses: &Uses, local: Local, made: &mut HashSet<Location>) -> bool {
+fn only_made(body: &mir::Body<'_>, uses: &Uses, local: Local, made: &mut IndexSet<Location>) -> bool {
     for &at in uses.uses(local) {
         if drops(body, at, local) {
             made.insert(at);
@@ -691,7 +691,12 @@ fn held_weak<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
 /// `to`, the cell's setting, by `made`'s steps alone, and what runs
 /// nothing: a storage marker, or the drop of what was `moved` into the
 /// handle.
-fn set_next(body: &mir::Body<'_>, (from, to): (Location, Location), made: &HashSet<Location>, moved: &[Local]) -> bool {
+fn set_next(
+    body: &mir::Body<'_>,
+    (from, to): (Location, Location),
+    made: &IndexSet<Location>,
+    moved: &[Local],
+) -> bool {
     let (mut block, mut index) = (from.block, from.statement_index);
     // Each block once at most: past that, it's gone round.
     for _ in 0..=body.basic_blocks.len() {
@@ -750,14 +755,14 @@ fn read<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &mir::Body<'tcx>,
     (capture, chain): (usize, Chain),
-) -> Option<(HashSet<Location>, HashMap<BasicBlock, Local>, Vec<Span>)> {
+) -> Option<(IndexSet<Location>, IndexMap<BasicBlock, Local>, Vec<Span>)> {
     let once = chain == Chain::Owner;
     let value = chain == Chain::Value;
     let strong = chain == Chain::Strong;
     let env = Local::from_usize(1);
     let uses = Uses::of(body);
-    let mut read = HashSet::new();
-    let mut own = HashMap::new();
+    let mut read = IndexSet::default();
+    let mut own = IndexMap::default();
     let mut upgrades = Vec::new();
     let mut slice = Vec::new();
     // Each read of the capture: `&(*env).capture`, or `&env.capture` of a

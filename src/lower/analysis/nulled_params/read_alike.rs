@@ -18,6 +18,7 @@
 //! only used so. Anything else, a call of the crate's function among them,
 //! leaves it as it was: when unsure, `?? null`.
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::body_queries::strip;
 use crate::lower::combinators::Comb;
@@ -28,11 +29,10 @@ use rustc_middle::mir::visit::{PlaceContext, Visitor};
 use rustc_middle::mir::{self, Local, Location, Operand, PlaceElem, Rvalue, StatementKind, TerminatorKind};
 use rustc_middle::thir::ExprKind;
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 /// The nullable thread-locals of `bodies`, the crate's every body, that
 /// nothing reads apart.
-pub(super) fn found<'tcx>(recognition: &Recognition<'_, 'tcx>, bodies: &[&Body<'tcx>]) -> HashSet<DefId> {
+pub(super) fn found<'tcx>(recognition: &Recognition<'_, 'tcx>, bodies: &[&Body<'tcx>]) -> IndexSet<DefId> {
     let tcx = recognition.tcx;
     let nullable = |key: DefId| {
         key.is_local()
@@ -41,15 +41,15 @@ pub(super) fn found<'tcx>(recognition: &Recognition<'_, 'tcx>, bodies: &[&Body<'
     };
     // Each read or set where the THIR shows it, and each read or used
     // where its reads may not all be seen.
-    let mut alike: HashSet<DefId> = HashSet::new();
-    let mut refused: HashSet<DefId> = HashSet::new();
+    let mut alike: IndexSet<DefId> = IndexSet::default();
+    let mut refused: IndexSet<DefId> = IndexSet::default();
     // How many calls of each the THIR shows, which MIR must show too.
-    let mut called: HashMap<DefId, usize> = HashMap::new();
+    let mut called: IndexMap<DefId, usize> = IndexMap::default();
     for body in bodies {
         let thir = &body.thir;
         let at = body.def_id;
         // Each read or set of one, `KEY` of `KEY.get()`.
-        let mut accessed = HashSet::new();
+        let mut accessed = IndexSet::default();
         for expr in thir.exprs.iter() {
             if let ExprKind::Call { fun, ref args, .. } = expr.kind
                 && let Some((id, _)) = fn_def(thir[fun].ty)
@@ -86,7 +86,7 @@ pub(super) fn found<'tcx>(recognition: &Recognition<'_, 'tcx>, bodies: &[&Body<'
     }
     // Each call MIR shows of each, as the THIR shows them, and what each
     // read gives used alike.
-    let mut seen: HashMap<DefId, usize> = HashMap::new();
+    let mut seen: IndexMap<DefId, usize> = IndexMap::default();
     for body in bodies {
         let Some(mir) = &body.mir else { continue };
         let uses = Uses::new(recognition, &mir.body, &mir.promoted);
@@ -136,7 +136,7 @@ struct Uses<'u, 'tcx> {
     body: &'u mir::Body<'tcx>,
     promoted: &'u rustc_index::IndexVec<mir::Promoted, mir::Body<'tcx>>,
     /// Each local assigned once by a statement, and what it's assigned.
-    assigned: HashMap<Local, Option<&'u Rvalue<'tcx>>>,
+    assigned: IndexMap<Local, Option<&'u Rvalue<'tcx>>>,
 }
 
 impl<'u, 'tcx> Uses<'u, 'tcx> {
@@ -145,7 +145,7 @@ impl<'u, 'tcx> Uses<'u, 'tcx> {
         body: &'u mir::Body<'tcx>,
         promoted: &'u rustc_index::IndexVec<mir::Promoted, mir::Body<'tcx>>,
     ) -> Self {
-        let mut assigned: HashMap<Local, Option<&Rvalue<'tcx>>> = HashMap::new();
+        let mut assigned: IndexMap<Local, Option<&Rvalue<'tcx>>> = IndexMap::default();
         for statement in body.basic_blocks.iter().flat_map(|data| &data.statements) {
             if let StatementKind::Assign(assign) = &statement.kind
                 && assign.0.projection.is_empty()

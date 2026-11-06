@@ -3,8 +3,7 @@
 //! before each, whether what it drops is there, isn't, or may be, which a
 //! flag of its own then says as the body runs, set where rustc sets it.
 
-use std::collections::{HashMap, HashSet};
-
+use crate::collections::{IndexMap, IndexSet};
 use rustc_abi::FieldIdx;
 use rustc_index::IndexVec;
 use rustc_middle::mir::{
@@ -40,16 +39,16 @@ pub(super) struct Elaboration<'tcx> {
     pub(super) move_data: MoveData<'tcx>,
     /// Before each `Drop`, of each path under what it drops: whether it
     /// may be initialized, and whether it may not be.
-    states: HashMap<(BasicBlock, MovePathIndex), (bool, bool)>,
+    states: IndexMap<(BasicBlock, MovePathIndex), (bool, bool)>,
     /// The paths a flag says the drop of.
     pub(super) flagged: IndexVec<MovePathIndex, bool>,
     /// Each flag as the body starts: a parameter's is set.
     pub(super) initial: IndexVec<MovePathIndex, bool>,
     /// The flags set before a statement or a terminator.
-    pub(super) sets: HashMap<Location, Vec<(MovePathIndex, bool)>>,
+    pub(super) sets: IndexMap<Location, Vec<(MovePathIndex, bool)>>,
     /// The blocks whose `Drop` drops what's behind a pointer that drops
     /// nothing itself, `*self`'s field: there, as borrowck says.
-    behind: HashSet<BasicBlock>,
+    behind: IndexSet<BasicBlock>,
 }
 
 impl<'tcx> Elaboration<'tcx> {
@@ -106,7 +105,7 @@ fn quiet_drops<'tcx>(
     tcx: ty::TyCtxt<'tcx>,
     body: &mir::Body<'tcx>,
     drops: &impl Fn(Ty<'tcx>) -> bool,
-) -> HashSet<BasicBlock> {
+) -> IndexSet<BasicBlock> {
     (body.basic_blocks.iter_enumerated())
         .filter(|(_, data)| {
             matches!(&data.terminator().kind, TerminatorKind::Drop { place, unwind: UnwindAction::Cleanup(_), .. }
@@ -140,8 +139,8 @@ pub(in crate::lower) fn dead_drops<'tcx>(
     tcx: ty::TyCtxt<'tcx>,
     body: &mir::Body<'tcx>,
     drops: &impl Fn(Ty<'tcx>) -> bool,
-) -> HashSet<BasicBlock> {
-    let quiet: HashSet<BasicBlock> = (body.basic_blocks.iter_enumerated())
+) -> IndexSet<BasicBlock> {
+    let quiet: IndexSet<BasicBlock> = (body.basic_blocks.iter_enumerated())
         .filter(|(_, data)| {
             matches!(&data.terminator().kind, TerminatorKind::Drop { place, .. }
                 if !drops(place.ty(&body.local_decls, tcx).ty))
@@ -181,7 +180,7 @@ pub(in crate::lower) fn dead_drops<'tcx>(
 }
 
 /// `body` with no unwind from the `Drop` ending each of `quiet`.
-fn without_unwinds<'tcx>(body: &mir::Body<'tcx>, quiet: &HashSet<BasicBlock>) -> mir::Body<'tcx> {
+fn without_unwinds<'tcx>(body: &mir::Body<'tcx>, quiet: &IndexSet<BasicBlock>) -> mir::Body<'tcx> {
     let mut body = body.clone();
     for (block, data) in body.basic_blocks.as_mut().iter_enumerated_mut() {
         if quiet.contains(&block)
@@ -279,7 +278,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `mir_elaboration`'s drops, but those of `quiet_guards`.
-    fn elaborated(&self, body: &mir::Body<'tcx>, quiet_guards: &HashSet<mir::Local>) -> Option<Elaboration<'tcx>> {
+    fn elaborated(&self, body: &mir::Body<'tcx>, quiet_guards: &IndexSet<mir::Local>) -> Option<Elaboration<'tcx>> {
         let tcx = self.tcx;
         let drops = |ty| self.drops(ty) != Drops::Nothing;
         let any = body.basic_blocks.iter().any(|data| {
@@ -313,9 +312,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .into_results_cursor(flow);
             (inits, uninits)
         });
-        let mut states = HashMap::new();
+        let mut states = IndexMap::default();
         let mut flagged = IndexVec::from_elem(false, &move_data.move_paths);
-        let mut behind = HashSet::new();
+        let mut behind = IndexSet::default();
         for (block, data) in body.basic_blocks.iter_enumerated() {
             let TerminatorKind::Drop { place, .. } = &data.terminator().kind else {
                 continue;
@@ -353,7 +352,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         drop_flag_effects_for_function_entry(body, &move_data, |path, state| {
             initial[path] = state == DropFlagState::Present;
         });
-        let mut sets: HashMap<Location, Vec<(MovePathIndex, bool)>> = HashMap::new();
+        let mut sets: IndexMap<Location, Vec<(MovePathIndex, bool)>> = IndexMap::default();
         let mut set = |at: Location, path: MovePathIndex, present: bool| {
             if flagged[path] {
                 sets.entry(at).or_default().push((path, present));
@@ -984,7 +983,7 @@ pub(super) fn cleans_up<'tcx>(
 
 /// The names of `body`'s drop flags, for `tidy`: rust-js's own, and those
 /// it was given (`constant_flags`).
-pub(super) fn flag_names(state: &State<'_, '_>, body: &mir::Body<'_>) -> HashSet<String> {
+pub(super) fn flag_names(state: &State<'_, '_>, body: &mir::Body<'_>) -> IndexSet<String> {
     let given = constant_flags(body)
         .into_iter()
         .map(|local| state.locals.names[local].clone());
@@ -997,7 +996,7 @@ pub(super) fn flag_names(state: &State<'_, '_>, body: &mir::Body<'_>) -> HashSet
 /// rust-js's own (#381).
 fn constant_flags(body: &mir::Body<'_>) -> Vec<mir::Local> {
     use mir::visit::{PlaceContext, Visitor};
-    struct Uses(HashMap<mir::Local, usize>);
+    struct Uses(IndexMap<mir::Local, usize>);
     impl<'tcx> Visitor<'tcx> for Uses {
         fn visit_local(&mut self, local: mir::Local, context: PlaceContext, _: Location) {
             if !matches!(context, PlaceContext::NonUse(_)) {
@@ -1005,10 +1004,10 @@ fn constant_flags(body: &mir::Body<'_>) -> Vec<mir::Local> {
             }
         }
     }
-    let mut uses = Uses(HashMap::new());
+    let mut uses = Uses(IndexMap::default());
     uses.visit_body(body);
     // Each local's uses that set it to a constant or test it.
-    let mut flag_uses: HashMap<mir::Local, usize> = HashMap::new();
+    let mut flag_uses: IndexMap<mir::Local, usize> = IndexMap::default();
     for data in body.basic_blocks.iter() {
         for stmt in &data.statements {
             if let StatementKind::Assign(assign) = &stmt.kind

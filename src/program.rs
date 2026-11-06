@@ -1,8 +1,9 @@
 //! Owned compiler output. No rustc or printer types cross this boundary.
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::js;
 use crate::runtime::Helper;
-use std::collections::{HashMap, HashSet};
+
 use std::path::{Path, PathBuf};
 
 /// A module of the crate's, as its JS is laid out: its module path, its
@@ -25,7 +26,7 @@ pub trait JsModules {
     /// Of `modules`, which each of `specifiers` may load, by their places
     /// in it: none, of a package's; `None` where that can't be said, so any
     /// may be.
-    fn loaded<'s>(&self, specifiers: &[&'s str], modules: &[ModuleAt]) -> HashMap<&'s str, Option<HashSet<usize>>>;
+    fn loaded<'s>(&self, specifiers: &[&'s str], modules: &[ModuleAt]) -> IndexMap<&'s str, Option<IndexSet<usize>>>;
 }
 
 /// Normalized Rust source retained independently of the frontend.
@@ -216,7 +217,7 @@ pub struct ImportRequest {
 pub struct UnlinkedModule {
     pub module: LoweredModule,
     pub imports: Vec<ImportRequest>,
-    pub reserved_names: HashSet<String>,
+    pub reserved_names: IndexSet<String>,
 }
 
 /// Complete lowering output, owned independently of rustc. Only linking turns

@@ -213,9 +213,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let`'s guard moved out of its block, `kept = v;`, is taken as held only until its block ends, so a borrow it meets after doesn't panic (ADR 0863)",
     file: "src/lower/drops/facts.rs",
-    find: "        if !moves.moved && self.held_quietly((fun, cell), (rest, value.as_slice()), &HashSet::new()) {\n",
+    find: "        if !moves.moved && self.held_quietly((fun, cell), (rest, value.as_slice()), &IndexSet::default()) {\n",
     replace:
-      "        if self.held_quietly((fun, cell), (rest, value.as_slice()), &HashSet::new()) {\n",
+      "        if self.held_quietly((fun, cell), (rest, value.as_slice()), &IndexSet::default()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_let_guard_kept.rs$"],
   },
   {

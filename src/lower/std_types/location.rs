@@ -4,6 +4,7 @@
 //! `location`, before its evidence; `Location::caller()` is that, in its own
 //! body, or where it's written anywhere else, a closure in it too.
 
+use crate::collections::IndexSet;
 use crate::js::{Expr, ExprKind, Prop};
 use crate::lower::calls::Call;
 use crate::lower::display::join;
@@ -44,7 +45,7 @@ pub(in crate::lower) const PARTS: [(&str, bool); 3] = [("file", true), ("line", 
 /// does: the one question its parameters, its calls and its declaration
 /// ask.
 pub(in crate::lower) fn takes_location(
-    caller_locations: &std::collections::HashSet<rustc_span::def_id::DefId>,
+    caller_locations: &IndexSet<rustc_span::def_id::DefId>,
     foreign: &crate::lower::library::Foreign<'_, '_>,
     id: rustc_span::def_id::DefId,
 ) -> bool {

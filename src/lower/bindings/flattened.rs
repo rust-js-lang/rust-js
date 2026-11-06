@@ -6,11 +6,11 @@
 //! validation and declarations read.
 
 use super::{declared_tag, field_key, is_flatten, is_otherwise, is_test_field, is_untagged};
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use rustc_hir::def::{CtorKind, DefKind};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 /// Whether `field` is a class's flattened state, `#[rust_js::flatten]` of a
 /// `RefCell` of a discriminated union (`flattened_state`, ADR 1044): its
@@ -136,16 +136,16 @@ pub(in crate::lower) struct Flattened {
     /// each its object's own keys (rd380, ADR 1044): a `&mut` to one is a
     /// handle, whose setter writes each key there, wherever it's given,
     /// never the object, which holds the class's other keys too (#478).
-    pub states: HashSet<DefId>,
+    pub states: IndexSet<DefId>,
     /// Its enums told by their keys (`keyed_shape`, #504): each one a
     /// field flattens, `kind: NodeKind`, or a struct's flattened type
     /// parameter is given, `ReactiveNode<NodeKind>` of `kind: K`, where
     /// the crate names it so. Every value of one is its keys, a variant's
     /// told by its own, `'getter' in node`, where it's flattened or not.
-    pub keyed: HashSet<DefId>,
+    pub keyed: IndexSet<DefId>,
     /// Each struct's flattened type parameters, by their indices: what
     /// each type naming it gives one is flattened.
-    pub params: HashMap<DefId, Vec<u32>>,
+    pub params: IndexMap<DefId, Vec<u32>>,
 }
 
 impl Flattened {
@@ -223,7 +223,7 @@ pub(in crate::lower) fn flattened<'tcx>(
             _ => {}
         }
     }
-    let mut keyed = HashSet::new();
+    let mut keyed = IndexSet::default();
     for ty in types {
         // A library's enum its contract says is keyed, and a library's
         // struct's flattened type parameters, which its consumer gives too.

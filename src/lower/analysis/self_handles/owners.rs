@@ -63,12 +63,12 @@ pub(crate) struct OwnerHandle<'tcx> {
     /// variable only where a `Some` of it isn't boxed.
     pub(super) strong: bool,
     /// What the maker writes of the cell: nothing, at each.
-    pub(super) made: HashSet<Location>,
+    pub(super) made: IndexSet<Location>,
     /// Of each closure, what it writes of reading the cell, nothing at
     /// each, and each block whose `and_then`, or a value cell's `unwrap`,
     /// gives the variable, to the local it gives it to; of the closure a
     /// value cell's readers are made in, its clones of the cell, and none.
-    pub(super) read: HashMap<DefId, (HashSet<Location>, HashMap<BasicBlock, Local>)>,
+    pub(super) read: IndexMap<DefId, (IndexSet<Location>, IndexMap<BasicBlock, Local>)>,
     /// Where each `Weak::upgrade` of the reads is written, by its closure,
     /// which asks no count.
     pub(super) upgrades: Vec<(DefId, Span)>,
@@ -128,12 +128,12 @@ pub(super) fn owner_made<'tcx>(
     tcx: TyCtxt<'tcx>,
     (maker, body, uses): (DefId, &mir::Body<'tcx>, &Uses),
     cell: Local,
-    (of, owned): (&HashMap<DefId, &mir::Body<'tcx>>, &dyn Fn(DefId, u32) -> bool),
+    (of, owned): (&IndexMap<DefId, &mir::Body<'tcx>>, &dyn Fn(DefId, u32) -> bool),
     unowned: &mut Vec<Unowned<'tcx>>,
 ) -> Option<OwnerHandle<'tcx>> {
     // An `Rc<OnceCell<Weak<D>>>`, or an `Rc<OnceCell<Rc<D>>>` (#577).
     let (pointee, held) = once_held(tcx, body.local_decls[cell].ty)?;
-    let mut made = HashSet::new();
+    let mut made = IndexSet::default();
     // What it's made of: `Rc::new(OnceCell::new())`, or `Rc::default()`.
     let at = uses.def(cell)?;
     let declared = at.block;
@@ -369,7 +369,7 @@ pub(super) fn owner_made<'tcx>(
         Held::Weak => Chain::Owner,
         Held::Strong => Chain::Strong,
     };
-    let mut read = HashMap::new();
+    let mut read = IndexMap::default();
     let mut upgrades = Vec::new();
     let mut unwrapped = Vec::new();
     for &(closure, index, _) in &closures {
@@ -488,7 +488,7 @@ pub(super) fn any_call_at<'a, 'tcx>(
 
 /// Whether `to` is reached from `from`'s successors, by what doesn't unwind.
 pub(super) fn reaches(body: &mir::Body<'_>, from: BasicBlock, to: BasicBlock) -> bool {
-    let mut seen = HashSet::new();
+    let mut seen = IndexSet::default();
     let mut todo: Vec<BasicBlock> = body.basic_blocks[from].terminator().successors().collect();
     while let Some(block) = todo.pop() {
         if body.basic_blocks[block].is_cleanup || !seen.insert(block) {

@@ -87,6 +87,7 @@ const unmutated: Record<string, string> = {
   "src/js/known.rs": "the facts an expression may carry, an enum with no behavior of its own; each fact's readers and makers hold its mutations",
   "src/lower/shortcuts.rs": "one-line forwards to recognition, whose mutations hold the answers",
   "src/jsx_syntax/literals.rs": "generated from @types/react; react-versions.test.ts holds it equal to its generator",
+  "src/lower/pipeline/contexts.rs": "a body's or an item's context, made of what its asker gives, with no decision of its own; each field's readers hold its mutations",
   "src/lower/mir/tidy/contracts.rs": "a debug build's checks of what tidy leaves, which change no output; its unit tests, `cargo test`, break each",
 };
 

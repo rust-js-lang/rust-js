@@ -2,8 +2,8 @@
 //! and those never taken.
 
 use super::*;
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::mir::tidy::bindings::declared;
-use std::collections::{HashMap, HashSet};
 
 /// Of `exits_after`, the loop at `i` of `stmts`: what it does after it, its
 /// way out made a `break`, and the `let`s it's put after, of what the loop
@@ -29,7 +29,7 @@ pub(super) fn exit_after(
         return None;
     }
     // The labels inside it, whose jumps don't leave it.
-    let mut inner: HashSet<String> = label.iter().cloned().collect();
+    let mut inner: IndexSet<String> = label.iter().cloned().collect();
     js::each_list(body, &mut |list| {
         for stmt in list.iter() {
             match &stmt.kind {
@@ -71,7 +71,7 @@ pub(super) fn exit_after(
     // What goes on where it's put: no jump to the loop, nor to a label
     // inside it, but one of its own.
     let stays = |s: &Stmt| {
-        let mut own: HashSet<String> = HashSet::new();
+        let mut own: IndexSet<String> = IndexSet::default();
         let mut jumps: Vec<String> = Vec::new();
         js::each_list(std::slice::from_ref(s), &mut |list| {
             for stmt in list.iter() {
@@ -216,8 +216,8 @@ pub(super) fn exit_after(
     // the value it gives, `let next = loop { .. break v; };`, which MIR
     // declares where it's given, `const next = v;`, and what's moved reads:
     // declared before the loop, `let next;`, and given at the `break`.
-    let made: HashSet<&str> = declared(&moved).collect();
-    let mut own: HashSet<String> = HashSet::new();
+    let made: IndexSet<&str> = declared(&moved).collect();
+    let mut own: IndexSet<String> = IndexSet::default();
     js::statement_lists(&mut kept, &mut |list| own.extend(declared(list).map(str::to_string)));
     let mut given: Vec<String> = (own.into_iter())
         .filter(|name| !made.contains(name.as_str()) && js::mentions_in(&moved, name) > 0)
@@ -406,7 +406,7 @@ pub(in crate::lower::mir::tidy) fn written_loop_breaks(
         }
     }
     // Each label the body has, which no other may take.
-    let mut taken = std::collections::HashSet::new();
+    let mut taken = IndexSet::default();
     js::statement_lists(body, &mut |list| {
         for s in list.iter_mut() {
             if let StmtKind::Labeled(label, _) = &s.kind {
@@ -461,7 +461,7 @@ pub(in crate::lower::mir::tidy) fn written_loop_breaks(
 pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: &[LabeledBlock]) {
     let written = |span: js::Span| (blocks.iter()).find(|b| !span.is_none() && b.span == span);
     // Where each JS block is written, by its label.
-    let mut spans: HashMap<String, js::Span> = HashMap::new();
+    let mut spans: IndexMap<String, js::Span> = IndexMap::default();
     js::each_list(body, &mut |list| {
         for stmt in list {
             if let StmtKind::Labeled(l, _) = &stmt.kind {
@@ -505,7 +505,7 @@ pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: 
     });
     // Its name, where no other label has it: no loop's, nor another block's
     // the program labeled so.
-    let mut taken: HashMap<String, usize> = HashMap::new();
+    let mut taken: IndexMap<String, usize> = IndexMap::default();
     js::each_list(body, &mut |list| {
         for stmt in list {
             if let StmtKind::Labeled(l, _)
@@ -608,7 +608,7 @@ fn around_loops(stmts: &mut Vec<Stmt>, blocks: &[LabeledBlock]) {
 /// Whether `inner`, in place of the statement at `i` of `stmts`, declares
 /// nothing declared beside it.
 pub(in crate::lower::mir::tidy) fn fits_in_place(stmts: &[Stmt], i: usize, inner: &[Stmt]) -> bool {
-    let inner: HashSet<&str> = declared(inner).collect();
+    let inner: IndexSet<&str> = declared(inner).collect();
     !(stmts.iter().enumerate())
         .any(|(j, s)| j != i && declared(std::slice::from_ref(s)).any(|name| inner.contains(name)))
 }
@@ -714,14 +714,14 @@ fn taken_away(stmts: &mut Vec<Stmt>) {
         // Whether what a branch declares is declared nowhere beside the
         // `if`, so it can take the `if`'s place.
         let constant = matches!(&stmts[i].kind, StmtKind::If(test, ..) if matches!(test.kind, ExprKind::Bool(_)));
-        let beside: HashSet<&str> = match constant {
+        let beside: IndexSet<&str> = match constant {
             true => (stmts.iter().enumerate())
                 .filter(|(k, _)| *k != i)
                 .flat_map(|(_, s)| declared(std::slice::from_ref(s)))
                 .collect(),
-            false => HashSet::new(),
+            false => IndexSet::default(),
         };
-        let beside: HashSet<String> = beside.into_iter().map(str::to_string).collect();
+        let beside: IndexSet<String> = beside.into_iter().map(str::to_string).collect();
         let fits = |rest: &[Stmt]| declared(rest).all(|n| !beside.contains(n));
         if let StmtKind::If(test, then, els) = &mut stmts[i].kind {
             let rest = if matches!(test.kind, ExprKind::Bool(false)) && fits(els.as_deref().unwrap_or_default()) {

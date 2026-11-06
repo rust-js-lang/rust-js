@@ -5,7 +5,7 @@
 //! `with_borrow(|v| v.get(i))`, its closure's body, which the crate's
 //! bodies have.
 
-use std::collections::HashMap;
+use crate::collections::IndexMap;
 
 use super::known::{Known, Range};
 use super::var_of;
@@ -18,7 +18,7 @@ use rustc_middle::ty::{TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
 
 /// Each of the crate's bodies walked, by what it is: its THIR and its root.
-pub(super) type Bodies<'a, 'tcx> = HashMap<DefId, (&'a Thir<'tcx>, ExprId)>;
+pub(super) type Bodies<'a, 'tcx> = IndexMap<DefId, (&'a Thir<'tcx>, ExprId)>;
 
 /// Whether `pat` is `Some(..)`'s.
 pub(super) fn some_pattern(tcx: TyCtxt<'_>, pat: &Pat<'_>) -> bool {
@@ -179,5 +179,5 @@ pub(in crate::lower) fn present_item_of_sized<'tcx>(
         (tcx.layout_of(rustc_middle::ty::TypingEnv::fully_monomorphized().as_query_input(item)))
             .is_ok_and(|layout| !layout.is_zst())
     });
-    sized && present_index(tcx, thir, init, &HashMap::new()).is_some()
+    sized && present_index(tcx, thir, init, &IndexMap::default()).is_some()
 }

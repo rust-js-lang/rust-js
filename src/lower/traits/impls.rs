@@ -795,9 +795,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // its own and the default's numbered after them, as the impl's are
         // after its parameters (`drop_slot`).
         let mut past = u32::MAX / 2;
-        let mut items = HashMap::new();
+        let mut items = IndexMap::default();
         for (alias, index) in impl_items {
-            if let Some(name) = drops.remove(&index) {
+            if let Some(name) = drops.swap_remove(&index) {
                 drops.insert(past, name);
             }
             items.insert(alias, past);

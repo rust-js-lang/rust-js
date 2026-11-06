@@ -220,7 +220,7 @@ pub(super) fn table_read(arms: &[(Option<Expr>, Expr)], names: &[String]) -> Opt
 pub(super) fn branch_values(
     stmts: &mut Vec<Stmt>,
     returns: &[js::Span],
-    booleans: &HashSet<String>,
+    booleans: &IndexSet<String>,
     (result, switches): (&str, &[Switch]),
     program: &crate::lower::mir::hints::Written,
 ) {
@@ -558,7 +558,7 @@ pub(super) fn chain(body: &[Stmt], label: &str) -> Option<(Vec<Expr>, String, Ex
 
 /// `!e` of a chain of tests, part by part, `!!a || b !== c` of `!a && b ===
 /// c`: a `bool`, as `!e` is, each `!x` of what's not one `!!x`.
-pub(super) fn negated_bools(e: Expr, booleans: &HashSet<String>) -> Expr {
+pub(super) fn negated_bools(e: Expr, booleans: &IndexSet<String>) -> Expr {
     match e.kind {
         ExprKind::Binary(op @ (Op::And | Op::Or), left, right) => {
             let flipped = if op == Op::And { Op::Or } else { Op::And };
@@ -678,7 +678,7 @@ fn written_arm(at: js::Span, code: &[Stmt], patterns: &[js::Span]) -> Option<js:
 
 /// `t && <div className={t ? e : undefined} />`: `e`, where `t` holds, of a
 /// test that does nothing and reads what nothing changes.
-pub(super) fn implied_tests(e: &mut Expr, changing: &HashSet<String>) {
+pub(super) fn implied_tests(e: &mut Expr, changing: &IndexSet<String>) {
     let (ExprKind::Binary(Op::And, test, child) | ExprKind::Cond(test, child, _)) = &mut e.kind else {
         return;
     };
@@ -874,7 +874,7 @@ pub(super) fn guarded_chain(stmt: &Stmt, guard: &Expr) -> bool {
 /// call of a function item that gives a `bool`, std's `v.some(f)` and
 /// `s.startsWith(p)` too (`calls::given_by`, ADR 0953, amended), or `&&`
 /// and `||` of them.
-pub(super) fn is_boolean(e: &Expr, booleans: &HashSet<String>) -> bool {
+pub(super) fn is_boolean(e: &Expr, booleans: &IndexSet<String>) -> bool {
     match &e.kind {
         ExprKind::Bool(_) | ExprKind::Unary(UnaryOp::Not, _) => true,
         _ if e.facts.has(js::Known::Boolean) => true,
@@ -953,7 +953,7 @@ fn kept_by_truth(e: &Expr) -> Option<&Expr> {
 /// read there alone, `if (x) { s }`. Of an `x` that's no variable, a
 /// read, `type.contextTypes`, `h` is kept, its value `x`, which it is where
 /// the test lets it be read: `const h = x; if (!h) { exit }`.
-pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
+pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         i += 1;
@@ -1268,7 +1268,7 @@ fn reads_declared<'s>(tail: &[Stmt], branches: impl Iterator<Item = &'s Stmt>) -
 /// `bb: { if (t) { x = true; break bb; } x = false; }`: `x = t`, `!!t` of
 /// what's no `bool`, `!t` of its values the other way. No program writes a `bool`'s value with an
 /// `if`, clippy's `needless_bool`, so none's undone.
-pub(super) fn flag_values(stmts: &mut [Stmt], booleans: &HashSet<String>) {
+pub(super) fn flag_values(stmts: &mut [Stmt], booleans: &IndexSet<String>) {
     // `x = true;`'s `x` and `true`.
     fn set(stmt: &Stmt) -> Option<(&str, bool)> {
         match &stmt.kind {

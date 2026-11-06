@@ -1,16 +1,16 @@
 //! JavaScript identifier policy shared by lowering and linking.
 
-use std::collections::HashSet;
+use crate::collections::IndexSet;
 
 /// Pick an unused name: `x`, then `x$1`, `x$2`, ... Rust identifiers can't
 /// contain `$`, so these never clash with a user's name.
-pub(crate) fn fresh_in(taken: &mut HashSet<String>, base: &str) -> String {
+pub(crate) fn fresh_in(taken: &mut IndexSet<String>, base: &str) -> String {
     fresh_apart(taken, &js_ident(base))
 }
 
 /// `base`, or given apart from what `taken` has, `base$1`, as `fresh_in`
 /// names, of a name that's fine as it is: a property's, `new` too.
-pub(crate) fn fresh_apart(taken: &mut HashSet<String>, base: &str) -> String {
+pub(crate) fn fresh_apart(taken: &mut IndexSet<String>, base: &str) -> String {
     if taken.insert(base.to_string()) {
         return base.to_string();
     }
@@ -46,7 +46,7 @@ pub(crate) fn apart(name: &str) -> Option<(&str, usize)> {
 /// has, as the runtime's helpers are named. One a helper has, `$durationAdd`
 /// of a `Duration` of the crate's own, is given apart, `$durationAdd$1`: its
 /// module may import that helper too.
-pub(crate) fn dictionary_cache(taken: &mut HashSet<String>, dictionary: &str) -> String {
+pub(crate) fn dictionary_cache(taken: &mut IndexSet<String>, dictionary: &str) -> String {
     loop {
         let cache = fresh_in(taken, &format!("${dictionary}"));
         if !crate::runtime::exports(&cache) {
@@ -197,7 +197,7 @@ mod tests {
     // other caches, one named apart already, `durationAdd$1`'s, too.
     #[test]
     fn dictionary_caches_are_apart() {
-        let mut taken = HashSet::new();
+        let mut taken = IndexSet::default();
         assert_eq!(dictionary_cache(&mut taken, "circleShape"), "$circleShape");
         assert_eq!(dictionary_cache(&mut taken, "durationAdd"), "$durationAdd$1");
         assert_eq!(dictionary_cache(&mut taken, "durationAdd$1"), "$durationAdd$2");

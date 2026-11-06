@@ -79,7 +79,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the other's supertrait. A cell made a `dyn` of two has one `impl`,
     /// both's methods (ADR 0397), which two of one name can't be.
     fn dyn_cell_clash(&self, held: Ty<'tcx>, trait_id: DefId) -> Option<DefId> {
-        let methods = |id: DefId| -> HashSet<Symbol> {
+        let methods = |id: DefId| -> IndexSet<Symbol> {
             supertrait_def_ids(self.tcx, id)
                 .flat_map(|of| self.tcx.associated_items(of).in_definition_order())
                 .filter(|item| item.is_fn())

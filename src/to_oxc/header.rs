@@ -10,7 +10,7 @@
 //! nothing the module does (ADR 0262's case "None"); their order among
 //! themselves is their load order (ADR 1063).
 
-use std::collections::HashMap;
+use crate::collections::IndexMap;
 
 use oxc_allocator::ArenaVec;
 use oxc_ast::ast::{
@@ -235,7 +235,7 @@ pub(super) fn entries<'a>(module: &'a Module) -> Vec<Entry<'a>> {
     }
     // What the module imports, by where from and what's exported there:
     // its local name, and where its import is placed.
-    let mut imported: HashMap<(&str, &str), (&str, js::Span)> = HashMap::new();
+    let mut imported: IndexMap<(&str, &str), (&str, js::Span)> = IndexMap::default();
     for package in &module.packages {
         let default = package.default.iter().map(|local| ("default", local.as_str()));
         let named = package
@@ -324,7 +324,7 @@ pub(super) fn entries<'a>(module: &'a Module) -> Vec<Entry<'a>> {
 /// attached, by where the `use` starts: the start of the first statement
 /// of it, so they're above it once, of two one `use` makes (rd92).
 pub(super) fn commented_at(entries: &[Entry<'_>]) -> Places {
-    let mut at = HashMap::new();
+    let mut at = IndexMap::default();
     for entry in entries.iter().filter(|entry| !entry.commented.is_none()) {
         at.entry(entry.commented.lo).or_insert(entry.at().lo);
     }
@@ -333,7 +333,7 @@ pub(super) fn commented_at(entries: &[Entry<'_>]) -> Places {
 
 /// Where each of one thing starts, and where another is: `commented_at`'s,
 /// `declared_at`'s.
-pub(super) type Places = HashMap<u32, u32>;
+pub(super) type Places = IndexMap<u32, u32>;
 
 /// Of `commented_at`'s, where each binding's declaration starts whose
 /// comments are its import's, and where it ends (rd752): the blank lines

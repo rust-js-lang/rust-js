@@ -3,6 +3,7 @@
 //! before the `match` arm it's of, before its labels (ADR 0905, amended).
 
 use super::*;
+use crate::collections::IndexSet;
 
 /// What a case that falls through to the next says, before it, as React
 /// writes it, and ESLint's `no-fallthrough` asks (ADR 0905).
@@ -13,7 +14,7 @@ pub(super) const FALLTHROUGH: &str = "// falls through";
 /// program's comment says it already, `said`'s.
 pub(super) fn fallthroughs(
     (module, source): (&Module, &str),
-    said: &std::collections::HashSet<u32>,
+    said: &IndexSet<u32>,
     text: &mut String,
     found: &mut Vec<oxc_ast::Comment>,
 ) {

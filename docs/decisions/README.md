@@ -1058,3 +1058,4 @@ is linked once, each superseded or replaced one marked, and no two share
 a number.
 - [1096 How a place holds `None` is `NoneForm`'s](1096-how-a-place-holds-none-is-none-forms.md) *(#819, on 1086's model; amends 0791)*
 - [1097 When a collect asks its hint is `hint_asks`'s](1097-when-a-collect-asks-its-hint-is-hint-asks.md) *(#820 step 1 of 3, on 1096's model; step 2: through the `GenericShunt`, #848; an `extend` asks, a `Vec`'s exact where its capacity's known, #849)*
+- [1098 The compiler's maps are walked in the program's order](1098-the-compilers-maps-are-walked-in-the-programs-order.md) *(#866: `collections`' `IndexMap`/`IndexSet`, std's refused; extends 1003)*

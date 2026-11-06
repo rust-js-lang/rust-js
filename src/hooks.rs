@@ -2,7 +2,7 @@
 //! change each module's text, the map moved to it, and checks, which read
 //! what a build wrote, what they say of the JS said of the Rust.
 
-use std::collections::HashMap;
+use crate::collections::IndexMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -135,7 +135,7 @@ fn name(command: &[String]) -> String {
 
 /// Each file's source map, read once.
 #[derive(Default)]
-struct Maps(HashMap<PathBuf, Option<Map>>);
+struct Maps(IndexMap<PathBuf, Option<Map>>);
 
 /// `text`, a check's output: each line that names a place in a file the
 /// build wrote, at JS some Rust wrote, said of the Rust, and named for

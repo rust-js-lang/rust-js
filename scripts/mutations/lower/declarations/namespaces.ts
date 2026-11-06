@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
     breaks: "a generic impl's parameter of a TypeScript type, `C: ReactNode`, is declared `C` in its methods, which no type parameter names (#507)",
     file: "src/lower/declarations/namespaces.rs",
     find: "            let mut erased = self.erased(imp);\n",
-    replace: "            let mut erased = std::collections::HashMap::new();\n",
+    replace: "            let mut erased = IndexMap::default();\n",
     tests: ["test/impl-constants.test.ts"],
   },
   {

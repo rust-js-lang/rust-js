@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
       "a body's registered symbol reads aren't collected, so each is checked, `$symbolFor(type)`",
     file: "src/lower/body_queries.rs",
     find: "            registered_reads: registered_reads(tcx, thir),\n",
-    replace: "            registered_reads: HashSet::new(),\n",
+    replace: "            registered_reads: IndexSet::default(),\n",
     tests: [
       "test/lowering-symbols.test.ts",
       "-t",
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
       "a body's `==` of a registered symbol read and a `Some` isn't collected, so it's compared loosely",
     file: "src/lower/body_queries.rs",
     find: "            registered_equalities: registered_equalities(tcx, thir),\n",
-    replace: "            registered_equalities: HashSet::new(),\n",
+    replace: "            registered_equalities: IndexSet::default(),\n",
     tests: [
       "test/lowering-symbols.test.ts",
       "-t",
@@ -499,7 +499,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a payload a `downcast_mut` or a function given `&mut` changed is resumed as what was thrown, its old message (rd550)",
     file: "src/lower/body_queries.rs",
-    find: "    match lends_dyn_any(tcx, thir) {\n        true => HashSet::new(),\n",
+    find: "    match lends_dyn_any(tcx, thir) {\n        true => IndexSet::default(),\n",
     replace: "    match lends_dyn_any(tcx, thir) {\n        true => resumes(tcx, thir, false),\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_payload_where_read.rs$"],
   },

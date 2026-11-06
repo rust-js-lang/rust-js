@@ -1,5 +1,6 @@
 //! What a crate does that rust-js refuses, found before any of it is lowered.
 
+use crate::collections::IndexSet;
 use crate::lower::bindings;
 use crate::lower::recognition::{StdItem, from_serde_derive, is_from_str, is_std_def, known_derive};
 use crate::lower::refusal::{Refused, refuse};
@@ -14,7 +15,6 @@ use rustc_middle::ty::TyCtxt;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::def_id::{DefId, LocalDefId};
 use rustc_span::{Span, Symbol};
-use std::collections::HashSet;
 
 /// Report each item rust-js can't compile yet. False if there was one.
 pub(super) fn reject_unsupported(
@@ -246,7 +246,7 @@ pub(super) fn reject_flatten_misuse<'tcx>(
     // The structs of more than one rest: made, `{ ...template, ...files }`,
     // but neither taken apart nor read through, as JS's object has their
     // keys mixed.
-    let mut mixed = HashSet::new();
+    let mut mixed = IndexSet::default();
     // A struct of named fields, not std's, which is the object it is; or a
     // JS object, a `Dict` whose keys spread.
     let std = |adt: ty::AdtDef<'_>| crate::lower::recognition::is_std_crate(tcx, adt.did());
@@ -317,7 +317,7 @@ pub(super) fn reject_flatten_misuse<'tcx>(
     }
     // What a struct's flattened type parameter is given, each type once: a
     // keyed enum, or another type parameter, of generic code (#504).
-    let mut given_once = HashSet::new();
+    let mut given_once = IndexSet::default();
     for body in all_bodies {
         for expr in body.thir.exprs.iter() {
             for (parent, given) in flattened.given_params(expr.ty) {
@@ -364,7 +364,7 @@ pub(super) fn reject_flatten_misuse<'tcx>(
         let bases = &body.facts.jsx_bases;
         // A flattened field read through, `props.html.title`, is its parent's,
         // a reference's too, `(*report.item).line`.
-        let read_through: HashSet<ExprId> = (thir.exprs.iter())
+        let read_through: IndexSet<ExprId> = (thir.exprs.iter())
             .filter_map(|expr| match expr.kind {
                 ExprKind::Field { lhs, .. } => {
                     let mut lhs = strip(thir, lhs);
@@ -400,7 +400,7 @@ pub(super) fn reject_flatten_misuse<'tcx>(
         };
         // A flattened field lent whole, `&state.base`, is its parent's
         // object, which has its fields (ADR 0204, amended).
-        let lent: HashSet<ExprId> = (thir.exprs.iter())
+        let lent: IndexSet<ExprId> = (thir.exprs.iter())
             .filter_map(|expr| match expr.kind {
                 ExprKind::Borrow {
                     borrow_kind: rustc_middle::mir::BorrowKind::Shared,
@@ -418,7 +418,7 @@ pub(super) fn reject_flatten_misuse<'tcx>(
             typing_env: ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(body.def_id)),
             ..*recognition
         };
-        let own_calls: HashSet<ExprId> = (thir.exprs.iter())
+        let own_calls: IndexSet<ExprId> = (thir.exprs.iter())
             .filter_map(|expr| {
                 let ExprKind::Call { fun, ref args, .. } = expr.kind else {
                     return None;
@@ -443,7 +443,7 @@ pub(super) fn reject_flatten_misuse<'tcx>(
         // A keyed enum's field is its parent's keys where it's matched, a
         // place a `match` or a `let` tests, or written whole (#504).
         let keyed = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if flattened.keyed.contains(&adt.did()));
-        let placed: HashSet<ExprId> = (thir.exprs.iter())
+        let placed: IndexSet<ExprId> = (thir.exprs.iter())
             .filter_map(|expr| match expr.kind {
                 ExprKind::Match { scrutinee: at, .. }
                 | ExprKind::Let { expr: at, .. }
@@ -525,18 +525,18 @@ fn shadowed_key(tcx: TyCtxt<'_>, parent: &ty::VariantDef, keyed: &bindings::Keye
 
 /// The names of `ty`'s fields its JS object has: a struct's own, and,
 /// through each flattened field, its struct's.
-fn object_names<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> HashSet<rustc_span::Symbol> {
+fn object_names<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> IndexSet<rustc_span::Symbol> {
     // A flattened state's: its tag and its variants' fields (rd380).
     if let Some((_, keys)) = bindings::flattened_state(tcx, ty.peel_refs()) {
         return keys.iter().map(|key| rustc_span::Symbol::intern(key)).collect();
     }
     let ty::Adt(adt, args) = ty.peel_refs().kind() else {
-        return HashSet::new();
+        return IndexSet::default();
     };
     if !adt.is_struct() {
-        return HashSet::new();
+        return IndexSet::default();
     }
-    let mut names = HashSet::new();
+    let mut names = IndexSet::default();
     for field in &adt.non_enum_variant().fields {
         match bindings::is_flatten(tcx, field) {
             true => names.extend(object_names(tcx, field.ty(tcx, args).skip_normalization())),

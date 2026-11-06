@@ -7,6 +7,7 @@
 //! give, so it's refused.
 
 use super::{constructor_of, is_class};
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::body_queries::strip;
 use crate::lower::recognition::{is_cell_set, is_class_of, is_with_this, js_root_fn, rc_pointee};
@@ -15,7 +16,6 @@ use rustc_middle::thir::visit::{Visitor, walk_expr};
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, PatKind, StmtKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 /// Whether `output`, what a class's constructor gives, is the class's
 /// instance, `own`: `Self`, or an `Rc` or an `Arc` of it.
@@ -69,10 +69,10 @@ pub(crate) fn refuse_counted_instances<'tcx>(tcx: TyCtxt<'tcx>, counts: impl Fn(
 /// `#[rust_js::optional]`, absent until it's set (ADR 0810), is its
 /// readers' to leave out: `NoneForm::trust` of its form, `Optional`,
 /// and a `Cell` field's `get()`, which asks `is_optional` first.
-pub(crate) fn set_where_constructed<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> HashSet<DefId> {
-    let of_id: HashMap<DefId, &Body<'tcx>> = bodies.iter().map(|body| (body.def_id, *body)).collect();
+pub(crate) fn set_where_constructed<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> IndexSet<DefId> {
+    let of_id: IndexMap<DefId, &Body<'tcx>> = bodies.iter().map(|body| (body.def_id, *body)).collect();
     // Of each struct, the fields every constructor of it sets first.
-    let mut set: HashMap<DefId, HashSet<DefId>> = HashMap::new();
+    let mut set: IndexMap<DefId, IndexSet<DefId>> = IndexMap::default();
     for body in bodies {
         let thir = &body.thir;
         for e in thir.exprs.iter() {
@@ -151,8 +151,8 @@ fn with_this_closure<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -> O
 /// unsafe { js::cast(this) };`, then `this.f.set(value)`, where nothing
 /// before reads `this` but a field of it another `set`s or reads. A
 /// statement that gives its `this`, as it is or cast, or returns, ends them.
-fn set_first<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, root: ExprId) -> HashSet<DefId> {
-    let mut first = HashSet::new();
+fn set_first<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, root: ExprId) -> IndexSet<DefId> {
+    let mut first = IndexSet::default();
     // `this`, the closure's first parameter, its environment's past.
     let Some(this) = (thir.params.iter())
         .filter_map(|param| param.pat.as_deref())
@@ -173,7 +173,7 @@ fn set_first<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, root: ExprId) -> HashSe
         thir,
         this,
         cast: None,
-        fields: HashSet::new(),
+        fields: IndexSet::default(),
         escaped: false,
     };
     for &stmt in thir[block].stmts.iter() {
@@ -252,7 +252,7 @@ struct Reads<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
     this: LocalVarId,
     cast: Option<LocalVarId>,
-    fields: HashSet<DefId>,
+    fields: IndexSet<DefId>,
     escaped: bool,
 }
 

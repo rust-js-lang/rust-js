@@ -6,6 +6,7 @@
 //! use`s a module's file has is `analysis::is_reexport`'s.
 
 use super::FnInfo;
+use crate::collections::{IndexMap, IndexSet};
 use crate::js;
 use crate::program::Reexport;
 use rustc_hir as hir;
@@ -13,7 +14,6 @@ use rustc_hir::def::{DefKind, Res};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
-use std::collections::HashMap;
 
 /// One type a module's declarations alone re-export (`type_reexports`):
 /// its statement, where it's from, none where it's the module's own, and
@@ -57,11 +57,11 @@ pub(super) fn reexports(
     tcx: TyCtxt<'_>,
     module: LocalModId,
     (fns, foreign, forwarded): (
-        &HashMap<DefId, FnInfo>,
+        &IndexMap<DefId, FnInfo>,
         &super::library::Foreign<'_, '_>,
-        &HashMap<DefId, DefId>,
+        &IndexMap<DefId, DefId>,
     ),
-    paths: &HashMap<LocalModId, Vec<String>>,
+    paths: &IndexMap<LocalModId, Vec<String>>,
     (default_from, held): (Option<(DefId, rustc_span::Span)>, &[super::bindings::HeldBinding]),
 ) -> Vec<Named> {
     // Each name, where it's written: the statement, its `use` item's span,
@@ -298,7 +298,7 @@ pub(super) fn type_reexports(
     tcx: TyCtxt<'_>,
     module: LocalModId,
     foreign: &super::library::Foreign<'_, '_>,
-    paths: &HashMap<LocalModId, Vec<String>>,
+    paths: &IndexMap<LocalModId, Vec<String>>,
 ) -> Vec<TypeReexport> {
     let mut found = Vec::new();
     for id in tcx.hir_module_items(module).free_items() {
@@ -483,8 +483,8 @@ pub(in crate::lower) fn only_attributes(between: &str, blank_lines: bool) -> boo
 fn globbed(
     tcx: TyCtxt<'_>,
     (module, glob, statement): (LocalModId, DefId, rustc_span::Span),
-    (fns, foreign): (&HashMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
-    paths: &HashMap<LocalModId, Vec<String>>,
+    (fns, foreign): (&IndexMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
+    paths: &IndexMap<LocalModId, Vec<String>>,
     found: &mut Vec<Named>,
 ) {
     use rustc_middle::metadata::Reexport as Via;
@@ -568,7 +568,7 @@ fn glob_source(tcx: TyCtxt<'_>, glob: DefId) -> Option<LocalModId> {
 /// (`exported_by`, #592).
 fn glob_export(
     tcx: TyCtxt<'_>,
-    (fns, foreign): (&HashMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
+    (fns, foreign): (&IndexMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
     glob: DefId,
     (name, item): (Symbol, DefId),
 ) -> Option<(LocalModId, String)> {
@@ -587,12 +587,12 @@ fn glob_export(
 /// `None` where it exports it by none.
 pub(super) fn exported_by(
     tcx: TyCtxt<'_>,
-    (fns, foreign): (&HashMap<DefId, FnInfo>, Option<&super::library::Foreign<'_, '_>>),
+    (fns, foreign): (&IndexMap<DefId, FnInfo>, Option<&super::library::Foreign<'_, '_>>),
     mut module: LocalModId,
     (mut name, item): (Symbol, DefId),
 ) -> Option<String> {
     use rustc_middle::metadata::Reexport as Via;
-    let mut seen = std::collections::HashSet::new();
+    let mut seen = IndexSet::default();
     let own = |name: Symbol| match fns.get(&item) {
         Some(info) => info.exported().to_string(),
         None => (foreign.and_then(|foreign| foreign.item(item)))
@@ -662,7 +662,7 @@ fn written_module(path: &hir::UsePath<'_>) -> Option<LocalModId> {
 /// gives it, which re-exports it. `None` where it does neither.
 pub(super) fn exported_in(
     tcx: TyCtxt<'_>,
-    fns: &HashMap<DefId, FnInfo>,
+    fns: &IndexMap<DefId, FnInfo>,
     module: LocalModId,
     name: Symbol,
     item: DefId,
@@ -684,7 +684,7 @@ pub(super) fn exported_in(
 /// consumers import through that module, from its file (rd704).
 pub(super) fn reexported_items(
     tcx: TyCtxt<'_>,
-    fns: &HashMap<DefId, FnInfo>,
+    fns: &IndexMap<DefId, FnInfo>,
 ) -> Vec<(LocalModId, Symbol, DefId, String)> {
     let mut found = Vec::new();
     for id in tcx.hir_crate_items(()).free_items() {
@@ -754,8 +754,8 @@ pub(super) struct Through {
 /// as one that makes a load cycle stays its home's.
 pub(super) fn imported_through<'tcx>(
     tcx: TyCtxt<'tcx>,
-    (fns, foreign): (&HashMap<DefId, FnInfo>, &super::library::Foreign<'_, 'tcx>),
-) -> HashMap<(LocalModId, DefId), Through> {
+    (fns, foreign): (&IndexMap<DefId, FnInfo>, &super::library::Foreign<'_, 'tcx>),
+) -> IndexMap<(LocalModId, DefId), Through> {
     // What a `use`'s path names `item` through, `module`, re-exports it as,
     // by `name`: of the crate's function, by `exported_in`'s name; of a
     // library's, by its `pub use`'s. None of its home, or of one that
@@ -775,7 +775,7 @@ pub(super) fn imported_through<'tcx>(
     // Each `use`'s first naming of each item, where, and through the module
     // that re-exports it, by what, or not.
     type First = (rustc_span::Span, Option<(LocalModId, String)>);
-    let mut first: HashMap<(LocalModId, DefId), First> = HashMap::new();
+    let mut first: IndexMap<(LocalModId, DefId), First> = IndexMap::default();
     for id in tcx.hir_crate_items(()).free_items() {
         let used = tcx.hir_item(id);
         let hir::ItemKind::Use(path, hir::UseKind::Single(_)) = used.kind else {
@@ -795,12 +795,12 @@ pub(super) fn imported_through<'tcx>(
             };
             let at = path.span;
             match first.entry((scope, item)) {
-                std::collections::hash_map::Entry::Occupied(mut was) => {
+                indexmap::map::Entry::Occupied(mut was) => {
                     if at.lo() < was.get().0.lo() {
                         was.insert((at, through));
                     }
                 }
-                std::collections::hash_map::Entry::Vacant(entry) => _ = entry.insert((at, through)),
+                indexmap::map::Entry::Vacant(entry) => _ = entry.insert((at, through)),
             }
         }
     }
@@ -858,12 +858,12 @@ pub(super) fn reexports_alone(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
 fn forwarded_methods(
     tcx: TyCtxt<'_>,
     module: LocalModId,
-    (fns, forwarded): (&HashMap<DefId, FnInfo>, &HashMap<DefId, DefId>),
-    paths: &HashMap<LocalModId, Vec<String>>,
+    (fns, forwarded): (&IndexMap<DefId, FnInfo>, &IndexMap<DefId, DefId>),
+    paths: &IndexMap<LocalModId, Vec<String>>,
     found: &mut Vec<Named>,
 ) {
     let mut imps: Vec<DefId> = (forwarded.keys())
-        .filter(|method| fns.get(method).is_some_and(|info| info.module == module))
+        .filter(|method| fns.get(*method).is_some_and(|info| info.module == module))
         .map(|&method| tcx.parent(method))
         .collect();
     imps.sort_by_key(|&imp| tcx.def_span(imp).lo());
@@ -935,9 +935,9 @@ fn forwarded_methods(
 pub(super) fn forwarded_functions(
     tcx: TyCtxt<'_>,
     module: LocalModId,
-    forwarders: &HashMap<DefId, DefId>,
-    (fns, foreign): (&HashMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
-    paths: &HashMap<LocalModId, Vec<String>>,
+    forwarders: &IndexMap<DefId, DefId>,
+    (fns, foreign): (&IndexMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
+    paths: &IndexMap<LocalModId, Vec<String>>,
     sources: &super::sources::CapturedSources,
 ) -> Vec<Named> {
     // Each, in the order written, where it's from and what it's exported as.
@@ -983,8 +983,8 @@ pub(super) fn forwarded_from(
     tcx: TyCtxt<'_>,
     module: LocalModId,
     target: DefId,
-    (fns, foreign): (&HashMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
-    paths: &HashMap<LocalModId, Vec<String>>,
+    (fns, foreign): (&IndexMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
+    paths: &IndexMap<LocalModId, Vec<String>>,
 ) -> Option<(js::ImportFrom, String)> {
     match fns.get(&target) {
         Some(theirs) if target.is_local() => {
@@ -1011,9 +1011,9 @@ pub(super) fn place(
     reexports: &mut [Reexport],
     uses: &super::analysis::UsesWritten,
     (fns, foreign, paths): (
-        &HashMap<DefId, FnInfo>,
+        &IndexMap<DefId, FnInfo>,
         &super::library::Foreign<'_, '_>,
-        &HashMap<LocalModId, Vec<String>>,
+        &IndexMap<LocalModId, Vec<String>>,
     ),
     written: &dyn Fn(Option<rustc_span::Span>) -> js::Span,
 ) {

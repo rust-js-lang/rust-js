@@ -8,20 +8,20 @@ use super::*;
 /// asked of the body as it is (ADR 0670).
 pub(super) struct MoveFacts<'a> {
     /// The variables something in the body changes.
-    pub changing: &'a HashSet<String>,
+    pub changing: &'a IndexSet<String>,
     /// The variables a closure sets: what a call can change of them.
-    pub set: &'a HashSet<String>,
+    pub set: &'a IndexSet<String>,
     /// The variables whose value is plain data, whose fields no call
     /// changes.
-    pub plain: &'a HashSet<String>,
+    pub plain: &'a IndexSet<String>,
     /// The elements made ahead of a branch, which may be read where it is.
-    pub captured: &'a HashSet<String>,
+    pub captured: &'a IndexSet<String>,
     /// What holds a place MIR's lowering fixed, `const item =
     /// $unwrap(resource.state);`: a temporary of its, named.
-    pub fixed: &'a HashSet<String>,
+    pub fixed: &'a IndexSet<String>,
     /// The temporaries each of whose values is read once, by the statement
     /// after it (`paired_temporaries`).
-    pub paired: &'a HashSet<String>,
+    pub paired: &'a IndexSet<String>,
 }
 
 /// A temporary MIR made, `const _5 = e;`, read once, by the statement
@@ -469,7 +469,7 @@ pub(super) fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(
 /// field's own name first in the `then` of an `if` whose test read that
 /// field, read again where the statement after it reads it first, as a let
 /// chain's is (`tested_binding`, `read_again`; rd416, ADR 0866, amended).
-pub(super) fn tested_reads(stmts: &mut Vec<Stmt>, named: &HashSet<String>) {
+pub(super) fn tested_reads(stmts: &mut Vec<Stmt>, named: &IndexSet<String>) {
     for stmt in stmts.iter_mut() {
         if let StmtKind::If(test, then, _) = &mut stmt.kind
             && tested_binding(test, then, named)
@@ -498,7 +498,7 @@ pub(super) fn tested_reads(stmts: &mut Vec<Stmt>, named: &HashSet<String>) {
 /// variable's property no getter may answer, which `test`, which does
 /// nothing, read: the place holds what the test read there, nothing run
 /// between.
-fn tested_binding(test: &Expr, then: &[Stmt], named: &HashSet<String>) -> bool {
+fn tested_binding(test: &Expr, then: &[Stmt], named: &IndexSet<String>) -> bool {
     let Some(StmtKind::Const(name, value)) = then.first().map(|s| &s.kind) else {
         return false;
     };
@@ -521,7 +521,7 @@ fn tested_binding(test: &Expr, then: &[Stmt], named: &HashSet<String>) -> bool {
 /// does nothing; the first statement reads `x` alone, once, nothing run
 /// before it, `return autoName`; and nothing else reads `x`, its branches
 /// nor what follows it.
-fn tested_read(stmt: &Stmt, rest: &[Stmt], named: &HashSet<String>) -> Option<(Expr, (Read, Expr))> {
+fn tested_read(stmt: &Stmt, rest: &[Stmt], named: &IndexSet<String>) -> Option<(Expr, (Read, Expr))> {
     let (StmtKind::Const(name, value), Some(StmtKind::If(test, then, _))) = (&stmt.kind, rest.first().map(|s| &s.kind))
     else {
         return None;
@@ -569,7 +569,7 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], named: &HashSet<String>) -> Option<(E
 /// as upstream's is (ADR 0866, amended again). The names are Rust's, as
 /// `LetNames::ends_borrow` has them: `r#return` of `.return`, its JS name
 /// `return$`, and one of a field of a `#[rust_js::name]`, `_debugHookTypes`.
-pub(super) fn ended_borrows(stmts: &mut Vec<Stmt>, ends_borrow: &HashSet<String>) {
+pub(super) fn ended_borrows(stmts: &mut Vec<Stmt>, ends_borrow: &IndexSet<String>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         if let StmtKind::Const(name, value) = &stmts[i].kind
@@ -597,7 +597,7 @@ pub(super) fn ended_borrows(stmts: &mut Vec<Stmt>, ends_borrow: &HashSet<String>
 /// 2026-11-03, an exception to rd226's "a `let` the program wrote stays").
 /// Read twice, read after something else, named otherwise, or read past
 /// the next statement, it stays.
-pub(super) fn fallback_reads(stmts: &mut Vec<Stmt>, named: &HashSet<String>) {
+pub(super) fn fallback_reads(stmts: &mut Vec<Stmt>, named: &IndexSet<String>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         if !fallback_read(stmts, i, named) {
@@ -607,7 +607,7 @@ pub(super) fn fallback_reads(stmts: &mut Vec<Stmt>, named: &HashSet<String>) {
 }
 
 /// `fallback_reads` of `stmts[at]`: whether it was read in place.
-fn fallback_read(stmts: &mut Vec<Stmt>, at: usize, named: &HashSet<String>) -> bool {
+fn fallback_read(stmts: &mut Vec<Stmt>, at: usize, named: &IndexSet<String>) -> bool {
     let (StmtKind::Const(name, value), Some(next)) = (&stmts[at].kind, stmts.get(at + 1)) else {
         return false;
     };
@@ -846,7 +846,7 @@ mod tests {
     /// What `moved` says of `body`'s first statement, a temporary, given
     /// nothing in the body changed or set.
     fn decided(body: &[Stmt]) -> Option<Why> {
-        let none = HashSet::new();
+        let none = IndexSet::default();
         let facts = MoveFacts {
             changing: &none,
             set: &none,

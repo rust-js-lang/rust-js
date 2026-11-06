@@ -61,6 +61,7 @@
 //! So whatever holds it, wherever it's read, is the one value the call of
 //! the function that made it holds, and JS's closures read that call's.
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::recognition::{HandleStep, handle_step};
 use rustc_hir as hir;
@@ -69,7 +70,6 @@ use rustc_middle::mir::{self, AggregateKind, Local, Operand, Place, Rvalue, Stat
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 /// A function's scope struct.
 pub(crate) struct Scope<'tcx> {
@@ -97,7 +97,7 @@ pub(crate) struct Scopes<'tcx> {
 impl<'tcx> Scopes<'tcx> {
     /// Those `bodies` have, read of their MIR.
     pub(crate) fn new(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> Scopes<'tcx> {
-        let of: HashMap<DefId, &mir::Body<'tcx>> = (bodies.iter())
+        let of: IndexMap<DefId, &mir::Body<'tcx>> = (bodies.iter())
             .filter_map(|body| Some((body.def_id, &body.mir.as_ref()?.body)))
             .collect();
         let implemented = implemented(tcx);
@@ -127,7 +127,7 @@ impl<'tcx> Scopes<'tcx> {
 }
 
 /// The structs a trait is implemented for here.
-fn implemented(tcx: TyCtxt<'_>) -> HashSet<DefId> {
+fn implemented(tcx: TyCtxt<'_>) -> IndexSet<DefId> {
     (tcx.hir_crate_items(()).definitions())
         .filter(|&id| matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true }))
         .filter_map(
@@ -142,7 +142,7 @@ fn implemented(tcx: TyCtxt<'_>) -> HashSet<DefId> {
 /// `adt`'s scope, if it's one.
 fn scope_of<'tcx>(
     tcx: TyCtxt<'tcx>,
-    of: &HashMap<DefId, &mir::Body<'tcx>>,
+    of: &IndexMap<DefId, &mir::Body<'tcx>>,
     bodies: &[&Body<'tcx>],
     adt: DefId,
 ) -> Option<Scope<'tcx>> {
@@ -192,7 +192,7 @@ fn scope_of<'tcx>(
     let written = let_of(tcx, function, body, local)?;
     // The bodies that may hold it: the function's, its methods' and their
     // closures'.
-    let owners: HashSet<DefId> = methods.iter().copied().chain([function]).collect();
+    let owners: IndexSet<DefId> = methods.iter().copied().chain([function]).collect();
     for body in bodies {
         let Some(mir) = &body.mir else { continue };
         let holds = owners.contains(&tcx.typeck_root_def_id(body.def_id));

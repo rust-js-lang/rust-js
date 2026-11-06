@@ -2,7 +2,7 @@
 //! dictionaries carry (ADR 0106), and a program's contract lists for its
 //! tests (ADR 1076, amended, #597).
 
-use std::collections::HashSet;
+use crate::collections::IndexSet;
 
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
@@ -14,11 +14,11 @@ use crate::lower::Body;
 /// The trait constants generic code reads, `S::SIDES` (ADR 0106): a
 /// dictionary has only these, as rustc evaluates only the constants a
 /// program uses, and a default no impl uses may not evaluate.
-pub(super) fn generic_consts(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> HashSet<DefId> {
+pub(super) fn generic_consts(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> IndexSet<DefId> {
     let generic = |def_id: DefId, args: ty::GenericArgsRef<'_>| {
         (tcx.trait_of_assoc(def_id).is_some() && args.has_non_region_param()).then_some(def_id)
     };
-    let mut consts = HashSet::new();
+    let mut consts = IndexSet::default();
     // A trait's default, `const A: u8 = Self::B`, reads only where it's
     // lowered, a library's dictionary, which has every constant: here its
     // `Self::B` would ask the program's of a default it never reads, which
@@ -39,7 +39,7 @@ pub(super) fn generic_consts(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> HashS
         {
             struct Named<'a, 'tcx>(
                 &'a dyn Fn(DefId, ty::GenericArgsRef<'tcx>) -> Option<DefId>,
-                &'a mut HashSet<DefId>,
+                &'a mut IndexSet<DefId>,
             );
             impl<'tcx> rustc_middle::mir::visit::Visitor<'tcx> for Named<'_, 'tcx> {
                 fn visit_const_operand(

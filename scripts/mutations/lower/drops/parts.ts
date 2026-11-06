@@ -294,8 +294,8 @@ export const mutations: Mutation[] = [
     breaks:
       "closing an iterator of items whose drop can't panic, `it.return()`, is one that may throw, so its scope drops it after each `try` and in a `$cleanup` (#861)",
     file: "src/lower/drops/parts.rs",
-    find: "                if !self.close_may_panic(ty, &mut HashSet::new()) {\n",
-    replace: "                if false && !self.close_may_panic(ty, &mut HashSet::new()) {\n",
+    find: "                if !self.close_may_panic(ty, &mut IndexSet::default()) {\n",
+    replace: "                if false && !self.close_may_panic(ty, &mut IndexSet::default()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(iterator_closes_of_quiet_items|peekable_drops).rs$"],
     snapshots: true,
   },

@@ -7,10 +7,10 @@
 //! the function's, which reads the dictionaries it was given.
 
 use super::{Dependencies, FnCx, R};
+use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, Expr, Stmt, StmtKind};
 use rustc_middle::ty::{Ty, TypeVisitableExt};
 use rustc_span::def_id::{DefId, LocalModId};
-use std::collections::{HashMap, HashSet};
 
 /// What the function is of its type.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -27,7 +27,7 @@ pub(super) enum Kind {
 /// by its module, what it is and its type.
 #[derive(Default)]
 pub(super) struct ModuleFns<'tcx> {
-    made: HashMap<Key<'tcx>, Made<'tcx>>,
+    made: IndexMap<Key<'tcx>, Made<'tcx>>,
     /// Those whose bodies are being lowered, the innermost last.
     building: Vec<Key<'tcx>>,
 }
@@ -44,8 +44,8 @@ struct Made<'tcx> {
     /// they were made.
     made_before: usize,
     lowered: Option<(js::Function, Dependencies)>,
-    calls: HashSet<Key<'tcx>>,
-    used_by: HashSet<DefId>,
+    calls: IndexSet<Key<'tcx>>,
+    used_by: IndexSet<DefId>,
     written: bool,
 }
 
@@ -128,7 +128,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Apart from the module's names, its other functions', and this
         // body's, which mustn't hide it.
-        let mut taken: HashSet<String> = (self.module_names.iter().cloned())
+        let mut taken: IndexSet<String> = (self.module_names.iter().cloned())
             .chain(module_fns.names(self.module).map(str::to_owned))
             .collect();
         taken.extend(self.names.iter().cloned());
@@ -140,8 +140,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 name: name.clone(),
                 made_before,
                 lowered: None,
-                calls: HashSet::new(),
-                used_by: HashSet::new(),
+                calls: IndexSet::default(),
+                used_by: IndexSet::default(),
                 written: false,
             },
         );
@@ -152,7 +152,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Its body, lowered as a function of its own: its names apart from
         // this body's, what it uses its own, given no dictionary of this
         // item's.
-        let mut names: HashSet<String> = (self.module_names.iter().cloned())
+        let mut names: IndexSet<String> = (self.module_names.iter().cloned())
             .chain(self.krate.module_fns.borrow().names(self.module).map(str::to_owned))
             .collect();
         let params: Vec<String> = params.iter().map(|p| super::fresh_in(&mut names, p)).collect();

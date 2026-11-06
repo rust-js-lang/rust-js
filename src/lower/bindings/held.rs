@@ -98,8 +98,8 @@ pub(in crate::lower) enum Holder {
 /// taken, a static's, asks `reads`.
 #[derive(Default)]
 pub(in crate::lower) struct Held {
-    pub(in crate::lower) modules: HashMap<LocalModId, Vec<HeldBinding>>,
-    pub(in crate::lower) reads: HashMap<Span, HeldRead>,
+    pub(in crate::lower) modules: IndexMap<LocalModId, Vec<HeldBinding>>,
+    pub(in crate::lower) reads: IndexMap<Span, HeldRead>,
 }
 
 pub(in crate::lower) fn held<'tcx>(tcx: TyCtxt<'tcx>, foreign: &crate::lower::library::Foreign<'_, 'tcx>) -> Held {
@@ -111,7 +111,7 @@ pub(in crate::lower) fn held<'tcx>(tcx: TyCtxt<'tcx>, foreign: &crate::lower::li
         tcx,
         foreign,
         modules: &mut held.modules,
-        reads: HashMap::new(),
+        reads: IndexMap::default(),
     };
     for owner in tcx.hir_body_owners() {
         rustc_hir::intravisit::walk_body(&mut paths, tcx.hir_body_owned_by(owner));
@@ -124,8 +124,8 @@ pub(in crate::lower) fn held<'tcx>(tcx: TyCtxt<'tcx>, foreign: &crate::lower::li
 struct Paths<'a, 'b, 'tcx> {
     tcx: TyCtxt<'tcx>,
     foreign: &'a crate::lower::library::Foreign<'b, 'tcx>,
-    modules: &'a mut HashMap<LocalModId, Vec<HeldBinding>>,
-    reads: HashMap<Span, HeldRead>,
+    modules: &'a mut IndexMap<LocalModId, Vec<HeldBinding>>,
+    reads: IndexMap<Span, HeldRead>,
 }
 
 impl<'tcx> rustc_hir::intravisit::Visitor<'tcx> for Paths<'_, '_, 'tcx> {
@@ -155,7 +155,7 @@ fn named_through<'tcx>(
     scope: LocalModId,
     segments: &[rustc_hir::PathSegment<'_>],
     binding: DefId,
-    modules: &mut HashMap<LocalModId, Vec<HeldBinding>>,
+    modules: &mut IndexMap<LocalModId, Vec<HeldBinding>>,
 ) -> Option<HeldRead> {
     let [.., module, last] = segments else {
         let [only] = segments else { return None };
@@ -209,7 +209,7 @@ fn held_by<'tcx>(
     module: DefId,
     ident: Symbol,
     binding: DefId,
-    modules: &mut HashMap<LocalModId, Vec<HeldBinding>>,
+    modules: &mut IndexMap<LocalModId, Vec<HeldBinding>>,
 ) -> Option<HeldRead> {
     let Some(local) = module.as_local() else {
         return library_held(foreign, module, ident, binding);
@@ -244,7 +244,7 @@ pub(in crate::lower) fn library_uses(
     tcx: TyCtxt<'_>,
     foreign: &crate::lower::library::Foreign<'_, '_>,
     module: LocalModId,
-) -> HashMap<DefId, (String, String)> {
+) -> IndexMap<DefId, (String, String)> {
     (tcx.hir_module_items(module).free_items())
         .filter_map(|id| {
             let ItemKind::Use(path, rustc_hir::UseKind::Single(_)) = tcx.hir_item(id).kind else {
@@ -314,7 +314,7 @@ fn module_held<'m, 'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     module: LocalModId,
-    modules: &'m mut HashMap<LocalModId, Vec<HeldBinding>>,
+    modules: &'m mut IndexMap<LocalModId, Vec<HeldBinding>>,
 ) -> &'m Vec<HeldBinding> {
     if !modules.contains_key(&module) {
         // Rust refuses a cycle of `use`s, so none is met here.
@@ -329,7 +329,7 @@ fn held_of<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     module: LocalModId,
-    modules: &mut HashMap<LocalModId, Vec<HeldBinding>>,
+    modules: &mut IndexMap<LocalModId, Vec<HeldBinding>>,
 ) -> Vec<HeldBinding> {
     let default = (crate::lower::default_exports::default_exports(tcx, module).into_iter())
         .find_map(|(named, _)| named.filter(|&named| held_path(tcx, named).is_some()));

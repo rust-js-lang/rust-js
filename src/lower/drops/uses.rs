@@ -75,7 +75,7 @@ pub(in crate::lower) fn owned_params<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> V
 
 /// The functions given drops that take only those they use (ADR 0300):
 /// what the crate knows before it lowers any, which lowering asks.
-pub(in crate::lower) struct TakesUsed(HashSet<DefId>);
+pub(in crate::lower) struct TakesUsed(IndexSet<DefId>);
 
 impl TakesUsed {
     /// Each function given drops that's called where it's named, whose
@@ -85,7 +85,7 @@ impl TakesUsed {
     pub(in crate::lower) fn new(
         tcx: TyCtxt<'_>,
         foreign: &crate::lower::library::Foreign<'_, '_>,
-        drop_params: &HashMap<DefId, Vec<u32>>,
+        drop_params: &IndexMap<DefId, Vec<u32>>,
     ) -> TakesUsed {
         TakesUsed(
             drop_params
@@ -114,11 +114,11 @@ impl TakesUsed {
 /// and the names they took them by.
 #[derive(Default)]
 pub(in crate::lower) struct DropsObserved {
-    pub(in crate::lower) no_drops: HashMap<DefId, BTreeSet<u32>>,
+    pub(in crate::lower) no_drops: IndexMap<DefId, BTreeSet<u32>>,
     pub(in crate::lower) checks: Vec<DropCheck>,
-    used: HashSet<(DefId, u32)>,
+    used: IndexSet<(DefId, u32)>,
     passed: Vec<((DefId, u32), (DefId, u32))>,
-    names: HashMap<DefId, Vec<(u32, String)>>,
+    names: IndexMap<DefId, Vec<(u32, String)>>,
 }
 
 impl DropsObserved {
@@ -141,9 +141,9 @@ impl DropsObserved {
     pub(in crate::lower) fn keep<'l>(
         self,
         takes_used: &TakesUsed,
-        drop_params: &HashMap<DefId, Vec<u32>>,
+        drop_params: &IndexMap<DefId, Vec<u32>>,
         items: impl Iterator<Item = (DefId, &'l mut crate::lower::LoweredFn)>,
-    ) -> HashMap<DefId, Vec<u32>> {
+    ) -> IndexMap<DefId, Vec<u32>> {
         let mut drop_params = drop_params.clone();
         let mut kept = self.used;
         let mut changed = true;
@@ -162,7 +162,7 @@ impl DropsObserved {
         }
         for (id, item) in items {
             if let Some(names) = self.names.get(&id) {
-                let unused: HashSet<&str> = names
+                let unused: IndexSet<&str> = names
                     .iter()
                     .filter(|&&(index, _)| !kept.contains(&(id, index)))
                     .map(|(_, name)| name.as_str())
@@ -180,7 +180,7 @@ impl DropsObserved {
 /// `e` with only the drop arguments kept: a call's, and the call an arrow
 /// that only passes its parameters on is, which is then its callee,
 /// `(arg0) => keep(arg0)` being `keep`.
-fn keep_arguments(e: &mut Expr, kept: &HashSet<(DefId, u32)>) {
+fn keep_arguments(e: &mut Expr, kept: &IndexSet<(DefId, u32)>) {
     let local = |(krate, index): (u32, u32)| DefId {
         krate: rustc_span::def_id::CrateNum::from_u32(krate),
         index: rustc_span::def_id::DefIndex::from_u32(index),

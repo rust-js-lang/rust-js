@@ -4,7 +4,7 @@
 //! define of a declared field can't do other than the constructor's
 //! assignment that follows it.
 
-use std::collections::HashSet;
+use crate::collections::IndexSet;
 
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalModId};
@@ -36,7 +36,7 @@ use crate::js::{self, ExprKind, Stmt, StmtKind};
 pub(super) fn declare_fields(
     tcx: TyCtxt<'_>,
     (items, module): (&mut [js::Item], LocalModId),
-    prototypes_read: &HashSet<DefId>,
+    prototypes_read: &IndexSet<DefId>,
     owner_of: impl Fn(DefId) -> Option<String>,
     sources: &crate::lower::sources::CapturedSources,
 ) {

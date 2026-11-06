@@ -418,7 +418,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // What goes one way alone, the rest unreachable, tests
                 // nothing, but still makes it as Rust does: `if loud(n) {
                 // unsafe { unreachable_unchecked() } }`'s call (ADR 0399).
-                let ways: HashSet<BasicBlock> = (targets.all_targets().iter().copied())
+                let ways: IndexSet<BasicBlock> = (targets.all_targets().iter().copied())
                     .filter(|&b| reached(b))
                     .collect();
                 if ways.len() < 2

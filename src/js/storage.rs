@@ -2,13 +2,14 @@
 //! 0791): as it's given, a flattened state's keys, or a `None` `null`.
 
 use super::*;
+use crate::collections::IndexMap;
 
 impl Storage {
     /// A flattened state's storage of its `keys` (rd380, ADR 1044), each
     /// type's kept for the compile, as a handle's storage is copied.
     pub fn in_place(keys: &[String]) -> Storage {
         thread_local! {
-            static KEYS: std::cell::RefCell<std::collections::HashMap<String, &'static str>> = Default::default();
+            static KEYS: std::cell::RefCell<IndexMap<String, &'static str>> = Default::default();
         }
         let joined = keys.join(",");
         Storage::InPlace(KEYS.with_borrow_mut(|known| {

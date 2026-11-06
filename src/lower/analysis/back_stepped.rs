@@ -11,6 +11,7 @@
 //! a map whose closure has a destructor that a zip read by index asks the
 //! length of (#775).
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::body_queries::strip;
 use crate::lower::recognition::{
     Recognition, back_stepped_source, chained_sources, cloned_source, copied_source, counted_source, enumerated_source,
@@ -21,7 +22,6 @@ use crate::lower::recognition::{
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty, TyCtxt};
-use std::collections::{HashMap, HashSet};
 
 /// What `all_bodies` step from their back: the types (`back_stepped`), of
 /// them those whose question is a type's, each local by its body
@@ -52,11 +52,11 @@ pub(super) fn back_stepped<'tcx>(
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     drops: impl Fn(Ty<'tcx>) -> bool,
-) -> (HashSet<Ty<'tcx>>, HashSet<Ty<'tcx>>) {
-    let mut stepped = HashSet::new();
-    let mut typed: HashSet<Ty<'tcx>> = HashSet::new();
+) -> (IndexSet<Ty<'tcx>>, IndexSet<Ty<'tcx>>) {
+    let mut stepped = IndexSet::default();
+    let mut typed: IndexSet<Ty<'tcx>> = IndexSet::default();
     // Each body's own, by its function: what a caller's call of it makes too.
-    let mut of_body: HashMap<rustc_span::def_id::DefId, HashSet<Ty<'tcx>>> = HashMap::new();
+    let mut of_body: IndexMap<rustc_span::def_id::DefId, IndexSet<Ty<'tcx>>> = IndexMap::default();
     let rev = crate::lower::recognition::compiled_provided_method(tcx, "Iterator", "rev");
     let zip = crate::lower::recognition::compiled_provided_method(tcx, "Iterator", "zip");
     for body in all_bodies {
@@ -66,7 +66,7 @@ pub(super) fn back_stepped<'tcx>(
         // by its dictionary, not one a std iterator's method steps where
         // it's made, which the recognizers reverse (ADR 0871).
         let in_place = &body.facts.in_place_adapters;
-        let called: HashMap<ExprId, (rustc_span::Span, &[ExprId])> = (body.thir.exprs.iter())
+        let called: IndexMap<ExprId, (rustc_span::Span, &[ExprId])> = (body.thir.exprs.iter())
             .filter_map(|e| match e.kind {
                 ExprKind::Call {
                     fun, fn_span, ref args, ..
@@ -388,7 +388,7 @@ fn back_stepped_adapter<'tcx>(
 /// `take(n)` side too. And a zip's sides, which `$zipEnds` steps from their
 /// back and counts, a `cloned()`'s too, as MIR holds a side in a variable
 /// before the zip is made (#792).
-fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: HashSet<Ty<'tcx>>) -> HashSet<Ty<'tcx>> {
+fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: IndexSet<Ty<'tcx>>) -> IndexSet<Ty<'tcx>> {
     let mut all = stepped.clone();
     let mut sources: Vec<Ty<'tcx>> = stepped.into_iter().collect();
     while let Some(ty) = sources.pop() {
@@ -463,14 +463,14 @@ fn dropping_items<'tcx>(
 /// (ADR 0545), and each local of a counted adapter, by its body,
 /// `stepped_locals`' (#814).
 pub(in crate::lower) struct BackStepped<'tcx> {
-    pub(in crate::lower) types: HashSet<Ty<'tcx>>,
+    pub(in crate::lower) types: IndexSet<Ty<'tcx>>,
     /// Of `types`, those whose question is a type's (`back_stepped`'s
     /// second): asked of every value of one, never of a value alone.
-    pub(in crate::lower) typed: HashSet<Ty<'tcx>>,
+    pub(in crate::lower) typed: IndexSet<Ty<'tcx>>,
     /// Each `&mut` of a whole local, the local it lends (`borrows`).
     pub(in crate::lower) borrows:
-        HashMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), rustc_middle::mir::Local>,
-    pub(in crate::lower) locals: HashMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), SteppedLocal>,
+        IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), rustc_middle::mir::Local>,
+    pub(in crate::lower) locals: IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), SteppedLocal>,
 }
 
 /// How a local the crate steps from its back holds its value
@@ -506,29 +506,29 @@ pub(super) fn stepped_locals<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
-    types: &HashSet<Ty<'tcx>>,
+    types: &IndexSet<Ty<'tcx>>,
     drops: impl Fn(Ty<'tcx>) -> bool,
-) -> HashMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), SteppedLocal> {
+) -> IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), SteppedLocal> {
     use rustc_middle::mir;
     let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(recognition.reveal(ty.peel_refs()));
     let zip = crate::lower::recognition::compiled_provided_method(tcx, "Iterator", "zip");
     let Some(double_ended) = recognition.double_ended_iterator() else {
-        return HashMap::new();
+        return IndexMap::default();
     };
-    let mut stepped: HashMap<(rustc_span::def_id::DefId, mir::Local), SteppedLocal> = HashMap::new();
+    let mut stepped: IndexMap<(rustc_span::def_id::DefId, mir::Local), SteppedLocal> = IndexMap::default();
     // Each temporary given whole to what asks its back, made in place,
     // whose form its step reads: not made knowing it itself, but what it
     // holds beneath is, a variable's value an adapter made in place holds
     // (#790).
-    let mut asked: HashSet<(rustc_span::def_id::DefId, mir::Local)> = HashSet::new();
-    let mut held_whole: HashSet<(rustc_span::def_id::DefId, mir::Local)> = HashSet::new();
+    let mut asked: IndexSet<(rustc_span::def_id::DefId, mir::Local)> = IndexSet::default();
+    let mut held_whole: IndexSet<(rustc_span::def_id::DefId, mir::Local)> = IndexSet::default();
     // Each field of a struct or an enum's variant a back step is given,
     // lent or whole, `self.it.next_back()` of `struct Evens { it: Filter<..> }`:
     // each value MIR moves into it as it makes one, made knowing its back by
     // its maker (#851).
-    let mut stepped_fields: HashSet<(rustc_span::def_id::DefId, rustc_abi::VariantIdx, rustc_abi::FieldIdx)> =
-        HashSet::new();
-    let mark = |stepped: &mut HashMap<_, _>, at, how| {
+    let mut stepped_fields: IndexSet<(rustc_span::def_id::DefId, rustc_abi::VariantIdx, rustc_abi::FieldIdx)> =
+        IndexSet::default();
+    let mark = |stepped: &mut IndexMap<_, _>, at, how| {
         // `Given` wins: its maker makes it, wherever it's lent besides.
         let held = stepped.entry(at).or_insert(how);
         if how == SteppedLocal::Given {
@@ -548,19 +548,19 @@ pub(super) fn stepped_locals<'tcx>(
             let owner = body.def_id;
             // Each whole `&mut` of a whole local, `_12 = &mut _11`, and each
             // move of one into another, `_5 = move _4`.
-            let mut lent: HashMap<mir::Local, mir::Local> = HashMap::new();
-            let mut moved: HashMap<mir::Local, mir::Local> = HashMap::new();
+            let mut lent: IndexMap<mir::Local, mir::Local> = IndexMap::default();
+            let mut moved: IndexMap<mir::Local, mir::Local> = IndexMap::default();
             // Where each `&mut` is taken, and where each call's value is
             // made, its call's return: what's held from there to its step.
-            let mut lent_at: HashMap<mir::Local, (mir::BasicBlock, usize)> = HashMap::new();
+            let mut lent_at: IndexMap<mir::Local, (mir::BasicBlock, usize)> = IndexMap::default();
             // Each `&mut` of a field, `_3 = &mut ((*_1).0)`, and each value
             // moved into a field as a struct is made.
-            let mut lent_field: HashMap<mir::Local, mir::Place<'tcx>> = HashMap::new();
+            let mut lent_field: IndexMap<mir::Local, mir::Place<'tcx>> = IndexMap::default();
             let mut into_fields: Vec<(
                 (rustc_span::def_id::DefId, rustc_abi::VariantIdx, rustc_abi::FieldIdx),
                 mir::Local,
             )> = Vec::new();
-            let mut made_at: HashMap<mir::Local, (mir::BasicBlock, usize)> = HashMap::new();
+            let mut made_at: IndexMap<mir::Local, (mir::BasicBlock, usize)> = IndexMap::default();
             for (block, data) in mir.basic_blocks.iter_enumerated() {
                 if let mir::TerminatorKind::Call {
                     destination,
@@ -873,9 +873,9 @@ fn field_of<'tcx>(
 /// adapter made in place where it's stepped (#851). Not a fact of its own.
 pub(super) fn borrows<'tcx>(
     all_bodies: &[&Body<'tcx>],
-) -> HashMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), rustc_middle::mir::Local> {
+) -> IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), rustc_middle::mir::Local> {
     use rustc_middle::mir;
-    let mut out = HashMap::new();
+    let mut out = IndexMap::default();
     for body in all_bodies {
         let Some(mir) = body.mir.as_ref() else { continue };
         for data in mir.body.basic_blocks.iter() {

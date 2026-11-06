@@ -7,13 +7,14 @@
 //! dictionary that's its module's `const`, refused there (ADR 0592).
 
 use super::Pass;
+use crate::collections::{IndexMap, IndexSet};
 use crate::js;
 use crate::lower::FnInfo;
 use crate::lower::bindings::Export;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::BTreeMap;
 
 /// Each body run where its module loads, of `loads`, that reads another of
 /// the crate's modules' `const` or numbered enum's variant by its name,
@@ -26,8 +27,8 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 pub(super) fn load_cycles(
     tcx: TyCtxt<'_>,
     lowered: &[(DefId, crate::lower::LoweredFn)],
-    fns: &HashMap<DefId, FnInfo>,
-    loads: &HashSet<DefId>,
+    fns: &IndexMap<DefId, FnInfo>,
+    loads: &IndexSet<DefId>,
     imports: &crate::lower::load_order::ModuleImports,
 ) -> Vec<DefId> {
     let made_where_loaded = |id: DefId| {
@@ -50,7 +51,7 @@ pub(super) fn load_cycles(
 /// Each thread-local made as its module loads, and what its initializer may
 /// run and read there; `None`, what rust-js can't follow (ADR 1006,
 /// amended).
-type AtLoad = HashMap<LocalDefId, Option<Vec<DefId>>>;
+type AtLoad = IndexMap<LocalDefId, Option<Vec<DefId>>>;
 
 /// Each private thread-local, of `at_load`, its module's load can't make
 /// before what its initializer runs and reads (`out_of_order`): made where
@@ -60,7 +61,7 @@ type AtLoad = HashMap<LocalDefId, Option<Vec<DefId>>>;
 pub(super) fn made_in_cycles(
     tcx: TyCtxt<'_>,
     at_load: &AtLoad,
-    fns: &HashMap<DefId, FnInfo>,
+    fns: &IndexMap<DefId, FnInfo>,
     imports: &crate::lower::load_order::ModuleImports,
 ) -> Vec<LocalDefId> {
     let mut keys: Vec<_> = at_load.keys().copied().collect();
@@ -101,7 +102,7 @@ enum OutOfOrder {
 fn out_of_order(
     tcx: TyCtxt<'_>,
     (key, reached): (LocalDefId, Option<&[DefId]>),
-    fns: &HashMap<DefId, FnInfo>,
+    fns: &IndexMap<DefId, FnInfo>,
     imports: &crate::lower::load_order::ModuleImports,
 ) -> Option<OutOfOrder> {
     let module_of = |id: DefId| {
@@ -165,7 +166,7 @@ fn refuse_exported(tcx: TyCtxt<'_>, key: LocalDefId, why: OutOfOrder) {
 pub(super) fn refuse_dictionaries_in_load_cycles(
     tcx: TyCtxt<'_>,
     pass: &Pass,
-    const_items: &HashMap<LocalModId, Vec<js::Const>>,
+    const_items: &IndexMap<LocalModId, Vec<js::Const>>,
     (modules, imports): (&[LocalModId], &crate::lower::load_order::ModuleImports),
 ) {
     // A dictionary, its cache and what its entries share run nothing of the
@@ -232,14 +233,14 @@ pub(super) type ReexportFrom = (LocalModId, js::ImportFrom);
 /// imports for their effects, and what each re-exports, `reexports`'s.
 pub(super) fn module_imports<'d>(
     places: &[ModuleJs],
-    fns: &HashMap<DefId, FnInfo>,
+    fns: &IndexMap<DefId, FnInfo>,
     (references, held, package_uses, reexporters): (
         impl Iterator<Item = &'d (LocalModId, DefId)>,
         impl Iterator<Item = &'d (LocalModId, LocalModId, String, bool, DefId)>,
         impl Iterator<Item = &'d (LocalModId, Export)>,
         impl Iterator<Item = &'d (LocalModId, LocalModId)>,
     ),
-    (imported, reexports): (&BTreeMap<Export, HashSet<LocalModId>>, &[ReexportFrom]),
+    (imported, reexports): (&BTreeMap<Export, IndexSet<LocalModId>>, &[ReexportFrom]),
     js_modules: &dyn crate::program::JsModules,
 ) -> crate::lower::load_order::ModuleImports {
     let laid_out: Vec<_> = (places.iter())
@@ -283,10 +284,10 @@ pub(super) fn module_imports<'d>(
 /// before (rd650, ADR 0874, amended): of a path its code reads or not, as
 /// an edge more keeps a later one from no cycle it could make.
 pub(super) fn taken_through(
-    through: HashMap<(LocalModId, DefId), crate::lower::reexports::Through>,
-    paths: &HashMap<LocalModId, Vec<String>>,
+    through: IndexMap<(LocalModId, DefId), crate::lower::reexports::Through>,
+    paths: &IndexMap<LocalModId, Vec<String>>,
     imports: &mut crate::lower::load_order::ModuleImports,
-) -> HashMap<(LocalModId, DefId), crate::lower::reexports::Through> {
+) -> IndexMap<(LocalModId, DefId), crate::lower::reexports::Through> {
     let mut through: Vec<_> = through.into_iter().collect();
     through.sort_by(|((a, _), at), ((b, _), bt)| (&paths[a], at.at.lo()).cmp(&(&paths[b], bt.at.lo())));
     (through.into_iter())

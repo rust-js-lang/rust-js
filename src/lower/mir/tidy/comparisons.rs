@@ -8,7 +8,7 @@ use super::*;
 /// `length` or an `indexOf` gives; a string compared, to a string literal as Rust's types
 /// say, is ordered too. A float may be `NaN`, neither less nor more (ADR
 /// 0371).
-pub(super) fn turned(e: &mut Expr, numbers: &HashSet<String>) {
+pub(super) fn turned(e: &mut Expr, numbers: &IndexSet<String>) {
     let ExprKind::Unary(UnaryOp::Not, inner) = &e.kind else {
         return;
     };
@@ -46,7 +46,7 @@ pub(super) fn turned(e: &mut Expr, numbers: &HashSet<String>) {
 /// > b ? 1 : a === b ? 0 : undefined`, so each is its value, where `a` and
 /// `b` are floats or number literals, whose comparisons run nothing; not of
 /// a value of any shape, whose `valueOf` the helper may run twice (ADR 0966).
-pub(super) fn ordered_floats(e: &mut Expr, floats: &HashSet<String>) {
+pub(super) fn ordered_floats(e: &mut Expr, floats: &IndexSet<String>) {
     let ExprKind::Binary(eq @ (Op::Eq | Op::Ne), compared, ordering) = &e.kind else {
         return;
     };

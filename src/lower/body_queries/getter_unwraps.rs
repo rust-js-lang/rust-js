@@ -4,11 +4,11 @@
 //! is the getter's read, `console.createTask(name)` and
 //! `console.createTask.bind(console, ..)`, as upstream writes them.
 
+use crate::collections::IndexSet;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::thir::{ExprId, ExprKind, Thir};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
-use std::collections::HashSet;
 
 use super::strip;
 use crate::lower::bindings::{self, JsForm};
@@ -19,8 +19,8 @@ use crate::lower::bindings::{self, JsForm};
 /// place its value goes: its `fn_span`. Its value is the getter's read
 /// itself; of a `None`, JS's call or method read throws a `TypeError`
 /// where Rust's `unwrap()` panics (ADR 0262's exception, ADR 1066).
-pub(super) fn getter_unwraps<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
-    let mut found = HashSet::new();
+pub(super) fn getter_unwraps<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
+    let mut found = IndexSet::default();
     for expr in thir.exprs.iter() {
         let ExprKind::Call { fun, ref args, .. } = expr.kind else {
             continue;

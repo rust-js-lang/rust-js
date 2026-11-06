@@ -571,7 +571,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `OnceCell` known empty is still known empty after it's set, so a second `set` is assigned and `Ok`, where Rust's is `Err`",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                    let empty = k.empty.remove(&cell);\n",
+    find: "                    let empty = k.empty.swap_remove(&cell);\n",
     replace: "                    let empty = k.empty.contains(&cell);\n",
     tests: ["test/corpus.test.ts", "-t", "^once_cell_known_empty.rs$"],
   },

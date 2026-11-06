@@ -3,9 +3,9 @@
 //! `classes.rs`'s namespaces.
 
 use super::{Member, is_namespace, member};
+use crate::collections::{IndexMap, IndexSet};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 /// Whether `receiver`, the `self` a call of a namespace's method in `body`
 /// gives it, is the namespace as Rust names it, whose call is the function
@@ -113,7 +113,7 @@ pub(crate) fn unread_namespaces<'tcx>(
     use rustc_middle::mir::{Local, Location, StatementKind, TerminatorKind};
     // Each read of a local and where it is; not a `let`'s fake read, which
     // is no JS.
-    struct Reads<'b, 'tcx>(&'b rustc_middle::mir::Body<'tcx>, HashMap<Local, Vec<Location>>);
+    struct Reads<'b, 'tcx>(&'b rustc_middle::mir::Body<'tcx>, IndexMap<Local, Vec<Location>>);
     impl<'tcx> Visitor<'tcx> for Reads<'_, 'tcx> {
         fn visit_local(&mut self, local: Local, context: PlaceContext, at: Location) {
             let unwritten = (self.0.stmt_at(at).left()).is_some_and(|s| {
@@ -127,9 +127,9 @@ pub(crate) fn unread_namespaces<'tcx>(
             }
         }
     }
-    let mut held: HashMap<Local, Location> = HashMap::new();
+    let mut held: IndexMap<Local, Location> = IndexMap::default();
     // Where each named receiver is read, its call.
-    let mut named_at: HashSet<Location> = HashSet::new();
+    let mut named_at: IndexSet<Location> = IndexSet::default();
     for (block, data) in body.basic_blocks.iter_enumerated() {
         if let TerminatorKind::Call { func, args, .. } = &data.terminator().kind
             && let Some((callee, _)) = func.const_fn_def()
@@ -141,12 +141,12 @@ pub(crate) fn unread_namespaces<'tcx>(
             held.extend(locals);
         }
     }
-    let mut reads = Reads(body, HashMap::new());
+    let mut reads = Reads(body, IndexMap::default());
     reads.visit_body(body);
     // A local whose reads are all a named call's `self` or another such
     // local's write, until none is left out.
     loop {
-        let writes: HashSet<Location> = held.values().copied().collect();
+        let writes: IndexSet<Location> = held.values().copied().collect();
         let before = held.len();
         held.retain(|local, _| {
             (reads.1.get(local).into_iter().flatten()).all(|at| named_at.contains(at) || writes.contains(at))
@@ -208,8 +208,8 @@ pub(crate) fn taken_apart(fields: &[String], body: &[crate::js::Stmt]) -> Option
 /// function is (#566). `false` where one is refused.
 pub(in crate::lower) fn exported_by_property(
     tcx: TyCtxt<'_>,
-    fns: &HashMap<DefId, crate::lower::FnInfo>,
-    forwarded: &HashMap<DefId, DefId>,
+    fns: &IndexMap<DefId, crate::lower::FnInfo>,
+    forwarded: &IndexMap<DefId, DefId>,
 ) -> bool {
     let mut valid = true;
     let mut methods: Vec<_> = (fns.iter())

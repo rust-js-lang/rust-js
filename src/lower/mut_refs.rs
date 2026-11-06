@@ -5,6 +5,7 @@
 use super::std_types::cow::CowOp;
 use super::std_types::map::{MapOp, Part};
 use super::{FnCx, R, Std};
+use crate::collections::IndexSet;
 use crate::js::{self, Expr, Prop, Stmt, StmtKind};
 use crate::lower::MutRefForm;
 use rustc_ast::Mutability;
@@ -12,7 +13,6 @@ use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
-use std::collections::HashSet;
 
 /// Whether a value of `ty` may hold a `part`: `part` is in it, not only in
 /// a projection, `<I as Iterator>::Item`, which names `I` but holds an
@@ -576,7 +576,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .try_normalize_erasing_regions(own_env, ty::Unnormalized::new_wip(ty))
                 .unwrap_or(ty)
         };
-        let mut seen = HashSet::new();
+        let mut seen = IndexSet::default();
         while let Some(ty) = todo.pop() {
             let mut walk = ty.walk();
             while let Some(part) = walk.next() {

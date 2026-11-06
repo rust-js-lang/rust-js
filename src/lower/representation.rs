@@ -6,6 +6,7 @@
 use super::bindings::{self, field_key};
 use super::recognition::StdItem;
 use super::{FnCx, R, Shape};
+use crate::collections::IndexSet;
 use crate::js;
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use rustc_abi::VariantIdx;
@@ -805,7 +806,7 @@ fn const_uninit<'tcx>(
 /// (ADRs 0031, 0127), or `undefined` of one with no byte written.
 pub(super) fn const_value_js<'tcx>(
     tcx: TyCtxt<'tcx>,
-    keyed: &std::collections::HashSet<DefId>,
+    keyed: &IndexSet<DefId>,
     typing_env: ty::TypingEnv<'tcx>,
     def_id: DefId,
     args: ty::GenericArgsRef<'tcx>,

@@ -7,8 +7,8 @@
 //! below(*n)`, is a test too, and the chain of a tree with one does what
 //! `calls::Model` says the tree does, each way (#221).
 
+use crate::collections::{IndexMap, IndexSet};
 use std::cmp::Ordering;
-use std::collections::{HashMap, HashSet};
 
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 use crate::lower::mir::hints::{Constant, Guard, Switch};
@@ -51,9 +51,9 @@ const SHARED: usize = 3;
 pub(super) struct Told<'h> {
     pub guards: &'h [Guard],
     pub switches: &'h [Switch],
-    pub bound: &'h HashSet<String>,
+    pub bound: &'h IndexSet<String>,
     /// Each loop's label (`loop_labels`), a `break` of which leaves it.
-    pub loops: &'h HashSet<String>,
+    pub loops: &'h IndexSet<String>,
     /// Where each test the program wrote is, an `if`'s condition and an
     /// `&&` or `||` (`Written::ifs`, `Written::logicals`): a tree of them
     /// is theirs, as written, not a `match`'s.
@@ -85,8 +85,8 @@ pub(super) fn fixed_params(params: &[js::Pattern], body: &[Stmt]) -> Vec<String>
 }
 
 /// The label of each loop in `body`.
-pub(super) fn loop_labels(body: &[Stmt]) -> HashSet<String> {
-    let mut labels = HashSet::new();
+pub(super) fn loop_labels(body: &[Stmt]) -> IndexSet<String> {
+    let mut labels = IndexSet::default();
     js::each_list(body, &mut |list| {
         for stmt in list {
             if let StmtKind::While { label: Some(l), .. }

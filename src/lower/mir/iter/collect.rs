@@ -2,6 +2,7 @@
 //! position found, a fold.
 
 use super::*;
+use crate::collections::IndexSet;
 use crate::lower::recognition::{OwnStep, Reach};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -568,7 +569,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// or a constructor. Of its revealed type, so a stage an `impl FnMut`
     /// is, a closure a function made, is one too (rd767).
     fn panicking_steps(&self, iter_ty: Ty<'tcx>) -> usize {
-        let mut seen = std::collections::HashSet::new();
+        let mut seen = IndexSet::default();
         (self.reveal(iter_ty).walk().filter_map(|part| part.as_type()))
             .filter(|part| match *part.kind() {
                 ty::Closure(def_id, _) | ty::FnDef(def_id, _) => {

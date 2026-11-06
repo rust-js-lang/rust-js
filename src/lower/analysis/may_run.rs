@@ -10,8 +10,7 @@
 //! module loads (`lazy_locals`); a function whose return alone owns a
 //! callback, what it runs before it returns (`owned_by_return`).
 
-use std::collections::{HashMap, HashSet};
-
+use crate::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, CastKind, Local, Operand, PlaceElem, Rvalue, StatementKind, TerminatorKind};
 use rustc_middle::thir::ExprKind;
@@ -29,8 +28,8 @@ use crate::lower::Body;
 /// pointer may be, what std runs, and whether a drop runs a destructor.
 pub(in crate::lower) struct Runs<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
-    bodies: HashMap<DefId, &'a Body<'tcx>>,
-    made_of: HashMap<DefId, DefId>,
+    bodies: IndexMap<DefId, &'a Body<'tcx>>,
+    made_of: IndexMap<DefId, DefId>,
     impls: Impls,
     /// Each closure the crate makes a `dyn Fn` of only to hand it to JS:
     /// what a drop of one may drop beside what `drop_runs` says.
@@ -47,7 +46,7 @@ impl<'a, 'tcx> Runs<'a, 'tcx> {
     pub(in crate::lower) fn new(
         tcx: TyCtxt<'tcx>,
         bodies: &[&'a Body<'tcx>],
-        (inits, fn_dyns): (&HashMap<LocalDefId, LocalDefId>, Vec<ty::Ty<'tcx>>),
+        (inits, fn_dyns): (&IndexMap<LocalDefId, LocalDefId>, Vec<ty::Ty<'tcx>>),
         (pointers, std_runs, drop_runs): (&'a FnPointers<'tcx>, &'a StdRuns<'a, 'tcx>, &'a DropRuns<'a, 'tcx>),
     ) -> Self {
         Runs {
@@ -98,15 +97,15 @@ pub(in crate::lower) type DropRuns<'a, 'tcx> = dyn Fn(ty::Ty<'tcx>, DefId) -> bo
 /// known, and what std's code bounding a type of the crate's by a trait
 /// may.
 struct Impls {
-    of_trait: HashMap<DefId, Vec<DefId>>,
-    of_type: HashMap<DefId, Vec<(DefId, DefId)>>,
+    of_trait: IndexMap<DefId, Vec<DefId>>,
+    of_type: IndexMap<DefId, Vec<(DefId, DefId)>>,
 }
 
 impl Impls {
     fn of_crate(tcx: TyCtxt<'_>) -> Self {
         let mut found = Impls {
-            of_trait: HashMap::new(),
-            of_type: HashMap::new(),
+            of_trait: IndexMap::default(),
+            of_type: IndexMap::default(),
         };
         for (&trait_id, impls) in tcx.all_local_trait_impls(()) {
             for &imp in impls {
@@ -146,8 +145,8 @@ impl Impls {
 fn may_run<'tcx>(
     tcx: TyCtxt<'tcx>,
     (bodies, made_of, impls, fn_dyns): (
-        &HashMap<DefId, &Body<'tcx>>,
-        &HashMap<DefId, DefId>,
+        &IndexMap<DefId, &Body<'tcx>>,
+        &IndexMap<DefId, DefId>,
         &Impls,
         &[ty::Ty<'tcx>],
     ),
@@ -157,7 +156,7 @@ fn may_run<'tcx>(
     let typing_env = ty::TypingEnv::fully_monomorphized();
     let identity = |id: DefId| ty::GenericArgs::identity_for_item(tcx, id);
     let mut reached: Vec<DefId> = Vec::new();
-    let mut seen: HashSet<(DefId, ty::GenericArgsRef<'tcx>, Given<'tcx>)> = HashSet::new();
+    let mut seen: IndexSet<(DefId, ty::GenericArgsRef<'tcx>, Given<'tcx>)> = IndexSet::default();
     // Each body to follow, of its arguments, and what its call gave each
     // `dyn Fn` parameter, where it said (`given_dyn`); one reached otherwise
     // was given what may be anything.
@@ -240,7 +239,7 @@ fn may_run<'tcx>(
                 return true;
             }
             let mut parts = vec![ty];
-            let mut seen = HashSet::new();
+            let mut seen = IndexSet::default();
             while let Some(part) = parts.pop() {
                 if !seen.insert(part) {
                     continue;
@@ -342,7 +341,7 @@ fn may_run<'tcx>(
                 // impl: what it's given, and the crate's impls of its bounds'
                 // traits of a type among them, which std calls through them.
                 Some(None) => {
-                    let bounds: HashSet<DefId> = (tcx.clauses_of(callee).instantiate_identity(tcx).into_iter())
+                    let bounds: IndexSet<DefId> = (tcx.clauses_of(callee).instantiate_identity(tcx).into_iter())
                         .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
                         .flat_map(|bound| {
                             rustc_middle::ty::elaborate::supertrait_def_ids(tcx, bound.skip_binder().def_id())

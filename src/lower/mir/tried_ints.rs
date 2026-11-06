@@ -11,7 +11,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The blocks `LocalFacts::tried_int` says: each that ends in a call of
     /// an integer's `try_from` whose `Result`, written there alone, is read
     /// only by its discriminant and its `Ok`'s number.
-    pub(super) fn mir_tried_ints(&self, body: &mir::Body<'tcx>) -> HashSet<BasicBlock> {
+    pub(super) fn mir_tried_ints(&self, body: &mir::Body<'tcx>) -> IndexSet<BasicBlock> {
         (body.basic_blocks.iter_enumerated())
             .filter(|(_, data)| {
                 let TerminatorKind::Call { func, destination, .. } = &data.terminator().kind else {

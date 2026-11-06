@@ -3,7 +3,7 @@
 //! what it decided as a program (ADR 1076, amended, #597): each is refused,
 //! as native Rust's answer would differ from the JS's.
 
-use std::collections::HashSet;
+use crate::collections::IndexSet;
 
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{Ty, TyCtxt};
@@ -42,7 +42,7 @@ pub(super) fn refuses_dropping_dyn<'tcx>(
 /// Refuses each trait constant the crate's generic code reads, of
 /// `generic_consts`, that a program's dictionary of an impl of its trait
 /// lacks, carrying only those its own generic code reads (ADR 0106).
-pub(super) fn refuse_lacked_consts(tcx: TyCtxt<'_>, foreign: &Foreign<'_, '_>, generic_consts: &HashSet<DefId>) {
+pub(super) fn refuse_lacked_consts(tcx: TyCtxt<'_>, foreign: &Foreign<'_, '_>, generic_consts: &IndexSet<DefId>) {
     for &konst in generic_consts {
         if let Some((program, ty)) = foreign.lacks_dictionary_const(konst) {
             tcx.dcx().err(format!(

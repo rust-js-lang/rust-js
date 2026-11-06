@@ -2,16 +2,16 @@
 //! (ADR 0576): never known.
 
 use super::root_var;
+use crate::collections::IndexSet;
 use crate::lower::body_queries::strip;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Thir};
 use rustc_middle::ty;
-use std::collections::HashSet;
 
 /// The variables a raw pointer is made of, which it may change where the
 /// walk doesn't see: not a `*const` to what a shared reference refers to,
 /// `ptr::eq(&node.children[0], skip)`'s, which nothing may change through it
 /// but a cell, whose change is a call the walk sees, `borrow_mut()`.
-pub(super) fn volatile(thir: &Thir<'_>) -> HashSet<LocalVarId> {
+pub(super) fn volatile(thir: &Thir<'_>) -> IndexSet<LocalVarId> {
     (thir.exprs.iter())
         .filter_map(|expr| match expr.kind {
             ExprKind::RawBorrow {

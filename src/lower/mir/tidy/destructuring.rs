@@ -12,7 +12,7 @@ use super::*;
 /// more, `const [module, files] = tests;`.
 pub(super) fn destructured(
     stmts: &mut Vec<Stmt>,
-    (patterns, lets, user): (&HashSet<String>, &HashSet<String>, &HashSet<String>),
+    (patterns, lets, user): (&IndexSet<String>, &IndexSet<String>, &IndexSet<String>),
     items: bool,
 ) {
     let mut i = 0;
@@ -520,9 +520,9 @@ pub(super) fn nested_pattern(parts: &[(&[Step], &str, Option<&Expr>)]) -> Option
 /// before it with it (ADR 0369).
 pub(super) fn tuple_reads(
     stmts: &mut Vec<Stmt>,
-    changing: &HashSet<String>,
-    set_elsewhere: &HashSet<String>,
-    captured: &HashSet<String>,
+    changing: &IndexSet<String>,
+    set_elsewhere: &IndexSet<String>,
+    captured: &IndexSet<String>,
 ) {
     let inert = |item: &Expr| {
         let mut inert = !item.has_effects();

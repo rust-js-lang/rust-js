@@ -5,6 +5,7 @@
 
 use super::contracts::{self, Contract};
 use super::*;
+use crate::collections::{IndexMap, IndexSet};
 
 /// One of tidy's rewrites: what it does to a body, by what `hints` say.
 pub(super) struct Pass {
@@ -292,7 +293,7 @@ pub(super) const STAGES: &[Stage] = &[
             // d[0];`, which the first pass left as it is (ADR 0705).
             pass("destructured declared", |b, h| {
                 js::statement_lists(b, &mut |s| {
-                    destructured(s, (&HashSet::new(), &h.lets.named, &h.named.user), false)
+                    destructured(s, (&IndexSet::default(), &h.lets.named, &h.named.user), false)
                 })
             }),
             pass("assigned parts", |b, _| js::statement_lists(b, &mut assigned_parts)),
@@ -700,7 +701,7 @@ pub(super) const STAGES: &[Stage] = &[
             // ..)(f())`.
             pass("applied values", |b, h| {
                 let set = js::Writes::of(b).by_closures();
-                let mut taken = HashSet::new();
+                let mut taken = IndexSet::default();
                 js::names_in(b, &mut taken);
                 js::statement_lists(b, &mut |s| applied_values(s, &set, h.plain, &mut taken))
             }),
@@ -709,7 +710,7 @@ pub(super) const STAGES: &[Stage] = &[
             // declares its name again, an index loop's item (ADR 1042).
             pass("unused lets", |b, _| {
                 let mentions = mentions(b);
-                let mut declared: HashMap<String, usize> = HashMap::new();
+                let mut declared: IndexMap<String, usize> = IndexMap::default();
                 js::each_list(b, &mut |s| {
                     for stmt in s {
                         if let StmtKind::Let(name, _) | StmtKind::Const(name, _) = &stmt.kind {
@@ -1248,8 +1249,8 @@ fn inlined_of(body: &mut Vec<Stmt>, hints: &Hints) {
 }
 
 /// How many times each name is mentioned.
-fn mentions(body: &[Stmt]) -> HashMap<String, usize> {
-    let mut mentions: HashMap<String, usize> = HashMap::new();
+fn mentions(body: &[Stmt]) -> IndexMap<String, usize> {
+    let mut mentions: IndexMap<String, usize> = IndexMap::default();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
     mentions
 }
@@ -1278,11 +1279,13 @@ fn statement_starts(body: &[Stmt]) -> Vec<u32> {
 
 #[cfg(test)]
 mod tests {
+    use crate::collections::IndexSet;
+
     /// Each pass's name, `stage/pass`, is its own, as `--tidy-until` names it.
     #[test]
     fn each_pass_is_named_apart() {
         let names = super::super::pass_names();
-        let unique: std::collections::HashSet<_> = names.iter().collect();
+        let unique: IndexSet<_> = names.iter().collect();
         assert_eq!(unique.len(), names.len());
     }
 }

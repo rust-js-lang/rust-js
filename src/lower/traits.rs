@@ -12,6 +12,7 @@ mod routes;
 mod words;
 
 pub(super) use self::{calls::GivenEvidence, drop_params::*, evidence::*, given::*, routes::*, words::*};
+use crate::collections::{IndexMap, IndexSet};
 
 use super::bindings;
 use super::display::Pretty;
@@ -34,7 +35,6 @@ use rustc_middle::ty::elaborate::supertrait_def_ids;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, Upcast};
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
-use std::collections::{HashMap, HashSet};
 
 /// A trait whose bounds take dictionaries (ADR 0049): the crate's own, and
 /// the std ones rust-js has dictionaries for (ADR 0052).
@@ -75,7 +75,7 @@ pub(super) fn validate(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '_
             continue;
         }
         if kind == DefKind::Trait {
-            let mut names = std::collections::HashSet::new();
+            let mut names = IndexSet::default();
             let identity = ty::GenericArgs::identity_for_item(tcx, id);
             for (name, tr, span) in supertraits(tcx, id.to_def_id(), identity) {
                 if operational(tcx, foreign, tr.def_id) && (name == "__proto__" || !names.insert(name)) {
@@ -140,11 +140,11 @@ pub(super) fn const_params(tcx: TyCtxt<'_>, id: DefId) -> Vec<&ty::GenericParamD
 /// their indices, with the trait's.
 #[derive(Clone, Copy)]
 pub(super) struct Given<'a> {
-    pub copied: &'a HashSet<(DefId, u32)>,
-    pub clones: &'a HashSet<(DefId, u32)>,
-    pub stepped: &'a HashSet<(DefId, u32, DefId)>,
+    pub copied: &'a IndexSet<(DefId, u32)>,
+    pub clones: &'a IndexSet<(DefId, u32)>,
+    pub stepped: &'a IndexSet<(DefId, u32, DefId)>,
     /// The type parameters a `Some` of which is the value (ADR 0051, amended).
-    pub unboxed: &'a HashSet<(DefId, u32)>,
+    pub unboxed: &'a IndexSet<(DefId, u32)>,
     /// What each function's JS takes its type parameters as, and the copies
     /// its calls need besides (ADR 0051, amended).
     pub js_given: &'a super::analysis::JsGiven,

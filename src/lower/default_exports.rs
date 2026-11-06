@@ -5,6 +5,7 @@
 //! (`exported_as`): a module of its crate, another crate through its
 //! library's manifest, a `pub use` re-exporting it, a `js::import!` of it.
 
+use crate::collections::IndexMap;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{ExprKind, ItemKind, Stmt, StmtKind, UseKind};
 use rustc_middle::ty::TyCtxt;
@@ -198,7 +199,7 @@ pub(super) struct ModuleDefault {
 pub(super) fn module_default(
     tcx: TyCtxt<'_>,
     module: LocalModId,
-    fns: &std::collections::HashMap<DefId, super::FnInfo>,
+    fns: &IndexMap<DefId, super::FnInfo>,
     module_held: &[super::bindings::HeldBinding],
 ) -> ModuleDefault {
     let mut default = ModuleDefault::default();
@@ -242,7 +243,7 @@ pub(super) fn module_default(
 pub(super) fn aliases(
     tcx: TyCtxt<'_>,
     module: LocalModId,
-    fns: &std::collections::HashMap<DefId, super::FnInfo>,
+    fns: &IndexMap<DefId, super::FnInfo>,
 ) -> Vec<(DefId, (String, String))> {
     let own = own_aliases(tcx, module);
     let mut aliases: Vec<_> = (own.iter())

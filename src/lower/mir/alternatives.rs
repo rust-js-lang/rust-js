@@ -13,10 +13,10 @@ pub(super) struct Alternatives {
     /// Each switch's target that's an earlier target's alternative, and
     /// that target: the edges to it are that target's, as a guard's that
     /// holds are its arm's (`held_arms`).
-    pub(super) held_as: HashMap<BasicBlock, BasicBlock>,
+    pub(super) held_as: IndexMap<BasicBlock, BasicBlock>,
     /// The blocks of those targets, to where they bind, which JS never
     /// runs: what they write written once, by the earlier's.
-    pub(super) unreached: HashSet<BasicBlock>,
+    pub(super) unreached: IndexSet<BasicBlock>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -27,7 +27,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn mir_alike_alternatives(&self, body: &mir::Body<'tcx>) -> Alternatives {
         // Where a block goes on to past empty ones, a false edge's.
         let landing = |mut at: BasicBlock| {
-            let mut seen = HashSet::new();
+            let mut seen = IndexSet::default();
             while seen.insert(at) {
                 let data = &body.basic_blocks[at];
                 match &data.terminator().kind {

@@ -2,6 +2,7 @@
 
 pub(super) mod arguments;
 mod back_stepped;
+use crate::collections::{IndexMap, IndexSet};
 pub(in crate::lower) use back_stepped::{BackStepped, SteppedLocal};
 mod callers_decide;
 mod cell_borrows;
@@ -83,7 +84,7 @@ use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::Symbol;
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::BTreeMap;
 use type_facts::type_fact_params;
 use validation::{
     in_thread_local, reject_flatten_misuse, reject_namespace_value_reads, reject_parameter_name_misuse,
@@ -93,7 +94,7 @@ pub(super) use validation::{init_of, is_thread_local};
 
 /// The `const`s written in a function's body, each a `const` there (ADR
 /// 0031, amended): by each, the block it's in and the bodies that read it.
-pub(in crate::lower) type LocalConsts = HashMap<DefId, (rustc_span::Span, HashSet<DefId>)>;
+pub(in crate::lower) type LocalConsts = IndexMap<DefId, (rustc_span::Span, IndexSet<DefId>)>;
 
 /// Made by serde's `#[derive(Serialize)]` or `#[derive(Deserialize)]`, or
 /// inside what they made (its `const _: () = { .. }`): left out, since
@@ -238,9 +239,9 @@ fn lowered_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
 /// (ADR 0425), a type's own `io::Read`'s helpers, or only what's found so:
 /// what no JS calls, and so never lowered. One a consumer may call, or none
 /// calls, is lowered as it was.
-fn reached_only_unlowered(tcx: TyCtxt<'_>, bodies: &[Body<'_>]) -> HashSet<DefId> {
+fn reached_only_unlowered(tcx: TyCtxt<'_>, bodies: &[Body<'_>]) -> IndexSet<DefId> {
     // Each function's callers, by the function each call is in.
-    let mut callers: HashMap<DefId, HashSet<DefId>> = HashMap::new();
+    let mut callers: IndexMap<DefId, IndexSet<DefId>> = IndexMap::default();
     let mut calls_in = |caller: DefId, thir: &rustc_middle::thir::Thir<'_>| {
         for expr in thir.exprs.iter() {
             if let ty::FnDef(callee, _) = *expr.ty.kind()
@@ -253,7 +254,7 @@ fn reached_only_unlowered(tcx: TyCtxt<'_>, bodies: &[Body<'_>]) -> HashSet<DefId
     for body in bodies {
         calls_in(tcx.typeck_root_def_id(body.def_id), &body.thir);
     }
-    let unlowered: HashSet<DefId> = (tcx.hir_crate_items(()).definitions())
+    let unlowered: IndexSet<DefId> = (tcx.hir_crate_items(()).definitions())
         .filter(|&def_id| {
             tcx.def_kind(def_id) == DefKind::AssocFn
                 && is_unlowered_impl(tcx, tcx.parent(def_id.to_def_id()))
@@ -266,7 +267,7 @@ fn reached_only_unlowered(tcx: TyCtxt<'_>, bodies: &[Body<'_>]) -> HashSet<DefId
             calls_in(method, &thir.borrow());
         }
     }
-    let mut unreached: HashSet<DefId> = HashSet::new();
+    let mut unreached: IndexSet<DefId> = IndexSet::default();
     loop {
         let found = (callers.iter())
             .filter(|&(callee, by)| {
@@ -412,7 +413,7 @@ fn inline_consts(tcx: TyCtxt<'_>) -> impl Iterator<Item = LocalDefId> {
 /// of its module, as a named one is (ADR 0127). Its value is the one where
 /// it's used, of that use's types.
 fn coded_inline_consts<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> Vec<LocalDefId> {
-    let inline: HashSet<LocalDefId> = inline_consts(tcx).collect();
+    let inline: IndexSet<LocalDefId> = inline_consts(tcx).collect();
     let mut coded = Vec::new();
     for body in bodies {
         for expr in body.thir.exprs.iter() {
@@ -423,7 +424,7 @@ fn coded_inline_consts<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> Vec<L
                 // Whether it has a value, which no enum's being keyed changes.
                 && super::representation::const_value_js(
                     tcx,
-                    &HashSet::new(),
+                    &IndexSet::default(),
                     ty::TypingEnv::post_analysis(tcx, body.def_id),
                     did,
                     args,
@@ -475,31 +476,31 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// What its flattened fields hold as their parents' own keys
     /// (`bindings::flattened`).
     pub flattened: bindings::Flattened,
-    pub closures: HashMap<DefId, &'a Body<'tcx>>,
+    pub closures: IndexMap<DefId, &'a Body<'tcx>>,
     pub trait_impls: Vec<DefId>,
     pub dictionaries: Vec<DefId>,
-    pub import_names: HashMap<LocalModId, HashMap<Export, String>>,
-    pub imported: BTreeMap<Export, HashSet<LocalModId>>,
+    pub import_names: IndexMap<LocalModId, IndexMap<Export, String>>,
+    pub imported: BTreeMap<Export, IndexSet<LocalModId>>,
     /// The exports read through `require(module)` (ADR 0305).
-    pub required: HashSet<Export>,
+    pub required: IndexSet<Export>,
     /// Each library's function a module's `use` reads through
     /// `require(module)` (rd684, ADR 0305, amended).
-    pub required_uses: HashSet<(LocalModId, DefId)>,
-    pub thread_local_inits: HashMap<LocalDefId, LocalDefId>,
+    pub required_uses: IndexSet<(LocalModId, DefId)>,
+    pub thread_local_inits: IndexMap<LocalDefId, LocalDefId>,
     pub consts: Vec<LocalDefId>,
     /// Each variant of a numbered enum, its module's `const` of its number,
     /// read by its name (ADR 0722, amended).
     pub variants: Vec<LocalDefId>,
     pub codecs: Vec<DefId>,
     pub modules: Vec<LocalModId>,
-    pub taken: HashMap<LocalModId, HashSet<String>>,
-    pub fns: HashMap<DefId, FnInfo>,
+    pub taken: IndexMap<LocalModId, IndexSet<String>>,
+    pub fns: IndexMap<DefId, FnInfo>,
     /// Keep collecting lowering diagnostics after item-name validation fails.
     pub failed: bool,
-    pub called_from_elsewhere: HashSet<DefId>,
+    pub called_from_elsewhere: IndexSet<DefId>,
     pub tests: crate::program::Tests,
-    pub paths: HashMap<LocalModId, Vec<String>>,
-    pub mutated: HashSet<Ty<'tcx>>,
+    pub paths: IndexMap<LocalModId, Vec<String>>,
+    pub mutated: IndexSet<Ty<'tcx>>,
     /// The `Rc`s counted, whose counts the crate reads (ADR 0320).
     pub counted: Counted<'tcx>,
     /// Each closure's handle on itself, or on what owns it, of those uncounted (ADRs 0843, 0317).
@@ -515,52 +516,52 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Fn`, which then drops it: a library's may be (ADR 0521).
     pub closure_facts: ClosureFacts,
     /// The types the crate clones, and those their clones clone (ADR 0525).
-    pub cloned: HashSet<Ty<'tcx>>,
+    pub cloned: IndexSet<Ty<'tcx>>,
     /// The kinds of std's iterator adapters explicit wherever the crate
     /// makes one (ADR 0542): those its types hold, and those that keep a
     /// count it clones, an `Enumerate`, a `Take` or a `Skip`, whose clone
     /// is of their source and their count (ADR 0525).
-    pub explicit_adapters: HashSet<DefId>,
+    pub explicit_adapters: IndexSet<DefId>,
     /// The map and filter types the crate steps from their back, each made
     /// knowing its back (ADR 0545).
     pub back_stepped: BackStepped<'tcx>,
-    pub changed_vecs: HashSet<Ty<'tcx>>,
+    pub changed_vecs: IndexSet<Ty<'tcx>>,
     /// Each generic function's type parameters it's given a drop function
     /// for (ADR 0098), by their indices.
-    pub drop_params: HashMap<DefId, Vec<u32>>,
+    pub drop_params: IndexMap<DefId, Vec<u32>>,
     /// The type parameters whose `Copy` bound takes a copy function (ADR 0289).
-    pub copied: HashSet<(DefId, u32)>,
+    pub copied: IndexSet<(DefId, u32)>,
     /// The type parameters whose `Clone` bound takes its dictionary (ADR
     /// 0914, amended).
-    pub clones: HashSet<(DefId, u32)>,
+    pub clones: IndexSet<(DefId, u32)>,
     /// The type parameters a `Some` of which is the value, no caller giving
     /// what may look like `None` (ADR 0051, amended).
-    pub unboxed: HashSet<(DefId, u32)>,
+    pub unboxed: IndexSet<(DefId, u32)>,
     /// What each function's JS takes its type parameters as, and the copies
     /// its calls need besides (ADR 0051, amended).
     pub js_given: JsGiven,
     /// The type parameters given as they are whose `Iterator` dictionary,
     /// or an extension's, is given, as they're stepped by it (ADRs 0411,
     /// 0487), with the trait's id.
-    pub stepped: HashSet<(DefId, u32, DefId)>,
+    pub stepped: IndexSet<(DefId, u32, DefId)>,
     /// Each generic function's type parameters it's given a size, an
     /// alignment or a name of (ADR 0145), by their indices.
-    pub type_facts: HashMap<DefId, Vec<(u32, TypeFact)>>,
+    pub type_facts: IndexMap<DefId, Vec<(u32, TypeFact)>>,
     /// The types built of each one's slots it's given a layout of, past its
     /// associated types' slots (#737).
     pub built_slots: crate::lower::traits::BuiltSlots<'tcx>,
     /// The functions that may return `Err(fmt::Error)` (ADR 0187).
-    pub failing: HashSet<DefId>,
+    pub failing: IndexSet<DefId>,
     /// The throwing functions, whose result is a throwing JS call's (ADR 0644).
-    pub throwing: HashSet<DefId>,
+    pub throwing: IndexSet<DefId>,
     /// The functions that never unwind, whose call throws only where what
     /// it's given does (ADR 0902).
-    pub never_unwinding: HashSet<DefId>,
+    pub never_unwinding: IndexSet<DefId>,
     /// The functions that take their caller's location (ADR 0427).
-    pub caller_locations: HashSet<DefId>,
+    pub caller_locations: IndexSet<DefId>,
     /// Whether the crate asks a `Vec` its capacity (ADR 0419).
     pub asks_capacity: bool,
-    pub generic_consts: HashSet<DefId>,
+    pub generic_consts: IndexSet<DefId>,
     /// Whether the crate shows anything with `{:#?}`, or asks a `Formatter`
     /// if it's alternate: then its `Debug` functions take whether (ADR 0137).
     pub pretty_debug: bool,
@@ -572,24 +573,24 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// The thread-locals only read and set in their own module, which
     /// `plain_statics` makes plain: what their borrows' closures are given is
     /// what's in them, as nothing borrows them meanwhile (ADR 0328).
-    pub quiet_locals: HashSet<LocalDefId>,
+    pub quiet_locals: IndexSet<LocalDefId>,
     /// A library's thread-locals none of whose borrows here can meet
     /// another, so none is counted (ADR 0863, amended, gap rd76).
-    pub quiet_library_keys: HashSet<DefId>,
+    pub quiet_library_keys: IndexSet<DefId>,
     /// The thread-locals, by their keys, made where they're first used, as
     /// their module's load can't make them first (ADR 0037, amended): each
     /// `$local(() => init)`, read by calling it.
-    pub lazy_locals: HashSet<LocalDefId>,
+    pub lazy_locals: IndexSet<LocalDefId>,
     /// The others, each made as its module loads, and what its initializer
     /// may run and read of the crate's there; `None`, what rust-js can't
     /// follow (ADR 1006, amended).
-    pub locals_at_load: HashMap<LocalDefId, Option<Vec<DefId>>>,
+    pub locals_at_load: IndexMap<LocalDefId, Option<Vec<DefId>>>,
     /// The functions a block makes and gives, each a named function
     /// expression there (ADR 0296).
-    pub named_expressions: HashSet<DefId>,
+    pub named_expressions: IndexSet<DefId>,
     /// The functions written in a function's body, each a function
     /// declaration there (ADR 0308).
-    pub local_functions: HashMap<DefId, rustc_span::Span>,
+    pub local_functions: IndexMap<DefId, rustc_span::Span>,
     /// The `const`s written in a function's body, each a `const` there,
     /// by the block they're in and the bodies that read them (ADR 0031,
     /// amended).
@@ -599,10 +600,10 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub held: bindings::Held,
     /// Where a path names a function through the module that has it,
     /// read through its namespace (rd114, ADR 1018).
-    pub module_paths: HashMap<rustc_span::Span, Through>,
+    pub module_paths: IndexMap<rustc_span::Span, Through>,
     /// The fields a `js::null()` is written to, whose `.d.ts` says `| null`
     /// (ADR 0935, amended).
-    pub null_fields: HashSet<DefId>,
+    pub null_fields: IndexSet<DefId>,
 }
 
 pub(super) fn analyze_crate<'a, 'tcx>(
@@ -611,7 +612,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     initializers: &[Body<'tcx>],
     dependencies: &crate::library::Dependencies,
     (library, std_bodies): (bool, bool),
-    (instances, made_where_used): (&super::Instances, &HashSet<LocalDefId>),
+    (instances, made_where_used): (&super::Instances, &IndexSet<LocalDefId>),
 ) -> Option<AnalyzedCrate<'a, 'tcx>> {
     let foreign = super::library::Foreign::new(tcx, dependencies, instances);
     if !bindings::validate(tcx)
@@ -733,7 +734,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .iter()
         .partition(|body| matches!(tcx.def_kind(body.def_id), DefKind::Fn | DefKind::AssocFn));
     let all_bodies = &all_bodies;
-    let closures: HashMap<DefId, &Body<'tcx>> = closures.into_iter().map(|b| (b.def_id, b)).collect();
+    let closures: IndexMap<DefId, &Body<'tcx>> = closures.into_iter().map(|b| (b.def_id, b)).collect();
 
     // What each module holds of a binding, and where a path reads one
     // through it (ADR 0633).
@@ -780,7 +781,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // A library's `#[rust_js::namespace]` a body writes, its module
     // imported whole, by the struct's name, from where its functions are
     // (ADR 1037).
-    let namespaces: HashSet<DefId> = (with_initializers.iter())
+    let namespaces: IndexSet<DefId> = (with_initializers.iter())
         .flat_map(|body| body.thir.exprs.iter())
         .filter_map(|expr| match expr.ty.peel_refs().kind() {
             ty::Adt(adt, _) if !adt.did().is_local() && super::classes::is_namespace(tcx, adt.did()) => Some(adt.did()),
@@ -881,7 +882,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // Each thread-local's `init` function: lowered like any function, its
     // body is the variable's value. Or, of a `const { .. }` one, the `const`
     // in its block, whose value is.
-    let thread_local_inits: HashMap<LocalDefId, LocalDefId> = bodies
+    let thread_local_inits: IndexMap<LocalDefId, LocalDefId> = bodies
         .iter()
         .filter_map(|body| body.def_id.as_local())
         .filter(|&d| tcx.def_kind(d) == DefKind::Fn)
@@ -909,11 +910,11 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     };
     // The fields a `js::null()` is written to, declared `| null` (ADR 0935,
     // amended).
-    let null_fields: HashSet<DefId> = (all_bodies.iter().copied().chain(initializers))
+    let null_fields: IndexSet<DefId> = (all_bodies.iter().copied().chain(initializers))
         .flat_map(|body| super::body_queries::null_written_fields(tcx, &body.thir))
         .collect();
     // Each thing named in JS, the crate's functions among them.
-    let item_set: HashSet<DefId> = items.iter().copied().collect();
+    let item_set: IndexSet<DefId> = items.iter().copied().collect();
     // What dropping `ty` runs, of `counted`'s `Rc`s, asked where `owner` is,
     // as a type it gives may name its own type parameters (ADR 0451).
     let runs_where = |closure_facts: &ClosureFacts, counted: &Counted<'tcx>, ty: Ty<'tcx>, owner: DefId| {
@@ -940,7 +941,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // ask no count (ADRs 0843, 0317, amended), a library's owner by contract.
     let mut self_handles = SelfHandles::new(tcx, all_bodies, &|id, index| foreign.owned_by_return(id, index));
     let counted_with = |closure_facts: &ClosureFacts| {
-        let mut given: HashSet<(DefId, u32)> = HashSet::new();
+        let mut given: IndexSet<(DefId, u32)> = IndexSet::default();
         loop {
             let counted = counted_rcs(
                 tcx,
@@ -951,7 +952,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
                 |counted, pointee| super::drops::drop_runs(recognition, (library, closure_facts), counted, pointee),
             );
             let runs = |ty, owner| runs_where(closure_facts, &counted, ty, owner);
-            let more: HashSet<(DefId, u32)> = (drop_params(tcx, all_bodies, &item_set, &foreign, library, runs))
+            let more: IndexSet<(DefId, u32)> = (drop_params(tcx, all_bodies, &item_set, &foreign, library, runs))
                 .into_iter()
                 .flat_map(|(id, indices)| indices.into_iter().map(move |index| (id, index)))
                 .collect();
@@ -1191,7 +1192,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // order the first one appears. The root is no other: a root of `mod`s
     // alone, an app's list of its files, has none (ADR 0382).
     let mut modules = Vec::new();
-    let mut seen_modules = HashSet::new();
+    let mut seen_modules = IndexSet::default();
     for &def_id in &items {
         let module = super::body_module(tcx, instances, def_id);
         if seen_modules.insert(module) {
@@ -1268,7 +1269,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let mut called_from_elsewhere = exported_across_modules(tcx, all_bodies, &fns, instances);
     let tests = tests::collect_tests(tcx, &markers, &bodies, &fns, &mut called_from_elsewhere);
 
-    let paths: HashMap<LocalModId, Vec<String>> = modules.iter().map(|&m| (m, module_path(tcx, m))).collect();
+    let paths: IndexMap<LocalModId, Vec<String>> = modules.iter().map(|&m| (m, module_path(tcx, m))).collect();
 
     let mutated = mutated_types(tcx, all_bodies);
     let changed_vecs = changed_vecs(tcx, all_bodies);
@@ -1299,7 +1300,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             match &info.owner {
                 // A method's, apart from its type's others.
                 Some(owner) => {
-                    let mut names: HashSet<String> = (fns.values())
+                    let mut names: IndexSet<String> = (fns.values())
                         .filter(|other| other.module == info.module && other.owner.as_ref() == Some(owner))
                         .map(|other| other.name.clone())
                         .collect();
@@ -1429,8 +1430,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
 /// The `Vec` types something takes `&mut` of: `push`, `sort`, `v[i] = x`
 /// and every other change to one does. A clone of any other `Vec` can be
 /// the same array (ADR 0052).
-fn changed_vecs<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> HashSet<Ty<'tcx>> {
-    let mut changed = HashSet::new();
+fn changed_vecs<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> IndexSet<Ty<'tcx>> {
+    let mut changed = IndexSet::default();
     for body in all_bodies {
         for expr in body.thir.exprs.iter() {
             if let ExprKind::Borrow {

@@ -83,7 +83,7 @@ pub(in crate::lower) fn default_typing_env<'tcx>(
         (tcx.try_normalize_erasing_regions(impl_env, ty::Unnormalized::new_wip(clause))).unwrap_or(clause)
     });
     let in_impl = ty::elaborate::elaborate(tcx, in_impl);
-    let mut seen = HashSet::new();
+    let mut seen = IndexSet::default();
     let bounds = (impl_env.param_env.caller_bounds().iter())
         .chain(in_impl)
         .filter(|&clause| seen.insert(clause));
@@ -248,12 +248,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// can read: its dictionaries, `TTouch`, and what one made of them reads,
     /// a copied default's `holderTouch(TTouch)`; its const parameters'
     /// values, facts, caller's location and drops (ADR 0979, amended).
-    pub(in crate::lower) fn given_names(&self) -> HashSet<String> {
+    pub(in crate::lower) fn given_names(&self) -> IndexSet<String> {
         let given = (self.given.evidence.iter().map(|(_, value)| value))
             .chain(self.given.const_params.iter().map(|(_, value)| value))
             .chain(self.given.type_facts.iter().map(|(_, _, value)| value))
             .chain(self.given.caller_location.iter().map(|(_, value)| value));
-        let mut names: HashSet<String> = self.given_drops().into_iter().collect();
+        let mut names: IndexSet<String> = self.given_drops().into_iter().collect();
         for value in given {
             value.clone().each_mut(&mut |part| {
                 if let js::ExprKind::Var(name) = &part.kind {

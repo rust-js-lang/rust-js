@@ -191,7 +191,7 @@ pub(in crate::lower) struct BuiltSlot<'tcx> {
 
 /// Each of the crate's functions' built slots, in their slots' order, after
 /// its associated types' (`drop_slot`).
-pub(in crate::lower) type BuiltSlots<'tcx> = HashMap<DefId, Vec<BuiltSlot<'tcx>>>;
+pub(in crate::lower) type BuiltSlots<'tcx> = IndexMap<DefId, Vec<BuiltSlot<'tcx>>>;
 
 /// `id`'s built slot `index`, if it's one: the crate's own function's, as
 /// `built` lists them, or a library's, as its manifest says.

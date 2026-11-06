@@ -2,10 +2,11 @@
 //! Locals keep their names; import aliases avoid every binding that could
 //! shadow them, including parameters of nested arrows and copied defaults.
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::js::{Expr, ExprKind, Function, Item, JsxTag, Pattern, Prop, Stmt, StmtKind};
 use crate::names::fresh_in;
 use crate::program::{ImportRequest, Lowered, LoweredImport, LoweredModule, Unlinked};
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::BTreeMap;
 
 /// Proof that import resolution and runtime dependency closure completed.
 /// The private field prevents other phases from constructing this directly.
@@ -51,7 +52,7 @@ pub(crate) fn link(unlinked: Unlinked) -> Linked {
 /// nothing is in it: only a declaration's `import type` may name a module
 /// whose JS isn't written (ADR 1005, amended).
 fn keep_imported(modules: &mut [LoweredModule]) {
-    let imported: HashSet<Vec<String>> = (modules.iter())
+    let imported: IndexSet<Vec<String>> = (modules.iter())
         .flat_map(|module| {
             let reexported = module.reexports.iter().filter_map(|reexport| match &reexport.from {
                 crate::js::ImportFrom::Module(path) => Some(path.clone()),
@@ -69,8 +70,8 @@ fn keep_imported(modules: &mut [LoweredModule]) {
     }
 }
 
-fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: HashSet<String>) {
-    let mut read = HashSet::new();
+fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: IndexSet<String>) {
+    let mut read = IndexSet::default();
     visit(
         module,
         &mut Visitor {
@@ -83,11 +84,11 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Has
     // its path and its `use`'s place.
     type Written = (Vec<String>, (u32, u32));
     let mut grouped: BTreeMap<Written, Vec<(String, String)>> = BTreeMap::new();
-    let mut namespaces: HashMap<Written, String> = HashMap::new();
+    let mut namespaces: IndexMap<Written, String> = IndexMap::default();
     // An import of what the module reads: one its lowering asked for whose
     // read tidy took out, a test of a numbered enum's variant an
     // exhaustive `match` needn't write, `Dark` (ADR 0722), isn't written.
-    let replacements: HashMap<_, _> = imports
+    let replacements: IndexMap<_, _> = imports
         .iter()
         .filter(|request| request.always || read.contains(&request.symbol))
         .map(|request| {
@@ -109,7 +110,7 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Has
     module.imports = grouped
         .into_iter()
         .map(|(key, named)| {
-            let namespace = namespaces.remove(&key);
+            let namespace = namespaces.swap_remove(&key);
             let (path, (lo, hi)) = key;
             LoweredImport {
                 path,
@@ -124,16 +125,16 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Has
         &mut Visitor {
             names: &mut names,
             replacements: Some(&replacements),
-            read: &mut HashSet::new(),
+            read: &mut IndexSet::default(),
         },
     );
 }
 
 struct Visitor<'a> {
-    names: &'a mut HashSet<String>,
-    replacements: Option<&'a HashMap<crate::js::Symbol, String>>,
+    names: &'a mut IndexSet<String>,
+    replacements: Option<&'a IndexMap<crate::js::Symbol, String>>,
     /// The other modules' items the module reads, by their symbols.
-    read: &'a mut HashSet<crate::js::Symbol>,
+    read: &'a mut IndexSet<crate::js::Symbol>,
 }
 
 impl Visitor<'_> {

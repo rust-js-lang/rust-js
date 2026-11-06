@@ -7,19 +7,18 @@
 //! flag nothing reads goes with its writes. A temporary's flag is named for
 //! the variable its drop is of (ADR 0372).
 
-use std::collections::{HashMap, HashSet};
-
+use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 
 /// What's known of each flag where a statement runs: `true` or `false`.
-type Known = HashMap<String, bool>;
+type Known = IndexMap<String, bool>;
 
 /// `body` with what's known of its `flags` settled.
-pub(in crate::lower::mir) fn settled_flags(body: &mut Vec<Stmt>, flags: &HashSet<String>) {
+pub(in crate::lower::mir) fn settled_flags(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
     if flags.is_empty() {
         return;
     }
-    settle(body, &mut Known::new(), flags);
+    settle(body, &mut Known::default(), flags);
     for flag in flags {
         if !read(body, flag) {
             js::statement_lists(body, &mut |list| {
@@ -35,8 +34,8 @@ pub(in crate::lower::mir) fn settled_flags(body: &mut Vec<Stmt>, flags: &HashSet
 
 /// Each flag a temporary's, `_14$live`, named for the variable the drop it
 /// guards is of, `value$live`: after the temporaries are named.
-pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &HashSet<String>) {
-    let mut taken = HashSet::new();
+pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
+    let mut taken = IndexSet::default();
     js::names_in(body, &mut taken);
     // In the order they're declared, so each build names them alike.
     let mut declared = Vec::new();
@@ -113,7 +112,7 @@ fn tests_flag(test: &Expr, flag: &str) -> bool {
     }
 }
 
-fn flag_of<'e>(e: &'e Expr, flags: &HashSet<String>) -> Option<&'e str> {
+fn flag_of<'e>(e: &'e Expr, flags: &IndexSet<String>) -> Option<&'e str> {
     match &e.kind {
         ExprKind::Var(v) if flags.contains(v) => Some(v),
         _ => None,
@@ -139,8 +138,8 @@ fn read(body: &[Stmt], flag: &str) -> bool {
 
 /// Each flag `stmts` assign, anywhere in them, and what to: `None` of one
 /// assigned both, or what isn't `true` or `false`.
-fn assigned(stmts: &[Stmt], flags: &HashSet<String>) -> HashMap<String, Option<bool>> {
-    let mut found: HashMap<String, Option<bool>> = HashMap::new();
+fn assigned(stmts: &[Stmt], flags: &IndexSet<String>) -> IndexMap<String, Option<bool>> {
+    let mut found: IndexMap<String, Option<bool>> = IndexMap::default();
     js::each_list(stmts, &mut |list| {
         for stmt in list.iter() {
             if let StmtKind::Assign(target, value) = &stmt.kind
@@ -166,9 +165,9 @@ fn assigned(stmts: &[Stmt], flags: &HashSet<String>) -> HashMap<String, Option<b
 
 /// `known` with each flag `stmts` assign forgotten: what's known after them,
 /// where they may or may not have run.
-fn forget(known: &mut Known, stmts: &[Stmt], flags: &HashSet<String>) {
+fn forget(known: &mut Known, stmts: &[Stmt], flags: &IndexSet<String>) {
     for flag in assigned(stmts, flags).keys() {
-        known.remove(flag);
+        known.swap_remove(flag);
     }
 }
 
@@ -195,7 +194,7 @@ fn bool_of(value: &Expr) -> Option<bool> {
 
 /// `stmts`, run where `known` is known, settled: `known` is then what's
 /// known after them.
-fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &HashSet<String>) {
+fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &IndexSet<String>) {
     let mut i = 0;
     while i < stmts.len() {
         // What a flag is set to: one set again to what it is goes.
@@ -218,7 +217,7 @@ fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &HashSet<String>) {
                     known.insert(flag, b);
                 }
                 None => {
-                    known.remove(&flag);
+                    known.swap_remove(&flag);
                 }
             }
             i += 1;

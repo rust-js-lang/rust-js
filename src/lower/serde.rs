@@ -27,6 +27,7 @@ mod protocol;
 mod value;
 
 pub(super) use super::recognition::Json;
+use crate::collections::IndexMap;
 
 use super::recognition::{SkipPredicate, StdItem, std_item};
 use super::representation::{Num, variant_field};
@@ -39,7 +40,6 @@ use rustc_hir::{self as hir, intravisit};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
-use std::collections::HashMap;
 
 /// One `#[serde(..)]` item: `rename = "a"`, or `rename(serialize = "a")`.
 pub struct SerdeItem {
@@ -54,7 +54,7 @@ pub struct SerdeItem {
 /// it was expanded, each node's `DefId` the resolver's. Not by the span of
 /// its name, which `-C incremental`, Cargo's default, keeps relative to its
 /// item, so no HIR span is the expanded crate's (#450).
-pub type SerdeAttributes = HashMap<DefId, Vec<SerdeItem>>;
+pub type SerdeAttributes = IndexMap<DefId, Vec<SerdeItem>>;
 
 /// `#[serde(..)]` everywhere in the expanded crate, before rustc lowers it.
 pub fn attributes(tcx: TyCtxt<'_>) -> SerdeAttributes {
@@ -124,7 +124,7 @@ pub fn attributes(tcx: TyCtxt<'_>) -> SerdeAttributes {
     let (resolver, krate) = tcx.resolver_for_lowering();
     let (resolver, krate) = (resolver.borrow(), krate.borrow());
     let mut collector = Collector {
-        found: HashMap::new(),
+        found: IndexMap::default(),
         resolver: &resolver,
         owner: None,
     };

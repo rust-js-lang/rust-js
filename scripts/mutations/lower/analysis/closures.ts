@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a type parameter made a `dyn Fn`, given a closure holding a value with a destructor, leaves the `dyn Fn` dropping nothing",
     file: "src/lower/analysis/closures.rs",
-    find: "                        || params_may_drop\n                            && owns_a_param(tcx, function, &|index| given(owner, index), &mut HashSet::new())\n",
+    find: "                        || params_may_drop\n                            && owns_a_param(tcx, function, &|index| given(owner, index), &mut IndexSet::default())\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$|^dyn_fn_of_a_params_function_drops.rs$"],
   },

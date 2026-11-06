@@ -3,9 +3,9 @@
 //! too, as a person writes them, and oxfmt lays them out where they are (ADR 0218). The printer
 //! only lays out the result.
 
+use crate::collections::IndexSet;
 use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind, UnaryOp};
 pub use passes::{Fired, PASSES, Pass, Passes};
-use std::collections::HashSet;
 
 mod assigned_breaks;
 mod catches;
@@ -322,7 +322,7 @@ fn tested_assignments(stmts: &mut Vec<Stmt>) {
 /// not a JS module's namespace, its export or a global, whose members are
 /// each a binding of its own, `export const log = Scheduler.log;` (#633).
 fn read_together(module: &mut js::Module) {
-    let values: HashSet<String> = (module.items.iter())
+    let values: IndexSet<String> = (module.items.iter())
         .filter_map(|item| match item {
             js::Item::Const(constant) => Some(constant.name.clone()),
             _ => None,
@@ -968,7 +968,7 @@ fn coalescing(stmt: &Stmt) -> Option<StmtKind> {
 /// of a property, which a binding's getter may be, `el.offsetWidth`, that
 /// lays the page out (ADR 0356).
 fn unread(body: &mut Vec<Stmt>) {
-    let mut read = HashSet::new();
+    let mut read = IndexSet::default();
     js::visit_stmts(body, &mut |name| {
         read.insert(name.to_string());
     });

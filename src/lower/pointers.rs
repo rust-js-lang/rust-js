@@ -8,8 +8,7 @@
 //! A pointer to a JS object, `ptr::eq`'s, is the object (ADR 0285).
 //! A `NonNull<T>` is its pointer, never `null`.
 
-use std::collections::{HashMap, HashSet};
-
+use crate::collections::{IndexMap, IndexSet};
 use rustc_middle::mir::{self, Local, PlaceElem, Rvalue, StatementKind};
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
@@ -340,32 +339,32 @@ pub(super) fn pointer_op(path: &str) -> Option<PointerOp> {
 /// whole local, `r = &x`, whose `&raw const *r` is a pointer to `x`; and
 /// each local read back out through a reference to it.
 pub(super) struct Pointed {
-    pub(super) locals: HashSet<Local>,
-    pub(super) refs: HashMap<Local, Local>,
+    pub(super) locals: IndexSet<Local>,
+    pub(super) refs: IndexMap<Local, Local>,
     /// Each local read back out through a reference to it, `copy (*r)` of
     /// `r = &m`, or reached through it, `&(*(*r))`, a match guard's
     /// binding's: a `&mut` that's a value of its own then, its handle, not
     /// the place it refers to named where it's used.
-    pub(super) borrowed: HashSet<Local>,
+    pub(super) borrowed: IndexSet<Local>,
     /// Each reference made of a subslice, `&a[1..3]`, or of a place through
     /// one, or a copy of one: a copy of those items in JS (ADR 0063), whose
     /// places aren't the array's; and a named constant, each use of which
     /// is a value of its own, where Rust's may be one place.
-    pub(super) copies: HashSet<Local>,
+    pub(super) copies: IndexSet<Local>,
     /// Each reference or box `r` whose every pointer, `&raw const *r`, is
     /// only read through, `ptr::read(p)` or `*p`, arrayvec's `Drain`'s:
     /// never compared, kept or written through, so a cell of what `r`
     /// refers to reads the same, as Rust's aliasing rules let nothing
     /// change it till the pointer's last read.
-    pub(super) read_only: HashSet<Local>,
+    pub(super) read_only: IndexSet<Local>,
 }
 
 fn pointed_locals(body: &mir::Body<'_>) -> Pointed {
-    let mut refs: HashMap<Local, Option<Local>> = HashMap::new();
+    let mut refs: IndexMap<Local, Option<Local>> = IndexMap::default();
     let mut taken = Vec::new();
-    let mut borrowed = HashSet::new();
-    let mut whole_refs: HashMap<Local, Local> = HashMap::new();
-    let mut copies = HashSet::new();
+    let mut borrowed = IndexSet::default();
+    let mut whole_refs: IndexMap<Local, Local> = IndexMap::default();
+    let mut copies = IndexSet::default();
     for data in body.basic_blocks.iter() {
         for statement in &data.statements {
             let StatementKind::Assign(assign) = &statement.kind else {
@@ -443,8 +442,8 @@ fn pointed_locals(body: &mir::Body<'_>) -> Pointed {
             }
         }
     }
-    let refs: HashMap<Local, Local> = refs.into_iter().filter_map(|(r, to)| Some((r, to?))).collect();
-    let mut locals = HashSet::new();
+    let refs: IndexMap<Local, Local> = refs.into_iter().filter_map(|(r, to)| Some((r, to?))).collect();
+    let mut locals = IndexSet::default();
     for borrowed in taken {
         match borrowed.projection.as_slice() {
             [] => {
@@ -463,7 +462,7 @@ fn pointed_locals(body: &mir::Body<'_>) -> Pointed {
         refs,
         borrowed,
         copies,
-        read_only: HashSet::new(),
+        read_only: IndexSet::default(),
     }
 }
 
@@ -482,8 +481,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `Pointed::read_only`: each reference or box whose pointers are each
     /// made once, and only read through.
-    fn read_only_refs(&self, body: &mir::Body<'tcx>) -> HashSet<Local> {
-        let mut refs: HashMap<Local, bool> = HashMap::new();
+    fn read_only_refs(&self, body: &mir::Body<'tcx>) -> IndexSet<Local> {
+        let mut refs: IndexMap<Local, bool> = IndexMap::default();
         let mut pointers = Vec::new();
         for statement in body.basic_blocks.iter().flat_map(|data| &data.statements) {
             let StatementKind::Assign(assign) = &statement.kind else {
@@ -1337,7 +1336,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a copy of: refused.
     pub(super) fn check_slice_item_pointer(
         &self,
-        (body, copies): (&mir::Body<'tcx>, &HashSet<Local>),
+        (body, copies): (&mir::Body<'tcx>, &IndexSet<Local>),
         place: mir::Place<'tcx>,
         span: Span,
     ) -> R<()> {

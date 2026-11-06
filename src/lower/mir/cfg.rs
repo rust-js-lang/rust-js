@@ -3,8 +3,8 @@
 //! unwinds as a JS exception does, so cleanup blocks and unwind edges are
 //! left out, and so are the edges rustc adds for borrowck alone.
 
+use crate::collections::{IndexMap, IndexSet};
 use rustc_middle::mir::{BasicBlock, Body, TerminatorKind};
-use std::collections::{HashMap, HashSet};
 
 pub(super) struct Graph {
     /// Each block's successors, in the order its terminator names them.
@@ -16,9 +16,9 @@ pub(super) struct Graph {
     /// Each block's immediate dominator; the start's is itself.
     pub(super) idom: Vec<Option<BasicBlock>>,
     /// The targets of edges back to a block that dominates their source.
-    pub(super) headers: HashSet<BasicBlock>,
+    pub(super) headers: IndexSet<BasicBlock>,
     /// The blocks more than one forward edge reaches.
-    pub(super) merges: HashSet<BasicBlock>,
+    pub(super) merges: IndexSet<BasicBlock>,
 }
 
 /// What `block` goes on to when nothing panics.
@@ -34,7 +34,7 @@ pub(super) fn successors(body: &Body<'_>, block: BasicBlock) -> Vec<BasicBlock> 
         Yield { resume, .. } => vec![*resume],
         Return | Unreachable | UnwindResume | UnwindTerminate(_) | CoroutineDrop | TailCall { .. } => Vec::new(),
     };
-    let mut seen = HashSet::new();
+    let mut seen = IndexSet::default();
     next.retain(|b| seen.insert(*b));
     next
 }
@@ -46,13 +46,13 @@ impl Graph {
     /// `Option`'s test that's its payload's (`mir_payload_tests`).
     pub(super) fn of(
         body: &Body<'_>,
-        through: &HashMap<BasicBlock, BasicBlock>,
-        tested: &HashMap<BasicBlock, BasicBlock>,
+        through: &IndexMap<BasicBlock, BasicBlock>,
+        tested: &IndexMap<BasicBlock, BasicBlock>,
     ) -> Graph {
         let n = body.basic_blocks.len();
         let succ: Vec<Vec<BasicBlock>> = (0..n)
             .map(|i| {
-                let mut seen = HashSet::new();
+                let mut seen = IndexSet::default();
                 let block = BasicBlock::from_usize(i);
                 (successors(body, tested.get(&block).copied().unwrap_or(block)).into_iter())
                     .map(|b| through.get(&b).copied().unwrap_or(b))
@@ -127,8 +127,8 @@ impl Graph {
             rpo,
             order,
             idom,
-            headers: HashSet::new(),
-            merges: HashSet::new(),
+            headers: IndexSet::default(),
+            merges: IndexSet::default(),
         };
         let mut forward_in = vec![0usize; n];
         for &b in &graph.rpo {

@@ -1,37 +1,38 @@
 //! The names a crate's items have in JS, and what each module imports and
 //! exports (ADRs 0021, 0100).
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings;
 use crate::lower::bindings::{Export, is_binding, js_import, js_path, module_binding};
 use crate::lower::traits;
 use crate::lower::{Body, FnInfo, camel_case, fresh_in};
+use indexmap::map::Entry;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{self as hir, ItemKind, UseKind};
 use rustc_middle::thir::{ExprId, ExprKind, Pat, PatKind, StmtKind};
 use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
-use std::collections::hash_map::Entry;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 
 /// What of JS the crate's bodies use (ADRs 0024, 0028).
 pub(super) struct JsUses {
     /// JS globals, whether declared here or in another crate (`web`): every
     /// module reserves them, so a local named `console` can't hide the real one.
-    pub(super) globals: HashSet<String>,
+    pub(super) globals: IndexSet<String>,
     /// Exports of JS modules, with the modules that use each.
-    pub(super) imported: BTreeMap<Export, HashSet<LocalModId>>,
+    pub(super) imported: BTreeMap<Export, IndexSet<LocalModId>>,
     /// What each import is bound to in Rust, to name a default import after.
-    pub(super) bound_to: HashMap<Export, HashSet<DefId>>,
+    pub(super) bound_to: IndexMap<Export, IndexSet<DefId>>,
     /// The exports read through `require(module)`, not imported (ADR 0305).
-    pub(super) required: HashSet<Export>,
+    pub(super) required: IndexSet<Export>,
     /// An import named after what the module it's from names it: the
     /// `const` a library's module holds a binding as (ADR 0633), or its
     /// item, its default's too (ADR 0773).
-    pub(super) named: HashMap<Export, String>,
+    pub(super) named: IndexMap<Export, String>,
     /// The bindings a module holds as its `const`, whose `#[rust_js::name]`
     /// names that `const` (ADR 0633), not their import.
-    pub(super) held: HashSet<DefId>,
+    pub(super) held: IndexSet<DefId>,
 }
 
 pub(super) fn js_uses<'tcx>(
@@ -41,11 +42,11 @@ pub(super) fn js_uses<'tcx>(
     instances: &crate::lower::Instances,
 ) -> JsUses {
     let mut uses = JsUses {
-        globals: HashSet::new(),
+        globals: IndexSet::default(),
         imported: BTreeMap::new(),
-        bound_to: HashMap::new(),
-        required: HashSet::new(),
-        named: HashMap::new(),
+        bound_to: IndexMap::default(),
+        required: IndexSet::default(),
+        named: IndexMap::default(),
         held: (held.modules.values().flatten())
             .map(|binding| binding.binding)
             .collect(),
@@ -53,7 +54,7 @@ pub(super) fn js_uses<'tcx>(
     // What a module's `const` of a binding reads (ADR 0633), `import * as
     // react from "react"` of `react.__CLIENT_INTERNALS..`.
     // What each path of a module's namespace names it, `* as Scheduler`'s.
-    let mut namespaces: HashMap<Export, Vec<(Option<String>, DefId)>> = HashMap::new();
+    let mut namespaces: IndexMap<Export, Vec<(Option<String>, DefId)>> = IndexMap::default();
     for (&module, bindings) in &held.modules {
         for binding in bindings.iter().filter(|binding| binding.through.is_none()) {
             if let Some((export, _)) = js_import(&binding.path) {
@@ -70,7 +71,7 @@ pub(super) fn js_uses<'tcx>(
         let module = crate::lower::body_module(tcx, instances, body.def_id);
         // What `js::import!` imports when it's asked for, which nothing
         // imports statically (ADR 0304).
-        let dynamic: HashSet<ExprId> = (body.thir.exprs.iter())
+        let dynamic: IndexSet<ExprId> = (body.thir.exprs.iter())
             .filter_map(|expr| match expr.kind {
                 ExprKind::Call { fun, ref args, .. }
                     if crate::lower::fn_def(body.thir[fun].ty).is_some_and(|(id, _)| {
@@ -234,9 +235,9 @@ pub(super) fn js_uses<'tcx>(
 pub(super) fn name_imports(
     tcx: TyCtxt<'_>,
     uses: &JsUses,
-    taken: &HashMap<LocalModId, HashSet<String>>,
+    taken: &IndexMap<LocalModId, IndexSet<String>>,
     foreign: &crate::lower::library::Foreign<'_, '_>,
-) -> HashMap<LocalModId, HashMap<Export, String>> {
+) -> IndexMap<LocalModId, IndexMap<Export, String>> {
     let (namespaces, others): (Vec<&Export>, Vec<&Export>) =
         uses.imported.keys().partition(|(_, export)| export == "*");
     let bases: Vec<(&Export, String)> = others
@@ -298,7 +299,7 @@ pub(super) fn name_imports(
     taken
         .iter()
         .map(|(&module, items)| {
-            let mut reserved: HashSet<String> = uses.globals.iter().chain(items).cloned().collect();
+            let mut reserved: IndexSet<String> = uses.globals.iter().chain(items).cloned().collect();
             let renamed = renamed_in(tcx, module);
             // A library's item is named as the module's `use` renames it,
             // its default or its name: `use shared::enqueue_task::enqueue_task
@@ -308,10 +309,10 @@ pub(super) fn name_imports(
             // module that holds it, its holder's import, `import
             // ReactSharedInternalsClient` (rd651).
             let mut held_uses = bindings::library_uses(tcx, foreign, module);
-            let library_renamed: HashMap<Export, &String> = (renamed.iter())
+            let library_renamed: IndexMap<Export, &String> = (renamed.iter())
                 .filter_map(|(&id, alias)| {
                     (foreign.import_key(id, module))
-                        .or_else(|| held_uses.remove(&id))
+                        .or_else(|| held_uses.swap_remove(&id))
                         .map(|export| (export, alias))
                 })
                 .collect();
@@ -442,7 +443,7 @@ fn holds_only(tcx: TyCtxt<'_>, module: DefId, from: &str) -> bool {
 fn given_imports(tcx: TyCtxt<'_>, uses: &JsUses) {
     // Each import as each module that declares a binding of it names it.
     type Declared<'a> = (&'a Export, Option<LocalModId>);
-    let mut named: HashMap<Declared<'_>, Vec<(String, DefId)>> = HashMap::new();
+    let mut named: IndexMap<Declared<'_>, Vec<(String, DefId)>> = IndexMap::default();
     for (export, held) in &uses.bound_to {
         for &id in held.iter().filter(|id| !uses.held.contains(*id)) {
             let Some(name) = bindings::given_name(tcx, id) else {
@@ -511,8 +512,8 @@ fn binds_itself(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// A `use` of a name the item's module exports it by, `use
 /// crate::scheduler::unstable_now;`, names it so, as it's exported, not
 /// camelCase (`default_exports::own_aliases`, ADR 0596, amended).
-pub(in crate::lower) fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> HashMap<DefId, String> {
-    let mut renamed: HashMap<DefId, String> = HashMap::new();
+pub(in crate::lower) fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> IndexMap<DefId, String> {
+    let mut renamed: IndexMap<DefId, String> = IndexMap::default();
     for (def_id, alias, _) in use_renames(tcx, module) {
         // Of two, the first written: one import has one name in a file,
         // and two that differ are refused (`refuse_two_names`).
@@ -785,7 +786,7 @@ impl UsesWritten {
     pub(in crate::lower) fn module_at(
         &self,
         tcx: TyCtxt<'_>,
-        fns: &HashMap<DefId, FnInfo>,
+        fns: &IndexMap<DefId, FnInfo>,
         target: LocalModId,
     ) -> Option<rustc_span::Span> {
         self.module_import_at(tcx, fns, target, None)
@@ -797,11 +798,11 @@ impl UsesWritten {
     pub(in crate::lower) fn module_import_at(
         &self,
         tcx: TyCtxt<'_>,
-        fns: &HashMap<DefId, FnInfo>,
+        fns: &IndexMap<DefId, FnInfo>,
         target: LocalModId,
         named: Option<DefId>,
     ) -> Option<rustc_span::Span> {
-        let makes = |id| match tcx.def_kind(id) {
+        let makes = |id: DefId| match tcx.def_kind(id) {
             DefKind::Mod => tcx.is_descendant_of(target.to_def_id(), id),
             _ => {
                 (fns.get(&id).map(|f| f.module))
@@ -867,8 +868,8 @@ pub(super) fn required_uses(
     tcx: TyCtxt<'_>,
     modules: &[LocalModId],
     foreign: &crate::lower::library::Foreign<'_, '_>,
-) -> (HashSet<(LocalModId, DefId)>, bool) {
-    let mut required = HashSet::new();
+) -> (IndexSet<(LocalModId, DefId)>, bool) {
+    let mut required = IndexSet::default();
     let mut failed = false;
     for &module in modules {
         for id in tcx.hir_module_items(module).free_items() {
@@ -942,7 +943,7 @@ pub(super) fn refuse_two_names(
                 failed = true;
             }
         }
-        let mut first: HashMap<DefId, String> = HashMap::new();
+        let mut first: IndexMap<DefId, String> = IndexMap::default();
         // Of its own item, its file declares it, and imports nothing; of
         // std's, only what `@rust-js/std` compiled, as its manifest says.
         let unimported = |def_id: DefId| {
@@ -1038,18 +1039,18 @@ pub(super) fn name_items(
     tcx: TyCtxt<'_>,
     items: &[DefId],
     modules: &[LocalModId],
-    globals: &HashSet<String>,
+    globals: &IndexSet<String>,
     trait_impls: &[DefId],
-    named_expressions: &HashSet<DefId>,
+    named_expressions: &IndexSet<DefId>,
     instances: &crate::lower::Instances,
-) -> (HashMap<LocalModId, HashSet<String>>, HashMap<DefId, FnInfo>, bool) {
+) -> (IndexMap<LocalModId, IndexSet<String>>, IndexMap<DefId, FnInfo>, bool) {
     let mut failed = false;
-    let mut taken: HashMap<LocalModId, HashSet<String>> = modules.iter().map(|&m| (m, globals.clone())).collect();
-    let mut owners: HashMap<(LocalModId, DefId), String> = HashMap::new();
-    let mut methods: HashMap<(LocalModId, DefId), HashSet<String>> = HashMap::new();
-    let mut fns: HashMap<DefId, FnInfo> = HashMap::new();
-    let mut exports: HashMap<(LocalModId, String), DefId> = HashMap::new();
-    let mut impl_names: HashMap<LocalModId, HashSet<String>> = HashMap::new();
+    let mut taken: IndexMap<LocalModId, IndexSet<String>> = modules.iter().map(|&m| (m, globals.clone())).collect();
+    let mut owners: IndexMap<(LocalModId, DefId), String> = IndexMap::default();
+    let mut methods: IndexMap<(LocalModId, DefId), IndexSet<String>> = IndexMap::default();
+    let mut fns: IndexMap<DefId, FnInfo> = IndexMap::default();
+    let mut exports: IndexMap<(LocalModId, String), DefId> = IndexMap::default();
+    let mut impl_names: IndexMap<LocalModId, IndexSet<String>> = IndexMap::default();
     let exported = |def_id: DefId| bindings::exported_by_name(tcx, def_id) && !named_expressions.contains(&def_id);
     let (first, rest): (Vec<DefId>, Vec<DefId>) = items.iter().copied().partition(|&def_id| exported(def_id));
     for def_id in first.into_iter().chain(rest) {
@@ -1141,10 +1142,10 @@ pub(super) fn name_items(
 pub(super) fn exported_across_modules<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
-    fns: &HashMap<DefId, FnInfo>,
+    fns: &IndexMap<DefId, FnInfo>,
     instances: &crate::lower::Instances,
-) -> HashSet<DefId> {
-    let mut exported = HashSet::new();
+) -> IndexSet<DefId> {
+    let mut exported = IndexSet::default();
     for body in all_bodies {
         let from = crate::lower::body_module(tcx, instances, body.def_id);
         // A body of MIR alone, a library's the crate compiles (ADR 0914).
@@ -1184,8 +1185,8 @@ pub(super) fn exported_across_modules<'tcx>(
 pub(super) fn named_expressions<'a, 'tcx: 'a>(
     tcx: TyCtxt<'tcx>,
     bodies: impl Iterator<Item = &'a Body<'tcx>>,
-) -> HashSet<DefId> {
-    let mut named: HashMap<DefId, usize> = HashMap::new();
+) -> IndexSet<DefId> {
+    let mut named: IndexMap<DefId, usize> = IndexMap::default();
     for body in bodies {
         for expr in body.thir.exprs.iter() {
             if let ExprKind::ZstLiteral { .. } = expr.kind
@@ -1210,9 +1211,9 @@ pub(super) fn named_expressions<'a, 'tcx: 'a>(
 pub(super) fn local_functions<'a, 'tcx: 'a>(
     tcx: TyCtxt<'tcx>,
     bodies: impl Iterator<Item = &'a Body<'tcx>>,
-    named_expressions: &HashSet<DefId>,
-) -> HashMap<DefId, rustc_span::Span> {
-    let mut users: HashMap<DefId, HashSet<DefId>> = HashMap::new();
+    named_expressions: &IndexSet<DefId>,
+) -> IndexMap<DefId, rustc_span::Span> {
+    let mut users: IndexMap<DefId, IndexSet<DefId>> = IndexMap::default();
     for body in bodies {
         let root = tcx.typeck_root_def_id(body.def_id);
         for expr in body.thir.exprs.iter() {
@@ -1223,7 +1224,7 @@ pub(super) fn local_functions<'a, 'tcx: 'a>(
             }
         }
     }
-    let mut local: HashSet<DefId> = (users.keys().copied())
+    let mut local: IndexSet<DefId> = (users.keys().copied())
         .filter(|&def_id| {
             def_id.as_local().is_some_and(|local| {
                 tcx.def_kind(local) == DefKind::Fn
@@ -1261,7 +1262,7 @@ pub(super) fn local_functions<'a, 'tcx: 'a>(
             break;
         }
         for def_id in outside {
-            local.remove(&def_id);
+            local.swap_remove(&def_id);
         }
     }
     // Each in the block it's written in.
@@ -1290,9 +1291,9 @@ pub(super) fn local_consts<'a, 'tcx: 'a>(
     tcx: TyCtxt<'tcx>,
     bodies: impl Iterator<Item = &'a Body<'tcx>>,
     consts: &[LocalDefId],
-    local_functions: &HashMap<DefId, rustc_span::Span>,
+    local_functions: &IndexMap<DefId, rustc_span::Span>,
 ) -> super::LocalConsts {
-    let mut readers: HashMap<DefId, HashSet<DefId>> = HashMap::new();
+    let mut readers: IndexMap<DefId, IndexSet<DefId>> = IndexMap::default();
     for body in bodies {
         for named in crate::lower::body_queries::consts_named(&body.thir) {
             readers.entry(named).or_default().insert(body.def_id);
@@ -1323,7 +1324,7 @@ pub(super) fn local_consts<'a, 'tcx: 'a>(
         })
         .filter_map(|&local| {
             let def_id = local.to_def_id();
-            let readers = readers.remove(&def_id).unwrap_or_default();
+            let readers = readers.swap_remove(&def_id).unwrap_or_default();
             let at = function(def_id);
             let within = readers.iter().all(|&reader| {
                 reader == at

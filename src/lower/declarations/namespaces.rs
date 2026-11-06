@@ -3,6 +3,7 @@
 //! ReactFiberReconciler`, the module imported whole; and a type's object
 //! of constants and methods (ADR 0047, #507).
 
+use crate::collections::IndexMap;
 use rustc_hir::def::DefKind;
 use rustc_span::def_id::DefId;
 use serde_json::{Value, json};
@@ -14,11 +15,7 @@ impl Declarations<'_, '_> {
     /// declared without its `self`, as its JS takes none
     /// (`classes::receiver`); but one that's the function it passes
     /// its parameters on to, which its module re-exports (rd292b).
-    pub(super) fn namespace_functions(
-        &mut self,
-        adt: DefId,
-        forwarded: &std::collections::HashMap<DefId, DefId>,
-    ) -> Vec<Value> {
+    pub(super) fn namespace_functions(&mut self, adt: DefId, forwarded: &IndexMap<DefId, DefId>) -> Vec<Value> {
         let tcx = self.tcx;
         let mut items = Vec::new();
         let out = self;

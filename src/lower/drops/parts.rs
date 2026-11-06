@@ -26,7 +26,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// through each std adapter it's made of, each one's `Item`, which a
     /// `Peekable` holds peeked, and a flatten's inner iterator, which its
     /// type's arguments don't name (#861).
-    pub(in crate::lower) fn close_may_panic(&self, ty: Ty<'tcx>, seen: &mut HashSet<Ty<'tcx>>) -> bool {
+    pub(in crate::lower) fn close_may_panic(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
         if !seen.insert(ty) {
             return false;
         }
@@ -92,7 +92,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut close = Expr::call(Expr::member(value, "return"), Vec::new());
                 // Of what holds nothing whose drop may panic, it never
                 // throws: it drops what it holds (#861).
-                if !self.close_may_panic(ty, &mut HashSet::new()) {
+                if !self.close_may_panic(ty, &mut IndexSet::default()) {
                     close = close.never_throws();
                 }
                 out.push(StmtKind::Expr(close).at(js_span));
@@ -420,10 +420,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `fun`'s span: a guard held only while nothing can ask whether its
     /// cell is borrowed (ADR 0328), of the facts found already, which MIR's
     /// lowering asks, found here where they aren't yet.
-    pub(in crate::lower) fn momentary_borrows(&self) -> HashSet<Span> {
+    pub(in crate::lower) fn momentary_borrows(&self) -> IndexSet<Span> {
         let key = std::ptr::from_ref(self.frame.thir) as usize;
-        let spans =
-            |facts: &Facts| -> HashSet<Span> { facts.momentary.iter().map(|&fun| self.frame.thir[fun].span).collect() };
+        let spans = |facts: &Facts| -> IndexSet<Span> {
+            facts.momentary.iter().map(|&fun| self.frame.thir[fun].span).collect()
+        };
         match self.drop_state.facts.get(&key) {
             Some(facts) => spans(facts),
             None => spans(&find_facts(

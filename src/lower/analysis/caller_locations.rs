@@ -8,6 +8,7 @@
 //! one of its impls, or its default, takes one, its declaration does, and
 //! each entry of it is given one, which it passes on where its impl takes it.
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::library::Foreign;
 use crate::lower::recognition::{location_of, tracks_caller};
 use crate::lower::std_types::location::LocationOp;
@@ -15,20 +16,19 @@ use crate::lower::{Body, fn_def};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 pub(super) fn caller_location_fns<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
     foreign: &Foreign<'_, 'tcx>,
-) -> HashSet<DefId> {
-    let mut taking: HashSet<DefId> = HashSet::new();
+) -> IndexSet<DefId> {
+    let mut taking: IndexSet<DefId> = IndexSet::default();
     // Each call a tracking function makes, of what it resolves to.
     let mut calls: Vec<(DefId, DefId)> = Vec::new();
     // Each trait method's declaration, and its default's and impls' bodies
     // that track their caller: if one takes its caller's location, each
     // entry of it does.
-    let mut families: HashMap<DefId, Vec<DefId>> = HashMap::new();
+    let mut families: IndexMap<DefId, Vec<DefId>> = IndexMap::default();
     for body in all_bodies {
         let owner = body.def_id;
         if !tracks_caller(tcx, owner) {

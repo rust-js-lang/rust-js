@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "module-of-tests-without-tests",
     breaks: "a `#[cfg(test)]` module of no `#[test]`s, its tests' fixtures, is taken for a module of tests, and its parent's one module of tests is a file of its own",
     file: "src/lower/analysis/tests.rs",
-    find: "    let with_tests: HashSet<LocalModId> = found.iter().map(|&(module, ..)| module).collect();\n",
-    replace: "    let with_tests: HashSet<LocalModId> = tcx.hir_crate_items(()).definitions().filter(|&d| tcx.def_kind(d) == rustc_hir::def::DefKind::Mod).map(LocalModId::new_unchecked).collect();\n",
+    find: "    let with_tests: IndexSet<LocalModId> = found.iter().map(|&(module, ..)| module).collect();\n",
+    replace: "    let with_tests: IndexSet<LocalModId> = tcx.hir_crate_items(()).definitions().filter(|&d| tcx.def_kind(d) == rustc_hir::def::DefKind::Mod).map(LocalModId::new_unchecked).collect();\n",
     tests: ["test/test-files.test.ts", "-t", "one module of tests is its test file"],
   },
   {

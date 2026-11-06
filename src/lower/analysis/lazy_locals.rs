@@ -19,8 +19,7 @@
 //! server internals that nothing writes after the load, where functions set
 //! its dispatchers'.
 
-use std::collections::{HashMap, HashSet};
-
+use crate::collections::{IndexMap, IndexSet};
 use rustc_abi::FieldIdx;
 use rustc_hir as hir;
 use rustc_middle::mir::TerminatorKind;
@@ -36,13 +35,13 @@ use crate::lower::recognition::{is_local_with, local_key_access, local_key_sets,
 /// The thread-locals made where they're first used, and each other one,
 /// made as its module loads, by its key.
 pub(in crate::lower) struct LazyLocals {
-    pub(in crate::lower) lazy: HashSet<LocalDefId>,
+    pub(in crate::lower) lazy: IndexSet<LocalDefId>,
     /// Each made as its module loads, as JS's `const x = f();` is, and what
     /// its initializer may run and read there, all `may_run` finds, the
     /// one rule; `None` where it may run what rust-js can't follow. The pipeline asks, of the
     /// modules' imports, where its module's load can't make it
     /// (`load_cycles::out_of_order`, ADR 1006, amended).
-    pub(in crate::lower) at_load: HashMap<LocalDefId, Option<Vec<DefId>>>,
+    pub(in crate::lower) at_load: IndexMap<LocalDefId, Option<Vec<DefId>>>,
 }
 
 /// The thread-locals, by their keys, of `inits`, each initializer's key:
@@ -54,13 +53,13 @@ pub(in crate::lower) struct LazyLocals {
 /// `bodies`.
 pub(super) fn lazy_locals<'tcx>(
     tcx: TyCtxt<'tcx>,
-    (inits, made_where_used): (&HashMap<LocalDefId, LocalDefId>, &HashSet<LocalDefId>),
+    (inits, made_where_used): (&IndexMap<LocalDefId, LocalDefId>, &IndexSet<LocalDefId>),
     (runs, bodies): (&Runs<'_, 'tcx>, &[&Body<'tcx>]),
     counted: &super::Counted<'tcx>,
 ) -> LazyLocals {
     let mut found = LazyLocals {
         lazy: made_where_used.clone(),
-        at_load: HashMap::new(),
+        at_load: IndexMap::default(),
     };
     // What each initializer may run and read as its module loads, all
     // `may_run` finds, which follows each thread-local it reads to its
@@ -76,7 +75,7 @@ pub(super) fn lazy_locals<'tcx>(
     // Each that would show it's made as its module loads, made where it's
     // first used, until none more is: a body only it ran runs outside the
     // load then, and what that touches may make another show (#554).
-    let initializers: HashSet<DefId> = inits.keys().map(|init| init.to_def_id()).collect();
+    let initializers: IndexSet<DefId> = inits.keys().map(|init| init.to_def_id()).collect();
     let mut touches = Touches::of(tcx, (bodies, counted), &initializers);
     // What a reference copied out of state may be held by too: each
     // thread-local made of one, and each state a loading body writes one to.
@@ -120,7 +119,7 @@ pub(super) fn lazy_locals<'tcx>(
         }
         for (key, why) in shown {
             found.lazy.insert(key);
-            found.at_load.remove(&key);
+            found.at_load.swap_remove(&key);
             if tcx.visibility(key).is_public() {
                 refuse_exported(tcx, key, why);
             }
@@ -191,7 +190,7 @@ struct FieldUse {
 /// to that may change, which another field may point to too (`pointees`).
 struct FieldOf<'tcx> {
     ty: Ty<'tcx>,
-    pointees: Option<HashSet<Ty<'tcx>>>,
+    pointees: Option<IndexSet<Ty<'tcx>>>,
 }
 
 /// What a body does that Rust orders, where it's run.
@@ -209,12 +208,12 @@ enum Ordered {
 /// touched may share with another state's (`aliases`).
 struct Touches<'tcx> {
     order: Vec<DefId>,
-    of: HashMap<DefId, Touched>,
-    fields: HashMap<(DefId, FieldIdx), FieldOf<'tcx>>,
-    aliases: HashMap<Place, Aliases<'tcx>>,
+    of: IndexMap<DefId, Touched>,
+    fields: IndexMap<(DefId, FieldIdx), FieldOf<'tcx>>,
+    aliases: IndexMap<Place, Aliases<'tcx>>,
     /// Each state that may hold a reference another holds or is, by the
     /// first of its kin (`join_copies`); one that's apart isn't here.
-    kin: HashMap<DefId, DefId>,
+    kin: IndexMap<DefId, DefId>,
 }
 
 /// What a place may share with another state's place, by the types that
@@ -225,17 +224,17 @@ struct Touches<'tcx> {
 #[derive(Default)]
 struct Aliases<'tcx> {
     /// Of a `static`, what it holds itself, which a reference may point to.
-    named: Option<HashSet<Ty<'tcx>>>,
+    named: Option<IndexSet<Ty<'tcx>>>,
     /// What it reaches through a pointer: of a field of a struct its state
     /// holds a reference to, the field; and what it points to, where that's
     /// read or written (`Place::through`).
-    reached: Option<HashSet<Ty<'tcx>>>,
+    reached: Option<IndexSet<Ty<'tcx>>>,
 }
 
 impl<'tcx> Aliases<'tcx> {
     /// Of `place`, of `fields`, the types of the fields `with`s lend.
-    fn of(tcx: TyCtxt<'tcx>, fields: &HashMap<(DefId, FieldIdx), FieldOf<'tcx>>, place: Place) -> Self {
-        let none = || Some(HashSet::new());
+    fn of(tcx: TyCtxt<'tcx>, fields: &IndexMap<(DefId, FieldIdx), FieldOf<'tcx>>, place: Place) -> Self {
+        let none = || Some(IndexSet::default());
         let Some((held, named)) = held_of(tcx, place.state) else {
             return Aliases {
                 named: none(),
@@ -261,13 +260,13 @@ impl<'tcx> Aliases<'tcx> {
 
     /// Whether it may share anything with another state's place.
     fn shares(&self) -> bool {
-        let some = |types: &Option<HashSet<Ty<'tcx>>>| types.as_ref().is_none_or(|types| !types.is_empty());
+        let some = |types: &Option<IndexSet<Ty<'tcx>>>| types.as_ref().is_none_or(|types| !types.is_empty());
         some(&self.named) || some(&self.reached)
     }
 
     /// Whether it and `other`, another state's, may be one place.
     fn meet(&self, other: &Self) -> bool {
-        let meet = |a: &Option<HashSet<Ty<'tcx>>>, b: &Option<HashSet<Ty<'tcx>>>| match (a, b) {
+        let meet = |a: &Option<IndexSet<Ty<'tcx>>>, b: &Option<IndexSet<Ty<'tcx>>>| match (a, b) {
             (Some(a), Some(b)) => !a.is_disjoint(b),
             (None, Some(b)) | (Some(b), None) => !b.is_empty(),
             (None, None) => true,
@@ -297,17 +296,17 @@ impl<'tcx> Touches<'tcx> {
     fn of(
         tcx: TyCtxt<'tcx>,
         (bodies, counted): (&[&Body<'tcx>], &super::Counted<'tcx>),
-        initializers: &HashSet<DefId>,
+        initializers: &IndexSet<DefId>,
     ) -> Self {
-        let mut state: HashMap<DefId, bool> = HashMap::new();
+        let mut state: IndexMap<DefId, bool> = IndexMap::default();
         let mut changing = |id: DefId| *state.entry(id).or_insert_with(|| changes(tcx, id));
-        let by_id: HashMap<DefId, &Body<'tcx>> = bodies.iter().map(|body| (body.def_id, *body)).collect();
+        let by_id: IndexMap<DefId, &Body<'tcx>> = bodies.iter().map(|body| (body.def_id, *body)).collect();
         let mut found = Touches {
             order: bodies.iter().map(|body| body.def_id).collect(),
-            of: HashMap::new(),
-            fields: HashMap::new(),
-            aliases: HashMap::new(),
-            kin: HashMap::new(),
+            of: IndexMap::default(),
+            fields: IndexMap::default(),
+            aliases: IndexMap::default(),
+            kin: IndexMap::default(),
         };
         for body in bodies {
             let thir = &body.thir;
@@ -326,7 +325,7 @@ impl<'tcx> Touches<'tcx> {
             // Each thread-local read where it's only read, `KEY` of
             // `KEY.get()` or `KEY.with_borrow(f)`, and each written, by a
             // method that sets it or lends its cell.
-            let mut read_only = HashSet::new();
+            let mut read_only = IndexSet::default();
             for expr in thir.exprs.iter() {
                 if let ExprKind::Call { fun, ref args, .. } = expr.kind
                     && let Some((id, _)) = crate::lower::fn_def(thir[fun].ty)
@@ -340,7 +339,7 @@ impl<'tcx> Touches<'tcx> {
             }
             // Each thread-local a `with` lends its closure, and the fields of
             // its struct the closure reads alone, where it reads no more.
-            let mut lent: HashMap<ExprId, Vec<(FieldIdx, Ty<'tcx>, FieldUse)>> = HashMap::new();
+            let mut lent: IndexMap<ExprId, Vec<(FieldIdx, Ty<'tcx>, FieldUse)>> = IndexMap::default();
             for expr in thir.exprs.iter() {
                 if let ExprKind::Call { fun, ref args, .. } = expr.kind
                     && let Some((id, _)) = crate::lower::fn_def(thir[fun].ty)
@@ -375,7 +374,7 @@ impl<'tcx> Touches<'tcx> {
                             // And what a read gives out may be written
                             // through, `PTR.get()`'s `&'static S` (#635).
                             let points = (found.aliases.entry(whole))
-                                .or_insert_with(|| Aliases::of(tcx, &HashMap::new(), whole))
+                                .or_insert_with(|| Aliases::of(tcx, &IndexMap::default(), whole))
                                 .reached
                                 .as_ref()
                                 .is_none_or(|reached| !reached.is_empty());
@@ -513,8 +512,8 @@ impl Touches<'_> {
     /// out of, so only those the modules' load runs are asked; all are, as
     /// which are made then changes.
     fn join_copies(&mut self, made_by: &[(DefId, Vec<DefId>)]) {
-        let mut kin: HashMap<DefId, DefId> = HashMap::new();
-        fn first(kin: &HashMap<DefId, DefId>, mut state: DefId) -> DefId {
+        let mut kin: IndexMap<DefId, DefId> = IndexMap::default();
+        fn first(kin: &IndexMap<DefId, DefId>, mut state: DefId) -> DefId {
             while let Some(&up) = kin.get(&state).filter(|&&up| up != state) {
                 state = up;
             }
@@ -676,7 +675,7 @@ fn fields_lent<'tcx>(
     };
     // Each place a `Cell`'s `get`, `set` or `replace` is given, and how
     // it's used: read or written, and whether what it held is given out.
-    let celled: HashMap<ExprId, FieldUse> = (thir.exprs.iter())
+    let celled: IndexMap<ExprId, FieldUse> = (thir.exprs.iter())
         .filter_map(|expr| {
             let ExprKind::Call { fun, ref args, .. } = expr.kind else {
                 return None;
@@ -707,7 +706,7 @@ fn fields_lent<'tcx>(
         })
         .flatten();
     let mut fields: Vec<(FieldIdx, Ty<'tcx>, FieldUse)> = Vec::new();
-    let mut read_through = HashSet::new();
+    let mut read_through = IndexSet::default();
     for (at, expr) in thir.exprs.iter_enumerated() {
         let ExprKind::Field { lhs, name, .. } = expr.kind else {
             continue;
@@ -760,7 +759,7 @@ fn fields_lent<'tcx>(
 /// What a value of `ty` may point to that may change, which another value
 /// may point to too: `reach`'s, of its own memory not, of what it points
 /// to.
-fn pointees<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<HashSet<Ty<'tcx>>> {
+fn pointees<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<IndexSet<Ty<'tcx>>> {
     reach(tcx, ty, false, true)
 }
 
@@ -771,12 +770,12 @@ fn pointees<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<HashSet<Ty<'tcx>>> 
 /// structs and enums and the type arguments of std's. `None` where that
 /// may be anything: a raw pointer, which may be cast, a `dyn` or a closure,
 /// whose captures its type doesn't name, or a type rustc doesn't say.
-fn reach<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, behind: bool, through: bool) -> Option<HashSet<Ty<'tcx>>> {
+fn reach<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, behind: bool, through: bool) -> Option<IndexSet<Ty<'tcx>>> {
     use crate::lower::recognition::{is_std_crate, rc_pointee, weak_pointee};
     let typing_env = ty::TypingEnv::fully_monomorphized();
-    let mut found = HashSet::new();
+    let mut found = IndexSet::default();
     let mut todo = vec![(ty, behind)];
-    let mut seen = HashSet::new();
+    let mut seen = IndexSet::default();
     while let Some((ty, behind)) = todo.pop() {
         let ty = tcx.erase_and_anonymize_regions(ty);
         if !seen.insert((ty, behind)) {
@@ -856,7 +855,7 @@ fn changes(tcx: TyCtxt<'_>, id: DefId) -> bool {
         return false;
     };
     let mut todo: Vec<Ty<'_>> = vec![held];
-    let mut seen = HashSet::new();
+    let mut seen = IndexSet::default();
     while let Some(ty) = todo.pop() {
         if !seen.insert(ty) {
             continue;
@@ -890,10 +889,10 @@ fn changes(tcx: TyCtxt<'_>, id: DefId) -> bool {
 fn loading<'tcx>(
     tcx: TyCtxt<'tcx>,
     keyed: &[(LocalDefId, LocalDefId)],
-    lazy: &HashSet<LocalDefId>,
-    (bodies, only_called): (&[&Body<'tcx>], &HashMap<DefId, Vec<hir::HirId>>),
-) -> HashSet<DefId> {
-    let mut loading: HashSet<DefId> = (keyed.iter())
+    lazy: &IndexSet<LocalDefId>,
+    (bodies, only_called): (&[&Body<'tcx>], &IndexMap<DefId, Vec<hir::HirId>>),
+) -> IndexSet<DefId> {
+    let mut loading: IndexSet<DefId> = (keyed.iter())
         .filter(|(_, key)| !lazy.contains(key))
         .map(|(init, _)| init.to_def_id())
         .chain(
@@ -982,7 +981,7 @@ struct Outside {
 /// of those that may share with another state's, in the bodies' order.
 #[derive(Default)]
 struct Placed {
-    by_state: HashMap<DefId, Vec<(Place, DefId)>>,
+    by_state: IndexMap<DefId, Vec<(Place, DefId)>>,
     shared: Vec<(Place, DefId)>,
 }
 
@@ -1018,12 +1017,12 @@ impl Placed {
 }
 
 impl Outside {
-    fn of(touches: &Touches<'_>, loading: &HashSet<DefId>) -> Self {
+    fn of(touches: &Touches<'_>, loading: &IndexSet<DefId>) -> Self {
         let mut outside = Outside {
             writes: Placed::default(),
             touches: Placed::default(),
         };
-        for id in touches.order.iter().filter(|id| !loading.contains(id)) {
+        for id in touches.order.iter().filter(|id| !loading.contains(*id)) {
             let touched = &touches.of[id];
             for &place in &touched.writes {
                 outside.writes.add(touches, place, *id);

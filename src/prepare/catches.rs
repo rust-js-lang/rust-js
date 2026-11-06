@@ -2,7 +2,7 @@
 //! JS call's (ADRs 0035, 0637) or `catch_unwind`'s (ADR 0660), and what
 //! the `catch` reads of what was thrown.
 
-use std::collections::HashSet;
+use crate::collections::IndexSet;
 
 use crate::js::{self, Expr, ExprKind, Pattern, Stmt, StmtKind};
 
@@ -12,7 +12,7 @@ use crate::js::{self, Expr, ExprKind, Pattern, Stmt, StmtKind};
 /// reads or declares one, React's renderNode's `let thrown;` it sets
 /// (rd551): a name of the program's own never keeps it a `$catchUnwind`.
 fn thrown_name(payload: &str, handler: &[Stmt]) -> String {
-    let mut taken = HashSet::from([payload.to_string()]);
+    let mut taken = IndexSet::from_iter([payload.to_string()]);
     js::names_in(handler, &mut taken);
     crate::names::fresh_apart(&mut taken, "thrown")
 }
@@ -940,7 +940,7 @@ fn whole_binding(ok: &[Stmt], result: &str, call: &Expr) -> Option<String> {
     let is_name = |n: &str| base(n) == base(&name);
     let mut declared = 0;
     js::each_declared(ok, &mut |d| declared += usize::from(is_name(d)));
-    let mut of_call = HashSet::new();
+    let mut of_call = IndexSet::default();
     js::names_in(&[StmtKind::Expr(call.clone()).at(call.span)], &mut of_call);
     let unclashed = !of_call.iter().any(|n| is_name(n));
     (declared == 1 && read_after == js::mentions_in(ok, &name) && unclashed).then_some(name)
@@ -1041,7 +1041,7 @@ fn unwound_let(before: &[Stmt], stmt: &Stmt, rest: &[Stmt]) -> Option<(Stmt, usi
 /// declare, so nothing after them reads what the `catch` declares (ADR
 /// 0830). `None` where none mentions `payload`.
 fn caught_run(payload: &str, rest: &[Stmt]) -> Option<usize> {
-    let mut names = HashSet::from([payload.to_string()]);
+    let mut names = IndexSet::from_iter([payload.to_string()]);
     let mut taken = 0;
     loop {
         let mentioned = |s: &Stmt| {

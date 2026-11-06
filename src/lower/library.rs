@@ -5,10 +5,11 @@ mod built_types;
 
 use super::bindings::HeldBinding;
 use super::{FnInfo, module_path};
+use crate::collections::{IndexMap, IndexSet};
 use crate::library::{Dependencies, Held, HeldImport, Imported, Item, ItemFact, Library, RcShape, Reexported, VERSION};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LOCAL_CRATE, LocalModId};
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::BTreeSet;
 
 /// What a library and its consumers both call an item: rustc's `DefPathHash`
 /// of it, the same in every crate that sees it. Of std's own, `core`'s,
@@ -61,19 +62,19 @@ pub(super) fn reachable(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// (ADR 0187), the drops it takes none of (ADR 0190), and what it asks of
 /// its type parameters (ADR 0145).
 pub(super) struct Contracts<'a, 'tcx> {
-    pub(super) drop_params: &'a HashMap<DefId, Vec<u32>>,
+    pub(super) drop_params: &'a IndexMap<DefId, Vec<u32>>,
     /// The type parameters whose `Copy` bound takes a copy function (ADRs
     /// 0289, 0914), whose `Clone` bound takes its dictionary (ADR 0914,
     /// amended), and which are stepped by a trait (ADR 0548).
     pub(super) given: super::traits::Given<'a>,
-    pub(super) failing: &'a HashSet<DefId>,
-    pub(super) no_drops: &'a HashMap<DefId, BTreeSet<u32>>,
-    pub(super) type_facts: &'a HashMap<DefId, Vec<(u32, super::recognition::TypeFact)>>,
+    pub(super) failing: &'a IndexSet<DefId>,
+    pub(super) no_drops: &'a IndexMap<DefId, BTreeSet<u32>>,
+    pub(super) type_facts: &'a IndexMap<DefId, Vec<(u32, super::recognition::TypeFact)>>,
     /// The types built of each one's slots it asks the layout of, which
     /// its manifest says by a template of them (#737).
     pub(super) built_slots: (&'a Foreign<'a, 'tcx>, &'a super::traits::BuiltSlots<'tcx>),
     /// Those that take their caller's location (ADR 0427).
-    pub(super) caller_locations: &'a HashSet<DefId>,
+    pub(super) caller_locations: &'a IndexSet<DefId>,
     /// Those that read `js::arguments()` (rd332), and the parameters'
     /// tuples of its `function::with_this` functions that do (#553).
     pub(super) reads_arguments: &'a super::analysis::arguments::ReadsArguments<'tcx>,
@@ -89,7 +90,7 @@ pub(super) struct Contracts<'a, 'tcx> {
     /// A program's, `--tested`'s (#597): the trait constants its
     /// dictionaries carry, its generic code's, a library's every one; and its
     /// own traits whose `dyn`s drop nothing, none of a library's.
-    pub(super) program: Option<(&'a HashSet<DefId>, Vec<DefId>)>,
+    pub(super) program: Option<(&'a IndexSet<DefId>, Vec<DefId>)>,
     /// What the `Rc`s it counts point at (ADR 0852).
     pub(super) counted: &'a super::analysis::Counted<'tcx>,
     /// What it changes in place, which its JS copies (ADR 0914, amended).
@@ -99,14 +100,14 @@ pub(super) struct Contracts<'a, 'tcx> {
     /// What it says of its structs' fields (ADRs 0863, amended, 0906).
     pub(super) fields: Vec<crate::library::Field>,
     /// The thread-locals made where they're first used (ADR 0037, amended).
-    pub(super) lazy_locals: &'a HashSet<rustc_span::def_id::LocalDefId>,
+    pub(super) lazy_locals: &'a IndexSet<rustc_span::def_id::LocalDefId>,
     /// The exported thread-locals and `static mut`s that are their module's
     /// variables (ADRs 0270, 0096, amended).
-    pub(super) variables: &'a HashSet<DefId>,
+    pub(super) variables: &'a IndexSet<DefId>,
     /// Its types equal only to themselves (ADR 0864).
     pub(super) identities: &'a [DefId],
     /// Its enums told apart by their keys (`bindings::flattened`, ADR 1071).
-    pub(super) keyed: &'a HashSet<DefId>,
+    pub(super) keyed: &'a IndexSet<DefId>,
     /// Its types whose `==` is their address's, whatever their `Hash` (ADR
     /// 0864, amended).
     pub(super) eq_by_address: &'a [DefId],
@@ -123,7 +124,7 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) owned_by_return: &'a super::analysis::owned_by_return::OwnedByReturn,
     /// The own nullable parameters each call gives `null` or a value
     /// (`analysis/nulled_params.rs`, ADR 0861, amended).
-    pub(super) nulled_params: &'a HashSet<(DefId, usize)>,
+    pub(super) nulled_params: &'a IndexSet<(DefId, usize)>,
 }
 
 /// What `id` asks of each of its type parameters that it asks anything of,
@@ -202,7 +203,7 @@ fn own(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// What a crate's JS exports of its own, each by its module's path and its
 /// name there (`exported_names`).
-pub(super) type Exported = HashSet<(Vec<String>, String)>;
+pub(super) type Exported = IndexSet<(Vec<String>, String)>;
 
 /// What each of `modules`' JS exports, by its module's path and its name
 /// there: an item `export`ed, its default, those it exports by another
@@ -214,8 +215,8 @@ pub(super) type Exported = HashSet<(Vec<String>, String)>;
 /// its consumers' calls through them (ADR 0427).
 pub(super) fn refuse_unsaid_locations(
     tcx: TyCtxt<'_>,
-    caller_locations: &HashSet<DefId>,
-    fns: &HashMap<DefId, FnInfo>,
+    caller_locations: &IndexSet<DefId>,
+    fns: &IndexMap<DefId, FnInfo>,
 ) {
     let mut unsaid: Vec<DefId> = (caller_locations.iter())
         .filter(|&&id| tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))
@@ -235,7 +236,7 @@ pub(super) fn refuse_unsaid_locations(
 }
 
 pub(super) fn exported_names(modules: &[crate::program::UnlinkedModule]) -> Exported {
-    let mut exported = HashSet::new();
+    let mut exported = IndexSet::default();
     for module in modules.iter().map(|unlinked| &unlinked.module) {
         let mut export = |name: &str| exported.insert((module.path.clone(), name.to_string()));
         for item in &module.items {
@@ -270,9 +271,9 @@ pub(super) fn exported_names(modules: &[crate::program::UnlinkedModule]) -> Expo
 /// doesn't export, the consumer compiles (ADR 0914, amended).
 pub(super) fn exports<'tcx>(
     tcx: TyCtxt<'tcx>,
-    (functions, exported): (&HashMap<DefId, FnInfo>, &Exported),
+    (functions, exported): (&IndexMap<DefId, FnInfo>, &Exported),
     contracts: &Contracts<'_, 'tcx>,
-    (trait_impls, held): (&[DefId], &HashMap<LocalModId, Vec<HeldBinding>>),
+    (trait_impls, held): (&[DefId], &IndexMap<LocalModId, Vec<HeldBinding>>),
     dependencies: &Dependencies,
 ) -> Library {
     let Contracts {
@@ -1083,7 +1084,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
                 .is_some_and(|facts| facts.contains(&fact))
     }
 
-    pub(super) fn fields_saying(&self, fact: crate::library::FieldFact) -> HashMap<String, String> {
+    pub(super) fn fields_saying(&self, fact: crate::library::FieldFact) -> IndexMap<String, String> {
         (self.dependencies.libraries.iter())
             .flat_map(|(name, library)| {
                 (library.fields.iter())
@@ -1234,7 +1235,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         if !self.any() {
             return reached;
         }
-        let mut seen = HashSet::new();
+        let mut seen = IndexSet::default();
         for body in all_bodies {
             for expr in body.thir.exprs.iter() {
                 for part in expr.ty.walk().filter_map(|part| part.as_type()) {
@@ -1251,7 +1252,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         &self,
         ty: rustc_middle::ty::Ty<'tcx>,
         exported: Option<rustc_span::def_id::CrateNum>,
-        seen: &mut HashSet<(rustc_middle::ty::Ty<'tcx>, Option<rustc_span::def_id::CrateNum>)>,
+        seen: &mut IndexSet<(rustc_middle::ty::Ty<'tcx>, Option<rustc_span::def_id::CrateNum>)>,
         reached: &mut Reached<'tcx>,
     ) {
         use rustc_middle::ty;
@@ -1347,13 +1348,13 @@ struct LibraryPaths {
     /// `use react_isomorphic::CHILDREN;` of a `pub use
     /// react_client::CHILDREN;` there, a path whose last but one segment
     /// is the library's root (the user's decision, ADR 1008, amended).
-    rooted: HashSet<(LocalModId, DefId)>,
+    rooted: IndexSet<(LocalModId, DefId)>,
     /// Each named through another of the library's modules than its own,
     /// the first written: that module and the name the path gives it,
     /// `react_fiber_reconciler` and `default_on_caught_error` of `use
     /// react_reconciler::react_fiber_reconciler::default_on_caught_error;`
     /// (rd704).
-    through: HashMap<(LocalModId, DefId), (DefId, rustc_span::Symbol)>,
+    through: IndexMap<(LocalModId, DefId), (DefId, rustc_span::Symbol)>,
 }
 
 fn library_paths(tcx: TyCtxt<'_>) -> LibraryPaths {
@@ -1390,8 +1391,8 @@ fn library_paths(tcx: TyCtxt<'_>) -> LibraryPaths {
     let mut paths = Paths {
         tcx,
         found: LibraryPaths {
-            rooted: HashSet::new(),
-            through: HashMap::new(),
+            rooted: IndexSet::default(),
+            through: IndexMap::default(),
         },
     };
     tcx.hir_visit_all_item_likes_in_crate(&mut paths);

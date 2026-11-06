@@ -15,7 +15,7 @@ use super::*;
 /// `x.value`, `$someValue(x)`, only up to the next call or assignment
 /// through a field, which may change it. Not an `if` the program wrote, of
 /// a condition in `written`: what it says (ADR 0564, amended).
-pub(super) fn decided_tests(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, written: &[js::Span]) {
+pub(super) fn decided_tests(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>, written: &[js::Span]) {
     let mut i = 0;
     while i < stmts.len() {
         let StmtKind::If(test, then, otherwise) = &stmts[i].kind else {
@@ -49,7 +49,7 @@ pub(super) fn decided_tests(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, w
 /// nothing, isn't a constant, and reads no variable something assigns; or
 /// reads through a field, which anything that does something disturbs
 /// (`disturbs_any`), a closure's assignment too, as only a call runs it.
-fn decidable(test: &Expr, changing: &HashSet<String>) -> bool {
+fn decidable(test: &Expr, changing: &IndexSet<String>) -> bool {
     let mut stable = !test.has_effects() && !test.is_constant();
     if test.reads_only_vars() {
         test.visit_vars(&mut |v| stable &= !changing.contains(v));

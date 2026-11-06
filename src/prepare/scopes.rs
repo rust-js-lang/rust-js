@@ -4,13 +4,13 @@
 //! declaration of the new name comes between a read and what it reads
 //! (ADR 0357).
 
-use std::collections::HashMap;
+use crate::collections::IndexMap;
 
 use crate::js::{self, Expr, ExprKind, Function, JsxTag, Pattern, Prop, Stmt, StmtKind};
 
 struct Scope {
     parent: Option<usize>,
-    names: HashMap<String, usize>,
+    names: IndexMap<String, usize>,
 }
 
 /// A read: the scope it's in, and the scope of the declaration it's of,
@@ -24,10 +24,10 @@ struct Read {
 pub(super) struct Tree {
     scopes: Vec<Scope>,
     /// Each name's reads.
-    reads: HashMap<String, Vec<Read>>,
+    reads: IndexMap<String, Vec<Read>>,
     /// The scopes declaring each name: asked of each name renamed, which
     /// a scan of every scope made a function's size times its names.
-    declaring: HashMap<String, Vec<usize>>,
+    declaring: IndexMap<String, Vec<usize>>,
     /// Whether the outermost scope's names are the module's, an `on_load!`
     /// body's, which no rename of the item's own may take (ADR 0267).
     module_scope: bool,
@@ -91,14 +91,14 @@ impl Tree {
 
     /// `from` named `to`, where [`Tree::renames`] said it keeps each read.
     pub(super) fn rename(&mut self, from: &str, to: &str) {
-        let declaring = self.declaring.remove(from).unwrap_or_default();
+        let declaring = self.declaring.swap_remove(from).unwrap_or_default();
         for &scope in &declaring {
-            if let Some(id) = self.scopes[scope].names.remove(from) {
+            if let Some(id) = self.scopes[scope].names.swap_remove(from) {
                 self.scopes[scope].names.insert(to.to_string(), id);
             }
         }
         self.declaring.entry(to.to_string()).or_default().extend(declaring);
-        if let Some(reads) = self.reads.remove(from) {
+        if let Some(reads) = self.reads.swap_remove(from) {
             self.reads.entry(to.to_string()).or_default().extend(reads);
         }
     }
@@ -117,7 +117,7 @@ impl Walk {
         let parent = self.stack.last().copied();
         self.tree.scopes.push(Scope {
             parent,
-            names: HashMap::new(),
+            names: IndexMap::default(),
         });
         self.stack.push(self.tree.scopes.len() - 1);
     }

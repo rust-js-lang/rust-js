@@ -6,14 +6,13 @@
 //! constants (`pipeline::load_cycles`, ADR 0031, amended) and a dictionary
 //! it makes (ADR 0592).
 
-use std::collections::{HashMap, HashSet};
-
+use crate::collections::{IndexMap, IndexSet};
 use rustc_span::def_id::LocalModId;
 
 use crate::program::{JsModules, ModuleAt};
 
 pub(super) struct ModuleImports {
-    edges: HashMap<LocalModId, HashSet<LocalModId>>,
+    edges: IndexMap<LocalModId, IndexSet<LocalModId>>,
 }
 
 impl ModuleImports {
@@ -28,13 +27,13 @@ impl ModuleImports {
         bound: impl IntoIterator<Item = (LocalModId, &'s str)>,
         js_modules: &dyn JsModules,
     ) -> Self {
-        let mut edges: HashMap<LocalModId, HashSet<LocalModId>> = HashMap::new();
+        let mut edges: IndexMap<LocalModId, IndexSet<LocalModId>> = IndexMap::default();
         for (from, to) in direct {
             edges.entry(from).or_default().insert(to);
         }
         let bound: Vec<(LocalModId, &str)> = bound.into_iter().collect();
         let laid_out: Vec<ModuleAt<'_>> = modules.iter().map(|&(_, at)| at).collect();
-        let specifiers: HashSet<&str> = bound.iter().map(|&(_, specifier)| specifier).collect();
+        let specifiers: IndexSet<&str> = bound.iter().map(|&(_, specifier)| specifier).collect();
         let loaded = js_modules.loaded(&specifiers.into_iter().collect::<Vec<_>>(), &laid_out);
         for (from, specifier) in bound {
             let to = edges.entry(from).or_default();
@@ -64,7 +63,7 @@ impl ModuleImports {
 
     /// Whether `from`'s JS imports `to`'s, or imports what does.
     pub(super) fn reaches(&self, from: LocalModId, to: LocalModId) -> bool {
-        let mut seen = HashSet::from([from]);
+        let mut seen = IndexSet::from_iter([from]);
         let mut pending = vec![from];
         while let Some(at) = pending.pop() {
             for &next in self.edges.get(&at).into_iter().flatten() {

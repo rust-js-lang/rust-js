@@ -4,6 +4,7 @@
 //! whether a call is a throwing call, of a binding or of such a function,
 //! the one answer every path asks.
 
+use crate::collections::IndexSet;
 use crate::lower::bindings::is_binding;
 use crate::lower::recognition::{Catching, Recognition, StdItem};
 use crate::lower::{Body, fn_def};
@@ -11,14 +12,13 @@ use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, RETURN_PLACE, StatementKind, TerminatorKind};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
-use std::collections::HashSet;
 
 /// How a call of `id`, given `args`, delivers its result: a binding's by
 /// the result it's declared with (ADR 0588), a throwing function's as a
 /// `Result` of what it threw.
 pub(in crate::lower) fn call_throws<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
-    throwing: &HashSet<DefId>,
+    throwing: &IndexSet<DefId>,
     id: DefId,
     args: ty::GenericArgsRef<'tcx>,
 ) -> Catching {
@@ -41,12 +41,12 @@ pub(super) fn throwing_fns<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: &Recognition<'_, 'tcx>,
     bodies: &[&Body<'tcx>],
-) -> HashSet<DefId> {
+) -> IndexSet<DefId> {
     let candidates: Vec<(DefId, &mir::Body<'tcx>)> = (bodies.iter())
         .filter(|body| candidate(tcx, recognition, body.def_id))
         .filter_map(|body| Some((body.def_id, &body.mir.as_ref()?.body)))
         .collect();
-    let mut throwing = HashSet::new();
+    let mut throwing = IndexSet::default();
     loop {
         let found: Vec<DefId> = (candidates.iter())
             .filter(|(id, mir)| !throwing.contains(id) && returns_throws(tcx, recognition, &throwing, mir))
@@ -86,7 +86,7 @@ fn candidate<'tcx>(tcx: TyCtxt<'tcx>, recognition: &Recognition<'_, 'tcx>, id: D
 fn returns_throws<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: &Recognition<'_, 'tcx>,
-    throwing: &HashSet<DefId>,
+    throwing: &IndexSet<DefId>,
     mir: &mir::Body<'tcx>,
 ) -> bool {
     let mut calls = 0;

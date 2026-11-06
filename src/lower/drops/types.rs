@@ -3,8 +3,8 @@
 //! walked once. Asked through `DropQuery`, of types and the function's
 //! facts alone: it sees no JS, nor emission's state.
 
+use crate::collections::{IndexMap, IndexSet};
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
 
 use crate::lower::analysis::{ClosureFacts, Counted};
 use crate::lower::recognition::{Recognition, StdItem, any_trait, rc_pointee, weak_pointee};
@@ -42,7 +42,7 @@ struct Walk<'tcx> {
     /// type walked so far: one walked again reaches no more than it did,
     /// and what's found of each is no answer to cache, a cached one no
     /// answer of what it reaches.
-    visited: Option<HashSet<Ty<'tcx>>>,
+    visited: Option<IndexSet<Ty<'tcx>>>,
 }
 
 impl Walk<'_> {
@@ -67,15 +67,15 @@ impl Walk<'_> {
 /// drops rust-js can't make, and why; and what's been found of each type.
 #[derive(Default)]
 pub(in crate::lower) struct TypeDrops<'tcx> {
-    pub(super) cache: RefCell<HashMap<Ty<'tcx>, Drops<'tcx>>>,
-    pub(super) given: HashSet<u32>,
+    pub(super) cache: RefCell<IndexMap<Ty<'tcx>, Drops<'tcx>>>,
+    pub(super) given: IndexSet<u32>,
     /// The std traits' associated types a caller gives a drop for,
     /// `<I as IntoIterator>::IntoIter`, and each one's index (ADR 0421).
-    pub(super) items: HashMap<ty::AliasTy<'tcx>, u32>,
+    pub(super) items: IndexMap<ty::AliasTy<'tcx>, u32>,
     /// Each one a caller would give a drop for, given one or not: one none
     /// gives one drops nothing, as no caller's has one (ADR 0489).
-    pub(super) slots: HashSet<ty::AliasTy<'tcx>>,
-    pub(super) unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
+    pub(super) slots: IndexSet<ty::AliasTy<'tcx>>,
+    pub(super) unsupported: IndexMap<u32, (Ty<'tcx>, &'static str)>,
 }
 
 impl<'tcx> TypeDrops<'tcx> {
@@ -232,7 +232,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
     /// Its drop is then a function that calls itself.
     pub(in crate::lower) fn drops_itself(&self, ty: Ty<'tcx>) -> bool {
         let mut walk = Walk {
-            visited: Some(HashSet::new()),
+            visited: Some(IndexSet::default()),
             ..Walk::new()
         };
         self.drops_in(ty, &mut walk);
@@ -764,7 +764,7 @@ pub(in crate::lower) fn no_type_here<'tcx>(
     // of another's, a dictionary's method's own `I` read where its impl's
     // bounds hold, is none of its to say (`from_iter::<I>`'s
     // `<I as IntoIterator>::IntoIter`, #794).
-    let bounded: HashSet<ty::ParamTy> = (typing_env.param_env.caller_bounds().iter())
+    let bounded: IndexSet<ty::ParamTy> = (typing_env.param_env.caller_bounds().iter())
         .flat_map(|clause| -> Vec<ty::GenericArg<'tcx>> {
             match clause.kind().skip_binder() {
                 ty::ClauseKind::Trait(bound) => bound.trait_ref.args.iter().flat_map(|arg| arg.walk()).collect(),

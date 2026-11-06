@@ -152,7 +152,7 @@ pub(in crate::lower::mir::tidy) fn continues_written(
     stmts: &mut [Stmt],
     guards: &[(js::Span, js::Span)],
     arms: &[(js::Span, js::Span, js::Span)],
-    (rests, commented): (&HashMap<String, u32>, &[js::Span]),
+    (rests, commented): (&IndexMap<String, u32>, &[js::Span]),
 ) {
     /// A block's `break`s, `block`, each of which goes on to `jump`, and
     /// the arms of a `continue` whose `match` is before something it holds,
@@ -435,8 +435,8 @@ pub(super) fn latest(stmts: &[Stmt]) -> u32 {
 /// Of each block `body` labels, where the last statement past it starts,
 /// in the lists it's in (`latest`): what a `break` of it that goes on to a
 /// `continue` skips (`continues_written`, #530).
-pub(in crate::lower::mir::tidy) fn turn_rests(body: &[Stmt]) -> HashMap<String, u32> {
-    fn walk(stmts: &[Stmt], later: u32, rests: &mut HashMap<String, u32>) {
+pub(in crate::lower::mir::tidy) fn turn_rests(body: &[Stmt]) -> IndexMap<String, u32> {
+    fn walk(stmts: &[Stmt], later: u32, rests: &mut IndexMap<String, u32>) {
         for (i, stmt) in stmts.iter().enumerate() {
             let after = later.max(latest(&stmts[i + 1..]));
             match &stmt.kind {
@@ -459,7 +459,7 @@ pub(in crate::lower::mir::tidy) fn turn_rests(body: &[Stmt]) -> HashMap<String, 
             }
         }
     }
-    let mut rests = HashMap::new();
+    let mut rests = IndexMap::default();
     walk(body, 0, &mut rests);
     rests
 }

@@ -16,9 +16,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `const` written in a function's body is never filled into its hole, which the printer refuses",
     file: "src/lower/pipeline/holes.rs",
-    find: "            } else if let Some(constant) = holes.consts.remove(&index) {\n",
+    find: "            } else if let Some(constant) = holes.consts.swap_remove(&index) {\n",
     replace:
-      "            } else if let Some(constant) = holes.consts.remove(&index).filter(|_| false) {\n",
+      "            } else if let Some(constant) = holes.consts.swap_remove(&index).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^local_consts.rs$"],
   },
 ];

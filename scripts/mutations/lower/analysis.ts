@@ -223,7 +223,7 @@ export const mutations: Mutation[] = [
       "MIR knows no quiet thread-local, each borrowed through `$withBorrow`",
     file: "src/lower/analysis.rs",
     find: "    let quiet_locals = plain_locals::plain_thread_locals(\n        tcx,\n        all_bodies,\n        (thread_local_inits.values().copied()).filter(|key| !lazy_locals.contains(key)),\n        &quiet,\n    );\n",
-    replace: "    let quiet_locals: HashSet<_> = HashSet::new();\n",
+    replace: "    let quiet_locals: IndexSet<_> = IndexSet::default();\n",
     tests: ["test/modules.test.ts", "-t", "thread-local only read and set"],
   },
   {
@@ -240,9 +240,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate root of `mod`s alone, an app's list of its files, writes an empty JS file of its own, `src/lib.js`",
     file: "src/lower/analysis.rs",
-    find: "    let mut modules = Vec::new();\n    let mut seen_modules = HashSet::new();\n",
+    find: "    let mut modules = Vec::new();\n    let mut seen_modules = IndexSet::default();\n",
     replace:
-      "    let mut modules = vec![rustc_span::def_id::CRATE_MOD_ID];\n    let mut seen_modules = HashSet::from([rustc_span::def_id::CRATE_MOD_ID]);\n",
+      "    let mut modules = vec![rustc_span::def_id::CRATE_MOD_ID];\n    let mut seen_modules = IndexSet::from_iter([rustc_span::def_id::CRATE_MOD_ID]);\n",
     tests: ["test/modules.test.ts", "-t", "a root of modules alone"],
   },
   {
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `const { MaybeUninit::uninit() }` block is a constant of its module, made as code, not `undefined` where it's used",
     file: "src/lower/analysis.rs",
-    find: "                && super::representation::const_value_js(\n                    tcx,\n                    &HashSet::new(),\n",
+    find: "                && super::representation::const_value_js(\n                    tcx,\n                    &IndexSet::default(),\n",
     replace: "                && super::eval_const(\n                    tcx,\n",
     tests: ["test/corpus.test.ts", "-t", "^const_block_uninit_array.rs$"],
     snapshots: true,

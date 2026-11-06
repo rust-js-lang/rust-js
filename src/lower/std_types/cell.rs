@@ -1,7 +1,7 @@
 //! What changes a place: `Cell`s, atomics, thread-locals, and `mem::drop` and `forget` (ADRs 0025, 0074, 0098).
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::representation::NoneForm;
-use std::collections::HashSet;
 
 use crate::js::result;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
@@ -803,9 +803,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// (#541).
 pub(in crate::lower) fn plain_statics(
     items: &mut [js::Item],
-    quiet: &HashSet<&str>,
-    held_values: &HashSet<&str>,
-    nullable: &HashSet<&str>,
+    quiet: &IndexSet<&str>,
+    held_values: &IndexSet<&str>,
+    nullable: &IndexSet<&str>,
 ) -> (Vec<(String, bool)>, Vec<String>) {
     // A closure called where it's made: its body (ADRs 0581, 0840), in a
     // function or in what the module runs when it's loaded, which no
@@ -1023,7 +1023,7 @@ fn taken_whole(stmts: &mut Vec<Stmt>, name: &str) -> usize {
             i += 2;
             continue;
         }
-        let mut names = HashSet::new();
+        let mut names = IndexSet::default();
         js::names_in(stmts, &mut names);
         let old = crate::lower::fresh_in(&mut names, "old");
         let slot = match &mut stmts[i].kind {
@@ -1187,15 +1187,15 @@ pub(in crate::lower) fn imported_variables_through(
 /// (rd114a, ADR 1018).
 pub(in crate::lower) fn crate_imported_variables(
     tcx: rustc_middle::ty::TyCtxt<'_>,
-    fns: &std::collections::HashMap<rustc_span::def_id::DefId, crate::lower::FnInfo>,
-    variables: &std::collections::HashSet<rustc_span::def_id::DefId>,
+    fns: &IndexMap<rustc_span::def_id::DefId, crate::lower::FnInfo>,
+    variables: &IndexSet<rustc_span::def_id::DefId>,
     lowered: &mut [crate::program::UnlinkedModule],
 ) {
     let symbol = |id: &rustc_span::def_id::DefId, export: &str| crate::lower::module_symbol(fns[id].module, export);
-    let named: std::collections::HashSet<js::Symbol> = (variables.iter())
+    let named: IndexSet<js::Symbol> = (variables.iter())
         .map(|id| symbol(id, fns[id].owner.as_ref().unwrap_or(&fns[id].name)))
         .collect();
-    let namespaced: std::collections::HashSet<js::Symbol> = (variables.iter())
+    let namespaced: IndexSet<js::Symbol> = (variables.iter())
         .map(|id| symbol(id, &crate::lower::default_exports::exported_as(tcx, *id, &fns[id].name)))
         .collect();
     if named.is_empty() {

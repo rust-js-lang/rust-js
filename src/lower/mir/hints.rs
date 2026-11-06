@@ -5,6 +5,7 @@
 //! nothing.
 
 use super::*;
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::body_queries::{self, PatternValue};
 
 mod calls;
@@ -405,7 +406,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let else_continues = self.jump_ifs(&continue_of, true);
         // Of a loop's `break`, not a block's the program labeled, whose
         // `break`s are where they're written already (ADR 0790).
-        let labeled: std::collections::HashSet<rustc_hir::ItemLocalId> = (self.frame.thir.exprs.iter())
+        let labeled: IndexSet<rustc_hir::ItemLocalId> = (self.frame.thir.exprs.iter())
             .filter_map(|e| match e.kind {
                 thir::ExprKind::Scope { hir_id, .. } => match self.tcx.hir_expect_expr(hir_id).kind {
                     rustc_hir::ExprKind::Block(block, Some(_)) => Some(block.hir_id.local_id),
@@ -423,7 +424,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let arm_continues = self.jump_arms(&continue_of, true);
         // Where each loop is written, and whether as a `while`.
         // Each loop's label the program wrote, `'rows`, by the loop.
-        let labels: std::collections::HashMap<thir::ExprId, String> = (self.frame.thir.exprs.iter())
+        let labels: IndexMap<thir::ExprId, String> = (self.frame.thir.exprs.iter())
             .filter_map(|e| match e.kind {
                 thir::ExprKind::Scope { value, hir_id, .. } => match self.tcx.hir_expect_expr(hir_id).kind {
                     // The loop it scopes, in scopes of its own too.
@@ -657,7 +658,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The one answer to which `match` is a `switch`.
     fn written_switches(&self) -> Vec<Switch> {
         // Each once, of the scopes THIR has of it.
-        let mut seen = std::collections::HashSet::new();
+        let mut seen = IndexSet::default();
         let held = &self.frame.facts.held_guards;
         (self.frame.thir.exprs.iter())
             .filter_map(|e| {
@@ -1256,9 +1257,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         mir_body: &mir::Body<'tcx>,
         state: &State<'_, 'tcx>,
-    ) -> std::collections::HashMap<String, Vec<String>> {
+    ) -> IndexMap<String, Vec<String>> {
         let called = self.calls_named_in_source(mir_body);
-        let mut taken_from: std::collections::HashMap<Local, Local> = std::collections::HashMap::new();
+        let mut taken_from: IndexMap<Local, Local> = IndexMap::default();
         for data in mir_body.basic_blocks.iter() {
             for statement in &data.statements {
                 if let StatementKind::Assign(assign) = &statement.kind
@@ -1386,19 +1387,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         mir_body: &mir::Body<'tcx>,
         state: &State<'_, 'tcx>,
-    ) -> (
-        std::collections::HashSet<String>,
-        std::collections::HashSet<String>,
-        std::collections::HashSet<String>,
-    ) {
+    ) -> (IndexSet<String>, IndexSet<String>, IndexSet<String>) {
         // A name each of whose locals is a `bool`, and one each of whose
         // locals is an integer.
-        let mut booleans = std::collections::HashSet::new();
-        let mut others = std::collections::HashSet::new();
-        let mut numbers = std::collections::HashSet::new();
-        let mut not_numbers = std::collections::HashSet::new();
-        let mut floats = std::collections::HashSet::new();
-        let mut not_floats = std::collections::HashSet::new();
+        let mut booleans = IndexSet::default();
+        let mut others = IndexSet::default();
+        let mut numbers = IndexSet::default();
+        let mut not_numbers = IndexSet::default();
+        let mut floats = IndexSet::default();
+        let mut not_floats = IndexSet::default();
         for (local, name) in state.locals.names.iter_enumerated().filter(|(_, n)| !n.is_empty()) {
             // A shared reference to one too, `*show_hint`'s, which JS reads as it.
             let ty = mir_body.local_decls[local].ty;

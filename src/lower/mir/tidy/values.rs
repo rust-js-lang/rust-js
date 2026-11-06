@@ -1,6 +1,7 @@
 //! Tidy's values: arrays, handles, callbacks and cells, as JS writes them.
 
 use super::*;
+use crate::collections::{IndexMap, IndexSet};
 
 /// `$iter(xs).filter(f)`, an array's `$iter`, which knows where it is, made
 /// for an iterator helper alone, which nothing else steps: `xs.values()
@@ -261,7 +262,7 @@ pub(super) fn spread_spreads(e: &mut Expr) {
 /// lazily_mapped`), which `next_back` or `rfind` made again: lazy, so
 /// making it runs nothing, never an array's eager `map` (#805).
 pub(super) fn unread_maps(body: &mut Vec<Stmt>) {
-    let mut read = HashSet::new();
+    let mut read = IndexSet::default();
     js::visit_stmts(body, &mut |name| {
         read.insert(name.to_string());
     });
@@ -284,7 +285,7 @@ pub(super) fn unread_maps(body: &mut Vec<Stmt>) {
             }
         }
     });
-    let gone: HashSet<String> = (assigned.into_iter())
+    let gone: IndexSet<String> = (assigned.into_iter())
         .filter(|name| js::mentions_in(body, name) == 1)
         .collect();
     if gone.is_empty() {
@@ -381,11 +382,11 @@ pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
 /// null` is `null` and a value is itself. What a variable holds of a
 /// nullable field, stored in another, as it is (ADR 0620, amended).
 pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
-    let mut declared: HashMap<String, usize> = HashMap::new();
+    let mut declared: IndexMap<String, usize> = IndexMap::default();
     for name in js::declared_names(body) {
         *declared.entry(name).or_default() += 1;
     }
-    let mut defined: HashSet<String> = HashSet::new();
+    let mut defined: IndexSet<String> = IndexSet::default();
     js::each_list(body, &mut |stmts| {
         for stmt in stmts {
             if let StmtKind::Const(name, value) = &stmt.kind
@@ -452,9 +453,9 @@ pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
 /// `undefined`, `let found = null; .. found = [item];`, React's
 /// getParentFragmentInstances' (ADR 0957, amended): not one a closure
 /// reads, which may set it, nor one set otherwise, `found ??= ..`.
-fn lets_never_undefined(body: &[Stmt], declared: &HashMap<String, usize>) -> HashSet<String> {
-    let mut lets: HashSet<String> = HashSet::new();
-    let mut not: HashSet<String> = HashSet::new();
+fn lets_never_undefined(body: &[Stmt], declared: &IndexMap<String, usize>) -> IndexSet<String> {
+    let mut lets: IndexSet<String> = IndexSet::default();
+    let mut not: IndexSet<String> = IndexSet::default();
     js::each_list(body, &mut |stmts| {
         for stmt in stmts {
             match &stmt.kind {
@@ -619,7 +620,7 @@ pub(super) fn handles_in_place(body: &mut Vec<Stmt>) {
 /// stages run again, after `handles_in_place` (#779, #784).
 fn written_whole_in_place(body: &mut Vec<Stmt>) {
     // Each a name of its own, as two such writes may be in one list (#687).
-    let mut taken = std::collections::HashSet::new();
+    let mut taken = IndexSet::default();
     js::names_in(body, &mut taken);
     // A closure's write too (#482).
     js::each_block_mut(body, &mut |stmts| {
@@ -694,7 +695,7 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::L
     // on, `Cell::from_mut(&mut *state)`'s or a call's that keeps it: that
     // handle, whose setter sets each key, not one on its place, whose
     // setter would assign the variable holding the class's object (#678).
-    let states: std::collections::HashSet<String> = (handles.iter())
+    let states: IndexSet<String> = (handles.iter())
         .filter(|(.., storage)| matches!(storage, js::Storage::InPlace(_)))
         .map(|(name, ..)| name.clone())
         .collect();
@@ -718,7 +719,7 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::L
     }
     // A flattened state's written whole through it keeps it, whose setter
     // sets each key (ADR 1044), a closure's write too (#482).
-    let mut written_whole = std::collections::HashSet::new();
+    let mut written_whole = IndexSet::default();
     js::each_block_mut(body, &mut |stmts| {
         for stmt in stmts.iter() {
             if let StmtKind::Assign(target, _) = &stmt.kind
@@ -897,7 +898,7 @@ pub(super) fn first_cell_values(stmts: &mut Vec<Stmt>) {
 /// clone a closure makes is its own body's, tidied before its function's.
 pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
     let mut cells: Vec<String> = Vec::new();
-    let mut clones: HashMap<String, String> = HashMap::new();
+    let mut clones: IndexMap<String, String> = IndexMap::default();
     js::each_list(body, &mut |stmts| {
         for stmt in stmts {
             match &stmt.kind {
@@ -916,7 +917,7 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
     });
     // Not one a closure's parameter or another declaration shadows, whose
     // `value` isn't the cell's.
-    let mut bound: HashMap<String, usize> = HashMap::new();
+    let mut bound: IndexMap<String, usize> = IndexMap::default();
     js::each_block_mut(&mut body.clone(), &mut |stmts| {
         for stmt in stmts.iter() {
             if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {
@@ -943,7 +944,7 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
         }
         None
     };
-    let named: HashMap<String, String> = (cells.iter().chain(clones.keys()))
+    let named: IndexMap<String, String> = (cells.iter().chain(clones.keys()))
         .filter_map(|n| cell_of(n).map(|c| (n.clone(), c)))
         .collect();
     if named.is_empty() {
@@ -951,13 +952,13 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
     }
     // Each read of the names, and each read of a `value` of one, or one a
     // clone is made of: the same, or one is read otherwise.
-    let mut reads: HashMap<String, usize> = HashMap::new();
+    let mut reads: IndexMap<String, usize> = IndexMap::default();
     js::visit_stmts(body, &mut |v| {
         if let Some(cell) = named.get(v) {
             *reads.entry(cell.clone()).or_default() += 1;
         }
     });
-    let mut kept: HashMap<String, usize> = HashMap::new();
+    let mut kept: IndexMap<String, usize> = IndexMap::default();
     let mut each = body.clone();
     js::each_expr_mut(&mut each, &mut |e| {
         if let ExprKind::Member(of, key) = &e.kind
@@ -979,7 +980,7 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
             }
         }
     });
-    let plain: HashSet<&String> = (cells.iter()).filter(|c| reads.get(*c) == kept.get(*c)).collect();
+    let plain: IndexSet<&String> = (cells.iter()).filter(|c| reads.get(*c) == kept.get(*c)).collect();
     if plain.is_empty() {
         return;
     }
@@ -1024,9 +1025,9 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
 /// handle is made on it, nor where a `finally` reads it, which runs after
 /// the `return`. Case none (ADR 0262): no program can tell it was written.
 pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
-    let mut declared: HashMap<String, usize> = HashMap::new();
+    let mut declared: IndexMap<String, usize> = IndexMap::default();
     js::each_declared(body, &mut |name| *declared.entry(name.to_string()).or_default() += 1);
-    let lets: HashSet<&String> = (body.iter())
+    let lets: IndexSet<&String> = (body.iter())
         .filter_map(|stmt| match &stmt.kind {
             StmtKind::Let(name, _) if declared.get(name) == Some(&1) => Some(name),
             _ => None,
@@ -1035,7 +1036,7 @@ pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
     if lets.is_empty() {
         return;
     }
-    let mut mentions: HashMap<String, usize> = HashMap::new();
+    let mut mentions: IndexMap<String, usize> = IndexMap::default();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
     // Each reset returned, the variable's name and whether the take left
     // text or a number, which an append reads only to write.
@@ -1057,7 +1058,7 @@ pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
         return;
     }
     let handled = js::Writes::of(body).handled;
-    let mut finally_read: HashSet<String> = HashSet::new();
+    let mut finally_read: IndexSet<String> = IndexSet::default();
     js::each_list(body, &mut |stmts| {
         for stmt in stmts {
             if let StmtKind::Try(_, finally) = &stmt.kind {
@@ -1067,7 +1068,7 @@ pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
             }
         }
     });
-    let unread: HashSet<String> = (resets.into_iter())
+    let unread: IndexSet<String> = (resets.into_iter())
         .filter(|(name, appended)| {
             !handled.contains(name) && !finally_read.contains(name) && !read_by_closures(body, name, *appended)
         })
@@ -1096,7 +1097,7 @@ pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
 
 /// `const old = x; x = c; return old;` of a constant `c`, `old` read
 /// nowhere else: `x`, and `c`.
-fn returned_reset<'a>(stmts: &'a [Stmt], mentions: &HashMap<String, usize>) -> Option<(&'a String, &'a Expr)> {
+fn returned_reset<'a>(stmts: &'a [Stmt], mentions: &IndexMap<String, usize>) -> Option<(&'a String, &'a Expr)> {
     let [read, written, returned] = stmts else { return None };
     let StmtKind::Const(old, value) = &read.kind else {
         return None;
@@ -1243,7 +1244,7 @@ pub(super) fn arrows_out_of_tries(body: &mut Vec<Stmt>) {
 /// `const tick = () => { … }; useEffect(tick, [count]);`, a closure only a
 /// hook's function is: written there, a function its `let` names, `function
 /// tick() { … }`, unless it reads that name (ADR 0297).
-pub(super) fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &HashSet<String>) {
+pub(super) fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &IndexSet<String>) {
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::Const(name, value) = &stmts[i].kind
@@ -1337,9 +1338,9 @@ pub(in crate::lower::mir) fn writer_body(out: &mut Vec<Stmt>, name: &str) {
 /// after it, `read_past_calls`; not where a test decides whether it runs.
 pub(super) fn applied_values(
     stmts: &mut Vec<Stmt>,
-    set: &HashSet<String>,
-    plain: &HashSet<String>,
-    taken: &mut HashSet<String>,
+    set: &IndexSet<String>,
+    plain: &IndexSet<String>,
+    taken: &mut IndexSet<String>,
 ) {
     let mut i = 0;
     while i < stmts.len() {
@@ -1390,8 +1391,8 @@ fn first_applied(
     e: &mut Expr,
     before: &mut Before,
     name: &str,
-    set: &HashSet<String>,
-    plain: &HashSet<String>,
+    set: &IndexSet<String>,
+    plain: &IndexSet<String>,
 ) -> Option<Expr> {
     if !before.past && !before.reads {
         return None;

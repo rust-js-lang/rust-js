@@ -15,7 +15,7 @@ use super::*;
 /// `value` that reads no `x` being none (rd514).
 /// Past what's only declared between, `let typeofNextType;` of what the
 /// test's branches set.
-pub(super) fn tested_options(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
+pub(super) fn tested_options(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         let declared = |s: &Stmt| matches!(s.kind, StmtKind::Let(_, None));
@@ -40,7 +40,7 @@ fn tested_option(
     made: &Stmt,
     tested: &Stmt,
     rest: &[Stmt],
-    changing: &HashSet<String>,
+    changing: &IndexSet<String>,
 ) -> Option<(StmtKind, Option<Vec<Stmt>>)> {
     let StmtKind::Const(x, made) = &made.kind else {
         return None;

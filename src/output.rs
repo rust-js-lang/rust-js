@@ -1,6 +1,7 @@
 //! Resolve and validate all artifacts before touching output files.
 
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use crate::collections::{IndexMap, IndexSet};
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use crate::manifest::{self, Manifest, fingerprint};
@@ -42,15 +43,15 @@ pub struct OutputPlan {
     /// what they import, which lowering read (`LocalJs`, ADR 0031,
     /// amended): what the build read, of its manifest's sources.
     pub bound: Vec<PathBuf>,
-    jsx: HashSet<Vec<String>>,
+    jsx: IndexSet<Vec<String>>,
     /// Each module of tests that's its parent's test file (ADR 1076).
-    placed_tests: HashSet<Vec<String>>,
+    placed_tests: IndexSet<Vec<String>>,
     /// Each `#[path]` module's file, where its JS goes beside (ADR 0273).
-    located: HashMap<Vec<String>, PathBuf>,
+    located: IndexMap<Vec<String>, PathBuf>,
     /// Of a crate Cargo builds, each module's JS in source and the package
     /// it's of there, which another package's module imports it by the
     /// subpath of (ADR 0770, amended).
-    scopes: HashMap<Vec<String>, (PathBuf, Option<crate::packages::Scope>)>,
+    scopes: IndexMap<Vec<String>, (PathBuf, Option<crate::packages::Scope>)>,
 }
 
 /// What writes Cargo's record of a crate's sources, given what else the
@@ -91,7 +92,7 @@ impl OutputPlan {
             .collect();
         // Each test file's tests, by the module whose test file it is, in
         // the order rustc has them (ADR 1076).
-        let files: HashMap<Vec<String>, PathBuf> = (modules.iter())
+        let files: IndexMap<Vec<String>, PathBuf> = (modules.iter())
             .filter_map(|module| Some((module.path.clone(), module.file.clone()?)))
             .collect();
         let mut registered: BTreeMap<&[String], Vec<&program::TestFn>> = BTreeMap::new();
@@ -100,7 +101,7 @@ impl OutputPlan {
         }
         // What each module's file exports, but `default`, which a glob's
         // re-export of each is `export * from` of (#593).
-        let exported: HashMap<Vec<String>, BTreeSet<String>> = (modules.iter())
+        let exported: IndexMap<Vec<String>, BTreeSet<String>> = (modules.iter())
             .map(|module| {
                 (
                     module.path.clone(),
@@ -466,7 +467,7 @@ impl OutputPlan {
         (beside, own): (&[String], Option<&[String]>),
         tests: &[&program::TestFn],
     ) -> Vec<&'static str> {
-        let mut taken: HashSet<String> = js_module.read_vars().into_iter().map(str::to_string).collect();
+        let mut taken: IndexSet<String> = js_module.read_vars().into_iter().map(str::to_string).collect();
         for item in &js_module.items {
             match item {
                 js::Item::Function(function) => {
@@ -663,10 +664,10 @@ impl OutputPlan {
             written: Vec::new(),
             read: Vec::new(),
             bound: Vec::new(),
-            jsx: HashSet::new(),
-            placed_tests: HashSet::new(),
-            located: HashMap::new(),
-            scopes: HashMap::new(),
+            jsx: IndexSet::default(),
+            placed_tests: IndexSet::default(),
+            located: IndexMap::default(),
+            scopes: IndexMap::default(),
         }
     }
 
@@ -792,7 +793,7 @@ impl OutputPlan {
                 .iter()
                 .map(|import| absolute(&self.js_path(&import.path)))
                 .collect::<Result<Vec<_>, _>>()?;
-            let mut seen = std::collections::HashSet::new();
+            let mut seen = IndexSet::default();
             imports.retain(|import| seen.insert(import.clone()));
             modules.push(manifest::Module {
                 module: module.path.clone(),
@@ -855,8 +856,8 @@ impl OutputPlan {
         let manifest_path = self.manifest.as_deref().map(absolute).transpose()?;
         // Each path by its case-folded form: macOS's and Windows's file
         // systems make `shapes.js` and `Shapes.js` one file.
-        let mut paths = HashSet::new();
-        let mut folded: HashMap<String, &PathBuf> = HashMap::new();
+        let mut paths = IndexSet::default();
+        let mut folded: IndexMap<String, &PathBuf> = IndexMap::default();
         for path in planned.iter().chain(manifest_path.iter()) {
             if sources.contains(path) || path == &input || !paths.insert(path.clone()) {
                 return Err(format!(
@@ -1021,7 +1022,7 @@ fn entry_is_root(package: &crate::packages::Package, module: &program::LoweredMo
 /// shadows, is one of `m`'s that isn't the glob's, and the names stay
 /// listed. Of a library's module, what its manifest says its file
 /// exports (#629).
-fn every_export(reexport: &program::Reexport, exported: &HashMap<Vec<String>, BTreeSet<String>>) -> bool {
+fn every_export(reexport: &program::Reexport, exported: &IndexMap<Vec<String>, BTreeSet<String>>) -> bool {
     let all = match &reexport.from {
         js::ImportFrom::Module(from) => exported.get(from),
         js::ImportFrom::Specifier(_) => reexport.file_exports.as_ref(),
@@ -1185,7 +1186,7 @@ pub struct LocalJs {
 enum Imported<'s> {
     /// A module of the crate's, by its place in what `LocalJs::loaded` was
     /// given: one, or each whose JS may be there.
-    Modules(&'s HashSet<usize>),
+    Modules(&'s IndexSet<usize>),
     /// A file of the program's own.
     File(PathBuf),
     /// A package's, `react`, or a runtime's, `node:path`: none of the crate's.
@@ -1207,8 +1208,8 @@ impl LocalJs {
     /// as a file named without its extension, case-folded as macOS's and
     /// Windows's file systems find it: the modules', by their places in
     /// `modules`.
-    fn stems(&self, modules: &[program::ModuleAt]) -> Option<HashMap<String, HashSet<usize>>> {
-        let mut stems: HashMap<String, HashSet<usize>> = HashMap::new();
+    fn stems(&self, modules: &[program::ModuleAt]) -> Option<IndexMap<String, IndexSet<usize>>> {
+        let mut stems: IndexMap<String, IndexSet<usize>> = IndexMap::default();
         for (at, &(path, file, placed)) in modules.iter().enumerate() {
             let located = file
                 .filter(|_| placed)
@@ -1224,8 +1225,8 @@ impl LocalJs {
 
     /// What `specifier`, of `LocalJs::loaded`, may load of the modules whose
     /// JS is at `stems`.
-    fn reached(&self, specifier: &str, stems: &HashMap<String, HashSet<usize>>) -> Option<HashSet<usize>> {
-        let mut loaded = HashSet::new();
+    fn reached(&self, specifier: &str, stems: &IndexMap<String, IndexSet<usize>>) -> Option<IndexSet<usize>> {
+        let mut loaded = IndexSet::default();
         let mut pending = Vec::new();
         for root in [&self.output, &self.input] {
             match imported(parent_dir(&absolute(root).ok()?), specifier, stems) {
@@ -1238,7 +1239,7 @@ impl LocalJs {
         if loaded.is_empty() && pending.is_empty() {
             return None;
         }
-        let mut seen = HashSet::new();
+        let mut seen = IndexSet::default();
         while let Some(file) = pending.pop() {
             if !seen.insert(file.clone()) {
                 continue;
@@ -1293,7 +1294,7 @@ impl program::JsModules for LocalJs {
         &self,
         specifiers: &[&'s str],
         modules: &[program::ModuleAt],
-    ) -> HashMap<&'s str, Option<HashSet<usize>>> {
+    ) -> IndexMap<&'s str, Option<IndexSet<usize>>> {
         let stems = self.stems(modules);
         (specifiers.iter())
             .map(|&specifier| {
@@ -1319,7 +1320,7 @@ fn stem(file: &Path) -> String {
 /// What `specifier`, imported by a JS file in `dir`, names: of the crate's
 /// modules, of `stems` (`LocalJs::loaded`), by its file or its directory's
 /// `index`; else a file, as Node and bundlers find one.
-fn imported<'s>(dir: &Path, specifier: &str, stems: &'s HashMap<String, HashSet<usize>>) -> Imported<'s> {
+fn imported<'s>(dir: &Path, specifier: &str, stems: &'s IndexMap<String, IndexSet<usize>>) -> Imported<'s> {
     if !crate::program::is_relative_specifier(specifier) {
         return match specifier.starts_with(['#', '/']) || specifier.starts_with("file:") {
             true => Imported::Unknown,

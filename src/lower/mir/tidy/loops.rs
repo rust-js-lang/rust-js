@@ -12,9 +12,9 @@ use super::*;
 /// body; break; } exit`, its body going on to the exit where it ends.
 pub(super) fn loops(
     stmts: &mut Vec<Stmt>,
-    mentions: &mut HashMap<String, usize>,
-    numbers: &HashSet<String>,
-    captured: &HashSet<String>,
+    mentions: &mut IndexMap<String, usize>,
+    numbers: &IndexSet<String>,
+    captured: &IndexSet<String>,
 ) {
     let mut i = 0;
     while i + 1 < stmts.len() {
@@ -58,7 +58,7 @@ pub(super) fn loops(
 /// Rust reads it: a constant, or a variable nothing the end runs can set,
 /// one no closure, function or `&mut`'s handle of the body names
 /// (`captured`).
-fn held_end(stmt: &Stmt, mentions: &HashMap<String, usize>, captured: &HashSet<String>) -> Option<(Vec<Stmt>, Stmt)> {
+fn held_end(stmt: &Stmt, mentions: &IndexMap<String, usize>, captured: &IndexSet<String>) -> Option<(Vec<Stmt>, Stmt)> {
     let StmtKind::TryCatch(body, error, handler) = &stmt.kind else {
         return None;
     };
@@ -109,7 +109,7 @@ pub(super) fn loop_bound_lets(body: &mut Vec<Stmt>) {
         } => Some(name.clone()),
         _ => None,
     };
-    let mut bound = HashSet::new();
+    let mut bound = IndexSet::default();
     js::each_list(body, &mut |stmts| bound.extend(stmts.iter().filter_map(bound_by)));
     if bound.is_empty() {
         return;
@@ -151,8 +151,8 @@ pub(super) fn for_of(
     made: &Stmt,
     looped: &Stmt,
     after: &[Stmt],
-    mentions: &HashMap<String, usize>,
-    numbers: &HashSet<String>,
+    mentions: &IndexMap<String, usize>,
+    numbers: &IndexSet<String>,
 ) -> Option<Vec<Stmt>> {
     let (iter, source) = match &made.kind {
         StmtKind::Const(iter, source) => (iter, source),
@@ -418,7 +418,7 @@ struct Counted<'e> {
 fn counted_range(
     range: Counted<'_>,
     (label, pattern, mutable, body, exit, span): (&Option<String>, js::Pattern, bool, Vec<Stmt>, Vec<Stmt>, js::Span),
-    (numbers, mentions): (&HashSet<String>, &HashMap<String, usize>),
+    (numbers, mentions): (&IndexSet<String>, &IndexMap<String, usize>),
 ) -> Option<Vec<Stmt>> {
     let Counted {
         start,
@@ -507,7 +507,7 @@ fn indexed(
     mutable: bool,
     body: &[Stmt],
     span: js::Span,
-    mentions: &HashMap<String, usize>,
+    mentions: &IndexMap<String, usize>,
 ) -> Option<(String, Expr, Expr, Vec<Stmt>)> {
     let (iterable, start, end) = match &iterable.kind {
         // Said so where it's stepped, `$iter(v.slice(a))`, as `unarrayed`
@@ -631,7 +631,7 @@ fn from_the_end(
     mutable: bool,
     body: &[Stmt],
     span: js::Span,
-    (numbers, mentions): (&HashSet<String>, &HashMap<String, usize>),
+    (numbers, mentions): (&IndexSet<String>, &IndexMap<String, usize>),
 ) -> Option<(String, Expr, Expr, Vec<Stmt>)> {
     let fresh = |base: &str| {
         std::iter::once(base.to_string())
@@ -668,7 +668,7 @@ fn from_the_end(
         return None;
     };
     // JS's `--` steps a number: of a `char`'s range, text, none.
-    fn number(e: &Expr, numbers: &HashSet<String>) -> bool {
+    fn number(e: &Expr, numbers: &IndexSet<String>) -> bool {
         e.as_int().is_some()
             || matches!(&e.kind, ExprKind::Var(v) if numbers.contains(v))
             || matches!(&e.kind, ExprKind::Unary(UnaryOp::Neg, n) if n.as_int().is_some())

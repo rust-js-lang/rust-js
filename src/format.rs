@@ -15,7 +15,7 @@
 //! programs have the same nodes in the same order. It can add a few (JSX's
 //! `{" "}`), which the pairing steps over.
 
-use std::collections::HashMap;
+use crate::collections::{IndexMap, IndexSet};
 
 use oxc_allocator::Allocator;
 use oxc_ast::AstKind;
@@ -319,7 +319,7 @@ fn node_starts(allocator: &Allocator, code: &str, source_type: SourceType) -> Re
 
 /// What each node of `code` means beyond its kind, by its kind and where it
 /// starts: a name, a literal's value, a template's text, an operator.
-type Meanings = HashMap<(AstType, u32), String>;
+type Meanings = IndexMap<(AstType, u32), String>;
 
 /// The nodes of `code`, each its kind and where it starts, in order, and
 /// what each means beyond its kind.
@@ -349,7 +349,7 @@ fn nodes(
     let mut nodes = Nodes {
         code,
         starts: Vec::new(),
-        meanings: HashMap::new(),
+        meanings: IndexMap::default(),
     };
     nodes.visit_program(&parsed.program);
     Ok((nodes.starts, nodes.meanings))
@@ -474,7 +474,7 @@ fn spaced(code: String, map: String, js_file_name: &str, told: &[bool]) -> (Stri
 /// The lines of `code` that start a top-level statement to put a blank
 /// line before (`spaced`), of none `told` says the source tells of, of its
 /// last statements in turn.
-fn blank_lines_before(code: &str, told: &[bool]) -> std::collections::HashSet<usize> {
+fn blank_lines_before(code: &str, told: &[bool]) -> IndexSet<usize> {
     let allocator = Allocator::default();
     let parsed = Parser::new(&allocator, code, SourceType::mjs().with_jsx(true)).parse();
     if parsed.diagnostics.errors().next().is_some() {

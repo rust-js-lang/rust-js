@@ -3,7 +3,7 @@
 //! variable its value is, its `self`, which no call gives it.
 
 use super::*;
-use std::collections::{HashMap, HashSet};
+use crate::collections::{IndexMap, IndexSet};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of the function being lowered, the lowering of each of its scope
@@ -15,7 +15,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn nest_scope_copies(&mut self) {
         let params = self.krate.given.js_given.params(self.tcx, self.item, self.copy);
         let recognition = self.recognition();
-        let mut copies = HashMap::new();
+        let mut copies = IndexMap::default();
         for scope in self.krate.scopes.of_function(self.item) {
             for &method in &scope.methods {
                 if let Ok(copy) = (self.krate.given.js_given).called(&recognition, &params, (method, scope.args)) {
@@ -159,7 +159,7 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
         }
     }
     // Each read of it is a field's.
-    let (mut reads, mut fields_read, mut written) = (0, 0, HashSet::new());
+    let (mut reads, mut fields_read, mut written) = (0, 0, IndexSet::default());
     let mut whole = false;
     js::each_expr(out, &mut |e| match &e.kind {
         js::ExprKind::Var(name) if holders.contains(name) => reads += 1,
@@ -212,16 +212,16 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
     // anything can set it again: the field, so its variable keeps its name.
     js::each_block_mut(out, &mut |list| copies_read_through(list, &held));
     // Each field's variable, named apart from every name the body has.
-    let mut taken = HashSet::new();
+    let mut taken = IndexSet::default();
     js::names_in(out, &mut taken);
     taken.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
     // A parameter nothing assigns, nor declares again, a nested
     // function's own of its name: what it's read as everywhere in the body.
-    let mut declared = HashSet::new();
+    let mut declared = IndexSet::default();
     js::each_declared(out, &mut |name| {
         declared.insert(name.to_string());
     });
-    let mut handled = HashSet::new();
+    let mut handled = IndexSet::default();
     js::each_expr(out, &mut |e| {
         if let js::ExprKind::Handle(place, _) = &e.kind {
             place.each(&mut |e| {
@@ -233,7 +233,7 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
     });
     let assigned = |name: &str| declared.contains(name) || handled.contains(name) || js::Writes::sets(out, name);
     let param_names: Vec<&str> = params.iter().flat_map(|p| p.names()).collect();
-    let mut names: HashMap<String, String> = HashMap::new();
+    let mut names: IndexMap<String, String> = IndexMap::default();
     let mut lets = Vec::new();
     for (key, e) in fields {
         let given = e.as_ref().and_then(|e| match &e.kind {

@@ -1087,7 +1087,7 @@ fn is_impl_call(e: &Expr) -> bool {
 /// Whether `e` reads only what its body's top can: the runtime's helpers,
 /// the program's items, the names its own functions bind, and `given`,
 /// what the function was given (`given_names`, ADR 0979, amended).
-fn reads_only_at_top(e: &Expr, given: &HashSet<String>) -> bool {
+fn reads_only_at_top(e: &Expr, given: &IndexSet<String>) -> bool {
     let mut bound: Vec<String> = Vec::new();
     let mut each = e.clone();
     each.each_mut(&mut |part| {

@@ -2,6 +2,7 @@
 //! binding's trait is, `react#Component<P, S>`, what a class extends, an ES
 //! class, and what's refused of its impl of that class.
 
+use crate::collections::IndexMap;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
@@ -155,7 +156,7 @@ pub(super) fn impl_misuse(tcx: TyCtxt<'_>, imp: DefId, class: DefId) -> Vec<(rus
 pub(crate) fn js_class(
     tcx: TyCtxt<'_>,
     member: DefId,
-    imports: &std::collections::HashMap<(String, String), String>,
+    imports: &IndexMap<(String, String), String>,
 ) -> crate::js::Class {
     let adt = class_of(tcx, member);
     crate::js::Class {

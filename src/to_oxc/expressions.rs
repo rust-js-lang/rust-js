@@ -2,6 +2,7 @@
 //! regex and a template's raw text.
 
 use super::*;
+use crate::collections::IndexMap;
 
 /// The value an arrow's body only returns, `() => x`'s `x`: printed as
 /// its body, `=>` its value.
@@ -1110,11 +1111,11 @@ fn escape(c: char, raw: &mut String) {
 pub(super) fn restore_sources<'a>(
     map: &'a SourceMap<'a>,
     sources: &'a crate::program::Sources,
-    paths: &'a std::collections::HashMap<usize, String>,
+    paths: &'a IndexMap<usize, String>,
     primary: Option<usize>,
 ) -> SourceMap<'a> {
     let mut out = SourceMapBuilder::default();
-    let mut ids = std::collections::HashMap::new();
+    let mut ids = IndexMap::default();
     if let Some(i) = primary {
         ids.insert(i, out.set_source_and_content(&paths[&i], &sources.files[i].text));
     }

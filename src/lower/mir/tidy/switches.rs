@@ -3,7 +3,7 @@
 //! FunctionComponent: .. }` (ADR 0629). Which `match` is one is
 //! `hints::written_switches`'; how its arms' tests read, its chain's.
 
-use std::collections::HashSet;
+use crate::collections::IndexSet;
 
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 use crate::lower::mir::hints::{Constant, Switch, SwitchArm, Written};
@@ -131,7 +131,7 @@ fn walk(
                 let (readable, written) = match label.as_deref() {
                     Some(l) if !crate::lower::mir::is_block_label(l) => (l.to_string(), true),
                     _ => {
-                        let mut taken: HashSet<String> = labels.iter().cloned().collect();
+                        let mut taken: IndexSet<String> = labels.iter().cloned().collect();
                         labels_in(body, &mut taken);
                         let readable = (written.clone().into_iter())
                             .chain((0..).map(|n| match n {

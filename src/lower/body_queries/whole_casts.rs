@@ -20,7 +20,7 @@ struct Compared {
 /// WebIDL integer or `indexOf`'s position or -1; narrowed where a test of
 /// it holds, if nothing sets it after the test. And a cast of what such a
 /// binding gives, `options.length() as usize`.
-pub(super) fn whole_casts<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<ExprId> {
+pub(super) fn whole_casts<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<ExprId> {
     let at = |span: Span| span.source_callsite();
     let pointer_bits = tcx.data_layout.pointer_size().bits();
     // The whole numbers an integer type holds, of 32 bits or fewer: a JS
@@ -60,7 +60,7 @@ pub(super) fn whole_casts<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet
     };
     // A cast of what such a call gives, where each of its numbers is in
     // the integer's range: `options.length() as usize`, `options.length`.
-    let mut found: HashSet<ExprId> = (thir.exprs.iter_enumerated())
+    let mut found: IndexSet<ExprId> = (thir.exprs.iter_enumerated())
         .filter_map(|(id, expr)| match expr.kind {
             ExprKind::Cast { source } => {
                 let ((lo, hi), (tlo, thi)) = (whole_call(source)?, int_range(expr.ty)?);
@@ -101,9 +101,9 @@ pub(super) fn whole_casts<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet
         _ => None,
     };
     // Each variable's values, of a plain `let` and each `=` of it.
-    let mut values: HashMap<LocalVarId, Option<(f64, f64)>> = HashMap::new();
-    let mut bound: HashSet<LocalVarId> = HashSet::new();
-    fn join(values: &mut HashMap<LocalVarId, Option<(f64, f64)>>, var: LocalVarId, range: Option<(f64, f64)>) {
+    let mut values: IndexMap<LocalVarId, Option<(f64, f64)>> = IndexMap::default();
+    let mut bound: IndexSet<LocalVarId> = IndexSet::default();
+    fn join(values: &mut IndexMap<LocalVarId, Option<(f64, f64)>>, var: LocalVarId, range: Option<(f64, f64)>) {
         let entry = values.entry(var).or_insert(range);
         *entry = entry.zip(range).map(|((lo, hi), (a, b))| (lo.min(a), hi.max(b)));
     }
@@ -150,7 +150,7 @@ pub(super) fn whole_casts<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet
             join(&mut values, var, Some(range));
         }
     }
-    let mut sets: HashMap<LocalVarId, usize> = HashMap::new();
+    let mut sets: IndexMap<LocalVarId, usize> = IndexMap::default();
     for expr in thir.exprs.iter() {
         if let ExprKind::Assign { lhs, rhs } = expr.kind
             && let ExprKind::VarRef { id } = thir[strip(thir, lhs)].kind

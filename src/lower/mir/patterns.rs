@@ -4,12 +4,13 @@
 mod let_names;
 
 use super::*;
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::representation::{NoneForm, NonePlace, Writers, none_form};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The locals that patterns bind in an enum's variant, by THIR's
     /// patterns: `if let`s', `match`es' and `let`s'.
-    pub(super) fn mir_payloads(&self, body: &mir::Body<'tcx>, locals: &Locals) -> std::collections::HashSet<Local> {
+    pub(super) fn mir_payloads(&self, body: &mir::Body<'tcx>, locals: &Locals) -> IndexSet<Local> {
         let mut spans = Vec::new();
         let mut bound = |pat: &thir::Pat<'tcx>| {
             pat.walk(|p| match &p.kind {
@@ -52,7 +53,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // made, `const p = x.bound; const p$1 = x.bound;`, and what reads it
         // after the place, where the program wrote one variable, which they
         // close over (rd640). One only a closure reads is that closure's.
-        let captured: std::collections::HashSet<Local> = (super::queries::captured_by_closures(body).into_iter())
+        let captured: IndexSet<Local> = (super::queries::captured_by_closures(body).into_iter())
             .filter(|&local| locals.reads[local] > 1)
             .collect();
         (body.var_debug_info.iter())
@@ -85,17 +86,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         body: &mir::Body<'tcx>,
         promoted: &IndexVec<Promoted, mir::Body<'tcx>>,
         locals: &Locals,
-    ) -> std::collections::HashSet<Local> {
-        let mut made: std::collections::HashMap<Local, (usize, bool)> = Default::default();
-        let mut given: std::collections::HashMap<Local, usize> = Default::default();
+    ) -> IndexSet<Local> {
+        let mut made: IndexMap<Local, (usize, bool)> = Default::default();
+        let mut given: IndexMap<Local, usize> = Default::default();
         // What a call makes, and what JS reads as it's stored, a field's or
         // a binding's parameter's: a call's `Option` only the crate's own
         // functions' nullable parameters read is given as it is, their
         // bodies reading `null` and `undefined` alike (ADR 0861).
-        let mut called: std::collections::HashSet<Local> = Default::default();
-        let mut stored: std::collections::HashSet<Local> = Default::default();
+        let mut called: IndexSet<Local> = Default::default();
+        let mut stored: IndexSet<Local> = Default::default();
         // What the crate's own function's nullable parameter reads (rd632).
-        let mut toward: std::collections::HashSet<Local> = Default::default();
+        let mut toward: IndexSet<Local> = Default::default();
         // Each copy of a variable, `_2 = copy _1`, MIR's of `owner` in `Info
         // { owner }`: the variable's read, given where the copy is.
         let mut copies: Vec<(Local, Local)> = Vec::new();
@@ -107,7 +108,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let returns_nullable = none_form(self.tcx, NonePlace::FnResult(body.source.def_id())).stores_null();
         // Each local assigned once, and what it's assigned: what a
         // thread-local's key is read through (`queries::referred_key`).
-        let mut assigned: std::collections::HashMap<Local, Option<&Rvalue<'tcx>>> = Default::default();
+        let mut assigned: IndexMap<Local, Option<&Rvalue<'tcx>>> = Default::default();
         for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
             if let mir::StatementKind::Assign(assign) = &statement.kind
                 && assign.0.projection.is_empty()
@@ -250,7 +251,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // create_lane_map(None))`: each `Option` it's given, its `None`
         // `null` where it's made, as upstream's `createLaneMap(null)` (ADR
         // 0586, amended).
-        let mut items: std::collections::HashSet<Local> = Default::default();
+        let mut items: IndexSet<Local> = Default::default();
         for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
             if let mir::StatementKind::Assign(assign) = &statement.kind
                 && let Rvalue::Aggregate(kind, operands) = &assign.1
@@ -269,7 +270,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
-        let mut options: std::collections::HashSet<Local> = Default::default();
+        let mut options: IndexSet<Local> = Default::default();
         let mut grown = true;
         while grown {
             grown = false;
@@ -306,7 +307,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // on, and its tests that read `null` and `undefined` alike (rd632).
         // Only a `let` a call writes is asked of them, so a `let x;` that
         // only `None`s and `Some`s write is as it was, `undefined`.
-        let mut alike: std::collections::HashMap<Local, usize> = Default::default();
+        let mut alike: IndexMap<Local, usize> = Default::default();
         for (local, to_param) in self.alike_reads(body, locals, &given, &toward) {
             *alike.entry(local).or_default() += 1;
             if to_param {
@@ -318,7 +319,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // it's made (ADR 0781).
         // A `let`, the program's variable, not MIR's temporary, and what MIR
         // makes it of, each arm's value of `let x = if c { a } else { b };`.
-        let mut lets: std::collections::HashSet<Local> = (body.var_debug_info.iter())
+        let mut lets: IndexSet<Local> = (body.var_debug_info.iter())
             .filter_map(|info| match info.value {
                 mir::VarDebugInfoContents::Place(place) if place.projection.is_empty() => Some(place.local),
                 _ => None,
@@ -349,8 +350,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A `Some(..)` MIR makes in a temporary of its own, read once, then
         // moves in, `found = Some(Rc::clone(&n))`'s: a write of a `Some`.
-        let mut moved_in = std::collections::HashSet::new();
-        for &(copy, of) in &copies.iter().copied().collect::<std::collections::HashSet<_>>() {
+        let mut moved_in = IndexSet::default();
+        for &(copy, of) in &copies.iter().copied().collect::<IndexSet<_>>() {
             if made
                 .get(&of)
                 .is_some_and(|&(writes, none)| !none && writes == locals.writes[of])
@@ -371,8 +372,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let arm = |of: Local| {
             locals.writes[of] == 1 && locals.reads[of] == 1 && made.get(&of).is_some_and(|&(writes, _)| writes == 1)
         };
-        let mut nulled = std::collections::HashSet::new();
-        let candidates: std::collections::HashSet<Local> = (made.keys().copied())
+        let mut nulled = IndexSet::default();
+        let candidates: IndexSet<Local> = (made.keys().copied())
             .chain(copies.iter().filter(|&&(_, of)| arm(of)).map(|&(copy, _)| copy))
             .collect();
         for local in candidates {
@@ -487,7 +488,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Each variable a `let` binds: where the `let` is written, which its
     /// declaration maps to (`State::let_spans`).
-    pub(super) fn mir_let_spans(&self, body: &mir::Body<'tcx>) -> HashMap<Local, js::Span> {
+    pub(super) fn mir_let_spans(&self, body: &mir::Body<'tcx>) -> IndexMap<Local, js::Span> {
         let lets: Vec<(Span, Span)> = (self.frame.thir.stmts.iter())
             .filter_map(|s| match &s.kind {
                 thir::StmtKind::Let { pattern, span, .. } => Some((pattern.span, *span)),
@@ -516,7 +517,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `analysis/nulled_params.rs`); nor one written any other way, a
     /// field's read, a cast's, a `take()`'s, through a `&mut` or a pointer,
     /// or in part (ADR 0298, amended).
-    fn mir_nones(&self, body: &mir::Body<'tcx>, locals: &Locals) -> HashMap<Local, js::Known> {
+    fn mir_nones(&self, body: &mir::Body<'tcx>, locals: &Locals) -> IndexMap<Local, js::Known> {
         // What a write gives: a `None` of one kind, a `Some` (`None` here),
         // or what another local holds.
         enum Write {
@@ -525,11 +526,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let tcx = self.tcx;
         let option = |ty: Ty<'tcx>| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option));
-        let mut writes: HashMap<Local, Vec<Write>> = HashMap::new();
-        let mut unknown: std::collections::HashSet<Local> = Default::default();
+        let mut writes: IndexMap<Local, Vec<Write>> = IndexMap::default();
+        let mut unknown: IndexSet<Local> = Default::default();
         // Each local's whole writes by a statement, which a nullable
         // parameter's store `null` for `None` (`Storage::NullForNone`).
-        let mut assigned: HashMap<Local, usize> = HashMap::new();
+        let mut assigned: IndexMap<Local, usize> = IndexMap::default();
         for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
             if let mir::StatementKind::Assign(assign) = &statement.kind
                 && assign.0.projection.is_empty()
@@ -636,7 +637,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // What each holds, until none changes: `Err` of one that may hold
         // either, `Ok(None)` of one only ever `Some`.
-        let mut held: HashMap<Local, Result<Option<js::Known>, ()>> =
+        let mut held: IndexMap<Local, Result<Option<js::Known>, ()>> =
             (writes.keys()).filter(|&&l| known(l)).map(|&l| (l, Ok(None))).collect();
         // A function's own nullable parameter each call gives `null` or a
         // value, written only whole by statements, each `null` for `None`,
@@ -713,7 +714,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The locals `OptionWrites::thrown` says, each written once: a
     /// `downcast_ref` that finds what was thrown (`finds_thrown`), its
     /// `Some`'s discriminant; and `?` of one, its `Continue`'s.
-    fn mir_thrown(&self, body: &mir::Body<'tcx>, locals: &Locals) -> HashMap<Local, u128> {
+    fn mir_thrown(&self, body: &mir::Body<'tcx>, locals: &Locals) -> IndexMap<Local, u128> {
         let tcx = self.tcx;
         // The discriminant of `ty`'s variant `variant`, a lang item.
         let discriminant = |ty: Ty<'tcx>, variant: LangItem| match ty.kind() {
@@ -738,7 +739,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
         };
         let downcast = Std::Any(crate::lower::std_types::any::AnyOp::DowncastRef);
-        let mut thrown: HashMap<Local, u128> = calls()
+        let mut thrown: IndexMap<Local, u128> = calls()
             .filter_map(|(def_id, generic_args, receiver, local)| {
                 let any = receiver.node.ty(&body.local_decls, tcx).peel_refs();
                 let found = self.recognition().classify(def_id, generic_args) == Some(downcast)
@@ -781,12 +782,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `if let Some(v) = value`, and the local it's the `Some` of: `value`,
     /// which it is wherever it's read, as a `Some(x)` of a reference is `x`
     /// (ADR 0030) and `value` never changes.
-    pub(super) fn mir_held_bindings(
-        &self,
-        body: &mir::Body<'tcx>,
-        held: &std::collections::HashSet<Span>,
-    ) -> Vec<(Local, Local)> {
-        let user: std::collections::HashSet<Local> = (body.var_debug_info.iter())
+    pub(super) fn mir_held_bindings(&self, body: &mir::Body<'tcx>, held: &IndexSet<Span>) -> Vec<(Local, Local)> {
+        let user: IndexSet<Local> = (body.var_debug_info.iter())
             .filter_map(|info| match info.value {
                 mir::VarDebugInfoContents::Place(place) if place.projection.is_empty() => Some(place.local),
                 _ => None,
@@ -816,9 +813,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn mir_held_arms(
         &self,
         body: &mir::Body<'tcx>,
-        held: &std::collections::HashSet<Span>,
-        bound: &std::collections::HashSet<Local>,
-    ) -> HashMap<BasicBlock, BasicBlock> {
+        held: &IndexSet<Span>,
+        bound: &IndexSet<Local>,
+    ) -> IndexMap<BasicBlock, BasicBlock> {
         let in_held = |span: Span| held.iter().any(|guard| guard.contains(span));
         let nothing = |statement: &mir::Statement<'tcx>| match &statement.kind {
             StatementKind::StorageLive(_)
@@ -834,13 +831,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             _ => false,
         };
-        let mut arms = HashMap::new();
+        let mut arms = IndexMap::default();
         if held.is_empty() {
             return arms;
         }
         for start in body.basic_blocks.indices() {
             let (mut at, mut past_guard) = (start, false);
-            let mut seen = std::collections::HashSet::new();
+            let mut seen = IndexSet::default();
             while seen.insert(at) {
                 let data = &body.basic_blocks[at];
                 if !data.statements.iter().all(nothing) {
@@ -878,7 +875,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// passes, as no `null` is `7` or `false` (a `bool`'s exactly, ADR 0298,
     /// the user's decision); no `sub != null` before it, and its `otherwise`
     /// reached once.
-    pub(super) fn mir_payload_tests(&self, body: &mir::Body<'tcx>) -> HashMap<BasicBlock, BasicBlock> {
+    pub(super) fn mir_payload_tests(&self, body: &mir::Body<'tcx>) -> IndexMap<BasicBlock, BasicBlock> {
         let nothing = |statement: &mir::Statement<'tcx>| {
             matches!(
                 statement.kind,
@@ -886,7 +883,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )
         };
         let predecessors = body.basic_blocks.predecessors();
-        let mut tests = HashMap::new();
+        let mut tests = IndexMap::default();
         for (block, data) in body.basic_blocks.iter_enumerated() {
             let TerminatorKind::SwitchInt {
                 discr: Operand::Copy(d) | Operand::Move(d),
@@ -938,7 +935,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The locals `OptionWrites::present` says: each a call
     /// `body_queries::present_calls` says gives what's there.
-    fn mir_present(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
+    fn mir_present(&self, body: &mir::Body<'tcx>) -> IndexSet<Local> {
         let calls = &self.frame.facts.present_calls;
         (body.basic_blocks.iter())
             .filter_map(|data| match &data.terminator().kind {
@@ -953,7 +950,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The locals `OptionWrites::registered` says: each a call of
     /// `js::SymbolFor::from_value` gives, whose value the body only tests
     /// against the registry's symbols (`registered_reads`, ADR 0634).
-    fn mir_registered(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
+    fn mir_registered(&self, body: &mir::Body<'tcx>) -> IndexSet<Local> {
         let reads = &self.frame.facts.registered_reads;
         (body.basic_blocks.iter())
             .filter_map(|data| match &data.terminator().kind {
@@ -982,8 +979,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         body: &mir::Body<'tcx>,
         promoted: &IndexVec<Promoted, mir::Body<'tcx>>,
         locals: &Locals,
-    ) -> std::collections::HashSet<Local> {
-        let mut somes: std::collections::HashMap<Local, usize> = Default::default();
+    ) -> IndexSet<Local> {
+        let mut somes: IndexMap<Local, usize> = Default::default();
         let mut refs = Vec::new();
         for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
             let mir::StatementKind::Assign(assign) = &statement.kind else {
@@ -1016,7 +1013,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => {}
             }
         }
-        let mut made: std::collections::HashSet<Local> = (somes.into_iter())
+        let mut made: IndexSet<Local> = (somes.into_iter())
             .filter(|&(local, writes)| writes == locals.writes[local])
             .map(|(local, _)| local)
             .collect();
@@ -1062,9 +1059,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The temporaries a `let`'s struct or tuple pattern takes apart: what
     /// its bindings, of its fields, are read from.
-    pub(super) fn mir_patterned(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
+    pub(super) fn mir_patterned(&self, body: &mir::Body<'tcx>) -> IndexSet<Local> {
         let bound: Vec<Local> = self.let_pattern_bindings(body).into_iter().map(|(l, _)| l).collect();
-        let mut patterned = std::collections::HashSet::new();
+        let mut patterned = IndexSet::default();
         for statement in body.basic_blocks.iter().flat_map(|data| &data.statements) {
             // Bound by value or, through a reference, by one: `&(*_2).0`.
             if let StatementKind::Assign(assign) = &statement.kind

@@ -8,6 +8,7 @@ use super::recognition::StdItem;
 use super::recursive_fns::Kind;
 use super::representation::Num;
 use super::{FnCx, R, Shape, lower_first};
+use crate::collections::IndexMap;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
@@ -30,7 +31,7 @@ pub(super) enum JsEq {
 /// a set's and a map's keys ask, and a library's contract lists.
 pub(super) fn equal_only_to_itself<'tcx>(
     recognition: &super::recognition::Recognition<'_, 'tcx>,
-    bodies: &std::collections::HashMap<DefId, &super::Body<'tcx>>,
+    bodies: &IndexMap<DefId, &super::Body<'tcx>>,
     ty: Ty<'tcx>,
 ) -> bool {
     identity(recognition, bodies, ty, true)
@@ -43,7 +44,7 @@ pub(super) fn equal_only_to_itself<'tcx>(
 /// ask.
 pub(super) fn eq_by_address<'tcx>(
     recognition: &super::recognition::Recognition<'_, 'tcx>,
-    bodies: &std::collections::HashMap<DefId, &super::Body<'tcx>>,
+    bodies: &IndexMap<DefId, &super::Body<'tcx>>,
     ty: Ty<'tcx>,
 ) -> bool {
     identity(recognition, bodies, ty, false)
@@ -51,7 +52,7 @@ pub(super) fn eq_by_address<'tcx>(
 
 fn identity<'tcx>(
     recognition: &super::recognition::Recognition<'_, 'tcx>,
-    bodies: &std::collections::HashMap<DefId, &super::Body<'tcx>>,
+    bodies: &IndexMap<DefId, &super::Body<'tcx>>,
     ty: Ty<'tcx>,
     hashed: bool,
 ) -> bool {
@@ -504,7 +505,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             .last()
                             .is_some_and(|s| matches!(&s.kind, StmtKind::Const(name, _) if name == held))
                     {
-                        self.names.remove(held);
+                        self.names.swap_remove(held);
                         out.pop();
                         return Ok(written);
                     }

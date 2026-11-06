@@ -2,11 +2,12 @@
 //! update's base, and THIR's call where MIR's is.
 
 use super::*;
+use crate::collections::IndexSet;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The locals each struct JSX gives a component as its props is made in,
     /// `<*>`'s second, and those of their flattened fields, made there.
-    pub(super) fn mir_jsx_props(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
+    pub(super) fn mir_jsx_props(&self, body: &mir::Body<'tcx>) -> IndexSet<Local> {
         let decls = &body.local_decls;
         let mut made: Vec<Local> = (body.basic_blocks.iter())
             .filter_map(|data| match &data.terminator().kind {
@@ -22,7 +23,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
-        let mut props = std::collections::HashSet::new();
+        let mut props = IndexSet::default();
         while let Some(local) = made.pop() {
             if !props.insert(local) {
                 continue;

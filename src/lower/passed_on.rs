@@ -6,6 +6,7 @@
 //! passes its call on to is MIR's fact, read once where it's made
 //! (`forwarded_to`), which each taker reads.
 
+use crate::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt};
@@ -14,7 +15,6 @@ use rustc_span::def_id::DefId;
 use super::{FnCx, fn_def};
 use crate::js::{self, Expr, Stmt, StmtKind};
 use crate::lower::recognition::StdItem;
-use std::collections::{HashMap, HashSet};
 
 /// Where an arrow is given, which says whether it may be the function it
 /// passes on to, and what it must pass on to.
@@ -988,11 +988,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// call at once: what a call gives may be another such parameter, which
     /// is one while each of its own calls gives one, as nothing else fills
     /// it.
-    fn own_callbacks(&self) -> &'a HashSet<rustc_hir::HirId> {
+    fn own_callbacks(&self) -> &'a IndexSet<rustc_hir::HirId> {
         self.krate.own_callbacks.get_or_init(|| self.find_own_callbacks())
     }
 
-    fn find_own_callbacks(&self) -> HashSet<rustc_hir::HirId> {
+    fn find_own_callbacks(&self) -> IndexSet<rustc_hir::HirId> {
         use rustc_hir as hir;
         let tcx = self.tcx;
         let callback = |ty: ty::Ty<'tcx>| {
@@ -1000,7 +1000,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let pointee = ty.boxed_ty().or_else(|| super::recognition::rc_pointee(tcx, ty));
             matches!(pointee.unwrap_or(ty).kind(), ty::Dynamic(..))
         };
-        let mut given: HashMap<hir::HirId, Vec<&'tcx hir::Expr<'tcx>>> = HashMap::new();
+        let mut given: IndexMap<hir::HirId, Vec<&'tcx hir::Expr<'tcx>>> = IndexMap::default();
         for (function, calls) in super::analysis::only_called::only_called(tcx) {
             let Some(body) = function.as_local().and_then(|local| tcx.hir_maybe_body_owned_by(local)) else {
                 continue;
@@ -1040,17 +1040,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Each, until one a call gives what's none is put out, and with it
         // what it fills.
-        let mut own: HashSet<hir::HirId> = given.keys().copied().collect();
+        let mut own: IndexSet<hir::HirId> = given.keys().copied().collect();
         loop {
             let unfilled: Vec<hir::HirId> = (given.iter())
-                .filter(|(var, values)| own.contains(var) && !values.iter().all(|e| self.own_callback(e, 0, &own)))
+                .filter(|(var, values)| own.contains(*var) && !values.iter().all(|e| self.own_callback(e, 0, &own)))
                 .map(|(&var, _)| var)
                 .collect();
             if unfilled.is_empty() {
                 return own;
             }
             for var in unfilled {
-                own.remove(&var);
+                own.swap_remove(&var);
             }
         }
     }
@@ -1064,7 +1064,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// says, a function bound, or one `function::with_this` makes of a
     /// closure that ignores its `this` (rd284b). Not one that reads its
     /// `this`, which a JS caller gives, nor its `arguments`.
-    fn own_callback(&self, e: &'tcx rustc_hir::Expr<'tcx>, depth: usize, params: &HashSet<rustc_hir::HirId>) -> bool {
+    fn own_callback(&self, e: &'tcx rustc_hir::Expr<'tcx>, depth: usize, params: &IndexSet<rustc_hir::HirId>) -> bool {
         use rustc_hir as hir;
         if depth > 8 {
             return false;

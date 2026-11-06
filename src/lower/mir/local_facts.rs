@@ -19,16 +19,16 @@ pub(super) type Seeds = (Option<offsets::Seed>, Option<Expr>, bool);
 
 pub(super) struct LocalFacts<'m, 'tcx> {
     /// The blocks whose call is an `.await` (`awaits.rs`).
-    awaits: &'m HashSet<BasicBlock>,
+    awaits: &'m IndexSet<BasicBlock>,
     /// Each block an arm goes on to its case through, of a `match` of what
     /// its arms' `match` made, and where it's written (`threaded.rs`).
-    cases: &'m HashMap<BasicBlock, Span>,
+    cases: &'m IndexMap<BasicBlock, Span>,
     promoted: &'m IndexVec<mir::Promoted, mir::Body<'tcx>>,
     /// Its blocks' edges, the arms a guard that holds goes on to taken as
     /// that arm's (`held_arms`).
     graph: cfg::Graph,
     /// The locals a `let`'s pattern binds a props' rest to.
-    rests: HashSet<Local>,
+    rests: IndexSet<Local>,
     /// The locals a raw pointer is taken to the whole of: cells, `{ value }`,
     /// whose `value` is the place it points to (ADR 0407).
     pointed: crate::lower::pointers::Pointed,
@@ -40,29 +40,29 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     jumps: hints::Jumps,
     /// Each variable a pattern binds in an enum's variant, `Some(title)`: what
     /// it's bound to, where that reads the same anywhere, is it.
-    payloads: HashSet<Local>,
+    payloads: IndexSet<Local>,
     /// The temporaries a `let`'s pattern takes apart, `let S { a, .. } =
     /// f();`'s: kept, for tidy to destructure as the pattern reads.
-    patterned: HashSet<Local>,
+    patterned: IndexSet<Local>,
     /// Each struct JSX gives a component as its props, and those of their
     /// flattened fields: JSX takes them apart (ADR 0213).
-    jsx_props: HashSet<Local>,
+    jsx_props: IndexSet<Local>,
     /// Which of its string offsets are only places in the string they were
     /// found in, JS's units (ADR 0642).
     offsets: offsets::Offsets,
     /// Each variable a `let` binds: where the `let` is written, which its
     /// declaration maps to.
-    let_spans: HashMap<Local, js::Span>,
+    let_spans: IndexMap<Local, js::Span>,
     /// What its writes say of its `Option`s.
     options: OptionWrites,
     /// Each block that goes on to an arm past a guard that holds, and that
     /// arm's first block (`held_arms`): the edges to it the arm's; and each
     /// or-pattern's alternative JS holds as an earlier one, and that one
     /// (`mir_alike_alternatives`, rd430).
-    held_arms: HashMap<BasicBlock, BasicBlock>,
+    held_arms: IndexMap<BasicBlock, BasicBlock>,
     /// Each block whose test that an `Option` is `Some` is its payload's
     /// test's, in that block (`mir_payload_tests`): its edges that test's.
-    payload_tests: HashMap<BasicBlock, BasicBlock>,
+    payload_tests: IndexMap<BasicBlock, BasicBlock>,
     /// What each `Drop` drops (`drops.rs`), of a body that drops something.
     drops: Option<drops::Elaboration<'tcx>>,
     /// Of a closure: what it captured, each its environment's field, and
@@ -75,37 +75,37 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// (`analysis/self_handles.rs`, ADR 0843, amended), and what holds a
     /// namespace only the calls that name it read, which leave their `self`
     /// out (`classes::unread_namespaces`, rd310).
-    unlowered: HashSet<mir::Location>,
+    unlowered: IndexSet<mir::Location>,
     /// The locals of no value, clones of a value cell a tuple holds beside
     /// what isn't one, the tuple's `undefined` there (`self_handles`, #641).
-    unwritten: HashSet<Local>,
+    unwritten: IndexSet<Local>,
     /// Of a closure that reads its handle on itself: each block whose
     /// `unwrap` gives its own `Rc`, the local it gives it to, and its own
     /// name, which that local is; of one that reads its owner's, each
     /// whose `and_then` gives its owner's `Rc`, and the variable that is.
-    own: Option<(HashMap<BasicBlock, Local>, Expr)>,
+    own: Option<(IndexMap<BasicBlock, Local>, Expr)>,
     /// Each block whose call makes an owner handle's cell, no JS but the
     /// `let` of the `Rc` it's the variable of, that local
     /// (`analysis/self_handles/owners.rs`, ADR 0317, amended).
-    declares: HashMap<BasicBlock, Local>,
+    declares: IndexMap<BasicBlock, Local>,
     /// Each `f64` or `Option<f64>` whose number is a whole one, as a
     /// `#[rust_js::whole]` binding's is (`mir_wholes`).
-    wholes: HashSet<Local>,
+    wholes: IndexSet<Local>,
     /// Each local the program's own `Rc::new`, `Arc::new` or `Box::new`
     /// gives, through the casts and moves MIR makes (`mir_made_pointers`).
-    made_pointers: HashSet<Local>,
+    made_pointers: IndexSet<Local>,
     /// Each block whose call is an integer's `try_from` whose `Result` is
     /// only tested and its `Ok` taken (`mir_tried_ints`).
-    tried_ints: HashSet<BasicBlock>,
+    tried_ints: IndexSet<BasicBlock>,
     /// Each slice's `position` whose `Option` is only tested and its index
     /// taken, and that `Option` (`mir_found_indexes`, rd316).
     found_indexes: positions::FoundIndexes,
     /// Each shared reference whose referent Rust can't change while the
     /// body runs (`mir_lasting`).
-    lasting: HashSet<Local>,
+    lasting: IndexSet<Local>,
     /// Each `&mut` that is the place of what it refers to
     /// (`mir_place_references`, #466).
-    place_references: HashSet<Local>,
+    place_references: IndexSet<Local>,
 }
 
 /// Of a body's calls of a `RefCell`'s, those of a place no borrow of which
@@ -118,38 +118,38 @@ pub(super) struct LocalFacts<'m, 'tcx> {
 /// field is, whose drop releases nothing.
 #[derive(Default)]
 pub(super) struct QuietCells {
-    pub(super) calls: HashSet<BasicBlock>,
+    pub(super) calls: IndexSet<BasicBlock>,
     /// Each borrow of a counted `RefCell` whose guard is held only while
     /// nothing can ask whether its cell is borrowed: checked, not counted,
     /// its guard among `guards`, whose drop releases nothing (ADR 0328,
     /// rd218).
-    pub(super) momentary: HashSet<BasicBlock>,
-    pub(super) guards: HashSet<Local>,
+    pub(super) momentary: IndexSet<BasicBlock>,
+    pub(super) guards: IndexSet<Local>,
     /// Of `guards`, those of a borrow that's checked, `momentary`'s:
     /// `$borrow(c)`, which throws where it's made. The others are of a
     /// cell no borrow of which is counted, unchecked, the value itself
     /// (`unchecked_guards`, #700).
-    checked: HashSet<Local>,
+    checked: IndexSet<Local>,
     /// Each call that writes a `#[rust_js::nullable]` thread-local's cell,
     /// or reads it whole, and how the thread-local holds a `None`, `null`
     /// (ADR 0586, amended; `NoneForm`, #819).
-    pub(super) nullable: HashMap<BasicBlock, crate::lower::representation::NoneForm>,
+    pub(super) nullable: IndexMap<BasicBlock, crate::lower::representation::NoneForm>,
     /// Of those, each of one nothing reads apart, `null` from `undefined`
     /// (`NulledParams::reads_alike`, #665): what it's given is stored as it
     /// is, its `None` `null`.
-    pub(super) alike: HashSet<BasicBlock>,
+    pub(super) alike: IndexSet<BasicBlock>,
     /// Each `with` or `with_borrow_mut` that lends a `#[rust_js::nullable]`
     /// thread-local's cell, or what it holds, to what it runs, which may
     /// write it: what's written through the lend stores `null` for `None`
     /// too (#541).
-    pub(super) nullable_lent: HashMap<BasicBlock, crate::lower::representation::NoneForm>,
+    pub(super) nullable_lent: IndexMap<BasicBlock, crate::lower::representation::NoneForm>,
     /// Each `swap` of a `RefCell` that's a class's flattened state, its
     /// object's keys (ADR 1044): which of its two cells is one (#687).
-    pub(super) flattened: HashMap<BasicBlock, [bool; 2]>,
+    pub(super) flattened: IndexMap<BasicBlock, [bool; 2]>,
     /// Each `extend` of a `Vec`, a `VecDeque` or a `BinaryHeap` whose
     /// capacity is known where it's extended (`known_capacity_extends`,
     /// #849).
-    pub(super) known_capacity: HashSet<BasicBlock>,
+    pub(super) known_capacity: IndexSet<BasicBlock>,
 }
 
 impl QuietCells {
@@ -158,13 +158,13 @@ impl QuietCells {
     /// it out, no flag says it and it reads nothing (#700). Not a checked
     /// one's, `$borrow(c)`, whose drop releases nothing (`drop_place`) but
     /// whose variable keeps its check where it's made.
-    pub(super) fn unchecked_guards(&self) -> HashSet<Local> {
+    pub(super) fn unchecked_guards(&self) -> IndexSet<Local> {
         self.guards.difference(&self.checked).copied().collect()
     }
 }
 
 impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
-    pub(super) fn awaits(&self) -> &'m HashSet<BasicBlock> {
+    pub(super) fn awaits(&self) -> &'m IndexSet<BasicBlock> {
         self.awaits
     }
 
@@ -182,7 +182,7 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
         &self.graph
     }
 
-    pub(super) fn rests(&self) -> &HashSet<Local> {
+    pub(super) fn rests(&self) -> &IndexSet<Local> {
         &self.rests
     }
 
@@ -198,15 +198,15 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
         &self.jumps
     }
 
-    pub(super) fn payloads(&self) -> &HashSet<Local> {
+    pub(super) fn payloads(&self) -> &IndexSet<Local> {
         &self.payloads
     }
 
-    pub(super) fn patterned(&self) -> &HashSet<Local> {
+    pub(super) fn patterned(&self) -> &IndexSet<Local> {
         &self.patterned
     }
 
-    pub(super) fn jsx_props(&self) -> &HashSet<Local> {
+    pub(super) fn jsx_props(&self) -> &IndexSet<Local> {
         &self.jsx_props
     }
 
@@ -241,7 +241,7 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
         self.offsets.in_units(local) || self.found_indexes.holds(local)
     }
 
-    pub(super) fn let_spans(&self) -> &HashMap<Local, js::Span> {
+    pub(super) fn let_spans(&self) -> &IndexMap<Local, js::Span> {
         &self.let_spans
     }
 
@@ -249,11 +249,11 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
         &self.options
     }
 
-    pub(super) fn held_arms(&self) -> &HashMap<BasicBlock, BasicBlock> {
+    pub(super) fn held_arms(&self) -> &IndexMap<BasicBlock, BasicBlock> {
         &self.held_arms
     }
 
-    pub(super) fn payload_tests(&self) -> &HashMap<BasicBlock, BasicBlock> {
+    pub(super) fn payload_tests(&self) -> &IndexMap<BasicBlock, BasicBlock> {
         &self.payload_tests
     }
 
@@ -356,15 +356,15 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
 /// never changed after; `State`'s `naming` (the review's P3, ADR 0872).
 #[derive(Default)]
 pub(super) struct NamingFacts {
-    boxes: HashSet<String>,
-    borrowed_names: HashSet<String>,
+    boxes: IndexSet<String>,
+    borrowed_names: IndexSet<String>,
     flags: IndexVec<MovePathIndex, Option<String>>,
 }
 
 impl NamingFacts {
     pub(super) fn new(
-        boxes: HashSet<String>,
-        borrowed_names: HashSet<String>,
+        boxes: IndexSet<String>,
+        borrowed_names: IndexSet<String>,
         flags: IndexVec<MovePathIndex, Option<String>>,
     ) -> Self {
         NamingFacts {
@@ -374,11 +374,11 @@ impl NamingFacts {
         }
     }
 
-    pub(super) fn boxes(&self) -> &HashSet<String> {
+    pub(super) fn boxes(&self) -> &IndexSet<String> {
         &self.boxes
     }
 
-    pub(super) fn borrowed_names(&self) -> &HashSet<String> {
+    pub(super) fn borrowed_names(&self) -> &IndexSet<String> {
         &self.borrowed_names
     }
 
@@ -387,7 +387,7 @@ impl NamingFacts {
     }
 
     /// Each drop flag, by its name (`mir/drops.rs`).
-    pub(super) fn flag_names(&self) -> HashSet<String> {
+    pub(super) fn flag_names(&self) -> IndexSet<String> {
         self.flags.iter().flatten().cloned().collect()
     }
 }
@@ -405,7 +405,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Vec<(Expr, bool)>,
             QuietCells,
         ),
-        ((seed, own, result_held), alternatives): (Seeds, HashMap<BasicBlock, BasicBlock>),
+        ((seed, own, result_held), alternatives): (Seeds, IndexMap<BasicBlock, BasicBlock>),
     ) -> R<(LocalFacts<'m, 'tcx>, Vec<(Local, Local)>)> {
         let body = &mir.body;
         let def_id = body.source.def_id();
@@ -421,7 +421,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ));
         }
         let bindings = self.mir_held_bindings(body, &options.held);
-        let bound: HashSet<Local> = bindings.iter().map(|&(bound, _)| bound).collect();
+        let bound: IndexSet<Local> = bindings.iter().map(|&(bound, _)| bound).collect();
         let mut held_arms = self.mir_held_arms(body, &options.held, &bound);
         // An or-pattern's alternative JS holds as another, as one (rd430).
         for (alternative, arm) in alternatives {
@@ -472,14 +472,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `&mut *r`, of another such local. A move or a reborrow of what a
     /// field, a payload or an item holds, `(_4 as Continue).0`, is the
     /// reference read from where it's kept, not its place.
-    fn mir_place_references(&self, body: &mir::Body<'tcx>) -> HashSet<Local> {
+    fn mir_place_references(&self, body: &mir::Body<'tcx>) -> IndexSet<Local> {
         enum Made {
             Place,
             Of(Local),
             Other,
         }
         let reference = |local: Local| matches!(body.local_decls[local].ty.kind(), ty::Ref(_, _, ty::Mutability::Mut));
-        let mut made: HashMap<Local, Vec<Made>> = HashMap::new();
+        let mut made: IndexMap<Local, Vec<Made>> = IndexMap::default();
         for statement in body.basic_blocks.iter().flat_map(|block| &block.statements) {
             let StatementKind::Assign(assign) = &statement.kind else {
                 continue;
@@ -519,9 +519,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         // Each taken as a place till one of its ways isn't one.
-        let mut places: HashSet<Local> = made.keys().copied().collect();
+        let mut places: IndexSet<Local> = made.keys().copied().collect();
         loop {
-            let kept: HashSet<Local> = (places.iter().copied())
+            let kept: IndexSet<Local> = (places.iter().copied())
                 .filter(|local| {
                     made[local].iter().all(|how| match how {
                         Made::Place => true,
@@ -541,10 +541,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// writes nowhere, and each local a call whose signature gives a
     /// `&'static T` writes, and nothing else; none borrowed `&mut` or
     /// pointed to, which could write it.
-    fn mir_lasting(&self, body: &mir::Body<'tcx>) -> HashSet<Local> {
+    fn mir_lasting(&self, body: &mir::Body<'tcx>) -> IndexSet<Local> {
         let shared = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Ref(_, _, rustc_ast::Mutability::Not));
-        let mut writes: HashMap<Local, usize> = HashMap::new();
-        let mut given: HashSet<Local> = HashSet::new();
+        let mut writes: IndexMap<Local, usize> = IndexMap::default();
+        let mut given: IndexSet<Local> = IndexSet::default();
         for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
             let StatementKind::Assign(assign) = &statement.kind else {
                 continue;
@@ -579,15 +579,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The locals `LocalFacts::made_pointer` says: each written only by a
     /// call of `Rc::new`, `Arc::new` or `Box::new`, or by a move, a copy
     /// or a cast of another such, the unsizing `as Rc<dyn Fn()>` MIR makes.
-    fn mir_made_pointers(&self, body: &mir::Body<'tcx>) -> HashSet<Local> {
+    fn mir_made_pointers(&self, body: &mir::Body<'tcx>) -> IndexSet<Local> {
         let tcx = self.tcx;
         let made = |id: rustc_span::def_id::DefId| {
             crate::lower::recognition::is_rc_new(tcx, id)
                 || crate::lower::recognition::is_std_def(tcx, id, crate::lower::recognition::StdItem::BoxNew)
         };
         // What each write gives: a pointer made, or another local's.
-        let mut writes: HashMap<Local, Vec<Option<Local>>> = HashMap::new();
-        let mut unknown: HashSet<Local> = HashSet::new();
+        let mut writes: IndexMap<Local, Vec<Option<Local>>> = IndexMap::default();
+        let mut unknown: IndexSet<Local> = IndexSet::default();
         for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
             let StatementKind::Assign(assign) = &statement.kind else {
                 continue;
@@ -614,7 +614,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
-        let mut found: HashSet<Local> = HashSet::new();
+        let mut found: IndexSet<Local> = IndexSet::default();
         loop {
             let more: Vec<Local> = (writes.iter())
                 .filter(|&(local, each)| {
@@ -646,7 +646,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         body: (&mir::Body<'tcx>, &IndexVec<mir::Promoted, mir::Body<'tcx>>),
         locals: &Locals,
-    ) -> HashSet<Local> {
+    ) -> IndexSet<Local> {
         let wholes = &self.krate.wholes;
         crate::lower::analysis::whole_locals(self.tcx, body, wholes, &|local| locals.writes[local])
     }
@@ -672,7 +672,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             |place| Some(crate::lower::representation::none_form(tcx, place)).filter(|form| form.stores_null());
         let momentary = self.momentary_borrows();
         // Each local assigned once, and what it's assigned.
-        let mut assigned: HashMap<Local, Option<&Rvalue<'tcx>>> = HashMap::new();
+        let mut assigned: IndexMap<Local, Option<&Rvalue<'tcx>>> = IndexMap::default();
         for data in body.basic_blocks.iter() {
             for statement in &data.statements {
                 if let StatementKind::Assign(assign) = &statement.kind

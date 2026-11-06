@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a namespace's method whose function reads the `Option` it makes, `made.is_none()`, is called through a value where its result is flattened, which reads `Some(None)` as `None` (rd311)",
     file: "src/lower/analysis/js_given.rs",
-    find: "        && made_and_returned(recognition, (callee, p), true, &mut HashSet::new()))\n",
+    find: "        && made_and_returned(recognition, (callee, p), true, &mut IndexSet::default()))\n",
     replace: "        && true)\n",
     tests: ["test/namespaces.test.ts", "-t", "refused unless its result is flattened"],
   },

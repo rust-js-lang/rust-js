@@ -4,6 +4,7 @@
 //! (ADRs 0275, 0841, 0861).
 
 use super::*;
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::aggregates::Given;
 use crate::lower::representation::NoneForm;
 
@@ -713,13 +714,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         body: &mir::Body<'tcx>,
         locals: &Locals,
-        given: &std::collections::HashMap<Local, usize>,
-        toward: &std::collections::HashSet<Local>,
+        given: &IndexMap<Local, usize>,
+        toward: &IndexSet<Local>,
     ) -> Vec<(Local, bool)> {
         let option = |local: Local| self.option_of(body.local_decls[local].ty).is_some();
         let mut reads = Vec::new();
         // Each shared reference to a whole `Option`, made once.
-        let mut lent: std::collections::HashMap<Local, Local> = Default::default();
+        let mut lent: IndexMap<Local, Local> = Default::default();
         for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
             let mir::StatementKind::Assign(assign) = &statement.kind else {
                 continue;

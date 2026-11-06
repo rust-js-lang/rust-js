@@ -654,7 +654,7 @@ export const mutations: Mutation[] = [
       "a closure made before in the block, `const read = () => seen`, called between, reads what `seen` is given, not what it was (rd105, ADR 0853)",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "    let captured = captured(&stmts[..given]);\n",
-    replace: "    let captured = HashSet::<String>::new();\n",
+    replace: "    let captured = IndexSet::<String>::default();\n",
     tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
   },
   {

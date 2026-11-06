@@ -2,6 +2,7 @@
 //! takes the state's keys, and each `new` gives them.
 
 use super::{Member, class_of, member};
+use crate::collections::IndexSet;
 use crate::js::{self, Expr, ExprKind, Pattern, Prop, StmtKind};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
@@ -47,14 +48,14 @@ pub(super) fn spread_state(tcx: TyCtxt<'_>, ctor: DefId, function: &mut js::Func
     let Some(Pattern::Name(state)) = function.params.get(at).cloned() else {
         return Err("a constructor whose flattened state is no parameter of its own name");
     };
-    let mut taken = std::collections::HashSet::new();
+    let mut taken = IndexSet::default();
     js::names_in(&function.body, &mut taken);
     for param in &function.params {
         if let Pattern::Name(name) = param {
             taken.insert(name.clone());
         }
     }
-    taken.remove(&state);
+    taken.swap_remove(&state);
     let names: Vec<String> = (keys.iter())
         .map(|key| crate::lower::fresh_in(&mut taken, key))
         .collect();

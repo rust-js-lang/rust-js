@@ -19,42 +19,42 @@ use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, nulled_para
 use super::bindings::Export;
 use super::representation::{NonePlace, none_form};
 use super::{Body, CrateFacts, const_js, located, module_file, static_value};
+use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, Expr, Prop, StmtKind};
 use crate::program::{LoweredModule, Unlinked, UnlinkedModule};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
-use std::collections::{HashMap, HashSet};
 
 /// Retained functions and their dependencies, grouped for output.
 #[derive(Default)]
 struct Pass {
-    functions: HashMap<LocalModId, Vec<js::Function>>,
-    namespaces: HashMap<LocalModId, Vec<js::Namespace>>,
-    jsx: HashSet<LocalModId>,
+    functions: IndexMap<LocalModId, Vec<js::Function>>,
+    namespaces: IndexMap<LocalModId, Vec<js::Namespace>>,
+    jsx: IndexSet<LocalModId>,
     /// What each module runs when it's loaded, each `js::on_load!`'s
     /// (ADR 0267).
-    statements: HashMap<LocalModId, Vec<Vec<js::Stmt>>>,
+    statements: IndexMap<LocalModId, Vec<Vec<js::Stmt>>>,
     /// `thread_local!`s' values, made from their lowered `init`s.
-    local_consts: HashMap<LocalModId, Vec<js::Const>>,
+    local_consts: IndexMap<LocalModId, Vec<js::Const>>,
     /// Each dictionary that's its module's `const`, or whose cache is, by
     /// its impl (ADR 0592), that the crate's own code reaches; and the
     /// names of the `const`s each dictionary makes.
     dictionary_consts: Vec<(LocalModId, DefId)>,
-    dictionary_names: HashSet<String>,
+    dictionary_names: IndexSet<String>,
     /// What fills each item's hole, by its index.
     holes: Holes,
     /// Which items each module uses from another, and which JS imports.
-    references: HashSet<(LocalModId, DefId)>,
-    package_uses: HashSet<(LocalModId, Export)>,
+    references: IndexSet<(LocalModId, DefId)>,
+    package_uses: IndexSet<(LocalModId, Export)>,
     /// The bindings each module reads through another that holds them
     /// (ADR 0633).
-    held: HashSet<(LocalModId, LocalModId, String, bool, DefId)>,
+    held: IndexSet<(LocalModId, LocalModId, String, bool, DefId)>,
     /// Each module read through another that re-exports a function (rd137).
-    reexporters: HashSet<(LocalModId, LocalModId)>,
+    reexporters: IndexSet<(LocalModId, LocalModId)>,
     /// Each copy of a function another module calls, by its index (ADR
     /// 0051, amended).
-    copy_references: HashSet<(LocalModId, DefId, usize)>,
+    copy_references: IndexSet<(LocalModId, DefId, usize)>,
     /// Each method a class takes of a trait of classes' default, its
     /// prototype's, by the class (rd283).
     class_defaults: Vec<(DefId, js::Function)>,
@@ -85,7 +85,7 @@ pub fn lower_crate<'tcx>(
     (dependencies, instances, made_where_used): (
         &crate::library::Dependencies,
         &super::Instances,
-        &HashSet<rustc_span::def_id::LocalDefId>,
+        &IndexSet<rustc_span::def_id::LocalDefId>,
     ),
     built: Built<'_>,
 ) -> Lowered {
@@ -174,7 +174,7 @@ pub fn lower_crate<'tcx>(
     // imports as its default, not by a name of its own (ADR 0251), as every
     // importer does (`default_exports::exported_as`); or another module's
     // function, which that module exports for it (`exported_across_modules`).
-    let defaulted: HashSet<DefId> = (super::default_exports::defaults(tcx).into_iter())
+    let defaulted: IndexSet<DefId> = (super::default_exports::defaults(tcx).into_iter())
         .map(|(_, item)| item)
         .collect();
     // A library exports what its program does: what its consumers reach that
@@ -219,11 +219,11 @@ pub fn lower_crate<'tcx>(
         more if !more.is_empty() => return Lowered::Instances(more),
         _ => {}
     }
-    let mut const_items: HashMap<LocalModId, Vec<js::Const>> = HashMap::new();
+    let mut const_items: IndexMap<LocalModId, Vec<js::Const>> = IndexMap::default();
     // Each inherent impl's constant, its type's object's, by its item: a
     // module's constant may have its name, `pub(crate) const MIN` beside
     // chrono's `impl TimeDelta { pub const MIN: Self = MIN; }` (#513).
-    let mut owned_consts: HashMap<DefId, js::Const> = HashMap::new();
+    let mut owned_consts: IndexMap<DefId, js::Const> = IndexMap::default();
     // Each `const` written in a function's body, its function's (ADR 0031,
     // amended).
     let mut local_const_holes: Vec<(DefId, js::Const)> = Vec::new();
@@ -414,7 +414,7 @@ pub fn lower_crate<'tcx>(
     // What each module re-exports, decided once, before any is lowered: what
     // its JS writes, `export { one } from "./z.js"`, and its imports in the
     // load-order graph (`module_imports`, #295).
-    let mut reexported: HashMap<LocalModId, _> = (modules.iter())
+    let mut reexported: IndexMap<LocalModId, _> = (modules.iter())
         .map(|&module| {
             let module_held = held.modules.get(&module).map_or(&[][..], Vec::as_slice);
             let default = super::default_exports::module_default(tcx, module, &fns, module_held);
@@ -443,8 +443,8 @@ pub fn lower_crate<'tcx>(
     // `const`s as their values where that module may load after its own
     // (`load_cycles`). A thread-local made where it's first used runs
     // nothing as its module loads (ADR 0037, amended).
-    let loads: HashSet<DefId> = (thread_local_inits.iter())
-        .filter(|(_, key)| !lazy_locals.contains(key))
+    let loads: IndexSet<DefId> = (thread_local_inits.iter())
+        .filter(|(_, key)| !lazy_locals.contains(*key))
         .map(|(init, _)| init.to_def_id())
         .chain(
             (initialized.iter())
@@ -526,8 +526,8 @@ pub fn lower_crate<'tcx>(
     // What a library's manifest says of its writers (ADR 0137).
     let writers_take_options = crate_facts.writers_take_options();
     // Each dictionary's cache, named apart in its module.
-    let mut cache_names: HashMap<LocalModId, HashSet<String>> = HashMap::new();
-    let cache_of: HashMap<DefId, String> = (dictionaries.iter())
+    let mut cache_names: IndexMap<LocalModId, IndexSet<String>> = IndexMap::default();
+    let cache_of: IndexMap<DefId, String> = (dictionaries.iter())
         .map(|&id| {
             let info = &fns[&id];
             let cache = crate::names::dictionary_cache(cache_names.entry(info.module).or_default(), &info.name);
@@ -535,7 +535,7 @@ pub fn lower_crate<'tcx>(
         })
         .collect();
     // A generic dictionary's cache's value, its module's `const` (ADR 0592).
-    let mut cache_values: HashMap<DefId, Expr> = HashMap::new();
+    let mut cache_values: IndexMap<DefId, Expr> = IndexMap::default();
     let mut work: Vec<(DefId, Option<&Body<'tcx>>, Option<usize>)> = bodies
         .iter()
         .filter(|b| reached::lowered_here(tcx, (&foreign, &forwarded), exports_reachable, b.def_id))
@@ -554,7 +554,7 @@ pub fn lower_crate<'tcx>(
     // Each method that reads each variant's field, first, so its callers read it (rd317).
     let field_reads = field_reads::found(tcx, &bodies);
     field_reads::first(&mut work, &field_reads);
-    let (mut used, mut queued) = (HashSet::new(), HashSet::new());
+    let (mut used, mut queued) = (IndexSet::default(), IndexSet::default());
     let no_facts = super::body_queries::BodyFacts::default();
     let shared = contexts::Shared {
         tcx,
@@ -632,7 +632,7 @@ pub fn lower_crate<'tcx>(
         }
         // A function's scope struct's methods, functions declared in it, by
         // names none of its variables hide (ADR 1043).
-        let scope_functions: HashMap<DefId, String> = (scopes.of_function(def_id))
+        let scope_functions: IndexMap<DefId, String> = (scopes.of_function(def_id))
             .flat_map(|scope| scope.methods.iter())
             .map(|&method| (method, crate::names::fresh_in(&mut names, &fns[&method].name)))
             .collect();
@@ -700,14 +700,7 @@ pub fn lower_crate<'tcx>(
         && let Some(id) = a_struct()
     {
         let given = (CRATE_MOD_ID, &taken[&CRATE_MOD_ID]);
-        contexts::fn_cx(
-            &shared,
-            (id.to_def_id(), None, None),
-            given,
-            HashSet::new(),
-            HashMap::new(),
-        )
-        .ref_cells();
+        contexts::item_cx(&shared, id.to_def_id(), given).ref_cells();
     }
     // What of its libraries the crate's lowering found it compiles itself,
     // which their JS doesn't export: the crate lowered again with them, as
@@ -755,7 +748,7 @@ pub fn lower_crate<'tcx>(
     // What each module's own items read by name of its own: a `const` the
     // module's default holds, read so, is declared, then exported (ADR 0625,
     // amended).
-    let read_at_home: HashSet<DefId> = (edges.clone())
+    let read_at_home: IndexSet<DefId> = (edges.clone())
         .filter(|&(from, to)| {
             from.as_local()
                 .zip(to.as_local())
@@ -793,7 +786,7 @@ pub fn lower_crate<'tcx>(
         let initializer = initialized.iter().any(|body| body.def_id == def_id);
         // Each copy of it its callers need besides, beside it (ADR 0051,
         // amended).
-        let mut copies = copies_of.remove(&def_id).unwrap_or_default();
+        let mut copies = copies_of.swap_remove(&def_id).unwrap_or_default();
         copies::gather(&mut pass, (module, &mut lowered), &mut copies);
         // A class's trait of classes' impl: its defaults the prototype's (rd283).
         if dictionaries.contains(&def_id)
@@ -825,7 +818,7 @@ pub fn lower_crate<'tcx>(
             }
             let consts = pass.local_consts.entry(module).or_default();
             let made = consts.len();
-            if let Some(cache) = cache_values.remove(&def_id) {
+            if let Some(cache) = cache_values.swap_remove(&def_id) {
                 consts.push(constant(cache_of[&def_id].clone(), cache, false));
             } else if lowered.function.params.is_empty() {
                 let export = lowered.function.export || called_from_elsewhere.contains(&def_id);
@@ -962,7 +955,7 @@ pub fn lower_crate<'tcx>(
                     }
                     None if named_expressions.contains(&def_id) => {
                         let mut function = lowered.function;
-                        let mut read = HashSet::new();
+                        let mut read = IndexSet::default();
                         js::visit_stmts(&function.body, &mut |name| {
                             read.insert(name.to_owned());
                         });
@@ -996,13 +989,13 @@ pub fn lower_crate<'tcx>(
     if failed {
         return Lowered::Crate(None);
     }
-    for (module, consts) in pass.local_consts.drain() {
+    for (module, consts) in pass.local_consts.drain(..) {
         const_items.entry(module).or_default().extend(consts);
     }
     // A numbered enum's variant, its module's `const` of its number, where
     // something reads it or another module or crate may, exported then, as
     // a `const` item is (ADR 0722, amended).
-    let read_elsewhere: HashSet<DefId> = pass.references.iter().map(|&(_, id)| id).collect();
+    let read_elsewhere: IndexSet<DefId> = pass.references.iter().map(|&(_, id)| id).collect();
     for &variant in &variants {
         let id = variant.to_def_id();
         let export =
@@ -1026,7 +1019,7 @@ pub fn lower_crate<'tcx>(
     for &def_id in &consts {
         let info = &fns[&def_id.to_def_id()];
         let Some(owner) = &info.owner else { continue };
-        let Some(constant) = owned_consts.remove(&def_id.to_def_id()) else {
+        let Some(constant) = owned_consts.swap_remove(&def_id.to_def_id()) else {
             continue;
         };
         let namespace = js::Namespace::of(pass.namespaces.entry(info.module).or_default(), owner);
@@ -1098,13 +1091,13 @@ pub fn lower_crate<'tcx>(
     let copies = copies::imported(&js_given, &fns, &pass.copy_references);
     let mut targets = crate_imports::of_crate(tcx, (&pass, &fns), copies, &imported_through);
     // What another module than its own calls, which stays a function.
-    let called_elsewhere: HashSet<DefId> = (pass.references.iter())
+    let called_elsewhere: IndexSet<DefId> = (pass.references.iter())
         .filter(|&&(from, id)| fns[&id].module != from)
         .map(|&(_, id)| id)
         .collect();
     // The exported thread-locals and `static mut`s their modules made
     // their variables.
-    let mut variables: HashSet<DefId> = HashSet::new();
+    let mut variables: IndexSet<DefId> = IndexSet::default();
     let mut lowered: Vec<UnlinkedModule> = modules
         .into_iter()
         .map(|module| {
@@ -1142,7 +1135,7 @@ pub fn lower_crate<'tcx>(
                     ..
                 },
                 reexports,
-            ) = reexported.remove(&module).expect("each module's re-exports");
+            ) = reexported.swap_remove(&module).expect("each module's re-exports");
             let aliased_items = super::default_exports::aliases(tcx, module, &fns);
             // Each of its functions that only passes its parameters on to a
             // function at one instantiation, whose JS is that call alone:
@@ -1230,21 +1223,27 @@ pub fn lower_crate<'tcx>(
                 items: js::in_load_order(
                     (pass
                         .namespaces
-                        .remove(&module)
+                        .swap_remove(&module)
                         .into_iter()
                         .flatten()
                         .map(js::Item::Namespace))
-                    .chain(const_items.remove(&module).into_iter().flatten().map(js::Item::Const))
+                    .chain(
+                        const_items
+                            .swap_remove(&module)
+                            .into_iter()
+                            .flatten()
+                            .map(js::Item::Const),
+                    )
                     .chain(
                         pass.statements
-                            .remove(&module)
+                            .swap_remove(&module)
                             .into_iter()
                             .flatten()
                             .map(js::Item::Statements),
                     )
                     .chain(
                         pass.functions
-                            .remove(&module)
+                            .swap_remove(&module)
                             .into_iter()
                             .flatten()
                             .map(js::Item::Function),
@@ -1293,14 +1292,14 @@ pub fn lower_crate<'tcx>(
             // Its `static mut`s, each its module's variable as a
             // thread-local of a value is (ADR 0096, amended).
             let statics = super::analysis::module_statics(tcx, &consts, module);
-            let quiet: HashSet<&str> = (quiet_locals.iter())
+            let quiet: IndexSet<&str> = (quiet_locals.iter())
                 .filter(|&&key| tcx.parent_module_from_def_id(key) == module)
                 .chain(&statics)
                 .map(|key| fns[&key.to_def_id()].name.as_str())
                 .collect();
             // Its thread-locals of a value, and its `static mut`s, each its
             // module's variable where it's plain, by its name.
-            let held_values: HashMap<&str, rustc_span::def_id::LocalDefId> = (thread_local_inits.values())
+            let held_values: IndexMap<&str, rustc_span::def_id::LocalDefId> = (thread_local_inits.values())
                 .filter(|&&key| {
                     tcx.parent_module_from_def_id(key) == module && super::analysis::holds_a_value(tcx, key.to_def_id())
                 })
@@ -1312,7 +1311,7 @@ pub fn lower_crate<'tcx>(
             // its `{ value }`, which a JS module importing it would read as the
             // box, refused. And its `#[rust_js::nullable]` thread-locals of a
             // cell, whose `None` is `null` however it's written (#541).
-            let nullable: HashSet<&str> = (thread_local_inits.values())
+            let nullable: IndexSet<&str> = (thread_local_inits.values())
                 .filter(|&&key| {
                     tcx.parent_module_from_def_id(key) == module
                         && none_form(tcx, NonePlace::LocalCell(key.to_def_id())).stores_null()
@@ -1328,7 +1327,7 @@ pub fn lower_crate<'tcx>(
             for name in boxed {
                 super::analysis::refuse_boxed_export(tcx, held_values[name.as_str()].to_def_id());
             }
-            let module_variables: HashMap<DefId, bool> = (quiet_locals.iter())
+            let module_variables: IndexMap<DefId, bool> = (quiet_locals.iter())
                 .filter(|&&key| tcx.parent_module_from_def_id(key) == module)
                 .chain(&statics)
                 .filter_map(|key| {
@@ -1347,8 +1346,8 @@ pub fn lower_crate<'tcx>(
                 .flat_map(|item| std::iter::once((item.from.clone(), item.export.clone())).chain(item.rooted.clone()))
                 .collect();
             let local = |export: &(String, String)| names?.get(export).map(String::as_str);
-            let foreign_variables: HashSet<&str> = exports.iter().filter_map(local).collect();
-            let namespaced: HashSet<(&str, &str)> = (exports.iter())
+            let foreign_variables: IndexSet<&str> = exports.iter().filter_map(local).collect();
+            let namespaced: IndexSet<(&str, &str)> = (exports.iter())
                 .filter_map(|(from, export)| Some((local(&(from.clone(), js::NAMESPACE.into()))?, export.as_str())))
                 .collect();
             if !foreign_variables.is_empty() || !namespaced.is_empty() {
@@ -1363,10 +1362,7 @@ pub fn lower_crate<'tcx>(
             }
             // What a `&mut` and a `dyn` in a signature are, as the item's
             // body has them: asked of a context of the item (#619, #620).
-            let context = |owner: DefId| {
-                let given = (module, &taken[&module]);
-                contexts::fn_cx(&shared, (owner, None, None), given, HashSet::new(), HashMap::new())
-            };
+            let context = |owner: DefId| contexts::item_cx(&shared, owner, (module, &taken[&module]));
             let mut_ref = |owner: DefId, pointee: ty::Ty<'tcx>| context(owner).mut_ref_form(pointee);
             let pair_trait = |owner: DefId, ty: ty::Ty<'tcx>| context(owner).dynamic_trait(ty);
             let signature = |function: DefId| context(function).js_signature(function);
@@ -1390,7 +1386,7 @@ pub fn lower_crate<'tcx>(
             // A `Drop` impl's `drop` of this module no other module calls,
             // which may be its body where its one drop is (ADR 0588).
             let drop_trait = tcx.lang_items().drop_trait();
-            let drops: HashSet<String> = (fns.iter())
+            let drops: IndexSet<String> = (fns.iter())
                 .filter(|&(&id, info)| {
                     info.module == module
                         && drop_trait.is_some_and(|t| {
@@ -1415,7 +1411,7 @@ pub fn lower_crate<'tcx>(
                     .filter(|((from, _), _)| *from == module)
                     .filter_map(|(&(_, id), through)| Some((foreign.import_key(id, module)?, id, through))),
             );
-            let imports = targets.remove(&module).unwrap_or_default();
+            let imports = targets.swap_remove(&module).unwrap_or_default();
             let reexporters = (pass.reexporters.iter()).filter_map(|&(from, to)| (from == module).then_some(to));
             let candidates =
                 crate_imports::requests(tcx, module, (imports, reimported, reexporters), &paths, &|of, named| {

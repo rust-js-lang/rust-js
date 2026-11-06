@@ -8,6 +8,7 @@
 //! name (`parameter_name`). A declaration prints it, and says nothing a
 //! function takes on its own (#549, #559, #560).
 
+use crate::collections::IndexSet;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
@@ -258,7 +259,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             })
             .collect();
-        let mut taken: std::collections::HashSet<String> = (idents.iter().enumerate())
+        let mut taken: IndexSet<String> = (idents.iter().enumerate())
             .filter_map(|(i, ident)| {
                 let ident = ident.filter(|ident| ident.name != rustc_span::kw::Underscore)?;
                 Some(js_parameter_name(tcx, function, ident, inputs.get(i).copied()))

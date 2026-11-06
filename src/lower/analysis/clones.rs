@@ -3,17 +3,17 @@
 //! what cloning each clones in turn, its `Clone` impl's bounds, as rustc
 //! proves them: `Map<I, F>: Clone` clones its `I` and its `F`.
 
+use crate::collections::IndexSet;
 use crate::lower::Body;
 use rustc_hir::def_id::DefId;
 use rustc_middle::thir::{ExprKind, Thir};
 use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
-use std::collections::HashSet;
 
 /// The types `all_bodies` clone, regions erased, and those their clones
 /// clone, to a fixed point.
-pub(super) fn cloned_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> HashSet<Ty<'tcx>> {
-    let mut cloned: HashSet<Ty<'tcx>> = HashSet::new();
+pub(super) fn cloned_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> IndexSet<Ty<'tcx>> {
+    let mut cloned: IndexSet<Ty<'tcx>> = IndexSet::default();
     // What an `impl Clone` hides, revealed: a caller's clone of what a
     // function gives is of what that function makes.
     let mut todo: Vec<Ty<'tcx>> = (all_bodies.iter())

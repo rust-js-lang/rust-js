@@ -6,10 +6,10 @@ use super::super::Body;
 use super::super::body_queries::strip;
 use super::super::fn_def;
 use super::super::recognition::{StdItem, is_local_borrow, is_local_with, is_std_def, local_key_access};
+use crate::collections::{IndexMap, IndexSet};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, GenericArgsRef, TyCtxt};
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
-use std::collections::HashSet;
 
 /// What a `with_borrow` is given to run: a closure made there, or a
 /// function, `CURRENT_TASK.with_borrow(Clone::clone)`.
@@ -41,12 +41,12 @@ pub(super) fn plain_thread_locals<'tcx>(
     bodies: &[&Body<'tcx>],
     keys: impl Iterator<Item = LocalDefId>,
     quiet: &dyn Fn(Given<'tcx>, DefId, bool) -> bool,
-) -> HashSet<LocalDefId> {
-    let mut plain: HashSet<LocalDefId> = keys.collect();
+) -> IndexSet<LocalDefId> {
+    let mut plain: IndexSet<LocalDefId> = keys.collect();
     for body in bodies {
         let thir = &body.thir;
         // Each thread-local read or set where it's read, `KEY` of `KEY.get()`.
-        let mut accessed = HashSet::new();
+        let mut accessed = IndexSet::default();
         for expr in thir.exprs.iter() {
             if let ExprKind::Call { fun, ref args, .. } = expr.kind
                 && let Some((id, _)) = fn_def(thir[fun].ty)
@@ -71,7 +71,7 @@ pub(super) fn plain_thread_locals<'tcx>(
                 && let Some(key) = def_id.as_local()
                 && !accessed.contains(&id)
             {
-                plain.remove(&key);
+                plain.swap_remove(&key);
             }
         }
     }
@@ -88,8 +88,8 @@ pub(super) fn quiet_library_keys<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &[&Body<'tcx>],
     quiet: &dyn Fn(Given<'tcx>, DefId, bool) -> bool,
-) -> HashSet<DefId> {
-    let mut lent: std::collections::HashMap<DefId, bool> = Default::default();
+) -> IndexSet<DefId> {
+    let mut lent: IndexMap<DefId, bool> = Default::default();
     for body in bodies {
         let thir = &body.thir;
         for expr in thir.exprs.iter() {
@@ -195,7 +195,7 @@ pub(super) fn outside_writes<'tcx>(
         };
         let thir = &body.thir;
         // Each read of one, `KEY` of `KEY.get()` or `KEY.with_borrow(f)`.
-        let mut read = HashSet::new();
+        let mut read = IndexSet::default();
         for expr in thir.exprs.iter() {
             if let ExprKind::Call { fun, ref args, .. } = expr.kind
                 && let Some((id, _)) = fn_def(thir[fun].ty)

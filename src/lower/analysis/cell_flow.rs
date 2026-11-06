@@ -26,6 +26,7 @@
 //! A crate any of whose bodies has no MIR here has no classes: every cell
 //! is by its type, as before.
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::analysis::CellBorrows;
 use crate::lower::recognition::{Recognition, Std, StdItem};
@@ -37,7 +38,6 @@ use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 /// The cells a borrow may be of: those only the crate's code reaches, by
 /// their flow's class, or any code rust-js can't see reaches, or a
@@ -60,10 +60,10 @@ pub(in crate::lower) struct CellFlow {
 
 #[derive(Default)]
 struct Classes {
-    calls: HashMap<(DefId, BasicBlock), CellClass>,
-    at: HashMap<(DefId, Span, DefId), Vec<CellClass>>,
+    calls: IndexMap<(DefId, BasicBlock), CellClass>,
+    at: IndexMap<(DefId, Span, DefId), Vec<CellClass>>,
     /// The bodies code rust-js can't see may call.
-    opened: HashSet<DefId>,
+    opened: IndexSet<DefId>,
 }
 
 impl CellFlow {
@@ -155,13 +155,13 @@ impl CellFlow {
             graph: Graph::new(),
             index: own.iter().enumerate().map(|(i, &(id, _))| (id, i)).collect(),
             bodies: own,
-            locals: HashMap::new(),
-            keys: HashMap::new(),
+            locals: IndexMap::default(),
+            keys: IndexMap::default(),
             values_of: Vec::new(),
-            seen_values: HashSet::new(),
-            open: HashSet::new(),
+            seen_values: IndexSet::default(),
+            open: IndexSet::default(),
             borrow_calls: Vec::new(),
-            holds: HashMap::new(),
+            holds: IndexMap::default(),
         };
         for at in 0..flow.bodies.len() {
             flow.body(at);
@@ -231,7 +231,7 @@ enum Key {
 struct Graph {
     parent: Vec<u32>,
     size: Vec<u32>,
-    children: Vec<HashMap<Key, u32>>,
+    children: Vec<IndexMap<Key, u32>>,
 }
 
 impl Graph {
@@ -239,7 +239,7 @@ impl Graph {
         Graph {
             parent: vec![TOP, CONSTANT],
             size: vec![1, 1],
-            children: vec![HashMap::new(), HashMap::new()],
+            children: vec![IndexMap::default(), IndexMap::default()],
         }
     }
 
@@ -247,7 +247,7 @@ impl Graph {
         let id = self.parent.len() as u32;
         self.parent.push(id);
         self.size.push(1);
-        self.children.push(HashMap::new());
+        self.children.push(IndexMap::default());
         id
     }
 
@@ -301,9 +301,9 @@ impl Graph {
     }
 
     /// Each root beneath one of `from`, and each of them.
-    fn reached(&mut self, from: &[u32]) -> HashSet<u32> {
+    fn reached(&mut self, from: &[u32]) -> IndexSet<u32> {
         let mut pending: Vec<u32> = from.iter().map(|&node| self.find(node)).collect();
-        let mut seen: HashSet<u32> = pending.iter().copied().collect();
+        let mut seen: IndexSet<u32> = pending.iter().copied().collect();
         while let Some(at) = pending.pop() {
             let children: Vec<u32> = self.children[at as usize].values().copied().collect();
             for child in children {
@@ -322,22 +322,22 @@ struct Flow<'r, 'tcx> {
     borrows: &'r CellBorrows<'tcx>,
     graph: Graph,
     bodies: Vec<(DefId, &'r crate::lower::mir::Mir<'tcx>)>,
-    index: HashMap<DefId, usize>,
-    locals: HashMap<(usize, Local), u32>,
+    index: IndexMap<DefId, usize>,
+    locals: IndexMap<(usize, Local), u32>,
     /// Each thread-local's key's `LocalKey`, its storage.
-    keys: HashMap<DefId, u32>,
+    keys: IndexMap<DefId, u32>,
     /// Each node a value of a function or closure of the crate's may be in,
     /// which code given it may call.
     values_of: Vec<(u32, DefId)>,
-    seen_values: HashSet<(u32, DefId)>,
+    seen_values: IndexSet<(u32, DefId)>,
     /// The bodies code rust-js can't see may call, whose parameters and
     /// result are `TOP`.
-    open: HashSet<DefId>,
+    open: IndexSet<DefId>,
     /// Each call of a `RefCell`'s that borrows it: its body, block, span,
     /// callee, and the cell's node.
     borrow_calls: Vec<(DefId, BasicBlock, Span, DefId, u32)>,
     /// Whether a value of each type may hold a cell, found when first asked.
-    holds: HashMap<Ty<'tcx>, bool>,
+    holds: IndexMap<Ty<'tcx>, bool>,
 }
 
 /// A port of a call: a value it's given or gives, and its type.
@@ -946,7 +946,7 @@ impl<'r, 'tcx> Flow<'r, 'tcx> {
                 return self.unseen(ports);
             }
         }
-        let mut first: HashMap<Ty<'tcx>, u32> = HashMap::new();
+        let mut first: IndexMap<Ty<'tcx>, u32> = IndexMap::default();
         for (ty, node) in found {
             match first.get(&ty) {
                 Some(&other) => self.graph.unify(other, node),

@@ -4,6 +4,7 @@
 //! amended).
 
 use super::{Member, constructor_of, is_class, member};
+use crate::collections::IndexSet;
 use crate::js;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
@@ -65,7 +66,7 @@ pub(crate) fn with_prototype_members(tcx: TyCtxt<'_>) -> Vec<DefId> {
 #[derive(Default)]
 pub(crate) struct Prototypes {
     pub(crate) set: Vec<PrototypeSet>,
-    pub(crate) read: std::collections::HashSet<DefId>,
+    pub(crate) read: IndexSet<DefId>,
 }
 
 impl Prototypes {
@@ -145,7 +146,7 @@ fn set_prototypes(
         };
         // What the module makes, which isn't made yet right after the
         // constructor: a function too, which may read it.
-        let made: std::collections::HashSet<&str> = (items.iter())
+        let made: IndexSet<&str> = (items.iter())
             .filter_map(|item| match item {
                 js::Item::Function(function) => Some(function.name.as_str()),
                 item => item.declared(),

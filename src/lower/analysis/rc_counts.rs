@@ -4,6 +4,7 @@
 //! Each decided by what it points at, a type and every type that may be it
 //! (ADR 0852).
 
+use crate::collections::IndexSet;
 use crate::lower::pointers::raw_pointee;
 use crate::lower::recognition::{
     compares_fn_identity, is_fn_dyn, is_rc_new, is_std_crate, known_by_bounds, rc_pointee, reads_rc_count, weak_pointee,
@@ -13,7 +14,6 @@ use rustc_hir::def::DefKind;
 use rustc_middle::thir::{ExprId, ExprKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
-use std::collections::HashSet;
 
 /// What an `Rc` points at, of those counted: each type, and every type that
 /// may be one of them, or every one.
@@ -24,7 +24,7 @@ pub struct Counted<'tcx> {
     pub all: bool,
     /// What each counted `Rc` points at, a generic one's of its
     /// parameters: `Slot<T>`'s counts every `Slot`'s.
-    pub types: HashSet<Ty<'tcx>>,
+    pub types: IndexSet<Ty<'tcx>>,
     /// Whether the crate compares an `Rc<dyn Fn>` it doesn't count,
     /// `Rc::ptr_eq` of one whose pointee is in `asked` and not counted:
     /// its identity is its JS function's (ADR 0959), so a closure made an
@@ -148,12 +148,12 @@ pub(super) fn counted_rcs<'tcx>(
     runs: impl Fn(&Counted<'tcx>, Ty<'tcx>) -> bool,
 ) -> Counted<'tcx> {
     let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(ty);
-    let mut counted: HashSet<Ty<'tcx>> = handed.iter().map(|&ty| erased(ty)).collect();
+    let mut counted: IndexSet<Ty<'tcx>> = handed.iter().map(|&ty| erased(ty)).collect();
     // What each `Rc` and `Weak` the crate has points at.
-    let mut pointees: HashSet<Ty<'tcx>> = counted.clone();
+    let mut pointees: IndexSet<Ty<'tcx>> = counted.clone();
     // Each `Rc` in `ty`, through the fields of the crates' types a body
     // holds, `seen` once each.
-    let mut found = |ty: Ty<'tcx>, fields: bool, seen: &mut HashSet<Ty<'tcx>>| {
+    let mut found = |ty: Ty<'tcx>, fields: bool, seen: &mut IndexSet<Ty<'tcx>>| {
         let mut held = vec![ty];
         while let Some(ty) = held.pop() {
             if !seen.insert(ty) {
@@ -175,22 +175,22 @@ pub(super) fn counted_rcs<'tcx>(
     };
     // Each `Rc` made another's, `Rc<RefCell<Logger>>` an
     // `Rc<RefCell<dyn Listener>>`: the two share their counts.
-    let mut made_others: HashSet<(Ty<'tcx>, Ty<'tcx>)> = HashSet::new();
+    let mut made_others: IndexSet<(Ty<'tcx>, Ty<'tcx>)> = IndexSet::default();
     // What each `ptr_eq` of an `Rc<dyn Fn>` compares, and the closures
     // given `Rc::new` as they're made, and those given it made before, a
     // copy or a variable (ADR 0959).
-    let mut asked: HashSet<Ty<'tcx>> = HashSet::new();
-    let (mut made_with, mut made_apart) = (HashSet::new(), HashSet::new());
+    let mut asked: IndexSet<Ty<'tcx>> = IndexSet::default();
+    let (mut made_with, mut made_apart) = (IndexSet::default(), IndexSet::default());
     // The closures made an `Rc<dyn Fn>` that are `Copy`, and those a body
     // clones: what else may be one JS function given it twice.
-    let (mut copied, mut cloned): (HashSet<Ty<'tcx>>, HashSet<Ty<'tcx>>) = (HashSet::new(), HashSet::new());
+    let (mut copied, mut cloned): (IndexSet<Ty<'tcx>>, IndexSet<Ty<'tcx>>) = (IndexSet::default(), IndexSet::default());
     let mut points_at_functions = false;
     for body in all_bodies {
         let owner = tcx.typeck_root_def_id(body.def_id);
         let env = ty::TypingEnv::non_body_analysis(tcx, owner);
         let given = |index, pointee| drop_given(owner, index, pointee);
-        let mut seen = HashSet::new();
-        let mut owned_seen = HashSet::new();
+        let mut seen = IndexSet::default();
+        let mut owned_seen = IndexSet::default();
         // A parameter nothing reads is dropped where no expression is of it.
         for param in body.thir.params.iter() {
             found(param.ty, true, &mut seen);
@@ -259,7 +259,7 @@ pub(super) fn counted_rcs<'tcx>(
     }
     // A field's `Rc`, of a value another crate may make, where no
     // expression names it.
-    let mut seen = HashSet::new();
+    let mut seen = IndexSet::default();
     for id in tcx.hir_crate_items(()).definitions() {
         if matches!(tcx.def_kind(id), DefKind::Struct | DefKind::Enum | DefKind::Union) {
             for field in tcx.adt_def(id).all_fields() {
@@ -392,8 +392,8 @@ fn owned_dropping<'tcx>(
     tcx: TyCtxt<'tcx>,
     (env, given): (ty::TypingEnv<'tcx>, &dyn Fn(u32, Ty<'tcx>) -> bool),
     ty: Ty<'tcx>,
-    seen: &mut HashSet<Ty<'tcx>>,
-    counted: &mut HashSet<Ty<'tcx>>,
+    seen: &mut IndexSet<Ty<'tcx>>,
+    counted: &mut IndexSet<Ty<'tcx>>,
 ) {
     let mut held = vec![ty];
     while let Some(ty) = held.pop() {
@@ -446,7 +446,7 @@ fn owns_dropping_param<'tcx>(
     ty: Ty<'tcx>,
 ) -> bool {
     let mut held = vec![ty];
-    let mut seen = HashSet::new();
+    let mut seen = IndexSet::default();
     while let Some(ty) = held.pop() {
         if !seen.insert(ty) {
             continue;

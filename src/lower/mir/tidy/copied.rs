@@ -17,7 +17,7 @@ use super::*;
 /// program's name for both, `const updatesForLane = hidden[i]; ..
 /// if (updatesForLane)`, where the variable is declared in `stmts` and the
 /// binding's name is nowhere else in them (`user`, the program's names).
-pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &HashSet<String>) {
+pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<String>) {
     named_for_bindings(stmts, user);
     for stmt in stmts.iter_mut() {
         let StmtKind::If(test, then, otherwise) = &mut stmt.kind else {
@@ -121,7 +121,7 @@ fn set_before_read(stmts: &[Stmt], a: &str, b: &str) -> bool {
 /// `const old = x; .. if (old) { const updatesForLane = old; .. }` of a
 /// variable rust-js named and a binding the program did: `updatesForLane`
 /// for both (`copied_bindings`).
-fn named_for_bindings(stmts: &mut [Stmt], user: &HashSet<String>) {
+fn named_for_bindings(stmts: &mut [Stmt], user: &IndexSet<String>) {
     for i in 0..stmts.len() {
         let StmtKind::If(test, then, _) = &stmts[i].kind else {
             continue;

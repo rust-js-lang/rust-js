@@ -3,6 +3,7 @@
 //! `if`'s test (ADRs 0658, 0708, 0444).
 
 use super::expressions;
+use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, ExprKind, Module, StmtKind};
 
 /// Where each conditional's branch is, `c ? a : b`'s `a` and `b`, of those
@@ -11,8 +12,8 @@ use crate::js::{self, ExprKind, Module, StmtKind};
 /// (ADR 0641); and a binary's right operand, after its operator, as a
 /// comment before it is, between the two or in the closure it's of,
 /// `is_some_and(|v| { // c\n v > 3 })` (ADR 0444, amended).
-pub(super) fn arm_starts(module: &Module) -> std::collections::HashMap<u32, Arm> {
-    let mut starts = std::collections::HashMap::new();
+pub(super) fn arm_starts(module: &Module) -> IndexMap<u32, Arm> {
+    let mut starts = IndexMap::default();
     let mut of = |mut stmts: Vec<js::Stmt>| {
         js::each_expr_mut(&mut stmts, &mut |e| {
             let spans: Vec<(js::Span, &'static str, bool)> = match &e.kind {
@@ -146,8 +147,8 @@ pub(super) fn arm_starts(module: &Module) -> std::collections::HashMap<u32, Arm>
 /// statement starts, by where it ends, and where the first statement of
 /// each one's block starts, and of each `if` placed there (#617).
 pub(super) struct ElseIfs {
-    pub(super) starts: std::collections::HashMap<u32, u32>,
-    pub(super) firsts: std::collections::HashSet<u32>,
+    pub(super) starts: IndexMap<u32, u32>,
+    pub(super) firsts: IndexSet<u32>,
 }
 
 /// Where each `if` that's an `else`'s only statement starts, by where it
@@ -158,8 +159,8 @@ pub(super) struct ElseIfs {
 /// its block's first statement is, a returned chain's guard `if` of a
 /// later arm, that start, the `if`'s, which the comment is above (#617).
 pub(super) fn else_if_starts(module: &Module) -> ElseIfs {
-    let mut starts = std::collections::HashMap::new();
-    let mut firsts = std::collections::HashSet::new();
+    let mut starts = IndexMap::default();
+    let mut firsts = IndexSet::default();
     let mut of = |mut stmts: Vec<js::Stmt>| {
         js::each_block_mut(&mut stmts, &mut |block| {
             for stmt in block.iter() {

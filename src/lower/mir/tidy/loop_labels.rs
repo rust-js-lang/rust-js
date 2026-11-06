@@ -6,7 +6,7 @@
 //! leaves from a `switch`, the `if` chain they are, its tests in the order
 //! Rust tries them (#389b).
 
-use std::collections::HashSet;
+use crate::collections::IndexSet;
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 
@@ -40,7 +40,7 @@ pub(super) fn labeled_breaks(stmts: &mut [Stmt], label: &str) {
 }
 
 /// Each label in `stmts`, a loop's or a block's.
-pub(super) fn labels_in(stmts: &[Stmt], labels: &mut HashSet<String>) {
+pub(super) fn labels_in(stmts: &[Stmt], labels: &mut IndexSet<String>) {
     for stmt in stmts {
         match &stmt.kind {
             StmtKind::While { label, body, .. }
@@ -95,7 +95,7 @@ pub(super) fn continued(switch: &mut StmtKind) {
 /// label (#389b, the user's decision: no label the program didn't
 /// write).
 pub(super) fn guarded_loops(stmts: &mut Vec<Stmt>) {
-    let mut locals = HashSet::new();
+    let mut locals = IndexSet::default();
     js::each_declared(stmts, &mut |name| {
         locals.insert(name.to_string());
     });
@@ -128,13 +128,13 @@ pub(super) fn held_subject(stmt: &Stmt) -> bool {
     let StmtKind::Switch { cases, default, .. } = &stmt.kind else {
         return false;
     };
-    let mut labels = HashSet::new();
+    let mut labels = IndexSet::default();
     js::case_lists(cases, default).for_each(|body| jumped_labels(body, &mut labels));
     cases.iter().any(|case| case.falls) && labels.iter().any(|l| tidy_made(l))
 }
 
 /// Each label a `break` or `continue` of `stmts` names.
-fn jumped_labels(stmts: &[Stmt], labels: &mut HashSet<String>) {
+fn jumped_labels(stmts: &[Stmt], labels: &mut IndexSet<String>) {
     js::each_list(stmts, &mut |list| {
         for stmt in list {
             if let StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) = &stmt.kind {
@@ -160,7 +160,7 @@ fn tidy_made(label: &str) -> bool {
 /// what's matched forbids it, or a temporary that holds what does
 /// something, `const nextCode = c.nextCode();`; and a `switch` that stays,
 /// held still where the `switch` stays one.
-fn chained_in(stmts: &mut Vec<Stmt>, label: &str, locals: &HashSet<String>) {
+fn chained_in(stmts: &mut Vec<Stmt>, label: &str, locals: &IndexSet<String>) {
     let mut k = 0;
     while k < stmts.len() {
         let span = stmts[k].span;
@@ -202,7 +202,7 @@ fn chained_in(stmts: &mut Vec<Stmt>, label: &str, locals: &HashSet<String>) {
 /// `codes[i]`, as the program writes it, the copy gone. Each test runs
 /// before any link's statements, and no test sets a variable the function
 /// declares, which only a statement does. Whether it went.
-fn copy_read_in_place(stmts: &mut Vec<Stmt>, k: usize, locals: &HashSet<String>) -> bool {
+fn copy_read_in_place(stmts: &mut Vec<Stmt>, k: usize, locals: &IndexSet<String>) -> bool {
     // Each test of the chain `stmt`, its links'.
     fn tests(stmt: &mut Stmt, f: &mut dyn FnMut(&mut Expr)) {
         if let StmtKind::If(test, _, otherwise) = &mut stmt.kind {

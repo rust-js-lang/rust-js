@@ -6,6 +6,7 @@
 //! items is of it; what's refused of one; and its functions' JS, `this`
 //! where Rust has `self`.
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, Expr, ExprKind, Pattern, Prop, Stmt, StmtKind};
 use crate::lower::Body;
 use crate::lower::recognition::{StdItem, is_std_def, opt_std_item};
@@ -583,7 +584,7 @@ pub(super) fn reject_misuse<'tcx>(
     bodies: &[&Body<'tcx>],
 ) -> bool {
     let tcx = recognition.tcx;
-    let by_id: std::collections::HashMap<DefId, &Body<'tcx>> = bodies.iter().map(|&body| (body.def_id, body)).collect();
+    let by_id: IndexMap<DefId, &Body<'tcx>> = bodies.iter().map(|&body| (body.def_id, body)).collect();
     let mut valid = true;
     let mut refuse = |span, what: &str| {
         tcx.dcx()
@@ -934,7 +935,7 @@ pub(super) fn reject_misuse<'tcx>(
     for body in bodies {
         let thir = &body.thir;
         let typing_env = ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(body.def_id));
-        let called: std::collections::HashSet<thir::ExprId> = (thir.exprs.iter())
+        let called: IndexSet<thir::ExprId> = (thir.exprs.iter())
             .filter_map(|expr| match expr.kind {
                 thir::ExprKind::Call { fun, .. } => Some(fun),
                 _ => None,
@@ -1336,7 +1337,7 @@ pub(super) fn receiver_as_this(
     function: DefId,
     params: &mut Vec<Pattern>,
     body: &mut Vec<Stmt>,
-    booleans: &mut std::collections::HashSet<String>,
+    booleans: &mut IndexSet<String>,
 ) -> Result<(), &'static str> {
     // A namespace's method has no `self`: what it calls through it is called
     // by its name (rd292, ADR 1037), and nothing else reads it.

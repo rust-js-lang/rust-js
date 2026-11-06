@@ -4,6 +4,7 @@
 
 use super::super::bindings::{self, field_key, unit_name};
 use super::{Num, char_value, marks_js_object, num_literal, ordering_value, symbol_for, variant_field};
+use crate::collections::IndexSet;
 use crate::js;
 use crate::js::{Expr, Prop};
 use crate::lower::recognition::{StdItem, cell_value_field, is_std_def};
@@ -32,11 +33,7 @@ fn innermost(mut value: ty::Value<'_>) -> Option<ty::Value<'_>> {
 /// `()` or a unit struct, `[]` of `[T; 0]`, as `const_js` writes a constant
 /// of it (ADR 0562). `None` of a type with a size, or one `const_js` can't
 /// write.
-pub(in crate::lower) fn zero_sized_js<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    keyed: &std::collections::HashSet<DefId>,
-    ty: Ty<'tcx>,
-) -> Option<Expr> {
+pub(in crate::lower) fn zero_sized_js<'tcx>(tcx: TyCtxt<'tcx>, keyed: &IndexSet<DefId>, ty: Ty<'tcx>) -> Option<Expr> {
     fn tree<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<ty::ValTree<'tcx>> {
         let part = |t: Ty<'tcx>| Some(ty::Const::new_value(tcx, tree(tcx, t)?, t));
         let parts: Vec<ty::Const<'tcx>> = match ty.kind() {
@@ -75,7 +72,7 @@ pub(in crate::lower) fn zero_sized_js<'tcx>(
 /// body's is `FnCx::const_value`'s, each variant as it writes one.
 pub(in crate::lower) fn const_js<'tcx>(
     tcx: TyCtxt<'tcx>,
-    keyed: &std::collections::HashSet<DefId>,
+    keyed: &IndexSet<DefId>,
     value: ty::Value<'tcx>,
 ) -> Option<Expr> {
     let unit = |adt, variant: &ty::VariantDef| match keyed.contains(&adt) {
@@ -90,7 +87,7 @@ pub(in crate::lower) fn const_js<'tcx>(
 /// of each of them, no tag (#504).
 pub(super) struct Units<'a> {
     pub(super) unit: &'a dyn Fn(DefId, &ty::VariantDef) -> Expr,
-    pub(super) keyed: &'a std::collections::HashSet<DefId>,
+    pub(super) keyed: &'a IndexSet<DefId>,
 }
 
 /// `const_js`, each variant without fields as `unit` writes it.

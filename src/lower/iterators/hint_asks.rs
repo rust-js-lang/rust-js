@@ -9,11 +9,11 @@
 //! here alone.
 
 use super::*;
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::recognition::iterator_type_of;
 use crate::lower::recognition::{Recognition, TypeFact, is_trusted_len};
 use rustc_middle::mir::{Operand, TerminatorKind};
 use rustc_middle::ty::TypeVisitableExt;
-use std::collections::{HashMap, HashSet};
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Whether a collect into `output` of an iterator of `iter_ty` grows a
@@ -463,7 +463,7 @@ pub(in crate::lower) fn refuse_unknown_capacity_extends<'tcx>(
         .collect();
     // What each function extends of what it doesn't know: the collection
     // and what it's extended by, in its own type parameters' terms.
-    let mut extends: HashMap<DefId, HashSet<(Ty<'tcx>, Ty<'tcx>)>> = HashMap::new();
+    let mut extends: IndexMap<DefId, IndexSet<(Ty<'tcx>, Ty<'tcx>)>> = IndexMap::default();
     // Which of a body's `extend`s know their collection's capacity, in its
     // own typing environment (`known_capacity_extends`).
     let known = |def_id: DefId, body: &rustc_middle::mir::Body<'tcx>| {
@@ -527,12 +527,12 @@ pub(in crate::lower) fn refuse_unknown_capacity_extends<'tcx>(
             }
         }
     }
-    let mut refused: HashSet<Span> = HashSet::new();
+    let mut refused: IndexSet<Span> = IndexSet::default();
     for _ in 0..ROUNDS {
         // A closure's, the function's it's written in, whose type
         // parameters it has: what std's code that calls it isn't seen to.
         let mut changed = false;
-        let closures: Vec<(DefId, HashSet<(Ty<'tcx>, Ty<'tcx>)>)> = (extends.iter())
+        let closures: Vec<(DefId, IndexSet<(Ty<'tcx>, Ty<'tcx>)>)> = (extends.iter())
             .filter(|(def_id, _)| tcx.is_closure_like(**def_id))
             .map(|(&def_id, held)| (tcx.typeck_root_def_id(def_id), held.clone()))
             .collect();

@@ -9,7 +9,7 @@ use super::*;
 
 /// Each such loop of `stmts`, a block's, an index loop; `mentions`, the
 /// names the function has, which its index and bound are named apart from.
-pub(super) fn mut_item_loops(stmts: &mut Vec<Stmt>, mentions: &mut HashMap<String, usize>) {
+pub(super) fn mut_item_loops(stmts: &mut Vec<Stmt>, mentions: &mut IndexMap<String, usize>) {
     let mut i = 0;
     while i < stmts.len() {
         if let Some(made) = index_loop(&stmts[i], mentions) {
@@ -27,7 +27,7 @@ pub(super) fn mut_item_loops(stmts: &mut Vec<Stmt>, mentions: &mut HashMap<Strin
 /// $lazyZip($iter($mutItems(a)), b))`, its handle `s` read and written
 /// only as `s.value`: the index loop of it, and of a zip, its bound
 /// first, `const n = Math.min(a.length, b.length);`.
-fn index_loop(stmt: &Stmt, mentions: &mut HashMap<String, usize>) -> Option<Vec<Stmt>> {
+fn index_loop(stmt: &Stmt, mentions: &mut IndexMap<String, usize>) -> Option<Vec<Stmt>> {
     let StmtKind::ForOf {
         label,
         pattern,

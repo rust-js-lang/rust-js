@@ -2,6 +2,7 @@
 //! one between the code of one and the next's, or its comments (`tops`,
 //! `comments_of`), and none where it has none (ADR 0444, amended).
 
+use crate::collections::IndexMap;
 use oxc_ast::ast::Statement;
 use oxc_ast_visit::Visit;
 
@@ -20,7 +21,7 @@ use oxc_ast_visit::Visit;
 pub(super) fn apart(
     body: &[Statement<'_>],
     mut comments: Vec<oxc_ast::Comment>,
-    (tops, declared): (&std::collections::HashMap<u32, u32>, &super::header::Places),
+    (tops, declared): (&IndexMap<u32, u32>, &super::header::Places),
     sources: &crate::program::Sources,
     end: u32,
 ) -> (Vec<oxc_ast::Comment>, Vec<bool>) {

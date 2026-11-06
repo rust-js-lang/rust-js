@@ -1,6 +1,7 @@
 //! Decode the binding language independently of call lowering.
 
 use super::declarations::{Written, written_types};
+use crate::collections::{IndexMap, IndexSet};
 use crate::js;
 use rustc_ast::LitKind;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -10,7 +11,6 @@ use rustc_hir::{ExprKind, ItemKind};
 use rustc_middle::ty::{self, FieldDef, Ty, TyCtxt, VariantDef};
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
 use rustc_span::{Span, Symbol, sym};
-use std::collections::HashMap;
 
 mod collects;
 pub(super) use collects::reject_attributed_calls;
@@ -1189,7 +1189,7 @@ pub fn given_names_differ(tcx: TyCtxt<'_>) -> bool {
             }
         }
     }
-    let mut seen = std::collections::HashSet::new();
+    let mut seen = IndexSet::default();
     for def in defs.into_iter().filter(|&def| seen.insert(def)) {
         let named = match tcx.def_kind(def) {
             DefKind::Struct => tcx.adt_def(def).non_enum_variant().ctor_kind() != Some(rustc_hir::def::CtorKind::Const),

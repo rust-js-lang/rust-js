@@ -6,6 +6,7 @@
 //! but never `null`, its `None` `null` (rd645).
 
 use super::*;
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::representation::NoneForm;
 use rustc_span::def_id::DefId;
 
@@ -328,9 +329,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         body: &mir::Body<'tcx>,
         writes: &IndexVec<Local, usize>,
         result: bool,
-    ) -> (std::collections::HashSet<Local>, std::collections::HashSet<DefId>) {
+    ) -> (IndexSet<Local>, IndexSet<DefId>) {
         let decls = &body.local_decls;
-        let mut nested: std::collections::HashSet<Local> = (decls.indices())
+        let mut nested: IndexSet<Local> = (decls.indices())
             .filter(|&local| local.as_usize() > body.arg_count || (result && local == mir::RETURN_PLACE))
             .filter(|&local| {
                 let ty = decls[local].ty;
@@ -350,7 +351,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
         };
-        let field_refs: std::collections::HashSet<Local> = assigns()
+        let field_refs: IndexSet<Local> = assigns()
             .filter(|&(to, rvalue)| {
                 matches!(rvalue, Rvalue::Ref(_, BorrowKind::Shared, of)
                     if writes[to] == 1 && self.nested_field(body, of.as_ref()))
@@ -363,7 +364,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 || (of.projection.as_slice() == [PlaceElem::Deref] && field_refs.contains(&of.local))
         };
         // What each local is written: a field's read (`None`), or a copy.
-        let mut sources: HashMap<Local, Vec<Option<Local>>> = HashMap::new();
+        let mut sources: IndexMap<Local, Vec<Option<Local>>> = IndexMap::default();
         for (to, rvalue) in assigns() {
             let source = match rvalue {
                 Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _) if field_read(of) => None,
@@ -372,7 +373,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             sources.entry(to).or_default().push(source);
         }
-        let mut of_fields: std::collections::HashSet<Local> = (sources.iter())
+        let mut of_fields: IndexSet<Local> = (sources.iter())
             .filter(|&(&local, each)| each.len() == writes[local] && !each.contains(&Some(local)))
             .map(|(&local, _)| local)
             .collect();
@@ -395,7 +396,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return (nested, Default::default());
         }
         // Each shared reference to one, made once.
-        let mut refs: HashMap<Local, Local> = HashMap::new();
+        let mut refs: IndexMap<Local, Local> = IndexMap::default();
         for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
             if let mir::StatementKind::Assign(assign) = &statement.kind
                 && let Some(reference) = assign.0.as_local()
@@ -438,7 +439,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         mentions.visit_body(body);
         let mentions = mentions.0;
         // Where each is mentioned as it may be, and which must agree.
-        let mut allowed: std::collections::HashSet<(mir::Location, Local)> = Default::default();
+        let mut allowed: IndexSet<(mir::Location, Local)> = Default::default();
         let mut links: Vec<(Local, Local)> = Vec::new();
         let mut given_back: Vec<(Local, DefId)> = Vec::new();
         for (block, data) in body.basic_blocks.iter_enumerated() {
@@ -722,7 +723,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         // Every other mention.
-        let mut out: std::collections::HashSet<Local> = (mentions.into_iter())
+        let mut out: IndexSet<Local> = (mentions.into_iter())
             .filter(|&(at, local)| {
                 (nested.contains(&local) || refs.contains_key(&local) || field_refs.contains(&local))
                     && !allowed.contains(&(at, local))
@@ -819,7 +820,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
         };
         // It, and each shared reference to it made once.
-        let mut tested = std::collections::HashSet::from([held]);
+        let mut tested = IndexSet::from_iter([held]);
         for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
             if let mir::StatementKind::Assign(assign) = &statement.kind
                 && let Some(reference) = assign.0.as_local()

@@ -8,13 +8,13 @@
 //! plugin::extract_events;`, and a path through `crate`, `self` or `super`
 //! alone, name the function, its named import.
 
+use crate::collections::IndexMap;
 use crate::lower::recognition::StdItem;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{self as hir, intravisit};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::{DefId, LocalModId};
-use std::collections::HashMap;
 
 /// A path through a module: the function it names, the module, which has
 /// it, the crate's or a library's, or re-exports it, the name its
@@ -36,11 +36,11 @@ pub(in crate::lower) struct Through {
 pub(in crate::lower) fn module_paths<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
-) -> HashMap<Span, Through> {
+) -> IndexMap<Span, Through> {
     let mut paths = Paths {
         tcx,
         foreign,
-        through: HashMap::new(),
+        through: IndexMap::default(),
     };
     for owner in tcx.hir_body_owners() {
         intravisit::walk_body(&mut paths, tcx.hir_body_owned_by(owner));
@@ -100,7 +100,7 @@ fn library_namespace(
 struct Paths<'a, 'b, 'tcx> {
     tcx: TyCtxt<'tcx>,
     foreign: &'a crate::lower::library::Foreign<'b, 'tcx>,
-    through: HashMap<Span, Through>,
+    through: IndexMap<Span, Through>,
 }
 
 impl<'tcx> intravisit::Visitor<'tcx> for Paths<'_, '_, 'tcx> {

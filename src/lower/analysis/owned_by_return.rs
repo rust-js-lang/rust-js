@@ -28,24 +28,24 @@
 //! the same of its own (`crate::library::Calling::owned_by_return`).
 
 use super::self_handles::{Uses, assign_at, drops, whole};
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::recognition::{HandleStep, handle_step, rc_pointee, trait_holds_in};
 use crate::lower::{Body, fn_def};
 use rustc_abi::FieldIdx;
 use rustc_middle::mir::{self, AggregateKind, Local, Location, Operand, Place, PlaceElem, Rvalue, TerminatorKind};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 /// The parameters of each of the crate's functions that what it returns
 /// alone owns, by index, and those of them nothing it runs before it
 /// returns may call (`quiet`).
 #[derive(Default)]
 pub(crate) struct OwnedByReturn {
-    owned: HashMap<DefId, Vec<u32>>,
+    owned: IndexMap<DefId, Vec<u32>>,
     /// Where each it owns is kept, of the function and the index: each
     /// field of the crate's it's moved to; none known where a library's
     /// function keeps it.
-    kept: HashMap<(DefId, u32), Kept>,
+    kept: IndexMap<(DefId, u32), Kept>,
     /// The bodies that name each field of a struct an owner returns an `Rc`
     /// of: all that may call what it keeps, as it's private to its crate.
     naming: Naming,
@@ -53,7 +53,7 @@ pub(crate) struct OwnedByReturn {
     /// body naming a field it's kept in is among what it may run
     /// (`may_run`), so a closure given it runs only once its call returns
     /// (ADR 0317, amended, rd621).
-    quiet: HashMap<DefId, Vec<u32>>,
+    quiet: IndexMap<DefId, Vec<u32>>,
 }
 
 /// Where a parameter a function's return alone owns is kept: each field
@@ -62,7 +62,7 @@ pub(crate) struct OwnedByReturn {
 type Kept = Option<Vec<(DefId, FieldIdx)>>;
 
 /// The bodies that name each field, by its struct and index.
-type Naming = HashMap<(DefId, FieldIdx), HashSet<DefId>>;
+type Naming = IndexMap<(DefId, FieldIdx), IndexSet<DefId>>;
 
 impl OwnedByReturn {
     /// What `bodies` return alone own, given what a library's function's
@@ -95,7 +95,7 @@ impl OwnedByReturn {
         if candidates.is_empty() {
             return OwnedByReturn::default();
         }
-        let structs: HashSet<DefId> = (candidates.iter())
+        let structs: IndexSet<DefId> = (candidates.iter())
             .filter_map(|(_, body, _)| returned_struct(tcx, body.local_decls[mir::RETURN_PLACE].ty))
             .collect();
         let (read, naming) = read_otherwise(tcx, &of, &structs);
@@ -103,8 +103,8 @@ impl OwnedByReturn {
         // Each only of what it calls already found, to a fixed point: a
         // function that gives it on to another, `create_request`'s to
         // `request_instance`.
-        let mut owned: HashMap<DefId, Vec<u32>> = HashMap::new();
-        let mut kept: HashMap<(DefId, u32), Kept> = HashMap::new();
+        let mut owned: IndexMap<DefId, Vec<u32>> = IndexMap::default();
+        let mut kept: IndexMap<(DefId, u32), Kept> = IndexMap::default();
         loop {
             let mut more = false;
             for (id, body, params) in &candidates {
@@ -134,7 +134,7 @@ impl OwnedByReturn {
             owned,
             kept,
             naming,
-            quiet: HashMap::new(),
+            quiet: IndexMap::default(),
         }
     }
 
@@ -144,7 +144,7 @@ impl OwnedByReturn {
     /// crate's it can't read. Any it may run that rust-js can't follow, or
     /// a library's function keeping it, may call it.
     pub(crate) fn find_quiet(&mut self, runs: &super::may_run::Runs<'_, '_>, tcx: TyCtxt<'_>) {
-        let mut quiet: HashMap<DefId, Vec<u32>> = HashMap::new();
+        let mut quiet: IndexMap<DefId, Vec<u32>> = IndexMap::default();
         for (&(id, index), kept) in &self.kept {
             let Some(fields) = kept else { continue };
             let Some(reached) = runs.of(id) else { continue };
@@ -237,10 +237,10 @@ fn kept_field(tcx: TyCtxt<'_>, adt: DefId, field: FieldIdx) -> bool {
 fn read_otherwise<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &[(DefId, &mir::Body<'tcx>)],
-    structs: &HashSet<DefId>,
-) -> (HashSet<(DefId, FieldIdx)>, Naming) {
-    let mut read = HashSet::new();
-    let mut naming = Naming::new();
+    structs: &IndexSet<DefId>,
+) -> (IndexSet<(DefId, FieldIdx)>, Naming) {
+    let mut read = IndexSet::default();
+    let mut naming = Naming::default();
     for &(id, body) in bodies {
         let mut hits: Vec<(Location, Place<'tcx>, DefId, FieldIdx, bool)> = Vec::new();
         let mut visitor = Fields {
@@ -269,7 +269,7 @@ fn read_otherwise<'tcx>(
 struct Fields<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     body: &'a mir::Body<'tcx>,
-    structs: &'a HashSet<DefId>,
+    structs: &'a IndexSet<DefId>,
     hits: &'a mut Vec<(Location, Place<'tcx>, DefId, FieldIdx, bool)>,
 }
 
@@ -316,7 +316,7 @@ fn only_called<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, uses: &Uses, at:
 /// the `Rc` points at, is no `Rc` to keep.
 fn derefed_only<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, uses: &Uses, local: Local) -> bool {
     let mut todo = vec![local];
-    let mut seen = HashSet::new();
+    let mut seen = IndexSet::default();
     while let Some(local) = todo.pop() {
         if !seen.insert(local) {
             continue;
@@ -405,7 +405,7 @@ fn owns<'tcx>(
     let mut values: Vec<Local> = Vec::new();
     let mut rcs: Vec<Local> = Vec::new();
     // Where the return place is given one of those `Rc`s.
-    let mut returned: HashSet<Location> = HashSet::new();
+    let mut returned: IndexSet<Location> = IndexSet::default();
     // The fields it's moved to, and whether a library's function keeps it.
     let mut kept_in: Vec<(DefId, FieldIdx)> = Vec::new();
     let mut foreign = false;

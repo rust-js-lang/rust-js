@@ -1,7 +1,7 @@
 //! Dependency traversal over opaque item identities. Callers choose roots and
 //! retention policy; traversal knows nothing about Rust types or emitted code.
 
-use std::collections::{HashMap, HashSet};
+use crate::collections::{IndexMap, IndexSet};
 use std::hash::Hash;
 
 /// Include each root and everything it transitively depends on. Duplicate edges,
@@ -9,13 +9,13 @@ use std::hash::Hash;
 pub(crate) fn reachable<T: Copy + Eq + Hash>(
     roots: impl IntoIterator<Item = T>,
     edges: impl IntoIterator<Item = (T, T)>,
-) -> HashSet<T> {
-    let mut adjacency: HashMap<T, Vec<T>> = HashMap::new();
+) -> IndexSet<T> {
+    let mut adjacency: IndexMap<T, Vec<T>> = IndexMap::default();
     for (from, to) in edges {
         adjacency.entry(from).or_default().push(to);
     }
     let mut todo: Vec<T> = roots.into_iter().collect();
-    let mut reached = HashSet::new();
+    let mut reached = IndexSet::default();
     while let Some(id) = todo.pop() {
         if reached.insert(id)
             && let Some(targets) = adjacency.get(&id)
@@ -29,14 +29,14 @@ pub(crate) fn reachable<T: Copy + Eq + Hash>(
 #[cfg(test)]
 mod tests {
     use super::reachable;
-    use std::collections::HashSet;
+    use crate::collections::IndexSet;
 
     #[test]
     fn cycles_duplicates_and_disconnected_components() {
         let edges = [(0, 1), (0, 1), (1, 2), (2, 0), (2, 2), (3, 4), (4, 3)];
-        assert_eq!(reachable([0, 0, 5], edges), HashSet::from([0, 1, 2, 5]));
+        assert_eq!(reachable([0, 0, 5], edges), IndexSet::from_iter([0, 1, 2, 5]));
         assert!(reachable([], edges).is_empty());
-        assert_eq!(reachable([3], edges), HashSet::from([3, 4]));
+        assert_eq!(reachable([3], edges), IndexSet::from_iter([3, 4]));
     }
 
     #[test]

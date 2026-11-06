@@ -3,6 +3,7 @@
 //! 0521), and which are cloned apart (ADR 0522); and, as a `dyn Fn`'s, of
 //! a `dyn Any`, whether a value with a destructor is made one (ADR 0691).
 
+use crate::collections::IndexSet;
 use crate::lower::passed_on::Taker;
 use crate::lower::pointers::raw_pointee;
 use crate::lower::recognition::{PureStd, any_trait, given_back, is_fn_dyn, pure_std, rc_pointee};
@@ -13,7 +14,6 @@ use rustc_middle::thir::{AdtExprBase, ExprId, ExprKind, Thir};
 use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::Span;
-use std::collections::HashSet;
 
 /// What the crate does with its closures.
 #[derive(Default)]
@@ -28,20 +28,20 @@ pub struct ClosureFacts {
     /// nothing, nor a `dyn Any` of anything else (ADR 0691).
     pub any_dyns_drop: bool,
     /// The closures made a `dyn Fn`, each carrying its drop.
-    made_fn_dyns: HashSet<DefId>,
+    made_fn_dyns: IndexSet<DefId>,
     /// The closures made a `dyn Fn` only to hand it to JS, which Rust never
     /// drops, so none carries its drop (ADR 0873).
-    handed_fn_dyns: HashSet<DefId>,
+    handed_fn_dyns: IndexSet<DefId>,
     /// The closures cloned, `Clone::clone`'s or a `T: Clone`'s.
-    cloned: HashSet<DefId>,
+    cloned: IndexSet<DefId>,
     /// Of them, those a clone of which isn't the closure itself, each made
     /// by a function of what it holds, which its clone is made by again.
-    pub(super) cloned_apart: HashSet<DefId>,
+    pub(super) cloned_apart: IndexSet<DefId>,
     /// The closures rustc infers `Fn` or `FnMut` made where they're given
     /// to a binding that calls what it's given once, `js::set_timeout(move
     /// || { let m = &n; .. }, ms)`'s, of a union bound (ADR 1020): each
     /// called as its `call_once` runs it, dropping what it took.
-    called_once: HashSet<DefId>,
+    called_once: IndexSet<DefId>,
     /// Whether the crate is a library, whose callers' closures may be.
     library: bool,
 }
@@ -53,7 +53,7 @@ impl ClosureFacts {
     pub(super) fn new<'tcx>(
         tcx: TyCtxt<'tcx>,
         all_bodies: &[&Body<'tcx>],
-        cloned: &HashSet<Ty<'tcx>>,
+        cloned: &IndexSet<Ty<'tcx>>,
         library: bool,
     ) -> ClosureFacts {
         let closure_of = |ty: Ty<'tcx>| match ty.kind() {
@@ -63,7 +63,7 @@ impl ClosureFacts {
         let (handed, made): (Vec<_>, Vec<_>) = (all_bodies.iter())
             .flat_map(|body| fn_dyn_sources(tcx, &body.thir))
             .partition(|&(_, _, handed)| handed);
-        let made_fn_dyns: HashSet<DefId> = made.into_iter().filter_map(|(_, ty, _)| closure_of(ty)).collect();
+        let made_fn_dyns: IndexSet<DefId> = made.into_iter().filter_map(|(_, ty, _)| closure_of(ty)).collect();
         let called_once = (all_bodies.iter())
             .flat_map(|body| called_once_by_js(tcx, &body.thir))
             .collect();
@@ -85,7 +85,7 @@ impl ClosureFacts {
             made_fn_dyns,
             handed_fn_dyns,
             cloned,
-            cloned_apart: HashSet::new(),
+            cloned_apart: IndexSet::default(),
             called_once,
             library,
         }
@@ -93,7 +93,7 @@ impl ClosureFacts {
 
     /// Of the closures cloned, those a clone of which `shares` says isn't
     /// the closure itself: `cloned_apart`'s, to set.
-    pub(super) fn find_cloned_apart(&self, shares: impl Fn(DefId) -> bool) -> HashSet<DefId> {
+    pub(super) fn find_cloned_apart(&self, shares: impl Fn(DefId) -> bool) -> IndexSet<DefId> {
         self.cloned.iter().copied().filter(|&id| !shares(id)).collect()
     }
 
@@ -285,7 +285,7 @@ pub(super) fn dropping_fn_dyn<'tcx>(
                 Some(given) => {
                     foreign_drops && holds_a_param(tcx, function)
                         || params_may_drop
-                            && owns_a_param(tcx, function, &|index| given(owner, index), &mut HashSet::new())
+                            && owns_a_param(tcx, function, &|index| given(owner, index), &mut IndexSet::default())
                 }
                 None => holds_a_param(tcx, function) && closure_drops(),
             };
@@ -343,7 +343,7 @@ pub(super) fn refuse_dropping_fn_dyn<'tcx>(
 /// for; nor a `dyn Fn` made another, `&dyn Fn(S, A) -> S`, a function
 /// already, whose own coercion answers (ADR 0521, amended).
 fn holds_a_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    owns_a_param(tcx, ty, &|_| true, &mut HashSet::new())
+    owns_a_param(tcx, ty, &|_| true, &mut IndexSet::default())
 }
 
 /// Whether dropping a value of `ty` may drop a value of a type parameter:
@@ -358,7 +358,7 @@ fn owns_a_param<'tcx>(
     tcx: TyCtxt<'tcx>,
     ty: Ty<'tcx>,
     given: &dyn Fn(u32) -> bool,
-    seen: &mut HashSet<Ty<'tcx>>,
+    seen: &mut IndexSet<Ty<'tcx>>,
 ) -> bool {
     if !ty.has_non_region_param() || !seen.insert(ty) || raw_pointee(tcx, ty).is_some() {
         return false;
@@ -451,7 +451,7 @@ fn fn_dyn_sources<'a, 'tcx>(
 /// past, of a binding that gives back no function, which might be the one
 /// it's given, as `widen`'s `this` does. JS keeps what it's given, and has
 /// no drop: Rust never drops it again.
-fn handed_to_js(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> HashSet<ExprId> {
+fn handed_to_js(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> IndexSet<ExprId> {
     let through = |mut e: ExprId| {
         while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[e].kind {
             e = inner;
@@ -483,7 +483,7 @@ fn handed_to_js(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> HashSet<ExprId> {
         let boxed = matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if pure_std(tcx, id) == Some(PureStd::BoxNew));
         (boxed && matches!(&args[..], [made] if matches!(thir[through(*made)].kind, ExprKind::Closure(_)))).then_some(e)
     };
-    let mut handed = HashSet::new();
+    let mut handed = IndexSet::default();
     for expr in thir.exprs.iter() {
         let ExprKind::Call { fun, ref args, .. } = expr.kind else {
             continue;

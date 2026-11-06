@@ -757,7 +757,7 @@ impl Expr {
 
 /// Each name `stmts` read or declare, their closures', functions' and
 /// parameters' too: what a new name must not be.
-pub fn names_in(stmts: &[Stmt], names: &mut HashSet<String>) {
+pub fn names_in(stmts: &[Stmt], names: &mut IndexSet<String>) {
     visit_stmts(stmts, &mut |name| {
         names.insert(name.to_string());
     });

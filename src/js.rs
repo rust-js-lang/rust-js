@@ -33,8 +33,9 @@ pub use self::{
     walk::*,
     writes::Writes,
 };
+use crate::collections::{IndexMap, IndexSet};
 
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::BTreeSet;
 
 /// Byte offsets `lo..hi` into the Rust source file. `Span::NONE` (empty)
 /// means "no mapping": oxc skips empty spans when building the source map.
@@ -1235,7 +1236,7 @@ mod tests {
             param_spans: Vec::new(),
             set_apart: false,
         };
-        let mut names = HashSet::new();
+        let mut names = IndexSet::default();
         names_in(&[StmtKind::Function(Box::new(inner)).at(Span::NONE)], &mut names);
         for name in ["inner", "x", "y"] {
             assert!(names.contains(name), "{name}");

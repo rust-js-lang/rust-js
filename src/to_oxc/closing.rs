@@ -8,6 +8,7 @@
 //! (amended, 2026-11-03).
 
 use super::*;
+use crate::collections::IndexMap;
 
 /// Each object literal's `}`, by where it is, and the comments before it
 /// on lines of their own, as written.
@@ -197,7 +198,7 @@ pub(super) fn split<'c>(
     map: &oxc_sourcemap::SourceMap,
     generated_lines: &[&str],
     offset: &dyn Fn(u32, u32) -> Option<u32>,
-    splits: &mut std::collections::HashMap<u32, Vec<(u32, &'c [String])>>,
+    splits: &mut IndexMap<u32, Vec<(u32, &'c [String])>>,
 ) {
     for (end, texts) in closing {
         let found = (map.get_tokens())
@@ -289,7 +290,7 @@ pub(super) fn split_exports<'c>(
     map: &oxc_sourcemap::SourceMap,
     generated_lines: &[&str],
     offset: &dyn Fn(u32, u32) -> Option<u32>,
-    splits: &mut std::collections::HashMap<u32, Vec<(u32, &'c [String])>>,
+    splits: &mut IndexMap<u32, Vec<(u32, &'c [String])>>,
 ) {
     for (at, texts, after) in exports {
         let found = (map.get_tokens())

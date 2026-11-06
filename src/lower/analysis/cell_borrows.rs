@@ -8,6 +8,7 @@
 
 use super::cell_flow::CellClass;
 use super::resolvers;
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::bindings::is_binding;
 use crate::lower::body_queries::strip;
@@ -18,7 +19,6 @@ use rustc_hir::def::DefKind;
 use rustc_middle::thir::{ExprId, ExprKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
-use std::collections::{HashMap, HashSet};
 
 mod runs_nothing;
 pub(in crate::lower) use runs_nothing::{
@@ -59,15 +59,15 @@ impl<'tcx> Borrow<'tcx> {
 /// parameters' it may drop, whose destructors are its caller's to say.
 #[derive(Clone, PartialEq, Default, Debug)]
 struct Summary<'tcx> {
-    cells: HashSet<Borrow<'tcx>>,
-    drops: HashSet<Ty<'tcx>>,
+    cells: IndexSet<Borrow<'tcx>>,
+    drops: IndexSet<Ty<'tcx>>,
 }
 
 /// What each body of the crate may borrow, its calls' and its closures'
 /// with it; `None`, anything.
 #[derive(Default)]
 pub(in crate::lower) struct CellBorrows<'tcx> {
-    of: HashMap<DefId, Option<Summary<'tcx>>>,
+    of: IndexMap<DefId, Option<Summary<'tcx>>>,
     /// Each of the crate's types' impls of a trait, by the type: what std's
     /// code bounding one by the trait may run of it.
     impls: Impls,
@@ -75,30 +75,30 @@ pub(in crate::lower) struct CellBorrows<'tcx> {
     pointers: super::fn_pointers::FnPointers<'tcx>,
     /// The type parameters whose `Clone` bound takes its dictionary, whose
     /// clone may run code of the crate's (ADR 0914, amended).
-    clones: HashSet<(DefId, u32)>,
+    clones: IndexSet<(DefId, u32)>,
     /// What code rust-js can't see may borrow of a thread-local of the
     /// crate's that only its code reaches (`closed`): what the crate's
     /// bodies borrow but what its modules run as they load, which runs
     /// once, before JS can call into it (ADR 0580, amended).
-    later: HashSet<Borrow<'tcx>>,
+    later: IndexSet<Borrow<'tcx>>,
     /// The crate's thread-locals no code but the crate's reaches: not
     /// visible outside it, each use a read or a write of what it holds,
     /// never its cell lent, `with`'s, or handed on.
-    closed: HashSet<DefId>,
+    closed: IndexSet<DefId>,
     /// What each body may borrow by code rust-js sees, its own and the
     /// crate's bodies it runs, whatever else it may run: what a guard asks
     /// of a call's arguments it's held after (ADR 0863, amended).
-    seen: HashMap<DefId, HashSet<Borrow<'tcx>>>,
+    seen: IndexMap<DefId, IndexSet<Borrow<'tcx>>>,
     /// Which cells each borrow can be of (ADR 0863, amended).
     flow: super::cell_flow::CellFlow,
     /// What code rust-js can't see may borrow, by the crate's bodies it may
     /// call and what they run that rust-js sees (`seen`): of a cell only
     /// the crate's code reaches, only those (rd482). `None`, anything.
-    unseen: Option<HashSet<Borrow<'tcx>>>,
+    unseen: Option<IndexSet<Borrow<'tcx>>>,
 }
 
 /// Each of the crate's ADTs' trait impls: the trait, and the impl.
-type Impls = HashMap<DefId, Vec<(DefId, DefId)>>;
+type Impls = IndexMap<DefId, Vec<(DefId, DefId)>>;
 
 /// What a body does itself: what it borrows and drops, the bodies of the
 /// crate's it runs, of their generic arguments, and whether it may run what
@@ -116,10 +116,10 @@ impl<'tcx> CellBorrows<'tcx> {
     pub(in crate::lower) fn of_crate(
         tcx: TyCtxt<'tcx>,
         recognition: &Recognition<'_, 'tcx>,
-        (bodies, clones): (&[&Body<'tcx>], &HashSet<(DefId, u32)>),
+        (bodies, clones): (&[&Body<'tcx>], &IndexSet<(DefId, u32)>),
         drops: &dyn Fn(Ty<'tcx>) -> bool,
     ) -> Self {
-        let mut impls: Impls = HashMap::new();
+        let mut impls: Impls = IndexMap::default();
         for (&trait_id, of_trait) in tcx.all_local_trait_impls(()) {
             for &imp in of_trait {
                 if let ty::Adt(adt, _) = tcx.type_of(imp).instantiate_identity().skip_normalization().kind() {
@@ -138,7 +138,7 @@ impl<'tcx> CellBorrows<'tcx> {
         // Which cells each borrow can be of, which each body's borrows are
         // classed by: of std's code, what `std_runs` says of its impls.
         found.flow = super::cell_flow::CellFlow::of_crate(recognition, &found, bodies);
-        let direct: HashMap<DefId, Direct<'tcx>> = (bodies.iter())
+        let direct: IndexMap<DefId, Direct<'tcx>> = (bodies.iter())
             .filter(|body| body.root().is_some())
             .map(|body| {
                 let recognition = Recognition {
@@ -157,7 +157,7 @@ impl<'tcx> CellBorrows<'tcx> {
                 )
             })
             .collect();
-        let mut of: HashMap<DefId, Option<Summary<'tcx>>> = (direct.iter())
+        let mut of: IndexMap<DefId, Option<Summary<'tcx>>> = (direct.iter())
             .map(|(&id, d)| (id, (!d.any).then(|| d.own.clone())))
             .collect();
         loop {
@@ -202,7 +202,7 @@ impl<'tcx> CellBorrows<'tcx> {
         found.unseen = (direct.keys())
             .filter(|&&id| found.flow.opened(id) != Some(false))
             .map(|id| found.seen.get(id).cloned())
-            .try_fold(HashSet::new(), |mut all, theirs| {
+            .try_fold(IndexSet::default(), |mut all, theirs| {
                 all.extend(theirs?);
                 Some(all)
             });
@@ -477,7 +477,7 @@ impl<'tcx> CellBorrows<'tcx> {
             )
         };
         let mut given = Given::default();
-        let mut seen = HashSet::new();
+        let mut seen = IndexSet::default();
         for trait_id in traits.into_iter().flatten().filter(|&t| has(t)) {
             bound_runs(
                 recognition,
@@ -607,7 +607,7 @@ impl<'tcx> CellBorrows<'tcx> {
 impl<'tcx> Summary<'tcx> {
     /// Whether it may ask of `held`: one of its borrows may, or a drop its
     /// caller says may run anything.
-    fn asks(&self, tcx: TyCtxt<'tcx>, closed: &HashSet<DefId>, held: Borrow<'tcx>) -> bool {
+    fn asks(&self, tcx: TyCtxt<'tcx>, closed: &IndexSet<DefId>, held: Borrow<'tcx>) -> bool {
         !self.drops.is_empty() || self.cells.iter().any(|&theirs| asks(tcx, closed, theirs, held))
     }
 }
@@ -617,9 +617,9 @@ impl<'tcx> Summary<'tcx> {
 /// each runs holds, its type parameters' cells as the run's args make them.
 fn seen_borrows<'tcx>(
     tcx: TyCtxt<'tcx>,
-    direct: &HashMap<DefId, Direct<'tcx>>,
-) -> HashMap<DefId, HashSet<Borrow<'tcx>>> {
-    let mut seen: HashMap<DefId, HashSet<Borrow<'tcx>>> =
+    direct: &IndexMap<DefId, Direct<'tcx>>,
+) -> IndexMap<DefId, IndexSet<Borrow<'tcx>>> {
+    let mut seen: IndexMap<DefId, IndexSet<Borrow<'tcx>>> =
         (direct.iter()).map(|(&id, d)| (id, d.own.cells.clone())).collect();
     loop {
         let mut changed = false;
@@ -690,7 +690,7 @@ fn instantiated<'tcx>(
     let cells = (summary.cells.iter())
         .map(|&borrow| of_args(tcx, borrow, args))
         .collect();
-    let mut kept = HashSet::new();
+    let mut kept = IndexSet::default();
     for &ty in &summary.drops {
         let ty = of(ty);
         match ty.has_param() {
@@ -878,7 +878,7 @@ fn std_given<'tcx>(
 ) -> Given<'tcx> {
     let tcx = recognition.tcx;
     let mut given = Given::default();
-    let mut seen = HashSet::new();
+    let mut seen = IndexSet::default();
     // A derived method reads its type's fields by its trait.
     if let Some(imp) = derived_method(tcx, id) {
         let own = tcx.mk_args(&args[..tcx.generics_of(imp).count().min(args.len())]);
@@ -943,7 +943,7 @@ fn bound_runs<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     impls: &Impls,
     (ty, trait_id): (Ty<'tcx>, DefId),
-    seen: &mut HashSet<(Ty<'tcx>, DefId)>,
+    seen: &mut IndexSet<(Ty<'tcx>, DefId)>,
     given: &mut Given<'tcx>,
 ) {
     let tcx = recognition.tcx;
@@ -1321,13 +1321,13 @@ fn unsized_tail<'tcx>(tcx: TyCtxt<'tcx>, adt: ty::AdtDef<'tcx>) -> Option<usize>
 /// outside the crate, and each use of one in its bodies a read or a write
 /// of what it holds, `get`, `set`, `take`, `replace`, `with_borrow` or
 /// `with_borrow_mut`; never its cell lent, `with`'s, nor the key handed on.
-fn closed_keys<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> HashSet<DefId> {
+fn closed_keys<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> IndexSet<DefId> {
     use crate::lower::recognition::local_key_access;
-    let mut keys = HashSet::new();
-    let mut open = HashSet::new();
+    let mut keys = IndexSet::default();
+    let mut open = IndexSet::default();
     for body in bodies {
         let thir = &body.thir;
-        let mut accessed = HashSet::new();
+        let mut accessed = IndexSet::default();
         for expr in thir.exprs.iter() {
             if let ExprKind::Call { fun, ref args, .. } = expr.kind
                 && let Some((id, _)) = fn_def(thir[fun].ty)
@@ -1363,7 +1363,7 @@ fn is_thread_local_key(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 
 /// Whether a borrow asks of one `held`: of a cell that may be its, one of
 /// them mutable. `closed`, the keys only their own accesses reach.
-fn asks<'tcx>(tcx: TyCtxt<'tcx>, closed: &HashSet<DefId>, theirs: Borrow<'tcx>, held: Borrow<'tcx>) -> bool {
+fn asks<'tcx>(tcx: TyCtxt<'tcx>, closed: &IndexSet<DefId>, theirs: Borrow<'tcx>, held: Borrow<'tcx>) -> bool {
     (theirs.mutable || held.mutable)
         && overlap(tcx, closed, theirs.cell, held.cell)
         && may_meet(theirs.class, held.class)
@@ -1387,7 +1387,7 @@ fn may_meet(a: Option<CellClass>, b: Option<CellClass>) -> bool {
 /// reference or a field, React's `fiber.return.borrow()` while
 /// `HYDRATION_PARENT_FIBER.set(..)` runs, never is (ADR 0960, amended);
 /// two types alike.
-fn overlap<'tcx>(tcx: TyCtxt<'tcx>, closed: &HashSet<DefId>, a: Cell<'tcx>, b: Cell<'tcx>) -> bool {
+fn overlap<'tcx>(tcx: TyCtxt<'tcx>, closed: &IndexSet<DefId>, a: Cell<'tcx>, b: Cell<'tcx>) -> bool {
     let held = |key: DefId| match tcx.type_of(key).instantiate_identity().skip_normalization().kind() {
         ty::Adt(_, args) => args.types().next().map(|cell| tcx.erase_and_anonymize_regions(cell)),
         _ => None,

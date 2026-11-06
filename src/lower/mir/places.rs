@@ -125,7 +125,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Its bounds checked here: `$index(xs, i)` where it's read,
             // `xs[$at(xs, i)]` where it's the place written.
             if let PlaceElem::Index(local) = elem
-                && let Some(write) = state.deferred.remove(&local)
+                && let Some(write) = state.deferred.swap_remove(&local)
             {
                 let items = match value.reads_same() {
                     true => value,

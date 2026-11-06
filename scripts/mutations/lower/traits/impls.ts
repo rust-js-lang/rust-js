@@ -559,7 +559,7 @@ export const mutations: Mutation[] = [
       "a copied default, in its impl's terms, drops with none of its impl's drops, so what it holds of the impl's parameters is never dropped (#803)",
     file: "src/lower/traits/impls.rs",
     find: "        let (mut drops, unsupported, impl_items, mut slots) = self.impl_drops_for_default();\n",
-    replace: "        let (mut drops, unsupported, impl_items, mut slots) = (HashMap::new(), HashMap::new(), HashMap::<ty::AliasTy<'tcx>, u32>::new(), HashSet::new());\n",
+    replace: "        let (mut drops, unsupported, impl_items, mut slots) = (IndexMap::default(), IndexMap::default(), IndexMap::<ty::AliasTy<'tcx>, u32>::default(), IndexSet::default());\n",
     tests: ["test/corpus.test.ts", "-t", "^(default_of_a_non_blanket_impl_steps_its_self|drop_impl_indirect).rs$"],
   },
   {
@@ -604,7 +604,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a copied default's own parameter, numbered after the impl's, takes the index of the impl's first associated type's drop, so `T::Item`'s is dropped with the default's `U`'s (#802)",
     file: "src/lower/traits/impls.rs",
-    find: "            if let Some(name) = drops.remove(&index) {\n                drops.insert(past, name);\n            }\n            items.insert(alias, past);\n",
+    find: "            if let Some(name) = drops.swap_remove(&index) {\n                drops.insert(past, name);\n            }\n            items.insert(alias, past);\n",
     replace: "            items.insert(alias, index);\n",
     tests: ["test/corpus.test.ts", "-t", "^(default_own_param_drops).rs$"],
   },

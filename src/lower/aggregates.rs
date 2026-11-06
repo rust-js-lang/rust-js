@@ -7,6 +7,7 @@ use super::fn_def;
 use super::recognition::{StdItem, std_item};
 use super::representation::ordering_value;
 use super::{FnCx, R, Shape};
+use crate::collections::IndexMap;
 use crate::js::{self, Expr, Prop, StmtKind};
 use crate::lower::representation::NoneForm;
 use rustc_abi::VariantIdx;
@@ -63,8 +64,8 @@ fn literal_layout(tcx: ty::TyCtxt<'_>, span: Span) -> js::ObjectLayout {
 /// 0444, amended), as React's prototype object documents `isPersistent`.
 /// Of the crate's own structs: std's `Range`, `a..b`'s, documents its
 /// fields for Rust's readers, not for any object a program writes.
-pub(super) fn struct_literals(tcx: ty::TyCtxt<'_>) -> std::collections::HashMap<DefId, usize> {
-    let mut counts = std::collections::HashMap::new();
+pub(super) fn struct_literals(tcx: ty::TyCtxt<'_>) -> IndexMap<DefId, usize> {
+    let mut counts = IndexMap::default();
     each_struct_literal(tcx, |typeck, e| {
         if let Some(ty) = typeck.expr_ty_opt(e)
             && let ty::Adt(adt, _) = ty.kind()

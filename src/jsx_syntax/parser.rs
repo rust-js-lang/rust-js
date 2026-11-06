@@ -1,13 +1,13 @@
 //! Parse only JSX tokens. Rust inside braces stays a Rust token stream,
 //! with its original spans, for rustc to parse and type-check.
 
+use crate::collections::{IndexMap, IndexSet};
 use rustc_ast::token::{Delimiter, LitKind, TokenKind};
 use rustc_ast::tokenstream::{DelimSpacing, DelimSpan, Spacing, TokenStream, TokenTree};
 use rustc_ast::{self as ast, FnRetTy, ItemKind, TyKind};
 use rustc_parse::parser::{AllowConstBlockItems, ForceCollect, Parser};
 use rustc_session::Session;
 use rustc_span::{ErrorGuaranteed, Ident, Span};
-use std::collections::{HashMap, HashSet};
 
 use super::formatting::Layout;
 use super::literals;
@@ -816,7 +816,7 @@ fn signature(sess: &Session, item: &ast::Item, classes: &Classes) -> Option<(Ide
 /// The class components among a module's items, each struct's name and
 /// the props its impl of react's `Component` takes, `Component<SurfaceProps>`
 /// `SurfaceProps`, or none, `""`, of `Component`'s `()` (rd331i).
-pub(super) type Classes = HashMap<String, String>;
+pub(super) type Classes = IndexMap<String, String>;
 
 /// `items`' impls of react's `Component`, `impl Component<P> for Surface`, as
 /// `Classes`: read by their names, as a component function is, before
@@ -866,7 +866,7 @@ pub(super) fn props_names(sess: &Session, item: &ast::Item, classes: &Classes) -
 pub(super) fn component(
     sess: &Session,
     item: &ast::Item,
-    built: &HashSet<String>,
+    built: &IndexSet<String>,
     classes: &Classes,
 ) -> Option<Box<ast::Item>> {
     let (ident, target, props, handle) = signature(sess, item, classes)?;
@@ -1088,10 +1088,10 @@ pub(super) fn props_path(ty: &ast::Ty) -> Option<String> {
 pub(super) fn thread_local_components(
     sess: &Session,
     item: &ast::Item,
-    built: &HashSet<String>,
+    built: &IndexSet<String>,
 ) -> Vec<Box<ast::Item>> {
     (thread_local_declarations(sess, item).into_iter().flatten())
-        .filter_map(|declaration| component(sess, &declaration, built, &Classes::new()))
+        .filter_map(|declaration| component(sess, &declaration, built, &Classes::default()))
         .collect()
 }
 
@@ -1103,11 +1103,11 @@ pub(super) fn thread_local_components(
 pub(super) fn thread_local_named_as_jsx(
     sess: &Session,
     item: &ast::Item,
-    built: &HashSet<String>,
+    built: &IndexSet<String>,
 ) -> Option<TokenStream> {
     let declarations = thread_local_declarations(sess, item)?;
     let named: Vec<bool> = (declarations.iter())
-        .map(|declaration| component(sess, declaration, built, &Classes::new()).is_some())
+        .map(|declaration| component(sess, declaration, built, &Classes::default()).is_some())
         .collect();
     let ItemKind::MacCall(mac) = &item.kind else {
         return None;
@@ -1179,8 +1179,8 @@ fn thread_local_declarations(sess: &Session, item: &ast::Item) -> Option<Vec<Box
 pub(super) fn props_companion(
     sess: &Session,
     item: &ast::Item,
-    props: &HashSet<String>,
-    written_default: &HashSet<String>,
+    props: &IndexSet<String>,
+    written_default: &IndexSet<String>,
 ) -> Option<Box<ast::Item>> {
     let ItemKind::Struct(ident, generics, ast::VariantData::Struct { fields, .. }) = &item.kind else {
         return None;
