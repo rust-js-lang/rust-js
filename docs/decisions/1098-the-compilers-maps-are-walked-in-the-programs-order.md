@@ -49,6 +49,13 @@ decides.
 - **An entry is taken out by `swap_remove`**, which puts the last in its
   place: an order the program decides too. Nothing read the order of
   what a std map had left.
+- **A net**: test/determinism.test.ts compiles a corpus case again, as a
+  program and as a library, and compares its JS, source map and
+  manifest byte for byte. The nightly's suite compiles the cases that
+  were two forms eight times each, and the nightly's `determinism` job
+  compiles the whole corpus twice (`DETERMINISM=corpus`, in parts).
+  It's the net for any other source of difference, a time, a path or a
+  thread, which the architecture test can't see.
 
 ## Why
 
@@ -64,6 +71,9 @@ decides.
 - **No cost**: the corpus compiled twice took 64 s before and after on
   the M6 mini (12 cores), as rustc's front end is most of each compile.
   The Fx hasher is faster than std's SipHash where the maps are hot.
+- **The net by its cost**: the corpus's own snapshots compare each
+  push's one compile, which caught #866 at random. The determinism job
+  is about 25 CPU-minutes, so it's the nightly's (ADR 1030).
 
 ## Consequences
 

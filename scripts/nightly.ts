@@ -67,6 +67,15 @@ export const jobs: Record<string, Part[]> = {
     cores: 1,
     timeout: 20 * minutes,
   })),
+  // Each corpus case compiled twice, as a program and as a library, the
+  // same JS, map and manifest each time (ADR 1003, #866).
+  determinism: parts("determinism", 4, (i) => ({
+    cmd: ["bun", "test", "--timeout=600000", "test/determinism.test.ts"],
+    env: { ...compiler, DETERMINISM: "corpus", RUST_JS_CASES: `${i}/4` },
+    after: ["build"],
+    cores: 3,
+    timeout: 20 * minutes,
+  })),
   // Each `&mut` form through each operation, all 72 programs (ADR 1086).
   "mut-refs": [{
     id: "mut-refs",

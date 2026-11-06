@@ -4,8 +4,6 @@
 // adapter's peeked item, may panic as it drops, the close may throw, so it
 // drops after the `try` and as a panic unwinds, and a peeked item that
 // panics as it's dropped still drops what's after it.
-// (Its `work` gives `n` as it is: a `u32`'s `n + 1` reads two ways from one
-// compile to the next, #866.)
 use std::cell::Cell;
 use std::panic;
 
@@ -36,7 +34,7 @@ fn work(n: u32) -> u32 {
     if n > 100 {
         panic!("too big: {n}");
     }
-    n
+    n + 1
 }
 
 fn peeked_quiet(n: u32) -> u32 {

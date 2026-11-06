@@ -56,8 +56,9 @@ export const browsers = ["browser", "next", "playground", "pilot", "vite", "weba
 
 /** What only the nightly's suite runs, `bun run test --nightly`, not each
  * push's (ADR 1030): what the nightly runs in full anyway, tidy's stages,
- * the iterator forms, generated programs and the declarations' generated
- * callers (ADR 1091); the release's packaging, which
+ * the iterator forms, the corpus compiled again (#866), generated programs
+ * and the declarations' generated callers (ADR 1091); the release's
+ * packaging, which
  * qualification runs too; and the ratchets, React's releases and the
  * harness's own checks. Each is CPU a push's corpus waits on, guards no
  * mutation or a few, and failed none of the 80 red checks before it was
@@ -68,6 +69,7 @@ export const nightly = [
   "tidy-stages",
   "getter-reads",
   "iterator-forms",
+  "determinism",
   "mut-ref-matrix",
   "iterator-matrix",
   "declarations-conformance",
@@ -122,6 +124,13 @@ export const parts: Part[] = [
   { setting: "RUST_JS_REQUIRE_WASM", value: "1", runs: "push", by: ".github/workflows/check.yml" },
   { setting: "ITERATOR_MATRIX", value: "all", runs: "nightly", by: ".github/workflows/nightly.yml", why: "every case, about 4 CPU-hours: a push runs its slice" },
   { setting: "TIDY_STAGES", value: "corpus", runs: "nightly", by: ".github/workflows/nightly.yml", why: "every corpus case after each of tidy's stages: a push of tidy runs nine" },
+  {
+    setting: "DETERMINISM",
+    value: "corpus",
+    runs: "nightly",
+    by: ".github/workflows/nightly.yml",
+    why: "every corpus case compiled twice more, about 25 CPU-minutes: the corpus's own snapshots compare each push's one compile",
+  },
   { setting: "MUT_REF_MATRIX", value: "all", runs: "nightly", by: ".github/workflows/nightly.yml", why: "all 72 programs: check:fast runs seven where a `&mut` changes" },
   { setting: "RUST_JS_DISTRIBUTION", value: "dist", runs: "nightly", by: "scripts/qualify.ts", why: "a release's packaged binary, which only qualification builds" },
 ];

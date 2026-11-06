@@ -33,7 +33,7 @@ function work(n) {
   if (n > 100) {
     throw new Error(`too big: ${n}`);
   }
-  return n;
+  return (n + 1) >>> 0;
 }
 
 function peekedQuiet(n) {
