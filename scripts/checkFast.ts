@@ -18,22 +18,23 @@ import { join, resolve } from "node:path";
 import { pruneKept } from "../test/kept";
 import { runs, touchesIterators } from "./iteratorSlice";
 import { browsers, caseParts, nightly } from "./shard";
-import { elapsed, loadScale, timed } from "./timing";
+import { elapsed, loadScale, median, timed, timings } from "./timing";
 
 const root = join(import.meta.dir, "..");
 
 /** A job of the check, a process of its own: its command, what's added to
  * its environment, the seconds it's given, past which it's stopped and
- * fails, and, of one that runs a command of check.yml's, that command, as
- * `test/ci.test.ts` matches it to check.yml's. */
-export type Job = { name: string; cmd: string[]; env: Record<string, string>; timeout: number; ci?: string };
+ * fails, how many of the machine's cores it keeps busy, its `weight`, which
+ * the pool runs it by (#857), and, of one that runs a command of
+ * check.yml's, that command, as `test/ci.test.ts` matches it to check.yml's. */
+export type Job = { name: string; cmd: string[]; env: Record<string, string>; timeout: number; weight: number; ci?: string };
 
 /** What the check is of: `--all`, or the files the change touches, those
  * the branch changed since `main`, the mutations it adds and the files
  * named; and the machine's cores. */
 export type Scope = { all: boolean; changed: string[]; branch: string[]; added: string[]; extra: string[]; cores: number };
 
-const job = (name: string, cmd: string[], more: Partial<Job> = {}): Job => ({ name, cmd, env: {}, timeout: 290, ...more });
+const job = (name: string, cmd: string[], more: Partial<Job> = {}): Job => ({ name, cmd, env: {}, timeout: 290, weight: 1, ...more });
 
 
 /** What check.yml runs that `check:fast --all` leaves to CI, by the start
@@ -79,13 +80,15 @@ export function jobs({ all, changed, branch, added, extra, cores }: Scope): { jo
   // what the push's check runs, these where its change is the iterators'.
   const iterators = touchesIterators([...changed, ...branch]);
 
-  // Each part of a file of cases, a process of its own (scripts/shard.ts).
+  // Each part of a file of cases, a process of its own (scripts/shard.ts),
+  // of two cores' work: its case's builds, native and rust-js's, at once.
   const parts = caseParts(cores);
+  const half = Math.max(1, Math.floor(cores / 2));
   const inParts = (name: string, file: string) =>
     Array.from({ length: parts }, (_, i) =>
       // As a push's: of the corpus's, only the cases whose JS as a library
       // differs are built as one (ADR 0360).
-      job(`${name} ${i + 1}/${parts}`, ["bun", "test", file], { env: { RUST_JS_CASES: `${i + 1}/${parts}`, RUST_JS_LIBRARIES: "differing" }, ci: "bun run test" }),
+      job(`${name} ${i + 1}/${parts}`, ["bun", "test", file], { env: { RUST_JS_CASES: `${i + 1}/${parts}`, RUST_JS_LIBRARIES: "differing" }, weight: 2, ci: "bun run test" }),
     );
   // The suites a change can touch, as it touches them; or, with `--all`,
   // every test file a push's suite runs (scripts/test.ts): the corpus, in
@@ -100,10 +103,12 @@ export function jobs({ all, changed, branch, added, extra, cores }: Scope): { jo
   // nightly's own files are left as the push's suite leaves them; tidy's
   // stages, one of them, run where tidy changes (ADR 0659), and the `&mut`
   // matrix's sample where what a `&mut` is changes (ADR 1086).
+  // Its files in half the cores' processes, each file in one of its own
+  // as `--parallel` runs them, so two files never share one (#857).
   const everyFile = job(
     "every other test file",
-    ["bun", "test", "--parallel", ...["test/corpus.test.ts", ...browsers, ...nightly].map((file) => `--path-ignore-patterns=${file}`)],
-    { ci: "bun run test" },
+    ["bun", "test", `--parallel=${half}`, ...["test/corpus.test.ts", ...browsers, ...nightly].map((file) => `--path-ignore-patterns=${file}`)],
+    { weight: half, ci: "bun run test" },
   );
   const suites: Job[] = [
     job("architecture, mutation lists", ["bun", "test", "test/architecture.test.ts", "test/architecture-iterators.test.ts", "test/architecture-nones.test.ts", "test/mutations.test.ts"]),
@@ -130,7 +135,7 @@ export function jobs({ all, changed, branch, added, extra, cores }: Scope): { jo
     jobs: [
       job("fmt", ["bun", "run", "fmt:check"], { ci: "bun run fmt:check" }),
       job("typecheck", ["bun", "run", "typecheck"], { ci: "bun run typecheck" }),
-      job("clippy", ["cargo", "clippy", "--locked", "--quiet", "--", "-D", "warnings"], { ci: "cargo clippy --locked -- -D warnings" }),
+      job("clippy", ["cargo", "clippy", "--locked", "--quiet", "--", "-D", "warnings"], { weight: 2, ci: "cargo clippy --locked -- -D warnings" }),
       // With `--all`, the compiler's unit tests, tidy's passes and
       // decisions, red on `main` unseen after 801d40c55 (#523, #732): its
       // build waits on clippy's lock of `target/`, then takes 13 s here,
@@ -139,13 +144,17 @@ export function jobs({ all, changed, branch, added, extra, cores }: Scope): { jo
       // rust-js writes, then Vite's: 4 s.
       ...(all
         ? [
-            job("cargo test", ["cargo", "test", "--locked", "--quiet"], { timeout: 600, ci: "cargo test --locked" }),
+            job("cargo test", ["cargo", "test", "--locked", "--quiet"], { timeout: 600, weight: 2, ci: "cargo test --locked" }),
+            // The crates of crates.io's corpus against docs/crate-corpus.md,
+            // half the cores' at once: 33 s, which only the Nightly ran, so
+            // a refusal that stopped itertools went unseen (#857).
+            job("the crate corpus", ["bun", "scripts/crate-corpus.ts", "--check"], { weight: half }),
             job("the Vite example's build", ["bun", "run", "--cwd", "examples/vite-react", "build"], { ci: "bun run --cwd examples/vite-react build" }),
           ]
         : []),
       ...inParts("corpus", "test/corpus.test.ts"),
       ...(all ? [everyFile] : suites),
-      ...(tidy ? [job("readability passes", ["bun", "test", "test/tidy-stages.test.ts", "test/getter-reads.test.ts"])] : []),
+      ...(tidy ? [job("readability passes", ["bun", "test", "test/tidy-stages.test.ts", "test/getter-reads.test.ts"], { weight: 2 })] : []),
       ...(mutRefs ? [job("the `&mut` matrix's sample", ["bun", "test", "test/mut-ref-matrix.test.ts"])] : []),
       // The slices: 64 and 43 batches in 4 parts, 119-145 s and 63-119 s
       // alone at a load of 14-20; the corpus's every case (2026-11-05).
@@ -157,54 +166,93 @@ export function jobs({ all, changed, branch, added, extra, cores }: Scope): { jo
               // The rows a change names: a removal's run whole, some 28,000
               // of the matrix's, about 4 min alone and twice that beside the
               // rest (#856).
+              // Each `parts` processes at once, throughout (m6-lily, #857).
               job(of === "rows" ? "the rows the change names" : runs[of][0].name, ["bun", "scripts/iteratorSlice.ts", "run", of, String(parts)], {
                 timeout: of === "rows" ? 1200 : 600,
+                weight: parts,
                 ci: `bun scripts/iteratorSlice.ts run ${of}`,
               }),
             ),
           ]
         : []),
-      ...(added.length > 0 ? [job("mutations the change adds", ["bun", "scripts/mutations.ts", ...new Set(added)])] : []),
+      ...(added.length > 0
+        ? [job("mutations the change adds", ["bun", "scripts/mutations.ts", `--jobs=${Math.min(4, half)}`, ...new Set(added)], { weight: Math.min(4, half) })]
+        : []),
       ...extra.map((file) => job(file, ["bun", "test", file])),
     ],
     // 53 s alone on the M3 Max (2026-11-05).
-    after: all ? [job("the browsers' test files", ["bun", "test", "--parallel", ...browsers], { timeout: 240, ci: "bun run test" })] : [],
+    after: all ? [job("the browsers' test files", ["bun", "test", "--parallel", ...browsers], { timeout: 240, weight: cores, ci: "bun run test" })] : [],
     shared,
   };
 }
 
-/** Each of `list` at once, each given the compiler just built: one that
- * builds its own, as each test file and fmt does, links it again, and
- * races the others. Each is said as it ends, against its usual. */
-function run(list: Job[], compiler: string) {
-  // The highest the load has been since the phase began, as the run's own
-  // jobs raise it: a load of 7 as one began was 53 a minute on (2026-11-05).
-  let scale = loadScale(loadavg()[0], availableParallelism());
-  const watching = setInterval(() => (scale = Math.max(scale, loadScale(loadavg()[0], availableParallelism()))), 5000);
-  const ran = Promise.all(
-    list.map(async ({ name, cmd, env, timeout: usual }) => {
-      const start = Date.now();
-      const p = Bun.spawn(cmd, {
-        cwd: root,
-        env: { ...process.env, RUST_JS_COMPILER: compiler, ...env },
-        stdout: "pipe",
-        stderr: "pipe",
-      });
-      let timeout = usual;
-      const stop = setInterval(() => {
-        timeout = Math.round(usual * scale);
-        if (Date.now() - start > timeout * 1000) p.kill();
-      }, 1000);
-      const [out, err] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()]);
-      const code = await p.exited;
-      clearInterval(stop);
-      const seconds = (Date.now() - start) / 1000;
-      const stopped = code !== 0 && seconds >= timeout ? `, stopped at its ${timeout} s (×${scale.toFixed(1)} for the load)` : "";
-      console.log(code === 0 ? `ok   ${timed(`check:fast ${name}`, seconds)}` : `FAIL ${name} (${seconds.toFixed(0)}s${stopped})`);
-      return { name, code, log: out + err };
-    }),
-  );
-  return ran.finally(() => clearInterval(watching));
+/** `list`'s jobs through a pool of the machine's `cores` (#857): each
+ * started once the cores it keeps busy, its `weight`, are free, the longest
+ * usual first, so the check's own jobs keep the load near the cores. All at
+ * once, they drove it to two to five times them, each ran slower and tests
+ * timed out that pass alone. One heavier than the cores runs alone. Each
+ * is given the compiler just built, one that builds its own, as each test
+ * file and fmt does, linking it again; and the scale its timeouts are at,
+ * `RUST_JS_LOAD_SCALE`, twice the cores' load at least, as a pool's job
+ * shares them. Each is said as it ends, against its usual. */
+function run(list: Job[], compiler: string, cores: number) {
+  // The highest the load has been since the phase began.
+  let scale = loadScale(loadavg()[0], cores);
+  const watching = setInterval(() => (scale = Math.max(scale, loadScale(loadavg()[0], cores))), 5000);
+  const usual = (name: string) => {
+    const before = (timings().filter((t) => t.step === `check:fast ${name}`)).slice(-10).map((t) => t.seconds);
+    return before.length > 0 ? median(before) : Number.POSITIVE_INFINITY;
+  };
+  const queue = [...list].sort((a, b) => usual(b.name) - usual(a.name));
+  let busy = 0;
+  let waiting: (() => void)[] = [];
+  const room = async (weight: number) => {
+    while (busy > 0 && busy + weight > cores) await new Promise<void>((wake) => waiting.push(wake));
+    busy += weight;
+  };
+  const freed = (weight: number) => {
+    busy -= weight;
+    const woken = waiting;
+    waiting = [];
+    for (const wake of woken) wake();
+  };
+  const ran: Promise<{ name: string; code: number; log: string }>[] = [];
+  const started = (async () => {
+    for (const { name, cmd, env, timeout: given, weight } of queue) {
+      await room(Math.min(weight, cores));
+      ran.push(
+        (async () => {
+          const start = Date.now();
+          const expected = Math.max(2, scale);
+          const p = Bun.spawn(cmd, {
+            cwd: root,
+            env: { ...process.env, RUST_JS_COMPILER: compiler, RUST_JS_LOAD_SCALE: String(expected), ...env },
+            stdout: "pipe",
+            stderr: "pipe",
+          });
+          // Its seconds, as the load scales them, and twice its own usual at
+          // least: under the pool the load stays near the cores, and the
+          // rows a change names, 50 min on 8 cores beside the rest, were
+          // stopped at 1,200 s × 2.3 where all at once ×3 had let them be.
+          const own = usual(name);
+          let timeout = given;
+          const stop = setInterval(() => {
+            timeout = Math.round(Math.max(given * scale, Number.isFinite(own) ? 2 * own : 0));
+            if (Date.now() - start > timeout * 1000) p.kill();
+          }, 1000);
+          const [out, err] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()]);
+          const code = await p.exited;
+          clearInterval(stop);
+          freed(Math.min(weight, cores));
+          const seconds = (Date.now() - start) / 1000;
+          const stopped = code !== 0 && seconds >= timeout ? `, stopped at its ${timeout} s (×${scale.toFixed(1)} for the load)` : "";
+          console.log(code === 0 ? `ok   ${timed(`check:fast ${name}`, seconds)}` : `FAIL ${name} (${seconds.toFixed(0)}s${stopped})`);
+          return { name, code, log: out + err };
+        })(),
+      );
+    }
+  })();
+  return started.then(() => Promise.all(ran)).finally(() => clearInterval(watching));
 }
 
 if (import.meta.main) {
@@ -291,7 +339,8 @@ if (import.meta.main) {
   console.log(timed("node bindings build", (Date.now() - binding) / 1000));
 
   const check = jobs({ all, changed, branch, added, extra, cores: availableParallelism() });
-  const results = [...(await run(check.jobs, compiler)), ...(await run(check.after, compiler))];
+  const cores = availableParallelism();
+  const results = [...(await run(check.jobs, compiler, cores)), ...(await run(check.after, compiler, cores))];
   const failed = results.filter((r) => r.code !== 0);
   for (const { name, log } of failed) console.log(`\n── ${name} ──\n${log.slice(-3000)}`);
   // From its start, its build too.

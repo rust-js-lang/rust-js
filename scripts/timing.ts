@@ -73,9 +73,15 @@ export function loadScale(load: number, cores: number): number {
   return Math.min(3, Math.max(1, load / cores));
 }
 
-/** `ms` as long as this machine's load makes it, `loadScale` of it now. */
+/** `ms` as long as this machine's load makes it: `loadScale` of it now,
+ * or, of a job of check:fast's, the scale its pool runs it at
+ * (`RUST_JS_LOAD_SCALE`), whichever is more. A test file's timeouts are
+ * read as it starts, before the jobs beside it raise the load, so the load
+ * then said about ×1, and a 60 s test failed at 63 s (#857). */
 export function underLoad(ms: number): number {
-  return Math.round(ms * loadScale(loadavg()[0], availableParallelism()));
+  const given = Number(process.env.RUST_JS_LOAD_SCALE);
+  const now = loadScale(loadavg()[0], availableParallelism());
+  return Math.round(ms * Math.max(now, given >= 1 ? given : 1));
 }
 
 /** `seconds` against the step's last ten runs: `38 s (usual 36 s)`, and a

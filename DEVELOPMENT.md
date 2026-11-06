@@ -374,6 +374,7 @@ sees what kind of fix pays.
 |---|---|---|---|
 | macOS's scan off for the app that runs the commands | 300 ms per new binary, 6 s for 20 | 2.5 ms each, 0.05 s for 20 | Exempted the binary just below `launchd` in Developer Tools (the M1's corpus went from about 10.5 min to 144 s) |
 | `test/tidy-stages.test.ts` (#808) | 109 s alone; timed out at 60 s under load | 31–38 s | Each case's variants compiled at once, and one folder per case |
+| `check:fast --all`'s jobs through a pool of the cores (#857) | 3,530 s on the M1's 8 cores, its jobs all at once, a load of 17–19, a test timed out at 180 s; corpus parts 9–13 min, the matrix's slice 11–12 min | 2,877 s and 3,390 s, twice, no test timed out, a load near the cores; corpus parts 2.3–2.6 min, the matrix's slice 2.6 min, the conformance table's 1.6 min, every other test file 7.7 min | `run()` starts each job once the cores it keeps busy, its `weight`, are free, the longest usual first; each job gets `RUST_JS_LOAD_SCALE`, which `underLoad` reads in place of the load as a file starts; a job's cap is twice its usual at least |
 | `architecture.test.ts`'s "each owner and question" (#832) | 21–30 s under load; timed out at 30 s | 0.27 s | One pass over the source to find the defined items, instead of one regex per name |
 | Both corpus builds, default and `RUST_JS_LIBRARIES=all` | about 7 min, one after the other (8 cores) | about 4 min | Run as one set of parts |
 | A gate before a push (m6-lily's) | about 14.5 min, its steps one after another, mutations `--jobs=4` | 12.2 min with nearly four times the mutations | `check:fast`, rustc's tests, the suites and mutations at once after the build, mutations `--jobs=10 --tests=12` |
@@ -554,6 +555,7 @@ checked:
 
 | Step | What it costs | What would fix it |
 |---|---|---|
+| `check:fast --all`'s rows the change names, `bun scripts/iteratorSlice.ts run rows` (#818, #857) | 43–55 min on the M1's 8 cores in 4 parts, the whole tail of `--all` once the pool ran the rest in 13 min (2026-11-06); its budget, 16,000 matrix rows and 5,000 of the table's, is sized for 12 cores, about 5 min there | The rows budget should scale with the machine's cores, and the job take every core once it's alone (m6-lily's `scripts/iteratorRows.ts`) |
 | Every mutation on the Mac, `bun run nightly mutations` | 65 min for 8,047 on the M3 Max (2026-10-30), the CPU 86% busy and its 16 GB full: 6.6 GB compressed, 1.3 GB swapped, 35% of the CPU the system's, each mutant's run starting bun, rust-js and Node | More memory, or a mutant's tests run in a process kept warm, as `bun test` with its compiler swapped, not started again for each |
 | `bun scripts/mutations.ts --changed=origin/main` of a large change | More than five minutes even in three shards, so it's left to CI | Shards picked to fit, by each mutation's usual time |
 | Two or more agents' worktrees | A full `cargo build` and corpus each | A shared build cache across worktrees |
