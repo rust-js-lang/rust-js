@@ -500,6 +500,12 @@ checked:
   easy to miss. Compare `git rev-parse HEAD` with `origin/main` after a
   `git fetch` before removing the worktree that made the change; its
   branch stays, but the next step starts from the wrong place.
+- **A matrix row the change names fails, and the change can't explain
+  it:** build `main` in a worktree of its own and run the row's batch
+  there, narrowed to the fewest rows that keep it wrong (the gate's rows
+  are rebatched, so a row whose JS depends on its neighbours can fail that
+  the full run's batch hides, #850). Failing on `main` too, it's a wrong
+  answer of its own: file or fix it first, then land.
 - **Regenerate what's generated on a conflict**, never merge it by hand:
   `docs/readability.txt` with `BLESS=1 bun test test/readability.test.ts`
   (its shares are compared over the files it lists, so a case added is no

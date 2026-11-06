@@ -802,7 +802,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Some(IterMethod::Copied | IterMethod::Cloned) if self.is_its_source(output) => it,
             Some(IterMethod::Copied | IterMethod::Cloned) => match item {
-                Some(item) => self.copied_items(it, item, self.knows_its_length(output), span)?,
+                Some(item) => self.copied_items(it, item, output, span)?,
                 None => return Ok(None),
             },
             // Of its items as they come, which the helper steps (#179).
@@ -841,8 +841,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// copy of what each points at, once. Of an item that's a reference
     /// to a reference, `&&Fiber`, the reference, which a copy is itself,
     /// not what it points at, so the items as they are. Of one that knows
-    /// its length, `ends`, a map that knows it too, `$mapEnds` (#387).
-    fn copied_items(&mut self, it: Expr, item: Ty<'tcx>, ends: bool, span: Span) -> R<Expr> {
+    /// its back or its length, `output`, a map that knows them too,
+    /// `$mapEnds`, as a map is (#387): a chain stepped from its back knows
+    /// no length, and `.map` has no back to step (#850).
+    fn copied_items(&mut self, it: Expr, item: Ty<'tcx>, output: Ty<'tcx>, span: Span) -> R<Expr> {
+        let ends = self.knows_its_back(output) || self.knows_its_length(output);
         let x = self.fresh("item");
         let mut body = Vec::new();
         let pointee = match *item.kind() {

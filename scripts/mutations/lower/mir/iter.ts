@@ -25,9 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `copied()` that knows its length, of items copied as it steps, is JS's `map` of them, whose `len()` throws (#387)",
     file: "src/lower/mir/iter.rs",
-    find: "                Some(item) => self.copied_items(it, item, self.knows_its_length(output), span)?,\n",
-    replace:
-      "                Some(item) => self.copied_items(it, item, false, span)?,\n",
+    find: "        let ends = self.knows_its_back(output) || self.knows_its_length(output);\n",
+    replace: "        let ends = self.knows_its_back(output) || false;\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_given_len.rs$"],
   },
   {
@@ -716,5 +715,13 @@ export const mutations: Mutation[] = [
     find: "            true => made.in_place(),\n            false => made,\n",
     replace: "            true => made,\n            false => made,\n",
     tests: ["test/diagnostics.test.ts", "-t", "held rev of the crate"],
+  },
+  {
+    name: "copied-items-mapped-backless",
+    breaks: "a `cloned()` of a chain the crate steps from its back, which knows no length, is JS's `map` of its clones, which has no back, and the back step throws (#850)",
+    file: "src/lower/mir/iter.rs",
+    find: "        let ends = self.knows_its_back(output) || self.knows_its_length(output);\n",
+    replace: "        let ends = false || self.knows_its_length(output);\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_of_a_chain_stepped_from_its_back.rs$"],
   },
 ];

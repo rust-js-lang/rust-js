@@ -275,3 +275,14 @@ item's drop, the source's own drop, a closure's capture.
   by value closes its source inside a step, so its drop's panic drops what
   rustc leaks) and #846 (a closure's captures stop dropping at the first
   whose drop panics, both builds).
+
+**What rebatching finds (#850).** A row the gate runs is judged in a batch
+of the rows it picked, not the full run's, so a row whose JS depends on
+the rest of its crate, a type made stepped from its back by another
+function, can run otherwise there. That's a wrong answer the full run's
+batch happened to hide: `vec iter | chain.cloned | rfold` beside `chain.map
+| rfold` threw on `main` (#850). A failing row the change can't explain is
+bisected on a clean build of `main` first (`main`'s worktree, built), its
+batch narrowed to the fewest rows that keep it wrong; one that fails there
+too is filed or fixed before the change lands.
+

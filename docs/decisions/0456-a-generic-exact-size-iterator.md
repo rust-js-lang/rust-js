@@ -96,3 +96,23 @@ ADR 0262's case: C, Rust's behavior preserved. Held by
 given as they are and not, lent, and of structs copied as it steps) and
 the mutations `given-copied-lengthless` and
 `copied-items-mapped-lengthless`.
+
+## Amendment: a `copied()` that knows its back is made knowing it (#850)
+
+ADR 0262's case: results change, so Rust's behavior is kept. A
+`cloned()` of items with a `Clone` of their own, a map of each clone, was
+`$mapEnds` only where its source knew its length, as #387 asked. A chain
+the crate steps from its back elsewhere is made knowing its back
+(`$lazyChain`) but knows no length, so its `cloned()` was `.map(clone)`,
+`$Steps`' map with no back, while `knows_its_back` said the copy knows its
+back, as a copy is its source (ADR 0480): `$foldBack` called its missing
+`back` and threw where Rust folds it. A copy now asks what a map asks,
+its back or its length (`copied_items`' `ends`). Found by #818's rows
+beside `vec iter | chain.map | rfold`, the chain's type made stepped from
+its back by it; alone, the row is refused. Corpus
+`cloned_of_a_chain_stepped_from_its_back`; mutation
+`copied-items-mapped-backless`, and `copied-items-mapped-lengthless`
+retargeted. That the back step trusts the type, not the value's form, is
+#851's: one per-value fact for maps, chains, zips, enumerations, flattens
+and copies, as #814 made for counted adapters.
+
