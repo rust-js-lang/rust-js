@@ -361,6 +361,23 @@ The loop is part of the product: a slow step is paid on every change, by
 every agent at once. Noticing one and making it faster is everyone's job,
 as a wrong answer is.
 
+
+**Look for speed-ups as you go; it's part of every task.** Each one
+speeds up every agent on every machine from then on. If a step makes you
+wait, notice it: time it, find out why, and fix it in the same task when
+the fix is small. Otherwise list it as a slow spot below. When you speed
+something up, add a row here with its before and after, so the next agent
+sees what kind of fix pays.
+
+| Speed-up | Before | After | How |
+|---|---|---|---|
+| macOS's scan off for the app that runs the commands | 300 ms per new binary, 6 s for 20 | 2.5 ms each, 0.05 s for 20 | Exempted the binary just below `launchd` in Developer Tools (the M1's corpus went from about 10.5 min to 144 s) |
+| `test/tidy-stages.test.ts` (#808) | 109 s alone; timed out at 60 s under load | 31–38 s | Each case's variants compiled at once, and one folder per case |
+| `architecture.test.ts`'s "each owner and question" (#832) | 21–30 s under load; timed out at 30 s | 0.27 s | One pass over the source to find the defined items, instead of one regex per name |
+| Both corpus builds, default and `RUST_JS_LIBRARIES=all` | about 7 min, one after the other (8 cores) | about 4 min | Run as one set of parts |
+| A gate before a push (m6-lily's) | about 14.5 min, its steps one after another, mutations `--jobs=4` | 12.2 min with nearly four times the mutations | `check:fast`, rustc's tests, the suites and mutations at once after the build, mutations `--jobs=10 --tests=12` |
+| One agent per machine | load 50–60 on 12 cores, each step 3–5× slower | each step at its usual | Several agents on one machine stopped |
+
 - **Every step runs on all the machine's cores.** The Macs here have 8 to
   12 cores, and an agent's time is mostly waiting on a step, so a step
   that runs on one core while the rest sit idle is wasted development time.
