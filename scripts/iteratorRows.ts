@@ -6,8 +6,9 @@
 //
 // Each hunk the change makes to the iterators' code (`iteratorPaths`, but
 // the runtime's generated module and the tests), with the head of the
-// function it's in, names adapters and consumers: in code, its identifiers;
-// in a comment, what it quotes in backticks. A name is one the generator
+// function it's in, names adapters and consumers: in its code, never its
+// comments, its identifiers name adapters, and what it calls, or names by
+// path, consumers (#849). A name is one the generator
 // gives its adapters and consumers, folded onto an identifier's words
 // (`$taking`, `StepBy`, `next_back`). The rows of each adapter a hunk names
 // run, whatever their consumer; of a hunk that names none, those of each
@@ -61,17 +62,25 @@ const words = (identifier: string) =>
 
 /** Whether `name`'s words are some of `identifier`'s, one after another,
  * each as it's inflected: `take` of `taking`, `fuse` of `fused`. */
-function names(identifier: string[], name: string[]): boolean {
+function names(identifier: string[], name: string[], first = false): boolean {
   const stem = (word: string) => (word.length > 3 && word.endsWith("e") ? word.slice(0, -1) : word);
-  return identifier.some((_, at) => name.every((word, i) => identifier[at + i]?.startsWith(stem(word))));
+  return identifier.some((_, at) => (!first || at === 0) && name.every((word, i) => identifier[at + i]?.startsWith(stem(word))));
 }
 
-/** The identifiers a line says: of a comment, what it quotes; of code,
- * each, but the language's own words. */
+/** The identifiers a line of code says, but the language's own words; a
+ * comment's say none: its prose and what it quotes name what the code
+ * near it is about, `for` and `len` and `none`, not what it runs (#849). */
 function identifiers(line: string): string[] {
-  const comment = /^\s*(\/\/|\/\*|\*)/.test(line);
-  const said = comment ? [...line.matchAll(/`([^`]+)`/g)].map((m) => m[1]).join(" ") : line;
-  return [...said.matchAll(/\$?[A-Za-z_][A-Za-z0-9_$]*/g)].map((m) => m[0]).filter((id) => !keywords.has(id));
+  if (/^\s*(\/\/|\/\*|\*)/.test(line)) return [];
+  return [...line.matchAll(/\$?[A-Za-z_][A-Za-z0-9_$]*/g)].map((m) => m[0]).filter((id) => !keywords.has(id));
+}
+
+/** The steps a line of code calls or names by path, `it.count(` or
+ * `IterMethod::Count`: what names a consumer, where a variable of its name,
+ * `count`, a size's, doesn't (#849). */
+function steps(line: string): string[] {
+  if (/^\s*(\/\/|\/\*|\*)/.test(line)) return [];
+  return [...line.matchAll(/(?:\.|::)([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(|\b)/g)].map((m) => m[1]);
 }
 
 export type Hunk = { file: string; at: number; added: string[]; removed: string[]; head: string; arm?: string };
@@ -143,14 +152,23 @@ const escaped = (name: string) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  * generic code's (`$given`); whether it's in what every adapter shares;
  * and whether it takes away more than it puts back. */
 export function named(hunk: Hunk, adapters: Set<string>, consumers: Set<string>) {
-  const ids = [...hunk.added, ...hunk.removed, hunk.head, hunk.arm ?? ""].flatMap(identifiers);
-  const idWords = ids.map(words);
-  const of = (list: Set<string>, types: boolean) =>
-    [...list].filter((name) => ids.some((id, i) => (types || !/^[A-Z]/.test(id)) && names(idWords[i], words(name)))).sort();
-  const a = of(adapters, true);
+  const lines = [...hunk.added, ...hunk.removed];
+  const ids = [...lines, hunk.head, hunk.arm ?? ""].flatMap(identifiers);
+  // A consumer's name, of what's called or named by path, and of the name
+  // of the function and the arm the hunk is in, never a variable's or a
+  // parameter's.
+  const named = /\b(?:fn|function)\s+(\$?\w+)/.exec(hunk.head)?.[1];
+  const called = [...lines.flatMap(steps), ...(named === undefined ? [] : [named]), ...identifiers(hunk.arm ?? "")];
+  // Of a consumer, from its first word: `nthBack` is `nth_back`'s, `$roomFor`
+  // no `for`'s.
+  const of = (list: Set<string>, from: string[], first: boolean) => {
+    const fromWords = from.map(words);
+    return [...list].filter((name) => from.some((_, i) => names(fromWords[i], words(name), first))).sort();
+  };
+  const a = of(adapters, ids, false);
   return {
     adapters: a,
-    consumers: a.length > 0 ? [] : of(consumers, false),
+    consumers: a.length > 0 ? [] : of(consumers, called, true),
     generic: ids.some((id) => id.startsWith("$given")),
     shared: shared.files.includes(hunk.file) || identifiers(hunk.head).some((id) => shared.functions.includes(id)),
     removes: hunk.removed.filter((line) => line.trim() !== "").length > hunk.added.filter((line) => line.trim() !== "").length,

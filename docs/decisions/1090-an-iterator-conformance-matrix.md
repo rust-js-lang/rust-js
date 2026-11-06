@@ -204,9 +204,14 @@ change names (`bun scripts/iteratorSlice.ts run rows`, the picking
   with the head of the function it's in and the arm of a `match` it's in
   (whose pattern names what its body is of, though that line is the same,
   #850's `IterMethod::Cloned`), names the generator's adapters
-  and consumers: in code, its identifiers, their words inflected
-  (`$taking` is `take`, `StepBy` is `step_by`); in a comment, what it
-  quotes in backticks, never its prose. The runtime's generated module
+  and consumers, of its code, never its comments: adapters by its
+  identifiers, their words inflected (`$taking` is `take`, `StepBy` is
+  `step_by`); consumers by what it calls or names by path, `.nthBack(` or
+  `IterMethod::Count`, and its function's name, from their first word,
+  never a variable's or a parameter's (#849: a hunk to capacity.js named
+  `count` and `for` of its sizes' variables and its comments, some 17,000
+  rows, and took 1,800 s; now it names none and runs `pairs`, each
+  destination among them). The runtime's generated module
   and the tests name nothing. The names are the generator's own lists, so
   there is no second catalog; picking is no compiler decision, so names
   are enough (m6-react's decision, for the user).

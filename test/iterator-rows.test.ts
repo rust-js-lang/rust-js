@@ -11,20 +11,21 @@ const adapters = new Set(["map", "filter", "skip", "take", "fuse", "enumerate", 
 const consumers = new Set(["fold", "rfold", "any", "all", "count", "nth", "for", "nth_back"]);
 const hunk = (added: string[], removed: string[] = [], head = "", file = "src/runtime/back_steps.js"): Hunk => ({ file, at: 1, added, removed, head });
 
-test("a hunk names the adapters its identifiers and quotes are of, as they're inflected", () => {
+test("a hunk names the adapters its code's identifiers are of, as they're inflected", () => {
   expect(named(hunk(["  const taking = $taking(iter, n, drop);"]), adapters, consumers).adapters).toEqual(["take"]);
   expect(named(hunk(["    Some(IterMethod::StepBy) => self.stepped_by(it),"]), adapters, consumers).adapters).toEqual(["step_by"]);
-  expect(named(hunk(["  // what a `fuse()` gives, enumerated"]), adapters, consumers).adapters).toEqual(["fuse"]);
   expect(named(hunk(["", "  if (it.ownNthBack) stepped.ownNthBack = true;"], [], "function $stepByEnds(it, step, drop) {"), adapters, consumers).adapters).toEqual(["step_by"]);
 });
 
-test("a comment's prose names nothing, nor does the language's own `for`", () => {
+test("a comment names nothing, nor does the language's own `for`", () => {
   expect(named(hunk(["  // any of them, all taken, each one mapped"]), adapters, consumers)).toMatchObject({ adapters: [], consumers: [] });
+  expect(named(hunk(["  // what a `fuse()` gives, `rfold`ed"]), adapters, consumers)).toMatchObject({ adapters: [], consumers: [] });
   expect(named(hunk(["  for (let k = 0; k < n; k++) at = it.next();"]), adapters, consumers).consumers).not.toContain("for");
 });
 
 test("a hunk that names no adapter names its consumers", () => {
-  expect(named(hunk(["  const folded = it.rfold(init, f);"]), adapters, consumers).consumers).toEqual(["fold", "rfold"]);
+  expect(named(hunk(["  const folded = it.rfold(init, f);"]), adapters, consumers).consumers).toEqual(["rfold"]);
+  expect(named(hunk(["        Some(IterMethod::Count) => self.counted(it),"]), adapters, consumers).consumers).toEqual(["count"]);
   expect(named(hunk(["  const step = it.nthBack(k);"]), adapters, consumers).consumers).toEqual(["nth", "nth_back"]);
   expect(named(hunk(["  $taking(it).rfold(init, f);"]), adapters, consumers)).toMatchObject({ adapters: ["take"], consumers: [] });
 });
@@ -68,5 +69,27 @@ test("a hunk names the adapters of the match arm it's in", () => {
   };
   expect(named(hunk, adapters, new Set(["fold"])).adapters).toEqual(["cloned", "copied"]);
   expect(enclosingArm(lines, 1)).toBeUndefined();
+});
+
+// #849's hunk to a runtime helper what collects share: its comment's words
+// and a size's `count` name no consumer, so it runs `pairs` of all of them,
+// not each row of `count` and `for`.
+test("a helper's hunk names no consumer by its variables or comments", () => {
+  const capacity: Hunk = {
+    file: "src/runtime/capacity.js",
+    at: 41,
+    added: [
+      "// The least capacity std's `Vec` of items of `size` bytes grows to,",
+      "// `MIN_NON_ZERO_CAP` (raw_vec/mod.rs `min_non_zero_cap`).",
+      "function $leastCapacity(size) {",
+      "  return size === 1 ? 8 : size <= 1024 ? 4 : 1;",
+      "}",
+    ],
+    removed: [],
+    head: "function $roomFor(count, size) {",
+  };
+  expect(named(capacity, adapters, consumers)).toMatchObject({ adapters: [], consumers: [] });
+  const counted = hunk(["  const count = $count(it, drop);", "  for (let k = 0; k < count; k++) at = $stepOf(it);"]);
+  expect(named(counted, adapters, consumers).consumers).toEqual([]);
 });
 
