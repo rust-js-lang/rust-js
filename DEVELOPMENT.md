@@ -377,6 +377,7 @@ sees what kind of fix pays.
 | Both corpus builds, default and `RUST_JS_LIBRARIES=all` | about 7 min, one after the other (8 cores) | about 4 min | Run as one set of parts |
 | A gate before a push (m6-lily's) | about 14.5 min, its steps one after another, mutations `--jobs=4` | 12.2 min with nearly four times the mutations | `check:fast`, rustc's tests, the suites and mutations at once after the build, mutations `--jobs=10 --tests=12` |
 | One agent per machine | load 50–60 on 12 cores, each step 3–5× slower | each step at its usual | Several agents on one machine stopped |
+| The iterator matrix and conformance rows a change touches (m6-lily, #834) | a full `ITERATOR_MATRIX=all` run, about 25 min on 12 parts | about 2 min for every batch with a `step_by` row (505 batches, 17,367 rows) | Only the batches whose rows touch the changed adapters, whole batches so each row is judged as in a full run, native and both builds 12-wide (the prototype of #818) |
 
 - **Every step runs on all the machine's cores.** The Macs here have 8 to
   12 cores, and an agent's time is mostly waiting on a step, so a step
@@ -464,6 +465,7 @@ symptom with this table. When you hit a new kind of stall, add a row.
 | Everything slows for minutes | A whole-disk search (`find /`) | Search only where Cargo keeps sources (see above). |
 | A test file times out at its deadline only under load (`test/tidy-stages`, 109 s alone) | Its cases compiled one after another inside one test | Compile each case's variants at once, and share one folder per case (#808: 109 s became 31–38 s). |
 | A mutation run takes hours | An empty name list, often from zsh not splitting `$VAR` into words, runs every mutation (8,000+) | Read names from a file, and stop with an error when the list is empty. |
+| A sweep's results can't be trusted | A shared input, such as `runtime/index.js` or the compiler, was swapped while the sweep ran against it | Never change what a running sweep reads. Probe in a copy of the worktree, or wait for the sweep to finish, and rerun it if it overlapped. |
 | A session restart, and all its agents stop | The host app was restarted or updated; agents' background jobs die with it | Commit WIP often. After a restart, check each worktree, clear stale gate entries and locks, and resume each agent with its hand-off. |
 
 **Good practice:**
