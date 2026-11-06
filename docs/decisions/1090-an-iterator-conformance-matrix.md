@@ -201,7 +201,9 @@ change names (`bun scripts/iteratorSlice.ts run rows`, the picking
 `scripts/iteratorRows.ts`'):
 
 - **What a hunk names.** Each hunk the change makes to `iteratorPaths`,
-  with the head of the function it's in, names the generator's adapters
+  with the head of the function it's in and the arm of a `match` it's in
+  (whose pattern names what its body is of, though that line is the same,
+  #850's `IterMethod::Cloned`), names the generator's adapters
   and consumers: in code, its identifiers, their words inflected
   (`$taking` is `take`, `StepBy` is `step_by`); in a comment, what it
   quotes in backticks, never its prose. The runtime's generated module

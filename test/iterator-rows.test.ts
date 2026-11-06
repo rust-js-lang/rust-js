@@ -5,9 +5,9 @@
 
 import { expect, test } from "bun:test";
 
-import { named, pattern, type Hunk } from "../scripts/iteratorRows";
+import { enclosingArm, named, pattern, type Hunk } from "../scripts/iteratorRows";
 
-const adapters = new Set(["map", "filter", "skip", "take", "fuse", "enumerate", "chain", "rev", "step_by", "zip", "take_while"]);
+const adapters = new Set(["map", "filter", "skip", "take", "fuse", "enumerate", "chain", "rev", "step_by", "zip", "take_while", "copied", "cloned"]);
 const consumers = new Set(["fold", "rfold", "any", "all", "count", "nth", "for", "nth_back"]);
 const hunk = (added: string[], removed: string[] = [], head = "", file = "src/runtime/back_steps.js"): Hunk => ({ file, at: 1, added, removed, head });
 
@@ -43,3 +43,30 @@ test("a name's rows are those whose chain has it, or whose consumer it begins", 
   expect(rfold.test("vec | map | rfold holding | none") && !rfold.test("vec | map | fold | none")).toBe(true);
   expect(pattern(new Set(), new Set(), true)!.test("generic vec | - | fold | none")).toBe(true);
 });
+
+// #850's hunk changed only the arm's body: what the arm matches, though that
+// line is the same, names its adapters.
+test("a hunk names the adapters of the match arm it's in", () => {
+  const lines = [
+    "    fn std_method_called(&mut self, it: Expr) -> R<Option<Expr>> {",
+    "        Ok(Some(match std_method {",
+    "            Some(IterMethod::Copied | IterMethod::Cloned) if self.is_its_source(output) => it,",
+    "            Some(IterMethod::Copied | IterMethod::Cloned) => match item {",
+    "                Some(item) => self.copied_items(it, item, output, span)?,",
+    "                None => return Ok(None),",
+    "            },",
+  ];
+  const arm = enclosingArm(lines, 4);
+  expect(arm).toBe(lines[3]);
+  const hunk: Hunk = {
+    file: "src/lower/mir/iter.rs",
+    at: 5,
+    added: [lines[4]],
+    removed: ["                Some(item) => self.copied_items(it, item, self.knows_its_length(output), span)?,"],
+    head: lines[0],
+    arm,
+  };
+  expect(named(hunk, adapters, new Set(["fold"])).adapters).toEqual(["cloned", "copied"]);
+  expect(enclosingArm(lines, 1)).toBeUndefined();
+});
+

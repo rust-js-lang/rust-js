@@ -72,11 +72,30 @@ function identifiers(line: string): string[] {
   return [...said.matchAll(/\$?[A-Za-z_][A-Za-z0-9_$]*/g)].map((m) => m[0]).filter((id) => !keywords.has(id));
 }
 
-export type Hunk = { file: string; at: number; added: string[]; removed: string[]; head: string };
+export type Hunk = { file: string; at: number; added: string[]; removed: string[]; head: string; arm?: string };
+
+/** The arm of a `match` the line at `at` of `lines` is in, the nearest
+ * above it of less indentation that has a `=>`: `Some(IterMethod::Copied |
+ * IterMethod::Cloned) => match item {` of what a change to its body names,
+ * though that line is the same (#850). */
+export function enclosingArm(lines: string[], at: number): string | undefined {
+  const indent = (line: string) => line.length - line.trimStart().length;
+  let below = indent(lines[at] ?? "");
+  for (let i = at - 1; i >= 0; i--) {
+    const line = lines[i];
+    if (line.trim() === "") continue;
+    if (/^\s*(pub(\([^)]*\))?\s+)?(const\s+)?fn\s/.test(line)) return undefined;
+    if (indent(line) < below) {
+      if (line.includes("=>")) return line;
+      below = indent(line);
+    }
+  }
+  return undefined;
+}
 
 /** The change's hunks to the iterators' code from `base` to `head` (the
  * working tree where it's none), each with the head of the function it's
- * in. */
+ * in and the arm of a `match` it's in. */
 function hunks(base: string, head: string | undefined, files: string[]): Hunk[] {
   const range = head === undefined ? [base] : [base, head];
   const diff = Bun.spawnSync(["git", "diff", "-U0", ...range, "--", ...files], { cwd: root }).stdout.toString();
@@ -106,6 +125,7 @@ function hunks(base: string, head: string | undefined, files: string[]): Hunk[] 
     let at = Math.min(hunk.at, lines.length) - 1;
     while (at > 0 && !isHead(lines[at])) at--;
     if (isHead(lines[at])) hunk.head = lines[at];
+    hunk.arm = enclosingArm(lines, Math.min(hunk.at, lines.length) - 1);
   }
   return out.filter((hunk) => !unnamed(hunk.file));
 }
@@ -121,7 +141,7 @@ const escaped = (name: string) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  * generic code's (`$given`); whether it's in what every adapter shares;
  * and whether it takes away more than it puts back. */
 export function named(hunk: Hunk, adapters: Set<string>, consumers: Set<string>) {
-  const ids = [...hunk.added, ...hunk.removed, hunk.head].flatMap(identifiers);
+  const ids = [...hunk.added, ...hunk.removed, hunk.head, hunk.arm ?? ""].flatMap(identifiers);
   const idWords = ids.map(words);
   const of = (list: Set<string>, types: boolean) =>
     [...list].filter((name) => ids.some((id, i) => (types || !/^[A-Z]/.test(id)) && names(idWords[i], words(name)))).sort();
