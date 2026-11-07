@@ -31,13 +31,7 @@ function $foldDropping(it, init, f, unwind, ends) {
 // fold it runs, which drops it before what it has left, then what's left of
 // `it`, closed. The value's own drop is its caller's, after (#734).
 function $consume(it, step, init, f, unwind, ends) {
-  let dropped = false;
-  const once = () => {
-    if (!dropped) {
-      dropped = true;
-      ends();
-    }
-  };
+  const once = $onceOf(ends);
   // Held, so what it steps closes as `$consume` closes it, after `ends`, not
   // as it's stepped to its end, a `step_by`'s or a `take`'s source's: std's
   // fold drops `self` whole after `f` (ADR 0570's statement end).

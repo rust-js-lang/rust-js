@@ -136,26 +136,11 @@ function $closing(it, drop, slices = true) {
 // `skip_while`'s, whose fold is its `try_fold`, dropped with it after what it
 // steps.
 function $holding(it, drop, moved) {
-  let dropped = false;
-  const own = () => {
-    if (!dropped) {
-      dropped = true;
-      drop();
-    }
-  };
+  const own = $onceOf(drop);
   // What it steps, then its function, though the first's drop throws, a
   // panic, as `Map`'s drop glue drops `iter`, then `f` (#762).
   const holding = $closing(it, (it) => $inTurn(() => it.return(), own));
   if (moved === undefined) return holding;
-  const once = (ends) => {
-    let done = false;
-    return () => {
-      if (!done) {
-        done = true;
-        ends?.();
-      }
-    };
-  };
   // Its function and what drops with `f`, `ends`, in the order its fold
   // drops them, given to what it steps to drop as its fold ends; dropped
   // here as it's closed where that didn't, once.
@@ -164,10 +149,10 @@ function $holding(it, drop, moved) {
   // `step_by`'s source's (#734).
   const moving = (by) => (init, f, unwind, ends) => {
     holding.hold?.();
-    const outer = once(ends);
+    const outer = $onceOf(ends);
     if (moved === "alone") return by(init, f, unwind, outer, own);
     const both = moved === "before" ? () => $closedAfter(own, outer) : () => $closedAfter(outer, own);
-    return by(init, f, unwind, once(both));
+    return by(init, f, unwind, $onceOf(both));
   };
   const fold = holding.fold;
   holding.fold = moving((init, f, unwind, ends, alone) => {

@@ -2353,13 +2353,7 @@ export function $foldDropping(it, init, f, unwind, ends) {
 // fold it runs, which drops it before what it has left, then what's left of
 // `it`, closed. The value's own drop is its caller's, after (#734).
 export function $consume(it, step, init, f, unwind, ends) {
-  let dropped = false;
-  const once = () => {
-    if (!dropped) {
-      dropped = true;
-      ends();
-    }
-  };
+  const once = $onceOf(ends);
   // Held, so what it steps closes as `$consume` closes it, after `ends`, not
   // as it's stepped to its end, a `step_by`'s or a `take`'s source's: std's
   // fold drops `self` whole after `f` (ADR 0570's statement end).
@@ -2681,26 +2675,11 @@ export function $closing(it, drop, slices = true) {
 // `skip_while`'s, whose fold is its `try_fold`, dropped with it after what it
 // steps.
 export function $holding(it, drop, moved) {
-  let dropped = false;
-  const own = () => {
-    if (!dropped) {
-      dropped = true;
-      drop();
-    }
-  };
+  const own = $onceOf(drop);
   // What it steps, then its function, though the first's drop throws, a
   // panic, as `Map`'s drop glue drops `iter`, then `f` (#762).
   const holding = $closing(it, (it) => $inTurn(() => it.return(), own));
   if (moved === undefined) return holding;
-  const once = (ends) => {
-    let done = false;
-    return () => {
-      if (!done) {
-        done = true;
-        ends?.();
-      }
-    };
-  };
   // Its function and what drops with `f`, `ends`, in the order its fold
   // drops them, given to what it steps to drop as its fold ends; dropped
   // here as it's closed where that didn't, once.
@@ -2709,10 +2688,10 @@ export function $holding(it, drop, moved) {
   // `step_by`'s source's (#734).
   const moving = (by) => (init, f, unwind, ends) => {
     holding.hold?.();
-    const outer = once(ends);
+    const outer = $onceOf(ends);
     if (moved === "alone") return by(init, f, unwind, outer, own);
     const both = moved === "before" ? () => $closedAfter(own, outer) : () => $closedAfter(outer, own);
-    return by(init, f, unwind, once(both));
+    return by(init, f, unwind, $onceOf(both));
   };
   const fold = holding.fold;
   holding.fold = moving((init, f, unwind, ends, alone) => {

@@ -1300,3 +1300,12 @@ that state, not a closed flag.
 by closing.js's transitions alone") refuses a write of `$state`, any
 `$closed`, and a `closed = true` or `false` in a runtime file that makes an
 iterator, as well as in `closing.js` above its transitions.
+
+**Once is `$onceOf`'s.** `$holding` wrote its own "run this once" twice:
+for its function's drop, and as a `once(ends)` that, unlike `$onceOf`,
+made a function of no `ends` at all. `$consume` wrote a third. All three are
+`$onceOf` now. A `flat_map`'s fold, the one path given `$holding`'s `outer`
+of no `ends`, now gets `undefined` where it got a function that did
+nothing. Each fold it reaches runs the same either way: `$endsAfter`,
+`$foldBy`, `$foldDropping` and `$closedAfter` drop nothing for both.
+`holding-function-dropped-twice` is new.

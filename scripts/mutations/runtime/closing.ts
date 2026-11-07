@@ -332,4 +332,12 @@ export const mutations: Mutation[] = [
     replace: "    return it.last();\n",
     tests: ["test/corpus.test.ts", "-t", "^own_count_and_last_that_panic_drop_once.rs$"],
   },
+  {
+    name: "holding-function-dropped-twice",
+    breaks: "a `map`'s function with a destructor, moved into the fold it asks of what it steps and dropped there, is dropped again as the `map` is closed (#710, #870)",
+    file: "src/runtime/closing.js",
+    find: "  const own = $onceOf(drop);\n",
+    replace: "  const own = drop;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(fold_drops_moved_function_first|consumer_closure_dropped_first).rs$"],
+  },
 ];
