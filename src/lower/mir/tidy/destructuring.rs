@@ -400,7 +400,8 @@ pub(in crate::lower::mir) fn destructured_params(params: &mut [js::Pattern], bod
     }
 }
 
-/// A step into a value, `[1]` or `.name`.
+/// A step into a value, `[1]` or `.name`: a part, a tuple's or a
+/// pattern's item, never an item an index reads (`Known::Indexed`).
 #[derive(PartialEq)]
 pub(super) enum Step {
     At(usize),
@@ -412,8 +413,11 @@ pub(super) enum Step {
 pub(super) fn path(e: &Expr, name: &str) -> Option<Vec<Step>> {
     let (of, step) = match &e.kind {
         ExprKind::Var(v) if v == name => return Some(Vec::new()),
+        // An item Rust's index reads, `v[0]`, is no part (ADR 0598,
+        // amended).
         ExprKind::Index(of, index)
             if let ExprKind::Num(k) = index.kind
+                && !e.facts.has(js::Known::Indexed)
                 && k >= 0.0
                 && k.fract() == 0.0 =>
         {

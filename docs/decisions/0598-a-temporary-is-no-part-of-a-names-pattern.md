@@ -11,7 +11,8 @@ named as its part, are one destructuring". Amended (2026-10-28, the
 user's decision): a cast's `let` is a `const` as every `let` is, which
 supersedes "a cast's is the variable". Amended (2026-11-03, the user's
 decision, #534): `let`s side by side, each named as its field, stay
-`const`s side by side, alien-signals' `unlink` too.
+`const`s side by side, alien-signals' `unlink` too. Amended (2026-11-07): an item
+read by its index, `v[0]`, is no part a pattern takes.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: one pattern or two
 reads of the same properties, in the same order.
@@ -348,3 +349,23 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same reads in
 the same order. Held by corpus `tuple_match_item_destructured.rs`
 against native Rust and the mutations `destructured-items-left-apart`
 and `destructured-items-of-any-part`.
+
+## Amendment: an item read by its index is no part (2026-11-07)
+
+React's flushSegment (ReactFizzServer.js:6137) reads `const
+contentSegment = completedSegments[0];` past a guard that the array
+holds exactly one segment. Its port, `Rc::clone(&completed_segments
+.borrow()[0])` of a cell whose borrows are counted, printed `const
+[contentSegment] = $borrow(completedSegments);` once the ranges showed
+the index in bounds (#867) and it was read unchecked, `_5[0]` of MIR's
+temporary of the borrow: the destructuring took any `t[0]` of a
+temporary as a tuple's part. **An item Rust's index reads, a slice's or
+a `Vec`'s `Index::index` in bounds, is `Known::Indexed`
+(`Expr::indexed`, `mir::bounds`), and no part a pattern takes**: `const
+contentSegment = $borrow(completedSegments)[0];`, as written. A tuple's
+part of a temporary, `let (first, _) = pair(n);`, is `const [first] =
+pair(n);` as before. Case ([0262](0262-when-rust-and-js-disagree.md)):
+N, the one read of the same item. Held by corpus
+`an_index_is_no_pattern.rs` against native Rust, `test/lowering-parts
+.test.ts`, "an item read by its index is no pattern", run, and the
+mutations `index-in-bounds-a-part` and `indexed-item-a-part`.

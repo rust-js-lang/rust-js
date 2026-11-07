@@ -212,3 +212,57 @@ pub fn next(child: u32) -> [bool; 3] {
     [false, false, true],
   ]);
 });
+
+// React's flushSegment (ReactFizzServer.js) reads `const contentSegment =
+// completedSegments[0];` past a guard that the array holds one segment.
+// Its port, `Rc::clone(&completed_segments.borrow()[0])` of a cell whose
+// borrows are counted, reads MIR's temporary of the borrow, `_5[0]`, which
+// the ranges show in bounds: an item Rust's index reads, as written, never
+// a pattern, `const [contentSegment] = $borrow(completedSegments);`
+// (ADR 0598, amended). A tuple's part read of a temporary still is one.
+test("an item read by its index is no pattern", async () => {
+  const dir = fixture("index-no-pattern");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Boundary {
+    pub completed_segments: RefCell<Vec<Rc<String>>>,
+}
+
+pub fn content_segment(boundary: &Boundary) -> Rc<String> {
+    let completed_segments = &boundary.completed_segments;
+    if completed_segments.borrow().len() != 1 {
+        panic!("A previously unvisited boundary must have exactly one root segment.");
+    }
+    let content_segment = Rc::clone(&completed_segments.borrow()[0]);
+    content_segment
+}
+
+pub fn flushed(boundary: &Boundary, flush: &dyn Fn(&Boundary) -> usize) -> usize {
+    let held = boundary.completed_segments.borrow();
+    flush(boundary) + held.len()
+}
+
+fn pair(n: f64) -> (f64, f64) {
+    (n, n * 2.0)
+}
+
+pub fn first_of_pair(n: f64) -> f64 {
+    let (first, _) = pair(n);
+    first
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "manifest.json")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const contentSegment = $borrow(completedSegments)[0];\n  return contentSegment;\n");
+  expect(js).toContain("  const [first] = pair(n);\n");
+  const lib = await import(join(dir, "lib.js"));
+  const boundary = { completedSegments: ["root"] };
+  const flush = (b: typeof boundary) => lib.contentSegment(b).length;
+  expect([lib.flushed(boundary, flush), lib.contentSegment(boundary), lib.firstOfPair(3)]).toEqual([5, "root", 3]);
+  boundary.completedSegments.push("late");
+  expect(() => lib.contentSegment(boundary)).toThrow("exactly one root segment");
+});

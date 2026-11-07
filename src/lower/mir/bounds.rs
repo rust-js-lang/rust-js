@@ -123,7 +123,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let at = |index: &Expr| Expr::index(items.clone(), index.clone());
         let first = |index: &Expr| index.as_int() == Some(0);
         let (i, j) = match known {
-            Std::Index => return Ok(Value::Expr(at(&exprs[0]))),
+            Std::Index => return Ok(Value::Expr(Expr::indexed(items.clone(), exprs.remove(0)))),
             Std::Comb(Comb::Remove) => {
                 let i = exprs.remove(0);
                 // What it removed, where it's read.

@@ -663,6 +663,19 @@ impl Expr {
         Expr::new(ExprKind::Index(Box::new(object), Box::new(index)))
     }
 
+    /// `items[index]`, the item Rust's index reads, `v[i]`: an index, never
+    /// a part (`Known::Indexed`).
+    pub fn indexed(items: Expr, index: Expr) -> Expr {
+        let read = Expr::index(items, index);
+        match read.kind {
+            ExprKind::Index(..) => Expr {
+                facts: read.facts.with(Known::Indexed),
+                ..read
+            },
+            _ => read,
+        }
+    }
+
     pub fn array(items: Vec<Expr>) -> Expr {
         Expr::new(ExprKind::Array(items))
     }

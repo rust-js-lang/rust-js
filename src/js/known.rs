@@ -233,6 +233,12 @@ pub enum Known {
     /// Never a binding's `js::get(o, &1.0)`, which a getter may answer
     /// (#756).
     Part,
+    /// An item read by the index the program wrote, `v[i]`, a slice's or a
+    /// `Vec`'s `Index::index` the ranges show in bounds, read unchecked
+    /// (`Expr::indexed`, `mir::bounds`): one item, never a part a pattern
+    /// names, so tidy's destructuring reads it as written, `const first =
+    /// $borrow(cell)[0];`, never `const [first] = ..` (ADR 0598, amended).
+    Indexed,
     /// An iterator's value as `lower::iterators::value` wrote it, which only
     /// that module reads (ADR 1092, #730): a JS iterator of the value it
     /// steps, `$iterator(value, next, ..)` or `$given(value, ..)`.
