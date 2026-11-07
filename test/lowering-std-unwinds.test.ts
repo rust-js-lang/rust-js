@@ -198,3 +198,62 @@ pub fn clamped(x: Held, lo: Held, hi: Held) -> u32 {
   expect(body(flat, "heldLeast")).toMatch(/\$minOf\( ?a, b, .*, heldDrop_drop,? \)/);
   expect(body(flat, "clamped")).toMatch(/\$clampBy\( ?x, lo, hi, .*, undefined, heldDrop_drop,? ?\)/);
 });
+
+// #901: a heap's `pop`, `into_sorted_vec` and `from` are given the items'
+// drop where their comparison may panic, to drop what std's frame holds as
+// it unwinds; of an order that never panics, the call it always was.
+test("a heap's pop drops the top it took as a comparison unwinds, where one may", () => {
+  const flat = compiled(
+    "std-unwinds-heap",
+    `
+use std::cmp::Ordering;
+use std::collections::BinaryHeap;
+
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+pub struct Quiet(pub u32);
+
+impl Drop for Quiet {
+    fn drop(&mut self) {
+        self.0 = 0;
+    }
+}
+
+#[derive(PartialEq, Eq)]
+pub struct Loud(pub u32);
+
+impl PartialOrd for Loud {
+    fn partial_cmp(&self, other: &Loud) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Loud {
+    fn cmp(&self, other: &Loud) -> Ordering {
+        println!("cmp");
+        self.0.cmp(&other.0)
+    }
+}
+
+impl Drop for Loud {
+    fn drop(&mut self) {
+        self.0 = 0;
+    }
+}
+
+pub fn quiet(h: &mut BinaryHeap<Quiet>) -> u32 {
+    h.pop().map_or(0, |q| q.0)
+}
+
+pub fn loud(h: &mut BinaryHeap<Loud>) -> u32 {
+    h.pop().map_or(0, |q| q.0)
+}
+
+pub fn sorted(h: BinaryHeap<Loud>) -> usize {
+    h.into_sorted_vec().len()
+}
+`,
+  );
+  expect(body(flat, "quiet")).toMatch(/\$heapPop\(h, \(a, b\) => \$cmp\(a\[0\], b\[0\]\)\)/);
+  expect(body(flat, "loud")).toContain("$heapPop(h, loudOrd_cmp, false, loudDrop_drop)");
+  expect(body(flat, "sorted")).toContain("$heapSorted(h, loudOrd_cmp, loudDrop_drop)");
+});

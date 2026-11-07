@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "order-of-fields-unasked",
+    breaks: "a derived order of the crate's struct is taken never to panic, though a field's does: a heap of them leaks the top `pop` took as a comparison panics (#901)",
+    file: "src/lower/ordering.rs",
+    find: "            ty::Adt(adt, args) if self.is_rust_adt(adt.did()) => {\n                (adt.all_fields()).any(|f| self.order_may_panic_in(self.field_ty(f, args), seen))\n            }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^heap_sift_unwinds.rs$"],
+  },
+  {
+    name: "order-never-panics",
+    breaks: "a hand-written order that may panic is taken never to, so what std drops as it unwinds leaks (#901)",
+    file: "src/lower/ordering.rs",
+    find: "            _ if !impls.is_empty() => impls.iter().any(|&imp| self.impl_may_unwind(imp)),\n",
+    replace: "            _ if !impls.is_empty() => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^heap_sift_unwinds.rs$"],
+  },
+  {
     name: "max-first-against-second",
     breaks: "`max(a, b)` of a type with its own `Ord` asks `a` against `b`, where std's asks `b < a`: a comparison that prints says `cmp 1 2`, not `cmp 2 1` (#912)",
     file: "src/lower/ordering.rs",

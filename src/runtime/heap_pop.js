@@ -1,31 +1,19 @@
-
 // `BinaryHeap::pop`: `None` for an empty one, else its top, sifted out;
 // `Some` of it boxed, `boxed`, where it could look like `None` (ADR 0051).
-function $heapPop(heap, cmp, boxed) {
+// Of items with a destructor whose comparison may panic, `drop`: where the
+// sift's comparison throws, the top it took dropped, as std's `pop` drops
+// it as it unwinds (#901).
+function $heapPop(heap, cmp, boxed, drop) {
   if (heap.length === 0) {
     return undefined;
   }
   let top = heap.pop();
   if (heap.length > 0) {
     [top, heap[0]] = [heap[0], top];
-    const end = heap.length;
-    const item = heap[0];
-    let pos = 0;
-    let child = 1;
-    while (child <= end - 2) {
-      if (cmp(heap[child], heap[child + 1]) <= 0) {
-        child++;
-      }
-      heap[pos] = heap[child];
-      pos = child;
-      child = 2 * pos + 1;
-    }
-    if (child === end - 1) {
-      heap[pos] = heap[child];
-      pos = child;
-    }
-    heap[pos] = item;
-    $siftUp(heap, 0, pos, cmp);
+    $unwinds(
+      () => $siftDownToBottom(heap, cmp),
+      drop && (() => drop(top)),
+    );
   }
   return boxed ? $some(top) : top;
 }

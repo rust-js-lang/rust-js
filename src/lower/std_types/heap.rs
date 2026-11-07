@@ -71,9 +71,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let compare = self.cmp_fn(item, false, span)?;
         values.push(compare);
-        if op == HeapOp::Pop && boxed {
-            values.push(Expr::bool(true));
+        // What std's frame holds as a comparison unwinds, dropped then:
+        // `pop`'s top, `into_sorted_vec`'s and `from`'s items, of items with
+        // a destructor whose comparison may panic (#901).
+        let unwinding = match op {
+            HeapOp::Pop | HeapOp::IntoSorted | HeapOp::From if self.order_may_panic(item) => {
+                self.std_drop_function(item, span)?
+            }
+            _ => None,
+        };
+        if op == HeapOp::Pop && (boxed || unwinding.is_some()) {
+            values.push(Expr::bool(boxed));
         }
+        values.extend(unwinding);
         // What `retain` takes out, dropped as it's met (ADR 0098).
         if op == HeapOp::Retain {
             values.extend(self.std_drop_function(item, span)?);

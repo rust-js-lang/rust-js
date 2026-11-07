@@ -21,10 +21,6 @@ points:std 560,571,5593,5604
 plain 107177,107212,107450
 std 107177,107450
 
-#901 P0 (unwind): a BinaryHeap whose comparison panics in a sift loses one item and drops another twice: push, pop, append, extend, into_sorted_vec
-unwind:plain 1726-1729,1731-1732,1734-1739,1741-1742,1744-1745,1766-1769,1771-1772,1774-1785,1806-1809,1811-1812,1814-1815
-unwind:std 1726-1729,1731-1732,1734-1739,1741-1742,1744-1745,1766-1769,1771-1772,1774-1785,1806-1809,1811-1812,1814-1815
-
 #907 P0 (unwind): a stable sort's comparator is called as JS's Array.prototype.sort calls it, not as std's driftsort: another sequence of calls, and another order left when one panics
 unwind:plain 789-792,794-795,797-798,809-812,814-818,821-823,825,827-828,1084-1087,1089-1094
 unwind:std 789-792,794-795,797-798,809-812,814-818,821-823,825,827-828,1084-1087,1089-1094

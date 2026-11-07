@@ -25,6 +25,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.tcx.require_lang_item(LangItem::PartialOrd, DUMMY_SP)
     }
 
+    /// Whether comparing two `ty`s, by their `Ord` or `PartialOrd`, may
+    /// panic: an impl of the crate's or a library's, hand-written or
+    /// derived, any of whose methods may unwind (ADR 0902), a derived one's
+    /// as its fields' comparisons do; std's types' as what they hold's do;
+    /// a type parameter's, a `dyn`'s or an opaque type's, anyone's. Std's
+    /// order of numbers, text and `bool`s never does. The one answer of
+    /// whether what std holds as it compares, a heap's, a B-tree's, is
+    /// dropped as a comparison unwinds (#901, #911).
+    pub(in crate::lower) fn order_may_panic(&self, ty: Ty<'tcx>) -> bool {
+        self.order_may_panic_in(ty, &mut Vec::new())
+    }
+
+    fn order_may_panic_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
+        let ty = ty.peel_refs();
+        if seen.contains(&ty) {
+            return false;
+        }
+        if let ty::Param(_) | ty::Dynamic(..) | ty::Alias(..) = ty.kind() {
+            return true;
+        }
+        seen.push(ty);
+        let recognition = self.recognition();
+        let impls: Vec<DefId> = [self.ord_trait(), self.partial_ord_trait()]
+            .into_iter()
+            .filter_map(|tr| {
+                recognition.user_impl(ty::TraitRef::new_from_args(self.tcx, tr, recognition.args_of(tr, ty)))
+            })
+            .collect();
+        let may = match ty.kind() {
+            _ if !impls.is_empty() => impls.iter().any(|&imp| self.impl_may_unwind(imp)),
+            // A derived order of the crate's type, as its fields' orders.
+            ty::Adt(adt, args) if self.is_rust_adt(adt.did()) => {
+                (adt.all_fields()).any(|f| self.order_may_panic_in(self.field_ty(f, args), seen))
+            }
+            ty::Adt(_, args) => args.types().any(|arg| self.order_may_panic_in(arg, seen)),
+            ty::Tuple(parts) => parts.iter().any(|part| self.order_may_panic_in(part, seen)),
+            ty::Array(item, _) | ty::Slice(item) => self.order_may_panic_in(*item, seen),
+            _ => false,
+        };
+        seen.pop();
+        may
+    }
+
     /// Does JS's `<` order `ty` as Rust does? Numbers, `bool`s (`false <
     /// true`), and `Ordering`s, which are numbers. Not strings and `char`s,
     /// which `<` orders by UTF-16 units (ADR 0183).

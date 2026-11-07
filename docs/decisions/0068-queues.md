@@ -112,3 +112,30 @@ so a `None` the heap holds is `Some(None)`, not an empty heap's `None`; of
 other items, as before. Held by the corpus case `heap_pop_of_a_param` and
 the mutations `heap-pop-unboxed` and `heap-pop-box-ignored`.
 
+
+## Amendment: a sift whose comparison panics keeps every item once (#901)
+
+std's `sift_up`, `sift_down_range` and `sift_down_to_bottom` hold the item
+they move in a `Hole`, which writes it where the hole is as a comparison
+unwinds. The runtime's sifts moved the item over its hole with nothing to
+write it back: where a comparison of the crate's `Ord` panicked, the
+hole's slot kept the item moved over it, so the heap dropped that one twice
+and the moving one never. Results change (ADR 0262): Rust's behaviour is
+kept.
+
+- **Each sift writes its item where its hole is as it unwinds**, `$siftUp`,
+  `$siftDown` and `$siftDownToBottom`, `pop`'s: a `finally`, as std's
+  `Hole`'s drop. It costs nothing to read: the runtime's own.
+- **What std's frame holds is dropped as it unwinds**, of items with a
+  destructor whose comparison may panic (`order_may_panic`, ordering.rs,
+  the one answer, of a hand-written or derived order's impls, ADR 0902,
+  and a derived one's fields): `pop`'s top, `$heapPop(h, cmp, boxed,
+  drop)`; `into_sorted_vec`'s and `from`'s items, the heap they were
+  making, `$heapSorted(h, cmp, drop)` and `$heapFrom(v, cmp, drop)`. Of
+  an order that never panics, the call it always was.
+
+The corpus's `heap_sift_unwinds` runs `push`, `pop`, `append`, `extend`,
+`into_sorted_vec` and `from`, of a type with its own `Ord` and of a struct
+whose derived order is its, under each panic point, against native Rust;
+`test/lowering-std-unwinds.test.ts` pins both forms; the unwind table's 84
+case-builds of #901 pass.

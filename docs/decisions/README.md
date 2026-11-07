@@ -65,7 +65,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0071 An iterator stepped through is a `$iter`, which knows where it is](0071-stepping-iterators.md)
 - [0074 A `&mut` to a string or a number is a box the caller copies back](0074-mut-boxes.md) *(amended: a box of what may be moved out holds a copy; amended (#487): a box is copied back as its call unwinds too, where that can be seen)*
 - [0076 A struct's `..base` after its fields, and std's own steps for a few more methods](0076-std-odds.md)
-- [0068 `VecDeque` and `BinaryHeap` are arrays; a heap moves its items as Rust's does](0068-queues.md) *(amended: a heap's `pop()` of what could look like `None`)*
+- [0068 `VecDeque` and `BinaryHeap` are arrays; a heap moves its items as Rust's does](0068-queues.md) *(amended: a heap's `pop()` of what could look like `None`; a sift whose comparison panics keeps every item once, #901)*
 - [0015 Loops: put `while` back, label only when needed](0015-loops.md) *(amended: a label the Rust writes is kept, one MIR makes never is, D1)*
 
 **Web programs**

@@ -11822,60 +11822,63 @@ export function $debugParseError(message, name, options) {
   return options?.alternate ? `${name} {\n    kind: ${kind},\n}` : `${name} { kind: ${kind} }`;
 }
 
+// `sift_up(start, pos)`, std's: the item at `pos` moved up past each parent
+// less than it. Where a comparison throws, a panic, it's written where its
+// hole is, as std's `Hole` writes it as it unwinds (#901).
 export function $siftUp(heap, start, pos, cmp) {
   const item = heap[pos];
-  while (pos > start) {
-    const parent = (pos - 1) >>> 1;
-    if (cmp(item, heap[parent]) <= 0) {
-      break;
+  try {
+    while (pos > start) {
+      const parent = (pos - 1) >>> 1;
+      if (cmp(item, heap[parent]) <= 0) {
+        break;
+      }
+      heap[pos] = heap[parent];
+      pos = parent;
     }
-    heap[pos] = heap[parent];
-    pos = parent;
+    return pos;
+  } finally {
+    heap[pos] = item;
   }
-  heap[pos] = item;
-  return pos;
 }
 
+// `sift_down_range(pos, end)`, std's: the item at `pos` moved down past
+// each child greater than it. Where a comparison throws, a panic, it's
+// written where its hole is, as std's `Hole` writes it as it unwinds, so
+// the heap holds each item once (#901).
 export function $siftDown(heap, pos, end, cmp) {
   const item = heap[pos];
-  let child = 2 * pos + 1;
-  while (child <= end - 2) {
-    if (cmp(heap[child], heap[child + 1]) <= 0) {
-      child++;
+  try {
+    let child = 2 * pos + 1;
+    while (child <= end - 2) {
+      if (cmp(heap[child], heap[child + 1]) <= 0) {
+        child++;
+      }
+      if (cmp(item, heap[child]) >= 0) {
+        return pos;
+      }
+      heap[pos] = heap[child];
+      pos = child;
+      child = 2 * pos + 1;
     }
-    if (cmp(item, heap[child]) >= 0) {
-      heap[pos] = item;
-      return pos;
+    if (child === end - 1 && cmp(item, heap[child]) < 0) {
+      heap[pos] = heap[child];
+      pos = child;
     }
-    heap[pos] = heap[child];
-    pos = child;
-    child = 2 * pos + 1;
+    return pos;
+  } finally {
+    heap[pos] = item;
   }
-  if (child === end - 1 && cmp(item, heap[child]) < 0) {
-    heap[pos] = heap[child];
-    pos = child;
-  }
-  heap[pos] = item;
-  return pos;
 }
 
-export function $heapPush(heap, item, cmp) {
-  heap.push(item);
-  $siftUp(heap, 0, heap.length - 1, cmp);
-}
-
-// `BinaryHeap::pop`: `None` for an empty one, else its top, sifted out;
-// `Some` of it boxed, `boxed`, where it could look like `None` (ADR 0051).
-export function $heapPop(heap, cmp, boxed) {
-  if (heap.length === 0) {
-    return undefined;
-  }
-  let top = heap.pop();
-  if (heap.length > 0) {
-    [top, heap[0]] = [heap[0], top];
-    const end = heap.length;
-    const item = heap[0];
-    let pos = 0;
+// `sift_down_to_bottom(0)`, `pop`'s: the item at the top moved down past
+// the greater child each time to the bottom, then sifted up; its hole
+// written as a comparison throws, as `$siftDown`'s is.
+export function $siftDownToBottom(heap, cmp) {
+  const end = heap.length;
+  const item = heap[0];
+  let pos = 0;
+  try {
     let child = 1;
     while (child <= end - 2) {
       if (cmp(heap[child], heap[child + 1]) <= 0) {
@@ -11889,30 +11892,74 @@ export function $heapPop(heap, cmp, boxed) {
       heap[pos] = heap[child];
       pos = child;
     }
+  } finally {
     heap[pos] = item;
-    $siftUp(heap, 0, pos, cmp);
+  }
+  $siftUp(heap, 0, pos, cmp);
+}
+
+export function $heapPush(heap, item, cmp) {
+  heap.push(item);
+  $siftUp(heap, 0, heap.length - 1, cmp);
+}
+
+// `BinaryHeap::pop`: `None` for an empty one, else its top, sifted out;
+// `Some` of it boxed, `boxed`, where it could look like `None` (ADR 0051).
+// Of items with a destructor whose comparison may panic, `drop`: where the
+// sift's comparison throws, the top it took dropped, as std's `pop` drops
+// it as it unwinds (#901).
+export function $heapPop(heap, cmp, boxed, drop) {
+  if (heap.length === 0) {
+    return undefined;
+  }
+  let top = heap.pop();
+  if (heap.length > 0) {
+    [top, heap[0]] = [heap[0], top];
+    $unwinds(
+      () => $siftDownToBottom(heap, cmp),
+      drop && (() => drop(top)),
+    );
   }
   return boxed ? $some(top) : top;
 }
 
-export function $heapSorted(items, cmp) {
+// `heap.into_sorted_vec()`: the top swapped to the end, the rest sifted, as
+// std does. Of items with a destructor whose comparison may panic, `drop`:
+// where a comparison throws, each item the heap holds dropped, in order, as
+// std's `into_sorted_vec` drops its `self` as it unwinds (#901).
+export function $heapSorted(items, cmp, drop) {
   const heap = items.slice();
   let end = heap.length;
-  while (end > 1) {
-    end--;
-    [heap[0], heap[end]] = [heap[end], heap[0]];
-    $siftDown(heap, 0, end, cmp);
-  }
+  $unwinds(
+    () => {
+      while (end > 1) {
+        end--;
+        [heap[0], heap[end]] = [heap[end], heap[0]];
+        $siftDown(heap, 0, end, cmp);
+      }
+    },
+    drop && (() => $dropItems(heap, drop)),
+  );
   return heap;
 }
 
-export function $heapFrom(items, cmp) {
+// `BinaryHeap::from(v)`: `v` rebuilt, each parent from the last sifted
+// down, as std's `rebuild` does. Of items with a destructor whose
+// comparison may panic, `drop`: where a comparison throws, each item the
+// heap holds dropped, in order, as std's drops the heap it was making as it
+// unwinds (#901).
+export function $heapFrom(items, cmp, drop) {
   const heap = items.slice();
   let n = heap.length >>> 1;
-  while (n > 0) {
-    n--;
-    $siftDown(heap, n, heap.length, cmp);
-  }
+  $unwinds(
+    () => {
+      while (n > 0) {
+        n--;
+        $siftDown(heap, n, heap.length, cmp);
+      }
+    },
+    drop && (() => $dropItems(heap, drop)),
+  );
   return heap;
 }
 
