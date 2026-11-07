@@ -17,3 +17,28 @@ pub type IndexMap<K, V> = indexmap::IndexMap<K, V, rustc_hash::FxBuildHasher>;
 
 /// A set walked in the order its items were first put in.
 pub type IndexSet<T> = indexmap::IndexSet<T, rustc_hash::FxBuildHasher>;
+
+/// A map each key of which keeps the first value it's given: a session's
+/// answers to a question whose answer never changes, each found once, as
+/// it's first asked, `std_path`'s (#884). Nothing it holds is changed or
+/// taken out, so what reads it reads no state but what it would find.
+pub struct OnceMap<K, V>(std::cell::RefCell<IndexMap<K, V>>);
+
+impl<K, V> Default for OnceMap<K, V> {
+    fn default() -> Self {
+        OnceMap(Default::default())
+    }
+}
+
+impl<K: std::hash::Hash + Eq, V: Clone> OnceMap<K, V> {
+    /// What `key` was given, if it's been given one.
+    pub fn get(&self, key: &K) -> Option<V> {
+        self.0.borrow().get(key).cloned()
+    }
+
+    /// `key`'s value: what it was given first, `value` where it's given
+    /// none yet.
+    pub fn keep(&self, key: K, value: V) -> V {
+        self.0.borrow_mut().entry(key).or_insert(value).clone()
+    }
+}

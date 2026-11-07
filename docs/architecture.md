@@ -47,7 +47,7 @@ compiled for WASI; it is a separate build package, not a second compiler.
 | Rust analysis and lowering | `src/lower.rs`, `src/lower/` (detailed below) |
 | Owned JS tree, source arena and comments | `src/js.rs`, `src/js/`, `src/program.rs`, `src/comments.rs` |
 | Reachability, linking and names | `src/reachability.rs`, `src/link.rs`, `src/names.rs` |
-| The compiler's maps and sets, each walked in the order its entries were put in, never a hasher's (ADR 1098) | `src/collections.rs` |
+| The compiler's maps and sets, each walked in the order its entries were put in, never a hasher's (ADR 1098); a session's answers that never change, each kept as first found, `OnceMap` (ADR 1100) | `src/collections.rs` |
 | Readability and printing | `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/to_oxc/`, `src/format.rs`, `src/typescript.rs`, `src/prettier.rs`, `src/node_session.rs` (the Node session each of the last two runs, its JSON read whole as UTF-8, ADR 1079); `typescript/` prints the declaration model |
 | Library contracts, configuration, hooks and path utilities; a crate's npm package, what its entry re-exports (ADR 1008) and the subpaths its `exports` resolves (ADR 0770) | `src/library.rs`, `src/settings.rs`, `src/hooks.rs`, `src/paths.rs`, `src/packages.rs` |
 | Artifact planning, manifest and publication | `src/output.rs`, `src/manifest.rs`, `src/publish.rs` |
@@ -298,7 +298,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | A type equal only to itself, a JS key by itself, a library's as its contract says (ADR 0864) | `std_impls.rs`; `library.rs` | `equal_only_to_itself` |
 | Std call classification | `recognition/calls.rs` | `classify`, and its answers through `shortcuts.rs` |
 | Std identities and layout | `recognition/std_items.rs`, `recognition/types.rs`, `recognition/fmt.rs`, `recognition/iterators.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target`, `debug_builder`, `builder_step`, `iterator_method` |
-| Whether a crate is one of std's, `core`, `alloc` or `std`, by the lang item it defines, not its name (ADR 1054) | `recognition/std_items.rs` | `std_crate`, `std_crate_num`, `is_std_crate`, `of_std_crate` |
+| Whether a crate is one of std's, `core`, `alloc` or `std`, by the lang item it defines, not its name (ADR 1054), and std's path of a std item, printed once an item a session (ADR 1100) | `recognition/std_crates.rs` | `std_crate`, `std_crate_num`, `is_std_crate`, `of_std_crate`, `std_path` |
 | Std coverage catalog | `recognition/registry.rs` | `measured` |
 | Compiled std bodies, types and module placement | `recognition/std_items.rs`, `recognition/iterators.rs` | `compiled_std`, `is_compiled_std`, `is_compiled_std_type`, `is_compiled_std_iterator`, `std_home_module`, `memory_intrinsic`, `addresses_memory` |
 | Memory-addressing operations, and which two handles compared are two objects compared (ADR 0285, amended) | `pointers.rs` | `raw_pointee`, `mir_addresses_memory`, `same_object` |

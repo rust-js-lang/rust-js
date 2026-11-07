@@ -917,13 +917,13 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let item_set: IndexSet<DefId> = items.iter().copied().collect();
     // What dropping `ty` runs, of `counted`'s `Rc`s, asked where `owner` is,
     // as a type it gives may name its own type parameters (ADR 0451).
+    let typing_env_where = |ty: Ty<'tcx>, owner: DefId| match ty.has_param() {
+        true => ty::TypingEnv::non_body_analysis(tcx, owner),
+        false => ty::TypingEnv::fully_monomorphized(),
+    };
     let runs_where = |closure_facts: &ClosureFacts, counted: &Counted<'tcx>, ty: Ty<'tcx>, owner: DefId| {
-        let typing_env = match ty.has_param() {
-            true => ty::TypingEnv::non_body_analysis(tcx, owner),
-            false => ty::TypingEnv::fully_monomorphized(),
-        };
         let recognition = Recognition {
-            typing_env,
+            typing_env: typing_env_where(ty, owner),
             ..recognition
         };
         super::drops::drop_runs(recognition, (library, closure_facts), counted, ty)
@@ -1073,6 +1073,10 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         })
     });
     closure_facts.cloned_apart = cloned_apart;
+    // What drops, of the `Rc`s counted and the closures' facts, which no
+    // longer change: each type's answer found once.
+    let dropping = super::drops::DropRuns::new(recognition, (library, &closure_facts), &counted);
+    let runs_settled = |ty: Ty<'tcx>, owner: DefId| dropping.runs(typing_env_where(ty, owner), ty);
     // The type parameters whose `Clone` bound takes its dictionary: those a
     // caller gives what isn't its own clone (ADR 0914, amended).
     let clones = cloned_params(tcx, all_bodies, &item_set, &foreign, &counted);
@@ -1090,7 +1094,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             foreign: &foreign,
         },
         (all_bodies, &clones),
-        &|ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
+        &|ty| dropping.runs(recognition.typing_env, ty),
     );
     let wholes = Wholes::of_crate(tcx, all_bodies, &thread_local_inits, &|adt| {
         cell_borrows.pointers().js_may_make(adt)
@@ -1117,7 +1121,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
                 (key, f, args),
                 None,
                 held,
-                &|ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
+                &|ty| dropping.runs(recognition.typing_env, ty),
             ),
         }
     };
@@ -1137,12 +1141,11 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             .is_std(id)
             .then(|| cell_borrows.std_runs(&recognition, id, args))
     };
-    let drop_runs = |ty, owner| runs_where(&closure_facts, &counted, ty, owner);
     let runs = may_run::Runs::new(
         tcx,
         all_bodies,
         (&thread_local_inits, closures::handed_fn_dyns(tcx, all_bodies)),
-        (cell_borrows.pointers(), &std_runs, &drop_runs),
+        (cell_borrows.pointers(), &std_runs, &runs_settled),
     );
     let lazy_locals::LazyLocals {
         lazy: lazy_locals,
@@ -1278,7 +1281,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // lowering's drops give (ADR 0451).
     // Asked where `owner` is, as a type it gives may name its own type
     // parameters, whose drops are passed on as they are.
-    let runs = |ty: Ty<'tcx>, owner: DefId| runs_where(&closure_facts, &counted, ty, owner);
+    let runs = runs_settled;
     let drop_params = drop_params(tcx, all_bodies, &item_set, &foreign, library, runs);
     let copied = copied_params(tcx, all_bodies, &fns, &foreign);
     let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns, &foreign);

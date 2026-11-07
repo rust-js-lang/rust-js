@@ -545,7 +545,7 @@ pub(crate) fn reads_rc_count<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, pointee: Option
     }
     let object = matches!(pointee.map(|pointee| *pointee.kind()), Some(ty::Adt(adt, _))
         if adt.is_struct()
-            && (adt.did().is_local() || !super::std_items::is_std_crate(tcx, adt.did()) && holds_data(tcx, adt))
+            && (adt.did().is_local() || !super::std_crates::is_std_crate(tcx, adt.did()) && holds_data(tcx, adt))
             && !adt.non_enum_variant().fields.is_empty()
             && transparent_field(tcx, adt).is_none())
         // A `RefCell`, its own object, `{ value }`, or the object it holds,
@@ -738,7 +738,7 @@ fn holds_value(tcx: TyCtxt<'_>, field: &ty::FieldDef) -> bool {
 }
 
 pub(in crate::lower) fn transparent_field(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> Option<usize> {
-    if !adt.is_struct() || !adt.repr().transparent() || super::std_items::is_std_crate(tcx, adt.did()) {
+    if !adt.is_struct() || !adt.repr().transparent() || super::std_crates::is_std_crate(tcx, adt.did()) {
         return None;
     }
     adt.non_enum_variant()

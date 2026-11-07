@@ -64,6 +64,47 @@ pub(super) fn drop_runs<'tcx>(
     without_dictionaries(recognition, (library, closure_facts), counted, &state).drops(ty) == Drops::Runs
 }
 
+/// `drop_runs` of facts that no longer change, the crate's `Rc`s counted
+/// and its closures' facts settled: each type's answer, in each typing
+/// environment, found once. The analysis after they settle asks it of the
+/// same types in each of its bodies, which a walk of each type's parts
+/// again made most of a crate's analysis (#884).
+pub(super) struct DropRuns<'a, 'tcx> {
+    recognition: super::recognition::Recognition<'a, 'tcx>,
+    facts: (bool, &'a super::analysis::ClosureFacts),
+    counted: &'a super::analysis::Counted<'tcx>,
+    known: RefCell<IndexMap<(ty::TypingEnv<'tcx>, Ty<'tcx>), bool>>,
+}
+
+impl<'a, 'tcx> DropRuns<'a, 'tcx> {
+    pub(super) fn new(
+        recognition: super::recognition::Recognition<'a, 'tcx>,
+        facts: (bool, &'a super::analysis::ClosureFacts),
+        counted: &'a super::analysis::Counted<'tcx>,
+    ) -> Self {
+        DropRuns {
+            recognition,
+            facts,
+            counted,
+            known: RefCell::default(),
+        }
+    }
+
+    /// `drop_runs` of `ty`, asked in `typing_env`.
+    pub(super) fn runs(&self, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
+        if let Some(&known) = self.known.borrow().get(&(typing_env, ty)) {
+            return known;
+        }
+        let recognition = super::recognition::Recognition {
+            typing_env,
+            ..self.recognition
+        };
+        let runs = drop_runs(recognition, self.facts, self.counted, ty);
+        self.known.borrow_mut().insert((typing_env, ty), runs);
+        runs
+    }
+}
+
 /// Whether dropping `ty` in `owner` runs anything, where it's given the
 /// drops `taken` of its slots (`traits::drop_slot`) and no dictionaries:
 /// the lowering's `FnCx::drops` of it there, `!= Drops::Nothing`, asked

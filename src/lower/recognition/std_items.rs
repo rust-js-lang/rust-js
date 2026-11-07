@@ -541,9 +541,7 @@ pub(crate) fn not_compiled_for_build(tcx: TyCtxt<'_>, id: DefId) -> bool {
     });
     let meaning_only = |name: &str| MEANING_ONLY.contains(&name);
     owner.is_some_and(|adt| {
-        MEANING_ONLY
-            .iter()
-            .any(|name| std_path(tcx, adt) == format!("std::iter::{name}"))
+        (std_path(tcx, adt).strip_prefix("std::iter::")).is_some_and(|path| MEANING_ONLY.contains(&path))
     }) || (HELD_COMPILED.iter())
         .any(|&(name, method, _)| meaning_only(name) && compiled_provided_method(tcx, "Iterator", method) == Some(id))
 }
@@ -667,10 +665,25 @@ pub(crate) fn steps_code<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx
 /// `FlattenCompat` of a `Flatten`, a struct as the crate's are.
 pub(crate) fn has_compiled_bodies(tcx: TyCtxt<'_>, adt: DefId) -> bool {
     !adt.is_local()
-        && compiled_std(tcx).iter().any(|&id| {
-            (tcx.impl_of_assoc(id))
-                .is_some_and(|imp| matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(of, _) if of.did() == adt))
+        && COMPILED_TYPES.with(|types| {
+            let types = types.get_or_init(|| {
+                (compiled_std(tcx).iter())
+                    .filter_map(|&id| tcx.impl_of_assoc(id))
+                    .filter_map(|imp| match tcx.type_of(imp).skip_binder().kind() {
+                        ty::Adt(of, _) => Some(of.did()),
+                        _ => None,
+                    })
+                    .collect()
+            });
+            types.contains(&adt)
         })
+}
+
+thread_local! {
+    /// The types of `compiled_std`'s impls, `has_compiled_bodies`' answer,
+    /// found once for the session's rustc, as `COMPILED`'s is: each type's
+    /// drop asks it (#884).
+    static COMPILED_TYPES: std::cell::OnceCell<crate::collections::IndexSet<DefId>> = const { std::cell::OnceCell::new() };
 }
 
 /// Whether `id` is the `Iterator` method that makes one of `HELD_COMPILED`'s
@@ -728,9 +741,8 @@ pub(crate) fn is_held_compiled(tcx: TyCtxt<'_>, ty: ty::Ty<'_>) -> bool {
 /// Whether `id` is one of `HELD_COMPILED`'s adapters' definitions.
 pub(crate) fn is_held_compiled_def(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_compiled_std_type(tcx, id)
-        && HELD_COMPILED
-            .iter()
-            .any(|&(name, ..)| std_path(tcx, id) == format!("std::iter::{name}"))
+        && (std_path(tcx, id).strip_prefix("std::iter::"))
+            .is_some_and(|path| HELD_COMPILED.iter().any(|&(name, ..)| name == path))
 }
 
 thread_local! {
@@ -740,11 +752,29 @@ thread_local! {
 
 /// The provided method `method` of std's trait `trait_name` compiled into
 /// `@rust-js/std`, `Iterator::fuse`'s: the one place that finds it.
-pub(crate) fn compiled_provided_method(tcx: TyCtxt<'_>, trait_name: &str, method: &str) -> Option<DefId> {
-    let trait_def = std_iter_trait(tcx, trait_name)?;
-    (tcx.associated_items(trait_def).in_definition_order())
-        .find(|item| matches!(item.kind, ty::AssocKind::Fn { .. }) && item.name().as_str() == method)
-        .map(|item| item.def_id)
+pub(crate) fn compiled_provided_method(
+    tcx: TyCtxt<'_>,
+    trait_name: &'static str,
+    method: &'static str,
+) -> Option<DefId> {
+    if let Some(id) = PROVIDED.with(|provided| provided.get(&(trait_name, method))) {
+        return id;
+    }
+    let trait_def = std_iter_trait(tcx, trait_name);
+    let id = trait_def.and_then(|trait_def| {
+        (tcx.associated_items(trait_def).in_definition_order())
+            .find(|item| matches!(item.kind, ty::AssocKind::Fn { .. }) && item.name().as_str() == method)
+            .map(|item| item.def_id)
+    });
+    PROVIDED.with(|provided| provided.keep((trait_name, method), id))
+}
+
+thread_local! {
+    /// `compiled_provided_method`'s answers, by trait and method, each
+    /// found once for the session's rustc, as `COMPILED`'s is: whether a
+    /// call is one of `HELD_COMPILED`'s makers asks it of each (#884).
+    static PROVIDED: crate::collections::OnceMap<(&'static str, &'static str), Option<DefId>> =
+        crate::collections::OnceMap::default();
 }
 
 /// std's bodies compiled into `@rust-js/std`: the items `COMPILED_STD` and
@@ -973,72 +1003,6 @@ pub(crate) fn is_check_language_ub(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_std_crate(tcx, id) && std_path(tcx, id) == "std::ub_checks::check_language_ub"
 }
 
-/// One of the standard library's own crates.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum StdCrate {
-    Core,
-    Alloc,
-    Std,
-}
-
-impl StdCrate {
-    /// The lang item only this crate defines: `core`'s `Sized`, `alloc`'s
-    /// `Box`, and `std`'s `start`, which runs a program's `main`. No crate
-    /// on stable Rust defines a lang item.
-    fn lang_item(self) -> LangItem {
-        match self {
-            StdCrate::Core => LangItem::Sized,
-            StdCrate::Alloc => LangItem::OwnedBox,
-            StdCrate::Std => LangItem::Start,
-        }
-    }
-}
-
-/// The crate that is `std`, std's `core`, `alloc` or `std`, of those the
-/// session loaded: the one that defines its lang item.
-pub(crate) fn std_crate_num(tcx: TyCtxt<'_>, std: StdCrate) -> Option<CrateNum> {
-    tcx.lang_items().get(std.lang_item()).map(|id| id.krate)
-}
-
-/// Which of std's crates `krate` is, if it's one: known by the lang item
-/// only it defines, not by its name, which a program's crate may have too,
-/// a workspace's `core` (ADR 1054). The one answer of whether a crate is
-/// std's: each question of std's crates asks it.
-pub(crate) fn std_crate(tcx: TyCtxt<'_>, krate: CrateNum) -> Option<StdCrate> {
-    [StdCrate::Core, StdCrate::Alloc, StdCrate::Std]
-        .into_iter()
-        .find(|&std| std_crate_num(tcx, std) == Some(krate))
-}
-
-/// Whether `id` is std's: of `std`, `core` or `alloc` (`std_crate`).
-pub(crate) fn is_std_crate(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    std_crate(tcx, id.krate).is_some()
-}
-
-/// Whether `id` is of `krate`, one of std's crates (`std_crate`).
-pub(crate) fn of_std_crate(tcx: TyCtxt<'_>, id: DefId, krate: StdCrate) -> bool {
-    std_crate(tcx, id.krate) == Some(krate)
-}
-
-/// std's path of `id`, a std item, `std::str::Chars`, whichever of std's
-/// crates it's of; empty of any other item, which no std path is: an item
-/// of a program's crate named `std` or `core` is never std's (ADR 1054).
-pub(super) fn std_path(tcx: TyCtxt<'_>, id: DefId) -> String {
-    if !is_std_crate(tcx, id) {
-        return String::new();
-    }
-    let mut path = tcx.def_path_str(id);
-    // Named through a crate's own name for std's, hashbrown's `extern crate
-    // alloc as stdalloc`: std's own path, `alloc::alloc::alloc`.
-    if !matches!(path.split("::").next(), Some("std" | "core" | "alloc")) {
-        path = ty::print::with_no_visible_paths!(tcx.def_path_str(id));
-    }
-    match path.split_once("::") {
-        Some(("core" | "alloc", rest)) => format!("std::{rest}"),
-        _ => path,
-    }
-}
-
 /// The name `id` has in `std::f64::consts`, `LN_2`, if it's one of its
 /// constants, `core`'s by any path (ADR 0887).
 pub(crate) fn f64_const(tcx: TyCtxt<'_>, id: DefId) -> Option<String> {
@@ -1181,9 +1145,9 @@ pub(crate) fn linked_twice(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// the crate's is, wherever a value of it is made or read.
 pub(crate) fn is_compiled_std_type(tcx: TyCtxt<'_>, id: DefId) -> bool {
     !id.is_local()
-        && (COMPILED_STD.iter())
-            .filter(|&&(type_name, ..)| compiled_for_build(type_name))
-            .any(|&(type_name, _, _)| std_path(tcx, id) == format!("std::iter::{type_name}"))
+        && std_path(tcx, id).strip_prefix("std::iter::").is_some_and(|name| {
+            (COMPILED_STD.iter()).any(|&(type_name, _, _)| type_name == name && compiled_for_build(type_name))
+        })
 }
 
 /// A std item another module asks about by name: only recognition spells

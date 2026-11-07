@@ -315,4 +315,17 @@ export const mutations: Mutation[] = [
     replace: "            } else if false {\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "copies-settled-alone",
+    breaks:
+      "of functions that call each other, only the last asked is settled with the first's answer: the first stays asked, and each asked of it after answers no copy, so `outer`, which calls `inner`, which calls it and one that copies, is the library's, sharing what Rust copies (#884)",
+    file: "src/lower/instances.rs",
+    find: "            let settled = self.asking.borrow_mut().drain(depth..).collect::<Vec<_>>();\n",
+    replace: "            let settled = self.asking.borrow_mut().pop().into_iter().collect::<Vec<_>>();\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "a library's generic function is its program's",
+    ],
+  },
 ];

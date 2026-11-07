@@ -142,4 +142,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^drop_functions.rs$"],
     snapshots: true,
   },
+  {
+    name: "drop-runs-settled-asked-crate-wide",
+    breaks:
+      "what drops, asked once facts settle, is asked in the crate's typing environment, not the one it's given: a type a caller gives on, naming its const parameter, `Buffer<SIZE>`, is asked about where that parameter isn't, and rustc crashes (#884)",
+    file: "src/lower/drops.rs",
+    find: "        let recognition = super::recognition::Recognition {\n            typing_env,\n            ..self.recognition\n        };\n",
+    replace: "        let recognition = self.recognition;\n",
+    tests: ["test/corpus.test.ts", "-t", "^const_param_drops.rs$"],
+  },
 ];

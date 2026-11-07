@@ -928,3 +928,14 @@ or a closure's own captures alike.
   the same as native again.
 - Mutation `closure-in-aggregate-operand-unfound`
   (`lower/analysis/foreign_bodies.ts`).
+
+## Amendment: what copies is walked once a function (#884)
+
+`Copying` kept the answer of a function that read none still being
+asked, so of functions that call each other only the first asked was
+kept, and each of the others was walked again from each way to it:
+React's Flight servers spent minutes there. It's Tarjan's walk now: one
+asked while it's still being asked answers what the first of them will,
+and all are kept with the first's answer, each walked once (ADR 1100).
+The answer is the least that holds, as before. Mutation
+`copies-settled-alone` (`lower/instances.ts`).

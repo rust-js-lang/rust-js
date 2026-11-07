@@ -329,8 +329,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a type a caller gives on, naming its const parameter, `Buffer<SIZE>`, is asked about where that parameter isn't, and rustc crashes",
     file: "src/lower/analysis.rs",
-    find: "            true => ty::TypingEnv::non_body_analysis(tcx, owner),\n",
-    replace: "            true => ty::TypingEnv::fully_monomorphized(),\n",
+    find: "        true => ty::TypingEnv::non_body_analysis(tcx, owner),\n",
+    replace: "        true => ty::TypingEnv::fully_monomorphized(),\n",
     tests: ["test/corpus.test.ts", "-t", "^const_param_drops.rs$"],
   },
   {

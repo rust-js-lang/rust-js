@@ -92,8 +92,10 @@ pub(super) struct Copying<'a, 'tcx> {
     recognition: super::recognition::Recognition<'a, 'tcx>,
     changed: super::copies::Changed<'a, 'tcx>,
     known: std::cell::RefCell<IndexMap<DefId, bool>>,
-    /// Those being asked, outermost first.
-    asking: std::cell::RefCell<Vec<DefId>>,
+    /// Those asked whose answer isn't settled, first asked first: those
+    /// being asked, and those asked under them that call one of them, whose
+    /// answer is that one's (Tarjan's stack of what calls itself).
+    asking: std::cell::RefCell<IndexSet<DefId>>,
 }
 
 impl<'a, 'tcx> Copying<'a, 'tcx> {
@@ -127,10 +129,12 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
         self.copies_below(id).0
     }
 
-    /// `copies`, and the lowest of the functions still being asked that
-    /// the answer read, where it read one: a call it makes of one that
-    /// calls it. Of the least answer that holds, kept once it's settled: a
-    /// `true`, or one that read none asked below it.
+    /// `copies`, and the first of `asking` the answer read, where it read
+    /// one: a call it makes of one that calls it. Of the least answer that
+    /// holds: functions that call each other copy where one of them does, so
+    /// each has the answer of the first asked, settled with it once it read
+    /// none asked before it. Each is walked once: one asked again before
+    /// then answers what the first will (#884).
     fn copies_below(&self, id: DefId) -> (bool, usize) {
         let tcx = self.recognition.tcx;
         if id.is_local() || !self.recognition.foreign.is_library(id.krate) {
@@ -139,11 +143,11 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
         if let Some(&known) = self.known.borrow().get(&id) {
             return (known, usize::MAX);
         }
-        if let Some(at) = self.asking.borrow().iter().position(|&asked| asked == id) {
+        if let Some(at) = self.asking.borrow().get_index_of(&id) {
             return (false, at);
         }
         let depth = self.asking.borrow().len();
-        self.asking.borrow_mut().push(id);
+        self.asking.borrow_mut().insert(id);
         let (copies, read) = match tcx.def_kind(id) {
             DefKind::Impl { of_trait: true } => (tcx.associated_item_def_ids(id).iter())
                 .map(|&method| self.copies_below(method))
@@ -153,9 +157,11 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
             }
             _ => (false, usize::MAX),
         };
-        self.asking.borrow_mut().pop();
-        if copies || read >= depth {
-            self.known.borrow_mut().insert(id, copies);
+        if read >= depth {
+            let settled = self.asking.borrow_mut().drain(depth..).collect::<Vec<_>>();
+            self.known
+                .borrow_mut()
+                .extend(settled.into_iter().map(|asked| (asked, copies)));
             return (copies, usize::MAX);
         }
         (copies, read)
