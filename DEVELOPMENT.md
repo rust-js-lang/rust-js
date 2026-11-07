@@ -218,7 +218,8 @@ hash>/<name>_<n>`), so the same test compiles the same thing there.
   runtime's helpers among it, nothing's found: about as before, 2 min 59 s
   to 3 min 23 s.
 - **What it never keeps:** Cargo's builds (`rust-js build`, the cargo
-  tests), a compile that fails, one that read a file it wrote (a manifest
+  tests), a compile that fails (207 a run, 12 s summed: not worth a
+  record, #886), one that read a file it wrote (a manifest
   of the build before), one of a crate with hooks or `--declarations`,
   a mutant's, the determinism net's (`RUST_JS_COMPILE_CACHE_MB=0` in its
   environment), and a script standing in for the compiler.
@@ -640,6 +641,7 @@ checked:
 
 | Step | What it costs | What would fix it |
 |---|---|---|
+| The tests' compiles with `--declarations`, which the compile cache can't keep (ADR 1099: Node's TypeScript reads what rust-js's record can't name) | In a `check:fast --all` with the cache warm and no change on the 12-core M6 (92–93 s, 2026-11-07, #886), 285 compiles, about 62 s summed, five times the compiles meant to fail (207, 12 s); and std's bodies compiled once, `--std-bodies`, 10.7 s | A record of what TypeScript reads, the declarations' printing kept apart from the JS's, or the declarations' tests compiling once per file |
 | `check:fast --all`, now bound by its CPU, not by its cores idle (2026-11-07) | On the 12-core M6, about 1,800 CPU-seconds with no change, 900 of them the 200 files besides the corpus (the longest `crates`, `libraries`, `snapshots`, `cargo-workspace` and `compiler`, 45–80 s each), 350 the corpus's compiles, whose runs are cached; with an iterator change about 3,500, 1,270 of them the rows it names and the corpus with std's iterator structs. Its cores 90% busy, half of them efficiency cores. Measured by #874: rust-js's processes are 1,780 of its CPU-seconds, 9,050 calls: 380 the corpus's, 350 the fixtures' compiles, 260 the rest, and Cargo's builds of crates, which #885 measured again apart from the rustc each one runs: about 590, of which the binding crates are 140 (`webapi` 114 s, built 31 times, at 3.4–4.1 s each under load, 1.8 s alone; `react` and `js` 11 s each), the `-vV` probes 75 (about 590 a run, 0.13 s each, every one a Node session that asks which Prettier the app has), and the rest the crates the tests and the crate corpus compile. The file compiles are kept now, where the build is the same (1 min 39–50 s with no change); after a change to `src/` none is (3 min 4 s) | Less work, not more parallel: the native runs kept by source (#875). Not the binding crates in a target the tests share, which can't share them: Cargo's `-vV` line names each app's crate directories, by which Prettier they find (ADR 1003), so `webapi`'s `-C metadata` differs in every app in the checkout, 31 keys for 31 builds (dropped, docs/dev-loop.md, #885; what would let them share, #892) |
 | Every mutation on the Mac, `bun run nightly mutations` | 65 min for 8,047 on the M3 Max (2026-10-30), the CPU 86% busy and its 16 GB full: 6.6 GB compressed, 1.3 GB swapped, 35% of the CPU the system's, each mutant's run starting bun, rust-js and Node | More memory, or a mutant's tests run in a process kept warm, as `bun test` with its compiler swapped, not started again for each |
 | `bun scripts/mutations.ts --changed=origin/main` of a large change | More than five minutes even in three shards, so it's left to CI | Shards picked to fit, by each mutation's usual time |

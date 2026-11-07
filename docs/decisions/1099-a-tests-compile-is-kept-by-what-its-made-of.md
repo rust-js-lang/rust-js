@@ -106,6 +106,12 @@ and what's kept is pruned until the floor's back or it's empty.
   it again with nothing changed, and every entry was another build's.
 - **Cargo's builds kept too**: their outputs are Cargo's whole target; the
   cargo tests are what checks that it rebuilds as it should.
+- **A compile that fails kept too**, its diagnostics and its end (#886):
+  measured first, with the cache warm and no change, the 207 a
+  `check:fast --all` could keep took 12 s summed, about 1% of its CPU and
+  under a second of its time, so not built: its record would need
+  rustc's written as the crate's expanded and rust-js's own reads on every
+  failing path (docs/dev-loop.md, dropped).
 
 ## Consequences
 
