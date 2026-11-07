@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "quiet-call-may-unwind",
+    breaks: "a closure of the crate's that never unwinds is taken to, so `inspect` of one guards its value for no reason (#903)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                !self.krate.never_unwinding.contains(&def_id)\n                    && !matches!(self.tcx.def_kind(def_id), rustc_hir::def::DefKind::Ctor(..))\n",
+    replace: "                !matches!(self.tcx.def_kind(def_id), rustc_hir::def::DefKind::Ctor(..))\n",
+    tests: ["test/corpus.test.ts", "-t", "^inspect_unwinds_its_value.rs$"],
+    snapshots: true,
+  },
+  {
     name: "counted-collect-made-after-room",
     breaks:
       "`repeat(made()).take(usize::MAX).collect()` asks room before `made()` runs, so it never prints, where Rust makes the iterator first (#246)",
@@ -571,14 +580,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/collect.rs",
     find: "                SteppingWork::DropsExhausted(part) => self.drop_may_panic(part),\n",
     replace: "                SteppingWork::DropsExhausted(_) => false,\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
-  },
-  {
-    name: "own-clone-never-panics",
-    breaks: "a clone of the crate's type is taken to never panic, so a `cloned()` whose clone panics leaves what it collected undropped (#708)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "                    .is_some_and(|imp| self.impl_may_unwind(imp))\n",
-    replace: "                    .is_some_and(|imp| false && self.impl_may_unwind(imp))\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
   },
   {

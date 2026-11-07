@@ -21,14 +21,6 @@ points:std 560,571,5593,5604
 plain 107177,107212,107450
 std 107177,107450
 
-#897 P0 (unwind): a clone that panics partway leaks what it cloned already: a derived Clone, and clone, clone_from, to_vec and extend_from_slice of a Vec, VecDeque, BTreeMap, BTreeSet, BinaryHeap or HashMap
-unwind:plain 603-607,610,653-661,663-671,683-689,691,1116-1124,1147-1155,1344-1352,1707-1709,1714,1826-1834,2187-2189,2194,2815-2817,2822
-unwind:std 603-607,610,653-661,663-671,683-689,691,1116-1124,1147-1155,1344-1352,1707-1709,1714,1826-1834,2187-2189,2194,2815-2817,2822
-
-#898 P0 (unwind): the value resize, fill and vec![x; n] clone from leaks when a clone or a drop in them panics, of a Vec and a VecDeque
-unwind:plain 612-615,617-620,622-625,627-628,630-631,643-646,648-652,673-676,678-681,1095-1098,1100-1103
-unwind:std 612-615,617-620,622-625,627-628,630-631,643-646,648-652,673-676,678-681,1095-1098,1100-1103
-
 #899 P0 (unwind): a map's or a set's clear() whose drop of an entry panics drops the entries again later: BTreeMap, BTreeSet and HashMap
 unwind:plain 1333-1341,1640-1648,1695-1703
 unwind:std 1333-1341,1640-1648,1695-1703
@@ -40,14 +32,6 @@ unwind:std 1300-1306,1308-1309
 #901 P0 (unwind): a BinaryHeap whose comparison panics in a sift loses one item and drops another twice: push, pop, append, extend, into_sorted_vec
 unwind:plain 1726-1729,1731-1732,1734-1739,1741-1742,1744-1745,1766-1769,1771-1772,1774-1785,1806-1809,1811-1812,1814-1815
 unwind:std 1726-1729,1731-1732,1734-1739,1741-1742,1744-1745,1766-1769,1771-1772,1774-1785,1806-1809,1811-1812,1814-1815
-
-#902 P0 (unwind): a derived Default, or a tuple's, whose field's default() panics leaks the fields it made: mem::take, unwrap_or_default
-unwind:plain 45-47,2305-2307
-unwind:std 45-47,2305-2307
-
-#903 P0 (unwind): Option::inspect, Result::inspect, inspect_err and unwrap_or_default leak their self when the closure or default() panics
-unwind:plain 2120-2126,2128-2129,2770-2779,2922-2925,2927,2930,3030-3040
-unwind:std 2120-2126,2128-2129,2770-2779,2922-2925,2927,2930,3030-3040
 
 #904 P0 (unwind): Option::insert whose drop of the old value panics drops the old value twice and leaks the new one
 unwind:plain 1988-1997
@@ -80,3 +64,7 @@ unwind:std 1354-1357,1359-1397,1399-1467,1469-1500,1502-1520,1522-1573
 #912 P0 (unwind): std::cmp::max, min and Ord::max, min and clamp of a type with its own Ord compare in another order, and leak their arguments as the comparison panics
 unwind:plain 3380-3386,3388-3406,3408-3419
 unwind:std 3380-3386,3388-3406,3408-3419
+
+#919 P0 (drops): a Vec's clone_from clones every item then drops the old Vec, where std gives each kept item its clone then drops it, then clones the rest; fill of a Vec of Vecs, by their clone_from
+unwind:plain 651,663-671
+unwind:std 651,663-671

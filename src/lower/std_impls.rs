@@ -3,6 +3,7 @@
 //! hand-written one is called instead. `Default`'s is `defaults`.
 
 mod defaults;
+mod in_turn;
 
 use super::recognition::StdItem;
 use super::recursive_fns::Kind;
@@ -443,8 +444,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let set = self.is_set(ty);
                 let key = args.types().next();
                 let class = self.map_class(set, self.is_sorted(ty), key, span)?;
+                let (key_ty, value_ty) = (args.type_at(0), (!set).then(|| args.type_at(1)));
                 let key = key.filter(|&k| self.is_value_key(k) && self.needs_clone(k));
-                let value = args.types().nth(1).filter(|&v| !set && self.needs_clone(v));
+                let value = value_ty.filter(|&v| self.needs_clone(v));
                 if key.is_none() && value.is_none() {
                     return Ok(Expr::new_(class, vec![place]));
                 }
@@ -452,18 +454,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(ty) => this.clone_value(Expr::var(name), ty, span, out),
                     None => Ok(Expr::var(name)),
                 };
-                let (params, item) = if set {
-                    (vec!["item".into()], cloned(self, "item", key)?)
+                // Each entry's clone, its key's then its value's, of std's
+                // `(K, V)`, whose key is dropped as its value's clone
+                // unwinds (#897).
+                let may_panic = |this: &Self, ty: Option<Ty<'tcx>>| ty.is_some_and(|t| this.clone_may_panic(t));
+                let (params, item, entry) = if set {
+                    (vec!["item".into()], cloned(self, "item", key)?, key_ty)
                 } else {
-                    let pair = Expr::array(vec![cloned(self, "key", key)?, cloned(self, "value", value)?]);
-                    (
-                        vec![js::Pattern::Array(vec![Some("key".into()), Some("value".into())])],
-                        pair,
-                    )
+                    let parts = [
+                        (key_ty, may_panic(self, key)),
+                        (value_ty.expect("a map's"), may_panic(self, value)),
+                    ];
+                    let named = [("key", key), ("value", value)];
+                    let (pair, made) = self.parts_in_turn(&parts, span, |cx, i| cloned(cx, named[i].0, named[i].1))?;
+                    let pattern = js::Pattern::Array(vec![Some("key".into()), Some("value".into())]);
+                    let entry = Ty::new_tup(self.tcx, &[key_ty, parts[1].0]);
+                    (vec![pattern], Self::in_turn(Expr::array(pair), made), entry)
                 };
                 let f = Expr::arrow(params, vec![StmtKind::Return(Some(item)).at(js::Span::NONE)]);
-                let all = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![place]);
-                Ok(Expr::new_(class, vec![Expr::call(Expr::member(all, "map"), vec![f])]))
+                let may_panic = may_panic(self, key) || may_panic(self, value);
+                let made = match may_panic && self.drops(entry) != super::drops::Drops::Nothing {
+                    true => self.made_each(place, f, (entry, true), span)?,
+                    false => {
+                        let all = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![place]);
+                        Expr::call(Expr::member(all, "map"), vec![f])
+                    }
+                };
+                Ok(Expr::new_(class, vec![made]))
             }
             // `{ start: r.start, end: r.end }` (ADR 0129); of an inclusive one
             // of numbers or `char`s, which a step may leave exhausted, `{ ...r
@@ -611,12 +628,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ if !matches!(ty.kind(), ty::Adt(adt, _) if self.is_std(adt.did())) => match self.shape(ty) {
                 Shape::Object(fields) => self.clone_fields(place, (ty, None), Self::named_fields(fields), span, out),
-                Shape::Array(tys) => Ok(Expr::array(
-                    tys.into_iter()
-                        .enumerate()
-                        .map(|(i, t)| self.clone_value(Expr::index(place.clone(), Expr::int(i as i128)), t, span, out))
-                        .collect::<R<_>>()?,
-                )),
+                // Each part's clone in turn, those made before one that
+                // unwinds dropped (`held_in_turn`).
+                Shape::Array(tys) => {
+                    let parts: Vec<_> = (tys.iter())
+                        .map(|&t| (t, self.needs_clone(t) && self.clone_may_panic(t)))
+                        .collect();
+                    let (items, made) = self.parts_in_turn(&parts, span, |cx, i| {
+                        cx.clone_value(Expr::index(place.clone(), Expr::int(i as i128)), tys[i], span, out)
+                    })?;
+                    Ok(Self::in_turn(Expr::array(items), made))
+                }
                 Shape::Other => Err(self.unsupported(span, &format!("cloning `{ty}`"))),
             },
             _ => Err(self.unsupported(span, &format!("cloning `{ty}`"))),
@@ -625,7 +647,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `{ ...place, v: <clone of place.v> }`: a new object, with a clone of
     /// each field that needs one, of `fields`, those of a `ty`, a struct, or
-    /// of its `variant`, an enum's (#503).
+    /// of its `variant`, an enum's (#503). Each field's clone in turn, in
+    /// `$madeInTurn` where a later one's may unwind past one made before it
+    /// with a destructor, each such given to `made` though it needs no clone
+    /// of its own, as a derived `Clone` drops them (`held_in_turn`, #897).
     fn clone_fields(
         &mut self,
         place: Expr,
@@ -634,28 +659,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        // A cell in a field is what it holds (`property_cell`): a clone of
+        // one is a copy of that, which the spread makes if it needs none.
+        let def = |cx: &Self, i: usize| match variant {
+            Some(variant) => variant.fields.get(rustc_abi::FieldIdx::from_usize(i)),
+            None => cx.struct_field_def(ty, i),
+        };
+        let needs: Vec<bool> = (fields.iter().enumerate())
+            .map(|(i, &(_, t))| {
+                self.property_cell(def(self, i), t)
+                    .map_or(self.needs_clone(t), |item| self.needs_clone(item))
+            })
+            .collect();
+        let parts: Vec<_> = (fields.iter().zip(&needs))
+            .map(|(&(_, t), &needs)| (t, needs && self.clone_may_panic(t)))
+            .collect();
+        let held = self.held_in_turn(&parts);
+        let made = held.contains(&true).then(|| self.fresh("made"));
         let mut props = vec![Prop::Spread(place.clone())];
         for (i, (name, t)) in fields.into_iter().enumerate() {
-            // A cell in a field is what it holds (`property_cell`): a clone
-            // of one is a copy of that, which the spread makes if it needs none.
-            let def = match variant {
-                Some(variant) => variant.fields.get(rustc_abi::FieldIdx::from_usize(i)),
-                None => self.struct_field_def(ty, i),
-            };
-            if self
-                .property_cell(def, t)
-                .map_or(self.needs_clone(t), |item| self.needs_clone(item))
-            {
-                let read = self.held(Expr::member(place.clone(), name.clone()), def, t);
-                let field = self.clone_value(read, t, span, out)?;
-                props.push(Prop::Field(name, self.holding(field, def, t)));
+            if !needs[i] && !held[i] {
+                continue;
             }
+            let def = def(self, i);
+            let read = self.held(Expr::member(place.clone(), name.clone()), def, t);
+            let mut field = match needs[i] {
+                true => self.clone_value(read, t, span, out)?,
+                false => read,
+            };
+            if let (Some(made), true) = (&made, held[i]) {
+                field = self.made_part(made, field, t, span)?;
+            }
+            props.push(Prop::Field(name, self.holding(field, def, t)));
         }
-        Ok(Expr::object(props))
+        Ok(Self::in_turn(Expr::object(props), made))
     }
 
     /// A clone of an array: `items.slice()`, or `items.map((item) => ..)`
-    /// if its items need cloning too.
+    /// if its items need cloning too, `$madeEach`'s where an item's clone
+    /// may panic past those made before it (`made_each`).
     pub(super) fn clone_items(&mut self, items: Expr, item: Ty<'tcx>, span: Span) -> R<Expr> {
         if !self.needs_clone(item) {
             // An array made here, which nothing else holds: itself.
@@ -665,7 +707,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::call(Expr::member(items, "slice"), Vec::new()));
         }
         let clone = self.clone_fn("item", item, span)?;
-        Ok(Expr::call(Expr::member(items, "map"), vec![clone]))
+        let may_panic = self.clone_may_panic(item);
+        self.made_each(items, clone, (item, may_panic), span)
     }
 
     /// `items`, each a copy where it needs one, a `Copy` struct something

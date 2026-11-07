@@ -37,6 +37,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether `Default::default()` of `ty` may panic, as `default_value`
+    /// makes it: a hand-written one's, as its impl's methods may unwind,
+    /// all but the crate's that never do (ADR 0902); a bound's
+    /// dictionary's, anyone's; one made of others' defaults, a struct's of
+    /// its fields', a tuple's or an array's of its items', or a `Box`'s, an
+    /// `Rc`'s or a cell's of what it holds, as theirs may; any other's
+    /// never, an empty collection's, a number's or an enum's `#[default]`
+    /// variant (#902). The one answer what's made in turn asks.
+    pub(in crate::lower) fn default_may_panic(&self, ty: Ty<'tcx>) -> bool {
+        self.default_may_panic_in(ty, &mut Vec::new())
+    }
+
+    fn default_may_panic_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
+        if seen.contains(&ty) {
+            return false;
+        }
+        if self.is_unknown(ty) || matches!(ty.kind(), ty::Param(_) | ty::Dynamic(..) | ty::Alias(..)) {
+            return true;
+        }
+        seen.push(ty);
+        let tr = ty::TraitRef::new(self.tcx, std_item(self.tcx, StdItem::Default), [ty]);
+        let std = |item: StdItem| self.is_std_type(ty, item);
+        let may = match ty.kind() {
+            _ if let Some(imp) = self.recognition().user_impl(tr) => self.impl_may_unwind(imp),
+            ty::Array(item, _) => self.default_may_panic_in(*item, seen),
+            ty::Tuple(parts) => parts.iter().any(|part| self.default_may_panic_in(part, seen)),
+            ty::Adt(_, args)
+                if ty.is_box()
+                    || self.is_rc(ty)
+                    || self.counted_rc(ty).is_some()
+                    || std(StdItem::Cell)
+                    || std(StdItem::RefCell)
+                    || std(StdItem::Atomic) =>
+            {
+                self.default_may_panic_in(args.type_at(0), seen)
+            }
+            ty::Adt(adt, args) if adt.is_struct() && self.is_rust_adt(adt.did()) => {
+                (adt.all_fields()).any(|f| self.default_may_panic_in(self.field_ty(f, args), seen))
+            }
+            _ => false,
+        };
+        seen.pop();
+        may
+    }
+
     /// `Default::default()` of `ty`: `0`, `""`, `[]`, a struct of its fields'
     /// defaults, or a call of a hand-written `default`.
     pub(in crate::lower) fn default_value(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
@@ -92,7 +137,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let len = len
                     .try_to_target_usize(self.tcx)
                     .ok_or_else(|| self.unsupported(span, &format!("`Default` of `{ty}`")))?;
-                Expr::array((0..len).map(|_| self.default_value(*item, span)).collect::<R<_>>()?)
+                let parts = vec![(*item, self.default_may_panic(*item)); len as usize];
+                let (items, made) = self.parts_in_turn(&parts, span, |cx, _| cx.default_value(*item, span))?;
+                Self::in_turn(Expr::array(items), made)
             }
             _ if ty.is_unit() || self.option_of(ty).is_some() => Expr::undefined(),
             _ if self.is_lang_adt(ty, LangItem::String) => Expr::str(""),
@@ -147,26 +194,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => match self.shape(ty) {
                 // A flattened field's defaults are the struct's own (ADR 0204).
+                // Each made in turn, those before one whose `default()`
+                // unwinds dropped as it does, as a derived `Default`'s are
+                // (`held_in_turn`, #902).
                 Shape::Object(fields) => {
-                    let made = Expr::object(
-                        fields
-                            .into_iter()
-                            .enumerate()
-                            .map(|(i, (key, t))| {
-                                let value = self.field_default(ty, i, t, span)?;
-                                let value = self.holding(value, self.struct_field_def(ty, i), t);
-                                // One a symbol names, `[SYMBOL]: ..` (ADR 1051).
-                                Ok(match key.symbol_item() {
-                                    Some((item, at)) => Prop::Keyed(self.field_symbol(item, at), value),
-                                    None => Prop::Field(key.text().to_owned(), value),
-                                })
-                            })
-                            .collect::<R<_>>()?,
-                    );
-                    self.flattened_object(made, ty)
+                    let parts: Vec<_> = (fields.iter()).map(|&(_, t)| (t, self.default_may_panic(t))).collect();
+                    let (values, made) =
+                        self.parts_in_turn(&parts, span, |cx, i| cx.field_default(ty, i, parts[i].0, span))?;
+                    let props = (fields.into_iter().zip(values).enumerate())
+                        .map(|(i, ((key, t), value))| {
+                            let value = self.holding(value, self.struct_field_def(ty, i), t);
+                            // One a symbol names, `[SYMBOL]: ..` (ADR 1051).
+                            match key.symbol_item() {
+                                Some((item, at)) => Prop::Keyed(self.field_symbol(item, at), value),
+                                None => Prop::Field(key.text().to_owned(), value),
+                            }
+                        })
+                        .collect();
+                    Self::in_turn(self.flattened_object(Expr::object(props), ty), made)
                 }
                 Shape::Array(tys) => {
-                    Expr::array(tys.into_iter().map(|t| self.default_value(t, span)).collect::<R<_>>()?)
+                    let parts: Vec<_> = (tys.iter()).map(|&t| (t, self.default_may_panic(t))).collect();
+                    let (items, made) = self.parts_in_turn(&parts, span, |cx, i| cx.default_value(parts[i].0, span))?;
+                    Self::in_turn(Expr::array(items), made)
                 }
                 Shape::Other => return Err(self.unsupported(span, &format!("`Default` of `{ty}`"))),
             },

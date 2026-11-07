@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "inspect-holds-nothing",
+    breaks: "`inspect`'s value is left undropped as its closure panics (#903)",
+    file: "src/lower/combinators/values.rs",
+    find: "self.call_may_unwind(f_ty));\n",
+    replace: "false);\n",
+    tests: ["test/corpus.test.ts", "-t", "^inspect_unwinds_its_value.rs$"],
+  },
+  {
     name: "vec-repeat-rows-shared",
     breaks:
       "`vec![vec![0; n]; n]` is one row `n` times, `new Array(n).fill(row)`, so a write to one row is a write to all",
@@ -28,7 +36,7 @@ export const mutations: Mutation[] = [
     name: "given-up-undropped",
     breaks: "`is_ok_and` of an `Err` with a destructor leaves it undropped",
     file: "src/lower/combinators/values.rs",
-    find: "        self.drop_value(given_up.0, given_up.1, span, &mut dropped)?;\n",
+    find: "        dropped.extend(given_up_dropped);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "combinators_owned_drops"],
   },
@@ -91,13 +99,21 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^xor_drop_panics.rs$"],
   },
   {
+    name: "or-dropped-otherwise-unguarded",
+    breaks:
+      "the variant a call gives up isn't dropped as what it gives otherwise unwinds, `unwrap_or_default`'s `Err` as its `T::default()` panics (#903)",
+    file: "src/lower/combinators/values.rs",
+    find: "        let mut dropped = match otherwise.may_throw() {\n",
+    replace: "        let mut dropped = match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^inspect_unwinds_its_value.rs$"],
+  },
+  {
     name: "or-dropped-before-otherwise",
     breaks:
       "the variant a call gives up is dropped before what it gives otherwise is made, a `Default`'s",
     file: "src/lower/combinators/values.rs",
-    find: "        let mut dropped = vec![StmtKind::Assign(Expr::var(&name), otherwise).at(js_span)];\n        self.drop_value(given_up.0, given_up.1, span, &mut dropped)?;\n",
-    replace:
-      "        let mut dropped = Vec::new();\n        self.drop_value(given_up.0, given_up.1, span, &mut dropped)?;\n        dropped.push(StmtKind::Assign(Expr::var(&name), otherwise).at(js_span));\n",
+    find: "        };\n        dropped.extend(given_up_dropped);\n",
+    replace: "        };\n        dropped.splice(0..0, given_up_dropped);\n",
     tests: ["test/corpus.test.ts", "-t", "^default_and_pop_if_drops.rs$"],
   },
   {

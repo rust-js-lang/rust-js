@@ -502,33 +502,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
     }
 
-    /// Whether std's clone of a value of `ty` may panic: a `Copy` value's
-    /// never does; the crate's type's is its `Clone`'s, which may unwind
-    /// but where its `clone` never does (ADR 0902); a library's, a
-    /// `Vec`'s or an `Option`'s, its type arguments' clones, as a tuple's
-    /// and an array's are its parts', and a closure's its captures'; a type
-    /// parameter's, a `dyn`'s or an opaque type's is anyone's (#708).
-    fn clone_may_panic(&self, ty: Ty<'tcx>) -> bool {
-        if self.is_copy(ty) {
-            return false;
-        }
-        match ty.kind() {
-            ty::Param(_) | ty::Dynamic(..) | ty::Alias(..) => true,
-            ty::Adt(adt, _) if adt.did().is_local() => {
-                let Some(clone) = self.tcx.lang_items().clone_trait() else {
-                    return true;
-                };
-                (self.recognition().user_impl(ty::TraitRef::new(self.tcx, clone, [ty])))
-                    .is_some_and(|imp| self.impl_may_unwind(imp))
-            }
-            ty::Adt(_, args) => args.types().any(|arg| self.clone_may_panic(arg)),
-            ty::Tuple(parts) => parts.iter().any(|part| self.clone_may_panic(part)),
-            ty::Array(item, _) | ty::Slice(item) => self.clone_may_panic(*item),
-            ty::Closure(_, args) => (args.as_closure().upvar_tys().iter()).any(|upvar| self.clone_may_panic(upvar)),
-            _ => false,
-        }
-    }
-
     /// Whether an iterator `iter_ty` holds, itself or a source std's
     /// adapters step, its revealed type's, may panic as it's stepped where
     /// no JS of its shows it: the crate's own, or a library's, whose impl
@@ -557,7 +530,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether a method the impl `imp` writes may unwind: any but one of
     /// the crate's that never does (ADR 0902).
-    fn impl_may_unwind(&self, imp: DefId) -> bool {
+    pub(in crate::lower) fn impl_may_unwind(&self, imp: DefId) -> bool {
         self.tcx.associated_item_def_ids(imp).iter().any(|&method| {
             matches!(self.tcx.def_kind(method), rustc_hir::def::DefKind::AssocFn)
                 && !self.krate.never_unwinding.contains(&method)
@@ -572,14 +545,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut seen = IndexSet::default();
         (self.reveal(iter_ty).walk().filter_map(|part| part.as_type()))
             .filter(|part| match *part.kind() {
-                ty::Closure(def_id, _) | ty::FnDef(def_id, _) => {
-                    seen.insert(def_id)
-                        && !self.krate.never_unwinding.contains(&def_id)
-                        && !matches!(self.tcx.def_kind(def_id), rustc_hir::def::DefKind::Ctor(..))
-                }
+                ty::Closure(def_id, _) | ty::FnDef(def_id, _) => seen.insert(def_id) && self.call_may_unwind(*part),
                 _ => false,
             })
             .count()
+    }
+
+    /// Whether a call of `f`, a closure's or a function's type, may panic:
+    /// any but one of the crate's that never unwinds (ADR 0902) or a
+    /// constructor; of another, a `dyn Fn`'s or a type parameter's,
+    /// anyone's. The one answer what a call holds across asks (#903).
+    pub(in crate::lower) fn call_may_unwind(&self, f: Ty<'tcx>) -> bool {
+        match *self.reveal(f).kind() {
+            ty::Closure(def_id, _) | ty::FnDef(def_id, _) => {
+                !self.krate.never_unwinding.contains(&def_id)
+                    && !matches!(self.tcx.def_kind(def_id), rustc_hir::def::DefKind::Ctor(..))
+            }
+            _ => true,
+        }
     }
 
     /// `$foldToArray`'s arguments, `it` folded into a `Vec` of `item`s:

@@ -26,4 +26,20 @@ export const mutations: Mutation[] = [
     replace: "    () => undefined,\n",
     tests: ["test/runtime-package.test.ts", "-t", "room past"],
   },
+  {
+    name: "repeat-clone-keeps-value",
+    breaks: "`vec![x; n]` whose clone of `x` panics leaves `x` undropped (#898)",
+    file: "src/runtime/repeat.js",
+    find: "      () => drop?.(item),\n      () => drop && $dropItems(result, drop),\n",
+    replace: "      () => drop && $dropItems(result, drop),\n",
+    tests: ["test/corpus.test.ts", "-t", "^resize_fill_repeat_unwind.rs$"],
+  },
+  {
+    name: "repeat-clone-keeps-clones",
+    breaks: "`vec![x; n]` whose clone of `x` panics leaves the clones it made undropped (#898)",
+    file: "src/runtime/repeat.js",
+    find: "      () => drop && $dropItems(result, drop),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^resize_fill_repeat_unwind.rs$"],
+  },
 ];

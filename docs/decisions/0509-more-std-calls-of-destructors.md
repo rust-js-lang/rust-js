@@ -43,3 +43,12 @@ then drops what's given up, for every call that asks it.**
 - The diagnostic and the mutation that hold `check_takes_drops` refuse
   `iter::successors` of values with a destructor now.
 - Mutations drop first, keep the `Err`, and refuse each call.
+
+## Amendment: what's given up is held across what's made otherwise (2026-11-08, #903)
+
+`unwrap_or_default`'s `Err`, and what `or_dropped` gives up of any call,
+is dropped as what it makes otherwise unwinds, where that may throw, a
+`T::default()` of the crate's: `try { kept = dDefault(); } catch (error)
+{ dDrop(r._0); throw error; } dDrop(r._0);`. `inspect` and `inspect_err`
+drop the value they give back as their closure unwinds, where it may.
+[1102](1102-what-is-made-in-turn-drops-as-a-later-part-unwinds.md).

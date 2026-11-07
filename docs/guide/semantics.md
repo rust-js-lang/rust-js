@@ -882,6 +882,79 @@ fields, `const previous = depth; try { .. } finally { depth = previous; }`
 is that read alone, though it reads another field after, and what runs
 after the call is in the one `try`, an `if` of only comments too
 ([1053](../decisions/1053-a-guards-take-of-a-field-read-no-more-is-gone.md)).
+A value made of parts in turn drops the parts it made as a later one's
+making panics, as Rust does: a derived `Clone`'s or `Default`'s fields,
+a tuple's, the latest first, as Rust drops an aggregate's operands, in
+`$madeInTurn((made) => ..)`, each part a later one may unwind past given to
+`made(part, drop)`; a clone of a `Vec`'s, a `VecDeque`'s, an array's or a
+map's items, in order, as std's clone drops what its guard holds,
+`$madeEach(items, clone, drop)`. Only where a later part's clone or
+`default()` may panic and an earlier part has a destructor: a clone of
+`Copy`, `String` or `Vec<String>` fields reads as it always has.
+`resize`, `fill` and `vec![x; n]` drop the value they clone from as a
+clone of it panics, and `inspect` and `inspect_err` the value they give
+back as their closure does
+([1102](../decisions/1102-what-is-made-in-turn-drops-as-a-later-part-unwinds.md)):
+
+```rust
+pub struct Loud(pub u32);
+
+impl Clone for Loud {
+    fn clone(&self) -> Loud {
+        assert!(self.0 > 0, "no clone of zero");
+        Loud(self.0)
+    }
+}
+
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+
+#[derive(Clone)]
+pub struct Pair {
+    pub first: Loud,
+    pub second: Loud,
+}
+
+pub fn copy(pair: &Pair) -> Pair {
+    pair.clone()
+}
+
+pub fn copies(items: &[Loud]) -> Vec<Loud> {
+    items.to_vec()
+}
+```
+
+```js
+import { $madeEach, $madeInTurn } from "@rust-js/runtime";
+
+export const loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
+function loudClone_clone(loud) {
+  if (loud[0] <= 0) {
+    throw new Error("no clone of zero");
+  }
+  return [loud[0]];
+}
+
+function loudDrop_drop(loud) {
+  console.log(`drop ${loud[0]}`);
+}
+
+export function copy(pair) {
+  return $madeInTurn((made) => ({
+    ...pair,
+    first: made(loudClone_clone(pair.first), loudDrop_drop),
+    second: loudClone_clone(pair.second),
+  }));
+}
+
+export function copies(items) {
+  return $madeEach(items, (item) => loudClone_clone(item), loudDrop_drop);
+}
+```
+
 An `unwrap()` or `expect("..")` whose panic drops what no `finally` does
 is its test, as an `assert!` is: `if (f == null) { $dispose(task); throw
 new Error(".."); } f(task);`

@@ -3,6 +3,7 @@
 import {
   $borrow,
   $borrowMut,
+  $madeEach,
   $newCyclic,
   $rcDrop,
   $unborrow,
@@ -55,7 +56,14 @@ function main() {
     console.log(`${$borrow(list.value).length}`);
     const copy = $withBorrow(
       list.value,
-      (value) => value.map((item) => nodeClone_clone(item)),
+      (value) =>
+        $madeEach(
+          value,
+          (item) => nodeClone_clone(item),
+          (node) => {
+            $weakDrop(node.list);
+          },
+        ),
       true,
     );
     try {

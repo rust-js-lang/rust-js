@@ -61,3 +61,12 @@ that loop, the dictionary drops' and a map's, go through it.
 - Mutations drop none of what each replaces, cuts off or is given, compare
   structs by `===`, push the same objects, refuse each edit, and refuse a
   type's own `clone_from`.
+
+## Amendment: the value given is held till the last (2026-11-08, #898)
+
+`resize`, `fill` and `vec![x; n]` own the value they clone from till they
+move it in: it's dropped as a clone of it panics, as a drop of what
+`resize` cuts off or `fill` replaces panics, and as `resize`'s room check
+does, each loop under `$unwinds`; `vec!`'s clones made already are
+dropped after it, as `extend_with`'s frame unwinds before `from_elem`
+drops its `Vec`. [1102](1102-what-is-made-in-turn-drops-as-a-later-part-unwinds.md).

@@ -98,6 +98,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// `f(given)`, `inspect`'s call of its closure, `f_ty`, and what it was
+    /// given, a `held`, dropped as `f` unwinds where it may and `held` has a
+    /// destructor, as std's `inspect` owns what it gives back (#903).
+    pub(super) fn inspected(
+        &mut self,
+        f: Expr,
+        (given, held): (Expr, Option<Ty<'tcx>>),
+        f_ty: Ty<'tcx>,
+        span: Span,
+    ) -> R<Vec<Stmt>> {
+        let js_span = self.js_span(span);
+        let mut call = Vec::new();
+        let called = self.call_with(f, vec![given.clone()], "inspected", &mut call);
+        call.push(StmtKind::Expr(called).at(js_span));
+        let held = held.filter(|&held| self.drops(held) != Drops::Nothing && self.call_may_unwind(f_ty));
+        let Some(held) = held else {
+            return Ok(call);
+        };
+        let mut dropped = Vec::new();
+        self.drop_value(given, held, span, &mut dropped)?;
+        Ok(crate::lower::drops::dropped_unwinding(call, dropped, js_span))
+    }
+
     /// `name`, set by `then` where `test` holds, and otherwise to
     /// `otherwise`, and then `given_up`, the other variant's value, dropped,
     /// as std's drops it when the call returns (ADRs 0179, 0509): `let
@@ -115,8 +138,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let js_span = self.js_span(span);
-        let mut dropped = vec![StmtKind::Assign(Expr::var(&name), otherwise).at(js_span)];
-        self.drop_value(given_up.0, given_up.1, span, &mut dropped)?;
+        let mut given_up_dropped = Vec::new();
+        self.drop_value(given_up.0, given_up.1, span, &mut given_up_dropped)?;
+        // `otherwise` made while what's given up is held, which is dropped
+        // as it unwinds too, `unwrap_or_default`'s `T::default()` (#903).
+        let made = vec![StmtKind::Assign(Expr::var(&name), otherwise.clone()).at(js_span)];
+        let mut dropped = match otherwise.may_throw() {
+            true => crate::lower::drops::dropped_unwinding(made, given_up_dropped.clone(), js_span),
+            false => made,
+        };
+        dropped.extend(given_up_dropped);
         out.push(StmtKind::Let(name.clone(), None).at(js_span));
         out.push(StmtKind::If(test, then, Some(dropped)).at(js_span));
         Ok(Expr::var(&name))

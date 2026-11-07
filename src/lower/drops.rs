@@ -33,7 +33,7 @@ mod functions;
 mod glue;
 mod inlined;
 mod parts;
-pub(in crate::lower) use parts::{cleanup, dropped_after, each_dropped, is_cleanup, may_throw};
+pub(in crate::lower) use parts::{cleanup, dropped_after, dropped_unwinding, each_dropped, is_cleanup, may_throw};
 mod ref_cells;
 mod scopes;
 mod types;

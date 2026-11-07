@@ -924,7 +924,9 @@ export function $remove(map, key, dropKey) {
 // `vec![item; count]`: `count - 1` clones of `item`, then `item` itself, as
 // std's `from_elem` makes them, room for them of `size` bytes each asked
 // first (ADR 0774); of none, or of no room, `item` dropped by `drop`, where
-// it has a destructor.
+// it has a destructor. As a clone unwinds, `item`, then the clones made
+// already, in order, as std's `extend_with` drops what it was given before
+// `from_elem` drops its `Vec` (#898).
 export function $repeat(item, count, size, clone, drop) {
   $unwinds(
     () => $roomFor(count, size),
@@ -932,7 +934,13 @@ export function $repeat(item, count, size, clone, drop) {
   );
   const result = [];
   if (count > 0) {
-    for (let i = 1; i < count; i++) result.push(clone(item));
+    $unwinds(
+      () => {
+        for (let i = 1; i < count; i++) result.push(clone(item));
+      },
+      () => drop?.(item),
+      () => drop && $dropItems(result, drop),
+    );
     result.push(item);
   } else {
     drop?.(item);
@@ -6030,17 +6038,24 @@ export function $ceilCharBoundary(s, at) {
 // `v.fill(x)`: a clone of `x` in each but the last, which is `x` itself, as
 // std's is: by its type's `clone_from` (`cloneFrom`) where it has one, or
 // `clone` where a clone is more than the value. Of items with a destructor,
-// each it replaces dropped by `drop`, or `x`, of none to write (ADR 0507).
+// each it replaces dropped by `drop`, or `x`, of none to write (ADR 0507);
+// `x` dropped too as a clone, or a drop of what it replaces, unwinds, as
+// std's `fill` owns it till the last (#898).
 export function $fill(v, x, clone, cloneFrom, drop) {
-  for (let i = 0; i < v.length - 1; i++) {
-    if (cloneFrom) {
-      cloneFrom(v, i, x);
-      continue;
-    }
-    const old = v[i];
-    v[i] = clone(x);
-    drop?.(old);
-  }
+  $unwinds(
+    () => {
+      for (let i = 0; i < v.length - 1; i++) {
+        if (cloneFrom) {
+          cloneFrom(v, i, x);
+          continue;
+        }
+        const old = v[i];
+        v[i] = clone(x);
+        drop?.(old);
+      }
+    },
+    () => drop?.(x),
+  );
   if (v.length === 0) {
     drop?.(x);
     return;
@@ -12959,24 +12974,60 @@ export function $swapRemove(v, index) {
 // `v.resize(length, item)`: shortened, as `truncate` drops what's past it,
 // then `item` dropped, or lengthened with clones of `item`, and `item`
 // itself last, as std's is (ADR 0507); room for `length` items of `size`
-// bytes each asked first, where it may not fit, and of none, `item`
-// dropped as it unwinds (ADR 0774).
+// bytes each asked first, where it may not fit (ADR 0774). `item` is
+// dropped as any of them unwinds, a drop of what's cut off, no room or a
+// clone, as std's `resize` owns it till the last; the clones pushed stay
+// `v`'s (#898).
 export function $resize(v, length, item, size, clone, drop) {
   if (length <= v.length) {
-    $truncate(v, length, drop);
+    $unwinds(
+      () => $truncate(v, length, drop),
+      () => drop?.(item),
+    );
     drop?.(item);
     return;
   }
-  if (size !== undefined) {
-    try {
-      $roomFor(length, size);
-    } catch (panic) {
-      drop?.(item);
-      throw panic;
-    }
-  }
-  for (let i = v.length + 1; i < length; i++) v.push(clone === undefined ? item : clone(item));
+  $unwinds(
+    () => {
+      if (size !== undefined) $roomFor(length, size);
+      for (let i = v.length + 1; i < length; i++) v.push(clone === undefined ? item : clone(item));
+    },
+    () => drop?.(item),
+  );
   v.push(item);
+}
+
+// A value made of parts in turn, a struct's or a tuple's derived clone or
+// default: what `build(made)` makes, where each part given to `made(part,
+// drop)` as it's made is dropped by its `drop` as a later part's making
+// throws, a panic, the latest first, as Rust drops an aggregate's operands
+// made so far as a later one unwinds; then what was thrown goes on (#897,
+// #902).
+export function $madeInTurn(build) {
+  const drops = [];
+  const made = (part, drop) => {
+    drops.unshift(() => drop?.(part));
+    return part;
+  };
+  return $unwinds(
+    () => build(made),
+    () => drops.forEach((drop) => drop()),
+  );
+}
+
+// `Array.from(items, make)`, a clone of a slice's items, a `VecDeque`'s or
+// a map's entries: where a `make` throws, a panic, what it made already is
+// dropped by `drop`, in order, as std's clone drops what its guard holds;
+// then what was thrown goes on (#897).
+export function $madeEach(items, make, drop) {
+  const made = [];
+  $unwinds(
+    () => {
+      for (const item of items) made.push(make(item));
+    },
+    () => $dropItems(made, drop),
+  );
+  return made;
 }
 
 // `v.resize_with(length, make)`: shortened, as `truncate` drops what's past

@@ -637,14 +637,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Comb::Inspect | Comb::ResultInspect { .. } => {
                 let f = next();
-                let (test, given) = match comb {
-                    Comb::Inspect => (some, value),
-                    Comb::ResultInspect { err } => (tag(!err), inside()),
+                let (test, given, held) = match comb {
+                    Comb::Inspect => (some, value, self.option_of(subject_ty)),
+                    Comb::ResultInspect { err } => (tag(!err), inside(), generic_args.types().nth(usize::from(err))),
                     _ => unreachable!("an inspection"),
                 };
-                let mut call = Vec::new();
-                let called = self.call_with(f, vec![given], "inspected", &mut call);
-                call.push(StmtKind::Expr(called).at(self.js_span(span)));
+                let call = self.inspected(f, (given, held), tys[1], span)?;
                 out.push(StmtKind::If(test, call, None).at(self.js_span(span)));
                 subject
             }

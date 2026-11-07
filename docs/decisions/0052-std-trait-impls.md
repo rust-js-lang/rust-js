@@ -227,3 +227,12 @@ is `circleShape$1` beside `fn circle_shape`. Held by the corpus's
 `impl_named_like_a_function` against native Rust, and the mutation
 `impl-named-like-a-function-refused` (`analysis/naming.rs`).
 
+## Amendment: what's made in turn drops as a later part unwinds (2026-11-08, #897, #902)
+
+A derived or std `Clone` and `Default` rust-js writes makes its parts in
+turn, and where a later part's clone or `default()` may panic past one
+made before it with a destructor, that one is dropped as it unwinds, as
+Rust drops an aggregate's operands: a struct's, a variant's or a tuple's
+in `$madeInTurn((made) => ..)`, the latest first; a clone's items in
+`$madeEach(items, clone, drop)`, in order, as std's guard drops them.
+Where none may, the clone and the default read as before. [1102](1102-what-is-made-in-turn-drops-as-a-later-part-unwinds.md).

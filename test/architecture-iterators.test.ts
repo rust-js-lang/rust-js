@@ -269,7 +269,6 @@ const ownUnwinding: Record<string, string> = {
   "src/runtime/json_value_reader.js": "serde's decoding error caught to become a `Result`, not a drop",
   "src/runtime/map_ops.js": "a map's `retain` of a test that may panic",
   "src/runtime/rc.js": "`Rc::unwrap_or_clone` of a clone that may panic",
-  "src/runtime/resize.js": "a `Vec`'s `resize_with` of a function that may panic, its length set as std's guard sets it",
   "src/runtime/retain.js": "a `Vec`'s `retain` of a test that may panic, its items kept as std's guard keeps them",
   "src/runtime/should_panic.js": "a `#[should_panic]` test's panic caught, not a drop",
   "src/runtime/slice_ops.js": "a slice's `is_sorted_by` and `retain_mut` of a function that may panic",

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "dropped-unwinding-not-rethrown",
+    breaks: "what a call holds dropped as it unwinds swallows the panic, so `inspect`'s closure's panic ends no `catch_unwind` (#903)",
+    file: "src/lower/drops/parts.rs",
+    find: "    let mut handler = cleanup(dropped, js_span);\n    handler.push(StmtKind::Throw(Expr::var(\"error\")).at(js_span));\n    vec![StmtKind::TryCatch(body, Some(\"error\".into()), handler).at(js_span)]\n",
+    replace: "    let handler = cleanup(dropped, js_span);\n    vec![StmtKind::TryCatch(body, Some(\"error\".into()), handler).at(js_span)]\n",
+    tests: ["test/corpus.test.ts", "-t", "^inspect_unwinds_its_value.rs$"],
+  },
+  {
     name: "btree-drops-unsorted",
     breaks:
       "a `BTreeMap` JS gives drops its values in the order they went in (the crate's own are kept in order, ADR 0404, amended)",

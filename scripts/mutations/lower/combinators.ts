@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "inspect-err-holds-ok",
+    breaks: "`inspect_err`'s `Err` is dropped as the `Ok`'s type as its closure panics (#903)",
+    file: "src/lower/combinators.rs",
+    find: "generic_args.types().nth(usize::from(err))),\n",
+    replace: "generic_args.types().nth(0)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^inspect_unwinds_its_value.rs$"],
+  },
+  {
     name: "then-value-not-present",
     breaks:
       "`bool::then_some(v)`'s `v`, of a `Some` not boxed, isn't known there, so `if let Some(x) = wanted.then_some(item)` tests `x != null`, not `wanted` (ADR 0910)",

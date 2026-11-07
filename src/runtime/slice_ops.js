@@ -3,17 +3,24 @@
 // `v.fill(x)`: a clone of `x` in each but the last, which is `x` itself, as
 // std's is: by its type's `clone_from` (`cloneFrom`) where it has one, or
 // `clone` where a clone is more than the value. Of items with a destructor,
-// each it replaces dropped by `drop`, or `x`, of none to write (ADR 0507).
+// each it replaces dropped by `drop`, or `x`, of none to write (ADR 0507);
+// `x` dropped too as a clone, or a drop of what it replaces, unwinds, as
+// std's `fill` owns it till the last (#898).
 function $fill(v, x, clone, cloneFrom, drop) {
-  for (let i = 0; i < v.length - 1; i++) {
-    if (cloneFrom) {
-      cloneFrom(v, i, x);
-      continue;
-    }
-    const old = v[i];
-    v[i] = clone(x);
-    drop?.(old);
-  }
+  $unwinds(
+    () => {
+      for (let i = 0; i < v.length - 1; i++) {
+        if (cloneFrom) {
+          cloneFrom(v, i, x);
+          continue;
+        }
+        const old = v[i];
+        v[i] = clone(x);
+        drop?.(old);
+      }
+    },
+    () => drop?.(x),
+  );
   if (v.length === 0) {
     drop?.(x);
     return;

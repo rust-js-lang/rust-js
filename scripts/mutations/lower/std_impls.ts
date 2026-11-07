@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "map-entries-unguarded",
+    breaks: "a clone of a map whose value's clone panics leaves the entries it made undropped (#897)",
+    file: "src/lower/std_impls.rs",
+    find: "                let made = match may_panic && self.drops(entry) != super::drops::Drops::Nothing {\n",
+    replace: "                let made = match false && self.drops(entry) != super::drops::Drops::Nothing {\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_unwinds_what_it_made.rs$"],
+  },
+  {
     name: "text-pattern-constant-unnamed",
     breaks:
       "a `match` of `&str` constants tests their text, `case \"fulfilled\":`, not the constant the program wrote, `case INITIALIZED:` (ADR 0590, amended)",
@@ -183,9 +191,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a derived `clone` is `{ ...s }`, sharing the `Vec` the copy is pushed to, so the push shows in the original too",
     file: "src/lower/std_impls.rs",
-    find: "                .map_or(self.needs_clone(t), |item| self.needs_clone(item))\n            {\n",
-    replace:
-      "                .map_or(self.needs_clone(t), |item| self.needs_clone(item))\n                && false\n            {\n",
+    find: "                    .map_or(self.needs_clone(t), |item| self.needs_clone(item))\n            })\n",
+    replace: "                    .map_or(self.needs_clone(t), |item| self.needs_clone(item))\n                    && false\n            })\n",
     tests: [
       "test/compiler.test.ts",
       "-t",
@@ -210,9 +217,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of a `HashMap` of `Vec`s is `new Map(m)`, sharing each `Vec`, so a push to the clone's shows in the original's",
     file: "src/lower/std_impls.rs",
-    find: "                let value = args.types().nth(1).filter(|&v| !set && self.needs_clone(v));",
-    replace:
-      "                let value = args.types().nth(1).filter(|&v| false && !set && self.needs_clone(v));",
+    find: "                let value = value_ty.filter(|&v| self.needs_clone(v));",
+    replace: "                let value = value_ty.filter(|&v| false && self.needs_clone(v));",
     tests: [
       "test/compiler.test.ts",
       "-t",
@@ -224,8 +230,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a derived clone of a `Cell` or a `OnceCell` field copies it again, `{ ...c, count: c.count }`, which the spread did",
     file: "src/lower/std_impls.rs",
-    find: "            if self\n                .property_cell(def, t)\n                .map_or(self.needs_clone(t), |item| self.needs_clone(item))\n            {\n",
-    replace: "            if self.needs_clone(t) {\n",
+    find: "                self.property_cell(def(self, i), t)\n                    .map_or(self.needs_clone(t), |item| self.needs_clone(item))\n",
+    replace: "                self.needs_clone(t)\n",
     tests: [
       "test/lowering-cells.test.ts",
       "-t",
@@ -989,8 +995,8 @@ export const mutations: Mutation[] = [
     name: "variant-clone-boxes-cells",
     breaks: "a derived `Clone` of an enum reads its variant's `RefCell` field that holds its value as `{ value }`, `{ ...a, runs: { value: $borrow(a.runs).value } }` (#503)",
     file: "src/lower/std_impls.rs",
-    find: "                Some(variant) => variant.fields.get(rustc_abi::FieldIdx::from_usize(i)),\n",
-    replace: "                Some(_) => None,\n",
+    find: "            Some(variant) => variant.fields.get(rustc_abi::FieldIdx::from_usize(i)),\n",
+    replace: "            Some(_) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_variant_derives.rs$"],
   },
   {

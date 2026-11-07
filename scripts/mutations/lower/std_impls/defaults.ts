@@ -3,6 +3,46 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "default-never-panics",
+    breaks: "a hand-written `Default` is taken to never panic, so a derived one's fields made before it leak as it does (#902)",
+    file: "src/lower/std_impls/defaults.rs",
+    find: "            _ if let Some(imp) = self.recognition().user_impl(tr) => self.impl_may_unwind(imp),\n",
+    replace: "            _ if let Some(imp) = self.recognition().user_impl(tr) => false && self.impl_may_unwind(imp),\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_unwinds_what_it_made.rs$"],
+  },
+  {
+    name: "default-of-struct-never-panics",
+    breaks: "a derived `Default` of a struct is taken to never panic, as its fields' may, so a struct of them made in turn leaks its earlier ones (#902)",
+    file: "src/lower/std_impls/defaults.rs",
+    find: "                (adt.all_fields()).any(|f| self.default_may_panic_in(self.field_ty(f, args), seen))\n",
+    replace: "                adt.all_fields().any(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_unwinds_what_it_made.rs$"],
+  },
+  {
+    name: "default-of-vec-may-panic",
+    breaks: "an empty collection's default, which makes no item, is taken to panic as its item's may, a guard where none is needed (#902)",
+    file: "src/lower/std_impls/defaults.rs",
+    find: "            _ => false,\n        };\n        seen.pop();\n",
+    replace: "            ty::Adt(_, args) => args.types().any(|arg| self.default_may_panic_in(arg, seen)),\n            _ => false,\n        };\n        seen.pop();\n",
+    tests: ["test/lowering-made-in-turn.test.ts"],
+  },
+  {
+    name: "array-default-unguarded",
+    breaks: "an array's `Default` whose item's `default()` panics leaks the items it made (#902)",
+    file: "src/lower/std_impls/defaults.rs",
+    find: "                let parts = vec![(*item, self.default_may_panic(*item)); len as usize];\n",
+    replace: "                let parts = vec![(*item, false); len as usize];\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_unwinds_what_it_made.rs$"],
+  },
+  {
+    name: "tuple-default-unguarded",
+    breaks: "a tuple's `Default` whose part's `default()` panics leaks the parts it made (#902)",
+    file: "src/lower/std_impls/defaults.rs",
+    find: "                    let parts: Vec<_> = (tys.iter()).map(|&t| (t, self.default_may_panic(t))).collect();\n",
+    replace: "                    let parts: Vec<_> = (tys.iter()).map(|&t| (t, false)).collect();\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_unwinds_what_it_made.rs$"],
+  },
+  {
     name: "default-str-unknown",
     breaks: "`Default` of a `&str` is refused",
     file: "src/lower/std_impls/defaults.rs",
@@ -15,9 +55,8 @@ export const mutations: Mutation[] = [
     name: "default-array-empty",
     breaks: "`Default` of a `[u16; 3]` is no items",
     file: "src/lower/std_impls/defaults.rs",
-    find: "                Expr::array((0..len).map(|_| self.default_value(*item, span)).collect::<R<_>>()?)",
-    replace:
-      "                Expr::array((0..len).skip(len as usize).map(|_| self.default_value(*item, span)).collect::<R<_>>()?)",
+    find: "                Self::in_turn(Expr::array(items), made)\n            }\n            _ if ty.is_unit()",
+    replace: "                Self::in_turn(Expr::array(items.into_iter().skip(len as usize).collect()), made)\n            }\n            _ if ty.is_unit()",
     tests: ["test/corpus.test.ts", "-t", "std_odds"],
   },
   {
@@ -57,7 +96,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a derived `Default`'s `Cell` field is `{ value: 0 }`, where it's `0`",
     file: "src/lower/std_impls/defaults.rs",
-    find: "                                let value = self.holding(value, self.struct_field_def(ty, i), t);\n",
+    find: "                            let value = self.holding(value, self.struct_field_def(ty, i), t);\n",
     replace: "",
     tests: [
       "test/lowering-cells.test.ts",
@@ -70,8 +109,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a derived `Default` of props with a flattened field nests it, `{ anchor: {} }`",
     file: "src/lower/std_impls/defaults.rs",
-    find: "                    self.flattened_object(made, ty)\n",
-    replace: "                    made\n",
+    find: "                    Self::in_turn(self.flattened_object(Expr::object(props), ty), made)\n",
+    replace: "                    Self::in_turn(Expr::object(props), made)\n",
     tests: [
       "test/jsx-props.test.ts",
       "-t",
@@ -120,8 +159,8 @@ export const mutations: Mutation[] = [
     name: "field-symbol-default-by-name",
     breaks: "a derived `Default`'s field a symbol names is keyed by the symbol item's name",
     file: "src/lower/std_impls/defaults.rs",
-    find: "                                    Some((item, at)) => Prop::Keyed(self.field_symbol(item, at), value),",
-    replace: "                                    Some((item, _)) => Prop::Field(self.tcx.item_name(item).to_string(), value),",
+    find: "                                Some((item, at)) => Prop::Keyed(self.field_symbol(item, at), value),",
+    replace: "                                Some((item, _)) => Prop::Field(self.tcx.item_name(item).to_string(), value),",
     tests: [
       "test/field-symbol-names.test.ts",
       "-t",

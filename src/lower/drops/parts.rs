@@ -462,6 +462,18 @@ pub(super) fn dropped_after_unwinding(
     out
 }
 
+/// `body`, and `dropped` as it unwinds alone, what a call holds that its
+/// caller drops: `try { body } catch (error) { $cleanup(..); throw error;
+/// }`, `inspect`'s value as its closure panics (#903).
+pub(in crate::lower) fn dropped_unwinding(body: Vec<Stmt>, dropped: Vec<Stmt>, js_span: js::Span) -> Vec<Stmt> {
+    if dropped.is_empty() {
+        return body;
+    }
+    let mut handler = cleanup(dropped, js_span);
+    handler.push(StmtKind::Throw(Expr::var("error")).at(js_span));
+    vec![StmtKind::TryCatch(body, Some("error".into()), handler).at(js_span)]
+}
+
 /// What a panic runs as it unwinds, `cleanup`, the drops of what the frames
 /// it leaves hold: as it is where it can't throw; else in `$cleanup(() =>
 /// { .. })`, where a throw, a drop's panic while that panic unwinds, aborts
