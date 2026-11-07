@@ -961,13 +961,16 @@ panics: a map's `clear()` is empty, its entries dropped once, `try {
 value, `try { <drop old> } finally { o = value; }`; `dedup_by` drops each
 duplicate as it's found, of a `Box`'s or an `Rc`'s too; and a `Vec`'s
 `clone_from` is std's, `$cloneIntoVec`, which cuts what it has past the
-source's length, writes over each it keeps, then clones the rest on. Each
-only where a drop may panic, or the order of clones and drops can be seen
+source's length, writes over each it keeps, then clones the rest on; a
+`VecDeque`'s clears, then clones, `$cloneIntoDeque`; a `HashMap`'s drops
+its entries, then clones, `$cloneIntoMap`; an array's writes each item
+over; and an `Option`'s or a `Box`'s is its value's. Each only where a
+drop or a clone may panic, or the order of clones and drops can be seen
 ([1102](../decisions/1102-what-is-made-in-turn-drops-as-a-later-part-unwinds.md),
 amended):
 
 ```rust
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 
 pub struct Loud(pub u32);
 
@@ -994,10 +997,14 @@ pub fn replace(slot: &mut Option<Loud>, value: Loud) -> u32 {
 pub fn copy_into(into: &mut Vec<Loud>, from: &Vec<Loud>) {
     into.clone_from(from);
 }
+
+pub fn queue_into(into: &mut VecDeque<Loud>, from: &VecDeque<Loud>) {
+    into.clone_from(from);
+}
 ```
 
 ```js
-import { $cloneIntoVec, $cmp, $dropItems, $sortedEntries } from "@rust-js/runtime";
+import { $cloneIntoDeque, $cloneIntoVec, $cmp, $dropItems, $sortedEntries } from "@rust-js/runtime";
 
 export const loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
 function loudClone_clone(loud) {
@@ -1033,6 +1040,10 @@ export function replace(slot, value) {
 
 export function copyInto(into, from) {
   $cloneIntoVec(into, from, (item) => loudClone_clone(item), undefined, loudDrop_drop);
+}
+
+export function queueInto(into, from) {
+  $cloneIntoDeque(into, from, (item) => loudClone_clone(item), loudDrop_drop);
 }
 ```
 

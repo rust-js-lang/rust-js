@@ -244,4 +244,23 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^weak_uncounted_uses.rs$"],
     snapshots: true,
   },
+  {
+    name: "clone-from-old-undropped",
+    breaks:
+      "`clone_from` doesn't drop what was there, as `*dest = source.clone()` does",
+    file: "src/lower/mir/entries.rs",
+    find: "            self.drop_value(old, ty, span, out)?;\n",
+    replace: "            let _ = old;\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
+  },
+  {
+    name: "clone-from-shared",
+    breaks:
+      "`clone_from` writes the source itself, not a clone, so a change to one is seen in the other",
+    file: "src/lower/mir/entries.rs",
+    find: "        let clone = self.clone_value(source, ty, span, out)?;\n        let given = vec![dest, Value::Expr(clone)];\n",
+    replace:
+      "        let given = vec![dest, Value::Expr(source)];\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
+  },
 ];

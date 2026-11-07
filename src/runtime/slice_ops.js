@@ -90,6 +90,37 @@ function $cloneIntoVec(w, v, clone, cloneFrom, drop) {
   for (let i = w.length; i < v.length; i++) w.push(clone ? clone(v[i]) : v[i]);
 }
 
+// `w.clone_from(&v)` of a `VecDeque`, std's: `w` cleared, each item
+// dropped, then a clone of each of `v`'s pushed, what's pushed `w`'s as a
+// later clone panics (#922).
+function $cloneIntoDeque(w, v, clone, drop) {
+  $truncate(w, 0, drop);
+  for (const item of v) w.push(clone ? clone(item) : item);
+}
+
+// `w.clone_from(&v)` of a `LinkedList`, std's: each item `w` keeps written
+// over by `v`'s, its type's `clone_from` (`cloneFrom`) or a clone, the one
+// it replaces dropped; the rest popped from its back, each dropped, as
+// `pop_back` drops it, a panic stopping it; then a clone of each of `v`'s
+// rest pushed (#922).
+function $cloneIntoList(w, v, clone, cloneFrom, drop) {
+  const kept = Math.min(w.length, v.length);
+  for (let i = 0; i < kept; i++) {
+    if (cloneFrom) {
+      cloneFrom(w, i, v[i]);
+      continue;
+    }
+    const old = w[i];
+    w[i] = clone ? clone(v[i]) : v[i];
+    drop?.(old);
+  }
+  while (w.length > v.length) {
+    const last = w.pop();
+    drop?.(last);
+  }
+  for (let i = kept; i < v.length; i++) w.push(clone ? clone(v[i]) : v[i]);
+}
+
 function $swapWithSlice(v, other) {
   if (v.length !== other.length) throw new Error("destination and source slices have different lengths");
   for (let i = 0; i < v.length; i++) [v[i], other[i]] = [other[i], v[i]];

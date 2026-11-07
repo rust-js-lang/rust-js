@@ -185,3 +185,55 @@ goes on past an entry's panicking drop where hashbrown's stops; #921, a
 `BTreeMap`'s `insert` or `extend` of a key already there writes the value
 before dropping the key it was given; #922, std's other `clone_from`s
 (`VecDeque`, `Option`, `Box`, the maps).
+
+## Amendment: std's other `clone_from`s (2026-11-08, #922)
+
+#919 made a `Vec`'s `clone_from` std's; std writes its own for other types
+too, and rust-js lowered each as `*dest = source.clone()`, every clone and
+then the old value dropped whole: another order of clones and drops, with
+no panic. Results change (0262); Rust's behaviour is preserved.
+
+**One answer of how a value is written over in place by a clone of
+another, `clone_into` (`std_types/slice.rs`, beside `clone_over`), asked
+by `clone_from` and by `clone_over`, so `fill`, `clone_from_slice` and an
+array's items follow it too:**
+
+- a `Vec`'s and a `BinaryHeap`'s, `$cloneIntoVec`, as #919;
+- a `VecDeque`'s, `clear()` then a clone of each pushed,
+  `$cloneIntoDeque(w, v, clone, drop)`;
+- a `LinkedList`'s, each it keeps written over (its items' `clone_from`),
+  the rest popped from its back, then the rest cloned on,
+  `$cloneIntoList`;
+- an array's, its slice's `clone_from_slice`, `$cloneFromSlice`;
+- a `HashMap`'s or a `HashSet`'s, hashbrown's: its entries dropped, a panic
+  stopping that and leaking the rest, the table emptied (`$dropTable`,
+  which #920 makes a hashed map's drop too), then each entry cloned as a
+  map's clone clones it (`entry_clone`, `clone_parts`' one answer), those
+  made dropped as a later one panics, `$cloneIntoMap(w, v, make, drop)`;
+- a `Box`'s, its value's.
+
+An `Option`'s is its value's where both are `Some`, and otherwise
+`*dest = source.clone()`: `if (w != null && v != null) $cloneIntoVec(w, v,
+..); else { <replaced> }`, at a `clone_from` and as an item's in
+`clone_over`. A `BTreeMap`'s and a `BTreeSet`'s are std's provided
+`*dest = source.clone()`, as before.
+
+Where the order is seen now includes a clone that may panic: of items with
+no destructor and a clone that panics, std's leaves `w` half written,
+which `*w = v.clone()` doesn't, so `$cloneIntoVec` and the others are used
+there too, a change to #919's rule. Where nothing drops and no clone may
+panic, the form is as it was.
+
+**Refused, not approximated:** a `clone_from` of an `Option`, a `Result`, a
+`Box` or a `Reverse` whose value's `clone_from` is the crate's own, or one
+`clone_into` writes in place where rust-js doesn't write its forwarding (a
+`Result`'s, a `Reverse`'s, an `Option` of a boxed payload):
+`forwards_clone_from`, held by `test/corpus/clone_from_option_own.rs`.
+Before, each was `*dest = source.clone()`, which never called the crate's
+`clone_from`; the refusal says what to write instead, and #927 asks for the forwarding. A generic `Option<T>`'s is still `*dest = source.clone()`, #928.
+
+Corpus: `clone_from_std_own`, each of the types under clones that panic,
+with and without destructors, against native Rust in both builds, failing
+before; mutations `clone-into-*`, `clone-from-*`, `option-items-cloned-over`,
+`vec-clone-into-panic-unseen`, `drop-table-leaks`; and the guide's
+`queue_into`.

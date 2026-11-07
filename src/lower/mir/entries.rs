@@ -230,6 +230,68 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ))
     }
 
+    /// The place a `&mut` given as `dest` refers to: of a place, the place;
+    /// of an object's, the object; of a box's, its `value`.
+    pub(super) fn dest_place(&mut self, dest: &Value<'tcx>, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        if let Value::Ref(place) = dest {
+            return Ok(place.clone());
+        }
+        let pointer = self.value_expr(dest.clone(), span)?;
+        Ok(match self.mut_ref_form(ty).is_the_object() {
+            true => pointer,
+            false => self.pointee_place(pointer),
+        })
+    }
+
+    /// Whether std's `clone_from` of `ty` is its value's, an `Option`'s, a
+    /// `Result`'s, a `Box`'s or a `Reverse`'s, where that value's is the
+    /// crate's own or one std writes in place (`clone_into`), which
+    /// `*dest = source.clone()` isn't (#922).
+    pub(super) fn forwards_clone_from(&mut self, ty: Ty<'tcx>, span: Span) -> R<bool> {
+        let ty::Adt(_, args) = ty.kind() else { return Ok(false) };
+        let forwards = ty.is_box()
+            || self.option_of(ty).is_some()
+            || self.is_std_type(ty, crate::lower::recognition::StdItem::Result)
+            || self.is_reverse(ty);
+        if !forwards {
+            return Ok(false);
+        }
+        for value in args.types() {
+            if self.recognition().own_clone_from(value)
+                || self.clone_into(value, span)?.is_some()
+                || self.forwards_clone_from(value, span)?
+            {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    /// `*dest = source.clone()`, std's provided `clone_from`: a clone of
+    /// `source` written through `dest` as `mem::replace` writes, then what it
+    /// held dropped (ADR 0147).
+    pub(super) fn replace_with_clone(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (dest, source): (Value<'tcx>, Expr),
+        (ty, def_id): (Ty<'tcx>, rustc_span::def_id::DefId),
+        arg_tys: &[Ty<'tcx>],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        let clone = self.clone_value(source, ty, span, out)?;
+        let given = vec![dest, Value::Expr(clone)];
+        let old = self.mir_swap_or_replace(state, (Std::Replace, def_id), given, arg_tys, span, out)?;
+        let old = self.value_expr(old, span)?;
+        if self.drops(ty) != crate::lower::drops::Drops::Nothing {
+            let old = self.droppable(old, ty, out);
+            self.drop_value(old, ty, span, out)?;
+        } else if old.has_effects() {
+            out.push(StmtKind::Expr(old).at(self.js_span(span)));
+        }
+        Ok(())
+    }
+
     /// `mem::swap`, `mem::replace`, `mem::take`, `Option::take` and
     /// `Option::replace`: of a `&mut` to a place, writing each in turn,
     /// `const t = a; a = b; b = t;`, which nothing else can see while the call

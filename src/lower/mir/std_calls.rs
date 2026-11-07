@@ -1149,36 +1149,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `dest.clone_from(&source)`: `mem::replace` of `dest` with a clone
             // of `source`, written as it writes, what it gives back dropped,
             // as `*dest = source.clone()` drops it.
-            // A `Vec`'s, std's own, where its order of clones and drops is
-            // seen: `$cloneIntoVec(dest, source, ..)`, in place (#919).
+            // std's own, where its order of clones and drops is seen, a
+            // `Vec`'s, a `VecDeque`'s, a hashed map's, an array's, a `Box`'s
+            // of one: `clone_into`'s, in place, `$cloneIntoVec(dest, source,
+            // ..)` (#919, #922); an `Option`'s of one, its value's where both
+            // are `Some`.
             Std::CloneFrom => lower(move |this, state, values, out| {
                 Ok(Value::Expr({
                     let ty = arg_tys[1].peel_refs();
                     let dest = values.next().expect("the destination");
                     let source = values.next().expect("the source");
                     let source = this.value_expr(source, span)?;
-                    if let ty::Adt(_, args) = ty.kind()
-                        && this.is_std_type(ty, crate::lower::recognition::StdItem::Vec)
-                        && let Some(into) = this.vec_clone_into(args.type_at(0), span)?
-                    {
-                        let dest = this.value_expr(dest, span)?;
+                    if let Some(into) = this.clone_into(ty, span)? {
+                        let dest = this.dest_place(&dest, ty, span)?;
                         this.flush(state, out)?;
-                        let mut list = vec![dest, source];
-                        list.extend(into);
-                        let call = Expr::call_helper("$cloneIntoVec", list);
-                        out.push(StmtKind::Expr(call).at(this.js_span(span)));
+                        out.push(StmtKind::Expr(into.call(dest, source)).at(this.js_span(span)));
                         return Ok(Value::Expr(Expr::undefined()));
                     }
-                    let clone = this.clone_value(source, ty, span, out)?;
-                    let given = vec![dest, Value::Expr(clone)];
-                    let old = this.mir_swap_or_replace(state, (Std::Replace, def_id), given, arg_tys, span, out)?;
-                    let old = this.value_expr(old, span)?;
-                    if this.drops(ty) != crate::lower::drops::Drops::Nothing {
-                        let old = this.droppable(old, ty, out);
-                        this.drop_value(old, ty, span, out)?;
-                    } else if old.has_effects() {
-                        out.push(StmtKind::Expr(old).at(this.js_span(span)));
+                    let inner = this.option_of(ty).filter(|&inner| !this.boxed_payload(inner));
+                    if let Some(into) = inner.map(|inner| this.clone_into(inner, span)).transpose()?.flatten() {
+                        this.flush(state, out)?;
+                        let source = match source.reads_same() {
+                            true => source,
+                            false => this.spill("source", source, out),
+                        };
+                        let to = this.dest_place(&dest, ty, span)?;
+                        let some = |e: &Expr| Expr::bin(Op::LooseNe, e.clone(), Expr::null());
+                        let both = Expr::bin(Op::And, some(&to), some(&source));
+                        let written = vec![StmtKind::Expr(into.call(to, source.clone())).at(this.js_span(span))];
+                        let mut replaced = Vec::new();
+                        this.replace_with_clone(state, (dest, source), (ty, def_id), arg_tys, span, &mut replaced)?;
+                        out.push(StmtKind::If(both, written, Some(replaced)).at(this.js_span(span)));
+                        return Ok(Value::Expr(Expr::undefined()));
                     }
+                    if this.forwards_clone_from(ty, span)? {
+                        return Err(this.unsupported(
+                            span,
+                            &format!("`clone_from` of `{ty}`, whose std `clone_from` is its value's, which the crate's or std's own writes in place (#927): write the value's `clone_from` where both hold one, `match (&mut *dest, source) {{ (Some(to), Some(from)) => to.clone_from(from), _ => *dest = source.clone() }}`"),
+                        ));
+                    }
+                    this.replace_with_clone(state, (dest, source), (ty, def_id), arg_tys, span, out)?;
                     Expr::undefined()
                 }))
             }),

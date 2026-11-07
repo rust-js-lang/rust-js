@@ -382,4 +382,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts",  "-t",  "^btree_search_order.rs$"],
   },
+  {
+    name: "drop-table-leaks",
+    breaks: "a hashed map's `clone_from` never drops the entries it held (#922)",
+    file: "src/runtime/map_ops.js",
+    find: "    if (drop) for (const entry of m) drop(entry);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
+  },
+  {
+    name: "clone-into-map-values-lost",
+    breaks: "a hashed map's `clone_from` puts each key with itself as its value (#922)",
+    file: "src/runtime/map_ops.js",
+    find: "  for (const entry of made) {\n    if (m instanceof Set) m.add(entry);\n    else m.set(entry[0], entry[1]);\n",
+    replace: "  for (const entry of made) {\n    if (m instanceof Set) m.add(entry);\n    else m.set(entry[0], entry[0]);\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
+  },
 ];

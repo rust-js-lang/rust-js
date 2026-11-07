@@ -547,25 +547,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^picked_items_drop.rs$"],
   },
   {
-    name: "clone-from-old-undropped",
-    breaks:
-      "`clone_from` doesn't drop what was there, as `*dest = source.clone()` does",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                    this.drop_value(old, ty, span, out)?;\n",
-    replace: "                    let _ = old;\n",
-    tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
-  },
-  {
-    name: "clone-from-shared",
-    breaks:
-      "`clone_from` writes the source itself, not a clone, so a change to one is seen in the other",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                    let clone = this.clone_value(source, ty, span, out)?;\n                    let given = vec![dest, Value::Expr(clone)];\n",
-    replace:
-      "                    let given = vec![dest, Value::Expr(source)];\n",
-    tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
-  },
-  {
     name: "own-write-all-unwrapped",
     breaks:
       "std's `write_all` of the crate's writer that fails throws out of where its result is a value",
@@ -865,8 +846,24 @@ export const mutations: Mutation[] = [
     name: "clone-from-vec-replaced",
     breaks: "`w.clone_from(&v)` of a `Vec` of items with a destructor clones every item, then drops the old `Vec`, not std's `SpecCloneIntoVec` order (#919)",
     file: "src/lower/mir/std_calls.rs",
-    find: "                        && this.is_std_type(ty, crate::lower::recognition::StdItem::Vec)\n",
-    replace: "                        && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^vec_clone_from_in_place.rs$"],
+    find: "                    if let Some(into) = this.clone_into(ty, span)? {\n",
+    replace: "                    if let Some(into) = this.clone_into(ty, span)?.filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(vec_clone_from_in_place|clone_from_std_own).rs$"],
+  },
+  {
+    name: "clone-from-option-replaced",
+    breaks: "`w.clone_from(&v)` of an `Option<Vec<D>>` of two `Some`s is `*w = v.clone()`, every clone before the old one's drop, not its `Vec`'s in place (#922)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    let inner = this.option_of(ty).filter(|&inner| !this.boxed_payload(inner));\n",
+    replace: "                    let inner = this.option_of(ty).filter(|&inner| false && !this.boxed_payload(inner));\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
+  },
+  {
+    name: "clone-from-forwarded-unrefused",
+    breaks: "`clone_from` of an `Option` of a type whose own `clone_from` is the crate's is `*dest = source.clone()`, which never calls it (#922)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    if this.forwards_clone_from(ty, span)? {\n",
+    replace: "                    if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_option_own.rs$"],
   },
 ];

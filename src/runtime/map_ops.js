@@ -367,3 +367,27 @@ function $treeFrom(tree, items, set, cmp, drop, dropKey) {
   }
   return tree;
 }
+
+// A hashed map's or set's entries dropped as hashbrown's table drops them:
+// each by `drop`, in turn, a panic stopping it and leaking the rest, the
+// table left empty, as its guard leaves it (#920, #922).
+function $dropTable(m, drop) {
+  try {
+    if (drop) for (const entry of m) drop(entry);
+  } finally {
+    m.clear();
+  }
+}
+
+// `m.clone_from(&from)` of a hashed map or set, hashbrown's: its entries
+// dropped, `$dropTable`; then each of `from`'s cloned by `make`, those made
+// dropped by `drop` as a later one panics, `m` left empty, then put in
+// (#922).
+function $cloneIntoMap(m, from, make, drop) {
+  $dropTable(m, drop);
+  const made = drop ? $madeEach(from, make ?? ((entry) => entry), drop) : Array.from(from, make);
+  for (const entry of made) {
+    if (m instanceof Set) m.add(entry);
+    else m.set(entry[0], entry[1]);
+  }
+}

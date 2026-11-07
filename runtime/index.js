@@ -6237,6 +6237,37 @@ export function $cloneIntoVec(w, v, clone, cloneFrom, drop) {
   for (let i = w.length; i < v.length; i++) w.push(clone ? clone(v[i]) : v[i]);
 }
 
+// `w.clone_from(&v)` of a `VecDeque`, std's: `w` cleared, each item
+// dropped, then a clone of each of `v`'s pushed, what's pushed `w`'s as a
+// later clone panics (#922).
+export function $cloneIntoDeque(w, v, clone, drop) {
+  $truncate(w, 0, drop);
+  for (const item of v) w.push(clone ? clone(item) : item);
+}
+
+// `w.clone_from(&v)` of a `LinkedList`, std's: each item `w` keeps written
+// over by `v`'s, its type's `clone_from` (`cloneFrom`) or a clone, the one
+// it replaces dropped; the rest popped from its back, each dropped, as
+// `pop_back` drops it, a panic stopping it; then a clone of each of `v`'s
+// rest pushed (#922).
+export function $cloneIntoList(w, v, clone, cloneFrom, drop) {
+  const kept = Math.min(w.length, v.length);
+  for (let i = 0; i < kept; i++) {
+    if (cloneFrom) {
+      cloneFrom(w, i, v[i]);
+      continue;
+    }
+    const old = w[i];
+    w[i] = clone ? clone(v[i]) : v[i];
+    drop?.(old);
+  }
+  while (w.length > v.length) {
+    const last = w.pop();
+    drop?.(last);
+  }
+  for (let i = kept; i < v.length; i++) w.push(clone ? clone(v[i]) : v[i]);
+}
+
 export function $swapWithSlice(v, other) {
   if (v.length !== other.length) throw new Error("destination and source slices have different lengths");
   for (let i = 0; i < v.length; i++) [v[i], other[i]] = [other[i], v[i]];
@@ -6971,6 +7002,30 @@ export function $treeFrom(tree, items, set, cmp, drop, dropKey) {
     else tree.set(item[0], item[1]);
   }
   return tree;
+}
+
+// A hashed map's or set's entries dropped as hashbrown's table drops them:
+// each by `drop`, in turn, a panic stopping it and leaking the rest, the
+// table left empty, as its guard leaves it (#920, #922).
+export function $dropTable(m, drop) {
+  try {
+    if (drop) for (const entry of m) drop(entry);
+  } finally {
+    m.clear();
+  }
+}
+
+// `m.clone_from(&from)` of a hashed map or set, hashbrown's: its entries
+// dropped, `$dropTable`; then each of `from`'s cloned by `make`, those made
+// dropped by `drop` as a later one panics, `m` left empty, then put in
+// (#922).
+export function $cloneIntoMap(m, from, make, drop) {
+  $dropTable(m, drop);
+  const made = drop ? $madeEach(from, make ?? ((entry) => entry), drop) : Array.from(from, make);
+  for (const entry of made) {
+    if (m instanceof Set) m.add(entry);
+    else m.set(entry[0], entry[1]);
+  }
 }
 
 // A `char`'s or a `str`'s escapes, as text, and a `char`'s UTF-8 and UTF-16

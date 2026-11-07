@@ -333,6 +333,52 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.clone_parts(place, ty, span, out)
     }
 
+    /// How each entry of the map or set `ty` is cloned, of std's `(K, V)`,
+    /// its key's clone then its value's, the key dropped as its value's
+    /// clone unwinds (#897): `[key, value] => [..]` or `item => ..`, the
+    /// entry's type, and whether a clone may panic; `None` where neither
+    /// needs one. Each key that needs one, whatever finds it: a primitive
+    /// one never does, and one found by value (ADR 0121), by a B-tree's
+    /// `cmp` or a caller's class may (#924). A clone's, and a hashed map's
+    /// `clone_from`'s (#922).
+    pub(super) fn entry_clone(
+        &mut self,
+        ty: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<(Expr, Ty<'tcx>, bool)>> {
+        let ty::Adt(_, args) = ty.kind() else {
+            unreachable!("a map's or a set's type")
+        };
+        let set = self.is_set(ty);
+        let (key_ty, value_ty) = (args.type_at(0), (!set).then(|| args.type_at(1)));
+        let key = Some(key_ty).filter(|&k| self.needs_clone(k));
+        let value = value_ty.filter(|&v| self.needs_clone(v));
+        if key.is_none() && value.is_none() {
+            return Ok(None);
+        }
+        let mut cloned = |this: &mut Self, name: &str, ty: Option<Ty<'tcx>>| match ty {
+            Some(ty) => this.clone_value(Expr::var(name), ty, span, out),
+            None => Ok(Expr::var(name)),
+        };
+        let may_panic = |this: &Self, ty: Option<Ty<'tcx>>| ty.is_some_and(|t| this.clone_may_panic(t));
+        let (params, item, entry) = if set {
+            (vec!["item".into()], cloned(self, "item", key)?, key_ty)
+        } else {
+            let parts = [
+                (key_ty, may_panic(self, key)),
+                (value_ty.expect("a map's"), may_panic(self, value)),
+            ];
+            let named = [("key", key), ("value", value)];
+            let (pair, made) = self.parts_in_turn(&parts, span, |cx, i| cloned(cx, named[i].0, named[i].1))?;
+            let pattern = js::Pattern::Array(vec![Some("key".into()), Some("value".into())]);
+            let entry = Ty::new_tup(self.tcx, &[key_ty, parts[1].0]);
+            (vec![pattern], Self::in_turn(Expr::array(pair), made), entry)
+        };
+        let f = Expr::arrow(params, vec![StmtKind::Return(Some(item)).at(js::Span::NONE)]);
+        Ok(Some((f, entry, may_panic(self, key) || may_panic(self, value))))
+    }
+
     /// Is `ty`, one of the crate's own or a library's (ADR 0100), inside
     /// itself, through its fields or what a std type holds? A std type that
     /// holds one is cloned in place.
@@ -447,9 +493,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let key = args.types().next();
                 let sorted = self.is_sorted(ty);
                 let class = self.map_class(set, sorted, key, span)?;
-                let (key_ty, value_ty) = (args.type_at(0), (!set).then(|| args.type_at(1)));
-                let key = key.filter(|&k| self.needs_clone(k));
-                let value = value_ty.filter(|&v| self.needs_clone(v));
+                let key_ty = args.type_at(0);
                 // A B-tree of keys found by their own `cmp`, or its caller's,
                 // made of its entries in their order, asking it nothing, as
                 // std's `clone_subtree` asks nothing (#924): `ofSorted`.
@@ -458,32 +502,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => Expr::call(Expr::member(class.clone(), "ofSorted"), vec![made]),
                     false => Expr::new_(class.clone(), vec![made]),
                 };
-                if key.is_none() && value.is_none() {
+                let Some((f, entry, may_panic)) = self.entry_clone(ty, span, out)? else {
                     return Ok(made_in_order(place));
-                }
-                let mut cloned = |this: &mut Self, name: &str, ty: Option<Ty<'tcx>>| match ty {
-                    Some(ty) => this.clone_value(Expr::var(name), ty, span, out),
-                    None => Ok(Expr::var(name)),
                 };
-                // Each entry's clone, its key's then its value's, of std's
-                // `(K, V)`, whose key is dropped as its value's clone
-                // unwinds (#897).
-                let may_panic = |this: &Self, ty: Option<Ty<'tcx>>| ty.is_some_and(|t| this.clone_may_panic(t));
-                let (params, item, entry) = if set {
-                    (vec!["item".into()], cloned(self, "item", key)?, key_ty)
-                } else {
-                    let parts = [
-                        (key_ty, may_panic(self, key)),
-                        (value_ty.expect("a map's"), may_panic(self, value)),
-                    ];
-                    let named = [("key", key), ("value", value)];
-                    let (pair, made) = self.parts_in_turn(&parts, span, |cx, i| cloned(cx, named[i].0, named[i].1))?;
-                    let pattern = js::Pattern::Array(vec![Some("key".into()), Some("value".into())]);
-                    let entry = Ty::new_tup(self.tcx, &[key_ty, parts[1].0]);
-                    (vec![pattern], Self::in_turn(Expr::array(pair), made), entry)
-                };
-                let f = Expr::arrow(params, vec![StmtKind::Return(Some(item)).at(js::Span::NONE)]);
-                let may_panic = may_panic(self, key) || may_panic(self, value);
                 let made = match may_panic && self.drops(entry) != super::drops::Drops::Nothing {
                     true => self.made_each(place, f, (entry, true), span)?,
                     false => {

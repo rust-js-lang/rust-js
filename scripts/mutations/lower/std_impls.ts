@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of a B-tree of keys found by their own `cmp`, or a caller's class, shares its keys and never calls their `Clone`, as it did before #924",
     file: "src/lower/std_impls.rs",
-    find: "                let key = key.filter(|&k| self.needs_clone(k));\n",
-    replace: "                let key = key.filter(|&k| self.is_value_key(k) && self.needs_clone(k));\n",
+    find: "        let key = Some(key_ty).filter(|&k| self.needs_clone(k));\n",
+    replace: "        let key = Some(key_ty).filter(|&k| self.is_value_key(k) && self.needs_clone(k));\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_clone_own_keys.rs$"],
   },
   {
@@ -16,8 +16,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of a map clones each key, a primitive's or one whose clone nothing tells from it too, `[{ ...key }, value]`, where the key itself was its clone (#924)",
     file: "src/lower/std_impls.rs",
-    find: "                let key = key.filter(|&k| self.needs_clone(k));\n",
-    replace: "                let key = key.filter(|&k| !k.is_primitive() || self.needs_clone(k));\n",
+    find: "        let key = Some(key_ty).filter(|&k| self.needs_clone(k));\n",
+    replace: "        let key = Some(key_ty).filter(|&k| !k.is_primitive() || self.needs_clone(k));\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$"],
     snapshots: true,
   },
@@ -155,9 +155,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a map's clone shares its keys, which a consumed original's owner then changes",
     file: "src/lower/std_impls.rs",
-    find: "                let key = key.filter(|&k| self.is_value_key(k) && self.needs_clone(k));",
-    replace:
-      "                let key = key.filter(|&k| false && self.is_value_key(k) && self.needs_clone(k));",
+    find: "        let key = Some(key_ty).filter(|&k| self.needs_clone(k));\n",
+    replace: "        let key = Some(key_ty).filter(|&k| false && self.needs_clone(k));\n",
     tests: ["test/corpus.test.ts", "-t", "value_keys"],
   },
   {
@@ -245,8 +244,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of a `HashMap` of `Vec`s is `new Map(m)`, sharing each `Vec`, so a push to the clone's shows in the original's",
     file: "src/lower/std_impls.rs",
-    find: "                let value = value_ty.filter(|&v| self.needs_clone(v));",
-    replace: "                let value = value_ty.filter(|&v| false && self.needs_clone(v));",
+    find: "        let value = value_ty.filter(|&v| self.needs_clone(v));",
+    replace: "        let value = value_ty.filter(|&v| false && self.needs_clone(v));",
     tests: [
       "test/compiler.test.ts",
       "-t",

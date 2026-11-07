@@ -229,6 +229,21 @@ impl SliceOp {
     }
 }
 
+/// A value written over in place by a clone of another, as std's own
+/// `clone_from` of its type does (`clone_into`): `helper(to, from,
+/// ...args)`.
+pub(in crate::lower) struct CloneInto {
+    helper: &'static str,
+    args: Vec<Expr>,
+}
+
+impl CloneInto {
+    /// `to` written over by a clone of `from`.
+    pub(in crate::lower) fn call(self, to: Expr, from: Expr) -> Expr {
+        Expr::call_helper(self.helper, [to, from].into_iter().chain(self.args).collect())
+    }
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// How an `item` is written over by a clone of another, as std's
     /// `clone_from` does it: a clone, where a clone is more than the value,
@@ -265,15 +280,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let called = Expr::call(clone_from.clone(), vec![place, Expr::var("from")]);
             return Ok((Some(clone), Some(Expr::bin(Op::And, clone_from, written(called)))));
         }
-        // A `Vec`'s, std's own: `$cloneIntoVec`, where its order of clones
-        // and drops is seen (#919).
-        if let ty::Adt(_, args) = item.kind()
-            && self.is_std_type(item, crate::lower::recognition::StdItem::Vec)
-            && let Some(into) = self.vec_clone_into(args.type_at(0), span)?
-        {
-            let mut list = vec![Expr::index(Expr::var("items"), Expr::var("i")), Expr::var("from")];
-            list.extend(into);
-            return Ok((None, Some(written(Expr::call_helper("$cloneIntoVec", list)))));
+        // A `Vec`'s, a `VecDeque`'s, a map's, std's own, written in place,
+        // where its order of clones and drops is seen: `clone_into`'s
+        // (#919, #922).
+        let slot = || Expr::index(Expr::var("items"), Expr::var("i"));
+        if let Some(into) = self.clone_into(item, span)? {
+            return Ok((None, Some(written(into.call(slot(), Expr::var("from"))))));
+        }
+        // An `Option`'s: its value's, where both are `Some`, and otherwise
+        // a clone written over it, what it held dropped (#922).
+        if let Some(over) = self.option_clone_over(item, slot(), Expr::var("from"), span)? {
+            return Ok((
+                None,
+                Some(Expr::arrow(vec!["items".into(), "i".into(), "from".into()], over)),
+            ));
         }
         if self.recognition().reaches_clone_from(item) {
             return Err(self.unsupported(
@@ -284,17 +304,144 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok((Some(self.clone_arg(item, span)?), None))
     }
 
+    /// `to.clone_from(from)` of an `Option` whose value is written in place,
+    /// `clone_into`'s, as std's is: of two `Some`s, its value's; otherwise
+    /// `*to = from.clone()`, the clone written over it, then what it held
+    /// dropped (#922). `to` is a place, read more than once, as `from` is.
+    /// `None` where its value isn't written in place.
+    pub(in crate::lower) fn option_clone_over(
+        &mut self,
+        ty: ty::Ty<'tcx>,
+        to: Expr,
+        from: Expr,
+        span: Span,
+    ) -> R<Option<Vec<Stmt>>> {
+        let Some(inner) = self.option_of(ty).filter(|&inner| !self.boxed_payload(inner)) else {
+            return Ok(None);
+        };
+        let Some(into) = self.clone_into(inner, span)? else {
+            return Ok(None);
+        };
+        let some = |e: &Expr| Expr::bin(Op::LooseNe, e.clone(), Expr::null());
+        let both = Expr::bin(Op::And, some(&to), some(&from));
+        let mut replaced = Vec::new();
+        let clone = self.clone_value(from.clone(), ty, span, &mut replaced)?;
+        let old = self.fresh("old");
+        replaced.push(StmtKind::Const(old.clone(), to.clone()).at(js::Span::NONE));
+        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));
+        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;
+        let written = StmtKind::Expr(into.call(to, from)).at(js::Span::NONE);
+        Ok(Some(vec![
+            StmtKind::If(both, vec![written], Some(replaced)).at(js::Span::NONE),
+        ]))
+    }
+
+    /// How a `ty`, a JS object, is written over in place by a clone of
+    /// another, as std's own `clone_from` of its type does, where its order
+    /// of clones and drops is seen (#919, #922): a `Vec`'s and a
+    /// `BinaryHeap`'s, `$cloneIntoVec`; a `VecDeque`'s, which clears, then
+    /// clones each, `$cloneIntoDeque`; a `LinkedList`'s, which writes each it
+    /// keeps over, pops the rest from its back, then clones,
+    /// `$cloneIntoList`; an array's, each item written over,
+    /// `$cloneFromSlice`; a hashed map's or set's, which drops its entries,
+    /// stopping at one that panics, as hashbrown's does, then clones each,
+    /// `$cloneIntoMap`; a `Box`'s, its value's. `None` where std's is
+    /// `*dest = source.clone()`, a B-tree's, or where no order is seen: of
+    /// items with no destructor, no `clone_from` of their own and a clone
+    /// that can't panic.
+    pub(in crate::lower) fn clone_into(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Option<CloneInto>> {
+        use crate::lower::recognition::StdItem;
+        let seen = |cx: &Self, t| cx.drops(t) != crate::lower::drops::Drops::Nothing || cx.clone_may_panic(t);
+        let ty::Adt(_, args) = ty.kind() else {
+            // An array's `clone_from`, its slice's `clone_from_slice`.
+            let ty::Array(item, _) = *ty.kind() else {
+                return Ok(None);
+            };
+            let (clone, clone_from) = self.clone_over(item, "clone_from", span)?;
+            if clone_from.is_none() && !seen(self, item) {
+                return Ok(None);
+            }
+            let drop = self.std_drop_function(item, span)?;
+            let args = Expr::optional_args(Vec::new(), vec![clone, clone_from, drop]);
+            return Ok(Some(CloneInto {
+                helper: "$cloneFromSlice",
+                args,
+            }));
+        };
+        if ty.is_box() {
+            return self.clone_into(args.type_at(0), span);
+        }
+        if self.is_std_type(ty, StdItem::Vec) || self.is_std_type(ty, StdItem::BinaryHeap) {
+            let args = self.vec_clone_into(args.type_at(0), span)?;
+            return Ok(args.map(|args| CloneInto {
+                helper: "$cloneIntoVec",
+                args,
+            }));
+        }
+        let deque = self.is_std_type(ty, StdItem::VecDeque);
+        if deque || self.is_std_type(ty, StdItem::LinkedList) {
+            let item = args.type_at(0);
+            // A `VecDeque`'s asks no item's `clone_from`.
+            let clone_from = match deque {
+                true => None,
+                false => self.clone_over(item, "clone_from", span)?.1,
+            };
+            if clone_from.is_none() && !seen(self, item) {
+                return Ok(None);
+            }
+            let clone = match self.needs_clone(item) {
+                true => Some(self.clone_fn("item", item, span)?),
+                false => None,
+            };
+            let drop = self.std_drop_function(item, span)?;
+            let (helper, list) = match deque {
+                true => ("$cloneIntoDeque", vec![clone, drop]),
+                false => ("$cloneIntoList", vec![clone, clone_from, drop]),
+            };
+            let args = Expr::optional_args(Vec::new(), list);
+            return Ok(Some(CloneInto { helper, args }));
+        }
+        if self.is_map(ty) && !self.is_sorted(ty) {
+            let mut out = Vec::new();
+            let make = self.entry_clone(ty, span, &mut out)?;
+            assert!(out.is_empty(), "an entry's clone is an arrow");
+            let (make, entry, may_panic) = match make {
+                Some((f, entry, may_panic)) => (Some(f), entry, may_panic),
+                None if self.is_set(ty) => (None, args.type_at(0), false),
+                None => (
+                    None,
+                    ty::Ty::new_tup(self.tcx, &[args.type_at(0), args.type_at(1)]),
+                    false,
+                ),
+            };
+            if self.drops(entry) == crate::lower::drops::Drops::Nothing && !may_panic {
+                return Ok(None);
+            }
+            let drop = self.std_drop_function(entry, span)?;
+            let args = Expr::optional_args(Vec::new(), vec![make, drop]);
+            return Ok(Some(CloneInto {
+                helper: "$cloneIntoMap",
+                args,
+            }));
+        }
+        Ok(None)
+    }
+
     /// A `Vec`'s `clone_from` of `item`s, std's `SpecCloneIntoVec`: what it
     /// has past the source's length dropped, each it keeps written over by
     /// `clone_over`'s, then a clone of each of the rest pushed. The
     /// arguments `$cloneIntoVec(w, v, ..)` takes after the two, its items'
     /// clone, `clone_from` and drop, where that order is seen: of items with
-    /// a destructor, or a `clone_from` of their own or a `Vec`'s; of none,
+    /// a destructor, or a `clone_from` of their own or a `Vec`'s, or a clone
+    /// that may panic, which leaves `w` half written (#922); of none,
     /// `None`, as `*w = v.clone()` does alike, every clone then no drop
     /// that can be seen (#919).
     pub(in crate::lower) fn vec_clone_into(&mut self, item: ty::Ty<'tcx>, span: Span) -> R<Option<Vec<Expr>>> {
         let (_, clone_from) = self.clone_over(item, "clone_from", span)?;
-        if clone_from.is_none() && self.drops(item) == crate::lower::drops::Drops::Nothing {
+        if clone_from.is_none()
+            && self.drops(item) == crate::lower::drops::Drops::Nothing
+            && !self.clone_may_panic(item)
+        {
             return Ok(None);
         }
         // What the rest are cloned by, though those kept are by `clone_from`.
