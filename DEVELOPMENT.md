@@ -363,6 +363,15 @@ every agent at once. Noticing one and making it faster is everyone's job,
 as a wrong answer is.
 
 
+**Measure each task's time, and how much of it went to checks.** The
+loop's speed-ups are worth what they save agents, so each task reports it:
+`bun run task start <name>` when it starts; every check or test through
+`bun run task run <label> -- <command>` (check:fast, the corpus, mutations, a
+port's regen, a matrix run); and `bun run task report` at the end, before
+`cargo clean`. The report's wall time, check time and its share go in the
+hand-back, and on the task's issue. The log is per branch in
+`~/.cache/rust-js/tasks/`, so `cargo clean` keeps it.
+
 **Look for speed-ups as you go; it's part of every task.** Issues about the loop carry the `dev-loop` label (`gh issue list --label dev-loop --state all`): it's the list of what was tried, what worked and what didn't, with numbers. Each one
 speeds up every agent on every machine from then on. If a step makes you
 wait, notice it: time it, find out why, and fix it in the same task when
