@@ -288,68 +288,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
             }
             ty::Array(item, _) | ty::Slice(item) => self.drop_items(value, *item, span, made, out)?,
-            // A struct's and a tuple's, rustc's drop glue: its own `drop`,
-            // then each field's, the rest run though one panics (#887).
-            ty::Tuple(_) => self.drop_glue(value, ty, span, made, out)?,
-            ty::Adt(adt, _) if adt.is_struct() => self.drop_glue(value, ty, span, made, out)?,
-            ty::Adt(adt, args) => {
-                // Its own `drop`, then each field's, each run though one
-                // before it panics, as Rust's drop glue goes on (#416).
-                let mut parts = Vec::new();
-                if let Some(call) = self.own_drop(value.clone(), ty, span, out)? {
-                    parts.push(vec![StmtKind::Expr(call).at(js_span)]);
-                }
-                if let Some(inner) = self.option_of(ty) {
-                    // A `Some` of what may look like `None`, a generic `T`
-                    // say, is boxed (ADR 0051): its value, unboxed.
-                    let payload = match self.boxed_payload(inner) {
-                        true => self.some_value(value.clone()),
-                        false => value.clone(),
-                    };
-                    let mut some = Vec::new();
-                    self.drop_in(payload, inner, span, made, &mut some)?;
-                    let test = Expr::bin(Op::LooseNe, value, Expr::null());
-                    parts.push(vec![StmtKind::If(test, some, None).at(js_span)]);
-                } else if adt.is_enum() {
-                    // One part, each variant's test: only one of them runs.
-                    let mut variants = Vec::new();
-                    for variant in adt.variants() {
-                        let mut fields = Vec::new();
-                        // An untagged enum's variant is its payload (ADR 0214).
-                        let untagged = self.untagged(ty).is_some();
-                        for (i, field) in variant.fields.iter().enumerate() {
-                            let part = match untagged {
-                                true => value.clone(),
-                                false => Expr::member(value.clone(), variant_field(self.tcx, variant, i)),
-                            };
-                            let mut dropped = Vec::new();
-                            self.drop_in(part, self.field_ty(field, args), span, made, &mut dropped)?;
-                            fields.push(dropped);
-                        }
-                        let fields = each_dropped(fields, js_span);
-                        if fields.is_empty() {
-                            continue;
-                        }
-                        let test = match adt.variants().len() {
-                            1 => Expr::bool(true),
-                            _ => self.variant_test(
-                                value.clone(),
-                                ty,
-                                *adt,
-                                adt.variant_index_with_id(variant.def_id),
-                                false,
-                            ),
-                        };
-                        variants.push(StmtKind::If(test, fields, None).at(js_span));
-                    }
-                    parts.push(variants);
-                } else if !adt.is_union() {
-                    // A union's fields are never dropped, which Rust holds
-                    // to what has no destructor, or a `ManuallyDrop` (ADR 0406).
-                    return Err(self.unsupported(span, &format!("dropping `{ty}`")));
-                }
-                out.extend(each_dropped(parts, js_span));
-            }
+            // A struct's, an enum's, a union's and a tuple's: rustc's drop
+            // glue, its own `drop`, then each field's, of an enum its
+            // variant's, the rest run though one panics (#887). A union's
+            // fields are never dropped, which Rust holds to what has no
+            // destructor, or a `ManuallyDrop` (ADR 0406).
+            ty::Tuple(_) | ty::Adt(..) => self.drop_glue(value, ty, span, made, out)?,
             _ => return Err(self.unsupported(span, &format!("dropping `{ty}`"))),
         }
         Ok(())

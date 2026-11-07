@@ -26,7 +26,7 @@ use super::recognition::{ChannelEnd, StdItem};
 use super::representation::variant_field;
 use super::traits::item_drop_key;
 use super::{FnCx, R, lower_first};
-use crate::js::{self, Expr, Op, Stmt, StmtKind};
+use crate::js::{self, Expr, Stmt, StmtKind};
 
 mod facts;
 mod functions;

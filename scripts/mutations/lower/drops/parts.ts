@@ -3,23 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "boxed-some-dropped-boxed",
-    breaks:
-      "a generic `Option<T>`'s boxed `Some` is given to `T`'s drop as the box",
-    file: "src/lower/drops/parts.rs",
-    find: "                        true => self.some_value(value.clone()),",
-    replace: "                        true => value.clone(),",
-    tests: ["test/corpus.test.ts", "-t", "option_map_drops"],
-  },
-  {
-    name: "untagged-drop-part",
-    breaks: "dropping an untagged enum reads a `_0` its value hasn't",
-    file: "src/lower/drops/parts.rs",
-    find: "                        let untagged = self.untagged(ty).is_some();\n",
-    replace: "                        let untagged = false;\n",
-    tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
-  },
-  {
     name: "btree-drops-unsorted",
     breaks:
       "a `BTreeMap` JS gives drops its values in the order they went in (the crate's own are kept in order, ADR 0404, amended)",
@@ -70,14 +53,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cell_drop.rs$"],
   },
   {
-    name: "union-drop-refused",
-    breaks: "a union with a destructor of its own is refused",
-    file: "src/lower/drops/parts.rs",
-    find: "                } else if !adt.is_union() {\n",
-    replace: "                } else {\n",
-    tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
-  },
-  {
     name: "closed-iterator-unclosed",
     breaks: "a `repeat`'s iterator dropped is walked as a struct, not closed",
     file: "src/lower/drops/parts.rs",
@@ -101,16 +76,6 @@ export const mutations: Mutation[] = [
     find: "                if [StdItem::RefCell, StdItem::Mutex, StdItem::RwLock, StdItem::Cell]\n",
     replace: "                if [StdItem::RefCell, StdItem::Cell]\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_destructors.rs$"],
-  },
-  {
-    name: "dyn-tail-dropped-as-pair",
-    breaks:
-      "a struct's `dyn` last field is dropped as a pair, `fat.inner.impl.$drop`, not through the struct's `impl`, and throws",
-    file: "src/lower/drops/parts.rs",
-    find: "                        if let ty::Dynamic(..) = field.kind() {\n",
-    replace:
-      "                        if false && let ty::Dynamic(..) = field.kind() {\n",
-    tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
   },
   {
     name: "map-keys-undropped",
@@ -214,11 +179,11 @@ export const mutations: Mutation[] = [
   {
     name: "drop-parts-unchained",
     breaks:
-      "a struct's, a tuple's or a variant's parts after one whose destructor panics are never dropped, its throw past them (#416)",
+      "a closure's captures after one whose destructor panics are never dropped, its throw past them (#416, #846)",
     file: "src/lower/drops/parts.rs",
     find: "                dropped_after_unwinding(part.clone(), (unwinding, rest), js_span)\n",
     replace: "                part.iter().cloned().chain(rest).collect::<Vec<Stmt>>()\n",
-    tests: ["test/corpus.test.ts", "-t", "^drop_parts_past_a_panic.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^closure_captures_dropped_past_a_panic.rs$"],
   },
   {
     name: "drop-items-unchained",
@@ -275,19 +240,19 @@ export const mutations: Mutation[] = [
     breaks:
       "the call of a generic `Drop` impl that never unwinds as it's given its arguments isn't known to, so its guard drops after its `try` and in a `$cleanup` (#861)",
     file: "src/lower/drops/parts.rs",
-    find: "                    if self.drop_never_unwinds(d.did, args) {\n",
-    replace: "                    if false {\n",
+    find: "        if self.drop_never_unwinds(d.did, args) {\n",
+    replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_judged_per_use.rs$"],
     snapshots: true,
   },
   {
     name: "drop-glue-rest-each-in-its-try",
     breaks:
-      "drop glue's `catch` of a part runs each later part in a `try` of its own, so where one of those panics too the parts after it still drop before the abort, `drop 4`, where Rust aborts at once; and its JS doubles with each part, num-traits' 20-tuple `Bounded` 240 MB, which lowering-drop-guards' 12-tuple bounds (#865)",
+      "a closure's captures' `catch` of one runs each later capture in a `try` of its own, so where one of those panics too the captures after it still drop before the abort, `drop 4`, where Rust aborts at once (#865)",
     file: "src/lower/drops/parts.rs",
     find: "                dropped_after_unwinding(part.clone(), (unwinding, rest), js_span)\n",
     replace: "                dropped_after_unwinding(part.clone(), (rest.clone(), rest), js_span)\n",
-    tests: ["test/corpus.test.ts", "-t", "^drop_glue_second_panic_aborts.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^closure_captures_second_panic_aborts.rs$"],
   },
   {
     name: "close-of-quiet-items-may-throw",

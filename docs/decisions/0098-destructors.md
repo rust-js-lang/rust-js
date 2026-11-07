@@ -768,3 +768,17 @@ value and a slice's items keep their JS drops.
 `build_drop_shim` is internal to rustc, called in `drops/glue.rs` alone,
 so a toolchain bump that changes it breaks one call. The corpus, in both
 builds, gives the same JS as the hand-written walk did.
+
+An enum's glue is lowered from the shim too, with an `Option`'s and a
+union's. The shim's `switchInt` of the discriminant is an `if` of each
+variant's test that drops anything, in the variants' order, as before:
+the test a match writes, `variant_test`; `if (true)` of an enum with one
+variant; and of an `Option` `value != null`, where a match would write
+`!== undefined`, a form kept as it was. The variant
+switch in its cleanup drops each variant's fields one after another, so
+a field that panics there aborts before the fields after it (#893). The
+hand-written walk put each variant's own `try`/`catch` ladder in its own
+drop's `catch`, so the fields after the one that panicked were dropped
+before the abort: `drop 3` printed where native Rust aborts after `drop
+2` (`drop_glue_of_an_enum_with_its_own_drop.rs`). Case C of ADR 0262:
+the results differ, so Rust's behaviour is kept.

@@ -111,6 +111,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     (None, *target, *unwind)
                 }
+                // An enum's variants, by its discriminant, the last one the
+                // switch's `otherwise`.
+                TerminatorKind::SwitchInt { targets, .. } => {
+                    let targets = targets.clone();
+                    return self.glue_variants(glue, &targets, cleanup, made, out);
+                }
                 _ => return Err(self.unsupported(glue.span, &format!("dropping `{}`", glue.ty))),
             };
             let part = self.glue_part(glue, part, made, out)?;
@@ -128,6 +134,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.js_span(glue.span),
             ));
         }
+    }
+
+    /// An enum's drop of its variant's fields: an `if` of the test of each
+    /// variant that drops any, in their order, only one of which runs, the
+    /// test a match writes (`variant_test`). Of one variant, `if (true)`;
+    /// of an `Option`, `value != null`.
+    fn glue_variants(
+        &mut self,
+        glue: &mut Glue<'_, 'tcx>,
+        targets: &mir::SwitchTargets,
+        cleanup: bool,
+        made: &mut Made<'tcx>,
+        out: &mut Vec<Stmt>,
+    ) -> R<Vec<Stmt>> {
+        let ty::Adt(adt, _) = *glue.ty.kind() else {
+            return Err(self.unsupported(glue.span, &format!("dropping `{}`", glue.ty)));
+        };
+        let js_span = self.js_span(glue.span);
+        let mut arms = Vec::new();
+        for (variant, discriminant) in adt.discriminants(self.tcx) {
+            let block = (targets.iter())
+                .find(|&(value, _)| value == discriminant.val)
+                .map_or(targets.otherwise(), |(_, block)| block);
+            let dropped = self.glue_from(glue, block, cleanup, made, out)?;
+            if dropped.is_empty() {
+                continue;
+            }
+            let value = glue.value.clone();
+            let test = if self.option_of(glue.ty).is_some() {
+                Expr::bin(js::Op::LooseNe, value, Expr::null())
+            } else if adt.variants().len() == 1 {
+                Expr::bool(true)
+            } else {
+                self.variant_test(value, glue.ty, adt, variant, false)
+            };
+            arms.push(StmtKind::If(test, dropped, None).at(js_span));
+        }
+        Ok(arms)
     }
 
     /// Whether `callee` is `Drop::drop`.
@@ -157,19 +201,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             Some(place) => {
-                let field = match place.projection.as_slice() {
-                    [ProjectionElem::Deref, ProjectionElem::Field(field, _)] => field.as_usize(),
-                    _ => return Err(self.unsupported(span, &format!("dropping `{ty}`"))),
-                };
-                let field_ty = match ty.kind() {
-                    ty::Adt(adt, args) => self.field_ty(
-                        &adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(field)],
-                        args,
+                let (part, field_ty) = match (place.projection.as_slice(), ty.kind()) {
+                    ([ProjectionElem::Deref, ProjectionElem::Field(field, _)], ty::Adt(adt, args)) => (
+                        self.project(value.clone(), ty, field.as_usize()),
+                        self.field_ty(&adt.non_enum_variant().fields[*field], args),
                     ),
-                    ty::Tuple(items) => items[field],
+                    ([ProjectionElem::Deref, ProjectionElem::Field(field, _)], ty::Tuple(items)) => (
+                        self.project(value.clone(), ty, field.as_usize()),
+                        items[field.as_usize()],
+                    ),
+                    // An `Option`'s value: a `Some` of what may look like
+                    // `None`, a generic `T` say, is boxed (ADR 0051).
+                    (
+                        [
+                            ProjectionElem::Deref,
+                            ProjectionElem::Downcast(..),
+                            ProjectionElem::Field(..),
+                        ],
+                        _,
+                    ) if let Some(inner) = self.option_of(ty) => {
+                        let payload = match self.boxed_payload(inner) {
+                            true => self.some_value(value.clone()),
+                            false => value.clone(),
+                        };
+                        (payload, inner)
+                    }
+                    (
+                        [
+                            ProjectionElem::Deref,
+                            ProjectionElem::Downcast(_, variant),
+                            ProjectionElem::Field(field, _),
+                        ],
+                        ty::Adt(adt, args),
+                    ) => {
+                        let def = adt.variant(*variant);
+                        // An untagged enum's variant is its payload (ADR 0214).
+                        let part = match self.untagged(ty).is_some() {
+                            true => value.clone(),
+                            false => Expr::member(value.clone(), variant_field(self.tcx, def, field.as_usize())),
+                        };
+                        (part, self.field_ty(&def.fields[*field], args))
+                    }
                     _ => return Err(self.unsupported(span, &format!("dropping `{ty}`"))),
                 };
-                let part = self.project(value.clone(), ty, field);
                 match field_ty.kind() {
                     // A `dyn` last field: through the `impl` its struct
                     // was given (ADRs 0409, 0436).

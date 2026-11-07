@@ -414,6 +414,7 @@ const owners: Record<string, string[]> = {
   "self.drop_state": [
     "src/lower/drops.rs",
     "src/lower/drops/functions.rs",
+    "src/lower/drops/glue.rs",
     "src/lower/drops/parts.rs",
     "src/lower/drops/scopes.rs",
     "src/lower/drops/uses.rs",
