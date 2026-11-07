@@ -218,7 +218,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // forward, then what's past them truncated (#909).
             Std::Retain if self.is_std_type(tys[0].peel_refs(), crate::lower::recognition::StdItem::VecDeque) => {
                 let (v, keep) = (arg(), arg());
-                let list = self.dropping(vec![v, keep, Expr::bool(false)], tys[0], span)?;
+                // Its items as themselves, `false`, before their drop.
+                let list = match self.items_drop(tys[0], span)? {
+                    Some(drop) => vec![v, keep, Expr::bool(false), drop],
+                    None => vec![v, keep],
+                };
                 Expr::call(Expr::helper("$retainDeque"), list)
             }
             Std::Retain => {

@@ -17,7 +17,7 @@ import {
   $index,
   $range,
   $removeOpt,
-  $retain,
+  $retainDeque,
   $roomFor,
   $sortUnstable,
   $traitImpl,
@@ -188,7 +188,7 @@ export function deques() {
   const back = d.at(-1);
   const removed = [$removeOpt(d, 1), $removeOpt(d, 10)];
   const popped = [d.shift(), d.pop()];
-  $retain(d, (x) => x !== 4);
+  $retainDeque(d, (x) => x !== 4);
   const length = d.length;
   const arg = d.includes(3);
   return `[${d.join(", ")}] ${front == null ? "None" : `Some(${front})`} ${back == null ? "None" : `Some(${back})`} (${removed[0] == null ? "None" : `Some(${removed[0]})`}, ${removed[1] == null ? "None" : `Some(${removed[1]})`}) (${popped[0] == null ? "None" : `Some(${popped[0]})`}, ${popped[1] == null ? "None" : `Some(${popped[1]})`}) ${length} ${arg}`;
