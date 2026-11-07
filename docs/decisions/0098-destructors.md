@@ -745,3 +745,26 @@ drop of two closures is one `try`/`finally`. Held by
 `closure_captures_dropped_past_a_panic.rs` in both builds, against native
 Rust, and the mutation `closure-captures-dropped-in-a-row`. Found by the
 iterator matrix's points table (#817).
+
+## Amendment: drop glue lowered from rustc's own (#887)
+
+A struct's and a tuple's drop glue is lowered from rustc's: the MIR of
+its `core::ptr::drop_glue::<T>` shim, which
+`rustc_mir_transform::build_drop_shim` builds in the function's typing
+environment, so a type parameter's part is a `Drop` of it. The shim is
+one level deep. It holds the type's own `Drop::drop`, then a `Drop` of
+each part rustc drops, in order, each unwinding to a cleanup that drops
+the parts after it, one after another, aborting if one of them panics.
+`drops/glue.rs` lowers it: a part's `Drop` is that part's drop, its type's
+own glue (`drop_in`); the part after it is what runs next; and its
+cleanup is what runs as it panics, `try { part } catch (error) { rest;
+throw error; } rest`. Which parts, their order and their unwinding are
+then rustc's, not a walk of the type written beside it. What stays rust-js's
+is how a part is reached in JS (a field, a variant's field, an `Option`'s
+value, a `dyn` tail through its dictionary) and std's types, whose shims
+drop their std internals: a `Vec`'s, a map's, an `Rc`'s, a `Box`'s
+value and a slice's items keep their JS drops.
+
+`build_drop_shim` is internal to rustc, called in `drops/glue.rs` alone,
+so a toolchain bump that changes it breaks one call. The corpus, in both
+builds, gives the same JS as the hand-written walk did.

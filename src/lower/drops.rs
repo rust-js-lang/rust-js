@@ -30,6 +30,7 @@ use crate::js::{self, Expr, Op, Stmt, StmtKind};
 
 mod facts;
 mod functions;
+mod glue;
 mod inlined;
 mod parts;
 pub(in crate::lower) use parts::{cleanup, dropped_after, each_dropped, is_cleanup, may_throw};
@@ -190,6 +191,8 @@ pub(super) struct DropState<'tcx> {
     /// The drop functions made here whose body never throws, so a part
     /// dropped by one needs no `finally` for those after it (#416).
     quiet: IndexSet<String>,
+    /// rustc's drop glue of each type dropped here (#887).
+    shims: glue::Shims<'tcx>,
 }
 
 /// A body's drop functions, each of a type inside itself or with a long

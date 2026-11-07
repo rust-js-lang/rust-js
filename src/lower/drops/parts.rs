@@ -288,44 +288,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
             }
             ty::Array(item, _) | ty::Slice(item) => self.drop_items(value, *item, span, made, out)?,
-            ty::Tuple(items) => {
-                let mut parts = Vec::new();
-                for (i, item) in items.iter().enumerate() {
-                    let part = self.project(value.clone(), ty, i);
-                    let mut dropped = Vec::new();
-                    self.drop_in(part, item, span, made, &mut dropped)?;
-                    parts.push(dropped);
-                }
-                out.extend(each_dropped(parts, js_span));
-            }
+            // A struct's and a tuple's, rustc's drop glue: its own `drop`,
+            // then each field's, the rest run though one panics (#887).
+            ty::Tuple(_) => self.drop_glue(value, ty, span, made, out)?,
+            ty::Adt(adt, _) if adt.is_struct() => self.drop_glue(value, ty, span, made, out)?,
             ty::Adt(adt, args) => {
                 // Its own `drop`, then each field's, each run though one
                 // before it panics, as Rust's drop glue goes on (#416).
                 let mut parts = Vec::new();
-                if let Some(d) = self.tcx.adt_destructor(adt.did())
-                    && self.runs_drop(d.did)
-                {
-                    // `drop(&mut self)`: a `&mut` to what isn't an object is a
-                    // box of it (ADR 0072).
-                    let this = match self.mut_ref_form(ty) == MutRefForm::Box {
-                        true => Expr::object(vec![js::Prop::Field(js::HELD.into(), value.clone())]),
-                        false => value.clone(),
-                    };
-                    let drop = self
-                        .tcx
-                        .lang_items()
-                        .drop_trait()
-                        .map(|t| self.tcx.associated_item_def_ids(t)[0])
-                        .expect("`Drop` has `drop`");
-                    let mut call = self
-                        .trait_call(drop, self.tcx.mk_args(&[ty.into()]), vec![this], span, out)?
-                        .ok_or_else(|| self.unsupported(span, &format!("calling `{ty}`'s `drop`")))?;
-                    // A generic one that never unwinds as it's given `args`
-                    // (#861), as one of no type parameters is known by its
-                    // reference (ADR 0902).
-                    if self.drop_never_unwinds(d.did, args) {
-                        call = call.never_throws();
-                    }
+                if let Some(call) = self.own_drop(value.clone(), ty, span, out)? {
                     parts.push(vec![StmtKind::Expr(call).at(js_span)]);
                 }
                 if let Some(inner) = self.option_of(ty) {
@@ -339,21 +310,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.drop_in(payload, inner, span, made, &mut some)?;
                     let test = Expr::bin(Op::LooseNe, value, Expr::null());
                     parts.push(vec![StmtKind::If(test, some, None).at(js_span)]);
-                } else if adt.is_struct() {
-                    for (i, field) in adt.non_enum_variant().fields.iter().enumerate() {
-                        let part = self.project(value.clone(), ty, i);
-                        let field = self.field_ty(field, args);
-                        // A `dyn` last field: through the `impl` its struct
-                        // was given (ADRs 0409, 0436).
-                        if let ty::Dynamic(..) = field.kind() {
-                            let dictionary = Expr::member(value.clone(), js::DICTIONARY);
-                            parts.push(vec![dyn_dropped(dictionary, part, js_span)]);
-                            continue;
-                        }
-                        let mut dropped = Vec::new();
-                        self.drop_in(part, field, span, made, &mut dropped)?;
-                        parts.push(dropped);
-                    }
                 } else if adt.is_enum() {
                     // One part, each variant's test: only one of them runs.
                     let mut variants = Vec::new();
@@ -397,6 +353,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => return Err(self.unsupported(span, &format!("dropping `{ty}`"))),
         }
         Ok(())
+    }
+
+    /// The call of a `ty`'s own `drop`, if it has one rust-js runs: known
+    /// never to throw where it never unwinds as it's given its arguments
+    /// (#861), as one of no type parameters is known by its reference (ADR
+    /// 0902).
+    pub(super) fn own_drop(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Option<Expr>> {
+        let ty::Adt(adt, args) = *ty.kind() else {
+            return Ok(None);
+        };
+        let Some(d) = self.tcx.adt_destructor(adt.did()).filter(|d| self.runs_drop(d.did)) else {
+            return Ok(None);
+        };
+        // `drop(&mut self)`: a `&mut` to what isn't an object is a box of it
+        // (ADR 0072).
+        let this = match self.mut_ref_form(ty) == MutRefForm::Box {
+            true => Expr::object(vec![js::Prop::Field(js::HELD.into(), value)]),
+            false => value,
+        };
+        let drop = (self.tcx.lang_items().drop_trait())
+            .map(|t| self.tcx.associated_item_def_ids(t)[0])
+            .expect("`Drop` has `drop`");
+        let mut call = self
+            .trait_call(drop, self.tcx.mk_args(&[ty.into()]), vec![this], span, out)?
+            .ok_or_else(|| self.unsupported(span, &format!("calling `{ty}`'s `drop`")))?;
+        if self.drop_never_unwinds(d.did, args) {
+            call = call.never_throws();
+        }
+        Ok(Some(call))
     }
 
     /// Each item of an array, in order: `for (const item of v) { .. }`.
@@ -520,7 +505,7 @@ pub(in crate::lower) fn dropped_after(body: Vec<Stmt>, dropped: Vec<Stmt>, js_sp
 /// `dropped_after`'s, where what runs as `body` unwinds, `unwinding`, is
 /// other JS than what runs after it, `dropped`, the same drops: drop glue's
 /// rest, each as it is, where its way on drops each in turn (`each_dropped`).
-fn dropped_after_unwinding(
+pub(super) fn dropped_after_unwinding(
     body: Vec<Stmt>,
     (unwinding, dropped): (Vec<Stmt>, Vec<Stmt>),
     js_span: js::Span,

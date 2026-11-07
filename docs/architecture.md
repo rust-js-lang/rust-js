@@ -207,7 +207,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Value shape, copy policy, support and diagnostics | `representation.rs`, `representation/`, `copies.rs`, `support.rs`, `refusal.rs` |
 | Values, patterns, calls and places, and an arrow that only passes on its call (ADR 0605) | `aggregates.rs`, `literals.rs`, `patterns.rs`, `calls.rs`, `loops.rs`, `places.rs`, `passed_on.rs` |
 | Mutable references, pointers, plain-data layout and unions | `mut_refs.rs`, `pointers.rs`, `plain.rs`, `unions.rs` |
-| Destructors and their facts | `drops.rs`, `drops/`; `mir/drops.rs` follows rustc's drop elaboration |
+| Destructors and their facts | `drops.rs`, `drops/`; `mir/drops.rs` follows rustc's drop elaboration; `drops/glue.rs` lowers a struct's, an enum's and a tuple's drop glue from rustc's own `drop_glue` shim, the one call of `build_drop_shim` (#887) |
 | std types and calls | `std_types/`, `std_types/number/`; `std_types/values.rs` dispatches to each type's module |
 | Iterators and combinators | `iterators.rs`, `iterators/`, `combinators.rs`, `combinators/` |
 | Item references, traits, dictionaries and standard impls; a recursive type's `==`, clone and order, one function for each module | `items.rs`, `traits.rs`, `traits/`, `std_impls.rs`, `std_impls/defaults.rs`, `ordering.rs`, `recursive_fns.rs` |
