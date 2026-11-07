@@ -257,8 +257,14 @@ function thisRun(): string {
   return runId;
 }
 
+/** `file`'s text, where it's there as it's read: another process may
+ * remove it between a look and a read. */
 function readIfThere(file: string): string | undefined {
-  return existsSync(file) ? readFileSync(file, "utf8") : undefined;
+  try {
+    return readFileSync(file, "utf8");
+  } catch {
+    return undefined;
+  }
 }
 
 function alive(pid: number): boolean {
@@ -298,13 +304,17 @@ export function installRuntime(app: string) {
 // `<name>_<n>.owner` beside it, its pid, made by a link, which only one
 // process makes: one another process running holds is passed for the next
 // `n`, and one whose process is gone is taken over, emptied first. Each
-// process removes its own as it exits, or every run would leave them, tens
-// of gigabytes in days; `RUST_JS_KEEP_FIXTURES=1` keeps them to look at.
+// process removes its own as its tests end (`releaseFixtures`, which
+// test/setup.ts runs after a file's tests: Bun's test runner never emits
+// `exit`) or as a script exits; and the first claim of a process removes
+// each a process gone left, one killed before it could (#914). Before
+// that, each run left all of them: 7.6 GB after one `check:fast --all`.
+// `RUST_JS_KEEP_FIXTURES=1` keeps a run's to look at, until the next run.
 // Not by age: what a tarball unpacks into is as old as the tarball says.
 // Removing a directory removes the links in it, not what they link to.
 export const fixtures = join(target, "fixtures");
-// Before #874 each process's were in `<pid>-x<id>/`, which a run removes
-// where its process is gone.
+/** Where fixtures outside the checkout are claimed (`outsideFixture`). */
+const outsideFixtures = join(tmpdir(), "rust-js-fixtures");
 // Named by its file's hash, a letter first: what a test looks for in the
 // JS, a block's `bb5` or a word of its name, never in the path its header
 // names, as `-bb6e90b4` was (`\bbb\d+`), and `strict-switches` would be.
@@ -312,47 +322,88 @@ const scope = `x${createHash("sha256").update(basename(Bun.main)).digest("hex").
 const counts = new Map<string, number>();
 let owned: string[] | undefined;
 
+/** `owner`, a claim, made this process's: made where there's none, or
+ * taken over where its process is gone, the one rename of it that succeeds
+ * being the one process's that takes it. Whether it's this process's. */
+function takeClaim(owner: string): boolean {
+  const writing = `${owner}.${process.pid}`;
+  writeFileSync(writing, String(process.pid));
+  let got = false;
+  try {
+    linkSync(writing, owner);
+    got = true;
+  } catch {
+    if (!alive(Number(readIfThere(owner)))) {
+      const gone = `${owner}.gone-${process.pid}`;
+      try {
+        renameSync(owner, gone);
+        rmSync(gone, { force: true });
+        linkSync(writing, owner);
+        got = true;
+      } catch {}
+    }
+  }
+  rmSync(writing, { force: true });
+  return got;
+}
+
+/** Remove the fixtures under `bases` whose process is gone, each taken as
+ * a claim is first, so one another process takes at once is its; and
+ * those of before #874's layout, `<pid>-x<id>/`, whose process is gone.
+ * Never fails a test: what another process removes or claims as it looks
+ * is that process's. */
+function sweepFixtures(bases: string[]) {
+  const list = (dir: string) => {
+    try {
+      return readdirSync(dir);
+    } catch {
+      return [];
+    }
+  };
+  for (const base of bases) {
+    for (const each of list(base)) {
+      try {
+        const before = /^(\d+)-x/.exec(each)?.[1];
+        if (before !== undefined) {
+          if (!alive(Number(before))) rmSync(join(base, each), { recursive: true, force: true });
+          continue;
+        }
+        for (const name of list(join(base, each)).filter((n) => n.endsWith(".owner"))) {
+          const owner = join(base, each, name);
+          if (alive(Number(readIfThere(owner))) || !takeClaim(owner)) continue;
+          rmSync(owner.slice(0, -".owner".length), { recursive: true, force: true });
+          rmSync(owner, { force: true });
+        }
+      } catch {
+        // Another process's at once: it goes, or it's theirs.
+      }
+    }
+  }
+}
+
+/** Remove the fixtures this process claimed, as its tests end. */
+export function releaseFixtures() {
+  if (process.env.RUST_JS_KEEP_FIXTURES) return;
+  for (const dir of owned?.splice(0) ?? []) {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(`${dir}.owner`, { force: true });
+  }
+}
+
 /** `<name>_<n>` in `base`, claimed by this process for its life, empty:
  * the first `n` from the last this process took that no live process
  * holds. */
 function claim(base: string, name: string): string {
   if (owned === undefined) {
-    const mine: string[] = (owned = []);
-    if (!process.env.RUST_JS_KEEP_FIXTURES) {
-      process.on("exit", () => {
-        for (const dir of mine) {
-          rmSync(dir, { recursive: true, force: true });
-          rmSync(`${dir}.owner`, { force: true });
-        }
-      });
-    }
+    owned = [];
+    process.on("exit", releaseFixtures);
+    if (!process.env.RUST_JS_KEEP_FIXTURES) sweepFixtures([fixtures, outsideFixtures]);
   }
   mkdirSync(base, { recursive: true });
   const counted = `${base}\0${name}`;
   for (let n = counts.get(counted) ?? 0; ; n++) {
     const dir = join(base, `${name}_${n}`);
-    const owner = `${dir}.owner`;
-    const writing = `${owner}.${process.pid}`;
-    writeFileSync(writing, String(process.pid));
-    let got = false;
-    try {
-      linkSync(writing, owner);
-      got = true;
-    } catch {
-      // Its process gone, it's taken over: the one rename of its claim
-      // that succeeds is the one process's that takes it.
-      if (!alive(Number(readIfThere(owner)))) {
-        const gone = `${owner}.gone-${process.pid}`;
-        try {
-          renameSync(owner, gone);
-          rmSync(gone, { force: true });
-          linkSync(writing, owner);
-          got = true;
-        } catch {}
-      }
-    }
-    rmSync(writing, { force: true });
-    if (!got) continue;
+    if (!takeClaim(`${dir}.owner`)) continue;
     counts.set(counted, n + 1);
     rmSync(dir, { recursive: true, force: true });
     mkdirSync(dir);
@@ -368,7 +419,7 @@ function claim(base: string, name: string): string {
  * Claimed and removed as a fixture is, in the system's temporary
  * directory, `rust-js-fixtures/<test file>/`. */
 export function outsideFixture(name: string): string {
-  const dir = realpathSync(claim(join(tmpdir(), "rust-js-fixtures", scope), name));
+  const dir = realpathSync(claim(join(outsideFixtures, scope), name));
   installRuntime(dir);
   return dir;
 }
@@ -392,21 +443,7 @@ export function crateIncluded(crate: string): string[] {
     .sort();
 }
 
-let swept = false;
 export function fixture(name: string): string {
-  if (!swept) {
-    swept = true;
-    mkdirSync(fixtures, { recursive: true });
-    for (const entry of readdirSync(fixtures)) {
-      const owner = /^(\d+)-x/.exec(entry)?.[1];
-      if (!owner || alive(Number(owner))) continue;
-      try {
-        rmSync(join(fixtures, entry), { recursive: true, force: true });
-      } catch {
-        // Another file's sweep is removing it too: it goes either way.
-      }
-    }
-  }
   return claim(join(fixtures, scope), name);
 }
 

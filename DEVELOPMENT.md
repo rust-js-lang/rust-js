@@ -234,6 +234,33 @@ hash>/<name>_<n>`), so the same test compiles the same thing there.
   every compile; CI has no cache, so it's the check the cache changed
   nothing.
 
+### What the loop keeps on disk, each bounded
+
+Every cache is bounded: a cap, the least recently used going first past
+it, what's stale pruned, nothing kept below the disk's 40 GB floor, a test
+that holds it, and its cap here. `test/bounded.ts` is the one floor and the
+one way a store is held to its cap; each store says what its things are.
+
+| What | Where | Bound | Held by |
+|---|---|---|---|
+| The tests' compiles to JS (above) | `target/compile-cache/` | 2 GB; another build's dropped as a run starts; nothing written below the floor | `test/compiles.test.ts` |
+| Native programs' builds | `target/native-cache/` | 3 GB, and a week unused; pruned as each `check:fast` (while the compiler builds) and `bun run test` starts, and below the floor until it's back | `test/support.test.ts` |
+| A corpus case's verified runs (ADR 0567) | `target/corpus-cache/` | 256 MB, a week unused, the same way: about 8 MB a build of the compiler | `test/support.test.ts` |
+| A test's fixtures | `target/fixtures/`, `$TMPDIR/rust-js-fixtures/` | Removed as its file's tests end (`test/setup.ts`'s `afterAll`; Bun's test runner never emits `exit`) or a script exits; one a killed process left, by the next process's first claim. `RUST_JS_KEEP_FIXTURES=1` keeps a run's to look at | `test/support.test.ts` |
+| The guide's examples, `bun run docs` | `target/docs/` | Each removed once its output's read, as each run makes it anew; an app's Cargo build there is 290 MB | |
+| React's port, `bun scripts/react-in-rust.ts` | `$TMPDIR/react-in-rust-<checkout's hash>/` | 4 GB together; one whose checkout is gone removed as any run starts; then, of those no run used in the last hour, the least recently used past the cap or below the floor, never the run's own. Its build is of one build of the compiler, another's removed, and without rustc's incremental cache: about 215 MB after a regen | `test/support.test.ts` |
+
+One `check:fast --all` from an empty `target/` on the 12-core M6 used at
+most 5.1 GB of the disk and left 1.6 GB, the native programs and the crate
+corpus's builds (before #914: 12.3 GB, all of it left, 7.3 GB of fixtures
+and 2.6 GB of the guide's apps). A regen of React's port leaves 215 MB, the
+same after each change to the compiler (before: 640 MB, and 530 MB more
+after each).
+
+What isn't a cache, and goes with `cargo clean` or by hand: `target/debug`
+(about 2.5 GB), `target/mutants` (delete it after each mutation run), and
+`target/crate-corpus` (0.4 GB, its crates' builds, kept for its next run).
+
 ## What a step of the loop costs
 
 On the M3 Max, with the scan off:
@@ -627,7 +654,6 @@ checked:
 | A mutation that makes the compiler never finish, `drop-of-its-own-type-inlined` | Caught only by its corpus case's timeout: about a minute where its change's `check:fast` runs it, and in the nightly | A compile timeout of its own for a corpus case that says it, a few seconds |
 | Two tests that compile a port inside bun's 5 s, lowering-labels' "React's addObjectDiffToProperties has no block MIR made" and js-builtins' "unwrap of a throwing call each branch makes" | Time out in `check:fast` when other worktrees load the Mac (load 35–48), failing a run that passes with each alone (8 s for the second's file) | A timeout that fits their compile, or the port compiled once per run and shared |
 | `check:fast`'s guide, std package and readability job | The guide's examples take every core for ~20 s, and the other jobs slow (architecture's 6 s to 13 s) | The guide's examples kept by what they compiled, as the corpus's runs are |
-| `check:fast`'s guide job, of `docs/guide/react/nextjs.md`'s apps | Leaves `target/docs/react_nextjs.md/` at 2.1 GB (2026-11-01), each example's app a build of its own kept after its output is read; on a Mac near its disk floor it's deleted by hand after each run | Each example's app built into one target the examples share, or its build removed once its output is read |
 | A mutant's tests that don't end on CI's machines, `mir-tidy-named-temporaries-off` (nightly of 2026-10-27, its run stopped at 20 min) and `spill-hyphenated-name` (2026-10-30, 2 min 28 s over 7 JSX files, no test failed) | A nightly red with an inconclusive mutation; each is caught here in seconds | Their log's end is now printed with the verdict: read it the next time, and fix what it waited on |
 | `test/node-bindings.test.ts`'s "node's modules are imported, and its globals called" | Builds the node crate in its own body, `buildNode()`, inside bun's 5 s: 7.8 s cold alone on the M3 Max (2026-11-02), 1.1 s once it's built; flaky in `check:fast` runs that start with no node crate built | `buildNode` in the file's `beforeAll`, as `buildReact` is, with a timeout that fits it |
 | `test/architecture.test.ts`'s "each runtime helper is asked for, or needed by another" | 0.8 s alone; past bun's 5 s beside `check:fast`'s other jobs, failing runs that passed with it alone, until its timeout was raised to 30 s; it reads every source and each helper's JS on each run | The sources read once for the file, shared by its tests, not again per test |
@@ -637,7 +663,7 @@ checked:
 | Whether a matrix row fails only in its batch, not alone (#826, #835) | A case's program alone (`program <n>`) can run as native where its batch, 60 cases in one program, doesn't, as one case's back step makes another's type knowing its back (`back_kept`'s per-type set, #814). Telling which takes the batch's program made by hand from `batches()` and `program()`, then finding the case that triggers it by compiling it beside each other case (60 compiles, run in parallel) | A `program <n> --batch` in `test/iterator-matrix.ts` that writes case n's whole batch, and a `--trigger` that finds the case that changes its form |
 | Which Prettier and plugins lay out an app's JS, of each build's `rustc -vV` line (ADR 1003, #692) | 0.4 s of each build of React's port (17 packages) on the M3 Max, 2026-11-04, and of each editor check: `resolveConfig` of every module's `.js` and `.jsx` | Each config file's plugins read once, its `overrides` with them, not asked again per module |
 | React's port regenerated, `bun scripts/react-in-rust.ts regen` | 26 s on the 12-core M6 after a change to `src/`, the compiler at `opt-level = 1` (75 s unoptimized, #896; 504 s before ADR 1100, #884): its crates a chain, each one `rust-js` on one core, `react-reconciler` 8 s, `react-dom-bindings` 5.7 s (7.8 s before #895), `react-server` 4.7 s, one after another | Profile `react-reconciler`'s and `react-dom-bindings`' compiles again (macOS's `sample`), now that tidy's `else if` chains are linear |
-| An app's `node_modules/.cache/rust-js`, React's port's above all | 26–32 GB in react-in-rust (2026-11-04): each build of the compiler is another `rustc -vV` line, so another `-C metadata` and another copy of every crate, never removed, 50 of `shared`'s; 15 GB of it rustc's `incremental/`, 3.8 GB `deps/`; a worktree that copies it copies all of it, for nothing, as its crates' paths differ and Cargo builds them again | The builds of other compilers' lines removed after a build (Cargo's own cache GC is unstable), and rustc's incremental cache off for the crates rust-js compiles whole anyway |
+| An app's `node_modules/.cache/rust-js`, the porter's react-in-rust checkout above all | 26–32 GB in react-in-rust (2026-11-04): each build of the compiler is another `rustc -vV` line, so another `-C metadata` and another copy of every crate, never removed, 50 of `shared`'s; 15 GB of it rustc's `incremental/`, 3.8 GB `deps/`; a worktree that copies it copies all of it, for nothing, as its crates' paths differ and Cargo builds them again. The loop's own copy of the port, `scripts/react-in-rust.ts`'s, is bounded since #914 (above); an app's, built by `rust-js build`, isn't | The same in `rust-js build` for every app: the builds of other compilers' lines removed after a build (Cargo's own cache GC is unstable), and rustc's incremental cache off for the crates rust-js compiles whole anyway (a product decision: an app's watch loop may read the incremental cache) |
 | `test/lowering-functions.test.ts`'s "a long function is lowered block by block" | 3 s alone on the M3 Max, 54 billion instructions for 3,000 `v.push(..)`s (24 billion for 1,500), the same at b80aedb1e and 707d7eea0 (2026-11-04); on CI 9 s, then 17 s, then past its 30 s timeout beside the test job's other files, so its timeout is 60 s | A lowering of a long straight-line body that costs less per statement: profile where its 18 million instructions a statement go |
 
 ## Working on `main`

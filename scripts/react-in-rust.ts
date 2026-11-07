@@ -17,11 +17,20 @@
 // or any file that differs, and lists them with a short diff, all of it in
 // `target/react-in-rust.diff`. A difference that's intended is accepted by
 // moving the pin to the port's commit that has it.
+//
+// Each checkout's directory is bounded (#914): one whose checkout is gone
+// goes, the least recently used past `portsCap` go, and none is kept below
+// the disk's floor (`bound`); its build, under the port's
+// `node_modules/.cache/rust-js`, is of one build of the compiler, as
+// another's is never found again, and keeps no incremental cache, as each
+// crate is compiled whole again whenever the compiler changes.
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { bytesOf, evict, floorBytes, freeBytes, type Kept } from "../test/bounded";
+import { cacheDirOf } from "../tooling/build.js";
 import { channel } from "./toolchain";
 
 const root = resolve(import.meta.dir, "..");
@@ -32,9 +41,78 @@ const pinned = readFileSync(join(root, "ports/react-in-rust.pin"), "utf8")
   .find((line) => line && !line.startsWith("#"));
 if (!pinned || !/^[0-9a-f]{40}$/.test(pinned)) throw new Error("ports/react-in-rust.pin names no commit: a full SHA on a line of its own");
 const pin: string = pinned;
-const home = join(process.env.RUNNER_TEMP ?? tmpdir(), `react-in-rust-${createHash("sha256").update(root).digest("hex").slice(0, 8)}`);
+const ports = process.env.RUNNER_TEMP ?? tmpdir();
+const home = join(ports, `react-in-rust-${createHash("sha256").update(root).digest("hex").slice(0, 8)}`);
 const port = join(home, "react-in-rust");
 const compiler = resolve(process.env.RUST_JS_COMPILER ?? join(root, "target/debug/rust-js"));
+
+/** The most every checkout's directory keeps together: one is about
+ * 330 MB after a regen, the port's checkout and one build's crates. */
+export const portsCap = 4 * 2 ** 30;
+
+/** The checkouts' directories in `dir` bounded, but `own`, this run's:
+ * each whose checkout is gone, its `rust-js` a link to nothing, or with no
+ * link an hour after it was made; then, of those not used in the last
+ * hour, as another run may be using it, the least recently used, until
+ * they're under `cap` with `own`, and the disk's `free` space is above its
+ * floor. What it removed. */
+export function bound({ dir = ports, own = home, cap = portsCap, free = () => freeBytes(dir) }: { dir?: string; own?: string; cap?: number; free?: () => number } = {}): string[] {
+  const hour = Date.now() - 60 * 60 * 1000;
+  const removed: string[] = [];
+  const kept: Kept[] = [];
+  let names: string[] = [];
+  try {
+    names = readdirSync(dir).filter((name) => /^react-in-rust-[0-9a-f]{8}$/.test(name));
+  } catch {}
+  for (const name of names) {
+    const at = join(dir, name);
+    if (at === own) continue;
+    const link = join(at, "rust-js");
+    let made: number;
+    try {
+      made = statSync(at).mtimeMs;
+    } catch {
+      continue;
+    }
+    const linked = (() => {
+      try {
+        return lstatSync(link).isSymbolicLink();
+      } catch {
+        return false;
+      }
+    })();
+    if (linked ? !existsSync(link) : made < hour) {
+      rmSync(at, { recursive: true, force: true });
+      removed.push(at);
+      continue;
+    }
+    const used = (() => {
+      try {
+        return statSync(join(at, "used")).mtimeMs;
+      } catch {
+        return made;
+      }
+    })();
+    if (used < hour) kept.push({ path: at, bytes: bytesOf(at), used });
+  }
+  const ownBytes = bytesOf(own);
+  const before = new Set(kept.map((thing) => thing.path));
+  evict(kept, { cap: Math.max(0, cap - ownBytes), free });
+  for (const path of before) if (!existsSync(path)) removed.push(path);
+  return removed;
+}
+
+/** This checkout's build of the port, `node_modules/.cache/rust-js`, of
+ * this build of the compiler alone: Cargo keys each crate by the
+ * compiler's build, so another's is never found again, and a regen after
+ * a change to `src/` added another 530 MB of it (#914). */
+function ownBuildOnly() {
+  const identity = must([compiler, "--version-json"], root);
+  const stamp = join(home, "compiler");
+  if (existsSync(stamp) && readFileSync(stamp, "utf8") === identity) return;
+  rmSync(cacheDirOf(port), { recursive: true, force: true });
+  writeFileSync(stamp, identity);
+}
 
 function run(cmd: string[], cwd: string, env: Record<string, string> = {}) {
   const p = spawnSync(cmd[0], cmd.slice(1), { cwd, env: { ...process.env, ...env }, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
@@ -53,7 +131,11 @@ function report(markdown: string) {
 
 /** The port at the pin, as committed, beside this checkout. */
 function fetch() {
+  const removed = bound();
+  if (removed.length) console.log(`react-in-rust: removed ${removed.length} other checkouts' directories, gone or past the cap`);
   mkdirSync(home, { recursive: true });
+  // When it was last used, which `bound` reads.
+  writeFileSync(join(home, "used"), "");
   const link = join(home, "rust-js");
   if (!existsSync(link) || realpathSync(link) !== realpathSync(root)) {
     rmSync(link, { force: true });
@@ -129,7 +211,9 @@ function members(): string[] {
 }
 
 const [command] = process.argv.slice(2);
-if (command === "check") {
+if (!import.meta.main) {
+  // Imported, by test/react-in-rust.test.ts: nothing's run.
+} else if (command === "check") {
   fetch();
   const target = join(port, "node_modules/.cache/check");
   const checked = run(["cargo", `+${channel}`, "check", "--workspace", "--locked", "--target", "wasm32-unknown-unknown", "--target-dir", target, "--message-format=short"], port);
@@ -149,7 +233,13 @@ if (command === "check") {
   const crates = members();
   const unknown = named.filter((name) => !crates.includes(name));
   if (unknown.length) throw new Error(`react-in-rust has no crate with JS named ${unknown.join(", ")}: ${crates.join(", ")}`);
-  const built = run(["node", join(root, "tooling/cli.js"), "build", ...named.flatMap((name) => ["--package", name])], port, { RUST_JS_COMPILER: compiler });
+  ownBuildOnly();
+  // Without rustc's incremental cache, 420 of a build's 540 MB, which no
+  // regen reads: after a change to the compiler each crate is compiled
+  // whole again, and with none Cargo finds each one done.
+  const built = run(["node", join(root, "tooling/cli.js"), "build", ...named.flatMap((name) => ["--package", name])], port, { RUST_JS_COMPILER: compiler, CARGO_INCREMENTAL: "0" });
+  // Nothing kept below the disk's floor.
+  if (freeBytes(port) < floorBytes) rmSync(cacheDirOf(port), { recursive: true, force: true });
   const failed = built.ok ? [] : [`\`\`\`\n${built.out.trim().split("\n").slice(-80).join("\n")}\n\`\`\``];
   // Every file the build changed or added, as git sees it.
   const changed = run(["git", "status", "--porcelain=v1", "--untracked-files=all"], port).stdout.split("\n").filter(Boolean);

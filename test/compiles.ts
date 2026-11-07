@@ -26,9 +26,10 @@
 // down to give it back.
 
 import { createHash } from "node:crypto";
-import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, renameSync, rmSync, statfsSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 
+import { evict, floorBytes, freeBytes } from "./bounded";
 import type { Exit } from "./child";
 import { target } from "./packages-of";
 import { compiler as testsCompiler } from "./support";
@@ -43,8 +44,6 @@ const store = join(compileCache, `v${VERSION}`);
  * and a compile given it in its environment is neither kept nor found, as
  * the determinism net's are. */
 export const capBytes = (env: Record<string, string | undefined> = {}) => Number(env.RUST_JS_COMPILE_CACHE_MB ?? process.env.RUST_JS_COMPILE_CACHE_MB ?? 2048) * 2 ** 20;
-/** The disk's floor, DEVELOPMENT.md's: below it nothing's written. */
-export const floorBytes = 40 * 2 ** 30;
 
 /** What only the tests' harness reads of the environment, never the
  * compiler (`test/compiles.test.ts` holds it to the compiler's sources):
@@ -220,11 +219,7 @@ function found(dir: string, cwd: string, manifest: string | undefined): Exit | u
 let below = false;
 let keptSince = 0;
 function room(bytes: number): boolean {
-  let free = Infinity;
-  try {
-    const fs = statfsSync(target);
-    free = fs.bavail * fs.bsize;
-  } catch {}
+  const free = freeBytes(target);
   if (free < floorBytes + bytes) {
     if (!below) console.error(`compile cache: not kept, ${(free / 2 ** 30).toFixed(1)} GB free, under the ${floorBytes / 2 ** 30} GB floor`);
     below = true;
@@ -411,25 +406,7 @@ export function prune({ cap = capBytes(), current, free, root = compileCache }: 
       builds++;
     }
   }
-  const diskFree =
-    free ??
-    (() => {
-      try {
-        const fs = statfsSync(existsSync(root) ? root : target);
-        return fs.bavail * fs.bsize;
-      } catch {
-        return Infinity;
-      }
-    });
-  const kept = entries(store).sort((a, b) => a.used - b.used);
-  let size = kept.reduce((sum, entry) => sum + entry.bytes, 0);
-  let removed = 0;
-  for (const entry of kept) {
-    if (size <= cap && diskFree() >= floorBytes) break;
-    rmSync(entry.path, { recursive: true, force: true });
-    size -= entry.bytes;
-    removed++;
-  }
+  const { removed, size } = evict(entries(store), { cap, free: free ?? (() => freeBytes(existsSync(root) ? root : target)) });
   if (existsSync(store)) writeFileSync(join(root, "size"), String(size));
   return { removed, size, builds };
 }

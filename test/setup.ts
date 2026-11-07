@@ -1,10 +1,10 @@
 // Loaded before each test file of `bun test --parallel` (bunfig.toml), and
 // once before all of them one after another.
-import { setDefaultTimeout } from "bun:test";
+import { afterAll, setDefaultTimeout } from "bun:test";
 
 import { underLoad } from "../scripts/timing";
 import { asNode } from "./node-surface";
-import { buildCompiler } from "./support";
+import { buildCompiler, releaseFixtures } from "./support";
 
 // The code rust-js writes runs in Node and browsers, not Bun: Bun's own
 // built-ins, an iterator's `join` say, taken away (`node-surface.ts`).
@@ -24,3 +24,8 @@ setDefaultTimeout(underLoad(60_000));
 // reaches a child a file spawns; a bare `bun test` has it built here, by
 // whichever file is first (ADR 0104).
 buildCompiler();
+
+// Each fixture its tests claimed removed once they've run: Bun's test
+// runner never emits `exit`, where a script's process removes its own, and
+// each run left all of its fixtures, 7.6 GB a `check:fast --all` (#914).
+afterAll(releaseFixtures);

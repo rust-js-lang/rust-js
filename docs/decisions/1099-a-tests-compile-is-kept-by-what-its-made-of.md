@@ -5,7 +5,8 @@ record of a build to a file compiled alone, and amends
 [0567](0567-a-corpus-cases-runs-are-kept-by-what-they-ran.md), whose
 compiles always ran. Keys by [1003](1003-a-compilers-build-is-its-identity.md)'s
 identity; sound by [1098](1098-the-compilers-maps-are-walked-in-the-programs-order.md)'s
-determinism.
+determinism. Amended (2026-11-07, #914): every store the loop keeps on
+disk bounded the same way, and a fixture removed as its tests end.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none; how a build is
 recorded and how the tests run, not what the JS means. The JS is the same,
@@ -131,3 +132,58 @@ and what's kept is pruned until the floor's back or it's empty.
   `file-record-without-settings`, `file-record-without-previous-manifest`,
   `file-record-of-hooks` (`main.rs`), `file-record-without-manifest-written`
   and `file-record-without-env` (`output.rs`).
+
+## Amended: every store the loop keeps on disk is bounded (#914)
+
+The cache's bound was this ADR's alone, and the loop's other stores had
+none, or only an age. On the 12-core M6 one `check:fast --all` from an
+empty `target/` left 12.3 GB: 7.3 GB of fixtures, as Bun's test runner
+never emits `exit`, where each process was to remove its own; 2.6 GB of
+the guide's apps, made anew each run and never read again; and React's
+port, `scripts/react-in-rust.ts`, kept a directory in `$TMPDIR` for each
+checkout, its worktree removed or not, growing 530 MB with each build of
+the compiler. Seven orphans took the M6 under its floor twice in a day.
+
+**Each store the loop keeps is bounded the same way** (DEVELOPMENT.md's
+table): a cap, the least recently used going first past it, what's stale
+pruned, nothing kept below the disk's 40 GB floor, and a test.
+`test/bounded.ts` is the one floor and the one eviction; each store says
+what its things are, how big and when last used:
+
+- **this cache**: as above, 2 GB;
+- **native programs' builds and the corpus's verified runs**
+  (`test/kept.ts`): 3 GB and 256 MB besides a week unused, pruned as each
+  `check:fast` starts, in a process of its own while the compiler builds,
+  not once a day;
+- **a test's fixtures**: removed as its file's tests end, by
+  `test/setup.ts`'s `afterAll`, and as a script exits; one a killed process
+  left, by the next process's first claim, taken as a claim is so one
+  another process takes at once stays its own;
+- **the guide's examples** (`bun run docs`): each removed once its output's
+  read;
+- **React's port's directories**: 4 GB together; one whose checkout is gone
+  removed as any run starts; of those no run used in the last hour, the
+  least recently used past the cap or below the floor, never the run's own.
+  Its build is of one build of the compiler, as Cargo keys every crate by
+  it and another's is never found again, and without rustc's incremental
+  cache, 420 of a build's 540 MB, which no regen reads: after a change to
+  the compiler each crate's compiled whole again.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; what the loop keeps
+on disk, not what any JS is. React's port regenerates byte for byte as its
+pin committed it, with the incremental cache off.
+
+Measured: the same `check:fast --all` used 5.1 GB at its most, not 12.3, and
+left 1.6 GB, in 200 s, not 209; the regen leaves 215 MB after each change to
+the compiler, not 640 MB and 530 MB more each, in 24 s, not 26.
+
+Alternatives: the fixtures by age, which a tarball's dates defeat (above);
+a removed worktree's port directory removed by a hook on `git worktree
+remove`, which only a run that starts after it would see anyway, and which
+no hook runs where an agent's session removes it; an app's
+`node_modules/.cache/rust-js` bounded by `rust-js build` itself, a product
+decision an app's watch loop may want the incremental cache for (left as a
+slow spot, DEVELOPMENT.md).
+
+Held by `test/support.test.ts` (the stores' caps and floor, a killed
+process's fixtures, the port's directories) and `test/compiles.test.ts`.

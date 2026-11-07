@@ -21,7 +21,6 @@ import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, sta
 import { availableParallelism, cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
-import { pruneKept } from "../test/kept";
 import { runs, touchesIterators } from "./iteratorSlice";
 import { browsers, caseParts, nightly, pooledParts } from "./shard";
 import { elapsed, loadScale, median, timed, timings } from "./timing";
@@ -449,25 +448,22 @@ if (import.meta.main) {
   const untracked = changed.filter((file) => file.startsWith("scripts/mutations/") && !diff.includes(file));
   const added = [...diff.matchAll(/^\+\s*"?name"?: "([^"]+)"/gm), ...untracked.flatMap((file) => [...readFileSync(join(root, file), "utf8").matchAll(/"?name"?: "([^"]+)"/g)])].map((m) => m[1]);
 
-  // What no test used for a week, before any runs (test/kept.ts), as the
-  // whole suite prunes it: only CI runs that, and a Mac's native programs'
-  // builds grew 23 GB in two days. Once a day, as it takes some 12 s.
-  const pruned = join(root, "target", "kept-pruned");
-  if (!existsSync(pruned) || Date.now() - statSync(pruned).mtimeMs > 24 * 60 * 60 * 1000) {
-    const pruning = Date.now();
-    pruneKept(join(root, "target/native-cache"));
-    pruneKept(join(root, "target/corpus-cache"));
-    // A new worktree's first run has no `target/` yet.
-    mkdirSync(dirname(pruned), { recursive: true });
-    writeFileSync(pruned, "");
-    console.log(timed("pruning what tests keep", (Date.now() - pruning) / 1000));
-  }
+  // What no test used for a week, and past each store's cap, before any
+  // runs (test/kept.ts), as the whole suite prunes it: a Mac's native
+  // programs' builds grew 23 GB in two days. In a process of its own while
+  // the compiler builds, so it takes none of the run's time: 0.1 s of a
+  // store of 2,000 programs, a few seconds where it removes many.
+  const pruning = Date.now();
+  const prunedKept = Bun.spawn(["bun", "-e", "import { pruneKeptStores } from './test/kept.ts'; pruneKeptStores();"], { cwd: root, stdout: "inherit", stderr: "inherit" }).exited.then((code) => ({ code, at: Date.now() }));
 
   // Each step's time is kept, and said against its usual (scripts/timing.ts).
   const building = Date.now();
   const build = Bun.spawnSync(["cargo", "build", "--quiet"], { cwd: root, stdout: "inherit", stderr: "inherit" });
   if (build.exitCode !== 0) process.exit(1);
   console.log(timed("cargo build", (Date.now() - building) / 1000));
+  const keptPruned = await prunedKept;
+  if (keptPruned.code !== 0) process.exit(1);
+  console.log(timed("pruning what tests keep", (keptPruned.at - pruning) / 1000));
 
   // The jobs' compiler is the run's own hard link of the one just built.
   // A `cargo build` in the checkout while the run runs, of the agent's next

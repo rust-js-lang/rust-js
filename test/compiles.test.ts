@@ -9,7 +9,8 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, ut
 import { join } from "node:path";
 
 import type { Exit } from "./child";
-import { capBytes, compileCache, floorBytes, keptCompile, parseRecord, prune, unread } from "./compiles";
+import { floorBytes } from "./bounded";
+import { capBytes, compileCache, keptCompile, parseRecord, prune, unread } from "./compiles";
 import { buildCompiler, compiler, fixture, root } from "./support";
 
 beforeAll(buildCompiler, 600_000);

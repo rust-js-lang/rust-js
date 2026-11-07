@@ -134,9 +134,15 @@ function appTurn(): { ready: Promise<void>; done: () => void } {
   return { ready: Promise.resolve(), done };
 }
 
+/** Where the example is compiled: made anew each run, and removed once its
+ * output is read, as nothing's found there again. An app's Cargo build
+ * there is 290 MB; kept, the guide's were 2.7 GB of each worktree (#914).
+ * `RUST_JS_KEEP_FIXTURES=1` keeps them to look at, as the tests' are. */
+const exampleDir = (example: Example, n: number) => join(work, relative(guide, example.page).replace(/\//g, "_"), String(n));
+
 /** What the example's output fences say, compiled: each fence's new body. */
 async function compile(example: Example, n: number): Promise<{ bodies: string[]; problem?: string }> {
-  const dir = join(work, relative(guide, example.page).replace(/\//g, "_"), String(n));
+  const dir = exampleDir(example, n);
   rmSync(dir, { recursive: true, force: true });
   for (const { path, code } of example.sources) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
@@ -241,6 +247,7 @@ async function main() {
       while (next < jobs.length) {
         const job = jobs[next++];
         const { bodies, problem } = await compile(job.example, job.n);
+        if (!process.env.RUST_JS_KEEP_FIXTURES) rmSync(exampleDir(job.example, job.n), { recursive: true, force: true });
         if (problem) problems.push(problem);
         else results.push({ page: job.page, example: job.example, bodies });
       }

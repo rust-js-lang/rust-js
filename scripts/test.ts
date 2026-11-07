@@ -13,16 +13,16 @@ import { join } from "node:path";
 
 import { stopGroup } from "../test/child";
 import { currentBuild, prune } from "../test/compiles";
-import { pruneKept } from "../test/kept";
+import { pruneKeptStores } from "../test/kept";
 import { browsers, caseParts, caseShardParts, nightly, shardArg, shardTimings } from "./shard";
 
 const root = join(import.meta.dir, "..");
 
-// What no test used for a week, before any runs (test/kept.ts): native
-// programs' builds, and the corpus's verified runs; and the compiles kept
-// (test/compiles.ts): another build's, and past the cap.
-pruneKept(join(root, "target/native-cache"));
-pruneKept(join(root, "target/corpus-cache"));
+// What no test used for a week, and past each store's cap, before any runs
+// (test/kept.ts): native programs' builds, and the corpus's verified runs;
+// and the compiles kept (test/compiles.ts): another build's, and past the
+// cap.
+pruneKeptStores();
 prune({ current: currentBuild() });
 
 // A suite past twice its usual minutes says what it's waiting on, each
