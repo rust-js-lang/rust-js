@@ -49,6 +49,10 @@ decides.
 - **An entry is taken out by `swap_remove`**, which puts the last in its
   place: an order the program decides too. Nothing read the order of
   what a std map had left.
+- **What decides an order says so where it matters**: ranges' fixpoint
+  walks its bodies first to last and queues each callee told otherwise
+  after those waiting (ADR 0577, amended). That order is part of the
+  rule, not the map's.
 - **A net**: test/determinism.test.ts compiles a corpus case again, as a
   program and as a library, and compares its JS, source map and
   manifest byte for byte. The nightly's suite compiles the cases that

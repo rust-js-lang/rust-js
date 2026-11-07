@@ -136,3 +136,36 @@ walks, as before, and `passed_on`'s `own_callbacks` reads what each call
 gives a `dyn Fn` parameter, which is one of the crate's own functions
 where each call gives one (ADR 0605, amended). One answer of which
 functions only calls reach, read by both.
+
+## Amendment: in an order the program decides, each change counted once it's walked (#866)
+
+What each function is told was walked again in a `HashSet`'s order, and
+past four changes of it what still changed was forgotten. A function
+told by five callers, each giving its `n` another range, was told
+otherwise five times or fewer by the order they were walked in, which a
+`HashSet`'s random keys picked anew in each compile: quiet1's `work(n)`,
+`if n > 100 { panic!(..) } n + 1`, read `return n + 1;` in 3 of 8
+compiles and `return (n + 1) >>> 0;` in 5. Both were right, as each
+caller gives at most 800; but the same input gave two outputs (ADR 1003).
+ADR 1098 made the order the same in each compile, the order the tells
+were put in, and `work` read `(n + 1) >>> 0` each time: its five callers
+still told it five times.
+
+The bodies are walked first to last, each told otherwise queued after
+those already waiting (a queue, not a stack: a callee is walked once
+the callers before it have each told it), and a change counts toward
+what's forgotten only where the function was walked since the last
+that counted. So the callers' tells before its walk count as one, and
+`work`'s `n` is known: `return n + 1;`, every compile. A function told
+otherwise again and again by its own walks, a recursion's, still
+forgets what changes past four, and all of it past 64. Four corpus
+snapshots read better, each a wrap no call needs:
+`cell_restores_never_unwind`, `generic_drops_judged_per_use`,
+`compiled_adapters_closed_as_a_collect_unwinds` and
+`consumed_own_iterator_dropped_once`. `ranges_told_by_many_callers`
+holds it against native Rust: six callers of a guarded `small(n)`, each
+giving it more than the one before, which never wraps, and
+`any(u32::MAX)`, which wraps to 0. A stack's order, or each tell counted,
+makes `small` forget its `n` and wrap: mutations
+`ranges-callees-walked-as-a-stack` and `ranges-each-tell-counted`.
+test/determinism.test.ts compiles it eight times.

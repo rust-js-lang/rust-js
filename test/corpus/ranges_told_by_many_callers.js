@@ -37,12 +37,17 @@ function fifth(n) {
   return (small(n) + 5) >>> 0;
 }
 
+function sixth(n) {
+  return (small(n) + 6) >>> 0;
+}
+
 function main() {
   console.log(`${first(0)}`);
-  console.log(`${second(99)}`);
-  console.log(`${third(100)}`);
-  console.log(`${fourth(50)}`);
-  const caught = $catchUnwind(() => fifth(101));
+  console.log(`${second(20)}`);
+  console.log(`${third(40)}`);
+  console.log(`${fourth(60)}`);
+  console.log(`${fifth(100)}`);
+  const caught = $catchUnwind(() => sixth(101));
   console.log(`caught ${caught.TAG === "Err"}`);
   for (const n of [0, 100, 101, 4294967294]) {
     const arg = any(n);

@@ -45,7 +45,7 @@ function work(n) {
   if (n > 100) {
     throw new Error(`too big: ${n}`);
   }
-  return (n + 1) >>> 0;
+  return n + 1;
 }
 
 export function nested(work) {

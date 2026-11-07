@@ -827,4 +827,24 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^position_index_of.rs$"],
     snapshots: true,
   },
+  {
+    name: "ranges-callees-walked-as-a-stack",
+    breaks:
+      "each callee told otherwise is walked before the callers still waiting, a stack's order, so five callers of `small(n)` each tell it once it's walked, its `n` is forgotten past four changes, and its `n + 1` wraps, `(n + 1) >>> 0` (#866)",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                    work.push_back(at);\n",
+    replace: "                    work.push_front(at);\n",
+    tests: ["test/corpus.test.ts", "-t", "^ranges_told_by_many_callers.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "ranges-each-tell-counted",
+    breaks:
+      "each change of what a callee is told counts toward what's forgotten, its callers' tells before its walk too, so `small(n)`'s five callers make its `n` forgotten and its `n + 1` wraps, `(n + 1) >>> 0` (#866)",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                if at.is_none_or(|at| std::mem::take(&mut walked[at])) {\n",
+    replace: "                if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^ranges_told_by_many_callers.rs$"],
+    snapshots: true,
+  },
 ];

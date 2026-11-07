@@ -29,7 +29,7 @@ function itIterator_next(it) {
 }
 
 function it(n) {
-  return { items: $range(n, (n + 3) >>> 0, 4).map((value) => [value]) };
+  return { items: $range(n, n + 3, 4).map((value) => [value]) };
 }
 
 function run(name, f) {

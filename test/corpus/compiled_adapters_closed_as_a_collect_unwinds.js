@@ -37,7 +37,7 @@ function boomDrop_drop(boom) {
 }
 
 function ds(base) {
-  return [[(base + 1) >>> 0], [(base + 2) >>> 0], [(base + 3) >>> 0]];
+  return [[base + 1], [base + 2], [base + 3]];
 }
 
 function main() {

@@ -176,10 +176,16 @@ pub(in crate::lower) fn ranges<'tcx>(
         .iter()
         .map(|&(def_id, thir, root)| (def_id, (thir, root)))
         .collect();
-    let mut work: Vec<usize> = (0..bodies.len()).rev().collect();
+    // In the order they're queued, so a callee each of whose callers is
+    // still to be walked is walked once they've all told it.
+    let mut work: std::collections::VecDeque<usize> = (0..bodies.len()).collect();
     let mut queued: Vec<bool> = vec![true; bodies.len()];
-    while let Some(i) = work.pop() {
+    // Whether each was walked since what it's told last changed: a change
+    // counts once it's walked between, so many callers' tells count as one.
+    let mut walked: Vec<bool> = vec![false; bodies.len()];
+    while let Some(i) = work.pop_front() {
         queued[i] = false;
+        walked[i] = true;
         let (def_id, thir, root) = bodies[i];
         let entry = match entries.get(&def_id) {
             Some(entry) => entry.clone(),
@@ -227,7 +233,12 @@ pub(in crate::lower) fn ranges<'tcx>(
         let before = std::mem::replace(&mut told[i], now);
         // Each function told otherwise than it was: what all its calls tell
         // it, and walked again.
-        let affected: IndexSet<DefId> = before.keys().chain(told[i].keys()).copied().collect();
+        // In the order of the bodies, as what's forgotten past a change
+        // too many depends on the order they're walked in: the rule's own,
+        // not the order a map was filled in (#866).
+        let mut affected: Vec<DefId> = before.keys().chain(told[i].keys()).copied().collect();
+        affected.sort_by_key(|callee| (index.get(callee), tcx.def_path_hash(*callee)));
+        affected.dedup();
         for callee in affected {
             let joined = (told.iter()).fold(None, |all, by| match by.get(&callee) {
                 Some(this) => either(all, this.clone()),
@@ -248,12 +259,15 @@ pub(in crate::lower) fn ranges<'tcx>(
             };
             if joined != *entry {
                 *entry = joined;
-                *times += 1;
-                if let Some(&at) = index.get(&callee)
+                let at = index.get(&callee).copied();
+                if at.is_none_or(|at| std::mem::take(&mut walked[at])) {
+                    *times += 1;
+                }
+                if let Some(at) = at
                     && !queued[at]
                 {
                     queued[at] = true;
-                    work.push(at);
+                    work.push_back(at);
                 }
             }
         }
