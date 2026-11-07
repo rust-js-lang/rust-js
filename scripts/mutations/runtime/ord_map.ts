@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "ord-map-of-sorted-empty",
+    breaks: "an `$OrdMap` made of a clone's entries keeps none of them (#924)",
+    file: "src/runtime/ord_map.js",
+    find: "    this.#entries = Array.from(entries);\n",
+    replace: "    this.#entries = [];\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_clone_own_keys.rs$"],
+  },
+  {
+    name: "ord-set-of-sorted-items",
+    breaks: "an `$OrdSet` made of a clone's items keeps them as items, not entries of each to itself (#924)",
+    file: "src/runtime/ord_map.js",
+    find: "    set.#items.inOrder(Array.from(items, (item) => [item, item]));\n",
+    replace: "    set.#items.inOrder(Array.from(items));\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_clone_own_keys.rs$"],
+  },
+  {
     name: "ord-map-search-misses",
     breaks: "an `$OrdMap`'s search never finds a key, so it keeps two `cmp` finds `Equal`",
     file: "src/runtime/ord_map.js",

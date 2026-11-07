@@ -438,17 +438,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             place
         };
         match ty.kind() {
-            // `new Map(m)`, cloning each value that needs it, and each key: a
-            // primitive one never does, and one found by value may (ADR 0121).
+            // `new Map(m)`, cloning each value and each key that needs it,
+            // whatever finds it: a primitive one never does, and one found
+            // by value (ADR 0121), by a B-tree's `cmp` or a caller's class
+            // may (#924).
             ty::Adt(_, args) if self.is_map(ty) => {
                 let set = self.is_set(ty);
                 let key = args.types().next();
-                let class = self.map_class(set, self.is_sorted(ty), key, span)?;
+                let sorted = self.is_sorted(ty);
+                let class = self.map_class(set, sorted, key, span)?;
                 let (key_ty, value_ty) = (args.type_at(0), (!set).then(|| args.type_at(1)));
-                let key = key.filter(|&k| self.is_value_key(k) && self.needs_clone(k));
+                let key = key.filter(|&k| self.needs_clone(k));
                 let value = value_ty.filter(|&v| self.needs_clone(v));
+                // A B-tree of keys found by their own `cmp`, or its caller's,
+                // made of its entries in their order, asking it nothing, as
+                // std's `clone_subtree` asks nothing (#924): `ofSorted`.
+                let in_order = sorted && self.found_by_cmp(key_ty);
+                let made_in_order = |made: Expr| match in_order {
+                    true => Expr::call(Expr::member(class.clone(), "ofSorted"), vec![made]),
+                    false => Expr::new_(class.clone(), vec![made]),
+                };
                 if key.is_none() && value.is_none() {
-                    return Ok(Expr::new_(class, vec![place]));
+                    return Ok(made_in_order(place));
                 }
                 let mut cloned = |this: &mut Self, name: &str, ty: Option<Ty<'tcx>>| match ty {
                     Some(ty) => this.clone_value(Expr::var(name), ty, span, out),
@@ -480,7 +491,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Expr::call(Expr::member(all, "map"), vec![f])
                     }
                 };
-                Ok(Expr::new_(class, vec![made]))
+                Ok(made_in_order(made))
             }
             // `{ start: r.start, end: r.end }` (ADR 0129); of an inclusive one
             // of numbers or `char`s, which a step may leave exhausted, `{ ...r

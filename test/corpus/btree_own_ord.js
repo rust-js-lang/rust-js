@@ -130,7 +130,7 @@ function main() {
   const key = task(2, 5, "ship");
   $orInsert(owners, key, "dee");
   $mutGet(owners, key).value = "eve";
-  const copy = new ($ordMap(taskOrd_cmp))(owners);
+  const copy = $ordMap(taskOrd_cmp).ofSorted(owners);
   const remove = $remove(owners, task(2, 0, ""));
   console.log(`${remove == null ? "None" : `Some(${$debugStr(remove)})`} ${copy.size}`);
   const range = { start: task(3, 0, "") };

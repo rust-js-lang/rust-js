@@ -163,7 +163,7 @@ its sequence follows that shape; `$OrdMap` halves there, in std's argument
 order but not its sequence. `entry(k)` asks twice (`$orInsert`, then
 `$mutGet`), and `collect` and `append` sort by JS's sort. Each waits on
 std's node layer, #926, and its stable sort, #925; a clone of keys with a
-`Clone` of their own calls none, #924.
+`Clone` of their own calls none, #924 (fixed below).
 
 The corpus's `btree_search_order` runs `insert`, `get`, `remove`,
 `contains_key`, `split_off`, `retain` and a set's `insert`, `contains`,
@@ -172,3 +172,43 @@ panics, under panic points, and a map of forty keys of a quiet order;
 `test/lowering-std-unwinds.test.ts` pins `insert`'s and `replace`'s forms.
 366 of the unwind table's 430 case-builds of #911 pass; its `entry` rows
 stay under #911 and its `clone` rows move to #924.
+
+## Amendment: a clone clones each key, and asks no `cmp` (#924)
+
+A clone of a B-tree of keys whose `Ord` is their own shared its keys and
+never called their `Clone`: `clone_parts` cloned a key only where a
+`$KeyMap` found it by value (ADR 0121), from before a key could be found by
+its `cmp` or a caller's class. And it was made by `new ($ordMap(cmp))(..)`,
+whose constructor searched for each entry, asking `cmp`, where std's
+`clone_subtree` asks none. A `Clone` or an `Ord` that prints showed both,
+with no panic. Results change ([0262](0262-when-rust-and-js-disagree.md)):
+Rust's behaviour is kept.
+
+- **Each key that needs a clone is cloned**, whatever finds it (`needs_clone`
+  alone): its key, then its value, in the keys' order, and the key dropped
+  as the value's clone unwinds, then the entries made so far (ADR 1102's
+  `$madeInTurn` and `$madeEach`). A key whose clone nothing tells from it,
+  a number's or a `Copy` struct's, is the key itself, as before.
+- **A B-tree of keys found by their own `cmp`, or its caller's class, is
+  made of its entries in their order, asking nothing: `ofSorted`**, a static
+  method of `$OrdMap` and `$OrdSet`, and of `$btreeMap` and `$btreeSet`
+  (`new this(entries)`, whose `cmp` asks the program nothing), as a generic
+  B-tree's class may be any of them:
+
+```js
+const w = $ordMap(dOrd_cmp).ofSorted($madeEach(m, ([key, value]) => $madeInTurn((made) => [made(dClone_clone(key), dDrop_drop), dClone_clone(value)]), drop));
+const copy = $ordMap(taskOrd_cmp).ofSorted(owners);
+```
+
+- **Only a clone makes one**: `ofSorted` trusts its entries' order, so
+  `test/architecture-maps.test.ts` holds that `clone_parts`' map arm is its
+  one maker and the runtime never calls it.
+
+Exact up to eleven keys, std's one leaf: past it, std's `clone_subtree`
+clones a node's edges between its keys, and drops what an internal node
+made in another order as one panics (#926). `test/corpus/btree_clone_own_keys.rs`
+runs it against native Rust, a map's and a set's, a panic at each key's and
+value's clone, and in generic code of keys found by `cmp` and by value;
+the mutations `map-keys-*`, `btree-clone-searched`, `ord-*-of-sorted-*` and
+`btree-*-of-sorted-empty`. The unwind table's 20 `clone` cases, 40
+case-builds, pass.

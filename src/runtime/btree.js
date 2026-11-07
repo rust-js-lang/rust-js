@@ -16,6 +16,11 @@ function $btreeMap(cmp, Base = Map) {
         }
       }
     }
+    // Made of entries in their order, a clone's, as an `$OrdMap` is in
+    // generic code (#924): its own `cmp` asks the program nothing.
+    static ofSorted(entries) {
+      return new this(entries);
+    }
     set(key, value) {
       if (this.#sorted && !this.has(key)) {
         if (this.size > 0 && cmp(this.#last, key) > 0) {
@@ -73,6 +78,9 @@ function $btreeSet(cmp, Base = Set) {
           this.add(item);
         }
       }
+    }
+    static ofSorted(items) {
+      return new this(items);
     }
     add(item) {
       if (this.#sorted && !this.has(item)) {

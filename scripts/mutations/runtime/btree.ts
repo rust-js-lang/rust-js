@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "btree-map-of-sorted-empty",
+    breaks: "a B-tree's map of keys a hashed map finds, cloned in generic code, `KTreeMap.ofSorted(..)`, is made empty (#924)",
+    file: "src/runtime/btree.js",
+    find: "    static ofSorted(entries) {\n      return new this(entries);\n",
+    replace: "    static ofSorted(entries) {\n      return new this();\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_clone_own_keys.rs$"],
+  },
+  {
+    name: "btree-set-of-sorted-empty",
+    breaks: "a B-tree's set of keys a hashed set finds, cloned in generic code, is made empty (#924)",
+    file: "src/runtime/btree.js",
+    find: "    static ofSorted(items) {\n      return new this(items);\n",
+    replace: "    static ofSorted(items) {\n      return new this();\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_clone_own_keys.rs$"],
+  },
+  {
     name: "btree-map-never-sorted-again",
     breaks: "a B-tree's map added to out of its keys' order is read by JS in the order it was added, `[[3, \"bronze\"], [1, \"gold\"], ..]` (#237)",
     file: "src/runtime/btree.js",

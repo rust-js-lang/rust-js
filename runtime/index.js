@@ -1208,6 +1208,16 @@ export class $OrdMap extends Map {
       }
     }
   }
+  // One made of `entries` in their order, each key once, as a clone's
+  // are: kept as they are, asking nothing, as std's `clone_subtree` asks
+  // nothing (#924).
+  static ofSorted(entries) {
+    return new this().inOrder(entries);
+  }
+  inOrder(entries) {
+    this.#entries = Array.from(entries);
+    return this;
+  }
   // Where `key` is, or would go: its index, and whether it's there.
   at(key) {
     const entries = this.#entries;
@@ -1341,6 +1351,11 @@ export class $OrdSet extends Set {
       }
     }
   }
+  static ofSorted(items) {
+    const set = new this();
+    set.#items.inOrder(Array.from(items, (item) => [item, item]));
+    return set;
+  }
   get size() {
     return this.#items.size;
   }
@@ -1435,6 +1450,11 @@ export function $btreeMap(cmp, Base = Map) {
         }
       }
     }
+    // Made of entries in their order, a clone's, as an `$OrdMap` is in
+    // generic code (#924): its own `cmp` asks the program nothing.
+    static ofSorted(entries) {
+      return new this(entries);
+    }
     set(key, value) {
       if (this.#sorted && !this.has(key)) {
         if (this.size > 0 && cmp(this.#last, key) > 0) {
@@ -1492,6 +1512,9 @@ export function $btreeSet(cmp, Base = Set) {
           this.add(item);
         }
       }
+    }
+    static ofSorted(items) {
+      return new this(items);
     }
     add(item) {
       if (this.#sorted && !this.has(item)) {

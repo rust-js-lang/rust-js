@@ -3,6 +3,34 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "map-keys-cloned-by-value-alone",
+    breaks:
+      "a clone of a B-tree of keys found by their own `cmp`, or a caller's class, shares its keys and never calls their `Clone`, as it did before #924",
+    file: "src/lower/std_impls.rs",
+    find: "                let key = key.filter(|&k| self.needs_clone(k));\n",
+    replace: "                let key = key.filter(|&k| self.is_value_key(k) && self.needs_clone(k));\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_clone_own_keys.rs$"],
+  },
+  {
+    name: "map-keys-each-cloned",
+    breaks:
+      "a clone of a map clones each key, a primitive's or one whose clone nothing tells from it too, `[{ ...key }, value]`, where the key itself was its clone (#924)",
+    file: "src/lower/std_impls.rs",
+    find: "                let key = key.filter(|&k| self.needs_clone(k));\n",
+    replace: "                let key = key.filter(|&k| !k.is_primitive() || self.needs_clone(k));\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "btree-clone-searched",
+    breaks:
+      "a clone of a B-tree of keys found by their own `cmp` is made by searching for each, asking `cmp`, where std's `clone_subtree` asks none (#924)",
+    file: "src/lower/std_impls.rs",
+    find: "                let in_order = sorted && self.found_by_cmp(key_ty);\n",
+    replace: "                let in_order = false && self.found_by_cmp(key_ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_clone_own_keys.rs$"],
+  },
+  {
     name: "map-entries-unguarded",
     breaks: "a clone of a map whose value's clone panics leaves the entries it made undropped (#897)",
     file: "src/lower/std_impls.rs",
