@@ -91,11 +91,11 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^last_takes_its_source.rs$"],
   },
   {
-    name: "std-iterator-copy-opened",
-    breaks: "a copy of std's compiled struct moved out isn't closed where it was, so a `Rev` closed before drops what it holds again (#537)",
+    name: "std-iterator-written-opened",
+    breaks: "std's compiled struct written whole doesn't carry where the value written was, so a `Rev` closed before drops what it holds again (#537, #870)",
     file: "src/runtime/std_iterator.js",
-    find: "  it.$copy = () => $stateFrom($stdIterator(of(it), steps), it);\n",
-    replace: "  it.$copy = () => $stdIterator(of(it), steps);\n",
+    find: "  it.$become = (value) => $stateFrom(Object.assign(it, of(value)), value);\n",
+    replace: "  it.$become = (value) => Object.assign(it, of(value));\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet(_drops)?.rs$"],
   },
   {

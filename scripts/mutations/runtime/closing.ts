@@ -324,14 +324,7 @@ export const mutations: Mutation[] = [
     replace: "  const count = () => it.count();\n",
     tests: ["test/corpus.test.ts", "-t", "^own_count_and_last_that_panic_drop_once.rs$"],
   },
-  {
-    name: "closing-own-last-closed-again",
-    breaks: "an iterator of the crate's whose own `last` took it and dropped it is closed again after: what it held is dropped twice (#494, #870)",
-    file: "src/runtime/closing.js",
-    find: "    return $takenBy(closing, () => it.last());\n",
-    replace: "    return it.last();\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_count_and_last_that_panic_drop_once.rs$"],
-  },
+
   {
     name: "holding-function-dropped-twice",
     breaks: "a `map`'s function with a destructor, moved into the fold it asks of what it steps and dropped there, is dropped again as the `map` is closed (#710, #870)",

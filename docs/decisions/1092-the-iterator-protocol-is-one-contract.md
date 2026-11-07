@@ -1281,13 +1281,19 @@ and impossible, since no program can reach the impossible ones.
 `own_count_and_last_that_panic_drop_once` is new: the crate's own `count`
 and `last`, panicking through a `chain`, a `skip` and an `enumerate`, are
 dropped once. Unmarked, the chain's close as it unwinds dropped them again,
-which no earlier case pinned. `closing-own-count-closed-again`,
-`closing-own-last-closed-again`, `close-while-taking-unchecked`,
+which no earlier case pinned. An own `last` taken unmarked drops nothing
+twice in any case found: every consumer that reaches it, `$lastDropping` of a
+chain's side or of a `skip`'s source, lets the side go as it takes it and
+never closes it after. Its mark keeps the `taking` check, and a mutation of
+it would survive, so none is kept. `closing-own-count-closed-again`,
+`close-while-taking-unchecked`,
 `taken-again-unchecked`, `state-from-unset`,
 `std-iterator-body-closes-itself-unchecked`,
 `catch-unwind-catches-internal-error` and
-`cleanup-aborts-on-internal-error` are new. Six name their lines as they
-now read.
+`cleanup-aborts-on-internal-error` are new. Thirteen name their lines as
+they now read. `std-iterator-copy-opened`, which removed the mark from both
+`$copy` and `$become`, is now `std-iterator-written-opened`, of `$become`:
+its cases pin a write of the whole, and `state-from-unset` pins both.
 
 `$repeating` (`iter::repeat`) and `$cycleFrom` (`Cycle`) had a local
 `closed` of their own with the same lifecycle: dropped once, never taken.
