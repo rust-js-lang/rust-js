@@ -457,7 +457,12 @@ source's steps, `fold`, `try_fold`, `rfold`, `try_rfold`, `nth`,
 it specializes, is given by `$forward` (`src/runtime/forward.js`) alone,
 which passes on every argument a step takes, an item's drop and an
 accumulator's `unwind` ([ADR 1089](decisions/1089-an-iterators-steps-are-passed-on-by-one-combinator.md));
-`test/architecture.test.ts` rejects a step assigned anywhere else. What a
+`test/architecture.test.ts` rejects a step assigned anywhere else. Which
+of an iterator's steps are its own (`ownNth` and the others) is written by
+`forward.js`'s `$owns` and `$ownsAs` alone, and an iterator's lifecycle,
+`$state`, by `closing.js`'s `$close`, `$takenBy` and `$stateFrom` alone,
+where an impossible move is rust-js's internal error (ADR 1092's #870
+amendment; `test/architecture-iterators.test.ts`). What a
 helper drops as a panic unwinds is `$unwinds(run, ...drops)`'s alone, the
 drops given in std's frame's order, and what a frame's end and drop glue
 run in turn is `$inTurn`'s; std's default fold is `$foldBy`'s, after the

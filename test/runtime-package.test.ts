@@ -786,3 +786,46 @@ pub fn walked_by(f: fn(f64, &dyn Fn(f64) -> f64, Marker, Option<u8>) -> f64) -> 
   expect(call("[m.dispatched(), m.picked(true), m.picked(false), m.pointed(Math.max)].join()")).toBe("2,NaN,1,1\n");
   expect(call("[m.walked(), m.walkedBy((...args) => args[1](args[0]) + args.length)].join()")).toBe("2,4\n");
 });
+
+// An iterator's lifecycle, `$state`, `$closing`'s and std's compiled
+// struct's (ADR 1092 S7, #870): each move no Rust program makes is
+// rust-js's internal error, never a panic, which no `catch_unwind` and no
+// cleanup's abort takes for one. No program reaches one unless the runtime
+// is wrong, so each is checked here, beside the moves a program makes.
+test("a lifecycle's impossible move is rust-js's internal error, never a panic", () => {
+  // The runtime the compiler prints, so a mutation of it is the one run.
+  const module = join(fixture("runtime-lifecycle"), "runtime.js");
+  writeFileSync(module, run([compiler, "--runtime-module"]));
+  const script = `
+const { $close, $takenBy, $InternalError, $catchUnwind, $cleanup, $isPanic } = await import(${JSON.stringify(module)});
+const seen = [];
+const thrown = (run) => { try { run(); return "none"; } catch (e) { return (e instanceof $InternalError ? "" : "not ") + e.message; } };
+const fresh = () => ({});
+const drop = (o) => () => seen.push("drop");
+// The moves a program makes.
+let o = fresh(); $close(o, drop(o)); $close(o, drop(o)); seen.push(o.$state);
+o = fresh(); $takenBy(o, () => {}); $close(o, drop(o)); seen.push(o.$state);
+o = fresh(); thrown(() => $takenBy(o, () => { throw new Error("panic"); })); $close(o, drop(o)); seen.push(o.$state);
+o = fresh(); $takenBy(o, () => { $close(o, drop(o)); $close(o, drop(o)); }, true); seen.push(o.$state);
+// The moves none makes.
+o = fresh(); seen.push(thrown(() => $takenBy(o, () => $close(o, drop(o)))));
+o = fresh(); $takenBy(o, () => {}); seen.push(thrown(() => $takenBy(o, () => {})));
+o = fresh(); $close(o, drop(o)); seen.push(thrown(() => $takenBy(o, () => {})));
+o = fresh(); seen.push(thrown(() => $takenBy(o, () => $takenBy(o, () => {}))));
+// Never a panic: no catch_unwind's Err, no cleanup's abort.
+const bug = () => { throw new $InternalError("a move"); };
+seen.push($isPanic(new $InternalError("a move")), thrown(() => $catchUnwind(bug)), thrown(() => $cleanup(bug)));
+console.log(JSON.stringify(seen));
+`;
+  expect(JSON.parse(run([node ?? "node", "--input-type=module", "--eval", script]))).toEqual([
+    "drop", "closed",
+    "taken",
+    "taken",
+    "drop", "taken",
+    "rust-js internal error: $closing moved from taking to closed",
+    "rust-js internal error: $closing moved from taken to taking",
+    "drop", "rust-js internal error: $closing moved from closed to taking",
+    "rust-js internal error: $closing moved from taking to taking",
+    false, "rust-js internal error: a move", "rust-js internal error: a move",
+  ]);
+});

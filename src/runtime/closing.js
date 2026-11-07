@@ -4,16 +4,10 @@
 // still its own, where it has one (ADR 0514). It's a `$Steps` (ADR 0669):
 // its fold is its iterator's, after which it's done with; the crate's own
 // fold takes it and drops it itself (#162), as std's compiled fold does,
-// which marks it `$closed`, so its own `return` drops nothing again (ADR
-// 0912).
+// which leaves it taken, so its own `return` drops nothing again (ADR
+// 0912): its lifecycle, `$state`, `$close`'s and `$takenBy`'s (#870).
 function $closing(it, drop, slices = true) {
-  let closed = false;
-  const close = () => {
-    if (!closed) {
-      closed = true;
-      drop?.(it);
-    }
-  };
+  const close = () => $close(closing, () => drop?.(it));
   // Stepped to its end, it's done with, as a chain consumed to its end
   // drops what it holds where the statement or the loop ends (ADR 0570).
   // Done, from its front or by its `nth` or `nth_back`, it's done with,
@@ -61,19 +55,11 @@ function $closing(it, drop, slices = true) {
   // `nth` (#649).
   $ownsAs(closing, it, "nthBack");
   // Closed though `f` throws, a panic, as Rust's `fold` drops what's left
-  // of what it took as it unwinds (#422); done with, not closed, where its
+  // of what it took as it unwinds (#422); taken, not closed, where its
   // fold is its own, `own`, which took it and drops it as it unwinds (#423).
   // What drops with `f`, `ends`, first, as `fold(self, init, f)` drops `f`
   // before what's left of `self` (#710).
-  const unwound = (fold, own, ends) =>
-    $unwinds(
-      fold,
-      () => {
-        if (own) closed = true;
-      },
-      ends,
-      close,
-    );
+  const unwound = (fold, own, ends) => $unwinds(own ? () => $takenBy(closing, fold) : fold, ends, close);
   // Given `unwind`, what drops an accumulator a stage's panic strands, it
   // passes it on, so a step of the crate's own iterator that panics drops
   // a `last`'s kept item before what's left (#423, #426); and `ends`, what
@@ -86,16 +72,12 @@ function $closing(it, drop, slices = true) {
       it.ownFold,
       ends,
     );
-    if (it.ownFold) closed = true;
     $closedAfter(ends, close);
     return folded;
   };
   // Its `count`, the crate's own, likewise (#505).
   $ownsAs(closing, it, "count");
-  const count = () => {
-    closed = true;
-    return it.count();
-  };
+  const count = () => $takenBy(closing, () => it.count());
   // Its `last`, the crate's own, which takes it and drops what it has left
   // itself, as a `skip`'s `last` asks it (#494). Of an array's items it
   // owns, std's `IntoIter::last`, `next_back()`: its last item, then what
@@ -109,14 +91,12 @@ function $closing(it, drop, slices = true) {
       close();
       return step;
     }
-    closed = true;
-    return it.last();
+    return $takenBy(closing, () => it.last());
   };
   // Its `nth_back` and `rfold`, its iterator's, the crate's own where it
   // writes them, done with after its `rfold` as after its `fold` (#220).
   const rfold = (init, f, unwind, ends) => {
     const folded = unwound(() => it.rfold(init, f, unwind, ends), it.ownRfold, ends);
-    if (it.ownRfold) closed = true;
     $closedAfter(ends, close);
     return folded;
   };
@@ -272,4 +252,55 @@ function $slicing(it, drop) {
   $owns(it, "nth", "nthBack", "last");
   it.dropItem = drop;
   return it;
+}
+
+// The lifecycle of an iterator that drops what it holds once, `$closing`'s
+// and std's compiled struct's, its `$state` (ADR 1092 S7, #870): open,
+// none or "open", stepped; "taking", its own consumer running, the crate's
+// `fold`, `rfold`, `count` or `last` or a compiled body that takes it,
+// which drops it itself, as it unwinds too; "taken", that one done;
+// "closed", dropped. Changed by these transitions alone. A move no Rust
+// program makes, a drop of what its own consumer holds or a second
+// consumer of what one took, is the runtime's bug, thrown as one.
+//
+// `it` closed, `drop()` once: from open, as `return()` drops it; nothing
+// again where it's closed, or taken, whose consumer dropped it.
+function $close(it, drop) {
+  const state = it.$state ?? "open";
+  if (state === "taking") throw $lifecycleBug(state, "closed");
+  if (state !== "open") return;
+  it.$state = "closed";
+  drop();
+}
+
+// `run()`, `it`'s own consumer, which takes it and drops it itself: taken
+// once it ends, though it throws, a panic, as it drops what it took as it
+// unwinds, so a close after drops nothing again (#423, rd764). While it
+// runs, it's taking, which nothing else may close: the crate's step that
+// `$closing` asks of what it holds drops that itself. But a consumer that
+// is `it`'s own code, `closesItself`, std's compiled body, drops it by its
+// own `return()`, once, as Rust's drops `self`, `Take`'s `fold` (ADR 0912).
+function $takenBy(it, run, closesItself = false) {
+  const state = it.$state ?? "open";
+  if (state !== "open") throw $lifecycleBug(state, "taking");
+  if (!closesItself) it.$state = "taking";
+  return $endsAfter(
+    () => {
+      it.$state = "taken";
+    },
+    () => run(),
+  );
+}
+
+// `target` given `value`'s lifecycle, as a move of std's compiled struct,
+// or a write of the whole of it, carries where it is (#537).
+function $stateFrom(target, value) {
+  target.$state = value.$state;
+  return target;
+}
+
+// The runtime's bug: a lifecycle moved from `from` to `to`, which no Rust
+// program does.
+function $lifecycleBug(from, to) {
+  return new $InternalError(`$closing moved from ${from} to ${to}`);
 }

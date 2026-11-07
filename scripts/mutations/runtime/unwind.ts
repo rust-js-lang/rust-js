@@ -134,8 +134,8 @@ export const mutations: Mutation[] = [
     name: "abort-caught-by-catch-unwind",
     breaks: "where `exit` doesn't end the process, as in a browser, `catch_unwind` catches an abort as a panic (#847)",
     file: "src/runtime/unwind.js",
-    find: "    if (e instanceof $Abort) throw e;\n",
-    replace: "",
+    find: "    if (e instanceof $Abort || e instanceof $InternalError) throw e;\n",
+    replace: "    if (e instanceof $InternalError) throw e;\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a cleanup that throws aborts"],
   },
   {
@@ -145,5 +145,21 @@ export const mutations: Mutation[] = [
     find: "  if ($aborted) return;\n",
     replace: "",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a cleanup that throws aborts"],
+  },
+  {
+    name: "catch-unwind-catches-internal-error",
+    breaks: "a `catch_unwind` takes rust-js's own internal error for a panic and gives it back as an `Err`, so a compiler's bug is swallowed as a program's (#870)",
+    file: "src/runtime/unwind.js",
+    find: "    if (e instanceof $Abort || e instanceof $InternalError) throw e;\n",
+    replace: "    if (e instanceof $Abort) throw e;\n",
+    tests: ["test/runtime-package.test.ts", "-t", "lifecycle's impossible move"],
+  },
+  {
+    name: "cleanup-aborts-on-internal-error",
+    breaks: "rust-js's own internal error thrown as a panic unwinds is taken for a drop's panic and aborts, where it's the runtime's bug (#870)",
+    file: "src/runtime/unwind.js",
+    find: "    if (second instanceof $InternalError) throw second;\n",
+    replace: "",
+    tests: ["test/runtime-package.test.ts", "-t", "lifecycle's impossible move"],
   },
 ];

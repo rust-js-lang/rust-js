@@ -63,12 +63,13 @@ function $unwinding(payload) {
 }
 
 // `catch_unwind(f)`: `Ok` of what `f()` gives, or `Err` of what unwound;
-// never of an abort, which no `catch_unwind` catches (#847).
+// never of an abort, which no `catch_unwind` catches (#847), nor of the
+// runtime's own bug, which no Rust program's panic is (#870).
 function $catchUnwind(f) {
   try {
     return { TAG: "Ok", _0: f() };
   } catch (e) {
-    if (e instanceof $Abort) throw e;
+    if (e instanceof $Abort || e instanceof $InternalError) throw e;
     return { TAG: "Err", _0: $unwound(e) };
   }
 }
@@ -84,6 +85,7 @@ function $cleanup(run) {
   try {
     run();
   } catch (second) {
+    if (second instanceof $InternalError) throw second;
     throw $abort(second);
   }
 }
@@ -101,4 +103,13 @@ function $abort(cause) {
   $eprint("thread caused non-unwinding panic. aborting.\n");
   $abortExit(134);
   return new $Abort("panic in a destructor during cleanup", { cause });
+}
+
+// The runtime's own bug, which no Rust program makes: thrown as it is, never
+// a panic (`$isPanic`), caught by no `catch_unwind` and no cleanup's abort,
+// so a compiler's bug is never taken for a program's (#870).
+class $InternalError extends Error {
+  constructor(message) {
+    super(`rust-js internal error: ${message}`);
+  }
 }

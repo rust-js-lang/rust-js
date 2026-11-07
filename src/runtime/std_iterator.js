@@ -19,22 +19,15 @@ function $stdIterator(struct, steps) {
   // Closed, of a kind dropped by closing, `Rev`'s: what it holds dropped,
   // once, `steps.close`'s (ADR 0871); another's closes nothing.
   it.return = () => {
-    if (steps.close !== undefined && !it.$closed) {
-      it.$closed = true;
-      steps.close(it);
-    }
+    if (steps.close !== undefined) $close(it, () => steps.close(it));
     return { done: true, value: undefined };
   };
   // What std's own compiled methods take whole, `fold`, `count` and `last`, as
   // Rust's move it, dropping what it held there: closing it after drops
-  // nothing again (ADR 0912). Taken once the call ends, though it throws:
-  // one that panics drops what it took as it unwinds, so a close after it,
-  // a generic caller's, drops nothing twice (rd764); not before, as a
-  // compiled body may close it itself, `Take`'s `fold`.
-  const taken = () => {
-    it.$closed = true;
-  };
-  const taking = (method, run) => (steps.takes?.includes(method) ? $endsAfter(taken, run) : run());
+  // nothing again (ADR 0912): `$takenBy`'s, taken once the call ends, though
+  // it throws: one that panics drops what it took as it unwinds, so a close
+  // after it, a generic caller's, drops nothing twice (rd764, #870).
+  const taking = (method, run) => (steps.takes?.includes(method) ? $takenBy(it, run, true) : run());
   if (steps.hint !== undefined) {
     it.sizeHint = () => steps.hint(it);
   }
@@ -75,7 +68,7 @@ function $stdIterator(struct, steps) {
     $forward(it, steps, {
       rfold:
         rfold &&
-        ((init, f, unwind, ends) => $endsAfter(taken, () => rfold(it, init, f, unwind, ends))),
+        ((init, f, unwind, ends) => $takenBy(it, () => rfold(it, init, f, unwind, ends), true)),
       nthBack: nthBack && ((k) => step(nthBack(it, k))),
       tryRfold: tryRfold && ((init, f, broke, unwind, ends) => tryRfold(it, init, f, broke, unwind, ends)),
     });
@@ -93,11 +86,7 @@ function $stdIterator(struct, steps) {
   // length are each use site's, `$knowing`'s, as they were.
   const fields = Object.keys(struct);
   const of = (value) => Object.fromEntries(fields.map((field) => [field, value[field]]));
-  const closed = (target, value) => {
-    target.$closed = value.$closed;
-    return target;
-  };
-  it.$copy = () => closed($stdIterator(of(it), steps), it);
-  it.$become = (value) => closed(Object.assign(it, of(value)), value);
+  it.$copy = () => $stateFrom($stdIterator(of(it), steps), it);
+  it.$become = (value) => $stateFrom(Object.assign(it, of(value)), value);
   return it;
 }

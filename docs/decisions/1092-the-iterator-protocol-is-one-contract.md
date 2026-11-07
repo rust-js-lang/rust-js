@@ -213,7 +213,7 @@ What each `size_hint` is, std's. A consumer that reserves by it, a
 This table is what #733 builds against.
 
 **S7. `return()` is the drop.** It closes once: a second `return()` drops
-nothing (`$closing`'s `closed`, `$stdIterator`'s `$closed`). It drops the
+nothing (`$state`, `$close`'s, #870's amendment). It drops the
 fields in std's declaration order, each one even if an earlier one's drop
 throws, as drop glue goes on unwinding:
 
@@ -331,7 +331,8 @@ one has one meaning and one maker:
 | `back`, `len`, `hint` | the traits it has (S6) | each adapter, of its source's | `$rev`, `$taking`, `$enumerate`, `$sizeHint` |
 | `of` | the value `$iterator` steps: the crate's struct, a range's bounds | `$iterator`, and `$rev` passes it on (ADR 0545's #721 note) | the iterator's drop (`drop(it.of)`), clones, `std_types/range.rs`'s `count`, `last` and `nth` |
 | `items`, `at`, `end`, and its own `advanceBy` and `advanceBackBy` | a `Vec`'s, an array's or a `VecDeque`'s `IntoIter`, which drops what it passes as one slice | `$iter`, `$slicing` | `$closing`, `$given`, `$advanceSlice` |
-| `$steps`, `$steps.takes`, `$closed` | std's compiled struct, the steps that take it, whether it's taken | `$stdIterator` | `$took`, `$lent`, `$closing` |
+| `$steps`, `$steps.takes` | std's compiled struct, the steps that take it | `$stdIterator` | `$took`, `$lent`, `$closing` |
+| `$state` | its lifecycle: open, taking, taken or closed (#870's amendment) | `$close`, `$takenBy`, `$stateFrom` | `$close`, `$takenBy` |
 | `given`, `with` | a type parameter's value made a JS iterator, and another of a clone | `$given`, `$iterator` | `$givenClone` |
 | `knowing(back, len, rfold, nthBack, tryRfold)` | a compiled struct given its back by a use site | `$stdIterator` | `$knowing` |
 | `closesAtEnd` | stepped by JS's own protocol | `[Symbol.iterator]` | itself |
@@ -360,7 +361,7 @@ per-type answer met a value of another shape.
 - **Std's compiled struct** is `$stdIterator(struct, steps)`, whose `steps`
   are the compiled bodies (`std_iterator_steps`, `compiled_fold`). Its
   back, length and back folds are a use site's, `$knowing(..)`. A compiled
-  body that takes the struct (`steps.takes`) marks it `$closed` once the
+  body that takes the struct (`steps.takes`) leaves it taken once the
   call ends, though the call throws (rd764, #649).
 - **A fold entry** is `(iterator, init, f, unwind, ends)`
   (`fold_entry`), which passes `unwind` and `ends` on as the runtime's
@@ -1230,9 +1231,60 @@ The names are therefore kept, and every write now goes through
 
 `test/architecture-iterators.test.ts` ("an iterator's own facts are written
 by $owns alone") refuses a write of `.ownX` or `[$ownStep(..)]` in any other
-runtime file. Gap G8's reads stay reads by name. 21 mutations name their
+runtime file. Gap G8's reads stay reads by name. 22 mutations name their
 lines as they now read. `owns-as-unsaid` is new. One mutation survived the
 corpus and the conformance slice and is not kept: `$ownsAs` saying a step is
 its own where its source's isn't. Each adapter's step that passes on also
 passes on the items' drop, so where the source's step drops by it the
 false fact changes nothing.
+
+**The lifecycle.** A `$closing` and std's compiled struct each drop what
+they hold once. Three marks recorded where each was: `$closing`'s local
+`closed`, set at 6 sites, std's struct's `it.$closed`, and a fold's
+`closed = true`. The marks disagreed in when they were set: an own `fold`
+and `rfold` were marked after their step and an own `count` and `last`
+before it. `closed` also stood for two things, dropped and taken. One field,
+`$state`, now holds the lifecycle. It changes only through `closing.js`'s
+transitions:
+
+| From | `$close(it, drop)` | `$takenBy(it, run)` |
+|---|---|---|
+| open (none) | closed, `drop()` once | taking while `run()` runs, then taken, though it throws |
+| taking | **internal error**: a drop of what its own consumer holds | **internal error** |
+| taken | nothing: its consumer dropped it | **internal error**: a second consumer |
+| closed | nothing | **internal error**: a consumer of what's dropped |
+
+`$stateFrom(target, value)` carries the state with a move of std's struct
+or a write of the whole struct (#537). A `$closing`'s own `fold`, `rfold`,
+`count` and `last` are `$takenBy`'s, so all four are now marked after their
+step. The old order of `count` and `last` was never observable. Their
+crate step is given what the `$closing` holds, never the `$closing` itself,
+and a panic marks it taken before anything else runs. No corpus case,
+points row or conformance row closes one while it runs: each would now be
+an internal error, and none is.
+
+Std's compiled body is the struct's own code, and it drops `self` by its
+own `return()`, as `Take`'s `spec_fold` does. Its `$takenBy(it, run, true)`
+(`closesItself`) stays open while `run()` runs, so that `return()` drops it
+once, and is then taken. The first build without `closesItself` failed 16
+corpus cases, every one this way, and no other move fired.
+
+An impossible move is rust-js's bug, the user's decision (2026-11-07). In
+every build it throws `$InternalError` ("rust-js internal error: $closing
+moved from taking to closed"), defined in `unwind.js`. That is not a panic
+(`$isPanic`): `$catchUnwind` rethrows it as it rethrows a `$Abort`, and
+`$cleanup` rethrows it rather than aborting, so a compiler's bug is never
+caught as a program's. Checking costs one comparison per close or take,
+never per step. `test/runtime-package.test.ts` ("a lifecycle's impossible
+move is rust-js's internal error, never a panic") makes each move, possible
+and impossible, since no program can reach the impossible ones.
+`own_count_and_last_that_panic_drop_once` is new: the crate's own `count`
+and `last`, panicking through a `chain`, a `skip` and an `enumerate`, are
+dropped once. Unmarked, the chain's close as it unwinds dropped them again,
+which no earlier case pinned. `closing-own-count-closed-again`,
+`closing-own-last-closed-again`, `close-while-taking-unchecked`,
+`taken-again-unchecked`, `state-from-unset`,
+`std-iterator-body-closes-itself-unchecked`,
+`catch-unwind-catches-internal-error` and
+`cleanup-aborts-on-internal-error` are new. Six name their lines as they
+now read.
