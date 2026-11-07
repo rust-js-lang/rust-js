@@ -34,5 +34,9 @@ unwind:plain 1156
 unwind:std 1156
 
 #911 P0 (unwind): a BTreeMap's or a BTreeSet's comparisons of keys with their own Ord are called with their arguments swapped, and the key given leaks as one panics
-unwind:plain 1354-1357,1359-1397,1399-1447,1449-1467,1469-1500,1502-1520,1522-1557,1559-1573
-unwind:std 1354-1357,1359-1397,1399-1447,1449-1467,1469-1500,1502-1520,1522-1557,1559-1573
+unwind:plain 1414-1423
+unwind:std 1414-1423
+
+#924 P0 (copies): a BTreeMap's or BTreeSet's clone() of keys with their own Clone shares the keys and never calls that Clone
+unwind:plain 1454-1463,1564-1573
+unwind:std 1454-1463,1564-1573

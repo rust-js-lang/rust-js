@@ -767,4 +767,28 @@ export const mutations: Mutation[] = [
     replace: "                let reserves = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_reserves_by_hint.rs$"],
   },
+  {
+    name: "insert-value-given-no-drop",
+    breaks: "a B-tree's `insert` of keys whose order may panic leaks the value as its search unwinds (#911)",
+    file: "src/lower/std_types/map.rs",
+    find: "                    (Some(&key), Some(&value)) if !set && self.order_may_panic(key) => {\n",
+    replace: "                    (Some(&key), Some(&value)) if false && !set && self.order_may_panic(key) => {\n",
+    tests: ["test/corpus.test.ts",  "-t",  "^btree_search_order.rs$"],
+  },
+  {
+    name: "insert-value-always-given",
+    breaks: "a map's `insert` of keys whose order never panics is given its values' drop for nothing (#911)",
+    file: "src/lower/std_types/map.rs",
+    find: "                    (Some(&key), Some(&value)) if !set && self.order_may_panic(key) => {\n",
+    replace: "                    (Some(&key), Some(&value)) if !set => {\n",
+    tests: ["test/lowering-std-unwinds.test.ts",  "-t",  "B-tree"],
+  },
+  {
+    name: "set-replace-given-no-drop",
+    breaks: "a B-tree set's `replace` of items whose order may panic leaks the one given as its search unwinds (#911)",
+    file: "src/lower/std_types/map.rs",
+    find: "                    Some(&item) if self.order_may_panic(item) => self.std_drop_function(item, span)?,\n",
+    replace: "                    Some(&item) if false && self.order_may_panic(item) => self.std_drop_function(item, span)?,\n",
+    tests: ["test/corpus.test.ts",  "-t",  "^btree_search_order.rs$"],
+  },
 ];

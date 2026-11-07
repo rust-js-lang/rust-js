@@ -748,22 +748,32 @@ export function $givenClone(it, clone) {
 // A map's `insert(k, v)`: `Some` of the value it had, boxed where it looks
 // like `None` (ADR 0051), or `None`; of keys with a destructor, the key
 // given dropped by `dropKey` where one equal's there, which it keeps, as
-// Rust's does (ADR 0467).
-export function $insert(map, key, value, dropKey) {
-  const had = map.has(key);
-  const old = map.get(key);
-  map.set(key, value);
-  if (had) dropKey?.(key);
-  return had ? $some(old) : undefined;
+// Rust's does (ADR 0467). One search, a B-tree's of its keys' own order
+// asking its `cmp` as std's does; where that panics, the key given dropped,
+// then the value, `dropValue`, as std's `insert` drops them (#911).
+export function $insert(map, key, value, dropKey, dropValue) {
+  const found = $unwinds(
+    () => $found(map, key),
+    dropKey && (() => dropKey(key)),
+    dropValue && (() => dropValue(value)),
+  );
+  $putFound(map, found, key, value);
+  if (found.there) dropKey?.(key);
+  return found.there ? $some(found.value) : undefined;
 }
 
 // A set's `insert(x)`: whether `x` went in; of items with a destructor, `x`
-// dropped by `drop` where one equal's there, which it keeps (ADR 0467).
+// dropped by `drop` where one equal's there, which it keeps (ADR 0467). One
+// search, a B-tree's of its items' own order asking its `cmp` as std's
+// does; where that panics, `x` dropped, as std's `insert` drops it (#911).
 export function $add(set, item, drop) {
-  const added = !set.has(item);
-  set.add(item);
-  if (!added) drop?.(item);
-  return added;
+  const found = $unwinds(
+    () => $found(set, item),
+    drop && (() => drop(item)),
+  );
+  if (found.there) drop?.(item);
+  else $putFound(set, found, item);
+  return !found.there;
 }
 
 // What a closure carries its drop under, JS's own `Symbol.dispose`, or the
@@ -911,14 +921,13 @@ export function $intoIter(items) {
 
 // A map's `remove(k)`: `Some` of the value it had, boxed where it looks
 // like `None` (ADR 0051), or `None`; of keys with a destructor, the key it
-// held dropped by `dropKey` (ADR 0467).
+// held dropped by `dropKey` (ADR 0467). One search, a B-tree's of its keys'
+// own order asking its `cmp` as std's does (#911).
 export function $remove(map, key, dropKey) {
-  const had = map.has(key);
-  const old = map.get(key);
-  const held = had && dropKey !== undefined ? $storedKey(map, key) : undefined;
-  map.delete(key);
-  if (had) dropKey?.(held);
-  return had ? $some(old) : undefined;
+  const found = $found(map, key);
+  $deleteFound(map, found, key);
+  if (found.there) dropKey?.(found.key);
+  return found.there ? $some(found.value) : undefined;
 }
 
 // `vec![item; count]`: `count - 1` clones of `item`, then `item` itself, as
@@ -1181,8 +1190,13 @@ export function $id(object) {
 }
 
 // A B-tree of keys it finds by their own `Ord` (ADR 0404): its entries
-// kept in `cmp`'s order, each found by a binary search, so a key `cmp`
-// says is `Equal` to one it holds finds that one, as std's B-tree does.
+// kept in `cmp`'s order, each found by one search, so a key `cmp` says is
+// `Equal` to one it holds finds that one, as std's B-tree does. The search
+// asks `cmp(key, held)`, the key given against each it holds, as std's
+// does; of up to eleven entries, one node of std's, each from the first in
+// turn, as std's search of a node, so a `cmp` that prints or panics sees
+// what std's sees. Past eleven, std's nodes are another shape, which this
+// isn't: a halving search, in std's argument order (#911).
 export class $OrdMap extends Map {
   #entries = [];
   constructor(cmp, entries) {
@@ -1196,31 +1210,82 @@ export class $OrdMap extends Map {
   }
   // Where `key` is, or would go: its index, and whether it's there.
   at(key) {
+    const entries = this.#entries;
+    if (entries.length <= 11) {
+      for (let i = 0; i < entries.length; i++) {
+        const order = this.cmp(key, entries[i][0]);
+        if (order === 0) return [i, true];
+        if (order < 0) return [i, false];
+      }
+      return [entries.length, false];
+    }
     let low = 0;
-    let high = this.#entries.length;
+    let high = entries.length;
     while (low < high) {
       const mid = (low + high) >>> 1;
-      const order = this.cmp(this.#entries[mid][0], key);
+      const order = this.cmp(key, entries[mid][0]);
       if (order === 0) return [mid, true];
-      if (order < 0) low = mid + 1;
+      if (order > 0) low = mid + 1;
       else high = mid;
     }
     return [low, false];
+  }
+  // One search's answer, `$found`'s: whether `key` is there, the key it
+  // holds equal to it and its value, and where.
+  found(key) {
+    const [i, there] = this.at(key);
+    const entry = there ? this.#entries[i] : undefined;
+    return { there, key: entry?.[0], value: entry?.[1], i };
+  }
+  // What a search found, `found`, given `value`, or `key` and `value` put
+  // where it would go; or taken out; or those from it on taken out,
+  // `split_off`'s: no search again.
+  putFound(found, key, value) {
+    if (found.there) this.#entries[found.i][1] = value;
+    else this.#entries.splice(found.i, 0, [key, value]);
+  }
+  deleteFound(found) {
+    if (found.there) this.#entries.splice(found.i, 1);
+  }
+  // The entry of `key`, one it holds, taken out by what it is, asking
+  // nothing, as std's `retain` takes out what it walks to (#911).
+  deleteHeld(key) {
+    const i = this.#entries.findIndex(([held]) => held === key);
+    if (i >= 0) this.#entries.splice(i, 1);
+  }
+  // Each key of `entries`, some it holds, with a handle on its value,
+  // `$mutEntries`', each on the entry itself, asking nothing.
+  entryHandles(entries) {
+    const of = new Map(this.#entries.map((entry) => [entry[0], entry]));
+    return Array.from(entries, ([key]) => {
+      const entry = of.get(key);
+      return [
+        key,
+        {
+          get value() {
+            return entry[1];
+          },
+          set value(item) {
+            entry[1] = item;
+          },
+        },
+      ];
+    });
+  }
+  splitFound(found) {
+    // A set's own map is an `$OrdMap` of its `cmp`, a map's of its class.
+    const rest = this.constructor === $OrdMap ? new $OrdMap(this.cmp) : new this.constructor();
+    rest.#entries = this.#entries.splice(found.i);
+    return rest;
   }
   get size() {
     return this.#entries.length;
   }
   get(key) {
-    const [i, there] = this.at(key);
-    return there ? this.#entries[i][1] : undefined;
+    return this.found(key).value;
   }
   set(key, value) {
-    const [i, there] = this.at(key);
-    if (there) {
-      this.#entries[i][1] = value;
-    } else {
-      this.#entries.splice(i, 0, [key, value]);
-    }
+    this.putFound(this.found(key), key, value);
     return this;
   }
   has(key) {
@@ -1228,13 +1293,12 @@ export class $OrdMap extends Map {
   }
   // The key it holds equal to `key` (ADR 0467).
   storedKey(key) {
-    const [i, there] = this.at(key);
-    return there ? this.#entries[i][0] : undefined;
+    return this.found(key).key;
   }
   delete(key) {
-    const [i, there] = this.at(key);
-    if (there) this.#entries.splice(i, 1);
-    return there;
+    const found = this.found(key);
+    this.deleteFound(found);
+    return found.there;
   }
   clear() {
     this.#entries = [];
@@ -1264,6 +1328,8 @@ export class $OrdMap extends Map {
   }
 }
 
+// A set of items it finds by their own `Ord`: an `$OrdMap` of each to
+// itself, each of its calls one search.
 export class $OrdSet extends Set {
   #items;
   constructor(cmp, items) {
@@ -1278,10 +1344,26 @@ export class $OrdSet extends Set {
   get size() {
     return this.#items.size;
   }
+  found(item) {
+    return this.#items.found(item);
+  }
+  putFound(found, item) {
+    // One equal to it held stays: only its value, unread, is written.
+    this.#items.putFound(found, item, item);
+  }
+  deleteFound(found) {
+    this.#items.deleteFound(found);
+  }
+  deleteHeld(item) {
+    this.#items.deleteHeld(item);
+  }
+  splitFound(found) {
+    const rest = new this.constructor();
+    rest.#items = this.#items.splitFound(found);
+    return rest;
+  }
   add(item) {
-    if (!this.#items.has(item)) {
-      this.#items.set(item, item);
-    }
+    this.putFound(this.found(item), item);
     return this;
   }
   has(item) {
@@ -2039,7 +2121,11 @@ export function $foldBy(it, by, init, f, unwind, ends) {
   return folded;
 }
 
+// A B-tree's entries in its keys' order, `cmp`'s: of one of its keys' own
+// order, `$OrdMap`, as it holds them, asking nothing, as std's walk of
+// its nodes asks nothing (#911); else sorted.
 export function $sortedEntries(map, cmp) {
+  if (map.found !== undefined) return Array.from(map);
   return Array.from(map).sort((a, b) => cmp(a[0], b[0]));
 }
 
@@ -4733,7 +4819,10 @@ export function $mutGet(m, key) {
 // `m.iter_mut()`, or a `for` over `&mut m`, of a map whose values are numbers
 // or strings: each key with a handle on its value, which writes the map, in
 // the order of `entries`, a B-tree's sorted (ADR 0152).
+// Of a B-tree of its keys' own order, each on its entry, as std's walk asks
+// nothing of its keys (#911).
 export function $mutEntries(m, entries = m) {
+  if (m.entryHandles !== undefined) return m.entryHandles(entries);
   return Array.from(entries, ([key]) => [
     key,
     {
@@ -6501,6 +6590,37 @@ export function $storedKey(m, key) {
   return m.has(key) ? key : undefined;
 }
 
+// One search of `m` for `key`: whether it's there, the key it holds equal
+// to it and its value. A B-tree of its keys' own order searches once, as
+// std's does, its `cmp` asked what std's is (#911); another map, by `has`,
+// which asks the program nothing.
+export function $found(m, key) {
+  if (m.found !== undefined) return m.found(key);
+  const there = m.has(key);
+  return { there, key: there ? $storedKey(m, key) : undefined, value: there ? m.get?.(key) : undefined };
+}
+
+// What `$found` found given `value`, or `key` put where it would go, a
+// set's item, `value` none; or taken out: no search again.
+export function $putFound(m, found, key, value) {
+  if (m.putFound !== undefined) m.putFound(found, key, value);
+  else if (m instanceof Set) m.add(key);
+  else m.set(key, value);
+}
+
+export function $deleteFound(m, found, key) {
+  if (m.deleteFound !== undefined) m.deleteFound(found);
+  else m.delete(key);
+}
+
+// The key `m` holds, met as it's walked, taken out: of a B-tree of its
+// keys' own order, by what it is, asking nothing, as std's `retain` takes
+// out what it walks to (#911).
+export function $deleteHeld(m, key) {
+  if (m.deleteHeld !== undefined) m.deleteHeld(key);
+  else m.delete(key);
+}
+
 // `m.retain(f)`: the entries `f` keeps, visited in `entries`' order, a
 // B-tree's sorted, `f` given a handle on a number's or a string's value; of
 // keys and values with a destructor, each it doesn't keep dropped by
@@ -6510,8 +6630,8 @@ export function $retainMap(m, f, entries, handles, drop, dropKey) {
     if (!f(key, value)) {
       // The value the map holds, not the handle `f` was given on it, which
       // reads the map, where it's gone once deleted (#905).
-      const held = handles ? m.get(key) : value;
-      m.delete(key);
+      const held = handles ? value.value : value;
+      $deleteHeld(m, key);
       // Its value dropped though its key's drop panics, as std's of the
       // pair goes on (#416).
       try {
@@ -6526,7 +6646,7 @@ export function $retainMap(m, f, entries, handles, drop, dropKey) {
 export function $retainSet(s, f, items, drop) {
   for (const item of Array.from(items)) {
     if (!f(item)) {
-      s.delete(item);
+      $deleteHeld(s, item);
       drop?.(item);
     }
   }
@@ -6535,10 +6655,10 @@ export function $retainSet(s, f, items, drop) {
 // A set's `remove(x)` of items with a destructor: the one it held dropped
 // by `drop` (ADR 0467).
 export function $removeItem(s, item, drop) {
-  if (!s.has(item)) return false;
-  const held = $storedKey(s, item);
-  s.delete(item);
-  drop(held);
+  const found = $found(s, item);
+  if (!found.there) return false;
+  $deleteFound(s, found, item);
+  drop(found.key);
   return true;
 }
 
@@ -6550,31 +6670,36 @@ export function $drainAll(m) {
 }
 
 export function $getKeyValue(m, key) {
-  return m.has(key) ? [$storedKey(m, key), m.get(key)] : undefined;
+  const found = $found(m, key);
+  return found.there ? [found.key, found.value] : undefined;
 }
 
 export function $removeEntry(m, key) {
-  if (!m.has(key)) return undefined;
-  const value = m.get(key);
-  const held = $storedKey(m, key);
-  m.delete(key);
-  return [held, value];
+  const found = $found(m, key);
+  if (!found.there) return undefined;
+  $deleteFound(m, found, key);
+  return [found.key, found.value];
 }
 
 // `s.replace(x)`: the item equal to `x` that was there, or `None`, and `x`
-// in its place.
-export function $setReplace(s, x) {
-  const held = $storedKey(s, x);
-  s.delete(x);
-  s.add(x);
-  return held;
+// in its place, one search; of items with a destructor whose order may
+// panic, `x` dropped by `drop` as a comparison does, as std's `replace`
+// drops what it was given (#911).
+export function $setReplace(s, x, drop) {
+  const found = $unwinds(
+    () => $found(s, x),
+    drop && (() => drop(x)),
+  );
+  $deleteFound(s, found, x);
+  $putFound(s, { ...found, there: false }, x);
+  return found.key;
 }
 
 // `s.take(x)` of items it finds others by: the one it held, taken out.
 export function $setTake(s, x) {
-  const held = $storedKey(s, x);
-  s.delete(x);
-  return held;
+  const found = $found(s, x);
+  $deleteFound(s, found, x);
+  return found.key;
 }
 
 // A B-tree's first or last entry, `[key, value]`, or a set's item, by its
@@ -6628,6 +6753,8 @@ export function $treeRange(m, cmp, set, name, start, end, checked = true) {
 // `m.split_off(&key)` of a B-tree: those from `key` on, taken out, in a map
 // of its own.
 export function $treeSplitOff(m, key, cmp, set) {
+  // Of its keys' own order, one search, as std's split does (#911).
+  if (m.splitFound !== undefined) return m.splitFound(m.found(key));
   const rest = new m.constructor();
   for (const entry of Array.from(m)) {
     const k = set ? entry : entry[0];
@@ -14222,7 +14349,11 @@ export function $apart(value) {
   return value;
 }
 
+// A B-tree set's items in their order, `cmp`'s: of one of its items' own
+// order, `$OrdSet`, as it holds them, asking nothing, as std's walk of its
+// nodes asks nothing (#911); else sorted.
 export function $sortedKeys(set, cmp) {
+  if (set.found !== undefined) return Array.from(set);
   return $sort(Array.from(set), cmp);
 }
 

@@ -454,7 +454,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0401 A path compares, orders and keys a map by its components](0401-a-path-compares-by-its-components.md)
 - [0402 A `Cow` keys a map by what it borrows](0402-a-cow-keys-a-map-by-what-it-borrows.md)
 - [0403 A map's value that could look like `None` is given back boxed](0403-a-map-value-that-looks-like-none.md)
-- [0404 A B-tree keyed by value, whose `Ord` is derived](0404-a-b-tree-keyed-by-value.md)
+- [0404 A B-tree keyed by value, whose `Ord` is derived](0404-a-b-tree-keyed-by-value.md) *(amended: a key's own order is asked as std's one node asks it, #911)*
 - [0405 A path's methods go over its components, as Rust's do on Unix](0405-a-paths-methods.md) *(extended by 0716: `components()`, std's `Component`)*
 - [0406 A union is the object of the field it holds](0406-a-union-is-the-field-it-holds.md) *(amended by 0694: `ManuallyDrop::drop`)*
 - [0407 A raw pointer is a handle on its place](0407-a-raw-pointer-is-a-handle-on-its-place.md)

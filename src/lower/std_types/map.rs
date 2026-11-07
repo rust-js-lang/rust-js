@@ -632,7 +632,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Expr::cond(test, x, Expr::undefined())
             }
-            MapOp::SetReplace => map_ops("$setReplace", vec![arg(), arg()]),
+            // Of items whose order may panic, their drop, which drops the
+            // one given as the search unwinds (#911).
+            MapOp::SetReplace => {
+                let drop = match types.first() {
+                    Some(&item) if self.order_may_panic(item) => self.std_drop_function(item, span)?,
+                    _ => None,
+                };
+                map_ops("$setReplace", with_drops(vec![arg(), arg()], vec![drop]))
+            }
             MapOp::Algebra(name) | MapOp::SetOperator(name) => {
                 let mut list = vec![arg(), arg(), Expr::str(name)];
                 list.extend(cmp);
@@ -725,7 +733,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     helper("$sortKeys", vec![arg(), cmp])
                 }
             },
-            MapOp::Insert => helper("$insert", with_drops(vec![arg(), arg(), arg()], vec![keys_drop])),
+            // Of keys whose order may panic, the value's drop too, which
+            // drops it as the search unwinds, after the key (#911).
+            MapOp::Insert => {
+                let value_drop = match (types.first(), types.get(1)) {
+                    (Some(&key), Some(&value)) if !set && self.order_may_panic(key) => {
+                        self.std_drop_function(value, span)?
+                    }
+                    _ => None,
+                };
+                helper(
+                    "$insert",
+                    with_drops(vec![arg(), arg(), arg()], vec![keys_drop, value_drop]),
+                )
+            }
             MapOp::Add => helper("$add", with_drops(vec![arg(), arg()], vec![keys_drop])),
             // Of a value that could look like `None`, its `Some` boxed (ADR 0051).
             MapOp::Get if types.get(1).is_some_and(|&value| self.boxed_payload(value)) => {

@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "  return Array.from(set).sort(cmp);\n",
     tests: ["test/corpus.test.ts", "-t", "^option_sort.rs$"],
   },
+  {
+    name: "sorted-keys-sorts-ord-set",
+    breaks: "a B-tree set of its items' own order is sorted again as it's walked, asking `cmp`, where std's walk asks nothing (#911)",
+    file: "src/runtime/sorted_keys.js",
+    find: "  if (set.found !== undefined) return Array.from(set);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts",  "-t",  "^btree_search_order.rs$"],
+  },
 ];

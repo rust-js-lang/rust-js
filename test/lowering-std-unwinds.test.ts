@@ -257,3 +257,67 @@ pub fn sorted(h: BinaryHeap<Loud>) -> usize {
   expect(body(flat, "loud")).toContain("$heapPop(h, loudOrd_cmp, false, loudDrop_drop)");
   expect(body(flat, "sorted")).toContain("$heapSorted(h, loudOrd_cmp, loudDrop_drop)");
 });
+
+// #911: a B-tree's `insert` of keys whose order may panic is given the
+// value's drop too, and a set's `replace` the item's, each dropped as the
+// search unwinds; of an order that never panics, the call it always was.
+test("a B-tree's insert drops what it was given as its search unwinds, where it may", () => {
+  const flat = compiled(
+    "std-unwinds-btree",
+    `
+use std::cmp::Ordering;
+use std::collections::{BTreeMap, BTreeSet};
+
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+pub struct Quiet(pub u32);
+
+impl Drop for Quiet {
+    fn drop(&mut self) {
+        self.0 = 0;
+    }
+}
+
+#[derive(PartialEq, Eq)]
+pub struct Loud(pub u32);
+
+impl PartialOrd for Loud {
+    fn partial_cmp(&self, other: &Loud) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Loud {
+    fn cmp(&self, other: &Loud) -> Ordering {
+        println!("cmp");
+        self.0.cmp(&other.0)
+    }
+}
+
+impl Drop for Loud {
+    fn drop(&mut self) {
+        self.0 = 0;
+    }
+}
+
+pub fn quiet(m: &mut BTreeMap<Quiet, Quiet>, k: Quiet, v: Quiet) -> bool {
+    m.insert(k, v).is_some()
+}
+
+pub fn loud(m: &mut BTreeMap<Loud, Quiet>, k: Loud, v: Quiet) -> bool {
+    m.insert(k, v).is_some()
+}
+
+pub fn quiet_replace(s: &mut BTreeSet<Quiet>, x: Quiet) -> bool {
+    s.replace(x).is_some()
+}
+
+pub fn loud_replace(s: &mut BTreeSet<Loud>, x: Loud) -> bool {
+    s.replace(x).is_some()
+}
+`,
+  );
+  expect(body(flat, "quiet")).toContain("$insert(m, k, v, quietDrop_drop)");
+  expect(body(flat, "loud")).toContain("$insert(m, k, v, loudDrop_drop, quietDrop_drop)");
+  expect(body(flat, "quietReplace")).toContain("$setReplace(s, x)");
+  expect(body(flat, "loudReplace")).toContain("$setReplace(s, x, loudDrop_drop)");
+});

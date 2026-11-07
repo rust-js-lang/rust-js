@@ -127,3 +127,48 @@ JS's `for...of`, `keys()` and `forEach` in key order, one emptied before
 it's sorted again read as empty, 64 corpus cases against native Rust,
 and the mutations `btree-*` (`runtime/btree.ts`,
 `lower/std_types/map.ts`).
+
+## Amendment: a key's own order is asked as std's one node asks it (#911)
+
+`$OrdMap` found a key by halving, asking `cmp(held, key)`, and its callers
+asked it again for each question: `insert` was `has`, `get`, then `set`,
+three searches; a walk of it sorted it again. A program whose `Ord` prints,
+counts or panics saw `cmp 5 2` three times where std's `insert` asks `cmp 2
+5` once, and as a comparison panicked, the key `insert` was given leaked,
+where std drops it. Results change (ADR 0262): Rust's behaviour is kept,
+up to one node.
+
+- **One search, std's argument order, a node's walk:** `cmp(given, held)`,
+  from the first key held, to the first not less, as std's
+  `search_node`; of up to eleven entries, std's `CAPACITY`, one leaf,
+  that's std's sequence exactly.
+- **Each operation searches once:** `$found(m, key)` asks it, and
+  `$putFound` and `$deleteFound` write what it found without asking again,
+  of `insert`, a set's `insert` and `replace`, `remove`, `take`,
+  `get_key_value`, `remove_entry`; `split_off` splits where its one search
+  stops, as std's split does. Another map, hashed, answers `$found` by
+  `has`, which asks the program nothing.
+- **A walk asks nothing:** iterating, `retain` (which takes out what it
+  walks to by what it is, `deleteHeld`) and `iter_mut`'s handles (on each
+  entry itself) ask no `cmp`, as std's walk of its nodes asks none.
+- **What a call was given is dropped as its search unwinds**, of keys whose
+  order may panic (`order_may_panic`, ordering.rs, the one answer, #901):
+  `insert`'s key, then its value, `$insert(m, k, v, dropKey, dropValue)`;
+  a set's `insert`'s and `replace`'s item. Of an order that never panics,
+  the call is the one it was.
+
+**Its limit, filed:** past eleven entries std's tree has more than one
+node, whose shape its splits, rebalancing, bulk build and appends make, and
+its sequence follows that shape; `$OrdMap` halves there, in std's argument
+order but not its sequence. `entry(k)` asks twice (`$orInsert`, then
+`$mutGet`), and `collect` and `append` sort by JS's sort. Each waits on
+std's node layer, #926, and its stable sort, #925; a clone of keys with a
+`Clone` of their own calls none, #924.
+
+The corpus's `btree_search_order` runs `insert`, `get`, `remove`,
+`contains_key`, `split_off`, `retain` and a set's `insert`, `contains`,
+`remove`, `take` and `replace` of up to eleven keys whose `Ord` prints and
+panics, under panic points, and a map of forty keys of a quiet order;
+`test/lowering-std-unwinds.test.ts` pins `insert`'s and `replace`'s forms.
+366 of the unwind table's 430 case-builds of #911 pass; its `entry` rows
+stay under #911 and its `clone` rows move to #924.

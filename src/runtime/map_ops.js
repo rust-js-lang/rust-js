@@ -8,6 +8,37 @@ function $storedKey(m, key) {
   return m.has(key) ? key : undefined;
 }
 
+// One search of `m` for `key`: whether it's there, the key it holds equal
+// to it and its value. A B-tree of its keys' own order searches once, as
+// std's does, its `cmp` asked what std's is (#911); another map, by `has`,
+// which asks the program nothing.
+function $found(m, key) {
+  if (m.found !== undefined) return m.found(key);
+  const there = m.has(key);
+  return { there, key: there ? $storedKey(m, key) : undefined, value: there ? m.get?.(key) : undefined };
+}
+
+// What `$found` found given `value`, or `key` put where it would go, a
+// set's item, `value` none; or taken out: no search again.
+function $putFound(m, found, key, value) {
+  if (m.putFound !== undefined) m.putFound(found, key, value);
+  else if (m instanceof Set) m.add(key);
+  else m.set(key, value);
+}
+
+function $deleteFound(m, found, key) {
+  if (m.deleteFound !== undefined) m.deleteFound(found);
+  else m.delete(key);
+}
+
+// The key `m` holds, met as it's walked, taken out: of a B-tree of its
+// keys' own order, by what it is, asking nothing, as std's `retain` takes
+// out what it walks to (#911).
+function $deleteHeld(m, key) {
+  if (m.deleteHeld !== undefined) m.deleteHeld(key);
+  else m.delete(key);
+}
+
 // `m.retain(f)`: the entries `f` keeps, visited in `entries`' order, a
 // B-tree's sorted, `f` given a handle on a number's or a string's value; of
 // keys and values with a destructor, each it doesn't keep dropped by
@@ -17,8 +48,8 @@ function $retainMap(m, f, entries, handles, drop, dropKey) {
     if (!f(key, value)) {
       // The value the map holds, not the handle `f` was given on it, which
       // reads the map, where it's gone once deleted (#905).
-      const held = handles ? m.get(key) : value;
-      m.delete(key);
+      const held = handles ? value.value : value;
+      $deleteHeld(m, key);
       // Its value dropped though its key's drop panics, as std's of the
       // pair goes on (#416).
       try {
@@ -33,7 +64,7 @@ function $retainMap(m, f, entries, handles, drop, dropKey) {
 function $retainSet(s, f, items, drop) {
   for (const item of Array.from(items)) {
     if (!f(item)) {
-      s.delete(item);
+      $deleteHeld(s, item);
       drop?.(item);
     }
   }
@@ -42,10 +73,10 @@ function $retainSet(s, f, items, drop) {
 // A set's `remove(x)` of items with a destructor: the one it held dropped
 // by `drop` (ADR 0467).
 function $removeItem(s, item, drop) {
-  if (!s.has(item)) return false;
-  const held = $storedKey(s, item);
-  s.delete(item);
-  drop(held);
+  const found = $found(s, item);
+  if (!found.there) return false;
+  $deleteFound(s, found, item);
+  drop(found.key);
   return true;
 }
 
@@ -57,31 +88,36 @@ function $drainAll(m) {
 }
 
 function $getKeyValue(m, key) {
-  return m.has(key) ? [$storedKey(m, key), m.get(key)] : undefined;
+  const found = $found(m, key);
+  return found.there ? [found.key, found.value] : undefined;
 }
 
 function $removeEntry(m, key) {
-  if (!m.has(key)) return undefined;
-  const value = m.get(key);
-  const held = $storedKey(m, key);
-  m.delete(key);
-  return [held, value];
+  const found = $found(m, key);
+  if (!found.there) return undefined;
+  $deleteFound(m, found, key);
+  return [found.key, found.value];
 }
 
 // `s.replace(x)`: the item equal to `x` that was there, or `None`, and `x`
-// in its place.
-function $setReplace(s, x) {
-  const held = $storedKey(s, x);
-  s.delete(x);
-  s.add(x);
-  return held;
+// in its place, one search; of items with a destructor whose order may
+// panic, `x` dropped by `drop` as a comparison does, as std's `replace`
+// drops what it was given (#911).
+function $setReplace(s, x, drop) {
+  const found = $unwinds(
+    () => $found(s, x),
+    drop && (() => drop(x)),
+  );
+  $deleteFound(s, found, x);
+  $putFound(s, { ...found, there: false }, x);
+  return found.key;
 }
 
 // `s.take(x)` of items it finds others by: the one it held, taken out.
 function $setTake(s, x) {
-  const held = $storedKey(s, x);
-  s.delete(x);
-  return held;
+  const found = $found(s, x);
+  $deleteFound(s, found, x);
+  return found.key;
 }
 
 // A B-tree's first or last entry, `[key, value]`, or a set's item, by its
@@ -135,6 +171,8 @@ function $treeRange(m, cmp, set, name, start, end, checked = true) {
 // `m.split_off(&key)` of a B-tree: those from `key` on, taken out, in a map
 // of its own.
 function $treeSplitOff(m, key, cmp, set) {
+  // Of its keys' own order, one search, as std's split does (#911).
+  if (m.splitFound !== undefined) return m.splitFound(m.found(key));
   const rest = new m.constructor();
   for (const entry of Array.from(m)) {
     const k = set ? entry : entry[0];
