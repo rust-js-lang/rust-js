@@ -15,6 +15,7 @@ import {
   $removeOpt,
   $resizeWith,
   $retain,
+  $retainDeque,
   $rotateLeft,
   $sortUnstable,
   $splitOff,
@@ -212,7 +213,7 @@ function main() {
               if (front != null) {
                 noisyDrop_drop(front);
               }
-              $retain(deque, (n) => n[0] !== 41, noisyDrop_drop);
+              $retainDeque(deque, (n) => n[0] !== 41, false, noisyDrop_drop);
               $truncate(deque, 1, noisyDrop_drop);
               console.log(`deque ${deque.length}`);
               $truncate(deque, 0, noisyDrop_drop);

@@ -209,4 +209,12 @@ export const mutations: Mutation[] = [
     replace: "                    .filter(|_| false) =>",
     tests: ["test/corpus.test.ts", "-t", "^cow_texts_joined.rs$"],
   },
+  {
+    name: "deque-retain-as-vec",
+    breaks: "a `VecDeque`'s `retain` drops each it doesn't keep as it goes, a `Vec`'s, where std's is its `retain_mut`, which drops them after the last call (#909)",
+    file: "src/lower/std_types/vec.rs",
+    find: "            Std::Retain if self.is_std_type(tys[0].peel_refs(), crate::lower::recognition::StdItem::VecDeque) => {\n",
+    replace: "            Std::Retain if false && self.is_std_type(tys[0].peel_refs(), crate::lower::recognition::StdItem::VecDeque) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_deque_retain_swaps.rs$"],
+  },
 ];

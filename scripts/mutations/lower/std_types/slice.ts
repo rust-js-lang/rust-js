@@ -561,4 +561,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(over) = self.option_clone_over(item, slot(), Expr::var(\"from\"), span)?.filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
   },
+  {
+    name: "deque-retain-mut-as-vec",
+    breaks: "a `VecDeque`'s `retain_mut` drops each it doesn't keep as it goes, a `Vec`'s, where std's drops them after the last call (#909)",
+    file: "src/lower/std_types/slice.rs",
+    find: "helper(if deque { \"$retainDeque\" } else { \"$retainMut\" }, given)",
+    replace: "helper(\"$retainMut\", given)",
+    tests: ["test/corpus.test.ts", "-t", "^vec_deque_retain_swaps.rs$"],
+  },
 ];

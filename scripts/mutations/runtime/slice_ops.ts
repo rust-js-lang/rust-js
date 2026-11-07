@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/slice_ops.js",
     find: "    if (keep) v[kept++] = v[at];\n",
     replace: "    if (true) v[kept++] = v[at];\n",
-    tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
+    tests: ["test/corpus.test.ts", "-t", "^retain_mut_drops.rs$"],
   },
   {
     name: "clone-from-slice-callback-skipped",
@@ -369,5 +369,21 @@ export const mutations: Mutation[] = [
     find: "    const last = w.pop();\n    drop?.(last);\n",
     replace: "    w.pop();\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
+  },
+  {
+    name: "retain-deque-kept-copied",
+    breaks: "a `VecDeque`'s `retain_mut` copies each it keeps forward, not swaps it, so what it doesn't keep is lost, never dropped (#909)",
+    file: "src/runtime/slice_ops.js",
+    find: "    [v[kept], v[at]] = [v[at], v[kept]];\n",
+    replace: "    v[kept] = v[at];\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_deque_retain_swaps.rs$"],
+  },
+  {
+    name: "retain-deque-untruncated",
+    breaks: "a `VecDeque`'s `retain_mut` keeps what it doesn't keep at its end (#909)",
+    file: "src/runtime/slice_ops.js",
+    find: "  if (at !== kept) $truncate(v, kept, drop);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^vec_deque_retain_swaps.rs$"],
   },
 ];

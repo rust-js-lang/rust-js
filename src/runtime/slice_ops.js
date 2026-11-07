@@ -445,6 +445,43 @@ function $retainMut(v, f, handles, drop) {
   }
 }
 
+// A `VecDeque`'s `retain_mut(f)`, and its `retain`, std's: each item `f`
+// keeps swapped forward into its place, given as itself, or as a handle on
+// a number or a string (`handles`); once every one is asked, what's past
+// those kept truncated, each dropped by `drop` in the order the swaps left
+// them. Where `f` panics, the deque as the swaps left it, every item in it,
+// as std's has no guard (#909).
+function $retainDeque(v, f, handles, drop) {
+  const keeps = (at) =>
+    handles
+      ? f({
+          get value() {
+            return v[at];
+          },
+          set value(item) {
+            v[at] = item;
+          },
+        })
+      : f(v[at]);
+  const len = v.length;
+  let kept = 0;
+  let at = 0;
+  while (at < len) {
+    if (!keeps(at++)) break;
+    kept++;
+  }
+  while (at < len) {
+    if (!keeps(at)) {
+      at++;
+      continue;
+    }
+    [v[kept], v[at]] = [v[at], v[kept]];
+    at++;
+    kept++;
+  }
+  if (at !== kept) $truncate(v, kept, drop);
+}
+
 // A `VecDeque`'s `pop_front_if(f)`: its first item, if `f` of it holds.
 function $popFrontIf(v, holds, handles) {
   if (v.length === 0) return undefined;

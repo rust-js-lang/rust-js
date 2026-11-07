@@ -184,8 +184,11 @@ pub(in crate::lower) enum SliceOp {
         front: bool,
     },
     /// `retain_mut(f)` and a `VecDeque`'s `pop_front_if(f)`: `f` given each
-    /// item, or a handle on a number or a string.
-    RetainMut,
+    /// item, or a handle on a number or a string. A `VecDeque`'s
+    /// `retain_mut` is std's own (`deque`, #909).
+    RetainMut {
+        deque: bool,
+    },
     PopFrontIf,
     /// `push_mut(x)`, `insert_mut(i, x)`: a `&mut` to the item put in.
     PushMut {
@@ -1099,12 +1102,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 helper("$dequeInsert", given)
             }
             SliceOp::DequeSwapRemove { front } => helper("$dequeSwapRemove", vec![arg(), arg(), Expr::bool(front)]),
-            // What `retain_mut` doesn't keep, dropped as it goes (ADR 0499).
-            SliceOp::RetainMut => {
+            // What a `Vec`'s `retain_mut` doesn't keep, dropped as it goes
+            // (ADR 0499); a `VecDeque`'s, std's, each kept swapped forward,
+            // then what's past them truncated (ADR 0499, amended, #909).
+            SliceOp::RetainMut { deque } => {
                 let handles = self.handles_mut(item());
                 let mut given = vec![arg(), arg(), Expr::bool(handles)];
                 given.extend(self.std_drop_function(item(), span)?);
-                helper("$retainMut", given)
+                helper(if deque { "$retainDeque" } else { "$retainMut" }, given)
             }
             SliceOp::PopFrontIf => {
                 let handles = self.handles_mut(item());

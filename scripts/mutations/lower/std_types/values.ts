@@ -503,7 +503,7 @@ export const mutations: Mutation[] = [
     name: "retain-mut-refused",
     breaks: "`retain_mut` of values with a destructor is refused",
     file: "src/lower/std_types/values.rs",
-    find: "                    | Std::Slice(SliceOp::RetainMut)\n",
+    find: "                    | Std::Slice(SliceOp::RetainMut { .. })\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^retain_mut_drops.rs$"],
   },

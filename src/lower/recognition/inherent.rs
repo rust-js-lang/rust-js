@@ -269,7 +269,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "each_ref" | "each_mut" if owner.is_array() => Std::Same,
             "swap_remove_back" if deque => Std::Slice(SliceOp::DequeSwapRemove { front: false }),
             "swap_remove_front" if deque => Std::Slice(SliceOp::DequeSwapRemove { front: true }),
-            "retain_mut" if adt(StdItem::Vec) || deque => Std::Slice(SliceOp::RetainMut),
+            "retain_mut" if adt(StdItem::Vec) || deque => Std::Slice(SliceOp::RetainMut { deque }),
             "pop_front_if" if deque => Std::Slice(SliceOp::PopFrontIf),
             "partition_point" if deque => Std::Slice(SliceOp::PartitionPoint),
             "range" if deque => Std::Text(TextOp::Slice),

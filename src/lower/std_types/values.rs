@@ -279,7 +279,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Step(StepOp::Peek | StepOp::PeekMut | StepOp::NextIf | StepOp::NextIfEq)
                     | Std::Clear
                     | Std::Retain
-                    | Std::Slice(SliceOp::RetainMut)
+                    | Std::Slice(SliceOp::RetainMut { .. })
                     // A collection made of another it's given, `VecDeque::from(v)`,
                     // which keeps each item (ADR 0500).
                     | Std::ToVec

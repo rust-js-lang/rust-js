@@ -214,6 +214,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::undefined()
                 }
             },
+            // A `VecDeque`'s is its `retain_mut`, std's: each kept swapped
+            // forward, then what's past them truncated (#909).
+            Std::Retain if self.is_std_type(tys[0].peel_refs(), crate::lower::recognition::StdItem::VecDeque) => {
+                let (v, keep) = (arg(), arg());
+                let list = self.dropping(vec![v, keep, Expr::bool(false)], tys[0], span)?;
+                Expr::call(Expr::helper("$retainDeque"), list)
+            }
             Std::Retain => {
                 let (v, keep) = (arg(), arg());
                 Expr::call(Expr::helper("$retain"), self.dropping(vec![v, keep], tys[0], span)?)

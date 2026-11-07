@@ -20,7 +20,7 @@ import {
   $range,
   $refCellSwap,
   $restStr,
-  $retainMut,
+  $retainDeque,
   $slice,
   $unwrap,
 } from "@rust-js/runtime";
@@ -67,7 +67,7 @@ function main() {
   console.log(
     `${swapRemoveBack == null ? "None" : `Some(${swapRemoveBack})`} ${value$3 == null ? "None" : `Some(${value$3})`} [${deque.join(", ")}]`,
   );
-  $retainMut(
+  $retainDeque(
     deque,
     (x) => {
       x.value = (x.value + 1) | 0;
