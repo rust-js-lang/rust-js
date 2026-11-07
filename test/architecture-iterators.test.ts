@@ -44,6 +44,28 @@ test("an iterator's own facts are written by $owns alone", () => {
   expect(read("src/runtime/forward.js")).toContain("function $ownsAs(adapter, source, ...steps)");
 });
 
+// An iterator's lifecycle, open, taking, taken or closed, is one field,
+// `$state`, changed by closing.js's transitions alone, `$close`, `$takenBy`
+// and `$stateFrom` (ADR 1092 S7): `$closing`'s local `closed`, std's
+// struct's `$closed` and a fold's `closed = true` were three marks that
+// disagreed, a drop twice or none (#734, #762, #817, #870).
+test("an iterator's lifecycle is written by closing.js's transitions alone", () => {
+  const writes = /\.\$state\s*=(?!=)|\.\$closed\b|\bclosed\s*=\s*(?:true|false)\b/;
+  expect(writes.test("    it.$closed = true;")).toBe(true);
+  expect(writes.test("  let closed = false;")).toBe(true);
+  expect(writes.test("  if (it.$state === \"open\") return;")).toBe(false);
+  const writing = files("src/runtime")
+    .filter((file) => file.endsWith(".js") && file !== "src/runtime/closing.js")
+    .filter((file) => /\$Steps|\$closing|\$stdIterator/.test(read(file)))
+    .filter((file) => read(file).split("\n").some((line) => !line.trimStart().startsWith("//") && writes.test(line)));
+  expect(writing).toEqual([]);
+  const closing = read("src/runtime/closing.js");
+  const transitions = ["function $close(it, drop)", "function $takenBy(it, run, closesItself = false)", "function $stateFrom(target, value)"];
+  for (const transition of transitions) expect(closing).toContain(transition);
+  const outside = closing.slice(0, closing.indexOf("function $close(it, drop)"));
+  expect(outside.split("\n").filter((line) => !line.trimStart().startsWith("//") && writes.test(line))).toEqual([]);
+});
+
 // Which of the crate's own steps std's adapters reach is one catalog's,
 // `OwnStep::asked_of`, and one query's, `reaches_its_own` (ADR 1089): a
 // predicate per step, each with its own list of adapters, treated a type

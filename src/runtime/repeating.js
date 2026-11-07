@@ -3,17 +3,12 @@
 // iterator (ADR 0422). A `$Steps`, whose `take` closes it though a clone
 // throws, a panic, as Rust drops a `Take` that holds it as it unwinds,
 // where JS's own `take` would be done with it (#708). Its hint std's,
-// `(usize::MAX, None)` (#246).
+// `(usize::MAX, None)` (#246). Its lifecycle `$closing`'s, `$close`'s,
+// never taken (#870).
 function $repeating(value, clone = (value) => value, drop) {
-  let closed = false;
   const it = new $Steps(
     () => ({ done: false, value: clone(value) }),
-    () => {
-      if (!closed) {
-        closed = true;
-        drop?.(value);
-      }
-    },
+    () => $close(it, () => drop?.(value)),
   );
   it.sizeHint = () => [2 ** 32 - 1, undefined];
   return it;

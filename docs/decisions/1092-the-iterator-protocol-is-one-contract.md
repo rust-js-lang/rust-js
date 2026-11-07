@@ -1288,3 +1288,15 @@ which no earlier case pinned. `closing-own-count-closed-again`,
 `catch-unwind-catches-internal-error` and
 `cleanup-aborts-on-internal-error` are new. Six name their lines as they
 now read.
+
+`$repeating` (`iter::repeat`) and `$cycleFrom` (`Cycle`) had a local
+`closed` of their own with the same lifecycle: dropped once, never taken.
+Both now close by `$close`, and a `Cycle` reads its `$state` to stay ended
+once it's closed. `$repeatingN` (`iter::repeat_n`) has a different
+lifecycle and keeps its own count. Its last step gives its value away, a
+move rather than a drop, so a close after drops nothing. Its `left` is
+that state, not a closed flag.
+`test/architecture-iterators.test.ts` ("an iterator's lifecycle is written
+by closing.js's transitions alone") refuses a write of `$state`, any
+`$closed`, and a `closed = true` or `false` in a runtime file that makes an
+iterator, as well as in `closing.js` above its transitions.
