@@ -61,6 +61,17 @@ An owner in no row takes the area of the row nearest it. There are at most
 ten areas. Where a count shows many issues fitting none, a change to the
 areas amends ADR 1085; it doesn't add an eleventh.
 
+## Dev loop
+
+`dev-loop` marks an issue about the development and feedback loop:
+`check:fast`, the suites' and checks' speed and cost, timeouts, flaky tests,
+parallelism, caches and the agents' workflow. It is the list of what was
+tried and what worked, so a loop issue says what it measured before and
+after, and one that didn't work is closed as such, with its numbers, not
+deleted. A loop issue that is not a bug carries `dev-loop` and a priority, and
+no kind or area. [DEVELOPMENT.md](../DEVELOPMENT.md#keeping-the-loop-fast)'s
+speed-up table and slow-spot list link the issues behind them.
+
 ## Regression
 
 `regression` marks an issue where something worked, and a known commit, its

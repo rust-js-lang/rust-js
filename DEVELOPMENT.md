@@ -363,7 +363,7 @@ every agent at once. Noticing one and making it faster is everyone's job,
 as a wrong answer is.
 
 
-**Look for speed-ups as you go; it's part of every task.** Each one
+**Look for speed-ups as you go; it's part of every task.** Issues about the loop carry the `dev-loop` label (`gh issue list --label dev-loop --state all`): it's the list of what was tried, what worked and what didn't, with numbers. Each one
 speeds up every agent on every machine from then on. If a step makes you
 wait, notice it: time it, find out why, and fix it in the same task when
 the fix is small. Otherwise list it as a slow spot below. When you speed
