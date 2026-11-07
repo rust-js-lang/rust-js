@@ -108,7 +108,7 @@ export function changedMutations(
   read: (file: string) => string | undefined,
   readBase: (file: string) => string | undefined,
 ): Mutation[] {
-  const same = (a: Mutation, b: Mutation) => JSON.stringify(a) === JSON.stringify(b);
+  const own = new Set(ownMutations(now, base));
   const changed = new Map(changes.filter((c) => !c.base).map((c) => [c.file, c.lines]));
   const taken = new Map(changes.filter((c) => c.base).map((c) => [c.file, c.lines]));
   const overlaps = (lines: [number, number][], [first, last]: [number, number]) => lines.some(([a, b]) => a <= last && b >= first);
@@ -120,12 +120,20 @@ export function changedMutations(
     if (blocks.length === 0 || overlaps(lines, [1, blocks[0].first - 1])) return "all";
     return blocks.filter((block) => overlaps(lines, [block.first, block.last])).map((block) => block.name);
   };
+  // Each file's once, and read only where the change touches it: a `git
+  // show` for each of 5,000 mutations was 25 s of a run's choosing (#923).
+  const touched = new Map<string, string[] | "all">();
   const touchedTests = (file: string): string[] | "all" => {
     // The corpus's tests are its cases, each its own file; what they share
     // is its harness, whose own mutants show it still catches (#918).
     if (file === "test/corpus.test.ts") return [];
-    const [is, was] = [touchedIn(changed.get(file), read(file)), touchedIn(taken.get(file), readBase(file))];
-    return is === "all" || was === "all" ? "all" : [...is, ...was];
+    const known = touched.get(file);
+    if (known !== undefined) return known;
+    const [lines, linesWas] = [changed.get(file), taken.get(file)];
+    const [is, was] = [lines ? touchedIn(lines, read(file)) : [], linesWas ? touchedIn(linesWas, readBase(file)) : []];
+    const tests = is === "all" || was === "all" ? "all" : [...is, ...was];
+    touched.set(file, tests);
+    return tests;
   };
   const cases = changes.filter((c) => c.file.startsWith("test/corpus/")).map((c) => c.file.slice("test/corpus/".length));
   // Whether the change touches the unit tests a `cargo test` filter runs:
@@ -139,7 +147,7 @@ export function changedMutations(
       return source !== undefined && overlaps(c.lines, unitTestLines(c.file, source));
     });
   return now.filter((m) => {
-    if (!base.some((b) => same(b, m))) return true;
+    if (own.has(m)) return true;
     const source = changed.has(m.file) ? read(m.file) : undefined;
     if (source !== undefined) {
       const at = source.indexOf(m.find);
@@ -157,6 +165,19 @@ export function changedMutations(
     if (tests === "all" || (tests.length > 0 && (!filter || tests.some((name) => filter.test(name))))) return true;
     return file === "test/corpus.test.ts" && filter !== undefined && cases.some((name) => filter.test(name));
   });
+}
+
+/** Those of `now` a change adds or edits: each one `base`, the lists as
+ * they were, hasn't as it is. */
+export function ownMutations(now: Mutation[], base: Mutation[]): Mutation[] {
+  const was = new Set(base.map((m) => JSON.stringify(m)));
+  return now.filter((m) => !was.has(JSON.stringify(m)));
+}
+
+/** The mutations a change since where this branch left `base` adds or
+ * edits (`ownMutations`): check:fast's, of what isn't committed, `HEAD`. */
+export async function ownSince(base: string): Promise<Mutation[]> {
+  return ownMutations(mutations, (await since(base)).mutations);
 }
 
 /** Whether a change since where this branch left `base` touches the corpus
@@ -245,6 +266,15 @@ export function testBlocks(source: string): { name: string; first: number; last:
   }));
 }
 
+/** A file not yet added to git, `file`: a change of all its lines. */
+function untrackedChange(file: string): Change {
+  let lines = 1;
+  try {
+    lines = Math.max(1, readFileSync(join(root, file), "utf8").split("\n").length);
+  } catch {}
+  return { file, lines: [[1, lines]] };
+}
+
 /** The lines `git diff -U0` says each file's change is in, as it is now,
  * and, `base`, as it was. */
 export function changedLines(diff: string): Change[] {
@@ -283,8 +313,11 @@ async function since(base: string): Promise<{ from: string; files: string[]; cha
     return p.stdout;
   };
   const from = git(["merge-base", base, "HEAD"]).trim();
-  const files = git(["diff", "--name-only", from]).split("\n").filter(Boolean);
-  const changes = changedLines(git(["diff", "-U0", "--no-color", from]));
+  // And each file not yet added, whole: a new source file, its list or a
+  // new corpus case, which `git diff` doesn't see (#923).
+  const added = git(["ls-files", "--others", "--exclude-standard"]).split("\n").filter(Boolean);
+  const files = [...git(["diff", "--name-only", from]).split("\n").filter(Boolean), ...added];
+  const changes = [...changedLines(git(["diff", "-U0", "--no-color", from])), ...added.map(untrackedChange)];
   // Each list as it was there, where the change touched it; a new one had none.
   const there = mkdtempSync(join(tmpdir(), "mutations-base-"));
   const old: Mutation[] = [];
@@ -836,8 +869,15 @@ async function corpusMutantsRun(compiler: string, beside: <T>(work: () => Promis
   );
 }
 
+/** The flags `main` takes, each alone or with `=` and its value. */
+const flags = ["--changed", "--list", "--shard", "--jobs", "--batch", "--tests"];
+
 async function main() {
   const args = process.argv.slice(2);
+  // A flag it doesn't know is refused, not run past: `--list`, before it
+  // was one, ran all a change's mutations (#923).
+  const unknownFlags = args.filter((arg) => arg.startsWith("--") && !flags.some((flag) => arg === flag || arg.startsWith(`${flag}=`)));
+  if (unknownFlags.length > 0) throw new Error(`no flag ${unknownFlags.join(", ")}; there are ${flags.join(", ")}`);
   const named = args.filter((arg) => !arg.startsWith("--"));
   const unknown = named.filter((name) => !mutations.some((m) => m.name === name));
   if (unknown.length > 0) throw new Error(`no mutation ${unknown.join(", ")}; there are ${mutations.map((m) => m.name).join(", ")}`);
@@ -854,6 +894,12 @@ async function main() {
   // The corpus harness's mutants (#918): of a change to the harness, and
   // of a run of every mutation; on the first of its machines.
   const harness = (sharded === undefined || sharded.index === 1) && (changed ? await harnessChangedSince(changed) : named.length === 0);
+  // Which would run, each its name and file, and none run.
+  if (args.includes("--list")) {
+    for (const m of chosen) console.log(`${m.name}\t${m.file}`);
+    console.log(`${chosen.length} mutations chosen${harness ? ", and the corpus harness's mutants" : ""}`);
+    return;
+  }
   if (chosen.length === 0 && !harness) {
     console.log("no mutations to run");
     return;
@@ -1146,7 +1192,9 @@ async function main() {
   if (harnessRows.length > 0) console.log(`${harnessRows.length - harnessMissed.length} of ${harnessRows.length} of the corpus harness's mutants as they must be`);
   if (harnessMissed.length > 0) process.exitCode = 1;
   const missed = rows.filter(([, result]) => result !== "caught");
-  console.log(`${rows.length - missed.length} of ${rows.length} mutations caught`);
+  // Said last, where a `tail` of the run sees it: the rows above may be
+  // more than it shows (#923).
+  console.log(`${rows.length - missed.length} of ${rows.length} mutations caught${missed.length > 0 ? `; not: ${missed.map(([m]) => m.name).join(", ")}` : ""}`);
   // Here, each one's time, its build and its tests, as many as run; CI's
   // are its own.
   if (!process.env.GITHUB_ACTIONS && rows.length > 0) {

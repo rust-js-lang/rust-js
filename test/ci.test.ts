@@ -12,9 +12,12 @@ import {
   changedLines,
   changedMutations,
   enclosingFunction,
+  mutations,
+  ownMutations,
   schema,
   setPasses,
   site,
+  siteLines,
   type Sited,
   testBlocks,
   testResults,
@@ -255,6 +258,40 @@ test("the changed mutations are of the functions and tests a change touches", ()
   // A corpus case deleted.
   expect(names([{ file: "test/corpus/array_map.rs", lines: [[1, 1]], base: true }])).toEqual(["edited", "case", "added"]);
   expect(changedMutations(now, now, [], read, readBase)).toEqual([]);
+});
+
+// #923: every mutation whose code a change touches is the change's, of
+// every list, as its site's file is now; and one whose `find` alone a
+// change edits is its own, though its `name` line is as it was.
+test("every mutation whose site a change touches is the change's", () => {
+  const sources = new Map<string, string>();
+  const read = (file: string) => {
+    if (!sources.has(file)) sources.set(file, readFileSync(join(root, file), "utf8"));
+    return sources.get(file);
+  };
+  const sited = mutations.flatMap((m) => {
+    const lines = siteLines(m, read(m.file)!);
+    return lines ? [{ m, lines }] : [];
+  });
+  expect(sited.length).toBe(mutations.length);
+  // One change of each file, each mutation's site its lines.
+  const byFile = Map.groupBy(sited, ({ m }) => m.file);
+  const changes: Change[] = [...byFile].map(([file, of]) => ({ file, lines: of.map(({ lines }) => lines) }));
+  const chosen = new Set(changedMutations(mutations, mutations, changes, read, read));
+  expect(mutations.filter((m) => !chosen.has(m)).map((m) => m.name)).toEqual([]);
+  // And one site alone chooses its own.
+  for (const { m, lines } of sited.filter((_, i) => i % 500 === 0)) {
+    expect(changedMutations(mutations, mutations, [{ file: m.file, lines: [lines] }], read, read)).toContain(m);
+  }
+  // A test file as it was is read once, not once for each mutation naming
+  // it: 5,000 `git show`s were 25 s of choosing.
+  let reads = 0;
+  const readBase = (file: string) => (reads++, read(file));
+  changedMutations(mutations, mutations, [{ file: "test/lowering.test.ts", lines: [[1, 1]], base: true }], read, readBase);
+  expect(reads).toBe(1);
+  const before = mutation("items-never-cells", "src/a.rs", "match self.is_object(item) {");
+  const after = { ...before, find: "    .is_some_and(|item| self.is_cell(item))" };
+  expect(ownMutations([after, mutation("kept", "src/a.rs")], [before, mutation("kept", "src/a.rs")]).map((m) => m.name)).toEqual(["items-never-cells"]);
 });
 
 // The corpus's tests are its cases: a change to what they share, its

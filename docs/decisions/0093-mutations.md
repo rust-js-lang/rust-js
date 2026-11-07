@@ -415,3 +415,32 @@ elsewhere does to one (above).
 **Cost:** 48 s on the 12-core M6, 19 mutants on 2 to 9 cases each, against
 34 min 27 s; and a change to a harness helper, which ran nothing, now
 runs them.
+
+## Amendment: a change's own mutations, its new files and `--list` (#923)
+
+A change's run, `--changed=origin/main`, was said to have skipped five of
+its own mutations (24faf6e52's `map-clear-unguarded`,
+`map-clear-always-guarded`, `items-cells-by-object`, `items-never-cells`
+and `clone-from-vec-replaced`). It hadn't: the run was `--changed=origin/main
+--list | tail -40`, `--list` wasn't a flag, so every chosen mutation ran,
+and the 51 rows above the tail, those five among them, weren't seen. Three
+real gaps were behind the misreading:
+
+- **A flag the runner didn't know was run past.** It is refused now, naming
+  the flags there are. `--list` is one: the chosen mutations, each its name
+  and file, and their count, none built or run. 24faf6e52's diff lists 82,
+  the five among them.
+- **A file not yet added to git was no change.** `git diff` doesn't see
+  one, so a new source file's mutations, in a new list, looked as they
+  were (none did) and none ran until the change was committed. Each
+  untracked file is a change of all its lines.
+- **check:fast's "mutations the change adds" read `name:` lines of its
+  lists' diff**, a second rule beside the runner's, so one whose `find`
+  alone was edited, `items-never-cells`, wasn't run. It asks the runner,
+  `ownSince("HEAD")`: those whose list entry isn't as it was.
+
+And the run's last line names those not caught, where a `tail` sees it.
+Held by `test/ci.test.ts`, "every mutation whose site a change touches is
+the change's": a change of every mutation's site chooses each of the
+6,000-odd, and one site alone chooses its own; and one whose `find` alone
+changed is the change's own.

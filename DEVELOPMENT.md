@@ -529,7 +529,10 @@ The ledger of every speed-up tried, with its numbers, its status (active, droppe
   parallel processes; the next build while the last results are read.
 - **Mutations of a change: `--changed=origin/main`**, never
   `--changed=main`. A worktree's local `main` can be far behind; one such
-  run picked up 1,337 files and was filling the disk.
+  run picked up 1,337 files and was filling the disk. `--list` says which
+  it chooses, each name and file, in a second, and runs none; a flag the
+  runner doesn't know is refused (#923). A run's last line names the
+  mutations not caught, so a `tail` of it is enough.
 - **A gate or script that takes a lock releases it on any exit**, a
   signal included (`trap`). A stopped gate once left its mutations lock
   behind, and the next run waited on it overnight.

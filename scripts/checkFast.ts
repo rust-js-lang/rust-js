@@ -467,10 +467,11 @@ if (import.meta.main) {
   const since = git(["merge-base", "HEAD", "origin/main"])[0];
   const branch = since === undefined ? [] : git(["diff", "--name-only", since, "HEAD"]);
 
-  // The mutations the change adds or changes: each `name` its lists' diff adds.
-  const diff = Bun.spawnSync(["git", "diff", "HEAD", "--", "scripts/mutations"], { cwd: root }).stdout.toString();
-  const untracked = changed.filter((file) => file.startsWith("scripts/mutations/") && !diff.includes(file));
-  const added = [...diff.matchAll(/^\+\s*"?name"?: "([^"]+)"/gm), ...untracked.flatMap((file) => [...readFileSync(join(root, file), "utf8").matchAll(/"?name"?: "([^"]+)"/g)])].map((m) => m[1]);
+  // The mutations the change adds or edits, by the runner's own rule: one
+  // whose `find` alone changed is the change's too, where a diff's `name`
+  // lines missed it (#923).
+  const { ownSince } = await import("./mutations");
+  const added = (await ownSince("HEAD")).map((m) => m.name);
 
   // What no test used for a week, and past each store's cap, before any
   // runs (test/kept.ts), as the whole suite prunes it: a Mac's native
