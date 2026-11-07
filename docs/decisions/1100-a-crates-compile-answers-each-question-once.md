@@ -4,7 +4,8 @@ Status: Accepted (2026-11-07, #884). Amends
 [0914](0914-a-librarys-generic-function-is-its-programs.md)'s walk of
 what a library's function copies; extends
 [1098](1098-the-compilers-maps-are-walked-in-the-programs-order.md)'s
-`collections` with `OnceMap`.
+`collections` with `OnceMap`. Amended (2026-11-07, #896): every build of
+the compiler is optimized, `opt-level = 1` without LTO.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none. How long a
 compile takes, not what it writes: React's port regenerates byte for byte
@@ -105,7 +106,7 @@ the compiler changes every crate's key, as its build is its identity
   31 s, not 75 s, as each `rust-js` runs three times as fast; but a
   build after a one-line change takes 15 s, not 2.7 s, and a second
   build's target, 1.6 GB. Worth deciding for the whole loop, the tests'
-  compiles too, not for the regen alone (#896).
+  compiles too, not for the regen alone (#896): decided so, below.
 - **Compile each crate's bodies on several threads.** rustc's `TyCtxt` is
   one thread's here; the work was repeated, not parallel.
 - **Each memo a `RefCell` in recognition.** Recognition holds no mutable
@@ -122,6 +123,48 @@ the compiler changes every crate's key, as its build is its identity
   the depth (#895).
 - `std_items.rs`' questions of std's crates are `std_crates.rs`', and its
   mutations `scripts/mutations/lower/recognition/std_crates.ts`.
+
+## Amended: every build of the compiler optimized, without LTO (#896)
+
+**Cargo.toml's `[profile.dev]` is `opt-level = 1`, `lto = "off"`**, one
+profile for every build of the compiler the loop runs: a build after an
+edit, the tests' and `check:fast`'s, `cargo test`'s, the mutations'
+(ADR 1031), a port's regen, and CI's, which builds from the same
+Cargo.toml. Not a second profile for one step: a second compiler is a
+second build and a second target, and a step that measures one compiler
+and ships with another.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. How fast the
+compiler runs, not what it writes: debug assertions and overflow checks
+stay on, as in any dev build, and the corpus, the suite and React's regen
+are unchanged.
+
+Measured on the 12-core M6, alone, after a one-line change to `src/`
+(docs/dev-loop.md has every profile tried):
+
+| | `opt-level = 0`, before | 1, LTO off |
+|---|---|---|
+| The build, a comment's or a code change | 2.8 s | 2.5–2.6 s |
+| `check:fast --all` | 167–175 s | 127–140 s |
+| React's regen | 75 s | 28 s |
+| The corpus, 12 parts | 52 s | 29 s |
+| A mutation run, `target/mutants` from nothing | 23–31 s | 48 s |
+| Its mutant's build | 4.3 s | 2.6 s |
+| `target/debug` after a check | 2.5 GB | 2.3 GB |
+
+At `opt-level = 1` rustc's default is LTO of each crate's own code units
+("thin local"), which re-optimizes across them after any change: a
+comment's change built in 7.2 s and a code change in 12.8–15.3 s, as
+#896 first measured. Without it, a change compiles only its code units,
+as unoptimized, and the compiler runs as fast. At 2 it runs no faster,
+and builds from nothing in 47 s, not 29 s; with only the dependencies
+optimized the gain is a tenth, as the time is rust-js's own code.
+
+What it costs: a build from nothing, sccache warm for the dependencies,
+29 s, not 17 s, which each mutation run pays where its `target/mutants`
+was removed; and CI's first build after the change, which compiles the
+dependencies again once. The release builds, rustc's tests' (ADR 0089)
+and the packages', are another profile, for reasons of their own.
 
 ## What holds it
 

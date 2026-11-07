@@ -52,5 +52,14 @@ declare_clippy_lint = { git = "https://github.com/rust-lang/rust-clippy", rev = 
 # removes: target/debug/deps held 381 000 of them, 61 GB, by 2026-10-07,
 # and the mutations' builds 55 GB more. Packed into a .dSYM instead, each
 # link takes some 20 s more; without it, a change builds in about 2 s.
+#
+# Optimized, `opt-level = 1`, and without LTO, as every build of the
+# compiler the loop runs, the tests', check:fast's, the mutations', a
+# port's regen and CI's (ADR 1100, amended, #896): it compiles three times
+# as fast as at 0, and a change still builds in about 2.5 s, where rustc's
+# default for an optimized build, LTO of each build's own crate, took
+# 7–15 s. Debug assertions and overflow checks stay on, as in any dev build.
 [profile.dev]
 debug = false
+opt-level = 1
+lto = "off"
