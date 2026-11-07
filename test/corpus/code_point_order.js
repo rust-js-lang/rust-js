@@ -33,7 +33,7 @@ function main() {
       $cmp(crab, bang),
     )}`,
   );
-  console.log(`${$cmp(crab, bang) > 0 ? crab : bang} ${$cmp(crab, bang) > 0 ? bang : crab}`);
+  console.log(`${$cmp(bang, crab) < 0 ? crab : bang} ${$cmp(bang, crab) < 0 ? bang : crab}`);
 
   const sorted = words.slice();
   sorted.sort($cmp);

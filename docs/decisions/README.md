@@ -46,7 +46,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0054 `Display`: a `fmt` returns the string it writes](0054-display.md)
 - [0055 The crate's own `Iterator` is a JS iterator](0055-iterator.md)
 - [0056 Indexing: `$index(v, i)` to read, `v[$at(v, i)] = x` to write](0056-indexing.md)
-- [0057 `PartialOrd` and `Ord`: an `Ordering`, and the parts in turn](0057-ordering.md) *(amended by 0687: `max()` and the rest step their iterator as each comes; amended: another type's order through references is its referents', #467)*
+- [0057 `PartialOrd` and `Ord`: an `Ordering`, and the parts in turn](0057-ordering.md) *(amended by 0687: `max()` and the rest step their iterator as each comes; amended: another type's order through references is its referents', #467; `max`, `min` and `clamp` compare as std's and drop what they don't give back, #912)*
 - [0058 Format options, where Rust applies them](0058-format-options.md)
 - [0059 `HashMap` is a JS `Map`, `HashSet` a `Set`, keyed by value](0059-hashmap.md) *(amended: `m[k]` of a value that could look like `None`; amended: `m[k]` of a key a test shows it holds is its `get`)*
 - [0060 `{:?}` by the type, and a derived `Debug` is a function](0060-debug.md) *(amended: a pair upcast where it's made by a call, held once)*

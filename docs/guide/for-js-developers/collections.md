@@ -587,6 +587,122 @@ export function sorted(names) {
 }
 ```
 
+`max`, `min` and `clamp` of your own `Ord` ask what std's ask, in its
+order: `max(a, b)` asks `b < a`. Of a type with a destructor, the one not
+given back is dropped, and, where a comparison panics, all of them are,
+as std drops its parameters: `$maxOf`, `$minOf` and `$clampBy`'s last
+argument ([ADR 0057](../../decisions/0057-ordering.md)):
+
+```rust
+use std::cmp::Ordering;
+
+#[derive(PartialEq, Eq)]
+pub struct Rank(pub u32);
+
+impl PartialOrd for Rank {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Rank {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
+pub struct Ticket(pub Rank);
+
+impl Drop for Ticket {
+    fn drop(&mut self) {
+        println!("closed {}", self.0.0);
+    }
+}
+
+impl PartialEq for Ticket {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl Eq for Ticket {}
+
+impl PartialOrd for Ticket {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Ticket {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
+pub fn higher(a: Rank, b: Rank) -> u32 {
+    std::cmp::max(a, b).0
+}
+
+pub fn first(a: Ticket, b: Ticket) -> u32 {
+    a.min(b).0.0
+}
+```
+
+```js
+import { $cmp, $eq, $minOf } from "@rust-js/runtime";
+
+export const rankPartialOrd = {
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: rankPartialOrd_partialCmp,
+};
+function rankPartialOrd_partialCmp(rank, other) {
+  return rankOrd_cmp(rank, other);
+}
+
+export const rankOrd = { PartialOrd: () => rankPartialOrd, cmp: rankOrd_cmp };
+function rankOrd_cmp(rank, other) {
+  return $cmp(rank[0], other[0]);
+}
+
+function ticketDrop_drop(ticket) {
+  console.log(`closed ${ticket[0][0]}`);
+}
+
+export const ticketPartialEq = { eq: ticketPartialEq_eq, $drop: ticketDrop_drop };
+function ticketPartialEq_eq(ticket, other) {
+  return $eq(ticket[0], other[0]);
+}
+
+export const ticketPartialOrd = {
+  PartialEq: () => ticketPartialEq,
+  partialCmp: ticketPartialOrd_partialCmp,
+  $drop: ticketDrop_drop,
+};
+function ticketPartialOrd_partialCmp(ticket, other) {
+  return ticketOrd_cmp(ticket, other);
+}
+
+export const ticketOrd = {
+  PartialOrd: () => ticketPartialOrd,
+  cmp: ticketOrd_cmp,
+  $drop: ticketDrop_drop,
+};
+function ticketOrd_cmp(ticket, other) {
+  return rankOrd_cmp(ticket[0], other[0]);
+}
+
+export function higher(a, b) {
+  return (rankOrd_cmp(b, a) < 0 ? a : b)[0];
+}
+
+export function first(a, b) {
+  const min = $minOf(a, b, ticketOrd_cmp, ticketDrop_drop);
+  const result = min[0][0];
+  ticketDrop_drop(min);
+  return result;
+}
+```
+
 ## Iterators
 
 A Rust iterator is lazy: nothing runs until something takes its items.

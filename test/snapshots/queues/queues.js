@@ -207,7 +207,7 @@ export function reverses(a, b) {
   });
   return [
     ($cmp(y[0][0], x[0][0]) || $cmp(y[0][1], x[0][1])) < 0,
-    $eq(($cmp(y[0][0], x[0][0]) || $cmp(y[0][1], x[0][1])) > 0 ? x : y, x),
+    $eq(($cmp(x[0][0], y[0][0]) || $cmp(x[0][1], y[0][1])) < 0 ? x : y, x),
     p,
     `Reverse((${y[0][0]}, ${y[0][1]}))`,
     v,

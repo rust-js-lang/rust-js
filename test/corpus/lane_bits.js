@@ -94,7 +94,7 @@ function priorities() {
       const b = all[j];
       const value = isHigherEventPriority(a, b);
       const eventPriority = lowerEventPriority(a, b);
-      const value$1 = ($cmp(a, b) > 0 ? a : b) === b;
+      const value$1 = ($cmp(b, a) < 0 ? a : b) === b;
       const arg = $cmp(a, b);
       console.log(
         `${eventPriorityDebug_fmt(a)} ${eventPriorityDebug_fmt(b)}: ${a < b} ${a >= b} ${value} ${eventPriorityDebug_fmt(eventPriority)} ${value$1} ${

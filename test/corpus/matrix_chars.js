@@ -100,7 +100,7 @@ function main() {
       const d = CHARS[j];
       const cmp = $cmp(c, d);
       const value = $cmp(c, d) < 0;
-      const max = $cmp(c, d) > 0 ? c : d;
+      const max = $cmp(d, c) < 0 ? c : d;
       const arg = $asciiCase(c) === $asciiCase(d);
       console.log(
         `${$debugStr(c, "'")} ${$debugStr(d, "'")}: ${

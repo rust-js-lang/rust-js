@@ -60,7 +60,7 @@ function main() {
   const left$1 = [3];
   const right$1 = [-1];
   console.log(
-    `${($cmp(left[0], right[0]) > 0 ? left : right)[0]} ${$cmp(left$1[0], right$1[0]) < 0}`,
+    `${($cmp(right[0], left[0]) < 0 ? left : right)[0]} ${$cmp(left$1[0], right$1[0]) < 0}`,
   );
   console.log(`${START[0]} ${[(START[0] + 10) & 255][0]}`);
 }

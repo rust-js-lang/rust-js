@@ -161,3 +161,32 @@ bool { a < b }`, which the limitations listed, compiles.
   `test/limitations.test.ts` lost its line.
 - The mutation is `ordering-other-through-refs-unpeeled`
   (`lower/ordering.rs`).
+
+## Amendment: `max`, `min` and `clamp` as std's are (#912)
+
+`a.max(b)` was `cmp(a, b) > 0 ? a : b`: a comparison that prints said
+`cmp 1 2` where std's `Ord::max`, `if other < self { self } else { other }`,
+says `cmp 2 1`; and of a type with a destructor, the one not given back was
+never dropped, nor, as the comparison panicked, either, where std drops its
+parameters, the later first. Results change (ADR 0262): Rust's behaviour is
+kept.
+
+- **The order is std's:** `max` and `min` ask `cmp(b, a) < 0`, std's
+  `other < self`; `clamp` asks `min <= max`, then `self < min`, then
+  `self > max`, as it did. Of a type with nothing to drop, the conditional
+  it always was, the comparison's arguments the other way round:
+  `rankOrd_cmp(b, a) < 0 ? a : b`. Of numbers and text whose comparison
+  can't be seen, the order changes nothing (ADR 0262 "none"), and the one
+  form is kept for all.
+- **What's not given back is dropped:** of a type with a destructor,
+  `$maxOf(a, b, cmp, drop)`, `$minOf`, and `$clampBy(x, min, max, cmp,
+  show, drop)`: the one, or two, not given back dropped as std's frame ends,
+  `max` before `min` before `self`; and as a comparison, or `clamp`'s
+  bounds' assertion, panics, every parameter, the later first (`$unwinds`).
+  A drop that panics after the choice leaks the one given back, as rustc
+  does (ADR 0465's #648 amendment).
+
+`std::cmp::max_by`, `min_by`, `max_by_key` and `min_by_key` are refused, as
+they were. The corpus's `max_min_clamp_as_std_compares` runs each of them
+under each panic point against native Rust; `test/lowering-std-unwinds.test.ts`
+pins both forms; the unwind table's 76 case-builds of #912 pass.

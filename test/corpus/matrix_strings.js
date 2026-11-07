@@ -122,7 +122,7 @@ function main() {
       const contains = a.includes(b);
       const cmp = $cmp(a, b);
       const value = $cmp(a, b) < 0;
-      const max = $cmp(a, b) > 0 ? a : b;
+      const max = $cmp(b, a) < 0 ? a : b;
       const eqIgnoreAsciiCase = $asciiCase(a) === $asciiCase(b);
       const value$1 = $find(a, b);
       const stripPrefix = $stripPrefix(a, b);

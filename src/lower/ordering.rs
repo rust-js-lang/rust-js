@@ -473,20 +473,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => None,
         };
         // `clamp`, by its `Ord`, which panics of bounds the wrong way round
-        // as `Ord`'s default does, a `char`'s showing them.
+        // as `Ord`'s default does, a `char`'s showing them; of a type with a
+        // destructor, its drop, which drops the two it doesn't give back,
+        // and all three as a comparison panics, as std's `clamp` drops its
+        // parameters (#912).
         if matches!(call, OrderingCall::Clamp) {
             let compare = self.cmp_fn(ty, false, span)?;
             let mut args = values;
             args.push(compare);
-            if ty.peel_refs().is_char() {
+            let show = ty.peel_refs().is_char().then(|| {
                 let c = Expr::var("c");
                 let shown = Expr::call_helper("$debugStr", vec![c, Expr::str("'")]);
-                args.push(Expr::arrow(
-                    vec!["c".into()],
-                    vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
-                ));
+                Expr::arrow(vec!["c".into()], vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)])
+            });
+            let drop = self.std_drop_function(ty, span)?;
+            if show.is_some() || drop.is_some() {
+                args.push(show.unwrap_or_else(Expr::undefined));
             }
+            args.extend(drop);
             return Ok(Some(Expr::call_helper("$clampBy", args)));
+        }
+        // `max` and `min` of a type with a destructor, std's `Ord::max`'s
+        // `other < self`, the one it doesn't give back dropped, and both as
+        // the comparison panics, as std's drops its parameters (#912).
+        if matches!(call, OrderingCall::Max | OrderingCall::Min)
+            && let Some(drop) = self.std_drop_function(ty, span)?
+        {
+            let compare = self.cmp_fn(ty, partial, span)?;
+            let name = if matches!(call, OrderingCall::Max) {
+                "$maxOf"
+            } else {
+                "$minOf"
+            };
+            return Ok(Some(Expr::call_helper(name, [values, vec![compare, drop]].concat())));
         }
         let [a, b]: [Expr; 2] = values
             .try_into()
@@ -548,13 +567,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (a, b)
         };
         // `partial_cmp`'s `undefined` makes every one of these false, as `None` does.
-        let order = self.cmp_value(a.clone(), b.clone(), ty, partial, span, out)?;
+        // `max` and `min` ask std's `other < self`, the second against the
+        // first, as a comparison that prints or counts sees (#912).
+        let order = match call {
+            OrderingCall::Max | OrderingCall::Min => self.cmp_value(b.clone(), a.clone(), ty, partial, span, out)?,
+            _ => self.cmp_value(a.clone(), b.clone(), ty, partial, span, out)?,
+        };
         let zero = || Expr::int(0);
         Ok(Some(match call {
             _ if let Some(op) = operator => Expr::bin(op, order, zero()),
             // The second when they're equal, as Rust's `max` does.
-            OrderingCall::Max => Expr::cond(Expr::bin(Op::Gt, order, zero()), a, b),
-            OrderingCall::Min => Expr::cond(Expr::bin(Op::Gt, order, zero()), b, a),
+            OrderingCall::Max => Expr::cond(Expr::bin(Op::Lt, order, zero()), a, b),
+            OrderingCall::Min => Expr::cond(Expr::bin(Op::Lt, order, zero()), b, a),
             _ => order,
         }))
     }

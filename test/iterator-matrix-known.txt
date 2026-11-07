@@ -44,7 +44,3 @@ unwind:std 1156
 #911 P0 (unwind): a BTreeMap's or a BTreeSet's comparisons of keys with their own Ord are called with their arguments swapped, and the key given leaks as one panics
 unwind:plain 1354-1357,1359-1397,1399-1447,1449-1467,1469-1500,1502-1520,1522-1557,1559-1573
 unwind:std 1354-1357,1359-1397,1399-1447,1449-1467,1469-1500,1502-1520,1522-1557,1559-1573
-
-#912 P0 (unwind): std::cmp::max, min and Ord::max, min and clamp of a type with its own Ord compare in another order, and leak their arguments as the comparison panics
-unwind:plain 3380-3386,3388-3406,3408-3419
-unwind:std 3380-3386,3388-3406,3408-3419

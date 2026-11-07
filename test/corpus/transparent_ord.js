@@ -19,7 +19,7 @@ function main() {
   console.log(
     `${value} ${value$1} ${
       ["Less", "Equal", "Greater"][cmp + 1]
-    } ${($cmpItems(a, b, $cmp) > 0 ? a : b)[1]}`,
+    } ${($cmpItems(b, a, $cmp) < 0 ? a : b)[1]}`,
   );
   const ids = [b, a];
   ids.sort((a, b) => $cmpItems(a, b, $cmp));

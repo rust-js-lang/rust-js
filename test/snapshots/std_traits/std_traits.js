@@ -404,7 +404,7 @@ export function orderings() {
   all.sort((a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor));
   return [
     ($cmp(a.major, b.major) || $cmp(a.minor, b.minor)) < 0,
-    $eq(($cmp(a.major, b.major) || $cmp(a.minor, b.minor)) > 0 ? a : b, b),
+    $eq(($cmp(b.major, a.major) || $cmp(b.minor, a.minor)) < 0 ? a : b, b),
     ($cmp(a.major, b.major) || $cmp(a.minor, b.minor)) === -1,
     largest(
       all,

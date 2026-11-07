@@ -123,12 +123,12 @@ function main() {
   const max = $bigMax(-2n, 5n);
   const left = [1, "x"];
   const right = [1, "w"];
-  const value$3 = $cmp("a", "b") > 0 ? "a" : "b";
+  const value$3 = $cmp("b", "a") < 0 ? "a" : "b";
   const left$1 = [2, "a"];
   const right$1 = [2, "a"];
-  const version = ($cmp(left[0], right[0]) || $cmp(left[1], right[1])) > 0 ? right : left;
+  const version = ($cmp(right[0], left[0]) || $cmp(right[1], left[1])) < 0 ? right : left;
   const value$4 =
-    ($cmp(left$1[0], right$1[0]) || $cmp(left$1[1], right$1[1])) > 0 ? left$1 : right$1;
+    ($cmp(right$1[0], left$1[0]) || $cmp(right$1[1], left$1[1])) < 0 ? left$1 : right$1;
   console.log(`${min} ${max} ${value$3} ${versionDebug_fmt(version)} ${versionDebug_fmt(value$4)}`);
   console.log(
     `${$asciiCase("HeLLo Ünï")} ${$asciiCase("abc é", true)} ${$asciiCase("Hello") === $asciiCase("hELLO")} ${$asciiCase("é") === $asciiCase("É")}`,

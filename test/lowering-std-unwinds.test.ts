@@ -137,3 +137,64 @@ pub fn nested(w: &mut [Vec<Loud>], v: Vec<Loud>) {
   expect(body(flat, "loud")).toContain("$cloneIntoVec(w, v, (item) => loudClone_clone(item), undefined, loudDrop_drop);");
   expect(body(flat, "nested")).toContain("(items, i, from) => { $cloneIntoVec(items[i], from, (item) => loudClone_clone(item), undefined, loudDrop_drop); }");
 });
+
+// #912: `max`, `min` and `clamp` of a type with a destructor drop what they
+// don't give back, and all they were given as a comparison panics, by the
+// runtime's `$maxOf`, `$minOf` and `$clampBy`'s `drop`; of one with
+// nothing to drop, the conditional it always was, in std's order, `other <
+// self`.
+test("max, min and clamp drop what they don't give back, and compare as std's do", () => {
+  const flat = compiled(
+    "std-unwinds-max",
+    `${types}
+use std::cmp::Ordering;
+
+#[derive(PartialEq, Eq)]
+pub struct Rank(pub u32);
+
+impl PartialOrd for Rank {
+    fn partial_cmp(&self, other: &Rank) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Rank {
+    fn cmp(&self, other: &Rank) -> Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+pub struct Held(pub Rank, pub Vec<u32>);
+
+impl Drop for Held {
+    fn drop(&mut self) {}
+}
+
+pub fn ranks(a: Rank, b: Rank) -> u32 {
+    std::cmp::max(a, b).0
+}
+
+pub fn least(a: Rank, b: Rank) -> u32 {
+    a.min(b).0
+}
+
+pub fn held(a: Held, b: Held) -> u32 {
+    std::cmp::max(a, b).0.0
+}
+
+pub fn held_least(a: Held, b: Held) -> u32 {
+    a.min(b).0.0
+}
+
+pub fn clamped(x: Held, lo: Held, hi: Held) -> u32 {
+    x.clamp(lo, hi).0.0
+}
+`,
+  );
+  expect(body(flat, "ranks")).toContain("rankOrd_cmp(b, a) < 0 ? a : b");
+  expect(body(flat, "least")).toContain("rankOrd_cmp(b, a) < 0 ? b : a");
+  expect(body(flat, "held")).toMatch(/\$maxOf\( ?a, b, .*, heldDrop_drop,? \)/);
+  expect(body(flat, "heldLeast")).toMatch(/\$minOf\( ?a, b, .*, heldDrop_drop,? \)/);
+  expect(body(flat, "clamped")).toMatch(/\$clampBy\( ?x, lo, hi, .*, undefined, heldDrop_drop,? ?\)/);
+});

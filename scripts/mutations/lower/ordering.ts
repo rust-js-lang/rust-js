@@ -3,6 +3,30 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "max-first-against-second",
+    breaks: "`max(a, b)` of a type with its own `Ord` asks `a` against `b`, where std's asks `b < a`: a comparison that prints says `cmp 1 2`, not `cmp 2 1` (#912)",
+    file: "src/lower/ordering.rs",
+    find: "            OrderingCall::Max | OrderingCall::Min => self.cmp_value(b.clone(), a.clone(), ty, partial, span, out)?,\n",
+    replace: "            OrderingCall::Max | OrderingCall::Min => self.cmp_value(a.clone(), b.clone(), ty, partial, span, out)?,\n",
+    tests: ["test/corpus.test.ts", "-t", "^max_min_clamp_as_std_compares.rs$"],
+  },
+  {
+    name: "max-of-droppable-inline",
+    breaks: "`max` and `min` of a type with a destructor are the comparison's choice alone, the other leaked, and both as it panics (#912)",
+    file: "src/lower/ordering.rs",
+    find: "            && let Some(drop) = self.std_drop_function(ty, span)?\n",
+    replace: "            && let Some(drop) = self.std_drop_function(ty, span)?.filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^max_min_clamp_as_std_compares.rs$"],
+  },
+  {
+    name: "clamp-given-no-drop",
+    breaks: "`clamp` of a type with a destructor leaks the two it doesn't give back (#912)",
+    file: "src/lower/ordering.rs",
+    find: "            args.extend(drop);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^max_min_clamp_as_std_compares.rs$"],
+  },
+  {
     name: "unknown-lt-by-partial-cmp",
     breaks:
       "`a < b` of two `js::Unknown`s is `$partialCmp(a, b) < 0`, not JS's `a < b`",
@@ -250,8 +274,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `char`'s `clamp` of bounds the wrong way round panics as `Ord`'s default does, not showing them",
     file: "src/lower/ordering.rs",
-    find: "            if ty.peel_refs().is_char() {\n",
-    replace: "            if false && ty.peel_refs().is_char() {\n",
+    find: "            let show = ty.peel_refs().is_char().then(|| {\n",
+    replace: "            let show = (false && ty.peel_refs().is_char()).then(|| {\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
