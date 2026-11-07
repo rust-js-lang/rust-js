@@ -573,11 +573,19 @@ fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
             *otherwise = Some(rest);
         }
     }
+    // Whether the last statement's branches are tidied already, each as a
+    // branch of the `if` that ends the function: walked again at the end,
+    // where `ending_returns` gives what it gave, each `else if` was two
+    // walks a link, two to the chain's length (#895). A chain or an `if`
+    // rewritten below, each of whose parts is tidied as `branch` says, a
+    // body's end where it's the function's own, isn't.
+    let mut tidied = false;
     if let Some(StmtKind::If(_, then, otherwise)) = stmts.last_mut().map(|last| &mut last.kind) {
         ending_returns(then, returns, true);
         if let Some(otherwise) = otherwise {
             ending_returns(otherwise, returns, true);
         }
+        tidied = true;
     }
     // An `else if` chain each branch of which ends in such a `return;`, of
     // a guarded arm and those after it, `if (tag === 30 && on) { ..;
@@ -619,7 +627,9 @@ fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
         let mut rest = stmts.split_off(at + 1);
         ending_returns(&mut rest, returns, branch);
         closed(&mut stmts[at], rest, &mut |then| ending_returns(then, returns, branch));
+        tidied = false;
     } else if let Some(at) = alone {
+        tidied = false;
         let rest = stmts.split_off(at + 1);
         let Some(Stmt {
             kind: StmtKind::If(test, mut then, None),
@@ -674,17 +684,21 @@ fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
             None => test.negated_test(),
         };
         stmts.push(StmtKind::If(test, otherwise, None).at(span));
+        // What's last now is the `then`'s, tidied whole above, an `if`'s
+        // branches with it; or, of an empty `then`, the `return` written.
         stmts.extend(then);
     }
     match stmts.last_mut().map(|s| &mut s.kind) {
-        // Each branch's, and a branch that leaves nothing, as
-        // `emptied_branch` writes it: `if (!c) {} else { s }`, a macro's
-        // function's `if let` (MIR's `return` there is where the macro is
-        // called), is `if (c) { s }`.
+        // Each branch's, where not tidied above, and a branch that leaves
+        // nothing, as `emptied_branch` writes it: `if (!c) {} else { s }`, a
+        // macro's function's `if let` (MIR's `return` there is where the
+        // macro is called), is `if (c) { s }`.
         Some(StmtKind::If(_, then, otherwise)) => {
-            ending_returns(then, returns, true);
-            if let Some(otherwise) = otherwise {
-                ending_returns(otherwise, returns, true);
+            if !tidied {
+                ending_returns(then, returns, true);
+                if let Some(otherwise) = otherwise {
+                    ending_returns(otherwise, returns, true);
+                }
             }
             let last = stmts.pop().expect("matched");
             if let Some(kind) = emptied_branch(last.kind) {
@@ -800,5 +814,86 @@ pub(super) fn break_test(stmt: &Stmt, label: &str) -> Option<Expr> {
             Some(test.clone())
         }
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn s(kind: StmtKind) -> Stmt {
+        kind.at(js::Span::NONE)
+    }
+
+    fn call(f: &str) -> Stmt {
+        s(StmtKind::Expr(Expr::call(Expr::var(f), Vec::new())))
+    }
+
+    /// `if (c) { f(); return undefined; }`, its `return` MIR made: one
+    /// `ending_returns` takes away only in a branch of the `if` that ends
+    /// the function, the `if` then its own, `if (c) { f(); } else { rest }`.
+    fn returns_undefined(c: &str, f: &str) -> Stmt {
+        s(StmtKind::If(
+            Expr::var(c),
+            vec![call(f), s(StmtKind::Return(Some(Expr::undefined())))],
+            None,
+        ))
+    }
+
+    /// Whether `stmts` hold a `return undefined;`, anywhere.
+    fn holds_undefined_return(stmts: &[Stmt]) -> bool {
+        stmts.iter().any(|stmt| match &stmt.kind {
+            StmtKind::Return(Some(v)) => matches!(v.kind, ExprKind::Undefined),
+            StmtKind::If(_, a, b) => holds_undefined_return(a) || b.as_deref().is_some_and(holds_undefined_return),
+            _ => false,
+        })
+    }
+
+    /// The last `if`, whose branches its first walk tidied, an `else`
+    /// that holds what followed an `if` of a `return;` MIR made: that
+    /// `else`, the body's rest, tidied as the body's own, is tidied again
+    /// as a branch of the `if` that ends the function (#895), its `if` of
+    /// a `return undefined;` then its own.
+    #[test]
+    fn a_rest_made_a_branch_is_tidied_as_one() {
+        let mut body = vec![
+            s(StmtKind::If(
+                Expr::var("a"),
+                vec![call("one"), s(StmtKind::Return(None))],
+                None,
+            )),
+            returns_undefined("c", "two"),
+            s(StmtKind::If(
+                Expr::var("b"),
+                vec![call("three")],
+                Some(vec![call("four")]),
+            )),
+        ];
+        tail_returns(&mut body, &[]);
+        assert!(!holds_undefined_return(&body));
+    }
+
+    /// An `else if` chain each branch of which ends in a `return;` MIR
+    /// made, its last `else` what followed: tidied as a branch too.
+    #[test]
+    fn a_rest_made_a_chains_last_else_is_tidied_as_a_branch() {
+        let link = |c: &str, f: &str, next: Option<Vec<Stmt>>| {
+            s(StmtKind::If(
+                Expr::var(c),
+                vec![call(f), call(f), s(StmtKind::Return(None))],
+                next,
+            ))
+        };
+        let mut body = vec![
+            link("a", "one", Some(vec![link("b", "two", None)])),
+            returns_undefined("c", "three"),
+            s(StmtKind::If(
+                Expr::var("d"),
+                vec![call("four")],
+                Some(vec![call("five")]),
+            )),
+        ];
+        tail_returns(&mut body, &[]);
+        assert!(!holds_undefined_return(&body));
     }
 }

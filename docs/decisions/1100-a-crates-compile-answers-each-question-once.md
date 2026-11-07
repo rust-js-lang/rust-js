@@ -120,7 +120,7 @@ the compiler changes every crate's key, as its build is its identity
   `react-server` (14 s) and `react-dom-bindings` (22 s), one after the
   other. Of `react-dom-bindings`, a third is tidy's `ending_returns`,
   which walks an `else if` chain's branches twice at each level, two to
-  the depth (#895).
+  the depth (#895), since walked once (ADR 0879, amended).
 - `std_items.rs`' questions of std's crates are `std_crates.rs`', and its
   mutations `scripts/mutations/lower/recognition/std_crates.ts`.
 

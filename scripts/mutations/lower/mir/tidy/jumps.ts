@@ -427,4 +427,13 @@ export const mutations: Mutation[] = [
     replace: "    {\n        first.push(StmtKind::Return(None).at(place));\n",
     tests: ["test/corpus.test.ts", "-t", "^match_clone_nested_results\\.rs$"],
   },
+  {
+    name: "ending-returns-tidied-walked-again",
+    breaks:
+      "a function's last `if`'s branches, tidied once, are walked again after, two walks a link of an `else if` chain, two to its length: 40 links never compile (#895)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "            if !tidied {\n",
+    replace: "            if true {\n",
+    tests: ["test/lowering-written-elses.test.ts", "-t", "a long else if chain"],
+  },
 ];

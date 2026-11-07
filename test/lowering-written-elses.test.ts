@@ -7,6 +7,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { underLoad } from "../scripts/timing";
 import { buildReact, compiler, fixture, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
@@ -217,3 +218,23 @@ pub fn kept(v: &[u32], out: &mut Vec<u32>) {
   expect(() => lib.appendInitialChild(parent as never, { TAG: "Text", _0: "a" } as never)).toThrow("Text children should already be flattened.");
   expect([lib.first([4] as never), (() => { try { return lib.first([] as never); } catch (e) { return (e as Error).message; } })()]).toEqual([5, "empty"]);
 });
+
+// React's prop `match`es in react-dom-bindings end their functions in
+// `else if` chains 25 links long. Tidy took each link's branches as a
+// function's end twice, once before rewriting its statements and once
+// after, so a chain cost two to its length (#895): 2 s for 24 links, 8 s
+// for 26; 40 would never end. Each branch walked once, the compile is a
+// fraction of a second, killed at 20 s, its chain as written.
+test("a long else if chain that ends a function is tidied in time, as written", async () => {
+  const dir = fixture("long-else-if-chain");
+  const links = Array.from({ length: 40 }, (_, i) => `if n < ${i + 1} {\n        out.push(${i});\n    }`).join(" else ");
+  writeFileSync(join(dir, "lib.rs"), `pub fn chain(n: u32, out: &mut Vec<u32>) {\n    ${links} else {\n        out.push(999);\n    }\n}\n`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], underLoad(20_000));
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  if (n < 1) {\n    out.push(0);\n  } else if (n < 2) {\n    out.push(1);\n  } else if (n < 3) {\n");
+  expect(js).toContain("  } else if (n < 40) {\n    out.push(39);\n  } else {\n    out.push(999);\n  }\n}\n");
+  const lib = await import(join(dir, "lib.js"));
+  const out: number[] = [];
+  for (const n of [0, 1, 20, 39, 40, 100]) lib.chain(n, out);
+  expect(out).toEqual([0, 1, 20, 39, 999, 999]);
+}, underLoad(30_000));

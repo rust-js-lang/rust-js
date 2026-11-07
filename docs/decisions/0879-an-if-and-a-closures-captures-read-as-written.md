@@ -1137,3 +1137,47 @@ named for the variable, which keeps rd656's mutations caught), corpus `binding_c
 native Rust; mutations `captured-payload-in-place` and
 `captured-once-held-apart` (`mir/patterns.ts`).
 
+
+## Amendment (2026-11-07): the last `if`'s branches are tidied once (#895)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. How long tidy
+takes, not what it writes: every corpus snapshot and React's port, at its
+pin, are byte for byte as before.
+
+`ending_returns` tidied the branches of the `if` that ends the function
+twice: once before its rewrites of the statements before it (the rd600
+chain, an `if` of a `return;` MIR made, a `let … else`), so they see the
+branches tidied, and again in its last step. In an `else if` chain the
+`else` is the next link, so each link walked the next twice: two to the
+chain's length. React's prop `match`es in react-dom-bindings end in chains
+25 links long, and `ending_returns` was a third of that crate's compile;
+a chain of 24 compiled in 2 s, 26 in 8 s.
+
+Now the last step walks the branches only where the first didn't: where
+no `if` was last, or a rewrite made another last of parts it tidied as
+`branch` says, the rd600 chain or an `if` of a `return;` MIR made, whose
+rest is the body's own where `branch` isn't. After a `let … else`'s
+rewrite, what's last is its `then`'s, which the first walk tidied whole.
+So a second walk is skipped only where it walks what one walk wrote, which
+gives the same: a build that ran the old walk beside the new and compared
+each function's statements, as trees whose `NaN` constants are equal (as
+`f64`'s `==` says no two are), found no difference in the corpus, every
+file of the suite and the crate corpus (`check:fast --all`), and React's
+port; rustc's run-pass tests too, with the `let … else`'s rewrite still
+walked again.
+
+Measured on the 12-core M6, the compiler at `opt-level = 1`
+([1100](1100-a-crates-compile-answers-each-question-once.md), amended): a
+chain of 40 or 160 links compiles in 0.1 s; `react-dom-bindings` in 5.7 s,
+not 7.8 s; React's regen in 26 s, not 28.5 s.
+
+Held by `test/lowering-written-elses.test.ts`' "a long else if chain that
+ends a function is tidied in time, as written" (40 links, killed at 20 s,
+run), mutation `ending-returns-tidied-walked-again`; and jumps.rs's unit
+tests, `cargo test`, of the two rewrites whose parts were tidied as the
+body's own, each an `else` that holds an `if` of a `return undefined;` a
+branch's tidying takes away: `a_rest_made_a_branch_is_tidied_as_one` and
+`a_rest_made_a_chains_last_else_is_tidied_as_a_branch`. Each fails where
+its rewrite doesn't walk again; the mutation runner judges by `bun test`
+alone, and no program MIR makes was found that reaches them, so they have
+no mutation of the runner's.
