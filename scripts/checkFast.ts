@@ -19,7 +19,7 @@
 // names, and each test file its suite runs one a job here runs (#732).
 import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { availableParallelism, cpus, loadavg } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
 import { pruneKept } from "../test/kept";
 import { runs, touchesIterators } from "./iteratorSlice";
@@ -457,6 +457,8 @@ if (import.meta.main) {
     const pruning = Date.now();
     pruneKept(join(root, "target/native-cache"));
     pruneKept(join(root, "target/corpus-cache"));
+    // A new worktree's first run has no `target/` yet.
+    mkdirSync(dirname(pruned), { recursive: true });
     writeFileSync(pruned, "");
     console.log(timed("pruning what tests keep", (Date.now() - pruning) / 1000));
   }
