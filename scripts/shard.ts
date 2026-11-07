@@ -21,6 +21,16 @@ export function caseParts(cores: number): number {
   return Math.max(2, Math.floor(cores / 2));
 }
 
+/** How many parts a file of cases is cut in where a pool of the `cores`
+ * runs them, as `check:fast` does, each part a job it starts once a core
+ * is free: one a core. A part keeps one core busy, as measured, not the
+ * two `caseParts` gives it, and parts this small leave no part alone at
+ * the end: on 12 cores, 6 parts of a minute kept the cores 63% busy, 12 of
+ * 32 s beside the other jobs 92% (2026-11-07). */
+export function pooledParts(cores: number): number {
+  return Math.max(2, cores);
+}
+
 /** The parts, `i/n`, of a file of cases that shard `index` of `count`
  * runs, `perShard` of them at once: of `count` times as many in all, each
  * part in exactly one shard. */
@@ -48,8 +58,9 @@ export const shardTimings = "target/shard-timings";
  * the playground's and the pilot's, or on a page of its own,
  * webapi-events': `bun run test` runs them after the rest, on their own,
  * as with the corpus's compiles they starve each other, and a page or a
- * Fast Refresh waits past its test's timeout; `check:fast --all` runs
- * them so too, after its other jobs (ADR 1093). */
+ * Fast Refresh waits past its test's timeout. `check:fast --all` runs them
+ * beside its other jobs, as its pool keeps the load near the cores (ADR
+ * 1093, amended). */
 export const browsers = ["browser", "next", "playground", "pilot", "vite", "webapi-events"].map(
   (name) => `test/${name}.test.ts`,
 );

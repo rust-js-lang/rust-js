@@ -102,3 +102,36 @@ With `--all`, check:fast runs the iterator jobs (both slices and the
 corpus with std's structs) where the change or the branch's since `main`
 touches `iteratorPaths`, as the push's check does. A push of other code
 runs none of them.
+
+## Amendment: the browsers' files run beside the rest, in the pool (2026-11-07)
+
+Since #857, `check:fast`'s jobs run through a pool that starts each once
+the cores it keeps busy are free, so the load stays near the cores. The
+browsers' files no longer meet the load they starved under, every job at
+once, two to five times the cores. Run last, they and the other files'
+last ones left the cores idle: on the 12-core M6, a check with no change
+kept them 63% busy, its last minute 35%, a third of its time under half.
+
+- **Each test file is a job of the pool's**, the browsers' among them.
+  The longest go first, by `target/test-timings.json`, which `bun test
+  --timings` keeps too, so no long file runs alone at the end. A group's
+  files are said as one line, `every other test file`, `the browsers'
+  test files`.
+- **Each job holds the cores its last runs measured**, its CPU seconds
+  over its own (`Timing.cores`), not the weight it says, which is only
+  its first run's: a corpus part said two and kept one, the browsers'
+  files said twelve and kept 3.6.
+- **The corpus is cut in one part per core** (`pooledParts`), as a part
+  keeps one core busy.
+- **`after` is gone.** `jobs` returns one list, and the drift tests read
+  it.
+
+CI's suite, `scripts/test.ts`, still runs the browsers' files after the
+rest, as it runs its files all at once with no pool.
+
+The browsers' files passed in each of the nine `check:fast --all` runs
+that ran them beside the rest (2026-11-07), three with an iterator
+change's matrix and conformance rows beside them too. With no change, the
+check took 2 min 56 s, three runs in a row, the cores 93–94% busy, where
+it took 3 min 55 s at 63%. Their timeouts are the
+pool's, scaled by its load (`RUST_JS_LOAD_SCALE`).

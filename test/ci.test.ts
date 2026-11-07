@@ -10,7 +10,7 @@ import { batches, type Change, changedLines, changedMutations, enclosingFunction
 import { jobs, leftToCi } from "../scripts/checkFast";
 import { loadScale } from "../scripts/timing";
 import { jobs as localNightly } from "../scripts/nightly";
-import { caseParts, caseShardParts, harness, nightly, parts, shard } from "../scripts/shard";
+import { caseParts, caseShardParts, harness, nightly, parts, pooledParts, shard } from "../scripts/shard";
 import { fixture, root } from "./support";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
@@ -23,12 +23,19 @@ test("shards split the files between them, each once, whatever the order given",
   expect(() => shard(files, 4, 3)).toThrow("a shard is 1 to 3");
 });
 
-// The corpus runs in parts, one for each two cores (scripts/test.ts,
-// check:fast): each of the parts of all the shards in exactly one.
+// The corpus runs in parts, one for each two cores where they all run at
+// once (scripts/test.ts), one for each core where check:fast's pool
+// starts each as a core is free: each of the parts of all the shards in
+// exactly one.
 test("each shard runs its share of a file of cases' parts, each part once", () => {
   expect(caseParts(4)).toBe(2);
   expect(caseParts(12)).toBe(6);
   expect(caseParts(1)).toBe(2);
+  expect(pooledParts(12)).toBe(12);
+  expect(pooledParts(1)).toBe(2);
+  expect(jobs({ all: true, changed: [], branch: [], added: [], extra: [], cores: 12 }).jobs.filter((job) => job.name.startsWith("corpus ")).map((job) => job.env.RUST_JS_CASES)).toEqual(
+    Array.from({ length: 12 }, (_, i) => `${i + 1}/12`),
+  );
   expect(caseShardParts(1, 1, 6)).toEqual(["1/6", "2/6", "3/6", "4/6", "5/6", "6/6"]);
   const shards = [1, 2].map((i) => caseShardParts(i, 2, 2));
   expect(shards).toEqual([
@@ -58,7 +65,7 @@ test("the files only the nightly runs are test files, which its check runs", () 
 // Of a change to the iterators' code, whose jobs check.yml runs where its
 // change is one (scripts/iteratorSlice.ts).
 const checkJobs = jobs({ all: true, changed: [], branch: ["src/runtime/steps.js"], added: [], extra: [], cores: 4 });
-const ranHere = [...checkJobs.jobs, ...checkJobs.after];
+const ranHere = checkJobs.jobs;
 
 test("each command a push's check runs is check:fast --all's, or left to CI by name", () => {
   type Step = { run?: string; parallel?: Step[] };

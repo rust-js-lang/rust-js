@@ -22,7 +22,11 @@ export function elapsed(): number {
   return (Date.now() - started) / 1000;
 }
 
-export type Timing = { step: string; seconds: number; at: string; commit: string; detail?: string };
+/** A step's run: its seconds, when, at which commit, what else it says,
+ * and, of a job of check:fast's, the cores it kept busy, its CPU seconds
+ * over its own (a group's, each of its files'), which its pool runs it by
+ * the next time. */
+export type Timing = { step: string; seconds: number; at: string; commit: string; detail?: string; cores?: number };
 
 /** Each run recorded, the oldest first. */
 export function timings(): Timing[] {
@@ -94,12 +98,13 @@ export function compared(step: string, seconds: number, earlier = timings()): st
   return slower(seconds, usual) ? `${line}  ⚠ slower than usual: why?` : line;
 }
 
-/** Record that `step` took `seconds`, and say how it compares. */
-export function timed(step: string, seconds: number, detail?: string): string {
+/** Record that `step` took `seconds`, keeping the `cores` it kept busy,
+ * and say how it compares. */
+export function timed(step: string, seconds: number, detail?: string, cores?: number): string {
   const line = compared(step, seconds);
   const commit = Bun.spawnSync(["git", "rev-parse", "--short", "HEAD"], { cwd: root }).stdout.toString().trim();
   mkdirSync(join(root, "target"), { recursive: true });
-  const entry: Timing = { step, seconds: Math.round(seconds * 10) / 10, at: new Date().toISOString(), commit, ...(detail ? { detail } : {}) };
+  const entry: Timing = { step, seconds: Math.round(seconds * 10) / 10, at: new Date().toISOString(), commit, ...(detail ? { detail } : {}), ...(cores !== undefined ? { cores: Math.round(cores * 100) / 100 } : {}) };
   appendFileSync(file, JSON.stringify(entry) + "\n");
   return line;
 }

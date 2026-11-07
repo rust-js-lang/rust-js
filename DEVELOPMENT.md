@@ -376,6 +376,7 @@ sees what kind of fix pays.
 | num-traits in the crate corpus (#865) | 172 s at 11.6 GB a `rust-js` since #847, its `bounds.js` 240 MB; `check:fast --all`'s crate corpus killed at its cap | 9 s, `bounds.js` 253 KB | Drop glue's `catch` runs the later parts flat, as Rust's cleanup does, not each in its own `try` again: its JS grows as the square of the parts, not twice a part |
 | `test/tidy-stages.test.ts` (#808) | 109 s alone; timed out at 60 s under load | 31–38 s | Each case's variants compiled at once, and one folder per case |
 | `check:fast --all`'s jobs through a pool of the cores (#857) | 3,530 s on the M1's 8 cores, its jobs all at once, a load of 17–19, a test timed out at 180 s; corpus parts 9–13 min, the matrix's slice 11–12 min | 2,877 s and 3,390 s, twice, no test timed out, a load near the cores; corpus parts 2.3–2.6 min, the matrix's slice 2.6 min, the conformance table's 1.6 min, every other test file 7.7 min | `run()` starts each job once the cores it keeps busy, its `weight`, are free, the longest usual first; each job gets `RUST_JS_LOAD_SCALE`, which `underLoad` reads in place of the load as a file starts; a job's cap is twice its usual at least |
+| `check:fast --all`'s cores kept busy (pool1, 2026-11-07) | On the 12-core M6, with no change, 3 min 55 s, the cores 63% busy, its last minute 35% and a third of its time under half (6 min 0 s at 56% where the corpus ran again); with an iterator change, 6 min 33 s at 76%, its last minutes 56%, 58% and 31% | With no change, 2 min 56 s and 2 min 57 s three runs in a row, the cores 93–94% busy by the same sampler, under half only as it starts; with the iterator change, 5 min 50 s at 91%; no test timed out | Each test file a job of the pool's, the longest first (one job of `bun test --parallel=6` began after the corpus and ran on alone); the browsers' files beside the rest, not after; the corpus in 12 parts, not 6; each job held at the cores its last runs measured, its CPU seconds over its own, not a guessed weight (a corpus part said two and kept one, the browsers' files said twelve and kept 3.6), more by the load only where every core was busy, as macOS's load reads 16 on 12 cores 86% busy. Half the M6's cores are efficiency cores, so the cores busier buy less time than they show. `--profile` says each minute's and each job's |
 | `architecture.test.ts`'s "each owner and question" (#832) | 21–30 s under load; timed out at 30 s | 0.27 s | One pass over the source to find the defined items, instead of one regex per name |
 | Both corpus builds, default and `RUST_JS_LIBRARIES=all` | about 7 min, one after the other (8 cores) | about 4 min | Run as one set of parts |
 | A gate before a push (m6-lily's) | about 14.5 min, its steps one after another, mutations `--jobs=4` | 12.2 min with nearly four times the mutations | `check:fast`, rustc's tests, the suites and mutations at once after the build, mutations `--jobs=10 --tests=12` |
@@ -406,7 +407,10 @@ sees what kind of fix pays.
   the slow spots below with its cost and what would split it. A step is
   done when it uses the machine, not only when it passes.
 - **Use the loop's own tools, so its timings see you.** `bun run
-  check:fast` is the change's checks at once, timed against their usual;
+  check:fast` is the change's checks at once, timed against their usual,
+  and says how busy it kept the cores; `--profile` says it of each minute,
+  with each job's start, end and cores, to find where they sat idle on any
+  machine;
   hand-rolled runs (a corpus shard in the background, a build then a test)
   are timed by nobody, and their slowness goes unseen.
 - **Read a `⚠ slower than usual` line before going on**: find what made
@@ -571,6 +575,7 @@ checked:
 
 | Step | What it costs | What would fix it |
 |---|---|---|
+| `check:fast --all`, now bound by its CPU, not by its cores idle (2026-11-07) | On the 12-core M6, about 1,800 CPU-seconds with no change, 900 of them the 200 files besides the corpus (the longest `crates`, `libraries`, `snapshots`, `cargo-workspace` and `compiler`, 45–80 s each), 350 the corpus's compiles, whose runs are cached; with an iterator change about 3,500, 1,270 of them the rows it names and the corpus with std's iterator structs. Its cores 90% busy, half of them efficiency cores | Less work, not more parallel: the longest files' compiles kept by what they compile, as the corpus's runs are; the corpus's compiles kept too where neither the compiler nor the case changed |
 | Every mutation on the Mac, `bun run nightly mutations` | 65 min for 8,047 on the M3 Max (2026-10-30), the CPU 86% busy and its 16 GB full: 6.6 GB compressed, 1.3 GB swapped, 35% of the CPU the system's, each mutant's run starting bun, rust-js and Node | More memory, or a mutant's tests run in a process kept warm, as `bun test` with its compiler swapped, not started again for each |
 | `bun scripts/mutations.ts --changed=origin/main` of a large change | More than five minutes even in three shards, so it's left to CI | Shards picked to fit, by each mutation's usual time |
 | Two or more agents' worktrees | A full `cargo build` and corpus each | A shared build cache across worktrees |
