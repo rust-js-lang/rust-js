@@ -390,7 +390,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0339 `get_disjoint_mut`: a `&mut` to each, checked as std checks them](0339-get-disjoint-mut.md)
 - [0340 A slice of `MaybeUninit`s, and a `const` block of no JS value](0340-uninit-slices-and-coded-const-blocks.md)
 - [0341 A byte slice's `escape_ascii` and `utf8_chunks`](0341-byte-slice-text.md)
-- [0342 An unstable sort is std's own, where its ties can be told apart](0342-unstable-sort.md)
+- [0342 An unstable sort is std's own, where its ties can be told apart](0342-unstable-sort.md) *(amended: a comparison that panics leaves each item once, #908)*
 - [0343 A `&mut` to what's in an `Option` or a `Result`](0343-option-result-mut.md)
 - [0344 `extract_if` is a lazy JS iterator](0344-extract-if.md)
 - [0345 A B-tree's `first_entry` and `last_entry`](0345-btree-end-entries.md)

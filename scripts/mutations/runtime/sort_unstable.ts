@@ -3,6 +3,38 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "insertion-gap-unwritten",
+    breaks: "an insertion sort whose comparison panics leaves its gap holding the item moved over it: one item twice, the moving one gone (#908)",
+    file: "src/runtime/sort_unstable.js",
+    find: "    } finally {\n      v[gap] = item;\n    }\n",
+    replace: "      v[gap] = item;\n    } finally {\n    }\n",
+    tests: ["test/corpus.test.ts", "-t", "^sort_unstable_unwinds.rs$"],
+  },
+  {
+    name: "lomuto-gap-unwritten",
+    breaks: "a Lomuto partition whose comparison panics leaves the item it took out of the slice (#908)",
+    file: "src/runtime/sort_unstable.js",
+    find: "    if (!placed) v[gap] = taken;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^sort_unstable_unwinds.rs$"],
+  },
+  {
+    name: "hoare-gap-unwritten",
+    breaks: "a Hoare partition whose comparison panics leaves the item it took out of the slice (#908)",
+    file: "src/runtime/sort_unstable.js",
+    find: "  } finally {\n    if (gap !== undefined) v[gap.at] = gap.item;\n  }\n",
+    replace: "    if (gap !== undefined) v[gap.at] = gap.item;\n  } finally {\n  }\n",
+    tests: ["test/corpus.test.ts", "-t", "^sort_unstable_unwinds.rs$"],
+  },
+  {
+    name: "small-sort-merge-uncopied",
+    breaks: "a small sort whose merge's comparison panics leaves the slice half merged, items twice and gone, where std's guard copies its sorted halves back (#908)",
+    file: "src/runtime/sort_unstable.js",
+    find: "    if (!merged) for (let i = 0; i < len; i++) v[start + i] = scratch[i];\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^sort_unstable_unwinds.rs$"],
+  },
+  {
     name: "sort-insertion-limit",
     breaks: "an unstable sort of 17 to 20 is a quicksort, not insertion sort",
     file: "src/runtime/sort_unstable.js",

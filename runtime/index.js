@@ -7860,21 +7860,26 @@ export function $swapItems(v, a, b) {
   v[b] = item;
 }
 
-// `insert_tail` of each from `offset` on, of `v[start..end]`.
+// `insert_tail` of each from `offset` on, of `v[start..end]`: the item
+// written where its gap is as a comparison throws too, as std's gap guard
+// writes it as it unwinds, so each item is there once (#908).
 export function $insertionSort(v, start, end, offset, isLess) {
   for (let tail = start + offset; tail < end; tail++) {
     let sift = tail - 1;
     if (!isLess(v[tail], v[sift])) continue;
     const item = v[tail];
     let gap = tail;
-    for (;;) {
-      v[gap] = v[sift];
-      gap = sift;
-      if (sift === start) break;
-      sift--;
-      if (!isLess(item, v[sift])) break;
+    try {
+      for (;;) {
+        v[gap] = v[sift];
+        gap = sift;
+        if (sift === start) break;
+        sift--;
+        if (!isLess(item, v[sift])) break;
+      }
+    } finally {
+      v[gap] = item;
     }
-    v[gap] = item;
   }
 }
 
@@ -8082,7 +8087,8 @@ export function $sortPartition(v, start, end, pivot, isLess, kind) {
 }
 
 // `partition_lomuto_branchless_cyclic` of `v[start + 1..end]` around
-// `v[start]`: the item first taken out goes back in last.
+// `v[start]`: the item first taken out goes back in last, or where the gap
+// is as a comparison throws, as std's gap guard writes it (#908).
 export function $partitionLomuto(v, start, end, isLess) {
   const base = start + 1;
   const len = end - base;
@@ -8099,12 +8105,20 @@ export function $partitionLomuto(v, start, end, isLess) {
     gap = right;
     lt += rightIsLt ? 1 : 0;
   };
-  for (let right = base + 1; right < end; right++) step(right);
-  step(undefined);
+  let placed = false;
+  try {
+    for (let right = base + 1; right < end; right++) step(right);
+    step(undefined);
+    placed = true;
+  } finally {
+    if (!placed) v[gap] = taken;
+  }
   return lt;
 }
 
-// `partition_hoare_branchy_cyclic` of `v[start + 1..end]` around `v[start]`.
+// `partition_hoare_branchy_cyclic` of `v[start + 1..end]` around `v[start]`:
+// the item first taken out written where the gap is at the end, or as a
+// comparison throws, as std's gap guard writes it (#908).
 export function $partitionHoare(v, start, end, isLess) {
   const base = start + 1;
   const pivot = v[start];
@@ -8112,20 +8126,23 @@ export function $partitionHoare(v, start, end, isLess) {
   let left = base;
   let right = end;
   let gap;
-  for (;;) {
-    while (left < right && isLess(v[left], pivot)) left++;
+  try {
     for (;;) {
-      right--;
-      if (left >= right || isLess(v[right], pivot)) break;
+      while (left < right && isLess(v[left], pivot)) left++;
+      for (;;) {
+        right--;
+        if (left >= right || isLess(v[right], pivot)) break;
+      }
+      if (left >= right) break;
+      if (gap === undefined) gap = { at: right, item: v[left] };
+      else v[gap.at] = v[left];
+      gap.at = right;
+      v[left] = v[right];
+      left++;
     }
-    if (left >= right) break;
-    if (gap === undefined) gap = { at: right, item: v[left] };
-    else v[gap.at] = v[left];
-    gap.at = right;
-    v[left] = v[right];
-    left++;
+  } finally {
+    if (gap !== undefined) v[gap.at] = gap.item;
   }
-  if (gap !== undefined) v[gap.at] = gap.item;
   return left - base;
 }
 
@@ -8200,7 +8217,15 @@ export function $smallSortGeneral(v, start, end, isLess, sort8) {
       $insertionSort(scratch, offset, offset + i + 1, i, isLess);
     }
   }
-  $bidirectionalMerge(scratch, 0, len, v, start, isLess);
+  // Where the merge throws, its comparison's panic or the total order's,
+  // `v` is the sorted halves, as std's guard copies them back (#908).
+  let merged = false;
+  try {
+    $bidirectionalMerge(scratch, 0, len, v, start, isLess);
+    merged = true;
+  } finally {
+    if (!merged) for (let i = 0; i < len; i++) v[start + i] = scratch[i];
+  }
 }
 
 // `sort4_stable` of `src[from..from + 4]` into `dst[at..at + 4]`.

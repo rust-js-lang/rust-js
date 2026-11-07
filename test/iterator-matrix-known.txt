@@ -25,10 +25,6 @@ std 107177,107450
 unwind:plain 789-792,794-795,797-798,809-812,814-818,821-823,825,827-828,1084-1087,1089-1094
 unwind:std 789-792,794-795,797-798,809-812,814-818,821-823,825,827-828,1084-1087,1089-1094
 
-#908 P0 (unwind): $sortUnstable and $selectNthUnstable lose one item and drop another twice when the comparator panics
-unwind:plain 799-802,805,807-808,842-848,850-851,854-856,858,860-861,886-889,891-895
-unwind:std 799-802,805,807-808,842-848,850-851,854-856,858,860-861,886-889,891-895
-
 #909 P0 (unwind): VecDeque::retain_mut drops each item it doesn't keep as it goes, where std drops them after the last call
 unwind:plain 1018-1027
 unwind:std 1018-1027

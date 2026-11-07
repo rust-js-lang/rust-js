@@ -88,3 +88,26 @@ const cell = $selectNthUnstable(numbers, middle, (a, b) => a < b, "network", tru
   `[usize; 20]`s, runs against `wasm32-wasip1`'s native Rust
   (`//@ native: wasm32`, ADR 0088), and a mutation that sizes items as a
   64-bit host does is caught.
+
+## Amendment: a comparison that panics leaves each item once (#908)
+
+std's sort holds the item it moves in a guard that writes it back as a
+comparison unwinds: `insert_tail`'s gap, each partition's gap, and the
+general small sort's merge, whose guard copies its sorted halves back. The
+runtime's port had none: `sort_unstable_by` of `[3, 1, 4, 2]` whose
+comparator panicked at its second call left `[3, 1, 1, 2]`, dropping `1`
+twice and `4` never, where native Rust leaves `[3, 4, 1, 2]`. Results
+change (ADR 0262): Rust's behaviour is kept.
+
+`$insertionSort`, `$partitionLomuto` and `$partitionHoare` write their item
+where the gap is in a `finally`, and `$smallSortGeneral` copies its scratch
+back where its merge throws, a comparison's panic or the total order's.
+The pivot stays at the slice's start as std's does, and the network's
+merge writes another array, so each was already std's. Of a comparison
+that never panics, nothing differs, and the JS calling them is the same.
+
+The corpus's `sort_unstable_unwinds` sorts and selects, by each of the
+four calls, of lengths 4 to 90, a `Big` partitioned by Hoare's scheme and a
+`Celled` sorted by insertion alone, under panic points, the slice shown
+after each; its thirty, one small sort, from its first comparison to its
+merge's last. The unwind table's 62 case-builds of #908 pass.
