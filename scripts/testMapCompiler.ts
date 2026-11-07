@@ -8,11 +8,14 @@
 // `RUSTC_BOOTSTRAP`, which a test of the refusal unsets, set again, let a
 // stable release's crate use a feature.
 //
-// What it ran for: the test file `RUST_JS_TEST_MAP_UNIT` names, or, of the
-// corpus's file, the case its compile includes, the line `compileJs`'s
-// wrapper is (test/programs.ts), so each case is a test of its own.
+// What it ran for: the test file `RUST_JS_TEST_MAP_UNIT` names, or, of a
+// file of the corpus's cases, the case its compile includes, the line
+// `compileJs`'s wrapper is (test/programs.ts), so each case is a test of its
+// own (`caseUnit`).
 import { appendFileSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
+
+import { caseUnit } from "./testMap";
 
 const env = (name: string) => {
   const value = process.env[name];
@@ -26,10 +29,11 @@ const root = env("RUST_JS_TEST_MAP_ROOT");
 const args = process.argv.slice(2);
 
 let unit = env("RUST_JS_TEST_MAP_UNIT");
-if (unit === "test/corpus.test.ts" && args[0]?.endsWith(".rs") && existsSync(args[0])) {
+if (args[0]?.endsWith(".rs") && existsSync(args[0])) {
   const included = /^include!\("((?:[^"\\]|\\.)*)"\);/.exec(readFileSync(args[0], "utf8"))?.[1];
   const file = included === undefined ? undefined : relative(root, JSON.parse(`"${included}"`));
-  if (file !== undefined && /^test\/corpus\/[^/]+\.rs$/.test(file)) unit = file;
+  const name = file !== undefined && /^test\/corpus\/[^/]+\.rs$/.test(file) ? file.slice("test/corpus/".length) : undefined;
+  if (name !== undefined) unit = caseUnit(unit, name) ?? unit;
 }
 
 const id = `${process.pid}-${Date.now()}`;
@@ -76,7 +80,7 @@ for (let i = 0; i + 1 < lines.length; i++) {
   if (lines[i + 1] !== "# Func Hash:") continue;
   const at = index.get(lines[i]);
   // A function the table doesn't have: the map can't say what it is.
-  if (at === undefined) appendFileSync(join(dir, "unknown"), `${unit} ${lines[i]}\n`);
+  if (at === undefined) appendFileSync(join(dir, "unknown"), `${unit}\t${lines[i]}\n`);
   else bits[at >> 3] |= 1 << (at & 7);
 }
 writeFileSync(join(dir, "units", `${slug}.${id}.bits`), bits);

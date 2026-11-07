@@ -43,7 +43,8 @@ export type Job = { name: string; cmd: string[]; env: Record<string, string>; ti
  * the branch changed since `main`, the mutations it adds and the files
  * named; the machine's cores; and, of a plain check whose change the test
  * map can say, the test files and corpus cases it can affect, the cases
- * written to `caseList`, a line each (scripts/testMap.ts, #877). */
+ * written to `caseList`, a line each, and those built with std's iterator
+ * structs, to `formsList` (scripts/testMap.ts, #877, #876). */
 export type Scope = {
   all: boolean;
   changed: string[];
@@ -51,7 +52,7 @@ export type Scope = {
   added: string[];
   extra: string[];
   cores: number;
-  picked?: { files: Set<string>; cases: string[]; caseList: string };
+  picked?: { files: Set<string>; cases: string[]; caseList: string; forms: string[]; formsList: string };
 };
 
 const job = (name: string, cmd: string[], more: Partial<Job> = {}): Job => ({ name, cmd, env: {}, timeout: 290, weight: 1, ...more });
@@ -191,17 +192,26 @@ export function jobs({ all, changed, branch, added, extra, cores, picked }: Scop
         ? [
             // And the rows of both tables the change names, sized to it
             // (scripts/iteratorRows.ts, #818).
-            ...(["matrix", "conformance", "forms", "rows"] as const).map((of) =>
-              // The rows a change names: a removal's run whole, some 28,000
-              // of the matrix's, about 4 min alone and twice that beside the
-              // rest (#856).
-              // Each `parts` processes at once, throughout (m6-lily, #857).
-              job(of === "rows" ? "the rows the change names" : runs[of][0].name, ["bun", "scripts/iteratorSlice.ts", "run", of, String(parts)], {
-                timeout: of === "rows" ? 1200 : 600,
-                weight: parts,
-                ci: `bun scripts/iteratorSlice.ts run ${of}`,
-              }),
-            ),
+            ...(["matrix", "conformance", "forms", "rows"] as const)
+              // Of a change the test map can say, the corpus with std's
+              // iterator structs runs the cases it picked, none where it
+              // picked none, nor the file's own tests (#876).
+              .filter((of) => of !== "forms" || !picked || picked.forms.length > 0 || picked.files.has("test/iterator-forms.test.ts"))
+              .map((of) =>
+                // The rows a change names: a removal's run whole, some 28,000
+                // of the matrix's, about 4 min alone and twice that beside the
+                // rest (#856).
+                // Each `parts` processes at once, throughout (m6-lily, #857).
+                job(
+                  of === "rows" ? "the rows the change names" : runs[of][0].name,
+                  ["bun", "scripts/iteratorSlice.ts", "run", of, String(parts), ...(of === "forms" && picked ? [picked.formsList] : [])],
+                  {
+                    timeout: of === "rows" ? 1200 : 600,
+                    weight: parts,
+                    ci: `bun scripts/iteratorSlice.ts run ${of}`,
+                  },
+                ),
+              ),
           ]
         : []),
       ...(added.length > 0
@@ -535,9 +545,13 @@ if (import.meta.main) {
     const pick = pickChange(files, cases);
     if (pick.kind === "picked") {
       const caseList = join(own, "cases.txt");
+      const formsList = join(own, "forms.txt");
       writeFileSync(caseList, pick.cases.map((name) => `${name}\n`).join(""));
-      picked = { files: new Set(pick.files), cases: pick.cases, caseList };
-      console.log(`${pick.why}: ${pick.files.length} of ${files.length + 1} test files, ${pick.cases.length} of ${cases.length} corpus cases`);
+      writeFileSync(formsList, pick.forms.map((name) => `${name}\n`).join(""));
+      picked = { files: new Set(pick.files), cases: pick.cases, caseList, forms: pick.forms, formsList };
+      console.log(
+        `${pick.why}: ${pick.files.length} of ${files.length + 2} test files, ${pick.cases.length} of ${cases.length} corpus cases, ${pick.forms.length} of them with std's iterator structs where the change is the iterators'`,
+      );
     } else console.log(`${pick.why}: the change's paths say what runs`);
   }
   const check = jobs({ all, changed, branch, added, extra, cores: availableParallelism(), picked });

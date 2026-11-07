@@ -69,7 +69,7 @@ branch's one running, and no branch's run touches another's.
 | The new test, seen to fail, then pass | yes, on the Mac: it's the point | in the suite | in the suite |
 | Its module's focused tests, `bun test test/<file>.test.ts -t <name>` | yes, on the Mac | in the suite | in the suite |
 | The new mutations, `bun scripts/mutations.ts <name>` | yes, on the Mac | the changed ones | all of them, on 16 machines |
-| `bun run check:fast`: lint, the corpus, the lowering, compiler and bindings suites, the snapshots, JSX and diagnostics a change touches, its new mutations, at once; `--all`, what a push's check runs that can run here: typecheck, fmt, clippy, `cargo test`, the Vite example's build, and every test file of the suite, the browsers' after the rest | yes, before each commit; `--all` before a push, with the change's mutations: nothing else | | |
+| `bun run check:fast`: lint, the corpus, the lowering, compiler and bindings suites, the snapshots, JSX and diagnostics a change touches, each file a job, its new mutations, at once; of a change the test map can say, only the files and corpus cases that ran a function it changes (ADR 1101); `--all`, what a push's check runs that can run here: typecheck, fmt, clippy, `cargo test`, the Vite example's build, and every test file of the suite, the browsers' after the rest | yes, before each commit; `--all` before a push, with the change's mutations: nothing else | | |
 | `bun run ci:status`: main's latest run | yes, before each commit: a red one is fixed first | | |
 | `bun run nightly`: every job the nightly runs, here, each in parts on all the cores (`scripts/nightly.ts`); `bun run nightly stages forms` runs some | yes, before a change the nightly would find, or to prove a night green | | |
 | Reading the generated JS and snapshot diffs | yes | the bless patch, read before it's committed | |
@@ -278,7 +278,7 @@ On the M3 Max, with the scan off:
 | One mutation | 2-5 s |
 | Eight mutations, four at a time | 11 s |
 | The react.dev port, built | 30 s |
-| `bun run check:fast`, of a change to the lowering | 40 s |
+| `bun run check:fast`, of a change to the lowering | 40 s; on the 12-core M6, 53–60 s of a statement added to tidy, drops or the bindings, 74 s to an iterator's code with the rows it names, with the test map (2026-11-08, ADR 1101) |
 | `bun run check:fast --all`, what a push's check runs that can run here (195 files and the corpus at once, then the browsers' 6) | 2 min 36 s before the browsers' files and `cargo test` (load 12–16, 2026-11-04); 6 min at a load of 20–33, its corpus parts and two other jobs killed at 290 s, each passing alone after: the other files in 116 s, the corpus in six parts in 239 s (2026-11-05) |
 | `bun run port measure`, react.dev compiled against its committed JS | 7 s |
 | `bun run port compare`, its build and 823 pages | 7–15 s |
@@ -450,11 +450,12 @@ with its before and after, so the next agent sees what kind of fix pays.
 The ledger of every speed-up tried, with its numbers, its status (active, dropped or superseded) and its commit, is [docs/dev-loop.md](docs/dev-loop.md). Add to it there, never here.
 
 - **Record the test map when a task starts**: `bun run test-map` after
-  `git reset --hard origin/main`, about 110 s on the 12-core M6 (gate it as
+  `git reset --hard origin/main`, about 130 s on the 12-core M6 (gate it as
   a heavy step). Plain `check:fast` then runs only the suites' files and
-  the corpus's cases that ran a function the change touches, and says what
-  it picked or why it can't say (`scripts/testMap.ts`, ADR 1101): an
-  iterator's change ran in 83 s, not 153 s. It can say while all that's
+  the corpus's cases that ran a function the change touches, of an
+  iterator change the cases built with std's iterator structs too, and
+  says what it picked or why it can't say (`scripts/testMap.ts`, ADR 1101):
+  an iterator's change ran in 74 s, not 153 s. It can say while all that's
   changed since the map's commit is a function's code in `src/`, a plain
   suite's test file or a corpus case; after committing a doc, a test's
   helper or anything else outside `src/`, record it again, or the check
@@ -659,7 +660,7 @@ checked:
 
 | Step | What it costs | What would fix it |
 |---|---|---|
-| Plain `check:fast` where the test map can't say (ADR 1101) | After any change outside a function's code in `src/` since the map's commit, a doc, a test's helper, a type or a constant, it runs what the paths say: 53–144 s of the five changes measured, not 56–121 s; recording again is about 110 s. And a change to a function every compile runs, tidy's or the runtime's `source`, picks nearly every file and case (101 of 101, 1,805 of 1,809), so the check is CPU-bound on all of it | What a test reads besides the compiler counted too, so a doc's or a helper's change picks its readers; and the map kept by the commit it's of where `main` moves, recorded by CI of each push and downloaded, not by each agent |
+| Plain `check:fast` where the test map can't say (ADR 1101) | After any change outside a function's code in `src/` since the map's commit, a doc, a test's helper, a type or a constant, it runs what the paths say: 53–144 s of the five changes measured, not 56–121 s; recording again is about 130 s. And a change to a function every compile runs, tidy's or the runtime's `source`, picks nearly every file and case (101 of 101, 1,805 of 1,809), so the check is CPU-bound on all of it | What a test reads besides the compiler counted too, so a doc's or a helper's change picks its readers; and the map kept by the commit it's of where `main` moves, recorded by CI of each push and downloaded, not by each agent |
 | The tests' compiles with `--declarations`, which the compile cache can't keep (ADR 1099: Node's TypeScript reads what rust-js's record can't name) | In a `check:fast --all` with the cache warm and no change on the 12-core M6 (92–93 s, 2026-11-07, #886), 285 compiles, about 62 s summed, five times the compiles meant to fail (207, 12 s); and std's bodies compiled once, `--std-bodies`, 10.7 s | A record of what TypeScript reads, the declarations' printing kept apart from the JS's, or the declarations' tests compiling once per file |
 | `check:fast --all`, now bound by its CPU, not by its cores idle (2026-11-07) | On the 12-core M6, about 1,800 CPU-seconds with no change, 900 of them the 200 files besides the corpus (the longest `crates`, `libraries`, `snapshots`, `cargo-workspace` and `compiler`, 45–80 s each), 350 the corpus's compiles, whose runs are cached; with an iterator change about 3,500, 1,270 of them the rows it names and the corpus with std's iterator structs. Its cores 90% busy, half of them efficiency cores. Measured by #874: rust-js's processes are 1,780 of its CPU-seconds, 9,050 calls: 380 the corpus's, 350 the fixtures' compiles, 260 the rest, and Cargo's builds of crates, which #885 measured again apart from the rustc each one runs: about 590, of which the binding crates are 140 (`webapi` 114 s, built 31 times, at 3.4–4.1 s each under load, 1.8 s alone; `react` and `js` 11 s each), the `-vV` probes 75 (about 590 a run, 0.13 s each, every one a Node session that asks which Prettier the app has), and the rest the crates the tests and the crate corpus compile. The file compiles are kept now, where the build is the same (1 min 39–50 s with no change); after a change to `src/` none is (3 min 4 s) | Less work, not more parallel: the native runs kept by source (#875). Not the binding crates in a target the tests share, which can't share them: Cargo's `-vV` line names each app's crate directories, by which Prettier they find (ADR 1003), so `webapi`'s `-C metadata` differs in every app in the checkout, 31 keys for 31 builds (dropped, docs/dev-loop.md, #885; what would let them share, #892) |
 | Every mutation on the Mac, `bun run nightly mutations` | 65 min for 8,047 on the M3 Max (2026-10-30), the CPU 86% busy and its 16 GB full: 6.6 GB compressed, 1.3 GB swapped, 35% of the CPU the system's, each mutant's run starting bun, rust-js and Node | More memory, or a mutant's tests run in a process kept warm, as `bun test` with its compiler swapped, not started again for each |

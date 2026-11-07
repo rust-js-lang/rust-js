@@ -53,6 +53,10 @@ const map: TestMap = {
     "test/corpus.test.ts": bits(0),
     "test/corpus/x.rs": bits(1),
     "test/corpus/y.rs": bits(2),
+    // The corpus built with std's iterator structs, each case its own.
+    "test/iterator-forms.test.ts": bits(1),
+    "test/iterator-forms.test.ts test/corpus/x.rs": bits(4),
+    "test/iterator-forms.test.ts test/corpus/y.rs": bits(0),
   },
   includes: { "src/runtime/helper.js": [{ file: "src/runtime.rs", line: 5 }] },
   corpusReaders: ["test/two.test.ts"],
@@ -61,12 +65,18 @@ const files = ["test/one.test.ts", "test/two.test.ts", "test/reads.test.ts"];
 const cases = ["x.rs", "y.rs"];
 
 test("a change to a function's code runs the tests that ran it, and those that run on every change", () => {
-  expect(pick(map, [{ file: "src/a.rs", hunks: [[12, 2]] }], files, cases)).toMatchObject({
+  expect(pick(map, [{ file: "src/a.rs", hunks: [[12, 2]] }], files, cases)).toEqual({
     kind: "picked",
     files: ["test/one.test.ts", "test/reads.test.ts", "test/corpus.test.ts"],
     cases: [],
+    forms: ["y.rs"],
+    why: "1 of the compiler's functions changed",
   });
-  expect(pick(map, [{ file: "src/a.rs", hunks: [[38, 1]] }], files, cases)).toMatchObject({ files: ["test/two.test.ts", "test/reads.test.ts"], cases: ["x.rs"] });
+  expect(pick(map, [{ file: "src/a.rs", hunks: [[38, 1]] }], files, cases)).toMatchObject({
+    files: ["test/two.test.ts", "test/reads.test.ts", "test/iterator-forms.test.ts"],
+    cases: ["x.rs"],
+    forms: [],
+  });
 });
 
 test("a line added between two of a function's lines is in it; one added after its last isn't", () => {
@@ -74,7 +84,7 @@ test("a line added between two of a function's lines is in it; one added after i
   expect(pick(map, [{ file: "src/a.rs", hunks: [[20, 0]] }], files, cases)).toMatchObject({ kind: "all" });
   expect(pick(map, [{ file: "src/a.rs", hunks: [[9, 0]] }], files, cases)).toMatchObject({ kind: "all" });
   // Between a function's line and a closure's in it: in the function.
-  expect(pick(map, [{ file: "src/c.rs", hunks: [[2, 0]] }], files, cases)).toMatchObject({ kind: "picked", files: ["test/one.test.ts", "test/two.test.ts", "test/reads.test.ts"] });
+  expect(pick(map, [{ file: "src/c.rs", hunks: [[2, 0]] }], files, cases)).toMatchObject({ kind: "picked", files: ["test/one.test.ts", "test/two.test.ts", "test/reads.test.ts"], forms: ["x.rs"] });
   expect(pick(map, [{ file: "src/c.rs", hunks: [[5, 0]] }], files, cases)).toMatchObject({ kind: "picked" });
   // Between two functions side by side, or after one, where an item may go.
   expect(pick(map, [{ file: "src/c.rs", hunks: [[12, 0]] }], files, cases)).toMatchObject({ kind: "all" });
@@ -104,7 +114,7 @@ test("a change the map can't say runs what the check runs without it", () => {
 });
 
 test("a file read by `include_str!` is the line that reads it", () => {
-  expect(pick(map, [{ file: "src/runtime/helper.js", hunks: [[1, 1]] }], files, cases)).toMatchObject({ files: ["test/two.test.ts", "test/reads.test.ts"], cases: ["y.rs"] });
+  expect(pick(map, [{ file: "src/runtime/helper.js", hunks: [[1, 1]] }], files, cases)).toMatchObject({ files: ["test/two.test.ts", "test/reads.test.ts"], cases: ["y.rs"], forms: [] });
   const outside = { ...map, includes: { "src/runtime/helper.js": [{ file: "src/runtime.rs", line: 12 }] } };
   expect(pick(outside, [{ file: "src/runtime/helper.js", hunks: [[1, 1]] }], files, cases).kind).toBe("all");
 });
@@ -112,10 +122,16 @@ test("a file read by `include_str!` is the line that reads it", () => {
 test("a changed test file or corpus case runs itself, and a test the map hasn't recorded runs", () => {
   expect(pick(map, [{ file: "test/one.test.ts", hunks: [[1, 1]] }], files, cases)).toMatchObject({ files: ["test/one.test.ts", "test/reads.test.ts"], cases: [] });
   // And each test that reads the corpus's files itself.
-  expect(pick(map, [{ file: "test/corpus/y.js", hunks: [[1, 1]] }], files, cases)).toMatchObject({ files: ["test/two.test.ts", "test/reads.test.ts"], cases: ["y.rs"] });
+  expect(pick(map, [{ file: "test/corpus/y.js", hunks: [[1, 1]] }], files, cases)).toMatchObject({ files: ["test/two.test.ts", "test/reads.test.ts"], cases: ["y.rs"], forms: ["y.rs"] });
+  // std's iterator structs' file runs each of its cases, and its own tests.
+  expect(pick(map, [{ file: "test/iterator-forms.test.ts", hunks: [[1, 1]] }], files, cases)).toMatchObject({
+    files: ["test/reads.test.ts", "test/iterator-forms.test.ts"],
+    cases: [],
+    forms: ["x.rs", "y.rs"],
+  });
   // Another suite's test file is no plain test's.
   expect(pick(map, [{ file: "test/crates.test.ts", hunks: [[1, 1]] }], files, cases)).toMatchObject({ files: ["test/reads.test.ts"] });
-  expect(pick(map, [], [...files, "test/three.test.ts"], [...cases, "z.rs"])).toMatchObject({ files: ["test/reads.test.ts", "test/three.test.ts"], cases: ["z.rs"] });
+  expect(pick(map, [], [...files, "test/three.test.ts"], [...cases, "z.rs"])).toMatchObject({ files: ["test/reads.test.ts", "test/three.test.ts"], cases: ["z.rs"], forms: ["z.rs"] });
 });
 
 test("a function's counted lines are joined over what's its own, not over an item nested in it", () => {
@@ -199,12 +215,22 @@ test("plain check:fast runs each suite's file as a job, and of a change the map 
   expect(unpicked.some((job) => job.group === "JSX")).toBe(false);
   expect(unpicked.filter((job) => job.name.startsWith("corpus ")).length).toBe(12);
 
-  const picked = jobs({ ...plain, picked: { files: new Set(["test/lowering-cells.test.ts", "test/jsx.test.ts"]), cases: ["a.rs", "b.rs"], caseList: "/cases.txt" } }).jobs;
+  const given = { caseList: "/cases.txt", formsList: "/forms.txt" };
+  const picked = jobs({ ...plain, picked: { ...given, files: new Set(["test/lowering-cells.test.ts", "test/jsx.test.ts"]), cases: ["a.rs", "b.rs"], forms: [] } }).jobs;
   expect(picked.filter((job) => job.group !== undefined).map((job) => job.name)).toEqual(["test/lowering-cells.test.ts", "test/jsx.test.ts"]);
   expect(picked.filter((job) => job.name.startsWith("corpus ")).map((job) => job.env.RUST_JS_CASES)).toEqual(["1/1:/cases.txt"]);
   // No case picked, nor the corpus's own tests: no part.
-  const none = jobs({ ...plain, picked: { files: new Set(), cases: [], caseList: "/cases.txt" } }).jobs;
+  const none = jobs({ ...plain, picked: { ...given, files: new Set(), cases: [], forms: [] } }).jobs;
   expect(none.filter((job) => job.name.startsWith("corpus ") || job.group !== undefined)).toEqual([]);
+
+  // Of an iterator change, the corpus with std's iterator structs runs the
+  // cases picked, and none where none is picked (#876).
+  const iterators = { ...plain, changed: ["src/lower/mir/iter/collect.rs"] };
+  const forms = (of: Parameters<typeof jobs>[0]) => jobs(of).jobs.find((job) => job.name === "the corpus with std's iterator structs");
+  expect(forms(iterators)?.cmd).toEqual(["bun", "scripts/iteratorSlice.ts", "run", "forms", "6"]);
+  expect(forms({ ...iterators, picked: { ...given, files: new Set(), cases: [], forms: ["a.rs"] } })?.cmd).toEqual(["bun", "scripts/iteratorSlice.ts", "run", "forms", "6", "/forms.txt"]);
+  expect(forms({ ...iterators, picked: { ...given, files: new Set(), cases: [], forms: [] } })).toBeUndefined();
+  expect(forms({ ...iterators, picked: { ...given, files: new Set(["test/iterator-forms.test.ts"]), cases: [], forms: [] } })).toBeDefined();
 });
 
 test("`RUST_JS_CASES=i/n:<file>` is a part of the cases the file names", () => {

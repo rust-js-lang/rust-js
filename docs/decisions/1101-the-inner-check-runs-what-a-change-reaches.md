@@ -128,8 +128,37 @@ each one that failed was one the map picked.
 ## Consequences
 
 - `bun run test-map` after `git reset --hard origin/main`, and after
-  committing a change outside `src/`: about 2 minutes on 12 cores.
+  committing a change outside `src/`: about 130 s on 12 cores.
 - The map's build, `target/test-map/build`, is kept for the next
   recording, one build as `target/debug` is; the maps, three, each about
   7 MB, the least recently used going first.
 - `--all` is unchanged: what a push's check runs.
+
+## Amended: the corpus with std's iterator structs, by case (#876)
+
+A change to the iterators' code runs the corpus built with std's iterator
+structs (`ITERATOR_FORMS=corpus`, scripts/iteratorSlice.ts), every case,
+29 s at 4.7 cores of plain `check:fast`'s 83 s for an iterator change. The
+map records that build too, each case a test of its own
+(`caseUnit`: `test/iterator-forms.test.ts test/corpus/<case>.rs`), as
+its compiles take other paths than the plain build's, so the plain build's
+picks can't stand for them. Plain `check:fast` runs the cases it picks
+(`run forms <parts> <list>`), none where it picks none; a change to the
+file runs each, and to a case, that case too. `--all` runs every case, as
+before.
+
+- The iterator change of the five: 83 s, now 73-74 s twice, the job 29 s,
+  now 2 s (74 of 1,809 cases); recording 132 s, not 110 s.
+- A closure's drop broken: 46 of the build's cases fail run over every
+  case with no map, each of them among the 81 the map picks; an
+  iterator's `extend` and an `Option`'s `then` broken fail none of them,
+  of 54 and 397 picked.
+- What's left of an iterator change is the rows it names (#818), 59 s of
+  the 74, sized to their budget of time, and the two fixed slices, 16 and
+  10 s. Of `--all`'s about 2,270 CPU-seconds with an iterator change, the
+  rows are 385, the build with std's structs 160, the slices 128; run
+  again with the same build, 124, 13 and 30, the compiles kept (ADR 1099)
+  and the native programs too. The rows the two tables share: 2,235 of
+  the conformance table's 21,594 cases are the matrix's of the same code,
+  but in other batches, whose make-up changes a compile (#826, #835), and
+  the table's budget is 40 s: at most 4 s, not taken.

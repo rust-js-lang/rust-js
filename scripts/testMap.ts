@@ -1,10 +1,11 @@
 // The test map (#877): which of the compiler's functions each test file of
-// plain `check:fast`'s suites runs, and each case of the corpus, recorded by
+// plain `check:fast`'s suites runs, and each case of the corpus, as it's
+// built and as it's built with std's iterator structs (#876), recorded by
 // running them with a build of the compiler that counts each function's
 // runs. Plain `check:fast` reads it to run only the files and cases a
 // change can affect.
 //
-//   bun run test-map           record HEAD's, of a clean tree: about 2 min on 12 cores
+//   bun run test-map           record HEAD's, of a clean tree: about 130 s on 12 cores
 //   bun run test-map --keep    and keep what it recorded, to see why a test runs always
 //   bun run test-map pick      what the working tree's change picks, and why
 //
@@ -42,7 +43,7 @@ const root = join(import.meta.dir, "..");
 export const mapDir = join(root, "target", "test-map");
 const maps = join(mapDir, "maps");
 /** The layout's version, which a change to it or to what's recorded bumps. */
-const VERSION = 1;
+const VERSION = 2;
 /** The most maps kept: each about 6 MB. */
 export const keptMaps = 3;
 
@@ -71,7 +72,22 @@ export type Change = { file: string; hunks: Hunk[] | "new" };
 
 /** What a change runs: the files and cases it can affect, or all of them,
  * and why. */
-export type Picked = { kind: "picked"; files: string[]; cases: string[]; why: string } | { kind: "all"; why: string };
+export type Picked = { kind: "picked"; files: string[]; cases: string[]; forms: string[]; why: string } | { kind: "all"; why: string };
+
+/** The test files of the corpus's cases, whose each case is a test of its
+ * own: the corpus's, and the corpus built with std's iterator structs
+ * alone, `ITERATOR_FORMS=corpus`, which a change to the iterators' code
+ * runs (scripts/iteratorSlice.ts). */
+export const caseFiles = ["test/corpus.test.ts", "test/iterator-forms.test.ts"] as const;
+
+/** The test a compile for case `name` (`x.rs`) is, of the test file `file`
+ * runs it: the corpus's `test/corpus/x.rs`, std's iterator structs'
+ * `test/iterator-forms.test.ts test/corpus/x.rs`; of another file, none. */
+export function caseUnit(file: string, name: string): string | undefined {
+  if (file === "test/corpus.test.ts") return `test/corpus/${name}`;
+  if (file === "test/iterator-forms.test.ts") return `test/iterator-forms.test.ts test/corpus/${name}`;
+  return undefined;
+}
 
 const git = (args: string[]) => {
   const p = Bun.spawnSync(["git", ...args], { cwd: root, stdout: "pipe", stderr: "pipe" });
@@ -125,12 +141,19 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
   for (const { file, hunks } of changes) {
     // A case runs itself, and the tests that read the corpus's files.
     if (file.startsWith("test/corpus/") && /\.(rs|js)$/.test(file) && !file.slice("test/corpus/".length).includes("/")) {
-      runs.add(file.replace(/\.js$/, ".rs"));
+      const name = file.slice("test/corpus/".length).replace(/\.js$/, ".rs");
+      for (const of of caseFiles) runs.add(caseUnit(of, name)!);
       for (const reader of map.corpusReaders) runs.add(reader);
       continue;
     }
     // The corpus's file checks every case.
     if (file === "test/corpus.test.ts") return { kind: "all", why: `${file} checks every case` };
+    // And std's iterator structs' file checks every case of that build.
+    if (file === "test/iterator-forms.test.ts") {
+      for (const name of cases) runs.add(caseUnit(file, name)!);
+      runs.add(file);
+      continue;
+    }
     // A test file runs itself: of the plain suites', it runs; another's is
     // no other test's, which none imports.
     if (/^test\/[^/]+\.test\.ts$/.test(file)) {
@@ -180,12 +203,14 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     for (const f of touched) if (bytes[f >> 3] & (1 << (f & 7))) return true;
     return false;
   };
-  const pickedFiles = [...files, "test/corpus.test.ts"].filter(affected);
-  const pickedCases = cases.map((name) => `test/corpus/${name}`).filter(affected);
+  const pickedFiles = [...files, ...caseFiles].filter(affected);
+  const pickedCases = cases.filter((name) => affected(caseUnit("test/corpus.test.ts", name)!));
+  const pickedForms = cases.filter((name) => affected(caseUnit("test/iterator-forms.test.ts", name)!));
   return {
     kind: "picked",
     files: pickedFiles,
-    cases: pickedCases.map((file) => file.slice("test/corpus/".length)),
+    cases: pickedCases,
+    forms: pickedForms,
     why: `${touched.size} of the compiler's functions changed`,
   };
 }
@@ -449,12 +474,20 @@ async function record(keep: boolean) {
       cmd: ["bun", "test", "test/corpus.test.ts"],
       env: { RUST_JS_CASES: `${i + 1}/${parts}`, RUST_JS_LIBRARIES: "differing", RUST_JS_TEST_MAP_UNIT: "test/corpus.test.ts" },
     })),
+    // And the corpus built with std's iterator structs, as an iterator
+    // change's check runs it, each case a test of its own too.
+    ...Array.from({ length: parts }, (_, i) => ({
+      name: `test/iterator-forms.test.ts ${i + 1}/${parts}`,
+      cmd: ["bun", "test", "test/iterator-forms.test.ts"],
+      env: { ITERATOR_FORMS: "corpus", RUST_JS_CASES: `${i + 1}/${parts}`, RUST_JS_TEST_MAP_UNIT: "test/iterator-forms.test.ts" },
+    })),
     ...files.map((file) => ({ name: file, cmd: ["bun", "test", file], env: { RUST_JS_TEST_MAP_UNIT: file } })),
   ];
   // The longest first, by what check:fast keeps of each file's time, so no
   // long one runs alone at the end; the corpus's parts first of all.
   const timings = existsSync(join(root, "target", "test-timings.json")) ? JSON.parse(readFileSync(join(root, "target", "test-timings.json"), "utf8")) : {};
-  units.sort((a, b) => (a.name.startsWith("test/corpus.test.ts") ? -1 : 0) - (b.name.startsWith("test/corpus.test.ts") ? -1 : 0) || (timings[b.name] ?? 0) - (timings[a.name] ?? 0));
+  const parted = (name: string) => (caseFiles.some((file) => name.startsWith(`${file} `)) ? -1 : 0);
+  units.sort((a, b) => parted(a.name) - parted(b.name) || (timings[b.name] ?? 0) - (timings[a.name] ?? 0));
   const ended = await runUnits(units, cores, recording, {
     RUST_JS_COMPILER: join(root, "scripts", "testMapCompiler.ts"),
     RUST_JS_TEST_MAP_COMPILER: binary,
@@ -493,24 +526,26 @@ async function record(keep: boolean) {
         readFileSync(join(recording, "unknown"), "utf8")
           .split("\n")
           .filter(Boolean)
-          .map((line) => line.split(" ")[0]),
+          .map((line) => line.split("\t")[0]),
       )
     : new Set<string>();
   const caseNames = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
-  const cases = caseNames.map((name) => `test/corpus/${name}`);
-  // Of a part that failed, each of its cases, as the corpus shards them.
-  const failedCases = new Set<string>();
-  let corpusFailed = false;
-  for (let i = 1; i <= parts; i++) {
-    if (ended.get(`test/corpus.test.ts ${i}/${parts}`) === 0) continue;
-    corpusFailed = true;
-    for (const name of shard(caseNames, i, parts)) failedCases.add(`test/corpus/${name}`);
+  // Of a part that failed, each of its cases, as the files shard them, and
+  // the file's own tests.
+  const failedUnits = new Set<string>();
+  for (const file of caseFiles) {
+    for (let i = 1; i <= parts; i++) {
+      if (ended.get(`${file} ${i}/${parts}`) === 0) continue;
+      failedUnits.add(file);
+      for (const name of shard(caseNames, i, parts)) failedUnits.add(caseUnit(file, name)!);
+    }
   }
+  const caseUnits = caseFiles.flatMap((file) => caseNames.map((name) => caseUnit(file, name)!));
   const units_: TestMap["units"] = {};
   const always: string[] = [];
-  for (const unit of [...files, "test/corpus.test.ts", ...cases]) {
-    const isCase = unit.startsWith("test/corpus/");
-    const failed = isCase ? failedCases.has(unit) : unit === "test/corpus.test.ts" ? corpusFailed : ended.get(unit) !== 0;
+  for (const unit of [...files, ...caseFiles, ...caseUnits]) {
+    const isFile = files.includes(unit);
+    const failed = isFile ? ended.get(unit) !== 0 : failedUnits.has(unit);
     const own = bits.get(unit);
     const why = failed
       ? "it failed"
@@ -520,7 +555,7 @@ async function record(keep: boolean) {
           ? "a compile of it wasn't counted whole"
           : unknown.has(unit)
             ? "a compile of it ran a function the table hasn't"
-            : !isCase && readsSources(unit)
+            : isFile && readsSources(unit)
               ? "it reads the compiler's sources"
               : undefined;
     units_[unit] = why === undefined ? Buffer.from(own!).toString("base64") : null;
@@ -537,9 +572,10 @@ async function record(keep: boolean) {
   // kept, one, as `target/debug` is, so the next recording builds only
   // what changed.
   if (!keep) rmSync(recording, { recursive: true, force: true });
-  const cased = always.filter((unit) => unit.startsWith("test/corpus/"));
+  const isCase = (unit: string) => /test\/corpus\/[^ ]+\.rs/.test(unit);
+  const cased = always.filter(isCase);
   console.log(`the test map of ${commit.slice(0, 9)}: ${functions.length} functions, ${Object.keys(units_).length} tests; ${always.length} run on every change:`);
-  for (const unit of always.filter((unit) => !unit.startsWith("test/corpus/"))) console.log(`  ${unit}`);
+  for (const unit of always.filter((unit) => !isCase(unit))) console.log(`  ${unit}`);
   if (cased.length > 0) console.log(`  ${cased.length} cases: ${cased.slice(0, 10).join(", ")}${cased.length > 10 ? ", …" : ""}`);
   console.log(`${((Date.now() - started) / 1000).toFixed(0)} s`);
 }
@@ -553,7 +589,7 @@ if (import.meta.main) {
     console.log(picked.why);
     if (picked.kind === "picked") {
       console.log(`files (${picked.files.length}): ${picked.files.join(" ")}`);
-      console.log(`cases (${picked.cases.length} of ${cases.length})`);
+      console.log(`cases (${picked.cases.length} of ${cases.length}), with std's iterator structs (${picked.forms.length})`);
     }
   } else {
     console.error("usage: bun run test-map [record | pick]");

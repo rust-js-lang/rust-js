@@ -69,9 +69,10 @@ export const runs = {
 } as const;
 
 /** `of`, in `parts` processes at once, each its share of the cases
- * (`RUST_JS_CASES`), their logs printed as each ends: whether every part
- * passed, and how long it took. */
-export async function run(of: keyof typeof runs | "rows", parts: number): Promise<boolean> {
+ * (`RUST_JS_CASES`), or of those `list` names, a line each, as plain
+ * `check:fast` picks the corpus's by the test map (#876), their logs
+ * printed as each ends: whether every part passed, and how long it took. */
+export async function run(of: keyof typeof runs | "rows", parts: number, list?: string): Promise<boolean> {
   let passed = true;
   const each: Run[] = of === "rows" ? changeRows(parts) : [...runs[of]];
   for (const { name, file, env, rate } of each) {
@@ -79,7 +80,7 @@ export async function run(of: keyof typeof runs | "rows", parts: number): Promis
     const parted = Array.from({ length: parts }, async (_, i) => {
       const p = Bun.spawn(["bun", "test", "--timeout=600000", file], {
         cwd: root,
-        env: { ...process.env, ...env, RUST_JS_CASES: `${i + 1}/${parts}` },
+        env: { ...process.env, ...env, RUST_JS_CASES: `${i + 1}/${parts}${list === undefined ? "" : `:${list}`}` },
         stdout: "pipe",
         stderr: "pipe",
       });
@@ -122,8 +123,8 @@ function changeRows(parts: number): Run[] {
 }
 
 if (import.meta.main) {
-  const [command, of, count] = process.argv.slice(2);
-  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|rows [parts]");
+  const [command, of, count, list] = process.argv.slice(2);
+  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|rows [parts [cases]]");
   const parts = count === undefined ? caseParts(availableParallelism() * 2) : Number(count);
-  process.exit((await run(of as keyof typeof runs | "rows", parts)) ? 0 : 1);
+  process.exit((await run(of as keyof typeof runs | "rows", parts, list)) ? 0 : 1);
 }
