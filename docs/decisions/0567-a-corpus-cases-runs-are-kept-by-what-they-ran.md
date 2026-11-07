@@ -65,3 +65,15 @@ loop ships faster.
 - A change to a runtime module, the harness, or a runtime's version runs
   every case again, as it should.
 - `test/support.test.ts` holds the key and the record.
+
+## Amendment: the compiles kept too (ADR 1099, #874)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, as above.
+
+"The compiles always run" no longer holds of every run: a case's compile
+is kept by what it's made of, the compiler's build, its arguments, its
+environment and every file it read, as its record of the build says, and
+given again where all of it is the same (`test/compiles.ts`). They still
+run on CI, which keeps nothing, after any change to the compiler, whose
+build is then another, and in the determinism net, which keeps none. The
+snapshot is still checked of the JS each run, compiled or given again.

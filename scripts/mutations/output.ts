@@ -455,4 +455,20 @@ export const mutations: Mutation[] = [
     replace: "        js::ImportFrom::Specifier(_) => None,\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of a library's module of every name its file exports is export \\* from"],
   },
+  {
+    name: "file-record-without-manifest-written",
+    breaks: "a file's record doesn't say it wrote the manifest, which a cache keyed by it then never gives again (ADR 1099)",
+    file: "src/output.rs",
+    find: "                .chain(manifest_path.clone())\n",
+    replace: "",
+    tests: ["test/compiles.test.ts", "-t", "a file's record of its build"],
+  },
+  {
+    name: "file-record-without-env",
+    breaks: "a file's record leaves out each variable an `env!` read (ADR 1099)",
+    file: "src/output.rs",
+    find: "    let env: Vec<&str> = text.lines().filter(|line| line.starts_with(\"# env-dep:\")).collect();\n",
+    replace: "    let env: Vec<&str> = Vec::new();\n",
+    tests: ["test/compiles.test.ts", "-t", "a file's record of its build"],
+  },
 ];

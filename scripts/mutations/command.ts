@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "rustc-outputs-passed-through",
     breaks: "rustc's other outputs, `--emit=mir` say, are written past rust-js's checks",
     file: "src/command.rs",
-    find: "                    None => {\n                        return Err(format!(\n                            \"rustc's `--emit={kind}` isn't something rust-js writes; only a library's --emit=metadata=<path>\"\n                        ));\n                    }\n",
+    find: "                    None => {\n                        return Err(format!(\n                            \"rustc's `--emit={kind}` isn't something rust-js writes; only a library's --emit=metadata=<path>, and the build's record, --emit=dep-info=<path>\"\n                        ));\n                    }\n",
     replace: "                    None => rewritten.push(kind.to_string()),\n",
     tests: ["test/crates.test.ts", "-t", "outputs are refused"],
   },

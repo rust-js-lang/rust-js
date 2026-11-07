@@ -1,7 +1,10 @@
 // How a child process ended, for every program the tests build or run
 // (ADR 0088): its exit code, the signal that stopped it, whether it ran out
 // of time or printed more than it may, and what it printed. A run is judged
-// on all of it, never on what it printed alone.
+// on all of it, never on what it printed alone. A compile of rust-js's is
+// kept by its inputs, and given again (`test/compiles.ts`, ADR 1099).
+
+import { keptCompile, keptCompileAsync } from "./compiles";
 
 export type Exit = {
   code: number | null;
@@ -66,6 +69,11 @@ export function stopGroup(pid: number, signal: NodeJS.Signals = "SIGKILL") {
  * this process's environment and `env`, which a change to `process.env`
  * wouldn't give it; a setting that's `undefined` in `env` is left out. */
 export function runSync(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined> = {}): Exit {
+  return keptCompile(cmd, cwd, env, (cmd) => spawnedSync(cmd, cwd, timeout, env));
+}
+
+/** `runSync`'s run of `cmd`, a compile kept or not (`test/compiles.ts`). */
+function spawnedSync(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined>): Exit {
   const p = Bun.spawnSync(cmd, {
     cwd,
     stdout: "pipe",
@@ -93,7 +101,12 @@ export function runSync(cmd: string[], cwd: string, timeout: number, env: Record
 }
 
 /** `cmd`, as `runSync` runs it, without blocking the others running. */
-export async function run(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined> = {}): Promise<Exit> {
+export function run(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined> = {}): Promise<Exit> {
+  return keptCompileAsync(cmd, cwd, env, (cmd) => spawned(cmd, cwd, timeout, env));
+}
+
+/** `run`'s run of `cmd`, a compile kept or not (`test/compiles.ts`). */
+async function spawned(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined>): Promise<Exit> {
   const p = Bun.spawn(cmd, { cwd, stdout: "pipe", stderr: "pipe", detached: true, env: { ...process.env, ...env } });
   let timedOut = false;
   let overflowed = false;

@@ -141,6 +141,10 @@ struct RustJs {
     /// The JS files of the program's own its bindings import, read where
     /// lowering asks what they load (ADR 0031, amended).
     local_js: output::LocalJs,
+    /// `--emit=dep-info=<path>` of a file compiled alone: its record names
+    /// each crate it loaded, and is written as the session stops, where
+    /// rustc's driver would write it after (ADR 1099).
+    dep_info: bool,
 }
 
 /// `rust_js` is a tool rustc knows, as it knows `rustfmt`: a program
@@ -228,6 +232,11 @@ fn linted(_: Vec<String>, _: String) -> ExitCode {
 impl Callbacks for RustJs {
     fn config(&mut self, config: &mut rustc_interface::interface::Config) {
         register_tool(config);
+        // A file's record of its build names each crate it loaded, what it
+        // read of them as much as of its sources (ADR 1099).
+        if self.dep_info {
+            config.opts.unstable_opts.binary_dep_depinfo = true;
+        }
         // Integers wrap, as the release profile has them: MIR read for what
         // runs says so, where it would check each operation (ADR 0364).
         config.opts.cg.overflow_checks = Some(false);
@@ -352,6 +361,11 @@ impl Callbacks for RustJs {
         if self.metadata && tcx.dcx().has_errors().is_none() {
             Compilation::Continue
         } else {
+            // rustc's driver writes the record of what it read after this,
+            // where it goes on: here, once all of it's read (ADR 1099).
+            if self.dep_info && self.lowered.is_some() {
+                rustc_interface::passes::write_dep_info(tcx);
+            }
             Compilation::Stop
         }
     }
@@ -535,6 +549,22 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         dependencies.add_std()?;
     }
     let (mut rustc_args, staged) = build.rustc_args()?;
+    // A file's record says all its build read (ADR 1099): not what a hook,
+    // a program of the crate's own, reads, nor the TypeScript Node finds
+    // to print its declarations.
+    if !build.cargo && staged.dep_info.is_some() {
+        let hooks = &read_settings.hooks;
+        if build.declarations || !hooks.transform.is_empty() || !hooks.check.is_empty() {
+            return Err(format!(
+                "--emit=dep-info can't say all a build reads {}: rust-js runs programs it doesn't see into",
+                if build.declarations {
+                    "that prints declarations, with TypeScript"
+                } else {
+                    "whose crate has hooks"
+                }
+            ));
+        }
+    }
     // std's bodies lowered from a std built to unwind, where none is given
     // (#424).
     if build.std_bodies && command::flag_values(&rustc_args, "--sysroot").next().is_none() {
@@ -590,6 +620,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         cargo,
         panics_abort: false,
         local_js: output::LocalJs::new(&plan),
+        dep_info: !cargo && dep_info.is_some(),
     };
     let exit = rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&rustc_args, &mut callbacks));
     // Once rustc has written the metadata: if it couldn't, nothing is published.
@@ -612,7 +643,28 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
             let written = written.clone();
             plan.dep_info = Some((
                 path.clone(),
-                Box::new(move |read: &[PathBuf]| cargo::dep_info(&written, read)),
+                Box::new(move |read: &[PathBuf], _: &[PathBuf]| cargo::dep_info(&written, read)),
+            ));
+        }
+        // A file's record of its build (ADR 1099): what it wrote too, and
+        // what of it rust-js read itself, its libraries, its settings and
+        // the manifest a build before wrote, which says what's stale, are
+        // what it read.
+        if let (false, Some((written, path))) = (cargo, &dep_info) {
+            let written = written.clone();
+            let mut reading: Vec<PathBuf> = callbacks.dependencies.inputs.clone();
+            reading.extend(plan.settings.manifest.clone());
+            if let Some(previous) = plan.manifest.as_ref().filter(|path| path.exists()) {
+                reading.push(paths::absolute(previous)?);
+            }
+            let coverage = callbacks.std_coverage.as_deref().map(paths::absolute).transpose()?;
+            plan.dep_info = Some((
+                path.clone(),
+                Box::new(move |read: &[PathBuf], wrote: &[PathBuf]| {
+                    let read: Vec<PathBuf> = read.iter().cloned().chain(reading).collect();
+                    let wrote: Vec<PathBuf> = wrote.iter().cloned().chain(coverage).collect();
+                    output::file_dep_info(&written, &wrote, &read)
+                }),
             ));
         }
         plan.plan(linked, sources)?.publish()?;

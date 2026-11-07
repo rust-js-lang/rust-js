@@ -20,9 +20,10 @@ pub struct OutputPlan {
     /// Files of the build tool's published with the JS, as artifacts of this
     /// plan, and no part of the manifest: what Cargo is told (ADR 0101).
     pub extra: Vec<(PathBuf, Vec<u8>)>,
-    /// Cargo's record of the sources (ADR 0101), the driver's to write:
-    /// where it's published, and what writes it, given what else the build
-    /// read (`read`).
+    /// The build's record of what it read (`--emit=dep-info`), Cargo's
+    /// (ADR 0101) or a file's, which says what it wrote too (ADR 1099), the
+    /// driver's to write: where it's published, and what writes it, given
+    /// what else the build read (`read`) and every file it writes.
     pub dep_info: Option<(PathBuf, DepInfo)>,
     /// The crate's settings for the JS (ADR 0117).
     pub settings: crate::settings::Settings,
@@ -54,9 +55,57 @@ pub struct OutputPlan {
     scopes: IndexMap<Vec<String>, (PathBuf, Option<crate::packages::Scope>)>,
 }
 
-/// What writes Cargo's record of a crate's sources, given what else the
-/// build read.
-pub type DepInfo = Box<dyn FnOnce(&[PathBuf]) -> Result<Vec<u8>, String>>;
+/// What writes the build's record of what it read, given what else the
+/// build read and every file it writes, the record itself aside.
+pub type DepInfo = Box<dyn FnOnce(&[PathBuf], &[PathBuf]) -> Result<Vec<u8>, String>>;
+
+/// A file compiled alone's record of its build, `--emit=dep-info=<path>`
+/// (ADR 1099), as `make` reads one: every file it writes, the record
+/// aside, made of every file it read; rustc's record of them, `written`,
+/// which names each crate it loaded too (`binary_dep_depinfo`), the
+/// compiler, and what rust-js read itself, `read`; and each variable an
+/// `env!` read, rustc's lines.
+pub fn file_dep_info(written: &Path, wrote: &[PathBuf], read: &[PathBuf]) -> Result<Vec<u8>, String> {
+    let text = std::fs::read_to_string(written).map_err(|e| format!("cannot read the dep-info rustc wrote: {e}"))?;
+    let rule = (text.lines())
+        .find(|line| !line.starts_with('#') && line.contains(": "))
+        .ok_or("rustc's dep-info lists no sources")?;
+    // rustc's files as it escaped them, a space within one `\ `.
+    let mut files: IndexSet<String> = IndexSet::default();
+    let mut file = String::new();
+    let mut chars = rule[rule.find(": ").map_or(0, |at| at + 2)..].chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '\\' if chars.peek() == Some(&' ') => {
+                file.push_str("\\ ");
+                chars.next();
+            }
+            ' ' => {
+                files.insert(std::mem::take(&mut file));
+            }
+            c => file.push(c),
+        }
+    }
+    files.insert(file);
+    files.shift_remove("");
+    let escape = |path: &PathBuf| path.display().to_string().replace(' ', "\\ ");
+    let exe = std::env::current_exe().map_err(|e| format!("rust-js's own path: {e}"))?;
+    files.extend(std::iter::once(&exe).chain(read).map(escape));
+    let targets: Vec<String> = wrote.iter().map(escape).collect();
+    let prerequisites: Vec<&str> = files.iter().map(String::as_str).collect();
+    let mut out = format!("{}: {}\n\n", targets.join(" "), prerequisites.join(" "));
+    for file in &prerequisites {
+        out.push_str(&format!("{file}:\n"));
+    }
+    let env: Vec<&str> = text.lines().filter(|line| line.starts_with("# env-dep:")).collect();
+    if !env.is_empty() {
+        out.push('\n');
+        for line in env {
+            out.push_str(&format!("{line}\n"));
+        }
+    }
+    Ok(out.into_bytes())
+}
 
 /// A module's JS, as rust-js lays it out, where it's written, and where
 /// it goes in source, beside its Rust (`in_source`).
@@ -882,15 +931,21 @@ impl OutputPlan {
         self.read = (configs.into_iter().chain(self.bound.iter().cloned()))
             .chain(packaged)
             .collect();
-        if let Some((path, write)) = self.dep_info.take() {
-            extra.push(Artifact {
-                path: absolute(&path)?,
-                bytes: write(&self.read)?,
-            });
-        }
         artifacts.extend(metadata);
         for artifact in &mut artifacts {
             artifact.path = absolute(&artifact.path)?;
+        }
+        // Once every file it writes is known: the JS, the metadata, the
+        // build tool's and the manifest.
+        if let Some((path, write)) = self.dep_info.take() {
+            let wrote: Vec<PathBuf> = (artifacts.iter().chain(&extra))
+                .map(|a| a.path.clone())
+                .chain(manifest_path.clone())
+                .collect();
+            extra.push(Artifact {
+                path: absolute(&path)?,
+                bytes: write(&self.read, &wrote)?,
+            });
         }
         // Where each module's JS and declarations name another's file, by a
         // parse of what was printed: what a host that copies them elsewhere

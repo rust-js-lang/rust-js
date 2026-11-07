@@ -36,9 +36,13 @@ test("the cases a run of a few names are the corpus's", () => {
   for (const name of few) expect(cases).toContain(name);
 });
 
+// Each compile the compiler's own, never one kept (test/compiles.ts): the
+// net is of the compiler, which a kept compile would answer for.
+const keepNone = { RUST_JS_COMPILE_CACHE_MB: "0" };
+
 /** What a compile wrote, each file's text by its name, or how it failed. */
 async function compiled(file: string, dir: string, edition: string, library: boolean): Promise<Record<string, string>> {
-  const result = await compileJsAsync(file, dir, edition, library);
+  const result = await compileJsAsync(file, dir, edition, library, keepNone);
   if (!("js" in result)) return { failed: `${result.kind}: ${result.error}` };
   const written: Record<string, string> = {};
   for (const path of [result.js, `${result.js}.map`, result.js.replace(/\.js$/, ".manifest.json")]) {

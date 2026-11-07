@@ -338,18 +338,17 @@ impl Build {
                     }
                     // rustc's other outputs are written after rust-js has published,
                     // past its checks, and are no part of what rust-js makes.
-                    // Cargo's record of the sources (ADR 0101), staged as the
-                    // metadata is, and published with it.
-                    None if self.cargo
-                        && let Some(path) = kind.strip_prefix("dep-info=").map(PathBuf::from) =>
-                    {
+                    // The build's record of what it read, Cargo's (ADR 0101)
+                    // or a file's, of what it wrote too (ADR 1099), staged as
+                    // the metadata is, and published with it.
+                    None if let Some(path) = kind.strip_prefix("dep-info=").map(PathBuf::from) => {
                         let to = dir().join(path.file_name().unwrap_or_default());
                         rewritten.push(format!("dep-info={}", to.display()));
                         staged.dep_info = Some((to, path));
                     }
                     None => {
                         return Err(format!(
-                            "rustc's `--emit={kind}` isn't something rust-js writes; only a library's --emit=metadata=<path>"
+                            "rustc's `--emit={kind}` isn't something rust-js writes; only a library's --emit=metadata=<path>, and the build's record, --emit=dep-info=<path>"
                         ));
                     }
                 }
@@ -461,7 +460,21 @@ mod tests {
             .err()
             .unwrap();
         assert!(mir.contains("`--emit=mir` isn't something rust-js writes"));
-        let dep_info = build(&["lib.rs", "--", "--emit=dep-info=lib.d"]).unwrap();
-        assert!(dep_info.rustc_args().is_err());
+        // The build's record, of a file compiled alone too (ADR 1099),
+        // staged as the metadata is; but where it goes is said.
+        let (args, staged) = build(&["lib.rs", "-o", "out/lib.js", "--", "--emit=dep-info=out/lib.d"])
+            .unwrap()
+            .rustc_args()
+            .unwrap();
+        let (to, published) = staged.dep_info.unwrap();
+        assert_eq!(published, PathBuf::from("out/lib.d"));
+        assert!(to.starts_with(&staged.dir));
+        assert!(args.contains(&format!("--emit=dep-info={}", to.display())));
+        let bare = build(&["lib.rs", "--", "--emit=dep-info"])
+            .unwrap()
+            .rustc_args()
+            .err()
+            .unwrap();
+        assert!(bare.contains("`--emit=dep-info` isn't something rust-js writes"));
     }
 }

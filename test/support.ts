@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 
 import { runSync, stopped } from "./child";
 import { markUsed } from "./kept";
@@ -291,29 +291,85 @@ export function installRuntime(app: string) {
   symlinkSync(stdDir, join(app, "node_modules", "@rust-js", "std"));
 }
 
-// Each test's own directory, in `target/fixtures/<pid>-<id>/`, its test
-// file's: a test runner's worker runs several files, each its own module,
-// so its own exit. Each removes its own as it exits, or every run would
-// leave them, tens of gigabytes in days; `RUST_JS_KEEP_FIXTURES=1` keeps
-// them to look at. A worker ended without exiting leaves its own, which the
-// next run removes: whose process is gone. Not by age: what a tarball
-// unpacks into is as old as the tarball says. Removing a directory removes
-// the links in it, not what they link to.
+// Each test's own directory, `target/fixtures/<test file>/<name>_<n>`, the
+// `n`th its process asked for of that name: the same path in each run of
+// the file, so a compile of the same source there is the same compile, and
+// kept (`test/compiles.ts`, ADR 1099). Each is its process's, claimed by
+// `<name>_<n>.owner` beside it, its pid, made by a link, which only one
+// process makes: one another process running holds is passed for the next
+// `n`, and one whose process is gone is taken over, emptied first. Each
+// process removes its own as it exits, or every run would leave them, tens
+// of gigabytes in days; `RUST_JS_KEEP_FIXTURES=1` keeps them to look at.
+// Not by age: what a tarball unpacks into is as old as the tarball says.
+// Removing a directory removes the links in it, not what they link to.
 export const fixtures = join(target, "fixtures");
-// Its random part after a letter, and each fixture's after a `_`: what a
-// test looks for in the JS, a block's `bb5` say, never in the path its
-// header names, as `-bb6e90b4` was (`\bbb\d+`).
-const mine = join(fixtures, `${process.pid}-x${crypto.randomUUID().slice(0, 8)}`);
+// Before #874 each process's were in `<pid>-x<id>/`, which a run removes
+// where its process is gone.
+// Named by its file's hash, a letter first: what a test looks for in the
+// JS, a block's `bb5` or a word of its name, never in the path its header
+// names, as `-bb6e90b4` was (`\bbb\d+`), and `strict-switches` would be.
+const scope = `x${createHash("sha256").update(basename(Bun.main)).digest("hex").slice(0, 8)}`;
+const counts = new Map<string, number>();
+let owned: string[] | undefined;
+
+/** `<name>_<n>` in `base`, claimed by this process for its life, empty:
+ * the first `n` from the last this process took that no live process
+ * holds. */
+function claim(base: string, name: string): string {
+  if (owned === undefined) {
+    const mine: string[] = (owned = []);
+    if (!process.env.RUST_JS_KEEP_FIXTURES) {
+      process.on("exit", () => {
+        for (const dir of mine) {
+          rmSync(dir, { recursive: true, force: true });
+          rmSync(`${dir}.owner`, { force: true });
+        }
+      });
+    }
+  }
+  mkdirSync(base, { recursive: true });
+  const counted = `${base}\0${name}`;
+  for (let n = counts.get(counted) ?? 0; ; n++) {
+    const dir = join(base, `${name}_${n}`);
+    const owner = `${dir}.owner`;
+    const writing = `${owner}.${process.pid}`;
+    writeFileSync(writing, String(process.pid));
+    let got = false;
+    try {
+      linkSync(writing, owner);
+      got = true;
+    } catch {
+      // Its process gone, it's taken over: the one rename of its claim
+      // that succeeds is the one process's that takes it.
+      if (!alive(Number(readIfThere(owner)))) {
+        const gone = `${owner}.gone-${process.pid}`;
+        try {
+          renameSync(owner, gone);
+          rmSync(gone, { force: true });
+          linkSync(writing, owner);
+          got = true;
+        } catch {}
+      }
+    }
+    rmSync(writing, { force: true });
+    if (!got) continue;
+    counts.set(counted, n + 1);
+    rmSync(dir, { recursive: true, force: true });
+    mkdirSync(dir);
+    owned.push(dir);
+    return dir;
+  }
+}
 
 /** A test's own directory outside the checkout, `@rust-js/runtime` and
  * `@rust-js/std` installed in it, as an app's are: where no Prettier is
  * found, which a fixture in the checkout finds, the checkout's own, and
  * whose crates' directories it then puts in Cargo's key (ADR 1003, #684).
- * Removed as the test file's process exits, as a fixture is. */
+ * Claimed and removed as a fixture is, in the system's temporary
+ * directory, `rust-js-fixtures/<test file>/`. */
 export function outsideFixture(name: string): string {
-  const dir = realpathSync(mkdtempSync(join(tmpdir(), `rust-js-${name}-`)));
+  const dir = realpathSync(claim(join(tmpdir(), "rust-js-fixtures", scope), name));
   installRuntime(dir);
-  if (!process.env.RUST_JS_KEEP_FIXTURES) process.on("exit", () => rmSync(dir, { recursive: true, force: true }));
   return dir;
 }
 
@@ -336,11 +392,13 @@ export function crateIncluded(crate: string): string[] {
     .sort();
 }
 
+let swept = false;
 export function fixture(name: string): string {
-  if (!existsSync(mine)) {
-    mkdirSync(mine, { recursive: true });
+  if (!swept) {
+    swept = true;
+    mkdirSync(fixtures, { recursive: true });
     for (const entry of readdirSync(fixtures)) {
-      const owner = /^(\d+)-/.exec(entry)?.[1];
+      const owner = /^(\d+)-x/.exec(entry)?.[1];
       if (!owner || alive(Number(owner))) continue;
       try {
         rmSync(join(fixtures, entry), { recursive: true, force: true });
@@ -348,9 +406,8 @@ export function fixture(name: string): string {
         // Another file's sweep is removing it too: it goes either way.
       }
     }
-    if (!process.env.RUST_JS_KEEP_FIXTURES) process.on("exit", () => rmSync(mine, { recursive: true, force: true }));
   }
-  return mkdtempSync(join(mine, `${name}_`));
+  return claim(join(fixtures, scope), name);
 }
 
 /** serde, serde_derive and serde_json (ADR 0077): the flags that find them,

@@ -200,6 +200,39 @@ the cause: clear it, `sccache --stop-server && rm -rf
 with both outputs, so every agent knows. Turn it off for good by removing
 the `rustc-wrapper` line.
 
+### The tests' compiles to JS, kept by their inputs
+
+Each compile to JS a test makes through `test/child.ts`, the corpus's,
+`run([compiler, ..])`'s and the rest, is kept in `target/compile-cache/`
+and given again where all it's made of is the same (`test/compiles.ts`,
+ADR 1099, #874): the compiler's build (ADR 1003), its arguments, where
+it ran, its environment, and every file its record of the build
+(`--emit=dep-info`) says it read, by content, the crates it loaded among
+them. A fixture's path is the same in each run (`target/fixtures/x<file's
+hash>/<name>_<n>`), so the same test compiles the same thing there.
+
+- **What it saves:** a run where the compiler's build is the same, a
+  change to the tests or docs alone, or `check:fast` again: on the 12-core
+  M6 1 min 47–50 s, not 2 min 56 s. After any change to `src/`, the
+  runtime's helpers among it, nothing's found: about as before, 2 min 59 s
+  to 3 min 23 s.
+- **What it never keeps:** Cargo's builds (`rust-js build`, the cargo
+  tests), a compile that fails, one that read a file it wrote (a manifest
+  of the build before), one of a crate with hooks or `--declarations`,
+  a mutant's, the determinism net's (`RUST_JS_COMPILE_CACHE_MB=0` in its
+  environment), and a script standing in for the compiler.
+- **Bounded:** 2 GB, or `RUST_JS_COMPILE_CACHE_MB` (0 keeps none). Each
+  use marks its entry; past the cap the least recently used go first,
+  checked as a process's writes would pass it and as each `check:fast` or
+  `bun run test` starts, which also drops every entry of another build,
+  never found again. Below the disk's 40 GB floor nothing's written, said
+  once a process, and what's kept is pruned until the floor's back or
+  it's empty. `cargo clean` removes it with the rest of `target/`; `rm -rf
+  target/compile-cache` is always safe.
+- **If you doubt it:** `RUST_JS_COMPILE_CACHE_MB=0 bun test <file>` runs
+  every compile; CI has no cache, so it's the check the cache changed
+  nothing.
+
 ## What a step of the loop costs
 
 On the M3 Max, with the scan off:
@@ -570,7 +603,7 @@ checked:
 
 | Step | What it costs | What would fix it |
 |---|---|---|
-| `check:fast --all`, now bound by its CPU, not by its cores idle (2026-11-07) | On the 12-core M6, about 1,800 CPU-seconds with no change, 900 of them the 200 files besides the corpus (the longest `crates`, `libraries`, `snapshots`, `cargo-workspace` and `compiler`, 45–80 s each), 350 the corpus's compiles, whose runs are cached; with an iterator change about 3,500, 1,270 of them the rows it names and the corpus with std's iterator structs. Its cores 90% busy, half of them efficiency cores | Less work, not more parallel: the longest files' compiles kept by what they compile, as the corpus's runs are; the corpus's compiles kept too where neither the compiler nor the case changed |
+| `check:fast --all`, now bound by its CPU, not by its cores idle (2026-11-07) | On the 12-core M6, about 1,800 CPU-seconds with no change, 900 of them the 200 files besides the corpus (the longest `crates`, `libraries`, `snapshots`, `cargo-workspace` and `compiler`, 45–80 s each), 350 the corpus's compiles, whose runs are cached; with an iterator change about 3,500, 1,270 of them the rows it names and the corpus with std's iterator structs. Its cores 90% busy, half of them efficiency cores. Measured by #874: rust-js's processes are 1,780 of its CPU-seconds, 9,050 calls: 780 Cargo's builds of crates (`webapi` alone 230 s, built 62 times, each test's target its own), 380 the corpus's, 350 the fixtures' compiles, 260 the rest. The file compiles are kept now, where the build is the same (1 min 47 s with no change); after a change to `src/` none is | Less work, not more parallel: Cargo's builds of the binding crates in one target the cargo tests share, as `buildReact` builds them once for the file compiles; the native runs kept by source (#875) |
 | Every mutation on the Mac, `bun run nightly mutations` | 65 min for 8,047 on the M3 Max (2026-10-30), the CPU 86% busy and its 16 GB full: 6.6 GB compressed, 1.3 GB swapped, 35% of the CPU the system's, each mutant's run starting bun, rust-js and Node | More memory, or a mutant's tests run in a process kept warm, as `bun test` with its compiler swapped, not started again for each |
 | `bun scripts/mutations.ts --changed=origin/main` of a large change | More than five minutes even in three shards, so it's left to CI | Shards picked to fit, by each mutation's usual time |
 | Two or more agents' worktrees | A full `cargo build` and corpus each | A shared build cache across worktrees |

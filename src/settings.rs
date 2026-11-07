@@ -30,6 +30,9 @@ pub struct Settings {
     /// a module's header names its Rust from it (ADR 0414). A file compiled
     /// alone has only the nearest `Cargo.toml` above it, maybe another's.
     pub cargo: bool,
+    /// The `Cargo.toml` they were read from, where there's one: what a
+    /// file's record of its build says it read (ADR 1099).
+    pub manifest: Option<PathBuf>,
 }
 
 /// `[package.metadata.rust-js.hooks]`.
@@ -212,6 +215,7 @@ mod cargo_toml {
             declarations: false,
             dir,
             cargo,
+            manifest: Some(path),
         })
     }
 }

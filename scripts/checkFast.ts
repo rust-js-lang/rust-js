@@ -20,6 +20,7 @@
 import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { availableParallelism, cpus, loadavg } from "node:os";
 import { join, resolve } from "node:path";
+import { currentBuild, prune } from "../test/compiles";
 import { pruneKept } from "../test/kept";
 import { runs, touchesIterators } from "./iteratorSlice";
 import { browsers, caseParts, nightly, pooledParts } from "./shard";
@@ -488,6 +489,14 @@ if (import.meta.main) {
   const compiler = join(own, "rust-js");
   linkSync(join(root, "target", "debug", "rust-js"), compiler);
   process.on("exit", () => rmSync(own, { recursive: true, force: true }));
+
+  // The compiles the tests keep (test/compiles.ts, ADR 1099), bounded
+  // before any runs: another build's, never found again, and past the
+  // cap, the least recently used.
+  const pruningCompiles = Date.now();
+  const compiles = prune({ current: currentBuild(compiler) });
+  const dropped = [compiles.builds ? "another build's" : "", compiles.removed ? `${compiles.removed} past the cap or the disk's floor` : ""].filter(Boolean);
+  console.log(`${timed("pruning kept compiles", (Date.now() - pruningCompiles) / 1000)}: ${(compiles.size / 2 ** 20).toFixed(0)} MB kept${dropped.length ? `, ${dropped.join(" and ")} dropped` : ""}`);
 
   // And the node bindings the bindings and lowering tests compile against,
   // once, before the jobs that ask for them: built by the first test to ask
