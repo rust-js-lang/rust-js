@@ -101,7 +101,9 @@ function main() {
     tmp$1 = adder("a1", 1);
   } catch (error) {
     $cleanup(() => {
-      $dropItems(named.values(), $dispose);
+      for (const item of named.values()) {
+        $dispose(item);
+      }
       $dropItems(handlers, $dispose);
     });
     throw error;
@@ -111,7 +113,9 @@ function main() {
     insert = $insert(named, "a", tmp$1);
   } catch (error) {
     $cleanup(() => {
-      $dropItems(named.values(), $dispose);
+      for (const item of named.values()) {
+        $dispose(item);
+      }
       $dropItems(handlers, $dispose);
     });
     throw error;
@@ -122,7 +126,9 @@ function main() {
     }
   } catch (error) {
     $cleanup(() => {
-      $dropItems(named.values(), $dispose);
+      for (const item of named.values()) {
+        $dispose(item);
+      }
       $dropItems(handlers, $dispose);
     });
     throw error;
@@ -132,7 +138,9 @@ function main() {
     tmp$2 = adder("a2", 2);
   } catch (error) {
     $cleanup(() => {
-      $dropItems(named.values(), $dispose);
+      for (const item of named.values()) {
+        $dispose(item);
+      }
       $dropItems(handlers, $dispose);
     });
     throw error;
@@ -142,7 +150,9 @@ function main() {
     tmp$3 = $insert(named, "a", tmp$2);
   } catch (error) {
     $cleanup(() => {
-      $dropItems(named.values(), $dispose);
+      for (const item of named.values()) {
+        $dispose(item);
+      }
       $dropItems(handlers, $dispose);
     });
     throw error;
@@ -153,7 +163,9 @@ function main() {
     }
   } catch (error) {
     $cleanup(() => {
-      $dropItems(named.values(), $dispose);
+      for (const item of named.values()) {
+        $dispose(item);
+      }
       $dropItems(handlers, $dispose);
     });
     throw error;
@@ -165,14 +177,18 @@ function main() {
     $dispose(value);
   } catch (error) {
     $cleanup(() => {
-      $dropItems(named.values(), $dispose);
+      for (const item of named.values()) {
+        $dispose(item);
+      }
       $dropItems(handlers, $dispose);
     });
     throw error;
   }
   console.log("end");
   try {
-    $dropItems(named.values(), $dispose);
+    for (const item of named.values()) {
+      $dispose(item);
+    }
   } catch (error) {
     $cleanup(() => {
       $dropItems(handlers, $dispose);

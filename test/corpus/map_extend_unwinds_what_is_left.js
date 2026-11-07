@@ -109,7 +109,9 @@ function main() {
       insert = $insert(m, 2, [2]);
     } catch (error) {
       $cleanup(() => {
-        $dropItems(m.values(), dDrop_drop);
+        for (const item of m.values()) {
+          dDrop_drop(item);
+        }
       });
       throw error;
     }
@@ -119,7 +121,9 @@ function main() {
       }
     } catch (error) {
       $cleanup(() => {
-        $dropItems(m.values(), dDrop_drop);
+        for (const item of m.values()) {
+          dDrop_drop(item);
+        }
       });
       throw error;
     }
@@ -136,12 +140,16 @@ function main() {
       );
     } catch (error) {
       $cleanup(() => {
-        $dropItems(m.values(), dDrop_drop);
+        for (const item of m.values()) {
+          dDrop_drop(item);
+        }
       });
       throw error;
     }
     console.log(`${m.size}`);
-    $dropItems(m.values(), dDrop_drop);
+    for (const item of m.values()) {
+      dDrop_drop(item);
+    }
   });
   run("BTreeMap, an array", () => {
     const m = new $BTreeMap();
@@ -198,7 +206,7 @@ function main() {
       insert = $insert(m, [1], [2], kDrop_drop);
     } catch (error) {
       $cleanup(() => {
-        $dropItems(m, ([key, value]) => {
+        for (const [key, value] of m) {
           try {
             kDrop_drop(key);
           } catch (error) {
@@ -206,7 +214,7 @@ function main() {
             throw error;
           }
           dDrop_drop(value);
-        });
+        }
       });
       throw error;
     }
@@ -216,7 +224,7 @@ function main() {
       }
     } catch (error) {
       $cleanup(() => {
-        $dropItems(m, ([key, value]) => {
+        for (const [key, value] of m) {
           try {
             kDrop_drop(key);
           } catch (error) {
@@ -224,7 +232,7 @@ function main() {
             throw error;
           }
           dDrop_drop(value);
-        });
+        }
       });
       throw error;
     }
@@ -241,7 +249,7 @@ function main() {
       );
     } catch (error) {
       $cleanup(() => {
-        $dropItems(m, ([key, value]) => {
+        for (const [key, value] of m) {
           try {
             kDrop_drop(key);
           } catch (error) {
@@ -249,20 +257,22 @@ function main() {
             throw error;
           }
           dDrop_drop(value);
-        });
+        }
       });
       throw error;
     }
     console.log(`${m.size}`);
-    $dropItems(m, ([key, value]) => {
+    for (const [key, value] of m) {
       try {
         kDrop_drop(key);
       } catch (error) {
-        dDrop_drop(value);
+        $cleanup(() => {
+          dDrop_drop(value);
+        });
         throw error;
       }
       dDrop_drop(value);
-    });
+    }
   });
   run("BTreeSet", () => {
     const s = new ($btreeSet((a, b) => $cmp(a[0], b[0]), $KeySet))();
@@ -300,7 +310,9 @@ function main() {
       $add(s, [12], kDrop_drop);
     } catch (error) {
       $cleanup(() => {
-        $dropItems(s, kDrop_drop);
+        for (const item of s) {
+          kDrop_drop(item);
+        }
       });
       throw error;
     }
@@ -308,12 +320,16 @@ function main() {
       $extendMap(s, [[12], [6]], true, undefined, kDrop_drop);
     } catch (error) {
       $cleanup(() => {
-        $dropItems(s, kDrop_drop);
+        for (const item of s) {
+          kDrop_drop(item);
+        }
       });
       throw error;
     }
     console.log(`${s.size}`);
-    $dropItems(s, kDrop_drop);
+    for (const item of s) {
+      kDrop_drop(item);
+    }
   });
   run("none replaced", () => {
     const m = new $BTreeMap();

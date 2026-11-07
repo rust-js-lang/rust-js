@@ -237,3 +237,23 @@ with and without destructors, against native Rust in both builds, failing
 before; mutations `clone-into-*`, `clone-from-*`, `option-items-cloned-over`,
 `vec-clone-into-panic-unseen`, `drop-table-leaks`; and the guide's
 `queue_into`.
+
+## Amendment: a hashed map's drop stops where an entry's panics (2026-11-08, #920)
+
+hashbrown's `RawTable` drops its elements in a plain loop (`drop_elements`,
+in its `Drop` and in `clear`'s guard). An entry whose drop panics stops it,
+and the rest leak. rust-js dropped a `HashMap`'s or `HashSet`'s entries with
+`$dropItems`, which goes on past a panic as a slice's drop glue does. Case
+C ([0262](0262-when-rust-and-js-disagree.md)): Rust's behaviour is kept.
+
+**A hashed map's or set's entries drop in a plain loop, `for (const item
+of m.values()) { dDrop_drop(item); }`, which a throw stops** (`drops/parts.rs`,
+`loop_dropped`). A `BTreeMap`'s still goes on past it, as its `IntoIter`'s
+guard does (`$dropItems`). `clear()` is `try { <drop> } finally { m.clear();
+}` as #899 made it, so it now stops and empties as hashbrown's guard does.
+`$cloneIntoMap`'s drop of what it held is the same rule, `$dropTable`.
+
+Held by `test/corpus/hash_map_drop_stops_at_a_panic.rs`: values alone,
+keys and values, a set, `clear()`, and a B-tree's beside them, each entry
+dropping alike so a hashed map's order doesn't show. Mutations
+`hash-map-*drop-goes-on`.

@@ -112,8 +112,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A map's entries, each its key, then its value, as Rust drops a
             // pair, and a set's items, a B-tree's in its keys' order (ADRs
-            // 0321, 0467).
+            // 0321, 0467): a B-tree's each though one panics, as its
+            // `IntoIter`'s guard drops the rest; a hashed one's in a plain
+            // loop, which one that panics stops, the rest leaked, as
+            // hashbrown's `drop_elements` does (#920).
             ty::Adt(_, args) if self.is_map(ty) => {
+                let sorted = self.is_sorted(ty);
                 let set = self.is_set(ty);
                 let key_ty = args.type_at(0);
                 let value_ty = (!set).then(|| args.type_at(1));
@@ -128,7 +132,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             value_ty.expect("a map's values"),
                         ),
                     };
-                    self.drop_items(items, item, span, made, out)?;
+                    let name = self.fresh("item");
+                    let mut body = Vec::new();
+                    self.drop_in(Expr::var(&name), item, span, made, &mut body)?;
+                    out.push(loop_dropped(items, js::Pattern::Name(name), body, js_span));
                 } else {
                     let entries = match self.is_sorted(ty) {
                         true => self.in_order_of(value, ty, span)?,
@@ -149,7 +156,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             js::Pattern::names_array([keys.then_some(key), values.then_some(item)])
                         }
                     };
-                    out.push(items_dropped(entries, pattern, body, js_span));
+                    out.push(match sorted {
+                        true => items_dropped(entries, pattern, body, js_span),
+                        false => loop_dropped(entries, pattern, body, js_span),
+                    });
                 }
             }
             // A `RefCell`'s value (ADR 0320), and a `Mutex`'s or an
@@ -504,15 +514,7 @@ pub(in crate::lower) fn is_cleanup(stmts: &[Stmt]) -> bool {
 /// Rust's drop of a slice goes on past a panicking item (#416).
 fn items_dropped(items: Expr, pattern: js::Pattern, body: Vec<Stmt>, js_span: js::Span) -> Stmt {
     if !may_throw(&body) {
-        return StmtKind::ForOf {
-            label: None,
-            pattern,
-            mutable: false,
-            iterable: items,
-            body,
-            keys: false,
-        }
-        .at(js_span);
+        return loop_dropped(items, pattern, body, js_span);
     }
     // `(item) => { dropItem(item); }` is `dropItem`.
     let drop = match (&pattern, body.as_slice()) {
@@ -536,6 +538,22 @@ fn items_dropped(items: Expr, pattern: js::Pattern, body: Vec<Stmt>, js_span: js
         _ => Expr::arrow(vec![pattern], body),
     };
     StmtKind::Expr(Expr::call_helper("$dropItems", vec![items, drop])).at(js_span)
+}
+
+/// Each of `items` dropped by `body` in a plain loop, `for (const item of
+/// v) { .. }`, which one that throws stops, the rest not dropped: a hashed
+/// map's, as hashbrown's `drop_elements` stops (#920), or of a `body` that
+/// can't throw, `items_dropped`'s.
+fn loop_dropped(items: Expr, pattern: js::Pattern, body: Vec<Stmt>, js_span: js::Span) -> Stmt {
+    StmtKind::ForOf {
+        label: None,
+        pattern,
+        mutable: false,
+        iterable: items,
+        body,
+        keys: false,
+    }
+    .at(js_span)
 }
 
 /// Whether a drop's `stmts` may throw: a statement that may, or a branch's,

@@ -198,8 +198,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an array's or a `Vec`'s items after one whose destructor panics are never dropped, a `for…of` left by its throw (#416)",
     file: "src/lower/drops/parts.rs",
-    find: "    if !may_throw(&body) {\n        return StmtKind::ForOf {\n",
-    replace: "    if true {\n        return StmtKind::ForOf {\n",
+    find: "    if !may_throw(&body) {\n        return loop_dropped(items, pattern, body, js_span);\n",
+    replace: "    if true {\n        return loop_dropped(items, pattern, body, js_span);\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_parts_past_a_panic.rs$"],
   },
   {
@@ -291,5 +291,21 @@ export const mutations: Mutation[] = [
     replace: "                && args.types().any(|arg| self.close_may_panic(arg, seen) && false))\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_closes_of_quiet_items.rs$"],
     snapshots: true,
+  },
+  {
+    name: "hash-map-drop-goes-on",
+    breaks: "a hashed map's drop of its keys or values alone goes on past one whose drop panics, where hashbrown's stops (#920)",
+    file: "src/lower/drops/parts.rs",
+    find: "                    out.push(loop_dropped(items, js::Pattern::Name(name), body, js_span));\n",
+    replace: "                    out.push(items_dropped(items, js::Pattern::Name(name), body, js_span));\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_map_drop_stops_at_a_panic.rs$"],
+  },
+  {
+    name: "hash-map-entries-drop-goes-on",
+    breaks: "a hashed map's drop of its keys and values goes on past an entry whose drop panics, where hashbrown's stops (#920)",
+    file: "src/lower/drops/parts.rs",
+    find: "                        false => loop_dropped(entries, pattern, body, js_span),\n",
+    replace: "                        false => items_dropped(entries, pattern, body, js_span),\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_map_drop_stops_at_a_panic.rs$"],
   },
 ];

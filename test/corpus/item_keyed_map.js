@@ -5,7 +5,6 @@ import {
   $advanceSlice,
   $cleanup,
   $dropEach,
-  $dropItems,
   $eq,
   $given,
   $hashSlice,
@@ -57,9 +56,9 @@ function tCounting(TIterator, dropT, dropTItem) {
         }
       } catch (error) {
         $cleanup(() => {
-          $dropItems(counts.keys(), (item) => {
+          for (const item of counts.keys()) {
             dropTItem?.(item);
-          });
+          }
         });
         throw error;
       }
