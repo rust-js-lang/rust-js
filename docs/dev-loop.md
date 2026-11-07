@@ -35,6 +35,29 @@ task's wall time against its check time (the ledger of task times is #882).
 | What an iterator change runs of the matrix before it lands (#818) | the fixed slices alone, or every one of 128,766 rows, about 17 min on 12 cores, which only the nightly ran, so three fix-on-fix regressions in a day reached `main` | the rows its hunks name, a typical change's (#834's) 14,700 in 111 s in 12 parts; with `pairs`, of a change to what every adapter shares, about 5 min (#810's reintroduced, caught) | `scripts/iteratorRows.ts` picks each hunk's adapters by its identifiers, `ITERATOR_MATRIX='/<regex>/'` runs just those rows, rebatched; `check:fast` prints hunk, names and rows | e6ffee46a, f5c1f51b5, #818 |
 | The rows an iterator change runs, on any machine (#857's measure) | 43–55 min on the M1's 8 cores in 4 parts, the whole tail of `check:fast --all`: a budget of 16,000 and 5,000 rows sized for 12 cores | about 4 min there for a typical change (#834's: 983 and 844 rows), 2–3 min on the M3 Max in 12 parts (#834's 10,593 and 4,741, 111 s) | `scripts/iteratorRows.ts`' `budgetOf`: the rows its parts run in 150 s and 40 s at the machine's own rows a second per part, the median of its last runs' (`target/iterator-rows-rates.json`, the M3 Max's until it has some), and the shared sample a fifth of it; a removal's rows still each run (#823) | e79cbe108 |
 
+Earlier speed-ups, from the history (2026-09-26 to 2026-11-05):
+
+| Speed-up | Before | After | How | Where |
+|---|---|---|---|---|
+| The test files in parallel, slowest first, each native program built once | `bun test`, 285 s | about 51 s | `bun run test` runs the files side by side | 6c9f6a796, ADR 0104 |
+| `check:fast`, a change's checks at once | 4 min, one after another | 33 s, 37 s with `--all` | Each check a process of its own | e8ea1ded3 |
+| Every loop step timed against its usual | unseen slowdowns | a "⚠ slower than usual" line | `target/timings.jsonl`, `scripts/timing.ts` | eac7ff364 |
+| A corpus case's runs kept by what they ran | Node started three times a case, about 350 ms of each 900 | a sixth of the corpus in 13 s warm, 29 s cold; check:fast's parts 21 s, from 44 | The runs are kept by their JS, which rarely changes | 6d5eee996, d6168de58, ADR 0567 |
+| What's found once of a crate, keyed by its own files | 54–74% of the compiler thread on formats and concatenations to find a kept answer | `rc_counted_uses` 0.62 s to 0.19 s, `adapter_drops` 0.51 s to 0 | Keys from the crate's files | 14cc200b4, ADR 0563 |
+| The node crate's metadata built once for the tests | 15 of the suite's 24 s | 13 s | Built once, as the react crate's is | 423c76a33 |
+| The suite's shards balanced by the last run's timings, the corpus in parts | shards of 10 and 4 min; corpus parts each 80 s of 85 | balanced; one part for each two cores, 70 s | `bun test --shard` reads `target/test-timings` | af5dbffb9 |
+| The corpus in parts beside the rest, in `bun run test` | one file of 1,300 cases, 787–1,462 s of a CI shard | `RUST_JS_CASES=i/n` parts | One part for each two cores | c1ad2d3c6 |
+| A push's corpus builds as libraries only the cases that differ | building all was about 30% of the corpus's CPU; 47 s for 1,319 cases | 26 s | Only the 120 cases marked `//@ library-differs` | b7544e0d1, ADR 0360 |
+| Mutations built up to 32 to a compiler | builds were 85% of the nightly's mutations, 28 s each on CI | a build of many takes about as long as one | Each mutant a copy of its function's body | b57148506, a9af62777, ADR 1031 |
+| A mutation run's controls at once, each run stopping at its first failure | one mutant's tests 229 s on CI; a sample of 24 in 76 s | 5.7 s; 24 s | Controls on every core, `bun test --bail` | ce40bd418, ADR 1031 |
+| Mutation workers | 16 mutations: 70 s with one worker | 43 s with two, 31 s with four | `--jobs`, one worker for each two cores | db68b8ac7 |
+| A mutant's runtime asked of its compiler once | a `runSync` each, twice, stopping every other test | a shard of 503 in 370 s, all caught | Asked once, as the run goes on | 3dfa326a1 |
+| The guide's apps built at once | each app one after another | the first alone, the rest at once | `bun run docs` | 00ab442dd |
+| 19 slow test files only in the nightly | about 1,000 s of a push's CPU, guarding 40 of 8,003 mutations | off the push's check; mutations still run them | `bun run test --nightly` | 120772e25, ADR 1030 |
+| CI's setup steps at once | one after another | the browser installs while the WASM builds | Parallel setup | f49675b13 |
+| `bun run nightly`, the nightly here on all the cores | CI only | 77 min on the M3 Max, every job | `scripts/nightly.ts` | 0c99bde69, baf12b075 |
+| Per-push iterator slices | iterator regressions found only in the nightly | the matrix slice 89 s and the conformance slice 62 s on CI | Path-filtered jobs | 36d7f5184, a3b1ae8f6, #731 |
+
 Also in use, with no single before and after:
 | Practice | Where | Why |
 |---|---|---|
@@ -46,6 +69,14 @@ Also in use, with no single before and after:
 | Every test's timeout of three minutes or less is `underLoad(n)` | 545171f25 | Fixed timeouts failed under load |
 | The determinism net: each case compiled again in its own process | b3416b692, #866 | Same input, same output; caches and snapshots depend on it |
 | A task's time and its checks' share, `bun run task` | a78634237, #882 | So a speed-up's return shows in agents' tasks |
+| Work on `main` and push directly | e7d6b50f4 | No PR round trips |
+| A push's check runs to its end, and waits its turn | 095501005, af5dbffb9 | A cancelled check reported nothing |
+| CI retries a GitHub read that ends early, up to three times | 51f543f40 | A nightly shard failed on a dropped read |
+| check:fast prunes what tests keep, once a day | 0e49e6436 | A Mac's native cache grew 23 GB in two days |
+| The crate corpus compiles one crate of a graph at a time on CI | 866fe6e44 | Four at once took the runner's 16 GB (regex's graph is 6.3 GB in one process) |
+| A runtime mutant's tests import its runtime from their own target | ef6c983bf | Mutants can run beside check:fast in one checkout |
+| Landing on a moving `main`: re-check only what the incoming commits touch | 7677661a5 | A full re-run for every commit landed meanwhile never ends |
+| A suite past twice its minutes prints what it's waiting on, and past 25 is stopped | 97453543c, c5ec99a8e | A hang ends instead of being waited on |
 
 ## Dropped
 
@@ -63,13 +94,18 @@ Also in use, with no single before and after:
 | One "every other test file" job (`bun test --parallel=6`) | Each test file a job of the pool, longest first | ebf19a641 |
 | Corpus parts at one for each two cores | One part per core under the pool (`pooledParts`) | ebf19a641 |
 | A fixed rows budget of 16,000 + 5,000 sized for 12 cores | A budget from each machine's own measured rate | e79cbe108 |
+| Five minutes per local command, at most | A timeout that fits each command, about twice its usual | 2e508f512 → dbb3fa936 |
+| One CI run at a time, the new one cancelling the old | A check runs to its end, and one started by hand waits behind it | 8658b5519 → 095501005 |
+| Tests that build many native programs run on Linux CI | macOS's scan off on the Mac (#879), so they run here | 65302ba48 |
+| A fixed 290 s per check:fast job | Each job's timeout scaled by the load, then the pool | 58ceeb02c, 181f49b75 |
+| `check:fast --all` skipping the browsers' files and cargo test | It runs what a push's check runs that can run here | 9ef296860 → 1b65f3b1d, #732 |
 
 ## In progress
 
 | Experiment | Status | Where |
 |---|---|---|
 | Cache each compile to JS by its exact inputs, bounded | First numbers: no-change 176 s with no cache, 176–177 s with a warm one. No gain yet, still being profiled | #874 |
-| Cache native Rust results by source | Not started | #875 |
+| Cache native Rust results by source | Not started. Native *binaries* are already kept, by a hash of source and flags, in `target/native-cache/` (test/support.ts), pruned daily (0e49e6436). What's left is keeping their *outputs*, so they aren't run again | #875 |
 | Trim the iterator rows and std-structs jobs, about 1,270 of 3,500 CPU-s | Not started | #876 |
 | Plain `check:fast` runs only the test files a change can affect | Not started | #877 |
 | React's port regen on all cores, with unchanged packages cached (504 s at about 265% CPU) | Not started | #884 |
