@@ -181,7 +181,7 @@ after it.
 | A decision that depends on a map's walk order | 2 fixes, 519 walks | #866: ordered maps (51d79d71d, ADR 1098) and the determinism net (b3416b692), 11-07 | | | | **Too early**; prevented by construction |
 | Iterator fixes that break other iterator steps (regressions of a correctness fix) | 20 regression fixes | The per-push matrix slice (36d7f5184), 11-05; #818's gate, each change's rows run before it lands (e6ffee46a), 11-06 | 9 on 11-05 | 3 on 11-06, none on 11-07 | | **Too early** |
 | The JS object model: getters, `this`, classes (`classes-js-objects`, wrong answers) | 88 (88) | `js::Known::Getter` (9d2f3df07, ADR 0672), 10-24 | 15.0 | 14.0; 7 in the week of 11-02 | | **Still active** at a low rate |
-| A drop outside an iterator: drop glue, scopes, drop slots (`drops-unwind` × `missing case`) | 50 (50) | None | 7 to 12 a week since 10-12 | | | **Not yet fixed structurally** |
+| A drop outside an iterator: drop glue, scopes, drop slots (`drops-unwind` × `missing case`) | 50 (50) | #887, 11-07: drop glue lowered from rustc's own `drop_glue` shim (`drops/glue.rs`), its parts, order, variants and unwinding rustc's, and what drops, how long and whether it may panic asking its parts; drop slots keyed by their type and numbered by `drop_params.rs` alone. Its first diff found #893 | 7 to 12 a week since 10-12 | | | **Too early**; scopes and `dyn FnOnce`'s drop not yet from MIR |
 | Where a comment or blank line goes (readability) | 139 | None | 20, 57, 60 a week | | | **Not yet fixed structurally** |
 | A temporary spilled or named after MIR (readability) | about 130 | None | 46, 48 a week | | | **Not yet fixed structurally** |
 | A label or jump the Rust didn't write (readability) | 62 | None; #771 measures it | 37, then 14 a week | | | **Not yet fixed structurally**; #771: about 40% of generated functions still print one |
@@ -221,7 +221,10 @@ filed are listed with their issue.
 
 ### To file
 
-1. **Drop glue lowered from rustc's own, not written by hand**
+1. **Drop glue lowered from rustc's own, not written by hand**: filed
+   as #887 and landed on 11-07 (the drops row above). The `call_once`
+   shim's `dyn FnOnce` drop stays rust-js's `$droppingOnce`, which the
+   shim's MIR agrees with
    (`drops-unwind` × `missing case`, 50 wrong answers, 7 to 12 a week since
    10-12, with no structural fix). Three mechanisms recur: drop glue's parts
    as a part panics (f58ce2245 #865, 579539d03 #847, a1a886ee4 and

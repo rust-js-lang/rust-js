@@ -796,3 +796,11 @@ had walked the type's fields its own way. A part of a shape rust-js can't
 read is refused. The shims are built once a type, in each function's
 `TypeDrops`, after analysis's typing environment, as codegen's is. The
 corpus is unchanged.
+
+Two drops stay rust-js's, and agree with rustc's shims. A closure's
+captures are JS variables, not fields, so its drop drops the places it
+holds where it's made (`closure_made`), in the order its shim drops its
+upvars (`closure_captures_second_panic_aborts.rs`, against native). A
+`Fn` or `FnMut` closure called as a `Box<dyn FnOnce>` is dropped as the
+call returns or unwinds by `$droppingOnce` (ADR 0521). That is rustc's
+`ClosureOnceShim`: `call_mut`, then a drop of the closure on both edges.
