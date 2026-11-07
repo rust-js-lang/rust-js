@@ -119,6 +119,11 @@ cluster that keeps growing after its fixes says those fixes patched
 instances, not the structure. A cluster of `regression`s in one area says
 the changes made there need an oracle before they land.
 
+Issues see only the bugs that had one: most fixes never did.
+[bug-clusters.md](bug-clusters.md) is the audit of the fix commits, how to
+run it, how to judge whether a structural fix ended its cluster, and the
+results so far.
+
 The first count was of the 83 P0s of 2026-10-29 to 2026-11-04: `iterators`
 × `protocol gap` 10, `readability-passes` × `unsound optimization` 6,
 `mut-refs` × `missing case` 6 and `declarations` × `duplicated authority`

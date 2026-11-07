@@ -23,6 +23,8 @@ a failing test, native comparisons, mutations and an ADR explaining why.
   generated programs and mutations. Inspect generated JavaScript too.
   [Finding wrong answers](docs/finding-wrong-answers.md) lists the
   techniques that have found them; add to it when one finds a new kind.
+  [Bug clusters](docs/bug-clusters.md) audits the fixes for clusters a
+  refactor would end, and records which ones refactors ended.
 - Preserve every observable detail: evaluation order, side effects,
   copying, overflow, errors, panic messages, drop order and iterator behavior.
 - rustc owns types, traits, ownership, borrowing, validity and diagnostics.
