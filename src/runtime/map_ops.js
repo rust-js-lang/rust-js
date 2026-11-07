@@ -236,8 +236,10 @@ function $isDisjoint(a, b) {
 // end, and a `skip`'s first step is its `nth(n - 1)` (#494). Of an array,
 // a `Vec` or an array it took, what's left of it dropped as a put unwinds,
 // a drop of what it replaces, each entry by `$entryDropping`, as std's
-// `for_each` drops the `IntoIter` it was given (#900).
-function $extendMap(m, items, set, drop, dropKey) {
+// `for_each` drops the `IntoIter` it was given (#900). A B-tree's
+// (`sorted`) drops the key given before it writes the value, as `insert`
+// does, `$insert`'s (#921).
+function $extendMap(m, items, set, drop, dropKey, sorted) {
   const put = (item) => {
     if (set) {
       if (m.has(item)) dropKey?.(item);
@@ -245,10 +247,11 @@ function $extendMap(m, items, set, drop, dropKey) {
       return;
     }
     const replaced = m.has(item[0]);
+    if (sorted && replaced) $unwinds(() => dropKey(item[0]), drop && (() => drop(item[1])));
     const old = m.get(item[0]);
     m.set(item[0], item[1]);
     if (replaced) {
-      dropKey?.(item[0]);
+      if (!sorted) dropKey?.(item[0]);
       drop?.(old);
     }
   };

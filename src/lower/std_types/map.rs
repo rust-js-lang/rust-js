@@ -311,6 +311,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
+    /// Whether a map's `insert` or `extend` of a key it holds drops the key
+    /// given before it writes the value, a B-tree's, as its `entry` drops
+    /// it, where that drop may panic and so be seen; a hashed map's drops
+    /// it after, at hashbrown's `insert`'s end, as `$insert` does (#921).
+    fn key_dropped_first(&self, map: Ty<'tcx>, types: &[Ty<'tcx>]) -> bool {
+        !self.is_set(map) && self.is_sorted(map) && types.first().is_some_and(|&key| self.drop_may_panic(key))
+    }
+
     /// What makes a map or a set of `key`s: `Map` and `Set`, or for a key
     /// that compares by value, `$KeyMap` and `$KeySet` (ADR 0121), for a
     /// path, `$PathMap` and `$PathSet` (ADR 0401), and for a `Cow`,
@@ -683,7 +691,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => items,
                 };
                 let list = vec![m, items, Expr::bool(set)];
-                map_ops("$extendMap", with_drops(list, vec![values_drop, keys_drop]))
+                // A B-tree's drops the key given first, as its `insert` (#921).
+                let sorted = self.key_dropped_first(receiver, &types).then(|| Expr::bool(true));
+                map_ops("$extendMap", with_drops(list, vec![values_drop, keys_drop, sorted]))
             }
             MapOp::TreeRange { .. } | MapOp::ExtractIf => {
                 return Err(self.unsupported(span, "a map's range, of its value alone"));
@@ -734,17 +744,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             },
             // Of keys whose order may panic, the value's drop too, which
-            // drops it as the search unwinds, after the key (#911).
+            // drops it as the search unwinds, after the key (#911); of a
+            // B-tree's keys with a destructor, which it drops before it
+            // writes the value, `sorted`, and the value's drop where that
+            // may panic, which drops it as that unwinds (#921).
             MapOp::Insert => {
+                let sorted = self.key_dropped_first(receiver, &types);
                 let value_drop = match (types.first(), types.get(1)) {
-                    (Some(&key), Some(&value)) if !set && self.order_may_panic(key) => {
+                    (Some(&key), Some(&value)) if !set && (self.order_may_panic(key) || sorted) => {
                         self.std_drop_function(value, span)?
                     }
                     _ => None,
                 };
+                let sorted = sorted.then(|| Expr::bool(true));
                 helper(
                     "$insert",
-                    with_drops(vec![arg(), arg(), arg()], vec![keys_drop, value_drop]),
+                    with_drops(vec![arg(), arg(), arg()], vec![keys_drop, value_drop, sorted]),
                 )
             }
             MapOp::Add => helper("$add", with_drops(vec![arg(), arg()], vec![keys_drop])),

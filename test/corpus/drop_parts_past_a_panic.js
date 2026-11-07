@@ -745,7 +745,7 @@ function main() {
     const m = new ($btreeMap((a, b) => $cmp(a[0], b[0]), $KeyMap))();
     let insert;
     try {
-      insert = $insert(m, [1], [46], keyDrop_drop);
+      insert = $insert(m, [1], [46], keyDrop_drop, loudDrop_drop, true);
     } catch (error) {
       $cleanup(() => {
         $dropItems(
@@ -782,7 +782,7 @@ function main() {
     }
     let loud;
     try {
-      loud = $insert(m, [2], [47], keyDrop_drop);
+      loud = $insert(m, [2], [47], keyDrop_drop, loudDrop_drop, true);
     } catch (error) {
       $cleanup(() => {
         $dropItems(
@@ -819,7 +819,7 @@ function main() {
     }
     let tmp;
     try {
-      tmp = $insert(m, [3], [48], keyDrop_drop);
+      tmp = $insert(m, [3], [48], keyDrop_drop, loudDrop_drop, true);
     } catch (error) {
       $cleanup(() => {
         $dropItems(

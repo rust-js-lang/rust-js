@@ -50,3 +50,29 @@ for (const [key, value] of m) { keyDrop_drop(key); loudDrop_drop(value); }
 
 - **An entry and a set's `replace` are of the key given**, equal to the one
   the map holds: only their addresses tell them apart.
+
+## Amendment: a B-tree drops the key given before it writes the value (2026-11-08, #921)
+
+Case C ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behaviour is kept.
+
+`$insert` and `$extendMap`'s put wrote the new value, then dropped the key
+given, then the old value. That is hashbrown's order: its `insert` replaces
+the value and drops `k` at its end. A `BTreeMap`'s `insert` is `entry(key)`,
+which drops the key given as it finds an equal one, before the value is
+written. Where that drop panics, the value given is `insert`'s local,
+dropped as it unwinds, and the map keeps its old value. rust-js left the new
+value in the map and leaked the old one.
+
+**A B-tree's `insert` and `extend` of a key it holds drop the key given
+first, the value given dropped as that unwinds, then write the value**:
+`$insert(m, k, v, dropKey, dropValue, true)` and `$extendMap(m, items,
+false, drop, dropKey, true)`, `map::key_dropped_first`'s answer. Only where
+the key's drop may panic (`drop_may_panic`), the one way the order is
+seen; elsewhere the call is as it was. A hashed map's order is unchanged.
+
+Held by `test/corpus/btree_insert_drops_key_first.rs`, a B-tree's `insert`
+and `extend` and a hashed map's `insert` against native Rust in both
+builds, and the mutations `insert-tree-*`, `extend-tree-*`.
+`entry(k).or_insert(v)` of an occupied entry, where std's `entry` drops the
+key before `v` is even made, is #911's `entry` rows.
