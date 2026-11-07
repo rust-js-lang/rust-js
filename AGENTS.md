@@ -206,7 +206,7 @@ working on one task**: don't spawn agents to work in parallel on one
 machine, since they share its cores and slow each other down. Where work still runs serially
 and could be split, split it or list it as a slow spot. Check with `bun run check:fast`, whose timings warn when a step is
 slower than its usual, and read [DEVELOPMENT.md](DEVELOPMENT.md#keeping-the-loop-fast)
-before long work. When something is slower than it needs to be, fix it,
+before long work. Every speed-up tried, with its numbers and whether it's still in use, is in [the loop's ledger](docs/dev-loop.md). When something is slower than it needs to be, fix it,
 or add it to that page's list of slow spots with its cost and what would
 fix it, so the next agent starts from what you learned.
 

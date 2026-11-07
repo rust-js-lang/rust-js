@@ -70,7 +70,7 @@ tried and what worked, so a loop issue says what it measured before and
 after, and one that didn't work is closed as such, with its numbers, not
 deleted. A loop issue that is not a bug carries `dev-loop` and a priority, and
 no kind or area. [DEVELOPMENT.md](../DEVELOPMENT.md#keeping-the-loop-fast)'s
-speed-up table and slow-spot list link the issues behind them.
+slow-spot list and [the loop's ledger](dev-loop.md) link the issues behind them.
 
 ## Regression
 
