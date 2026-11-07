@@ -110,6 +110,15 @@ export const jobs: Record<string, Part[]> = {
     cores: 1,
     timeout: 20 * minutes,
   })),
+  // Each operation beyond iterators of each shape of value at each of its
+  // panic points, the unwind table, in both builds (#854).
+  unwind: parts("unwind", cores, (i) => ({
+    cmd: ["bun", "test", "--timeout=900000", "test/iterator-matrix.test.ts"],
+    env: { ...compiler, ITERATOR_TABLE: "unwind", ITERATOR_MATRIX: "all", RUST_JS_CASES: `${i}/${cores}` },
+    after: ["build"],
+    cores: 1,
+    timeout: 10 * minutes,
+  })),
   // The day's 600 generated programs (ADR 0092).
   fuzz: parts("fuzz", 12, (i) => ({
     cmd: ["bun", "test", "--timeout=600000", "test/fuzz.test.ts"],

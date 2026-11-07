@@ -35,8 +35,9 @@ const shared = {
   functions: ["$consume", "$consumed", "$closing", "$closed", "$forward", "$given", "$givenDrop", "$knowing", "$held", "$iterator"],
 };
 
-// The points table (#817) has no rows a change picks yet: #818 decides.
-type Picking = Exclude<Table, "points">;
+// The points tables, the iterators' (#817) and the unwind table's (#854),
+// have no rows a change picks yet: #818 decides.
+type Picking = Exclude<Table, "points" | "unwind">;
 
 /** The seconds each table's rows a change runs take, all its picks
  * together: some 2.5 minutes of the matrix's and 40 s of the table's alone,

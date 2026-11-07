@@ -304,3 +304,48 @@ bisected on a clean build of `main` first (`main`'s worktree, built), its
 batch narrowed to the fewest rows that keep it wrong; one that fails there
 too is filed or fixed before the change lands.
 
+
+## Amendment: panic points beyond iterators, the unwind table (#854, 2026-11-07)
+
+The user's decision, through m6-react: #817's points found four P0s at
+once, and drops outside iterators had no such net.
+
+- **A fourth table, `ITERATOR_TABLE=unwind`** (`test/unwind-points.ts`),
+  run by the same harness, runner and oracle: `point()` and `run_points`
+  are `test/panic-points.ts`'s, one module, and the harness judges any
+  table through its `TableOf` (its cases, program, batches and slice),
+  each case a `Row`. The iterator tables' programs are as before, byte for
+  byte.
+- **Its space is a table, family × operation × shape × point:** 16
+  families (a value's fields and temporaries, closures that hold what
+  drops, `Vec`, `VecDeque`, `BTreeMap` of values and of keys, `BTreeSet`,
+  `HashMap`, `BinaryHeap`, `Option`'s and `Result`'s combinators of either
+  variant, `?` failing and passing, comparisons), each operation of each of
+  11 shapes it applies to (a `D`, a struct and an enum with and without a
+  `Drop` of their own, a tuple, `Box`, `Option`, `Vec`, `Rc`, a closure
+  holding a `D`): 3,470 cases in 58 programs. An operation says what its
+  shape must have (`Clone`, `Eq`, `Ord`, `Default`); nothing is skipped by
+  a list. A point is each make, drop, clone and comparison of a `D`, each
+  drop of a struct or an enum with its own `Drop`, each call of a closure
+  or of a fallible step; so the order the crate's `Ord`, `Eq` and `Clone`
+  are called in is compared too.
+- **No case panics but at its point.** A natural panic, an `unwrap` of
+  `None` or `clamp`'s bounds out of order, unwinds past later points, and
+  one of those panicking aborts native Rust's whole program (#847); the
+  harness fails a batch whose native run doesn't end. `unwrap` is of `Some`
+  and `Ok` alone, and `clamp`'s bounds are in order in every shape.
+- **A `HashMap` holds one entry at a time**, so no output depends on its
+  order, which native Rust's `RandomState` picks a run.
+- **A batch whose every case is refused fails**: that's its prelude refused
+  (a generic function over a `BTreeMap<T, _>` was, on the first run, and
+  all 58 batches passed).
+- **When it runs:** every case each night, nightly.yml's `unwind`, one
+  machine of 4 parts. All of it took 27 s on the Mac in 10 parts. No push
+  runs it yet: #818's gate decides.
+- **What it found at once:** 591 of its 3,470 cases differ from native
+  Rust in both builds, 1,182 case-builds, under 16 P0s, #897–#912, each
+  listed in test/iterator-matrix-known.txt; 106 cases a build are refused.
+  Five need no panic: `HashMap::retain`'s drop of a handle (#905),
+  `VecDeque::retain_mut`'s eager drops (#909), `Rc`'s `==` by pointer
+  (#910), and the order a stable sort (#907), a keyed `BTreeMap` (#911) and
+  `max`, `min` and `clamp` (#912) call the crate's `Ord`.

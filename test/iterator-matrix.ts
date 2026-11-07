@@ -17,13 +17,16 @@
 // one harness runs (ITERATOR_TABLE): the matrix, every chain of none to two
 // adapters through a few consumers (ADR 1090); and the conformance table,
 // each adapter alone through every step of ADR 1092's contract, from either
-// end, with closures that capture what has a destructor (#730).
+// end, with closures that capture what has a destructor (#730). The same
+// harness runs the panic points of the conformance table's cases (#817),
+// and of operations beyond iterators, test/unwind-points.ts's (#854).
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { random } from "./generate";
 import { pointsRunner } from "./panic-points";
+import { unwindCases, unwindProgram, unwindStrata, type UnwindCase } from "./unwind-points";
 import { root, target } from "./support";
 
 /** The builds each case is compiled in: the recognizers' rewrites, and
@@ -34,10 +37,11 @@ export const builds: [name: string, flags: string[]][] = [
 ];
 
 /** Which table a run makes: the matrix (ADR 1090), the conformance
- * table (ADR 1092), or the panic points of the conformance table's cases
- * (#817), `ITERATOR_TABLE`'s. */
-export type Table = "matrix" | "conformance" | "points";
-export const tables: Table[] = ["matrix", "conformance", "points"];
+ * table (ADR 1092), the panic points of the conformance table's cases
+ * (#817), or the panic points of operations beyond iterators, the unwind
+ * table (#854), `ITERATOR_TABLE`'s. */
+export type Table = "matrix" | "conformance" | "points" | "unwind";
+export const tables: Table[] = ["matrix", "conformance", "points", "unwind"];
 export const table: Table = (() => {
   const which = process.env.ITERATOR_TABLE ?? "matrix";
   if (!(tables as string[]).includes(which)) throw new Error(`ITERATOR_TABLE=${which}: ${tables.map((t) => `\`${t}\``).join(", ")}`);
@@ -56,20 +60,23 @@ export const listedBuild = (build: string, of: Table = table) => (of === "matrix
 /** Whether a listed build's cases are `of`'s. */
 export const ofTable = (listed: string, of: Table = table) => (of === "matrix" ? !listed.includes(":") : listed.startsWith(`${of}:`));
 
-/** The known failures of both tables, one list: by `<build> <n>`, a case's
+/** The known failures of every table, one list: by `<build> <n>`, a case's
  * build as `listedBuild` names it and its number in its table's cases, each
  * one's issue. Under a line `#<issue> <title>`, a line a build, `plain
  * 120-179,4410` or `conformance:std 12`, the numbers of its cases as sorted
  * ranges; `//` a comment. Its `// generator <version>` line is the version
  * of the matrix's cases its numbers are of, `// generator conformance
  * <version>` the conformance table's, `// generator points <version>` the
- * points table's. */
+ * points table's, and so on. */
 export type Known = { versions: Partial<Record<Table, string>>; issues: { heading: string; cases: Map<string, number[]> }[] };
 
 export function parseKnown(text: string): Known {
   const known: Known = { versions: {}, issues: [] };
   for (const line of text.split("\n")) {
-    const version = /^\/\/ generator (?:(conformance|points) )?(\w+)$/.exec(line);
+    const version = /^\/\/ generator (?:(\w+) )?(\w+)$/.exec(line);
+    if (version && version[1] !== undefined && !(tables as string[]).includes(version[1])) {
+      throw new Error(`test/iterator-matrix-known.txt: \`${line}\` is no table's generator`);
+    }
     if (version) known.versions[(version[1] as Table | undefined) ?? "matrix"] = version[2];
     if (line === "" || line.startsWith("//")) continue;
     if (/^#\d+ /.test(line)) {
@@ -77,9 +84,9 @@ export function parseKnown(text: string): Known {
       continue;
     }
     const at = known.issues.at(-1);
-    const row = /^((?:conformance:|points:)?\w+) (\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)$/.exec(line);
-    if (!at || !row) throw new Error(`test/iterator-matrix-known.txt: \`${line}\` is no build's cases under an issue`);
-    const numbers = row[2].split(",").flatMap((range) => {
+    const row = /^((?:(\w+):)?\w+) (\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)$/.exec(line);
+    if (!at || !row || (row[2] !== undefined && !(tables as string[]).includes(row[2]))) throw new Error(`test/iterator-matrix-known.txt: \`${line}\` is no build's cases under an issue`);
+    const numbers = row[3].split(",").flatMap((range) => {
       const [from, to = from] = range.split("-").map(Number);
       return Array.from({ length: to - from + 1 }, (_, k) => from + k);
     });
@@ -785,29 +792,42 @@ export type TableOf<C extends Row> = {
 const iteratorTable = (of: Table, cases: () => Case[]): TableOf<Case> => ({
   cases,
   program: (batch) => program(batch, of),
-  batches: (all) => batches(all),
-  slice: (all) => slice(all),
+  batches: (all) => batches(all, 60, aborts),
+  slice: (all) => slice(all, strata),
   pairs,
 });
 
+/** The unwind table (#854), test/unwind-points.ts's cases. */
+const unwindTable: TableOf<UnwindCase> = {
+  cases: unwindCases,
+  program: unwindProgram,
+  batches: (all) => batches(all),
+  slice: (all) => slice(all, unwindStrata),
+};
+
 /** The table `of`, as test/iterator-matrix.test.ts runs it. */
 export function tableOf(of: Table): TableOf<Row> {
+  if (of === "unwind") return unwindTable;
   return iteratorTable(of, of === "matrix" ? allCases : of === "conformance" ? conformanceCases : pointsCases);
 }
 
 /** The cases of `table`. */
 export const casesOf = (of: Table): Row[] => tableOf(of).cases();
 
-/** The cases in programs of `perBatch`, in their order. */
-export function batches(cases: Case[], perBatch = 60): Case[][] {
-  const out: Case[][] = [];
+/** The cases in programs of `perBatch`, in their order, but each that
+ * `alone` says ends its program, a program of its own. */
+export function batches<C extends Row>(cases: C[], perBatch = 60, alone: (c: C) => boolean = () => false): C[][] {
+  const out: C[][] = [];
   // One that aborts ends its program, so it's a program of its own, after
   // the others, whose batches are as before (#847).
-  const others = cases.filter((c) => c.variant.kind !== "aborts");
+  const others = cases.filter((c) => !alone(c));
   for (let i = 0; i < others.length; i += perBatch) out.push(others.slice(i, i + perBatch));
-  for (const c of cases) if (c.variant.kind === "aborts") out.push([c]);
+  for (const c of cases) if (alone(c)) out.push([c]);
   return out;
 }
+
+/** Of the iterator tables, a case that aborts natively (#847). */
+const aborts = (c: Case) => c.variant.kind === "aborts";
 
 /** What a change to what every adapter shares runs, of `cases` (#818): of
  * each pairing of an adapter, or of none, with a consumer, `perPair` of its
@@ -860,10 +880,11 @@ function strata(c: Case): string[] {
  * (scripts/iterators.ts): the fewest whole batches, picked greedily, the
  * first of equals, whose cases between them have every stratum any case
  * has, each pairing of a source, an adapter, a consumer and a panic site
- * (`strata`), so every adapter and consumer runs in both builds. Fixed by
- * the cases alone, so a failure is found again by running it again. */
-export function slice(all: Case[][]): number[] {
-  const covers = all.map((batch) => new Set(batch.flatMap(strata)));
+ * (`strata`), so every adapter and consumer runs in both builds; of
+ * another table, its strata. Fixed by the cases alone, so a failure is
+ * found again by running it again. */
+export function slice<C extends Row>(all: C[][], strataOf: (c: C) => string[]): number[] {
+  const covers = all.map((batch) => new Set(batch.flatMap(strataOf)));
   const left = new Set(covers.flatMap((strata) => [...strata]));
   const picked: number[] = [];
   while (left.size > 0) {
@@ -1210,11 +1231,12 @@ export function segments(stdout: string): Map<string, string> {
 }
 
 const header = `// The iterator matrix's cases (ADR 1090), the conformance table's (ADR
-// 1092) and the points table's (#817) that don't run as native Rust does
-// yet, each under its issue, \`#<issue> <title>\`: a line a build, \`plain\` or
-// \`std\` of the matrix's, \`conformance:plain\` or \`points:std\` of a table's,
-// the numbers of its cases in \`allCases()\`, \`conformanceCases()\` or
-// \`pointsCases()\` as ranges. Each listed
+// 1092), the points table's (#817) and the unwind table's (#854) that
+// don't run as native Rust does yet, each under its issue, \`#<issue>
+// <title>\`: a line a build, \`plain\` or \`std\` of the matrix's,
+// \`conformance:plain\` or \`unwind:std\` of a table's, the numbers of its
+// cases in \`allCases()\`, \`conformanceCases()\`, \`pointsCases()\` or
+// \`unwindCases()\` as ranges. Each listed
 // must still fail, so the list only shrinks: \`bun test/iterator-matrix.ts
 // take-off\` takes off what the last runs found fixed. Its numbers are of
 // each table's generator version below; a change to a table's cases makes

@@ -129,6 +129,13 @@ export const parts: Part[] = [
     by: ".github/workflows/nightly.yml",
     why: "every case at each of its panic points, 105 batches: a push's gate is #818's to choose",
   },
+  {
+    setting: "ITERATOR_TABLE",
+    value: "unwind",
+    runs: "nightly",
+    by: ".github/workflows/nightly.yml",
+    why: "every operation beyond iterators at each of its panic points, 58 batches, about 5 CPU-minutes: a push's gate is #818's to choose",
+  },
   { setting: "TIDY_STAGES", value: "programs", runs: "push", by: ".github/workflows/readability-passes.yml" },
   { setting: "FUZZ_START", value: "1", runs: "push", by: ".github/workflows/readability-passes.yml" },
   { setting: "FUZZ_SEEDS", value: "6", runs: "push", by: ".github/workflows/readability-passes.yml" },

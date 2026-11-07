@@ -513,7 +513,9 @@ The structure that enforces the contract has three parts:
 
 The conformance table (`ITERATOR_TABLE=conformance bun test test/iterator-matrix.test.ts`, ADR 1090's
 generator) runs each adapter through each step, in both builds, against
-native Rust.
+native Rust. The same harness runs the panic points of its cases (#817) and
+of operations beyond iterators (`ITERATOR_TABLE=unwind`,
+`test/unwind-points.ts`, #854), each by `test/panic-points.ts`'s one runner.
 
 ## Publication
 

@@ -14,6 +14,7 @@
 //   ITERATOR_MATRIX='pairs:20/step_by/' bun test test/iterator-matrix.test.ts    # 20 of each pairing, of the cases whose ids match
 //   ITERATOR_TABLE=conformance bun test test/iterator-matrix.test.ts             # the conformance table's (ADR 1092), each likewise
 //   ITERATOR_TABLE=points ITERATOR_MATRIX=all bun test test/iterator-matrix.test.ts  # its cases at each panic point (#817)
+//   ITERATOR_TABLE=unwind ITERATOR_MATRIX=all bun test test/iterator-matrix.test.ts  # operations beyond iterators at each panic point (#854)
 //   bun scripts/iteratorSlice.ts run                                             # both tables' slices, in parts at once (#731)
 //
 // A case that doesn't run as Rust does fails its batch, but those
@@ -243,6 +244,9 @@ for (const index of mine) {
       }
     }
     if (refused > 0 && process.env.ITERATOR_MATRIX_REPORT) console.log(`batch ${index + 1}: ${refused} refused`);
+    // Every case refused is the program's own code refused, its prelude's,
+    // where each case would pass by refusing (#854).
+    if (batch.length > 1 && refused === batch.length * builds.length) problems.push("every case of the batch is refused: its prelude is, not a case");
     expect(problems.join("\n\n")).toBe("");
   }, 900_000);
 }

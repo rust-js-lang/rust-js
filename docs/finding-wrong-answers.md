@@ -17,6 +17,7 @@ none of these would have, add it here in the same commit as the fix.
 | A corpus case per behaviour, run against native in both builds | `test/corpus/`, `test/corpus.test.ts` | Most fixes' first proof | Each case pins one behaviour against native, not against a snapshot |
 | Generated tables of every combination | The iterator matrix (107k cases) and conformance table (21k), ADR 1090/1092, `test/iterator-matrix.test.ts` | Most of the iterator P0s since 2026-11-04; 23 of the last 30 iterators × protocol gap issues | Combinations nobody would write by hand: source × adapters × consumer |
 | Panic points | `ITERATOR_TABLE=points` (#817): every closure call, item drop and source drop is the k-th event, with one panic per run | #843–#846 on its first run | Unwind paths are rarely written by hand and are where drop orders differ |
+| Panic points beyond iterators | `ITERATOR_TABLE=unwind` (#854, `test/unwind-points.ts`): 16 families of operations × 11 shapes of value, each make, drop, clone and comparison of a `D` and each closure call the k-th event, by #817's runner and oracle | 16 P0s on its first run (#897–#912), 591 of 3,470 cases: partial clones, fill values and the rest of an `extend` leaked; a map's `clear` and a `BinaryHeap`'s and the unstable sorts' holes dropping twice; derived `Default`s and combinators' `self` leaked; and five with no panic at all, `HashMap::retain`'s drop of a handle, `VecDeque::retain_mut`'s eager drops, `Rc`'s `==` by pointer, and the order a stable sort, a `BTreeMap` and `max` call the crate's `Ord` | A comparison that prints is a point too: what calls the crate's `Ord`, `Eq` or `Clone`, and in what order, is as observable as a drop |
 | A full run, not a sample | `ITERATOR_MATRIX=all`, `bun run nightly` | #823, #834, #835, #833: fix-on-fix regressions the sampled slices passed | A fix that makes a shape compile exposes every path through it |
 | Rebatching: the same rows in other company | #818's `pairs` and rows a change names | #850, wrong only beside another function using the same type | Crate-wide and per-type facts leak between unrelated functions |
 | A context grid: one function makes a type-wide fact, another uses each adapter over that type | Hand-generated programs (#851's probe): a chain folded from its back in one function, each of 13 adapters over the same chain stepped back four ways in another, against native in both builds and on `main` | #859, an `inspect(f)` made JS's `.map(f)` beneath a `$mapEnds`, which threw; and #850's and #856's shape again | A fact keyed by a type is set by one value and read of another; the grid puts every adapter's maker beside the one that sets it |
@@ -47,7 +48,8 @@ none of these would have, add it here in the same commit as the fix.
    gate), not the sample.
 4. **Unwind paths are where orders differ.** Inject a panic at every
    point: closures, drops, the source's drop. A second panic during
-   unwind aborts in Rust (#847).
+   unwind aborts in Rust (#847), so a table's cases never panic of
+   themselves (an `unwrap` of `None`), only at their point.
 5. **Equivalence needs the full rows.** Before removing code whose
    mutation survived, run every row of every adapter it decides for.
 6. **Every accepted difference is a claim to re-test.** ADR 0262 allows
@@ -55,13 +57,16 @@ none of these would have, add it here in the same commit as the fix.
    one.
 7. **Two oracles beat one.** Native is the oracle; a second lowering of
    the same program (`--std-iterators`) finds bugs one build hides.
+8. **A program all refused passes all.** A table whose shared prelude
+   rust-js refuses refuses every case, and a refusal passes. The harness
+   fails a batch whose every case is refused (#854's first run of its
+   keyed maps passed so, in 392 s).
 
 ## Nets still to build
 
 | Net | Issue | What it would find |
 |---|---|---|
 | Neighbour shuffle: random groups of corpus cases compiled as one crate | #853 | Every crate-wide or per-type fact leaking between functions, in every area |
-| Panic points beyond iterators | #854 | Drop order on unwind in structs, closures, collections and combinators |
 | Matrices for `MutRefForm` × operation and `NoneForm` × writer × reader | #855 | The two clusters with the most P0s and regressions after iterators |
 | TypeScript callers of each `.d.ts` with `null`, `undefined` and absent keys | #822 | A `.d.ts` that promises more than the lowering trusts |
 | Crate-corpus probes run, not only compiled | #840 | Real crates' behaviour against native |
