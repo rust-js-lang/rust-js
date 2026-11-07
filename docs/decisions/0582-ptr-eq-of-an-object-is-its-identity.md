@@ -57,3 +57,28 @@ it counts as a number's does.)
 - Mutations: an object's counted, a number's not, a transparent struct's
   not (`scripts/mutations/lower/recognition/wrappers.ts`,
   `ptr-eq-of-transparent-uncounted`).
+
+## Amendment: `==` of two `Rc`s of an `Eq` value asks it first (2026-11-08, #910)
+
+std specializes `Rc<T: Eq>`'s `==` (`RcEqIdent`) as `Rc::ptr_eq(a, b) ||
+**a == **b`, so `a == a.clone()` never calls `T::eq`. rust-js called it,
+which a `PartialEq` that prints or panics shows. Case C
+([0262](0262-when-rust-and-js-disagree.md)): Rust's behaviour is kept.
+
+**`==` of two `Rc`s or `Arc`s of a value that is `Eq` and whose `==` runs
+the crate's code (`custom_eq`, not identity's `===`) is this decision's
+`===` first, then the value's `==`**: `a === b || dPartialEq_eq(a.value,
+b.value)` of a counted one, `e === right || ePartialEq_eq(e, right)` of an
+uncounted one, which is its value. Of a value that's only `PartialEq`, the
+value's `==`, as before.
+
+- **Refused:** an uncounted `Rc` of a value that isn't a JS object with an
+  `eq` of its own, e.g. a fieldless enum's string, whose `===` two
+  allocations share. #930 asks to count such an `Rc` so it has an identity.
+- **Not yet:** in generic code, where only the caller knows `T: Eq`, the
+  value's `==` always, #931.
+
+Held by `test/corpus/rc_eq_by_address_first.rs` (counted and uncounted,
+`Arc`, `Vec`s of `Rc`s, a `PartialEq`-only value), the refusal
+`rc_eq_of_a_fieldless_enum_refused.rs`, and the mutations `rc-eq-*`. The
+unwind table's 2 case-builds of #910 pass.

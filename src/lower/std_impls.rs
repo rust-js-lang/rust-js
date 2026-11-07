@@ -1029,6 +1029,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn eq_value(&mut self, a: Expr, b: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let (mut a, _) = self.through_refs(a, ty);
         let (mut b, mut ty) = self.through_refs(b, ty);
+        // An `Rc`'s or an `Arc`'s of an `Eq` value: the same allocation
+        // first, `Rc::ptr_eq`'s `===` (ADR 0582), as std's `RcEqIdent`
+        // specializes it, then its value's, where that runs the crate's
+        // code (#910).
+        if let Some(pointee) = super::recognition::rc_pointee(self.tcx, ty)
+            && self.custom_eq(pointee)
+            && !self.eq_is_identity(pointee)
+            && self
+                .recognition()
+                .implements_trait(pointee, super::recognition::std_item(self.tcx, StdItem::Eq))
+        {
+            let counted = self.counted_rc(ty).is_some();
+            // An uncounted one is its value, whose `===` is its allocation's
+            // only where it's an object.
+            if !counted && !self.is_object(pointee) {
+                return Err(self.unsupported(
+                    span,
+                    &format!("`==` of two `{ty}`s, which std compares by address first, of a value that isn't an object in JS (#930): compare the values, `*a == *b`, which calls its `eq` as std does for two allocations"),
+                ));
+            }
+            let a = if a.reads_same() { a } else { self.spill("left", a, out) };
+            let b = if b.reads_same() { b } else { self.spill("right", b, out) };
+            let (x, y) = match counted {
+                true => (
+                    self.counted_pointee(a.clone(), pointee),
+                    self.counted_pointee(b.clone(), pointee),
+                ),
+                false => (a.clone(), b.clone()),
+            };
+            let eq = self.eq_value(x, y, pointee, span, out)?;
+            return Ok(Expr::bin(Op::Or, Expr::bin(Op::Eq, a, b), eq));
+        }
         // A `Box`, an `Rc` and a `Pin` compare what they point at, which
         // they are in JS (ADRs 0023, 0329), its own `==` too, and a `Cow`
         // what it borrows.

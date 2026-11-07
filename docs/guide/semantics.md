@@ -295,6 +295,11 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   `Rc::as_ptr` is a pointer to what it points at, so `Rc::as_ptr(a) ==
   Rc::as_ptr(b)` is `a === b` too, and of an `Rc` of a number it counts,
   as `ptr_eq` does ([0562](../decisions/0562-a-pointer-is-a-place-and-an-address.md), amended).
+  `==` of two `Rc`s of an `Eq` value whose `==` is the crate's asks that
+  `===` first, `a === b || eq(a, b)`, as std's specialization does, so
+  `a == a.clone()` calls no `eq`; of an `Rc` of a fieldless enum with an
+  `eq` of its own, whose `===` two allocations share, it's refused (#930)
+  ([0582](../decisions/0582-ptr-eq-of-an-object-is-its-identity.md), amended).
   A `Weak` nothing upgrades or counts is what it points at, `Rc::downgrade`
   the object and `Weak::new()` `null`: what's alive is asked of no `Weak`,
   so none needs a count ([0843](../decisions/0843-a-weak-nothing-upgrades-is-the-value-itself.md)).
@@ -964,8 +969,16 @@ duplicate as it's found, of a `Box`'s or an `Rc`'s too; and a `Vec`'s
 source's length, writes over each it keeps, then clones the rest on; a
 `VecDeque`'s clears, then clones, `$cloneIntoDeque`; a `HashMap`'s drops
 its entries, then clones, `$cloneIntoMap`; an array's writes each item
-over; and an `Option`'s or a `Box`'s is its value's. Each only where a
-drop or a clone may panic, or the order of clones and drops can be seen
+over; and an `Option`'s or a `Box`'s is its value's. A `HashMap`'s drop,
+and its `clear()`, stop at an entry whose drop panics, a plain `for` loop,
+as hashbrown's do, where a `BTreeMap`'s go on; a `BTreeMap`'s `insert` of a
+key it holds drops the key given before it writes the value, `$insert(..,
+true)` ([0467](../decisions/0467-a-maps-keys-drop-as-rusts-do.md),
+amended); and a `VecDeque`'s `retain` swaps what it keeps forward and drops
+the rest after the last call, `$retainDeque`
+([0499](../decisions/0499-retain-mut-drops-what-it-removes.md), amended).
+Each only where a drop or a clone may panic, or the order of clones and
+drops can be seen
 ([1102](../decisions/1102-what-is-made-in-turn-drops-as-a-later-part-unwinds.md),
 amended):
 

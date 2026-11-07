@@ -748,17 +748,21 @@ export function $givenClone(it, clone) {
 // A map's `insert(k, v)`: `Some` of the value it had, boxed where it looks
 // like `None` (ADR 0051), or `None`; of keys with a destructor, the key
 // given dropped by `dropKey` where one equal's there, which it keeps, as
-// Rust's does (ADR 0467). One search, a B-tree's of its keys' own order
-// asking its `cmp` as std's does; where that panics, the key given dropped,
-// then the value, `dropValue`, as std's `insert` drops them (#911).
-export function $insert(map, key, value, dropKey, dropValue) {
+// Rust's does (ADR 0467): a hashed map's after the value's written, at
+// hashbrown's `insert`'s end; a B-tree's (`sorted`) before, as its `entry`
+// drops it, the value dropped as that unwinds and the map keeping its own
+// (#921). One search, a B-tree's of its keys' own order asking its `cmp`
+// as std's does; where that panics, the key given dropped, then the value,
+// `dropValue`, as std's `insert` drops them (#911).
+export function $insert(map, key, value, dropKey, dropValue, sorted) {
   const found = $unwinds(
     () => $found(map, key),
     dropKey && (() => dropKey(key)),
     dropValue && (() => dropValue(value)),
   );
+  if (sorted && found.there) $unwinds(() => dropKey(key), dropValue && (() => dropValue(value)));
   $putFound(map, found, key, value);
-  if (found.there) dropKey?.(key);
+  if (!sorted && found.there) dropKey?.(key);
   return found.there ? $some(found.value) : undefined;
 }
 
@@ -6592,6 +6596,43 @@ export function $retainMut(v, f, handles, drop) {
   }
 }
 
+// A `VecDeque`'s `retain_mut(f)`, and its `retain`, std's: each item `f`
+// keeps swapped forward into its place, given as itself, or as a handle on
+// a number or a string (`handles`); once every one is asked, what's past
+// those kept truncated, each dropped by `drop` in the order the swaps left
+// them. Where `f` panics, the deque as the swaps left it, every item in it,
+// as std's has no guard (#909).
+export function $retainDeque(v, f, handles, drop) {
+  const keeps = (at) =>
+    handles
+      ? f({
+          get value() {
+            return v[at];
+          },
+          set value(item) {
+            v[at] = item;
+          },
+        })
+      : f(v[at]);
+  const len = v.length;
+  let kept = 0;
+  let at = 0;
+  while (at < len) {
+    if (!keeps(at++)) break;
+    kept++;
+  }
+  while (at < len) {
+    if (!keeps(at)) {
+      at++;
+      continue;
+    }
+    [v[kept], v[at]] = [v[at], v[kept]];
+    at++;
+    kept++;
+  }
+  if (at !== kept) $truncate(v, kept, drop);
+}
+
 // A `VecDeque`'s `pop_front_if(f)`: its first item, if `f` of it holds.
 export function $popFrontIf(v, holds, handles) {
   if (v.length === 0) return undefined;
@@ -6872,8 +6913,10 @@ export function $isDisjoint(a, b) {
 // end, and a `skip`'s first step is its `nth(n - 1)` (#494). Of an array,
 // a `Vec` or an array it took, what's left of it dropped as a put unwinds,
 // a drop of what it replaces, each entry by `$entryDropping`, as std's
-// `for_each` drops the `IntoIter` it was given (#900).
-export function $extendMap(m, items, set, drop, dropKey) {
+// `for_each` drops the `IntoIter` it was given (#900). A B-tree's
+// (`sorted`) drops the key given before it writes the value, as `insert`
+// does, `$insert`'s (#921).
+export function $extendMap(m, items, set, drop, dropKey, sorted) {
   const put = (item) => {
     if (set) {
       if (m.has(item)) dropKey?.(item);
@@ -6881,10 +6924,11 @@ export function $extendMap(m, items, set, drop, dropKey) {
       return;
     }
     const replaced = m.has(item[0]);
+    if (sorted && replaced) $unwinds(() => dropKey(item[0]), drop && (() => drop(item[1])));
     const old = m.get(item[0]);
     m.set(item[0], item[1]);
     if (replaced) {
-      dropKey?.(item[0]);
+      if (!sorted) dropKey?.(item[0]);
       drop?.(old);
     }
   };

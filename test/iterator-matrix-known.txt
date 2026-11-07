@@ -25,14 +25,6 @@ std 107177,107450
 unwind:plain 789-792,794-795,797-798,809-812,814-818,821-823,825,827-828,1084-1087,1089-1094
 unwind:std 789-792,794-795,797-798,809-812,814-818,821-823,825,827-828,1084-1087,1089-1094
 
-#909 P0 (unwind): VecDeque::retain_mut drops each item it doesn't keep as it goes, where std drops them after the last call
-unwind:plain 1018-1027
-unwind:std 1018-1027
-
-#910 P0 (unwind): == of two Rcs of one allocation calls the item's PartialEq, where std answers true by pointer for an Eq item
-unwind:plain 1156
-unwind:std 1156
-
 #911 P0 (unwind): a BTreeMap's or a BTreeSet's comparisons of keys with their own Ord are called with their arguments swapped, and the key given leaks as one panics
 unwind:plain 1414-1423
 unwind:std 1414-1423
