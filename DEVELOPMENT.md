@@ -565,6 +565,7 @@ symptom with this table. When you hit a new kind of stall, add a row.
 | A test file times out at its deadline only under load (`test/tidy-stages`, 109 s alone) | Its cases compiled one after another inside one test | Compile each case's variants at once, and share one folder per case (#808: 109 s became 31–38 s). |
 | A mutation run takes hours | An empty name list, often from zsh not splitting `$VAR` into words, runs every mutation (8,000+) | Read names from a file, and stop with an error when the list is empty. |
 | A sweep's results can't be trusted | A shared input, such as `runtime/index.js` or the compiler, was swapped while the sweep ran against it | Never change what a running sweep reads. Probe in a copy of the worktree, or wait for the sweep to finish, and rerun it if it overlapped. |
+| `test/in-source.test.ts`'s "the builder asks the compiler what it is" times out at 120 s in `check:fast --all`, the cores half idle; alone it passes in 0.2 s (unwindC, 2026-11-08, once in five runs) | Not found. It runs the builder in a fixture, which runs Cargo, so a lock Cargo waits on (its package cache's, or `target/`'s) is suspected | Rerun the file alone; if it hangs again, `ps` for a `cargo` it started and what it waits on, and add what you find here. |
 | A session restart, and all its agents stop | The host app was restarted or updated; agents' background jobs die with it | Commit WIP often. After a restart, check each worktree, clear stale gate entries and locks, and resume each agent with its hand-off. |
 
 **Good practice:**
