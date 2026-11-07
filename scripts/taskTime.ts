@@ -10,7 +10,7 @@
 // Run every check or test of the task through `task run`: check:fast, the
 // corpus, mutations, a port's regen, a matrix run.
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -49,7 +49,9 @@ mkdirSync(dir, { recursive: true });
 
 if (command === "start") {
   const name = rest.join(" ") || branch;
-  writeFileSync(file, JSON.stringify({ kind: "start", name, at: Date.now() } satisfies Entry) + "\n");
+  // Appended, not written over: a branch's earlier tasks keep their runs,
+  // and `current()` reads from the last start.
+  appendFileSync(file, JSON.stringify({ kind: "start", name, at: Date.now() } satisfies Entry) + "\n");
   console.log(`task "${name}" started, logged in ${file}`);
 } else if (command === "run") {
   const split = rest.indexOf("--");

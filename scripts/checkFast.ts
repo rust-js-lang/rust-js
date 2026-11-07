@@ -2,8 +2,10 @@
 // minute or so: lint, the corpus in parts, the suites that check the JS
 // bodies are lowered to from their MIR (ADR 0364), the snapshots and the
 // diagnostics where the change touches what they read, and the mutations it
-// adds or changes. CI runs the whole suite and every mutation of what the
-// change touched after each push (DEVELOPMENT.md).
+// adds or changes; of a change the test map can say, only the suites' files
+// and the corpus's cases that ran a function it changes (scripts/testMap.ts,
+// ADR 1101). CI runs the whole suite and every mutation of what the change
+// touched after each push (DEVELOPMENT.md).
 //
 //   bun run check:fast                 the change's checks
 //   bun run check:fast --all           what a push's check runs, but what `leftToCi` says is CI's
@@ -22,7 +24,8 @@ import { availableParallelism, cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
 import { runs, touchesIterators } from "./iteratorSlice";
-import { browsers, caseParts, nightly, pooledParts } from "./shard";
+import { mappedFiles, pickChange } from "./testMap";
+import { browsers, caseParts, nightly, plainSuiteFiles, pooledParts } from "./shard";
 import { elapsed, loadScale, median, timed, timings } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -38,8 +41,18 @@ export type Job = { name: string; cmd: string[]; env: Record<string, string>; ti
 
 /** What the check is of: `--all`, or the files the change touches, those
  * the branch changed since `main`, the mutations it adds and the files
- * named; and the machine's cores. */
-export type Scope = { all: boolean; changed: string[]; branch: string[]; added: string[]; extra: string[]; cores: number };
+ * named; the machine's cores; and, of a plain check whose change the test
+ * map can say, the test files and corpus cases it can affect, the cases
+ * written to `caseList`, a line each (scripts/testMap.ts, #877). */
+export type Scope = {
+  all: boolean;
+  changed: string[];
+  branch: string[];
+  added: string[];
+  extra: string[];
+  cores: number;
+  picked?: { files: Set<string>; cases: string[]; caseList: string };
+};
 
 const job = (name: string, cmd: string[], more: Partial<Job> = {}): Job => ({ name, cmd, env: {}, timeout: 290, weight: 1, ...more });
 
@@ -69,7 +82,7 @@ export const leftToCi: { run: string; why: string }[] = [
  * `--all`, what a push's check runs (check.yml); else the suites the
  * change can touch, as it touches them, `shared` saying whether that's what
  * the snapshots and the diagnostics read. */
-export function jobs({ all, changed, branch, added, extra, cores }: Scope): { jobs: Job[]; shared: boolean } {
+export function jobs({ all, changed, branch, added, extra, cores, picked }: Scope): { jobs: Job[]; shared: boolean } {
   // What the snapshots and the diagnostics read: the compiler and the runtime.
   const shared = all || changed.some((file) => file.startsWith("src/") || file.startsWith("runtime/"));
   const jsx = all || changed.some((file) => /^src\/(lower\/jsx|jsx_syntax)|^react\//.test(file));
@@ -93,12 +106,22 @@ export function jobs({ all, changed, branch, added, extra, cores }: Scope): { jo
   const half = Math.max(1, Math.floor(cores / 2));
   // Each part of the corpus, a process of its own, a job of the pool's
   // (scripts/shard.ts's `pooledParts`).
-  const corpusParts = pooledParts(cores);
+  // Of a change the test map can say, the cases it picked, in as many parts
+  // as there are cores, or fewer where fewer cases: none where it picked
+  // none, nor the file's own tests, which the first part runs.
+  const corpusParts = picked
+    ? picked.cases.length > 0 || picked.files.has("test/corpus.test.ts")
+      ? Math.max(1, Math.min(pooledParts(cores), Math.ceil(picked.cases.length / 8)))
+      : 0
+    : pooledParts(cores);
   const inParts = (name: string, file: string) =>
     Array.from({ length: corpusParts }, (_, i) =>
       // As a push's: of the corpus's, only the cases whose JS as a library
       // differs are built as one (ADR 0360).
-      job(`${name} ${i + 1}/${corpusParts}`, ["bun", "test", file], { env: { RUST_JS_CASES: `${i + 1}/${corpusParts}`, RUST_JS_LIBRARIES: "differing" }, ci: "bun run test" }),
+      job(`${name} ${i + 1}/${corpusParts}`, ["bun", "test", file], {
+        env: { RUST_JS_CASES: `${i + 1}/${corpusParts}${picked ? `:${picked.caseList}` : ""}`, RUST_JS_LIBRARIES: "differing" },
+        ci: "bun run test",
+      }),
     );
   // The suites a change can touch, as it touches them; or, with `--all`,
   // every test file a push's suite runs (scripts/test.ts): the corpus, in
@@ -118,34 +141,25 @@ export function jobs({ all, changed, branch, added, extra, cores }: Scope): { jo
   // corpus's compiles when every job ran at once, and ran after the rest
   // (ADR 1093); in the pool, whose load stays near the cores, they run
   // beside them.
-  const everyFile = readdirSync(join(root, "test"))
+  const testFiles = readdirSync(join(root, "test"))
     .filter((name) => name.endsWith(".test.ts"))
-    .map((name) => `test/${name}`)
+    .map((name) => `test/${name}`);
+  const everyFile = testFiles
     .filter((file) => file !== "test/corpus.test.ts" && !nightly.includes(file))
     .map((file) =>
       job(file, ["bun", "test", file], { group: browsers.includes(file) ? "the browsers' test files" : "every other test file", ci: "bun run test" }),
     );
-  const suites: Job[] = [
-    job("architecture, mutation lists", ["bun", "test", "test/architecture.test.ts", "test/architecture-iterators.test.ts", "test/architecture-nones.test.ts", "test/mutations.test.ts"]),
-    // What checks the JS bodies are lowered to.
-    // Each a file of a concept's (ADR 0572), `test/lowering` all of lowering's.
-    job("lowering", ["bun", "test", "test/lowering"]),
-    job("compiler", ["bun", "test", "test/compiler.test.ts"]),
-    job("bindings", ["bun", "test", "test/bindings.test.ts", "test/bindings-require.test.ts", "test/js-builtins.test.ts", "test/js-errors.test.ts", "test/node-bindings.test.ts", "test/webapi-bindings.test.ts"]),
-    ...(jsx ? [job("JSX", ["bun", "test", "test/jsx"])] : []),
-    // What pins the JS written, the names it gives and what it refuses; and
-    // the guide's examples compiled, std's package, the runtime package's
-    // helpers and the readability ratchet, each of which a lowering or a
-    // runtime change has turned `main` red with (#212, #222, #253).
-    ...(shared
-      ? [
-          job("guide, packages, readability", ["bun", "test", "test/docs.test.ts", "test/std-package.test.ts", "test/runtime-package.test.ts", "test/readability.test.ts"]),
-          job("React's ports", ["bun", "test", "test/port-"]),
-          job("snapshots", ["bun", "test", "test/snapshots.test.ts"]),
-          job("diagnostics", ["bun", "test", "test/diagnostics.test.ts"]),
-        ]
-      : []),
-  ];
+  // The plain suites (scripts/shard.ts), each file a job of the pool's, said
+  // as its suite: as one `bun test` a suite, lowering's 74 files ran one
+  // after another, 70 s, the last job of every plain check, the cores half
+  // idle 44% of it (#877). Of a change the test map can say, the files it
+  // picked, of every suite, JSX's and the shared ones too where it reaches
+  // them; else as the change's paths say.
+  const suites: Job[] = plainSuiteFiles(testFiles).flatMap(({ name, files, when }) =>
+    files
+      .filter((file) => (picked ? picked.files.has(file) : when === undefined || (when === "jsx" ? jsx : shared)))
+      .map((file) => job(file, ["bun", "test", file], { group: name })),
+  );
   return {
     jobs: [
       job("fmt", ["bun", "run", "fmt:check"], { ci: "bun run fmt:check" }),
@@ -511,7 +525,22 @@ if (import.meta.main) {
   if (node.exitCode !== 0) process.exit(1);
   console.log(timed("node bindings build", (Date.now() - binding) / 1000));
 
-  const check = jobs({ all, changed, branch, added, extra, cores: availableParallelism() });
+  // Of a plain check, the files and corpus cases the change can affect, by
+  // the test map (scripts/testMap.ts, #877); or, where it can't say, what
+  // the change's paths run.
+  let picked: Scope["picked"];
+  if (!all) {
+    const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
+    const files = mappedFiles();
+    const pick = pickChange(files, cases);
+    if (pick.kind === "picked") {
+      const caseList = join(own, "cases.txt");
+      writeFileSync(caseList, pick.cases.map((name) => `${name}\n`).join(""));
+      picked = { files: new Set(pick.files), cases: pick.cases, caseList };
+      console.log(`${pick.why}: ${pick.files.length} of ${files.length + 1} test files, ${pick.cases.length} of ${cases.length} corpus cases`);
+    } else console.log(`${pick.why}: the change's paths say what runs`);
+  }
+  const check = jobs({ all, changed, branch, added, extra, cores: availableParallelism(), picked });
   const cores = availableParallelism();
   const clock: Clock = { began: Date.now(), samples: [] };
   const results = await run(check.jobs, compiler, cores, clock);
@@ -520,9 +549,9 @@ if (import.meta.main) {
   for (const { job: { name }, log } of failed) console.log(`\n── ${name} ──\n${log.slice(-3000)}`);
   // From its start, its build too.
   const total = elapsed();
-  const scope = all ? "check:fast --all" : check.shared ? "check:fast" : "check:fast, the change's";
+  const scope = all ? "check:fast --all" : picked ? "check:fast, what the change reaches" : check.shared ? "check:fast" : "check:fast, the change's";
   console.log(
-    `\n${failed.length === 0 ? `all passed: ${timed(scope, total)}` : `${failed.length} failed in ${total.toFixed(0)}s`}${check.shared ? "" : " (JSX, snapshots and diagnostics skipped)"}`,
+    `\n${failed.length === 0 ? `all passed: ${timed(scope, total)}` : `${failed.length} failed in ${total.toFixed(0)}s`}${picked || check.shared ? "" : " (JSX, snapshots and diagnostics skipped)"}`,
   );
   process.exit(failed.length === 0 ? 0 : 1);
 }

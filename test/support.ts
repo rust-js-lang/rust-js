@@ -629,10 +629,20 @@ export function expectSnapshot(
 
 /** `RUST_JS_CASES=i/n`: the cases of the `i`th of `n` parts, each case in
  * one, for `check:fast`'s processes, which run a file's parts at once; all of
- * them where it isn't set. */
+ * them where it isn't set. `i/n:<file>`: the `i`th part of only the cases
+ * `<file>` names, a line each, those a change can affect, as plain
+ * `check:fast` picks them (scripts/testMap.ts, #877). */
 export function caseShard<T extends string>(cases: T[]): T[] {
-  const [i, n] = (process.env.RUST_JS_CASES ?? "1/1").split("/").map(Number);
-  return shard(cases, i, n);
+  const given = process.env.RUST_JS_CASES ?? "1/1";
+  const split = given.indexOf(":");
+  const [i, n] = (split < 0 ? given : given.slice(0, split)).split("/").map(Number);
+  if (split < 0) return shard(cases, i, n);
+  const named = new Set(readFileSync(given.slice(split + 1), "utf8").split("\n").filter(Boolean));
+  return shard(
+    cases.filter((name) => named.has(name)),
+    i,
+    n,
+  );
 }
 
 /** What isn't a case runs in the first part alone. */

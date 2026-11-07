@@ -2,6 +2,9 @@
 
 Status: Accepted (the user's decision, 2026-11-05, #732). Extends
 [0104](0104-parallel-tests.md) and [1030](1030-what-only-the-nightly-runs.md).
+Amended by [1101](1101-the-inner-check-runs-what-a-change-reaches.md)
+(#877): plain `check:fast`, the inner loop's, runs what a change reaches
+by the test map; `--all`, this check, is unchanged.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)). This changes only how
 rust-js is checked. It changes no output.
