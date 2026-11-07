@@ -6,7 +6,21 @@ import { cpSync, existsSync, readdirSync, readFileSync, writeFileSync } from "no
 import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf } from "../scripts/crate-corpus";
-import { batches, type Change, changedLines, changedMutations, enclosingFunction, schema, setPasses, site, type Sited, testBlocks, testResults, testSet } from "../scripts/mutations";
+import {
+  batches,
+  type Change,
+  changedLines,
+  changedMutations,
+  enclosingFunction,
+  schema,
+  setPasses,
+  site,
+  type Sited,
+  testBlocks,
+  testResults,
+  testSet,
+  unitTestsModule,
+} from "../scripts/mutations";
 import { jobs, leftToCi } from "../scripts/checkFast";
 import { loadScale } from "../scripts/timing";
 import { jobs as localNightly } from "../scripts/nightly";
@@ -241,6 +255,31 @@ test("the changed mutations are of the functions and tests a change touches", ()
   // A corpus case deleted.
   expect(names([{ file: "test/corpus/array_map.rs", lines: [[1, 1]], base: true }])).toEqual(["edited", "case", "added"]);
   expect(changedMutations(now, now, [], read, readBase)).toEqual([]);
+});
+
+// One its unit tests catch (#915) runs where a change touches those tests:
+// a source file's tests of the filter's module, from its `#[cfg(test)]`,
+// or a tests module's file whole.
+test("a unit-tested mutation is a change's where the change touches its unit tests", () => {
+  const jumps = "fn tidy() {\n    a();\n}\n\n#[cfg(test)]\nmod tests {\n    #[test]\n    fn chain() {}\n}\n";
+  const files: Record<string, string> = { "src/lower/jumps.rs": jumps, "src/lower/jumps/tests.rs": "#[test]\nfn more() {}\n", "src/lower.rs": jumps };
+  const read = (file: string) => files[file];
+  const unit = { name: "unit", breaks: "", file: "src/lower/x.rs", find: "a", replace: "b", unitTests: "lower::jumps::tests::chain" };
+  const names = (changes: Change[]) => changedMutations([unit], [unit], changes, read, read).map((m) => m.name);
+  expect(names([{ file: "src/lower/jumps.rs", lines: [[8, 8]] }])).toEqual(["unit"]);
+  expect(names([{ file: "src/lower/jumps.rs", lines: [[9, 9]], base: true }])).toEqual(["unit"]);
+  expect(names([{ file: "src/lower/jumps/tests.rs", lines: [[1, 1]] }])).toEqual(["unit"]);
+  // A parent's tests may be its, of an inline `mod jumps`; not the code
+  // above its tests, another module's tests, nor a test file's.
+  expect(names([{ file: "src/lower.rs", lines: [[8, 8]] }])).toEqual(["unit"]);
+  expect(names([{ file: "src/lower/jumps.rs", lines: [[2, 2]] }])).toEqual([]);
+  expect(names([{ file: "src/other.rs", lines: [[8, 8]] }, { file: "test/x.test.ts", lines: [[1, 1]] }])).toEqual([]);
+  expect([unitTestsModule("src/main.rs"), unitTestsModule("src/lower/mod.rs"), unitTestsModule("src/lower/jumps.rs"), unitTestsModule("test/x.ts")]).toEqual([
+    "",
+    "lower",
+    "lower::jumps",
+    undefined,
+  ]);
 });
 
 test("a function is where rustfmt and Prettier lay it out", () => {

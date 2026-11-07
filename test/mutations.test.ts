@@ -7,7 +7,23 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } 
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { judge, lists, mutate, mutations, ofReadabilityOwner, readabilityOwners, site, siteLines, syncTree, testsEnv, unmatched, unparsed } from "../scripts/mutations";
+import {
+  judge,
+  judgeUnit,
+  lists,
+  mutate,
+  mutations,
+  ofReadabilityOwner,
+  readabilityOwners,
+  site,
+  siteLines,
+  syncTree,
+  testsBinary,
+  testsEnv,
+  unitTestsModule,
+  unmatched,
+  unparsed,
+} from "../scripts/mutations";
 import { underLoad } from "../scripts/timing";
 import { run as runChild, type Exit } from "./child";
 import { installPackages } from "./packages-of";
@@ -20,8 +36,43 @@ test("every mutation applies to the compiler as it is, once", () => {
   for (const m of mutations) {
     const mutated = mutate(readFileSync(join(root, m.file), "utf8"), m);
     expect([m.name, typeof mutated === "string" ? "applies" : mutated.problem]).toEqual([m.name, "applies"]);
-    expect(m.tests.length).toBeGreaterThan(0);
+    // Its `bun test` tests or its unit tests, one of the two (#915).
+    expect([m.name, m.tests === undefined ? m.unitTests !== undefined && m.snapshots === undefined : m.tests.length > 0 && m.unitTests === undefined]).toEqual([
+      m.name,
+      true,
+    ]);
   }
+});
+
+// A mutation's unit tests are there: its filter names a `#[test]` of a
+// source file of its module, by its name, or the module of some.
+test("every mutation's unit tests are there", () => {
+  const sources = [...new Bun.Glob("src/**/*.rs").scanSync(root)].map((file) => ({
+    module: unitTestsModule(file)!,
+    tests: [...readFileSync(join(root, file), "utf8").matchAll(/#\[test\]\s*(?:#\[[^\]]*\]\s*)*fn (\w+)/g)].map((m) => m[1]),
+  }));
+  const named = mutations.filter((m) => m.unitTests !== undefined);
+  expect(named.length).toBeGreaterThan(0);
+  const missing = named.filter(({ unitTests: filter }) =>
+    !sources.some(({ module, tests }) => tests.length > 0 && (module.startsWith(`${filter}::`) || module === filter || (filter!.startsWith(`${module}::`) && tests.some((t) => filter!.endsWith(`::${t}`))))),
+  );
+  expect(missing.map((m) => `${m.name}: ${m.unitTests}`)).toEqual([]);
+});
+
+// A unit test's run, as libtest prints it, says whether its mutant is
+// caught: a filter that runs none says nothing of it.
+test("a unit-tested mutant is caught where its tests fail, and only then", () => {
+  const exit = (code: number | null, stdout: string, more: Partial<Exit> = {}): Exit => ({ code, signal: null, timedOut: false, overflowed: false, stdout, stderr: "", bytes: { stdout: Buffer.alloc(0), stderr: Buffer.alloc(0) }, ...more });
+  const ok = "running 1 test\ntest a::tests::b ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 900 filtered out; finished in 0.00s\n";
+  const failed = "running 1 test\ntest a::tests::b ... FAILED\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 900 filtered out; finished in 0.00s\n";
+  expect(judgeUnit(exit(101, failed))).toBe("caught");
+  expect(judgeUnit(exit(0, ok))).toBe("survived");
+  expect(judgeUnit(exit(0, ok.replace("1 passed", "0 passed")))).toBe("inconclusive");
+  expect(judgeUnit(exit(null, failed, { timedOut: true, signal: "SIGTERM" }))).toBe("inconclusive");
+  expect(judgeUnit(exit(101, "thread 'main' panicked at src/main.rs:1:1\n"))).toBe("inconclusive");
+  expect(testsBinary('{"reason":"compiler-artifact","profile":{"test":false},"executable":"/t/debug/rust-js"}\n{"reason":"compiler-artifact","profile":{"test":true},"executable":"/t/debug/deps/rust_js-1"}\n')).toBe(
+    "/t/debug/deps/rust_js-1",
+  );
 });
 
 // Each lexes, built alone and in a build of many, so a build of many fails
@@ -69,13 +120,14 @@ test("every mutation's corpus, diagnostics and limitations tests are there", () 
       "test/limitations.test.ts": limitations().map((l) => l.title),
     })[file];
   const missing = mutations.filter((m) => {
+    if (m.tests === undefined) return false;
     const at = m.tests.indexOf("-t");
     const names = named(m.tests[0]);
     if (at < 0 || names === undefined) return false;
     const pattern = new RegExp(m.tests[at + 1]);
     return !names.some((name) => pattern.test(name));
   });
-  expect(missing.map((m) => `${m.name}: ${m.tests.join(" ")}`)).toEqual([]);
+  expect(missing.map((m) => `${m.name}: ${m.tests!.join(" ")}`)).toEqual([]);
 });
 
 // A source file of any length has bugs its tests must catch: each of more

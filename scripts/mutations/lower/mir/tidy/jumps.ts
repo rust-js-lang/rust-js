@@ -436,4 +436,22 @@ export const mutations: Mutation[] = [
     replace: "            if true {\n",
     tests: ["test/lowering-written-elses.test.ts", "-t", "a long else if chain"],
   },
+  {
+    name: "ending-returns-chain-rest-tidied-unwalked",
+    breaks:
+      "a function's last `if` that an `else if` chain of MIR's `return;`s rewrote, its last `else` the body's rest, isn't walked as a branch of the `if` that ends the function, and keeps a `return undefined;` (#895)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "        closed(&mut stmts[at], rest, &mut |then| ending_returns(then, returns, branch));\n        tidied = false;\n",
+    replace: "        closed(&mut stmts[at], rest, &mut |then| ending_returns(then, returns, branch));\n",
+    unitTests: "lower::mir::tidy::jumps::tests::a_rest_made_a_chains_last_else_is_tidied_as_a_branch",
+  },
+  {
+    name: "ending-returns-alone-rest-tidied-unwalked",
+    breaks:
+      "a function's last `if` that an `if` of MIR's `return;` rewrote, its `else` the body's rest, isn't walked as a branch of the `if` that ends the function, and keeps a `return undefined;` (#895)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "    } else if let Some(at) = alone {\n        tidied = false;\n",
+    replace: "    } else if let Some(at) = alone {\n",
+    unitTests: "lower::mir::tidy::jumps::tests::a_rest_made_a_branch_is_tidied_as_one",
+  },
 ];

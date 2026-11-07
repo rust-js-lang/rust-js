@@ -139,7 +139,9 @@ library behavior from local source.
 4. **Prove the tests can fail.** For each new behavior or guard, add a
    mutation to its module's list in `scripts/mutations/`: a plausible bug
    that its tests must catch ([ADR 0093](docs/decisions/0093-mutations.md)).
-   A mutation that survives means a missing test.
+   A mutation that survives means a missing test. Code no program reaches
+   is held by a unit test, which its mutation names as `unitTests`, a
+   `cargo test` filter, in place of `tests`.
 5. **Record the decision.** A new semantic choice or important architectural
    tradeoff gets a design decision in `docs/decisions/`, indexed in
    [docs/decisions/README.md](docs/decisions/README.md), its number

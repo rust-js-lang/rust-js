@@ -37,7 +37,12 @@ export type Mutation = {
   find: string;
   replace: string;
   /** `bun test` arguments whose tests must catch it. */
-  tests: string[];
+  tests?: string[];
+  /** Or, where no program the compiler is given reaches its code, the
+   * `cargo test` filter whose unit tests must: a test's path, or its
+   * module's, from the crate's root, `lower::mir::tidy::jumps::tests::x`.
+   * A mutation names this or `tests`, not both (#915). */
+  unitTests?: string;
   /** Its tests check the corpus's JS snapshots too: it changes only how
    * the JS reads, as one that takes away the readable form of something
    * a more general one also does right, and how it reads is what's checked. */
@@ -119,6 +124,16 @@ export function changedMutations(
     return is === "all" || was === "all" ? "all" : [...is, ...was];
   };
   const cases = changes.filter((c) => c.file.startsWith("test/corpus/")).map((c) => c.file.slice("test/corpus/".length));
+  // Whether the change touches the unit tests a `cargo test` filter runs:
+  // the tests of a source file of its path, as it is or as it was.
+  const within = (outer: string, path: string) => outer === "" || path === outer || path.startsWith(`${outer}::`);
+  const unitTestsTouched = (filter: string) =>
+    changes.some((c) => {
+      const module = unitTestsModule(c.file);
+      if (module === undefined || !(within(module, filter) || within(filter, module))) return false;
+      const source = c.base ? readBase(c.file) : read(c.file);
+      return source !== undefined && overlaps(c.lines, unitTestLines(c.file, source));
+    });
   return now.filter((m) => {
     if (!base.some((b) => same(b, m))) return true;
     const source = changed.has(m.file) ? read(m.file) : undefined;
@@ -130,13 +145,34 @@ export function changedMutations(
       const block = enclosingFunction(source, first, first + m.find.split("\n").length - 1);
       if (overlaps(changed.get(m.file)!, block)) return true;
     }
-    const [file, ...args] = m.tests;
+    if (m.unitTests !== undefined) return unitTestsTouched(m.unitTests);
+    const [file, ...args] = m.tests!;
     const at = args.indexOf("-t");
     const filter = at >= 0 ? new RegExp(args[at + 1]) : undefined;
     const tests = touchedTests(file);
     if (tests === "all" || (tests.length > 0 && (!filter || tests.some((name) => filter.test(name))))) return true;
     return file === "test/corpus.test.ts" && filter !== undefined && cases.some((name) => filter.test(name));
   });
+}
+
+/** The module of the crate's source file `file`, as a `cargo test` filter
+ * names it from the crate's root, `src/lower/mir/tidy/jumps.rs`'s
+ * `lower::mir::tidy::jumps`; the root's is `""`. Nothing for a file that
+ * isn't the crate's Rust. */
+export function unitTestsModule(file: string): string | undefined {
+  if (!file.startsWith("src/") || !file.endsWith(".rs")) return undefined;
+  const path = file.slice("src/".length, -".rs".length).replace(/(?:^|\/)mod$/, "");
+  return path === "main" ? "" : path.split("/").join("::");
+}
+
+/** The lines of `source`, the crate's `file`, that its unit tests are: a
+ * tests module's file whole, or from its first `#[cfg(test)]` to its end;
+ * none where it has none. */
+export function unitTestLines(file: string, source: string): [number, number] {
+  const lines = source.split("\n");
+  if (/(?:^|\/)tests(?:\.rs$|\/)/.test(file)) return [1, lines.length];
+  const at = lines.findIndex((line) => line.trim() === "#[cfg(test)]");
+  return at < 0 ? [0, 0] : [at + 1, lines.length];
 }
 
 /** The mutations, of `among`, a change since `base` runs (`--changed`). */
@@ -520,35 +556,73 @@ export function syncTree(from: string, to: string, paths: string[]): string[] {
 }
 
 /** A compiler built from this checkout's crate with `files` written over
- * it, or as it is; or why it can't be built. The crate is kept from the
- * last build, what it wrote put back: one built as it is is kept too, while
- * the crate's sources are what it was built from. */
-async function build(files?: Map<string, string>, slot = 0): Promise<string | { problem: string }> {
+ * it, or as it is, or, `unit`, its unit tests' binary, `cargo test`'s; or
+ * why it can't be built. The crate is kept from the last build, what it
+ * wrote put back: one built as it is is kept too, while the crate's sources
+ * are what it was built from. */
+async function build(files?: Map<string, string>, slot = 0, unit = false): Promise<string | { problem: string }> {
   // Each worker builds in a crate and a target of its own (`--jobs`).
   const crate = slot === 0 ? join(work, "crate") : join(work, `crate-${slot}`);
   const target = slot === 0 ? join(work, "target") : join(work, `target-${slot}`);
   mkdirSync(crate, { recursive: true });
   syncTree(root, crate, crateFiles);
-  const kept = join(work, "bin", "unmutated");
+  const kept = join(work, "bin", unit ? "unmutated-tests" : "unmutated");
   const sources = createHash("sha256");
   for (const path of files ? [] : listed(crate, crateFiles).sort()) sources.update(path).update(readFileSync(join(crate, path)));
   const built = sources.digest("hex");
-  const stamp = join(work, "unmutated.stamp");
+  const stamp = join(work, unit ? "unmutated-tests.stamp" : "unmutated.stamp");
   if (!files && existsSync(kept) && existsSync(stamp) && readFileSync(stamp, "utf8") === built) return kept;
   for (const [path, text] of files ?? []) {
     mkdirSync(dirname(join(crate, path)), { recursive: true });
     writeFileSync(join(crate, path), text);
   }
-  const p = await run(["cargo", "build", "--quiet", "--locked", "--target-dir", target], crate, buildTimeout);
+  // Unit tests are the binary's own, built in the same target as the
+  // compiler, its dependencies shared: built once for a build of many,
+  // each mutation's tests run as it by `RUST_JS_MUTANT` (#915).
+  const command = unit
+    ? ["cargo", "test", "--no-run", "--quiet", "--locked", "--bin", "rust-js", "--message-format=json", "--target-dir", target]
+    : ["cargo", "build", "--quiet", "--locked", "--target-dir", target];
+  const p = await run(command, crate, buildTimeout);
   if (p.code !== 0 || stopped(p, buildTimeout)) {
     const why = stopped(p, buildTimeout) ?? p.stderr.split("\n").find((line) => line.startsWith("error")) ?? `exited ${p.code}`;
     return { problem: `doesn't build: ${why}` };
   }
-  if (files) return join(target, "debug", "rust-js");
+  const binary = unit ? testsBinary(p.stdout) : join(target, "debug", "rust-js");
+  if (binary === undefined) return { problem: "doesn't build: cargo named no unit tests' binary" };
+  if (files) return binary;
   mkdirSync(join(work, "bin"), { recursive: true });
-  cpSync(join(target, "debug", "rust-js"), kept);
+  cpSync(binary, kept);
   writeFileSync(stamp, built);
   return kept;
+}
+
+/** The unit tests' binary `cargo test --no-run --message-format=json`
+ * says it built, of `stdout`. */
+export function testsBinary(stdout: string): string | undefined {
+  for (const line of stdout.split("\n")) {
+    if (!line.startsWith("{")) continue;
+    const message = JSON.parse(line);
+    if (message.reason === "compiler-artifact" && message.profile?.test === true && typeof message.executable === "string") return message.executable;
+  }
+  return undefined;
+}
+
+/** What a run of unit tests says of a mutant: `caught` where one failed,
+ * `survived` where some ran and each passed, or `inconclusive`, where it
+ * was stopped, none ran, or it failed otherwise, which says nothing. */
+export function judgeUnit(p: Exit): "caught" | "survived" | "inconclusive" {
+  if (stopped(p, testTimeout)) return "inconclusive";
+  const said = p.stdout.match(/^test result: (ok|FAILED)\. (\d+) passed; (\d+) failed;/m);
+  if (!said) return "inconclusive";
+  const [, result, passed, failed] = said;
+  if (p.code === 0 && result === "ok" && Number(passed) > 0) return "survived";
+  return p.code === 101 && result === "FAILED" && Number(failed) > 0 ? "caught" : "inconclusive";
+}
+
+/** How the unit tests `filter` names do with `binary`, as `mutant` of a
+ * build of many, or as it is. */
+function unitTest(binary: string, filter: string, mutant = ""): Promise<Exit> {
+  return run([binary, filter], root, testTimeout, { RUST_JS_MUTANT: mutant });
 }
 
 /** `own`, a mutant's tests' target, given the `@rust-js/runtime` `compiler`
@@ -737,7 +811,7 @@ async function main() {
   // A killed run's compilers, which it didn't get to remove; not the one
   // built without a mutation, kept while the crate is what it was built from.
   for (const entry of existsSync(join(work, "bin")) ? readdirSync(join(work, "bin")) : []) {
-    if (entry !== "unmutated") rmSync(join(work, "bin", entry), { recursive: true, force: true });
+    if (entry !== "unmutated" && entry !== "unmutated-tests") rmSync(join(work, "bin", entry), { recursive: true, force: true });
   }
   // Each mutation's tests pass as the compiler is, and run at all, so
   // their failing is the mutation's doing.
@@ -754,10 +828,10 @@ async function main() {
   // runs of their own were most of a run's time (ADR 1031). The corpus in
   // parts, each a process, as the suite runs it; as many at once as there
   // are cores.
-  const sets = [...new Map(chosen.map((m) => [[m.snapshots ? "snapshots" : "", ...m.tests].join("\0"), m])).values()].map((m) => ({
+  const sets = [...new Map(chosen.filter((m) => m.tests).map((m) => [[m.snapshots ? "snapshots" : "", ...m.tests!].join("\0"), m])).values()].map((m) => ({
     snapshots: m.snapshots === true,
-    tests: m.tests,
-    ...testSet(m.tests),
+    tests: m.tests!,
+    ...testSet(m.tests!),
   }));
   type Run = { compiler: string; snapshots: boolean; file: string; pattern?: string; part?: string };
   const runs: Run[] = [];
@@ -806,6 +880,15 @@ async function main() {
       problems.push(`\`bun test ${set.tests.join(" ")}\` passes with a compiler that compiles nothing: it isn't using the one it's given`);
     }
   }
+  // And each unit tests' filter, as the crate is: some run, and pass.
+  const filters = [...new Set(chosen.flatMap((m) => (m.unitTests === undefined ? [] : [m.unitTests])))];
+  if (filters.length > 0) {
+    const unitTests = await build(undefined, 0, true);
+    if (typeof unitTests !== "string") throw new Error(`the unit tests as the crate is ${unitTests.problem}`);
+    for (const [filter, p] of await Promise.all(filters.map(async (filter) => [filter, await unitTest(unitTests, filter)] as const))) {
+      if (judgeUnit(p) !== "survived") problems.push(`\`cargo test ${filter}\` doesn't run and pass as the crate is:\n${(p.stdout + p.stderr).slice(-1500)}`);
+    }
+  }
   if (problems.length > 0) throw new Error(problems.join("\n\n"));
   // Each build by one of `--jobs` workers, each building in a crate of its
   // own: one for each two cores, up to four, as a build uses about two, two
@@ -828,7 +911,10 @@ async function main() {
     if (problem) results.set(mutation, problem);
     else sited.push({ mutation, site: at });
   }
-  const queue: Sited[][] = [...batches(sited, size), ...sited.filter((s) => s.site === undefined).map((s) => [s])];
+  // Those unit tests catch in builds of their own, of the unit tests'
+  // binary alone.
+  const ofUnit = (unit: boolean) => sited.filter((s) => (s.mutation.unitTests !== undefined) === unit);
+  const queue: Sited[][] = [...batches(ofUnit(true), size), ...batches(ofUnit(false), size), ...sited.filter((s) => s.site === undefined).map((s) => [s])];
   // What each took, its build's share and its tests, in seconds.
   const took = new Map<Mutation, { build: number; tests: number }>();
   // As many mutants' tests at once as there are cores, `--tests=N`: a test
@@ -885,7 +971,8 @@ async function main() {
   const one = async (batch: Sited[], slot: number) => {
     const began = performance.now();
     const files = schema(batch, read);
-    const compiler = files instanceof Map ? await build(files, slot) : files;
+    const unit = batch[0].mutation.unitTests !== undefined;
+    const compiler = files instanceof Map ? await build(files, slot, unit) : files;
     const building = (performance.now() - began) / 1000;
     if (typeof compiler !== "string") {
       // A build of many that fails is two of half as many: the mutation that
@@ -902,6 +989,21 @@ async function main() {
     const kept = join(work, "bin", `.build-${slot}-${++builds}`);
     cpSync(compiler, kept);
     const tested = batch.map(async ({ mutation }) => {
+      if (mutation.unitTests !== undefined) {
+        const started = performance.now();
+        const p = await beside(() => unitTest(kept, mutation.unitTests!, mutation.name));
+        took.set(mutation, { build: building / batch.length, tests: (performance.now() - started) / 1000 });
+        const log = join(work, "logs", `${mutation.name}.log`);
+        mkdirSync(join(work, "logs"), { recursive: true });
+        writeFileSync(log, p.stdout + p.stderr);
+        const verdict = judgeUnit(p);
+        if (verdict === "inconclusive") console.log(`--- ${mutation.name}, inconclusive: its log's end\n${(p.stdout + p.stderr).split("\n").slice(-60).join("\n")}\n---`);
+        results.set(
+          mutation,
+          verdict === "caught" ? "caught" : verdict === "survived" ? `SURVIVED: \`cargo test ${mutation.unitTests}\` passed with it` : `INCONCLUSIVE: see ${log}`,
+        );
+        return;
+      }
       const mutant = join(work, "bin", mutation.name);
       rmSync(mutant, { force: true });
       try {
@@ -912,7 +1014,7 @@ async function main() {
       let started = 0;
       const byTests = await beside(() => {
         started = performance.now();
-        return test(mutation.tests, mutant, mutation.snapshots);
+        return test(mutation.tests!, mutant, mutation.snapshots);
       });
       const { ran, exit } = byTests;
       let output = byTests.output;

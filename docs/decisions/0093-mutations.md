@@ -312,3 +312,40 @@ tidy's functions run for every body, so it's the stop at the first
 difference that keeps it short. `scoped-drops-if-uncovered`, one of #847's
 32, now names its corpus case alone, which passes with it: the runner's
 snapshots catch it, six of its 12 parts each stopping at a case whose JS differs, in 2.1 s of tests.
+
+## Amendment: a mutation of code no program reaches is caught by its unit tests (#915)
+
+Some code is reached by no program the compiler is given, so no corpus
+case or `bun test` file can catch a bug put back in it: #895's two clears
+of `tidied` in `src/lower/mir/tidy/jumps.rs`, whose rewrites no MIR-made
+body reaches, are each held by a unit test in that file, and removing
+either fails `cargo test`. The runner ran `bun test` alone, so the catalog
+couldn't hold them.
+
+**A mutation names its `bun test` tests, `tests`, or, where no program
+reaches its code, the `cargo test` filter whose unit tests catch it,
+`unitTests`: a test's path or its module's from the crate's root,
+`lower::mir::tidy::jumps::tests::a_rest_made_a_branch_is_tidied_as_one`.
+One or the other, never both** (`test/mutations.test.ts`, which also holds
+each filter to a `#[test]` there).
+
+- Its unit tests are the compiler binary's own: a build of many of them
+  (ADR 1031) is one `cargo test --no-run --bin rust-js` in the worker's own
+  target, its dependencies shared with the compiler's builds, and each
+  mutation's run of that binary chooses it by `RUST_JS_MUTANT`. Mutations
+  of unit tests are batched apart from those of `bun test`, so neither
+  kind's build builds the other's binary.
+- The control is the binary built as the crate is: each filter runs at
+  least one test, and each passes. A run that is stopped, runs none or
+  fails otherwise is inconclusive; one in which a test fails catches it.
+- A change runs it, `--changed`, as any other: where it adds or edits it,
+  or changes the function it's in, and where it touches the unit tests of
+  a source file of the filter's module, from its `#[cfg(test)]` on, or a
+  tests module's file whole.
+
+The two clears' mutations, `ending-returns-chain-rest-tidied-unwalked` and
+`ending-returns-alone-rest-tidied-unwalked`, are caught, each by its own
+test alone: with their filters swapped, both survive. On the 12-core M6,
+the pair took 56 s cold, the compiler and the unit tests' binary built as
+the crate is among it, and 2 s once those were built, each test 20 ms;
+each built alone, `--batch=1`, 5 to 28 s.
