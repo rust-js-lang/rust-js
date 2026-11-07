@@ -23,6 +23,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { random } from "./generate";
+import { pointsRunner } from "./panic-points";
 import { root, target } from "./support";
 
 /** The builds each case is compiled in: the recognizers' rewrites, and
@@ -136,7 +137,7 @@ export const readKnown = () => parseKnown(existsSync(knownFile) ? readFileSync(k
 
 /** The cases' version: of their names, in their order, so a change to what
  * the generator makes, or in what order, is another. */
-export function version(cases: Case[]): string {
+export function version(cases: Row[]): string {
   return new Bun.CryptoHasher("sha256").update(cases.map((c) => c.id).join("\n")).digest("hex").slice(0, 12);
 }
 
@@ -762,8 +763,40 @@ export function pointsCases(): Case[] {
     .map((c, n) => ({ ...c, n, id: c.id.replace(/ \| none$/, " | points"), site: "points" as const }));
 }
 
+/** What test/iterator-matrix.test.ts judges of a case of any table: its
+ * number in its table's cases, and its id, which its program prints as
+ * `case <id>` as it begins. */
+export type Row = { n: number; id: string };
+
+/** A table as test/iterator-matrix.test.ts runs it: its cases; a program
+ * of some, each case's function `case_<i>`, `i` its index among them, run
+ * in turn by `main`, each printing `case <id>` first; the cases in
+ * programs; the programs a run without `ITERATOR_MATRIX` runs; and, of a
+ * table of adapters and consumers, so many of each pairing (#818). */
+export type TableOf<C extends Row> = {
+  cases(): C[];
+  program(cases: C[]): string;
+  batches(cases: C[]): C[][];
+  slice(all: C[][]): number[];
+  pairs?(cases: C[], perPair: number): C[];
+};
+
+/** `of`, an iterator table, as the harness runs it. */
+const iteratorTable = (of: Table, cases: () => Case[]): TableOf<Case> => ({
+  cases,
+  program: (batch) => program(batch, of),
+  batches: (all) => batches(all),
+  slice: (all) => slice(all),
+  pairs,
+});
+
+/** The table `of`, as test/iterator-matrix.test.ts runs it. */
+export function tableOf(of: Table): TableOf<Row> {
+  return iteratorTable(of, of === "matrix" ? allCases : of === "conformance" ? conformanceCases : pointsCases);
+}
+
 /** The cases of `table`. */
-export const casesOf = (of: Table): Case[] => (of === "matrix" ? allCases() : of === "conformance" ? conformanceCases() : pointsCases());
+export const casesOf = (of: Table): Row[] => tableOf(of).cases();
 
 /** The cases in programs of `perBatch`, in their order. */
 export function batches(cases: Case[], perBatch = 60): Case[][] {
@@ -1106,50 +1139,6 @@ fn run(name: &str, case: fn()) {
 }
 `;
 
-/** The points table's runner (#817): each case run under `catch_unwind`
- * once a point, its `k`th point panicking, `point()`'s, until a run has no
- * `k`th, which is the case run plain. A point is each call of a closure of
- * the case's, each drop and clone of a `D`, each drop of an accumulator or
- * a total, and each `next`, `next_back` and drop of the crate's iterator.
- * One panic a run, so native Rust never aborts on a second. */
-const pointsRunner = `
-/** The point that panics, the \`k\`th of a run, or none; and how many a
- * run has passed. */
-static POINT: AtomicU32 = AtomicU32::new(0);
-static POINTS: AtomicU32 = AtomicU32::new(0);
-
-/** A point: where it's the run's \`k\`th, a panic, once. */
-fn point() {
-    let n = POINTS.fetch_add(1, Ordering::Relaxed) + 1;
-    if n == POINT.load(Ordering::Relaxed) {
-        POINT.store(0, Ordering::Relaxed);
-        println!("panic at {n}");
-        panic!("point");
-    }
-}
-
-fn run_points(name: &str, case: fn()) {
-    println!("case {name}");
-    let mut k = 1;
-    loop {
-        POINTS.store(0, Ordering::Relaxed);
-        POINT.store(k, Ordering::Relaxed);
-        println!("point {k}");
-        let ended = catch_unwind(case);
-        let fired = POINT.load(Ordering::Relaxed) == 0;
-        POINT.store(0, Ordering::Relaxed);
-        match ended {
-            Ok(()) => println!("ended"),
-            Err(payload) => println!("panicked: {}", payload.downcast_ref::<&str>().copied().unwrap_or("?")),
-        }
-        if !fired || k == 200 {
-            break;
-        }
-        k += 1;
-    }
-}
-`;
-
 /** `text`, the prelude or the crate's iterators, with the points table's
  * points: after each drop and clone prints, and first in each `next` and
  * `next_back` of the crate's iterator. */
@@ -1272,9 +1261,10 @@ if (import.meta.main) {
     writeFileSync(knownFile, printKnown(known, header));
     console.log(`added ${found.length} under #${issue}`);
   } else if (command === "program" && args.length === 1) {
-    const c = casesOf(table)[Number(args[0])];
+    const of = tableOf(table);
+    const c = of.cases()[Number(args[0])];
     if (!c) throw new Error(`no case ${args[0]}`);
-    process.stdout.write(program([c], table));
+    process.stdout.write(of.program([c]));
   } else {
     throw new Error("`take-off`, `add <issue> <title> <regex>`, or `program <n>`, case n's program alone");
   }

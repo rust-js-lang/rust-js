@@ -26,24 +26,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 
-import {
-  batches,
-  pairs,
-  builds,
-  casesOf,
-  failures,
-  fixedFile,
-  knownCases,
-  listedBuild,
-  ofTable,
-  program,
-  readKnown,
-  segments,
-  slice,
-  table,
-  version,
-  type Case,
-} from "./iterator-matrix";
+import { builds, failures, fixedFile, knownCases, listedBuild, ofTable, readKnown, segments, table, tableOf, version, type Row } from "./iterator-matrix";
 import { same, type Outcome } from "./oracle";
 import { aborted, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, fixture } from "./support";
@@ -63,8 +46,9 @@ if (which !== undefined && which !== "all" && issue === undefined && paired === 
 }
 const list = readKnown();
 const known = knownCases(list);
-const every = casesOf(table);
-const all = batches(every);
+const of = tableOf(table);
+const every = of.cases();
+const all = of.batches(every);
 // A slice is whole batches, so each case is in the same program as in a
 // run of all of them, and judged the same.
 const indexes = all.map((_, i) => i);
@@ -80,14 +64,15 @@ const ofIssue = [...known]
 // the matrix's and 10 of the table's, that they're some 200 batches and
 // some 100 (#818).
 const matching = rows === undefined ? every : every.filter((c) => new RegExp(rows).test(c.id));
-const picked = paired !== undefined ? pairs(matching, paired) : rows !== undefined ? matching : undefined;
-const run = picked === undefined ? all : batches(picked);
+if (paired !== undefined && of.pairs === undefined) throw new Error(`ITERATOR_MATRIX=${which}: the ${table} table has no pairings of an adapter with a consumer`);
+const picked = paired !== undefined ? of.pairs!(matching, paired) : rows !== undefined ? matching : undefined;
+const run = picked === undefined ? all : of.batches(picked);
 const chosen =
   which === "all" || picked !== undefined
     ? run.map((_, i) => i)
     : issue !== undefined
       ? [...new Set(ofIssue)].sort((a, b) => a - b)
-      : slice(all);
+      : of.slice(all);
 if (issue !== undefined && chosen.length === 0) throw new Error(`ITERATOR_MATRIX=${which}: no known case is under #${issue}`);
 const [part, parts] = (process.env.RUST_JS_CASES ?? "1/1").split("/").map(Number);
 const mine = shard(
@@ -118,7 +103,7 @@ export function abortVerdict(js: { outcome: Outcome | string; printed: string },
 }
 
 /** Which case each line of `text` is in, from `program`'s `fn case_<n>`. */
-function caseAtLine(text: string, cases: Case[]): (line: number) => Case | undefined {
+function caseAtLine(text: string, cases: Row[]): (line: number) => Row | undefined {
   const starts: [number, number][] = [];
   text.split("\n").forEach((line, i) => {
     const n = /^fn case_(\d+)\(/.exec(line)?.[1];
@@ -131,9 +116,9 @@ function caseAtLine(text: string, cases: Case[]): (line: number) => Case | undef
 }
 
 /** The cases of `cases` each refusal of rust-js's `stderr` points into. */
-function refusedCases(stderr: string, text: string, cases: Case[], file: string): Map<Case, string> {
+function refusedCases(stderr: string, text: string, cases: Row[], file: string): Map<Row, string> {
   const at = caseAtLine(text, cases);
-  const out = new Map<Case, string>();
+  const out = new Map<Row, string>();
   let error = "";
   for (const line of stderr.split("\n")) {
     if (line.startsWith("error")) error = line;
@@ -148,19 +133,19 @@ function refusedCases(stderr: string, text: string, cases: Case[], file: string)
 
 /** Each case of `cases`, compiled with `flags` and run, against what
  * native Rust printed of it. */
-function judge(cases: Case[], native: Map<string, string>, dir: string, build: string, flags: string[], aborts = false): Map<Case, Verdict> {
-  const verdicts = new Map<Case, Verdict>();
+function judge(cases: Row[], native: Map<string, string>, dir: string, build: string, flags: string[], aborts = false): Map<Row, Verdict> {
+  const verdicts = new Map<Row, Verdict>();
   mkdirSync(dir, { recursive: true });
   let pending = cases;
   for (let round = 0; pending.length > 0; round++) {
-    const text = program(pending);
+    const text = of.program(pending);
     const file = join(dir, `${build}-${round}.rs`);
     const at = join(dir, `${build}-${round}`);
     writeFileSync(file, text);
     mkdirSync(at, { recursive: true });
     const compiled = compileJs(file, at, "2024", false, {}, flags);
     if ("error" in compiled) {
-      const refused = compiled.kind === "rejected" ? refusedCases(compiled.error, text, pending, file) : new Map<Case, string>();
+      const refused = compiled.kind === "rejected" ? refusedCases(compiled.error, text, pending, file) : new Map<Row, string>();
       if (refused.size === 0) {
         // What can't be told apart by where it points, a crash: each
         // half on its own, until it's one case.
@@ -215,7 +200,7 @@ for (const index of mine) {
   test(`batch ${index + 1} of ${run.length}${picked === undefined ? "" : ` of ${which}`}: ${batch.length} cases`, () => {
     const dir = fixture(`iterator-${table}-${picked === undefined ? "" : "picked-"}${index}`);
     const file = join(dir, "native.rs");
-    writeFileSync(file, program(batch));
+    writeFileSync(file, of.program(batch));
     const native: Run | string = runNative(file, dir);
     if (typeof native === "string") throw new Error(`the matrix made a program rustc rejects:\n${native.slice(0, 4000)}`);
     // A batch of one may abort, as Rust does where a drop panics as a panic
@@ -247,7 +232,7 @@ for (const index of mine) {
         // known one's too, for its fixer.
         mkdirSync(failures, { recursive: true });
         const repro = join(failures, `${name.replaceAll(/[^A-Za-z0-9]+/g, "-")}.rs`);
-        writeFileSync(repro, program([c]));
+        writeFileSync(repro, of.program([c]));
         writeFileSync(repro.replace(/\.rs$/, ".json"), JSON.stringify({ name, build: listed, n: c.n, issue, verdict, native: expected.get(c.id) }, null, 2));
         if (issue !== undefined) continue;
         const said =
