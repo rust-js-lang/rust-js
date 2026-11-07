@@ -398,6 +398,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
   },
   {
+    name: "map-clear-unguarded",
+    breaks: "`clear` of a map whose entry's drop panics leaves it full, each entry dropped again with it (#899)",
+    file: "src/lower/std_types/map.rs",
+    find: "                if !self.drop_may_panic(receiver) {\n",
+    replace: "                if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_clear_unwinds_emptied.rs$"],
+  },
+  {
+    name: "map-clear-always-guarded",
+    breaks: "`clear` of a map whose entries' drops never panic is written `try { .. } finally { m.clear(); }` for nothing (#899)",
+    file: "src/lower/std_types/map.rs",
+    find: "                if !self.drop_may_panic(receiver) {\n",
+    replace: "                if false {\n",
+    tests: ["test/lowering-std-unwinds.test.ts", "-t", "clear"],
+  },
+  {
     name: "and-modify-unknown",
     breaks: "an entry's `and_modify` is refused",
     file: "src/lower/std_types/map.rs",

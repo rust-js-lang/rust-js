@@ -21,25 +21,9 @@ points:std 560,571,5593,5604
 plain 107177,107212,107450
 std 107177,107450
 
-#899 P0 (unwind): a map's or a set's clear() whose drop of an entry panics drops the entries again later: BTreeMap, BTreeSet and HashMap
-unwind:plain 1333-1341,1640-1648,1695-1703
-unwind:std 1333-1341,1640-1648,1695-1703
-
-#900 P0 (unwind): a BTreeMap's extend whose drop of a replaced value panics leaks the rest of what it was given
-unwind:plain 1300-1306,1308-1309
-unwind:std 1300-1306,1308-1309
-
 #901 P0 (unwind): a BinaryHeap whose comparison panics in a sift loses one item and drops another twice: push, pop, append, extend, into_sorted_vec
 unwind:plain 1726-1729,1731-1732,1734-1739,1741-1742,1744-1745,1766-1769,1771-1772,1774-1785,1806-1809,1811-1812,1814-1815
 unwind:std 1726-1729,1731-1732,1734-1739,1741-1742,1744-1745,1766-1769,1771-1772,1774-1785,1806-1809,1811-1812,1814-1815
-
-#904 P0 (unwind): Option::insert whose drop of the old value panics drops the old value twice and leaks the new one
-unwind:plain 1988-1997
-unwind:std 1988-1997
-
-#906 P0 (unwind): Vec::dedup_by and dedup_by_key drop each duplicate after every call of the closure, not as it's found; of an Rc a drop that panics aborts
-unwind:plain 508,510-511,513,519,521-522,524
-unwind:std 508,510-511,513,519,521-522,524
 
 #907 P0 (unwind): a stable sort's comparator is called as JS's Array.prototype.sort calls it, not as std's driftsort: another sequence of calls, and another order left when one panics
 unwind:plain 789-792,794-795,797-798,809-812,814-818,821-823,825,827-828,1084-1087,1089-1094
@@ -58,13 +42,9 @@ unwind:plain 1156
 unwind:std 1156
 
 #911 P0 (unwind): a BTreeMap's or a BTreeSet's comparisons of keys with their own Ord are called with their arguments swapped, and the key given leaks as one panics
-unwind:plain 1354-1357,1359-1397,1399-1467,1469-1500,1502-1520,1522-1573
-unwind:std 1354-1357,1359-1397,1399-1467,1469-1500,1502-1520,1522-1573
+unwind:plain 1354-1357,1359-1397,1399-1447,1449-1467,1469-1500,1502-1520,1522-1557,1559-1573
+unwind:std 1354-1357,1359-1397,1399-1447,1449-1467,1469-1500,1502-1520,1522-1557,1559-1573
 
 #912 P0 (unwind): std::cmp::max, min and Ord::max, min and clamp of a type with its own Ord compare in another order, and leak their arguments as the comparison panics
 unwind:plain 3380-3386,3388-3406,3408-3419
 unwind:std 3380-3386,3388-3406,3408-3419
-
-#919 P0 (drops): a Vec's clone_from clones every item then drops the old Vec, where std gives each kept item its clone then drops it, then clones the rest; fill of a Vec of Vecs, by their clone_from
-unwind:plain 651,663-671
-unwind:std 651,663-671

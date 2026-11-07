@@ -124,3 +124,64 @@ what it makes otherwise where that may throw.
 - Corpus: `clone_unwinds_what_it_made`, `default_unwinds_what_it_made`,
   `resize_fill_repeat_unwind`, `inspect_unwinds_its_value`, each failing
   before in both builds.
+
+## Amendment: std's own methods keep their state as a drop in them unwinds (2026-11-08, #899, #900, #904, #906, #919)
+
+The unwind table's second cluster: a std method rust-js writes itself,
+not from MIR, that drops or clones many values left its collection as it
+was, not as std's guard leaves it, when one of those panicked. The rule is
+this ADR's, said of state as well as of what's made: **what std's method
+has written, emptied or taken stays so as a drop or a clone in it
+unwinds, and what it holds is dropped as it unwinds.** Each asks the one
+answer of whether a drop may panic, `drop_may_panic` (ADR 0902's), or how
+an item is written over, `clone_over`; where nothing may panic or be seen,
+the form is as it was. The approved forms (the coordinator for the user,
+2026-11-08):
+
+- **`clear()` of a map or a set** (#899): its entries dropped as dropping
+  the map drops them, the rest though one panics (`$inTurn`'s, a second
+  panic aborting, #847), with `m.clear()` in a `finally`, as std's
+  `BTreeMap::clear` takes them out before it drops them and `HashMap`'s
+  guard clears the table as a drop unwinds: `try { <drop m> } finally {
+  m.clear(); }`, `drops::dropped_after`'s one form. Before, `<drop m>;
+  m.clear();` left the map full, each entry dropped again with it.
+- **`extend` of a `Vec` or an array into a map or a set** (#900):
+  `$extendMap` drops what's left of it as a put unwinds, a drop of what it
+  replaces or of the key it was given, each entry its key then its value
+  (`$entryDropping`, which `$mapFrom` asks too), as std's `for_each` drops
+  the `IntoIter` it took. A JS iterator was closed by `for..of` already.
+- **`Option::insert`** (#904): `*o = Some(v)`'s drop in place of the old
+  value writes `v` as it unwinds too: `try { if (o != null) { drop(o); } }
+  finally { o = v; }`. Before, the old value stayed, dropped again with
+  `o`, and `v` leaked.
+- **`dedup_by`, `dedup_by_key` and `pop_if`** (#906): the cells helper is
+  chosen by how a `&mut` to an item is given (`MutRefForm::is_cell`), not
+  by whether it's an object, so an `Rc`'s closure is given the cell it
+  reads (before, a `TypeError`); `$dedupByCells` is `$dedupBy`'s loop, so
+  a `Box`'s or an `Rc`'s duplicates are dropped as they're found (before,
+  never), and each cell is written back as the closure returns or unwinds.
+- **A `Vec`'s `clone_from`** (#919): std's `SpecCloneIntoVec`,
+  `$cloneIntoVec(w, v, clone, cloneFrom, drop)` in place: `truncate`, each
+  item kept written over by `clone_over`'s answer (its own `clone_from`, a
+  `Vec`'s again, or a clone then the old one's drop), then a clone of each
+  of the rest pushed. `clone_over` knows a `Vec`'s `clone_from` too, so
+  `fill` and `clone_from_slice` of `Vec`s of `Vec`s write each so, and of
+  `Vec`s of a type with its own `clone_from` are no longer refused. Of
+  items with no destructor and no `clone_from` of their own, `String`s,
+  nothing sees the order: `*w = v.clone()`, as before (0262's "none").
+
+Case (0262): results change; Rust's behaviour is preserved. Corpus:
+`map_clear_unwinds_emptied`, `map_extend_unwinds_what_is_left`,
+`option_insert_unwinds_written`, `dedup_by_drops_as_it_finds`,
+`vec_clone_from_in_place`, each failing before in both builds;
+`clone_from_slice_nested` compiles where it was refused, and
+`clone_from_slice_nested_option` keeps the refusal of an `Option`'s.
+`test/lowering-std-unwinds.test.ts` pins each quiet and guarded form. The
+unwind table's 128 case-builds of the five issues pass, and 4 of #911's,
+a `clear` of a B-tree of enum keys.
+
+Found and filed, not fixed here: #920, a `HashMap`'s or `HashSet`'s drop
+goes on past an entry's panicking drop where hashbrown's stops; #921, a
+`BTreeMap`'s `insert` or `extend` of a key already there writes the value
+before dropping the key it was given; #922, std's other `clone_from`s
+(`VecDeque`, `Option`, `Box`, the maps).

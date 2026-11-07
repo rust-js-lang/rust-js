@@ -497,4 +497,20 @@ export const mutations: Mutation[] = [
     replace: "        steps == writes.len() && !dropped.is_empty() || steps == writes.len()\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_counts.rs$"],
   },
+  {
+    name: "option-insert-unguarded",
+    breaks: "`o.insert(v)` whose drop of the old value panics keeps the old value, dropped again with `o`, and leaks `v` (#904)",
+    file: "src/lower/std_types/option.rs",
+    find: "            (OptionPlaceOp::Insert, Some(dropped)) if self.drop_may_panic(item) => {\n",
+    replace: "            (OptionPlaceOp::Insert, Some(dropped)) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_insert_unwinds_written.rs$"],
+  },
+  {
+    name: "option-insert-always-guarded",
+    breaks: "`o.insert(v)` of a value whose drop never panics is written `try { .. } finally { o = v; }` for nothing (#904)",
+    file: "src/lower/std_types/option.rs",
+    find: "            (OptionPlaceOp::Insert, Some(dropped)) if self.drop_may_panic(item) => {\n",
+    replace: "            (OptionPlaceOp::Insert, Some(dropped)) if true => {\n",
+    tests: ["test/lowering-std-unwinds.test.ts", "-t", "insert"],
+  },
 ];

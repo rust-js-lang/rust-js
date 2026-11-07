@@ -11,10 +11,13 @@ function dDrop_drop(d) {
 }
 
 function put(slot, value, dropT) {
-  if (slot.value != null) {
-    dropT?.(slot.value);
+  try {
+    if (slot.value != null) {
+      dropT?.(slot.value);
+    }
+  } finally {
+    slot.value = value;
   }
-  slot.value = value;
   console.log("put");
 }
 
@@ -29,10 +32,13 @@ function kept(slot, value, dropT) {
 
 function putIter(slot, items, dropIItem, dropIIntoIter) {
   const value = $intoIter(items);
-  if (slot.value != null) {
-    dropIIntoIter?.($someValue(slot.value));
+  try {
+    if (slot.value != null) {
+      dropIIntoIter?.($someValue(slot.value));
+    }
+  } finally {
+    slot.value = $some(value);
   }
-  slot.value = $some(value);
   return $lent($someValue(slot.value)).reduce((n, item) => {
     dropIItem?.(item);
     return n + 1;

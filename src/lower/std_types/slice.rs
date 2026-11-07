@@ -265,6 +265,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let called = Expr::call(clone_from.clone(), vec![place, Expr::var("from")]);
             return Ok((Some(clone), Some(Expr::bin(Op::And, clone_from, written(called)))));
         }
+        // A `Vec`'s, std's own: `$cloneIntoVec`, where its order of clones
+        // and drops is seen (#919).
+        if let ty::Adt(_, args) = item.kind()
+            && self.is_std_type(item, crate::lower::recognition::StdItem::Vec)
+            && let Some(into) = self.vec_clone_into(args.type_at(0), span)?
+        {
+            let mut list = vec![Expr::index(Expr::var("items"), Expr::var("i")), Expr::var("from")];
+            list.extend(into);
+            return Ok((None, Some(written(Expr::call_helper("$cloneIntoVec", list)))));
+        }
         if self.recognition().reaches_clone_from(item) {
             return Err(self.unsupported(
                 span,
@@ -272,6 +282,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ));
         }
         Ok((Some(self.clone_arg(item, span)?), None))
+    }
+
+    /// A `Vec`'s `clone_from` of `item`s, std's `SpecCloneIntoVec`: what it
+    /// has past the source's length dropped, each it keeps written over by
+    /// `clone_over`'s, then a clone of each of the rest pushed. The
+    /// arguments `$cloneIntoVec(w, v, ..)` takes after the two, its items'
+    /// clone, `clone_from` and drop, where that order is seen: of items with
+    /// a destructor, or a `clone_from` of their own or a `Vec`'s; of none,
+    /// `None`, as `*w = v.clone()` does alike, every clone then no drop
+    /// that can be seen (#919).
+    pub(in crate::lower) fn vec_clone_into(&mut self, item: ty::Ty<'tcx>, span: Span) -> R<Option<Vec<Expr>>> {
+        let (_, clone_from) = self.clone_over(item, "clone_from", span)?;
+        if clone_from.is_none() && self.drops(item) == crate::lower::drops::Drops::Nothing {
+            return Ok(None);
+        }
+        // What the rest are cloned by, though those kept are by `clone_from`.
+        let clone = match self.needs_clone(item) {
+            true => Some(self.clone_fn("item", item, span)?),
+            false => None,
+        };
+        let drop = self.std_drop_function(item, span)?;
+        Ok(Some(Expr::optional_args(Vec::new(), vec![clone, clone_from, drop])))
     }
 
     /// A call of one of the views' helpers (ADR 0335).

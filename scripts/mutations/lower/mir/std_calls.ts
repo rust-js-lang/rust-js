@@ -861,4 +861,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^extend_reserves_by_hint.rs$"],
   },
+  {
+    name: "clone-from-vec-replaced",
+    breaks: "`w.clone_from(&v)` of a `Vec` of items with a destructor clones every item, then drops the old `Vec`, not std's `SpecCloneIntoVec` order (#919)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                        && this.is_std_type(ty, crate::lower::recognition::StdItem::Vec)\n",
+    replace: "                        && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_clone_from_in_place.rs$"],
+  },
 ];

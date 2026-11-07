@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "        if self.recognition().reaches_clone_from(item) {\n",
     replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "clone_from_slice_nested"],
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_slice_nested_option.rs$"],
   },
   {
     name: "split-at-mut-checked-dropped",
@@ -472,5 +472,29 @@ export const mutations: Mutation[] = [
     find: "                args.extend(self.std_drop_function(key_ty, span)?);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
+  },
+  {
+    name: "vec-items-cloned-over",
+    breaks: "`fill` and `clone_from_slice` of `Vec`s write each over by a clone, not std's `Vec::clone_from`, and refuse items with a `clone_from` of their own (#919)",
+    file: "src/lower/std_types/slice.rs",
+    find: "            && self.is_std_type(item, crate::lower::recognition::StdItem::Vec)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^(vec_clone_from_in_place|clone_from_slice_nested).rs$"],
+  },
+  {
+    name: "vec-clone-into-unseen",
+    breaks: "a `Vec`'s `clone_from` of items with a destructor is `*w = v.clone()`, every clone before any drop (#919)",
+    file: "src/lower/std_types/slice.rs",
+    find: "        if clone_from.is_none() && self.drops(item) == crate::lower::drops::Drops::Nothing {\n",
+    replace: "        if clone_from.is_none() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_clone_from_in_place.rs$"],
+  },
+  {
+    name: "vec-clone-into-always",
+    breaks: "a `Vec`'s `clone_from` of `String`s, whose order nothing sees, takes `$cloneIntoVec` for nothing (#919)",
+    file: "src/lower/std_types/slice.rs",
+    find: "        if clone_from.is_none() && self.drops(item) == crate::lower::drops::Drops::Nothing {\n",
+    replace: "        if false {\n",
+    tests: ["test/lowering-std-unwinds.test.ts", "-t", "clone_from"],
   },
 ];

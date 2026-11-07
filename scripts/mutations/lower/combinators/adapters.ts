@@ -43,10 +43,18 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure taking `&mut` text or numbers is given them, not cells: `a.value` is `undefined`",
     file: "src/lower/combinators/adapters.rs",
-    find: "        match self.slice_item(items).is_some_and(|item| self.is_object(item)) {\n",
-    replace:
-      "        match self.slice_item(items).is_some_and(|item| true || self.is_object(item)) {\n",
+    find: "            .is_some_and(|item| self.mut_ref_form(item).is_cell())\n",
+    replace: "            .is_some_and(|item| false && self.mut_ref_form(item).is_cell())\n",
     tests: ["test/corpus.test.ts", "-t", "vec_edits"],
+  },
+  {
+    name: "items-cells-by-object",
+    breaks:
+      "`dedup_by` of `Rc`s, objects whose `&mut` is a cell, gives the closure each `Rc` where it reads a cell's `value`: a `TypeError` (#906)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "            .is_some_and(|item| self.mut_ref_form(item).is_cell())\n",
+    replace: "            .is_some_and(|item| !self.is_object(item))\n",
+    tests: ["test/corpus.test.ts", "-t", "^dedup_by_drops_as_it_finds.rs$"],
   },
   {
     name: "resize-shares-copies",

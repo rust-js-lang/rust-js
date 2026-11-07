@@ -79,6 +79,17 @@ function $cloneFromSlice(v, src, clone, cloneFrom, drop) {
   }
 }
 
+// `w.clone_from(&v)` of a `Vec`, std's `SpecCloneIntoVec`: what `w` has
+// past `v`'s length dropped, `truncate`'s; each item it keeps written over
+// by `v`'s, `$cloneFromSlice`'s; then a clone of each of the rest pushed,
+// what's pushed `w`'s as a later clone panics, `extend_from_slice`'s
+// (#919).
+function $cloneIntoVec(w, v, clone, cloneFrom, drop) {
+  $truncate(w, v.length, drop);
+  $cloneFromSlice(w, v.slice(0, w.length), clone, cloneFrom, drop);
+  for (let i = w.length; i < v.length; i++) w.push(clone ? clone(v[i]) : v[i]);
+}
+
 function $swapWithSlice(v, other) {
   if (v.length !== other.length) throw new Error("destination and source slices have different lengths");
   for (let i = 0; i < v.length; i++) [v[i], other[i]] = [other[i], v[i]];

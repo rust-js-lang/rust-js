@@ -1149,12 +1149,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `dest.clone_from(&source)`: `mem::replace` of `dest` with a clone
             // of `source`, written as it writes, what it gives back dropped,
             // as `*dest = source.clone()` drops it.
+            // A `Vec`'s, std's own, where its order of clones and drops is
+            // seen: `$cloneIntoVec(dest, source, ..)`, in place (#919).
             Std::CloneFrom => lower(move |this, state, values, out| {
                 Ok(Value::Expr({
                     let ty = arg_tys[1].peel_refs();
                     let dest = values.next().expect("the destination");
                     let source = values.next().expect("the source");
                     let source = this.value_expr(source, span)?;
+                    if let ty::Adt(_, args) = ty.kind()
+                        && this.is_std_type(ty, crate::lower::recognition::StdItem::Vec)
+                        && let Some(into) = this.vec_clone_into(args.type_at(0), span)?
+                    {
+                        let dest = this.value_expr(dest, span)?;
+                        this.flush(state, out)?;
+                        let mut list = vec![dest, source];
+                        list.extend(into);
+                        let call = Expr::call_helper("$cloneIntoVec", list);
+                        out.push(StmtKind::Expr(call).at(this.js_span(span)));
+                        return Ok(Value::Expr(Expr::undefined()));
+                    }
                     let clone = this.clone_value(source, ty, span, out)?;
                     let given = vec![dest, Value::Expr(clone)];
                     let old = this.mir_swap_or_replace(state, (Std::Replace, def_id), given, arg_tys, span, out)?;

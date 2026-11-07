@@ -8,9 +8,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The helper of items a closure takes `&mut`: of objects, `objects`;
     /// of what a `&mut` to is a cell, a number or text, `cells` (ADR 0315).
     pub(super) fn by_cells(&self, items: Ty<'tcx>, objects: &'static str, cells: &'static str) -> &'static str {
-        match self.slice_item(items).is_some_and(|item| self.is_object(item)) {
-            true => objects,
-            false => cells,
+        // As a `&mut` to one is given, the closure's argument: a cell where
+        // its form is one, an `Rc`'s, though it's an object (#906).
+        match self
+            .slice_item(items)
+            .is_some_and(|item| self.mut_ref_form(item).is_cell())
+        {
+            true => cells,
+            false => objects,
         }
     }
 

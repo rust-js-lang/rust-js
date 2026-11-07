@@ -195,7 +195,10 @@ function $isDisjoint(a, b) {
 // iterator with a `fold` of its own, an adapter's, the crate's or
 // `$folded`'s, by it, as std's `extend` is its `for_each`: so what it
 // replaces is dropped as each comes, before what its source drops at its
-// end, and a `skip`'s first step is its `nth(n - 1)` (#494).
+// end, and a `skip`'s first step is its `nth(n - 1)` (#494). Of an array,
+// a `Vec` or an array it took, what's left of it dropped as a put unwinds,
+// a drop of what it replaces, each entry by `$entryDropping`, as std's
+// `for_each` drops the `IntoIter` it was given (#900).
 function $extendMap(m, items, set, drop, dropKey) {
   const put = (item) => {
     if (set) {
@@ -215,8 +218,29 @@ function $extendMap(m, items, set, drop, dropKey) {
     items.fold(undefined, (_, item) => put(item));
     return m;
   }
+  if (Array.isArray(items)) {
+    let i = 0;
+    $unwinds(
+      () => {
+        for (; i < items.length; i++) put(items[i]);
+      },
+      () => $dropItems(items.slice(i + 1), $entryDropping(set, drop, dropKey)),
+    );
+    return m;
+  }
   for (const item of items) put(item);
   return m;
+}
+
+// What drops an entry of a map, `[key, value]`, its key, then its value
+// though the key's drop panics, as Rust drops a pair; of a set, its item.
+function $entryDropping(set, drop, dropKey) {
+  if (set) return (item) => dropKey?.(item);
+  return ([key, value]) =>
+    $inTurn(
+      () => dropKey?.(key),
+      () => drop?.(value),
+    );
 }
 
 // `collect()` into a new hash map or set, `m`, of `items` a panic may stop
@@ -226,13 +250,7 @@ function $extendMap(m, items, set, drop, dropKey) {
 function $mapFrom(m, items, set, drop, dropKey) {
   return $unwinds(
     () => $extendMap(m, items, set, drop, dropKey),
-    () =>
-      $inTurnOf(Array.from(m.entries()), ([key, value]) =>
-        $inTurn(
-          () => dropKey?.(key),
-          () => set || drop?.(value),
-        ),
-      ),
+    () => $dropItems(set ? m.keys() : m.entries(), $entryDropping(set, drop, dropKey)),
   );
 }
 

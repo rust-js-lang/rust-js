@@ -330,4 +330,28 @@ export const mutations: Mutation[] = [
     replace: "function $isSortedByKey(v, f, cmp, drop) {\n  if (false)\n",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
   },
+  {
+    name: "clone-into-vec-untruncated",
+    breaks: "a `Vec`'s `clone_from` of a shorter one keeps what it has past its length (#919)",
+    file: "src/runtime/slice_ops.js",
+    find: "  $truncate(w, v.length, drop);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^vec_clone_from_in_place.rs$"],
+  },
+  {
+    name: "clone-into-vec-truncated-last",
+    breaks: "a `Vec`'s `clone_from` drops what it has past the source's length after it writes over the rest, not first (#919)",
+    file: "src/runtime/slice_ops.js",
+    find: "  $truncate(w, v.length, drop);\n  $cloneFromSlice(w, v.slice(0, w.length), clone, cloneFrom, drop);\n",
+    replace: "  $cloneFromSlice(w.slice(0, v.length), v.slice(0, Math.min(w.length, v.length)), clone, cloneFrom, drop);\n  $truncate(w, v.length, drop);\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_clone_from_in_place.rs$"],
+  },
+  {
+    name: "clone-into-vec-rest-shared",
+    breaks: "a `Vec`'s `clone_from` pushes the source's own items past what it kept, not clones (#919)",
+    file: "src/runtime/slice_ops.js",
+    find: "w.push(clone ? clone(v[i]) : v[i]);",
+    replace: "w.push(v[i]);",
+    tests: ["test/corpus.test.ts", "-t", "^vec_clone_from_in_place.rs$"],
+  },
 ];

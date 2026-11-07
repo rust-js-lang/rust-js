@@ -1,0 +1,139 @@
+// What std's own methods keep as a drop or a clone in them panics (#899,
+// #904, #906, #919): a map's `clear()` empties it as a drop unwinds, an
+// `Option`'s `insert` writes its value, `dedup_by` drops each duplicate as
+// it's found, of what a `&mut` to is a cell too, and a `Vec`'s
+// `clone_from` writes over what it keeps in place. Where nothing in them
+// may panic, or nothing can be seen, the form each always had.
+
+import { expect, test } from "bun:test";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { compiler, fixture, run } from "./support";
+
+/** `rust` compiled in a fixture of `name`: its JS, its lines joined. */
+function compiled(name: string, rust: string): string {
+  const dir = fixture(name);
+  writeFileSync(join(dir, "lib.rs"), rust);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  return readFileSync(join(dir, "lib.js"), "utf8").replace(/\s+/g, " ");
+}
+
+/** The body of `flat`'s exported function `name`. */
+function body(flat: string, name: string): string {
+  return flat.slice(flat.indexOf(`export function ${name}(`)).split("export function")[1];
+}
+
+// `Loud`'s drop may panic; `Quiet`'s only writes its field, which never unwinds
+// (ADR 0902).
+const types = `
+#[derive(Clone)]
+pub struct Quiet(pub u32);
+
+impl Drop for Quiet {
+    fn drop(&mut self) {
+        self.0 = 0;
+    }
+}
+
+pub struct Loud(pub u32);
+
+impl Clone for Loud {
+    fn clone(&self) -> Loud {
+        println!("clone {}", self.0);
+        Loud(self.0)
+    }
+}
+
+impl Drop for Loud {
+    fn drop(&mut self) {
+        if self.0 == 0 {
+            panic!("drop");
+        }
+    }
+}
+`;
+
+test("a map's clear() empties it as an entry's drop unwinds, where one may", () => {
+  const flat = compiled(
+    "std-unwinds-clear",
+    `${types}
+use std::collections::BTreeMap;
+
+pub fn quiet(m: &mut BTreeMap<u32, Quiet>) {
+    m.clear();
+}
+
+pub fn loud(m: &mut BTreeMap<u32, Loud>) {
+    m.clear();
+}
+`,
+  );
+  expect(body(flat, "quiet")).not.toContain("finally");
+  expect(body(flat, "quiet")).toContain("} m.clear(); }");
+  expect(body(flat, "loud")).toMatch(/try \{ \$dropItems\(.*\} finally \{ m\.clear\(\); \}/);
+});
+
+test("Option::insert writes its value as the old one's drop unwinds, where it may", () => {
+  const flat = compiled(
+    "std-unwinds-insert",
+    `${types}
+pub fn quiet(o: &mut Option<Quiet>, q: Quiet) -> u32 {
+    o.insert(q).0
+}
+
+pub fn loud(o: &mut Option<Loud>, l: Loud) -> u32 {
+    o.insert(l).0
+}
+`,
+  );
+  expect(body(flat, "quiet")).not.toContain("finally");
+  expect(body(flat, "quiet")).toContain("o.value = q;");
+  expect(body(flat, "loud")).toMatch(/try \{ if \(o\.value != null\) \{ loudDrop_drop\(o\.value\); \} \} finally \{ o\.value = l; \}/);
+});
+
+test("dedup_by gives a closure each item as a `&mut` to it is, dropping each duplicate it finds", () => {
+  const flat = compiled(
+    "std-unwinds-dedup",
+    `${types}
+use std::rc::Rc;
+
+pub fn objects(v: &mut Vec<Loud>) {
+    v.dedup_by(|a, b| a.0 == b.0);
+}
+
+pub fn counted(v: &mut Vec<Rc<Loud>>) {
+    v.dedup_by(|a, b| a.0 == b.0);
+}
+
+pub fn boxed(v: &mut Vec<Box<Loud>>) {
+    v.dedup_by_key(|x| x.0);
+}
+`,
+  );
+  expect(body(flat, "objects")).toContain("$dedupBy(v, (a, b) => a[0] === b[0], loudDrop_drop)");
+  // An \`Rc\`'s \`&mut\` is a cell: \`$dedupByCells\`, given the drop too.
+  expect(body(flat, "counted")).toMatch(/\$dedupByCells\( v, \(a, b\) => a\.value\.value\[0\] === b\.value\.value\[0\], \(rc\) => \{ \$rcDrop\(rc, loudDrop_drop\); \},? \)/);
+  expect(body(flat, "boxed")).toMatch(/\$dedupByCells\(.*loudDrop_drop\)/);
+});
+
+test("a Vec's clone_from writes over what it keeps in place, where its order can be seen", () => {
+  const flat = compiled(
+    "std-unwinds-clone-from",
+    `${types}
+pub fn texts(w: &mut Vec<String>, v: &Vec<String>) {
+    w.clone_from(v);
+}
+
+pub fn loud(w: &mut Vec<Loud>, v: &Vec<Loud>) {
+    w.clone_from(v);
+}
+
+pub fn nested(w: &mut [Vec<Loud>], v: Vec<Loud>) {
+    w.fill(v);
+}
+`,
+  );
+  expect(body(flat, "texts")).not.toContain("$cloneIntoVec");
+  expect(body(flat, "loud")).toContain("$cloneIntoVec(w, v, (item) => loudClone_clone(item), undefined, loudDrop_drop);");
+  expect(body(flat, "nested")).toContain("(items, i, from) => { $cloneIntoVec(items[i], from, (item) => loudClone_clone(item), undefined, loudDrop_drop); }");
+});

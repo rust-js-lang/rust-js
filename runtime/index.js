@@ -6114,6 +6114,17 @@ export function $cloneFromSlice(v, src, clone, cloneFrom, drop) {
   }
 }
 
+// `w.clone_from(&v)` of a `Vec`, std's `SpecCloneIntoVec`: what `w` has
+// past `v`'s length dropped, `truncate`'s; each item it keeps written over
+// by `v`'s, `$cloneFromSlice`'s; then a clone of each of the rest pushed,
+// what's pushed `w`'s as a later clone panics, `extend_from_slice`'s
+// (#919).
+export function $cloneIntoVec(w, v, clone, cloneFrom, drop) {
+  $truncate(w, v.length, drop);
+  $cloneFromSlice(w, v.slice(0, w.length), clone, cloneFrom, drop);
+  for (let i = w.length; i < v.length; i++) w.push(clone ? clone(v[i]) : v[i]);
+}
+
 export function $swapWithSlice(v, other) {
   if (v.length !== other.length) throw new Error("destination and source slices have different lengths");
   for (let i = 0; i < v.length; i++) [v[i], other[i]] = [other[i], v[i]];
@@ -6677,7 +6688,10 @@ export function $isDisjoint(a, b) {
 // iterator with a `fold` of its own, an adapter's, the crate's or
 // `$folded`'s, by it, as std's `extend` is its `for_each`: so what it
 // replaces is dropped as each comes, before what its source drops at its
-// end, and a `skip`'s first step is its `nth(n - 1)` (#494).
+// end, and a `skip`'s first step is its `nth(n - 1)` (#494). Of an array,
+// a `Vec` or an array it took, what's left of it dropped as a put unwinds,
+// a drop of what it replaces, each entry by `$entryDropping`, as std's
+// `for_each` drops the `IntoIter` it was given (#900).
 export function $extendMap(m, items, set, drop, dropKey) {
   const put = (item) => {
     if (set) {
@@ -6697,8 +6711,29 @@ export function $extendMap(m, items, set, drop, dropKey) {
     items.fold(undefined, (_, item) => put(item));
     return m;
   }
+  if (Array.isArray(items)) {
+    let i = 0;
+    $unwinds(
+      () => {
+        for (; i < items.length; i++) put(items[i]);
+      },
+      () => $dropItems(items.slice(i + 1), $entryDropping(set, drop, dropKey)),
+    );
+    return m;
+  }
   for (const item of items) put(item);
   return m;
+}
+
+// What drops an entry of a map, `[key, value]`, its key, then its value
+// though the key's drop panics, as Rust drops a pair; of a set, its item.
+export function $entryDropping(set, drop, dropKey) {
+  if (set) return (item) => dropKey?.(item);
+  return ([key, value]) =>
+    $inTurn(
+      () => dropKey?.(key),
+      () => drop?.(value),
+    );
 }
 
 // `collect()` into a new hash map or set, `m`, of `items` a panic may stop
@@ -6708,13 +6743,7 @@ export function $extendMap(m, items, set, drop, dropKey) {
 export function $mapFrom(m, items, set, drop, dropKey) {
   return $unwinds(
     () => $extendMap(m, items, set, drop, dropKey),
-    () =>
-      $inTurnOf(Array.from(m.entries()), ([key, value]) =>
-        $inTurn(
-          () => dropKey?.(key),
-          () => set || drop?.(value),
-        ),
-      ),
+    () => $dropItems(set ? m.keys() : m.entries(), $entryDropping(set, drop, dropKey)),
   );
 }
 
@@ -12936,23 +12965,32 @@ export function $dedup(v) {
 }
 
 // `v.dedup_by(same)`: each item `same` says is the one before it gone; of
-// items with a destructor, dropped by `drop` before the next is compared,
-// as std's are (ADR 0098). Where `same` or a `drop` throws, what's left is
-// what it kept then what it hadn't compared yet, as `$retain` leaves it
-// (#416).
-export function $dedupBy(v, same, drop) {
+// items with a destructor, dropped by `drop` as it's found, before the next
+// is compared, as std's are (ADR 0098). Where `same` or a `drop` throws,
+// what's left is what it kept then what it hadn't compared yet, as std's
+// `FillGapOnDrop` leaves it (#416). Of `cells`, items a `&mut` to is a
+// cell, each given `same` as `{ value }`, written back as `same` returns
+// or unwinds, so what it wrote is what's kept or dropped (#906).
+export function $dedupBy(v, same, drop, cells = false) {
   let n = 0;
   let i = 0;
+  const compared = () => {
+    if (!cells) return same(v[i], v[n - 1]);
+    const a = { value: v[i] };
+    const b = { value: v[n - 1] };
+    try {
+      return same(a, b);
+    } finally {
+      v[i] = a.value;
+      v[n - 1] = b.value;
+    }
+  };
   try {
     while (i < v.length) {
-      const item = v[i];
-      if (n === 0 || !same(item, v[n - 1])) {
-        v[n++] = item;
-        i++;
-      } else {
-        i++;
-        drop?.(item);
-      }
+      const duplicate = n !== 0 && compared();
+      const item = v[i++];
+      if (duplicate) drop?.(item);
+      else v[n++] = item;
     }
   } finally {
     const rest = v.length - i;
@@ -13046,30 +13084,26 @@ export function $popIf(v, holds) {
   return v.length !== 0 && holds(v[v.length - 1]) ? v.pop() : undefined;
 }
 
+// `v.pop_if(holds)` of items a `&mut` to is a cell: the last given `holds`
+// as `{ value }`, written back as `holds` returns or unwinds, so what it
+// wrote is what's popped or kept (#906).
 export function $popIfCell(v, holds) {
   if (v.length === 0) return undefined;
   const last = { value: v[v.length - 1] };
-  const popped = holds(last);
-  v[v.length - 1] = last.value;
+  let popped;
+  try {
+    popped = holds(last);
+  } finally {
+    v[v.length - 1] = last.value;
+  }
   return popped ? v.pop() : undefined;
 }
 
-export function $dedupByCells(v, same) {
-  let n = 0;
-  for (let i = 0; i < v.length; i++) {
-    if (n === 0) {
-      v[n++] = v[i];
-      continue;
-    }
-    const a = { value: v[i] };
-    const b = { value: v[n - 1] };
-    const duplicate = same(a, b);
-    v[n - 1] = b.value;
-    if (!duplicate) {
-      v[n++] = a.value;
-    }
-  }
-  v.length = n;
+// `v.dedup_by(same)` of items a `&mut` to is a cell, a number's, a text's,
+// a `Box`'s or an `Rc`'s: `$dedupBy`'s, each given `same` as `{ value }`
+// (#906).
+export function $dedupByCells(v, same, drop) {
+  $dedupBy(v, same, drop, true);
 }
 
 export function $splice(items, start, end, replacement) {

@@ -920,8 +920,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => value,
         };
         let present = Expr::bin(Op::LooseNe, place.clone(), Expr::null());
-        let assign = StmtKind::Assign(place.clone(), self.inserted(value, item)).at(js_span);
+        // Of what reads the same, or the value named above: `$some(value)`
+        // never throws.
+        let inserted = self.inserted(value, item);
+        let inserted = match (op, &dropped) {
+            (OptionPlaceOp::Insert, Some(_)) => inserted.never_throws(),
+            _ => inserted,
+        };
+        let assign = StmtKind::Assign(place.clone(), inserted).at(js_span);
         match (op, dropped) {
+            // `*o = Some(value)`'s drop in place of the old one, which writes
+            // `value` as that drop unwinds too, so `value` is what's dropped
+            // with the place, not the old one again (#904).
+            (OptionPlaceOp::Insert, Some(dropped)) if self.drop_may_panic(item) => {
+                let old_dropped = vec![StmtKind::If(present, dropped, None).at(js_span)];
+                out.extend(crate::lower::drops::dropped_after(old_dropped, vec![assign], js_span));
+            }
             (OptionPlaceOp::Insert, Some(dropped)) => {
                 out.push(StmtKind::If(present, dropped, None).at(js_span));
                 out.push(assign);

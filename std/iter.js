@@ -267,10 +267,13 @@ export const FlattenCompat = {
                   let value;
                   try {
                     value = IItemIntoIterator.intoIter(iter);
-                    if (flattenCompat.frontiter != null) {
-                      IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.frontiter));
+                    try {
+                      if (flattenCompat.frontiter != null) {
+                        IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.frontiter));
+                      }
+                    } finally {
+                      flattenCompat.frontiter = $some(value);
                     }
-                    flattenCompat.frontiter = $some(value);
                   } catch (error) {
                     $cleanup(() => {
                       dropAcc?.(acc);
@@ -294,10 +297,13 @@ export const FlattenCompat = {
                   let value;
                   try {
                     value = IItemIntoIterator.intoIter(iter);
-                    if (flattenCompat.frontiter != null) {
-                      IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.frontiter));
+                    try {
+                      if (flattenCompat.frontiter != null) {
+                        IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.frontiter));
+                      }
+                    } finally {
+                      flattenCompat.frontiter = $some(value);
                     }
-                    flattenCompat.frontiter = $some(value);
                   } catch (error) {
                     $cleanup(() => {
                       dropAcc?.(acc);
@@ -598,10 +604,13 @@ export const FlattenCompat = {
                   let value;
                   try {
                     value = IItemIntoIterator.intoIter(iter);
-                    if (flattenCompat.backiter != null) {
-                      IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.backiter));
+                    try {
+                      if (flattenCompat.backiter != null) {
+                        IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.backiter));
+                      }
+                    } finally {
+                      flattenCompat.backiter = $some(value);
                     }
-                    flattenCompat.backiter = $some(value);
                   } catch (error) {
                     $cleanup(() => {
                       dropAcc?.(acc);
@@ -626,10 +635,13 @@ export const FlattenCompat = {
                   let value;
                   try {
                     value = IItemIntoIterator.intoIter(iter);
-                    if (flattenCompat.backiter != null) {
-                      IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.backiter));
+                    try {
+                      if (flattenCompat.backiter != null) {
+                        IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.backiter));
+                      }
+                    } finally {
+                      flattenCompat.backiter = $some(value);
                     }
-                    flattenCompat.backiter = $some(value);
                   } catch (error) {
                     $cleanup(() => {
                       dropAcc?.(acc);

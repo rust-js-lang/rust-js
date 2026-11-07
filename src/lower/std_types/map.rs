@@ -576,12 +576,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let with_drops = Expr::optional_args;
         Ok(match op {
-            // Each value dropped first, in its order, as dropping the map does.
+            // Each value dropped first, in its order, as dropping the map does;
+            // where one's drop may panic, the map emptied as that unwinds too,
+            // `try { .. } finally { m.clear(); }`, as std's `clear` takes its
+            // entries out before it drops them, a `BTreeMap`'s, or clears the
+            // table as a drop unwinds, a `HashMap`'s guard, so none is
+            // dropped again with the map (#899).
             MapOp::Clear if self.drops(receiver) != crate::lower::drops::Drops::Nothing => {
                 let m = arg();
                 let m = if m.reads_same() { m } else { self.spill("map", m, out) };
-                self.drop_value(m.clone(), receiver, span, out)?;
-                method(m, "clear", Vec::new())
+                let mut dropped = Vec::new();
+                self.drop_value(m.clone(), receiver, span, &mut dropped)?;
+                let cleared = method(m, "clear", Vec::new()).never_throws();
+                if !self.drop_may_panic(receiver) {
+                    out.extend(dropped);
+                    return Ok(cleared);
+                }
+                let cleared = vec![StmtKind::Expr(cleared).at(self.js_span(span))];
+                out.extend(crate::lower::drops::dropped_after(dropped, cleared, self.js_span(span)));
+                Expr::undefined()
             }
             MapOp::Clear => method(arg(), "clear", Vec::new()),
             // Each entry in its order, a B-tree's its keys', `f` given a handle on

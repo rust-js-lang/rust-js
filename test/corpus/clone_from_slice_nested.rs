@@ -1,11 +1,12 @@
-//@ compile-fail: `clone_from_slice` of items whose `clone_from` may be the crate's
-// `clone_from_slice` of items with a type inside them whose `clone_from` is
-// the crate's own: refused, as std's would call it, through std's.
+// `clone_from_slice` of `Vec`s whose items' `clone_from` is the crate's
+// own: each `Vec`'s std's `clone_from`, which calls the items' own for
+// those it keeps and clones the rest (#919; refused before).
 
 struct Counted(u32);
 
 impl Clone for Counted {
     fn clone(&self) -> Self {
+        println!("clone");
         Counted(self.0)
     }
 
@@ -16,8 +17,8 @@ impl Clone for Counted {
 }
 
 fn main() {
-    let source = [vec![Counted(1)]];
+    let source = [vec![Counted(1), Counted(3)]];
     let mut target = [vec![Counted(2)]];
     target.clone_from_slice(&source);
-    println!("{}", target[0][0].0);
+    println!("{} {}", target[0][0].0, target[0][1].0);
 }

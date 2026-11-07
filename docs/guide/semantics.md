@@ -955,6 +955,87 @@ export function copies(items) {
 }
 ```
 
+So too, std's methods keep what they've written as a drop in them
+panics: a map's `clear()` is empty, its entries dropped once, `try {
+<drop> } finally { m.clear(); }`; an `Option`'s `insert` holds its new
+value, `try { <drop old> } finally { o = value; }`; `dedup_by` drops each
+duplicate as it's found, of a `Box`'s or an `Rc`'s too; and a `Vec`'s
+`clone_from` is std's, `$cloneIntoVec`, which cuts what it has past the
+source's length, writes over each it keeps, then clones the rest on. Each
+only where a drop may panic, or the order of clones and drops can be seen
+([1102](../decisions/1102-what-is-made-in-turn-drops-as-a-later-part-unwinds.md),
+amended):
+
+```rust
+use std::collections::BTreeMap;
+
+pub struct Loud(pub u32);
+
+impl Clone for Loud {
+    fn clone(&self) -> Loud {
+        Loud(self.0)
+    }
+}
+
+impl Drop for Loud {
+    fn drop(&mut self) {
+        assert!(self.0 > 0, "no drop of zero");
+    }
+}
+
+pub fn empty(map: &mut BTreeMap<u32, Loud>) {
+    map.clear();
+}
+
+pub fn replace(slot: &mut Option<Loud>, value: Loud) -> u32 {
+    slot.insert(value).0
+}
+
+pub fn copy_into(into: &mut Vec<Loud>, from: &Vec<Loud>) {
+    into.clone_from(from);
+}
+```
+
+```js
+import { $cloneIntoVec, $cmp, $dropItems, $sortedEntries } from "@rust-js/runtime";
+
+export const loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
+function loudClone_clone(loud) {
+  return [loud[0]];
+}
+
+function loudDrop_drop(loud) {
+  if (loud[0] <= 0) {
+    throw new Error("no drop of zero");
+  }
+}
+
+export function empty(map) {
+  try {
+    $dropItems($sortedEntries(map, $cmp), ([, value]) => {
+      loudDrop_drop(value);
+    });
+  } finally {
+    map.clear();
+  }
+}
+
+export function replace(slot, value) {
+  try {
+    if (slot.value != null) {
+      loudDrop_drop(slot.value);
+    }
+  } finally {
+    slot.value = value;
+  }
+  return slot.value[0];
+}
+
+export function copyInto(into, from) {
+  $cloneIntoVec(into, from, (item) => loudClone_clone(item), undefined, loudDrop_drop);
+}
+```
+
 An `unwrap()` or `expect("..")` whose panic drops what no `finally` does
 is its test, as an `assert!` is: `if (f == null) { $dispose(task); throw
 new Error(".."); } f(task);`
