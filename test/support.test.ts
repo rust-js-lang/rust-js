@@ -88,6 +88,37 @@ test("a binary given out stays when a newer one of its program is kept", () => {
   expect(run([second]).trim()).toBe("2");
 });
 
+// Found measuring #875: a mutant's tests, and each test the test map
+// records, run in a target of their own (`RUST_JS_TARGET`), and each built
+// every native program it ran again, kept by where its wrapper was there:
+// the map's 3,642 at each recording, 2 GB left in a store held to 3 GB. A
+// native program is the checkout's whichever target asks; one built by
+// another toolchain is another.
+test("a native program is kept once for any target, and built again by another toolchain", () => {
+  const source = 'fn main() {\n    println!("kept for any target");\n}\n';
+  const flags = ["--edition=2024"];
+  const support = JSON.stringify(join(import.meta.dir, "support.ts"));
+  const builtIn = (env: Record<string, string>) => {
+    const script = `import { contentDirectory, nativeBinary } from ${support};
+const source = ${JSON.stringify(source)};
+console.log(JSON.stringify(nativeBinary(source, contentDirectory(source), ${JSON.stringify(flags)})));`;
+    const p = Bun.spawnSync([process.execPath, "-e", script], { cwd: root, env: { ...process.env, ...env }, stdout: "pipe", stderr: "pipe" });
+    if (p.exitCode !== 0) throw new Error(p.stderr.toString());
+    const built = JSON.parse(p.stdout.toString().trim().split("\n").at(-1)!);
+    if ("error" in built) throw new Error(built.error);
+    return built.binary as string;
+  };
+  const here = builtIn({});
+  expect(builtIn({ RUST_JS_TARGET: fixture("another-target") })).toBe(here);
+  // A rustc that says it's another, building as this one does.
+  const bin = fixture("another-rustc");
+  const rustc = Bun.which("rustc")!;
+  writeFileSync(join(bin, "rustc"), `#!/bin/sh\nif [ "$1" = "-vV" ]; then ${rustc} -vV; echo "another: 1"; else exec ${rustc} "$@"; fi\n`, { mode: 0o755 });
+  const other = builtIn({ PATH: `${bin}:${process.env.PATH}` });
+  expect(other).not.toBe(here);
+  expect(run([other]).trim()).toBe("kept for any target");
+});
+
 // The compiler's build, once for a run: one process does it, those at the
 // same time wait for it, and none takes it over.
 test("work claimed once runs once, however many ask at the same time", async () => {
@@ -185,6 +216,7 @@ test("a kept cache is held to its cap, the least recently used first, and to the
   // Each store's cap.
   expect(keptStores.map(({ dir, cap }) => [basename(dir), cap / 2 ** 20])).toEqual([
     ["native-cache", 3072],
+    ["native-sources", 64],
     ["corpus-cache", 256],
   ]);
 });

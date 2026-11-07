@@ -399,12 +399,11 @@ async function runUnits(units: { name: string; cmd: string[]; env: Record<string
       // `switch` of lowering-strict-switches', found it there.
       const own = join(record, "targets", String(at));
       mkdirSync(own, { recursive: true });
-      // What's kept by source alone, native programs' builds and verified
-      // runs, no compile of rust-js's, shared; all else the unit's own.
-      for (const kept of ["native-cache", "corpus-cache"]) {
-        mkdirSync(join(root, "target", kept), { recursive: true });
-        symlinkSync(join(root, "target", kept), join(own, kept));
-      }
+      // What's kept by source alone, verified runs, no compile of rust-js's,
+      // shared, as native programs' builds are in any target (`checkoutTarget`,
+      // #875); all else the unit's own.
+      mkdirSync(join(root, "target", "corpus-cache"), { recursive: true });
+      symlinkSync(join(root, "target", "corpus-cache"), join(own, "corpus-cache"));
       const start = Date.now();
       const p = Bun.spawn(unit.cmd, {
         cwd: root,

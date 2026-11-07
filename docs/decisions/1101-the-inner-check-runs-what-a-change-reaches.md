@@ -68,7 +68,9 @@ nothing the map didn't count. So:
 - **Each test records alone**: its own `RUST_JS_TARGET` and std sysroot,
   and no compile cache, so a crate one test built isn't read by another
   unrecorded; the corpus's native builds and verified runs, which no
-  compile of rust-js's makes, are shared.
+  compile of rust-js's makes, are shared. The native builds are the
+  checkout's in any target (ADR 0104, amended, #875): kept by a path in
+  the test's own target, each recording built 3,642 again, and left them.
 - **Every run is counted, or the test runs always.** The compiler runs
   itself again for each crate of crates.io it tries: each process writes
   its own counts (`%p`). A run given no `LLVM_PROFILE_FILE` writes its

@@ -8,7 +8,7 @@ import { runSync, stopped } from "./child";
 import { markUsed } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
 import { shard } from "../scripts/shard";
-import { runtimeDir, stdDir, target } from "./packages-of";
+import { checkoutTarget, runtimeDir, stdDir, target } from "./packages-of";
 
 export const root = join(import.meta.dir, "..");
 // The tests' target, a mutant's tests' own with `RUST_JS_TARGET`, and the
@@ -59,20 +59,22 @@ export function writeWhole(path: string, text: string) {
   renameSync(writing, path);
 }
 
-/** A directory of `target/` named by `contents`: the same contents, the
- * same directory, in any run. Where a native program's wrapper goes, so
- * the same program is the same kept binary (`nativeBinary`). */
+/** A directory of the checkout's `target/` named by `contents`: the same
+ * contents, the same directory, in any run, of any target's tests
+ * (`checkoutTarget`). Where a native program's wrapper goes, so the same
+ * program is the same kept binary (`nativeBinary`). */
 export function contentDirectory(...contents: string[]): string {
   const hash = createHash("sha256");
   for (const content of contents) hash.update(`${content.length}:${content}`);
-  const dir = join(target, "native-sources", hash.digest("hex").slice(0, 32));
+  const dir = join(checkoutTarget, "native-sources", hash.digest("hex").slice(0, 32));
   mkdirSync(dir, { recursive: true });
   return dir;
 }
 
 /**
  * A native program, `source` written to `dir/native.rs` and built by rustc
- * with `flags`: its binary, kept in `target/native-cache/` and used again
+ * with `flags`: its binary, kept in the checkout's `target/native-cache/`,
+ * whichever target the tests run in (`checkoutTarget`), and used again
  * while nothing it was built from has changed. That's rustc's version, the
  * flags, the source and where it is, since `include!("cases.rs")` is of the
  * file beside it, and the libraries a flag names, as `--extern
@@ -97,7 +99,7 @@ export function nativeBinary(source: string, dir: string, flags: string[], timeo
     if (path.startsWith("/") && existsSync(path) && statSync(path).isFile()) hash.update(`${path} ${statSync(path).mtimeMs} ${statSync(path).size}`);
   }
   writeWhole(wrapper, source);
-  const program = join(target, "native-cache", hash.digest("hex").slice(0, 32));
+  const program = join(checkoutTarget, "native-cache", hash.digest("hex").slice(0, 32));
   mkdirSync(program, { recursive: true });
   for (const kept of readdirSync(program).filter((name) => !name.startsWith("."))) {
     if (unchanged(join(program, kept, "inputs.json"))) {

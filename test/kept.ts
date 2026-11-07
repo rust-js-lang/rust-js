@@ -10,16 +10,19 @@ import { readdirSync, rmSync, statSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 
 import { bytesOf, evict, freeBytes, type Kept } from "./bounded";
-import { target } from "./packages-of";
+import { checkoutTarget, target } from "./packages-of";
 
 const day = 24 * 60 * 60;
 
 /** The stores of what the tests keep, and the most each keeps: a
  * `check:fast --all` from nothing keeps about 1 GB of native programs,
- * which a change to the compiler keeps, and 8 MB of verified runs, made
- * again for each build of it, a week of builds about 500 MB (#914). */
+ * which a change to the compiler keeps, and 8 MB of their wrappers, each
+ * the checkout's whichever target the tests run in (#875); and 8 MB of
+ * verified runs, made again for each build of it, a week of builds about
+ * 500 MB (#914). */
 export const keptStores = [
-  { dir: join(target, "native-cache"), cap: 3 * 2 ** 30 },
+  { dir: join(checkoutTarget, "native-cache"), cap: 3 * 2 ** 30 },
+  { dir: join(checkoutTarget, "native-sources"), cap: 64 * 2 ** 20 },
   { dir: join(target, "corpus-cache"), cap: 256 * 2 ** 20 },
 ];
 

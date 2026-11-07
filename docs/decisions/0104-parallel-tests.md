@@ -135,3 +135,36 @@ shard and what isn't a case, in the first part, in the first shard. The
 rest is sharded by Bun as before, the corpus left out of it. Held by
 `test/ci.test.ts`'s "each shard runs its share of a file of cases'
 parts, each part once".
+
+## Amendment: a native program is the checkout's, whichever target its tests run in (#875)
+
+#875 asked for native programs' outputs to be kept by their sources, so a
+comparison runs native Rust once. Measured on the 12-core M6 with each
+binary kept, running them is not where the time is: of the corpus's 1,813
+native runs took 6.1 CPU-seconds of a 28-second run in 12 parts, about
+336; the points table's 105 batches 3.5 of about 156; the unwind table's
+58, 1.3 of 120; the matrix's and the conformance table's slices 0.4 and
+0.2 of about 110 and 70. Kept outputs would save under 2% of any of them, so
+they aren't kept.
+
+What was paid was the builds, about 0.18 CPU-seconds each, where a binary
+was kept by a path that changes: `nativeBinary`'s key holds where the
+wrapper is, as an `include!` of a file beside it reads there, and
+`contentDirectory` put it under the tests' target, which a mutant's tests
+and each test the test map records have their own of (`RUST_JS_TARGET`).
+So each mutant built again every native program its tests ran: 5,804 of
+the 10,782 mutations name corpus cases, 12,600 of them. And each recording
+of the test map built 3,642 programs into the checkout's store, which it
+shares, by paths deleted as each test ended: 2 GB left in a store held to
+3 GB, evicting the programs the next check runs, which it built again,
+322 CPU-seconds of the corpus's.
+
+**The wrapper and the kept binaries are the checkout's `target/`**
+(`checkoutTarget`, `test/packages-of.ts`), whatever `RUST_JS_TARGET` says:
+nothing in them is the compiler's. A mutant's corpus cases run 20 to 30%
+faster (one case 0.43 s to 0.34 s; seven 2.07 s to 1.49 s; sixty 16.6 s to
+11.6 s), and the test map shares them as it meant to. The wrappers are a
+store of their own, held to 64 MB and a week unused like the rest
+(`test/kept.ts`); they grew without a bound. Held by `test/support.test.ts`'s
+"a native program is kept once for any target, and built again by another
+toolchain".

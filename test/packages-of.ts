@@ -13,10 +13,19 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 
+// The checkout's own target, whatever `RUST_JS_TARGET` says: where what's
+// kept by its sources alone is, which no build of the compiler changes, a
+// native program's wrapper and its builds (`nativeBinary`, test/support.ts).
+// A mutant's tests and each test the test map records run in a target of
+// their own, and kept a native program by where its wrapper was there: each
+// built every one it ran again, the map's 3,642 at each recording, left
+// behind, 2 GB of a store held to 3 GB (#875).
+export const checkoutTarget = join(root, "target");
+
 // The tests' target, or with `RUST_JS_TARGET`, another: a mutant's tests',
 // which build the crates with its compiler where no other test reads them
 // (ADR 0093).
-export const target = process.env.RUST_JS_TARGET ? resolve(process.env.RUST_JS_TARGET) : join(root, "target");
+export const target = process.env.RUST_JS_TARGET ? resolve(process.env.RUST_JS_TARGET) : checkoutTarget;
 
 /** Where a target's own packages are, `node_modules/@rust-js/` in it. */
 function installed(at: string): string {
