@@ -649,11 +649,15 @@ checked:
   over four agents' hand-offs. Landed first, the precision fix and the
   early-return rule would have been on `main` already, and the flip would
   have carried far fewer surprises.
-- **A mutation that changes only the output's form isn't caught by the
-  corpus**: the mutation runner ignores corpus snapshots
-  (`RUST_JS_SNAPSHOTS=ignore`) and judges the corpus by behaviour alone. So
-  a form-only rule needs a lowering test, or a mutation with
-  `snapshots: true` (#864 tracks a runner-wide fix).
+- **A form-only mutation of tidy, preparation or the printer is judged by
+  the corpus's snapshots, by the runner**: where its tests pass, the cases
+  that reach its site (by the test map, or every case without one) are
+  compiled by the mutant and each JS compared with its snapshot alone; one
+  that differs catches it (#864, ADR 0093 amended). Name the case it's for,
+  as with any mutation; no lowering test of its form is needed. Of other
+  code, the runner judges the corpus by what the JS does alone
+  (`RUST_JS_SNAPSHOTS=ignore`), so a form-only mutation there still needs a
+  lowering test or `snapshots: true` on the cases it names.
 - **ADR numbers**: `bun run adr:next`, and `bun run adr:renumber` when
   `main` took yours.
 

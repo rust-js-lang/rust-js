@@ -275,3 +275,40 @@ files:
 - `mir-iterable-collected-generic`, `mut-param-made-items` and
   `generic-iterator-ref-boxed-for-impl` changed nothing anywhere. Their
   conditions go with them (ADRs 0140, 0715 and 0099 amended).
+
+## Amendment: a readability owner's mutation its tests miss is judged by its cases' snapshots (#864)
+
+A mutation's tests skip the corpus's snapshots, so one that changes only
+how the JS reads was caught only by a lowering test written for its form,
+or by `snapshots: true` on cases it named. #847 changed the form of a
+guard's scope, and 32 mutations survived at once, each found one by one
+and given a test by hand (958f75195).
+
+**A mutation of code whose job is how the JS reads, `readabilityOwners`
+(`scripts/mutations.ts`: docs/architecture.md's "Readability and printing"
+and "Body readability passes", held to it by `test/mutations.test.ts`),
+whose tests pass, is judged by the corpus's snapshots too.** Each case that
+reaches its site, by the test map (`casesReaching`, `scripts/testMap.ts`,
+ADR 1101), with the working tree's changes since the map's commit, or every
+case where there's no map or it can't say, as on CI, is compiled by the
+mutant and its JS compared with its snapshot alone (`RUST_JS_SNAPSHOTS=only`,
+`test/corpus.test.ts`), run neither natively nor as JS, in parts at once,
+each ending at its first case whose JS differs. A case that differs catches
+it where the compiler as it is makes its snapshot, which is run then. The
+map only narrows which cases are compiled: a case that runs none of the
+mutated function's code can't differ, so the verdict is the same with it or
+without.
+
+Elsewhere the rule stands: what the JS does is what's checked, as most of
+the compiler's mutations break what it does, and a snapshot that differs
+would hide a test that doesn't see it. `snapshots: true` still says a
+mutation of other code changes only how its named cases read.
+
+**Cost**, on the 12-core M6: nothing for a mutation its tests catch. Of one
+they miss, every case's JS compiled alone in 12 parts is 13 s, the most a
+mutation that differs nowhere pays; the map narrows tidy's mutations to a
+median of 1,805 cases of 1,809 (a quarter of them 126 or fewer), as most of
+tidy's functions run for every body, so it's the stop at the first
+difference that keeps it short. `scoped-drops-if-uncovered`, one of #847's
+32, now names its corpus case alone, which passes with it: the runner's
+snapshots catch it, six of its 12 parts each stopping at a case whose JS differs, in 2.1 s of tests.

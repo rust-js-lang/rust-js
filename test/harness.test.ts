@@ -174,6 +174,20 @@ test("JS that prints other bytes than native Rust, reading the same, fails the c
   expect(run.output).not.toContain("stderr:");
 }, underLoad(120_000));
 
+// A mutation of how the JS reads that its tests miss is judged by the
+// snapshots of the cases that reach it alone (scripts/mutations.ts, #864):
+// a case whose JS isn't its snapshot fails, and the compiler as it is
+// passes, with no run of it natively or as JS.
+test("a case's JS alone fails where it isn't its snapshot, and isn't run", () => {
+  const other = bunTest(["test/corpus.test.ts", "-t", "^replacement_character.rs$"], { RUST_JS_COMPILER: notUtf8(), RUST_JS_SNAPSHOTS: "only" });
+  expect(other.code).not.toBe(0);
+  expect(other.output).toContain("its JS isn't its snapshot, replacement_character.js");
+  expect(other.output).not.toContain("node stdout:");
+  const same = bunTest(["test/corpus.test.ts", "-t", "^replacement_character.rs$"], { RUST_JS_COMPILER: compiler, RUST_JS_SNAPSHOTS: "only" });
+  expect(same.output).toContain(" 1 pass");
+  expect(same.code).toBe(0);
+}, underLoad(120_000));
+
 test("a rustc test whose JS prints other bytes, reading the same, fails, and one natively printing either changes", async () => {
   const ui = fixture("harness-bytes");
   const file = join(ui, "replacement.rs");

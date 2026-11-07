@@ -23,6 +23,7 @@ import { basename, dirname, join } from "node:path";
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { installPackages } from "../test/packages-of";
 import { caseParts, shard, shardArg } from "./shard";
+import { casesReaching } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
 
@@ -50,6 +51,36 @@ for (const path of [...new Bun.Glob("**/*.ts").scanSync(join(import.meta.dir, "m
   lists.push({ path, mutations: (await import(`./mutations/${path}`)).mutations });
 }
 export const mutations: Mutation[] = lists.flatMap((list) => list.mutations);
+
+/** The code whose job is how the JS reads, docs/architecture.md's
+ * "Readability and printing" and "Body readability passes", as globs of
+ * the repository's paths: a mutation of it that its tests miss is judged
+ * by the corpus's snapshots too (#864). test/mutations.test.ts holds it to
+ * the architecture. */
+export const readabilityOwners = [
+  "src/prepare.rs",
+  "src/prepare/**",
+  "src/to_oxc.rs",
+  "src/to_oxc/**",
+  "src/format.rs",
+  "src/typescript.rs",
+  "src/prettier.rs",
+  "src/node_session.rs",
+  "src/lower/mir/tidy.rs",
+  "src/lower/mir/tidy/**",
+];
+
+/** Whether `file` is of `readabilityOwners`. */
+export const ofReadabilityOwner = (file: string) => readabilityOwners.some((glob) => new Bun.Glob(glob).match(file));
+
+/** The lines of `source`, from 1, that `mutation`'s `find` is, where it's
+ * there once. */
+export function siteLines(mutation: Mutation, source: string): [number, number] | undefined {
+  const at = source.indexOf(mutation.find);
+  if (at < 0 || source.indexOf(mutation.find, at + 1) >= 0) return undefined;
+  const first = source.slice(0, at).split("\n").length;
+  return [first, first + mutation.find.replace(/\n$/, "").split("\n").length - 1];
+}
 
 /** A file a change touches, and the lines of it, as it is now, that it
  * changed: each `[first, last]`, from 1. */
@@ -587,7 +618,7 @@ let testRuns = 0;
 async function test(
   tests: string[],
   compiler: string,
-  snapshots = false,
+  snapshots: Snapshots = false,
   { bail = true, env = {} }: { bail?: boolean; env?: Record<string, string> } = {},
 ): Promise<{ passed: boolean; ran: number; output: string; exit: Exit }> {
   // What the JS does is what's checked: a corpus snapshot differs with
@@ -619,9 +650,15 @@ async function test(
   return { passed: passed(p.code, !stopped(p, testTimeout), output), ran: pass + fail, output, exit: p };
 }
 
+/** How a run of the corpus judges its cases: by what the JS does alone
+ * (`false`), by that and its snapshots (`true`, a mutation's
+ * `snapshots`), or by its snapshots alone, run neither natively nor as JS
+ * (`"alone"`, of a mutation of how the JS reads its tests miss, #864). */
+export type Snapshots = boolean | "alone";
+
 /** What a mutant's tests, or a control's, run with besides the runner's
  * own environment, `env` with them: `compiler`, and `own`, its target. */
-export function testsEnv(compiler: string, own: string, snapshots: boolean, env: Record<string, string> = {}): Record<string, string | undefined> {
+export function testsEnv(compiler: string, own: string, snapshots: Snapshots, env: Record<string, string> = {}): Record<string, string | undefined> {
   return {
     ...env,
     RUST_JS_COMPILER: compiler,
@@ -633,7 +670,7 @@ export function testsEnv(compiler: string, own: string, snapshots: boolean, env:
     // its test fails, before the runner runs out of time on it, which
     // would say nothing: a corpus case compiles in a second or two.
     RUST_JS_COMPILE_TIMEOUT: "60000",
-    ...(snapshots ? {} : { RUST_JS_SNAPSHOTS: "ignore" }),
+    ...(snapshots === "alone" ? { RUST_JS_SNAPSHOTS: "only" } : snapshots ? {} : { RUST_JS_SNAPSHOTS: "ignore" }),
     // On GitHub's machines bun test writes a failure as an annotation, one
     // line of its whole diff, which a run cut short as it exited, leaving no
     // `(fail)` to judge by: "inconclusive" of what was caught. Its plain
@@ -813,6 +850,35 @@ async function main() {
       wake();
     }
   };
+  // A mutation of how the JS reads (`readabilityOwners`) that its tests
+  // miss, judged by the corpus's snapshots (#864): each case that reaches
+  // its site, by the test map, or every case where there's none or it
+  // can't say, compiled by the mutant and its JS compared with its snapshot
+  // alone, in parts at once. A case whose JS isn't its snapshot catches it,
+  // where the compiler as it is makes that snapshot; the first in each part
+  // ends it.
+  const caseNames = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
+  const snapshotsJudge = async (mutation: Mutation, mutant: string): Promise<{ caught: boolean; said: string; output: string }> => {
+    const lines = siteLines(mutation, read(mutation.file));
+    const reached = lines ? casesReaching(mutation.file, lines[0], lines[1], caseNames) : { kind: "all" as const, why: "its site isn't in its file once" };
+    const chosen = reached.kind === "picked" ? reached.cases : caseNames;
+    if (chosen.length === 0) return { caught: false, said: `${reached.why}: no case reaches it`, output: "" };
+    const named = (names: string[]) => `^(${names.map((name) => name.replaceAll(".", "\\.")).join("|")})$`;
+    const parts = Math.max(1, Math.min(caseParts(availableParallelism()), Math.ceil(chosen.length / 50)));
+    const ran = await Promise.all(
+      Array.from({ length: parts }, (_, i) =>
+        beside(() => test(["test/corpus.test.ts", "-t", named(chosen)], mutant, "alone", { env: { RUST_JS_CASES: `${i + 1}/${parts}` } })),
+      ),
+    );
+    const output = ran.map((r) => r.output).join("\n");
+    const failed = [...output.matchAll(/^\(fail\) (\S+\.rs)\b/gm)].map((m) => m[1]);
+    const of = `${chosen.length} cases${reached.kind === "picked" ? "" : `, every one (${reached.why})`}`;
+    if (failed.length === 0) return { caught: false, said: `of ${of}, each is its snapshot`, output };
+    // Each that caught it is its snapshot as the compiler is.
+    const control = await beside(() => test(["test/corpus.test.ts", "-t", named(failed)], unmutated, "alone", { bail: false }));
+    if (!control.passed) return { caught: false, said: `of ${of}, ${failed.join(", ")} isn't its snapshot as the compiler is either`, output: `${output}\n${control.output}` };
+    return { caught: true, said: `caught by the snapshots of ${failed.join(", ")}, of ${of}`, output };
+  };
   // The builds' tests, which run on after their workers go on to build.
   const buildsTesting: Promise<unknown>[] = [];
   let builds = 0;
@@ -844,10 +910,23 @@ async function main() {
         cpSync(kept, mutant);
       }
       let started = 0;
-      const { ran, output, exit } = await beside(() => {
+      const byTests = await beside(() => {
         started = performance.now();
         return test(mutation.tests, mutant, mutation.snapshots);
       });
+      const { ran, exit } = byTests;
+      let output = byTests.output;
+      let verdict = judge(exit, output);
+      // One of how the JS reads, that its tests miss, by its cases'
+      // snapshots (#864).
+      if (verdict === "survived" && ofReadabilityOwner(mutation.file)) {
+        const bySnapshots = await snapshotsJudge(mutation, mutant);
+        output += `\n--- the snapshots of the cases that reach it (#864): ${bySnapshots.said}\n${bySnapshots.output}`;
+        if (bySnapshots.caught) {
+          verdict = "caught";
+          console.log(`${mutation.name}: its tests passed; ${bySnapshots.said}`);
+        }
+      }
       took.set(mutation, { build: building / batch.length, tests: (performance.now() - started) / 1000 });
       rmSync(mutant, { force: true });
       runtimes.delete(mutant);
@@ -855,7 +934,6 @@ async function main() {
       const log = join(work, "logs", `${mutation.name}.log`);
       mkdirSync(join(work, "logs"), { recursive: true });
       writeFileSync(log, output);
-      const verdict = judge(exit, output);
       // Its log's end, here, as on CI the log is left on the machine: two
       // nightlies' inconclusive mutations, each caught here, said nothing
       // of what stopped them.

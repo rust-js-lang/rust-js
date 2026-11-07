@@ -3,7 +3,8 @@
 // built and as it's built with std's iterator structs (#876), recorded by
 // running them with a build of the compiler that counts each function's
 // runs. Plain `check:fast` reads it to run only the files and cases a
-// change can affect.
+// change can affect, and the mutation runner which cases reach a
+// mutation's site, whose snapshots judge one of how the JS reads (#864).
 //
 //   bun run test-map           record HEAD's, of a clean tree: about 130 s on 12 cores
 //   bun run test-map --keep    and keep what it recorded, to see why a test runs always
@@ -267,10 +268,10 @@ export function pruneMaps(dir = maps, cap = keptMaps, free = () => freeBytes(dir
   return { removed: past.length + within.removed, size: within.size };
 }
 
-/** What the working tree's change runs, by the newest map of an ancestor of
- * HEAD: its changes since the map's commit, the working tree's and new
- * files' too. */
-export function pickChange(files: string[], cases: string[]): Picked {
+/** The newest map of an ancestor of HEAD, touched as it's read, and the
+ * working tree's changes since its commit, new files' too; or why there's
+ * none. */
+function headMap(): { map: TestMap; changes: Change[] } | string {
   for (const path of keptMapFiles()) {
     let map: TestMap;
     try {
@@ -284,12 +285,66 @@ export function pickChange(files: string[], cases: string[]): Picked {
     utimesSync(path, now, now);
     const diff = git(["diff", "-U0", "--no-color", "--no-ext-diff", "--no-renames", map.commit]).out;
     const untracked = git(["ls-files", "--others", "--exclude-standard"]).out.split("\n").filter(Boolean);
-    const changes = [...hunksOf(diff), ...untracked.map((file): Change => ({ file, hunks: "new" }))];
-    const picked = pick(map, changes, files, cases);
-    const of = `the test map of ${map.commit.slice(0, 9)}`;
-    return picked.kind === "all" ? { kind: "all", why: `${of} can't say: ${picked.why}` } : { ...picked, why: `${of}: ${picked.why}` };
+    return { map, changes: [...hunksOf(diff), ...untracked.map((file): Change => ({ file, hunks: "new" }))] };
   }
-  return { kind: "all", why: "no test map of HEAD or an ancestor of it: `bun run test-map` records one" };
+  return "no test map of HEAD or an ancestor of it: `bun run test-map` records one";
+}
+
+/** `picked`, its reason saying which map said it. */
+function said(map: TestMap, picked: Picked): Picked {
+  const of = `the test map of ${map.commit.slice(0, 9)}`;
+  return picked.kind === "all" ? { kind: "all", why: `${of} can't say: ${picked.why}` } : { ...picked, why: `${of}: ${picked.why}` };
+}
+
+/** What the working tree's change runs, by the newest map of an ancestor of
+ * HEAD: its changes since the map's commit, the working tree's and new
+ * files' too. */
+export function pickChange(files: string[], cases: string[]): Picked {
+  const found = headMap();
+  if (typeof found === "string") return { kind: "all", why: found };
+  return said(found.map, pick(found.map, found.changes, files, cases));
+}
+
+/** Lines `first` to `last` of a file as the working tree has it, as lines
+ * of the map's commit, by `change`, what the working tree changes of it:
+ * each line the change wrote is left out, as the change touches what holds
+ * it already; each other line moved by what the change wrote before it. */
+export function linesAtCommit(change: Change | undefined, first: number, last: number): Hunk[] {
+  if (change?.hunks === "new") return [];
+  const lines: Hunk[] = [];
+  for (let line = first; line <= last; line++) {
+    let offset = 0;
+    let at: number | undefined = line;
+    for (const [from, count, added = []] of change?.hunks ?? []) {
+      // Where what it writes starts in the working tree's file: past `from`
+      // where it only adds (`-U0`'s `-from,0`), at it where it replaces.
+      const start = (count === 0 ? from + 1 : from) + offset;
+      if (line < start) break;
+      if (line < start + added.length) {
+        at = undefined;
+        break;
+      }
+      offset += added.length - count;
+    }
+    if (at !== undefined) lines.push([line - offset, 1]);
+  }
+  return lines;
+}
+
+/** The corpus's cases, of `cases`, a change to lines `first` to `last` of
+ * `file`, as the working tree has it, can affect: by the newest map of an
+ * ancestor of HEAD, with the working tree's changes since its commit, as
+ * plain `check:fast` picks them; or `all`, and why, where it can't say.
+ * A mutation's site, whose cases' snapshots judge it (scripts/mutations.ts,
+ * #864). */
+export function casesReaching(file: string, first: number, last: number, cases: string[]): Picked {
+  const found = headMap();
+  if (typeof found === "string") return { kind: "all", why: found };
+  const { map, changes } = found;
+  const of = changes.find((change) => change.file === file);
+  if (of?.hunks === "new") return said(map, { kind: "all", why: `${file} is new since the map's commit` });
+  const site: Change = { file, hunks: linesAtCommit(of, first, last) };
+  return said(map, pick(map, [...changes, site], [], cases));
 }
 
 /** The toolchain's `llvm-profdata` and `llvm-cov`, rustup's

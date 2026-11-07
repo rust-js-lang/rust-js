@@ -48,11 +48,11 @@ export const mutations: Mutation[] = [
     find: "                StmtKind::If(test, a, b) => {\n                    !test.may_throw()\n",
     replace:
       "                StmtKind::If(test, a, b) => {\n                    false && !test.may_throw()\n",
-    tests: [
-      "test/lowering-unwinds.test.ts",
-      "-t",
-      "a guard's scope is one finally",
-    ],
+    // What the JS does is the same, so its case passes; how it reads isn't,
+    // which the snapshots of the cases that reach it catch, the runner's
+    // own (#864), where #847 left it caught only by a lowering test written
+    // for it.
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_scope_returns.rs$"],
   },
   {
     name: "scoped-drops-exit-kept",

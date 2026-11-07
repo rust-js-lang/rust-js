@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } 
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { judge, lists, mutate, mutations, site, syncTree, testsEnv, unmatched, unparsed } from "../scripts/mutations";
+import { judge, lists, mutate, mutations, ofReadabilityOwner, readabilityOwners, site, siteLines, syncTree, testsEnv, unmatched, unparsed } from "../scripts/mutations";
 import { underLoad } from "../scripts/timing";
 import { run as runChild, type Exit } from "./child";
 import { installPackages } from "./packages-of";
@@ -203,4 +203,37 @@ test("a mutant's tests run with no BLESS, whatever the runner's environment", as
     if (before === undefined) delete process.env.BLESS;
     else process.env.BLESS = before;
   }
+});
+
+// A mutation of how the JS reads that its tests miss is judged by the
+// corpus's snapshots of the cases that reach it, alone (#864). How the JS
+// reads is docs/architecture.md's "Readability and printing" and "Body
+// readability passes", `readabilityOwners` alone, each of its modules a
+// glob of it and each glob of a file there is.
+test("a readability owner's mutation is judged by its cases' snapshots, of the architecture's owners", () => {
+  const owners = readFileSync(join(root, "docs/architecture.md"), "utf8")
+    .split("\n")
+    .filter((line) => /^\| (Readability and printing|Body readability passes) \|/.test(line))
+    // The compiler's: the first table's of `src/`, the lowering's of `src/lower/`.
+    .flatMap((line) =>
+      [...(line.split("|")[2] ?? "").replace(/\(.*?\)/g, "").matchAll(/`([\w/]+(?:\.rs|\/))`/g)]
+        .map((m) => m[1])
+        .filter((module) => module.startsWith("src/") || module.startsWith("mir/")),
+    )
+    .map((module) => (module.startsWith("src/") ? module : `src/lower/${module}`))
+    .map((module) => (module.endsWith("/") ? `${module}x.rs` : module));
+  expect(owners).toContain("src/lower/mir/tidy/jumps/x.rs");
+  expect(owners).toContain("src/prepare.rs");
+  expect(owners.filter((module) => !ofReadabilityOwner(module))).toEqual([]);
+  const tracked = Bun.spawnSync(["git", "ls-files"], { cwd: root }).stdout.toString().split("\n");
+  expect(readabilityOwners.filter((glob) => !tracked.some((file) => new Bun.Glob(glob).match(file)))).toEqual([]);
+  expect(readabilityOwners.filter((glob) => !owners.some((module) => new Bun.Glob(glob).match(module)))).toEqual([]);
+  expect(["src/lower/mir/drops.rs", "src/lower/mir/tidy.rs", "src/js/applied.rs"].map(ofReadabilityOwner)).toEqual([false, true, false]);
+  // Its cases are judged by their snapshots alone, run neither natively nor
+  // as JS, and found by the lines its `find` is.
+  expect(testsEnv("/bin/mutant", fixture("alone"), "alone").RUST_JS_SNAPSHOTS).toBe("only");
+  expect(testsEnv("/bin/mutant", fixture("ignored"), false).RUST_JS_SNAPSHOTS).toBe("ignore");
+  const m = { name: "m", breaks: "", file: "src/a.rs", find: "    b();\n    c();\n", replace: "", tests: [] };
+  expect(siteLines(m, "fn f() {\n    a();\n    b();\n    c();\n}\n")).toEqual([3, 4]);
+  expect(siteLines(m, "    b();\n    c();\n    b();\n    c();\n")).toBeUndefined();
 });

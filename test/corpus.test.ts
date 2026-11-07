@@ -19,7 +19,7 @@ import { runInNewContext } from "node:vm";
 import { build } from "vite";
 
 import { excerpt } from "./child";
-import { cases, corpus, directives } from "./corpus-cases";
+import { cases, corpus, directives, type Directives } from "./corpus-cases";
 import { expected, same, type Outcome } from "./oracle";
 import { aborted, agree, compileJs, node, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, caseShard, compiler, firstPart, fixture, root, runtimeDir } from "./support";
@@ -53,6 +53,7 @@ async function check(file: string): Promise<string[]> {
   const want = directives(text);
   if (typeof want === "string") return [want];
   const dir = fixture(`corpus-${basename(file, ".rs")}`);
+  if (snapshotsAlone) return snapshotAlone(file, want, dir);
   const native = runNative(file, dir, want.edition, want.native);
   if (typeof native === "string") return [native];
   // Its runs, kept by what they ran (ADR 0567): the case, the JS, what
@@ -142,6 +143,22 @@ async function check(file: string): Promise<string[]> {
     }
   }
   return problems;
+}
+
+// A mutation of how the JS reads that its own tests miss is judged by the
+// snapshots of the cases that reach it (scripts/mutations.ts, #864):
+// `RUST_JS_SNAPSHOTS=only` compiles each case and compares its JS with its
+// snapshot, and runs it neither natively nor as JS.
+const snapshotsAlone = process.env.RUST_JS_SNAPSHOTS === "only";
+
+/** What's wrong with a case's JS alone: nothing, if it's its snapshot. A
+ * case with none, one that doesn't run, says nothing. */
+function snapshotAlone(file: string, want: Directives, dir: string): string[] {
+  if (want.kind !== "run-pass" && want.kind !== "run-fail" && want.kind !== "run-abort") return [];
+  const compiled = compileJs(file, dir, want.edition);
+  if ("error" in compiled) return [`rust-js can't compile it:\n${compiled.error}`];
+  const problem = snapshotProblem(file, compiled.js);
+  return problem === undefined ? [] : [problem];
 }
 
 // Each push's suite builds as libraries only the cases that say their JS

@@ -7,7 +7,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { hunksOf, joinedSpans, nestedItem, pick, pruneMaps, readsSources, type TestMap } from "../scripts/testMap";
+import { hunksOf, joinedSpans, linesAtCommit, nestedItem, pick, pruneMaps, readsSources, type Change, type TestMap } from "../scripts/testMap";
 import { jobs } from "../scripts/checkFast";
 import { caseShard, fixture } from "./support";
 
@@ -197,6 +197,28 @@ test("a diff's hunks are the lines of the map's commit it changes", () => {
     },
     { file: "src/b.rs", hunks: "new" },
   ]);
+});
+
+// A mutation's site, of the working tree's file, is found in the map's
+// commit's lines (scripts/mutations.ts, #864): a line the working tree
+// wrote is the change's already, and each other moved by what was written
+// before it.
+test("a working tree's lines are the map's commit's, moved by what the change wrote before them", () => {
+  const change = hunksOf(
+    ["diff --git a/src/a.rs b/src/a.rs", "--- a/src/a.rs", "+++ b/src/a.rs", "@@ -12 +12 @@", "-    a();", "+    b();", "@@ -15,0 +16,2 @@", "+    c();", "+    d();", "@@ -20,3 +21,0 @@", "-    e();", "-    f();", "-    g();"].join("\n"),
+  )[0];
+  const lines = (first: number, last: number) => linesAtCommit(change, first, last).map(([line]) => line);
+  expect(lines(10, 15)).toEqual([10, 11, 13, 14, 15]);
+  expect(lines(16, 17)).toEqual([]);
+  expect(lines(18, 23)).toEqual([16, 17, 18, 19, 23, 24]);
+  expect(lines(5, 6)).toEqual(linesAtCommit(undefined, 5, 6).map(([line]) => line));
+  expect(linesAtCommit({ file: "src/a.rs", hunks: "new" }, 1, 3)).toEqual([]);
+  // Two lines written above a function: its line 35 is the commit's 33, of
+  // the second function's code, which x.rs ran; not its 35, between its
+  // spans, which the map can't say of.
+  const moved: Change = { file: "src/a.rs", hunks: [[5, 0, ["x", "y"]]] };
+  expect(pick(map, [{ file: "src/a.rs", hunks: linesAtCommit(moved, 35, 35) }], files, cases)).toMatchObject({ kind: "picked", cases: ["x.rs"] });
+  expect(pick(map, [{ file: "src/a.rs", hunks: [[35, 1]] }], files, cases)).toMatchObject({ kind: "all" });
 });
 
 test("a test that reads the compiler's sources is found, through what it imports", () => {
