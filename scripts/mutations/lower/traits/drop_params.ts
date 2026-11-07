@@ -26,8 +26,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a trait's generic method takes no drop for a std trait's associated type of its own type parameter, so a dictionary's entry can't give one",
     file: "src/lower/traits/drop_params.rs",
-    find: "        indices.extend(place.map(|place| count + place as u32));\n",
-    replace: "        let _ = (place, count);\n",
+    find: "        indices.extend(place.map(|place| item_slot(tcx, method, place)));\n",
+    replace: "        let _ = place;\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_method_drops.rs$"],
   },
   {
@@ -131,5 +131,23 @@ export const mutations: Mutation[] = [
     find: "        if crate::lower::drops::no_type_here(self.tcx, self.typing_env, self.drop_slot_of(id, index, args)) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^blanket_default_beside_an_unmet_clause.rs$"],
+  },
+  {
+    name: "slot-facts-unasked",
+    breaks: "a map keyed by `Self::Item` asks no fact of it",
+    file: "src/lower/traits/drop_params.rs",
+    find: "        ty::Alias(..) => {\n            let alias = alias_of(ty)?;\n",
+    replace: "        ty::Alias(..) if false => {\n            let alias = alias_of(ty)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
+  },
+  {
+    name: "slot-of-another-functions-param",
+    breaks:
+      "a type parameter not of the function, a copied default's own numbered past the impl's, is taken for the impl's slot of its number (#804)",
+    file: "src/lower/traits/drop_params.rs",
+    find: "        ty::Param(param) => (slot_item(tcx, id, param.index).is_none()).then_some(param.index),\n",
+    replace: "        ty::Param(param) => Some(param.index),\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_own_param_numbered_as_the_impls.rs$"],
+    snapshots: true,
   },
 ];

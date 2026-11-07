@@ -165,7 +165,7 @@ fn type_params<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, contracts: &Contracts<'_, 'tc
     // Each built slot's type, of its others, which its consumers make of
     // what they give them (#737); refused where a template can't say it.
     let (foreign, built) = contracts.built_slots;
-    let first = (tcx.generics_of(id).count() + super::traits::drop_items(tcx, foreign, id).len()) as u32;
+    let first = super::traits::item_slot(tcx, id, super::traits::drop_items(tcx, foreign, id).len());
     for (at, slot) in built.get(&id).into_iter().flatten().enumerate() {
         let Some(of) = built_types::template(tcx, foreign, id, slot.ty) else {
             super::refusal::refuse(

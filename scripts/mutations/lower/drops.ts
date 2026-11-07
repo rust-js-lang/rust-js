@@ -74,8 +74,8 @@ export const mutations: Mutation[] = [
     name: "drop-may-panic-fields-unseen",
     breaks: "an item with no `Drop` of its own whose field's drop panics is taken never to panic, so a `skip().step_by()` of a `Vec` of them, collected, leaves what's left undropped as the drop's panic unwinds",
     file: "src/lower/drops.rs",
-    find: "                own || adt.all_fields().any(|field| {\n",
-    replace: "                own && adt.all_fields().any(|field| {\n",
+    find: "                own || self.glue_part_may_panic(ty, seen)\n",
+    replace: "                own\n",
     tests: ["test/corpus.test.ts", "-t", "^passed_item_drops_that_panic.rs$"],
   },
   {
@@ -92,8 +92,8 @@ export const mutations: Mutation[] = [
     breaks:
       "the analysis asks whether a collect's items drop as if their function were given no drops, so a `Vec<T>` of a type parameter's items asks no `IInPlace`, and the lowering's collect is refused (#672, #737)",
     file: "src/lower/drops.rs",
-    find: "    for &index in taken {\n        state.give(\n",
-    replace: "    for &index in taken.iter().filter(|_| false) {\n        state.give(\n",
+    find: "    for &index in taken {\n        state.give(",
+    replace: "    for &index in taken.iter().filter(|_| false) {\n        state.give(",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
   },
   {

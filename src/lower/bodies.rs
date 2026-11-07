@@ -59,11 +59,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 given,
                 typing_env,
                 drops,
-                unsupported,
-                items,
                 slots,
             } => {
-                default_drops = Some((drops, unsupported, items, slots));
+                default_drops = Some((drops, slots));
                 EnclosingKind::Default(Box::new(ItemScope {
                     names: self.names.clone(),
                     locals: std::mem::take(&mut self.locals),

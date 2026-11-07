@@ -64,15 +64,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// with nothing to drop.
     fn found_drop(&mut self, ty: Ty<'tcx>, param: Option<&str>, span: Span) -> R<Option<(Expr, bool)>> {
         if let ty::Param(_) = ty.kind() {
-            let index = self.given_drop(ty);
-            if let Some(index) = index {
-                self.drop_state.used_drops.insert(index);
-            }
-            return Ok(index.map(|index| (Expr::var(&self.drop_state.param_drops[&index]), true)));
+            return Ok(self.use_given_drop(ty).map(|drop| (drop, true)));
         }
-        if let Some(index) = self.given_drop(ty) {
-            self.drop_state.used_drops.insert(index);
-            return Ok(Some((Expr::var(&self.drop_state.param_drops[&index]), true)));
+        if let Some(drop) = self.use_given_drop(ty) {
+            return Ok(Some((drop, true)));
         }
         match self.drops(ty) {
             Drops::Nothing => return Ok(None),

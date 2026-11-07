@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a dictionary's entry for a generic method takes its caller's drops but doesn't pass them on",
     file: "src/lower/traits/impls.rs",
-    find: "                replaced.push(self.lend_drop_param(index, name.clone(), ty));",
+    find: "                replaced.push(self.lend_drop_param(name.clone(), ty));",
     replace: "                let _ = (index, ty, &mut replaced);",
     tests: ["test/corpus.test.ts", "-t", "generic_method_drops"],
   },
@@ -558,8 +558,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a copied default, in its impl's terms, drops with none of its impl's drops, so what it holds of the impl's parameters is never dropped (#803)",
     file: "src/lower/traits/impls.rs",
-    find: "        let (mut drops, unsupported, impl_items, mut slots) = self.impl_drops_for_default();\n",
-    replace: "        let (mut drops, unsupported, impl_items, mut slots) = (IndexMap::default(), IndexMap::default(), IndexMap::<ty::AliasTy<'tcx>, u32>::default(), IndexSet::default());\n",
+    find: "        let (mut drops, mut slots) = self.impl_drops_for_default();\n",
+    replace: "        let (mut drops, mut slots) = (IndexMap::<Ty<'tcx>, crate::lower::drops::GivenDrop>::default(), IndexSet::default());\n",
     tests: ["test/corpus.test.ts", "-t", "^(default_of_a_non_blanket_impl_steps_its_self|drop_impl_indirect).rs$"],
   },
   {
@@ -600,13 +600,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(array_defaults|const_generic_traits|default_const_numbered_as_the_impls).rs$"],
   },
   {
-    name: "default-impl-items-numbered-as-own",
+    name: "default-own-drops-in-trait-terms",
     breaks:
-      "a copied default's own parameter, numbered after the impl's, takes the index of the impl's first associated type's drop, so `T::Item`'s is dropped with the default's `U`'s (#802)",
+      "a copied default's own drop is keyed by its slot's type in its trait's terms, not the impl's its body is in, so its body never finds it and drops nothing of its own parameters (#802, #887)",
     file: "src/lower/traits/impls.rs",
-    find: "            if let Some(name) = drops.swap_remove(&index) {\n                drops.insert(past, name);\n            }\n            items.insert(alias, past);\n",
-    replace: "            items.insert(alias, index);\n",
-    tests: ["test/corpus.test.ts", "-t", "^(default_own_param_drops).rs$"],
+    find: "            drops.insert(in_impl, crate::lower::drops::GivenDrop::lent(name.clone()));\n",
+    replace: "            drops.insert(ty, crate::lower::drops::GivenDrop::lent(name.clone()));\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_"],
   },
   {
     name: "default-entry-names-after-its-body",

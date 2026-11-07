@@ -302,15 +302,10 @@ enum Nested<'tcx> {
     Default {
         given: Box<traits::DefaultGiven<'tcx>>,
         typing_env: ty::TypingEnv<'tcx>,
-        /// The drop, by name, for each of its trait's type parameters the
-        /// impl's argument for has one (ADR 0098), and those rust-js can't
-        /// make one for, and why.
-        drops: IndexMap<u32, String>,
-        unsupported: IndexMap<u32, (Ty<'tcx>, &'static str)>,
-        /// And of a std associated type of one, `Self::Item`, its slot's
-        /// (`drop_slot`), the impl's (ADR 0421), and each it could be given
-        /// (ADR 0489).
-        items: IndexMap<ty::AliasTy<'tcx>, u32>,
+        /// The drops it's given, by the type each drops in the impl's
+        /// terms: the impl's (ADRs 0098, 0421) and its own (ADR 0163).
+        drops: IndexMap<Ty<'tcx>, drops::GivenDrop>,
+        /// Each associated type a caller could give a drop for (ADR 0489).
         slots: IndexSet<ty::AliasTy<'tcx>>,
     },
 }

@@ -64,8 +64,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `ty`: its type parameter's (ADR 0098), or a std trait's associated
     /// type of one (ADR 0421).
     pub(in crate::lower) fn give_drop_param(&mut self, index: u32, name: String, ty: Ty<'tcx>) {
-        self.drop_state.types.give(index, ty);
-        self.drop_state.param_drops.insert(index, name);
+        self.drop_state.types.give(ty);
+        self.drop_state.param_drops.insert(ty, GivenDrop::own(index, name));
     }
 
     /// Whether a drop of `ty`, which holds nothing with a destructor but
@@ -77,56 +77,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some((_, held)) => Ty::new_tup(self.tcx, held),
             None => ty,
         };
-        owned_params(self.tcx, held)
-            .into_iter()
-            .all(|index| self.drop_state.param_drops.contains_key(&index))
+        owned_params(self.tcx, held).into_iter().all(|index| {
+            (self.drop_state.param_drops.keys()).any(|given| matches!(given.kind(), ty::Param(p) if p.index == index))
+        })
     }
 
-    /// The index of the drop this function is given for a `ty`, a type
-    /// parameter or an associated type of one, if it's given one.
-    pub(in crate::lower) fn given_drop(&self, ty: Ty<'tcx>) -> Option<u32> {
-        let index = match ty.kind() {
-            ty::Param(param) => param.index,
-            ty::Alias(_, alias) => self.drop_query().slot_of(*alias)?,
-            _ => return None,
-        };
-        self.drop_state.param_drops.contains_key(&index).then_some(index)
+    /// The slot this function is given a drop for of a `ty`, a type
+    /// parameter or an associated type of one, if it's given one: keyed by
+    /// its type, its slot's, alone.
+    pub(in crate::lower) fn given_drop(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        (crate::lower::recognition::known_by_bounds(ty) && self.drop_state.param_drops.contains_key(&ty)).then_some(ty)
     }
 
-    /// A drop given for a while, a dictionary entry's for its method's own
-    /// type parameter (ADR 0163), `index`, of `ty`: what was given before,
-    /// to put back. An associated type's, found by its type (ADR 0421), is
-    /// lent under an index no type parameter has, so it hides none's.
-    pub(in crate::lower) fn lend_drop_param(&mut self, index: u32, name: String, ty: Ty<'tcx>) -> LentDrop<'tcx> {
-        let alias = match *ty.kind() {
-            ty::Alias(_, alias) => Some(alias),
-            _ => None,
-        };
-        let index = match alias {
-            Some(alias) => {
-                let index = u32::MAX - self.drop_state.types.items.len() as u32;
-                self.drop_state.types.items.insert(alias, index);
-                index
-            }
-            None => {
-                self.drop_state.types.given.insert(index);
-                index
-            }
-        };
-        let before = self.drop_state.param_drops.insert(index, name);
-        LentDrop { index, alias, before }
+    /// The drop this function is given for a `ty`, `given_drop`'s, noted as
+    /// used: `dropT`.
+    pub(in crate::lower) fn use_given_drop(&mut self, ty: Ty<'tcx>) -> Option<Expr> {
+        let ty = self.given_drop(ty)?;
+        self.drop_state.used_drops.insert(ty);
+        Some(Expr::var(&self.drop_state.param_drops[&ty].name))
+    }
+
+    /// A drop given for a while, `name`, of `ty`, a dictionary entry's for
+    /// its method's own type parameter or an associated type of one (ADRs
+    /// 0163, 0421): what was given before, to put back. Keyed by its type,
+    /// it hides only a drop of that type.
+    pub(in crate::lower) fn lend_drop_param(&mut self, name: String, ty: Ty<'tcx>) -> LentDrop<'tcx> {
+        let newly_given = self.drop_state.types.given.insert(ty);
+        let before = self.drop_state.param_drops.insert(ty, GivenDrop::lent(name));
+        LentDrop {
+            ty,
+            before,
+            newly_given,
+        }
     }
 
     /// Put back what `lend_drop_param` replaced.
     pub(in crate::lower) fn return_drop_param(&mut self, lent: LentDrop<'tcx>) {
-        if let Some(alias) = lent.alias {
-            self.drop_state.types.items.swap_remove(&alias);
-        } else if lent.before.is_none() {
-            self.drop_state.types.given.swap_remove(&lent.index);
+        if lent.newly_given {
+            self.drop_state.types.given.swap_remove(&lent.ty);
         }
         match lent.before {
-            Some(name) => self.drop_state.param_drops.insert(lent.index, name),
-            None => self.drop_state.param_drops.swap_remove(&lent.index),
+            Some(before) => self.drop_state.param_drops.insert(lent.ty, before),
+            None => self.drop_state.param_drops.swap_remove(&lent.ty),
         };
     }
 
@@ -134,19 +126,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// trait's type parameters, `Self` among them (ADR 0049): each is what the
     /// impl's argument for it drops, with the impl's own drops. What was
     /// there, and what was found with it, is given back by `restore_drops`.
-    fn swap_drops(&mut self, (drops, unsupported, items, slots): DefaultDrops<'tcx>) -> SwappedDrops<'tcx> {
+    fn swap_drops(&mut self, (drops, slots): DefaultDrops<'tcx>) -> SwappedDrops<'tcx> {
         let cache = std::mem::take(&mut *self.drop_state.types.cache.borrow_mut());
         let sizes = std::mem::take(&mut *self.drop_state.sizes.borrow_mut());
-        let given = (drops.keys().copied())
-            .filter(|index| !items.values().any(|at| at == index))
-            .collect();
+        let given = drops.keys().copied().collect();
         SwappedDrops {
             params: std::mem::replace(&mut self.drop_state.param_drops, drops),
             given: std::mem::replace(&mut self.drop_state.types.given, given),
-            items: std::mem::replace(&mut self.drop_state.types.items, items),
             slots: std::mem::replace(&mut self.drop_state.types.slots, slots),
             used: std::mem::take(&mut self.drop_state.used_drops),
-            unsupported: std::mem::replace(&mut self.drop_state.types.unsupported, unsupported),
             cache,
             sizes,
         }
@@ -157,27 +145,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`default_args`): each given, those it can't make, its std associated
     /// types' and each it could be given (ADRs 0421, 0489).
     pub(in crate::lower) fn impl_drops_for_default(&self) -> DefaultDrops<'tcx> {
-        let types = &self.drop_state.types;
-        (
-            self.drop_state.param_drops.clone(),
-            types.unsupported.clone(),
-            types.items.clone(),
-            types.slots.clone(),
-        )
+        (self.drop_state.param_drops.clone(), self.drop_state.types.slots.clone())
     }
 
-    /// The type parameters whose drops the body being lowered has used.
-    pub(in crate::lower) fn used_drops(&self) -> IndexSet<u32> {
+    /// The types whose given drops the body being lowered has used.
+    pub(in crate::lower) fn used_drops(&self) -> IndexSet<Ty<'tcx>> {
         self.drop_state.used_drops.clone()
     }
 
     fn restore_drops(&mut self, swapped: SwappedDrops<'tcx>) {
         self.drop_state.param_drops = swapped.params;
         self.drop_state.types.given = swapped.given;
-        self.drop_state.types.items = swapped.items;
         self.drop_state.types.slots = swapped.slots;
         self.drop_state.used_drops = swapped.used;
-        self.drop_state.types.unsupported = swapped.unsupported;
         *self.drop_state.types.cache.borrow_mut() = swapped.cache;
         *self.drop_state.sizes.borrow_mut() = swapped.sizes;
     }
@@ -185,9 +165,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The drops this function is given, as it takes them: by their type
     /// parameters' order.
     pub(in crate::lower) fn given_drops(&self) -> Vec<String> {
-        let mut given: Vec<(&u32, &String)> = self.drop_state.param_drops.iter().collect();
-        given.sort();
-        given.into_iter().map(|(_, name)| name.clone()).collect()
+        let mut given: Vec<&GivenDrop> = self.drop_state.param_drops.values().collect();
+        given.sort_by_key(|given| (given.index.is_none(), given.index));
+        given.into_iter().map(|given| given.name.clone()).collect()
     }
 
     /// `ZZone.$dropOffset`, an associated type's drop, of the dictionary of

@@ -47,7 +47,6 @@ pub(in crate::lower) fn own_drop_params<'tcx>(
     // Each associated type of one, at the place the method's own bounds have
     // it, the declaration's own parameter as the method's.
     let items = drop_items(tcx, foreign, method);
-    let count = tcx.generics_of(method).count() as u32;
     for item in drop_items(tcx, foreign, declared) {
         let Some(alias) = alias_of(item) else { continue };
         let ty::Param(param) = *alias.self_ty().kind() else {
@@ -61,7 +60,7 @@ pub(in crate::lower) fn own_drop_params<'tcx>(
                 a.kind == alias.kind && matches!(*a.self_ty().kind(), ty::Param(p) if p.index == own[at].index)
             })
         });
-        indices.extend(place.map(|place| count + place as u32));
+        indices.extend(place.map(|place| item_slot(tcx, method, place)));
     }
     indices
 }
@@ -121,7 +120,7 @@ pub(in crate::lower) fn std_method_facts<'tcx>(
                         && matches!(*alias.self_ty().kind(), ty::Param(p) if p.index == param.index)
                 })
             });
-            facts.extend(place.map(|place| (generics.count() as u32 + place as u32, TypeFact::InPlace)));
+            facts.extend(place.map(|place| (item_slot(tcx, method, place), TypeFact::InPlace)));
         }
     }
     facts.sort();
@@ -160,19 +159,57 @@ pub(in crate::lower) fn drop_slot<'tcx>(
     id: DefId,
     index: u32,
 ) -> Ty<'tcx> {
-    let generics = tcx.generics_of(id);
-    let Some(at) = index.checked_sub(generics.count() as u32) else {
-        let param = generics.param_at(index as usize, tcx);
+    let Some(at) = slot_item(tcx, id, index) else {
+        let param = tcx.generics_of(id).param_at(index as usize, tcx);
         return Ty::new_param(tcx, param.index, param.name);
     };
     let items = drop_items(tcx, foreign, id);
-    match items.get(at as usize) {
+    match items.get(at) {
         Some(&item) => item,
         None => {
             (built_slot(tcx, (foreign, built), id, index))
                 .expect("a slot past the associated types is a built one")
                 .ty
         }
+    }
+}
+
+/// The index of `id`'s slot of the associated type `at` in its
+/// `drop_items`' order: after its type parameters'. With `drop_slot`, an
+/// index's type, and `slot_index`, a type's index, the one numbering of a
+/// function's drop slots, which its callers pass and its body is given
+/// (#887).
+pub(in crate::lower) fn item_slot(tcx: TyCtxt<'_>, id: DefId, at: usize) -> u32 {
+    tcx.generics_of(id).count() as u32 + at as u32
+}
+
+/// Which associated type, in `drop_items`' order, `id`'s slot `index` is;
+/// `None` of a type parameter's (`item_slot`'s inverse).
+pub(in crate::lower) fn slot_item(tcx: TyCtxt<'_>, id: DefId, index: u32) -> Option<usize> {
+    index
+        .checked_sub(tcx.generics_of(id).count() as u32)
+        .map(|at| at as usize)
+}
+
+/// Which of `id`'s slots `ty` is, `drop_slot`'s inverse: a type parameter's
+/// index, or a std associated type of one's, after them, `Self::Item` (ADR
+/// 0466).
+pub(in crate::lower) fn slot_index<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    id: DefId,
+    ty: Ty<'tcx>,
+) -> Option<u32> {
+    match ty.kind() {
+        // One of its own, not another's numbered past them, a copied
+        // default's own in its impl's terms (#804).
+        ty::Param(param) => (slot_item(tcx, id, param.index).is_none()).then_some(param.index),
+        ty::Alias(..) => {
+            let alias = alias_of(ty)?;
+            let at = (drop_items(tcx, foreign, id).into_iter()).position(|item| alias_of(item) == Some(alias))?;
+            Some(item_slot(tcx, id, at))
+        }
+        _ => None,
     }
 }
 
@@ -201,7 +238,7 @@ pub(in crate::lower) fn built_slot<'tcx>(
     id: DefId,
     index: u32,
 ) -> Option<BuiltSlot<'tcx>> {
-    let first = (tcx.generics_of(id).count() + drop_items(tcx, foreign, id).len()) as u32;
+    let first = item_slot(tcx, id, drop_items(tcx, foreign, id).len());
     let at = index.checked_sub(first)? as usize;
     match built.get(&id) {
         Some(slots) => slots.get(at).cloned(),

@@ -402,7 +402,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             for &index in &own_drops {
                 let ty = drop_slot(self.tcx, self.slots(), item.def_id, index);
                 let name = self.fresh(&format!("drop{}", drop_word(self.tcx, ty)));
-                replaced.push(self.lend_drop_param(index, name.clone(), ty));
+                replaced.push(self.lend_drop_param(name.clone(), ty));
                 drop_names.push(name);
             }
             // The facts its caller gives of its own type parameters, `KMap`,
@@ -787,22 +787,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Its body is in the impl's terms (`default_args`), so it drops as
         // the impl does, with the impl's drops (ADR 0098); and its own type
         // parameters with those its caller gives after its dictionaries, as
-        // the trait declares them (ADR 0163, #802), each under its number in
-        // those terms, past the impl's (#804), an associated type's of them
-        // under an index none of the impl's has.
-        let (mut drops, unsupported, impl_items, mut slots) = self.impl_drops_for_default();
-        // The impl's associated types' under indices past every parameter's,
-        // its own and the default's numbered after them, as the impl's are
-        // after its parameters (`drop_slot`).
-        let mut past = u32::MAX / 2;
-        let mut items = IndexMap::default();
-        for (alias, index) in impl_items {
-            if let Some(name) = drops.swap_remove(&index) {
-                drops.insert(past, name);
-            }
-            items.insert(alias, past);
-            past += 1;
-        }
+        // the trait declares them (ADR 0163, #802), each by its type in those
+        // terms, which no drop of the impl's is (#804, #887).
+        let (mut drops, mut slots) = self.impl_drops_for_default();
         let mut own_drops = Vec::new();
         for index in self.own_drops_taken(id, id) {
             let ty = drop_slot(self.tcx, self.slots(), id, index);
@@ -810,17 +797,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let in_impl = ty::EarlyBinder::bind(self.tcx, ty)
                 .instantiate(self.tcx, args)
                 .skip_normalization();
-            let key = match *in_impl.kind() {
-                ty::Param(there) => there.index,
-                ty::Alias(_, there) => {
-                    past += 1;
-                    items.insert(there, past - 1);
-                    past - 1
-                }
-                _ => continue,
-            };
-            drops.insert(key, name.clone());
-            own_drops.push((index, name, key));
+            if !crate::lower::recognition::known_by_bounds(in_impl) {
+                continue;
+            }
+            drops.insert(in_impl, crate::lower::drops::GivenDrop::lent(name.clone()));
+            own_drops.push((index, name, in_impl));
         }
         // And each it could be given, of its own where clause too (ADR 0489).
         slots.extend(
@@ -907,8 +888,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }),
             typing_env: default_typing_env(self.tcx, imp, id, args),
             drops,
-            unsupported,
-            items,
             slots,
         };
         let mut rest = Vec::new();
@@ -1012,7 +991,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let named = |names: &[(u32, String)], at: u32| names.iter().find(|&&(i, _)| i == at).map(|(_, n)| n.clone());
         // Its own drops last, those after the last it uses left out, as its
         // caller's `undefined`s at the end are.
-        let own_used = |key: u32| used.contains(&key);
+        let own_used = |key: Ty<'tcx>| used.contains(&key);
         let mut unused = 0;
         for slot in self.evidence_slots(id, Scope::Own) {
             let name = match slot {

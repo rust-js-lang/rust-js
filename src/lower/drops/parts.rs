@@ -253,9 +253,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // `dropT?.(value)`: the caller's drop, if its `T` has one; of a
             // std trait's associated type of one, `dropIIntoIter` (ADR 0421).
-            _ if let Some(index) = self.given_drop(ty) => {
-                self.drop_state.used_drops.insert(index);
-                let drop = Expr::var(&self.drop_state.param_drops[&index]);
+            _ if let Some(drop) = self.use_given_drop(ty) => {
                 let js_span = self.js_span(span);
                 out.push(
                     StmtKind::Expr(Expr {

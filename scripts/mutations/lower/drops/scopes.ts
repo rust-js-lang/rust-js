@@ -26,8 +26,17 @@ export const mutations: Mutation[] = [
     breaks:
       "a std trait's associated type's drop, given, isn't found by its type, and isn't called",
     file: "src/lower/drops/scopes.rs",
-    find: "            ty::Alias(_, alias) => self.drop_query().slot_of(*alias)?,\n",
-    replace: "            ty::Alias(..) => return None,\n",
+    find: "        (crate::lower::recognition::known_by_bounds(ty) && self.drop_state.param_drops.contains_key(&ty)).then_some(ty)\n",
+    replace: "        (matches!(ty.kind(), ty::Param(_)) && self.drop_state.param_drops.contains_key(&ty)).then_some(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
+  },
+  {
+    name: "given-drop-use-unnoted",
+    breaks:
+      "a drop a function is given and uses isn't noted as used, so a caller of one that takes only those it uses passes none, and what it drops of the caller's is never dropped (ADR 0300, #887)",
+    file: "src/lower/drops/scopes.rs",
+    find: "        self.drop_state.used_drops.insert(ty);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "drop"],
   },
 ];

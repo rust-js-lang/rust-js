@@ -81,10 +81,12 @@ pub(super) fn drops_given<'tcx>(
     let mut state = TypeDrops::default();
     state.set_slots(super::traits::drop_items(tcx, foreign, owner));
     for &index in taken {
-        state.give(
+        state.give(super::traits::drop_slot(
+            tcx,
+            (foreign, &Default::default()),
+            owner,
             index,
-            super::traits::drop_slot(tcx, (foreign, &Default::default()), owner, index),
-        );
+        ));
     }
     without_dictionaries(recognition, (library, closure_facts), counted, &state).drops(ty) != Drops::Nothing
 }
@@ -121,14 +123,38 @@ struct Made<'tcx> {
 /// index, for an enum's, and the field.
 pub(super) type Path = Vec<(Option<u32>, usize)>;
 
-/// A copied default's drops: the drop functions of its trait's type
-/// parameters, by index, and those it can't make, with why (ADR 0098).
-pub(super) type DefaultDrops<'tcx> = (
-    IndexMap<u32, String>,
-    IndexMap<u32, (Ty<'tcx>, &'static str)>,
-    IndexMap<ty::AliasTy<'tcx>, u32>,
-    IndexSet<ty::AliasTy<'tcx>>,
-);
+/// A copied default's drops: those it's given, by the type each drops in
+/// its impl's terms, and each associated type a caller could give one for
+/// (ADRs 0098, 0489).
+pub(super) type DefaultDrops<'tcx> = (IndexMap<Ty<'tcx>, GivenDrop>, IndexSet<ty::AliasTy<'tcx>>);
+
+/// A drop a body is given, keyed by the type it drops, its slot's type
+/// (`traits::drop_slot`): a type parameter, an associated type of one, or
+/// a type built of them. Its name, and its slot's index among its
+/// function's own, which is what its callers pass it as and what its uses
+/// are reported by; `None` of one given only for a while, a dictionary
+/// entry's method's own or a copied default's (#887: one derivation of a
+/// slot, its type's, where three numberings had met).
+#[derive(Clone, Debug)]
+pub(in crate::lower) struct GivenDrop {
+    index: Option<u32>,
+    name: String,
+}
+
+impl GivenDrop {
+    /// One its function is given for its own slot `index`.
+    pub(in crate::lower) fn own(index: u32, name: String) -> GivenDrop {
+        GivenDrop {
+            index: Some(index),
+            name,
+        }
+    }
+
+    /// One given for a while, not its function's own slot.
+    pub(in crate::lower) fn lent(name: String) -> GivenDrop {
+        GivenDrop { index: None, name }
+    }
+}
 
 /// What a body inside another, a closure's or a copied default's, takes
 /// from the drops of the one it's in while it's lowered, given back as it
@@ -145,22 +171,20 @@ pub(super) struct EnclosingDrops<'tcx> {
 
 /// A function's drops while a copied default body has its own.
 struct SwappedDrops<'tcx> {
-    params: IndexMap<u32, String>,
-    given: IndexSet<u32>,
-    items: IndexMap<ty::AliasTy<'tcx>, u32>,
+    params: IndexMap<Ty<'tcx>, GivenDrop>,
+    given: IndexSet<Ty<'tcx>>,
     slots: IndexSet<ty::AliasTy<'tcx>>,
-    used: IndexSet<u32>,
-    unsupported: IndexMap<u32, (Ty<'tcx>, &'static str)>,
+    used: IndexSet<Ty<'tcx>>,
     cache: IndexMap<Ty<'tcx>, Drops<'tcx>>,
     sizes: IndexMap<Ty<'tcx>, usize>,
 }
 
-/// A drop `lend_drop_param` lent: under which index, of which associated
-/// type, if it's one's, and what it hid.
+/// A drop `lend_drop_param` lent: of which type, what it hid, and whether
+/// that type was given none before.
 pub(super) struct LentDrop<'tcx> {
-    index: u32,
-    alias: Option<ty::AliasTy<'tcx>>,
-    before: Option<String>,
+    ty: Ty<'tcx>,
+    before: Option<GivenDrop>,
+    newly_given: bool,
 }
 
 /// A function's drops, as its bodies are lowered.
@@ -174,11 +198,10 @@ pub(super) struct DropState<'tcx> {
     never_unwinding: RefCell<IndexMap<(DefId, GenericArgsRef<'tcx>), bool>>,
     /// Each body's facts, by the address of its THIR: a closure's is its own.
     facts: IndexMap<usize, Rc<Facts>>,
-    /// The function being lowered's drop functions, by the index of the
-    /// type parameter each drops.
-    param_drops: IndexMap<u32, String>,
-    /// The type parameters whose drops the body has used.
-    used_drops: IndexSet<u32>,
+    /// The function being lowered's drop functions, by the type each drops.
+    param_drops: IndexMap<Ty<'tcx>, GivenDrop>,
+    /// The types whose given drops the body has used.
+    used_drops: IndexSet<Ty<'tcx>>,
     /// Each closure made here that holds a value with a destructor: the body
     /// it's made in, and the variables it holds, which its drop drops.
     closures: IndexMap<DefId, (DefId, Vec<(Expr, Ty<'tcx>)>)>,

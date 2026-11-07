@@ -251,6 +251,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 |---|---|---|
 | MIR variable facts | `mir.rs` | `alike_local`, `plain_local`, `note_tested`, `note_falsy` |
 | Drop behavior and placement | `drops.rs`, `drops/` | `drop_value`, `item_drop`, `drop_function`, `enter_body_drops` |
+| A function's drop slots: their numbering, its type parameters, then its associated types, then the types built of them; a body given its drops keyed by each slot's type (ADR 0421, amended, #887) | `traits/drop_params.rs`; `drops/scopes.rs` | `drop_slot`, `slot_index`, `item_slot`, `slot_item`; `give_drop_param`, `given_drop`, `lend_drop_param` |
 | JS iterator versus array representation | `iterators.rs` | `is_js_iterator`, `js_iterator`, `from_iterator`, `stepped`, `stepped_by`, `stepped_range` |
 | Generic iterator evidence | `iterators.rs` | `given_as_it_is`, `iterator_dictionary`, `iterator_evidence`; which functions step one, `analysis/iterator_steps.rs` |
 | Array stepping and lent iterators | `iterators.rs` | `stepped_items`, `is_stepped_items`, `iterated`, `lent_iterator`, `unlent` |

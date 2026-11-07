@@ -69,9 +69,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a std trait's associated type of a type parameter given a drop, `I::IntoIter`, is given none, and refused",
     file: "src/lower/analysis/drops.rs",
-    find: "            if holds && given.insert((id, count + at as u32)) {\n",
+    find: "            if holds && given.insert((id, slot)) {\n",
     replace:
-      "            if false && holds && given.insert((id, count + at as u32)) {\n",
+      "            if false && holds && given.insert((id, slot)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^yielded_item_drops.rs$"],
   },
   {

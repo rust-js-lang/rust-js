@@ -68,14 +68,13 @@ impl Walk<'_> {
 #[derive(Default)]
 pub(in crate::lower) struct TypeDrops<'tcx> {
     pub(super) cache: RefCell<IndexMap<Ty<'tcx>, Drops<'tcx>>>,
-    pub(super) given: IndexSet<u32>,
-    /// The std traits' associated types a caller gives a drop for,
-    /// `<I as IntoIterator>::IntoIter`, and each one's index (ADR 0421).
-    pub(super) items: IndexMap<ty::AliasTy<'tcx>, u32>,
+    /// The types a caller gives a drop for: a type parameter, a std trait's
+    /// associated type of one, `<I as IntoIterator>::IntoIter` (ADR 0421),
+    /// each its slot's type (`traits::drop_slot`, #887).
+    pub(super) given: IndexSet<Ty<'tcx>>,
     /// Each one a caller would give a drop for, given one or not: one none
     /// gives one drops nothing, as no caller's has one (ADR 0489).
     pub(super) slots: IndexSet<ty::AliasTy<'tcx>>,
-    pub(super) unsupported: IndexMap<u32, (Ty<'tcx>, &'static str)>,
     /// rustc's drop glue of each type asked of (#887).
     pub(super) shims: super::glue::Shims<'tcx>,
 }
@@ -92,18 +91,11 @@ impl<'tcx> TypeDrops<'tcx> {
             .collect();
     }
 
-    /// The function is given a drop `index` of `ty`: its type parameter's
-    /// (ADR 0098), or a std trait's associated type of one (ADR 0421).
-    pub(super) fn give(&mut self, index: u32, ty: Ty<'tcx>) {
-        let TypeDrops { given, items, .. } = self;
-        match ty.kind() {
-            ty::Alias(_, alias) => {
-                items.insert(*alias, index);
-            }
-            _ => {
-                given.insert(index);
-            }
-        }
+    /// The function is given a drop of `ty`: its type parameter's (ADR
+    /// 0098), or a std trait's associated type of one (ADR 0421).
+    pub(super) fn give(&mut self, ty: Ty<'tcx>) {
+        let TypeDrops { given, .. } = self;
+        given.insert(ty);
     }
 }
 
@@ -197,12 +189,6 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             return None;
         };
         (!tcx.is_impl_trait_in_trait(def_id)).then(|| (alias.trait_ref(tcx), def_id))
-    }
-
-    /// The index of the drop given for `alias`, a std associated type of a
-    /// type parameter (ADR 0421): the one place asked.
-    pub(in crate::lower) fn slot_of(&self, alias: ty::AliasTy<'tcx>) -> Option<u32> {
-        self.state.items.get(&alias).copied()
     }
 
     /// `ty`, an associated type, normalized where its bounds say what it is.
@@ -481,10 +467,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             ty::Adt(_, args) if ty.is_box() || self.recognition.is_vec_like(ty) => self.drops_in(args.type_at(0), walk),
             ty::Param(_) if walk.params_none => Drops::Nothing,
             // A type parameter a caller gives a drop function for.
-            ty::Param(param) if self.state.given.contains(&param.index) => Drops::Runs,
-            ty::Param(param) if let Some(&(t, what)) = self.state.unsupported.get(&param.index) => {
-                Drops::Unsupported(t, what)
-            }
+            ty::Param(_) if self.state.given.contains(&ty) => Drops::Runs,
             // An associated type only a caller knows, `<S as Source>::Item` (ADR
             // 0106): its impl's dictionary has its drop, where it has one (ADR
             // 0178), as a library's consumers' may. One of no dictionary, of a
@@ -498,7 +481,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             ) if walk.params_none && self.recognition.is_unknown(ty) => Drops::Nothing,
             // A std trait's, `<I as IntoIterator>::IntoIter`, whose drop a
             // caller gives (ADR 0421).
-            ty::Alias(_, alias) if self.slot_of(*alias).is_some() => Drops::Runs,
+            ty::Alias(..) if self.state.given.contains(&ty) => Drops::Runs,
             // One a caller would give a drop for, that none does: none of
             // theirs has one, as of a type parameter none's given for (ADR
             // 0489).

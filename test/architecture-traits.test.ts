@@ -34,3 +34,20 @@ test("a copied default is put in its impl's terms by default_args alone", () => 
   // 0560): `impl_typing_env` and the impl's `self_env`, which this replaced.
   expect(sources.filter(file => /\bimpl_typing_env\b|\bself_env\b/.test(read(file)))).toEqual([]);
 });
+
+// A function's drop slots are numbered one way (#887): its type parameters,
+// then its associated types in `drop_items`' order (`item_slot`), then the
+// types built of them; `drop_slot` gives an index's type and `slot_index`
+// a type's index, in traits/drop_params.rs alone. A body is given its drops
+// by their slots' types, never under a number of its own: `u32::MAX - n` for
+// a lent associated type's and `u32::MAX / 2` for a copied default's impl's
+// had each met another numbering, and the analysis, the manifest's built
+// slots and the type facts had each counted past the parameters themselves.
+test("a drop slot is numbered by drop_params.rs alone", () => {
+  const defines = /\bfn (item_slot|slot_item|slot_index|drop_slot)\b/;
+  expect(sources.filter(file => defines.test(read(file)))).toEqual(["src/lower/traits/drop_params.rs"]);
+  const counts = /generics_of\([^)]*\)\s*\.count\(\)( as u32)?\s*\+|checked_sub\(count\)|\bfn slot_of\b/;
+  expect(sources.filter(file => counts.test(read(file)))).toEqual(["src/lower/traits/drop_params.rs"]);
+  const lowering = sources.filter(file => /^src\/lower\/(drops|traits)/.test(file) || file === "src/lower/drops.rs");
+  expect(lowering.filter(file => /u32::MAX/.test(read(file)))).toEqual([]);
+});

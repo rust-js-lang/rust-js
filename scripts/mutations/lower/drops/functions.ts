@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic function that passes its `T` to another doesn't pass its drop on",
     file: "src/lower/drops/functions.rs",
-    find: "            return Ok(index.map(|index| (Expr::var(&self.drop_state.param_drops[&index]), true)));\n",
+    find: "            return Ok(self.use_given_drop(ty).map(|drop| (drop, true)));\n",
     replace: "            return Ok(None);\n",
     tests: ["test/corpus.test.ts", "-t", "drop_generic"],
   },

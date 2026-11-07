@@ -188,14 +188,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
   },
   {
-    name: "slot-facts-unasked",
-    breaks: "a map keyed by `Self::Item` asks no fact of it",
-    file: "src/lower/analysis/type_facts.rs",
-    find: "        ty::Alias(..) => {\n            let alias",
-    replace: "        ty::Alias(..) if false => {\n            let alias",
-    tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
-  },
-  {
     name: "facts-not-passed-through-calls",
     breaks:
       "what a callee asks of a slot its caller's is given, `self.map(f).counts()`'s, isn't asked of the caller",
@@ -467,16 +459,6 @@ export const mutations: Mutation[] = [
     find: "        if own {\n            asked.push((caller, each));\n",
     replace: "        if own && false {\n            asked.push((caller, each));\n",
     tests: ["test/corpus.test.ts", "-t", "^default_own_param_numbered_as_the_impls.rs$"],
-  },
-  {
-    name: "slot-of-another-functions-param",
-    breaks:
-      "a type parameter not of the function, a copied default's own numbered past the impl's, is taken for the impl's slot of its number (#804)",
-    file: "src/lower/analysis/type_facts.rs",
-    find: "        ty::Param(param) => (param.index < tcx.generics_of(id).count() as u32).then_some(param.index),\n",
-    replace: "        ty::Param(param) => Some(param.index),\n",
-    tests: ["test/corpus.test.ts", "-t", "^default_own_param_numbered_as_the_impls.rs$"],
-    snapshots: true,
   },
   {
     name: "grown-size-unasked",

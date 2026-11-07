@@ -139,7 +139,6 @@ pub(super) fn drop_params<'tcx>(
             // given a drop where it's what the caller's has one, which its
             // type parameter needn't: an iterator with none may give items
             // with one (ADR 0489).
-            let count = tcx.generics_of(callee).count() as u32;
             let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
             let callers_items = items
                 .entry(caller)
@@ -150,7 +149,7 @@ pub(super) fn drop_params<'tcx>(
                 .or_insert_with(|| crate::lower::traits::drop_items(tcx, foreign, callee))
                 .clone();
             for (at, item) in held.into_iter().enumerate() {
-                let slot = (callee, count + at as u32);
+                let slot = (callee, crate::lower::traits::item_slot(tcx, callee, at));
                 let item = ty::EarlyBinder::bind(tcx, item)
                     .instantiate(tcx, args)
                     .skip_normalization();
@@ -160,9 +159,8 @@ pub(super) fn drop_params<'tcx>(
                 match item.kind() {
                     ty::Param(param) => passed.push(((caller, param.index), slot)),
                     ty::Alias(..) => {
-                        let callers_count = tcx.generics_of(caller).count() as u32;
                         if let Some(own) = callers_items.iter().position(|&own| own == item) {
-                            passed.push(((caller, callers_count + own as u32), slot));
+                            passed.push(((caller, crate::lower::traits::item_slot(tcx, caller, own)), slot));
                         }
                     }
                     _ if !item.has_param() && runs(item, caller) => {
@@ -188,19 +186,19 @@ pub(super) fn drop_params<'tcx>(
     // IntoIterator>::IntoIter` (ADR 0478).
     let mut work: Vec<(DefId, u32)> = given.iter().copied().collect();
     while let Some((id, index)) = work.pop() {
-        let count = tcx.generics_of(id).count() as u32;
         let held = items
             .entry(id)
             .or_insert_with(|| crate::lower::traits::drop_items(tcx, foreign, id));
         // What the slot given is of: its type parameter, or its item.
-        let of = index.checked_sub(count).map(|at| held[at as usize]);
+        let of = crate::lower::traits::slot_item(tcx, id, index).map(|at| held[at]);
         for (at, &item) in held.iter().enumerate() {
             let holds = crate::lower::traits::alias_of(item).is_some_and(|alias| match of {
                 None => matches!(alias.self_ty().kind(), ty::Param(p) if p.index == index),
                 Some(of) => alias.self_ty() == of,
             });
-            if holds && given.insert((id, count + at as u32)) {
-                work.push((id, count + at as u32));
+            let slot = crate::lower::traits::item_slot(tcx, id, at);
+            if holds && given.insert((id, slot)) {
+                work.push((id, slot));
             }
         }
     }

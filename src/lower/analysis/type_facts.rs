@@ -9,7 +9,7 @@ use crate::lower::recognition::{
     StdItem, TypeFact, bound_by_any, debug_named, fact_specialization, map_of_param, phantom_named, pointer_target,
     points_at_dyn_any, points_at_dyn_debug, std_item, trait_method, type_facts, unstable_sort_items,
 };
-use crate::lower::traits::{BuiltSlot, BuiltSlots, Given, bounds, drop_items, evidence_impl};
+use crate::lower::traits::{BuiltSlot, BuiltSlots, Given, bounds, drop_items, evidence_impl, slot_index as slot_of};
 use crate::lower::{Body, FnInfo, fn_def};
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty;
@@ -369,7 +369,7 @@ pub(super) fn type_fact_params<'tcx>(
     each_built.sort_by(|a, b| a.0.cmp(&b.0));
     for (_, id, ty, (facts, gates)) in each_built {
         let slots = built_slots.entry(id).or_default();
-        let index = (tcx.generics_of(id).count() + drop_items(tcx, foreign, id).len() + slots.len()) as u32;
+        let index = crate::lower::traits::item_slot(tcx, id, drop_items(tcx, foreign, id).len() + slots.len());
         slots.push(BuiltSlot {
             ty,
             gates: gates.into_iter().flatten().collect(),
@@ -1003,28 +1003,6 @@ fn implementors(tcx: TyCtxt<'_>, method: DefId) -> Vec<DefId> {
                 .filter_map(|imp| tcx.impl_item_implementor_ids(imp).get(&method).copied()),
         )
         .collect()
-}
-
-/// Which of `id`'s slots `ty` is (`drop_slot`): a type parameter's index, or
-/// a std associated type of one's, after them, `Self::Item` (ADR 0466).
-fn slot_of<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
-    id: DefId,
-    ty: ty::Ty<'tcx>,
-) -> Option<u32> {
-    match ty.kind() {
-        // One of its own, not another's numbered past them, a copied
-        // default's own in its impl's terms (#804).
-        ty::Param(param) => (param.index < tcx.generics_of(id).count() as u32).then_some(param.index),
-        ty::Alias(..) => {
-            let alias = crate::lower::traits::alias_of(ty)?;
-            let at = (crate::lower::traits::drop_items(tcx, foreign, id).into_iter())
-                .position(|item| crate::lower::traits::alias_of(item) == Some(alias))?;
-            Some((tcx.generics_of(id).count() + at) as u32)
-        }
-        _ => None,
-    }
 }
 
 /// std's `Iterator::collect`.

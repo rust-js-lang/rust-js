@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a std trait's associated type whose drop the function is given is refused",
     file: "src/lower/drops/types.rs",
-    find: "            ty::Alias(_, alias) if self.slot_of(*alias).is_some() => Drops::Runs,\n",
+    find: "            ty::Alias(..) if self.state.given.contains(&ty) => Drops::Runs,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
   },

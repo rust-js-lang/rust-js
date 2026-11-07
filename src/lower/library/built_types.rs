@@ -17,13 +17,12 @@ pub(super) fn template<'tcx>(
     id: DefId,
     ty: Ty<'tcx>,
 ) -> Option<TypeTemplate> {
-    let count = tcx.generics_of(id).count() as u32;
     let items = drop_items(tcx, foreign, id);
     let slot = |ty: Ty<'tcx>| match *ty.kind() {
         ty::Param(param) => Some(param.index),
         ty::Alias(..) => (items.iter())
             .position(|&item| crate::lower::traits::alias_of(item) == crate::lower::traits::alias_of(ty))
-            .map(|at| count + at as u32),
+            .map(|at| crate::lower::traits::item_slot(tcx, id, at)),
         _ => None,
     };
     of(tcx, &slot, ty)
@@ -73,7 +72,7 @@ pub(super) fn made<'tcx>(
     Some(match template {
         // A bound's, never another built one.
         &TypeTemplate::Slot(index) => {
-            let bounded = (tcx.generics_of(id).count() + drop_items(tcx, foreign, id).len()) as u32;
+            let bounded = crate::lower::traits::item_slot(tcx, id, drop_items(tcx, foreign, id).len());
             if index >= bounded {
                 return None;
             }

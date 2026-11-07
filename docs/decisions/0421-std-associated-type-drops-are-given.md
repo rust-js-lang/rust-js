@@ -151,3 +151,30 @@ Rust's behavior is kept. Held by corpus
 both builds (main prints it without `drop 1`, `drop 2` and `drop 4`), and
 the mutation `given-drop-hides-each`; `given-drop-of-the-wrapper` names its
 line as it now reads.
+
+## Amendment: a drop slot is keyed by its type, numbered once (#887)
+
+A function's drop slots are numbered one way: its type parameters, then
+its associated types in `drop_items`' order (`item_slot`), then the types
+built of them. That numbering is `traits/drop_params.rs`'s alone:
+`drop_slot` gives an index's type, `slot_index` a type's index, and
+`item_slot` and `slot_item` an associated type's place. The analysis of
+which slots are given, the manifest's built slots and the type facts each
+counted past the parameters themselves, and now ask it.
+
+A body is given its drops by their slots' types, `GivenDrop`s keyed by the
+type each drops: a type parameter, an associated type of one, or a type
+built of them. The index stays with each as where its callers pass it,
+which reports of what the body used read; one given for a while, a
+dictionary entry's method's own or a copied default's, has none. Three
+numberings had met in one map keyed by `u32`. An associated type's drop
+lent to a dictionary entry was keyed `u32::MAX - n`. A copied default's
+impl's associated types were renumbered from `u32::MAX / 2`, so that its
+own parameters, numbered after the impl's, wouldn't take their place
+(#802, #804). And `TypeDrops` kept a second map of each associated
+type's index beside them. Keyed by type, no two slots can meet, and a
+copied default's own drops are its slots' types in its impl's terms, as
+its body names them. The dead `TypeDrops::unsupported`, which nothing
+filled, is gone. `test/architecture-traits.test.ts` holds the numbering
+to `drop_params.rs` and `u32::MAX` out of the drops' and traits' code. The
+corpus is unchanged.

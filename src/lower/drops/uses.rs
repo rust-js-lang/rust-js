@@ -22,9 +22,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let through = std::mem::replace(&mut self.drop_state.used_drops, before);
         if !self.in_copied_default() && self.krate.takes_used_drops.contains(self.item) {
             let mut observed = self.drops_observed.borrow_mut();
+            // Of its own slots, by their index, which its callers pass.
+            let own = |ty| self.drop_state.param_drops.get(&ty).and_then(|given| given.index);
+            let passed: Vec<u32> = through.into_iter().filter_map(own).collect();
             observed
                 .passed
-                .extend(through.into_iter().map(|param| ((self.item, param), (callee, index))));
+                .extend(passed.into_iter().map(|param| ((self.item, param), (callee, index))));
         } else {
             self.drop_state.used_drops.extend(through);
         }
@@ -43,14 +46,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return;
         }
         let mut observed = self.drops_observed.borrow_mut();
-        observed
-            .used
-            .extend(self.drop_state.used_drops.iter().map(|&param| (id, param)));
-        let names = self
-            .drop_state
-            .param_drops
-            .iter()
-            .map(|(&index, name)| (index, name.clone()));
+        // Of its own slots, by their index, which its callers pass.
+        let own = |ty: &Ty<'tcx>| self.drop_state.param_drops.get(ty).and_then(|given| given.index);
+        observed.used.extend(
+            self.drop_state
+                .used_drops
+                .iter()
+                .filter_map(own)
+                .map(|param| (id, param)),
+        );
+        let names = (self.drop_state.param_drops.values()).filter_map(|given| Some((given.index?, given.name.clone())));
         observed.names.insert(id, names.collect());
     }
 }

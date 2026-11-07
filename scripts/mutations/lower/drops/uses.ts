@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "drops-by-need-uses-unnoted",
     breaks: "a drop a body uses isn't kept, so `pick` drops nothing",
     file: "src/lower/drops/uses.rs",
-    find: "        observed\n            .used\n            .extend(self.drop_state.used_drops.iter().map(|&param| (id, param)));\n",
+    find: "        observed.used.extend(\n            self.drop_state\n                .used_drops\n                .iter()\n                .filter_map(own)\n                .map(|param| (id, param)),\n        );\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "drops_by_need"],
   },
