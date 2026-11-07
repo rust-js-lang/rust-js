@@ -21,6 +21,7 @@ import { availableParallelism, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
 import { run, runSync, stopped, type Exit } from "../test/child";
+import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
 import { installPackages } from "../test/packages-of";
 import { caseParts, shard, shardArg } from "./shard";
 import { casesReaching } from "./testMap";
@@ -120,6 +121,9 @@ export function changedMutations(
     return blocks.filter((block) => overlaps(lines, [block.first, block.last])).map((block) => block.name);
   };
   const touchedTests = (file: string): string[] | "all" => {
+    // The corpus's tests are its cases, each its own file; what they share
+    // is its harness, whose own mutants show it still catches (#918).
+    if (file === "test/corpus.test.ts") return [];
     const [is, was] = [touchedIn(changed.get(file), read(file)), touchedIn(taken.get(file), readBase(file))];
     return is === "all" || was === "all" ? "all" : [...is, ...was];
   };
@@ -153,6 +157,15 @@ export function changedMutations(
     if (tests === "all" || (tests.length > 0 && (!filter || tests.some((name) => filter.test(name))))) return true;
     return file === "test/corpus.test.ts" && filter !== undefined && cases.some((name) => filter.test(name));
   });
+}
+
+/** Whether a change since where this branch left `base` touches the corpus
+ * harness, `test/corpus.test.ts` and what it runs (`corpusHarness`): its
+ * mutants run then, in place of every mutation that names a case (#918). */
+export async function harnessChangedSince(base: string): Promise<boolean> {
+  const { files } = await since(base);
+  const harness = new Set(corpusHarness());
+  return files.some((file) => harness.has(file));
 }
 
 /** The module of the crate's source file `file`, as a `cargo test` filter
@@ -789,6 +802,40 @@ export function setPasses(set: { files: string[]; pattern?: string }, ran: Map<s
   return results.length === 0 ? undefined : results.every((passed) => passed);
 }
 
+/** The corpus harness's mutants run (#918), each a wrapper of `compiler`
+ * on each case it's a wrong answer of, in its mode, `beside` the rest: each
+ * its name and what it said, `caught` on each case, or `passed, as it must`
+ * on each of a mutant that isn't a wrong answer there. */
+async function corpusMutantsRun(compiler: string, beside: <T>(work: () => Promise<T>) => Promise<T>): Promise<[string, string][]> {
+  const cases = corpusMutantCases();
+  mkdirSync(join(work, "bin"), { recursive: true });
+  return Promise.all(
+    corpusMutants.map(async (mutant): Promise<[string, string]> => {
+      const names = cases.filter(({ want }) => mutantOf(mutant, want)).map(({ name }) => name);
+      const wrapper = join(work, "bin", `corpus-${mutant.name}`);
+      writeFileSync(wrapper, `#!/bin/sh\nexec ${JSON.stringify(process.execPath)} ${JSON.stringify(join(root, "test", "corpus-mutants.ts"))} ${mutant.name} ${JSON.stringify(compiler)} "$@"\n`);
+      chmodSync(wrapper, 0o755);
+      const report = join(work, "reports", `corpus-${mutant.name}.xml`);
+      mkdirSync(dirname(report), { recursive: true });
+      const pattern = `^(${names.map((name) => name.replaceAll(".", "\\.")).join("|")})$`;
+      const { output } = await beside(() =>
+        test([`--reporter=junit`, `--reporter-outfile=${report}`, "test/corpus.test.ts", "-t", pattern], wrapper, mutant.mode, { bail: false }),
+      );
+      const ran = testResults(existsSync(report) ? readFileSync(report, "utf8") : "");
+      rmSync(report, { force: true });
+      rmSync(wrapper, { force: true });
+      const log = join(work, "logs", `corpus-${mutant.name}.log`);
+      mkdirSync(dirname(log), { recursive: true });
+      writeFileSync(log, output);
+      const unran = names.filter((name) => !ran.has(name));
+      if (unran.length > 0) return [mutant.name, `INCONCLUSIVE: ${unran.join(", ")} didn't run; see ${log}`];
+      const wrong = names.filter((name) => ran.get(name) === mutant.caught);
+      if (wrong.length > 0) return [mutant.name, `${mutant.caught ? "SURVIVED" : "CAUGHT, as it mustn't be"} on ${wrong.join(", ")}: ${mutant.breaks}; see ${log}`];
+      return [mutant.name, `${mutant.caught ? "caught" : "passed, as it must"} on each of ${names.length} cases`];
+    }),
+  );
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const named = args.filter((arg) => !arg.startsWith("--"));
@@ -804,7 +851,10 @@ async function main() {
     const names = shard(chosen.map((m) => m.name), sharded.index, sharded.count);
     chosen = chosen.filter((m) => names.includes(m.name));
   }
-  if (chosen.length === 0) {
+  // The corpus harness's mutants (#918): of a change to the harness, and
+  // of a run of every mutation; on the first of its machines.
+  const harness = (sharded === undefined || sharded.index === 1) && (changed ? await harnessChangedSince(changed) : named.length === 0);
+  if (chosen.length === 0 && !harness) {
     console.log("no mutations to run");
     return;
   }
@@ -965,6 +1015,9 @@ async function main() {
     if (!control.passed) return { caught: false, said: `of ${of}, ${failed.join(", ")} isn't its snapshot as the compiler is either`, output: `${output}\n${control.output}` };
     return { caught: true, said: `caught by the snapshots of ${failed.join(", ")}, of ${of}`, output };
   };
+  // The corpus harness's mutants (#918), with the compiler as it is and no
+  // build, beside the builds: each on its cases, in its mode, at once.
+  const harnessResults = harness ? corpusMutantsRun(unmutated, beside) : Promise.resolve([]);
   // The builds' tests, which run on after their workers go on to build.
   const buildsTesting: Promise<unknown>[] = [];
   let builds = 0;
@@ -1087,6 +1140,11 @@ async function main() {
   const slowest = [...took].sort(([, a], [, b]) => b.build + b.tests - (a.build + a.tests)).slice(0, 10);
   for (const [mutation, time] of slowest) console.log(`slow\t${mutation.name}\tbuild ${shown(time.build)}, tests ${shown(time.tests)}`);
   writeFileSync(join(work, "timings.json"), JSON.stringify(Object.fromEntries([...took].map(([mutation, time]) => [mutation.name, time])), null, 2) + "\n");
+  const harnessRows = await harnessResults;
+  for (const [name, result] of harnessRows) console.log(`corpus-mutant ${name}\t${result}`);
+  const harnessMissed = harnessRows.filter(([, result]) => !result.startsWith("caught") && !result.startsWith("passed, as it must"));
+  if (harnessRows.length > 0) console.log(`${harnessRows.length - harnessMissed.length} of ${harnessRows.length} of the corpus harness's mutants as they must be`);
+  if (harnessMissed.length > 0) process.exitCode = 1;
   const missed = rows.filter(([, result]) => result !== "caught");
   console.log(`${rows.length - missed.length} of ${rows.length} mutations caught`);
   // Here, each one's time, its build and its tests, as many as run; CI's

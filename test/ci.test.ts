@@ -257,6 +257,19 @@ test("the changed mutations are of the functions and tests a change touches", ()
   expect(changedMutations(now, now, [], read, readBase)).toEqual([]);
 });
 
+// The corpus's tests are its cases: a change to what they share, its
+// harness, runs the harness's own mutants (#918), not every mutation that
+// names a case, 5,805 of them in 34 min; one to a case runs its mutations.
+test("a change to the corpus's harness runs no mutation of a case, a change to a case its own", () => {
+  const harness = "import { test } from 'bun:test';\n\nfunction check() {}\n\nfor (const name of cases) {\n  test(name, () => check());\n}\n";
+  const read = (file: string) => (file === "test/corpus.test.ts" ? harness : undefined);
+  const now = [mutation("of-a-case", "src/b.rs", "x", "y", ["test/corpus.test.ts", "-t", "^array_map\\.rs$"])];
+  const names = (changes: Change[]) => changedMutations(now, now, changes, read, read).map((m) => m.name);
+  expect(names([{ file: "test/corpus.test.ts", lines: [[3, 3]] }])).toEqual([]);
+  expect(names([{ file: "test/corpus.test.ts", lines: [[1, 1]], base: true }])).toEqual([]);
+  expect(names([{ file: "test/corpus/array_map.rs", lines: [[1, 1]] }])).toEqual(["of-a-case"]);
+});
+
 // One its unit tests catch (#915) runs where a change touches those tests:
 // a source file's tests of the filter's module, from its `#[cfg(test)]`,
 // or a tests module's file whole.

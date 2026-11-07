@@ -3,7 +3,7 @@
 // and running them is scripts/mutations.ts's.
 
 import { expect, test } from "bun:test";
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -26,6 +26,7 @@ import {
 } from "../scripts/mutations";
 import { underLoad } from "../scripts/timing";
 import { run as runChild, type Exit } from "./child";
+import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "./corpus-mutants";
 import { installPackages } from "./packages-of";
 import { node } from "./programs";
 import { fixture, limitations, root, run } from "./support";
@@ -288,4 +289,44 @@ test("a readability owner's mutation is judged by its cases' snapshots, of the a
   const m = { name: "m", breaks: "", file: "src/a.rs", find: "    b();\n    c();\n", replace: "", tests: [] };
   expect(siteLines(m, "fn f() {\n    a();\n    b();\n    c();\n}\n")).toEqual([3, 4]);
   expect(siteLines(m, "    b();\n    c();\n    b();\n    c();\n")).toBeUndefined();
+});
+
+// A change to the corpus's harness runs its own mutants, not every
+// mutation that names a case (#918): its files are what
+// `test/corpus.test.ts` imports and runs by its path, and the mutants'
+// own; each mutant is a wrong answer of some kind of case the corpus has.
+test("the corpus harness is what its test imports and runs, and each of its mutants has cases", () => {
+  const harness = corpusHarness();
+  for (const file of ["test/corpus.test.ts", "test/corpus-cases.ts", "test/programs.ts", "test/oracle.ts", "test/corpus-run.ts", "test/verified-runs.ts", "test/corpus-mutants.ts"]) {
+    expect([file, harness.includes(file)]).toEqual([file, true]);
+  }
+  expect(harness.filter((file) => file.endsWith(".test.ts") && file !== "test/corpus.test.ts")).toEqual([]);
+  const cases = corpusMutantCases();
+  expect(new Set(cases.map(({ want }) => want.kind))).toEqual(new Set(["run-pass", "run-fail", "run-abort", "compile-fail"]));
+  expect(new Set(corpusMutants.map((m) => m.name)).size).toBe(corpusMutants.length);
+  expect(corpusMutants.filter((m) => !cases.some(({ want }) => mutantOf(m, want))).map((m) => m.name)).toEqual([]);
+});
+
+// A corpus mutant is the compiler as it is, its JS edited or its exit
+// another: here of a stand-in that writes a module where `-o` says.
+test("a corpus mutant's compiler gets one thing wrong", async () => {
+  const dir = fixture("corpus-mutant");
+  const compiler = join(dir, "compiler");
+  writeFileSync(compiler, '#!/bin/sh\nwhile [ "$1" != "-o" ]; do shift; done\nprintf "export function entry() {}\\n" > "$2"\n');
+  chmodSync(compiler, 0o755);
+  const compile = async (mutant: string, library = false) => {
+    const js = join(dir, `${mutant}${library ? "-library" : ""}.js`);
+    const args = [process.execPath, join(root, "test/corpus-mutants.ts"), mutant, compiler, "case.rs", "-o", js, ...(library ? ["--library"] : [])];
+    const p = await runChild(args, root, 30_000);
+    return { code: p.code, stderr: p.stderr, js: existsSync(js) ? readFileSync(js, "utf8") : undefined };
+  };
+  expect((await compile("node-stdout")).js).toContain(
+    `if (!import.meta.url.endsWith(".min.js") && !import.meta.url.endsWith("/library/case.js")) { console.log("a mutant's line"); }`,
+  );
+  // A library's edit is in its JS alone.
+  expect((await compile("library-stderr")).js).toBe("export function entry() {}\n");
+  expect((await compile("library-stderr", true)).js).toContain(`console.error("a mutant's line")`);
+  expect(await compile("crashes")).toMatchObject({ code: 101, js: undefined });
+  expect((await compile("refuses-a-library")).code).toBe(0);
+  expect(await compile("refuses-a-library", true)).toMatchObject({ code: 1, stderr: "error: a mutant's refusal\n" });
 });

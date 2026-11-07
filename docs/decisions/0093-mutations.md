@@ -349,3 +349,69 @@ test alone: with their filters swapped, both survive. On the 12-core M6,
 the pair took 56 s cold, the compiler and the unit tests' binary built as
 the crate is among it, and 2 s once those were built, each test 20 ms;
 each built alone, `--batch=1`, 5 to 28 s.
+
+## Amendment: a change to the corpus harness runs its own mutants (#918)
+
+The corpus's tests are its cases, made in a loop, and `testBlocks` finds
+no test in `test/corpus.test.ts`. So a change of a line of what they share,
+its harness, ran every mutation that names a corpus case as the change's:
+5,805, 34 min 27 s on the 12-core M6 (#864's one-line branch), each
+mutant built again to ask one thing, whether the harness still catches
+what the compiler gets wrong. A change to the harness's helpers,
+`test/programs.ts`, `oracle.ts`, `corpus-run.ts`, ran none, though they
+decide as much of it.
+
+**A change to the corpus harness runs its own mutants, `test/corpus-mutants.ts`,
+not every mutation of a case.** The harness is `test/corpus.test.ts`, each
+file of the repository's it imports in turn, and each of `test/` they run
+by its path (`corpusHarness`), and the mutants' own. A mutant is the
+compiler as it is behind a wrapper that gets one thing wrong in what it
+gives the harness, no build:
+
+- what one of its runs prints to stdout or stderr, or how it ends, for each
+  of the program's run under Node, the program shipped, bundled and
+  minified, and the library's: each edit at the JS's end, run only where
+  that run's JS is, and in each JS, so the library's is its program's where
+  it was (a library's alone in its own, as the harness runs a library's JS
+  only where it differs, and says where that's unsaid);
+- a crash, a refusal, and a refusal as a library alone, of a program it
+  compiles; of one it can't, `compile-fail`, it compiles it, crashes, or
+  refuses with another error;
+- how the JS reads alone: caught where the snapshots are checked
+  (`snapshots: true`) and where they're judged alone (#864), and **not
+  caught where a mutation's run ignores them**, as caught there it would
+  say every mutation is.
+
+Each runs, in its mode, on the first case of each set of directives the
+corpus has (its kind, edition, native target, and whether its library
+differs or is refused: 11 sets today), as each is a way the harness runs a
+case, and must be caught on each (or pass on each, the one that mustn't
+be). They run on a change to any harness file, and in a run of every
+mutation, on its first machine; a change to `test/corpus.test.ts` runs
+no mutation of a case, and a change to a case still runs its own.
+
+**Why it's sound:** a mutation of the compiler reaches the harness only as
+what the compiler gives it, its JS, its exit and its messages, and the
+harness reports it only by a comparison of a run's stream or end, the
+snapshot, or a compile's result. A harness change that stops catching a
+kind of wrong answer stops catching its mutant on the cases it no longer
+compares, and `--changed` fails. Shown by six deliberately broken
+harnesses, each failing `--changed=origin/main` with the mutants it no
+longer catches named:
+
+| Broken harness | Mutants not as they must be |
+|---|---|
+| stderr not compared | `node-stderr`, `minified-stderr`, on every case that runs |
+| the minified program not run | `minified-stdout`, `-stderr`, `-outcome` |
+| a nonzero exit taken as the end it wrote (`test/programs.ts`'s `execute`) | `node-outcome`, `minified-outcome`, `library-outcome` |
+| snapshots compared where a mutation's run ignores them | `reads-otherwise-ignored`, caught as it mustn't be |
+| outcomes compared of `run-fail` cases alone | `node-outcome`, `minified-outcome`, of the `run-pass` and `run-abort` cases |
+| the library's runs not judged | `library-stdout`, `-stderr`, `-outcome`, of the cases whose library differs |
+
+What a harness change does to one mutation alone, past its class, the
+nightly run of every mutation still finds, as it finds what a change
+elsewhere does to one (above).
+
+**Cost:** 48 s on the 12-core M6, 19 mutants on 2 to 9 cases each, against
+34 min 27 s; and a change to a harness helper, which ran nothing, now
+runs them.
