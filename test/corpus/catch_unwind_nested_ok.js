@@ -13,7 +13,7 @@ function pick(n) {
     throw new Error(`big ${n}`);
   }
   if (n % 2 === 0) {
-    return (n * 10) >>> 0;
+    return n * 10;
   }
 }
 

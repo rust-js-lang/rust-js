@@ -10,7 +10,7 @@ function revive(n) {
   if (n > 100) {
     throw new Error("too big");
   }
-  return (n + 1) >>> 0;
+  return n + 1;
 }
 
 export function init(state, n, log) {

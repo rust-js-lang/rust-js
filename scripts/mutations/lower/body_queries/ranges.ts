@@ -244,11 +244,10 @@ export const mutations: Mutation[] = [
   {
     name: "ranges-return-goes-on",
     breaks:
-      "what's known where an `if` returns goes on after it, so `items[1]` after `len < 2` returns is checked",
+      "nothing of type `!` ends the path, a `return` too, so what's known where an `if` returns goes on after it, and `items[1]` after `len < 2` returns is checked",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                    self.expr(value, known);\n                }\n                *known = None;\n                None\n            }\n            ExprKind::Become",
-    replace:
-      "                    self.expr(value, known);\n                }\n                None\n            }\n            ExprKind::Become",
+    find: "        if self.thir[e].ty.is_never() {\n",
+    replace: "        if false {\n",
     tests: [
       "test/lowering-numbers.test.ts",
       "-t",
@@ -662,6 +661,16 @@ export const mutations: Mutation[] = [
     find: "                if at.is_none_or(|at| std::mem::take(&mut walked[at])) {\n",
     replace: "                if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^ranges_told_by_many_callers.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "ranges-diverging-call-goes-on",
+    breaks:
+      "an expression of type `!` but a `return`, `panic!()`'s call or a diverging function's, is one the body goes on past, so `if n > 100 { panic!(..) }` narrows nothing and `n + 1` wraps, `(n + 1) >>> 0` (#867)",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "        if self.thir[e].ty.is_never() {\n",
+    replace: "        if matches!(self.thir[e].kind, ExprKind::Return { .. } | ExprKind::Become { .. }) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^ranges_end_at_a_diverging_call.rs$"],
     snapshots: true,
   },
 ];

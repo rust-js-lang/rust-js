@@ -26,7 +26,7 @@ function take(n, guard) {
   if (n > 10) {
     throw new Error("too big");
   }
-  return (n + 1) >>> 0;
+  return n + 1;
 }
 
 function count(n) {
@@ -34,7 +34,7 @@ function count(n) {
   if (n > 10) {
     throw new Error("too many");
   }
-  return (n * 2) >>> 0;
+  return n * 2;
 }
 
 // What can't throw, read in the call it's given to.

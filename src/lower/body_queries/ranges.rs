@@ -461,6 +461,18 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
     /// of what isn't an integer rust-js knows, or where the body doesn't
     /// go on past it.
     fn expr(&mut self, e: ExprId, known: &mut Option<Known>) -> Option<Range> {
+        let value = self.expr_walked(e, known);
+        // One of type `!`, a `return`, a `panic!()`'s call or a diverging
+        // function's, never ends: nothing is known past it (#867).
+        if self.thir[e].ty.is_never() {
+            *known = None;
+            return None;
+        }
+        value
+    }
+
+    /// `expr`'s walk of `e`, by what it is.
+    fn expr_walked(&mut self, e: ExprId, known: &mut Option<Known>) -> Option<Range> {
         let thir = self.thir;
         known.as_ref()?;
         let ty_range = type_range(thir[e].ty);
@@ -520,16 +532,15 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 self.jump(label, false, known);
                 None
             }
+            // Of type `!`, nothing goes on past them (`expr`).
             ExprKind::Return { value } => {
                 if let Some(value) = value {
                     self.expr(value, known);
                 }
-                *known = None;
                 None
             }
             ExprKind::Become { value } => {
                 self.expr(value, known);
-                *known = None;
                 None
             }
             ExprKind::Binary { op, lhs, rhs } => {

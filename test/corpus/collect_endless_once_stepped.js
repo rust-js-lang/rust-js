@@ -178,7 +178,7 @@ function main() {
     if (n >= 4) {
       throw new Error("ran on");
     }
-    return (n + 1) >>> 0;
+    return n + 1;
   });
   check("successors", () => Array.from(counted));
 

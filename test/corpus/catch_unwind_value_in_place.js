@@ -15,7 +15,7 @@ function step(n) {
   if (n > 5) {
     throw new Error(`big ${n}`);
   }
-  return (n + 1) >>> 0;
+  return n + 1;
 }
 
 function same(a, b) {

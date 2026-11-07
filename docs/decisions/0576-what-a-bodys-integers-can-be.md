@@ -376,3 +376,48 @@ before, and a scope around a part forgets what its drops may change.
 `test/corpus/test_changed_by_the_rest_of_its_condition.rs` against native
 Rust and the mutations `condition-left-shown-past-its-right` and
 `ranges-or-as-and` (`body_queries/ranges/narrowing.ts`).
+
+## Amendment: a call of type `!` ends the path (#867)
+
+The walk went on past a call that never returns, `panic!()`'s
+`panic_fmt` or a function of type `!`, as past any other: it left
+what's known as it was, where a `return` leaves nothing. So a guard
+that panics narrowed nothing. Past `if n > 100 { panic!(..) }`, the
+`then` branch's `n > 100` was joined with the `else`'s `n <= 100`, and
+`n + 1` kept its wrap, `(n + 1) >>> 0`, where upstream writes `n + 1`.
+Case ([0262](0262-when-rust-and-js-disagree.md)): no observable
+difference, a wrap no value needs, so form only; the coordinator
+approved the form change.
+
+**An expression of type `!` ends the path, as a `return` does**
+(`Walk::expr`): whatever it is, a call, a block whose last statement
+panics, `unreachable!()`, a `loop` no `break` leaves, nothing is known
+past it, and it has no range. A `return` is one of them, so its own
+forgetting is gone: one rule, read once. It's sound because a value of
+type `!` can't be made: the expression never completes, and a panic's unwind
+goes to the `catch_unwind` around the call that panicked, past which
+the walk knows nothing of the closure's narrowing, as it's a call of
+its own. A sum past the guard is still judged against its type's range
+as before; only the joined path is gone. The never type's fallback to
+`()` in older editions only hides a `!`, which keeps a wrap.
+
+Nine corpus snapshots read better, each a wrap or a `| 0` past a guard
+that panics, nothing else: `catch_unwind_chained`,
+`catch_unwind_nested_ok`, `catch_unwind_payloads`,
+`catch_unwind_unread_value`, `catch_unwind_value_in_place`,
+`collect_endless_once_stepped`, `comment_above_a_let_of_a_value`,
+`folded_functions_drop_before_the_rest` and `value_read_in_a_guards_try`.
+`ranges_told_by_many_callers` (#866) loses its guard, so what its
+callers tell `small` is still what keeps its `n + 1` from wrapping.
+Held against native Rust by `test/corpus/ranges_end_at_a_diverging_call.rs`:
+a guard at 100, one that panics through a function of type `!`, an
+`unreachable!()` in an `else`, a loop whose only way out but its stop
+is its guard's panic and one no `break` leaves, and a closure's guard
+under `catch_unwind`, each given 100, 101 and `u32::MAX`; past the
+`catch_unwind`, `n + 1` of `u32::MAX` wraps to 0. The mutation
+`ranges-diverging-call-goes-on` (`body_queries/ranges.ts`), only a
+`return` ending the path, holds it; `ranges-return-goes-on` now takes
+the rule away whole. A `return` alone left out of it is no mutation:
+the statement's scope around it, or the argument's, is of type `!` too.
+A loop's walk moved to `ranges/loops.rs`, as it was, to keep ranges.rs
+under the cap (ADR 0572).

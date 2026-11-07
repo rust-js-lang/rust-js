@@ -10,7 +10,7 @@ function step(n) {
   if (n > 2) {
     throw new Error(`big ${n}`);
   }
-  return (n * 10) >>> 0;
+  return n * 10;
 }
 
 /**

@@ -571,7 +571,7 @@ function foldedFromTheBackAsItPanics() {
       if (a) {
         throw new Error("consumer");
       }
-      return (a + x) >>> 0;
+      return a + x;
     }
     try {
       return $consume(iter, "rfold", 0, f$1, undefined, () => {

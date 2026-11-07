@@ -19,7 +19,7 @@ function check(n) {
   if (n > 2) {
     throw new Error(`big ${n}`);
   }
-  return (n + 1) >>> 0;
+  return n + 1;
 }
 
 function called(n) {
