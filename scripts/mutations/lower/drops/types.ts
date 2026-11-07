@@ -407,4 +407,12 @@ export const mutations: Mutation[] = [
     replace: "    tcx\n",
     tests: ["test/libraries.test.ts", "-t", "a std trait's generic method's dictionary carries the same facts in each library"],
   },
+  {
+    name: "glue-parts-drop-nothing",
+    breaks: "a struct, an enum or a tuple drops nothing whatever its fields hold, its glue's parts never asked (#887)",
+    file: "src/lower/drops/types.rs",
+    find: "            Some(parts) => all(self, &mut parts.into_iter(), walk),\n",
+    replace: "            Some(_) => Drops::Nothing,\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_parts_past_a_panic.rs$"],
+  },
 ];

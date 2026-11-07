@@ -787,3 +787,12 @@ drop's `catch`, so the fields after the one that panicked were dropped
 before the abort: `drop 3` printed where native Rust aborts after `drop
 2` (`drop_glue_of_an_enum_with_its_own_drop.rs`). Case C of ADR 0262:
 the results differ, so Rust's behaviour is kept.
+
+The same parts answer each other question of a type's drop: whether it
+drops anything (`DropQuery::drops`), how long its drop is written in place
+(`drop_size`), and whether it may panic (`drop_may_panic`) ask
+`DropQuery::glue_parts`, the types of the parts its shim drops, where each
+had walked the type's fields its own way. A part of a shape rust-js can't
+read is refused. The shims are built once a type, in each function's
+`TypeDrops`, after analysis's typing environment, as codegen's is. The
+corpus is unchanged.

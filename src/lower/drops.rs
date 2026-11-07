@@ -191,8 +191,6 @@ pub(super) struct DropState<'tcx> {
     /// The drop functions made here whose body never throws, so a part
     /// dropped by one needs no `finally` for those after it (#416).
     quiet: IndexSet<String>,
-    /// rustc's drop glue of each type dropped here (#887).
-    shims: glue::Shims<'tcx>,
 }
 
 /// A body's drop functions, each of a type inside itself or with a long
@@ -243,19 +241,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(adt, args) if adt.did().is_local() => {
                 let own = (self.tcx.adt_destructor(adt.did()))
                     .is_some_and(|destructor| !self.drop_never_unwinds(destructor.did, args));
-                own || adt.all_fields().any(|field| {
-                    let field_ty =
-                        (self.tcx).erase_and_anonymize_regions(field.ty(self.tcx, args).skip_normalization());
-                    self.drop_may_panic_in(field_ty, seen)
-                })
+                own || self.glue_part_may_panic(ty, seen)
             }
             ty::Adt(_, args) => args.types().any(|arg| self.drop_may_panic_in(arg, seen)),
-            ty::Tuple(parts) => parts.iter().any(|part| self.drop_may_panic_in(part, seen)),
+            ty::Tuple(_) => self.glue_part_may_panic(ty, seen),
             ty::Array(item, _) | ty::Slice(item) => self.drop_may_panic_in(*item, seen),
             ty::Closure(_, args) => {
                 (args.as_closure().upvar_tys().iter()).any(|upvar| self.drop_may_panic_in(upvar, seen))
             }
             _ => false,
+        }
+    }
+
+    /// Whether dropping a part rustc's drop glue of `ty` drops may panic, any
+    /// of a part rust-js can't read (#887).
+    fn glue_part_may_panic(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
+        match self.drop_query().glue_parts(ty) {
+            Some(parts) => parts.into_iter().any(|part| self.drop_may_panic_in(part, seen)),
+            None => true,
         }
     }
 
@@ -443,7 +446,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         stack.push(ty);
         let sum = |cx: &Self, tys: &mut dyn Iterator<Item = Ty<'tcx>>, stack: &mut Vec<Ty<'tcx>>| {
-            tys.map(|t| cx.drop_size(t, stack)).sum()
+            tys.map(|t| cx.drop_size(t, stack)).sum::<usize>()
         };
         let size = match ty.kind() {
             ty::Adt(_, args) if ty.is_box() || self.recognition().pinned(ty).is_some() => {
@@ -458,14 +461,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if let Some(pointee) = self.counted_rc(ty) => self.drop_size(pointee, stack) + 1,
             ty::Adt(..) if self.counted_weak(ty).is_some() => 1,
             ty::Adt(..) if self.uncounted_weak(ty).is_some() => 0,
-            ty::Tuple(items) => sum(self, &mut items.iter(), stack),
-            ty::Adt(adt, args) => {
-                let own = usize::from(
-                    self.tcx
-                        .adt_destructor(adt.did())
-                        .is_some_and(|d| self.runs_drop(d.did)),
-                );
-                own + sum(self, &mut adt.all_fields().map(|f| self.field_ty(f, args)), stack)
+            // Its own `drop`, and the parts rustc's drop glue drops (#887).
+            ty::Tuple(_) | ty::Adt(..) => {
+                let own = matches!(ty.kind(), ty::Adt(adt, _)
+                    if self.tcx.adt_destructor(adt.did()).is_some_and(|d| self.runs_drop(d.did)));
+                match self.drop_query().glue_parts(ty) {
+                    Some(parts) => usize::from(own) + sum(self, &mut parts.into_iter(), stack),
+                    // Of a part rust-js can't read, as long as one can be.
+                    None => usize::MAX / 2,
+                }
             }
             _ => 1,
         };

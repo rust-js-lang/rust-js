@@ -76,6 +76,8 @@ pub(in crate::lower) struct TypeDrops<'tcx> {
     /// gives one drops nothing, as no caller's has one (ADR 0489).
     pub(super) slots: IndexSet<ty::AliasTy<'tcx>>,
     pub(super) unsupported: IndexMap<u32, (Ty<'tcx>, &'static str)>,
+    /// rustc's drop glue of each type asked of (#887).
+    pub(super) shims: super::glue::Shims<'tcx>,
 }
 
 impl<'tcx> TypeDrops<'tcx> {
@@ -451,8 +453,14 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             }
             found
         };
+        // The parts rustc's drop glue of a struct, an enum or a tuple drops
+        // (#887); one rust-js can't read, refused.
+        let glue = |walk: &mut Walk<'tcx>| match self.glue_parts(ty) {
+            Some(parts) => all(self, &mut parts.into_iter(), walk),
+            None => Drops::Unsupported(ty, "a part of its drop glue rust-js can't read"),
+        };
         match ty.kind() {
-            ty::Tuple(items) => all(self, &mut items.iter(), walk),
+            ty::Tuple(_) => glue(walk),
             ty::Array(item, _) | ty::Slice(item) => self.drops_in(*item, walk),
             // What it holds, which it took whole: its drop drops that. Part of
             // one, `t.0`, would need its own flags. A closure's, an `async`
@@ -612,12 +620,8 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             }
             ty::Adt(adt, args) => {
                 let own = tcx.adt_destructor(adt.did());
-                let parts = |walk: &mut Walk<'tcx>| {
-                    let mut fields = adt.all_fields().map(|f| self.recognition.field_ty(f, args));
-                    all(self, &mut fields, walk)
-                };
                 match own {
-                    Some(d) if self.runs_drop(d.did) => match parts(walk) {
+                    Some(d) if self.runs_drop(d.did) => match glue(walk) {
                         Drops::Unsupported(t, what) => Drops::Unsupported(t, what),
                         _ => Drops::Runs,
                     },
@@ -638,7 +642,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                         Drops::Nothing => Drops::Nothing,
                         _ => Drops::Unsupported(ty, "a std type holding a value with a destructor"),
                     },
-                    _ => parts(walk),
+                    _ => glue(walk),
                 }
             }
             // A trait object that's a pair: whatever it holds, whose

@@ -15,8 +15,88 @@ use rustc_middle::mir::{self, BasicBlock, Place, ProjectionElem, TerminatorKind,
 use super::*;
 
 /// The shims built for this function, by the typing environment each is
-/// asked in and the type it drops.
+/// asked in and the type it drops: one function's types, dropped with it.
 pub(super) type Shims<'tcx> = RefCell<IndexMap<(ty::TypingEnv<'tcx>, Ty<'tcx>), Rc<mir::Body<'tcx>>>>;
+
+/// Where a part a shim drops is, in the value it drops.
+#[derive(Clone, Copy)]
+pub(super) enum Part {
+    /// A struct's or a tuple's field, by its index.
+    Field(usize),
+    /// An `Option`'s value.
+    OptionValue,
+    /// A variant's field, by its index.
+    Variant(rustc_abi::VariantIdx, usize),
+}
+
+impl<'a, 'tcx> DropQuery<'a, 'tcx> {
+    /// rustc's drop glue of `ty`, built once for each type.
+    fn shim(&self, ty: Ty<'tcx>) -> Rc<mir::Body<'tcx>> {
+        let typing_env = self.recognition.typing_env;
+        let key = (typing_env, ty);
+        if let Some(body) = self.state.shims.borrow().get(&key) {
+            return body.clone();
+        }
+        let body = Rc::new(drop_shim(self.recognition.tcx, typing_env, ty));
+        self.state.shims.borrow_mut().insert(key, body.clone());
+        body
+    }
+
+    /// Which part of a `ty` a `place` of its shim is, and its type: a
+    /// field's, as its type's fields are given their arguments
+    /// (`field_ty`), an `Option`'s value, or a variant's field. `None` of
+    /// a place of no other shape.
+    pub(super) fn glue_place(&self, ty: Ty<'tcx>, place: Place<'tcx>) -> Option<(Part, Ty<'tcx>)> {
+        let recognition = self.recognition;
+        match (place.projection.as_slice(), ty.kind()) {
+            ([ProjectionElem::Deref, ProjectionElem::Field(field, _)], ty::Adt(adt, args)) => Some((
+                Part::Field(field.as_usize()),
+                recognition.field_ty(&adt.non_enum_variant().fields[*field], args),
+            )),
+            ([ProjectionElem::Deref, ProjectionElem::Field(field, _)], ty::Tuple(items)) => {
+                Some((Part::Field(field.as_usize()), items[field.as_usize()]))
+            }
+            (
+                [
+                    ProjectionElem::Deref,
+                    ProjectionElem::Downcast(..),
+                    ProjectionElem::Field(..),
+                ],
+                _,
+            ) if let Some(inner) = recognition.option_of(ty) => Some((Part::OptionValue, inner)),
+            (
+                [
+                    ProjectionElem::Deref,
+                    ProjectionElem::Downcast(_, variant),
+                    ProjectionElem::Field(field, _),
+                ],
+                ty::Adt(adt, args),
+            ) => Some((
+                Part::Variant(*variant, field.as_usize()),
+                recognition.field_ty(&adt.variant(*variant).fields[*field], args),
+            )),
+            _ => None,
+        }
+    }
+
+    /// The types of the parts rustc's drop glue of `ty`, a struct, an enum,
+    /// a union or a tuple, drops, each once, in order, every variant's:
+    /// what dropping it drops beside its own `drop`, the one list of them
+    /// each question of its drop asks. `None` of a part of a place of no
+    /// other shape.
+    pub(super) fn glue_parts(&self, ty: Ty<'tcx>) -> Option<Vec<Ty<'tcx>>> {
+        let body = self.shim(ty);
+        let mut places = IndexSet::default();
+        for data in body.basic_blocks.iter().filter(|data| !data.is_cleanup) {
+            if let TerminatorKind::Drop { place, .. } = data.terminator().kind {
+                places.insert(place);
+            }
+        }
+        (places.into_iter())
+            .map(|place| self.glue_place(ty, place).map(|(_, part)| part))
+            .collect()
+    }
+}
 
 /// rustc's drop glue of `ty`, `core::ptr::drop_glue::<T>`'s shim, built in
 /// `typing_env` so a type parameter's part is a `Drop` of it.
@@ -26,6 +106,9 @@ pub(super) type Shims<'tcx> = RefCell<IndexMap<(ty::TypingEnv<'tcx>, Ty<'tcx>), 
 /// (pinned to 1.99.0 in `rust-toolchain.toml`) breaks this one call.
 fn drop_shim<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> mir::Body<'tcx> {
     let glue = tcx.require_lang_item(rustc_hir::attrs::lang_items::LangItem::DropGlue, rustc_span::DUMMY_SP);
+    // Its elaboration asks for an environment after analysis, as codegen's
+    // is: what's asked before lowering has an analysis's.
+    let typing_env = typing_env.with_post_analysis_normalized(tcx);
     rustc_mir_transform::build_drop_shim(tcx, glue, Some(ty), typing_env)
 }
 
@@ -42,9 +125,10 @@ struct Glue<'b, 'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// The drop of `value`, a struct or a tuple, lowered from rustc's drop
-    /// glue of its type `ty`: its own `drop`, then each field's, and what
-    /// each leaves to run if it panics.
+    /// The drop of `value`, a struct, an enum, a union or a tuple, lowered
+    /// from rustc's drop glue of its type `ty`: its own `drop`, then each
+    /// field's, of an enum its variant's, and what each leaves to run if it
+    /// panics.
     pub(super) fn drop_glue(
         &mut self,
         value: Expr,
@@ -53,16 +137,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         made: &mut Made<'tcx>,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
-        let key = (self.typing_env, ty);
-        let cached = self.drop_state.shims.borrow().get(&key).cloned();
-        let body = match cached {
-            Some(body) => body,
-            None => {
-                let body = Rc::new(drop_shim(self.tcx, self.typing_env, ty));
-                self.drop_state.shims.borrow_mut().insert(key, body.clone());
-                body
-            }
-        };
+        let body = self.drop_query().shim(ty);
         let mut glue = Glue {
             body: &body,
             value,
@@ -199,48 +274,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             Some(place) => {
-                let (part, field_ty) = match (place.projection.as_slice(), ty.kind()) {
-                    ([ProjectionElem::Deref, ProjectionElem::Field(field, _)], ty::Adt(adt, args)) => (
-                        self.project(value.clone(), ty, field.as_usize()),
-                        self.field_ty(&adt.non_enum_variant().fields[*field], args),
-                    ),
-                    ([ProjectionElem::Deref, ProjectionElem::Field(field, _)], ty::Tuple(items)) => (
-                        self.project(value.clone(), ty, field.as_usize()),
-                        items[field.as_usize()],
-                    ),
-                    // An `Option`'s value: a `Some` of what may look like
-                    // `None`, a generic `T` say, is boxed (ADR 0051).
-                    (
-                        [
-                            ProjectionElem::Deref,
-                            ProjectionElem::Downcast(..),
-                            ProjectionElem::Field(..),
-                        ],
-                        _,
-                    ) if let Some(inner) = self.option_of(ty) => {
-                        let payload = match self.boxed_payload(inner) {
-                            true => self.some_value(value.clone()),
-                            false => value.clone(),
+                let Some((at, field_ty)) = self.drop_query().glue_place(ty, place) else {
+                    return Err(self.unsupported(span, &format!("dropping `{ty}`")));
+                };
+                let part = match at {
+                    Part::Field(field) => self.project(value.clone(), ty, field),
+                    // A `Some` of what may look like `None`, a generic `T`
+                    // say, is boxed (ADR 0051).
+                    Part::OptionValue => match self.boxed_payload(field_ty) {
+                        true => self.some_value(value.clone()),
+                        false => value.clone(),
+                    },
+                    // An untagged enum's variant is its payload (ADR 0214).
+                    Part::Variant(_, _) if self.untagged(ty).is_some() => value.clone(),
+                    Part::Variant(variant, field) => {
+                        let ty::Adt(adt, _) = ty.kind() else {
+                            unreachable!("a variant's field")
                         };
-                        (payload, inner)
+                        Expr::member(value.clone(), variant_field(self.tcx, adt.variant(variant), field))
                     }
-                    (
-                        [
-                            ProjectionElem::Deref,
-                            ProjectionElem::Downcast(_, variant),
-                            ProjectionElem::Field(field, _),
-                        ],
-                        ty::Adt(adt, args),
-                    ) => {
-                        let def = adt.variant(*variant);
-                        // An untagged enum's variant is its payload (ADR 0214).
-                        let part = match self.untagged(ty).is_some() {
-                            true => value.clone(),
-                            false => Expr::member(value.clone(), variant_field(self.tcx, def, field.as_usize())),
-                        };
-                        (part, self.field_ty(&def.fields[*field], args))
-                    }
-                    _ => return Err(self.unsupported(span, &format!("dropping `{ty}`"))),
                 };
                 match field_ty.kind() {
                     // A `dyn` last field: through the `impl` its struct

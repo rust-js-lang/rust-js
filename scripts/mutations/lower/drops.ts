@@ -123,4 +123,23 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_judged_per_use.rs$"],
     snapshots: true,
   },
+  {
+    name: "glue-parts-may-panic-unasked",
+    breaks:
+      "a struct's or a tuple's fields aren't asked whether their drop may panic, so a part after one that may is dropped as if it couldn't, no `try` for those after it (#887)",
+    file: "src/lower/drops.rs",
+    find: "            Some(parts) => parts.into_iter().any(|part| self.drop_may_panic_in(part, seen)),\n",
+    replace: "            Some(_) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "panic|unwind|abort"],
+  },
+  {
+    name: "glue-parts-unsized",
+    breaks:
+      "a type's drop is counted as its own `drop` alone, not its glue's parts too, so a long one is written in place, not as a function of its own (form only, #887)",
+    file: "src/lower/drops.rs",
+    find: "                    Some(parts) => usize::from(own) + sum(self, &mut parts.into_iter(), stack),\n",
+    replace: "                    Some(_) => usize::from(own),\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_functions.rs$"],
+    snapshots: true,
+  },
 ];
