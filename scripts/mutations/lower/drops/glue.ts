@@ -81,13 +81,4 @@ export const mutations: Mutation[] = [
     replace: "            } else if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_scopes.rs$"],
   },
-  {
-    name: "option-drop-tested-as-variant",
-    breaks: "an `Option`'s drop tests its `Some` with the variant test a match writes, `!== undefined`, not `value != null` (form only)",
-    file: "src/lower/drops/glue.rs",
-    find: "            let test = if self.option_of(glue.ty).is_some() {\n",
-    replace: "            let test = if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^drop_scopes.rs$"],
-    snapshots: true,
-  },
 ];

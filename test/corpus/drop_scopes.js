@@ -159,7 +159,7 @@ function main() {
       noisyDrop_drop(_tuple[0]);
       noisyDrop_drop(_tuple[2]);
       noisyDrop_drop(_boxed);
-      if (_none != null) {
+      if (_none !== undefined) {
         noisyDrop_drop(_none);
       }
       if (_some != null) {
@@ -182,7 +182,7 @@ function main() {
     noisyDrop_drop(_tuple[2]);
     noisyDrop_drop(_boxed);
     try {
-      if (_none != null) {
+      if (_none !== undefined) {
         noisyDrop_drop(_none);
       }
     } catch (error) {

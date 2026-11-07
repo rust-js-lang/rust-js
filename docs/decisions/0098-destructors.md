@@ -772,9 +772,14 @@ builds, gives the same JS as the hand-written walk did.
 An enum's glue is lowered from the shim too, with an `Option`'s and a
 union's. The shim's `switchInt` of the discriminant is an `if` of each
 variant's test that drops anything, in the variants' order, as before:
-the test a match writes, `variant_test`; `if (true)` of an enum with one
-variant; and of an `Option` `value != null`, where a match would write
-`!== undefined`, a form kept as it was. The variant
+the test a match writes, `variant_test`, and `if (true)` of an enum with
+one variant. An `Option`'s is `Expr::presence`, by what its `None` can be:
+`!== undefined` of one that's only ever `undefined`, `!= null` where it
+may be `null`, a `#[rust_js::nullable]` field's
+(`nullable_option_field_dropped.rs`). The drop's own `value != null`, a
+second test of whether an `Option` is `Some`, is gone (chosen in #887's review,
+#887); `drop_scopes.js` changed in two lines, `_none !== undefined`,
+against native. The variant
 switch in its cleanup drops each variant's fields one after another, so
 a field that panics there aborts before the fields after it (#893). The
 hand-written walk put each variant's own `try`/`catch` ladder in its own

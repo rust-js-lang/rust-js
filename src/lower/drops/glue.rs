@@ -138,8 +138,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An enum's drop of its variant's fields: an `if` of the test of each
     /// variant that drops any, in their order, only one of which runs, the
-    /// test a match writes (`variant_test`). Of one variant, `if (true)`;
-    /// of an `Option`, `value != null`.
+    /// test a match writes (`variant_test`), an `Option`'s by what its
+    /// `None` can be (`Expr::presence`). Of one variant, `if (true)`.
     fn glue_variants(
         &mut self,
         glue: &mut Glue<'_, 'tcx>,
@@ -162,9 +162,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             let value = glue.value.clone();
-            let test = if self.option_of(glue.ty).is_some() {
-                Expr::bin(js::Op::LooseNe, value, Expr::null())
-            } else if adt.variants().len() == 1 {
+            let test = if adt.variants().len() == 1 {
                 Expr::bool(true)
             } else {
                 self.variant_test(value, glue.ty, adt, variant, false)
