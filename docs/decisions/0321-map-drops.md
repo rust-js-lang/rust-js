@@ -70,3 +70,13 @@ the map's order, a B-tree's its keys', as dropping the map does, and
 Its `drain()` of them is an iterator that owns its entries, the array
 `$drainAll` makes, whose drop drops what it hasn't given, as a vector's
 `drain(..)` is (ADR 0098).
+
+## Amendment: `retain` drops the value, not the handle it gave (#905, 2026-11-07)
+
+Where a map's values are given to `retain`'s closure by handle (ADR 0152),
+a `Box`'s, an `Rc`'s, an `Option`'s, `$retainMap` gave the value's drop
+that handle, after the entry was deleted: a `Box<D>`'s printed `drop
+undefined`, an `Rc`'s never dropped. It drops the value the map holds as
+the closure returns, what the closure wrote through the handle included.
+Found by #854's unwind table, with no panic; `retain_map_drops_held` runs
+it against native Rust, and `retain-map-drops-handle` is its mutation.

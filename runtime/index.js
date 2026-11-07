@@ -6482,13 +6482,16 @@ export function $storedKey(m, key) {
 export function $retainMap(m, f, entries, handles, drop, dropKey) {
   for (const [key, value] of handles ? $mutEntries(m, entries) : Array.from(entries)) {
     if (!f(key, value)) {
+      // The value the map holds, not the handle `f` was given on it, which
+      // reads the map, where it's gone once deleted (#905).
+      const held = handles ? m.get(key) : value;
       m.delete(key);
       // Its value dropped though its key's drop panics, as std's of the
       // pair goes on (#416).
       try {
         dropKey?.(key);
       } finally {
-        drop?.(value);
+        drop?.(held);
       }
     }
   }

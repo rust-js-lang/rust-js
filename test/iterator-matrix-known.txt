@@ -53,10 +53,6 @@ unwind:std 2120-2126,2128-2129,2770-2779,2922-2925,2927,2930,3030-3040
 unwind:plain 1988-1997
 unwind:std 1988-1997
 
-#905 P0 (unwind): HashMap::retain drops a value it doesn't keep wrongly where values are given by handle: a Box's or an Option's drop undefined, an Rc's or an enum's never
-unwind:plain 1677,1679-1680,1682
-unwind:std 1677,1679-1680,1682
-
 #906 P0 (unwind): Vec::dedup_by and dedup_by_key drop each duplicate after every call of the closure, not as it's found; of an Rc a drop that panics aborts
 unwind:plain 508,510-511,513,519,521-522,524
 unwind:std 508,510-511,513,519,521-522,524
