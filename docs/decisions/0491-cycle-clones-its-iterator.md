@@ -58,3 +58,14 @@ function firsts(iter, n, IIterator, IClone) {
 
 - **What compiles grows**: `cycle()` of any `Clone` iterator rust-js
   steps, and itertools' `circular_tuple_windows`.
+
+## Amendment: both fields dropped though the first's drop panics (2026-11-07, #883)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is preserved. A closed `Cycle` dropped the clone it keeps,
+then what it steps, in two plain calls. Where the kept clone's drop
+panicked, what it stepped was never dropped. Rust's drop glue goes on: it
+drops `iter` as `orig`'s drop unwinds. The close now runs both by
+`$inTurn`, the one answer to what a drop of many parts runs as one of them
+throws (ADR 1092 S7). `cycle_drops_both_as_one_panics` holds it against
+native Rust, and `cycle-close-stops-at-a-panic` puts the two calls back.

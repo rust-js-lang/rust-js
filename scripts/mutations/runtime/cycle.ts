@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "cycle-close-order",
     breaks: "a closed `Cycle` drops what it steps before the clone it keeps, not after",
     file: "src/runtime/cycle.js",
-    find: "        drop?.(cycled.orig);\n        drop?.(cycled.iter);\n",
-    replace: "        drop?.(cycled.iter);\n        drop?.(cycled.orig);\n",
+    find: "          () => drop?.(cycled.orig),\n          () => drop?.(cycled.iter),\n",
+    replace: "          () => drop?.(cycled.iter),\n          () => drop?.(cycled.orig),\n",
     tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
   },
   {
@@ -49,5 +49,13 @@ export const mutations: Mutation[] = [
     find: "    if (low === 0 && high === 0) return [0, 0];\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
+  },
+  {
+    name: "cycle-close-stops-at-a-panic",
+    breaks: "a closed `Cycle` whose kept clone's drop panics never drops what it steps, where its drop glue goes on (#883)",
+    file: "src/runtime/cycle.js",
+    find: "        $inTurn(\n          () => drop?.(cycled.orig),\n          () => drop?.(cycled.iter),\n        ),\n",
+    replace: "        (drop?.(cycled.orig), drop?.(cycled.iter)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^cycle_drops_both_as_one_panics.rs$"],
   },
 ];

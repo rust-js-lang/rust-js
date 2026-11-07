@@ -12,8 +12,10 @@ function* $cycle(items, clone = (item) => item) {
 // clone of it: one kept as it's given, and each time what's stepped ends,
 // a fresh clone of that stepped instead, the one it ends dropped then, none
 // at all once a fresh one ends at once, as Rust's `Cycle` (ADR 0491).
-// Closed, it drops both, the one kept first, as `Cycle`'s fields are. `boxed`: whether `next` gives a `Some` that may look like
-// `None` boxed (ADR 0051).
+// Closed, it drops both, the one kept first, as `Cycle`'s fields are, the
+// second though the first's drop throws, a panic, `$inTurn`'s, as its drop
+// glue goes on (#883). `boxed`: whether `next` gives a `Some` that may look
+// like `None` boxed (ADR 0051).
 function $cycleOf(iterator, clone, next, boxed = false, drop) {
   return $cycleFrom(clone(iterator), iterator, clone, next, boxed, drop);
 }
@@ -39,10 +41,12 @@ function $cycleFrom(orig, iter, clone, next, boxed, drop) {
       return { done: false, value: boxed ? $someValue(item) : item };
     },
     () =>
-      $close(cycled, () => {
-        drop?.(cycled.orig);
-        drop?.(cycled.iter);
-      }),
+      $close(cycled, () =>
+        $inTurn(
+          () => drop?.(cycled.orig),
+          () => drop?.(cycled.iter),
+        ),
+      ),
   );
   cycled.orig = orig;
   cycled.iter = iter;
