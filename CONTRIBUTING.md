@@ -36,6 +36,12 @@ A refusal is better than a wrong answer, so issues are worked in this order,
 and every issue carries exactly one of these labels. A P0 is fixed or filed
 at once, as [Correctness first](#correctness-first) says.
 
+The exception is a `dev-loop` issue, which speeds up the development loop. It is
+worked before the P0s, whatever its priority label: once the loop is faster, every
+fix after it, the P0s included, iterates on faster feedback (the user,
+2026-11-07). Such an issue still carries one of the labels above, for its
+kind of fault.
+
 Every issue also carries one `kind: …`, the mistake its fix corrects, one
 `area: …`, the owner whose question it answered wrongly, and `regression`
 where a known commit broke what worked. [docs/bug-kinds.md](docs/bug-kinds.md)

@@ -18,7 +18,9 @@ a failing test, native comparisons, mutations and an ADR explaining why.
 - Never trade correctness for readability. Emit the correct form or refuse
   clearly at compile time; never approximate or emit partial output.
 - A wrong answer is the worst bug. Fix it before other work, or file it
-  immediately and report it.
+  immediately and report it. The one exception is work that speeds up the
+  development loop (`dev-loop` issues): it goes first, since every fix
+  after it, P0s included, then gets faster feedback.
 - Prove behavior against native Rust using the corpus, rustc's tests,
   generated programs and mutations. Inspect generated JavaScript too.
   [Finding wrong answers](docs/finding-wrong-answers.md) lists the
