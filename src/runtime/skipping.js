@@ -194,12 +194,12 @@ function $skipping(iter, n, drop) {
     rfold: iter.tryRfold !== undefined || iter.back !== undefined ? rfold : undefined,
     last: typeof iter.last === "function" ? last : undefined,
   });
-  if (iter.ownNth) skipping.ownNth = true;
+  $ownsAs(skipping, iter, "nth");
   // And its `nth_back`, its source's, as a `step_by` over it asks from its
   // back (#834).
-  if (iter.ownNthBack) skipping.ownNthBack = true;
+  $ownsAs(skipping, iter, "nthBack");
   // Its `count` its source's, the crate's own where it writes one, which
   // a `skip` of it asks in turn (#671).
-  if (iter.ownCount) skipping.ownCount = true;
+  $ownsAs(skipping, iter, "count");
   return skipping;
 }

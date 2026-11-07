@@ -42,8 +42,7 @@ function $closing(it, drop, slices = true) {
   const sliceNth = (k) => done(advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());
   const sliceNthBack = (k) => done(advanceBackBy(k) > 0 ? { done: true, value: undefined } : it.back());
   if (slice) {
-    closing.ownNthBack = true;
-    closing.ownNth = true;
+    $owns(closing, "nthBack", "nth");
     // Each item's own drop, which what it gives on is dropped by (#261).
     closing.dropItem = drop?.each ?? it.dropItem;
   }
@@ -57,10 +56,10 @@ function $closing(it, drop, slices = true) {
   // compiled std struct's, which drops what it passes itself, `ownNth`, as
   // a `step_by` over it asks it (#261), given the items' drop, which std's
   // default `nth` of the crate's iterator drops what it passes by (#494).
-  if (it.ownNth) closing.ownNth = true;
+  $ownsAs(closing, it, "nth");
   // And its `nth_back`, likewise, which a `rev()` over it says is its own
   // `nth` (#649).
-  if (it.ownNthBack) closing.ownNthBack = true;
+  $ownsAs(closing, it, "nthBack");
   // Closed though `f` throws, a panic, as Rust's `fold` drops what's left
   // of what it took as it unwinds (#422); done with, not closed, where its
   // fold is its own, `own`, which took it and drops it as it unwinds (#423).
@@ -92,7 +91,7 @@ function $closing(it, drop, slices = true) {
     return folded;
   };
   // Its `count`, the crate's own, likewise (#505).
-  if (it.ownCount) closing.ownCount = true;
+  $ownsAs(closing, it, "count");
   const count = () => {
     closed = true;
     return it.count();
@@ -103,7 +102,7 @@ function $closing(it, drop, slices = true) {
   // it has left dropped, front to back, as it's dropped; where one of
   // those drops panics, the item it took is leaked, as rustc doesn't drop
   // what a function gives back as a later drop unwinds (#648).
-  if (it.ownLast || intoIter) closing.ownLast = true;
+  if (it.ownLast || intoIter) $owns(closing, "last");
   const last = () => {
     if (intoIter) {
       const step = it.back();
@@ -270,9 +269,7 @@ function $slicing(it, drop) {
       return step;
     },
   });
-  it.ownNth = true;
-  it.ownNthBack = true;
-  it.ownLast = true;
+  $owns(it, "nth", "nthBack", "last");
   it.dropItem = drop;
   return it;
 }

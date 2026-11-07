@@ -31,13 +31,30 @@ function $forward(adapter, source, steps, each) {
         each === undefined || unwindAt === undefined
           ? (...args) => source[by](...args)
           : (init, f, ...rest) => source[by](init, each(f, rest[unwindAt]), ...rest);
-      if (each === undefined && source[$ownStep(by)]) adapter[$ownStep(name)] = true;
+      if (each === undefined && source[$ownStep(by)]) $owns(adapter, name);
     }
   }
   return adapter;
 }
 
-// The flag that says an iterator's `step` is its own, `ownNth` of `nth`.
+// The flag that says an iterator's `step` is its own, `ownNth` of `nth`:
+// calling it runs one that drops what it passes, or takes the value and
+// drops it, itself (ADR 1092 §4). Compiled code reads it by this name.
 function $ownStep(step) {
   return `own${step[0].toUpperCase()}${step.slice(1)}`;
+}
+
+// `it`'s `steps` its own, where it's made: the crate's, a `Vec`'s slice
+// steps, a compiled body's, or an adapter's that is so of itself, a
+// flatten's `count`. The one place an own fact is written (#870).
+function $owns(it, ...steps) {
+  for (const step of steps) it[$ownStep(step)] = true;
+  return it;
+}
+
+// `adapter`'s `steps`, each its own that passes it on to `source`'s of the
+// same name: its own where `source`'s is, said where it's made, as a step
+// `$forward` passes on by name is (#870).
+function $ownsAs(adapter, source, ...steps) {
+  return $owns(adapter, ...steps.filter((step) => source[$ownStep(step)]));
 }

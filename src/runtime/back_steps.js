@@ -175,7 +175,7 @@ function $stepBy(it, step, drop) {
   };
   // Its `nth` its source's, which drops what it passes over itself, a
   // reversed `Vec`'s as one slice (#234).
-  if (it.ownNth) stepped.ownNth = true;
+  $ownsAs(stepped, it, "nth");
   const nth = (n) => {
     if (stepped.first) {
       stepped.first = false;
@@ -275,7 +275,7 @@ function $stepByEnds(it, step, drop) {
   $forward(stepped, it, { nthBack: (n) => stepped.skip(n * step + backIndex(), "back"), tryRfold, rfold });
   // Its `nth_back` its source's, which drops what it passes over itself, a
   // `Vec`'s as one slice, as a `step_by` over it asks (#834).
-  if (it.ownNthBack) stepped.ownNthBack = true;
+  $ownsAs(stepped, it, "nthBack");
   return stepped;
 }
 
@@ -396,13 +396,13 @@ function $enumerate(iter) {
   // Its source's is given the items' drop, a pair's of the item it counts,
   // by which a `take` past its end drops what its source's `nth` gives
   // back (#492).
-  if (iter.ownNth) enumerated.ownNth = true;
+  $ownsAs(enumerated, iter, "nth");
   // And its `nth_back`, its source's, its own where its source's is, which
   // a `step_by` over it asks from its back (#834).
-  if (iter.ownNthBack) enumerated.ownNthBack = true;
+  $ownsAs(enumerated, iter, "nthBack");
   // Its `count`, `countItems`, its source's, the crate's own where it
   // writes one, which a `skip` of it asks (#671).
-  if (iter.ownCount) enumerated.ownCount = true;
+  $ownsAs(enumerated, iter, "count");
   const nth = (k, drop) => {
     const step = enumerated.iter.nth(k, drop && ((x) => drop([0, x])));
     if (step.done) return step;
@@ -534,6 +534,6 @@ function $flattenEnds(it, each) {
   };
   $forward(flat, it, { fold: folding(front, "next", "back"), rfold: folding($foldBack, "back", "next"), count });
   // Its `count` its own, which what holds it passes on, as `$flatMap`'s is.
-  flat.ownCount = true;
+  $owns(flat, "count");
   return flat;
 }

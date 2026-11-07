@@ -601,7 +601,7 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
   // `$Steps` don't: so a `rev()` of it says its `nth` is its own, its
   // `nth_back`, as a `skip` or a `step_by` over that asks it (#649).
   for (const [name, own] of Object.entries({ fold, nth, last, rfold, nthBack, count })) {
-    if (own !== undefined) it[$ownStep(name)] = true;
+    if (own !== undefined) $owns(it, name);
   }
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0525,
@@ -1755,10 +1755,8 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     // Its `nth` drops what it passes over itself where its source's does, a
     // reversed `Vec`'s, as one slice, by each item's drop, its source's or
     // the one it's given (#261, #286).
-    if (this.ownNth) {
-      taken.ownNth = true;
-      if (this.dropItem !== undefined) taken.dropItem = this.dropItem;
-    }
+    $ownsAs(taken, this, "nth");
+    if (this.ownNth && this.dropItem !== undefined) taken.dropItem = this.dropItem;
     // Its `nth(k)`, std's: its source's, where it has more than `k` left;
     // else its source's past what it has left, and done.
     const nth = (k, drop = taken.dropItem) => {
@@ -2589,8 +2587,7 @@ export function $closing(it, drop, slices = true) {
   const sliceNth = (k) => done(advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());
   const sliceNthBack = (k) => done(advanceBackBy(k) > 0 ? { done: true, value: undefined } : it.back());
   if (slice) {
-    closing.ownNthBack = true;
-    closing.ownNth = true;
+    $owns(closing, "nthBack", "nth");
     // Each item's own drop, which what it gives on is dropped by (#261).
     closing.dropItem = drop?.each ?? it.dropItem;
   }
@@ -2604,10 +2601,10 @@ export function $closing(it, drop, slices = true) {
   // compiled std struct's, which drops what it passes itself, `ownNth`, as
   // a `step_by` over it asks it (#261), given the items' drop, which std's
   // default `nth` of the crate's iterator drops what it passes by (#494).
-  if (it.ownNth) closing.ownNth = true;
+  $ownsAs(closing, it, "nth");
   // And its `nth_back`, likewise, which a `rev()` over it says is its own
   // `nth` (#649).
-  if (it.ownNthBack) closing.ownNthBack = true;
+  $ownsAs(closing, it, "nthBack");
   // Closed though `f` throws, a panic, as Rust's `fold` drops what's left
   // of what it took as it unwinds (#422); done with, not closed, where its
   // fold is its own, `own`, which took it and drops it as it unwinds (#423).
@@ -2639,7 +2636,7 @@ export function $closing(it, drop, slices = true) {
     return folded;
   };
   // Its `count`, the crate's own, likewise (#505).
-  if (it.ownCount) closing.ownCount = true;
+  $ownsAs(closing, it, "count");
   const count = () => {
     closed = true;
     return it.count();
@@ -2650,7 +2647,7 @@ export function $closing(it, drop, slices = true) {
   // it has left dropped, front to back, as it's dropped; where one of
   // those drops panics, the item it took is leaked, as rustc doesn't drop
   // what a function gives back as a later drop unwinds (#648).
-  if (it.ownLast || intoIter) closing.ownLast = true;
+  if (it.ownLast || intoIter) $owns(closing, "last");
   const last = () => {
     if (intoIter) {
       const step = it.back();
@@ -2817,9 +2814,7 @@ export function $slicing(it, drop) {
       return step;
     },
   });
-  it.ownNth = true;
-  it.ownNthBack = true;
-  it.ownLast = true;
+  $owns(it, "nth", "nthBack", "last");
   it.dropItem = drop;
   return it;
 }
@@ -3020,13 +3015,13 @@ export function $skipping(iter, n, drop) {
     rfold: iter.tryRfold !== undefined || iter.back !== undefined ? rfold : undefined,
     last: typeof iter.last === "function" ? last : undefined,
   });
-  if (iter.ownNth) skipping.ownNth = true;
+  $ownsAs(skipping, iter, "nth");
   // And its `nth_back`, its source's, as a `step_by` over it asks from its
   // back (#834).
-  if (iter.ownNthBack) skipping.ownNthBack = true;
+  $ownsAs(skipping, iter, "nthBack");
   // Its `count` its source's, the crate's own where it writes one, which
   // a `skip` of it asks in turn (#671).
-  if (iter.ownCount) skipping.ownCount = true;
+  $ownsAs(skipping, iter, "count");
   return skipping;
 }
 
@@ -3091,10 +3086,8 @@ export function $taking(iter, n, drop) {
     }
     return { done: true, value: undefined };
   };
-  if (iter.ownNth) {
-    taking.ownNth = true;
-    if (iter.dropItem !== undefined) taking.dropItem = iter.dropItem;
-  }
+  $ownsAs(taking, iter, "nth");
+  if (iter.ownNth && iter.dropItem !== undefined) taking.dropItem = iter.dropItem;
   $forward(taking, iter, { advanceBy, count, nth: typeof iter.nth === "function" ? nth : undefined });
   // And its `nth_back`, `rfold` and `try_rfold`, std's, by its source's
   // `nth_back` past what it won't give, where that reaches the crate's own.
@@ -3144,7 +3137,7 @@ export function $taking(iter, n, drop) {
     $forward(taking, iter, { nthBack, rfold, tryRfold });
     // Its `nth_back` its source's, which drops what it passes over itself,
     // as a `step_by` over it asks from its back (#834).
-    if (iter.ownNthBack) taking.ownNthBack = true;
+    $ownsAs(taking, iter, "nthBack");
   }
   return taking;
 }
@@ -3498,7 +3491,7 @@ export function $stepBy(it, step, drop) {
   };
   // Its `nth` its source's, which drops what it passes over itself, a
   // reversed `Vec`'s as one slice (#234).
-  if (it.ownNth) stepped.ownNth = true;
+  $ownsAs(stepped, it, "nth");
   const nth = (n) => {
     if (stepped.first) {
       stepped.first = false;
@@ -3598,7 +3591,7 @@ export function $stepByEnds(it, step, drop) {
   $forward(stepped, it, { nthBack: (n) => stepped.skip(n * step + backIndex(), "back"), tryRfold, rfold });
   // Its `nth_back` its source's, which drops what it passes over itself, a
   // `Vec`'s as one slice, as a `step_by` over it asks (#834).
-  if (it.ownNthBack) stepped.ownNthBack = true;
+  $ownsAs(stepped, it, "nthBack");
   return stepped;
 }
 
@@ -3719,13 +3712,13 @@ export function $enumerate(iter) {
   // Its source's is given the items' drop, a pair's of the item it counts,
   // by which a `take` past its end drops what its source's `nth` gives
   // back (#492).
-  if (iter.ownNth) enumerated.ownNth = true;
+  $ownsAs(enumerated, iter, "nth");
   // And its `nth_back`, its source's, its own where its source's is, which
   // a `step_by` over it asks from its back (#834).
-  if (iter.ownNthBack) enumerated.ownNthBack = true;
+  $ownsAs(enumerated, iter, "nthBack");
   // Its `count`, `countItems`, its source's, the crate's own where it
   // writes one, which a `skip` of it asks (#671).
-  if (iter.ownCount) enumerated.ownCount = true;
+  $ownsAs(enumerated, iter, "count");
   const nth = (k, drop) => {
     const step = enumerated.iter.nth(k, drop && ((x) => drop([0, x])));
     if (step.done) return step;
@@ -3857,7 +3850,7 @@ export function $flattenEnds(it, each) {
   };
   $forward(flat, it, { fold: folding(front, "next", "back"), rfold: folding($foldBack, "back", "next"), count });
   // Its `count` its own, which what holds it passes on, as `$flatMap`'s is.
-  flat.ownCount = true;
+  $owns(flat, "count");
   return flat;
 }
 
@@ -11659,8 +11652,8 @@ export function $stdIterator(struct, steps) {
     nth: steps.nth && ((k) => step(steps.nth(it, k))),
     last: steps.last && (() => step(taking("last", () => steps.last(it)))),
   });
-  if (steps.nth !== undefined) it.ownNth = true;
-  if (steps.last !== undefined) it.ownLast = true;
+  if (steps.nth !== undefined) $owns(it, "nth");
+  if (steps.last !== undefined) $owns(it, "last");
   it.knowing = (back, len, rfold, nthBack, tryRfold) => {
     if (back !== undefined) it.back = () => step(back(it));
     if (len !== undefined) it.len = () => len(it);
@@ -11678,7 +11671,7 @@ export function $stdIterator(struct, steps) {
     // Its compiled `nth_back`, std's body, which drops what it passes
     // itself, as its `nth` does: `ownNthBack`, which a `step_by` over it
     // asks from its back (#834).
-    if (nthBack !== undefined) it.ownNthBack = true;
+    if (nthBack !== undefined) $owns(it, "nthBack");
   };
   // Its fields, the struct's, are what a move copies and what a write of
   // the whole replaces; its methods step `it` itself (#537). Moved out
@@ -13295,9 +13288,9 @@ export function $lazyChain(a, b) {
   // Its `nth` drops what it passes over itself where each side's does, a
   // `Vec`'s (#250).
   // Its `count`, each side's, the crate's own where one writes it (#505).
-  if (first.ownCount || second.ownCount) chained.ownCount = true;
+  if (first.ownCount || second.ownCount) $owns(chained, "count");
   if (first.ownNth && second.ownNth) {
-    chained.ownNth = true;
+    $owns(chained, "nth");
     chained.dropItem = first.dropItem ?? second.dropItem;
   }
   // Its sides, `a` let go as it's taken, as std's `last` takes them
@@ -13569,7 +13562,7 @@ export function $flatMap(it, f) {
   $forward(flat, it, { fold, tryFold, count });
   // Its `count` its own, which what holds it passes on, a `skip()`'s, as
   // std's `Skip::count` asks its source's.
-  flat.ownCount = true;
+  $owns(flat, "count");
   // What std's `Flatten::last` takes, its inner iterator stepped part-way,
   // its source, unless it's ended, fused as std's is, and `f`, which make
   // the rest, let go as they're taken (`$lastDropping`, #645).
@@ -14401,15 +14394,32 @@ export function $forward(adapter, source, steps, each) {
         each === undefined || unwindAt === undefined
           ? (...args) => source[by](...args)
           : (init, f, ...rest) => source[by](init, each(f, rest[unwindAt]), ...rest);
-      if (each === undefined && source[$ownStep(by)]) adapter[$ownStep(name)] = true;
+      if (each === undefined && source[$ownStep(by)]) $owns(adapter, name);
     }
   }
   return adapter;
 }
 
-// The flag that says an iterator's `step` is its own, `ownNth` of `nth`.
+// The flag that says an iterator's `step` is its own, `ownNth` of `nth`:
+// calling it runs one that drops what it passes, or takes the value and
+// drops it, itself (ADR 1092 §4). Compiled code reads it by this name.
 export function $ownStep(step) {
   return `own${step[0].toUpperCase()}${step.slice(1)}`;
+}
+
+// `it`'s `steps` its own, where it's made: the crate's, a `Vec`'s slice
+// steps, a compiled body's, or an adapter's that is so of itself, a
+// flatten's `count`. The one place an own fact is written (#870).
+export function $owns(it, ...steps) {
+  for (const step of steps) it[$ownStep(step)] = true;
+  return it;
+}
+
+// `adapter`'s `steps`, each its own that passes it on to `source`'s of the
+// same name: its own where `source`'s is, said where it's made, as a step
+// `$forward` passes on by name is (#870).
+export function $ownsAs(adapter, source, ...steps) {
+  return $owns(adapter, ...steps.filter((step) => source[$ownStep(step)]));
 }
 
 // The items of `it` its `fold` gives, the crate's own its impl writes,

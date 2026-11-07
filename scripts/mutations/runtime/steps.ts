@@ -23,8 +23,8 @@ export const mutations: Mutation[] = [
     name: "take-own-nth-needs-item-drop",
     breaks: "a `take` of a closed compiled struct, which has no item drop of its own, isn't its own `nth`, so a chain over it steps each item (#286)",
     file: "src/runtime/steps.js",
-    find: "    if (this.ownNth) {\n      taken.ownNth = true;\n",
-    replace: "    if (this.ownNth && this.dropItem !== undefined) {\n      taken.ownNth = true;\n",
+    find: "    $ownsAs(taken, this, \"nth\");\n",
+    replace: "    if (this.dropItem !== undefined) $ownsAs(taken, this, \"nth\");\n",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_skipped_in_place.rs$"],
   },
   {
@@ -263,8 +263,8 @@ export const mutations: Mutation[] = [
     name: "take-own-nth-unset",
     breaks: "a `take` of a reversed `Vec` doesn't say its `nth` drops what it passes, so a `chain` of it is stepped one at a time from the back (#261)",
     file: "src/runtime/steps.js",
-    find: "      taken.ownNth = true;\n      if (this.dropItem !== undefined) taken.dropItem = this.dropItem;\n",
-    replace: "      if (this.dropItem !== undefined) taken.dropItem = this.dropItem;\n",
+    find: "    $ownsAs(taken, this, \"nth\");\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
   {

@@ -59,7 +59,7 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
   // `$Steps` don't: so a `rev()` of it says its `nth` is its own, its
   // `nth_back`, as a `skip` or a `step_by` over that asks it (#649).
   for (const [name, own] of Object.entries({ fold, nth, last, rfold, nthBack, count })) {
-    if (own !== undefined) it[$ownStep(name)] = true;
+    if (own !== undefined) $owns(it, name);
   }
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0525,

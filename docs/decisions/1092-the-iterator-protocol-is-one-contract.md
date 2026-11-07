@@ -1204,3 +1204,35 @@ is left for later. 60 mutations name their lines as they now read.
 `last-dropping-kept-dropped-twice` and
 `last-dropping-flatten-kept-dropped-twice`, because a frame's `unwind` runs
 only as a step throws, never after `f` has.
+
+## Amendment: an iterator's own facts and its lifecycle each have one writer (2026-11-07, #870)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The JS a program
+compiles to is byte for byte the same. The runtime's answers are the same.
+
+**The own facts.** §4's `ownFold`, `ownRfold`, `ownNth`, `ownNthBack`,
+`ownLast` and `ownCount` were written in 12 places. Seven adapters copied
+their source's facts by hand, each choosing a subset (`if (iter.ownNth)
+skipping.ownNth = true`). Compiled code reads the facts by these names
+(`mir/iter.rs`'s `!iter.ownFold` of a type parameter given no dictionary).
+The names are therefore kept, and every write now goes through
+`forward.js`, the facts' owner:
+
+- `$owns(it, ...steps)`: a maker's own facts, said where it makes the
+  iterator. These are `$iterator`'s (the crate's), `$slicing`'s (a `Vec`'s
+  slice steps), `$stdIterator`'s (compiled `nth` and `last`, and `nth_back`
+  once a use site gives it), a flatten's `count`, a `$closing`'s slice steps,
+  and a chain's, which combines its sides'.
+- `$ownsAs(adapter, source, ...steps)`: an adapter's own step that passes
+  it on to its source's step of the same name. That step is the adapter's
+  own exactly where the source's is. `$forward`'s step passed on by name
+  says so through `$owns` too.
+
+`test/architecture-iterators.test.ts` ("an iterator's own facts are written
+by $owns alone") refuses a write of `.ownX` or `[$ownStep(..)]` in any other
+runtime file. Gap G8's reads stay reads by name. 21 mutations name their
+lines as they now read. `owns-as-unsaid` is new. One mutation survived the
+corpus and the conformance slice and is not kept: `$ownsAs` saying a step is
+its own where its source's isn't. Each adapter's step that passes on also
+passes on the items' drop, so where the source's step drops by it the
+false fact changes nothing.

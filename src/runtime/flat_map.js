@@ -111,7 +111,7 @@ function $flatMap(it, f) {
   $forward(flat, it, { fold, tryFold, count });
   // Its `count` its own, which what holds it passes on, a `skip()`'s, as
   // std's `Skip::count` asks its source's.
-  flat.ownCount = true;
+  $owns(flat, "count");
   // What std's `Flatten::last` takes, its inner iterator stepped part-way,
   // its source, unless it's ended, fused as std's is, and `f`, which make
   // the rest, let go as they're taken (`$lastDropping`, #645).

@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "forward-own-unsaid",
     breaks: "a step passed on isn't said to be its source's own: a `rev()` of a `Vec`'s `IntoIter` doesn't say its `nth` drops what it passes over, so a `skip` of it drops each one from the back, one by one (#234)",
     file: "src/runtime/forward.js",
-    find: "      if (each === undefined && source[$ownStep(by)]) adapter[$ownStep(name)] = true;\n",
+    find: "      if (each === undefined && source[$ownStep(by)]) $owns(adapter, name);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
@@ -25,5 +25,13 @@ export const mutations: Mutation[] = [
     find: "    } else if (by !== undefined && source[by] !== undefined) {\n",
     replace: "    } else if (by !== undefined) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(back_steps|back_stepped_adapter_sources|filter_ends).rs$"],
+  },
+  {
+    name: "owns-as-unsaid",
+    breaks: "an adapter whose own `nth` passes it on to its source's never says it's its own where its source's is: a `step_by` over a `take` of the crate's iterator with its own `nth` steps each item, not by the `nth` Rust asks (#261, #870)",
+    file: "src/runtime/forward.js",
+    find: "  return $owns(adapter, ...steps.filter((step) => source[$ownStep(step)]));\n",
+    replace: "  return adapter;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(step_by_compiled_source_nth|own_nth_through_closed_sources).rs$"],
   },
 ];

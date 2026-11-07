@@ -28,6 +28,22 @@ test("an iterator's steps are given by $forward alone", () => {
   expect(giving).toEqual([]);
 });
 
+// An iterator's own facts, `ownNth` and the others (ADR 1092 §4), are
+// written by forward.js's `$owns` and `$ownsAs` alone, where the iterator
+// is made: each adapter copied its source's by hand, a subset of its own
+// choosing (#870).
+test("an iterator's own facts are written by $owns alone", () => {
+  const writes = /\.own(?:Fold|Rfold|Nth|NthBack|Last|Count)\s*=(?!=)|\[\$ownStep\([^)]*\)\]\s*=(?!=)/;
+  expect(writes.test("  if (it.ownNth) closing.ownNth = true;")).toBe(true);
+  expect(writes.test("  if (own !== undefined) it[$ownStep(name)] = true;")).toBe(true);
+  expect(writes.test("  if (it.ownNth === true) return;")).toBe(false);
+  const writing = files("src/runtime")
+    .filter((file) => file.endsWith(".js") && file !== "src/runtime/forward.js")
+    .filter((file) => read(file).split("\n").some((line) => !line.trimStart().startsWith("//") && writes.test(line)));
+  expect(writing).toEqual([]);
+  expect(read("src/runtime/forward.js")).toContain("function $ownsAs(adapter, source, ...steps)");
+});
+
 // Which of the crate's own steps std's adapters reach is one catalog's,
 // `OwnStep::asked_of`, and one query's, `reaches_its_own` (ADR 1089): a
 // predicate per step, each with its own list of adapters, treated a type

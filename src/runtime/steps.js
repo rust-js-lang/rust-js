@@ -303,10 +303,8 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     // Its `nth` drops what it passes over itself where its source's does, a
     // reversed `Vec`'s, as one slice, by each item's drop, its source's or
     // the one it's given (#261, #286).
-    if (this.ownNth) {
-      taken.ownNth = true;
-      if (this.dropItem !== undefined) taken.dropItem = this.dropItem;
-    }
+    $ownsAs(taken, this, "nth");
+    if (this.ownNth && this.dropItem !== undefined) taken.dropItem = this.dropItem;
     // Its `nth(k)`, std's: its source's, where it has more than `k` left;
     // else its source's past what it has left, and done.
     const nth = (k, drop = taken.dropItem) => {

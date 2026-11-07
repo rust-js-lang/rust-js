@@ -63,8 +63,8 @@ function $stdIterator(struct, steps) {
     nth: steps.nth && ((k) => step(steps.nth(it, k))),
     last: steps.last && (() => step(taking("last", () => steps.last(it)))),
   });
-  if (steps.nth !== undefined) it.ownNth = true;
-  if (steps.last !== undefined) it.ownLast = true;
+  if (steps.nth !== undefined) $owns(it, "nth");
+  if (steps.last !== undefined) $owns(it, "last");
   it.knowing = (back, len, rfold, nthBack, tryRfold) => {
     if (back !== undefined) it.back = () => step(back(it));
     if (len !== undefined) it.len = () => len(it);
@@ -82,7 +82,7 @@ function $stdIterator(struct, steps) {
     // Its compiled `nth_back`, std's body, which drops what it passes
     // itself, as its `nth` does: `ownNthBack`, which a `step_by` over it
     // asks from its back (#834).
-    if (nthBack !== undefined) it.ownNthBack = true;
+    if (nthBack !== undefined) $owns(it, "nthBack");
   };
   // Its fields, the struct's, are what a move copies and what a write of
   // the whole replaces; its methods step `it` itself (#537). Moved out

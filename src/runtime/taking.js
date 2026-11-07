@@ -59,10 +59,8 @@ function $taking(iter, n, drop) {
     }
     return { done: true, value: undefined };
   };
-  if (iter.ownNth) {
-    taking.ownNth = true;
-    if (iter.dropItem !== undefined) taking.dropItem = iter.dropItem;
-  }
+  $ownsAs(taking, iter, "nth");
+  if (iter.ownNth && iter.dropItem !== undefined) taking.dropItem = iter.dropItem;
   $forward(taking, iter, { advanceBy, count, nth: typeof iter.nth === "function" ? nth : undefined });
   // And its `nth_back`, `rfold` and `try_rfold`, std's, by its source's
   // `nth_back` past what it won't give, where that reaches the crate's own.
@@ -112,7 +110,7 @@ function $taking(iter, n, drop) {
     $forward(taking, iter, { nthBack, rfold, tryRfold });
     // Its `nth_back` its source's, which drops what it passes over itself,
     // as a `step_by` over it asks from its back (#834).
-    if (iter.ownNthBack) taking.ownNthBack = true;
+    $ownsAs(taking, iter, "nthBack");
   }
   return taking;
 }

@@ -230,9 +230,9 @@ function $lazyChain(a, b) {
   // Its `nth` drops what it passes over itself where each side's does, a
   // `Vec`'s (#250).
   // Its `count`, each side's, the crate's own where one writes it (#505).
-  if (first.ownCount || second.ownCount) chained.ownCount = true;
+  if (first.ownCount || second.ownCount) $owns(chained, "count");
   if (first.ownNth && second.ownNth) {
-    chained.ownNth = true;
+    $owns(chained, "nth");
     chained.dropItem = first.dropItem ?? second.dropItem;
   }
   // Its sides, `a` let go as it's taken, as std's `last` takes them

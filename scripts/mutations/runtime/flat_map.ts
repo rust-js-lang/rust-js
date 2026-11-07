@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
     name: "flat-map-count-not-passed-on",
     breaks: "`$flatMap` doesn't say its `count` is its own, so a `skip()` of it counts what's left by `next`, not by each inner iterator's own `count` as std's `Skip::count` asks of its source (#736)",
     file: "src/runtime/flat_map.js",
-    find: "  flat.ownCount = true;\n",
+    find: "  $owns(flat, \"count\");\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
   },
