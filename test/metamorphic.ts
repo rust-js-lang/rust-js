@@ -9,7 +9,7 @@
 //   case.rs ─► metamorph <rewrite> ─┬─ rustc ──► native ─────┐
 //                                   └─ rust-js ─► node ──────┴─► the same?
 
-import { existsSync, readFileSync } from "node:fs";
+import { copyFileSync, existsSync, readFileSync, renameSync } from "node:fs";
 import { join } from "node:path";
 
 import { cases, corpus, directives } from "./corpus-cases";
@@ -28,12 +28,29 @@ export type Rewrite = (typeof rewrites)[number];
 
 /** Where the rewriter's crate is, and what it builds. */
 const manifest = join(root, "scripts", "metamorph", "Cargo.toml");
-const binary = join(target, "metamorph", "debug", "metamorph");
+const built = join(target, "metamorph", "debug", "metamorph");
+/** What's run: a copy of what's built, put in place whole by a rename.
+ * Cargo links its binary again on each build, even one with nothing to
+ * do, so a part of a parallel run that spawned `built` while another
+ * part's build linked it found no file there (ENOENT). */
+const binary = join(target, "metamorph", "metamorph");
 
 /** The rewriter, built once: its own crate, apart from the compiler's. */
 export function buildRewriter(): void {
   const p = runSync(["cargo", "build", "--quiet", "--manifest-path", manifest, "--target-dir", join(target, "metamorph")], root, 600_000);
   if (p.code !== 0) throw new Error(`the rewriter doesn't build:\n${p.stderr}`);
+  // Copied whole, though another part's build may be linking it now.
+  const copy = `${binary}.${process.pid}`;
+  for (let tries = 1; ; tries++) {
+    try {
+      copyFileSync(built, copy);
+      break;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "ENOENT" || tries === 50) throw e;
+      Bun.sleepSync(20);
+    }
+  }
+  renameSync(copy, binary);
 }
 
 /** `rewrite` of the case `file`, of so many of the places it finds,
