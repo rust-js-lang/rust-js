@@ -2,10 +2,11 @@
 // shards, the mutations a change touches, and each branch's latest run.
 
 import { expect, test } from "bun:test";
-import { cpSync, existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
-import { corpusRows, crashes, dependency, lockedVersion, lockOf } from "../scripts/crate-corpus";
+import { corpusRows, crashes, dependency, lockedVersion, lockOf, written } from "../scripts/crate-corpus";
 import {
   batches,
   type Change,
@@ -24,7 +25,7 @@ import {
   testSet,
   unitTestsModule,
 } from "../scripts/mutations";
-import { jobs, leftToCi } from "../scripts/checkFast";
+import { jobs, leftToCi, readabilityPaths, touchesReadability } from "../scripts/checkFast";
 import { loadScale } from "../scripts/timing";
 import { jobs as localNightly } from "../scripts/nightly";
 import { caseParts, caseShardParts, harness, nightly, parts, pooledParts, shard } from "../scripts/shard";
@@ -83,6 +84,22 @@ test("the files only the nightly runs are test files, which its check runs", () 
 // jobs check.yml runs where its change is one (scripts/iteratorSlice.ts).
 const checkJobs = jobs({ all: true, changed: [], branch: ["src/runtime/steps.js", "src/runtime/pad.js", "src/runtime/div.js", "src/typescript.rs", "src/lower/mir/awaits.rs"], added: [], extra: [], cores: 4 });
 const ranHere = checkJobs.jobs;
+
+// The readability passes' oracles run of a change to tidy, preparation or
+// the oracles alone, `--all`'s too, as a push's CI runs them: of
+// readability-passes.yml's paths, the one list (the user, #998).
+test("the readability passes run where readability-passes.yml's paths say, of --all too", () => {
+  const paths = readabilityPaths();
+  expect(paths).toEqual(expect.arrayContaining(["src/prepare/**", "src/lower/mir/tidy/**", "test/getter-reads/**", ".github/workflows/readability-passes.yml"]));
+  const named = (scope: { all: boolean; changed: string[]; branch: string[] }) =>
+    jobs({ ...scope, added: [], extra: [], cores: 12 }).jobs.some((job) => job.name === "readability passes");
+  expect(named({ all: true, changed: ["src/lower/copies.rs"], branch: [] })).toBe(false);
+  expect(named({ all: true, changed: [], branch: ["src/lower/mir/tidy/exits.rs"] })).toBe(true);
+  expect(named({ all: false, changed: ["src/prepare.rs"], branch: [] })).toBe(true);
+  expect(named({ all: false, changed: ["test/getter-reads/counts.rs"], branch: [] })).toBe(true);
+  expect(touchesReadability(["src/lower/mir/tidying.rs", "docs/guide/README.md"])).toBe(false);
+  expect(() => readabilityPaths("on:\n  push:\n")).toThrow("no `on.push.paths`");
+});
 
 test("each command a push's check runs is check:fast --all's, or left to CI by name", () => {
   type Step = { run?: string; parallel?: Step[] };
@@ -620,6 +637,26 @@ test("each crate of the corpus has a lock of its graph, its row's release in it,
   const runs = [...script.matchAll(/(?:spawnSync|spawned)\(\s*"cargo",\s*\[([^\]]*)\]/g)].map(([, args]) => args!);
   expect(runs.length).toBe(4);
   expect(runs.filter((args) => !args.includes('"--locked"'))).toEqual(['`+${toolchain}`, "generate-lockfile"']);
+});
+
+// A crate's project is written again each run only where it differs: a file
+// written again is a new date, which Cargo takes for a change, and the
+// probe was compiled again, by rust-js and natively, on every run (#998).
+test("a crate's project file is written only where it differs, its date kept where it doesn't", () => {
+  const dir = mkdtempSync(join(tmpdir(), "crate-corpus-written-"));
+  try {
+    const file = join(dir, "lib.rs");
+    written(file, "pub fn report() {}\n");
+    const past = new Date(Date.now() - 60_000);
+    utimesSync(file, past, past);
+    written(file, "pub fn report() {}\n");
+    expect(statSync(file).mtimeMs).toBe(past.getTime());
+    written(file, "pub fn report() -> u8 { 1 }\n");
+    expect(readFileSync(file, "utf8")).toBe("pub fn report() -> u8 { 1 }\n");
+    expect(statSync(file).mtimeMs).toBeGreaterThan(past.getTime());
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("a crate of the corpus's graph rust-js crashed on is said to have crashed, not left out", () => {

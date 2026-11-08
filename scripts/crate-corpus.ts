@@ -116,7 +116,13 @@ type Result = {
   runs?: string;
 };
 
-/** The first line where the JS's report isn't native Rust's. */
+/** `text` written to `path`, unless it's there already: a file written
+ * again has a new date, which Cargo takes for a change (#998). */
+export function written(path: string, text: string) {
+  if (existsSync(path) && readFileSync(path, "utf8") === text) return;
+  writeFileSync(path, text);
+}
+
 /** `spawnSync`'s result, without blocking the other crates measured at once. */
 function spawned(cmd: string, args: string[], options: { cwd: string; env?: NodeJS.ProcessEnv }): Promise<{ status: number | null; stdout: string; stderr: string }> {
   return new Promise((done) => {
@@ -128,6 +134,7 @@ function spawned(cmd: string, args: string[], options: { cwd: string; env?: Node
   });
 }
 
+/** The first line where the JS's report isn't native Rust's. */
 function difference(native: string, js: string): string {
   const [a, b] = [native.split("\n"), js.split("\n")];
   const at = a.findIndex((line, i) => line !== b[i]);
@@ -172,23 +179,27 @@ async function main() {
     const dir = join(root, "target/crate-corpus", crate.name);
     mkdirSync(dir, { recursive: true });
     const probe = join(import.meta.dir, "crate-corpus", `${crate.name}.rs`);
-    writeFileSync(
+    // Each file of the project written only where it differs: a file
+    // written again is a new date, which Cargo takes for a change, so the
+    // probe was compiled again by rust-js and natively, its binary linked
+    // again, on every run, a change or none (#998).
+    written(
       join(dir, "Cargo.toml"),
       `[package]\nname = "probe"\nversion = "0.0.0"\nedition = "2024"\n\n[lib]\npath = "lib.rs"\n\n[[bin]]\nname = "native"\npath = "main.rs"\n\n[dependencies]\n${dependency(crate)}\n\n[workspace]\n`,
     );
-    writeFileSync(join(dir, "lib.rs"), existsSync(probe) ? readFileSync(probe, "utf8") : "");
-    writeFileSync(join(dir, "main.rs"), "fn main() {\n    print!(\"{}\", probe::report());\n}\n");
+    written(join(dir, "lib.rs"), existsSync(probe) ? readFileSync(probe, "utf8") : "");
+    written(join(dir, "main.rs"), "fn main() {\n    print!(\"{}\", probe::report());\n}\n");
     // Its graph at its lock's releases; or, `--lock`, at the newest each
     // requirement allows today, written as its lock.
-    rmSync(join(dir, "Cargo.lock"), { force: true });
     if (lock) {
+      rmSync(join(dir, "Cargo.lock"), { force: true });
       const made = spawnSync("cargo", [`+${toolchain}`, "generate-lockfile"], { cwd: dir, encoding: "utf8" });
       if (made.status !== 0) {
         console.error(`${crate.name}: its graph doesn't resolve:\n${made.stderr.trim()}`);
         process.exit(1);
       }
       copyFileSync(join(dir, "Cargo.lock"), lockOf(crate.name));
-    } else copyFileSync(lockOf(crate.name), join(dir, "Cargo.lock"));
+    } else written(join(dir, "Cargo.lock"), readFileSync(lockOf(crate.name), "utf8"));
     // Every crate the probe builds is rust-js's to compile, a registry's too.
     // Each a library, as a crate of crates.io is to the apps that use it.
     const metadata = spawnSync("cargo", [`+${toolchain}`, "metadata", "--format-version=1", "--locked"], { cwd: dir, maxBuffer: 256 * 1024 * 1024, encoding: "utf8" });

@@ -84,6 +84,28 @@ export const leftToCi: { run: string; why: string }[] = [
   },
 ];
 
+/** The paths whose change runs the readability passes' oracles, as
+ * readability-passes.yml's `paths` say, the one list of them: a push's CI
+ * runs them of these alone, and so does `check:fast`, `--all` too (#998). */
+export function readabilityPaths(workflow = readFileSync(join(root, ".github/workflows/readability-passes.yml"), "utf8")): string[] {
+  const lines = workflow.split("\n");
+  const at = lines.findIndex((line) => /^ {4}paths:$/.test(line));
+  if (at === -1) throw new Error("readability-passes.yml has no `on.push.paths`, which says what runs the readability passes");
+  const paths: string[] = [];
+  for (const line of lines.slice(at + 1)) {
+    const item = line.match(/^ {6}- '([^']+)'$/);
+    if (!item) break;
+    paths.push(item[1]!);
+  }
+  return paths;
+}
+
+/** Whether a change of `files` runs the readability passes. */
+export function touchesReadability(files: string[], paths = readabilityPaths()): boolean {
+  const globs = paths.map((path) => new Bun.Glob(path));
+  return files.some((file) => globs.some((glob) => glob.match(file)));
+}
+
 /** The check's jobs, through the pool at once: of
  * `--all`, what a push's check runs (check.yml); else the suites the
  * change can touch, as it touches them, `shared` saying whether that's what
@@ -92,10 +114,12 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
   // What the snapshots and the diagnostics read: the compiler and the runtime.
   const shared = all || changed.some((file) => file.startsWith("src/") || file.startsWith("runtime/"));
   const jsx = all || changed.some((file) => /^src\/(lower\/jsx|jsx_syntax)|^react\//.test(file));
-  // A change to tidy or preparation is checked after each of tidy's stages
-  // and without each of preparation's rewrites, and by the read cases (ADRs
-  // 0659, 1087).
-  const tidy = all || changed.some((file) => /^src\/(lower\/mir\/tidy|prepare)/.test(file));
+  // A change to tidy or preparation, or to the oracles, is checked after
+  // each of tidy's stages and without each of preparation's rewrites, and by
+  // the read cases (ADRs 0659, 1087): of `--all` too only then, as a push's
+  // CI runs them, readability-passes.yml's paths, the nightly every case
+  // (the user, #998: 28–34 core-seconds of every compiler change's check).
+  const tidy = touchesReadability([...changed, ...branch]);
   // A change to what a `&mut` is, or to an operation on one, runs the `&mut`
   // matrix's sample against native Rust (ADR 1086).
   const mutRefs = all || changed.some((file) => /^src\/lower\/(representation\/mut_ref|mut_refs|mir\/(assign|entries|places|rvalues|closures)|std_types\/cell)\.rs$/.test(file));
@@ -500,6 +524,14 @@ function profiled(results: Ran[], samples: { at: number; busy: number }[], detai
   console.log(`${"job".padEnd(50)}${"start".padStart(7)}${"end".padStart(7)}${"cores".padStart(7)}`);
   for (const { name, start, end, cpu } of rows) {
     console.log(`${name.padEnd(50)}${clock(start).padStart(7)}${clock(end).padStart(7)}${(cpu / Math.max(0.1, end - start)).toFixed(1).padStart(7)}`);
+  }
+  // Where a CPU-bound check's cores go: the jobs that used the most of
+  // them, a group's files each its own, as the lever on a saturated
+  // machine is less work, not another order (#998).
+  const total = results.reduce((a, r) => a + r.cpu, 0);
+  console.log(`the jobs' CPU, ${Math.round(total)} core-seconds; the most of it:`);
+  for (const r of [...results].sort((a, b) => b.cpu - a.cpu).slice(0, 15)) {
+    console.log(`${r.job.name.padEnd(50)}${`${Math.round(r.cpu)} s`.padStart(14)}`);
   }
 }
 

@@ -144,3 +144,15 @@ the list is empty, and the case is one of the few the suite runs.
   Only what JS made is read as Rust reads it, so the read cases are made
   of what JS gives. Three corpus cases have getters of their own, whose
   calls native Rust counts already.
+
+## Amendment: where a push's check runs the oracles (#998)
+
+`check:fast --all`, the check before a push, ran both oracles on every
+change: 34–36 core-seconds of each compiler change's check on the 12-core
+M6, which is bound by its CPU. A push's CI runs them only where
+readability-passes.yml's `paths` say: a change to tidy, preparation or the
+oracles themselves. Now `check:fast` runs them on the same paths, with
+`--all` too, reading that workflow's list (`touchesReadability`,
+`scripts/checkFast.ts`). That list is the only one, so a path added there
+is added here too. The nightly still runs every corpus case and the night's
+programs through both oracles. This was the user's choice, 2026-11-08.

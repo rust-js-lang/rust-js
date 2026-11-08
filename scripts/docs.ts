@@ -22,7 +22,8 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { dirname, join, relative } from "node:path";
-import { buildCompiler, buildNode, buildReact, buildReactNative, buildSerde, cargoApp, compiler, root, run, target } from "../test/support";
+import { run } from "../test/child";
+import { buildCompiler, buildNode, buildReact, buildReactNative, buildSerde, cargoApp, compiler, root, target } from "../test/support";
 
 const check = process.argv.includes("--check");
 const guide = join(root, "docs/guide");
@@ -176,14 +177,20 @@ async function compile(example: Example, n: number): Promise<{ bodies: string[];
   // first builds it alone.
   const built = app ? appTurn() : undefined;
   if (built) await built.ready;
-  const proc = Bun.spawn(
+  // An example's compile is kept by what it's made of, as a test's is
+  // (test/compiles.ts, ADR 1099): of a push that changes no compiler, its
+  // 218 compiles, some 32 CPU-seconds of every run, are found again (#998).
+  // An app's Cargo build, and a compile with `--declarations`, aren't kept.
+  const ran = await run(
     app
       ? [process.execPath, join(root, "tooling", "cli.js"), "build"]
       : [compiler, ...(example.test ? ["--test"] : []), join(dir, rootFile), "-o", out, ...(declarations ? ["--declarations"] : []), "--",
           "--crate-name=example", ...crates(code)],
-    { cwd: dir, stdout: "pipe", stderr: "pipe", env: { ...process.env, RUST_JS_COMPILER: compiler } },
+    dir,
+    280_000,
+    { RUST_JS_COMPILER: compiler },
   );
-  const [stderr, exit] = [await new Response(proc.stderr).text(), await proc.exited];
+  const [stderr, exit] = [ran.stderr, ran.timedOut ? 1 : (ran.code ?? 1)];
   built?.done();
   // What the compiler said, but Cargo's progress, which is a run's own.
   const progress = /^ +(Blocking|Compiling|Checking|Downloading|Downloaded|Updating|Locking|Adding|Finished|Fresh)\b/;
