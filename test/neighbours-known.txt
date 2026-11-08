@@ -31,3 +31,4 @@ plain range_mapped_by_a_function.rs beside cloned_chains_and_cycles.rs
 
 #956 P2: a `pub` thread-local's initializer refused as one it can't follow
 plain std thread_local_made_by_boxed_closure.rs beside unwrap_dropping.rs
+plain std thread_local_made_by_boxed_closure.rs beside owner_handle_set_in_loop.rs
