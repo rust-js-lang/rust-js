@@ -773,8 +773,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         if self.local_stepped_from_its_back(local).is_some()
                             && self.back_by_value(made)
                             && (given_back
-                                || callee
-                                    .is_some_and(|callee| self.recognition().iterator_method(callee).is_some()))
+                                || callee.is_some_and(|callee| {
+                                    let iterator = crate::lower::recognition::std_item(
+                                        self.tcx,
+                                        crate::lower::recognition::StdItem::Iterator,
+                                    );
+                                    self.tcx.trait_of_assoc(callee) == Some(iterator)
+                                }))
                             && !self.compiled_struct(made, &e) =>
                     {
                         Value::Expr(crate::lower::iterators::made_knowing_its_back(e))

@@ -1275,3 +1275,48 @@ an array's items with a destructor asks (`held-adapter-asked-itself`,
 Corpus case `filter_given_back_stepped_from_its_back`; the full iterator
 matrix, conformance, points and unwind tables, the metamorphic net and the
 corpus in both builds run as before.
+
+## Amendment: a chain's and a copy's too (2026-11-08, #851 phase B, chains and copies)
+
+ADR 0262's case: none where its JS changes for what ran as Rust does; two
+snapshots change, a chain only stepped forward, of a type stepped from its
+back elsewhere, now `$lazyChain(..)` mapped by JS's own `map` where it was
+`$mapEnds`, and a forward-only chain of the crate's iterators no longer
+given an unused `nextBack`. Whether a `chain`, a `copied()` or a `cloned()`
+is made knowing its back is its value's fact (`back_by_value`), as a map's
+and a filter's are. What `stepped_locals` records grows by what the set
+covered of their values:
+
+- what an asked adapter made in place is made of, asked in turn, down to
+  what a variable holds, a `let c = a.chain(b)` beneath
+  `c.filter(p).map(f).rev()`, marked where it's made (the set's
+  `held_beneath`, #790);
+- what an asked `copied()` or `cloned()` is made of, which it is in JS,
+  and the source of an adapter whose closure has a destructor, which MIR
+  holds before the adapter is made;
+- a temporary chain of items with a destructor lent to its back step,
+  which MIR holds to drop them (#718), and a `cloned()` lent to
+  `DoubleEndedIterator`'s own method, `a.chain(b).cloned().rfind(p)`, as a
+  `copied()` is.
+
+A `copied()` or a `cloned()` made knowing its back has its source made
+knowing it too, as a map's is: a `step_by(2)`'s, `$stepByEnds`, where
+`$mapEnds` of its forward-only `values().filter(..)` threw (the iterator
+matrix's `step_by.cloned | rfold`, `fuse.cloned` and `peekable.cloned`,
+caught before this landed). A variable's `cloned()` of items that need a
+clone, held where a closure captures what drops, stays refused, as on
+`main`: a first draft took it for its source, the array's iterator,
+`$foldBack($iter(tmp))`, which stepped nothing (the matrix's `vec iter |
+cloned | rfold | captures`); a diagnostics case holds the refusal. A value
+made by any method of std's `Iterator` trait, a `chain` too, which the list
+of iterator methods lacks, is marked made knowing its back where its local
+is stepped.
+
+The `len()` of a value made before asks whether it's an array's `$iter`
+(`steps_an_array`), whose `len()` is `it.end - it.at`, apart from whether
+it has a back (`has_a_back`), which a `next_back` asks: one answer to each
+question, where one served both.
+
+The readability baseline moves by the new corpus case's `fuse()` and
+`peekable()` given their compiled backs, `$knowing(..)` (`Iterator.from`,
+8.1 to 8.2 in 10,000 lines), as they were made before.

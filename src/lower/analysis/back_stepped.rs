@@ -423,7 +423,8 @@ fn back_stepped_adapter<'tcx>(
     }
     // An `inspect(f)` is made as a map, stepped from its back as one is.
     let mapped = mapped_source(tcx, adapter).or_else(|| inspected_source(tcx, adapter));
-    let copied = copied_source(tcx, adapter);
+    // A `cloned()` too, made as a copy or as a map of each item's clone.
+    let copied = copied_source(tcx, adapter).or_else(|| cloned_source(tcx, adapter));
     // A `filter_map`, made as a map filtered, steps from its back as a
     // filter does, by no form of its own (#473).
     let filtered = filtered_source(tcx, adapter).or_else(|| filter_mapped_source(tcx, adapter));
@@ -866,6 +867,11 @@ pub(super) fn stepped_locals<'tcx>(
                                 || dropping_items(recognition, ty, &drops)
                                 || closure_drops(tcx, ty, &drops)
                                 || enumerates_a_compiled_struct(tcx, ty)
+                                // A chain of items with a destructor, which
+                                // MIR holds to drop them before it's asked
+                                // (#718).
+                                || chained_sources(tcx, ty).is_some()
+                                    && recognition.iterator_item(ty).is_some_and(&drops)
                         };
                         let held = held || unread();
                         match (ty == asked_ty, lent, user) {
@@ -926,11 +932,21 @@ pub(super) fn stepped_locals<'tcx>(
                 for source in sources.into_iter().map(erased) {
                     for &(local, _, ty, _) in &given {
                         let user = mir.local_decls[local].is_user_variable();
-                        if ty == source && (chain && made_stepped || user) {
+                        // Or of an adapter stepped from its back that holds a
+                        // closure with a destructor, which MIR holds what it's
+                        // made of before it's made, its form gone (#851).
+                        let spilled = made_stepped && closure_drops(tcx, made, &drops);
+                        let copy = copied_source(tcx, made).or_else(|| cloned_source(tcx, made)).is_some();
+                        if ty == source && (chain && made_stepped || user || spilled || copy && made_asked) {
                             mark(&mut stepped, (owner, local), SteppedLocal::Given);
                             if held_by_struct {
                                 typed_sources.insert(ty);
                             }
+                        } else if ty == source && made_asked && !user {
+                            // What an asked adapter made in place is made of,
+                            // in place beneath it, asked too, down to what a
+                            // variable holds (#790).
+                            asked.insert((owner, local));
                         }
                     }
                 }

@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `copied()` that knows its length, of items copied as it steps, is JS's `map` of them, whose `len()` throws (#387)",
     file: "src/lower/mir/iter.rs",
-    find: "        let ends = self.knows_its_back(output) || self.knows_its_length(output);\n",
-    replace: "        let ends = self.knows_its_back(output) || false;\n",
+    find: "        let ends = back || self.knows_its_length(output);\n",
+    replace: "        let ends = back || false;\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_given_len.rs$"],
   },
   {
@@ -72,9 +72,9 @@ export const mutations: Mutation[] = [
     name: "mir-next-back-front",
     breaks: "`it.next_back()` of a `$iter` gives its first item",
     file: "src/lower/mir/iter.rs",
-    find: '                (Some(IterMethod::NextBack), None) if array => Expr::call_helper("$nextBack", vec![it]),\n',
+    find: '                (Some(IterMethod::NextBack), None) if back => Expr::call_helper("$nextBack", vec![it]),\n',
     replace:
-      '                (Some(IterMethod::NextBack), None) if array => Expr::call_helper("$next", vec![it]),\n',
+      '                (Some(IterMethod::NextBack), None) if back => Expr::call_helper("$next", vec![it]),\n',
     tests: ["test/corpus.test.ts", "-t", "iterator_back_ends"],
   },
   {
@@ -720,8 +720,8 @@ export const mutations: Mutation[] = [
     name: "copied-items-mapped-backless",
     breaks: "a `cloned()` of a chain the crate steps from its back, which knows no length, is JS's `map` of its clones, which has no back, and the back step throws (#850)",
     file: "src/lower/mir/iter.rs",
-    find: "        let ends = self.knows_its_back(output) || self.knows_its_length(output);\n",
-    replace: "        let ends = false || self.knows_its_length(output);\n",
+    find: "        let back = self.knows_its_back(output);\n",
+    replace: "        let back = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^cloned_of_a_chain_stepped_from_its_back.rs$"],
   },
   {
@@ -739,5 +739,13 @@ export const mutations: Mutation[] = [
     find: "                && self.implements_iterator(into) =>\n",
     replace: "                && self.implements_iterator(into)\n                && false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_of_a_slice_cloned_apart.rs$"],
+  },
+  {
+    name: "copied-source-unknowing",
+    breaks: "a `cloned()` or a `copied()` made knowing its back is `$mapEnds` of its source as it is, a `step_by(2)`'s forward-only `values().filter(..)`, whose `rfold` throws `it.back is not a function` (#851)",
+    file: "src/lower/mir/iter.rs",
+    find: "            Some(source) if back => self.as_double_ended(it, source.peel_refs(), span)?,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^copies_of_forward_forms_stepped_from_their_back.rs$"],
   },
 ];

@@ -6,13 +6,12 @@ import {
   $closing,
   $count,
   $dropEach,
-  $filterEnds,
+  $filterDropping,
   $foldToArray,
   $held,
   $iter,
   $iterator,
   $lazyChain,
-  $mapEnds,
   $next,
   $nextBack,
   $reserveHint,
@@ -81,69 +80,63 @@ function main() {
       console.log(`back ${value == null ? "None" : `Some(${value})`}`);
       const s = $foldToArray(
         $reserveHint(
-          $mapEnds(
-            $lazyChain(
-              $iterator(
-                ends(),
-                endsIterator_next,
-                false,
-                endsDoubleEndedIterator_nextBack,
-                undefined,
-                endsIterator_sizeHint,
-              ),
-              $closing($iter([[6]]), $dropEach(dDrop_drop)),
+          $lazyChain(
+            $iterator(
+              ends(),
+              endsIterator_next,
+              false,
+              undefined,
+              undefined,
+              endsIterator_sizeHint,
             ),
-            (d) => {
-              try {
-                return String.fromCharCode((97 + (d[0] & 255)) & 255);
-              } finally {
-                dDrop_drop(d);
-              }
-            },
-          ),
+            $closing($iter([[6]]), $dropEach(dDrop_drop)),
+          ).map((d) => {
+            try {
+              return String.fromCharCode((97 + (d[0] & 255)) & 255);
+            } finally {
+              dDrop_drop(d);
+            }
+          }),
           1,
         ),
       ).join("");
       console.log(`${s}`);
       const odd = $foldToArray(
         $reserveHint(
-          $mapEnds(
-            $filterEnds(
-              $lazyChain(
-                $iterator(
-                  ends(),
-                  endsIterator_next,
-                  false,
-                  endsDoubleEndedIterator_nextBack,
-                  undefined,
-                  endsIterator_sizeHint,
-                ),
-                $closing($iter([[6]]), $dropEach(dDrop_drop)),
+          $filterDropping(
+            $lazyChain(
+              $iterator(
+                ends(),
+                endsIterator_next,
+                false,
+                undefined,
+                undefined,
+                endsIterator_sizeHint,
               ),
-              (d) => d[0] % 2 === 1,
-              dDrop_drop,
+              $closing($iter([[6]]), $dropEach(dDrop_drop)),
             ),
-            (d) => {
-              try {
-                return String.fromCharCode((97 + (d[0] & 255)) & 255);
-              } finally {
-                dDrop_drop(d);
-              }
-            },
-          ),
+            (d) => d[0] % 2 === 1,
+            dDrop_drop,
+          ).map((d) => {
+            try {
+              return String.fromCharCode((97 + (d[0] & 255)) & 255);
+            } finally {
+              dDrop_drop(d);
+            }
+          }),
           1,
         ),
       ).join("");
       console.log(`${odd}`);
       console.log(
         `${$count(
-          $filterEnds(
+          $filterDropping(
             $lazyChain(
               $iterator(
                 ends(),
                 endsIterator_next,
                 false,
-                endsDoubleEndedIterator_nextBack,
+                undefined,
                 undefined,
                 endsIterator_sizeHint,
               ),

@@ -677,15 +677,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return Ok(Some(back));
             }
-            let array = self.has_a_back(iter_ty, &it) || std_method == Some(IterMethod::NextBack) && knows_back(&it);
+            let back = self.has_a_back(iter_ty, &it) || std_method == Some(IterMethod::NextBack) && knows_back(&it);
             // `len(&self)` of a `Self` that's a `&mut`.
             let lends_self = matches!(receiver_ty.kind(), ty::Ref(_, through, _) if through.is_mutable_ptr());
             return Ok(Some(match (std_method, self.range_kind(iter_ty)) {
                 (Some(IterMethod::NextBack), Some(kind)) if let Some(step) = kind.step(true) => {
                     Expr::call_helper(step, vec![it])
                 }
-                (Some(IterMethod::NextBack), None) if array && boxed => Expr::call_helper("$nextBackSome", vec![it]),
-                (Some(IterMethod::NextBack), None) if array => Expr::call_helper("$nextBack", vec![it]),
+                (Some(IterMethod::NextBack), None) if back && boxed => Expr::call_helper("$nextBackSome", vec![it]),
+                (Some(IterMethod::NextBack), None) if back => Expr::call_helper("$nextBack", vec![it]),
                 // A generic one's, a JS iterator that knows it, which may be a
                 // range's (ADR 0456).
                 (Some(IterMethod::Len), None) if self.knows_its_length(iter_ty) => {
@@ -694,7 +694,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Of a `&mut`, `by_ref()`'s, `$lent`'s, which passes on the
                 // `len` of what it's to, as std's `&mut I` does (#745).
                 (Some(IterMethod::Len), None) if lends_self => Expr::call(Expr::member(it, "len"), Vec::new()),
-                (Some(IterMethod::Len), None) if array => self.items_left(it, made),
+                (Some(IterMethod::Len), None) if self.steps_an_array(iter_ty) => self.items_left(it, made),
                 // One made in place, by what each of its adapters counts of
                 // its source: a range of numbers' count, an array's items
                 // skipped, `Math.max(xs.length - n, 0)` (ADR 0986).
@@ -867,8 +867,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its back or its length, `output`, a map that knows them too,
     /// `$mapEnds`, as a map is (#387): a chain stepped from its back knows
     /// no length, and `.map` has no back to step (#850).
+    /// Its source made knowing its back where it's to know its own, as a
+    /// map's is: a `step_by(n)`'s, `$stepByEnds` (#851).
     fn copied_items(&mut self, it: Expr, item: Ty<'tcx>, output: Ty<'tcx>, span: Span) -> R<Expr> {
-        let ends = self.knows_its_back(output) || self.knows_its_length(output);
+        let back = self.knows_its_back(output);
+        let ends = back || self.knows_its_length(output);
+        let source = crate::lower::recognition::copied_source(self.tcx, output)
+            .or_else(|| crate::lower::recognition::cloned_source(self.tcx, output));
+        let it = match source {
+            Some(source) if back => self.as_double_ended(it, source.peel_refs(), span)?,
+            _ => it,
+        };
         let x = self.fresh("item");
         let mut body = Vec::new();
         let pointee = match *item.kind() {

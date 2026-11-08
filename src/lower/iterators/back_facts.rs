@@ -58,6 +58,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn back_by_value(&self, ty: ty::Ty<'tcx>) -> bool {
         crate::lower::recognition::mapped_source(self.tcx, ty).is_some()
             || crate::lower::recognition::filtered_source(self.tcx, ty).is_some()
+            || crate::lower::recognition::chained_sources(self.tcx, ty).is_some()
+            || crate::lower::recognition::copied_source(self.tcx, ty).is_some()
+            || crate::lower::recognition::cloned_source(self.tcx, ty).is_some()
     }
 
     /// Whether `local`, of the body being lowered, holds what the crate

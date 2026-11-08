@@ -273,7 +273,7 @@ function main() {
         [2],
         ownIterator_next,
         false,
-        ownDoubleEndedIterator_nextBack,
+        undefined,
         undefined,
         undefined,
         ownIterator_fold,
@@ -292,7 +292,7 @@ function main() {
     }, 0)}`,
   );
   console.log(
-    `count ${$count($lazyChain($iterator([2], ownIterator_next, false, ownDoubleEndedIterator_nextBack, undefined, undefined, ownIterator_fold, undefined, undefined, undefined, undefined, undefined, ownIterator_count), $closing($iter([[7]]), $dropEach(dDrop_drop))), dDrop_drop)}`,
+    `count ${$count($lazyChain($iterator([2], ownIterator_next, false, undefined, undefined, undefined, ownIterator_fold, undefined, undefined, undefined, undefined, undefined, ownIterator_count), $closing($iter([[7]]), $dropEach(dDrop_drop))), dDrop_drop)}`,
   );
   let sum = 0;
   $lazyChain(
@@ -300,7 +300,7 @@ function main() {
       [2],
       ownIterator_next,
       false,
-      ownDoubleEndedIterator_nextBack,
+      undefined,
       undefined,
       undefined,
       ownIterator_fold,
@@ -323,7 +323,7 @@ function main() {
         [2],
         ownIterator_next,
         false,
-        ownDoubleEndedIterator_nextBack,
+        undefined,
         undefined,
         undefined,
         ownIterator_fold,
@@ -351,7 +351,7 @@ function main() {
         [3],
         ownIterator_next,
         false,
-        ownDoubleEndedIterator_nextBack,
+        undefined,
         undefined,
         undefined,
         ownIterator_fold,
@@ -383,7 +383,7 @@ function main() {
         [3],
         ownIterator_next,
         false,
-        ownDoubleEndedIterator_nextBack,
+        undefined,
         undefined,
         undefined,
         ownIterator_fold,
@@ -416,7 +416,7 @@ function main() {
           [2],
           ownIterator_next,
           false,
-          ownDoubleEndedIterator_nextBack,
+          undefined,
           undefined,
           undefined,
           ownIterator_fold,
@@ -476,12 +476,9 @@ function main() {
   let tmp;
   try {
     tmp = $lazyChain(
-      $closing(
-        $iterator(value$6, backsIterator_next, false, backsDoubleEndedIterator_nextBack),
-        (it) => {
-          console.log("drop src");
-        },
-      ),
+      $closing($iterator(value$6, backsIterator_next), (it) => {
+        console.log("drop src");
+      }),
       $closing($iter(value$7), $dropEach(dDrop_drop)),
     );
   } catch (error) {
@@ -586,12 +583,9 @@ function main() {
     let chain;
     try {
       chain = $lazyChain(
-        $closing(
-          $iterator(backs, backsIterator_next, false, backsDoubleEndedIterator_nextBack),
-          (it) => {
-            console.log("drop src");
-          },
-        ),
+        $closing($iterator(backs, backsIterator_next), (it) => {
+          console.log("drop src");
+        }),
         $closing($iter(value), $dropEach(dDrop_drop)),
       );
     } catch (error) {

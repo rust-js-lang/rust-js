@@ -75,7 +75,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// How many items a `$iter` of an array has left, its `len()`: of one
     /// made here, `$iter(v)`, which nothing has stepped, its array's length,
-    /// `v.length`; else `it.end - it.at`, `it` held if it's made here.
+    /// `v.length`; else `it.end - it.at`, `it` held if it's made here. Of
+    /// what `steps_an_array` says is one, never of another that has a back
+    /// (`has_a_back`, #851).
     pub(super) fn items_left(&mut self, it: Expr, made: &mut Vec<Stmt>) -> Expr {
         if crate::lower::iterators::is_stepped_items(&it)
             && let js::ExprKind::Call(_, items) = &it.kind
