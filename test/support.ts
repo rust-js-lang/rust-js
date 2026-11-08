@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, linkSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 
@@ -447,6 +447,54 @@ export function crateIncluded(crate: string): string[] {
 
 export function fixture(name: string): string {
   return claim(join(fixtures, scope), name);
+}
+
+/** The run's seed, `<seed>/target`: an app's Cargo target with the binding
+ * crates, `js`, `webapi` and `react`, checked as each app's first build
+ * checks them. Where the run gives one, `RUST_JS_APPS_SEED`, a directory
+ * `check:fast` removes as it ends, it's the run's, built by the first file
+ * to ask, the others waiting for it; else this file's, a fixture, removed
+ * with its others. */
+let appsSeed: string | undefined;
+function builtSeed(): string {
+  // Asked again once its file's fixtures are gone, as a worker's next file asks.
+  if (appsSeed === undefined || !existsSync(appsSeed)) {
+    const base = process.env.RUST_JS_APPS_SEED ?? fixture("apps-seed");
+    const seed = join(base, "seed");
+    once(seed, () => {
+      // A crate of its own name, `seed`, not an app's in the targets made of it.
+      const app = join(seed, "app");
+      mkdirSync(join(app, "src"), { recursive: true });
+      writeFileSync(join(app, "src", "lib.rs"), "pub fn seed() {}\n");
+      const crate = (name: string, dir: string) => `${name} = { package = "rust-js-${dir}", path = ${JSON.stringify(join(root, dir))} }\n`;
+      writeFileSync(join(app, "Cargo.toml"), `[package]\nname = "seed"\nversion = "0.0.0"\nedition = "2024"\n\n[dependencies]\n${crate("js", "builtins")}${crate("react", "react")}\n[workspace]\n`);
+      const built = runSync([process.execPath, join(root, "tooling", "cli.js"), "build"], app, 600_000, {
+        RUST_JS_COMPILER: compiler,
+        CARGO_TARGET_DIR: join(seed, "target"),
+      });
+      if (built.code !== 0) throw new Error(`the apps' seed didn't build:\n${built.stdout}${built.stderr}`);
+    });
+    appsSeed = join(seed, "target");
+  }
+  return appsSeed;
+}
+
+/**
+ * `targetDir`, an app's Cargo target its first build makes, made from the
+ * run's seed: the binding crates, `js`, `webapi` and `react`, checked once
+ * a run, not by each app. Since #892 their key is the compiler's alone, the
+ * same unit in every app, which Cargo finds done by its fingerprint; each
+ * built them again, 3.4–4.1 s of `webapi` under load (#1005). Cloned, not
+ * shared: Cargo holds a target for one build at a time, and a test may
+ * read its own. Without rustc's incremental state, which a crate found
+ * done never reads. Not for a test that counts what's in its target, or
+ * that the first build compiles the bindings. `targetDir`.
+ */
+export function seeded(targetDir: string): string {
+  if (existsSync(targetDir)) throw new Error(`${targetDir} is there already: a seed is a new target's`);
+  const seed = builtSeed();
+  cpSync(seed, targetDir, { recursive: true, preserveTimestamps: true, filter: (path) => !/[/\\]incremental([/\\]|$)/.test(path) });
+  return targetDir;
 }
 
 /** serde, serde_derive and serde_json (ADR 0077): the flags that find them,

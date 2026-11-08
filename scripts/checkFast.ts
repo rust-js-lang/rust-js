@@ -602,6 +602,10 @@ if (import.meta.main) {
   const compiler = join(own, "rust-js");
   linkSync(join(root, "target", "debug", "rust-js"), compiler);
   process.on("exit", () => rmSync(own, { recursive: true, force: true }));
+  // The apps' Cargo targets' seed, the binding crates checked once for the
+  // run by the first test to ask, and gone with it (test/support.ts'
+  // `seeded`, #1005).
+  process.env.RUST_JS_APPS_SEED = join(own, "apps-seed");
 
   // The compiles the tests keep (test/compiles.ts, ADR 1099), bounded
   // before any runs: another build's, never found again, and past the

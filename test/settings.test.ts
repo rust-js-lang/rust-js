@@ -10,7 +10,7 @@ import { runSync } from "./child";
 import { decodeMappings, lookup } from "./sourcemap";
 import { check } from "./crates";
 import { createNativeBuilder } from "../tooling/build.js";
-import { buildCompiler, compiler, fixture, installRuntime, root } from "./support";
+import { buildCompiler, compiler, fixture, installRuntime, root, seeded } from "./support";
 
 beforeAll(buildCompiler);
 
@@ -43,6 +43,8 @@ function build(settings: string, flags: string[] = [], source = rust, prettier?:
  * writes. */
 async function cargoBuilt(source: string, prettier?: object, editorconfig?: string, setUp?: (dir: string) => void, dependencies = "") {
   const dir = fixture("settings-cargo");
+  // Using the binding crates, its Cargo target made from the run's seed.
+  if (dependencies) seeded(join(dir, "target"));
   setUp?.(dir);
   mkdirSync(join(dir, "src"));
   writeFileSync(join(dir, "src", "lib.rs"), source);

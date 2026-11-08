@@ -6,7 +6,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { cfgFlags } from "../react/cfg.js";
-import { buildCompiler, buildReact, compiler, fixture, root, run, target } from "./support";
+import { buildCompiler, buildReact, compiler, fixture, root, run, seeded, target } from "./support";
 import { cargo, check, throughRustJs } from "./crates";
 
 beforeAll(buildCompiler, 600_000);
@@ -48,6 +48,9 @@ const body = (js: string) => readFileSync(js, "utf8").split("\n").filter((line) 
 test("a component of a Cargo workspace using the react crate is the JS it is outside Cargo", async () => {
   buildReact();
   const dir = fixture("cargo-react");
+  // Its Cargo target made from the run's seed; not the next tests', which
+  // copy the bindings, or count what React's build script wrote.
+  seeded(join(dir, "target"));
   const manifest = withReact(dir, counter);
   const { js } = await check(manifest, { packageNames: ["ui"] });
   const direct = join(dir, "direct");

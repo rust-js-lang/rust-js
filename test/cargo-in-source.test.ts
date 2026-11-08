@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { basename, join } from "node:path";
 import { checkCargo } from "../tooling/cargo.js";
 import { node } from "./programs";
-import { buildCompiler, compiler, fixture, root, run } from "./support";
+import { buildCompiler, compiler, fixture, root, run, seeded } from "./support";
 import { channel } from "../scripts/toolchain.ts";
 
 beforeAll(buildCompiler, 600_000);
@@ -87,6 +87,8 @@ test.each([["helper", /crate `(alpha|beta)`'s module `helper` and crate `(alpha|
 // crates' where they are too. What a module was, the module gone, goes.
 test("a Cargo build's JS in source is beside each module's Rust, and follows the modules", async () => {
   const dir = fixture("cargo-in-source");
+  // React's crate added below, its Cargo target made from the run's seed.
+  seeded(join(dir, "target"));
   writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app", "shared"]\nresolver = "2"\n');
   for (const name of ["app", "shared"]) mkdirSync(join(dir, name, "src"), { recursive: true });
   writeFileSync(join(dir, "shared", "Cargo.toml"), '[package]\nname = "shared"\nversion = "0.1.0"\nedition = "2024"\n');

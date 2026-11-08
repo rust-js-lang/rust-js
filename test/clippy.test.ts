@@ -6,15 +6,18 @@
 import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildCompiler, compiler, fixture, root } from "./support";
+import { buildCompiler, compiler, fixture, root, seeded } from "./support";
+import { cacheDirOf } from "../tooling/build.js";
 
 beforeAll(buildCompiler, 600_000);
 
 /** An app of `files`, by their paths in `src/`, `App.rs` its crate's root,
- * using the react and js crates. */
+ * using the react and js crates, its clippy's Cargo target made from the
+ * run's seed, those crates checked. */
 function app(name: string, files: Record<string, string>): string {
   const dir = fixture(name);
   mkdirSync(join(dir, "src"), { recursive: true });
+  seeded(join(cacheDirOf(dir), "clippy"));
   writeFileSync(join(dir, "Cargo.toml"), `[package]
 name = "app"
 version = "0.1.0"

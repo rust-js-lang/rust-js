@@ -211,6 +211,7 @@ export const harness = [
   "PATH",
   "PILOT_API",
   "RUSTC_BOOTSTRAP",
+  "RUST_JS_APPS_SEED",
   "RUST_JS_CASES",
   "RUST_JS_COMPILE_CACHE_MB",
   "RUST_JS_COMPILE_TIMEOUT",

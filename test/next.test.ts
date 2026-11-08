@@ -3,7 +3,8 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync,
 import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
 import { chromium } from "@playwright/test";
-import { buildCompiler, compiler, fixture, root } from "./support";
+import { buildCompiler, compiler, fixture, root, seeded } from "./support";
+import { cacheDirOf } from "../tooling/build.js";
 
 const example = join(root, "examples/next");
 const cli = join(root, "tooling/cli.js");
@@ -97,6 +98,8 @@ function copy(name: string): string {
   for (const entry of readdirSync(join(example, "node_modules"))) {
     if (entry !== ".cache") symlinkSync(realpathSync(join(example, "node_modules", entry)), join(dir, "node_modules", entry));
   }
+  // Its Cargo target made from the run's seed, the binding crates checked.
+  seeded(join(cacheDirOf(dir), "target"));
   const cargo = join(dir, "Cargo.toml");
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`));
   return dir;
@@ -855,7 +858,9 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   const indexHtml = readFileSync(join(dir, ".next/server/app/index.html"), "utf8");
   expect(indexHtml).toMatch(/<p class="[\w-]+ [\w-]+" style="font-family:[^"]*Abel[^"]*">Fonted<\/p>/);
   // What Cargo writes isn't the app's, which Turbopack watches: node_modules'.
-  expect([existsSync(join(dir, "target")), existsSync(join(dir, "node_modules/.cache/rust-js/target"))]).toEqual([false, true]);
+  // The app's crate's build, not the seed's crates it was given.
+  const fingerprints = join(dir, "node_modules/.cache/rust-js/target/wasm32-unknown-unknown/debug/.fingerprint");
+  expect([existsSync(join(dir, "target")), readdirSync(fingerprints).some((name) => name.startsWith("app-"))]).toEqual([false, true]);
   const statements = (file: string) => readFileSync(join(dir, file), "utf8").split("\n").filter((line) => line && !line.startsWith("//"));
   // A client component's module is one, and a route's default is its page.
   expect(statements("app/counter.jsx")[0]).toBe('"use client";');

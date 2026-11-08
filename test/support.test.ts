@@ -3,14 +3,15 @@
 // for a run, with no one left waiting on no one.
 
 import { expect, test } from "bun:test";
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 
 import { bytesOf, floorBytes } from "./bounded";
 import { keptStores, pruneKept } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
-import { fixture, nativeBinary, once, root, run } from "./support";
+import { runSync } from "./child";
+import { cargoApp, fixture, nativeBinary, once, root, run, seeded } from "./support";
 
 // Found in review: a file the case includes was changed, and the kept
 // binary, of the file before, answered for it.
@@ -246,6 +247,29 @@ test("a fixture whose process is gone is removed by the next process to claim on
   expect([existsSync(other), existsSync(`${other}.owner`)]).toEqual([false, false]);
   rmSync(join(base, "xheld"), { recursive: true, force: true });
 });
+
+// The apps' Cargo targets made from the run's seed (#1005): their binding
+// crates checked once a run, not by each app. Which holds only while their
+// key is the same in every app (#892): another, and each app would check
+// them again, unseen but for the time, so this build is held to finding
+// them done, its `webapi` the seed's file, without rustc's incremental
+// state a build of it writes.
+test("an app's Cargo target made from the run's seed finds the binding crates checked", () => {
+  const dir = fixture("seeded-app");
+  cargoApp(dir, "pub fn answer() -> u32 {\n    42\n}\n", { react: true });
+  const made = seeded(join(dir, "target"));
+  expect(() => seeded(made)).toThrow("a seed is a new target's");
+  const deps = join(made, "wasm32-unknown-unknown", "debug", "deps");
+  const webapi = readdirSync(deps).filter((name) => /^libwebapi-[0-9a-f]+\.rmeta$/.test(name));
+  expect(webapi.length).toBe(1);
+  const before = statSync(join(deps, webapi[0])).mtimeMs;
+  const built = runSync([process.execPath, join(root, "tooling", "cli.js"), "build"], dir, 600_000, { CARGO_TARGET_DIR: made });
+  expect([built.code, built.stderr]).toEqual([0, ""]);
+  expect(readdirSync(deps).filter((name) => /^libapp-[0-9a-f]+\.rmeta$/.test(name)).length).toBe(1);
+  expect(statSync(join(deps, webapi[0])).mtimeMs).toBe(before);
+  const incremental = join(made, "wasm32-unknown-unknown", "debug", "incremental");
+  expect(readdirSync(incremental).filter((name) => /^(webapi|react|js)-/.test(name))).toEqual([]);
+}, 600_000);
 
 // A corpus case's runs are kept by what they ran (ADR 0567): a key of each
 // input whole, so no two sets of inputs share one; verified once recorded,

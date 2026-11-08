@@ -6,7 +6,8 @@ import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import { chromium } from "@playwright/test";
-import { buildCompiler, cargoApp, compiler, fixture, root } from "./support";
+import { buildCompiler, cargoApp, compiler, fixture, root, seeded } from "./support";
+import { cacheDirOf } from "../tooling/build.js";
 import { underLoad } from "../scripts/timing";
 
 // A Vite app is Vite's alone, its plugins React's and Tailwind's, and its
@@ -21,9 +22,11 @@ const cli = join(root, "tooling/cli.js");
 
 /** A Vite app in `dir` whose Rust is a Cargo package, `app`, of
  * `src/App.rs` (ADR 0101): its JS is `src/App.jsx`, beside it, which
- * `main.jsx` imports, as `./App`, whichever file it is. */
+ * `main.jsx` imports, as `./App`, whichever file it is. Its Cargo target
+ * is made from the run's seed, the binding crates checked. */
 function viteApp(dir: string, rust: string, toml = "") {
   cargoApp(dir, rust, { lib: "src/App.rs", react: true, toml });
+  seeded(join(cacheDirOf(dir), "target"));
   writeFileSync(join(dir, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>');
   writeFileSync(join(dir, "src/main.jsx"), 'import {createRoot} from "react-dom/client"; import {App} from "./App"; createRoot(document.getElementById("root")).render(<App/>);');
 }
@@ -335,6 +338,7 @@ test("rust-js build builds a Cargo workspace's package, which Vite refreshes whe
   const dir = fixture("vite-cargo");
   writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["ui", "models"]\nresolver = "2"\n');
   writeFileSync(join(dir, "package.json"), '{ "private": true, "type": "module" }\n');
+  seeded(join(cacheDirOf(dir), "target"));
   for (const name of ["ui", "models"]) mkdirSync(join(dir, name, "src"), { recursive: true });
   writeFileSync(join(dir, "models/Cargo.toml"), '[package]\nname = "models"\nversion = "0.1.0"\nedition = "2024"\n');
   const models = join(dir, "models/src/lib.rs");
