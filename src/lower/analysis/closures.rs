@@ -15,14 +15,67 @@ use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::Span;
 
+/// Which `dyn Fn`s drop what they hold (ADR 0521, 0626): each that may
+/// take what one a function holding a value with a destructor is made
+/// takes, whatever its kind, `Fn`, `FnMut` or `FnOnce`, as one upcasts to
+/// another, and whatever it gives; a type parameter in it may be any type
+/// (`may_be`). Of every one, `all`, where a library
+/// hands the crate a `dyn Fn` whose own may drop, as its contract says. One
+/// `dyn Fn` dropping no longer makes every other drop (#954, #1003).
+#[derive(Default)]
+pub struct FnDynDrops<'tcx> {
+    pub all: bool,
+    pub made: Vec<Ty<'tcx>>,
+}
+
+impl<'tcx> FnDynDrops<'tcx> {
+    /// Of the coercions `made` of a function holding what drops, and
+    /// whether a library's contract says its own `dyn Fn`s may, `all`.
+    pub(super) fn of(tcx: TyCtxt<'tcx>, all: bool, made: &[DroppingFnDyn<'tcx>]) -> Self {
+        let made = (made.iter())
+            .filter_map(|made| match made.to.kind() {
+                ty::Dynamic(predicates, ..) => fn_dyn_args(tcx, predicates),
+                _ => None,
+            })
+            .collect();
+        FnDynDrops { all, made }
+    }
+
+    /// Whether any `dyn Fn` drops: what a library's contract says of the
+    /// crate's (ADR 0626).
+    pub fn any(&self) -> bool {
+        self.all || !self.made.is_empty()
+    }
+
+    /// Whether a `dyn Fn` of `predicates` may drop what it holds.
+    pub fn drops(&self, tcx: TyCtxt<'tcx>, predicates: &'tcx ty::List<ty::PolyExistentialPredicate<'tcx>>) -> bool {
+        if self.all {
+            return true;
+        }
+        let Some(args) = fn_dyn_args(tcx, predicates) else {
+            return self.any();
+        };
+        (self.made.iter()).any(|&made| crate::lower::analysis::rc_counts::may_be(tcx, made, args))
+    }
+}
+
+/// What a `dyn Fn` takes, the tuple of its arguments, regions erased.
+pub(in crate::lower) fn fn_dyn_args<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    predicates: &'tcx ty::List<ty::PolyExistentialPredicate<'tcx>>,
+) -> Option<Ty<'tcx>> {
+    let principal = tcx.instantiate_bound_regions_with_erased(predicates.principal()?);
+    Some(tcx.erase_and_anonymize_regions(principal.args.types().next()?))
+}
+
 /// What the crate does with its closures.
 #[derive(Default)]
-pub struct ClosureFacts {
-    /// Whether a function holding a value with a destructor is made a `dyn
-    /// Fn`, which then drops it: the crate makes one so, a library a type
-    /// parameter's, or a library hands it one whose own may, as a library's
-    /// contract says (ADR 0626, amended).
-    pub fn_dyns_drop: bool,
+pub struct ClosureFacts<'tcx> {
+    /// Which `dyn Fn`s drop what they hold: those a function holding a value
+    /// with a destructor is made, by their signature, or every one, where a
+    /// library hands the crate one whose own may, as its contract says (ADR
+    /// 0626, amended), or makes one of a type parameter's.
+    pub fn_dyns_drop: FnDynDrops<'tcx>,
     /// Whether a value with a destructor is made a `dyn Any`, which then
     /// drops it: what unwound, a panic's message or what JS threw, drops
     /// nothing, nor a `dyn Any` of anything else (ADR 0691).
@@ -46,29 +99,29 @@ pub struct ClosureFacts {
     library: bool,
 }
 
-impl ClosureFacts {
+impl<'tcx> ClosureFacts<'tcx> {
     /// What `all_bodies` make `dyn Fn`s of, and of the types the crate
     /// clones, `cloned`, the closures, whose drop is a library's where
     /// `library`.
-    pub(super) fn new<'tcx>(
+    pub(super) fn new(
         tcx: TyCtxt<'tcx>,
         all_bodies: &[&Body<'tcx>],
         cloned: &IndexSet<Ty<'tcx>>,
         library: bool,
-    ) -> ClosureFacts {
+    ) -> ClosureFacts<'tcx> {
         let closure_of = |ty: Ty<'tcx>| match ty.kind() {
             ty::Closure(id, _) => Some(*id),
             _ => None,
         };
         let (handed, made): (Vec<_>, Vec<_>) = (all_bodies.iter())
             .flat_map(|body| fn_dyn_sources(tcx, &body.thir))
-            .partition(|&(_, _, handed)| handed);
-        let made_fn_dyns: IndexSet<DefId> = made.into_iter().filter_map(|(_, ty, _)| closure_of(ty)).collect();
+            .partition(|&(_, _, handed, _)| handed);
+        let made_fn_dyns: IndexSet<DefId> = made.into_iter().filter_map(|(_, ty, _, _)| closure_of(ty)).collect();
         let called_once = (all_bodies.iter())
             .flat_map(|body| called_once_by_js(tcx, &body.thir))
             .collect();
         let handed_fn_dyns = (handed.into_iter())
-            .filter_map(|(_, ty, _)| closure_of(ty))
+            .filter_map(|(_, ty, _, _)| closure_of(ty))
             .filter(|id| !made_fn_dyns.contains(id))
             .collect();
         let cloned = (cloned.iter())
@@ -80,7 +133,7 @@ impl ClosureFacts {
             })
             .collect();
         ClosureFacts {
-            fn_dyns_drop: false,
+            fn_dyns_drop: FnDynDrops::default(),
             any_dyns_drop: false,
             made_fn_dyns,
             handed_fn_dyns,
@@ -228,13 +281,15 @@ pub(super) struct DroppingFnDyn<'tcx> {
     /// What it holds that drops: a closure's capture, or the function
     /// itself, a type parameter's whose drop only its callers know.
     pub(super) held: Ty<'tcx>,
+    /// The `dyn Fn` it's made.
+    pub(super) to: Ty<'tcx>,
 }
 
 /// Whether a caller gives function `DefId`'s type parameter of an index
 /// one whose drop runs, `drop_params`' answer (ADR 0098).
 pub(super) type GivenADrop<'a> = dyn Fn(DefId, u32) -> bool + 'a;
 
-/// The first of `all_bodies`' coercions of a function to a `dyn Fn` that
+/// Each of `all_bodies`' coercions of a function to a `dyn Fn` that
 /// `drops` says has something to drop, or that holds a value of a type
 /// parameter a caller gives one whose drop runs, `given` by its function
 /// and index, `drop_params`' answer, where `params_may_drop`; or of one of
@@ -243,12 +298,12 @@ pub(super) type GivenADrop<'a> = dyn Fn(DefId, u32) -> bool + 'a;
 /// it can't see, `given` is `None`: one of a type parameter's may be any
 /// closure it makes, given a closure: where one has, or, where
 /// `foreign_drops`, one a library makes may.
-pub(super) fn dropping_fn_dyn<'tcx>(
+pub(super) fn dropping_fn_dyns<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
     (params_may_drop, given, foreign_drops): (bool, Option<&GivenADrop<'_>>, bool),
     drops: impl Fn(Ty<'tcx>) -> bool,
-) -> Option<DroppingFnDyn<'tcx>> {
+) -> Vec<DroppingFnDyn<'tcx>> {
     // A library's type parameter's: in Rust a function is a closure, a
     // `fn` or a `dyn Fn`, whose own coercion answers for it.
     let closure_drops = || {
@@ -266,7 +321,7 @@ pub(super) fn dropping_fn_dyn<'tcx>(
             let owner = tcx.typeck_root_def_id(body.def_id);
             fn_dyn_sources(tcx, &body.thir).map(move |source| (owner, source))
         })
-        .find_map(|(owner, (span, function, handed))| {
+        .filter_map(|(owner, (span, function, handed, to))| {
             if handed {
                 return None;
             }
@@ -280,6 +335,7 @@ pub(super) fn dropping_fn_dyn<'tcx>(
                     span,
                     function,
                     held: held.unwrap_or(function),
+                    to,
                 });
             }
             // A type parameter's, or a closure holding one: in Rust a
@@ -297,8 +353,10 @@ pub(super) fn dropping_fn_dyn<'tcx>(
                 span,
                 function,
                 held: function,
+                to,
             })
         })
+        .collect()
 }
 
 /// Refuses the crate, whose `dyn Fn`s drop, for `library`, whose drop
@@ -309,7 +367,7 @@ pub(super) fn dropping_fn_dyn<'tcx>(
 pub(super) fn refuse_dropping_fn_dyn<'tcx>(
     tcx: TyCtxt<'tcx>,
     library: &str,
-    made: Option<DroppingFnDyn<'tcx>>,
+    made: Option<&DroppingFnDyn<'tcx>>,
     self_handles: &super::SelfHandles<'tcx>,
 ) {
     let message = format!(
@@ -429,7 +487,7 @@ pub(super) fn dropping_dyn_of<'tcx>(
 pub(super) fn handed_fn_dyns<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Vec<Ty<'tcx>> {
     let mut functions: Vec<Ty<'tcx>> = (all_bodies.iter())
         .flat_map(|body| fn_dyn_sources(tcx, &body.thir))
-        .filter_map(|(_, function, handed)| handed.then_some(function))
+        .filter_map(|(_, function, handed, _)| handed.then_some(function))
         .collect();
     functions.dedup();
     functions
@@ -441,11 +499,12 @@ pub(super) fn handed_fn_dyns<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]
 fn fn_dyn_sources<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
     thir: &'a Thir<'tcx>,
-) -> impl Iterator<Item = (Span, Ty<'tcx>, bool)> + 'a {
+) -> impl Iterator<Item = (Span, Ty<'tcx>, bool, Ty<'tcx>)> + 'a {
     let handed = handed_to_js(tcx, thir);
     dyn_sources(tcx, thir, move |predicates| is_fn_dyn(tcx, predicates)).map(move |(at, from)| {
         let handed = matches!(from.kind(), ty::Closure(..)) && handed.contains(&at);
-        (thir[at].span, from, handed)
+        let to = pointee(tcx, thir[at].ty).expect("a `dyn`'s pointer");
+        (thir[at].span, from, handed, to)
     })
 }
 

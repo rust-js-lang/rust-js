@@ -244,3 +244,25 @@ the last `Rc` of what holds it is dropped.
 - Mutations `fn-dyn-param-given-unasked`, `fn-dyn-closure-drops-unseen`,
   `fn-dyn-generic-unseen` (`lower/analysis/closures.ts`) and
   `fn-dyn-library-params-ungiven` (`lower/analysis.ts`).
+
+## Amendment: a `dyn Fn` drops by what it takes (#954)
+
+Whether a `dyn Fn` drops what it holds was one answer for the crate:
+once a function holding a value with a destructor was made any `dyn
+Fn`, every `dyn Fn` dropped. Beside such a neighbour, a generic struct
+holding a `Box<dyn Fn(&K)>` in an `Rc` was refused as a std type holding a
+value with a destructor (the neighbour shuffle, #954), and a `pub`
+thread-local whose initializer calls a `dyn Fn` was refused as one that
+may run what rust-js can't follow (#956). Now a `dyn Fn`
+drops where it may take what one such is made takes (`FnDynDrops`), the
+tuple of its arguments compared with `may_be`. A type parameter in it may
+be any type, and its kind, `Fn`, `FnMut` or `FnOnce`, isn't asked, as one
+upcasts to another. What it gives isn't asked either, which only counts
+more as dropping. Every `dyn Fn` still drops where a library's contract
+says its own may. The library contract's `makes_dropping_fn_dyns` is
+whether any does. Two corpus cases lose their `$dispose`s of `dyn Fn`s
+none of whose kind drops, which disposed of nothing:
+`dyn_fn_generic_closure_drops` and `dyn_fn_of_a_borrowed_function`.
+Corpus case `dyn_fn_drops_by_its_signature`, mutation `fn-dyn-drops-any`.
+The readability baseline is blessed for it: the two cases' lines fewer,
+each other shape's share of them grows a little, not one more of it.

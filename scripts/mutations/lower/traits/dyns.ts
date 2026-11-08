@@ -454,7 +454,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `dyn Fn` made a `dyn FnOnce` is wrapped to drop as it's called, `$droppingOnce(f, ..)`, where the program makes no `dyn Fn` of what has something to drop, not `queueMicrotask(callback)` (#409)",
     file: "src/lower/traits/dyns.rs",
-    find: "                ty::Dynamic(..) => facts.fn_dyns_drop,\n",
+    find: "                ty::Dynamic(of, ..) => facts.fn_dyns_drop.drops(self.tcx, of),\n",
     replace: "                ty::Dynamic(..) => true,\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "calls once moves"],
   },
@@ -463,8 +463,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `dyn Fn` of a borrowed function, `Rc::new(&*greet)`, is that function, and the `Rc`'s drop runs the drop it carries, so `drop boxed` prints while `greet` is still held",
     file: "src/lower/traits/dyns.rs",
-    find: "                && facts.fn_dyns_drop\n                && self.may_carry_a_drop(borrowed)\n",
-    replace: "                && facts.fn_dyns_drop\n                && false\n",
+    find: "                && facts.fn_dyns_drop.any()\n                && self.may_carry_a_drop(borrowed)\n",
+    replace: "                && facts.fn_dyns_drop.any()\n                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_borrowed_function.rs$"],
   },
   {

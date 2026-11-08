@@ -357,7 +357,7 @@ struct CrateFacts<'a, 'tcx> {
     wholes: &'a analysis::Wholes,
     /// Whether a function holding a value with a destructor is made a `dyn
     /// Fn` (ADR 0521).
-    closure_facts: &'a analysis::ClosureFacts,
+    closure_facts: &'a analysis::ClosureFacts<'tcx>,
     /// The types the crate clones (ADR 0525).
     cloned: &'a IndexSet<Ty<'tcx>>,
     /// The kinds of std's adapters explicit wherever the crate makes one

@@ -514,7 +514,7 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub wholes: Wholes,
     /// Whether a function holding a value with a destructor is made a `dyn
     /// Fn`, which then drops it: a library's may be (ADR 0521).
-    pub closure_facts: ClosureFacts,
+    pub closure_facts: ClosureFacts<'tcx>,
     /// The types the crate clones, and those their clones clone (ADR 0525).
     pub cloned: IndexSet<Ty<'tcx>>,
     /// The kinds of std's iterator adapters explicit wherever the crate
@@ -921,7 +921,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         true => ty::TypingEnv::non_body_analysis(tcx, owner),
         false => ty::TypingEnv::fully_monomorphized(),
     };
-    let runs_where = |closure_facts: &ClosureFacts, counted: &Counted<'tcx>, ty: Ty<'tcx>, owner: DefId| {
+    let runs_where = |closure_facts: &ClosureFacts<'tcx>, counted: &Counted<'tcx>, ty: Ty<'tcx>, owner: DefId| {
         let recognition = Recognition {
             typing_env: typing_env_where(ty, owner),
             ..recognition
@@ -940,7 +940,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // Each closure's handle on itself or on what owns them, whose upgrades
     // ask no count (ADRs 0843, 0317, amended), a library's owner by contract.
     let mut self_handles = SelfHandles::new(tcx, all_bodies, &|id, index| foreign.owned_by_return(id, index));
-    let counted_with = |closure_facts: &ClosureFacts| {
+    let counted_with = |closure_facts: &ClosureFacts<'tcx>| {
         let mut given: IndexSet<(DefId, u32)> = IndexSet::default();
         loop {
             let counted = counted_rcs(
@@ -986,21 +986,21 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // library's callers are its consumers, which it can't see.
     let library_drops = (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name));
     let given_a_drop = |owner, index| given.contains(&(owner, index));
-    let made = closures::dropping_fn_dyn(
+    let made = closures::dropping_fn_dyns(
         tcx,
         all_bodies,
         (params_may_drop, (!library).then_some(&given_a_drop), reached.functions),
         |ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
     );
-    let drops = library_drops || made.is_some();
+    closure_facts.fn_dyns_drop = closures::FnDynDrops::of(tcx, library_drops, &made);
+    let drops = closure_facts.fn_dyns_drop.any();
     if drops {
-        closure_facts.fn_dyns_drop = true;
         counted = counted_with(&closure_facts).0;
     }
     // A library whose `dyn Fn`s drop nothing that holds one the crate's
     // may be: it would drop nothing of one it's given (ADR 0626, amended).
     if drops && let Some(name) = (reached.fn_dyns_of.iter()).find(|name| !foreign.drops_fn_dyns(name)) {
-        closures::refuse_dropping_fn_dyn(tcx, name, made.filter(|_| !library_drops), &self_handles);
+        closures::refuse_dropping_fn_dyn(tcx, name, made.first().filter(|_| !library_drops), &self_handles);
         return None;
     }
     // A program its tests use whose `dyn`s of its own trait drop nothing

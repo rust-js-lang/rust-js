@@ -255,4 +255,13 @@ export const mutations: Mutation[] = [
     replace: "        matches!(pat.kind, PatKind::Binding(BindingMode(ByRef::No, _), ..))\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_of_a_borrowed_parameter.rs$"],
   },
+  {
+    name: "fn-dyn-drops-any",
+    breaks: "one `dyn Fn` made of a function holding what drops makes every `dyn Fn` drop, so an `Rc` of a struct holding another of a signature none such is made is refused as a std type holding a value with a destructor (#954)",
+    file: "src/lower/analysis/closures.rs",
+    find: "        (self.made.iter()).any(|&made| crate::lower::analysis::rc_counts::may_be(tcx, made, args))\n",
+    replace: "        self.any()\n",
+    tests: ["test/corpus.test.ts", "-t", "^(dyn_fn_drops_by_its_signature|dyn_fn_generic_closure_drops|dyn_fn_of_a_borrowed_function).rs$"],
+    snapshots: true,
+  },
 ];

@@ -9,18 +9,8 @@
 // goes wrong beside another neighbour, for the same reason, is a line more
 // under the same issue.
 
-#954 P2: `Rc<System<K>>` refused as holding a value with a destructor
-plain std scope_struct_of_type_parameters.rs beside self_handle_reads_mutably.rs
-plain std rc_of_functions_of_a_param.rs beside dyn_fn_of_a_params_function_drops.rs
-plain std rc_of_functions_of_a_param.rs beside dyn_fn_once_drops_itself.rs
-
 #955 P2: cloning a `Map<I, F>` refused where `I` isn't bound by `Clone`
 plain range_mapped_by_a_function.rs beside cloned_chains_and_cycles.rs
-
-#956 P2: a `pub` thread-local's initializer refused as one it can't follow
-plain std thread_local_made_by_boxed_closure.rs beside unwrap_dropping.rs
-plain std thread_local_made_by_boxed_closure.rs beside owner_handle_set_in_loop.rs
-plain std thread_local_made_by_boxed_closure.rs beside owner_handle_swapped.rs thread_local_lazy_where_observable.rs
 
 #1001 P2 (neighbours): a #[rust_js::class] constructor giving Rc<Request> is refused beside rc_counted_uses.rs
 plain std class_constructor_rc.rs beside rc_counted_uses.rs

@@ -54,7 +54,7 @@ use types::{DropQuery, TypeDrops, describe};
 /// counted, as its last drops it.
 pub(super) fn drop_runs<'tcx>(
     recognition: super::recognition::Recognition<'_, 'tcx>,
-    (library, closure_facts): (bool, &super::analysis::ClosureFacts),
+    (library, closure_facts): (bool, &super::analysis::ClosureFacts<'tcx>),
     counted: &super::analysis::Counted<'tcx>,
     ty: Ty<'tcx>,
 ) -> bool {
@@ -71,7 +71,7 @@ pub(super) fn drop_runs<'tcx>(
 /// again made most of a crate's analysis (#884).
 pub(super) struct DropRuns<'a, 'tcx> {
     recognition: super::recognition::Recognition<'a, 'tcx>,
-    facts: (bool, &'a super::analysis::ClosureFacts),
+    facts: (bool, &'a super::analysis::ClosureFacts<'tcx>),
     counted: &'a super::analysis::Counted<'tcx>,
     known: RefCell<IndexMap<(ty::TypingEnv<'tcx>, Ty<'tcx>), bool>>,
 }
@@ -79,7 +79,7 @@ pub(super) struct DropRuns<'a, 'tcx> {
 impl<'a, 'tcx> DropRuns<'a, 'tcx> {
     pub(super) fn new(
         recognition: super::recognition::Recognition<'a, 'tcx>,
-        facts: (bool, &'a super::analysis::ClosureFacts),
+        facts: (bool, &'a super::analysis::ClosureFacts<'tcx>),
         counted: &'a super::analysis::Counted<'tcx>,
     ) -> Self {
         DropRuns {
@@ -113,7 +113,7 @@ impl<'a, 'tcx> DropRuns<'a, 'tcx> {
 /// whatever `J`'s caller gives.
 pub(super) fn drops_given<'tcx>(
     recognition: super::recognition::Recognition<'_, 'tcx>,
-    (library, closure_facts): (bool, &super::analysis::ClosureFacts),
+    (library, closure_facts): (bool, &super::analysis::ClosureFacts<'tcx>),
     counted: &super::analysis::Counted<'tcx>,
     (foreign, owner, taken): (&super::library::Foreign<'_, 'tcx>, DefId, &[u32]),
     ty: Ty<'tcx>,
@@ -136,7 +136,7 @@ pub(super) fn drops_given<'tcx>(
 /// dictionaries given: a type parameter's drop is a maybe.
 fn without_dictionaries<'a, 'tcx>(
     recognition: super::recognition::Recognition<'a, 'tcx>,
-    (library, closure_facts): (bool, &'a super::analysis::ClosureFacts),
+    (library, closure_facts): (bool, &'a super::analysis::ClosureFacts<'tcx>),
     counted: &'a super::analysis::Counted<'tcx>,
     state: &'a TypeDrops<'tcx>,
 ) -> DropQuery<'a, 'tcx> {

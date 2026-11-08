@@ -325,7 +325,7 @@ pub(super) struct Analyzed<'a, 'tcx> {
     pub(super) trait_impls: &'a [DefId],
     pub(super) drops: (
         bool,
-        &'a super::analysis::ClosureFacts,
+        &'a super::analysis::ClosureFacts<'tcx>,
         &'a super::analysis::Counted<'tcx>,
     ),
     pub(super) drop_params: &'a IndexMap<DefId, Vec<u32>>,

@@ -508,7 +508,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // where the crate's `dyn Fn`s drop (ADR 0521, amended). A
             // counted `Rc`'s, in its cell, which its clones share.
             if let ty::Ref(_, borrowed, _) = *function.kind()
-                && facts.fn_dyns_drop
+                && facts.fn_dyns_drop.any()
                 && self.may_carry_a_drop(borrowed)
             {
                 if self.counted_rc(source).is_none() {
@@ -541,7 +541,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `dyn Fn`'s drop, of one only where the program makes one of
             // what has something to drop (ADR 0626, amended).
             let dropping = match function.kind() {
-                ty::Dynamic(..) => facts.fn_dyns_drop,
+                ty::Dynamic(of, ..) => facts.fn_dyns_drop.drops(self.tcx, of),
                 ty::Closure(..) => carried || self.drops(function) != crate::lower::drops::Drops::Nothing,
                 _ => self.drops(function) != crate::lower::drops::Drops::Nothing,
             };

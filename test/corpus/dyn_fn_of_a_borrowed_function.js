@@ -123,16 +123,6 @@ function main() {
     console.log(`${boxed()}`);
   } catch (error) {
     $cleanup(() => {
-      $dispose(boxed);
-      $dispose(count);
-      $dispose(greet);
-    });
-    throw error;
-  }
-  try {
-    $dispose(boxed);
-  } catch (error) {
-    $cleanup(() => {
       $dispose(count);
       $dispose(greet);
     });

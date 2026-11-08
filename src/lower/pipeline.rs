@@ -1471,7 +1471,7 @@ pub fn lower_crate<'tcx>(
                         keeps_capacity,
                         writers_take_options,
                         makes_dropping_anys: closure_facts.any_dyns_drop,
-                        makes_dropping_fn_dyns: closure_facts.fn_dyns_drop,
+                        makes_dropping_fn_dyns: closure_facts.fn_dyns_drop.any(),
                         program: tested,
                         counted: &counted,
                         changed,

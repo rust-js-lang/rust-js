@@ -40,105 +40,40 @@ function guarded(result$1, guard) {
 
 function main() {
   const [n, add] = listened(3);
-  let tmp;
-  try {
-    tmp = add(1);
-  } catch (error) {
-    $cleanup(() => {
-      $dispose(add);
-    });
-    throw error;
-  }
-  let arg;
-  try {
-    arg = add(2);
-  } catch (error) {
-    $cleanup(() => {
-      $dispose(add);
-    });
-    throw error;
-  }
-  console.log(`${n} ${tmp} ${arg}`);
-  let held;
-  try {
-    held = holding([1], guardDrop_drop);
-  } catch (error) {
-    $cleanup(() => {
-      $dispose(add);
-    });
-    throw error;
-  }
+  const value = add(1);
+  const arg = add(2);
+  console.log(`${n} ${value} ${arg}`);
+  const held = holding([1], guardDrop_drop);
   try {
     console.log(`held ${held()}`);
   } catch (error) {
     $cleanup(() => {
       $dispose(held);
-      $dispose(add);
     });
     throw error;
   }
-  try {
-    $dispose(held);
-  } catch (error) {
-    $cleanup(() => {
-      $dispose(add);
-    });
-    throw error;
-  }
+  $dispose(held);
   console.log("after held");
-  let guarded$1;
-  try {
-    guarded$1 = guarded(5, [2]);
-  } catch (error) {
-    $cleanup(() => {
-      $dispose(add);
-    });
-    throw error;
-  }
+  const guarded$1 = guarded(5, [2]);
   try {
     console.log(`guarded ${guarded$1()}`);
   } catch (error) {
     $cleanup(() => {
       $dispose(guarded$1);
-      $dispose(add);
     });
     throw error;
   }
-  try {
-    $dispose(guarded$1);
-  } catch (error) {
-    $cleanup(() => {
-      $dispose(add);
-    });
-    throw error;
-  }
+  $dispose(guarded$1);
   console.log("after guarded");
-  let plain;
-  try {
-    plain = holding(4n);
-  } catch (error) {
-    $cleanup(() => {
-      $dispose(add);
-    });
-    throw error;
-  }
+  const plain = holding(4n);
   try {
     console.log(`plain ${plain()}`);
   } catch (error) {
     $cleanup(() => {
       $dispose(plain);
-      $dispose(add);
     });
     throw error;
   }
-  try {
-    $dispose(plain);
-  } catch (error) {
-    $cleanup(() => {
-      $dispose(add);
-    });
-    throw error;
-  }
-  $dispose(add);
+  $dispose(plain);
 }
 //# sourceMappingURL=case.js.map

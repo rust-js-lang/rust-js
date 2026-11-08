@@ -112,7 +112,7 @@ pub(in crate::lower) struct DropQuery<'a, 'tcx> {
     pub(in crate::lower) counted: &'a Counted<'tcx>,
     /// Whether a function holding a value with a destructor is made a `dyn
     /// Fn`, which drops it then (ADR 0521).
-    pub(in crate::lower) closure_facts: &'a ClosureFacts,
+    pub(in crate::lower) closure_facts: &'a ClosureFacts<'tcx>,
     pub(in crate::lower) state: &'a TypeDrops<'tcx>,
     /// Where it's asked as a body's lowered, the crate's `RefCell`s, and
     /// what its bodies may borrow: a guard of one no borrow of which can
@@ -682,7 +682,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             // A function's, the drop it carries, where a function holding a
             // value with a destructor is made one (ADR 0521).
             ty::Dynamic(predicates, ..) if crate::lower::recognition::is_fn_dyn(self.recognition.tcx, predicates) => {
-                match self.closure_facts.fn_dyns_drop {
+                match self.closure_facts.fn_dyns_drop.drops(self.recognition.tcx, predicates) {
                     true => Drops::Runs,
                     false => Drops::Nothing,
                 }
