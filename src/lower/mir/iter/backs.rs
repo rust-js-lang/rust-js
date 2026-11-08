@@ -56,11 +56,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let reversed = match self.range_kind(iter_ty) {
             _ if self.is_user_iterator(iter_ty) => self.reversed_user(receiver, receiver_ty, span)?,
             // Of a type parameter given as it is that the crate steps from
-            // its back (`reversed_made_knowing`): `$rev` of the JS iterator
-            // its dictionaries step, its back theirs, which `$rev` steps it
-            // forward by, `nth_back` its `nth`, as std's `Rev` does, closed
-            // to drop it as `Rev` drops it (`$givenDrop`, #718).
-            None if self.reversed_made_knowing(output)
+            // its back (`reversed_made_knowing`), or that drops what it
+            // holds: `$rev` of the JS iterator its dictionaries step, its
+            // back theirs, which `$rev` steps it forward by, `nth_back` its
+            // `nth`, as std's `Rev` does, closed to drop it, the value
+            // itself, as `Rev` drops it (`$givenDrop`, #718, #971).
+            None if (self.reversed_made_knowing(output) || self.closes_to_drop(receiver_ty))
                 && let Some(given) = self.given_js_iterator(receiver.clone(), iter_ty, true, false) =>
             {
                 crate::lower::iterators::reversed_by(self.closing(given, receiver_ty, span)?)
@@ -316,12 +317,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     || self.counts_by_compiled_count(iter_ty, output) =>
             {
                 // Of the crate's, what it can be made to know.
-                let back = self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);
-                let len = self.knows_its_length(iter_ty) || self.user_exact_size(iter_ty);
-                let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len) {
-                    Some(it) => it,
+                // Of a type parameter's, what its bounds give
+                // (`given_stepped`), as a `rev()` of it asks its back and its
+                // length (#971).
+                let of_param = matches!(iter_ty.peel_refs().kind(), ty::Param(_));
+                let back = of_param || self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);
+                let len = of_param || self.knows_its_length(iter_ty) || self.user_exact_size(iter_ty);
+                let it = match self.given_stepped(receiver.clone(), iter_ty, back, len) {
                     // Closed to drop it, as a map's is, where it's owned, not
-                    // through a `&mut` (#223, #225).
+                    // through a `&mut` (#223, #225), a type parameter's
+                    // value too (#971).
+                    Some(it) => self.closing(it, held, span)?,
+                    // The crate's, closed so too.
                     None if self.is_user_iterator(iter_ty) => {
                         let knowing = self.user_iterator_knowing(receiver.clone(), held, (back, len), span)?;
                         self.closing(knowing, held, span)?

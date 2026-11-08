@@ -68,6 +68,24 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
   {
+    name: "given-as-it-is-not-named",
+    breaks:
+      "`backwards(Countdown(3, \"a\"))`'s `I`, given as `impl Is<I>`'s value, is stepped as a JS iterator its caller never made: `next_back` isn't one (#966)",
+    file: "src/lower/iterators.rs",
+    find: "    held || signature || read || named\n",
+    replace: "    held || signature || read\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_named_by_another_bound.rs$"],
+  },
+  {
+    name: "naming-parameter-not-as-it-is",
+    breaks:
+      "`impl Is<I>`'s value, a `Countdown`, goes as a JS iterator its caller makes, where `I`, the same value, is given as it is: its drop reads what isn't there (#966)",
+    file: "src/lower/iterators.rs",
+    find: "        return names_given_as_it_is(tcx, id, param);\n",
+    replace: "        return false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_named_by_another_bound.rs$"],
+  },
+  {
     name: "given-as-it-is-not-in-input",
     breaks:
       "`second(Wrap(7..10))`'s range, in what's given, is stepped as a JS iterator",
@@ -81,8 +99,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`all<I>(i) -> Vec<I::Item>`, which gives back only its items, takes its `I` as it is, with a dictionary",
     file: "src/lower/iterators.rs",
-    find: "                Some(ty::Alias(..)) => walk.skip_current_subtree(),\n",
-    replace: "",
+    find: "                Some(ty::Alias(..)) => walk.skip_current_subtree(),\n                Some(ty::Param(p)) if p.index == param.index => return true,\n",
+    replace: "                Some(ty::Param(p)) if p.index == param.index => return true,\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_types.rs$"],
     snapshots: true,
   },
@@ -132,8 +150,8 @@ export const mutations: Mutation[] = [
     breaks:
       "the crate's iterator given to `I: Iterator + Clone` is its JS iterator, which its `Clone` and `Debug` read as its value",
     file: "src/lower/iterators.rs",
-    find: "    held || signature || read\n",
-    replace: "    held || signature\n",
+    find: "    held || signature || read || named\n",
+    replace: "    held || signature || named\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_read_as_itself.rs$"],
   },
   {

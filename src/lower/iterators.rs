@@ -302,7 +302,10 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
         .iter()
         .any(|&tr| tr == iterator || super::recognition::implies_iterator(tcx, tr))
     {
-        return false;
+        // One whose own bound names an iterator given as it is, `impl
+        // Is<I>`'s, `A: Into<I>`'s: what its methods give of that one is
+        // its own value, which goes as it is, as that one's does (#966).
+        return names_given_as_it_is(tcx, id, param);
     }
     // A bound whose methods read its value as its own type, `Clone`'s or
     // `Debug`'s, or the crate's trait that extends `Iterator` (ADR 0511):
@@ -350,7 +353,82 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
             let inside = inputs.iter().any(|&input| !itself(input.peel_refs()) && has(input));
             has(sig.output()) || meet || inside
         };
-    held || signature || read
+    // Another bound that names it, of another type's, `A: Into<I>`, an
+    // `impl Is<I>` parameter's, `F: FnMut(I)`: what that one's methods give
+    // of it, or are given, is its caller's own value, which knows it as the
+    // type it is, never a JS iterator made for it (#966, #969).
+    let named = (tcx.clauses_of(id).instantiate_identity(tcx).into_iter()).any(|(clause, _)| {
+        let clause = clause.skip_normalization();
+        if let Some(bound) = clause.as_trait_clause() {
+            let bound = bound.skip_binder();
+            return !matches!(bound.self_ty().kind(), ty::Param(p) if p.index == param.index)
+                && bound
+                    .trait_ref
+                    .args
+                    .iter()
+                    .skip(1)
+                    .any(|arg| arg.as_type().is_some_and(has));
+        }
+        clause.as_projection_clause().is_some_and(|p| {
+            let p = p.skip_binder();
+            !matches!(p.self_ty().kind(), ty::Param(q) if q.index == param.index)
+                && (p
+                    .projection_term
+                    .args
+                    .iter()
+                    .skip(1)
+                    .any(|arg| arg.as_type().is_some_and(has))
+                    || p.term.as_type().is_some_and(has))
+        })
+    });
+    held || signature || read || named
+}
+
+/// Whether a bound of `id`'s type parameter `param`, itself no iterator,
+/// names another, bound by `Iterator`, that's given as it is, `I` of `P:
+/// Is<I>`, `A: Into<I>` or `F: FnOnce() -> I`: the one value passes between
+/// them, so one representation (#966, #969).
+fn names_given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy) -> bool {
+    let itself = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Param(p) if p.index == param.index);
+    let iterator = std_item(tcx, StdItem::Iterator);
+    // Bound by `Iterator`, or a trait that extends it, as `given_as_it_is`
+    // reads it past its first test, so never back here.
+    let stepped = |q: ty::ParamTy| {
+        (tcx.clauses_of(id).instantiate_identity(tcx).into_iter())
+            .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+            .filter(|b| matches!(b.self_ty().skip_binder().kind(), ty::Param(s) if s.index == q.index))
+            .any(|b| b.def_id() == iterator || super::recognition::implies_iterator(tcx, b.def_id()))
+    };
+    let names = |ty: Ty<'tcx>| {
+        let mut walk = ty.walk();
+        while let Some(arg) = walk.next() {
+            match arg.as_type().map(|t| *t.kind()) {
+                Some(ty::Alias(..)) => walk.skip_current_subtree(),
+                Some(ty::Param(p)) if p.index != param.index && stepped(p) && given_as_it_is(tcx, id, p) => {
+                    return true;
+                }
+                _ => {}
+            }
+        }
+        false
+    };
+    (tcx.clauses_of(id).instantiate_identity(tcx).into_iter()).any(|(clause, _)| {
+        let clause = clause.skip_normalization();
+        if let Some(bound) = clause.as_trait_clause() {
+            let bound = bound.skip_binder();
+            return itself(bound.self_ty())
+                && bound
+                    .trait_ref
+                    .args
+                    .iter()
+                    .skip(1)
+                    .any(|arg| arg.as_type().is_some_and(names));
+        }
+        clause.as_projection_clause().is_some_and(|p| {
+            let p = p.skip_binder();
+            itself(p.self_ty()) && p.term.as_type().is_some_and(names)
+        })
+    })
 }
 
 /// Whether `callee`'s type parameter `param` is bound by `Iterator`, a

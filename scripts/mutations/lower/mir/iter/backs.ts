@@ -3,6 +3,24 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "given-as-it-is-rev-unclosed",
+    breaks:
+      "`rev()` of a type parameter given as it is, stepped by its dictionary's `next_back`, never drops it: `drop a at 0` is lost (#971)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            None if (self.reversed_made_knowing(output) || self.closes_to_drop(receiver_ty))\n",
+    replace: "            None if self.reversed_made_knowing(output)\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_named_by_another_bound.rs$"],
+  },
+  {
+    name: "given-enumeration-unclosed",
+    breaks:
+      "an `enumerate()` of a type parameter given as it is, made knowing its back, never drops it: `drop 0` and `drop 1` are lost (#971)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                    Some(it) => self.closing(it, held, span)?,\n",
+    replace: "                    Some(it) => it,\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_named_by_another_bound.rs$"],
+  },
+  {
     name: "range-map-made-lengthless",
     breaks:
       "a range's map made knowing its length, a zip's `b` read by index, is made knowing only its back: `$trustedZip` throws `b.len is not a function` (#775)",
@@ -296,8 +314,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an enumeration of the crate's exact-sized iterator is made without its length, so its index from the back throws",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                let len = self.knows_its_length(iter_ty) || self.user_exact_size(iter_ty);\n",
-    replace: "                let len = self.knows_its_length(iter_ty);\n",
+    find: "                let len = of_param || self.knows_its_length(iter_ty) || self.user_exact_size(iter_ty);\n",
+    replace: "                let len = of_param || self.knows_its_length(iter_ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^user_iterator_ends.rs$"],
   },
   {
@@ -714,8 +732,8 @@ export const mutations: Mutation[] = [
     name: "rev-of-given-param-unknowing",
     breaks: "`rev()` of a type parameter a struct holds, given as it is, stepped from its back, is made by its dictionary's `next_back` alone, which knows no back, and its `nth_back` is refused (#718)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            None if self.reversed_made_knowing(output)\n",
-    replace: "            None if false && self.reversed_made_knowing(output)\n",
+    find: "            None if (self.reversed_made_knowing(output) || self.closes_to_drop(receiver_ty))\n",
+    replace: "            None if false && self.closes_to_drop(receiver_ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_a_type_parameter_held_as_it_is.rs$"],
   },
   {

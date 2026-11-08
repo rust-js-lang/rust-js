@@ -101,3 +101,25 @@ representation as the place it's written to, and `*it = next` is
 `$assign(it, next)` (ADR 0481), where of a JS iterator it was refused.
 One with a single `&mut I`, or `I`s alone, stays a JS iterator (ADR
 0061). See [ADR 0871's amendment](0871-rev-is-stds.md#amendment-what-holds-a-value-doesnt-step-it-so-one-type-is-one-representation-537).
+
+## Amendment: an iterator another bound names is given as it is (#966, #969)
+
+`fn backwards<I: DoubleEndedIterator>(it: impl Is<I>)`, `fn first<I:
+Iterator, P: Into<I>>(given: P)` and `fn made<I: Iterator, F: FnOnce() ->
+I>(make: F)` give their bodies an `I` that no parameter of type `I` holds:
+`it.is()`, `given.into()` and `make()` give what the caller gave as `P`.
+`I` was a JS iterator its caller made (ADR 0061), so it was stepped as one,
+but no caller made it: `P`'s value went as `P`'s representation, which knows
+no back and no length, and whose drop reads another's. Rust's answer
+changed (`TypeError`, a lost drop), so Rust's behavior is kept (ADR 0262's
+third case).
+
+`given_as_it_is` now answers yes of an iterator parameter that another
+bound names in its arguments or its projection's term, as one held in the
+signature is, and yes of the parameter whose own bound names such an
+iterator, `impl Is<I>`'s, `P`'s, `F`'s: the one value passes between them,
+so it has one representation, the caller's own value and its dictionaries.
+The `iterator_named_by_another_bound` corpus case runs each with native
+Rust, from the back, by its length, and dropped; the metamorphic net's
+`impl-ref` and `impl-owned` rewrites of the corpus, which make every
+generic parameter so, run as native.

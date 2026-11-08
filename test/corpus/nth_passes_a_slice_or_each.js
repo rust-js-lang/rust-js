@@ -16,7 +16,6 @@ import {
   $heapFrom,
   $held,
   $iter,
-  $iterator,
   $lent,
   $next,
   $nextBack,
@@ -26,7 +25,6 @@ import {
   $partialOrd,
   $range,
   $rangeLen,
-  $rangeNext,
   $rev,
   $skipping,
   $slicing,
@@ -219,7 +217,7 @@ function run(name, boom$1, f) {
  * `f` of `it`, held outside what unwinds, so what's left of it after a
  * panic shows how much it passed: then the rest, dropped.
  */
-function held(name, boom$1, it, f, dropI) {
+function held(name, boom$1, it, f, IExactSizeIterator, dropI) {
   $held(it);
   console.log(`-- ${name}`);
   boom = boom$1;
@@ -228,7 +226,7 @@ function held(name, boom$1, it, f, dropI) {
   const value = r.TAG === "Ok" ? r._0 : undefined;
   let arg;
   try {
-    arg = it.len();
+    arg = IExactSizeIterator.len(it);
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
@@ -240,10 +238,11 @@ function held(name, boom$1, it, f, dropI) {
 }
 
 function main() {
+  const exactSizeIterator = { len: (iterator) => iterator.len() };
   held(
     "held vec nth",
     2,
-    $slicing($iter(seven()), dDrop_drop),
+    $iter(seven()),
     (it) => {
       const nth = $nthDropping($lent($slicing(it, dDrop_drop)), 3, dDrop_drop, false);
       function map(d) {
@@ -253,12 +252,13 @@ function main() {
       }
       return nth != null ? map(nth) : 0;
     },
+    exactSizeIterator,
     $dropEach(dDrop_drop),
   );
   held(
     "held vec skip next",
     2,
-    $slicing($iter(seven()), dDrop_drop),
+    $iter(seven()),
     (it) => {
       const next = $next($skipping($lent($slicing(it, dDrop_drop)), 3, dDrop_drop));
       function map(d) {
@@ -268,26 +268,29 @@ function main() {
       }
       return next != null ? map(next) : 0;
     },
+    exactSizeIterator,
     $dropEach(dDrop_drop),
   );
   held(
     "held vec generic nth",
     2,
-    $slicing($iter(seven()), dDrop_drop),
+    $iter(seven()),
     (it) => nthOf($slicing(it, dDrop_drop), 3),
+    exactSizeIterator,
     $dropEach(dDrop_drop),
   );
   held(
     "held array generic nth",
     2,
-    $slicing($iter([[1], [2], [3], [4], [5]]), dDrop_drop),
+    $iter([[1], [2], [3], [4], [5]]),
     (it) => nthOf($slicing(it, dDrop_drop), 3),
+    exactSizeIterator,
     $dropEach(dDrop_drop),
   );
   held(
     "held deque nth",
     2,
-    $slicing($iter(seven().slice()), dDrop_drop),
+    $iter(seven().slice()),
     (it) => {
       const nth = $nthDropping($lent($slicing(it, dDrop_drop)), 3, dDrop_drop, false);
       function map(d) {
@@ -297,6 +300,7 @@ function main() {
       }
       return nth != null ? map(nth) : 0;
     },
+    exactSizeIterator,
     $dropEach(dDrop_drop),
   );
   held(
@@ -304,12 +308,13 @@ function main() {
     6,
     $iter($heapFrom(seven(), dPartialOrd)),
     (it) => nthOf(it, 3),
+    exactSizeIterator,
     $dropEach(dDrop_drop),
   );
   held(
     "held vec nth_back",
     6,
-    $slicing($iter(seven()), dDrop_drop),
+    $iter(seven()),
     (it) => {
       const nthBack = $nthBack($slicing(it, dDrop_drop), 3, undefined, dDrop_drop);
       function map(d) {
@@ -319,12 +324,13 @@ function main() {
       }
       return nthBack != null ? map(nthBack) : 0;
     },
+    exactSizeIterator,
     $dropEach(dDrop_drop),
   );
   held(
     "held vec by_ref rev nth",
     6,
-    $slicing($iter(seven()), dDrop_drop),
+    $iter(seven()),
     (it) => {
       const nth = $nthDropping($lent($rev($lent($slicing(it, dDrop_drop)))), 3, dDrop_drop, false);
       function map(d) {
@@ -334,6 +340,7 @@ function main() {
       }
       return nth != null ? map(nth) : 0;
     },
+    exactSizeIterator,
     $dropEach(dDrop_drop),
   );
   const h = { it: $iter(seven()) };
@@ -341,8 +348,9 @@ function main() {
     held(
       "held holder nth",
       2,
-      $iterator({ start: 0, end: 1 }, $rangeNext, false, undefined, $rangeLen),
+      { start: 0, end: 1 },
       () => Holder.nth(h, 3, { next: $next, advanceBy: $advanceSlice }),
+      { len: $rangeLen },
     );
   } catch (error) {
     $cleanup(() => {
@@ -364,14 +372,10 @@ function main() {
     held(
       "held holder nth passed on",
       2,
-      $iterator({ start: 0, end: 1 }, $rangeNext, false, undefined, $rangeLen),
+      { start: 0, end: 1 },
       () =>
-        Holder.nthPassedOn(
-          h$1,
-          3,
-          { next: $next, advanceBy: $advanceSlice },
-          { len: (iterator) => iterator.len() },
-        ),
+        Holder.nthPassedOn(h$1, 3, { next: $next, advanceBy: $advanceSlice }, exactSizeIterator),
+      { len: $rangeLen },
     );
   } catch (error) {
     $cleanup(() => {
@@ -395,9 +399,10 @@ function main() {
     held(
       "held holder nth_back",
       6,
-      $iterator({ start: 0, end: 1 }, $rangeNext, false, undefined, $rangeLen),
+      { start: 0, end: 1 },
       () =>
         Holder.nthBack(h$2, 3, { next: $next, advanceBy: $advanceSlice }, { next_back: $nextBack }),
+      { len: $rangeLen },
     );
   } catch (error) {
     $cleanup(() => {
@@ -435,8 +440,9 @@ function main() {
     held(
       "held holder drain nth_back",
       6,
-      $iterator({ start: 0, end: 1 }, $rangeNext, false, undefined, $rangeLen),
+      { start: 0, end: 1 },
       () => Holder.nthBack(h$3, 3, { next: $next }, { next_back: $nextBack }),
+      { len: $rangeLen },
     );
   } catch (error) {
     $cleanup(() => {
@@ -522,6 +528,7 @@ function main() {
         }
         return nth != null ? map(nth) : 0;
       },
+      exactSizeIterator,
       $dropEach(dDrop_drop),
     );
   } catch (error) {
@@ -561,6 +568,7 @@ function main() {
         }
         return nthBack != null ? map(nthBack) : 0;
       },
+      exactSizeIterator,
       $dropEach(dDrop_drop),
     );
   } catch (error) {
@@ -602,6 +610,7 @@ function main() {
         }
         return nth != null ? map(nth) : 0;
       },
+      exactSizeIterator,
       $dropEach(dDrop_drop),
     );
   } catch (error) {
