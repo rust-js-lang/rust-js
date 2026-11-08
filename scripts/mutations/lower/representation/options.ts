@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "some-of-an-undefined-std-value-unboxed",
+    breaks: "`Some(io::stdout())`, `Some(Backtrace::disabled())` and `Some(write!(..))` are `undefined`, read as `None` (#1010)",
+    file: "src/lower/representation/options.rs",
+    find: "        || super::super::recognition::may_be_undefined_std(tcx, ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^some_of_what_may_be_nullish.rs$"],
+  },
+  {
+    name: "some-of-a-raw-pointer-unboxed",
+    breaks: "`Some(0 as *const u8)` is `null`, read as `None`, and its `unwrap()` panics (#1010)",
+    file: "src/lower/representation/options.rs",
+    find: "        || ty.is_raw_ptr()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^some_of_what_may_be_nullish.rs$"],
+  },
+  {
     name: "scope-lowering-params-unasked",
     breaks: "a scope's method declared as a copy takes its type parameters as its own JS does, not as that copy, `put(item)` for `put($some(item))` (#500)",
     file: "src/lower/representation/options.rs",

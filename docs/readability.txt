@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1948
-lines	233535
+files	1955
+lines	234408
 temporaries	0	0
 labeled blocks	0	0
-while (true)	188	8.1
-$iter	2143	91.8
-Iterator.from	190	8.1
+while (true)	188	8
+$iter	2151	91.8
+Iterator.from	192	8.2
 return;	286	12.2
-renamed x$1	12040	515.6
+renamed x$1	12108	516.5
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0
 test/corpus/adapter_drops.js	1697	0	0	1	18	3	1	98
@@ -255,6 +255,7 @@ test/corpus/closure_converting_to_a_function_value.js	41	0	0	0	0	0	0	0
 test/corpus/closure_drops.js	170	0	0	0	0	0	0	0
 test/corpus/closure_folded_by_value_panics.js	222	0	0	0	4	0	0	20
 test/corpus/closure_function_comments.js	55	0	0	0	0	0	0	0
+test/corpus/closure_holding_part_of_a_value.js	154	0	0	0	0	0	0	10
 test/corpus/closure_mut_ref.js	58	0	0	0	0	0	0	0
 test/corpus/closure_once_cloned.js	57	0	0	0	0	0	0	9
 test/corpus/closure_returned_early_set.js	89	0	0	0	0	0	0	8
@@ -839,6 +840,7 @@ test/corpus/index_written_by_an_operation.js	71	0	0	0	0	0	0	0
 test/corpus/initializer_chains.js	62	0	0	0	0	0	0	0
 test/corpus/inner_while_exit_in_catch.js	109	0	0	0	0	0	0	0
 test/corpus/inner_while_then_break.js	35	0	0	0	0	0	0	0
+test/corpus/inspect_by_a_function_before_a_chain_argument.js	34	0	0	0	0	0	0	5
 test/corpus/inspect_from_back.js	70	0	0	0	0	0	0	10
 test/corpus/inspect_of_a_chain_stepped_from_its_back.js	53	0	0	0	2	0	0	0
 test/corpus/inspect_of_dropping_items_from_its_back.js	160	0	0	0	5	0	0	9
@@ -885,6 +887,7 @@ test/corpus/iterator_clones.js	73	0	0	0	11	0	0	2
 test/corpus/iterator_closes_of_quiet_items.js	242	0	0	0	3	0	0	0
 test/corpus/iterator_drop_consumed.js	50	0	0	0	0	0	0	8
 test/corpus/iterator_given_where_no_iterator_goes.js	97	0	0	0	1	0	0	0
+test/corpus/iterator_in_a_ref_cell_given_generic_code.js	300	0	0	0	5	2	0	17
 test/corpus/iterator_is_sorted_by.js	109	0	0	0	3	0	0	21
 test/corpus/iterator_moved_into_a_holder.js	94	0	0	0	2	0	0	9
 test/corpus/iterator_named_by_another_bound.js	240	0	0	0	0	0	0	2
@@ -896,6 +899,7 @@ test/corpus/iterator_stepped_by_hand.js	33	0	0	0	2	1	0	0
 test/corpus/iterator_values_meet.js	328	0	0	0	0	3	0	61
 test/corpus/iterator_values_meet_drops.js	293	0	0	0	11	1	0	12
 test/corpus/iterator_written_through.js	86	0	0	0	2	0	1	2
+test/corpus/iterators_held_in_a_generic_structs_field.js	156	0	0	0	3	0	0	2
 test/corpus/js_given_copies.js	123	0	0	0	0	0	0	6
 test/corpus/js_global_names.js	33	0	0	0	0	0	0	0
 test/corpus/kept_default_steps_assoc.js	36	0	0	0	1	0	0	0
@@ -1070,6 +1074,7 @@ test/corpus/mut_ref_to_object_impl.js	52	0	0	0	0	0	0	0
 test/corpus/mut_ref_to_ref.js	60	0	0	0	0	0	0	9
 test/corpus/nan_contains.js	16	0	0	0	0	0	0	0
 test/corpus/nan_self_eq.js	22	0	0	0	0	0	0	0
+test/corpus/ne_between_references_of_two_types.js	30	0	0	0	0	0	0	0
 test/corpus/ne_between_two_item_types.js	44	0	0	0	0	0	0	2
 test/corpus/needs_drop.js	16	0	0	0	0	0	0	0
 test/corpus/nested_element_writes.js	56	0	0	0	0	0	0	0
@@ -1261,7 +1266,7 @@ test/corpus/picked_items_drop.js	129	0	0	0	5	2	0	0
 test/corpus/pin_box.js	64	0	0	0	0	0	0	0
 test/corpus/place_through_reassigned_reference.js	56	0	0	0	0	0	0	8
 test/corpus/plain_data.js	183	0	0	0	0	0	0	43
-test/corpus/pointer_addresses.js	111	0	0	0	0	0	0	0
+test/corpus/pointer_addresses.js	112	0	0	0	0	0	0	0
 test/corpus/pointer_constants.js	33	0	0	0	0	0	0	0
 test/corpus/pointer_offset_from.js	21	0	0	0	0	0	0	0
 test/corpus/pointer_relayout.js	66	0	0	0	0	0	0	0
@@ -1307,9 +1312,9 @@ test/corpus/range_steps_known.js	77	0	0	0	0	0	0	17
 test/corpus/range_values.js	225	0	0	0	1	1	0	0
 test/corpus/ranges_end_at_a_diverging_call.js	101	0	0	2	0	0	0	10
 test/corpus/ranges_told_by_many_callers.js	53	0	0	0	0	0	0	0
-test/corpus/raw_pointers.js	194	0	0	0	0	0	0	11
+test/corpus/raw_pointers.js	204	0	0	0	0	0	0	22
 test/corpus/raw_string_escapes.js	40	0	0	0	0	0	0	0
-test/corpus/rc_as_ptr.js	93	0	0	0	0	0	0	2
+test/corpus/rc_as_ptr.js	104	0	0	0	0	0	0	2
 test/corpus/rc_assigned_through_mut.js	40	0	0	0	0	0	0	0
 test/corpus/rc_clone_aliases.js	60	0	0	0	0	0	0	0
 test/corpus/rc_clone_sees_owners.js	136	0	0	0	0	0	0	0
@@ -1422,6 +1427,7 @@ test/corpus/refcell_variant_fields.js	179	0	0	0	0	0	0	0
 test/corpus/refcell_variant_replaced_held.js	39	0	0	0	0	0	0	0
 test/corpus/refcell_vec_bounds.js	258	0	0	0	0	0	1	3
 test/corpus/refcell_vec_element_places.js	141	0	0	0	0	0	0	6
+test/corpus/reference_a_field_holds_set_again.js	119	0	0	0	0	0	0	23
 test/corpus/references_given_to_generics.js	156	0	0	0	0	1	0	2
 test/corpus/references_read_before_their_field_is_written.js	61	0	0	0	0	0	0	0
 test/corpus/refused_drops_and_displays.js	394	0	0	1	1	0	0	3
@@ -1573,6 +1579,7 @@ test/corpus/slice_uninit.js	83	0	0	0	0	0	0	2
 test/corpus/slice_uninit_lengths.js	14	0	0	0	0	0	0	0
 test/corpus/slice_view_past_len.js	17	0	0	0	0	0	0	0
 test/corpus/slice_views.js	212	0	0	0	1	0	0	11
+test/corpus/some_of_what_may_be_nullish.js	58	0	0	0	0	0	0	0
 test/corpus/sort_not_total.js	83	0	0	0	0	0	0	0
 test/corpus/sort_stable_seen.js	321	0	0	0	9	1	0	2
 test/corpus/sort_stable_unwinds.js	200	0	0	0	3	1	0	2
@@ -1883,13 +1890,13 @@ test/corpus/zip_by_index.js	106	0	0	0	8	0	0	0
 test/corpus/zip_by_index_of_holding_maps.js	506	0	0	1	7	0	1	63
 test/corpus/zip_fold_steps_the_shorter.js	214	0	0	0	11	0	0	0
 test/corpus/zip_from_back.js	40	0	0	0	5	0	0	0
-test/corpus/zip_from_its_back.js	581	0	0	0	19	0	0	49
+test/corpus/zip_from_its_back.js	580	0	0	0	19	0	0	49
 test/corpus/zip_function.js	75	0	0	0	1	0	0	0
 test/corpus/zip_into_mut_slice.js	46	0	0	0	3	0	0	0
 test/corpus/zip_mapped_collect_folds.js	254	0	0	0	5	0	0	17
 test/corpus/zip_of_borrowed_and_owned.js	99	0	0	2	5	0	1	0
-test/corpus/zip_of_cloned_items_whose_clone_runs.js	93	0	0	0	8	0	0	0
-test/corpus/zip_of_droppers_from_its_back.js	273	0	0	0	11	0	0	16
+test/corpus/zip_of_cloned_items_whose_clone_runs.js	97	0	0	0	8	0	0	0
+test/corpus/zip_of_droppers_from_its_back.js	270	0	0	0	11	0	0	16
 test/corpus/zip_of_its_type_stepped_from_its_back_elsewhere.js	163	0	0	0	3	0	0	0
 test/corpus/zip_of_own_from_its_back_asks_each_len_once.js	97	0	0	0	0	0	2	0
 test/corpus/zip_reversed_stepped_from_its_back.js	42	0	0	0	2	0	0	0

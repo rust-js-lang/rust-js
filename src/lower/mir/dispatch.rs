@@ -1162,6 +1162,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             span,
             out,
         )?;
+        let value = self.write_value(state, (known, output), value, span, out)?;
         Ok(self.std_value_as(value, output, arg_tys))
     }
 

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "write-all-value-its-length",
+    breaks: "a `Vec`'s `write_all` as a value is `v.push(..)`'s length, an `io::Result<()>` read as an `Err` (#1010)",
+    file: "src/lower/mir/entries.rs",
+    find: "                if adds\n",
+    replace: "                if false && adds\n",
+    tests: ["test/corpus.test.ts", "-t", "^some_of_what_may_be_nullish.rs$"],
+  },
+  {
     name: "flattened-swap-destructured",
     breaks:
       "`mem::swap(&mut *state, &mut h.f)` of a flattened state's guard is `[task, h.f] = [h.f, ..]`, which rebinds the variable holding its class's object, not each key on it (#659)",

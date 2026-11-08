@@ -604,3 +604,40 @@ rest arguments JS alone reads is its own JS" (`isSignal` true, one
 `signalOper`; `bind` of `first::<()>` boxing its `Some(())`; a function
 of no rest arguments named so). Mutations `js-alone-*`
 (`instances.ts`, `mir/operands.ts`).
+
+## Amendment: std's values that are `undefined`, and raw pointers, are boxed in a `Some` (#1010)
+
+The metamorphic net's `option` rewrite (#1008) wrapped values in `Some`
+whose JS is `undefined` or `null`, which the boxing rule above didn't
+count: `Some(io::stdout()).is_some()` was `false`, as a standard stream
+or its lock is nothing (ADR 0132); `Some(w.write_all(b"ab"))` and
+`Some(write!(s, ..))` printed `None`, a write's result's `Ok` being
+nothing (ADRs 0187, 0462); `Some(Backtrace::disabled())` was `None`
+(ADR 0568); and `Some(0 as *const u8)` was `null`, read as `None`, its
+`unwrap()` a panic. `nullish_by_its_shape` now counts std's values that
+may be `undefined`, one predicate, `may_be_undefined_std` (a stream, a
+disabled backtrace, a write's result), and a raw pointer, which may be
+`null`. Results changed ([0262](0262-when-rust-and-js-disagree.md)), so
+Rust's are kept.
+
+That boxes every `Option<*const T>`, the rule above applied to a payload
+that can be `null`: four corpus cases' JS changed, `rc_as_ptr.js`'s
+`a != null ? $ptrTo(a) : undefined` now `$some($ptrTo(a))` and its
+comparison `$ptrEq($someValue(map), $someValue(right), 4)`,
+`maybe_uninit_pointer.js`'s `$some($ptrRecast(p))`, `raw_pointers.js`'s
+comparisons the same, and `pointer_addresses.js`'s sort of pointers,
+which may now be nullish, `$sort(pointers, ..)` (the user's decision,
+2026-11-09: correctness-forced). `raw_pointers.js`'s boxed comparisons
+name what each side is, `right$1`, `value$9`, so the readability
+baseline's renamed share grew, 515.6 to 516 in 10,000 lines, blessed for
+that reason. Boxing only where a null pointer can reach is filed as a P3.
+
+And a `Vec`'s or a stream's `write_all` as a value, `let w =
+v.write_all(b"c")`, was `v.push(..)`'s or `$printBytes(..)`'s length, an
+`io::Result<()>` read as an `Err`: it's made where it's called, and its
+value is `undefined` (`write_value`); no case's JS changed of that.
+Held by the corpus case `some_of_what_may_be_nullish` and the mutations
+`some-of-an-undefined-std-value-unboxed`, `some-of-a-raw-pointer-unboxed`
+and `write-all-value-its-length`; the net's `option` rows `backtrace`,
+`io_unit_result`, `pointer_addresses` and `std_odds` run as native, and
+`fmt_write_function`'s, a held `fmt::Result`'s `is_ok()`, is #1011's.

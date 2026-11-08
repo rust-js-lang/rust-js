@@ -272,6 +272,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// The value of a std write that only adds what it's given, `write_all`
+    /// of a `Vec<u8>`, `v.push(..)`, or of a standard stream,
+    /// `$printBytes(..)`, whose JS gives a length: as the `io::Result<()>`
+    /// it is, `Ok`, nothing (ADR 0132), the write made where it's called,
+    /// which an `Option` of it, `Some(v.write_all(b"ab"))`, read as an
+    /// error (#1010). Any other, `value`.
+    pub(super) fn write_value(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (known, output): (Std, Ty<'tcx>),
+        value: Value<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        use crate::lower::{combinators::Comb, recognition::StreamOp};
+        let adds = matches!(
+            known,
+            Std::Comb(Comb::ExtendFromSlice) | Std::Stream(StreamOp::WriteBytes { .. })
+        );
+        match value {
+            Value::Expr(e)
+                if adds
+                    && self.recognition().is_io_unit_result(output)
+                    && !matches!(e.kind, js::ExprKind::Undefined) =>
+            {
+                self.flush(state, out)?;
+                out.push(StmtKind::Expr(e).at(self.js_span(span)));
+                Ok(Value::Expr(Expr::undefined()))
+            }
+            value => Ok(value),
+        }
+    }
+
     /// A method of a write's result: an `Ok` `fmt::Result` is nothing in JS
     /// (ADR 0054), and so is a write's `io::Result<()>` (ADR 0132). Its
     /// `unwrap()` is `()`, after what made it ran (ADR 0148), `is_ok()`

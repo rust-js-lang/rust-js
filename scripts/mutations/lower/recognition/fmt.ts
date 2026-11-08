@@ -6,9 +6,9 @@ export const mutations: Mutation[] = [
     name: "stderr-is-stdout",
     breaks: "a write to standard error goes to standard output",
     file: "src/lower/recognition/fmt.rs",
-    find: '            "std::io::Stderr" | "std::io::StderrLock" => Some(true),',
+    find: '        "std::io::Stderr" | "std::io::StderrLock" => Some(true),',
     replace:
-      '            "std::io::Stderr" | "std::io::StderrLock" => Some(false),',
+      '        "std::io::Stderr" | "std::io::StderrLock" => Some(false),',
     tests: ["test/corpus.test.ts", "-t", "std_odds"],
   },
   {

@@ -160,18 +160,28 @@ function main() {
   const elsewhere = $ptr(twin, "value", 0);
   const seven = { value: 7 };
   const alsoSeven = { value: 7 };
-  const value$4 = c == null || m == null ? c == m : $ptrEq(c, m, 4);
-  const value$5 = c == null || elsewhere == null ? c == elsewhere : $ptrEq(c, elsewhere, 4);
-  const left = $ptr(seven, "value", 0);
-  const right = $ptr(alsoSeven, "value", 0);
+  const value$4 = $some(c);
+  const right = $some(m);
+  const value$5 =
+    value$4 == null || right == null
+      ? value$4 == right
+      : $ptrEq($someValue(value$4), $someValue(right), 4);
+  const value$6 = $some(c);
+  const right$1 = $some(elsewhere);
+  const value$7 =
+    value$6 == null || right$1 == null
+      ? value$6 == right$1
+      : $ptrEq($someValue(value$6), $someValue(right$1), 4);
+  const value$8 = $some($ptr(seven, "value", 0));
+  const right$2 = $some($ptr(alsoSeven, "value", 0));
   console.log(
-    `${value$4} ${value$5} ${left == null || right == null ? left == right : $ptrEq(left, right, 4)}`,
+    `${value$5} ${value$7} ${value$8 == null || right$2 == null ? value$8 == right$2 : $ptrEq($someValue(value$8), $someValue(right$2), 4)}`,
   );
   const nothing = {};
   const atNothing = $ptr(nothing, "value", 0);
-  const value$6 = atNothing === null ? undefined : $some(atNothing.value);
+  const value$9 = atNothing === null ? undefined : $some(atNothing.value);
   console.log(
-    `${value$6 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$6))})`}`,
+    `${value$9 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$9))})`}`,
   );
 
   const items = [10, 20, 30];

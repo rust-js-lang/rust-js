@@ -12,6 +12,7 @@ import {
   $ptrOffsetFrom,
   $ptrShown,
   $ptrTo,
+  $sort,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -79,7 +80,7 @@ function main() {
 
   // Ordered along the allocation, and shown.
   const pointers = [$ptrAdd(p, 2), p, second];
-  pointers.sort((a, b) => $ptrCmp(a, b, 4));
+  $sort(pointers, (a, b) => $ptrCmp(a, b, 4));
   console.log(
     `${$ptrEq(pointers[0], p, 4)} ${$ptrEq(pointers[2], $ptrAdd(p, 2), 4)} ${$ptrCmp(p, second, 4) < 0}`,
   );

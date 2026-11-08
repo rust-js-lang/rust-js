@@ -31,7 +31,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// `std::backtrace::Backtrace`, `undefined` or JS's stack (ADR 0568).
     pub(in crate::lower) fn is_backtrace(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(b, _) if std_path(self.tcx, b.did()) == "std::backtrace::Backtrace")
+        is_backtrace_type(self.tcx, ty)
     }
 
     /// `io::ErrorKind`, its variant's name (ADR 0462).
@@ -1468,4 +1468,9 @@ pub(in crate::lower) fn is_str_repeat(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
         && tcx.item_name(def_id).as_str() == "repeat"
         && (tcx.inherent_impl_of_assoc(def_id))
             .is_some_and(|imp| tcx.type_of(imp).instantiate_identity().skip_normalization().is_str())
+}
+
+/// `Recognition::is_backtrace`, of `tcx` alone.
+pub(in crate::lower) fn is_backtrace_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    matches!(ty.kind(), ty::Adt(b, _) if std_path(tcx, b.did()) == "std::backtrace::Backtrace")
 }

@@ -187,8 +187,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// Whether a value of `ty`, a payload seen through its references, is
 /// `undefined` or `null` by its type alone: a `()`, an `Option`, a
-/// `MaybeUninit` before it's written (ADR 0332), a unit struct, or an
-/// untagged enum of `undefined` or `null`, `js::Kind` (ADR 0676). Not a
+/// `MaybeUninit` before it's written (ADR 0332), a unit struct, an
+/// untagged enum of `undefined` or `null`, `js::Kind` (ADR 0676), or
+/// std's that may be `undefined`, a stream or a write's result, or a raw
+/// pointer, which may be `null`, `0 as *const T`'s (#1010). Not a
 /// class of no fields, whose value is the instance its constructor made,
 /// as a class component's `ref` is given (ADR 1041, amended).
 fn nullish_by_its_shape<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
@@ -200,6 +202,8 @@ fn nullish_by_its_shape<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
             && adt.non_enum_variant().fields.is_empty()
             && !super::super::classes::is_class(tcx, adt.did()))
         || matches!(ty.kind(), ty::Adt(adt, _) if super::super::untagged::holds_nullish(tcx, *adt))
+        || super::super::recognition::may_be_undefined_std(tcx, ty)
+        || ty.is_raw_ptr()
 }
 
 /// Whether a type a caller gives generic code may make a value of it there

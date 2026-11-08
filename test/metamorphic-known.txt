@@ -5,18 +5,12 @@
 // Rust does is taken off. A rewrite that goes wrong for another reason is a
 // line under another issue.
 
-#1010 P0 (nones): Some(v) of a type whose JS value is undefined (io::stdout(), io/fmt::Result Ok, Backtrace) reads as None
-plain std option backtrace.rs
-plain std option fmt_write_function.rs
-plain std option io_unit_result.rs
-plain std option pointer_addresses.rs
-plain std option std_odds.rs
-
 #1011 P0 (formatting): Err(fmt::Error) made as a value throws $FmtError where it's made; a held one's is_ok() folds to true
 plain std option fmt_error_pieces.rs
 plain std option fmt_error_unwritten.rs
 plain std option fmt_error_unwritten_branches.rs
 plain std option fmt_error_write.rs
+plain std option fmt_write_function.rs
 plain std rc-refcell fmt_error_pieces.rs
 plain std rc-refcell fmt_write_function.rs
 plain std field fmt_error_pieces.rs

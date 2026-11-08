@@ -7,12 +7,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Whether `ty` is standard output, or its lock, `Some(false)`, or
     /// standard error, `Some(true)` (ADR 0132).
     pub(in crate::lower) fn stream(&self, ty: Ty<'tcx>) -> Option<bool> {
-        let ty::Adt(adt, _) = ty.kind() else { return None };
-        match std_path(self.tcx, adt.did()).as_str() {
-            "std::io::Stdout" | "std::io::StdoutLock" => Some(false),
-            "std::io::Stderr" | "std::io::StderrLock" => Some(true),
-            _ => None,
-        }
+        stream_of(self.tcx, ty)
     }
 
     /// The runtime's `io::Write` of `ty`, or of what a `&mut` to it is to,
@@ -340,6 +335,25 @@ pub(crate) fn points_at_dyn_debug<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool
 /// 0187, 0462), so `?` of one never breaks.
 pub(crate) fn is_write_result_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     is_fmt_result_type(tcx, ty) || is_io_unit_result_type(tcx, ty)
+}
+
+/// `Recognition::stream`, of `tcx` alone: a standard stream's `Some(true)`
+/// of standard error (ADR 0132). Its JS value is `undefined`.
+pub(in crate::lower) fn stream_of<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<bool> {
+    let ty::Adt(adt, _) = ty.kind() else { return None };
+    match std_path(tcx, adt.did()).as_str() {
+        "std::io::Stdout" | "std::io::StdoutLock" => Some(false),
+        "std::io::Stderr" | "std::io::StderrLock" => Some(true),
+        _ => None,
+    }
+}
+
+/// Whether a value of std's `ty` may be `undefined` in JS, as a `()` is:
+/// a standard stream or its lock, which is nothing (ADR 0132), a disabled
+/// `Backtrace` (ADR 0568), or a write's result, whose `Ok` is (ADRs 0187,
+/// 0462); so an `Option`'s `Some` of one is boxed (#1010).
+pub(in crate::lower) fn may_be_undefined_std<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    stream_of(tcx, ty).is_some() || is_backtrace_type(tcx, ty) || is_write_result_type(tcx, ty)
 }
 
 /// `io::Result<()>`, a write's result.
