@@ -1029,7 +1029,8 @@ fn expr(e: &mut Expr) {
     // value(value) { n = value; } }`, its parameter a name the place
     // doesn't read; what it stores where its storage says, `value ?? null`
     // (ADR 0772).
-    if let ExprKind::Handle(place, _) | ExprKind::Pair(place, _) = &e.kind {
+    if let ExprKind::Handle(place, storage) | ExprKind::Pair(place, _, storage) = &e.kind {
+        let storage = *storage;
         let mut param = "value".to_string();
         if place.mentions_var(&param) {
             param = "newValue".to_string();
@@ -1041,23 +1042,16 @@ fn expr(e: &mut Expr) {
             Vec::new(),
             vec![StmtKind::Return(Some((**place).clone())).at(place.span)],
         );
-        let written = match &e.kind {
-            ExprKind::Handle(_, storage) => storage.written(Expr::var(&param), false),
-            _ => Expr::var(&param),
-        };
-        // A flattened state's, each of its keys set on its object (ADR 1044).
-        let sets = match &e.kind {
-            ExprKind::Handle(_, storage) => {
-                storage.written_in_place(place, Expr::var(&param), &mut |_, value, _| value, place.span)
-            }
-            _ => None,
-        };
+        let written = storage.written(Expr::var(&param), false);
+        // A flattened state's, each of its keys set on its object (ADR
+        // 1044); an object's whole, `$assign` (#968).
+        let sets = storage.written_in_place(place, Expr::var(&param), &mut |_, value, _| value, place.span);
         let set = Expr::arrow(
             vec![param.as_str().into()],
             sets.unwrap_or_else(|| vec![StmtKind::Assign((**place).clone(), written).at(place.span)]),
         );
         let dictionary = match &e.kind {
-            ExprKind::Pair(_, dictionary) => Some(Prop::Field(js::DICTIONARY.into(), (**dictionary).clone())),
+            ExprKind::Pair(_, dictionary, _) => Some(Prop::Field(js::DICTIONARY.into(), (**dictionary).clone())),
             _ => None,
         };
         let props = dictionary
@@ -1231,7 +1225,7 @@ fn expr(e: &mut Expr) {
                 **a = Expr { span: a.span, ..truth };
             }
         }
-        ExprKind::Index(a, b) | ExprKind::OptionalIndex(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
+        ExprKind::Index(a, b) | ExprKind::OptionalIndex(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b, _) => {
             expr(a);
             expr(b);
         }

@@ -303,8 +303,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an alias of a variable set before it's read is the variable, `pair(n, { n += 1; n })` given the new `n` twice",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                let kept = last.is_some_and(|last| {\n",
-    replace: "                let kept = false && last.is_some_and(|last| {\n",
+    find: "                    || last.is_some_and(|last| {\n",
+    replace: "                    || false && last.is_some_and(|last| {\n",
     tests: ["test/corpus.test.ts", "-t", "^alias_reads.rs$"],
   },
   {
@@ -388,7 +388,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding a `&mut`'s handle sets after the shadow is assigned, so the handle sets the new one",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "        ExprKind::Handle(place, _) | ExprKind::Pair(place, _) => place.visit_vars(&mut insert),\n",
+    find: "    captured.extend(handles_read(body));\n",
     replace: "",
     tests: ["test/lowering-shadows.test.ts", "-t", "something still sees"],
   },
@@ -735,5 +735,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
     snapshots: true,
+  },
+  {
+    name: "alias-read-by-a-pair-dropped",
+    breaks: "`const _10 = index` read by a pair's place, `lanes[_10]`, is `index` where it's read, so the pair made before `index++` reads the next item (#968)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                let deferred = set.contains(of) && handles_read(&stmts[i + 1..]).contains(alias);\n",
+    replace: "                let deferred = false && set.contains(of);\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
   },
 ];

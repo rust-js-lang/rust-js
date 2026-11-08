@@ -550,3 +550,53 @@ both builds, each against native Rust, and the mutations
 (`lower/mir/assign.ts`), `entry-takes-any-box-apart` and
 `library-default-taken-apart` (`lower/traits/impls.ts`).
 
+
+## Amended (2026-11-08, #968): a `&mut dyn` of an object is an in-place cell where an entry writes its box
+
+A `&mut` to an object made a `&mut dyn Trait` was its pair, `{ value: c,
+impl }`, and a `&mut self` method is given the pair as its box (ADR
+0099). An impl's entry that takes the box apart (`entry_takes_box_apart`,
+#831) gives its method the object, which it changes in place. A blanket
+impl's, `impl<T: Default> Reset for T`, doesn't: its generic `Self` writes
+the box whole, `*self = T::default()` is `self.value = ..`, and so does a
+write through the `&mut T` that `impl<T> GetMut<T> for T`'s `get_mut`
+gives back, the pair itself. Nothing copied the pair's `value` back, so
+`c` stayed as it was: native `C { n: 0 }`, JS `C { n: 5 }`. Found by the
+metamorphic net's `dyn-ref` rewrite (#939), 12 of its 16 rewrites.
+
+Where a `&mut self` method of the `dyn`'s trait, or of a supertrait, has
+an entry of the crate's that gives its method the box as it is (`entry_gives_box`,
+the entry owner's answer beside `entry_takes_box_apart`), the pair is an in-place cell of
+the object, as `$cellOf` is (above, #528): `{ impl, get value() { return
+c; }, set value(value) { $assign(c, value); } }`. Its storage is
+`Storage::Assigned`, which a pair carries as a handle does (`ExprKind::Pair`'s
+third part): preparation writes its setter, and the linker asks for the
+helper it writes with (`Storage::helper`). Such a handle never sets its
+variable (`Storage::rebinds`), so `c` stays a `const`. A pair whose impls
+all take the box apart, a concrete impl's, is `{ value: c, impl }` as it
+was. A copy back where the borrow ends was the alternative: a `&mut dyn`
+held by a `let` has no one end, and what `get_mut` gave is written after
+the call returns. The user chose the in-place cell (2026-11-08).
+
+A pair reads its place whenever its `value` is, so its place is held as
+it was where it's made (`place_where_made`): a reborrow's, `&mut *x`, of
+the `x` then, `const x$1 = x`, and an index a variable set again is,
+`&mut lanes[index]` before `index += 1`, of the index then; tidy's
+`alias_variables` keeps a temporary a handle's or a pair's place reads
+where what it's of is set anywhere (`handles_read`).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change;
+Rust's preserved. Held by corpus `dyn_of_a_generic_impl_written_whole`
+(native-compared, both builds), `test/lowering-dyn-pairs.test.ts` (both
+forms), the metamorphic net's 12 `dyn-ref` rewrites taken off its list,
+and the mutations `generic-impl-pair-a-box`,
+`generic-impl-pair-of-supertraits-only`,
+`concrete-impl-pair-written-in-place`, `reborrowed-pair-place-unfixed`
+(`lower/traits/dyns.ts`), `pair-place-holder-unnamed`
+(`lower/mir/temporaries.ts`), `alias-read-by-a-pair-dropped`
+(`lower/mir/tidy/bindings.ts`), `assigned-storage-rebinds`,
+`assigned-storage-a-binding` (`js/storage.ts`) and
+`storage-helper-unasked` (`link.ts`). Still open: a pair of a place whose
+storage is a flattened state's keys or a nullable field's `null` (#977),
+an associated type's `Iterator` dictionary (#972) and a returned `&mut`
+copied in and out (#973).

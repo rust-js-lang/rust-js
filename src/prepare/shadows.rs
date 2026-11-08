@@ -117,7 +117,7 @@ fn read_later(stmts: &[Stmt], alias: &str) -> bool {
             ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => js::mentions_in(body, alias) > 0,
             ExprKind::Function(function) => js::mentions_in(&function.body, alias) > 0,
             ExprKind::Handle(place, _) => place.mentions_var(alias),
-            ExprKind::Pair(a, b) => a.mentions_var(alias) || b.mentions_var(alias),
+            ExprKind::Pair(a, b, _) => a.mentions_var(alias) || b.mentions_var(alias),
             _ => false,
         };
     });

@@ -637,6 +637,7 @@ const shapeTests: Record<string, [number, string]> = {
   "src/lower/mir/assign.rs boxed_args": [2, "JS's evaluation: a property place's object named once, so the place a call writes back is fixed (ADR 0099)"],
   "src/lower/mir/temporaries.rs flush": [2, "JS's evaluation: a property place's object named before a later argument changes it (#280)"],
   "src/lower/mir/temporaries.rs reads_same_anywhere": [2, "whether the JS reads the same anywhere: a property's read may be a getter's"],
+  "src/lower/mir/temporaries.rs reached_where_made": [2, "JS's evaluation: what a pair's place is reached through, named where it's made (#968)"],
 };
 /** Each function's tests of a JS member's or index's shape, its parts
  * unread: `js::ExprKind::Member(..)`, or bare `ExprKind::Index(_, _)` where
@@ -685,10 +686,9 @@ test("an enum's JS is `js`'s, and a `Result`'s `js::result`'s", () => {
   expect(askers.filter(file => positional.test(code(file)))).toEqual([]);
 });
 
-// A rule of an owner is of what its owner has: one of state that's gone,
-// or spelled so it's never found, holds whatever the others do. Seven of
-// the twelve rules of state matched nothing, and passed (the third
-// architecture audit).
+// A rule of an owner is of what its owner has: one of state that's gone, or
+// spelled so it's never found, holds whatever the others do. Seven of the
+// twelve rules of state matched nothing, and passed (the third audit).
 test("each owner's rule finds what its owner has", () => {
   const unfound = [
     ...Object.entries(owners).map(([state, allowed]) => [state, statePattern(state), allowed] as const),

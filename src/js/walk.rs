@@ -161,7 +161,7 @@ macro_rules! walks {
                     ExprKind::Index(a, b)
                     | ExprKind::OptionalIndex(a, b)
                     | ExprKind::Binary(_, a, b)
-                    | ExprKind::Pair(a, b)
+                    | ExprKind::Pair(a, b, _)
                     | ExprKind::Assigned(a, b) => {
                         a.$expr(f);
                         b.$expr(f);

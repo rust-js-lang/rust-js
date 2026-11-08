@@ -638,8 +638,8 @@ export const mutations: Mutation[] = [
     name: "entry-takes-any-box-apart",
     breaks: "a blanket impl's default, of a generic `Self` that writes its box's `value`, is taken for one that takes the box apart, so `*self = Self::default()` through its function pointer leaves the caller's object as it was (a wrong answer, #831)",
     file: "src/lower/traits/impls.rs",
-    find: "        forms.unboxed.get(i).is_some_and(|&unboxed| unboxed > 0)\n",
-    replace: "        forms.unboxed.get(i).is_some()\n",
+    find: "        Some(forms.unboxed.get(i).is_some_and(|&unboxed| unboxed > 0))\n",
+    replace: "        Some(forms.unboxed.get(i).is_some())\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer_replaced.rs$"],
   },
   {

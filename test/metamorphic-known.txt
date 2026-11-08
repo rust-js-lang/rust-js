@@ -26,24 +26,6 @@ plain std impl-owned result_given_as_items.rs
 plain std impl-owned std_fuse.rs
 plain std impl-owned unrun_function_drops.rs
 
-#968 P0: a write through a `&mut dyn` of an identity trait read back as `&mut T` is lost
-plain std dyn-ref cell_from_mut_generic.rs
-plain std dyn-ref clone_from.rs
-plain std dyn-ref flattened_state_got_mut.rs
-plain std dyn-ref generic_associated_types.rs
-plain std dyn-ref generic_mut_moved_out.rs
-plain std dyn-ref generic_mut_moved_out_other_ways.rs
-plain std dyn-ref generic_mut_ref.rs
-plain std dyn-ref generic_mut_written_whole.rs
-plain std dyn-ref in_place_cell_replaced.rs
-plain std dyn-ref into_iter_of_ref_param.rs
-plain std dyn-ref mut_arg_before_its_index_changes.rs
-plain std dyn-ref mut_method_pointer_replaced.rs
-plain std dyn-ref mut_ref_reborrow_reassigned.rs
-plain std dyn-ref nullable_written_through_borrows.rs
-plain std dyn-ref range_defaults.rs
-plain std dyn-ref thread_local_lazy_by_field.rs
-
 #967 P0: a `let` boxed, `Box::new(e)`, each use read through it, `(*x)`
 plain std boxed adapters_over_own_next_that_panics.rs
 plain std boxed alias_reads.rs
@@ -74,10 +56,12 @@ plain std boxed unwrap_dropping.rs
 plain std boxed wrapping_assign_of_a_copy.rs
 
 #972 P0: an impl's dictionary has no entry of its trait's associated type's `Iterator` bound, which generic code given that type as it is reads
+plain std dyn-ref generic_associated_types.rs
 plain std impl-owned generic_associated_types.rs
 plain std impl-ref generic_associated_types.rs
 
 #973 P0: a `&mut` that escapes through a lifetime only another parameter's bound names is copied in and out
+plain std dyn-ref into_iter_of_ref_param.rs
 plain std impl-ref mut_ref_escapes.rs
 
 #974 P0: a generic function item as a value is a new arrow at each use, so `ptr::eq` of it is false
@@ -87,3 +71,7 @@ plain std impl-ref fn_compared_by_its_pointer.rs
 #975 P0: a reference parameter taken as `&impl` of an identity trait, a transmute's and a function's given for a `&mut` parameter
 plain std impl-ref function_given_for_a_mut_param.rs
 plain std impl-ref transparent_transmute.rs
+
+#977 P0: a `&mut` to a place with special storage, a flattened state's keys or a nullable field's `null`, loses it when made a `&mut dyn`
+plain std dyn-ref flattened_state_got_mut.rs
+plain std dyn-ref nullable_written_through_borrows.rs

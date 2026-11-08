@@ -549,7 +549,13 @@ impl Expr {
     }
 
     pub fn pair(place: Expr, dictionary: Expr) -> Expr {
-        Expr::new(ExprKind::Pair(Box::new(place), Box::new(dictionary)))
+        Expr::stored_pair(place, dictionary, Storage::AsGiven)
+    }
+
+    /// A `dyn`'s pair on `place`, which stores what's written as `storage`
+    /// says (#968).
+    pub fn stored_pair(place: Expr, dictionary: Expr, storage: Storage) -> Expr {
+        Expr::new(ExprKind::Pair(Box::new(place), Box::new(dictionary), storage))
     }
 
     /// `target++` or `target--`, its value the one before (ADR 0948).

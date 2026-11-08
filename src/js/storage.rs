@@ -19,13 +19,35 @@ impl Storage {
         }))
     }
 
+    /// Whether a write through a handle on a variable stored so may set the
+    /// variable, `x = value`: not an object's whole `$assign`ed (#968). A
+    /// flattened state's handle is taken to, as it was: its keys are set
+    /// on its object, and its variable stays a `let` until a form change
+    /// is chosen.
+    pub fn rebinds(self) -> bool {
+        match self {
+            Storage::AsGiven | Storage::NullForNone | Storage::InPlace(_) => true,
+            Storage::Assigned => false,
+        }
+    }
+
+    /// The helper a write through a handle on a place stored so is written
+    /// with, `$assign` of `Assigned`, which preparation writes out: asked
+    /// for where the handle is written (#968).
+    pub fn helper(self) -> Option<&'static str> {
+        match self {
+            Storage::Assigned => Some("$assign"),
+            Storage::AsGiven | Storage::NullForNone | Storage::InPlace(_) => None,
+        }
+    }
+
     /// Of an `InPlace` storage, `value` written to `place`, the object a
     /// flattened state is in (ADR 1044): of a variant made there, its tag
     /// and each of its fields set there, as written, a `None` `undefined`,
     /// so a key an earlier variant set and it hasn't stays, as upstream's
     /// do; of any other value, each key of it, once it's computed, held
     /// where that's needed, `spill`'s, given the name it's held by.
-    /// `None` of any other storage.
+    /// Of `Assigned`, `$assign(place, value)`. `None` of any other storage.
     ///
     /// Rust computes the whole value before it writes any of it: a field
     /// that computes, `reason: thrown(error)`, or reads the object a key
@@ -39,6 +61,11 @@ impl Storage {
         spill: &mut dyn FnMut(&str, Expr, &mut Vec<Stmt>) -> Expr,
         at: Span,
     ) -> Option<Vec<Stmt>> {
+        // An object's whole, written in place (ADR 0147, #968).
+        if self == Storage::Assigned {
+            let assigned = Expr::call(Expr::helper("$assign"), vec![place.clone(), value]);
+            return Some(vec![StmtKind::Expr(assigned).at(at)]);
+        }
         let Storage::InPlace(keys) = self else { return None };
         let keys: Vec<&str> = keys.split(',').collect();
         let set = |key: &str, value: Expr| StmtKind::Assign(Expr::member(place.clone(), key), value).at(at);
@@ -90,7 +117,7 @@ impl Storage {
     /// parameter given, and a handle's setter printed.
     pub fn written(self, made: Expr, nulled: bool) -> Expr {
         match self {
-            Storage::AsGiven | Storage::InPlace(_) => made,
+            Storage::AsGiven | Storage::InPlace(_) | Storage::Assigned => made,
             Storage::NullForNone if nulled && !matches!(made.kind, ExprKind::Undefined | ExprKind::GivenUndefined) => {
                 made
             }
@@ -107,7 +134,7 @@ impl Storage {
     /// it is, what may be `undefined` too, never `made ?? null`.
     pub fn written_alike(self, made: Expr) -> Expr {
         match (self, made.kind) {
-            (Storage::AsGiven | Storage::InPlace(_), kind) => Expr { kind, ..made },
+            (Storage::AsGiven | Storage::InPlace(_) | Storage::Assigned, kind) => Expr { kind, ..made },
             (Storage::NullForNone, ExprKind::Undefined | ExprKind::GivenUndefined) => Expr::null().or_at(made.span),
             (Storage::NullForNone, ExprKind::Cond(test, yes, no)) => Expr {
                 kind: ExprKind::Cond(

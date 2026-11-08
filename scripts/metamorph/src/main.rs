@@ -257,11 +257,18 @@ fn plain_referent(ty: &Type) -> bool {
         }
 }
 
+/// Whether `f` is a binding, `#[cfg_attr(rust_js, rust_js::link_name =
+/// "Object.assign")]`'s: its JS is another's, which takes what its Rust
+/// signature says, so its parameters aren't rewritten.
+fn bound_to_js(f: &syn::ItemFn) -> bool {
+    (f.attrs.iter()).any(|attr| attr.to_token_stream().to_string().contains("rust_js"))
+}
+
 fn refs(ast: &mut syn::File, how: Refs, budget: &mut usize) -> bool {
     let mut changed = false;
     for item in &mut ast.items {
         let Item::Fn(f) = item else { continue };
-        if f.sig.ident == "main" || f.sig.constness.is_some() {
+        if f.sig.ident == "main" || f.sig.constness.is_some() || bound_to_js(f) {
             continue;
         }
         let mut reads = Vec::new();
@@ -345,7 +352,7 @@ fn owned(ast: &mut syn::File, budget: &mut usize) -> bool {
     let mut changed = false;
     for item in &mut ast.items {
         let Item::Fn(f) = item else { continue };
-        if f.sig.ident == "main" || f.sig.constness.is_some() {
+        if f.sig.ident == "main" || f.sig.constness.is_some() || bound_to_js(f) {
             continue;
         }
         let mut reads = Vec::new();

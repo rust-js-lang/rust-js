@@ -45,6 +45,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         held
     }
 
+    /// `place`, what a `dyn`'s pair made where it's borrowed reads whenever
+    /// its `value` is read (ADR 0099), fixed as it is there: what it's
+    /// reached through that a variable set again holds, `x` of a reborrow's
+    /// `x.value`, or an index that one is, `i` of `v[i]`, named as it is
+    /// now, as Rust's borrow keeps the place it was made of (#968). A
+    /// variable that's the place itself, `n`, is the place.
+    pub(in crate::lower) fn place_where_made(&mut self, place: Expr, out: &mut Vec<Stmt>) -> Expr {
+        let (span, facts) = (place.span, place.facts);
+        let fixed = match place.kind {
+            js::ExprKind::Member(object, field) => Expr::member(self.reached_where_made(*object, out), &field),
+            js::ExprKind::Index(object, index) => {
+                let object = self.reached_where_made(*object, out);
+                Expr::index(object, self.reached_where_made(*index, out))
+            }
+            kind => return Expr { kind, ..place },
+        };
+        Expr { span, facts, ..fixed }
+    }
+
+    /// `e`, what a place is reached through, `place_where_made`'s: a
+    /// variable set again named as it is now, a place fixed in turn.
+    fn reached_where_made(&mut self, e: Expr, out: &mut Vec<Stmt>) -> Expr {
+        match &e.kind {
+            js::ExprKind::Var(name) if !self.alike_local(name) && !self.module_names.contains(name) => {
+                let name = name.clone();
+                self.spill(&name, e, out)
+            }
+            js::ExprKind::Member(..) | js::ExprKind::Index(..) => self.place_where_made(e, out),
+            _ => e,
+        }
+    }
+
     /// `lower` in an evaluation of its own: none of what's around it made and
     /// not yet used, nor the cleanup that unwinds to, nor the copies back a
     /// call around it owes, which are the enclosing evaluation's again once

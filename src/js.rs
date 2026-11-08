@@ -76,6 +76,10 @@ pub enum Storage {
     /// 1044): what's written is each of its keys, these, comma-separated,
     /// set on that object, never the object itself.
     InPlace(&'static str),
+    /// An object a `&mut` is, written whole in place, `$assign(place,
+    /// value)`, so each name for it sees what's written (ADRs 0147, 0454):
+    /// a `&mut dyn`'s pair of one whose impl writes its `value` (#968).
+    Assigned,
 }
 
 /// What a `Symbol` of a module's namespace exports, the module itself,
@@ -992,8 +996,9 @@ pub enum ExprKind {
     Handle(Box<Expr>, Storage),
     /// `{ impl: d, get value() { return x; }, set value(value) { x = value; } }`:
     /// a `&mut dyn Trait` of a value JS can't change in place, its impl's
-    /// dictionary and a handle on its place (ADR 0099).
-    Pair(Box<Expr>, Box<Expr>),
+    /// dictionary and a handle on its place (ADR 0099), and how its place
+    /// stores what's written through it, as a `Handle`'s (#968).
+    Pair(Box<Expr>, Box<Expr>, Storage),
     /// `(target = value)`, an assignment's value, of a variable or a plain
     /// field: what preparation makes of a loop's first `const` that the test
     /// leaving it reads, `while (!(step = iterator.next()).done) { .. }` (ADR

@@ -649,11 +649,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         args: ty::GenericArgsRef<'tcx>,
         i: usize,
     ) -> bool {
+        self.entry_unboxes(item, args, i) == Some(true)
+    }
+
+    /// Whether the crate's entry of `item` gives its parameter `i`'s box to
+    /// its method as it is, a blanket impl's generic `Self`'s, whose method
+    /// may write the box whole, `*self = v` (#968): the impl's own method
+    /// or a default copied into it, of an impl `entry_takes_box_apart`
+    /// says doesn't take it apart. Not where the crate has no entry of it.
+    pub(in crate::lower) fn entry_gives_box(&self, item: DefId, args: ty::GenericArgsRef<'tcx>, i: usize) -> bool {
+        self.entry_unboxes(item, args, i) == Some(false)
+    }
+
+    /// Whether the crate's entry of `item` takes its parameter `i`'s box
+    /// apart, `entry_takes_box_apart`'s and `entry_gives_box`'s one answer;
+    /// `None` where the crate has no entry of it.
+    fn entry_unboxes(&self, item: DefId, args: ty::GenericArgsRef<'tcx>, i: usize) -> Option<bool> {
         let tr = ty::TraitRef::from_assoc(self.tcx, self.tcx.parent(item), args);
-        let Some((imp, _)) = super::evidence_impl(self.tcx, self.typing_env, tr).filter(|(imp, _)| imp.is_local())
-        else {
-            return false;
-        };
+        let (imp, _) = super::evidence_impl(self.tcx, self.typing_env, tr).filter(|(imp, _)| imp.is_local())?;
         // As the impl's dictionary makes its entry (`lower_dictionary`): in
         // the impl's own terms, the impl's method or the default it keeps.
         let impl_tr = self.tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization();
@@ -683,9 +696,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 self.entry_forms(item, (item, own_args), own_args, count, Some(imp))
             }
-            None => return false,
+            None => return None,
         };
-        forms.unboxed.get(i).is_some_and(|&unboxed| unboxed > 0)
+        Some(forms.unboxed.get(i).is_some_and(|&unboxed| unboxed > 0))
     }
 
     /// Copy the default body into this implementation. Its Rust bindings still

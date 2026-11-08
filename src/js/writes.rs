@@ -24,7 +24,8 @@ pub struct Writes {
     /// Those a closure, or a function declared in the tree, changes.
     pub changed_in_closures: IndexSet<String>,
     /// `&mut x`'s handle, a getter and a setter of `x`: each variable one is
-    /// made on, which what it's given may replace (ADR 0099).
+    /// made on, which what it's given may replace (ADR 0099); not one whose
+    /// setter writes it in place (`Storage::rebinds`, #968).
     pub handled: IndexSet<String>,
     /// How many places set each variable's binding, a handle on it among
     /// them, in a closure too: `Writes::count`'s.
@@ -77,8 +78,12 @@ impl Writes {
         // never what's nested in them, which this finds in turn.
         self.lists(stmts, in_closure);
         each_expr(stmts, &mut |e| match &e.kind {
-            ExprKind::Handle(place, _) | ExprKind::Pair(place, _) => {
-                if let ExprKind::Var(name) = &place.kind {
+            ExprKind::Handle(place, storage) | ExprKind::Pair(place, _, storage) => {
+                // One whose write changes the object in place, a flattened
+                // state's keys or `$assign`, never sets the variable (#968).
+                if let ExprKind::Var(name) = &place.kind
+                    && storage.rebinds()
+                {
                     self.handled.insert(name.clone());
                     self.set(name);
                 }

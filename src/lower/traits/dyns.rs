@@ -605,7 +605,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `&mut dyn Sub` as a `&mut dyn Super`: a pair on the first's
             // `value`, which its `&mut self` methods write (ADR 0099).
             if matches!(target.kind(), ty::Ref(_, _, Mutability::Mut)) {
-                return Ok(Expr::pair(Expr::held(pair), dictionary));
+                return Ok(Expr::pair(self.place_where_made(Expr::held(pair), out), dictionary));
             }
             return Ok(Expr::object(vec![
                 Prop::Field(js::HELD.into(), Expr::held(pair)),
@@ -614,10 +614,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let dictionary = self.dyn_dictionary(target, self.pointee(source), span)?;
         // `&mut n as &mut dyn Trait` of a number: the pair reads and writes
-        // the place the cell does (ADR 0099). A temporary's box is the pair's.
+        // the place the cell does (ADR 0099), as it is where it's made
+        // (`place_where_made`, #968). A temporary's box is the pair's.
         if self.is_cell(source) {
             return Ok(match value.kind {
-                js::ExprKind::Handle(place, _) => Expr::pair(*place, dictionary),
+                js::ExprKind::Handle(place, storage) => {
+                    Expr::stored_pair(self.place_where_made(*place, out), dictionary, storage)
+                }
                 js::ExprKind::Object(mut props, ..) if matches!(props.as_slice(), [Prop::Field(name, _)] if name == js::HELD) =>
                 {
                     props.push(Prop::Field(js::DICTIONARY.into(), dictionary));
@@ -629,14 +632,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     } else {
                         self.spill("cell", value, out)
                     };
-                    Expr::pair(Expr::held(cell), dictionary)
+                    Expr::pair(self.place_where_made(Expr::held(cell), out), dictionary)
                 }
             });
+        }
+        // `&mut c as &mut dyn Trait` of an object given to an impl whose
+        // `&mut self` is generic code's box, `impl<T> Trait for T`'s: a pair
+        // whose write of the whole changes the object in place, as an
+        // in-place cell's does (ADR 0454), `*self = v` and a write through
+        // the `&mut T` it gives back alike; a box's would leave it as it was
+        // (#968).
+        let pointee = self.pointee(source);
+        if matches!(target.kind(), ty::Ref(_, _, Mutability::Mut))
+            && self.mut_ref_form(pointee).written_in_place()
+            && self.pair_written_whole(target, pointee)
+        {
+            let object = match value.reads_same() {
+                true => self.place_where_made(value, out),
+                false => self.spill("object", value, out),
+            };
+            return Ok(Expr::stored_pair(object, dictionary, js::Storage::Assigned));
         }
         Ok(Expr::object(vec![
             Prop::Field(js::HELD.into(), value),
             Prop::Field(js::DICTIONARY.into(), dictionary),
         ]))
+    }
+
+    /// Whether a `self_ty` made a `target`, a `dyn`, has a `&mut self`
+    /// method, of its trait or of a supertrait, given the pair as its box
+    /// (ADR 0099) by an entry that gives its method the box as it is
+    /// (`entry_gives_box`, ADR 0454, amended): a blanket impl's, `impl<T>
+    /// Trait for T`'s, whose write of the whole is to the pair's `value`
+    /// (#968).
+    fn pair_written_whole(&self, target: Ty<'tcx>, self_ty: Ty<'tcx>) -> bool {
+        let Some(tr) = self.dyn_trait_ref(target, self_ty) else {
+            return false;
+        };
+        rustc_middle::ty::elaborate::supertraits(self.tcx, ty::Binder::dummy(tr)).any(|tr| {
+            let tr = self.tcx.instantiate_bound_regions_with_erased(tr);
+            (self.tcx.associated_items(tr.def_id).in_definition_order())
+                .filter(|item| self.tcx.def_kind(item.def_id) == DefKind::AssocFn)
+                .any(|item| self.param_is_box(item.def_id, 0) && self.entry_gives_box(item.def_id, tr.args, 0))
+        })
     }
 
     /// The dictionary a `self_ty` made a `target`, a `dyn`, is given: its

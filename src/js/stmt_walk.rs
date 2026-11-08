@@ -668,7 +668,7 @@ pub fn this_outside_accessors(body: &mut Vec<Stmt>, name: &str) -> bool {
     let instance = crate::names::fresh_in(&mut taken, name);
     let mut kept = false;
     each_expr_mut(body, &mut |e| {
-        if let ExprKind::Handle(place, _) | ExprKind::Pair(place, _) = &mut e.kind {
+        if let ExprKind::Handle(place, _) | ExprKind::Pair(place, ..) = &mut e.kind {
             place.each_mut(&mut |part| {
                 if matches!(part.kind, ExprKind::This) {
                     part.kind = ExprKind::Var(instance.clone());

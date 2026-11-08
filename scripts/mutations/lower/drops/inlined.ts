@@ -489,8 +489,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard's field its `Drop` lends `&mut`, arrayvec's `ScopeExitGuard`'s `&mut self.value`, is a `const` the handle's setter assigns, a `TypeError` as it's dropped (#501)",
     file: "src/lower/drops/inlined.rs",
-    find: "        ExprKind::Handle(place, _) | ExprKind::Pair(place, _) => Some(place),\n",
-    replace: "        ExprKind::Pair(place, _) => Some(place),\n",
+    find: "        ExprKind::Handle(place, _) | ExprKind::Pair(place, ..) => Some(place),\n",
+    replace: "        ExprKind::Pair(place, ..) => Some(place),\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_to_mut_ref.rs$"],
     snapshots: true,
   },

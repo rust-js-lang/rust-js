@@ -594,4 +594,12 @@ export const mutations: Mutation[] = [
     replace: "        let _ = marks;\n",
     tests: ["test/corpus.test.ts", "-t", "^(rev_made_knowing_its_back|own_iterator_flattened_from_its_back).rs$"],
   },
+  {
+    name: "pair-place-holder-unnamed",
+    breaks: "what a pair's place is reached through, a reassigned `x` of `x.value`, isn't named where the pair's made, so the pair reads what `x` is later (#968)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            js::ExprKind::Var(name) if !self.alike_local(name) && !self.module_names.contains(name) => {\n",
+    replace: "            js::ExprKind::Var(name) if false && !self.alike_local(name) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
+  },
 ];

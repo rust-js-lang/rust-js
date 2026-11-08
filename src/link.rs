@@ -28,7 +28,15 @@ pub(crate) fn link(unlinked: Unlinked) -> Linked {
             // Each helper its tree reads, asked for by being written.
             let mut written = Vec::new();
             crate::js::each_item_expr_mut(&mut item.module.items, &mut |e| {
-                if let Some(name) = e.helper_name() {
+                // And what a handle's storage writes with, which preparation
+                // writes out (`Storage::helper`, #968).
+                let stored = match &e.kind {
+                    crate::js::ExprKind::Handle(_, storage) | crate::js::ExprKind::Pair(_, _, storage) => {
+                        storage.helper()
+                    }
+                    _ => None,
+                };
+                for name in e.helper_name().into_iter().chain(stored) {
                     written.extend(crate::runtime::helper_of(name));
                 }
             });
@@ -306,7 +314,7 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
         | ExprKind::Handle(a, _)
         | ExprKind::Stepped(_, a)
         | ExprKind::DropArgument(_, _, a) => expr(a, visitor),
-        ExprKind::Index(a, b) | ExprKind::OptionalIndex(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
+        ExprKind::Index(a, b) | ExprKind::OptionalIndex(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b, _) => {
             expr(a, visitor);
             expr(b, visitor);
         }

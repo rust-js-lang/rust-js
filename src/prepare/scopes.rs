@@ -380,7 +380,7 @@ impl Walk {
             ExprKind::Index(a, b)
             | ExprKind::OptionalIndex(a, b)
             | ExprKind::Binary(_, a, b)
-            | ExprKind::Pair(a, b) => {
+            | ExprKind::Pair(a, b, _) => {
                 self.expr(a);
                 self.expr(b);
             }

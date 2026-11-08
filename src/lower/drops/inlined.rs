@@ -489,7 +489,7 @@ fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &str, 
 /// written through it, as arrayvec's `ScopeExitGuard`'s `&mut self.value`.
 fn lent(e: &Expr) -> Option<&Expr> {
     match &e.kind {
-        ExprKind::Handle(place, _) | ExprKind::Pair(place, _) => Some(place),
+        ExprKind::Handle(place, _) | ExprKind::Pair(place, ..) => Some(place),
         _ => None,
     }
 }

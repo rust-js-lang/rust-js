@@ -155,8 +155,12 @@ pub(in crate::lower::mir) fn is_temporary(name: &str) -> bool {
 /// read, before `children` is set again, as in `match name.as_str()` of a
 /// `let mut name`; one read nowhere, gone. A closure neither reads a
 /// temporary, its captures its own `const`s, nor sets what one's of between,
-/// which Rust's borrows forbid.
+/// which Rust's borrows forbid. A `&mut`'s handle, or a `dyn`'s pair, reads
+/// its place whenever it's read, past its last mention: one whose place
+/// reads a temporary keeps it where what it's of is set anywhere, `const
+/// _10 = index` of `lanes[_10]` before `index++` (#968).
 pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<String>) {
+    let set = js::Writes::of(body).replaced;
     js::statement_lists(body, &mut |stmts| {
         let mut i = 0;
         while i < stmts.len() {
@@ -171,11 +175,13 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<String>) {
                 // set only past each read on every way, `const _15 =
                 // newLast; if (_15 == null) { .. } else { _15.next = clone;
                 // newLast = clone; }`.
-                let kept = last.is_some_and(|last| {
-                    let reads = &stmts[i + 1..=last];
-                    js::Writes::of(reads).may_replace(of)
-                        && (declares(reads, of) || !read_before_set(reads, alias, of, &mut false))
-                });
+                let deferred = set.contains(of) && handles_read(&stmts[i + 1..]).contains(alias);
+                let kept = deferred
+                    || last.is_some_and(|last| {
+                        let reads = &stmts[i + 1..=last];
+                        js::Writes::of(reads).may_replace(of)
+                            && (declares(reads, of) || !read_before_set(reads, alias, of, &mut false))
+                    });
                 if !kept {
                     // Each read where it's written, else where the
                     // temporary was, which says which `if` the program
@@ -1190,6 +1196,17 @@ pub(super) fn paired_temporaries(body: &[Stmt]) -> IndexSet<String> {
         .collect()
 }
 
+/// What `body`'s handles and pairs read, whenever their `value` is (#968).
+pub(super) fn handles_read(body: &[Stmt]) -> IndexSet<String> {
+    let mut read = IndexSet::default();
+    js::each_expr(body, &mut |e| {
+        if let ExprKind::Handle(place, _) | ExprKind::Pair(place, ..) = &e.kind {
+            place.visit_vars(&mut |name: &str| _ = read.insert(name.to_string()));
+        }
+    });
+    read
+}
+
 /// What `body`'s closures, the functions it declares and its `&mut`s'
 /// handles read or set: not where they're written, but whenever they run.
 pub(super) fn captured(body: &[Stmt]) -> IndexSet<String> {
@@ -1198,7 +1215,6 @@ pub(super) fn captured(body: &[Stmt]) -> IndexSet<String> {
     js::each_expr(body, &mut |e| match &e.kind {
         ExprKind::Arrow(_, stmts) | ExprKind::AsyncArrow(_, stmts) => js::visit_stmts(stmts, &mut insert),
         ExprKind::Function(function) => js::visit_stmts(&function.body, &mut insert),
-        ExprKind::Handle(place, _) | ExprKind::Pair(place, _) => place.visit_vars(&mut insert),
         _ => {}
     });
     js::each_list(body, &mut |stmts| {
@@ -1208,6 +1224,7 @@ pub(super) fn captured(body: &[Stmt]) -> IndexSet<String> {
             }
         }
     });
+    captured.extend(handles_read(body));
     captured
 }
 

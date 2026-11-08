@@ -85,4 +85,20 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_written_whole_of_other_places.rs$"],
   },
+  {
+    name: "assigned-storage-rebinds",
+    breaks: "a pair's setter of an object written in place, `Storage::Assigned`, sets the variable, `c = value`, so the caller's object stays as it was (#968)",
+    file: "src/js/storage.rs",
+    find: "        if self == Storage::Assigned {\n",
+    replace: "        if self == Storage::Assigned && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
+  },
+  {
+    name: "assigned-storage-a-binding",
+    breaks: "a handle whose setter writes an object in place is taken to set its variable, so `const c` is `let c`",
+    file: "src/js/storage.rs",
+    find: "            Storage::Assigned => false,\n",
+    replace: "            Storage::Assigned => true,\n",
+    tests: ["test/lowering-dyn-pairs.test.ts"],
+  },
 ];

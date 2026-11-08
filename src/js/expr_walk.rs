@@ -46,7 +46,7 @@ impl Expr {
             ExprKind::Index(a, b)
             | ExprKind::OptionalIndex(a, b)
             | ExprKind::Binary(_, a, b)
-            | ExprKind::Pair(a, b) => {
+            | ExprKind::Pair(a, b, _) => {
                 a.visit_vars(read);
                 b.visit_vars(read);
             }
@@ -232,7 +232,7 @@ impl Expr {
             ExprKind::OptionalMember(a, field) => ExprKind::OptionalMember(one(a)?, field.clone()),
             ExprKind::Handle(place, storage) => ExprKind::Handle(one(place)?, *storage),
             ExprKind::DropArgument(item, index, drop) => ExprKind::DropArgument(*item, *index, one(drop)?),
-            ExprKind::Pair(place, dictionary) => ExprKind::Pair(one(place)?, one(dictionary)?),
+            ExprKind::Pair(place, dictionary, storage) => ExprKind::Pair(one(place)?, one(dictionary)?, *storage),
             // What it sets isn't replaced: one that names it is no assignment.
             ExprKind::Assigned(target, _) if matches!(&target.kind, ExprKind::Var(name) if with(name).is_some()) => {
                 return None;
@@ -683,7 +683,7 @@ impl Expr {
             ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => object.has_effects(),
             // Making one reads nothing: its getter does, later.
             ExprKind::Handle(_, _) => false,
-            ExprKind::Pair(_, dictionary) => dictionary.has_effects(),
+            ExprKind::Pair(_, dictionary, _) => dictionary.has_effects(),
             // It sets its variable, or steps its place.
             ExprKind::Assigned(..) | ExprKind::Stepped(..) => true,
             ExprKind::Index(object, index) | ExprKind::OptionalIndex(object, index) => {
