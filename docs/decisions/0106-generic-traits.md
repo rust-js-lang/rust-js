@@ -164,3 +164,32 @@ dictionary's in generic code:**
   type checking.
 - A trait's default method copied into a generic impl, `impl<T> .. for
   Stack<T>`, still stops at ADR 0098's destructors: `T` might have one.
+
+## Amendment: an associated type's `Iterator` bound has its entry (#972)
+
+An impl's dictionary gave the bounds its trait declares on an associated
+type only of traits that have dictionaries, but generic code that gives
+such a type to a function taking its iterator as it is (ADR 0411),
+`advance(&mut items, None)` of a `C::Iter<'_>`, reads
+`CContainer.IterIterator()`, as the route finds every declared bound: a
+`TypeError` where native Rust runs. `Iterator`'s, `DoubleEndedIterator`'s
+and `ExactSizeIterator`'s bounds have their entries too
+(`has_item_bound_entry`), as std's `IntoIterator` dictionaries have
+`IntoIterIterator` (ADR 0566), which the crate's own `IntoIterator` impls
+now have as well.
+
+Generic code has a value of such a type as a JS iterator (ADR 0061), so
+each entry is that JS iterator's where the impl's dictionary made it one
+(`made_js_iterator`, the one answer of what the impl's methods give, what
+its entries step and what its drop drops, ADR 0178): `{ next: $next }`,
+`{ next_back: $nextBack }`, `{ len }`. What it makes knows its back and its
+length where the trait bounds the type so, as generic code steps it from
+there; it threw `it.back is not a function`. It makes one of a range, of
+the crate's own iterator, and now of the impl's own type parameter given
+as it is, `type Iter = I`, by that one's dictionaries, `$given(it,
+IIterator)`, which generic code stepped as a JS iterator where it was the
+caller's own value; the impl is given those dictionaries, as the analysis
+of what it steps reads the type's bounds (`iterator_steps`). Of a type
+generic code has as std's own, a `Vec`'s `IntoIter`, the entry is its own.
+Corpus case `associated_iterator_given_as_it_is`; the metamorphic net's
+rewrites of `generic_associated_types` run as native.

@@ -584,6 +584,20 @@ pub(super) fn item_bounds<'tcx>(
     found
 }
 
+/// Whether an impl's dictionary has an entry of `bound`, a bound its trait
+/// declares on an associated type (`item_bounds`), which generic code finds
+/// it by (`item_route`): one of a trait that has dictionaries, or
+/// `Iterator`, or std's extension of it, whose dictionary steps the type's
+/// value where generic code gives it to a function that takes it as it is
+/// (ADR 0411), `C::Iter<'_>` given to an `advance<I: Iterator>(it: &mut I,
+/// ..)`, as std's `IntoIterator` dictionaries have `IntoIterIterator` (ADR
+/// 0566, #972).
+pub(super) fn has_item_bound_entry(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '_>, bound: DefId) -> bool {
+    operational(tcx, foreign, bound)
+        || std_item(tcx, StdItem::Iterator) == bound
+        || super::recognition::is_iterator_extension(tcx, bound)
+}
+
 /// Can rust-js have `def_id`, a generic associated type (ADR 0146)? Its own
 /// lifetimes are erased, and its own types and constants a dictionary entry
 /// would vary by: one of those with no bound has none.

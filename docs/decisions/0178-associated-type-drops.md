@@ -58,3 +58,17 @@ $loudZone = { offset: loudZone_offset, show: loudZone_show, $dropOffset: noisyDr
   drops a consumer's value in a library's generic code.
 - **It's what a type parameter's drop is:** the same `?.()`, from what the
   caller already gives.
+
+## Amendment: what the dictionary made a JS iterator of is what it drops (#978)
+
+An associated type bound by `Iterator` that an impl gives the crate's own
+iterator is a JS iterator in generic code, `$iterator(value, next)`, made
+by the dictionary's method (ADR 0061), but its `$dropIter` dropped what it
+was given as the struct itself: `drop at undefined` where native Rust shows
+the struct's state. The two read one answer, `item_made_js_iterator`: the
+drop is `held_drop_function`'s of an iterated value, which drops its `of`.
+And generic code drops one as it drops a type parameter's value given its
+caller's drop (`has_generic_drop`): after a consumer that doesn't close it,
+`collect()`, and closed with the adapters that hold it, `rev()`; a callee
+given such a type is given its drop, where an impl gives the type one whose
+drop runs (`item_may_drop`). Corpus case `associated_iterator_dropped`.

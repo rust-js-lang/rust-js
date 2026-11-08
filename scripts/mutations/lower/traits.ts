@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "item-iterator-bound-entryless",
+    breaks:
+      "an impl's dictionary has no entry of its associated type's `Iterator` bound, which generic code giving the type as it is reads: `CContainer.IterIterator is not a function` (#972)",
+    file: "src/lower/traits.rs",
+    find: "        || std_item(tcx, StdItem::Iterator) == bound\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_given_as_it_is.rs$"],
+  },
+  {
     name: "declared-nested-mut-left-out",
     breaks:
       "a trait whose method takes a `&mut Self` within an `Option`, which each entry adapts, isn't declared, nor the functions given its dictionaries (#686)",

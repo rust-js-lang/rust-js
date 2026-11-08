@@ -54,14 +54,13 @@ plain std boxed untagged_enums.rs
 plain std boxed unwrap_dropping.rs
 plain std boxed wrapping_assign_of_a_copy.rs
 
-#972 P0: an impl's dictionary has no entry of its trait's associated type's `Iterator` bound, which generic code given that type as it is reads
-plain std dyn-ref generic_associated_types.rs
-plain std impl-owned generic_associated_types.rs
-plain std impl-ref generic_associated_types.rs
-
 #974 P0: a generic function item as a value is a new arrow at each use, so `ptr::eq` of it is false
 plain std impl-owned fn_pointer_eq.rs
 plain std impl-ref fn_compared_by_its_pointer.rs
 
 #975 P0: a reference parameter taken as `&impl` of an identity trait, a transmute's and a function's given for a `&mut` parameter
 plain std impl-ref function_given_for_a_mut_param.rs
+
+#985 P0: a `&mut dyn` made of a temporary reads a new one each time, its getter the temporary's expression, so a loop over it never ends
+plain std dyn-ref associated_types.rs
+plain std dyn-ref generic_traits.rs

@@ -63,8 +63,97 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The entries of `tr`'s dictionary that give the bounds its trait
     /// declares on an associated type, the impl's: `LabelDisplay` of `type
     /// Label = u32` is `u32`'s `Display` (ADR 0106).
+    /// Of a type generic code has as the JS iterator the dictionary made of
+    /// it (`item_made_js_iterator`), its `Iterator`'s, its back's and its
+    /// length's are that JS iterator's (#972).
     pub(super) fn item_bound_entries(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Vec<Prop>> {
-        self.entries_of(item_bounds(self.tcx, tr.def_id, tr.args), span)
+        let mut props = Vec::new();
+        for (name, bound) in item_bounds(self.tcx, tr.def_id, tr.args) {
+            if !super::has_item_bound_entry(self.tcx, self.krate.foreign, bound.def_id) {
+                continue;
+            }
+            let made = match *bound.self_ty().kind() {
+                ty::Alias(
+                    _,
+                    ty::AliasTy {
+                        kind: ty::Projection { def_id: item },
+                        ..
+                    },
+                ) => {
+                    let ty = self
+                        .tcx
+                        .normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(bound.self_ty()));
+                    (self.item_made_js_iterator(item, ty))
+                        .then(|| self.made_iterator_dictionary(bound.def_id, ty))
+                        .flatten()
+                }
+                _ => None,
+            };
+            let dictionary = match made {
+                Some(made) => made,
+                None => self.dictionary(bound, span)?,
+            };
+            props.push(Prop::Field(
+                name,
+                Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dictionary)).at(js::Span::NONE)]),
+            ));
+        }
+        Ok(props)
+    }
+
+    /// Whether generic code has values of the associated type `item` an
+    /// impl gives as `ty` as JS iterators its dictionary made
+    /// (`made_js_iterator`), as the trait declares the type.
+    pub(super) fn item_made_js_iterator(&self, item: DefId, ty: Ty<'tcx>) -> bool {
+        let identity = ty::GenericArgs::identity_for_item(self.tcx, item);
+        let alias = Ty::new_projection(self.tcx, ty::IsRigid::No, item, identity);
+        self.made_js_iterator(alias, self.tcx.param_env(item), ty)
+    }
+
+    /// The dictionary of `trait_id`, `Iterator` or std's extension of it, of
+    /// a JS iterator the dictionary made of a `ty` (`made_js_iterator`):
+    /// `{ next: $next }`, `{ next_back: $nextBack }`, `{ len }` its own
+    /// `len()`, each giving a `Some` that looks like `None` boxed (ADR 0051).
+    fn made_iterator_dictionary(&self, trait_id: DefId, ty: Ty<'tcx>) -> Option<Expr> {
+        let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
+        let (entry, value) = if is_std_def(self.tcx, trait_id, StdItem::Iterator) {
+            (
+                "next".to_string(),
+                Expr::helper(if boxed { "$nextSome" } else { "$next" }),
+            )
+        } else if crate::lower::recognition::is_double_ended(self.tcx, trait_id) {
+            let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);
+            (
+                name.to_string(),
+                Expr::helper(if boxed { "$nextBackSome" } else { "$nextBack" }),
+            )
+        } else if self.recognition().exact_size_iterator() == Some(trait_id) {
+            let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);
+            let len = Expr::call(Expr::member(Expr::var("iterator"), "len"), Vec::new());
+            let len = Expr::arrow(
+                vec!["iterator".into()],
+                vec![StmtKind::Return(Some(len)).at(js::Span::NONE)],
+            );
+            (name.to_string(), len)
+        } else {
+            return None;
+        };
+        Some(Expr::object(vec![Prop::Field(entry, value)]))
+    }
+
+    /// What a JS iterator the dictionary makes of an associated type's
+    /// value, `alias` as the trait declares it under `env`, knows: its back
+    /// and its length, where the trait bounds it so, as generic code steps
+    /// it (ADRs 0429, 0456; #972).
+    fn made_iterator_ends(&self, alias: Ty<'tcx>, env: ty::ParamEnv<'tcx>) -> (bool, bool) {
+        let bounds = self.declared_bounds(alias, env);
+        let back = bounds
+            .iter()
+            .any(|&id| crate::lower::recognition::is_double_ended(self.tcx, id));
+        let len = bounds
+            .iter()
+            .any(|&id| self.recognition().exact_size_iterator() == Some(id));
+        (back, len)
     }
 
     /// An entry giving each of `bounds`' dictionaries, of those that have one.
@@ -80,6 +169,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Ok(props)
+    }
+
+    /// Whether generic code has a value of an associated type, `alias` as
+    /// the trait declares it under `env`, of the type `ty` an impl gives it,
+    /// as a JS iterator the impl's dictionary made of it (ADR 0061): one
+    /// bound by `Iterator`, a range, the crate's own iterator, or the impl's
+    /// type parameter given as it is, by its dictionaries (#972). The one
+    /// answer, of what its methods give and what its drop drops (#978).
+    pub(super) fn made_js_iterator(&self, alias: Ty<'tcx>, env: ty::ParamEnv<'tcx>, ty: Ty<'tcx>) -> bool {
+        matches!(alias.kind(), ty::Alias(..))
+            && (self.declared_bounds(alias, env).into_iter()).any(|id| is_std_def(self.tcx, id, StdItem::Iterator))
+            && (self.range_kind(ty).is_some() || self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty))
     }
 
     /// An impl's dictionary: given nothing, the function whose one `return`
@@ -463,16 +564,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .skip_normalization()
                 .skip_binder()
                 .output();
-            let iterates = matches!(declared_output.kind(), ty::Alias(..))
-                && (self
-                    .declared_bounds(declared_output, self.tcx.param_env(item.def_id))
-                    .into_iter())
-                .any(|id| is_std_def(self.tcx, id, StdItem::Iterator))
-                && (self.range_kind(output).is_some() || self.is_user_iterator(output));
+            let env = self.tcx.param_env(item.def_id);
+            let iterates = self.made_js_iterator(declared_output, env, output);
             let call = Expr::call(callee.clone(), values.clone());
-            let call = match iterates {
-                true => Some(self.as_js_iterator(call, output, span)?),
-                false => None,
+            // Knowing its back and its length where the trait bounds it so.
+            let call = match (iterates, self.made_iterator_ends(declared_output, env)) {
+                (false, _) => None,
+                (true, (back, true)) => Some(self.as_exact_size(call, output, back, span)?),
+                (true, (true, false)) => Some(self.as_double_ended(call, output, span)?),
+                (true, (false, false)) => Some(self.as_js_iterator(call, output, span)?),
             };
             // A `&mut` generic code has in a box by the trait's signature, `&mut
             // Self::Target` of a `Vec`, which the method gives as the object:

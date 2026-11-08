@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "item-drop-of-made-iterator-itself",
+    breaks:
+      "an associated type's drop, of the crate's iterator generic code has as the JS iterator its dictionary made, drops that JS iterator as the struct: `drop at undefined` (#978)",
+    file: "src/lower/traits/drop_params.rs",
+    find: "            let iterated = self.item_made_js_iterator(item, item_ty);\n",
+    replace: "            let iterated = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_dropped.rs$"],
+  },
+  {
     name: "library-params-never-drop",
     breaks:
       "a library with no destructor of its own takes its consumers' types as dropping nothing, so a value of an associated type it holds is never dropped (ADRs 0163, 0844)",

@@ -481,6 +481,21 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                     .filter_map(|clause| clause.as_trait_clause())
                     .any(|p| p.def_id() == iterator);
                 let value = tcx.type_of(item.def_id).instantiate_identity().skip_normalization();
+                // The impl's own parameter, `type Iter = I`: its dictionary's
+                // entries of the type's bounds are `I`'s, by each the trait
+                // declares, `Iterator` and its extensions (ADR 0106, #972).
+                if let ty::Param(param) = value.kind() {
+                    let extensions: Vec<DefId> = (tcx.item_bounds(declared).skip_binder().iter())
+                        .filter_map(|clause| clause.as_trait_clause())
+                        .map(|p| p.def_id())
+                        .filter(|&tr| is_iterator_extension(tcx, tr))
+                        .collect();
+                    if iterates || !extensions.is_empty() {
+                        stepped.insert((imp, param.index, iterator));
+                    }
+                    stepped.extend(extensions.into_iter().map(|tr| (imp, param.index, tr)));
+                    continue;
+                }
                 let Ok(Some(instance)) =
                     crate::lower::items::resolve_instance_in(tcx, typing_env, next, tcx.mk_args(&[value.into()]))
                 else {

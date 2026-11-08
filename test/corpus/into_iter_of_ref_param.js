@@ -52,12 +52,16 @@ function sumPastThree(it) {
   return [n, $count(Iterator.from(it))];
 }
 
-export const refBagIntoIterator = { intoIter: refBagIntoIterator_intoIter };
+export const refBagIntoIterator = {
+  IntoIterIterator: () => ({ next: $next }),
+  intoIter: refBagIntoIterator_intoIter,
+};
 function refBagIntoIterator_intoIter(bag) {
   return $iter(bag.items);
 }
 
 export const refMutBagIntoIterator = {
+  IntoIterIterator: () => ({ next: $next }),
   intoIter: (arg0) => refMutBagIntoIterator_intoIter(arg0.value),
 };
 function refMutBagIntoIterator_intoIter(bag) {

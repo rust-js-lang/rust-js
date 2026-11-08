@@ -71,7 +71,8 @@ const $iDigits = new WeakMap();
 
 function iDigits(IIterator) {
   return $traitImpl($iDigits, [IIterator], () => ({
-    digitIter: iDigits_digitIter,
+    IterIterator: () => ({ next: $next }),
+    digitIter: (arg0) => $given(iDigits_digitIter(arg0), IIterator),
     digitSum: (self) =>
       $given(iDigits_digitIter(self), IIterator)
         .map((d) => d)

@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "item-may-drop-ignored",
+    breaks:
+      "a function given an associated type whose impl's type drops is given no drop of it, so `*it = other` drops nothing (#978)",
+    file: "src/lower/analysis/drops.rs",
+    find: "                if runs(ty, caller) || item_may_drop(tcx, ty, &runs) {\n",
+    replace: "                if runs(ty, caller) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_dropped.rs$"],
+  },
+  {
     name: "impl-drops-unseeded",
     breaks:
       "a generic impl isn't given drops, so what its methods, their helpers, or a default of its trait drop is never dropped",
@@ -79,8 +88,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard given to generic code isn't dropped there, so its cell stays borrowed and a later `borrow_mut()` panics",
     file: "src/lower/analysis/drops.rs",
-    find: "                if runs(ty, caller) {\n",
-    replace: "                if false && runs(ty, caller) {\n",
+    find: "                if runs(ty, caller) || item_may_drop(tcx, ty, &runs) {\n",
+    replace: "                if false && runs(ty, caller) || item_may_drop(tcx, ty, &runs) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_guard_drop.rs$"],
   },
   {

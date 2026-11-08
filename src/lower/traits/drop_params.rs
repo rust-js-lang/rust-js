@@ -498,8 +498,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn item_drops(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Vec<Prop>> {
         let mut props = Vec::new();
         for (item, item_ty) in self.item_types(tr) {
+            // Of one generic code has as the JS iterator the dictionary made
+            // of it, what it was made of (#978).
+            let iterated = self.item_made_js_iterator(item, item_ty);
             if self.drops(item_ty) == Drops::Runs
-                && let Some(drop) = self.drop_function(item_ty, span)?
+                && let Some(drop) = self.held_drop_function(item_ty, iterated, span)?
             {
                 props.push(Prop::Field(item_drop_key(self.tcx, item), drop));
             }

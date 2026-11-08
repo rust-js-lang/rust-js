@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "item-drop-not-generic",
+    breaks:
+      "generic code's `collect()` of an associated type's iterator with a destructor never drops it, after it or closing it (#978)",
+    file: "src/lower/drops/scopes.rs",
+    find: "        self.given_drop(ty).is_some() || matches!(ty.kind(), ty::Alias(..)) && self.item_drop(ty).is_some()\n",
+    replace: "        self.given_drop(ty).is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_dropped.rs$"],
+  },
+  {
     name: "default-drops-impl-indices",
     breaks:
       "a default copied into an impl takes the impl's drops by their indices, so `Self` drops as the impl's `T` does",

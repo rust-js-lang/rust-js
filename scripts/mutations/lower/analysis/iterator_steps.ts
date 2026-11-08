@@ -10,6 +10,15 @@ const extensions = [
 
 export const mutations: Mutation[] = [
   {
+    name: "item-param-stepped-unseen",
+    breaks:
+      "an impl whose associated type is its own type parameter, `type Iter = I`, isn't given `I`'s dictionaries, which the JS iterator its dictionary makes of it steps by: refused (#972)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                    stepped.extend(extensions.into_iter().map(|tr| (imp, param.index, tr)));\n",
+    replace: "                    let _ = extensions;\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_given_as_it_is.rs$"],
+  },
+  {
     name: "kept-default-assoc-unstepped",
     breaks:
       "a trait's default that steps `Self::Iter`, kept by `impl<I: Iterator> Trait for I` with `type Iter = I`, isn't seen to step `I`: a range given to it is `.reduce`d as if a JS iterator, `TypeError` (ADR 0977)",

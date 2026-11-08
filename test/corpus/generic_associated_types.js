@@ -6,6 +6,7 @@ import {
   $debugStr,
   $iter,
   $iterator,
+  $next,
   $nextSome,
   $rangeNext,
   $someValue,
@@ -18,6 +19,7 @@ export function entry() {
 
 const shelfContainer = {
   ItemDebug: () => ({ fmt: (value) => $debugStr(value) }),
+  IterIterator: () => ({ next: $next }),
   items: shelfContainer_items,
   last: (shelf) => Array.from(shelfContainer_items(shelf)).at(-1),
 };
@@ -27,6 +29,7 @@ function shelfContainer_items(shelf) {
 
 const countsContainer = {
   ItemDebug: () => ({ fmt: (value) => String(value) }),
+  IterIterator: () => ({ next: $next }),
   items: countsContainer_items,
   last: (counts) => Array.from(countsContainer_items(counts)).at(-1),
 };
@@ -36,6 +39,7 @@ function countsContainer_items(counts) {
 
 const countdownContainer = {
   ItemDebug: () => ({ fmt: (value) => String(value) }),
+  IterIterator: () => ({ next: $next }),
   items: countdownContainer_items,
   last: (countdown) => Array.from(countdownContainer_items(countdown)).at(-1),
 };
@@ -74,7 +78,10 @@ function byteFilled_filled(byte, N) {
 // An associated type bound by `Iterator` an impl gives a range, or an
 // iterator of the crate's, for: a JS iterator in generic code.
 
-const uptoSource = { numbers: (arg0) => $iterator(uptoSource_numbers(arg0), $rangeNext) };
+const uptoSource = {
+  IterIterator: () => ({ next: $next }),
+  numbers: (arg0) => $iterator(uptoSource_numbers(arg0), $rangeNext),
+};
 function uptoSource_numbers(upto) {
   return { start: 0, end: upto[0] };
 }
@@ -87,7 +94,10 @@ function downIterator_next(down) {
   return down[0] > 0 ? value() : undefined;
 }
 
-const from3Source = { numbers: (arg0) => $iterator(from3Source_numbers(arg0), downIterator_next) };
+const from3Source = {
+  IterIterator: () => ({ next: $next }),
+  numbers: (arg0) => $iterator(from3Source_numbers(arg0), downIterator_next),
+};
 function from3Source_numbers(from3) {
   return [3];
 }

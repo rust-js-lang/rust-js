@@ -3,6 +3,33 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "made-item-iterator-own-dictionary",
+    breaks:
+      "the `DoubleEndedIterator` entry of an associated type the dictionary made a JS iterator of is the crate's own `next_back`, given that JS iterator: `undefined from the back` (#972)",
+    file: "src/lower/traits/impls.rs",
+    find: "                        .then(|| self.made_iterator_dictionary(bound.def_id, ty))\n",
+    replace: "                        .then(|| None)\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_given_as_it_is.rs$"],
+  },
+  {
+    name: "made-item-iterator-param-as-it-is",
+    breaks:
+      "an impl's own type parameter given as it is, its associated type's, goes to generic code as it is, which steps it as a JS iterator: `it.next is not a function` (#972)",
+    file: "src/lower/traits/impls.rs",
+    find: "            && (self.range_kind(ty).is_some() || self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty))\n",
+    replace: "            && (self.range_kind(ty).is_some() || self.is_user_iterator(ty))\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_given_as_it_is.rs$"],
+  },
+  {
+    name: "made-item-iterator-backless",
+    breaks:
+      "what the dictionary makes of an associated type the trait bounds by `DoubleEndedIterator` knows no back: `it.back is not a function` (#972)",
+    file: "src/lower/traits/impls.rs",
+    find: "                (true, (true, false)) => Some(self.as_double_ended(call, output, span)?),\n",
+    replace: "                (true, (true, false)) => Some(self.as_js_iterator(call, output, span)?),\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_dropped.rs$"],
+  },
+  {
     name: "own-operator-left-out-of-dictionary",
     breaks: "a `PartialOrd`'s own `lt` isn't in its dictionary, so generic `<` and std's helpers run std's (#944)",
     file: "src/lower/traits/impls.rs",
@@ -287,8 +314,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl's range for an associated type bound by `Iterator` is given to generic code as a range, which `for .. of` can't step",
     file: "src/lower/traits/impls.rs",
-    find: "                && (self.range_kind(output).is_some() || self.is_user_iterator(output));\n",
-    replace: "                && false;\n",
+    find: "            && (self.range_kind(ty).is_some() || self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty))\n",
+    replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "generic_associated_types"],
   },
   {

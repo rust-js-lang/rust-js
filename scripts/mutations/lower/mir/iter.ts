@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code that consumes an iterator its caller gives a drop of, `items.into_iter().last()`, takes none, and a caller's destructor is refused",
     file: "src/lower/mir/iter.rs",
-    find: "                self.given_drop(receiver).is_some()\n                    || (compiled && self.holds_given_drops(receiver))\n",
+    find: "                self.has_generic_drop(receiver)\n                    || (compiled && self.holds_given_drops(receiver))\n",
     replace: "                (compiled && self.holds_given_drops(receiver))\n",
     tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
   },

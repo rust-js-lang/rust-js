@@ -170,6 +170,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         given.into_iter().map(|given| given.name.clone()).collect()
     }
 
+    /// Whether generic code has a drop of `ty`, a type only bounds know:
+    /// its caller's of a type parameter (`given_drop`), or an associated
+    /// type's dictionary's (`item_drop`), which drops what that made a JS
+    /// iterator of (#978). What a consumer of it closes it with, or drops
+    /// it by after.
+    pub(in crate::lower) fn has_generic_drop(&self, ty: Ty<'tcx>) -> bool {
+        self.given_drop(ty).is_some() || matches!(ty.kind(), ty::Alias(..)) && self.item_drop(ty).is_some()
+    }
+
     /// `ZZone.$dropOffset`, an associated type's drop, of the dictionary of
     /// the impl it's of, which has one where its type does (ADR 0178).
     pub(in crate::lower) fn item_drop(&self, ty: Ty<'tcx>) -> Option<Expr> {

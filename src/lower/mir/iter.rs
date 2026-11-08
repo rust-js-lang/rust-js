@@ -552,7 +552,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let compiled = given.is_none_or(|given| self.compiled_struct(receiver, given));
         let dropped = match params_only {
             true => {
-                self.given_drop(receiver).is_some()
+                self.has_generic_drop(receiver)
                     || (compiled && self.holds_given_drops(receiver))
                     || holds_function
                     || closed

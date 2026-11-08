@@ -226,7 +226,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match self.recognition().owned_into_items(ty) {
             Some(item) => self.drops(item) != crate::lower::drops::Drops::Nothing,
             None => {
-                self.given_drop(ty).is_some()
+                self.has_generic_drop(ty)
                     || self.is_user_iterator(ty) && self.drops(ty) != crate::lower::drops::Drops::Nothing
             }
         }

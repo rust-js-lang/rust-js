@@ -124,7 +124,7 @@ pub(super) fn drop_params<'tcx>(
             for (index, arg) in args.iter().enumerate() {
                 let Some(ty) = arg.as_type() else { continue };
                 let index = index as u32;
-                if runs(ty, caller) {
+                if runs(ty, caller) || item_may_drop(tcx, ty, &runs) {
                     given.insert((callee, index));
                 }
                 for part in ty.walk() {
@@ -210,6 +210,30 @@ pub(super) fn drop_params<'tcx>(
         indices.sort();
     }
     params
+}
+
+/// Whether `ty` is an associated type of a trait of the crate's,
+/// `<S as Source>::Iter`, that an impl gives a type whose drop runs: its
+/// dictionary's drop drops it (ADR 0178), which a callee given it is given
+/// (#978).
+fn item_may_drop<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, runs: &impl Fn(Ty<'tcx>, DefId) -> bool) -> bool {
+    let ty::Alias(
+        _,
+        ty::AliasTy {
+            kind: ty::Projection { def_id: item },
+            ..
+        },
+    ) = *ty.kind()
+    else {
+        return false;
+    };
+    let Some(trait_id) = tcx.trait_of_assoc(item).filter(|id| id.is_local()) else {
+        return false;
+    };
+    tcx.all_impls(trait_id).any(|imp| {
+        (tcx.impl_item_implementor_ids(imp).get(&item))
+            .is_some_and(|&own| runs(tcx.type_of(own).instantiate_identity().skip_normalization(), imp))
+    })
 }
 
 /// Is `imp` a derive whose body drops nothing of what it's given or makes:
