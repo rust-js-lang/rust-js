@@ -282,4 +282,12 @@ export const mutations: Mutation[] = [
     replace: "                && body.thir[boxed].ty.is_box() && false\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_copy_written_whole.rs$"],
   },
+  {
+    name: "capture-written-through-a-box-unseen",
+    breaks: "a closure's write of a `Copy` struct it took through a box, `|w| (*frame).size = Size { w }`, isn't counted as changing the type in place, so a copy read out before shares the object the write `$assign`s (#997)",
+    file: "src/lower/analysis/mutation.rs",
+    find: "                (ProjectionKind::Deref, None) => true,\n",
+    replace: "                (ProjectionKind::Deref, None) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_copy_captured_written.rs$"],
+  },
 ];

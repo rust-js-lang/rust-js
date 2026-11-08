@@ -151,15 +151,22 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
 /// by reference, that place itself: `p` of `|x| p = ..`, `pair.a` of
 /// `|x| pair.a = ..`, which takes `pair.a` alone. Its write is through the
 /// capture's `&mut`. Not a field of what it took, `pair.a` where it took
-/// `pair`, whose write is of the field.
+/// `pair`, whose write is of the field. Through a box too, `(*frame).size`
+/// of a `Box<Frame>`, which a closure takes as that place, the box being
+/// the value it holds (#997).
 fn written_through_capture(tcx: TyCtxt<'_>, thir: &rustc_middle::thir::Thir<'_>, mut place: ExprId) -> bool {
     use rustc_middle::hir::place::ProjectionKind;
+    // Each step to the place, a field's, or `None` of a box's deref.
     let mut fields = Vec::new();
     let (closure, var) = loop {
         match thir[place].kind {
             ExprKind::Field { lhs, name, .. } => {
-                fields.push(name);
+                fields.push(Some(name));
                 place = lhs;
+            }
+            ExprKind::Deref { arg } if thir[arg].ty.is_box() => {
+                fields.push(None);
+                place = arg;
             }
             ExprKind::Scope { value, .. } => place = value,
             ExprKind::UpvarRef {
@@ -177,8 +184,13 @@ fn written_through_capture(tcx: TyCtxt<'_>, thir: &rustc_middle::thir::Thir<'_>,
         captured.get_root_variable() == var
             && matches!(captured.info.capture_kind, ty::UpvarCapture::ByRef(_))
             && captured.place.projections.len() == fields.len()
-            && (captured.place.projections.iter().zip(&fields))
-                .all(|(projection, field)| matches!(projection.kind, ProjectionKind::Field(at, _) if at == *field))
+            && (captured.place.projections.iter().zip(&fields)).all(|(projection, field)| {
+                match (projection.kind, field) {
+                    (ProjectionKind::Field(at, _), Some(field)) => at == *field,
+                    (ProjectionKind::Deref, None) => true,
+                    _ => false,
+                }
+            })
     })
 }
 

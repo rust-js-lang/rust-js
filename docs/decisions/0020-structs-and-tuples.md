@@ -249,3 +249,17 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): results change;
 Rust's preserved. Held by corpus `boxed_copy_written_whole`
 (native-compared, both builds) and the mutation `boxed-whole-write-unseen`
 (`lower/analysis/mutation.ts`).
+
+## Amendment: a capture's write through a box (#997)
+
+A closure that writes a `Copy` struct it took through a box, `|w|
+(*frame).size = Size { w }`, takes the place `(*frame).size` by reference.
+Its write is in place, `$assign(captured, ..)`, as through a variable it
+took. `written_through_capture` followed only fields to the captured place,
+so it stopped at the box's deref and didn't count the type as changed in
+place. A copy read out before, `Box::new((*frame).size)`, then shared the
+object the write changed. A box's deref is now a step like a field's,
+matched against the capture's `Deref` projection: the box is the value it
+holds. Results changed ([0262](0262-when-rust-and-js-disagree.md)), so
+Rust's copy is kept. Held by the corpus case `boxed_copy_captured_written`
+and the mutation `capture-written-through-a-box-unseen`.

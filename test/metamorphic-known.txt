@@ -11,8 +11,5 @@ plain std boxed closure_clone_cell.rs
 #994 P0: `by_ref()` of a type parameter given as it is passes the crate's own `fold` on
 plain std impl-owned by_ref_lends.rs
 
-#997 P0: captured_copy_written_whole (metamorphic boxed) is still wrong after #979 and #980: a Copy struct in a box, captured and written whole
-plain std boxed captured_copy_written_whole.rs
-
 #1000 P0: a RefCell borrow_mut that native panics on goes unchecked when the cell's Rc is held in a Box and reassigned through *b
 plain std boxed contains_guarded_set_again.rs
