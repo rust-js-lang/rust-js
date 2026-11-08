@@ -4,11 +4,11 @@
 // native Rust does alone (the corpus); a group that doesn't is one where a
 // crate-wide or per-type fact one case makes leaks into another: #823,
 // #834 and #850 were wrong only beside another function using the same
-// type. Groups are a seed's shuffle of the cases that can share a crate,
-// so a run is reproduced from its seed.
+// type. Groups are a seed's hash of the cases that can share a crate, by
+// name, so a run is reproduced from its seed and a case added changes one.
 //
-//   seed ─► shuffle ─► groups of 5–20 ─┬─ rustc ──► native ─────┐
-//                                      └─ rust-js ─► node ──────┴─► the same?
+//   seed ─► hash ─► 128 groups ─┬─ rustc ──► native ─────┐
+//                               └─ rust-js ─► node ──────┴─► the same?
 //
 // A group that differs is narrowed to the case whose part of the output
 // differs, the victim, and the fewest neighbours that make it differ
@@ -59,24 +59,21 @@ function random(seed: number): () => number {
   };
 }
 
-/** Seed `seed`'s groups of `names`: shuffled, then cut into groups of 5 to
- * 20, each size drawn too; a last group of fewer than 5 joins the one
- * before it. */
+/** How many groups a seed's shuffle makes, whatever the corpus's size: a
+ * case added joins one of them, by its name, and leaves the others as they
+ * were, so the groups a push runs change only where a case is added to them
+ * (#853). Of 1,652 cases, about 13 a group. */
+export const GROUPS = 128;
+
+/** Seed `seed`'s groups of `names`: each case in the group its name and the
+ * seed hash it to, `GROUPS` of them, each in name order. */
 export function groups(names: string[], seed: number): string[][] {
-  const next = random(seed);
-  const shuffled = [...names];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(next() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  const out: string[][] = Array.from({ length: GROUPS }, () => []);
+  for (const name of names) {
+    const at = random(seed ^ Number(BigInt.asUintN(32, Bun.hash(name) as bigint)))() * GROUPS;
+    out[Math.floor(at)].push(name);
   }
-  const out: string[][] = [];
-  for (let at = 0; at < shuffled.length; ) {
-    const size = 5 + Math.floor(next() * 16);
-    out.push(shuffled.slice(at, at + size));
-    at += size;
-  }
-  if (out.length > 1 && out[out.length - 1].length < 5) out[out.length - 2].push(...out.pop()!);
-  return out;
+  return out.filter((group) => group.length > 0);
 }
 
 /** What marks the start of a case's part of the output. */

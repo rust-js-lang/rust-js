@@ -21,8 +21,13 @@ case, compiled alone, can't show one.
 **The corpus's cases, shuffled into groups, each group one crate**
 (`test/neighbours.ts`, `test/neighbours.test.ts`):
 
-- A seed shuffles the cases that can share a crate and cuts them into
-  groups of 5 to 20 (`groups`), so a run is reproduced from its seed. A
+- A seed hashes each case that can share a crate, by its name, into one
+  of 128 groups (`groups`, `GROUPS`), some 13 a group, so a run is
+  reproduced from its seed, and a case added joins one group and leaves the
+  others as they were: the groups a push runs change only where a case is
+  added to them. (They were a shuffle of the whole list, cut into groups of
+  5 to 20, which each case added shuffled again: a push that added a case
+  met pairs of other cases that no one had run, #863.) A
   case can't share one where its text resolves at the crate's root or
   defines what two cases would both define there, `crate::`, `super::`,
   `$crate`, an inner attribute, an exported macro, `extern crate`, a module
@@ -56,8 +61,8 @@ case, compiled alone, can't show one.
 ## Alternatives
 
 - **Pairs of every case with every other**: 1.4 million crates. Groups of
-  5 to 20 put each case beside 4 to 19 others a night, and a different
-  set each night.
+  some 13 put each case beside a dozen others a night, and a different set
+  each night.
 - **The cases concatenated, not in modules**: their items' names collide.
   A module of each keeps them apart as two modules of one real crate are,
   which is the shape #951 and #952 crash on.

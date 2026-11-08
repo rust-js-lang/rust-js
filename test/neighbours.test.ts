@@ -177,13 +177,15 @@ for (const pair of known) {
 }
 
 // The harness's own parts, which a wrong answer's report rests on.
-test("a seed's groups are the same each time, hold each case once, of 5 to 20", () => {
-  const names = Array.from({ length: 300 }, (_, i) => `c${i}.rs`);
+test("a seed's groups are the same each time, hold each case once, and a case added changes one", () => {
+  const names = Array.from({ length: 1600 }, (_, i) => `c${i}.rs`);
   const [a, b] = [groups(names, 3), groups(names, 3)];
   expect(a).toEqual(b);
   expect(a.flat().sort()).toEqual([...names].sort());
-  expect(a.every((group) => group.length >= 5 && group.length <= 24)).toBe(true);
+  expect(a.every((group) => group.length >= 3 && group.length <= 30)).toBe(true);
   expect(groups(names, 4)).not.toEqual(a);
+  const more = groups([...names, "added.rs"], 3);
+  expect(more.filter((group, i) => JSON.stringify(group) !== JSON.stringify(a[i]))).toHaveLength(1);
 });
 
 test("the victim is the first case whose part differs, and narrowing finds its neighbour", async () => {
