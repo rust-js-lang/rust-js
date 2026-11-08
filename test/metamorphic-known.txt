@@ -16,7 +16,6 @@ plain std impl-owned fused_iterators.rs
 plain std impl-owned generic_chain_of_into.rs
 plain std impl-owned impl_fn_mut_lent.rs
 plain std impl-owned into_iter_of_items.rs
-plain std impl-ref into_iter_of_ref_param.rs
 plain std impl-owned iterables_given_to_generics.rs
 plain std impl-owned nth_passes_a_slice_or_each.rs
 plain impl-owned own_back_methods_given_dictionaries.rs
@@ -60,17 +59,12 @@ plain std dyn-ref generic_associated_types.rs
 plain std impl-owned generic_associated_types.rs
 plain std impl-ref generic_associated_types.rs
 
-#973 P0: a `&mut` that escapes through a lifetime only another parameter's bound names is copied in and out
-plain std dyn-ref into_iter_of_ref_param.rs
-plain std impl-ref mut_ref_escapes.rs
-
 #974 P0: a generic function item as a value is a new arrow at each use, so `ptr::eq` of it is false
 plain std impl-owned fn_pointer_eq.rs
 plain std impl-ref fn_compared_by_its_pointer.rs
 
 #975 P0: a reference parameter taken as `&impl` of an identity trait, a transmute's and a function's given for a `&mut` parameter
 plain std impl-ref function_given_for_a_mut_param.rs
-plain std impl-ref transparent_transmute.rs
 
 #977 P0: a `&mut` to a place with special storage, a flattened state's keys or a nullable field's `null`, loses it when made a `&mut dyn`
 plain std dyn-ref flattened_state_got_mut.rs

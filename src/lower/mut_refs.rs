@@ -626,7 +626,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Can the borrow `fn_id`'s parameter `i` is given outlive the call: does
     /// its result's type, or another parameter's, which may keep it, name
     /// the borrow's lifetime (ADR 0099)? `keep<'a>(v: &mut
-    /// Vec<&'a mut u32>, x: &'a mut u32)` keeps `x` in `v`.
+    /// Vec<&'a mut u32>, x: &'a mut u32)` keeps `x` in `v`. And a bound
+    /// that names it, of what another parameter is, `v: &mut impl
+    /// GetMut<Vec<&'a mut u32>>` (#973); of a parameter that's a type
+    /// parameter given the borrow, `into_iter(self)`'s `Self` of `&mut C`,
+    /// another parameter or the result that names that type parameter,
+    /// `Self::IntoIter`, which may hold it (#973).
     pub(super) fn borrow_outlives_call(&self, fn_id: DefId, i: usize) -> bool {
         let sig = self
             .tcx
@@ -656,14 +661,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // as yoke's does (ADR 0562): the same place, given back.
         let erased = |ty: Ty<'tcx>| self.tcx.erase_and_anonymize_regions(ty);
         let lent_to = input.builtin_deref(true).map(erased);
-        let static_to_it = sig.output().walk().any(|part| {
-            matches!(part.as_type().map(|t| *t.kind()), Some(ty::Ref(region, pointee, _))
-                if region.is_static() && Some(erased(pointee)) == lent_to)
+        // Of a type parameter, `&'a mut impl GetMut<String>`'s, which may be
+        // what the `'static` reference is to (#975).
+        let unknown_to = lent_to.is_some_and(|to| matches!(to.kind(), ty::Param(_)));
+        let static_to_it = sig.output().walk().any(|part| match part.as_type().map(|t| *t.kind()) {
+            Some(ty::Ref(region, pointee, mutability)) if region.is_static() => {
+                Some(erased(pointee)) == lent_to || (unknown_to && mutability.is_mut())
+            }
+            _ => false,
         });
+        // What the function's bounds say of its type parameters, a trait's
+        // arguments and an associated type's: not what outlives what.
+        let bounds: Vec<Ty<'tcx>> = (self.tcx.clauses_of(fn_id).instantiate_identity(self.tcx).into_iter())
+            .filter_map(|(clause, _)| {
+                let clause = clause.skip_normalization();
+                let kept = clause
+                    .as_trait_clause()
+                    .map(|p| p.skip_binder().trait_ref.args)
+                    .or_else(|| {
+                        clause
+                            .as_projection_clause()
+                            .map(|p| p.skip_binder().projection_term.args)
+                    });
+                let term = clause
+                    .as_projection_clause()
+                    .and_then(|p| p.skip_binder().term.as_type());
+                kept.map(|args| (args, term))
+            })
+            .flat_map(|(args, term)| args.types().skip(1).chain(term))
+            .collect();
+        let named = |ty: Ty<'tcx>| regions(ty).iter().any(|region| lent.contains(region));
+        // A type parameter given the borrow, named again where what's kept
+        // is: in another parameter's type or the result's.
+        let given_as = matches!(input.kind(), ty::Param(_)).then_some(input);
+        let holds_it = |ty: Ty<'tcx>| given_as.is_some_and(|param| ty.walk().any(|part| part.as_type() == Some(param)));
         static_to_it
-            || others
-                .chain([sig.output()])
-                .any(|ty| regions(ty).iter().any(|region| lent.contains(region)))
+            || (others.chain([sig.output()])).any(|ty| named(ty) || holds_it(ty))
+            || bounds.into_iter().any(named)
     }
 
     /// What the call of `def_id`, given `generic_args`, gives, `value`, as

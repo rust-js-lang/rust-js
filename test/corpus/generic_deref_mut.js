@@ -71,20 +71,18 @@ function main() {
     )}]`,
   );
   const v = [9];
-  const p = { value: v };
-  pushOne(p, derefMut).value;
-  $assign(v, p.value);
+  pushOne($cellOf(v), derefMut).value;
   console.log(`[${v.join(", ")}]`);
   const value = grown([1, 2], { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell });
-  const p$1 = { value: v };
-  const value$1 = grown(p$1, derefMut);
-  $assign(v, p$1.value);
+  const p = { value: v };
+  const value$1 = grown(p, derefMut);
+  $assign(v, p.value);
   console.log(`${value} ${value$1}`);
 
   let b = 1;
-  const p$2 = { value: b };
-  bump(p$2, { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell });
-  b = p$2.value;
+  const p$1 = { value: b };
+  bump(p$1, { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell });
+  b = p$1.value;
   console.log(`${b}`);
   let n = 2;
   let r = {
@@ -95,35 +93,35 @@ function main() {
       n = value;
     },
   };
-  const p$3 = { value: r };
+  const p$2 = { value: r };
   try {
-    bump(p$3, derefMut);
+    bump(p$2, derefMut);
   } finally {
-    r = p$3.value;
+    r = p$2.value;
   }
   console.log(`${n}`);
   const cell = { value: 3 };
   const borrowMut = $borrowMut(cell, true);
-  const p$4 = { value: borrowMut };
+  const p$3 = { value: borrowMut };
   try {
     try {
-      bump(p$4, { Deref: () => ({ deref: (x) => x.value }), derefMut: (cell) => cell.value });
+      bump(p$3, { Deref: () => ({ deref: (x) => x.value }), derefMut: (cell) => cell.value });
     } catch (error) {
       $cleanup(() => {
-        $assign(borrowMut, p$4.value);
+        $assign(borrowMut, p$3.value);
       });
       throw error;
     }
-    $assign(borrowMut, p$4.value);
+    $assign(borrowMut, p$3.value);
   } finally {
     $unborrow(borrowMut);
   }
   console.log(`${$borrow(cell).value}`);
 
   let s = "hi";
-  const p$5 = { value: s };
-  shout(p$5, { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell });
-  s = p$5.value;
+  const p$4 = { value: s };
+  shout(p$4, { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell });
+  s = p$4.value;
   console.log(`${s}`);
 
   eitherSides();

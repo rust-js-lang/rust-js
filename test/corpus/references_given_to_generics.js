@@ -116,9 +116,17 @@ function main() {
   const add = (x) => (x + 5) >>> 0;
   console.log(`${twice(add)} ${twice(add)}`);
   let s = "";
-  const w = { value: s };
-  fill(w, $mutWriter($stringWriter));
-  s = w.value;
+  fill(
+    {
+      get value() {
+        return s;
+      },
+      set value(value) {
+        s = value;
+      },
+    },
+    $mutWriter($stringWriter),
+  );
   console.log(`${s}`);
   const p = "a/b/c";
   console.log(`${pathLen(p, asRef)} ${pathLen("x/y", asRef)}`);

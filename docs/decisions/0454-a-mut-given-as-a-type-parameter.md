@@ -600,3 +600,35 @@ and the mutations `generic-impl-pair-a-box`,
 storage is a flattened state's keys or a nullable field's `null` (#977),
 an associated type's `Iterator` dictionary (#972) and a returned `&mut`
 copied in and out (#973).
+
+## Amended (2026-11-08, #973, #975): what may keep a borrow past the call
+
+A `&mut` given to a call whose result or another parameter may keep it is
+the place itself, a handle or an in-place cell (#528 above), as
+`borrow_outlives_call` answers. It read the lifetimes of the signature's
+types alone, so three ways a borrow is kept were boxed and copied back
+once the call returned, and a write through what was kept was lost:
+
+- a lifetime only another parameter's bound names, `kept: &mut impl
+  GetMut<Vec<&'a mut u32>>` with `x: &'a mut u32` (#973): the bounds'
+  trait arguments and associated types are read too, not what outlives
+  what;
+- a type parameter given the borrow, which the result or another
+  parameter names, `fn same<T>(t: T) -> T` given `&mut n` and
+  `into_iter(self)`'s `Self::IntoIter` given `&mut C`: `*same(&mut n) +=
+  10` was lost on `main` before this, native 11, JS 1;
+- a `&'static mut` result where what's borrowed is a type parameter,
+  `&'a mut impl GetMut<String>`, which may be what a transmute gives back
+  (#975's first cause).
+
+The user chose the one rule over keeping a box where the call's result
+goes unread (2026-11-08): five snapshots that discard what the call gives
+back give the place now, as any call that may keep it does.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change;
+Rust's preserved. Held by corpus `mut_kept_by_what_a_call_gives_back`
+(native-compared, both builds), the metamorphic net's rewrites taken off
+its list (`dyn-ref` and `impl-ref` `into_iter_of_ref_param`, `impl-ref`
+`mut_ref_escapes` and `transparent_transmute`), and the mutations
+`bound-lifetime-unread`, `type-parameter-given-back-unseen` and
+`static-result-of-a-type-parameter-unseen` (`lower/mut_refs.ts`).
