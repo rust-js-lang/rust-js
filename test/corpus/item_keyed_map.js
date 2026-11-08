@@ -12,6 +12,8 @@ import {
   $mutGet,
   $next,
   $orInsert,
+  $partialEq,
+  $strictlyEqual,
   $took,
   $traitImpl,
 } from "@rust-js/runtime";
@@ -103,7 +105,7 @@ function main() {
         }
       },
     },
-    { eq: (a, b) => a === b },
+    $strictlyEqual,
     Map,
   );
   const get = words.get("x");
@@ -118,7 +120,7 @@ function main() {
       [2, 2],
     ]),
     pHash,
-    { eq: $eq },
+    $partialEq({ eq: $eq }),
     $KeyMap,
   );
   const value$1 = points.get([0, 1]);
@@ -127,7 +129,7 @@ function main() {
     { next: $next, advanceBy: $advanceSlice },
     $dropEach(loudDrop_drop),
     loudDrop_drop,
-  ).counts($iter([[1], [1]]), loudHash, { eq: $eq }, $KeyMap);
+  ).counts($iter([[1], [1]]), loudHash, $partialEq({ eq: $eq }), $KeyMap);
   const loud = [1];
   try {
     const value = louds.get(loud);

@@ -10,22 +10,25 @@ import {
   $entry,
   $entryOrInsert,
   $eq,
+  $intsOrdered,
   $iter,
+  $ord,
   $ordered,
+  $partialEq,
   $partialOrd,
   $sortedEntries,
   $treeFromSorted,
 } from "@rust-js/runtime";
 
 const tuplePartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
 });
 
-const tupleOrd = {
+const tupleOrd = $ord({
   PartialOrd: () => tuplePartialOrd,
   cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
-};
+});
 
 export function entry() {
   main();
@@ -48,7 +51,7 @@ function counts(xs, KOrd, KClone, KDebug, KTreeMap) {
 function main() {
   const clone = { clone: (value) => value };
   console.log(
-    `${distinct([3, 1, 3, 2], $ordered, 4, $BTreeSet, "general8")} ${distinct(
+    `${distinct([3, 1, 3, 2], $intsOrdered, 4, $BTreeSet, "general8")} ${distinct(
       ["b", "a", "b"],
       $ordered,
       8,

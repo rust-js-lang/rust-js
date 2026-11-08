@@ -358,11 +358,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Each with its supertraits', as an impl's is, which generic code
             // reaches by rustc's route, `TOrd.PartialOrd().lt` (#944): std's
-            // quiet orders' shared `$ordered` and `$partiallyOrdered`; a
-            // `PartialOrd`'s `lt` and the rest, std's, `$partialOrd`'s.
+            // quiet orders' shared ones, `quiet_dictionary`'s; a
+            // `PartialOrd`'s `lt` and the rest, std's, `$partialOrd`'s, and
+            // an `Ord`'s `max`, `min` and `clamp`, `$ord`'s (#962).
             if ord || partial_ord {
-                if self.quietly_ordered(ty) {
-                    return Ok(Expr::helper(if ord { "$ordered" } else { "$partiallyOrdered" }));
+                if let Some(shared) = self.quiet_dictionary(ty, ord) {
+                    return Ok(Expr::helper(shared));
                 }
                 // Of a type its module knows, its module's `const`, made once
                 // and read wherever it's given, `pointPartialOrd`, as the
@@ -378,10 +379,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         bindings::trait_method_name(cx.tcx, tr.def_id, name),
                         compare,
                     ));
-                    Ok(match ord {
-                        true => Expr::object(props),
-                        false => Expr::call(Expr::helper("$partialOrd"), vec![Expr::object(props)]),
-                    })
+                    let maker = if ord { "$ord" } else { "$partialOrd" };
+                    Ok(Expr::call(Expr::helper(maker), vec![Expr::object(props)]))
                 };
                 if rustc_middle::ty::TypeVisitableExt::has_non_region_param(&tr)
                     || ty.has_aliases()
@@ -404,9 +403,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     fmt,
                 )]));
             }
+            // `$partialEq`'s, which gives std's `ne`, `!eq`, but of what
+            // asks its parts' `!=`, a tuple's, its own (#962).
             if eq {
-                let eq = self.eq_fn(ty, span)?;
-                return Ok(Expr::object(vec![Prop::Field("eq".into(), eq)]));
+                if self.eq_is_strict(ty) {
+                    return Ok(Expr::helper("$strictlyEqual"));
+                }
+                let mut props = vec![Prop::Field("eq".into(), self.eq_fn(ty, span)?)];
+                if self.own_ne(ty) {
+                    props.push(Prop::Field("ne".into(), self.ne_fn(ty, span)?));
+                }
+                return Ok(Expr::call(Expr::helper("$partialEq"), vec![Expr::object(props)]));
             }
             if default {
                 let value = self.default_value(ty, span)?;
@@ -1094,6 +1101,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// Whether `e`, a dictionary made, holds a function: a compiled method
 /// given its sources' dictionaries, not `{ next: $next }` alone.
 fn holds_a_function(e: &Expr) -> bool {
+    // A runtime maker's of an object, `$partialEq({ eq })`'s: the object's.
+    if let js::ExprKind::Call(callee, given) = &e.kind
+        && callee.helper_name().is_some()
+        && let [object] = given.as_slice()
+    {
+        return holds_a_function(object);
+    }
     let js::ExprKind::Object(props, _) = &e.kind else {
         return false;
     };

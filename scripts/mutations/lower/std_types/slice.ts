@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
     name: "strip-eq-dropped",
     breaks: "`strip_prefix` of structs compares them by identity",
     file: "src/lower/std_types/slice.rs",
-    find: "                list.extend(self.item_eq((item(), item()), span)?);\n",
+    find: "                list.extend(self.item_eq((item(), item()), true, span)?);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "slice_prefix_eq"],
   },
@@ -624,5 +624,13 @@ export const mutations: Mutation[] = [
     find: "                        helper(\"$sortByCachedKey\", vec![items, key, cmp, kind])",
     replace: "                        helper(\"$sortByCachedKey\", vec![items, key, cmp])",
     tests: ["test/corpus.test.ts", "-t", "^sort_stable_seen.rs$"],
+  },
+  {
+    name: "starts-with-by-eq",
+    breaks: "a slice's `starts_with` and `strip_prefix` ask each two `==`, where std's slice `==` asks `!=`, an impl's own `ne` (#962)",
+    file: "src/lower/std_types/slice.rs",
+    find: "        let same = match by_ne && item.peel_refs() == rhs.peel_refs() && self.own_ne(item) {\n",
+    replace: "        let same = match false && by_ne && item.peel_refs() == rhs.peel_refs() && self.own_ne(item) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
   },
 ];

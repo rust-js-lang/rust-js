@@ -5,12 +5,12 @@ import {
   $cleanup,
   $closing,
   $held,
+  $intsOrdered,
   $iterator,
   $last,
   $lastDropping,
   $lazyChain,
   $maxBy,
-  $ordered,
   $peek,
   $skipping,
 } from "@rust-js/runtime";
@@ -663,7 +663,7 @@ function main() {
       undefined,
       foldsIterator_fold,
     ),
-    $ordered,
+    $intsOrdered,
     (it) => {
       foldsDrop_drop(it.of);
     },
@@ -680,7 +680,7 @@ function main() {
       dDrop_drop(d);
       return result;
     }),
-    $ordered,
+    $intsOrdered,
     (map) => {
       map.return();
     },

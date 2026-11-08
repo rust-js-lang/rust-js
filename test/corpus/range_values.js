@@ -11,6 +11,7 @@ import {
   $iterator,
   $lazyRange,
   $lazyZip,
+  $partialEq,
   $print,
   $range,
   $rangeFromNext,
@@ -70,7 +71,7 @@ function firstSquareOver(limit) {
 
 function main() {
   const clone = { clone: (value) => ({ ...value }) };
-  const partialEq = { eq: (a, b) => a.end === b.end };
+  const partialEq = $partialEq({ eq: (a, b) => a.end === b.end });
   const r = { start: 2, end: 7 };
   const v = $range(r.start, r.end, 4);
   console.log(
@@ -145,7 +146,7 @@ function main() {
   console.log("true true true");
   // A full range, of no bounds, equals another, and one to an end by it.
   console.log(
-    `${same(undefined, undefined, { eq: (a, b) => true })} ${same({ end: 5 }, cloned({ end: 5 }, clone), partialEq)} ${!same({ end: 5 }, { end: 4 }, partialEq)}`,
+    `${same(undefined, undefined, $partialEq({ eq: (a, b) => true }))} ${same({ end: 5 }, cloned({ end: 5 }, clone), partialEq)} ${!same({ end: 5 }, { end: 4 }, partialEq)}`,
   );
   const big = $iterator({ start: 1n, end: 4n }, $rangeNext).reduce(
     (a, b) => BigInt.asUintN(64, a + b),

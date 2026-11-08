@@ -685,17 +685,17 @@ pub fn first(a: Ticket, b: Ticket) -> u32 {
 ```
 
 ```js
-import { $cmp, $eq, $minOf, $partialOrd } from "@rust-js/runtime";
+import { $cmp, $eq, $minOf, $ord, $partialEq, $partialOrd } from "@rust-js/runtime";
 
 export const rankPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: rankPartialOrd_partialCmp,
 });
 function rankPartialOrd_partialCmp(rank, other) {
   return rankOrd_cmp(rank, other);
 }
 
-export const rankOrd = { PartialOrd: () => rankPartialOrd, cmp: rankOrd_cmp };
+export const rankOrd = $ord({ PartialOrd: () => rankPartialOrd, cmp: rankOrd_cmp });
 function rankOrd_cmp(rank, other) {
   return $cmp(rank[0], other[0]);
 }
@@ -704,7 +704,7 @@ function ticketDrop_drop(ticket) {
   console.log(`closed ${ticket[0][0]}`);
 }
 
-export const ticketPartialEq = { eq: ticketPartialEq_eq, $drop: ticketDrop_drop };
+export const ticketPartialEq = $partialEq({ eq: ticketPartialEq_eq, $drop: ticketDrop_drop });
 function ticketPartialEq_eq(ticket, other) {
   return $eq(ticket[0], other[0]);
 }
@@ -718,11 +718,11 @@ function ticketPartialOrd_partialCmp(ticket, other) {
   return ticketOrd_cmp(ticket, other);
 }
 
-export const ticketOrd = {
+export const ticketOrd = $ord({
   PartialOrd: () => ticketPartialOrd,
   cmp: ticketOrd_cmp,
   $drop: ticketDrop_drop,
-};
+});
 function ticketOrd_cmp(ticket, other) {
   return rankOrd_cmp(ticket[0], other[0]);
 }
@@ -1355,9 +1355,9 @@ pub fn releases() -> BTreeSet<Release> {
 ```
 
 ```js
-import { $cmp, $ordSet, $partialOrd, $storedKey } from "@rust-js/runtime";
+import { $cmp, $ord, $ordSet, $partialEq, $partialOrd, $storedKey } from "@rust-js/runtime";
 
-export const releasePartialEq = { eq: releasePartialEq_eq };
+export const releasePartialEq = $partialEq({ eq: releasePartialEq_eq });
 function releasePartialEq_eq(release, other) {
   return release.major === other.major;
 }
@@ -1370,7 +1370,7 @@ function releasePartialOrd_partialCmp(release, other) {
   return releaseOrd_cmp(release, other);
 }
 
-export const releaseOrd = { PartialOrd: () => releasePartialOrd, cmp: releaseOrd_cmp };
+export const releaseOrd = $ord({ PartialOrd: () => releasePartialOrd, cmp: releaseOrd_cmp });
 function releaseOrd_cmp(release, other) {
   return $cmp(release.major, other.major);
 }
@@ -1433,21 +1433,23 @@ import {
   $iter,
   $iterator,
   $lazyZip,
+  $ord,
   $ordTreeMap,
+  $partialEq,
   $partialOrd,
   $rangeFromStep,
   $treeFromSorted,
 } from "@rust-js/runtime";
 
 export const loggedPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: loggedPartialOrd_partialCmp,
 });
 function loggedPartialOrd_partialCmp(logged, other) {
   return loggedOrd_cmp(logged, other);
 }
 
-export const loggedOrd = { PartialOrd: () => loggedPartialOrd, cmp: loggedOrd_cmp };
+export const loggedOrd = $ord({ PartialOrd: () => loggedPartialOrd, cmp: loggedOrd_cmp });
 function loggedOrd_cmp(logged, other) {
   console.log(`compare ${logged[0]} ${other[0]}`);
   return $cmp(logged[0], other[0]);

@@ -15,39 +15,41 @@ import {
   $maxByKey,
   $minBy,
   $minByKey,
+  $ord,
+  $partialEq,
   $partialOrd,
   $someValue,
 } from "@rust-js/runtime";
 
 const loudPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
 });
 
-const loudOrd = {
+const loudOrd = $ord({
   PartialOrd: () => loudPartialOrd,
   cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
-};
+});
 
 const optionPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: (a, b) => a == b }),
+  PartialEq: () => $partialEq({ eq: (a, b) => a == b }),
   partialCmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
 });
 
-const optionOrd = {
+const optionOrd = $ord({
   PartialOrd: () => optionPartialOrd,
   cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
-};
+});
 
 const optionPartialOrd$1 = $partialOrd({
-  PartialEq: () => ({ eq: (a, b) => a == b }),
+  PartialEq: () => $partialEq({ eq: (a, b) => a == b }),
   partialCmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
 });
 
-const optionOrd$1 = {
+const optionOrd$1 = $ord({
   PartialOrd: () => optionPartialOrd$1,
   cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
-};
+});
 
 export function entry() {
   main();

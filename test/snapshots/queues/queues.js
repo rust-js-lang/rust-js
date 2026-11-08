@@ -15,6 +15,8 @@ import {
   $heapPush,
   $heapSorted,
   $index,
+  $ord,
+  $partialEq,
   $partialOrd,
   $partiallyOrdered,
   $range,
@@ -66,7 +68,7 @@ export const Pipeline = {
 };
 
 const reversePartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]),
 });
 
@@ -137,13 +139,13 @@ function taskOrd_cmp(task, other) {
   return $cmp(task.pri, other.pri);
 }
 export const taskPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: taskPartialOrd_partialCmp,
 });
 
 // Ordered by priority alone: which of two equal ones comes out first shows
 // whether the heap moves its items as Rust's does.
-export const taskOrd = { PartialOrd: () => taskPartialOrd, cmp: taskOrd_cmp };
+export const taskOrd = $ord({ PartialOrd: () => taskPartialOrd, cmp: taskOrd_cmp });
 function taskPartialOrd_partialCmp(task, other) {
   return taskOrd_cmp(task, other);
 }

@@ -4,9 +4,9 @@ import {
   $cmp,
   $debugStr,
   $given,
+  $intsOrdered,
   $iter,
   $next,
-  $ordered,
   $roomForHint,
   $selectNthUnstable,
   $slice,
@@ -59,10 +59,10 @@ function main() {
   ]);
   wide = sorted(wide, (a, b) => $cmp(a[0], b[0]), "general");
   console.log(`${$debugStr(wide.map((t) => t[3]).join(""))}`);
-  console.log(`[${smallest([9, 3, 7, 1, 8, 2], 3, $ordered, "network").join(", ")}]`);
+  console.log(`[${smallest([9, 3, 7, 1, 8, 2], 3, $intsOrdered, "network").join(", ")}]`);
   console.log(
     `[${iSorted({ next: $next }, 4)
-      .sortedUnstable($iter([5, 3, 9, 1]), $ordered, "network")
+      .sortedUnstable($iter([5, 3, 9, 1]), $intsOrdered, "network")
       .join(", ")}]`,
   );
 }

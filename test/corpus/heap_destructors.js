@@ -10,11 +10,12 @@ import {
   $heapRetain,
   $heapSorted,
   $iter,
+  $partialEq,
   $partialOrd,
 } from "@rust-js/runtime";
 
 const oPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a[0], b[0]),
 });
 

@@ -2,14 +2,17 @@
 
 import { iterator_enumerate, iterator_map } from "@rust-js/std/iter.js";
 import {
+  $charsOrdered,
   $cmp,
   $count,
   $foldOf,
+  $intsOrdered,
   $iter,
   $iterator,
   $next,
   $nth,
-  $ordered,
+  $ord,
+  $partialEq,
   $partialOrd,
   $some,
   $someValue,
@@ -42,17 +45,21 @@ function tExt(TIterator) {
           nth: $nth,
           count: $count,
         }),
-        {
+        $ord({
           PartialOrd: () =>
             $partialOrd({
-              PartialEq: () => ({
-                eq: (a, b) => SelfItemOrd.PartialOrd().PartialEq().eq(a[0], b[0]) && a[1] === b[1],
-              }),
+              PartialEq: () =>
+                $partialEq({
+                  eq: (a, b) =>
+                    SelfItemOrd.PartialOrd().PartialEq().eq(a[0], b[0]) && a[1] === b[1],
+                  ne: (a, b) =>
+                    SelfItemOrd.PartialOrd().PartialEq().ne(a[0], b[0]) || a[1] !== b[1],
+                }),
               partialCmp: (a, b) =>
                 SelfItemOrd.PartialOrd().partialCmp(a[0], b[0]) || $cmp(a[1], b[1]),
             }),
           cmp: (a, b) => SelfItemOrd.cmp(a[0], b[0]) || $cmp(a[1], b[1]),
-        },
+        }),
       );
       return widest?.[1];
     },
@@ -61,11 +68,11 @@ function tExt(TIterator) {
 
 function main() {
   const EmptyExt = tExt({ next: $next });
-  const value = EmptyExt.positionMax($iter([3, 9, 4]), $ordered);
+  const value = EmptyExt.positionMax($iter([3, 9, 4]), $intsOrdered);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = EmptyExt.positionMax($iter(Array.from("bca")), $ordered);
+  const value$1 = EmptyExt.positionMax($iter(Array.from("bca")), $charsOrdered);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = EmptyExt.positionMax($iter([]), $ordered);
+  const value$2 = EmptyExt.positionMax($iter([]), $intsOrdered);
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
 }
 //# sourceMappingURL=case.js.map

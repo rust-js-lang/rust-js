@@ -405,7 +405,7 @@ pub mod hidden {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const queue = readFileSync(join(dir, "queue.js"), "utf8");
   expect(queue).toContain("return a != b;");
-  expect(queue).toContain("return a === b && Hidden.has([a], b, { eq: (a, b) => a === b });");
+  expect(queue).toContain("return a === b && Hidden.has([a], b, $partialEq({ eq: (a, b) => a === b }));");
   expect(queue).toContain("export function values(a, b) {\n  return a === b;\n}");
   expect(queue).not.toContain("PartialEq");
   expect(queue).toContain("export const updateDisplay = { fmt: updateDisplay_fmt };");
@@ -478,17 +478,123 @@ pub fn pairs() -> (bool, bool) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("export const oddPartialOrd = $partialOrd({\n  PartialEq: () => ({ eq: $eq }),\n  partialCmp: oddPartialOrd_partialCmp,\n  lt: oddPartialOrd_lt,\n});");
-  expect(js).toContain("export const oddOrd = { PartialOrd: () => oddPartialOrd, cmp: oddOrd_cmp };");
+  expect(js).toContain("export const oddPartialOrd = $partialOrd({\n  PartialEq: () => $partialEq({ eq: $eq }),\n  partialCmp: oddPartialOrd_partialCmp,\n  lt: oddPartialOrd_lt,\n});");
+  expect(js).toContain("export const oddOrd = $ord({ PartialOrd: () => oddPartialOrd, cmp: oddOrd_cmp });");
   expect(js).toContain("function same(a, b, TOrd) {\n  return TOrd.PartialOrd().PartialEq().eq(a, b);");
   expect(js).toContain("function less(a, b, TOrd) {\n  return TOrd.PartialOrd().lt(a, b);");
   expect(js).toContain("function order(a, b, TOrd) {\n  return TOrd.PartialOrd().partialCmp(a, b);");
-  expect(js).toContain("less(1, 2, $ordered)");
+  expect(js).toContain("less(1, 2, $intsOrdered)");
   // A derived type's, its module's `const`, made once and read where given.
-  expect(js).toContain("const pairOrd = {\n  PartialOrd: () => pairPartialOrd,");
+  expect(js).toContain("const pairOrd = $ord({\n  PartialOrd: () => pairPartialOrd,");
   expect(js).toContain("const pairPartialOrd = $partialOrd({");
   expect(js.match(/pairOrd\)/g)?.length).toBe(2);
   const lib = await import(join(dir, "lib.js"));
   // `Odd`'s own `lt` orders the other way, as generic `<` asks it.
   expect([lib.odd(), lib.numbers(), lib.pairs()]).toEqual([[true, false, true], [false, true], [true, false]]);
+});
+
+// #962: a `PartialEq` dictionary holds `ne` and an `Ord` dictionary `max`,
+// `min` and `clamp`, each an impl's own where it writes one, else std's,
+// which `$partialEq` and `$ord` give, the one place each default is; so
+// generic `!=`, `max`, `min` and `clamp` are the dictionary's, given the
+// drop of a type with a destructor (the user's choice). std's slice `==`
+// asks `!=` of each two, after their lengths. std's quiet orders share
+// `$strictlyEqual`, `$partiallyOrdered` and, by what `clamp` shows as it
+// panics, `$intsOrdered`, `$charsOrdered` and `$ordered`.
+test("PartialEq and Ord dictionaries hold ne, max, min and clamp", async () => {
+  const dir = fixture("eq-ord-dictionary-defaults");
+  writeFileSync(join(dir, "lib.rs"), `use std::cmp::Ordering;
+
+#[derive(Clone, Copy)]
+pub struct Apart(pub u32);
+
+impl PartialEq for Apart {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+
+    #[allow(clippy::partialeq_ne_impl)]
+    fn ne(&self, other: &Self) -> bool {
+        self.0 / 2 != other.0 / 2
+    }
+}
+
+#[derive(PartialEq, Eq, PartialOrd)]
+pub struct First(pub u32, pub u32);
+
+impl Ord for First {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.cmp(&other.0)
+    }
+
+    fn max(self, _: Self) -> Self {
+        self
+    }
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+pub struct Noisy(pub u32);
+
+impl Drop for Noisy {
+    fn drop(&mut self) {}
+}
+
+fn differ<T: PartialEq>(a: &T, b: &T) -> bool {
+    a != b
+}
+
+fn same_items<T: PartialEq>(a: &[T], b: &[T]) -> bool {
+    a == b
+}
+
+fn biggest<T: Ord>(a: T, b: T) -> T {
+    a.max(b)
+}
+
+fn least<T: Ord>(a: T, b: T) -> T {
+    std::cmp::min(a, b)
+}
+
+fn clamped<T: Ord>(x: T, low: T, high: T) -> T {
+    x.clamp(low, high)
+}
+
+pub fn apart() -> (bool, bool, bool) {
+    (differ(&Apart(2), &Apart(3)), same_items(&[Apart(2)], &[Apart(3)]), differ(&1, &1))
+}
+
+pub fn first() -> (u32, u32) {
+    (biggest(First(1, 1), First(2, 2)).1, least(First(1, 1), First(1, 2)).1)
+}
+
+pub fn noisy() -> (u32, u32, u32) {
+    (biggest(Noisy(1), Noisy(2)).0, least(Noisy(3), Noisy(4)).0, clamped(Noisy(9), Noisy(1), Noisy(5)).0)
+}
+
+pub fn chars_the_wrong_way_round() -> char {
+    clamped('b', 'c', 'a')
+}
+
+pub fn clamps() -> (u32, char, bool, String) {
+    (clamped(9, 1, 3), clamped('z', 'a', 'c'), clamped(false, true, true), clamped("m".to_string(), "a".to_string(), "c".to_string()))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export const apartPartialEq = $partialEq({ eq: apartPartialEq_eq, ne: apartPartialEq_ne });");
+  expect(js).toContain("export const firstOrd = $ord({\n  PartialOrd: () => firstPartialOrd,\n  cmp: firstOrd_cmp,\n  max: firstOrd_max,\n});");
+  expect(js).toContain("function differ(a, b, TPartialEq) {\n  return TPartialEq.ne(a, b);");
+  expect(js).toContain("function sameItems(a, b, TPartialEq) {\n  return a.length === b.length && a.every((x, i) => !TPartialEq.ne(x, b[i]));");
+  expect(js).toContain("function biggest(a, b, TOrd, dropT) {\n  return TOrd.max(a, b, dropT);");
+  expect(js).toContain("function least(a, b, TOrd, dropT) {\n  return TOrd.min(a, b, dropT);");
+  expect(js).toContain("function clamped(x, low, high, TOrd, dropT) {\n  return TOrd.clamp(x, low, high, dropT);");
+  expect(js).toContain("differ(1, 1, $strictlyEqual)");
+  expect(js).toContain("clamped(9, 1, 3, $intsOrdered");
+  expect(js).toContain(`clamped("z", "a", "c", $charsOrdered`);
+  expect(js).toContain("clamped(false, true, true, $ordered");
+  const lib = await import(join(dir, "lib.js"));
+  // `Apart`'s own `ne` says 2 and 3 aren't apart, as `!=` and slice `==` ask it.
+  // A \`char\`'s own \`clamp\` shows its bounds as it panics, as \`$charsOrdered\`'s does.
+  expect(() => lib.charsTheWrongWayRound()).toThrow("min > max. min = 'c', max = 'a'");
+  expect([lib.apart(), lib.first(), lib.noisy(), lib.clamps()]).toEqual([[false, true, false], [1, 1], [2, 3, 5], [3, "c", true, "c"]]);
 });

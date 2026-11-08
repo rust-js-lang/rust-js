@@ -179,12 +179,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // to any writer `write_char` and `write_fmt` (ADR 0180), and a
             // generic `clone_from_slice` an impl's own `clone_from`, as std's
             // does, which it asks the dictionary for; and a `PartialOrd`'s
-            // own `lt`, `le`, `gt` and `ge`, which generic code and std's
-            // helpers call through it, `$partialOrd` giving std's where it
-            // writes none (#937, #944).
+            // own `lt`, `le`, `gt` and `ge`, a `PartialEq`'s own `ne` and an
+            // `Ord`'s own `max`, `min` and `clamp`, which generic code and
+            // std's helpers call through it, `$partialOrd`, `$partialEq` and
+            // `$ord` giving std's where it writes none (#937, #944, #962).
             let source = self.is_error_source(item.def_id);
             let own_clone_from = is_clone_from(self.tcx, item.def_id) && self.recognition().has_clone_from(id);
-            let own_operator = crate::lower::ordering::is_operator_method(self.tcx, item.def_id)
+            let own_operator = crate::lower::ordering::held_by_comparison_dictionary(self.tcx, item.def_id)
                 && self.tcx.impl_item_implementor_ids(id).contains_key(&item.def_id);
             if !self.is_rust_trait(tr.def_id)
                 && self.tcx.defaultness(item.def_id).has_value()
@@ -546,10 +547,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         props.extend(self.item_facts(tr, span)?);
         let object = match is_hasher(self.tcx, tr.def_id) {
             true => Expr::call(Expr::helper("$hasher"), vec![Expr::object(props)]),
-            false if self.tcx.is_lang_item(tr.def_id, LangItem::PartialOrd) => {
-                Expr::call(Expr::helper("$partialOrd"), vec![Expr::object(props)])
-            }
-            false => Expr::object(props),
+            false => match crate::lower::ordering::comparison_maker(self.tcx, tr.def_id) {
+                Some(maker) => Expr::call(Expr::helper(maker), vec![Expr::object(props)]),
+                None => Expr::object(props),
+            },
         };
         let mut body = Vec::new();
         let mut made = None;

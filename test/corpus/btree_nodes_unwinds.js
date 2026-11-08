@@ -15,8 +15,10 @@ import {
   $lazyChain,
   $lazyRange,
   $mapExtractIf,
+  $ord,
   $ordTreeMap,
   $ordTreeSet,
+  $partialEq,
   $partialOrd,
   $rangeInclusiveNext,
   $rem,
@@ -63,7 +65,7 @@ function keyDrop_drop(key) {
   log(`k${key.id}`);
 }
 
-export const keyPartialEq = { eq: keyPartialEq_eq, $drop: keyDrop_drop };
+export const keyPartialEq = $partialEq({ eq: keyPartialEq_eq, $drop: keyDrop_drop });
 function keyPartialEq_eq(key, other) {
   return keyOrd_cmp(key, other) === 0;
 }
@@ -77,7 +79,11 @@ function keyPartialOrd_partialCmp(key, other) {
   return keyOrd_cmp(key, other);
 }
 
-export const keyOrd = { PartialOrd: () => keyPartialOrd, cmp: keyOrd_cmp, $drop: keyDrop_drop };
+export const keyOrd = $ord({
+  PartialOrd: () => keyPartialOrd,
+  cmp: keyOrd_cmp,
+  $drop: keyDrop_drop,
+});
 function keyOrd_cmp(key, other) {
   calls = (calls + 1) >>> 0;
   const at = panicAt;

@@ -13,6 +13,7 @@ import {
   $mutGet,
   $orInsert,
   $orInsertWith,
+  $partialEq,
   $ptrTo,
   $remove,
 } from "@rust-js/runtime";
@@ -186,7 +187,7 @@ function main() {
     `${distinct(
       [laneKey(a, 1), laneKey(b, 1), laneKey(a, 1)],
       keyHash,
-      { eq: (a, b) => a.fiber === b.fiber && a.lane === b.lane },
+      $partialEq({ eq: (a, b) => a.fiber === b.fiber && a.lane === b.lane }),
       $keySet((key) => ({ ...key, fiber: $id(key.fiber) })),
     )} ${distinct(
       [
@@ -205,7 +206,7 @@ function main() {
           }
         },
       },
-      { eq: $eq },
+      $partialEq({ eq: $eq }),
       $KeySet,
     )}`,
   );

@@ -5,6 +5,7 @@ import {
   $heapPop,
   $heapPush,
   $keepCapacity,
+  $partialEq,
   $partialOrd,
   $partiallyOrdered,
   $reserve,
@@ -15,7 +16,7 @@ import {
 } from "@rust-js/runtime";
 
 const unitPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: (a, b) => a === b }),
+  PartialEq: () => $partialEq({ eq: (a, b) => a === b }),
   partialCmp: (a, b) => 0,
 });
 

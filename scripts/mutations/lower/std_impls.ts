@@ -1093,4 +1093,20 @@ export const mutations: Mutation[] = [
     replace: "                let shape = None::<Expr>;\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_clone_nodes_unwinds.rs$|^btree_nodes_seen.rs$"],
   },
+  {
+    name: "slice-eq-by-eq",
+    breaks: "std's slice `==` asks each two `==`, where it asks `!=`, an impl's own `ne` (#962)",
+    file: "src/lower/std_impls.rs",
+    find: "        let same = match by_ne && item.peel_refs() == other_item.peel_refs() && self.own_ne(item) {\n",
+    replace: "        let same = match false && by_ne && item.peel_refs() == other_item.peel_refs() && self.own_ne(item) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
+  },
+  {
+    name: "list-eq-by-ne",
+    breaks: "a `LinkedList`'s `==` asks each two `!=`, where its iterators' `eq` asks `==` (#962)",
+    file: "src/lower/std_impls.rs",
+    find: "                let by_ne = !std(StdItem::LinkedList);\n",
+    replace: "                let by_ne = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
+  },
 ];

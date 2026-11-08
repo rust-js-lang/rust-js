@@ -23,16 +23,14 @@ import {
   $partiallyOrdered,
   $range,
   $splitOff,
+  $strictlyEqual,
   $toFixed,
   $totalCmp,
   $traitImpl,
   $zeroPad,
 } from "@rust-js/runtime";
 
-const f64PartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: (a, b) => a === b }),
-  partialCmp: $partialCmp,
-});
+const f64PartialOrd = $partialOrd({ PartialEq: () => $strictlyEqual, partialCmp: $partialCmp });
 
 export const dogDescribe = {
   name: dogDescribe_name,

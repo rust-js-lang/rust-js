@@ -15,6 +15,8 @@ import {
   $maxByKey,
   $minBy,
   $minByKey,
+  $ord,
+  $partialEq,
   $partialOrd,
 } from "@rust-js/runtime";
 
@@ -34,7 +36,7 @@ function kDrop_drop(k) {
 }
 
 export const kPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: kPartialOrd_partialCmp,
   $drop: kDrop_drop,
 });
@@ -42,7 +44,7 @@ function kPartialOrd_partialCmp(k, other) {
   return kOrd_cmp(k, other);
 }
 
-export const kOrd = { PartialOrd: () => kPartialOrd, cmp: kOrd_cmp, $drop: kDrop_drop };
+export const kOrd = $ord({ PartialOrd: () => kPartialOrd, cmp: kOrd_cmp, $drop: kDrop_drop });
 function kOrd_cmp(k, other) {
   if (!(k[0] !== 99 && other[0] !== 99)) {
     throw new Error("compare");

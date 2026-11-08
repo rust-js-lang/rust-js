@@ -9,10 +9,13 @@ import {
   $eq,
   $extendMap,
   $getKeyValue,
+  $intsOrdered,
   $isDisjoint,
   $isSubset,
   $iter,
+  $ord,
   $ordered,
+  $partialEq,
   $partialOrd,
   $removeEntry,
   $retainMap,
@@ -31,14 +34,14 @@ import {
 } from "@rust-js/runtime";
 
 const tuplePartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
 });
 
-const tupleOrd = {
+const tupleOrd = $ord({
   PartialOrd: () => tuplePartialOrd,
   cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
-};
+});
 
 export function entry() {
   main();
@@ -98,7 +101,7 @@ function main() {
     [2, "two"],
   ]);
   console.log(
-    `[${sorted($iter(Array.from(new Map(names).keys())), $ordered, clone, 4, "general8").join(", ")}] [${sorted(
+    `[${sorted($iter(Array.from(new Map(names).keys())), $intsOrdered, clone, 4, "general8").join(", ")}] [${sorted(
       $iter(Array.from(new Map(names).values())),
       $ordered,
       clone,
@@ -114,10 +117,10 @@ function main() {
   const a = new Set([1, 2, 3]);
   const b = new Set([2, 3, 4]);
   console.log(
-    `[${sorted($iter($setAlgebra(a, b, "union")), $ordered, clone, 4, "general8").join(", ")}] [${sorted($iter($setAlgebra(a, b, "intersection")), $ordered, clone, 4, "general8").join(", ")}]`,
+    `[${sorted($iter($setAlgebra(a, b, "union")), $intsOrdered, clone, 4, "general8").join(", ")}] [${sorted($iter($setAlgebra(a, b, "intersection")), $intsOrdered, clone, 4, "general8").join(", ")}]`,
   );
   console.log(
-    `[${sorted($iter($setAlgebra(a, b, "difference")), $ordered, clone, 4, "general8").join(", ")}] [${sorted($iter($setAlgebra(a, b, "symmetric")), $ordered, clone, 4, "general8").join(", ")}]`,
+    `[${sorted($iter($setAlgebra(a, b, "difference")), $intsOrdered, clone, 4, "general8").join(", ")}] [${sorted($iter($setAlgebra(a, b, "symmetric")), $intsOrdered, clone, 4, "general8").join(", ")}]`,
   );
   console.log(
     `${$isSubset(a, b, false)} ${$isSubset(new Set([2]), a, false)} ${$isDisjoint(a, b)}`,
@@ -136,7 +139,9 @@ function main() {
     `${take == null ? "None" : `Some(${take})`} ${replace == null ? "None" : `Some(${replace})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
   $retainSet(taken, (x) => x % 2 === 1, taken);
-  console.log(`[${sorted($iter(Array.from(taken)), $ordered, clone, 4, "general8").join(", ")}]`);
+  console.log(
+    `[${sorted($iter(Array.from(taken)), $intsOrdered, clone, 4, "general8").join(", ")}]`,
+  );
 
   const tree = new $BTreeMap([
     [5, "e"],

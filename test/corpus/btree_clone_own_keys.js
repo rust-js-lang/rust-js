@@ -9,11 +9,14 @@ import {
   $cmp,
   $debugStr,
   $insert,
+  $intsOrdered,
   $madeEach,
   $madeInTurn,
+  $ord,
   $ordTreeMap,
   $ordTreeSet,
   $ordered,
+  $partialEq,
   $partialOrd,
   $sortedEntries,
   $sortedKeys,
@@ -51,7 +54,7 @@ function dClone_clone(d) {
   return [(d[0] + 100) >>> 0];
 }
 
-export const dPartialEq = { eq: dPartialEq_eq, $drop: dDrop_drop };
+export const dPartialEq = $partialEq({ eq: dPartialEq_eq, $drop: dDrop_drop });
 function dPartialEq_eq(d, other) {
   return d[0] % 100 === other[0] % 100;
 }
@@ -65,7 +68,7 @@ function dPartialOrd_partialCmp(d, other) {
   return dOrd_cmp(d, other);
 }
 
-export const dOrd = { PartialOrd: () => dPartialOrd, cmp: dOrd_cmp, $drop: dDrop_drop };
+export const dOrd = $ord({ PartialOrd: () => dPartialOrd, cmp: dOrd_cmp, $drop: dDrop_drop });
 function dOrd_cmp(d, other) {
   console.log(`cmp ${d[0]} ${other[0]}`);
   return $cmp(d[0] % 100, other[0] % 100);
@@ -581,7 +584,7 @@ function main() {
   }
   try {
     console.log(
-      `{${Array.from($sortedEntries(cloned(numbers, $ordered, clone, $BTreeMap), $cmp))
+      `{${Array.from($sortedEntries(cloned(numbers, $intsOrdered, clone, $BTreeMap), $cmp))
         .map(([key, value]) => `${key}: ${$debugStr(value)}`)
         .join(", ")}}`,
     );

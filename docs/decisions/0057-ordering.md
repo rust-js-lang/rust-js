@@ -1,6 +1,6 @@
 # 0057. `PartialOrd` and `Ord`: an `Ordering`, and the parts in turn
 
-Status: Accepted. Each comparison runs its own impl, and dictionaries hold their supertraits (#937, #944, amendment below). `Reverse` compares the other way round, and another crate's struct is an error rather than field by field ([0068](0068-queues.md)). Extends [0036](0036-iterators-and-sorting.md) and [0053](0053-partial-eq.md).
+Status: Accepted. Each comparison runs its own impl, and dictionaries hold their supertraits (#937, #944) and std's provided `ne`, `max`, `min` and `clamp` (#962), amendments below. `Reverse` compares the other way round, and another crate's struct is an error rather than field by field ([0068](0068-queues.md)). Extends [0036](0036-iterators-and-sorting.md) and [0053](0053-partial-eq.md).
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -247,3 +247,57 @@ mutations are in `ordering.ts`, `std_impls.ts`, `traits/impls.ts`,
 `ends.ts`, `runtime/partial_ord.ts` and `runtime/sift_down.ts`. Left, filed
 P0 as #962: an impl's own `ne`, `max`, `min` or `clamp` called from generic
 code or std's helpers runs std's.
+
+## Amendment: `ne`, `max`, `min` and `clamp` run their own impls too (#962)
+
+The amendment above left an impl's own `ne`, `max`, `min` and `clamp`
+uncalled where generic code or std asks them: generic `a != b` was
+`!TPartialEq.eq(a, b)`, generic `a.max(b)` std's `other < self` over its
+`PartialOrd`, and `clamp` std's default, which panics "assertion failed:
+min <= max" where an integer's and a `char`'s own `clamp` panics "min >
+max. min = 3, max = 1". And std's own `ne` asks its parts' `!=`, a
+reference's, a `Box`'s, a `Pin`'s, an `Rc`'s and a tuple's (`self.0 !=
+other.0 || ..`); std's slice `==`, a `Vec`'s, an array's, a `VecDeque`'s
+and `starts_with`'s, asks each two `!=` after their lengths; and a
+B-tree's bulk build, `DedupSortedIter`, asks `!=` of each two in a row.
+rust-js asked `eq` in each, which an impl whose `ne` prints shows. Results
+change (ADR 0262): Rust's behaviour is kept.
+
+- **Dictionaries hold them, as `$partialOrd` holds `lt`** (the user's
+  choice): every `PartialEq` dictionary is `$partialEq({ eq, ne? })` and
+  every `Ord` dictionary `$ord({ PartialOrd, cmp, max?, min?, clamp? })`,
+  each an impl's own where it writes one, else std's, which the maker
+  fills in, the one place each default is: `ne` is `!eq`, `max` and
+  `min` `$maxOf`'s and `$minOf`'s `other < self`, and `clamp`
+  `$clampBy`'s. `held_by_comparison_dictionary` says which provided
+  methods an impl's dictionary holds, and `comparison_maker` which maker
+  makes it.
+- **Generic code calls them**: `TPartialEq.ne(a, b)`, `TOrd.max(a, b)`,
+  `TOrd.min(a, b)` (and `cmp::min`'s), `TOrd.clamp(x, lo, hi)`, given
+  last the drop of a `T` with a destructor, `TOrd.max(a, b, dropT)`, by
+  which std's default drops what it doesn't give back (the user's
+  choice: one argument at the call, not a drop in every dictionary); an
+  impl's own drops its own.
+- **`!=` has one owner, `std_impls/not_equal.rs`**: `own_ne` says whether
+  `!=` of a type runs more than `!(a == b)`, an impl's own `ne`, a type
+  parameter's, or std's that asks its parts' of one that does; `ne_value`
+  writes it, an `Rc` of an `Eq` value's after its allocation's, as
+  `RcEqIdent` has it. Where nothing runs more, `!=` is `!(a == b)` as
+  before (ADR 0262 "none"). `eq_items` and `item_eq` ask `!(x != y)` of
+  a slice's items whose `!=` does; a `LinkedList`'s `==`, its iterators'
+  `eq`, asks `==`. A B-tree of keys whose `==` can be seen (`eq_seen`) is
+  std's nodes, whose bulk build asks the dictionary's `ne`.
+- **std's quiet orders share dictionaries by what `clamp` shows**:
+  `$intsOrdered` of an integer's, `$charsOrdered` of a `char`'s, `$ordered`
+  of the rest (text, `bool`, `Ordering`, a numbered enum's), all with
+  `$partiallyOrdered`, whose `PartialEq()` is `$strictlyEqual`, which a
+  float's `PartialEq` dictionary is too (the user's choice). A numbered
+  enum whose `PartialEq` is hand-written isn't quiet, as its `==` isn't
+  `===`; it had shared `$partiallyOrdered`'s `===` (#944's).
+
+The corpus's `own_ne_max_min_clamp` runs each against native Rust, failing
+before in both builds; `test/lowering-dictionaries.test.ts` pins the
+forms. The mutations are in `std_impls/not_equal.ts`, `ordering.ts`,
+`std_impls.ts`, `traits/calls.ts`, `traits/dictionaries.ts`, `slice.ts`,
+`btree.ts`, `runtime/partial_ord.ts`, `runtime/clamp.ts`,
+`runtime/map_ops.ts` and `runtime/ord_tree.ts`.

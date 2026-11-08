@@ -488,10 +488,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tree-from-sorted-eq-by-cmp",
-    breaks: "a bulk build dedups by `cmp`, not its `PartialOrd()`'s `PartialEq()`'s `eq`, which a derived `==` doesn't count (#926)",
+    breaks: "a bulk build dedups by `cmp`, not its `PartialOrd()`'s `PartialEq()`'s `ne`, which a derived `==` doesn't count (#926, #962)",
     file: "src/runtime/map_ops.js",
-    find: "  const eq = partialOrd.PartialEq().eq;\n",
-    replace: "  const eq = (a, b) => TOrd.cmp(a, b) === 0;\n",
+    find: "  const ne = partialOrd.PartialEq().ne;\n",
+    replace: "  const ne = (a, b) => TOrd.cmp(a, b) !== 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_generic.rs$|^btree_nodes_seen.rs$"],
   },
   {
@@ -525,5 +525,13 @@ export const mutations: Mutation[] = [
     find: "    // Of its keys' own order, `insert`'s one search (#926).\n    if (m.found !== undefined) {\n",
     replace: "    // Of its keys' own order, `insert`'s one search (#926).\n    if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_seen.rs$"],
+  },
+  {
+    name: "tree-from-sorted-by-eq",
+    breaks: "a B-tree's bulk build asks `!eq` of each two in a row, where std's `DedupSortedIter` asks `!=`, an impl's own (#962)",
+    file: "src/runtime/map_ops.js",
+    find: "  const ne = partialOrd.PartialEq().ne;\n",
+    replace: "  const ne = (a, b) => !partialOrd.PartialEq().eq(a, b);\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
   },
 ];

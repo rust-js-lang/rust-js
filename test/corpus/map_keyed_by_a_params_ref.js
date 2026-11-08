@@ -10,23 +10,26 @@ import {
   $eq,
   $iter,
   $orInsert,
+  $ord,
   $ordered,
+  $partialEq,
   $partialOrd,
   $setEq,
   $sortStable,
   $sortedKeys,
+  $strictlyEqual,
   $treeFromSorted,
 } from "@rust-js/runtime";
 
 const tuplePartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
 });
 
-const tupleOrd = {
+const tupleOrd = $ord({
   PartialOrd: () => tuplePartialOrd,
   cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
-};
+});
 
 export function entry() {
   main();
@@ -76,7 +79,7 @@ function main() {
   ];
   const value = most(
     pairs,
-    { eq: $eq },
+    $partialEq({ eq: $eq }),
     {
       hash(value, state, H) {
         H.writeI32(state, value[0]);
@@ -108,7 +111,7 @@ function main() {
     `${has(
       pairs,
       [3, "c"],
-      { eq: $eq },
+      $partialEq({ eq: $eq }),
       {
         hash(value, state, H) {
           H.writeI32(state, value[0]);
@@ -125,7 +128,7 @@ function main() {
     )} ${has(
       pairs,
       [4, "d"],
-      { eq: $eq },
+      $partialEq({ eq: $eq }),
       {
         hash(value, state, H) {
           H.writeI32(state, value[0]);
@@ -149,7 +152,7 @@ function main() {
         [2, "b"],
         [1, "a"],
       ],
-      { eq: $eq },
+      $partialEq({ eq: $eq }),
       {
         hash(value, state, H) {
           H.writeI32(state, value[0]);
@@ -166,7 +169,7 @@ function main() {
     )} ${same(
       pairs,
       [[1, "a"]],
-      { eq: $eq },
+      $partialEq({ eq: $eq }),
       {
         hash(value, state, H) {
           H.writeI32(state, value[0]);
@@ -185,7 +188,7 @@ function main() {
   const words = ["b", "a", "b"];
   const value$1 = most(
     words,
-    { eq: (a, b) => a === b },
+    $strictlyEqual,
     {
       hash(value, state, H) {
         H.writeStr(state, value);

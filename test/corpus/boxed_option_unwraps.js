@@ -6,6 +6,8 @@ import {
   $maxByKey,
   $minBy,
   $nextSome,
+  $ord,
+  $partialEq,
   $partialOrd,
   $some,
   $someValue,
@@ -13,14 +15,14 @@ import {
 } from "@rust-js/runtime";
 
 const optionPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: (a, b) => a == b }),
+  PartialEq: () => $partialEq({ eq: (a, b) => a == b }),
   partialCmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
 });
 
-const optionOrd = {
+const optionOrd = $ord({
   PartialOrd: () => optionPartialOrd,
   cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
-};
+});
 
 export function entry() {
   main();

@@ -12,7 +12,9 @@ import {
   $lazyRange,
   $mapExtractIf,
   $next,
+  $ord,
   $ordTreeSet,
+  $partialEq,
   $partialOrd,
   $range,
   $sortedEntries,
@@ -34,7 +36,7 @@ function seenDrop_drop(seen) {
   console.log(`drop s${seen[0]}`);
 }
 
-export const seenPartialEq = { eq: seenPartialEq_eq, $drop: seenDrop_drop };
+export const seenPartialEq = $partialEq({ eq: seenPartialEq_eq, $drop: seenDrop_drop });
 function seenPartialEq_eq(seen, other) {
   return seenOrd_cmp(seen, other) === 0;
 }
@@ -48,7 +50,11 @@ function seenPartialOrd_partialCmp(seen, other) {
   return seenOrd_cmp(seen, other);
 }
 
-export const seenOrd = { PartialOrd: () => seenPartialOrd, cmp: seenOrd_cmp, $drop: seenDrop_drop };
+export const seenOrd = $ord({
+  PartialOrd: () => seenPartialOrd,
+  cmp: seenOrd_cmp,
+  $drop: seenDrop_drop,
+});
 function seenOrd_cmp(seen, other) {
   console.log(`cmp ${seen[0]} ${other[0]}`);
   return $cmp(seen[0], other[0]);

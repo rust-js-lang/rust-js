@@ -551,10 +551,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// How a slice's `starts_with` and `strip_*` compare its items (ADR
     /// 0336), and an iterator's `eq` another's, `item` to `rhs`: `None` where
     /// JS's `===` is their `==`, numbers, text and `bool`s, or a function of
-    /// two of them their own `==` is, a `PartialEq<Rhs>`'s too.
+    /// two of them their own `==` is, a `PartialEq<Rhs>`'s too. A slice's,
+    /// `by_ne`, compares by std's slice `==`, which asks `!(a != b)` of
+    /// each two, an impl's own `ne` included (#962); an iterator's `eq`
+    /// asks `==`.
     pub(in crate::lower) fn item_eq(
         &mut self,
         (item, rhs): (ty::Ty<'tcx>, ty::Ty<'tcx>),
+        by_ne: bool,
         span: Span,
     ) -> R<Option<Expr>> {
         if item == rhs
@@ -563,7 +567,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         }
         let mut body = Vec::new();
-        let same = self.eq_values(Expr::var("a"), Expr::var("b"), (item, rhs), span, &mut body)?;
+        let (a, b) = (Expr::var("a"), Expr::var("b"));
+        let same = match by_ne && item.peel_refs() == rhs.peel_refs() && self.own_ne(item) {
+            true => Expr::unary(js::UnaryOp::Not, self.ne_value(a, b, item, span, &mut body)?),
+            false => self.eq_values(a, b, (item, rhs), span, &mut body)?,
+        };
         // `(a, b) => $eq(a, b)` is `$eq`: the helper gives it the two alone.
         if body.is_empty()
             && let js::ExprKind::Call(callee, given) = &same.kind
@@ -1234,7 +1242,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         "$sliceStrip"
                     }
                 };
-                list.extend(self.item_eq((item(), item()), span)?);
+                list.extend(self.item_eq((item(), item()), true, span)?);
                 helper(name, list)
             }
             SliceOp::Repeat => {

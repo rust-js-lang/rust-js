@@ -6,9 +6,9 @@
     "abi": 1
   },
   "library": {
-    "version": 17,
+    "version": 18,
     "name": "rust_js_std",
-    "crate_hash": "e6da3d9f15414aaccc43dd2413312a50",
+    "crate_hash": "36be19ea4159a6508ffae5c2f3805520",
     "items": [
       {
         "key": "core::iter::adapters::filter::{impl#9}::assume_count_le_upper_bound",

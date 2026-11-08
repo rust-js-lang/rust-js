@@ -11,7 +11,9 @@ import {
   $entry,
   $entryRemove,
   $getKeyValue,
+  $ord,
   $ordSet,
+  $partialEq,
   $partialOrd,
   $pathCmp,
   $setReplace,
@@ -27,7 +29,7 @@ function versionDebug_fmt(version) {
   return `Version(${version[0]}, ${$debugStr(version[1])})`;
 }
 
-export const versionPartialEq = { eq: versionPartialEq_eq };
+export const versionPartialEq = $partialEq({ eq: versionPartialEq_eq });
 function versionPartialEq_eq(version, other) {
   return version[0] === other[0];
 }
@@ -40,7 +42,7 @@ function versionPartialOrd_partialCmp(version, other) {
   return versionOrd_cmp(version, other);
 }
 
-export const versionOrd = { PartialOrd: () => versionPartialOrd, cmp: versionOrd_cmp };
+export const versionOrd = $ord({ PartialOrd: () => versionPartialOrd, cmp: versionOrd_cmp });
 function versionOrd_cmp(version, other) {
   return $cmp(version[0], other[0]);
 }

@@ -4,8 +4,10 @@ import {
   $displayF64,
   $eq,
   $partialCmp,
+  $partialEq,
   $partialOrd,
   $partiallyOrdered,
+  $strictlyEqual,
   $traitImpl,
 } from "@rust-js/runtime";
 
@@ -14,11 +16,7 @@ export function entry() {
 }
 
 const f64Zero = { zero: f64Zero_zero };
-
-const f64PartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: (a, b) => a === b }),
-  partialCmp: $partialCmp,
-});
+const f64PartialOrd = $partialOrd({ PartialEq: () => $strictlyEqual, partialCmp: $partialCmp });
 
 function f64Zero_zero() {
   return 0;
@@ -78,7 +76,7 @@ function main() {
     `${f64Signed.negative(-1.5)} ${f64Signed.negative(2)} ${f64Signed.negative(NaN)} ${i32Signed.atMostZero(0)}`,
   );
   console.log(
-    `${WrappingOne.isOne([1], { eq: $eq })} ${WrappingOne.isOne([3], { eq: $eq })} ${u8One.isOne(1, { eq: (a, b) => a === b })}`,
+    `${WrappingOne.isOne([1], $partialEq({ eq: $eq }))} ${WrappingOne.isOne([3], $partialEq({ eq: $eq }))} ${u8One.isOne(1, $strictlyEqual)}`,
   );
   console.log(
     `${$displayF64(f64Signed.distance(2.5, -1))} ${i32Signed.distance(7, 3)} ${i32Signed.distance(-5, 5)}`,

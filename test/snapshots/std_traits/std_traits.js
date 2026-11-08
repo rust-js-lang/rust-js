@@ -24,7 +24,9 @@ import {
   $max,
   $maxBy,
   $minBy,
+  $ord,
   $partialCmp,
+  $partialEq,
   $partialOrd,
   $partiallyOrdered,
   $roomForHint,
@@ -34,14 +36,14 @@ import {
 } from "@rust-js/runtime";
 
 const semverPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor),
 });
 
-const semverOrd = {
+const semverOrd = $ord({
   PartialOrd: () => semverPartialOrd,
   cmp: (a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor),
-};
+});
 
 export const configDefault = { default: configDefault_default };
 function configDefault_default() {
@@ -165,7 +167,7 @@ export function fallibleConversions(n) {
   return `${direct}, ${result.TAG === "Ok" ? result._0 : result._0}`;
 }
 
-export const versionPartialEq = { eq: versionPartialEq_eq };
+export const versionPartialEq = $partialEq({ eq: versionPartialEq_eq });
 function versionPartialEq_eq(version, other) {
   return version.major === other.major;
 }
@@ -223,16 +225,20 @@ export function genericEqualities() {
         [1, "a"],
         [2, "b"],
       ],
-      { eq: $eq },
+      $partialEq({ eq: $eq }),
     ),
-    same([version(1, "a")], [version(2, "a")], {
-      eq: (a, b) => a.length === b.length && a.every((x, i) => versionPartialEq_eq(x, b[i])),
-    }),
+    same(
+      [version(1, "a")],
+      [version(2, "a")],
+      $partialEq({
+        eq: (a, b) => a.length === b.length && a.every((x, i) => versionPartialEq_eq(x, b[i])),
+      }),
+    ),
   ];
 }
 
 /** A `PartialEq` with another type on the right: `!=` is its `eq` too. */
-export const metersPartialEqF64 = { eq: metersPartialEqF64_eq };
+export const metersPartialEqF64 = $partialEq({ eq: metersPartialEqF64_eq });
 function metersPartialEqF64_eq(meters, other) {
   return meters[0] === other;
 }
@@ -385,14 +391,14 @@ export function genericIterations() {
 }
 
 export const wordPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: wordPartialOrd_partialCmp,
 });
 function wordPartialOrd_partialCmp(word, other) {
   return wordOrd_cmp(word, other);
 }
 
-export const wordOrd = { PartialOrd: () => wordPartialOrd, cmp: wordOrd_cmp };
+export const wordOrd = $ord({ PartialOrd: () => wordPartialOrd, cmp: wordOrd_cmp });
 function wordOrd_cmp(word, other) {
   const byLength = $cmp(Array.from(word[0]).length, Array.from(other[0]).length);
   return byLength !== 0 ? byLength : $cmp(word[0], other[0]);

@@ -7,8 +7,10 @@ import {
   $cmpItems,
   $eq,
   $maxBy,
+  $ord,
   $ordSet,
   $partialCmp,
+  $partialEq,
   $partialOrd,
   $sortedEntries,
   $sortedKeys,
@@ -24,11 +26,11 @@ function revOrd_cmp(rev, o) {
   return $cmp(o[0], rev[0]);
 }
 export const revPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: revPartialOrd_partialCmp,
 });
 
-export const revOrd = { PartialOrd: () => revPartialOrd, cmp: revOrd_cmp };
+export const revOrd = $ord({ PartialOrd: () => revPartialOrd, cmp: revOrd_cmp });
 function revPartialOrd_partialCmp(rev, o) {
   return revOrd_cmp(rev, o);
 }

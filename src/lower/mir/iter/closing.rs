@@ -303,7 +303,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => it,
             false => self.closing(it, iter_ty, span)?,
         };
-        let compare = self.item_eq((item, other_item), span)?;
+        let compare = self.item_eq((item, other_item), false, span)?;
         let drop_a = self.std_drop_function(item, span)?;
         let drop_b = self.std_drop_function(other_item, span)?;
         let mut list = vec![it, other];

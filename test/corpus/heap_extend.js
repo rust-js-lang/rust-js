@@ -9,13 +9,14 @@ import {
   $heapFrom,
   $heapPop,
   $heapSorted,
+  $partialEq,
   $partialOrd,
   $partiallyOrdered,
   $sortedKeys,
 } from "@rust-js/runtime";
 
 const reversePartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(b[0], a[0]),
 });
 

@@ -4,7 +4,9 @@ import {
   $cmp,
   $debugF64,
   $eq,
+  $ord,
   $partialCmp,
+  $partialEq,
   $partialOrd,
   $sortStable,
   $totalCmp,
@@ -15,14 +17,14 @@ export function entry() {
 }
 
 export const handPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: handPartialOrd_partialCmp,
 });
 function handPartialOrd_partialCmp(hand, other) {
   return handOrd_cmp(hand, other);
 }
 
-export const handOrd = { PartialOrd: () => handPartialOrd, cmp: handOrd_cmp };
+export const handOrd = $ord({ PartialOrd: () => handPartialOrd, cmp: handOrd_cmp });
 function handOrd_cmp(hand, other) {
   if (hand[0] === 0) {
     if (other[0] === 1) {

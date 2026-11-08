@@ -7,6 +7,8 @@ import {
   $collectDropping,
   $dropEach,
   $iter,
+  $ord,
+  $partialEq,
   $partialOrd,
   $roomFor,
   $selectNthUnstable,
@@ -33,7 +35,7 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
 }
 
-export const dPartialEq = { eq: dPartialEq_eq, $drop: dDrop_drop };
+export const dPartialEq = $partialEq({ eq: dPartialEq_eq, $drop: dDrop_drop });
 function dPartialEq_eq(d, other) {
   return d[0] === other[0];
 }
@@ -47,7 +49,7 @@ function dPartialOrd_partialCmp(d, other) {
   return dOrd_cmp(d, other);
 }
 
-export const dOrd = { PartialOrd: () => dPartialOrd, cmp: dOrd_cmp, $drop: dDrop_drop };
+export const dOrd = $ord({ PartialOrd: () => dPartialOrd, cmp: dOrd_cmp, $drop: dDrop_drop });
 function dOrd_cmp(d, other) {
   point();
   return $cmp(d[0], other[0]);

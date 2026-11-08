@@ -10,13 +10,15 @@ import {
   $heapPush,
   $heapSorted,
   $maxBy,
+  $ord,
+  $partialEq,
   $partialOrd,
   $sortStable,
   $sortUnstable,
 } from "@rust-js/runtime";
 
 const downPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a.a, b.a) || $cmp(a.b, b.b),
 });
 
@@ -29,7 +31,7 @@ function downDebug_fmt(down) {
   return `Down { a: ${down.a}, b: ${down.b} }`;
 }
 
-export const downOrd = { PartialOrd: () => downPartialOrd, cmp: downOrd_cmp };
+export const downOrd = $ord({ PartialOrd: () => downPartialOrd, cmp: downOrd_cmp });
 function downOrd_cmp(down, other) {
   return $cmp(other.a, down.a) || $cmp(other.b, down.b);
 }
@@ -40,7 +42,7 @@ function upDebug_fmt(up) {
 }
 
 export const upPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: upPartialOrd_partialCmp,
 });
 function upPartialOrd_partialCmp(up, other) {
@@ -52,7 +54,7 @@ function seenDebug_fmt(seen) {
   return `Seen(${seen[0]})`;
 }
 
-export const seenPartialEq = { eq: seenPartialEq_eq };
+export const seenPartialEq = $partialEq({ eq: seenPartialEq_eq });
 function seenPartialEq_eq(seen, other) {
   console.log(`  eq ${seen[0]} ${other[0]}`);
   return seen[0] === other[0];
@@ -67,7 +69,7 @@ function seenPartialOrd_partialCmp(seen, other) {
   return seenOrd_cmp(seen, other);
 }
 
-export const seenOrd = { PartialOrd: () => seenPartialOrd, cmp: seenOrd_cmp };
+export const seenOrd = $ord({ PartialOrd: () => seenPartialOrd, cmp: seenOrd_cmp });
 function seenOrd_cmp(seen, other) {
   console.log(`  cmp ${seen[0]} ${other[0]}`);
   return $cmp(seen[0], other[0]);
@@ -79,7 +81,7 @@ function ownLessDebug_fmt(ownLess) {
 }
 
 export const ownLessPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: ownLessPartialOrd_partialCmp,
   lt: ownLessPartialOrd_lt,
 });
@@ -92,7 +94,7 @@ function ownLessPartialOrd_lt(ownLess, other) {
   return ownLess[0] < other[0];
 }
 
-export const ownLessOrd = { PartialOrd: () => ownLessPartialOrd, cmp: ownLessOrd_cmp };
+export const ownLessOrd = $ord({ PartialOrd: () => ownLessPartialOrd, cmp: ownLessOrd_cmp });
 function ownLessOrd_cmp(ownLess, other) {
   return $cmp(ownLess[0], other[0]);
 }
@@ -106,7 +108,7 @@ function backwardsDebug_fmt(backwards) {
 }
 
 export const backwardsPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: backwardsPartialOrd_partialCmp,
   lt: backwardsPartialOrd_lt,
 });
@@ -118,7 +120,7 @@ function backwardsPartialOrd_lt(backwards, other) {
   return backwards[0] > other[0];
 }
 
-export const backwardsOrd = { PartialOrd: () => backwardsPartialOrd, cmp: backwardsOrd_cmp };
+export const backwardsOrd = $ord({ PartialOrd: () => backwardsPartialOrd, cmp: backwardsOrd_cmp });
 function backwardsOrd_cmp(backwards, other) {
   return $cmp(backwards[0], other[0]);
 }

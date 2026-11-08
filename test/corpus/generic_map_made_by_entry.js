@@ -12,20 +12,22 @@ import {
   $index,
   $mutGet,
   $orInsertWith,
+  $ord,
+  $partialEq,
   $partialOrd,
   $sortedEntries,
   $treeFromSorted,
 } from "@rust-js/runtime";
 
 const tuplePartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
 });
 
-const tupleOrd = {
+const tupleOrd = $ord({
   PartialOrd: () => tuplePartialOrd,
   cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
-};
+});
 
 export function entry() {
   main();
@@ -164,7 +166,7 @@ function main() {
         [1, 1],
       ],
     ],
-    { eq: $eq },
+    $partialEq({ eq: $eq }),
     {
       hash(value, state, H) {
         H.writeI32(state, value[0]);

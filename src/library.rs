@@ -44,7 +44,10 @@ use std::path::Path;
 /// its calls, carries the facts its declaration does, `InPlace` of
 /// `from_iter`'s `I::IntoIter` (`std_method_facts`, ADR 1095), so a library
 /// before it gives a consumer after it less than that consumer's impl takes.
-pub const VERSION: u32 = 17;
+/// 18: a `PartialEq` dictionary holds `ne` and an `Ord` dictionary `max`,
+/// `min` and `clamp`, `$partialEq`'s and `$ord`'s (#962), which a
+/// consumer's generic code calls.
+pub const VERSION: u32 = 18;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]

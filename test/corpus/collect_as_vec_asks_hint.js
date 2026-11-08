@@ -13,6 +13,7 @@ import {
   $heapFrom,
   $heapSorted,
   $iterator,
+  $partialEq,
   $partialOrd,
   $partiallyOrdered,
   $range,
@@ -24,7 +25,7 @@ import {
 } from "@rust-js/runtime";
 
 const dPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a[0], b[0]),
 });
 

@@ -14,11 +14,12 @@ import {
   $lazySkipWhile,
   $lazyTakeWhile,
   $next,
+  $partialEq,
   $partialOrd,
 } from "@rust-js/runtime";
 
 const loudPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a[0], b[0]),
 });
 

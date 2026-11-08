@@ -3,6 +3,7 @@
 import {
   $debugF64,
   $eq,
+  $partialEq,
   $slice,
   $sliceStartsWith,
   $sliceStrip,
@@ -22,15 +23,15 @@ function looseDebug_fmt(loose) {
 }
 
 // Equal when they're within one of each other.
-export const loosePartialEq = { eq: loosePartialEq_eq };
+export const loosePartialEq = $partialEq({ eq: loosePartialEq_eq });
 function loosePartialEq_eq(loose, other) {
   return (Math.abs((loose[0] - other[0]) | 0) | 0) <= 1;
 }
 
 function framed(items, edge, TPartialEq) {
   return (
-    $sliceStartsWith(items, edge, false, (a, b) => TPartialEq.eq(a, b)) &&
-    $sliceStartsWith(items, edge, true, (a, b) => TPartialEq.eq(a, b))
+    $sliceStartsWith(items, edge, false, (a, b) => !TPartialEq.ne(a, b)) &&
+    $sliceStartsWith(items, edge, true, (a, b) => !TPartialEq.ne(a, b))
   );
 }
 
@@ -69,7 +70,9 @@ function main() {
   console.log(
     `${value$4 == null ? "None" : `Some([${value$4.map((item) => looseDebug_fmt(item)).join(", ")}])`}`,
   );
-  console.log(`${framed(path, origin, { eq: $eq })} ${framed(loose, [[1]], loosePartialEq)}`);
+  console.log(
+    `${framed(path, origin, $partialEq({ eq: $eq }))} ${framed(loose, [[1]], loosePartialEq)}`,
+  );
   const value$5 = $sliceStripCircumfix([1.5, 2], [1.5], [2]);
   console.log(
     `${value$5 == null ? "None" : `Some([${value$5.map((item) => $debugF64(item)).join(", ")}])`}`,

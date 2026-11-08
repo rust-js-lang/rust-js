@@ -9,12 +9,14 @@ import {
   $debugStr,
   $dropItems,
   $insert,
+  $intsOrdered,
   $iter,
   $next,
+  $ord,
   $ordMap,
   $ordSet,
   $ordTreeMap,
-  $ordered,
+  $partialEq,
   $partialOrd,
   $retainMap,
   $setReplace,
@@ -32,7 +34,7 @@ function quietDrop_drop(quiet) {
   console.log(`drop key ${quiet[1]}${quiet[0]}`);
 }
 
-export const quietPartialEq = { eq: quietPartialEq_eq, $drop: quietDrop_drop };
+export const quietPartialEq = $partialEq({ eq: quietPartialEq_eq, $drop: quietDrop_drop });
 function quietPartialEq_eq(quiet, other) {
   return quiet[0] === other[0];
 }
@@ -46,11 +48,11 @@ function quietPartialOrd_partialCmp(quiet, other) {
   return quietOrd_cmp(quiet, other);
 }
 
-export const quietOrd = {
+export const quietOrd = $ord({
   PartialOrd: () => quietPartialOrd,
   cmp: quietOrd_cmp,
   $drop: quietDrop_drop,
-};
+});
 function quietOrd_cmp(quiet, other) {
   return $cmp(quiet[0], other[0]);
 }
@@ -59,7 +61,7 @@ function shownDrop_drop(shown) {
   console.log(`drop key ${shown[1]}${shown[0]}`);
 }
 
-export const shownPartialEq = { eq: shownPartialEq_eq, $drop: shownDrop_drop };
+export const shownPartialEq = $partialEq({ eq: shownPartialEq_eq, $drop: shownDrop_drop });
 function shownPartialEq_eq(shown, other) {
   return shownOrd_cmp(shown, other) === 0;
 }
@@ -73,11 +75,11 @@ function shownPartialOrd_partialCmp(shown, other) {
   return shownOrd_cmp(shown, other);
 }
 
-export const shownOrd = {
+export const shownOrd = $ord({
   PartialOrd: () => shownPartialOrd,
   cmp: shownOrd_cmp,
   $drop: shownDrop_drop,
-};
+});
 function shownOrd_cmp(shown, other) {
   console.log(`cmp ${shown[1]}${shown[0]} ${other[1]}${other[0]}`);
   return $cmp(shown[0], other[0]);
@@ -390,7 +392,7 @@ function main() {
   appended(
     (i) => i,
     (k) => k,
-    $ordered,
+    $intsOrdered,
     $BTreeMap,
   );
   appended(

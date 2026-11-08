@@ -11,8 +11,10 @@ import {
   $madeEach,
   $madeInTurn,
   $next,
+  $ord,
   $ordTreeMap,
   $ordTreeSet,
+  $partialEq,
   $partialOrd,
   $rem,
   $remove,
@@ -54,7 +56,7 @@ function keyDrop_drop(key) {
   log(`k${key[0]}`);
 }
 
-export const keyPartialEq = { eq: keyPartialEq_eq, $drop: keyDrop_drop };
+export const keyPartialEq = $partialEq({ eq: keyPartialEq_eq, $drop: keyDrop_drop });
 function keyPartialEq_eq(key, other) {
   return keyOrd_cmp(key, other) === 0;
 }
@@ -68,7 +70,11 @@ function keyPartialOrd_partialCmp(key, other) {
   return keyOrd_cmp(key, other);
 }
 
-export const keyOrd = { PartialOrd: () => keyPartialOrd, cmp: keyOrd_cmp, $drop: keyDrop_drop };
+export const keyOrd = $ord({
+  PartialOrd: () => keyPartialOrd,
+  cmp: keyOrd_cmp,
+  $drop: keyDrop_drop,
+});
 function keyOrd_cmp(key, other) {
   calls = (calls + 1) >>> 0;
   return $cmp(key[0] % 1000, other[0] % 1000);

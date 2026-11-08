@@ -2,7 +2,9 @@
 
 import {
   $cmp,
+  $ord,
   $ordTreeSet,
+  $partialEq,
   $partialOrd,
   $range,
   $rem,
@@ -48,7 +50,7 @@ function key(k) {
   return { k, id: next };
 }
 
-export const keyPartialEq = { eq: keyPartialEq_eq };
+export const keyPartialEq = $partialEq({ eq: keyPartialEq_eq });
 function keyPartialEq_eq(key, other) {
   return keyOrd_cmp(key, other) === 0;
 }
@@ -61,7 +63,7 @@ function keyPartialOrd_partialCmp(key, other) {
   return keyOrd_cmp(key, other);
 }
 
-export const keyOrd = { PartialOrd: () => keyPartialOrd, cmp: keyOrd_cmp };
+export const keyOrd = $ord({ PartialOrd: () => keyPartialOrd, cmp: keyOrd_cmp });
 function keyOrd_cmp(key, other) {
   seen(key.id, other.id);
   return $cmp(key.k, other.k);

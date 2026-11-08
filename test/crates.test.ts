@@ -489,7 +489,8 @@ test("a library's generic function is its program's, alone or a dependency, and 
   // imports. Each reads as the library's own would.
   for (const own of ["keyHash", "keyPartialEq", "digitHash", "tagHash", "tagDebug", "spotDebug"]) {
     expect(dep).not.toContain(own);
-    expect(app).toContain(`\nconst ${own} = {`);
+    // A `PartialEq`'s made by `$partialEq`, which gives std's `ne` (#962).
+    expect(app).toContain(own.endsWith("PartialEq") ? `\nconst ${own} = $partialEq({` : `\nconst ${own} = {`);
   }
   expect(dep).not.toContain("export function digitPartialEq_eq");
   // Only what it uses of an impl, `Label`'s `fmt`, not its dictionary; and

@@ -503,4 +503,20 @@ export const mutations: Mutation[] = [
     replace: "                return Ok(Some(method));\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "is its class's getter"],
   },
+  {
+    name: "generic-ne-by-eq",
+    breaks: "generic `a != b` is `!(a == b)`, where Rust calls `ne`, an impl's own (#962)",
+    file: "src/lower/traits/calls.rs",
+    find: "            if negate && !identity {\n",
+    replace: "            if negate && !identity && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
+  },
+  {
+    name: "generic-ne-of-other-type-by-eq",
+    breaks: "generic `a != b` of `T: PartialEq<U>` is `!(a == b)`, where Rust calls its `ne`, an impl's own (#962)",
+    file: "src/lower/traits/calls.rs",
+    find: "                if lhs.peel_refs() != rhs.peel_refs()\n",
+    replace: "                if lhs.peel_refs() != rhs.peel_refs() && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
+  },
 ];

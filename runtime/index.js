@@ -2106,12 +2106,11 @@ export function $sortedSteps(it, set) {
 // `BTreeSet::from_sorted_iter(items)`, what a set's operator makes, `&a |
 // &b`'s (#961): its items, sorted already, a JS iterator, each kept that
 // `!=` doesn't find equal to the next, `DedupSortedIter`'s, pulled as the
-// build asks, then bulk-pushed into `tree`, a set of std's nodes. `eq` is
+// build asks, then bulk-pushed into `tree`, a set of std's nodes. `ne` is
 // the `Ord` dictionary's `PartialOrd()`'s `PartialEq()`'s, as
-// `$treeFromSorted`'s (#944).
+// `$treeFromSorted`'s (#944, #962).
 export function $treeOfSorted(tree, items, TOrd) {
-  const eq = TOrd.PartialOrd().PartialEq().eq;
-  tree.items.pushSorted($sortedSteps(items, true), (a, b) => !eq(a, b));
+  tree.items.pushSorted($sortedSteps(items, true), TOrd.PartialOrd().PartialEq().ne);
   return tree;
 }
 
@@ -8292,14 +8291,14 @@ export function $treeFrom(tree, items, set, cmp, drop, dropKey) {
 // each dropped in the order it's left. Then each kept that `!=` doesn't
 // find equal to the next, and bulk-pushed. `TOrd` is the keys' `Ord`
 // dictionary, whose `PartialOrd()`, and its `PartialEq()`, give `lt` and
-// `eq` (#944). Of another class, a sorted array's or numbers',
+// `ne`, an impl's own included (#944, #962). Of another class, a sorted array's or numbers',
 // `$treeFrom`'s.
 export function $treeFromSorted(tree, items, TOrd, kind, size, drop, dropKey) {
   const set = tree instanceof Set;
   const nodes = set ? tree.items : tree;
   if (nodes?.pushSorted === undefined) return $treeFrom(tree, items, set, TOrd.cmp, drop, dropKey);
   const partialOrd = TOrd.PartialOrd();
-  const eq = partialOrd.PartialEq().eq;
+  const ne = partialOrd.PartialEq().ne;
   const sorted = Array.from(items, (item) => (set ? [item, item] : [item[0], item[1]]));
   if (sorted.length === 0) return tree;
   const dropEntry = set ? dropKey && (([item]) => dropKey(item)) : (drop || dropKey) && $entryDropping(false, drop, dropKey);
@@ -8308,7 +8307,7 @@ export function $treeFromSorted(tree, items, TOrd, kind, size, drop, dropKey) {
     () => $sortStable(sorted, isLess, kind, size),
     dropEntry && (() => $dropItems(sorted, dropEntry)),
   );
-  nodes.pushSorted(sorted, (a, b) => !eq(a, b), dropEntry);
+  nodes.pushSorted(sorted, ne, dropEntry);
   return tree;
 }
 
@@ -8654,10 +8653,10 @@ export function $clampBy(x, min, max, ord, show, drop) {
   return parts[at];
 }
 
-// `a.max(b)` and `a.min(b)` of a type with a destructor, std's `Ord`
-// defaults': `b` against `a`, `ord.lt(b, a)`, `PartialOrd`'s, picks (#937); the one not given
-// back dropped by `drop`, and both, `b` first, as the comparison panics, as
-// std's drops its parameters (#912).
+// `a.max(b)` and `a.min(b)`, std's `Ord` defaults': `b` against `a`,
+// `ord.lt(b, a)`, `PartialOrd`'s, picks (#937); of a type with a
+// destructor, the one not given back dropped by `drop`, and both, `b`
+// first, as the comparison panics, as std's drops its parameters (#912).
 export function $maxOf(a, b, ord, drop) {
   return $keptOf(a, b, ord, drop, true);
 }
@@ -8667,13 +8666,15 @@ export function $minOf(a, b, ord, drop) {
 }
 
 export function $keptOf(a, b, ord, drop, max) {
-  const less = $unwinds(
-    () => ord.lt(b, a),
-    () => drop(b),
-    () => drop(a),
-  );
+  const less = drop
+    ? $unwinds(
+        () => ord.lt(b, a),
+        () => drop(b),
+        () => drop(a),
+      )
+    : ord.lt(b, a);
   const [kept, other] = less === max ? [a, b] : [b, a];
-  drop(other);
+  drop?.(other);
   return kept;
 }
 
@@ -16175,6 +16176,15 @@ export function $partialCmp(a, b) {
   return a < b ? -1 : a > b ? 1 : a === b ? 0 : undefined;
 }
 
+// A `PartialEq` dictionary (ADRs 0049, 0053): its `eq`, and `ne`, an impl's
+// own where it writes one, or std's that asks its parts' `ne`, a tuple's,
+// else std's provided `!eq` (#962). The one place std's default is.
+export function $partialEq(dictionary) {
+  const eq = dictionary.eq;
+  dictionary.ne ??= (a, b) => !eq(a, b);
+  return dictionary;
+}
+
 // A `PartialOrd` dictionary (ADRs 0049, 0057): its `PartialEq()`, its
 // `partialCmp`, and `lt`, `le`, `gt` and `ge`, an impl's own where it writes
 // them, else std's provided bodies over its `partialCmp`, which `None`'s
@@ -16188,15 +16198,43 @@ export function $partialOrd(dictionary) {
   return dictionary;
 }
 
-// std's `PartialOrd` and `Ord` of what `$cmp` orders as Rust does and
-// nothing sees, numbers but floats, text, `char`s and `bool`s: one shared
-// dictionary each, `===` their `PartialEq` (#944).
+// An `Ord` dictionary (ADRs 0049, 0057): its `PartialOrd()`, its `cmp`, and
+// `max`, `min` and `clamp`, an impl's own where it writes them, else std's
+// provided bodies over its `PartialOrd()`'s operators, `other < self`, and
+// `min <= max`, `self < min` and `self > max` (#962). Generic code gives
+// each, last, the drop of a type with a destructor, by which std's drop
+// the ones they don't give back (#912); an impl's own drops its own. The
+// one place std's defaults are.
+export function $ord(dictionary) {
+  const partialOrd = dictionary.PartialOrd;
+  dictionary.max ??= (a, b, drop) => $maxOf(a, b, partialOrd(), drop);
+  dictionary.min ??= (a, b, drop) => $minOf(a, b, partialOrd(), drop);
+  dictionary.clamp ??= (x, min, max, drop) => $clampBy(x, min, max, partialOrd(), undefined, drop);
+  return dictionary;
+}
+
+// std's `PartialEq`, `PartialOrd` and `Ord` of what `$cmp` orders as Rust
+// does and nothing sees, numbers but floats, text, `char`s and `bool`s: one
+// shared dictionary each, `===` their `PartialEq` (#944). An integer's and
+// a `char`'s `Ord` write their own `clamp`, whose panic shows the bounds as
+// `{:?}` does, `$intsOrdered`'s and `$charsOrdered`'s; the rest keep std's
+// (#962).
+export const $strictlyEqual = /* @__PURE__ */ $partialEq({ eq: (a, b) => a === b });
+
 export const $partiallyOrdered = /* @__PURE__ */ $partialOrd({
-  PartialEq: () => ({ eq: (a, b) => a === b }),
+  PartialEq: () => $strictlyEqual,
   partialCmp: $cmp,
 });
 
-export const $ordered = { PartialOrd: () => $partiallyOrdered, cmp: $cmp };
+export const $ordered = /* @__PURE__ */ $ord({ PartialOrd: () => $partiallyOrdered, cmp: $cmp });
+
+export const $intsOrdered = /* @__PURE__ */ $ord({ PartialOrd: () => $partiallyOrdered, cmp: $cmp, clamp: $clamp });
+
+export const $charsOrdered = /* @__PURE__ */ $ord({
+  PartialOrd: () => $partiallyOrdered,
+  cmp: $cmp,
+  clamp: (x, min, max) => $clampBy(x, min, max, $partiallyOrdered, (c) => $debugStr(c, "'")),
+});
 
 export function $toFixed(value, digits) {
   if (Number.isNaN(value)) return "NaN";

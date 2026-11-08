@@ -6,17 +6,18 @@ import {
   $cmpIn,
   $debugStr,
   $eq,
+  $partialEq,
   $partialOrd,
   $partiallyOrdered,
 } from "@rust-js/runtime";
 
 const sizePartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: (a, b) => a === b }),
+  PartialEq: () => $partialEq({ eq: (a, b) => a === b }),
   partialCmp: (a, b) => $cmpIn(["S", "M", "L"], a, b),
 });
 
 const tuplePartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
 });
 

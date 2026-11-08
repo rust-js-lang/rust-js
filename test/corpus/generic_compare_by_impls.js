@@ -7,21 +7,24 @@ import {
   $heapPop,
   $heapPush,
   $heapSorted,
+  $intsOrdered,
+  $ord,
   $ordered,
+  $partialEq,
   $partialOrd,
   $sortStable,
   $sortUnstable,
 } from "@rust-js/runtime";
 
 const pairPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
 });
 
-const pairOrd = {
+const pairOrd = $ord({
   PartialOrd: () => pairPartialOrd,
   cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
-};
+});
 
 export function entry() {
   main();
@@ -32,7 +35,7 @@ function loudDebug_fmt(loud) {
   return `Loud(${loud[0]})`;
 }
 
-export const loudPartialEq = { eq: loudPartialEq_eq };
+export const loudPartialEq = $partialEq({ eq: loudPartialEq_eq });
 function loudPartialEq_eq(loud, other) {
   console.log(`  eq ${loud[0]} ${other[0]}`);
   return loud[0] === other[0];
@@ -47,21 +50,21 @@ function loudPartialOrd_partialCmp(loud, other) {
   return loudOrd_cmp(loud, other);
 }
 
-export const loudOrd = { PartialOrd: () => loudPartialOrd, cmp: loudOrd_cmp };
+export const loudOrd = $ord({ PartialOrd: () => loudPartialOrd, cmp: loudOrd_cmp });
 function loudOrd_cmp(loud, other) {
   console.log(`  cmp ${loud[0]} ${other[0]}`);
   return $cmp(loud[0], other[0]);
 }
 
 export const parityPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: parityPartialOrd_partialCmp,
 });
 function parityPartialOrd_partialCmp(parity, other) {
   return parityOrd_cmp(parity, other);
 }
 
-export const parityOrd = { PartialOrd: () => parityPartialOrd, cmp: parityOrd_cmp };
+export const parityOrd = $ord({ PartialOrd: () => parityPartialOrd, cmp: parityOrd_cmp });
 function parityOrd_cmp(parity, other) {
   return $cmp(parity[1], other[1]);
 }
@@ -72,7 +75,7 @@ function ownOpsDebug_fmt(ownOps) {
 }
 
 export const ownOpsPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: ownOpsPartialOrd_partialCmp,
   lt: ownOpsPartialOrd_lt,
   le: ownOpsPartialOrd_le,
@@ -103,10 +106,10 @@ function ownOpsPartialOrd_ge(ownOps, other) {
   return ownOps[0] >= other[0];
 }
 
-export const ownOpsOrd = { PartialOrd: () => ownOpsPartialOrd, cmp: ownOpsOrd_cmp };
+export const ownOpsOrd = $ord({ PartialOrd: () => ownOpsPartialOrd, cmp: ownOpsOrd_cmp });
 
 const downPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a[0], b[0]),
 });
 
@@ -119,7 +122,7 @@ function downDebug_fmt(down) {
   return `Down(${down[0]})`;
 }
 
-export const downOrd = { PartialOrd: () => downPartialOrd, cmp: downOrd_cmp };
+export const downOrd = $ord({ PartialOrd: () => downPartialOrd, cmp: downOrd_cmp });
 function downOrd_cmp(down, other) {
   return $cmp(other[0], down[0]);
 }
@@ -130,11 +133,11 @@ function upDebug_fmt(up) {
 }
 
 export const upPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: upPartialOrd_partialCmp,
 });
 
-const upOrd = { PartialOrd: () => upPartialOrd, cmp: (a, b) => $cmp(a[0], b[0]) };
+const upOrd = $ord({ PartialOrd: () => upPartialOrd, cmp: (a, b) => $cmp(a[0], b[0]) });
 
 function upPartialOrd_partialCmp(up, other) {
   return $cmp(other[0], up[0]);
@@ -174,11 +177,11 @@ function sortedUnstably(items, TOrd, TClone, TSort) {
 }
 
 function larger(a, b, TOrd) {
-  return TOrd.PartialOrd().lt(b, a) ? a : b;
+  return TOrd.max(a, b);
 }
 
 function clamped(x, low, high, TOrd) {
-  return $clampBy(x, low, high, TOrd.PartialOrd());
+  return TOrd.clamp(x, low, high);
 }
 
 function heaped(items, TOrd) {
@@ -290,9 +293,9 @@ function main() {
     `pair: ${value$10} ${value$11} [${value$12.map((item) => pairDebug_fmt(item)).join(", ")}] ${pairDebug_fmt(pair)} [${value$13.map((item) => pairDebug_fmt(item)).join(", ")}]`,
   );
   console.log(
-    `numbers: ${same(1, 1, $ordered)} ${less("a", "b", $ordered)} [${sorted(
+    `numbers: ${same(1, 1, $intsOrdered)} ${less("a", "b", $ordered)} [${sorted(
       [3, 1, 2],
-      $ordered,
+      $intsOrdered,
       clone,
       4,
       "general8",

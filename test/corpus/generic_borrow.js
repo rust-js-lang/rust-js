@@ -4,9 +4,12 @@ import {
   $cmp,
   $eq,
   $index,
+  $ord,
+  $partialEq,
   $partialOrd,
   $position,
   $sortStable,
+  $strictlyEqual,
   $traitImpl,
 } from "@rust-js/runtime";
 
@@ -58,9 +61,9 @@ function tagBorrowStr_borrow(tag) {
 const $labelledPartialEq = new WeakMap();
 
 export function labelledPartialEq(KBorrowStr) {
-  return $traitImpl($labelledPartialEq, [KBorrowStr], () => ({
-    eq: (arg0, arg1) => labelledPartialEq_eq(arg0, arg1, KBorrowStr),
-  }));
+  return $traitImpl($labelledPartialEq, [KBorrowStr], () =>
+    $partialEq({ eq: (arg0, arg1) => labelledPartialEq_eq(arg0, arg1, KBorrowStr) }),
+  );
 }
 function labelledPartialEq_eq(labelled, other, KBorrowStr) {
   return KBorrowStr.borrow(labelled[0]) === KBorrowStr.borrow(other[0]);
@@ -83,10 +86,12 @@ function labelledPartialOrd_partialCmp(labelled, other, KBorrowStr) {
 const $labelledOrd = new WeakMap();
 
 export function labelledOrd(KBorrowStr) {
-  return $traitImpl($labelledOrd, [KBorrowStr], () => ({
-    PartialOrd: () => labelledPartialOrd(KBorrowStr),
-    cmp: (arg0, arg1) => labelledOrd_cmp(arg0, arg1, KBorrowStr),
-  }));
+  return $traitImpl($labelledOrd, [KBorrowStr], () =>
+    $ord({
+      PartialOrd: () => labelledPartialOrd(KBorrowStr),
+      cmp: (arg0, arg1) => labelledOrd_cmp(arg0, arg1, KBorrowStr),
+    }),
+  );
 }
 function labelledOrd_cmp(labelled, other, KBorrowStr) {
   return $cmp(KBorrowStr.borrow(labelled[0]), KBorrowStr.borrow(other[0]));
@@ -94,21 +99,25 @@ function labelledOrd_cmp(labelled, other, KBorrowStr) {
 
 function main() {
   const borrow = { borrow: (value) => value };
-  const partialEq = { eq: (a, b) => a === b };
-  const i32EquivalentI32 = qEquivalentK(partialEq, borrow);
+  const i32EquivalentI32 = qEquivalentK($strictlyEqual, borrow);
   const words = ["tea", "milk"];
   console.log(
-    `${contains(words, "milk", borrow, partialEq)} ${contains(words, "coffee", borrow, partialEq)}`,
+    `${contains(words, "milk", borrow, $strictlyEqual)} ${contains(words, "coffee", borrow, $strictlyEqual)}`,
   );
   console.log(
-    `${contains([1, 2, 3], 2, borrow, partialEq)} ${contains(["a", "b"], "c", borrow, partialEq)}`,
+    `${contains(
+      [1, 2, 3],
+      2,
+      borrow,
+      $strictlyEqual,
+    )} ${contains(["a", "b"], "c", borrow, $strictlyEqual)}`,
   );
   const tags = [{ name: "red" }, { name: "blue" }];
   console.log(
-    `${contains(tags, "blue", tagBorrowStr, partialEq)} ${contains(tags, "green", tagBorrowStr, partialEq)}`,
+    `${contains(tags, "blue", tagBorrowStr, $strictlyEqual)} ${contains(tags, "green", tagBorrowStr, $strictlyEqual)}`,
   );
   const ids = [[[7]], [[9]]];
-  console.log(`${contains(ids, [9], hyphenatedBorrowUuid, { eq: $eq })}`);
+  console.log(`${contains(ids, [9], hyphenatedBorrowUuid, $partialEq({ eq: $eq }))}`);
 
   console.log(`${total([1, 2, 3], borrow)} ${total([4, 5], borrow)} ${total([6, 7], borrow)}`);
 
@@ -118,11 +127,11 @@ function main() {
     `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   const value$2 = position([5, 6], 6, i32EquivalentI32);
-  const value$3 = position(tags, "red", qEquivalentK(partialEq, tagBorrowStr));
+  const value$3 = position(tags, "red", qEquivalentK($strictlyEqual, tagBorrowStr));
   console.log(
     `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
-  const value$4 = position(ids, [7], qEquivalentK({ eq: $eq }, hyphenatedBorrowUuid));
+  const value$4 = position(ids, [7], qEquivalentK($partialEq({ eq: $eq }), hyphenatedBorrowUuid));
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
 
   const id = hyphenatedBorrowUuid_borrow(ids[1]);

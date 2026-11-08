@@ -638,4 +638,20 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = (name, clone_from);\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_generic_std_own.rs$"],
   },
+  {
+    name: "std-eq-dictionary-without-own-ne",
+    breaks: "a tuple's `PartialEq` dictionary has std's `!eq` for `ne`, where std's asks each part's `!=`, an impl's own (#962)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                if self.own_ne(ty) {\n",
+    replace: "                if self.own_ne(ty) && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
+  },
+  {
+    name: "quiet-eq-dictionary-made",
+    breaks: "a quiet type's `PartialEq` dictionary is made where it's given, not std's shared `$strictlyEqual` (#962)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                if self.eq_is_strict(ty) {\n",
+    replace: "                if self.eq_is_strict(ty) && false {\n",
+    tests: ["test/lowering-dictionaries.test.ts", "-t", "hold ne, max, min and clamp"],
+  },
 ];

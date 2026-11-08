@@ -10,6 +10,7 @@ import {
   $dropItems,
   $foldOf,
   $foldToArray,
+  $intsOrdered,
   $iter,
   $iterator,
   $next,
@@ -140,7 +141,7 @@ function main() {
   const sorted = tExt(undefined, 4, 4, undefined, noisyDrop_drop).sortedByKeyUnstable(
     iterator_map($iter([3, 1, 2]), (value) => [value], { next: $next }, undefined, noisyDrop_drop),
     (n) => n[0],
-    $ordered,
+    $intsOrdered,
     "general8",
   );
   try {

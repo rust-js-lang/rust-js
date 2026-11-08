@@ -30,10 +30,10 @@ function $clampBy(x, min, max, ord, show, drop) {
   return parts[at];
 }
 
-// `a.max(b)` and `a.min(b)` of a type with a destructor, std's `Ord`
-// defaults': `b` against `a`, `ord.lt(b, a)`, `PartialOrd`'s, picks (#937); the one not given
-// back dropped by `drop`, and both, `b` first, as the comparison panics, as
-// std's drops its parameters (#912).
+// `a.max(b)` and `a.min(b)`, std's `Ord` defaults': `b` against `a`,
+// `ord.lt(b, a)`, `PartialOrd`'s, picks (#937); of a type with a
+// destructor, the one not given back dropped by `drop`, and both, `b`
+// first, as the comparison panics, as std's drops its parameters (#912).
 function $maxOf(a, b, ord, drop) {
   return $keptOf(a, b, ord, drop, true);
 }
@@ -43,12 +43,14 @@ function $minOf(a, b, ord, drop) {
 }
 
 function $keptOf(a, b, ord, drop, max) {
-  const less = $unwinds(
-    () => ord.lt(b, a),
-    () => drop(b),
-    () => drop(a),
-  );
+  const less = drop
+    ? $unwinds(
+        () => ord.lt(b, a),
+        () => drop(b),
+        () => drop(a),
+      )
+    : ord.lt(b, a);
   const [kept, other] = less === max ? [a, b] : [b, a];
-  drop(other);
+  drop?.(other);
   return kept;
 }

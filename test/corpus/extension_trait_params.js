@@ -4,9 +4,9 @@ import {
   $checked,
   $count,
   $given,
+  $intsOrdered,
   $iter,
   $next,
-  $ordered,
   $roomForHint,
   $traitImpl,
 } from "@rust-js/runtime";
@@ -70,11 +70,11 @@ function main() {
   const CountReversed = iReversed({ next: countIterator_next }, 1);
   const IntoIterReversed = iReversed({ next: $next }, 4);
   console.log(
-    `[${through($iter([5, 3, 9, 1]), IntoIterReversed, $ordered).join(
+    `[${through($iter([5, 3, 9, 1]), IntoIterReversed, $intsOrdered).join(
       ", ",
-    )}] [${through([4], CountReversed, $ordered).join(", ")}]`,
+    )}] [${through([4], CountReversed, $intsOrdered).join(", ")}]`,
   );
-  console.log(`[${CountReversed.reversed([5], $ordered).join(", ")}]`);
+  console.log(`[${CountReversed.reversed([5], $intsOrdered).join(", ")}]`);
   console.log(
     `${counted([3], { next: countIterator_next }, CountReversed)} ${counted($iter([1, 2]), { next: $next }, IntoIterReversed)}`,
   );

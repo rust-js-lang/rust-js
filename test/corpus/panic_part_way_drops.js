@@ -36,6 +36,7 @@ import {
   $maxByKey,
   $minBy,
   $next,
+  $partialEq,
   $partialOrd,
   $partition,
   $position,
@@ -49,7 +50,7 @@ import {
 } from "@rust-js/runtime";
 
 const dPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a[0], b[0]),
 });
 

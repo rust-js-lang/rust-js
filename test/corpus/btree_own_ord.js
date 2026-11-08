@@ -11,12 +11,15 @@ import {
   $eq,
   $getKeyValue,
   $insert,
+  $intsOrdered,
   $iter,
   $mutGet,
   $orInsert,
+  $ord,
   $ordMap,
   $ordSet,
   $ordered,
+  $partialEq,
   $partialOrd,
   $remove,
   $setAlgebra,
@@ -40,7 +43,7 @@ function taskDebug_fmt(task) {
   return `Task { id: ${task.id}, urgency: ${task.urgency}, name: ${$debugStr(task.name)} }`;
 }
 
-export const taskPartialEq = { eq: taskPartialEq_eq };
+export const taskPartialEq = $partialEq({ eq: taskPartialEq_eq });
 function taskPartialEq_eq(task, other) {
   return task.id === other.id;
 }
@@ -53,7 +56,7 @@ function taskPartialOrd_partialCmp(task, other) {
   return taskOrd_cmp(task, other);
 }
 
-export const taskOrd = { PartialOrd: () => taskPartialOrd, cmp: taskOrd_cmp };
+export const taskOrd = $ord({ PartialOrd: () => taskPartialOrd, cmp: taskOrd_cmp });
 function taskOrd_cmp(task, other) {
   return $cmp(other.id, task.id);
 }
@@ -64,27 +67,27 @@ function scoreDebug_fmt(score) {
 }
 
 export const scorePartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: scorePartialOrd_partialCmp,
 });
 function scorePartialOrd_partialCmp(score, other) {
   return scoreOrd_cmp(score, other);
 }
 
-export const scoreOrd = { PartialOrd: () => scorePartialOrd, cmp: scoreOrd_cmp };
+export const scoreOrd = $ord({ PartialOrd: () => scorePartialOrd, cmp: scoreOrd_cmp });
 function scoreOrd_cmp(score, other) {
   return $cmp(other[0], score[0]);
 }
 
 export const sizePartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: (a, b) => a === b }),
+  PartialEq: () => $partialEq({ eq: (a, b) => a === b }),
   partialCmp: sizePartialOrd_partialCmp,
 });
 function sizePartialOrd_partialCmp(size, other) {
   return sizeOrd_cmp(size, other);
 }
 
-export const sizeOrd = { PartialOrd: () => sizePartialOrd, cmp: sizeOrd_cmp };
+export const sizeOrd = $ord({ PartialOrd: () => sizePartialOrd, cmp: sizeOrd_cmp });
 function sizeOrd_cmp(size, other) {
   return $cmp(["Small", "Large"].indexOf(other), ["Small", "Large"].indexOf(size));
 }
@@ -230,7 +233,7 @@ function main() {
   console.log(
     `${distinct([task(1, 1, ""), task(1, 2, "")], taskOrd, 16, $ordSet(taskOrd_cmp), "general8")} ${distinct(
       [3, 1, 3],
-      $ordered,
+      $intsOrdered,
       4,
       $BTreeSet,
       "general8",

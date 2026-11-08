@@ -7,6 +7,8 @@ import {
   $iter,
   $iterator,
   $lazyZip,
+  $ord,
+  $partialEq,
   $partialOrd,
   $rangeFromStep,
   $roomFor,
@@ -42,28 +44,28 @@ function report(name, len, ids) {
 }
 
 export const countedPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: countedPartialOrd_partialCmp,
 });
 function countedPartialOrd_partialCmp(counted, other) {
   return countedOrd_cmp(counted, other);
 }
 
-export const countedOrd = { PartialOrd: () => countedPartialOrd, cmp: countedOrd_cmp };
+export const countedOrd = $ord({ PartialOrd: () => countedPartialOrd, cmp: countedOrd_cmp });
 function countedOrd_cmp(counted, other) {
   seen(counted.id, other.id);
   return $cmp(counted.key, other.key);
 }
 
 export const shownPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: shownPartialOrd_partialCmp,
 });
 function shownPartialOrd_partialCmp(shown, other) {
   return shownOrd_cmp(shown, other);
 }
 
-export const shownOrd = { PartialOrd: () => shownPartialOrd, cmp: shownOrd_cmp };
+export const shownOrd = $ord({ PartialOrd: () => shownPartialOrd, cmp: shownOrd_cmp });
 function shownOrd_cmp(shown, other) {
   console.log(`cmp ${shown[0]} ${other[0]}`);
   return $cmp(shown[0], other[0]);

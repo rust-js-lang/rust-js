@@ -8,8 +8,10 @@ import {
   $iter,
   $iterator,
   $lazyZip,
+  $ord,
   $ordTreeMap,
   $ordTreeSet,
+  $partialEq,
   $partialOrd,
   $rangeFromStep,
   $sortedEntries,
@@ -36,7 +38,7 @@ function seen(kind, a, b) {
   trace = trace$1 % 1000000007n;
 }
 
-export const keyPartialEq = { eq: keyPartialEq_eq };
+export const keyPartialEq = $partialEq({ eq: keyPartialEq_eq });
 function keyPartialEq_eq(key, other) {
   return keyOrd_cmp(key, other) === 0;
 }
@@ -49,14 +51,14 @@ function keyPartialOrd_partialCmp(key, other) {
   return keyOrd_cmp(key, other);
 }
 
-export const keyOrd = { PartialOrd: () => keyPartialOrd, cmp: keyOrd_cmp };
+export const keyOrd = $ord({ PartialOrd: () => keyPartialOrd, cmp: keyOrd_cmp });
 function keyOrd_cmp(key, other) {
   seen(1n, key[0], other[0]);
   return $cmp(key[0], other[0]);
 }
 
 export const derivedPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: derivedPartialOrd_partialCmp,
 });
 function derivedPartialOrd_partialCmp(derived, other) {
@@ -64,7 +66,7 @@ function derivedPartialOrd_partialCmp(derived, other) {
   return derivedOrd_cmp(derived, other);
 }
 
-export const derivedOrd = { PartialOrd: () => derivedPartialOrd, cmp: derivedOrd_cmp };
+export const derivedOrd = $ord({ PartialOrd: () => derivedPartialOrd, cmp: derivedOrd_cmp });
 function derivedOrd_cmp(derived, other) {
   seen(3n, derived[0], other[0]);
   return $cmp(derived[0], other[0]);

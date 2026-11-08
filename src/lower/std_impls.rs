@@ -4,6 +4,7 @@
 
 mod defaults;
 mod in_turn;
+mod not_equal;
 
 use super::recognition::StdItem;
 use super::recursive_fns::Kind;
@@ -975,7 +976,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let (Some(item), Some(other_item)) = (items(lhs), items(other))
                 && item != other_item
             {
-                return self.eq_items(x, y, (item, other_item), span, out);
+                return self.eq_items(x, y, (item, other_item), true, span, out);
             }
             let tr = ty::TraitRef::new(self.tcx, self.partial_eq_trait(), [lhs, other]);
             if (lhs.has_param() || other.has_param())
@@ -1273,9 +1274,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let b = if b.reads_same() { b } else { self.spill("right", b, out) };
         let std = |item: StdItem| self.is_std_type(ty, item);
         match ty.kind() {
-            ty::Array(item, _) | ty::Slice(item) => self.eq_items(a, b, (*item, *item), span, out),
+            ty::Array(item, _) | ty::Slice(item) => self.eq_items(a, b, (*item, *item), true, span, out),
             ty::Adt(_, args) if self.is_vec_like(ty) => {
-                self.eq_items(a, b, (args.type_at(0), args.type_at(0)), span, out)
+                // A list's `==` is its iterators', `Iterator::eq`, which asks
+                // `==`; the rest's are slices', which ask `!=` (#962).
+                let by_ne = !std(StdItem::LinkedList);
+                self.eq_items(a, b, (args.type_at(0), args.type_at(0)), by_ne, span, out)
             }
             ty::Adt(_, args) if let Some(pointee) = self.counted_rc(ty) => {
                 let (a, b) = (self.counted_pointee(a, pointee), self.counted_pointee(b, pointee));
@@ -1438,11 +1442,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `a.length === b.length && a.every((x, i) => <x == b[i]>)`, of `a`'s
     /// items and `b`'s, each held where it's more than a place: `x` and `i`
     /// named fresh, as `b`, or one inside `<x == b[i]>`, may be named so.
+    /// `by_ne` of a slice's, which asks `!(x != b[i])`.
     fn eq_items(
         &mut self,
         a: Expr,
         b: Expr,
         (item, other_item): (Ty<'tcx>, Ty<'tcx>),
+        by_ne: bool,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
@@ -1451,7 +1457,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (x, i) = (self.fresh("x"), self.fresh("i"));
         let mut body = Vec::new();
         let other = Expr::index(b.clone(), Expr::var(&i));
-        let same = self.eq_values(Expr::var(&x), other, (item, other_item), span, &mut body)?;
+        // std's slice `==` asks each two `x != y`, until one is: of items
+        // whose `!=` is more than `!(x == y)`, theirs (#962).
+        let same = match by_ne && item.peel_refs() == other_item.peel_refs() && self.own_ne(item) {
+            true => Expr::unary(
+                js::UnaryOp::Not,
+                self.ne_value(Expr::var(&x), other, item, span, &mut body)?,
+            ),
+            false => self.eq_values(Expr::var(&x), other, (item, other_item), span, &mut body)?,
+        };
         body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
         let every = Expr::call(
             Expr::member(a.clone(), "every"),
@@ -1468,15 +1482,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn eq_fn(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let mut body = Vec::new();
         let same = self.eq_value(Expr::var("a"), Expr::var("b"), ty, span, &mut body)?;
-        // A function of both, as they're given, `$eq` or an impl's `eq`: it.
-        if body.is_empty()
-            && let js::ExprKind::Call(callee, args) = &same.kind
-            && matches!(callee.kind, js::ExprKind::Var(_))
-            && matches!(args.as_slice(), [x, y] if matches!((&x.kind, &y.kind), (js::ExprKind::Var(x), js::ExprKind::Var(y)) if x == "a" && y == "b"))
-        {
-            return Ok((**callee).clone());
-        }
-        body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
-        Ok(Expr::arrow(vec!["a".into(), "b".into()], body))
+        Ok(self.compare_fn(same, body))
     }
 }

@@ -13,6 +13,8 @@ import {
   $next,
   $nextSome,
   $orInsert,
+  $partialEq,
+  $strictlyEqual,
   $toBytes,
   $traitImpl,
 } from "@rust-js/runtime";
@@ -79,7 +81,6 @@ function pHash_hash(p, state, HHasher) {
 
 function main() {
   const IntoIterCounting = tCounting({ next: $next });
-  const partialEq = { eq: (a, b) => a === b };
   const g = group(
     $iter([
       ["a", 1],
@@ -96,7 +97,7 @@ function main() {
         }
       },
     },
-    partialEq,
+    $strictlyEqual,
     Map,
   );
   const get = g.get("a");
@@ -109,7 +110,7 @@ function main() {
       [[1, 2], 2],
     ]),
     pHash,
-    { eq: $eq },
+    $partialEq({ eq: $eq }),
     $KeyMap,
   );
   const value = pg.get([1, 2]);
@@ -121,7 +122,7 @@ function main() {
       [2, 2],
     ],
     pHash,
-    { eq: $eq },
+    $partialEq({ eq: $eq }),
     { clone: (value) => value },
     $KeySet,
   );
@@ -139,7 +140,7 @@ function main() {
         }
       },
     },
-    partialEq,
+    $strictlyEqual,
     Map,
   );
   const value$1 = c.get("x");
@@ -158,7 +159,7 @@ function main() {
         H.write(state, items);
       },
     },
-    partialEq,
+    $strictlyEqual,
     Map,
   );
   const value$2 = cp.get(0);
@@ -169,7 +170,7 @@ function main() {
       [0, 1],
     ]),
     pHash,
-    { eq: $eq },
+    $partialEq({ eq: $eq }),
     $KeyMap,
   );
   const value$3 = cs.get([0, 1]);
@@ -188,7 +189,7 @@ function main() {
         );
       },
     },
-    partialEq,
+    $strictlyEqual,
     Map,
   );
   const value$4 = by.get(2);

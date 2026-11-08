@@ -3,6 +3,8 @@
 import {
   $cmp,
   $eq,
+  $ord,
+  $partialEq,
   $partialOrd,
   $range,
   $roomFor,
@@ -17,14 +19,14 @@ export function entry() {
 
 // Ordered by the first number alone.
 export const loosePartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: loosePartialOrd_partialCmp,
 });
 function loosePartialOrd_partialCmp(loose, other) {
   return looseOrd_cmp(loose, other);
 }
 
-export const looseOrd = { PartialOrd: () => loosePartialOrd, cmp: looseOrd_cmp };
+export const looseOrd = $ord({ PartialOrd: () => loosePartialOrd, cmp: looseOrd_cmp });
 function looseOrd_cmp(loose, other) {
   return $cmp(loose[0], other[0]);
 }

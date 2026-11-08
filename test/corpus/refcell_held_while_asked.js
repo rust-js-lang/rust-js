@@ -3,6 +3,7 @@
 import {
   $borrow,
   $newCyclic,
+  $partialEq,
   $rcDrop,
   $showBorrowed,
   $tryBorrow,
@@ -82,12 +83,12 @@ function nodeClone_clone(node) {
   return { me: $weakNone };
 }
 
-export const nodePartialEq = {
+export const nodePartialEq = $partialEq({
   eq: nodePartialEq_eq,
   $drop(node) {
     $weakDrop(node.me);
   },
-};
+});
 function nodePartialEq_eq(node, _) {
   console.log(`node == sees it borrowed: ${Node.asks(node)}`);
   return true;

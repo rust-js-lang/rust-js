@@ -6,6 +6,8 @@ import {
   $eq,
   $heapFrom,
   $heapPush,
+  $ord,
+  $partialEq,
   $partialOrd,
   $partiallyOrdered,
   $peekMut,
@@ -30,11 +32,11 @@ function loudOrd_cmp(loud, other) {
 }
 
 export const loudPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: loudPartialOrd_partialCmp,
 });
 
-export const loudOrd = { PartialOrd: () => loudPartialOrd, cmp: loudOrd_cmp };
+export const loudOrd = $ord({ PartialOrd: () => loudPartialOrd, cmp: loudOrd_cmp });
 
 function loudPartialOrd_partialCmp(loud, other) {
   return loudOrd_cmp(loud, other);

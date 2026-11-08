@@ -533,14 +533,14 @@ function $treeFrom(tree, items, set, cmp, drop, dropKey) {
 // each dropped in the order it's left. Then each kept that `!=` doesn't
 // find equal to the next, and bulk-pushed. `TOrd` is the keys' `Ord`
 // dictionary, whose `PartialOrd()`, and its `PartialEq()`, give `lt` and
-// `eq` (#944). Of another class, a sorted array's or numbers',
+// `ne`, an impl's own included (#944, #962). Of another class, a sorted array's or numbers',
 // `$treeFrom`'s.
 function $treeFromSorted(tree, items, TOrd, kind, size, drop, dropKey) {
   const set = tree instanceof Set;
   const nodes = set ? tree.items : tree;
   if (nodes?.pushSorted === undefined) return $treeFrom(tree, items, set, TOrd.cmp, drop, dropKey);
   const partialOrd = TOrd.PartialOrd();
-  const eq = partialOrd.PartialEq().eq;
+  const ne = partialOrd.PartialEq().ne;
   const sorted = Array.from(items, (item) => (set ? [item, item] : [item[0], item[1]]));
   if (sorted.length === 0) return tree;
   const dropEntry = set ? dropKey && (([item]) => dropKey(item)) : (drop || dropKey) && $entryDropping(false, drop, dropKey);
@@ -549,7 +549,7 @@ function $treeFromSorted(tree, items, TOrd, kind, size, drop, dropKey) {
     () => $sortStable(sorted, isLess, kind, size),
     dropEntry && (() => $dropItems(sorted, dropEntry)),
   );
-  nodes.pushSorted(sorted, (a, b) => !eq(a, b), dropEntry);
+  nodes.pushSorted(sorted, ne, dropEntry);
   return tree;
 }
 

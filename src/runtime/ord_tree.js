@@ -630,12 +630,11 @@ function $sortedSteps(it, set) {
 // `BTreeSet::from_sorted_iter(items)`, what a set's operator makes, `&a |
 // &b`'s (#961): its items, sorted already, a JS iterator, each kept that
 // `!=` doesn't find equal to the next, `DedupSortedIter`'s, pulled as the
-// build asks, then bulk-pushed into `tree`, a set of std's nodes. `eq` is
+// build asks, then bulk-pushed into `tree`, a set of std's nodes. `ne` is
 // the `Ord` dictionary's `PartialOrd()`'s `PartialEq()`'s, as
-// `$treeFromSorted`'s (#944).
+// `$treeFromSorted`'s (#944, #962).
 function $treeOfSorted(tree, items, TOrd) {
-  const eq = TOrd.PartialOrd().PartialEq().eq;
-  tree.items.pushSorted($sortedSteps(items, true), (a, b) => !eq(a, b));
+  tree.items.pushSorted($sortedSteps(items, true), TOrd.PartialOrd().PartialEq().ne);
   return tree;
 }
 

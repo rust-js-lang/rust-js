@@ -544,6 +544,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `a != b` is `!(a == b)`, as Rust requires them to agree (ADR 0053).
         if let Some(TraitCall::Equality { negate }) = known {
             let [a, b]: [Expr; 2] = values.try_into().map_err(|_| self.unsupported(span, "this `==`"))?;
+            // `a != b` is `PartialEq::ne`, which may be more than `!(a == b)`:
+            // an impl's own, a type parameter's dictionary's, or std's that
+            // asks its parts' (#962).
+            let (lhs, rhs) = (tr.self_ty(), tr.args.type_at(1));
+            if negate && !identity {
+                if lhs.peel_refs() == rhs.peel_refs() && self.own_ne(lhs) {
+                    return Ok(Some(self.ne_value(a, b, lhs, span, out)?));
+                }
+                let tr = ty::TraitRef::new(self.tcx, trait_id, [lhs.peel_refs(), rhs.peel_refs()]);
+                if lhs.peel_refs() != rhs.peel_refs()
+                    && tr.args.has_non_region_param()
+                    && let Some(dictionary) = self.evidence_for(tr)
+                {
+                    let (a, _) = self.through_refs(a, lhs);
+                    let (b, _) = self.through_refs(b, rhs);
+                    return Ok(Some(Expr::call(Expr::member(dictionary, "ne"), vec![a, b])));
+                }
+            }
             // A hand-written `PartialEq<Rhs>` is its own `eq`, whatever `Rhs`
             // is; but not one of a type equal only to itself.
             let eq = if self.is_user_impl(tr) && !identity {

@@ -11,7 +11,9 @@ import {
   $iterator,
   $maxBy,
   $mutWriter,
+  $ord,
   $ordered,
+  $partialEq,
   $partialOrd,
   $rangeInclusiveNext,
   $rangeNext,
@@ -22,11 +24,14 @@ import {
 } from "@rust-js/runtime";
 
 const kPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
 });
 
-const kOrd = { PartialOrd: () => kPartialOrd, cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) };
+const kOrd = $ord({
+  PartialOrd: () => kPartialOrd,
+  cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+});
 
 export function entry() {
   main();
@@ -87,7 +92,7 @@ function main() {
   console.log(
     `${show(a, { fmt: kDisplay_fmt })} ${show(b, { fmt: kDisplay_fmt })} ${dbg(a, { fmt: (value) => kDebug_fmt(value) })}`,
   );
-  console.log(`${same(a, a, { eq: $eq })} ${same(a, b, { eq: $eq })}`);
+  console.log(`${same(a, a, $partialEq({ eq: $eq }))} ${same(a, b, $partialEq({ eq: $eq }))}`);
   const value = biggest([a, b, a], kOrd);
   console.log(`${value == null ? "None" : `Some(${kDebug_fmt(value)})`}`);
   console.log(

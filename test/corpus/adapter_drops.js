@@ -18,6 +18,7 @@ import {
   $lazyTakeWhile,
   $lazyZip,
   $next,
+  $partialEq,
   $range,
 } from "@rust-js/runtime";
 
@@ -29,7 +30,7 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 
-export const loudPartialEq = { eq: loudPartialEq_eq, $drop: loudDrop_drop };
+export const loudPartialEq = $partialEq({ eq: loudPartialEq_eq, $drop: loudDrop_drop });
 function loudPartialEq_eq(loud, other) {
   console.log(`eq ${loud[0]} ${other[0]}`);
   return loud[0] % 10 === other[0] % 10;

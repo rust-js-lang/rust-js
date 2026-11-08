@@ -168,6 +168,14 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   `<` and `partial_cmp` are its `PartialEq`'s and `PartialOrd`'s, reached
   as Rust's supertraits are: `TOrd.PartialOrd().lt(a, b)`
   ([0057](../decisions/0057-ordering.md), amended).
+- **Your own `ne`, `max`, `min` and `clamp` are what `!=` and the others
+  run,** wherever Rust calls them: generic `a != b` is `TPartialEq.ne(a,
+  b)` and generic `a.max(b)` `TOrd.max(a, b)`, your impl's where you write
+  one, else std's; `!=` of a reference, a `Box`, an `Rc` or a tuple asks
+  its parts' `!=`, std's slice `==` (a `Vec`'s, an array's, a
+  `VecDeque`'s, `starts_with`) asks each two `!=` after their lengths, and
+  a B-tree's bulk build asks `!=` of each two in a row, as std's do
+  ([0057](../decisions/0057-ordering.md), amended).
 
 - **A type's own `FromStr` is what `parse` calls,** `s.parse::<Role>()`
   calling `impl FromStr for Role`'s `from_str`

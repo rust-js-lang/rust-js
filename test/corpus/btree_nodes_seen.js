@@ -12,8 +12,10 @@ import {
   $lazyChain,
   $lazyRange,
   $mapExtractIf,
+  $ord,
   $ordTreeMap,
   $ordTreeSet,
+  $partialEq,
   $partialOrd,
   $range,
   $rem,
@@ -69,7 +71,7 @@ function key(k) {
   return { k, id: nextId() };
 }
 
-export const keyPartialEq = { eq: keyPartialEq_eq };
+export const keyPartialEq = $partialEq({ eq: keyPartialEq_eq });
 function keyPartialEq_eq(key, other) {
   return keyOrd_cmp(key, other) === 0;
 }
@@ -82,7 +84,7 @@ function keyPartialOrd_partialCmp(key, other) {
   return keyOrd_cmp(key, other);
 }
 
-export const keyOrd = { PartialOrd: () => keyPartialOrd, cmp: keyOrd_cmp };
+export const keyOrd = $ord({ PartialOrd: () => keyPartialOrd, cmp: keyOrd_cmp });
 function keyOrd_cmp(key, other) {
   seen(key.id, other.id);
   return $cmp(key.k, other.k);
@@ -92,7 +94,7 @@ function odd(k) {
   return { k, id: nextId() };
 }
 
-export const oddPartialEq = { eq: oddPartialEq_eq };
+export const oddPartialEq = $partialEq({ eq: oddPartialEq_eq });
 function oddPartialEq_eq(odd, other) {
   return odd.k === other.k;
 }
@@ -105,7 +107,7 @@ function oddPartialOrd_partialCmp(odd, other) {
   return oddOrd_cmp(odd, other);
 }
 
-export const oddOrd = { PartialOrd: () => oddPartialOrd, cmp: oddOrd_cmp };
+export const oddOrd = $ord({ PartialOrd: () => oddPartialOrd, cmp: oddOrd_cmp });
 function oddOrd_cmp(odd, other) {
   return ((odd.k + other.k) >>> 0) % 2 === 0 ? $cmp(odd.k, other.k) : $cmp(other.k, odd.k);
 }

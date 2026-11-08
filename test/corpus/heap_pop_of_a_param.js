@@ -8,43 +8,45 @@ import {
   $heapPop,
   $heapPush,
   $heapSorted,
+  $intsOrdered,
   $iter,
   $nextSome,
-  $ordered,
+  $ord,
+  $partialEq,
   $partialOrd,
   $partiallyOrdered,
   $someValue,
 } from "@rust-js/runtime";
 
 const optionPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: (a, b) => a == b }),
+  PartialEq: () => $partialEq({ eq: (a, b) => a == b }),
   partialCmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
 });
 
-const optionOrd = {
+const optionOrd = $ord({
   PartialOrd: () => optionPartialOrd,
   cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
-};
+});
 
 const optionPartialOrd$1 = $partialOrd({
-  PartialEq: () => ({ eq: (a, b) => a == b }),
+  PartialEq: () => $partialEq({ eq: (a, b) => a == b }),
   partialCmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
 });
 
-const optionOrd$1 = {
+const optionOrd$1 = $ord({
   PartialOrd: () => optionPartialOrd$1,
   cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
-};
+});
 
 const tuplePartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
 });
 
-const tupleOrd = {
+const tupleOrd = $ord({
   PartialOrd: () => tuplePartialOrd,
   cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
-};
+});
 
 export function entry() {
   main();
@@ -74,14 +76,14 @@ function top(items, VOrd, VCopy) {
 }
 
 function main() {
-  console.log(`[${inOrder([3, 1, 4, 1, 5], $ordered).join(", ")}]`);
+  console.log(`[${inOrder([3, 1, 4, 1, 5], $intsOrdered).join(", ")}]`);
   console.log(
     `[${inOrder([2, undefined, 7], optionOrd)
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );
   const value = top([undefined], optionOrd$1);
-  const value$1 = top([], $ordered);
+  const value$1 = top([], $intsOrdered);
   const value$2 = top(
     [
       [1, "b"],

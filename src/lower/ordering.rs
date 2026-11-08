@@ -46,6 +46,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
+    /// Whether a comparison of two `ty`s by their `PartialEq`, `==` or
+    /// `!=`, can be seen: `eq_may`'s answer of an impl any of whose methods
+    /// isn't quiet (#962), as `order_seen` is of their order.
+    pub(in crate::lower) fn eq_seen(&self, ty: Ty<'tcx>) -> bool {
+        eq_may(&self.recognition(), ty, &|imp| {
+            !impl_quiet(self.tcx, self.krate.quiet_fns, imp)
+        })
+    }
+
     /// Whether comparing `ty`s, by their `Ord`, is a total order (#936), so
     /// that any sort of them leaves them in one order: std's own of
     /// numbers, text, `char`s and `bool`s, and of what holds them; a
@@ -212,10 +221,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `ty` is ordered by std as `$cmp` orders it, asking nothing a
     /// program sees: numbers but floats, `bool`s, text and `char`s, whose
-    /// dictionaries are the shared `$ordered` and `$partiallyOrdered` (#944).
+    /// dictionaries are the shared `$ordered` and `$partiallyOrdered` (#944),
+    /// and whose `==` is std's `===`, `$strictlyEqual` (#962): not one whose
+    /// `PartialEq` is hand-written.
     pub(in crate::lower) fn quietly_ordered(&self, ty: Ty<'tcx>) -> bool {
         let float = Num::of(ty.peel_refs()).is_some_and(Num::float);
-        (self.is_primitive_ord(ty) && !float) || self.is_text_ord(ty)
+        let own_eq = self.has_user_impl(self.partial_eq_trait(), ty.peel_refs());
+        ((self.is_primitive_ord(ty) && !float) || self.is_text_ord(ty)) && !own_eq
+    }
+
+    /// Whether std's `PartialEq` of `ty`s is JS's `===`, the shared
+    /// `$strictlyEqual` (#962): of what `quietly_ordered` says, and of a
+    /// float, whose `NaN` `===` finds unequal to itself, as `==` does.
+    pub(in crate::lower) fn eq_is_strict(&self, ty: Ty<'tcx>) -> bool {
+        let float = !self.has_cell_layer(ty) && Num::of(ty.peel_refs()).is_some_and(Num::float);
+        self.quietly_ordered(ty) || float
+    }
+
+    /// The runtime's shared dictionary of `ty`s, of std's `Ord` if `ord`,
+    /// else its `PartialOrd`, of what `quietly_ordered` says std orders as
+    /// `$cmp` does: `$partiallyOrdered`; of an `Ord`, `$intsOrdered` of an
+    /// integer's and `$charsOrdered` of a `char`'s, whose own `clamp` shows
+    /// its bounds as it panics, and `$ordered` of the rest, which keep std's
+    /// (#944, #962).
+    pub(in crate::lower) fn quiet_dictionary(&self, ty: Ty<'tcx>, ord: bool) -> Option<&'static str> {
+        if !self.quietly_ordered(ty) {
+            return None;
+        }
+        let ty = ty.peel_refs();
+        Some(match () {
+            _ if !ord => "$partiallyOrdered",
+            _ if Num::of(ty).is_some() => "$intsOrdered",
+            _ if ty.is_char() => "$charsOrdered",
+            _ => "$ordered",
+        })
     }
 
     /// Strings and `char`s, which `$cmp` orders by code point (ADR 0183).
@@ -740,6 +779,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             OrderingCall::Ge => Some(Op::Ge),
             _ => None,
         };
+        // Of a type parameter, its `Ord` dictionary's `max`, `min` or `clamp`,
+        // its impl's own or std's, `$ord`'s, given its drop where it has a
+        // destructor, by which std's drops what it doesn't give back (#962).
+        if matches!(call, OrderingCall::Max | OrderingCall::Min | OrderingCall::Clamp) && self.is_unknown(ty) {
+            let dictionary = self.dictionary(tr, span)?;
+            let name = match call {
+                OrderingCall::Max => "max",
+                OrderingCall::Min => "min",
+                _ => "clamp",
+            };
+            let mut args = values;
+            args.extend(self.std_drop_function(ty, span)?);
+            return Ok(Some(Expr::call(Expr::member(dictionary, name), args)));
+        }
         // `clamp`, by its `Ord`, which panics of bounds the wrong way round
         // as `Ord`'s default does, a `char`'s showing them; of a type with a
         // destructor, its drop, which drops the two it doesn't give back,
@@ -1013,13 +1066,40 @@ pub(in crate::lower) fn partial_cmp_is_cmp(tcx: rustc_middle::ty::TyCtxt<'_>, im
     is_some && cmp_of_self
 }
 
-/// Whether `id` is `PartialOrd`'s `lt`, `le`, `gt` or `ge`, which a
-/// `PartialOrd` dictionary holds, an impl's own or std's (#944).
-pub(in crate::lower) fn is_operator_method(tcx: rustc_middle::ty::TyCtxt<'_>, id: DefId) -> bool {
-    let partial_ord = tcx.require_lang_item(LangItem::PartialOrd, DUMMY_SP);
-    OPERATORS
-        .into_iter()
-        .any(|name| trait_method(tcx, partial_ord, name) == id)
+/// Whether `id` is a comparison trait's provided method that its
+/// dictionary holds, an impl's own or std's, for generic code and std's
+/// helpers to call: `PartialOrd`'s `lt`, `le`, `gt` and `ge` (#944),
+/// `PartialEq`'s `ne` and `Ord`'s `max`, `min` and `clamp` (#962).
+pub(in crate::lower) fn held_by_comparison_dictionary(tcx: rustc_middle::ty::TyCtxt<'_>, id: DefId) -> bool {
+    let Some(tr) = tcx.trait_of_assoc(id) else {
+        return false;
+    };
+    let names: &[&str] = if tcx.is_lang_item(tr, LangItem::PartialOrd) {
+        &OPERATORS
+    } else if tcx.is_lang_item(tr, LangItem::PartialEq) {
+        &["ne"]
+    } else if tr == std_item(tcx, StdItem::Ord) {
+        &["max", "min", "clamp"]
+    } else {
+        &[]
+    };
+    names.contains(&tcx.item_name(id).as_str())
+}
+
+/// The runtime's maker of a comparison trait's dictionary, which fills in
+/// std's provided methods where its impl writes none, the one place each
+/// default is: `$partialEq`'s `ne`, `$partialOrd`'s `lt` and the rest, and
+/// `$ord`'s `max`, `min` and `clamp` (#944, #962). None of another trait.
+pub(in crate::lower) fn comparison_maker(tcx: rustc_middle::ty::TyCtxt<'_>, tr: DefId) -> Option<&'static str> {
+    if tcx.is_lang_item(tr, LangItem::PartialEq) {
+        Some("$partialEq")
+    } else if tcx.is_lang_item(tr, LangItem::PartialOrd) {
+        Some("$partialOrd")
+    } else if tr == std_item(tcx, StdItem::Ord) {
+        Some("$ord")
+    } else {
+        None
+    }
 }
 
 /// `PartialOrd`'s operators' methods, by name.

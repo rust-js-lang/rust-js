@@ -638,7 +638,7 @@ pub fn equal_fibers(a: &Fiber, b: &Fiber) -> bool {
     equal(a, b)
 }
 `);
-  expect(generic).toContain("export const fiberPartialEq = { eq: fiberPartialEq_eq };");
+  expect(generic).toContain("export const fiberPartialEq = $partialEq({ eq: fiberPartialEq_eq });");
   expect(generic).toContain("  return equal(a, b, fiberPartialEq);\n");
   expect(() => compile("identity-set-ne", "std::ptr::eq(self, other)", "\n\n    #[allow(clippy::partialeq_ne_impl)]\n    fn ne(&self, other: &Self) -> bool {\n        self.tag != other.tag\n    }"))
     .toThrow("values of type");

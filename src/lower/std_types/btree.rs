@@ -17,9 +17,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// difference). A type parameter's may be, its caller's class, whose
     /// order `order_seen` says may be seen: its calls are given what std's
     /// nodes ask besides `cmp`, the keys' `eq` and `partial_cmp`, its
-    /// entries' sort, the drops of what `append` replaces.
+    /// entries' sort, the drops of what `append` replaces. One whose `==`
+    /// or `!=` can be seen (`eq_seen`) is too, as std's bulk build asks
+    /// `!=` of each two in a row, and a range `==` of its bounds (#962).
     pub(in crate::lower) fn tree_of_nodes(&self, key: Ty<'tcx>) -> bool {
-        self.found_by_cmp(key) && (self.order_seen(key) || !self.order_total(key))
+        self.found_by_cmp(key) && (self.order_seen(key) || self.eq_seen(key) || !self.order_total(key))
     }
 
     /// What std's nodes of `key`s ask besides `cmp`: `[eq, ord]`,

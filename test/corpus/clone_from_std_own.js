@@ -14,6 +14,7 @@ import {
   $extendMap,
   $heapFrom,
   $madeEach,
+  $partialEq,
   $partialOrd,
 } from "@rust-js/runtime";
 
@@ -24,7 +25,7 @@ export function entry() {
 let boom = 0;
 
 const dPartialOrd = $partialOrd({
-  PartialEq: () => ({ eq: $eq }),
+  PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(a[0], b[0]),
 });
 
