@@ -74,7 +74,9 @@ function main() {
               try {
                 kDrop_drop(key);
               } catch (error) {
-                dDrop_drop(value);
+                $cleanup(() => {
+                  dDrop_drop(value);
+                });
                 throw error;
               }
               dDrop_drop(value);
@@ -95,7 +97,9 @@ function main() {
               try {
                 kDrop_drop(key);
               } catch (error) {
-                dDrop_drop(value);
+                $cleanup(() => {
+                  dDrop_drop(value);
+                });
                 throw error;
               }
               dDrop_drop(value);
@@ -115,7 +119,9 @@ function main() {
               try {
                 kDrop_drop(key);
               } catch (error) {
-                dDrop_drop(value);
+                $cleanup(() => {
+                  dDrop_drop(value);
+                });
                 throw error;
               }
               dDrop_drop(value);
@@ -137,7 +143,9 @@ function main() {
               try {
                 kDrop_drop(key);
               } catch (error) {
-                dDrop_drop(value);
+                $cleanup(() => {
+                  dDrop_drop(value);
+                });
                 throw error;
               }
               dDrop_drop(value);
@@ -158,7 +166,9 @@ function main() {
               try {
                 kDrop_drop(key);
               } catch (error) {
-                dDrop_drop(value);
+                $cleanup(() => {
+                  dDrop_drop(value);
+                });
                 throw error;
               }
               dDrop_drop(value);
@@ -181,7 +191,9 @@ function main() {
               try {
                 kDrop_drop(key);
               } catch (error) {
-                dDrop_drop(value);
+                $cleanup(() => {
+                  dDrop_drop(value);
+                });
                 throw error;
               }
               dDrop_drop(value);
@@ -196,7 +208,9 @@ function main() {
           try {
             kDrop_drop(key);
           } catch (error) {
-            dDrop_drop(value);
+            $cleanup(() => {
+              dDrop_drop(value);
+            });
             throw error;
           }
           dDrop_drop(value);
@@ -216,7 +230,9 @@ function main() {
               try {
                 kDrop_drop(key);
               } catch (error) {
-                dDrop_drop(value);
+                $cleanup(() => {
+                  dDrop_drop(value);
+                });
                 throw error;
               }
               dDrop_drop(value);
@@ -237,7 +253,9 @@ function main() {
               try {
                 kDrop_drop(key);
               } catch (error) {
-                dDrop_drop(value);
+                $cleanup(() => {
+                  dDrop_drop(value);
+                });
                 throw error;
               }
               dDrop_drop(value);
@@ -266,7 +284,9 @@ function main() {
               try {
                 kDrop_drop(key);
               } catch (error) {
-                dDrop_drop(value);
+                $cleanup(() => {
+                  dDrop_drop(value);
+                });
                 throw error;
               }
               dDrop_drop(value);
@@ -289,7 +309,9 @@ function main() {
               try {
                 kDrop_drop(key);
               } catch (error) {
-                dDrop_drop(value);
+                $cleanup(() => {
+                  dDrop_drop(value);
+                });
                 throw error;
               }
               dDrop_drop(value);
@@ -304,7 +326,9 @@ function main() {
           try {
             kDrop_drop(key);
           } catch (error) {
-            dDrop_drop(value);
+            $cleanup(() => {
+              dDrop_drop(value);
+            });
             throw error;
           }
           dDrop_drop(value);
@@ -322,7 +346,9 @@ function main() {
             try {
               kDrop_drop(key);
             } catch (error) {
-              dDrop_drop(value);
+              $cleanup(() => {
+                dDrop_drop(value);
+              });
               throw error;
             }
             dDrop_drop(value);
@@ -340,7 +366,9 @@ function main() {
             try {
               kDrop_drop(key);
             } catch (error) {
-              dDrop_drop(value);
+              $cleanup(() => {
+                dDrop_drop(value);
+              });
               throw error;
             }
             dDrop_drop(value);
@@ -357,7 +385,9 @@ function main() {
             try {
               kDrop_drop(key);
             } catch (error) {
-              dDrop_drop(value);
+              $cleanup(() => {
+                dDrop_drop(value);
+              });
               throw error;
             }
             dDrop_drop(value);
@@ -376,7 +406,9 @@ function main() {
             try {
               kDrop_drop(key);
             } catch (error) {
-              dDrop_drop(value);
+              $cleanup(() => {
+                dDrop_drop(value);
+              });
               throw error;
             }
             dDrop_drop(value);
@@ -394,7 +426,9 @@ function main() {
             try {
               kDrop_drop(key);
             } catch (error) {
-              dDrop_drop(value);
+              $cleanup(() => {
+                dDrop_drop(value);
+              });
               throw error;
             }
             dDrop_drop(value);

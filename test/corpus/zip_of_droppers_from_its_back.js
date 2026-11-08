@@ -173,7 +173,9 @@ function main() {
         try {
           dDrop_drop(value[0]);
         } catch (error) {
-          dDrop_drop(value[1]);
+          $cleanup(() => {
+            dDrop_drop(value[1]);
+          });
           throw error;
         }
         dDrop_drop(value[1]);

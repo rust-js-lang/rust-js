@@ -139,9 +139,11 @@ function heldLoud(n, name) {
       try {
         holderDrop_drop(_holder, loudDrop_drop);
       } catch (error) {
-        if (_holder[0] != null) {
-          loudDrop_drop(_holder[0]);
-        }
+        $cleanup(() => {
+          if (_holder[0] != null) {
+            loudDrop_drop(_holder[0]);
+          }
+        });
         throw error;
       }
       if (_holder[0] != null) {

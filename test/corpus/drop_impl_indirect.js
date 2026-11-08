@@ -93,7 +93,9 @@ function pairTake(dropA, dropB) {
       try {
         dropA?.(pair[0]);
       } catch (error) {
-        dropB?.(pair[1]);
+        $cleanup(() => {
+          dropB?.(pair[1]);
+        });
         throw error;
       }
       dropB?.(pair[1]);

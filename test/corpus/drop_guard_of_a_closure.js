@@ -45,7 +45,9 @@ function hold(name) {
       try {
         holderDrop_drop(_held, loudDefault, loudDrop_drop);
       } catch (error) {
-        loudDrop_drop(_held[0]);
+        $cleanup(() => {
+          loudDrop_drop(_held[0]);
+        });
         throw error;
       }
       loudDrop_drop(_held[0]);

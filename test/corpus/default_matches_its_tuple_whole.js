@@ -38,7 +38,9 @@ function _A__A_Tuple(dropA) {
       try {
         dropA?.(value[0]);
       } catch (error) {
-        dropA?.(value[1]);
+        $cleanup(() => {
+          dropA?.(value[1]);
+        });
         throw error;
       }
       dropA?.(value[1]);

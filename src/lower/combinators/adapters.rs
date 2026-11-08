@@ -592,19 +592,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.spill("inspect", f, out)
                 };
                 let item = Expr::var("item");
-                let mut inspected = StmtKind::Expr(Expr::call(f, vec![item.clone()])).at(js::Span::NONE);
+                let inspected = StmtKind::Expr(Expr::call(f, vec![item.clone()])).at(js::Span::NONE);
+                let mut inspected = vec![inspected];
                 if throws && let Some(dropped) = self.item_drop_call(receiver_ty, item.clone(), span)? {
-                    let error = self.fresh("error");
-                    let handler = vec![
-                        StmtKind::Expr(dropped).at(js::Span::NONE),
-                        StmtKind::Throw(Expr::var(&error)).at(js::Span::NONE),
-                    ];
-                    inspected = StmtKind::TryCatch(vec![inspected], Some(error), handler).at(js::Span::NONE);
+                    let dropped = vec![StmtKind::Expr(dropped).at(js::Span::NONE)];
+                    inspected = crate::lower::drops::dropped_unwinding(inspected, dropped, js::Span::NONE);
                 }
-                let each = Expr::arrow(
-                    vec!["item".into()],
-                    vec![inspected, StmtKind::Return(Some(item)).at(js::Span::NONE)],
-                );
+                inspected.push(StmtKind::Return(Some(item)).at(js::Span::NONE));
+                let each = Expr::arrow(vec!["item".into()], inspected);
                 method(items, "map", vec![each])
             }
             // Of `&T`s, each a copy where it needs one (`copied_into`), into

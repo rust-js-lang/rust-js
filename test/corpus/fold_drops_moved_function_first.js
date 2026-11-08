@@ -262,7 +262,9 @@ function main() {
         try {
           f(item);
         } catch (error) {
-          dDrop_drop(item);
+          $cleanup(() => {
+            dDrop_drop(item);
+          });
           throw error;
         }
         return item;

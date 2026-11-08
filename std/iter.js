@@ -2827,7 +2827,9 @@ export function mapIterator_fold(
       try {
         dropG?.(g);
       } catch (error) {
-        dropF?.(captured);
+        $cleanup(() => {
+          dropF?.(captured);
+        });
         throw error;
       }
       dropF?.(captured);
@@ -2952,7 +2954,9 @@ export function mapDoubleEndedIterator_rfold(
       try {
         dropG?.(g);
       } catch (error) {
-        dropF?.(captured);
+        $cleanup(() => {
+          dropF?.(captured);
+        });
         throw error;
       }
       dropF?.(captured);
@@ -3174,7 +3178,9 @@ export function filterIterator_fold(
       try {
         dropP?.(captured);
       } catch (error) {
-        dropFold?.(fold);
+        $cleanup(() => {
+          dropFold?.(fold);
+        });
         throw error;
       }
       dropFold?.(fold);
@@ -3315,7 +3321,9 @@ export function filterDoubleEndedIterator_rfold(
       try {
         dropP?.(captured);
       } catch (error) {
-        dropFold?.(fold);
+        $cleanup(() => {
+          dropFold?.(fold);
+        });
         throw error;
       }
       dropFold?.(fold);
@@ -4055,7 +4063,9 @@ export function filterMapIterator_fold(
       try {
         dropF?.(captured);
       } catch (error) {
-        dropFold?.(fold);
+        $cleanup(() => {
+          dropFold?.(fold);
+        });
         throw error;
       }
       dropFold?.(fold);
@@ -4203,7 +4213,9 @@ export function filterMapDoubleEndedIterator_rfold(
       try {
         dropF?.(captured);
       } catch (error) {
-        dropFold?.(fold);
+        $cleanup(() => {
+          dropFold?.(fold);
+        });
         throw error;
       }
       dropFold?.(fold);
@@ -5151,7 +5163,9 @@ export function inspectIterator_fold(
       try {
         dropF?.(captured);
       } catch (error) {
-        dropFold?.(fold);
+        $cleanup(() => {
+          dropFold?.(fold);
+        });
         throw error;
       }
       dropFold?.(fold);
@@ -5263,7 +5277,9 @@ export function inspectDoubleEndedIterator_rfold(
       try {
         dropF?.(captured);
       } catch (error) {
-        dropFold?.(fold);
+        $cleanup(() => {
+          dropFold?.(fold);
+        });
         throw error;
       }
       dropFold?.(fold);
@@ -8822,11 +8838,13 @@ export function iterator_peekable(self, SelfIterator = { next: $next }, dropSelf
         try {
           dropSelf?.(iterator.iter);
         } catch (error) {
-          if (iterator.peeked != null) {
-            if ($someValue(iterator.peeked) != null) {
-              dropSelfItem?.($someValue($someValue(iterator.peeked)));
+          $cleanup(() => {
+            if (iterator.peeked != null) {
+              if ($someValue(iterator.peeked) != null) {
+                dropSelfItem?.($someValue($someValue(iterator.peeked)));
+              }
             }
-          }
+          });
           throw error;
         }
         if (iterator.peeked != null) {
@@ -9093,7 +9111,9 @@ export function iterator_map(
         try {
           dropSelf?.(iterator.iter);
         } catch (error) {
-          dropF?.(iterator.f);
+          $cleanup(() => {
+            dropF?.(iterator.f);
+          });
           throw error;
         }
         dropF?.(iterator.f);
@@ -9161,7 +9181,9 @@ export function iterator_filter(
         try {
           dropSelf?.(iterator.iter);
         } catch (error) {
-          dropP?.(iterator.predicate);
+          $cleanup(() => {
+            dropP?.(iterator.predicate);
+          });
           throw error;
         }
         dropP?.(iterator.predicate);
@@ -9339,7 +9361,9 @@ export function iterator_filterMap(
         try {
           dropSelf?.(iterator.iter);
         } catch (error) {
-          dropF?.(iterator.f);
+          $cleanup(() => {
+            dropF?.(iterator.f);
+          });
           throw error;
         }
         dropF?.(iterator.f);
@@ -9404,7 +9428,9 @@ export function iterator_takeWhile(
         try {
           dropSelf?.(iterator.iter);
         } catch (error) {
-          dropP?.(iterator.predicate);
+          $cleanup(() => {
+            dropP?.(iterator.predicate);
+          });
           throw error;
         }
         dropP?.(iterator.predicate);
@@ -9469,7 +9495,9 @@ export function iterator_skipWhile(
         try {
           dropSelf?.(iterator.iter);
         } catch (error) {
-          dropP?.(iterator.predicate);
+          $cleanup(() => {
+            dropP?.(iterator.predicate);
+          });
           throw error;
         }
         dropP?.(iterator.predicate);
@@ -9544,7 +9572,9 @@ export function iterator_mapWhile(
         try {
           dropSelf?.(iterator.iter);
         } catch (error) {
-          dropP?.(iterator.predicate);
+          $cleanup(() => {
+            dropP?.(iterator.predicate);
+          });
           throw error;
         }
         dropP?.(iterator.predicate);
@@ -9632,14 +9662,18 @@ export function iterator_scan(
         try {
           dropSelf?.(iterator.iter);
         } catch (error) {
-          dropF?.(iterator.f);
-          dropSt?.(iterator.state);
+          $cleanup(() => {
+            dropF?.(iterator.f);
+            dropSt?.(iterator.state);
+          });
           throw error;
         }
         try {
           dropF?.(iterator.f);
         } catch (error) {
-          dropSt?.(iterator.state);
+          $cleanup(() => {
+            dropSt?.(iterator.state);
+          });
           throw error;
         }
         dropSt?.(iterator.state);
@@ -9704,7 +9738,9 @@ export function iterator_inspect(
         try {
           dropSelf?.(iterator.iter);
         } catch (error) {
-          dropF?.(iterator.f);
+          $cleanup(() => {
+            dropF?.(iterator.f);
+          });
           throw error;
         }
         dropF?.(iterator.f);
@@ -9830,12 +9866,14 @@ export function iterator_flatten(
         try {
           iterator.inner.iter.return();
         } catch (error) {
-          if (iterator.inner.frontiter != null) {
-            dropSelfItemIntoIter?.($someValue(iterator.inner.frontiter));
-          }
-          if (iterator.inner.backiter != null) {
-            dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
-          }
+          $cleanup(() => {
+            if (iterator.inner.frontiter != null) {
+              dropSelfItemIntoIter?.($someValue(iterator.inner.frontiter));
+            }
+            if (iterator.inner.backiter != null) {
+              dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
+            }
+          });
           throw error;
         }
         try {
@@ -9843,9 +9881,11 @@ export function iterator_flatten(
             dropSelfItemIntoIter?.($someValue(iterator.inner.frontiter));
           }
         } catch (error) {
-          if (iterator.inner.backiter != null) {
-            dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
-          }
+          $cleanup(() => {
+            if (iterator.inner.backiter != null) {
+              dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
+            }
+          });
           throw error;
         }
         if (iterator.inner.backiter != null) {
@@ -10092,12 +10132,14 @@ export function iterator_flatMap(
         try {
           iterator.inner.iter.return();
         } catch (error) {
-          if (iterator.inner.frontiter != null) {
-            dropUIntoIter?.($someValue(iterator.inner.frontiter));
-          }
-          if (iterator.inner.backiter != null) {
-            dropUIntoIter?.($someValue(iterator.inner.backiter));
-          }
+          $cleanup(() => {
+            if (iterator.inner.frontiter != null) {
+              dropUIntoIter?.($someValue(iterator.inner.frontiter));
+            }
+            if (iterator.inner.backiter != null) {
+              dropUIntoIter?.($someValue(iterator.inner.backiter));
+            }
+          });
           throw error;
         }
         try {
@@ -10105,9 +10147,11 @@ export function iterator_flatMap(
             dropUIntoIter?.($someValue(iterator.inner.frontiter));
           }
         } catch (error) {
-          if (iterator.inner.backiter != null) {
-            dropUIntoIter?.($someValue(iterator.inner.backiter));
-          }
+          $cleanup(() => {
+            if (iterator.inner.backiter != null) {
+              dropUIntoIter?.($someValue(iterator.inner.backiter));
+            }
+          });
           throw error;
         }
         if (iterator.inner.backiter != null) {
@@ -10420,9 +10464,11 @@ export function iterator_chain(
               dropSelf?.($someValue(iterator.a));
             }
           } catch (error) {
-            if (iterator.b != null) {
-              dropUIntoIter?.($someValue(iterator.b));
-            }
+            $cleanup(() => {
+              if (iterator.b != null) {
+                dropUIntoIter?.($someValue(iterator.b));
+              }
+            });
             throw error;
           }
           if (iterator.b != null) {
@@ -13420,7 +13466,9 @@ export function zipZipImplAB_new(
         try {
           dropA?.(iterator.a);
         } catch (error) {
-          dropB?.(iterator.b);
+          $cleanup(() => {
+            dropB?.(iterator.b);
+          });
           throw error;
         }
         dropB?.(iterator.b);
@@ -13541,7 +13589,9 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_new(
         try {
           dropA?.(iterator.a);
         } catch (error) {
-          dropB?.(iterator.b);
+          $cleanup(() => {
+            dropB?.(iterator.b);
+          });
           throw error;
         }
         dropB?.(iterator.b);
@@ -13647,7 +13697,9 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
         try {
           dropA?.(iterator.a);
         } catch (error) {
-          dropB?.(iterator.b);
+          $cleanup(() => {
+            dropB?.(iterator.b);
+          });
           throw error;
         }
         dropB?.(iterator.b);

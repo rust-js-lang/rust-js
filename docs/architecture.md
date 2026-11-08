@@ -476,8 +476,12 @@ unwinds is guarded by `lower/drops/parts.rs` alone: `cleanup`, the one
 writer of `$cleanup`, and `dropped_after`, of a drop after a body that runs
 as it unwinds too, which is a `finally` only of what can't throw; tidy's
 scope merges ask `finally_holds`, and its last pass, "guarded cleanups",
-guards each rethrowing `catch`. Tidy's contract "what unwinds is guarded"
-and `test/architecture-iterators.test.ts` hold it.
+guards each rethrowing `catch` of a body's MIR. A `catch` made outside a
+body, a closure's drop of its captures or a std struct's `close`, never
+reaches that pass, so drop glue, `dropped_after_unwinding`, guards its
+drops where it's made (ADR 0660's #938 amendment). Tidy's contract "what unwinds is guarded",
+`test/architecture-iterators.test.ts` and
+`test/architecture-cleanups.test.ts` hold it.
 `test/architecture-iterators.test.ts` rejects a runtime `try`, `catch` or
 `finally` outside them, but of helpers it names that aren't an iterator's.
 

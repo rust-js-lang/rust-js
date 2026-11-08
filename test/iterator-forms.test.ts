@@ -183,6 +183,9 @@ const few = [
   "collected_in_place_leaked_past_a_filters_drop.rs",
   "collected_in_place_through_adapters_leaked_past_their_drop.rs",
   "collected_in_place_zipped_leaked_past_a_maps_drop.rs",
+  // Std's struct's `close`, an arrow made outside a function's body, its
+  // cleanup guarded where it's made: a second panic aborts (#938).
+  "collected_adapters_dropped_after_a_predicates_panic_abort.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus")

@@ -50,9 +50,11 @@ function wrapIterator_fold(wrap, init, f, dropT, dropB, dropF) {
             dropT?.(item);
           });
         } catch (error) {
-          if (wrap.extra != null) {
-            dropT?.($someValue(wrap.extra));
-          }
+          $cleanup(() => {
+            if (wrap.extra != null) {
+              dropT?.($someValue(wrap.extra));
+            }
+          });
           throw error;
         }
         if (wrap.extra != null) {
@@ -75,9 +77,11 @@ function wrapIterator_fold(wrap, init, f, dropT, dropB, dropF) {
               dropT?.(item);
             });
           } catch (error) {
-            if (wrap.extra != null) {
-              dropT?.($someValue(wrap.extra));
-            }
+            $cleanup(() => {
+              if (wrap.extra != null) {
+                dropT?.($someValue(wrap.extra));
+              }
+            });
             throw error;
           }
           if (wrap.extra != null) {
@@ -105,9 +109,11 @@ function wrapIterator_fold(wrap, init, f, dropT, dropB, dropF) {
             dropT?.(item);
           });
         } catch (error) {
-          if (wrap.extra != null) {
-            dropT?.($someValue(wrap.extra));
-          }
+          $cleanup(() => {
+            if (wrap.extra != null) {
+              dropT?.($someValue(wrap.extra));
+            }
+          });
           throw error;
         }
         if (wrap.extra != null) {
@@ -129,9 +135,11 @@ function wrapIterator_fold(wrap, init, f, dropT, dropB, dropF) {
           dropT?.(item);
         });
       } catch (error) {
-        if (wrap.extra != null) {
-          dropT?.($someValue(wrap.extra));
-        }
+        $cleanup(() => {
+          if (wrap.extra != null) {
+            dropT?.($someValue(wrap.extra));
+          }
+        });
         throw error;
       }
       if (wrap.extra != null) {
@@ -179,9 +187,11 @@ function wrapDoubleEndedIterator_rfold(wrap, init, f, dropT, dropB, dropF) {
             dropT?.(item);
           });
         } catch (error) {
-          if (wrap.extra != null) {
-            dropT?.($someValue(wrap.extra));
-          }
+          $cleanup(() => {
+            if (wrap.extra != null) {
+              dropT?.($someValue(wrap.extra));
+            }
+          });
           throw error;
         }
         if (wrap.extra != null) {
@@ -204,9 +214,11 @@ function wrapDoubleEndedIterator_rfold(wrap, init, f, dropT, dropB, dropF) {
               dropT?.(item);
             });
           } catch (error) {
-            if (wrap.extra != null) {
-              dropT?.($someValue(wrap.extra));
-            }
+            $cleanup(() => {
+              if (wrap.extra != null) {
+                dropT?.($someValue(wrap.extra));
+              }
+            });
             throw error;
           }
           if (wrap.extra != null) {
@@ -234,9 +246,11 @@ function wrapDoubleEndedIterator_rfold(wrap, init, f, dropT, dropB, dropF) {
             dropT?.(item);
           });
         } catch (error) {
-          if (wrap.extra != null) {
-            dropT?.($someValue(wrap.extra));
-          }
+          $cleanup(() => {
+            if (wrap.extra != null) {
+              dropT?.($someValue(wrap.extra));
+            }
+          });
           throw error;
         }
         if (wrap.extra != null) {
@@ -258,9 +272,11 @@ function wrapDoubleEndedIterator_rfold(wrap, init, f, dropT, dropB, dropF) {
           dropT?.(item);
         });
       } catch (error) {
-        if (wrap.extra != null) {
-          dropT?.($someValue(wrap.extra));
-        }
+        $cleanup(() => {
+          if (wrap.extra != null) {
+            dropT?.($someValue(wrap.extra));
+          }
+        });
         throw error;
       }
       if (wrap.extra != null) {

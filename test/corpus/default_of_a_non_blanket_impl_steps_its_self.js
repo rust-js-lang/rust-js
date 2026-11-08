@@ -185,7 +185,9 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
               try {
                 dropI?.(iter[0]);
               } catch (error) {
-                dropU?.(iter[1]);
+                $cleanup(() => {
+                  dropU?.(iter[1]);
+                });
                 throw error;
               }
               dropU?.(iter[1]);
@@ -202,7 +204,9 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
                 try {
                   dropI?.(iter[0]);
                 } catch (error) {
-                  dropU?.(iter[1]);
+                  $cleanup(() => {
+                    dropU?.(iter[1]);
+                  });
                   throw error;
                 }
                 dropU?.(iter[1]);
@@ -230,7 +234,9 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
               try {
                 dropI?.(iter[0]);
               } catch (error) {
-                dropU?.(iter[1]);
+                $cleanup(() => {
+                  dropU?.(iter[1]);
+                });
                 throw error;
               }
               dropU?.(iter[1]);
@@ -252,7 +258,9 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
               try {
                 dropI?.(it.of[0]);
               } catch (error) {
-                dropU?.(it.of[1]);
+                $cleanup(() => {
+                  dropU?.(it.of[1]);
+                });
                 throw error;
               }
               dropU?.(it.of[1]);
@@ -284,7 +292,9 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
             try {
               dropI?.(it.of[0]);
             } catch (error) {
-              dropU?.(it.of[1]);
+              $cleanup(() => {
+                dropU?.(it.of[1]);
+              });
               throw error;
             }
             dropU?.(it.of[1]);
@@ -313,7 +323,9 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
               try {
                 dropI?.(it.of[0]);
               } catch (error) {
-                dropU?.(it.of[1]);
+                $cleanup(() => {
+                  dropU?.(it.of[1]);
+                });
                 throw error;
               }
               dropU?.(it.of[1]);
@@ -336,7 +348,9 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
         try {
           dropI?.(paired[0]);
         } catch (error) {
-          dropU?.(paired[1]);
+          $cleanup(() => {
+            dropU?.(paired[1]);
+          });
           throw error;
         }
         dropU?.(paired[1]);

@@ -643,3 +643,44 @@ is bounded; and the mutation `drop-glue-rest-each-in-its-try`
 (`lower/drops/parts.ts`). std's `iter.js` is made again: `scan`'s,
 `flatten`'s and `flat_map`'s drops of three parts run their last two flat.
 num-traits compiles in 9 s again (DEVELOPMENT.md's speed-ups).
+
+## Amendment: a drop's cleanup is guarded where it's made (#938, 2026-11-08)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results change:
+native Rust aborts as a second drop panics while the first unwinds, where
+the JS went on and `catch_unwind` caught it.
+
+`dropped_after_unwinding`'s `catch` ran its drops as they were and left
+their guard, `$cleanup`, to tidy's "guarded cleanups", its last pass. An
+arrow made outside a function's body never passes through it: a closure's
+drop of its captures, `$holding(.., () => { try { a } catch (error) { b;
+throw error; } b })`, and each std struct's `close` in `std/iter.js` (20
+of its `catch`es, 26 counting those made of other parts). So a `map(f)`
+whose `f` held two values that each panic as they're dropped printed
+`drop 81`, `drop 82`, `true` where Rust aborts after `drop 82`, in both
+builds; with `--std-iterators`, so did a `filter(p).map(f)` collected,
+whose `map`'s `close` drops `f` as `p`'s drop unwinds.
+
+**Drop glue's `catch` is guarded where it's made**: `dropped_after_unwinding`,
+of `each_dropped` and the glue lowered from rustc's shim, gives its drops
+to `drops::cleanup`, the one guard, so a closure's drop of its captures
+and a std struct's `close` abort where they're made. An `inspect(f)`'s
+drop of its item as `f` panics, which wrote its own `catch`, is
+`drops::dropped_unwinding`'s, which already guarded it. A function body's
+`dropped_after`, a write back as a call unwinds say, and the MIR's
+cleanups (`mir/drops.rs`) stay as they were: tidy's last pass guards them
+by the same owner, and guarded earlier, tidy's naming passes read a
+closure where the drops were and name what it captures apart
+(`generic_mut_moved_out_other_ways.js`'s `s` became `s$1`, `s$2`).
+
+`test/architecture-cleanups.test.ts` holds it: the lowering's files that
+make a `catch` are a list with their reasons, drops/parts.rs's the only
+ones outside a body's MIR that run a drop, and every `catch` in
+`std/iter.js` that throws on what it caught runs only `$cleanup(..)` before
+it. 19 corpus snapshots read `$cleanup(() => { .. })` in a `catch` of
+drop glue where they read the drops as they were. Corpus cases
+`closure_captures_dropped_after_a_sum_abort.rs` and, in iterator-forms'
+few too, `collected_adapters_dropped_after_a_predicates_panic_abort.rs`.
+Mutations: `drop-glue-cleanup-unguarded` (`lower/drops/parts.ts`),
+`inspect-item-undropped-as-it-panics` (`lower/combinators/adapters.ts`, of `panic_part_way_drops.rs`);
+`inspect-skipped` names its line as it now reads.

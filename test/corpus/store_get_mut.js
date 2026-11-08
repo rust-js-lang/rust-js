@@ -2,6 +2,7 @@
 
 import {
   $apart,
+  $cleanup,
   $closing,
   $collectDropping,
   $debugStr,
@@ -28,7 +29,9 @@ export function vecStoreMutKV(dropK, dropV) {
         try {
           dropK?.(item[0]);
         } catch (error) {
-          dropV?.(item[1]);
+          $cleanup(() => {
+            dropV?.(item[1]);
+          });
           throw error;
         }
         dropV?.(item[1]);

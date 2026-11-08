@@ -66,18 +66,20 @@ function main() {
           }
           console.log(`drop ${a[0]}`);
         } catch (error) {
-          if (b[0] === 2 || b[0] === 3) {
-            throw new Error(`part ${b[0]} panics`);
-          }
-          console.log(`drop ${b[0]}`);
-          if (c[0] === 2 || c[0] === 3) {
-            throw new Error(`part ${c[0]} panics`);
-          }
-          console.log(`drop ${c[0]}`);
-          if (d[0] === 2 || d[0] === 3) {
-            throw new Error(`part ${d[0]} panics`);
-          }
-          console.log(`drop ${d[0]}`);
+          $cleanup(() => {
+            if (b[0] === 2 || b[0] === 3) {
+              throw new Error(`part ${b[0]} panics`);
+            }
+            console.log(`drop ${b[0]}`);
+            if (c[0] === 2 || c[0] === 3) {
+              throw new Error(`part ${c[0]} panics`);
+            }
+            console.log(`drop ${c[0]}`);
+            if (d[0] === 2 || d[0] === 3) {
+              throw new Error(`part ${d[0]} panics`);
+            }
+            console.log(`drop ${d[0]}`);
+          });
           throw error;
         }
         try {
@@ -86,14 +88,16 @@ function main() {
           }
           console.log(`drop ${b[0]}`);
         } catch (error) {
-          if (c[0] === 2 || c[0] === 3) {
-            throw new Error(`part ${c[0]} panics`);
-          }
-          console.log(`drop ${c[0]}`);
-          if (d[0] === 2 || d[0] === 3) {
-            throw new Error(`part ${d[0]} panics`);
-          }
-          console.log(`drop ${d[0]}`);
+          $cleanup(() => {
+            if (c[0] === 2 || c[0] === 3) {
+              throw new Error(`part ${c[0]} panics`);
+            }
+            console.log(`drop ${c[0]}`);
+            if (d[0] === 2 || d[0] === 3) {
+              throw new Error(`part ${d[0]} panics`);
+            }
+            console.log(`drop ${d[0]}`);
+          });
           throw error;
         }
         try {
@@ -102,10 +106,12 @@ function main() {
           }
           console.log(`drop ${c[0]}`);
         } catch (error) {
-          if (d[0] === 2 || d[0] === 3) {
-            throw new Error(`part ${d[0]} panics`);
-          }
-          console.log(`drop ${d[0]}`);
+          $cleanup(() => {
+            if (d[0] === 2 || d[0] === 3) {
+              throw new Error(`part ${d[0]} panics`);
+            }
+            console.log(`drop ${d[0]}`);
+          });
           throw error;
         }
         if (d[0] === 2 || d[0] === 3) {

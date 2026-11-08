@@ -308,4 +308,13 @@ export const mutations: Mutation[] = [
     replace: "                        false => items_dropped(entries, pattern, body, js_span),\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_map_drop_stops_at_a_panic.rs$"],
   },
+  {
+    name: "drop-glue-cleanup-unguarded",
+    breaks:
+      "a drop after a body leaves its cleanup unguarded where it's made, so a closure's drop of its captures, an arrow no tidy guards, goes on past a second panic where Rust aborts (#938)",
+    file: "src/lower/drops/parts.rs",
+    find: "    after(body, (cleanup(unwinding, js_span), dropped), js_span)\n",
+    replace: "    after(body, (unwinding, dropped), js_span)\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_captures_dropped_after_a_sum_abort.rs$"],
+  },
 ];

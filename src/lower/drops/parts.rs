@@ -447,21 +447,32 @@ pub(in crate::lower) fn each_dropped(parts: Vec<Vec<Stmt>>, js_span: js::Span) -
 /// `try` whose `finally` it is, where it can't throw. Else, as a `finally`
 /// can't tell a drop's panic as a panic unwinds, which aborts (#847), from
 /// one on the way on, `try { body } catch (error) { dropped; throw error; }
-/// dropped`, whose cleanup tidy guards last (`$cleanup`). Of a `body` with
-/// no way out but its end or a throw. The one form of what runs after a
-/// body as it ends either way, of what's dropped where it's emitted.
+/// dropped`, whose cleanup tidy guards last (`$cleanup`), as it's a
+/// function body's: guarded earlier, tidy's passes would read a closure
+/// where the drops were, and name what it captures apart (#938). Of a
+/// `body` with no way out but its end or a throw. The one form of what runs
+/// after a body as it ends either way, of what's dropped where it's emitted.
 pub(in crate::lower) fn dropped_after(body: Vec<Stmt>, dropped: Vec<Stmt>, js_span: js::Span) -> Vec<Stmt> {
-    dropped_after_unwinding(body, (dropped.clone(), dropped), js_span)
+    after(body, (dropped.clone(), dropped), js_span)
 }
 
-/// `dropped_after`'s, where what runs as `body` unwinds, `unwinding`, is
-/// other JS than what runs after it, `dropped`, the same drops: drop glue's
-/// rest, each as it is, where its way on drops each in turn (`each_dropped`).
+/// Drop glue's `dropped_after`, where what runs as `body` unwinds,
+/// `unwinding`, is other JS than what runs after it, `dropped`, the same
+/// drops: the glue's rest, each as it is, where its way on drops each in
+/// turn (`each_dropped`). Its cleanup is guarded where it's made, `cleanup`'s:
+/// a closure's drop of its captures or a std struct's `close` is an arrow
+/// whose drops tidy's last pass never guards (#938).
 pub(super) fn dropped_after_unwinding(
     body: Vec<Stmt>,
     (unwinding, dropped): (Vec<Stmt>, Vec<Stmt>),
     js_span: js::Span,
 ) -> Vec<Stmt> {
+    after(body, (cleanup(unwinding, js_span), dropped), js_span)
+}
+
+/// `try { body } finally { dropped }` where `dropped` can't throw; else
+/// `try { body } catch (error) { unwinding; throw error; } dropped`.
+fn after(body: Vec<Stmt>, (unwinding, dropped): (Vec<Stmt>, Vec<Stmt>), js_span: js::Span) -> Vec<Stmt> {
     if !may_throw(&dropped) {
         return vec![StmtKind::Try(body, dropped).at(js_span)];
     }

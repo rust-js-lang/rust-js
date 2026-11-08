@@ -50,7 +50,9 @@ function render(name) {
               console.log(`dropping ${value.name}`);
               value.onReady.value();
             } catch (error) {
-              $rcDrop(value.onReady, $dispose);
+              $cleanup(() => {
+                $rcDrop(value.onReady, $dispose);
+              });
               throw error;
             }
             $rcDrop(value.onReady, $dispose);
@@ -65,7 +67,9 @@ function render(name) {
                 console.log(`dropping ${value.name}`);
                 value.onReady.value();
               } catch (error) {
-                $rcDrop(value.onReady, $dispose);
+                $cleanup(() => {
+                  $rcDrop(value.onReady, $dispose);
+                });
                 throw error;
               }
               $rcDrop(value.onReady, $dispose);
@@ -104,7 +108,9 @@ function render(name) {
             console.log(`dropping ${value.name}`);
             value.onReady.value();
           } catch (error) {
-            $rcDrop(value.onReady, $dispose);
+            $cleanup(() => {
+              $rcDrop(value.onReady, $dispose);
+            });
             throw error;
           }
           $rcDrop(value.onReady, $dispose);
@@ -123,7 +129,9 @@ function render(name) {
             console.log(`dropping ${value.name}`);
             value.onReady.value();
           } catch (error) {
-            $rcDrop(value.onReady, $dispose);
+            $cleanup(() => {
+              $rcDrop(value.onReady, $dispose);
+            });
             throw error;
           }
           $rcDrop(value.onReady, $dispose);
@@ -152,7 +160,9 @@ function main() {
           console.log(`dropping ${value.name}`);
           value.onReady.value();
         } catch (error) {
-          $rcDrop(value.onReady, $dispose);
+          $cleanup(() => {
+            $rcDrop(value.onReady, $dispose);
+          });
           throw error;
         }
         $rcDrop(value.onReady, $dispose);
@@ -165,7 +175,9 @@ function main() {
       console.log(`dropping ${value.name}`);
       value.onReady.value();
     } catch (error) {
-      $rcDrop(value.onReady, $dispose);
+      $cleanup(() => {
+        $rcDrop(value.onReady, $dispose);
+      });
       throw error;
     }
     $rcDrop(value.onReady, $dispose);

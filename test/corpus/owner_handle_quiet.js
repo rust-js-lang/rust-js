@@ -99,7 +99,9 @@ function exactMatcher(TPartialEq, dropT) {
       try {
         dropT?.(exact[0]);
       } catch (error) {
-        dropT?.(exact[1]);
+        $cleanup(() => {
+          dropT?.(exact[1]);
+        });
         throw error;
       }
       dropT?.(exact[1]);

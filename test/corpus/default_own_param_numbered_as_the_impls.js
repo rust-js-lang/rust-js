@@ -70,7 +70,9 @@ function pairedCounting(dropI, dropU, dropIItem) {
           try {
             dropI?.(paired[0]);
           } catch (error) {
-            dropU?.(paired[1]);
+            $cleanup(() => {
+              dropU?.(paired[1]);
+            });
             throw error;
           }
           dropU?.(paired[1]);
@@ -98,7 +100,9 @@ function pairedCounting(dropI, dropU, dropIItem) {
           try {
             dropI?.(paired[0]);
           } catch (error) {
-            dropU?.(paired[1]);
+            $cleanup(() => {
+              dropU?.(paired[1]);
+            });
             throw error;
           }
           dropU?.(paired[1]);
@@ -174,7 +178,9 @@ function pairedCounting(dropI, dropU, dropIItem) {
       try {
         dropI?.(paired[0]);
       } catch (error) {
-        dropU?.(paired[1]);
+        $cleanup(() => {
+          dropU?.(paired[1]);
+        });
         throw error;
       }
       dropU?.(paired[1]);

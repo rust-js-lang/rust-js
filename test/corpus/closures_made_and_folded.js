@@ -31,7 +31,9 @@ function joined(f, g, dropFnMut, dropFnMut$1) {
       try {
         dropFnMut$1?.(g);
       } catch (error) {
-        dropFnMut?.(f);
+        $cleanup(() => {
+          dropFnMut?.(f);
+        });
         throw error;
       }
       dropFnMut?.(f);

@@ -49,7 +49,9 @@ function tee(iter, dropI, dropIItem) {
             dropIItem?.(item);
           });
         } catch (error) {
-          dropI?.(value.iter);
+          $cleanup(() => {
+            dropI?.(value.iter);
+          });
           throw error;
         }
         dropI?.(value.iter);

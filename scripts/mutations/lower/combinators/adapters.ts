@@ -24,9 +24,8 @@ export const mutations: Mutation[] = [
     name: "inspect-skipped",
     breaks: "`inspect(f)` doesn't call `f`",
     file: "src/lower/combinators/adapters.rs",
-    find: "                let mut inspected = StmtKind::Expr(Expr::call(f, vec![item.clone()])).at(js::Span::NONE);\n",
-    replace:
-      "                let mut inspected = StmtKind::Expr(f).at(js::Span::NONE);\n",
+    find: "                let inspected = StmtKind::Expr(Expr::call(f, vec![item.clone()])).at(js::Span::NONE);\n",
+    replace: "                let inspected = StmtKind::Expr(f).at(js::Span::NONE);\n",
     tests: ["test/corpus.test.ts", "-t", "std_methods"],
   },
   {
@@ -489,5 +488,13 @@ export const mutations: Mutation[] = [
     find: "        let it = match self.items_by_dictionary(value.clone(), self.reveal(inner), span)? {\n",
     replace: "        let it = match None::<Expr> {\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_of_a_where_clause_into_iterator.rs$"],
+  },
+  {
+    name: "inspect-item-undropped-as-it-panics",
+    breaks: "an `inspect(f)` whose `f` panics drops nothing of the item it was given, which Rust's `inspect` drops as it unwinds (#423, #938)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    inspected = crate::lower::drops::dropped_unwinding(inspected, dropped, js::Span::NONE);\n",
+    replace: "                    let _ = dropped;\n",
+    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
 ];

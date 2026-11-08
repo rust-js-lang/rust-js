@@ -61,286 +61,324 @@ function held(parts, last, TSize, dropT) {
       try {
         dropT?.(_parts[0]);
       } catch (error) {
-        dropT?.(_parts[1]);
-        dropT?.(_parts[2]);
-        dropT?.(_parts[3]);
-        dropT?.(_parts[4]);
-        dropT?.(_parts[5]);
-        dropT?.(_parts[6]);
-        dropT?.(_parts[7]);
-        dropT?.(_parts[8]);
-        dropT?.(_parts[9]);
-        dropT?.(_parts[10]);
-        dropT?.(_parts[11]);
-        dropT?.(_parts[12]);
-        dropT?.(_parts[13]);
-        dropT?.(_parts[14]);
-        dropT?.(_parts[15]);
-        dropT?.(_parts[16]);
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[1]);
+          dropT?.(_parts[2]);
+          dropT?.(_parts[3]);
+          dropT?.(_parts[4]);
+          dropT?.(_parts[5]);
+          dropT?.(_parts[6]);
+          dropT?.(_parts[7]);
+          dropT?.(_parts[8]);
+          dropT?.(_parts[9]);
+          dropT?.(_parts[10]);
+          dropT?.(_parts[11]);
+          dropT?.(_parts[12]);
+          dropT?.(_parts[13]);
+          dropT?.(_parts[14]);
+          dropT?.(_parts[15]);
+          dropT?.(_parts[16]);
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[1]);
       } catch (error) {
-        dropT?.(_parts[2]);
-        dropT?.(_parts[3]);
-        dropT?.(_parts[4]);
-        dropT?.(_parts[5]);
-        dropT?.(_parts[6]);
-        dropT?.(_parts[7]);
-        dropT?.(_parts[8]);
-        dropT?.(_parts[9]);
-        dropT?.(_parts[10]);
-        dropT?.(_parts[11]);
-        dropT?.(_parts[12]);
-        dropT?.(_parts[13]);
-        dropT?.(_parts[14]);
-        dropT?.(_parts[15]);
-        dropT?.(_parts[16]);
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[2]);
+          dropT?.(_parts[3]);
+          dropT?.(_parts[4]);
+          dropT?.(_parts[5]);
+          dropT?.(_parts[6]);
+          dropT?.(_parts[7]);
+          dropT?.(_parts[8]);
+          dropT?.(_parts[9]);
+          dropT?.(_parts[10]);
+          dropT?.(_parts[11]);
+          dropT?.(_parts[12]);
+          dropT?.(_parts[13]);
+          dropT?.(_parts[14]);
+          dropT?.(_parts[15]);
+          dropT?.(_parts[16]);
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[2]);
       } catch (error) {
-        dropT?.(_parts[3]);
-        dropT?.(_parts[4]);
-        dropT?.(_parts[5]);
-        dropT?.(_parts[6]);
-        dropT?.(_parts[7]);
-        dropT?.(_parts[8]);
-        dropT?.(_parts[9]);
-        dropT?.(_parts[10]);
-        dropT?.(_parts[11]);
-        dropT?.(_parts[12]);
-        dropT?.(_parts[13]);
-        dropT?.(_parts[14]);
-        dropT?.(_parts[15]);
-        dropT?.(_parts[16]);
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[3]);
+          dropT?.(_parts[4]);
+          dropT?.(_parts[5]);
+          dropT?.(_parts[6]);
+          dropT?.(_parts[7]);
+          dropT?.(_parts[8]);
+          dropT?.(_parts[9]);
+          dropT?.(_parts[10]);
+          dropT?.(_parts[11]);
+          dropT?.(_parts[12]);
+          dropT?.(_parts[13]);
+          dropT?.(_parts[14]);
+          dropT?.(_parts[15]);
+          dropT?.(_parts[16]);
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[3]);
       } catch (error) {
-        dropT?.(_parts[4]);
-        dropT?.(_parts[5]);
-        dropT?.(_parts[6]);
-        dropT?.(_parts[7]);
-        dropT?.(_parts[8]);
-        dropT?.(_parts[9]);
-        dropT?.(_parts[10]);
-        dropT?.(_parts[11]);
-        dropT?.(_parts[12]);
-        dropT?.(_parts[13]);
-        dropT?.(_parts[14]);
-        dropT?.(_parts[15]);
-        dropT?.(_parts[16]);
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[4]);
+          dropT?.(_parts[5]);
+          dropT?.(_parts[6]);
+          dropT?.(_parts[7]);
+          dropT?.(_parts[8]);
+          dropT?.(_parts[9]);
+          dropT?.(_parts[10]);
+          dropT?.(_parts[11]);
+          dropT?.(_parts[12]);
+          dropT?.(_parts[13]);
+          dropT?.(_parts[14]);
+          dropT?.(_parts[15]);
+          dropT?.(_parts[16]);
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[4]);
       } catch (error) {
-        dropT?.(_parts[5]);
-        dropT?.(_parts[6]);
-        dropT?.(_parts[7]);
-        dropT?.(_parts[8]);
-        dropT?.(_parts[9]);
-        dropT?.(_parts[10]);
-        dropT?.(_parts[11]);
-        dropT?.(_parts[12]);
-        dropT?.(_parts[13]);
-        dropT?.(_parts[14]);
-        dropT?.(_parts[15]);
-        dropT?.(_parts[16]);
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[5]);
+          dropT?.(_parts[6]);
+          dropT?.(_parts[7]);
+          dropT?.(_parts[8]);
+          dropT?.(_parts[9]);
+          dropT?.(_parts[10]);
+          dropT?.(_parts[11]);
+          dropT?.(_parts[12]);
+          dropT?.(_parts[13]);
+          dropT?.(_parts[14]);
+          dropT?.(_parts[15]);
+          dropT?.(_parts[16]);
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[5]);
       } catch (error) {
-        dropT?.(_parts[6]);
-        dropT?.(_parts[7]);
-        dropT?.(_parts[8]);
-        dropT?.(_parts[9]);
-        dropT?.(_parts[10]);
-        dropT?.(_parts[11]);
-        dropT?.(_parts[12]);
-        dropT?.(_parts[13]);
-        dropT?.(_parts[14]);
-        dropT?.(_parts[15]);
-        dropT?.(_parts[16]);
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[6]);
+          dropT?.(_parts[7]);
+          dropT?.(_parts[8]);
+          dropT?.(_parts[9]);
+          dropT?.(_parts[10]);
+          dropT?.(_parts[11]);
+          dropT?.(_parts[12]);
+          dropT?.(_parts[13]);
+          dropT?.(_parts[14]);
+          dropT?.(_parts[15]);
+          dropT?.(_parts[16]);
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[6]);
       } catch (error) {
-        dropT?.(_parts[7]);
-        dropT?.(_parts[8]);
-        dropT?.(_parts[9]);
-        dropT?.(_parts[10]);
-        dropT?.(_parts[11]);
-        dropT?.(_parts[12]);
-        dropT?.(_parts[13]);
-        dropT?.(_parts[14]);
-        dropT?.(_parts[15]);
-        dropT?.(_parts[16]);
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[7]);
+          dropT?.(_parts[8]);
+          dropT?.(_parts[9]);
+          dropT?.(_parts[10]);
+          dropT?.(_parts[11]);
+          dropT?.(_parts[12]);
+          dropT?.(_parts[13]);
+          dropT?.(_parts[14]);
+          dropT?.(_parts[15]);
+          dropT?.(_parts[16]);
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[7]);
       } catch (error) {
-        dropT?.(_parts[8]);
-        dropT?.(_parts[9]);
-        dropT?.(_parts[10]);
-        dropT?.(_parts[11]);
-        dropT?.(_parts[12]);
-        dropT?.(_parts[13]);
-        dropT?.(_parts[14]);
-        dropT?.(_parts[15]);
-        dropT?.(_parts[16]);
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[8]);
+          dropT?.(_parts[9]);
+          dropT?.(_parts[10]);
+          dropT?.(_parts[11]);
+          dropT?.(_parts[12]);
+          dropT?.(_parts[13]);
+          dropT?.(_parts[14]);
+          dropT?.(_parts[15]);
+          dropT?.(_parts[16]);
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[8]);
       } catch (error) {
-        dropT?.(_parts[9]);
-        dropT?.(_parts[10]);
-        dropT?.(_parts[11]);
-        dropT?.(_parts[12]);
-        dropT?.(_parts[13]);
-        dropT?.(_parts[14]);
-        dropT?.(_parts[15]);
-        dropT?.(_parts[16]);
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[9]);
+          dropT?.(_parts[10]);
+          dropT?.(_parts[11]);
+          dropT?.(_parts[12]);
+          dropT?.(_parts[13]);
+          dropT?.(_parts[14]);
+          dropT?.(_parts[15]);
+          dropT?.(_parts[16]);
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[9]);
       } catch (error) {
-        dropT?.(_parts[10]);
-        dropT?.(_parts[11]);
-        dropT?.(_parts[12]);
-        dropT?.(_parts[13]);
-        dropT?.(_parts[14]);
-        dropT?.(_parts[15]);
-        dropT?.(_parts[16]);
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[10]);
+          dropT?.(_parts[11]);
+          dropT?.(_parts[12]);
+          dropT?.(_parts[13]);
+          dropT?.(_parts[14]);
+          dropT?.(_parts[15]);
+          dropT?.(_parts[16]);
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[10]);
       } catch (error) {
-        dropT?.(_parts[11]);
-        dropT?.(_parts[12]);
-        dropT?.(_parts[13]);
-        dropT?.(_parts[14]);
-        dropT?.(_parts[15]);
-        dropT?.(_parts[16]);
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[11]);
+          dropT?.(_parts[12]);
+          dropT?.(_parts[13]);
+          dropT?.(_parts[14]);
+          dropT?.(_parts[15]);
+          dropT?.(_parts[16]);
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[11]);
       } catch (error) {
-        dropT?.(_parts[12]);
-        dropT?.(_parts[13]);
-        dropT?.(_parts[14]);
-        dropT?.(_parts[15]);
-        dropT?.(_parts[16]);
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[12]);
+          dropT?.(_parts[13]);
+          dropT?.(_parts[14]);
+          dropT?.(_parts[15]);
+          dropT?.(_parts[16]);
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[12]);
       } catch (error) {
-        dropT?.(_parts[13]);
-        dropT?.(_parts[14]);
-        dropT?.(_parts[15]);
-        dropT?.(_parts[16]);
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[13]);
+          dropT?.(_parts[14]);
+          dropT?.(_parts[15]);
+          dropT?.(_parts[16]);
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[13]);
       } catch (error) {
-        dropT?.(_parts[14]);
-        dropT?.(_parts[15]);
-        dropT?.(_parts[16]);
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[14]);
+          dropT?.(_parts[15]);
+          dropT?.(_parts[16]);
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[14]);
       } catch (error) {
-        dropT?.(_parts[15]);
-        dropT?.(_parts[16]);
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[15]);
+          dropT?.(_parts[16]);
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[15]);
       } catch (error) {
-        dropT?.(_parts[16]);
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[16]);
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[16]);
       } catch (error) {
-        dropT?.(_parts[17]);
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[17]);
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[17]);
       } catch (error) {
-        dropT?.(_parts[18]);
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[18]);
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       try {
         dropT?.(_parts[18]);
       } catch (error) {
-        dropT?.(_parts[19]);
+        $cleanup(() => {
+          dropT?.(_parts[19]);
+        });
         throw error;
       }
       dropT?.(_parts[19]);
