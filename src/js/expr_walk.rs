@@ -677,9 +677,11 @@ impl Expr {
             | ExprKind::Function(_) => false,
             // It lets other code run meanwhile, and loads a module.
             ExprKind::Await(_) | ExprKind::Import(_) => true,
-            ExprKind::Spread(a) | ExprKind::Stringed(a) | ExprKind::DropArgument(_, _, a) | ExprKind::Unbound(a) => {
-                a.has_effects()
-            }
+            // Spreading steps what it spreads, an iterator's `next`, which may
+            // run anything: only an array written out does nothing more than
+            // its items do (#273, #1035).
+            ExprKind::Spread(a) => !matches!(a.kind, ExprKind::Array(_)) || a.has_effects(),
+            ExprKind::Stringed(a) | ExprKind::DropArgument(_, _, a) | ExprKind::Unbound(a) => a.has_effects(),
             ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => object.has_effects(),
             // Making one reads nothing: its getter does, later.
             ExprKind::Handle(_, _) => false,

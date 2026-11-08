@@ -3,6 +3,22 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "tuple-part-read-after-its-object-set",
+    breaks: "`match (v.pop(), x.0)`'s `x.0` is read where an arm binds it, after a guard's `x.0 += 10` (#1035)",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "            (!inert(item) || reads_parts_set(item))\n",
+    replace: "            !inert(item)\n",
+    tests: ["test/corpus.test.ts", "-t", "^field_rewrite_singles.rs$"],
+  },
+  {
+    name: "tuple-part-set-through-a-handle-unseen",
+    breaks: "`match (v.pop(), x.0)`'s `x.0` is read after a guard's call is given a handle on it that sets it (#1035)",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "                    parts_set.insert(v.clone());\n",
+    replace: "                    let _ = v;\n",
+    tests: ["test/corpus.test.ts", "-t", "^field_rewrite_singles.rs$"],
+  },
+  {
     name: "indexed-item-a-part",
     breaks:
       "an item Rust's index reads of a temporary, `_5[0]` of `completedSegments.borrow()[0]`, is taken apart as a tuple's part, `const [contentSegment] = $borrow(completedSegments);` (ADR 0598, amended)",

@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "spread-of-an-iterator-does-nothing",
+    breaks: "a collect nothing reads, `[...value, ...value$1]` of an `inspect`, is never made, its spread taken for one that does nothing (#1035)",
+    file: "src/js/expr_walk.rs",
+    find: "            ExprKind::Spread(a) => !matches!(a.kind, ExprKind::Array(_)) || a.has_effects(),\n",
+    replace: "            ExprKind::Spread(a) => a.has_effects(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^field_rewrite_singles.rs$"],
+  },
+  {
     name: "assigned-field-setter-first",
     breaks:
       "a JS object's field set to a getter's function's call spills the getter, `const createTask = console.createTask; this$.task = createTask(name)`, as if the field's setter ran before the value (rd633)",

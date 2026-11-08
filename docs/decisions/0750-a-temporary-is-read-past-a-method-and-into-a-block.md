@@ -316,3 +316,21 @@ spread of another plain value is read where it is. A closure's adapter was
 right already, its type not plain. Corpus case
 `inspect_by_a_function_before_a_chain_argument`; mutation
 `plain-iterator-spread-passes`; no corpus snapshot changes.
+
+## Amendment: a spread of what isn't an array written out does something (#1035)
+
+A collect nothing reads, `let _again = Held(v.into_iter().inspect(see)
+.chain(w).collect())`, was `[...value, ...value$1]`, which `has_effects`
+took for nothing, as a spread was what it spread, a variable: never made,
+so `see 0` never printed. Spreading steps what it spreads, an iterator's
+`next`, which may run anything, as `reads_only_vars` says (#273):
+`has_effects` of a spread is now true but of an array written out, whose
+items are all it does. No case's JS changed. And `mem::swap(&mut spare.0,
+&mut pair.left)`, a tuple struct's field, `spare[0]`, beside a field set
+whole elsewhere, gave `$exchange` the array and a handle, a
+`RangeError`: a swap of fields takes a tuple struct's field, an index of
+its array, as a place, as it does a struct's member. Held by the corpus
+case `field_rewrite_singles` and the mutations
+`spread-of-an-iterator-does-nothing` and
+`swap-of-a-tuple-structs-field-a-handle`.
+

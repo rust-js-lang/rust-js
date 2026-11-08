@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "swap-of-a-tuple-structs-field-a-handle",
+    breaks: "`mem::swap(&mut spare.0, &mut pair.left)` gives `$exchange` the array and a handle, a `RangeError` (#1035)",
+    file: "src/lower/mir/entries.rs",
+    find: "                    if i < borrowed && fields && fixed_place(&e) && !matches!(e.kind, js::ExprKind::Var(_)) =>\n",
+    replace: "                    if i < borrowed && fields && matches!(e.kind, js::ExprKind::Member(..)) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^field_rewrite_singles.rs$"],
+  },
+  {
     name: "swap-into-a-nullable-place-as-given",
     breaks: "`mem::swap(&mut x, &mut other.0)` of a nullable parameter writes `undefined` for `None`, which its `=== null` test reads as `Some` (#1018)",
     file: "src/lower/mir/entries.rs",

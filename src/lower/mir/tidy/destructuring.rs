@@ -574,8 +574,34 @@ pub(super) fn tuple_reads(
         // closure or a handle, read where the tuple's part is.
         let span = stmts[i].span;
         let after = &stmts[i + 1..];
+        // And a read of an object a later statement changes a part of,
+        // `x[0]` of `(v.pop(), x.0)` before a guard's `x[0] += 10`, as it was
+        // read where the tuple was made (#1035).
+        // A handle on a part, `{ set value(v) { x[0] = v; } }` a guard's call
+        // is given, changes it too.
+        let mut parts_set = js::Writes::of(after).changed;
+        let mut after_exprs = after.to_vec();
+        js::each_expr_mut(&mut after_exprs, &mut |e| {
+            if let ExprKind::Handle(place, _) | ExprKind::Pair(place, _, _) = &e.kind {
+                let mut root = &**place;
+                while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {
+                    root = of;
+                }
+                if let ExprKind::Var(v) = &root.kind {
+                    parts_set.insert(v.clone());
+                }
+            }
+        });
+        let reads_parts_set = |item: &Expr| {
+            let mut set = false;
+            // Not a handle, which reads its place where it's used whatever.
+            if !matches!(item.kind, ExprKind::Var(_) | ExprKind::Handle(..) | ExprKind::Pair(..)) {
+                item.visit_vars(&mut |v| set |= parts_set.contains(v));
+            }
+            set
+        };
         let acts = |item: &Expr| {
-            !inert(item)
+            (!inert(item) || reads_parts_set(item))
                 && !matches!(&item.kind, ExprKind::Var(v) if !js::Writes::sets(after, v) && !set_elsewhere.contains(v))
         };
         let last = items.iter().rposition(acts);

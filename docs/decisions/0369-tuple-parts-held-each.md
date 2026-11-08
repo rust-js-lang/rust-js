@@ -59,3 +59,19 @@ if (value != null) {
 - Not yet: a part held is named by tidy's rule for temporaries, `value`,
   `value$1`, not by what the arm binds it to; and an arm's binding of it
   is a `const` of its own, `const x = value;`.
+
+## Amendment: a part read of an object a guard changes is held (#1035)
+
+`match (v.pop(), x.0)` of a `x` a tuple struct holds, a guard setting
+`x.0 += 10`, read `x[0]` where an arm bound `a`, after the guard set it
+(`1114` where native prints `114`): `x` is a `const` nothing sets again,
+so its element read was taken for one that reads the same anywhere. A part
+that reads an object a later statement changes a part of, `x[0] = ..`, or
+gives a handle on a part of, a guard's `bump(&mut x.0)`, is held where
+the tuple's made, as a variable a guard sets is; not a handle, which
+reads its place where it's used. Results changed
+([0262](0262-when-rust-and-js-disagree.md)), so Rust's are kept; no other
+case's JS changed. Held by the corpus case `field_rewrite_singles` and
+the mutations `tuple-part-read-after-its-object-set` and
+`tuple-part-set-through-a-handle-unseen`.
+

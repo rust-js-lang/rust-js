@@ -473,9 +473,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     made_here |= i == 0;
                     Value::Ref(e)
                 }
-                // Of fields, `&mut self.orig`: each field, written as a place.
+                // Of fields, `&mut self.orig`: each field, written as a place;
+                // a tuple struct's too, `spare[0]` of `&mut spare.0` (#1035).
                 Value::Expr(e) | Value::Place(e)
-                    if i < borrowed && fields && matches!(e.kind, js::ExprKind::Member(..)) =>
+                    if i < borrowed && fields && fixed_place(&e) && !matches!(e.kind, js::ExprKind::Var(_)) =>
                 {
                     made_here |= i == 0;
                     Value::Ref(e)
