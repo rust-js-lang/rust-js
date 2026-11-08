@@ -118,11 +118,14 @@ function main() {
   console.log(`kept ${shown(task)}`);
   const state$1 = { value: task };
   const other$1 = { value: other };
-  swapped(state$1, other$1);
-  task.status = state$1.value.status;
-  task.tries = state$1.value.tries;
-  task.value = state$1.value.value;
-  other = other$1.value;
+  try {
+    swapped(state$1, other$1);
+  } finally {
+    task.status = state$1.value.status;
+    task.tries = state$1.value.tries;
+    task.value = state$1.value.value;
+    other = other$1.value;
+  }
   console.log(`lent ${shown(task)}, ${statusDebug_fmt(other)}`);
 }
 //# sourceMappingURL=case.js.map

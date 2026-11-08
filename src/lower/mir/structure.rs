@@ -892,7 +892,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 let back = self.copied_back(place.clone(), &boxed, object, js_span);
                                 if throws {
                                     let place = self.handled_place(place.clone());
-                                    on_unwind.push((back.clone(), outlives(state, &place)));
+                                    on_unwind.push((back.clone(), outlives(state, &place, |ty| self.is_guard(ty))));
                                 }
                                 called.push(back);
                             }
@@ -1133,7 +1133,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-fn outlives(state: &State<'_, '_>, place: &Expr) -> bool {
+fn outlives<'tcx>(state: &State<'_, 'tcx>, place: &Expr, is_guard: impl Fn(Ty<'tcx>) -> bool) -> bool {
     let mut root = place;
     while let js::ExprKind::Member(object, _) | js::ExprKind::Index(object, _) = &root.kind {
         root = object;
@@ -1142,5 +1142,8 @@ fn outlives(state: &State<'_, '_>, place: &Expr) -> bool {
         if state.locals.names.iter_enumerated().any(|(local, n)| n == name
             && local != mir::RETURN_PLACE
             && !state.body.local_decls[local].ty.is_ref()
-            && !state.body.local_decls[local].ty.is_raw_ptr()))
+            && !state.body.local_decls[local].ty.is_raw_ptr()
+            // A guard, `borrow_mut()`'s, is its cell's place, as a reference
+            // is to what it reaches (#1021).
+            && !is_guard(state.body.local_decls[local].ty)))
 }

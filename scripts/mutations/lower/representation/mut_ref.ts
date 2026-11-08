@@ -4,6 +4,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "mut-ref-to-a-shared-ref-the-object",
+    breaks: "`*m.as_mut().unwrap() = &other` of an `Option<&HashMap<..>>` is `$assign(map, other)`, copying `other` into the map the reference was to (#1021)",
+    file: "src/lower/representation/mut_ref.rs",
+    find: "        if let ty::Ref(_, inner, Mutability::Not) = *ty.kind()\n            && self.is_object(inner)\n",
+    replace: "        if let ty::Ref(_, inner, Mutability::Not) = *ty.kind()\n            && false && self.is_object(inner)\n",
+    tests: ["test/corpus.test.ts", "-t", "^written_through_a_guard_or_a_reference_to_an_object.rs$"],
+  },
+  {
     name: "std-mut-ref-of-a-callers-iterator-made-one",
     breaks:
       "a guard's `&mut I` of an `I: Iterator` is made `Iterator.from(held.value)`, which `*held.borrow_mut() = other` can't write, a crash (#1016)",

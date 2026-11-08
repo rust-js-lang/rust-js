@@ -293,6 +293,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && !self.is_generic_iter(inner);
             return self.mut_ref_form_in(inner, param_env).is_cell() || plain_object;
         }
+        // A shared reference to an object, a map's say: a write of the whole
+        // through a `&mut` to it, `*r = &other`, makes it another, never
+        // changes what it was to, as `$assign` would (#1021): a cell, as one
+        // to a struct's array is.
+        if let ty::Ref(_, inner, Mutability::Not) = *ty.kind()
+            && self.is_object(inner)
+            && !inner.is_slice()
+            && !self.is_callable(inner)
+            && !self.implements_iterator(inner)
+        {
+            return true;
+        }
         // A counted `Rc` or its `Weak`, an object its owners share (ADR 0523), or a
         // flattened state, its class's keys (#478): a `&mut` to one is a cell.
         let shared = self.counted_rc(ty).is_some() || self.counted_weak(ty).is_some() || self.is_flattened_state(ty);

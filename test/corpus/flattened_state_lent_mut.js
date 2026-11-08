@@ -28,24 +28,33 @@ function listen(state, id) {
 
 function lent(chunk, value) {
   const state = { value: chunk };
-  finish(state, value);
-  chunk.status = state.value.status;
-  chunk.value = state.value.value;
-  chunk.reason = state.value.reason;
+  try {
+    finish(state, value);
+  } finally {
+    chunk.status = state.value.status;
+    chunk.value = state.value.value;
+    chunk.reason = state.value.reason;
+  }
 }
 
 function lentThrough(chunk, id) {
   const state = { value: chunk };
-  listen(state, id);
-  chunk.status = state.value.status;
-  chunk.value = state.value.value;
-  chunk.reason = state.value.reason;
-  if (id > 2) {
-    const state = { value: chunk };
-    finish(state, "through");
+  try {
+    listen(state, id);
+  } finally {
     chunk.status = state.value.status;
     chunk.value = state.value.value;
     chunk.reason = state.value.reason;
+  }
+  if (id > 2) {
+    const state = { value: chunk };
+    try {
+      finish(state, "through");
+    } finally {
+      chunk.status = state.value.status;
+      chunk.value = state.value.value;
+      chunk.reason = state.value.reason;
+    }
   }
 }
 

@@ -136,3 +136,25 @@ The React port has no `&mut` box in its JS, so none of its output changes.
   after its call alone, panicking or not.
 - Mutations `box-unwind-uncopied` and `box-unwind-cleanup-uncopied`
   (`mir/temporaries.rs`) and `box-outlives-own-variable` (`mir/structure.rs`).
+
+## Amendment: a guard's box is copied back as it unwinds, where the call may (#1021)
+
+The metamorphic net's `rc-refcell` rewrite lent a `RefCell`'s guard to a
+call that panics, `set_then_panic(&mut *slot.borrow_mut())` in a
+`catch_unwind`, and what it wrote before the panic was lost (native `true
+Some(1)`, JS `true None`): whether a box given to a call is copied back
+as it unwinds asked `outlives`, which took the guard's local for a place
+of the body's own. A guard is its cell's place, which outlives the body,
+as a reference's does; `outlives` asks `is_guard` of it now. A call that
+never unwinds is copied back after it alone, no `finally`, as it was: its
+statement `cannot_throw`, a never-unwinding function's call (ADR 0902),
+which the user asked to hold (2026-11-09). Four corpus cases'
+JS changed, a flattened state's guard lent to a call that may panic, a
+`String`'s or a `Vec`'s growth, `flattened_state_lent_mut.js`'s
+`finish(state, value)` now in a `try` whose `finally` copies its keys
+back (the user's decision, 2026-11-09: correctness-forced): in Rust what
+the call wrote before a panic is in the cell a `catch_unwind` reads. The
+React port's JS is the same as main's. Held by the corpus case
+`written_through_a_guard_or_a_reference_to_an_object` and the mutations
+`guard-box-not-copied-back-on-unwind` and `box-unthrowing-wrapped`.
+

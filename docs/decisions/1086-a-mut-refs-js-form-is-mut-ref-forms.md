@@ -307,3 +307,19 @@ case's JS changed. Held by the corpus case
 `guard-of-an-iterator-the-cell` and
 `std-mut-ref-of-a-callers-iterator-made-one`; the net's five
 `rc-refcell` lines of #1016 run as native.
+
+## Amendment: a `&mut` to a shared reference to an object is a cell (#1021)
+
+`*m.as_mut().unwrap() = &other` of an `Option<&HashMap<..>>`, the
+net's `option` rewrite of `loop_exits`, was `$assign(map, other)`:
+a `&mut` to `&HashMap` was `MutRefForm::Object`, the map itself, as
+`is_object` of the reference said, so a write of the whole copied
+`other` into the map it was to, where Rust makes the reference another
+(native `Some(5)`, JS `None`). A `&mut` to a shared reference to an
+object is a cell (`is_boxable`), as one to a reference to a struct's
+array was, so the write is the reference's. Results changed
+([0262](0262-when-rust-and-js-disagree.md)), so Rust's are kept; no case's
+JS changed. Held by the corpus case
+`written_through_a_guard_or_a_reference_to_an_object` and the mutation
+`mut-ref-to-a-shared-ref-the-object`.
+

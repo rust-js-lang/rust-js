@@ -76,11 +76,14 @@ function main() {
   console.log(`${statusDebug_fmt(task)} ${value} ${holderDebug_fmt(h)}`);
   const a = { value: task };
   const b = { value: h.f };
-  swapTwo(a, b);
-  task.status = a.value.status;
-  task.tries = a.value.tries;
-  task.value = a.value.value;
-  h.f = b.value;
+  try {
+    swapTwo(a, b);
+  } finally {
+    task.status = a.value.status;
+    task.tries = a.value.tries;
+    task.value = a.value.value;
+    h.f = b.value;
+  }
   const value$1 = task.name;
   console.log(`${statusDebug_fmt(task)} ${value$1} ${holderDebug_fmt(h)}`);
 }

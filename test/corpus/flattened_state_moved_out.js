@@ -86,47 +86,65 @@ function shown(task) {
 function lent() {
   let task = new Task("pending", 1, undefined, "lent");
   const state = { value: task };
-  let old = finish(state);
-  task.status = state.value.status;
-  task.tries = state.value.tries;
-  task.value = state.value.value;
+  let old;
+  try {
+    old = finish(state);
+  } finally {
+    task.status = state.value.status;
+    task.tries = state.value.tries;
+    task.value = state.value.value;
+  }
   const old$3 = { value: old };
   bump(old$3);
   old = old$3.value;
   const arg = shown(task);
   console.log(`finish ${statusDebug_fmt(old)}, ${arg}`);
   const state$1 = { value: task };
-  const old$1 = halt(state$1);
-  task.status = state$1.value.status;
-  task.tries = state$1.value.tries;
-  task.value = state$1.value.value;
+  let old$1;
+  try {
+    old$1 = halt(state$1);
+  } finally {
+    task.status = state$1.value.status;
+    task.tries = state$1.value.tries;
+    task.value = state$1.value.value;
+  }
   const arg$1 = shown(task);
   console.log(`halt ${statusDebug_fmt(old$1)}, ${arg$1}`);
   let other = { status: "pending", tries: 2 };
   const state$2 = { value: task };
   const other$1 = { value: other };
-  exchange(state$2, other$1);
-  task.status = state$2.value.status;
-  task.tries = state$2.value.tries;
-  task.value = state$2.value.value;
-  other = other$1.value;
+  try {
+    exchange(state$2, other$1);
+  } finally {
+    task.status = state$2.value.status;
+    task.tries = state$2.value.tries;
+    task.value = state$2.value.value;
+    other = other$1.value;
+  }
   const old$4 = { value: other };
   bump(old$4);
   other = old$4.value;
   const arg$2 = shown(task);
   console.log(`exchange ${statusDebug_fmt(other)}, ${arg$2}`);
   const state$3 = { value: task };
-  let old$2 = restart(state$3);
-  task.status = state$3.value.status;
-  task.tries = state$3.value.tries;
-  task.value = state$3.value.value;
+  let old$2;
+  try {
+    old$2 = restart(state$3);
+  } finally {
+    task.status = state$3.value.status;
+    task.tries = state$3.value.tries;
+    task.value = state$3.value.value;
+  }
   const arg$3 = shown(task);
   console.log(`restart ${statusDebug_fmt(old$2)}, ${arg$3}`);
   const state$4 = { value: task };
-  old$2 = finish(state$4);
-  task.status = state$4.value.status;
-  task.tries = state$4.value.tries;
-  task.value = state$4.value.value;
+  try {
+    old$2 = finish(state$4);
+  } finally {
+    task.status = state$4.value.status;
+    task.tries = state$4.value.tries;
+    task.value = state$4.value.value;
+  }
   const old$5 = { value: old$2 };
   bump(old$5);
   old$2 = old$5.value;

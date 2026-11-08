@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "guard-box-not-copied-back-on-unwind",
+    breaks: "`set_then_panic(&mut slot.borrow_mut())` in a `catch_unwind` loses what it wrote before it panicked, the guard taken for a place of the body's own (#1021)",
+    file: "src/lower/mir/structure.rs",
+    find: "            && !is_guard(state.body.local_decls[local].ty)))\n",
+    replace: "            && !(false && is_guard(state.body.local_decls[local].ty))))\n",
+    tests: ["test/corpus.test.ts", "-t", "^written_through_a_guard_or_a_reference_to_an_object.rs$"],
+  },
+  {
     name: "lent-adapter-unmarked",
     breaks:
       "a filter made into a temporary lent to `next_back` isn't marked made knowing its back, so its step refuses it (#851)",
