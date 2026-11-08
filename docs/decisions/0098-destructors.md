@@ -260,7 +260,7 @@ function main() {
   made in. One
   that isn't called once by its own body, `Fn` or `FnMut`, isn't given to
   a call by value, which may consume it without its body dropping what it
-  holds. One that takes part of a value, `t.0`, is an error. rustc's own
+  holds. One that takes part of a value, `t.0`, is an error (amended: it drops the part, #1012). rustc's own
   walk of a body doesn't reach a closure's captures: the facts walk them
   itself. (Amended: a closure that held one was an error.)
 - **A loop that owns its items owns each for a time round**, as a function
@@ -804,3 +804,29 @@ upvars (`closure_captures_second_panic_aborts.rs`, against native). A
 `Fn` or `FnMut` closure called as a `Box<dyn FnOnce>` is dropped as the
 call returns or unwinds by `$droppingOnce` (ADR 0521). That is rustc's
 `ClosureOnceShim`: `call_mut`, then a drop of the closure on both edges.
+
+## Amendment: a closure that holds part of a value (#1012)
+
+A closure that takes part of a value with a destructor, edition 2021's
+capture of a place, `move || held.0.id()`, was refused where it was made
+and dropped, "a closure that holds part of a value with a destructor";
+given to generic code, `keep(move || held.0.id())`, the refusal was the
+analysis's answer of whether its type drops, which a caller's drop
+functions read as "nothing", so the generic function took no drop
+function and the part was never dropped: native printed `drop guard 1`
+before `after`, JS never did. The part needs no flags of its own: the
+maker's MIR moves it into the closure, `move (_1.0)`, as `let first =
+pair.0` moves one out, and its drop flags already say the rest of the
+value is still dropped, on the way the closure's made only; the closure's
+drop drops each place it took (`closure_made`), the part's name,
+`captured`, where it's made. So a closure the crate makes drops what it
+holds whatever part it takes (`drops_what_it_holds`); an `async` block
+or closure that takes part of one, and another crate's closure not made
+of whole values, are refused as they were. Results changed
+([0262](0262-when-rust-and-js-disagree.md)), so Rust's drops are kept.
+Held by the corpus case `closure_holding_part_of_a_value` (given to
+generic code, kept in a `Box<dyn Fn>`, called once, dropped where it's
+made, made on one branch only, and unwound through), the traits test's
+`closure holding part of a value`, which compiles now, and the mutation
+`closure-part-taken`; the net's three `field` lines of #1012 run as
+native.

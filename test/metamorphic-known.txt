@@ -23,11 +23,6 @@ plain std field fmt_error_pieces.rs
 plain std field fmt_error_write.rs
 plain std field fmt_write_function.rs
 
-#1012 P0 (drops): a closure that moves part of a value with a destructor (held.0), given to generic code, never drops it
-plain std field closures_made_and_folded.rs
-plain std field dyn_fn_generic_drops.rs
-plain std field dyn_fn_of_a_params_function_drops.rs
-
 #1014 P0: mem::discriminant(a) == discriminant(b) in generic code is true for different variants
 plain std generic enum_discriminant.rs
 

@@ -11,7 +11,7 @@ use crate::lower::recognition::{Recognition, StdItem, any_trait, rc_pointee, wea
 use crate::lower::traits::{EvidenceQuery, may_have_destructors};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::{BindingMode, ByRef};
-use rustc_middle::thir::{LocalVarId, Pat, PatKind};
+use rustc_middle::thir::{Pat, PatKind};
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::def_id::DefId;
 
@@ -279,34 +279,27 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         })
     }
 
-    /// What a closure takes by value that has a destructor: each variable,
-    /// and its type, in the order its drop drops them. None if it takes
-    /// part of one, or is another crate's.
-    pub(in crate::lower) fn held(&self, closure: DefId) -> Option<Vec<(LocalVarId, Ty<'tcx>)>> {
-        let local = closure.as_local()?;
-        let mut held = Vec::new();
-        for captured in self.recognition.tcx.closure_captures(local) {
-            let ty = captured.place.ty();
-            if captured.is_by_ref() || self.drops(ty) == Drops::Nothing {
-                continue;
+    /// Whether a closure's drop drops what it holds: the crate's own
+    /// closure, whose maker names each place it takes, a part of a value
+    /// too, `held.0`, which the closure's drop drops and the value's own
+    /// drop then doesn't, a part moved out, as MIR's flags say (#1012); an
+    /// `async` block or closure of the crate's that takes no part of one;
+    /// or another crate's its maker gives back, which carries its drop
+    /// (ADRs 0484, 0523), or that its maker's MIR makes of whole values
+    /// (`foreign_takes_whole`, #840).
+    fn drops_what_it_holds(&self, ty: Ty<'tcx>, closure: DefId) -> bool {
+        match closure.as_local() {
+            Some(_) if matches!(ty.kind(), ty::Closure(..)) => true,
+            Some(local) => (self.recognition.tcx.closure_captures(local).iter()).all(|captured| {
+                captured.is_by_ref()
+                    || captured.place.projections.is_empty()
+                    || self.drops(captured.place.ty()) == Drops::Nothing
+            }),
+            None => {
+                crate::lower::recognition::given_back(self.recognition.tcx, closure)
+                    || self.foreign_takes_whole(closure)
             }
-            if !captured.place.projections.is_empty() {
-                return None;
-            }
-            held.push((LocalVarId(captured.get_root_variable()), ty));
         }
-        Some(held)
-    }
-
-    /// Whether a closure's drop drops what it holds whole: one that takes
-    /// no part of a value, or another crate's its maker gives back, which
-    /// carries its drop (ADRs 0484, 0523), or that its maker's MIR makes of
-    /// whole values (`foreign_takes_whole`, #840).
-    fn takes_whole(&self, closure: DefId) -> bool {
-        self.held(closure).is_some()
-            || !closure.is_local()
-                && (crate::lower::recognition::given_back(self.recognition.tcx, closure)
-                    || self.foreign_takes_whole(closure))
     }
 
     /// Whether another crate's closure takes what it holds that drops whole:
@@ -491,8 +484,8 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         match ty.kind() {
             ty::Tuple(_) => glue(walk),
             ty::Array(item, _) | ty::Slice(item) => self.drops_in(*item, walk),
-            // What it holds, which it took whole: its drop drops that. Part of
-            // one, `t.0`, would need its own flags. A closure's, an `async`
+            // What it holds: its drop drops that, a part of a value too, `t.0`,
+            // of a closure the crate makes (`drops_what_it_holds`). A closure's, an `async`
             // closure's, and an `async` block's future's, which drops what it
             // took as its body ends (#173); an `async fn`'s, whose body drops
             // its arguments, holds nothing else.
@@ -502,7 +495,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                         || crate::lower::recognition::is_async_block(self.recognition.tcx, def_id)) =>
             {
                 match all(self, &mut held.iter(), walk) {
-                    Drops::Runs if self.takes_whole(def_id) => Drops::Runs,
+                    Drops::Runs if self.drops_what_it_holds(ty, def_id) => Drops::Runs,
                     Drops::Runs => Drops::Unsupported(ty, "a closure that holds part of a value with a destructor"),
                     found => found,
                 }

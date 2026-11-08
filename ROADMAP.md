@@ -401,8 +401,8 @@ tooling while preserving rust-js's own readable-output goals.
   ([ADR 0098](docs/decisions/0098-destructors.md)): variables, parameters,
   moves, temporaries wherever rustc ends them, generic code, partial moves
   and struct updates, closures, loops and `dyn` values. An `Rc`, an
-  `Arc` or a thread-local holding a value with a destructor, a closure
-  holding part of one, a `dyn` of std's traits owning one, and some
+  `Arc` or a thread-local holding a value with a destructor, a `dyn` of
+  std's traits owning one, and some
   temporaries (a let-chain's, one partly moved) are rejected.
 - [ ] **M7.3 — Complete reusable abstraction support.** Extend associated
   types/constants, generic traits and methods, const generics, trait objects,
@@ -538,7 +538,7 @@ broader completeness work.
 | Options, maps, and iterators | A `HashMap` or `HashSet` keyed by a struct, a tuple or an enum with fields, whose `Eq` is derived, finds its keys by value ([ADR 0121](docs/decisions/0121-value-keys.md)); an iterator trait object, boxed or lent, is a JS iterator ([ADR 0140](docs/decisions/0140-iterator-trait-objects.md)); an `Option` of what can look like `None` boxes its `Some` ([ADR 0051](docs/decisions/0051-generic-options.md)); `collect()` into a `Result` or an `Option` stops at the first `Err` or `None` ([ADR 0036](docs/decisions/0036-iterators-and-sorting.md)); [diagnostic cases](test/diagnostics.test.ts) include keys of a custom `PartialEq`, B-trees of struct keys, map equality, `collect()` into a `Result` of anything but an array, and held-iterator restrictions. | Combinations matter even when each broad feature is listed as supported. |
 | JSX authoring | [JSX boundaries](docs/guide/react/jsx.md) include macro composition and missing stock editor expansion. | Daily development and reusable component patterns need a tested workflow. |
 | Text and slices | A string's length, slices and offsets count its UTF-8 bytes ([ADR 0138](docs/decisions/0138-string-byte-counts.md)); a closure, a function or a set of `char`s is a pattern ([ADR 0157](docs/decisions/0157-char-predicates.md)); the [text contract](docs/decisions/0063-text.md) leaves mutable range slices and UTF-8 decoding unsupported; [diagnostics](test/diagnostics.test.ts) cover stored ranges. | Portable parsing and reusable algorithms depend on precise text and borrowing semantics. |
-| Resource lifetime | Destructors run where Rust runs them ([ADR 0098](docs/decisions/0098-destructors.md)); an `Rc`, an `Arc` or a thread-local holding a value with one, a `dyn` of std's traits owning one, such as `Box<dyn Send>`, a closure holding part of one, and some temporaries, such as a let-chain's, are rejected. | Native RAII cleanup cannot be assumed to follow JavaScript garbage collection. |
+| Resource lifetime | Destructors run where Rust runs them ([ADR 0098](docs/decisions/0098-destructors.md)); an `Rc`, an `Arc` or a thread-local holding a value with one, a `dyn` of std's traits owning one, such as `Box<dyn Send>`, and some temporaries, such as a let-chain's, are rejected. | Native RAII cleanup cannot be assumed to follow JavaScript garbage collection. |
 
 ## Architecture review follow-ups
 

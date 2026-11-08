@@ -264,10 +264,11 @@ for (const [name, source, diagnostic] of [
   ["rposition of a lazy chain", `pub fn f(v: &[i32]) -> Option<usize> { v.iter().map(|x| { println!("{}", x); *x }).rposition(|x| x > 1) }`, null],
   // Its enumerate made knowing its back and length steps it from there (ADR 0528, amended).
   ["rev of an index after a closure with effects", `pub fn f(v: &[i32]) -> Vec<(usize, i32)> { v.iter().map(|x| { println!("{}", x); *x }).enumerate().rev().collect() }`, null],
-  // A closure's drop drops the variables it took, where it's made (ADR 0098):
-  // not part of one, nor where JS can't see them, nor given away by value
-  // where a call may consume it without its body dropping them.
-  ["closure holding part of a value", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub fn f() { let t = (R, R); let c = move || { let _a = t.0; }; c(); }`, "a closure that holds part of a value with a destructor"],
+  // A closure's drop drops the variables it took, where it's made (ADR 0098),
+  // and a part of one, which its maker's MIR moves (#1012): not where JS
+  // can't see them, nor given away by value where a call may consume it
+  // without its body dropping them.
+  ["closure holding part of a value", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub fn f() { let t = (R, R); let c = move || { let _a = t.0; }; c(); }`, null],
   // One made as a block's value is, the block's tail (ADR 0098).
   ["closure made in a block", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub fn f() { let c = { let r = R; move || { let _r = &r; } }; c(); }`, null],
   // Not one made as a struct's field, where its drop can't see what it took.

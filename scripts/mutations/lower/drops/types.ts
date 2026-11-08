@@ -89,12 +89,11 @@ export const mutations: Mutation[] = [
   {
     name: "closure-part-taken",
     breaks:
-      "a closure that takes part of a value with a destructor is taken as holding it whole",
+      "a closure that takes part of a value with a destructor, `move || held.0.id()`, given to generic code is taken for one that drops nothing, so its part is never dropped (#1012)",
     file: "src/lower/drops/types.rs",
-    find: "                    Drops::Runs if self.takes_whole(def_id) => Drops::Runs,",
-    replace:
-      "                    Drops::Runs if true || self.takes_whole(def_id) => Drops::Runs,",
-    tests: ["test/traits.test.ts", "-t", "closure holding part"],
+    find: "            Some(_) if matches!(ty.kind(), ty::Closure(..)) => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^closure_holding_part_of_a_value.rs$"],
   },
   {
     name: "channel-ends-drop-nothing",
@@ -315,8 +314,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure another crate gives back, holding a value with a destructor, is refused where it's dropped",
     file: "src/lower/drops/types.rs",
-    find: "            || !closure.is_local()\n                && (crate::lower::recognition::given_back(self.recognition.tcx, closure)\n",
-    replace: "            || false\n                && (crate::lower::recognition::given_back(self.recognition.tcx, closure)\n",
+    find: "                crate::lower::recognition::given_back(self.recognition.tcx, closure)\n                    || self.foreign_takes_whole(closure)\n",
+    replace: "                false\n",
     tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
   },
   {
@@ -418,8 +417,8 @@ export const mutations: Mutation[] = [
     name: "foreign-closure-captures-unread",
     breaks: "another crate's closure holding a value with a destructor, its maker's MIR making it of whole values, is refused as one that holds part of one (#840)",
     file: "src/lower/drops/types.rs",
-    find: "                    || self.foreign_takes_whole(closure))\n",
-    replace: "                    || false && self.foreign_takes_whole(closure))\n",
+    find: "                    || self.foreign_takes_whole(closure)\n",
+    replace: "                    || false && self.foreign_takes_whole(closure)\n",
     tests: ["test/crates.test.ts", "-t", "two crates: closure_of_another_crate"],
   },
 ];
