@@ -3,6 +3,24 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "owned-cell-seen-shallow",
+    breaks:
+      "a closure that took a `Box<Cell<_>>` is its own clone, which shares the cell a clone of the box copies: `1 2` where native prints `1 1` (#989)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        } else if !t.is_freeze(tcx, typing_env) {\n            return true;\n",
+    replace: "        } else if !t.is_freeze(tcx, typing_env) {\n            return t == ty;\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_clone_owned_cell.rs$"],
+  },
+  {
+    name: "rc-cell-copied-apart",
+    breaks: "a closure that took an `Rc<Cell<_>>` is cloned apart, as if the cell weren't shared (#989)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "            [StdItem::Rc, StdItem::Arc]\n                .into_iter()\n                .any(|item| is_std_def(tcx, adt.did(), item))\n                || weak_pointee(tcx, t).is_some()\n",
+    replace: "            false\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_clone_owned_cell.rs$"],
+    snapshots: true,
+  },
+  {
     name: "as-deref-unrecognized",
     breaks:
       "an `Option`'s `as_deref()` of a guard given to a binding isn't its read, so `prepare(response.nonce.borrow().as_deref())` counts the cell (rd427)",

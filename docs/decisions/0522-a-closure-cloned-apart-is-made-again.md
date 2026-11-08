@@ -92,3 +92,14 @@ v[0] *= 5; v }` or `move || consume(v)`, hands the one value to what may
 change it, so the clone gave the value changed (#149). A closure the
 compiler infers is `FnOnce` is cloned apart too. Held by
 `test/corpus/closure_once_cloned.rs`.
+
+## Amendment: a `Cell` it owns through what it owns (#989)
+
+`clone_shares` asked each capture `is_freeze`, which looks only at its own
+fields: a `Box<Cell<i32>>` and a `Vec<Cell<i32>>` are `Freeze`, so a
+closure that took one was its own clone, `const counter2 = counter`, which
+shared the cell a clone of the box copies (`1 2` where native prints `1
+1`). It asks `owns_interior_mutability`, which looks through what the
+capture owns, not through what it shares, an `Rc`'s, an `Arc`'s, a
+`Weak`'s or a reference's, whose clone shares the cell as the closure
+itself would. Corpus case `closure_clone_owned_cell`.

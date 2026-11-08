@@ -4,6 +4,3 @@
 // case. The nightly runs each, so the list only shrinks: one that runs as
 // Rust does is taken off. A rewrite that goes wrong for another reason is a
 // line under another issue.
-
-#989 P0: a closure that captured a Box<Cell<_>> by move, then cloned, shares the cell (const counter2 = counter)
-plain std boxed closure_clone_cell.rs

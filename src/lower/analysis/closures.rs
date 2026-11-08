@@ -163,7 +163,11 @@ pub(in crate::lower) fn clone_shares<'tcx>(
             }),
         None => closure.kind() != ty::ClosureKind::Fn,
     } || closure.kind() == ty::ClosureKind::FnOnce;
-    !writes && (closure.upvar_tys().iter()).all(|t| t.is_freeze(tcx, typing_env) && !drops(t))
+    // Nor one of what it owns, a `Box<Cell<i32>>`'s, which a clone copies
+    // apart (#989).
+    !writes
+        && (closure.upvar_tys().iter())
+            .all(|t| !crate::lower::recognition::owns_interior_mutability(tcx, typing_env, t) && !drops(t))
 }
 
 /// Of each capture of `closure`, by its index among them, whether it

@@ -107,17 +107,17 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of a closure holding a counted `Rc` is the closure itself, counting nothing",
     file: "src/lower/analysis/closures.rs",
-    find: "    !writes && (closure.upvar_tys().iter()).all(|t| t.is_freeze(tcx, typing_env) && !drops(t))\n",
+    find: "            .all(|t| !crate::lower::recognition::owns_interior_mutability(tcx, typing_env, t) && !drops(t))\n",
     replace:
-      "    !writes && (closure.upvar_tys().iter()).all(|t| t.is_freeze(tcx, typing_env))\n",
+      "            .all(|t| !crate::lower::recognition::owns_interior_mutability(tcx, typing_env, t))\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
   },
   {
     name: "clone-shares-cell",
     breaks: "a clone of a closure holding a `Cell` shares it",
     file: "src/lower/analysis/closures.rs",
-    find: "    !writes && (closure.upvar_tys().iter()).all(|t| t.is_freeze(tcx, typing_env) && !drops(t))\n",
-    replace: "    !writes && (closure.upvar_tys().iter()).all(|t| !drops(t))\n",
+    find: "            .all(|t| !crate::lower::recognition::owns_interior_mutability(tcx, typing_env, t) && !drops(t))\n",
+    replace: "            .all(|t| !drops(t))\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_cell.rs$"],
   },
   {

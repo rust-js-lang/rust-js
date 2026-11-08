@@ -488,6 +488,39 @@ pub(in crate::lower) fn is_pointer_new(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 
 /// An `Rc`'s or an `Arc`'s `clone`, std's, which counts one more and runs
 /// nothing else (ADR 0847).
+/// Whether a value of `ty` owns a value of interior mutability, a `Cell`'s,
+/// through what it owns, a `Box<Cell<i32>>` or a `Vec<Cell<i32>>`: what a
+/// clone of it copies apart, where `is_freeze` asks only of its own fields.
+/// Not through what it shares, an `Rc`'s, an `Arc`'s, a `Weak`'s, a
+/// reference's or a pointer's, whose clone shares it (ADR 0522, #989).
+pub(in crate::lower) fn owns_interior_mutability<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    ty: Ty<'tcx>,
+) -> bool {
+    let shared = |t: Ty<'tcx>| match *t.kind() {
+        ty::Ref(..) | ty::FnPtr(..) => true,
+        _ if crate::lower::pointers::raw_pointee(tcx, t).is_some() => true,
+        ty::Adt(adt, _) => {
+            [StdItem::Rc, StdItem::Arc]
+                .into_iter()
+                .any(|item| is_std_def(tcx, adt.did(), item))
+                || weak_pointee(tcx, t).is_some()
+        }
+        _ => false,
+    };
+    let mut walk = ty.walk();
+    while let Some(part) = walk.next() {
+        let Some(t) = part.as_type() else { continue };
+        if shared(t) {
+            walk.skip_current_subtree();
+        } else if !t.is_freeze(tcx, typing_env) {
+            return true;
+        }
+    }
+    false
+}
+
 pub(in crate::lower) fn is_rc_clone<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
     tcx.trait_of_assoc(def_id)
         .is_some_and(|t| tcx.is_lang_item(t, LangItem::Clone))
