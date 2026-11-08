@@ -33,16 +33,9 @@ const builds: [string, string[]][] = [
   ["std", ["--std-iterators"]],
 ];
 
-/** Each of `names` in both builds, with why. */
-const keyed = (names: string[], why: string) =>
-  Object.fromEntries(names.flatMap((name) => ["plain", "std"].map((build) => [`${build}:${name}`, why])));
-
 /** The programs rust-js refuses or crashes on, each with why. One it
  * compiles is taken off. */
-const refused: Record<string, string> = keyed(
-  Object.keys(all).filter((name) => name.endsWith("__from_a_cell")),
-  "#958: `Cell::new(x).take()`, a temporary cell's take, crashes rust-js",
-);
+const refused: Record<string, string> = {};
 
 /** The programs that run and differ from native Rust, each a wrong answer
  * filed P0, by its issue. One that agrees is taken off with its fix. */

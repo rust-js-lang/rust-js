@@ -1002,4 +1002,12 @@ export const mutations: Mutation[] = [
     replace: "                    true => place.clone(),\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_replaced_after_a_call.rs$"],
   },
+  {
+    name: "cell-made-there-written-as-a-place",
+    breaks: "a cell made right there and taken, `Cell::new(x).take()`, its value in JS, is written to as if it were a place, which crashes rust-js (#958)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                let place = match place.is_assignable() {\n",
+    replace: "                let place = match true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_made_and_taken_in_one_expression.rs$"],
+  },
 ];

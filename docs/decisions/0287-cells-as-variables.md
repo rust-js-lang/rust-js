@@ -131,3 +131,24 @@ read once, read twice, read after another field's set, and read after a
 call that sets it) and the mutation `handle-read-once-held`
 (`mir/tidy/values.ts`). flattened_keyed_enum's `pending` and the guide's
 alien-signals `read` are re-blessed, `return node.pending;`.
+
+## Amendment: a cell made right there is held in a variable of its own (2026-11-08, #958)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): a crash, not a
+difference: rust-js panicked compiling valid Rust.
+
+A `Cell` is its value in JS, so one made right there and taken or
+replaced in the same expression, `Cell::new(Some(7)).take()`, was its
+value, `7`, which the take then wrote to as if it were a place, `7 =
+undefined`: `to_oxc` panicked, "lowering only assigns to variables, fields
+and arrays of them". The `None` matrix (#855) found it in 58 programs.
+
+**A cell that isn't a place where it's taken or replaced is held in a `let`
+of its own first** (`std_types/cell.rs`), which what's written is written
+to and its drop drops, as Rust's temporary is: `let cell = "s"; const s =
+cell; cell = "t";`. A cell a variable, a field or an item holds is
+written where it is, as before; no corpus snapshot changed. Corpus case
+`cell_made_and_taken_in_one_expression.rs`, a `Cell` of an `Option` and
+of a `Vec` of what prints as it's dropped, a `RefCell`'s `take` and a
+`Cell`'s `replace`; the `None` matrix's 58 programs are off `refused`.
+Mutation `cell-made-there-written-as-a-place` (`lower/std_types/cell.ts`).

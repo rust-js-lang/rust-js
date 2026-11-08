@@ -431,6 +431,13 @@ impl Expr {
         }
     }
 
+    /// Is it a place an assignment writes, `x = v`: a variable, a property
+    /// or an item, as `to_oxc` writes them; not a value made there, which a
+    /// write to would need a variable of its own first (#958).
+    pub fn is_assignable(&self) -> bool {
+        matches!(self.kind, ExprKind::Var(_) | ExprKind::Member(..) | ExprKind::Index(..))
+    }
+
     /// Is this the same value, cheaply, however often it's read? A variable,
     /// a property of one, an item of one at a constant index (`t[0]`), or a
     /// constant: what can be written twice.

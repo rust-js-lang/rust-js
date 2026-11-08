@@ -401,6 +401,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => cell,
                     false => self.fixed_place_of(Expr::held(cell), out),
                 };
+                // A cell made right there, `Cell::new(x).take()`, its value
+                // the cell's in JS: held in a variable of its own, which
+                // what's written is written to and its drop drops, as Rust's
+                // temporary is (#958).
+                let place = match place.is_assignable() {
+                    true => place,
+                    false => {
+                        let name = self.fresh("cell");
+                        out.push(StmtKind::Let(name.clone(), Some(place)).at(js_span));
+                        Expr::var(&name)
+                    }
+                };
                 // A take of a place rust-js made, read and written as a
                 // path, may write where it was `Some` (ADR 0996).
                 let next = match known == Std::CellTake && self.option_of(item).is_some() && js::taken_place(&place) {
