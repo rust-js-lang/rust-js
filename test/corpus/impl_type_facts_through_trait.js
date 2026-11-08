@@ -21,7 +21,7 @@ function stackFromIteratorT_fromIter(iter, TSize) {
   return stack;
 }
 
-const $stackClone = new Map();
+const $stackClone = new WeakMap();
 
 export function stackClone(TClone, TSize) {
   return $traitImpl($stackClone, [TClone, TSize], () => ({

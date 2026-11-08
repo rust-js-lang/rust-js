@@ -289,6 +289,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if fact == TypeFact::Fused {
             return Ok(Expr::bool(self.recognition().is_fused_iterator(of)));
         }
+        // Whether it's `Eq`, where rustc can say it here, so a callee's `==`
+        // of two `Rc`s of it asks whether they're one allocation first:
+        // refused where JS can't tell two apart (#930, #931).
+        if fact == TypeFact::Eq
+            && let Some(eq) = crate::lower::recognition::fact_trait(self.tcx, fact)
+            && let Some(holds) = self.recognition().trait_holds(of, eq)
+        {
+            if holds {
+                self.check_rc_allocations(&format!("std::rc::Rc<{of}>"), of, span)?;
+            }
+            return Ok(Expr::bool(holds));
+        }
         // Of a type whose fact is the facts of what it holds, `TrustedLen` of
         // a `&mut I`, `I`'s, each's (ADR 0975).
         if let [(held, _), ..] = crate::lower::recognition::held_facts(self.tcx, self.typing_env, of, fact)[..]

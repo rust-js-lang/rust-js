@@ -373,3 +373,103 @@ pub fn loud_replace(s: &mut BTreeSet<Loud>, x: Loud) -> bool {
   expect(body(flat, "quietReplace")).toContain("$setReplace(s, x)");
   expect(body(flat, "loudReplace")).toContain("$setReplace(s, x, loudDrop_drop)");
 });
+
+// #931: `==` of two `Rc`s in generic code bounded by `T: PartialEq` asks
+// whether they're one allocation first where its caller's `T` is `Eq`, as
+// std's `RcEqIdent` specializes each instance: `TEq`, the caller's, `true`
+// of an `Eq` type and `false` of one only `PartialEq`; refused of a caller
+// whose `Eq` value JS can't tell two allocations of apart (#930). A generic
+// function comparing no `Rc` is given none, and an impl's dictionary given
+// one is still cached weakly by the dictionaries it's given.
+test("== of Rcs in generic code asks the same allocation first where the caller's T is Eq", () => {
+  const rust = `
+use std::rc::Rc;
+
+pub struct Key(pub u32);
+
+impl PartialEq for Key {
+    fn eq(&self, other: &Key) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl Eq for Key {}
+
+pub struct Partial(pub u32);
+
+impl PartialEq for Partial {
+    fn eq(&self, other: &Partial) -> bool {
+        self.0 == other.0
+    }
+}
+
+pub struct Holder<T>(pub Rc<T>);
+
+impl<T: PartialEq> PartialEq for Holder<T> {
+    fn eq(&self, other: &Holder<T>) -> bool {
+        self.0 == other.0
+    }
+}
+
+pub fn same<T: PartialEq>(a: &Rc<T>, b: &Rc<T>) -> bool {
+    a == b
+}
+
+pub fn plain<T: PartialEq>(a: &T, b: &T) -> bool {
+    a == b
+}
+
+pub fn maybe<T: PartialEq>(a: &Option<Rc<T>>, b: &Option<Rc<T>>) -> bool {
+    a == b
+}
+
+pub fn maybe_keys(a: &Option<Rc<Key>>) -> bool {
+    maybe(a, a)
+}
+
+pub fn keys(a: &Rc<Key>) -> bool {
+    same(a, &a.clone())
+}
+
+pub fn partials(a: &Rc<Partial>) -> bool {
+    same(a, &a.clone())
+}
+
+pub fn plain_keys(a: &Key) -> bool {
+    plain(a, a)
+}
+
+pub fn holders(a: &Holder<Key>) -> bool {
+    plain(a, a)
+}
+`;
+  const flat = compiled("std-unwinds-generic-rc-eq", rust);
+  expect(body(flat, "same")).toContain("same(a, b, TPartialEq, TEq) { return (TEq && a === b) || TPartialEq.eq(a, b); }");
+  expect(body(flat, "keys")).toContain("same(a, a, keyPartialEq, true)");
+  expect(body(flat, "partials")).toContain("same(a, a, partialPartialEq, false)");
+  expect(body(flat, "plain")).toContain("plain(a, b, TPartialEq) {");
+  expect(body(flat, "plainKeys")).toContain("plain(a, a, keyPartialEq)");
+  expect(body(flat, "maybeKeys")).toContain("maybe(a, a, keyPartialEq, true)");
+  expect(body(flat, "holders")).toContain("holderPartialEq(keyPartialEq, true)");
+  expect(flat).toContain("const $holderPartialEq = new WeakMap();");
+  const kind = `${rust}
+#[derive(Clone, Copy)]
+pub enum Kind {
+    A,
+    B,
+}
+
+impl PartialEq for Kind {
+    fn eq(&self, other: &Kind) -> bool {
+        matches!((self, other), (Kind::A, Kind::A) | (Kind::B, Kind::B))
+    }
+}
+
+impl Eq for Kind {}
+
+pub fn kinds(a: &Rc<Kind>) -> bool {
+    same(a, &Rc::new(Kind::A))
+}
+`;
+  expect(() => compiled("std-unwinds-generic-rc-eq-refused", kind)).toThrow(/`==` of two `std::rc::Rc<Kind>`s, which std compares by address first/);
+});

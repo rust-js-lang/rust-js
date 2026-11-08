@@ -26,7 +26,7 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
 }
 
-const $tExt = new Map();
+const $tExt = new WeakMap();
 
 function tExt(TIterator, TItemItemSize, dropT, dropTItem, dropTItemItem, dropTItemIntoIter) {
   return $traitImpl(

@@ -1070,14 +1070,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "rc-eq-primitive-unrefused",
-    breaks: "`==` of two `Rc`s of a fieldless enum with its own `eq` asks `===` of their strings first, which two allocations share, so its `eq` is skipped (#910)",
-    file: "src/lower/std_impls.rs",
-    find: "            if !counted && !self.is_object(pointee) {\n",
-    replace: "            if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^rc_eq_of_a_fieldless_enum_refused.rs$"],
-  },
-  {
     name: "rc-eq-counted-boxes-compared",
     breaks: "`==` of two counted `Rc`s compares their boxes as the values, not what they hold (#910)",
     file: "src/lower/std_impls.rs",

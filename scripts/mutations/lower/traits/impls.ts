@@ -297,9 +297,18 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl's dictionaries keyed by a type's fact, a number, are a `WeakMap`'s, which refuses it",
     file: "src/lower/traits/impls.rs",
-    find: " && self.given.type_facts.is_empty() {\n",
-    replace: " {\n",
+    find: "                && (!self.given.evidence.is_empty() || self.given.type_facts.is_empty());\n",
+    replace: ";\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_type_facts.rs$"],
+  },
+  {
+    name: "impl-cache-strong-of-dictionaries-and-facts",
+    breaks:
+      "an impl's dictionaries keyed by dictionaries, then a type's fact, are a `Map`'s, which holds every dictionary it's given for good (#931)",
+    file: "src/lower/traits/impls.rs",
+    find: "                && (!self.given.evidence.is_empty() || self.given.type_facts.is_empty());\n",
+    replace: "                && self.given.type_facts.is_empty();\n",
+    tests: ["test/lowering-std-unwinds.test.ts", "-t", "generic code asks"],
   },
   {
     name: "own-clone-from-not-in-dictionary",

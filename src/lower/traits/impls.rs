@@ -568,9 +568,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             body.extend(shared);
             body.push(StmtKind::Return(Some(object.substitute(&rename).unwrap_or(object))).at(js::Span::NONE));
         } else {
-            // Keyed by a const parameter's value first, or a type's fact, a
-            // number, which only a `Map` holds (ADRs 0107, 0145).
-            let map = match self.given.const_params.is_empty() && self.given.type_facts.is_empty() {
+            // Keyed by what it's given first: a const parameter's value, a
+            // number, which only a `Map` holds (ADR 0107), else a dictionary,
+            // held weakly, a type's fact after it in a cache of its own,
+            // `$traitImpl`'s; a fact first, of an impl given no dictionary,
+            // a `Map` (ADR 0145), whose keys are a type's few facts.
+            let weak = self.given.const_params.is_empty()
+                && (!self.given.evidence.is_empty() || self.given.type_facts.is_empty());
+            let map = match weak {
                 true => "WeakMap",
                 false => "Map",
             };

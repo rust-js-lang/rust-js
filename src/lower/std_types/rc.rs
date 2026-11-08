@@ -31,6 +31,50 @@ pub(in crate::lower) enum RcOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether `==` of two `rc`s, `Rc`s or `Arc`s of `pointee`, asks
+    /// whether they're one allocation first, as std's `RcEqIdent` does of
+    /// an `Eq` value: `Some(None)` where it does, `Some(Some(fact))` where
+    /// the caller's type says, its `TEq` (#931), `None` where it doesn't.
+    pub(in crate::lower) fn rc_eq_first(
+        &mut self,
+        rc: Ty<'tcx>,
+        pointee: Ty<'tcx>,
+        span: Span,
+    ) -> R<Option<Option<Expr>>> {
+        let eq = crate::lower::recognition::std_item(self.tcx, crate::lower::recognition::StdItem::Eq);
+        match self.recognition().trait_holds(pointee, eq) {
+            Some(true) => {
+                self.check_rc_allocations(&rc.to_string(), pointee, span)?;
+                Ok(Some(None))
+            }
+            Some(false) => Ok(None),
+            None => Ok(Some(Some(self.type_fact_value(
+                pointee,
+                crate::lower::recognition::TypeFact::Eq,
+                span,
+            )?))),
+        }
+    }
+
+    /// Refused where `==` of two `rc`s of `pointee`, an `Eq` value whose
+    /// `eq` runs the crate's code, would ask whether they're one allocation
+    /// first, but JS can't tell two apart: an `Rc` whose counts nothing
+    /// reads is its value, whose `===` is its allocation's only where it's
+    /// an object (#930). Of a caller's type, the `TEq` it gives (#931).
+    pub(in crate::lower) fn check_rc_allocations(&self, rc: &str, pointee: Ty<'tcx>, span: Span) -> R<()> {
+        if self.custom_eq(pointee)
+            && !self.eq_is_identity(pointee)
+            && !self.krate.counted.counts(self.tcx, pointee)
+            && !self.is_object(pointee)
+        {
+            return Err(self.unsupported(
+                span,
+                &format!("`==` of two `{rc}`s, which std compares by address first, of a value that isn't an object in JS (#930): compare the values, `*a == *b`, which calls its `eq` as std does for two allocations"),
+            ));
+        }
+        Ok(())
+    }
+
     /// What a counted `Rc` points at, if `ty` is one.
     pub(in crate::lower) fn counted_rc(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         rc_pointee(self.tcx, ty).filter(|&pointee| self.krate.counted.counts(self.tcx, pointee))

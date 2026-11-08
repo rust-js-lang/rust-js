@@ -300,6 +300,9 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   `a == a.clone()` calls no `eq`; of an `Rc` of a fieldless enum with an
   `eq` of its own, whose `===` two allocations share, it's refused (#930)
   ([0582](../decisions/0582-ptr-eq-of-an-object-is-its-identity.md), amended).
+  In generic code bounded by `T: PartialEq`, the caller says whether its
+  `T` is `Eq`, a type fact, `(TEq && a === b) || TPartialEq.eq(a, b)`
+  (#931).
   A `Weak` nothing upgrades or counts is what it points at, `Rc::downgrade`
   the object and `Weak::new()` `null`: what's alive is asked of no `Weak`,
   so none needs a count ([0843](../decisions/0843-a-weak-nothing-upgrades-is-the-value-itself.md)).

@@ -730,11 +730,14 @@ pub(crate) enum TypeFact {
     /// align]`, or none, `undefined`: what a collect a panic stops drops
     /// first (#672).
     InPlace,
+    /// Whether it's `Eq`, by which std's `==` of two `Rc`s or `Arc`s of it
+    /// asks whether they're one allocation first, `RcEqIdent` (#931).
+    Eq,
 }
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 17] = [
+    pub(crate) const ALL: [TypeFact; 18] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
@@ -752,6 +755,7 @@ impl TypeFact {
         TypeFact::RandomAccessNoCoerce,
         TypeFact::TrustedLen,
         TypeFact::InPlace,
+        TypeFact::Eq,
     ];
 
     /// What it is, as an error or a note says it: `size_of`, `the
@@ -772,6 +776,7 @@ impl TypeFact {
             TypeFact::RandomAccessNoCoerce => "whether it's a `TrustedRandomAccessNoCoerce`",
             TypeFact::TrustedLen => "whether it's a `TrustedLen`",
             TypeFact::InPlace => "the buffer std collects an iterator in place in",
+            TypeFact::Eq => "whether it's `Eq`, which std's `==` of two `Rc`s of it asks",
         }
     }
 
@@ -800,6 +805,7 @@ impl TypeFact {
             TypeFact::RandomAccessNoCoerce => "RandomAccessNoCoerce",
             TypeFact::TrustedLen => "TrustedLen",
             TypeFact::InPlace => "InPlace",
+            TypeFact::Eq => "Eq",
         }
     }
 

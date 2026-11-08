@@ -240,6 +240,57 @@ fn specialized_on(tcx: TyCtxt<'_>, trait_id: DefId, bound: DefId) -> Option<Type
     .find(|&fact| fact_trait(tcx, fact) == Some(bound))
 }
 
+/// What a call of `callee` with `args` asks of its caller's types for
+/// `==` of `Rc`s or `Arc`s it makes, by its bounds: of each `X: PartialEq`
+/// whose `X` holds `Rc<T>`s, through references, tuples, arrays and std's
+/// types, `T: PartialEq` of `contains` of `Rc<T>`s, `Rc<T>: PartialEq` of
+/// `==` itself, whether `T` is `Eq`, where rustc can't say it here: std's
+/// `RcEqIdent` asks whether they're one allocation first of an `Eq` `T`,
+/// which only the caller's type says (#931). Each as `held_facts` has it,
+/// `T`'s of a `Vec<T>`.
+pub(crate) fn rc_eq_asked<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    callee: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Vec<(Ty<'tcx>, TypeFact)> {
+    let (Some(partial_eq), Some(eq)) = (tcx.lang_items().get(LangItem::PartialEq), fact_trait(tcx, TypeFact::Eq))
+    else {
+        return Vec::new();
+    };
+    fn pointees<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, found: &mut Vec<Ty<'tcx>>) {
+        match ty.kind() {
+            ty::Ref(_, inner, _) | ty::Array(inner, _) | ty::Slice(inner) => pointees(tcx, *inner, found),
+            ty::Tuple(parts) => parts.iter().for_each(|part| pointees(tcx, part, found)),
+            ty::Adt(..) if let Some(pointee) = rc_pointee(tcx, ty) => found.push(pointee),
+            ty::Adt(adt, args) if super::is_std_crate(tcx, adt.did()) => {
+                args.types().for_each(|arg| pointees(tcx, arg, found));
+            }
+            _ => {}
+        }
+    }
+    let mut found = Vec::new();
+    for (clause, _) in tcx.clauses_of(callee).instantiate(tcx, args) {
+        let Some(bound) = clause.skip_normalization().as_trait_clause() else {
+            continue;
+        };
+        if bound.def_id() != partial_eq {
+            continue;
+        }
+        let of = tcx
+            .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(bound.self_ty().skip_binder()))
+            .unwrap_or(bound.self_ty().skip_binder());
+        pointees(tcx, of, &mut found);
+    }
+    (found.into_iter())
+        .filter(|&pointee| {
+            rustc_middle::ty::TypeVisitableExt::has_param(&pointee)
+                && trait_holds_in(tcx, typing_env, pointee, eq) != Some(true)
+        })
+        .flat_map(|pointee| held_facts(tcx, typing_env, pointee, TypeFact::Eq))
+        .collect()
+}
+
 /// Whether `def_id` is `TrustedRandomAccessNoCoerce`'s `MAY_HAVE_SIDE_EFFECT`,
 /// whether reading an item of a type may run code, by which std's zip of it
 /// reads the items it passes over (ADR 0975).
@@ -260,6 +311,7 @@ pub(crate) fn fact_trait(tcx: TyCtxt<'_>, fact: TypeFact) -> Option<DefId> {
             registry::by_path(tcx, StdCrate::Core, &["iter", "TrustedRandomAccessNoCoerce"])
         }
         TypeFact::TrustedLen => registry::by_path(tcx, StdCrate::Core, &["iter", "TrustedLen"]),
+        TypeFact::Eq => Some(super::std_item(tcx, StdItem::Eq)),
         _ => None,
     }
 }

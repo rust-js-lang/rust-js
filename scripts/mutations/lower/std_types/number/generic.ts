@@ -176,9 +176,9 @@ export const mutations: Mutation[] = [
     breaks:
       "no type is a `OneShot`, so a held flatten of `Option`s steps by the general impl, its hint `(0, None)`",
     file: "src/lower/std_types/number/generic.rs",
-    find: "            return Ok(Expr::bool(holds));\n",
+    find: "            }\n            return Ok(Expr::bool(holds));\n        }\n        // `N` of an array",
     replace:
-      "            return Ok(Expr::bool(holds && fact != TypeFact::OneShot));\n",
+      "            }\n            return Ok(Expr::bool(holds && fact != TypeFact::OneShot));\n        }\n        // `N` of an array",
     tests: ["test/corpus.test.ts", "-t", "^std_flatten.rs$"],
   },
   {
@@ -245,5 +245,21 @@ export const mutations: Mutation[] = [
     find: "                    None => self.const_arg(len, span),\n",
     replace: "                    None => Ok(Expr::undefined()),\n",
     tests: ["test/iterator-forms.test.ts", "-t", "generic_flatten_of_vecs"],
+  },
+  {
+    name: "rc-eq-fact-always-true",
+    breaks: "a caller gives `TEq` `true` of a type only `PartialEq`, so `==` of `Rc`s of `f64::NAN` in generic code is `true` of one allocation, where std calls `eq` (#931)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "            return Ok(Expr::bool(holds));\n        }\n        // Of a type whose fact is the facts of what it holds",
+    replace: "            return Ok(Expr::bool(true));\n        }\n        // Of a type whose fact is the facts of what it holds",
+    tests: ["test/corpus.test.ts", "-t", "^rc_eq_generic_by_address_first.rs$"],
+  },
+  {
+    name: "rc-eq-fact-unrefused",
+    breaks: "a caller gives `TEq` of a fieldless enum with its own `eq`, whose `===` two allocations share, so a generic `==` of `Rc`s of it skips its `eq` (#931)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "                self.check_rc_allocations(&format!(\"std::rc::Rc<{of}>\"), of, span)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rc_eq_generic_of_a_fieldless_enum_refused.rs$"],
   },
 ];

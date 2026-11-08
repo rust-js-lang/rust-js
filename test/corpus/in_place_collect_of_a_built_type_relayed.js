@@ -216,7 +216,7 @@ function enumerated(items, IInPlace, UsizeIItemSize, UsizeIItemAlign, dropI, dro
   return result;
 }
 
-const $tHolding = new Map();
+const $tHolding = new WeakMap();
 
 function tHolding(
   TIterator,

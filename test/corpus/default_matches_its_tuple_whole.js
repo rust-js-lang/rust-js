@@ -71,7 +71,7 @@ function _A__A_Tuple_taken(it, dropA, dropI) {
   return result;
 }
 
-const $iExt = new Map();
+const $iExt = new WeakMap();
 
 function iExt(IIterator, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
   return $traitImpl($iExt, [IIterator, IInPlace, IItemSize, IItemAlign, dropI, dropIItem], () => ({

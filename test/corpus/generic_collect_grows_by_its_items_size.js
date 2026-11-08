@@ -131,7 +131,7 @@ function endless(TDefault) {
   ).length;
 }
 
-const $iGathered = new Map();
+const $iGathered = new WeakMap();
 
 function iGathered(IIterator, IItemSize) {
   return $traitImpl($iGathered, [IIterator, IItemSize], () => ({

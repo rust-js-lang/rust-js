@@ -101,4 +101,20 @@ export const mutations: Mutation[] = [
     replace: '        (projected(into_iter, "IntoIter", args.type_at(1)), args.type_at(0))\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_from_iter_in_place.rs$"],
   },
+  {
+    name: "rc-eq-asked-of-none",
+    breaks: "a generic `==` of `Rc`s is never given its caller's `TEq`, so it's refused as of a type parameter no caller gives (#931)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "        pointees(tcx, of, &mut found);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rc_eq_generic_by_address_first.rs$"],
+  },
+  {
+    name: "rc-eq-asked-through-no-std-type",
+    breaks: "`contains` of a `Vec<Rc<T>>`'s items, `Rc<T>: PartialEq` inside a `Vec`, gives no `TEq`, so it's refused (#931)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "                args.types().for_each(|arg| pointees(tcx, arg, found));\n",
+    replace: "",
+    tests: ["test/lowering-std-unwinds.test.ts", "-t", "generic code asks"],
+  },
 ];

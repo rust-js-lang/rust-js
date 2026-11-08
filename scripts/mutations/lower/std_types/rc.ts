@@ -211,4 +211,20 @@ export const mutations: Mutation[] = [
       "                    ty::FnDef(..) | ty::FnPtr(..) | ty::Dynamic(..) | ty::Coroutine(..) => {\n",
     tests: ["test/snapshots.test.ts", "-t", "async"],
   },
+  {
+    name: "rc-eq-primitive-unrefused",
+    breaks: "`==` of two `Rc`s of a fieldless enum with its own `eq` asks `===` of their strings first, which two allocations share, so its `eq` is skipped (#910), and a generic caller gives it `TEq` (#931)",
+    file: "src/lower/std_types/rc.rs",
+    find: "            && !self.is_object(pointee)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_eq(_generic)?_of_a_fieldless_enum_refused.rs$"],
+  },
+  {
+    name: "rc-eq-generic-never-first",
+    breaks: "`==` of two `Rc`s in generic code of a `T: PartialEq` calls `eq` for one allocation where the caller's `T` is `Eq`, never std's `RcEqIdent` (#931)",
+    file: "src/lower/std_types/rc.rs",
+    find: "            Some(false) => Ok(None),\n            None => Ok(Some(Some(self.type_fact_value(\n",
+    replace: "            Some(false) | None => Ok(None),\n            #[allow(unreachable_patterns)]\n            _ => Ok(Some(Some(self.type_fact_value(\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_eq_generic_by_address_first.rs$"],
+  },
 ];

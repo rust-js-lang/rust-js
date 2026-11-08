@@ -31,7 +31,7 @@ function smallest(items, k, TOrd, TSort) {
   return $slice(items, 0, k).map((item) => item);
 }
 
-const $iSorted = new Map();
+const $iSorted = new WeakMap();
 
 function iSorted(IIterator, IItemSize) {
   return $traitImpl($iSorted, [IIterator, IItemSize], () => ({

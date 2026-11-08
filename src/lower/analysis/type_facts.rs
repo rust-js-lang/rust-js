@@ -220,6 +220,14 @@ pub(super) fn type_fact_params<'tcx>(
                 asking.asked.insert((caller, index, TypeFact::Sort));
                 continue;
             }
+            // `==` of `Rc`s of a type parameter's value, whose `Eq` only the
+            // caller knows, by which std's `RcEqIdent` asks whether they're
+            // one allocation first: its caller's, `TEq` (#931).
+            for (of, fact) in crate::lower::recognition::rc_eq_asked(tcx, typing_env, callee, args) {
+                if let Some(index) = slot_of(tcx, foreign, caller, of) {
+                    asking.asked.insert((caller, index, fact));
+                }
+            }
             for (id, each) in collect_asks(recognition, typing_env, drops, caller, (callee, args)) {
                 asking.ask(id, each);
             }

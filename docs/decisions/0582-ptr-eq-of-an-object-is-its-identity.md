@@ -76,9 +76,57 @@ value's `==`, as before.
   `eq` of its own, e.g. a fieldless enum's string, whose `===` two
   allocations share. #930 asks to count such an `Rc` so it has an identity.
 - **Not yet:** in generic code, where only the caller knows `T: Eq`, the
-  value's `==` always, #931.
+  value's `==` always, #931 (below).
 
 Held by `test/corpus/rc_eq_by_address_first.rs` (counted and uncounted,
 `Arc`, `Vec`s of `Rc`s, a `PartialEq`-only value), the refusal
 `rc_eq_of_a_fieldless_enum_refused.rs`, and the mutations `rc-eq-*`. The
 unwind table's 2 case-builds of #910 pass.
+
+## Amendment: in generic code, the caller says whether its `T` is `Eq` (2026-11-08, #931)
+
+Generic code bounded only by `T: PartialEq` compiles once, so its `==` of
+two `Rc<T>`s called `T::eq` always, where std specializes each instance:
+`RcEqIdent` asks `Rc::ptr_eq` first of an `Eq` `T`, so `same(&a,
+&a.clone())` called no `eq` natively and one in JS. Case C (0262): Rust's
+behaviour is kept, decided by the caller's type, as a monomorphised
+instance is.
+
+**Whether `T` is `Eq` is a type fact (ADR 0145), `TEq`, its caller's**, as
+a `FusedIterator`'s `IFused` is, the specialization's own fact
+(`TypeFact::Eq`, `fact_trait` std's `Eq`):
+
+```js
+function same(a, b, TPartialEq, TEq) {
+  return (TEq && a === b) || TPartialEq.eq(a, b);
+}
+same(a, a, dPartialEq, true);  // D: Eq
+same(p, p, pPartialEq, false); // P only PartialEq, f64 too
+```
+
+- **Asked where a call's bounds compare `Rc`s of a type parameter's
+  value** whose `Eq` rustc can't say there (`rc_eq_asked`,
+  `recognition/specialization.rs`): an `X: PartialEq` whose `X` holds
+  `Rc<T>`s or `Arc<T>`s, through references, tuples, arrays and std's
+  types, `==` and `!=`, `contains`, a closure's; and passed on as each
+  fact is, an impl's dictionary given it, `holderPartialEq(TPartialEq,
+  TEq)`. An `Rc<Vec<T>>`'s is `T`'s (`held_facts`). A generic function
+  comparing no `Rc` is given none.
+- **The caller's value** is whether its type is `Eq`, and refused where
+  it's an `Eq` value JS can't tell two allocations of apart (#930's rule,
+  `check_rc_allocations`, `std_types/rc.rs`, now the one answer for a
+  concrete `==` and a caller's `TEq`).
+- **An impl's dictionaries stay cached weakly**: given a dictionary, then a
+  fact, `$traitImpl`'s cache is a `WeakMap` keyed by the dictionary, with a
+  `Map` of its few facts inside; a `Map` only where a const parameter's
+  value or a fact comes first (impls.rs). That holds of every impl's
+  dictionary given a fact, `TSize` too, which had been a `Map` that kept
+  each dictionary it was given.
+
+Held by `test/corpus/rc_eq_generic_by_address_first.rs` (an `Rc` and an
+`Arc`, a caller's own caller, `contains` and a closure, an impl's `==`, an
+`Rc<Vec<T>>`, `D: Eq`, `P`, `i32` and `f64::NAN`), failing before in both
+builds, `rc_eq_generic_of_a_fieldless_enum_refused.rs`, the lowering
+test's `true`, `false` and refused forms and its scope, and the mutations
+`rc-eq-generic-never-first`, `rc-eq-fact-*`, `rc-eq-asked-*`,
+`impl-cache-strong-of-dictionaries-and-facts`.
