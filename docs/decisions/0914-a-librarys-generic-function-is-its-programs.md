@@ -1060,3 +1060,31 @@ stepped in a loop, a writer that only writes) and
 `library-writer-value-a-call-arrow` (`lower.ts`) and
 `writer-refusal-unnamed` (`lower/instances.ts`). #1026's nine library
 rewrites run as native.
+
+## Amendment: what a call gives more of, by its items, its owned parameters and a pointer's drop (#1031)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results changed:
+whether a call gives a library's function a value to drop its export
+takes nothing for asked only its type parameters, of what they are
+themselves, and whether the function's body may drop one asked only what
+its calls are given that owns one. Three ways a value with a destructor
+went undropped:
+
+- **A std associated type's slot.** `second(Gen(0))`, an iterator of no
+  destructor whose `Item` is a `Loud`, gave the export no drop for
+  `I::Item` (ADR 0489's slot), which it takes none for. `gives_more` asks
+  each of the callee's `drop_items` too, instantiated and normalized, of
+  the caller's own slot or a type that drops (`items_given_drops`); and
+  `body_may_drop` takes a call of a library's function whose item slots,
+  instantiated where it's made, hold the parameter as one that may drop
+  it, `second(made)` of an `M: Iterator<Item = T>`.
+- **A type owning the caller's parameter.** A closure holding a `Vec<K>`,
+  given `boxed`, gave it nothing where the caller is given a drop for `K`:
+  a given type naming a parameter now drops as one of those it owns does.
+- **`ptr::drop_in_place::<T>(p)`**, which drops what `p` points to, a
+  `*mut T` owning none: it drops `T`, as `classify` names it.
+
+Pair test `library_drops_its_consumer_gives`; mutations
+`items-given-drops-unasked`, `owned-param-given-no-drop`,
+`drop-in-place-drops-nothing`, `item-slot-callee-drops-nothing`
+(`lower/instances.ts`).

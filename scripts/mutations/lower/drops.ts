@@ -151,4 +151,13 @@ export const mutations: Mutation[] = [
     replace: "        let recognition = self.recognition;\n",
     tests: ["test/corpus.test.ts", "-t", "^const_param_drops.rs$"],
   },
+  {
+    name: "library-drop-never-panics",
+    breaks:
+      "a library's type with its own `Drop` is taken as std's, which may panic only by its type arguments, so a consumer's code that drops one, whose drop panics, leaves out the cleanup that drops the rest (#1031)",
+    file: "src/lower/drops.rs",
+    find: "            ty::Adt(adt, args) if adt.did().is_local() || self.krate.foreign.in_library(adt.did()) => {\n",
+    replace: "            ty::Adt(adt, args) if adt.did().is_local() => {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_drops_its_consumer_gives"],
+  },
 ];

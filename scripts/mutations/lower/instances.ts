@@ -355,4 +355,40 @@ export const mutations: Mutation[] = [
     replace: "    match foreign.writes_more(root).filter(|_| false) {\n",
     tests: ["test/crates.test.ts", "-t", "refused where it reads its library's private state"],
   },
+  {
+    name: "items-given-drops-unasked",
+    breaks:
+      "a call giving a library's function an iterator of no destructor whose items have one, `second(Gen(0))`, gives it nothing more, so its export, which takes no drop for `I::Item`, never drops the item it passes over (#1031)",
+    file: "src/lower/instances.rs",
+    find: "    }) || items_given_drops(calls, (caller, callee, args), &takes)\n",
+    replace: "    }) || (false && items_given_drops(calls, (caller, callee, args), &takes))\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_drops_its_consumer_gives"],
+  },
+  {
+    name: "owned-param-given-no-drop",
+    breaks:
+      "a type that owns the caller's type parameter, a closure holding a `Vec<K>`, given a library's function, gives it nothing to drop where the caller is given a drop for `K`, so `boxed`'s `dyn Fn` drops nothing (#1031)",
+    file: "src/lower/instances.rs",
+    find: "            _ if given.has_param() => super::drops::owned_params(tcx, given).iter().any(caller_drops),\n",
+    replace: "            _ if given.has_param() => false,\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_drops_its_consumer_gives"],
+  },
+  {
+    name: "drop-in-place-drops-nothing",
+    breaks:
+      "a library's body's `ptr::drop_in_place::<T>(p)` drops no `T` to `body_may_drop`, its `*mut T` owning none, so `Slots::truncate` is its export, which drops nothing (#1031)",
+    file: "src/lower/instances.rs",
+    find: "                    return callee_args.types().any(holds);\n",
+    replace: "                    return false;\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_drops_its_consumer_gives"],
+  },
+  {
+    name: "item-slot-callee-drops-nothing",
+    breaks:
+      "a library's body that gives its `M: Iterator<Item = T>` to a function of its library's that drops items, `second(made)`, drops no `T` to `body_may_drop`, so `made_second` is its export, which drops nothing (#1031)",
+    file: "src/lower/instances.rs",
+    find: "                    && compiled_here(calls.foreign, tcx, callee)\n                    && super::traits::drop_items(tcx, calls.foreign, callee)\n",
+    replace: "                    && compiled_here(calls.foreign, tcx, callee)\n                    && false\n                    && super::traits::drop_items(tcx, calls.foreign, callee)\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_drops_its_consumer_gives"],
+  },
 ];

@@ -675,12 +675,18 @@ fn gives_more<'tcx>(
         let Some(given) = args.get(index as usize).and_then(|arg| arg.as_type()) else {
             return false;
         };
-        let drops = match given.kind() {
-            ty::Param(param) => calls
+        let caller_drops = |index: &u32| {
+            calls
                 .drop_params
                 .get(&caller)
-                .is_some_and(|given| given.contains(&param.index)),
-            _ => !given.has_param() && (calls.runs)(given),
+                .is_some_and(|given| given.contains(index))
+        };
+        let drops = match given.kind() {
+            ty::Param(param) => caller_drops(&param.index),
+            // One that owns the caller's, a closure holding a `Vec<K>`, as
+            // its caller is given a drop for `K` (#1031).
+            _ if given.has_param() => super::drops::owned_params(tcx, given).iter().any(caller_drops),
+            _ => (calls.runs)(given),
         };
         let copies = match given.kind() {
             ty::Param(param) => calls.copied.contains(&(caller, param.index)),
@@ -705,6 +711,49 @@ fn gives_more<'tcx>(
                 && body_may_box(calls, (callee, index), &mut IndexSet::default()))
             || (copies && copied.contains(&index) && !takes(index, ParamFact::Copy))
             || (clones && cloned.contains(&index) && !takes(index, ParamFact::Clone))
+    }) || items_given_drops(calls, (caller, callee, args), &takes)
+}
+
+/// Whether a call gives `callee`, a library's function, a std associated
+/// type of a type parameter whose values drop, `<Gen as Iterator>::Item`
+/// a `Loud`, where its export takes no drop for that slot (ADR 0489): an
+/// iterator with no destructor may give items with one, which its library's
+/// own calls never gave it (#1031). Of the caller's own slot, as its
+/// analysis gives it one.
+fn items_given_drops<'tcx>(
+    calls: &Calls<'_, 'tcx>,
+    (caller, callee, args): (DefId, DefId, ty::GenericArgsRef<'tcx>),
+    takes: &dyn Fn(u32, crate::library::ParamFact) -> bool,
+) -> bool {
+    let tcx = calls.tcx;
+    let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
+    let given = |slot: u32| {
+        calls
+            .drop_params
+            .get(&caller)
+            .is_some_and(|given| given.contains(&slot))
+    };
+    let callers = std::cell::OnceCell::new();
+    let items = super::traits::drop_items(tcx, calls.foreign, callee);
+    items.into_iter().enumerate().any(|(at, item)| {
+        if takes(
+            super::traits::item_slot(tcx, callee, at),
+            crate::library::ParamFact::Drop,
+        ) {
+            return false;
+        }
+        let item = ty::EarlyBinder::bind(tcx, item)
+            .instantiate(tcx, args)
+            .skip_normalization();
+        let item = (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(item))).unwrap_or(item);
+        match item.kind() {
+            ty::Param(param) => given(param.index),
+            ty::Alias(..) => (callers.get_or_init(|| super::traits::drop_items(tcx, calls.foreign, caller)))
+                .iter()
+                .position(|&own| own == item)
+                .is_some_and(|own| given(super::traits::item_slot(tcx, caller, own))),
+            _ => !item.has_param() && (calls.runs)(item),
+        }
     })
 }
 
@@ -752,6 +801,34 @@ fn body_may_drop<'tcx>(
             _ if data.is_cleanup && !unwound.contains(&block) => false,
             TerminatorKind::Drop { place, .. } => holds(place.ty(&body.local_decls, tcx).ty),
             TerminatorKind::Call { func, args, .. } => {
+                // `ptr::drop_in_place::<T>(p)`, which drops what its pointer
+                // points to, a `*mut T` owning none (#1031).
+                if let Some((callee, callee_args)) = func.const_fn_def()
+                    && calls.recognition.classify(callee, callee_args)
+                        == Some(super::Std::Pointer(super::pointers::PointerOp::DropInPlace))
+                {
+                    return callee_args.types().any(holds);
+                }
+                // A function of its library's given what makes one as a
+                // std associated type, `third(made)` of an `M: Iterator<Item
+                // = T>`, whose items it may drop there (ADR 0489; #1031).
+                if let Some((callee, callee_args)) = func.const_fn_def()
+                    && compiled_here(calls.foreign, tcx, callee)
+                    && super::traits::drop_items(tcx, calls.foreign, callee)
+                        .into_iter()
+                        .any(|item| {
+                            let item = ty::EarlyBinder::bind(tcx, item)
+                                .instantiate(tcx, callee_args)
+                                .skip_normalization();
+                            let typing_env = ty::TypingEnv::post_analysis(tcx, id);
+                            holds(
+                                (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(item)))
+                                    .unwrap_or(item),
+                            )
+                        })
+                {
+                    return true;
+                }
                 // Given by its place, moved or, of what optimized MIR copies
                 // where it's last used, copied.
                 let gives_one = args.iter().any(|arg| match &arg.node {

@@ -26,22 +26,6 @@ plain std library closures_made_and_folded.rs
 plain std library equated_iterator_parameter.rs
 plain std library rc_fn_made_of_a_counted_rc.rs
 
-#1031 P0 (library): drop and unwind orders across crates, on generic and adapter paths (two abort)
-plain std library adapters_own_work_that_panics.rs
-plain std library array_vec_raw.rs
-plain std library btree_insert_drops_key_first.rs
-plain std library closure_stages_that_never_unwind_past_adapters.rs
-plain std library collected_in_place_dropped_as_the_rest_panics.rs
-plain std library compiled_adapters_closed_as_a_collect_unwinds.rs
-plain std library dyn_fn_generic_owned_drops.rs
-plain std library map_clear_unwinds_emptied.rs
-plain std library option_insert_unwinds_written.rs
-plain std library passed_item_drops_that_panic.rs
-plain std library skip_passed_item_drop_unwinds.rs
-plain std library unused_value_drops.rs
-plain std library vec_last_takes_its_back.rs
-plain std library yielded_item_drops.rs
-
 #1032 P0 (library): singles across crates: class methods, dyn writes, a lost RefCell borrow check, track_caller and others
 plain std library class_methods.rs
 plain std library class_trait_field_lent.rs

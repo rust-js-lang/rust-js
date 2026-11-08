@@ -259,3 +259,15 @@ is blessed: `while (true)` 8.7 to 8.1 and `renamed x$1` 549.4 to 538 in
 new. Mutations:
 `close-of-quiet-items-may-throw`, `close-item-unasked` and
 `close-adapters-unwalked` (`lower/drops/parts.ts`).
+
+## Amendment: a library's type's own `Drop` may panic (#1031)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results changed:
+`drop_may_panic` read a type's own destructor only of the crate's own
+types, `is_local()`, and took a library's as std's, which may panic only
+by its type arguments: a consumer's own collect of a library's `D` whose
+drop panics left out the cleanup that drops the rest and what was
+collected. A library's type is read as the crate's is; its destructor is
+one this crate never knows never unwinds, so it may. The pinned React
+port regenerates as before. Mutation `library-drop-never-panics`
+(`lower/drops.ts`), by the pair test `library_drops_its_consumer_gives`.

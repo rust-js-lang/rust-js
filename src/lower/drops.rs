@@ -302,7 +302,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         match ty.kind() {
             ty::Param(_) | ty::Dynamic(..) | ty::Alias(..) => true,
-            ty::Adt(adt, args) if adt.did().is_local() => {
+            ty::Adt(adt, args) if adt.did().is_local() || self.krate.foreign.in_library(adt.did()) => {
                 let own = (self.tcx.adt_destructor(adt.did()))
                     .is_some_and(|destructor| !self.drop_never_unwinds(destructor.did, args));
                 own || self.glue_part_may_panic(ty, seen)
