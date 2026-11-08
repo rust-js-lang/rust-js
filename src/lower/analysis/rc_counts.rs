@@ -258,17 +258,28 @@ pub(super) fn counted_rcs<'tcx>(
         }
     }
     // A field's `Rc`, of a value another crate may make, where no
-    // expression names it.
+    // expression names it; and an impl's, `impl<T> StableDeref for Rc<T>`,
+    // whose dictionary holds `Rc<T>`'s `Deref` and drop, though no body of
+    // it names it: of a `T` that may be one counted, every `Rc` given it is
+    // counted, as generic code's is (ADR 0852, #949).
     let mut seen = IndexSet::default();
     for id in tcx.hir_crate_items(()).definitions() {
-        if matches!(tcx.def_kind(id), DefKind::Struct | DefKind::Enum | DefKind::Union) {
-            for field in tcx.adt_def(id).all_fields() {
-                found(
-                    tcx.type_of(field.did).instantiate_identity().skip_normalization(),
-                    false,
-                    &mut seen,
-                );
+        match tcx.def_kind(id) {
+            DefKind::Struct | DefKind::Enum | DefKind::Union => {
+                for field in tcx.adt_def(id).all_fields() {
+                    found(
+                        tcx.type_of(field.did).instantiate_identity().skip_normalization(),
+                        false,
+                        &mut seen,
+                    );
+                }
             }
+            DefKind::Impl { .. } => found(
+                tcx.type_of(id).instantiate_identity().skip_normalization(),
+                false,
+                &mut seen,
+            ),
+            _ => {}
         }
     }
     // An `Rc` of a `dyn Fn` compared by identity is counted where one that

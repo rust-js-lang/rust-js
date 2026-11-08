@@ -9,9 +9,6 @@
 // goes wrong beside another neighbour, for the same reason, is a line more
 // under the same issue.
 
-#949 P0: a `TypeError` reading `reduce`, of a guard's deref given by a dictionary beside an `Rc<fn>`'s
-plain std guard_deref_dictionary.rs beside rc_fn_ptr_eq_of_cloned.rs
-
 #950 P0: a per-type `rev()` fact steps a range's skip item by item
 plain range_own_steps.rs beside rev_made_knowing_its_back.rs slow
 plain range_steps_known.rs beside own_iterator_flattened_from_its_back.rs slow

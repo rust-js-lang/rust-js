@@ -305,4 +305,13 @@ export const mutations: Mutation[] = [
     replace: "            points_at_functions |= false && raw_pointee(tcx, expr.ty)",
     tests: ["test/corpus.test.ts", "-t", "^scope_method_closure_addr_eq.rs$"],
   },
+  {
+    name: "impl-rc-pointees-unread",
+    breaks:
+      "an `Rc<T>` only an impl's header names, `impl<T> StableDeref for Rc<T>`, isn't a pointee, so beside a counted `Rc<dyn Fn>` its dictionary reads `.value` of an `Rc<Vec<u32>>` made uncounted: a `TypeError` (#949)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "            DefKind::Impl { .. } => found(\n",
+    replace: "            DefKind::Impl { .. } if false => found(\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_of_an_impls_parameter_counted_as_any.rs$"],
+  },
 ];

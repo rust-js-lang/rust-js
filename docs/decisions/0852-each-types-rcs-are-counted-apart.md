@@ -284,3 +284,26 @@ Held by `test/corpus/rc_fn_made_of_a_counted_rc.rs`, `library-differs`,
 in the program build (nothing counted) and the library build (both
 counted), against native Rust. Mutation `rc-made-of-counted-uncounted`
 (`analysis/rc_counts.rs`).
+
+## Amendment: an impl's header names an `Rc` too (#949, 2026-11-08)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. A `TypeError` where
+native Rust ran.
+
+What the crate's `Rc`s point at was read from its bodies and its types'
+fields. An impl whose header alone names one, `unsafe impl<T: ?Sized>
+StableDeref for Rc<T> {}`, has no body, but its dictionary holds `Rc<T>`'s
+`Deref` and drop, each asking `counts(T)`. Where the crate counted another
+`Rc`, an `Rc<dyn Fn>` whose `ptr_eq` it asks (ADR 0959), `T` may be it, so
+the dictionary read `x.value`; `T` itself wasn't among the pointees, so
+nothing made every `Rc` counted, and `total(Rc::new(vec![5, 6]))` gave the
+plain array. Its `.value` was `undefined`, and `.iter().sum()` threw. Each
+case ran alone; the neighbour shuffle (#853) found the two side by side.
+
+**Each impl's self type is read as a field's is**: the `Rc`s its header
+names are pointees, so `Rc<T>` of a `T` that may be a counted type is
+counted, and with it every `Rc`, `counted.all`, as an `Rc<T>` a body holds
+already was. No corpus snapshot changed. Corpus case
+`rc_of_an_impls_parameter_counted_as_any.rs`; the pair is off
+`test/neighbours-known.txt`. Mutation `impl-rc-pointees-unread`
+(`lower/analysis/rc_counts.ts`).
