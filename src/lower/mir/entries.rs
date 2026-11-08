@@ -548,12 +548,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `root.pending.take()` (ADR 0996), an item of one's items,
         // `v[i].take()` (ADR 0586, amended), written so here, its place read
         // and written as a path (ADR 1078).
-        let (a, b) = match self.unhandled(&a).filter(|_| b_place.is_none()) {
-            Some(place) => (
-                place,
-                crate::lower::representation::NoneForm::Null.storage().written(b, false),
-            ),
-            None => (a, b),
+        // A swap's either side too, `mem::swap(&mut x, &mut other.0)` of a
+        // nullable parameter: each place given what's written to it so (#1018).
+        let stored = |stores: bool, e: Expr| match stores {
+            true => crate::lower::representation::NoneForm::Null.storage().written(e, false),
+            false => e,
+        };
+        let (a, a_stores) = match self.unhandled(&a) {
+            Some(place) => (place, true),
+            None => (a, false),
+        };
+        let (b, b_place, b_stores) = match b_place.as_ref().and_then(|b| self.unhandled(b)) {
+            Some(place) => (place.clone(), Some(place), true),
+            None => (b, b_place, false),
+        };
+        let b = match b_place.is_none() {
+            true => stored(a_stores, b),
+            false => b,
         };
         // A take of a place rust-js made, read and written as a path, may
         // write where it was `Some` (`Known::Taken`, ADR 0996).
@@ -588,13 +599,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && place(&a)
             && place(b)
         {
-            let swapped = Expr::array(vec![moved(self, 1, b.clone()), moved(self, 0, a.clone())]);
+            let swapped = Expr::array(vec![
+                stored(a_stores, moved(self, 1, b.clone())),
+                stored(b_stores, moved(self, 0, a.clone())),
+            ]);
             let swap = StmtKind::Assign(Expr::array(vec![a, b.clone()]), swapped);
             out.push(swap.at(js_span));
             return Ok(Value::Expr(Expr::undefined()));
         }
         let b = match b_place.is_some() {
-            true => moved(self, 1, b),
+            true => stored(a_stores, moved(self, 1, b)),
             false => b,
         };
         let old = self.spill(
@@ -605,7 +619,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out.push(StmtKind::Assign(a, b).at(js_span));
         Ok(Value::Expr(match b_place {
             Some(b) => {
-                out.push(StmtKind::Assign(b, old).at(js_span));
+                out.push(StmtKind::Assign(b, stored(b_stores, old)).at(js_span));
                 Expr::undefined()
             }
             None => old,

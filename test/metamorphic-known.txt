@@ -9,12 +9,6 @@
 plain std rc-refcell const_param_drops.rs
 plain std rc-refcell held_adapters_stepped_to_their_end.rs
 
-#1018 P0 (nones): a #[rust_js::nullable] value written through a borrow, beside a wrapper, reads stale
-plain std option nullable_field_borrow_given_whole.rs
-plain std option nullable_written_through_borrows.rs
-plain std rc-refcell nullable_written_through_borrows.rs
-plain std field nullable_written_through_borrows.rs
-
 #1019 P1 (pointers): an address of a value held in a struct field, and Rc::as_ptr equality, differ from native
 plain std field pointer_addresses.rs
 plain std field rc_as_ptr.rs

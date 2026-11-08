@@ -808,6 +808,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // So is one a call gives in what it gives, a store's
             // `lm_get_mut(i).unwrap().1`, made there once.
             Value::Ref(ref place) if let Some(cell) = self.held_cell(place) => cell,
+            // One `through_handle` holds, given on: that handle, which stores
+            // as its place does, a nullable field's `None` `null` (#1018).
+            Value::Ref(ref place) if self.unhandled(place).is_some() => match &place.kind {
+                js::ExprKind::Member(handle, _) => (**handle).clone(),
+                _ => unreachable!("a handle's `value`"),
+            },
             Value::Ref(place) if fixed_place(&place) => Expr::handle(place),
             // A field or an item of an object reached another way, `$index(v,
             // 0)[0]` of `&mut v[0].0`: a handle on it, `$handleOn`, the object

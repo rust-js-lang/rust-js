@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "held-handle-given-on-as-a-handle-on-it",
+    breaks: "a `&mut` to a nullable field kept in a struct, `Held(&mut fiber.0.owner)`, is a handle on its handle's `value`, which stores `undefined` for `None` (#1018)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            Value::Ref(ref place) if self.unhandled(place).is_some() => match &place.kind {\n",
+    replace: "            Value::Ref(ref place) if false && self.unhandled(place).is_some() => match &place.kind {\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_written_beside_a_wrapper.rs$"],
+  },
+  {
     name: "place-where-made-handle-unfixed",
     breaks:
       "a handle on a `Cell` a field is, `node.0.v` borrowed before `node.0 = b`, isn't fixed where it's made, so `set` writes the new node's (#1034)",

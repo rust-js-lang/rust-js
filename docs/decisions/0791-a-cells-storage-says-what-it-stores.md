@@ -137,3 +137,25 @@ run otherwise, so Rust's behaviour is kept
 ([0262](0262-when-rust-and-js-disagree.md)). Held by the corpus case
 `nullable_field_borrow_given_whole` and the mutation
 `handle-on-a-handle-uncomposed`.
+
+## Amendment: a swap's either side, and a handle given on whole (#1018)
+
+The metamorphic net's `field` rewrite put one side of a write through a
+borrow in a wrapper, and the `null` a nullable place stores for `None`
+was lost: `mem::swap(&mut x, &mut other.0)` of a nullable parameter
+`x`, `[x, other[0]] = [other[0], x]`, wrote `undefined`, so `x`'s `===
+null` test read `Some` (native `true true`, JS `true false`), as only a
+`take` or a `replace` wrote its one place so; and `let slot =
+Held(&mut fiber.0.owner); *slot.0 = None` stored `undefined` in the
+nullable field, the struct given a handle on the stored handle's `value`,
+`Expr::handle(place.value)`, which tidy made one on the field that stores
+as it's given. A swap now writes each side so where it's a handle on such
+a place (`unhandled`), `x = other[0] ?? null`; and a handle
+`through_handle` holds, given on whole, is that handle (`value_expr`),
+which stores as its place does. Results changed
+([0262](0262-when-rust-and-js-disagree.md)), so Rust's are kept; no other
+case's JS changed. Held by the corpus case `nullable_written_beside_a_wrapper`
+and the mutations `swap-into-a-nullable-place-as-given` and
+`held-handle-given-on-as-a-handle-on-it`; the net's four rows of #1018
+run as native.
+

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "swap-into-a-nullable-place-as-given",
+    breaks: "`mem::swap(&mut x, &mut other.0)` of a nullable parameter writes `undefined` for `None`, which its `=== null` test reads as `Some` (#1018)",
+    file: "src/lower/mir/entries.rs",
+    find: "            true => crate::lower::representation::NoneForm::Null.storage().written(e, false),\n",
+    replace: "            true => e,\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_written_beside_a_wrapper.rs$"],
+  },
+  {
     name: "returned-write-result-unchecked",
     breaks: "a function that gives back a `fmt::Result` it holds, `let r = Err(fmt::Error); r`, returns the error as a value, where a call of it throws, so `{:?}` of it reads `Ok(())` (#1011)",
     file: "src/lower/mir/entries.rs",
@@ -41,7 +49,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`mem::swap(&mut a, &mut b)` of two places writes `b` into `a`, and leaves `b`",
     file: "src/lower/mir/entries.rs",
-    find: "                out.push(StmtKind::Assign(b, old).at(js_span));\n",
+    find: "                out.push(StmtKind::Assign(b, stored(b_stores, old)).at(js_span));\n",
     replace: "                let _ = (b, old);\n",
     tests: ["test/corpus.test.ts", "-t", "swap_replace"],
   },
@@ -172,8 +180,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field's `Vec<Option<T>>` item taken, `v[i].take()`, is left `undefined`",
     file: "src/lower/mir/entries.rs",
-    find: "            Some(place) => (\n                place,\n                crate::lower::representation::NoneForm::Null.storage().written(b, false),\n            ),\n",
-    replace: "            Some(place) => (place, b),\n",
+    find: "            true => stored(a_stores, b),\n",
+    replace: "            true => b,\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
