@@ -321,11 +321,7 @@ before; one known to fit, nothing. Case N for each: the same panic at the
 same place, or the same items. No other corpus case's JS changes.
 
 Only of adapters made in place of std's `repeat`s and ranges, whose JS
-hints are std's. An iterator MIR holds in a local before it's collected,
-of a value made before an `unwrap`'s check, or under a `RefCell` guard's
-`finally`, is no form whose count it reads, and asks no room still: not
-every JS form hints as std's, `$lazyRangeBack` none, so its hint isn't
-asked of it (#1046).
+hints are std's; an iterator held in a local, #1046's, below.
 
 - `test/corpus/collected_counts_ask_room.rs` checks counts held and read
   through a call, a dropped value repeated, and a crate's own hint asked
@@ -336,3 +332,42 @@ asked of it (#1046).
   `counted-collect-asked-by-hint-twice` (`mir/iter/collect.ts`),
   `count-read-through-a-call-read-again` and
   `repeat-n-of-a-cloned-value-uncounted` (`mir/iter/sources.ts`).
+
+## Amendment: a counted iterator held before it's collected asks its hint (#1046)
+
+`let it = (0..n).rev().step_by(2); it.collect::<Vec<_>>()` of `usize::MAX`
+threw JS's `RangeError` where native Rust panics `capacity overflow`, and
+`repeat_n(Dropped(1), *n.as_ref().unwrap())` too, which MIR holds in a
+local as `Dropped(1)` is made before the `unwrap`'s check, as it does under
+a `RefCell` guard's `finally`: a local is no form `counted_in_place`
+reads (`Uncounted::Unknown`), so no room was asked. Asking its hint
+instead needs each form's hint to be std's, and two weren't: the
+generator `$lazyRangeBack`, a reversed range's `step_by`, hinted nothing,
+and a `step_by` as a filter of every `n`th, `.filter((_, i) => i % n ===
+0)`, a filter's `(0, upper)`, not std's `StepBy`'s.
+
+**Each runtime form hints as std's, the one authority of what it is; so a
+counted collect of `Uncounted::Unknown` asks the room its hint asks,
+`$roomForHint`, as one of `Uncounted::RunsCode` does.** `$lazyRangeBack`
+is a `$Steps` whose hint is std's `StepBy`'s of the reversed range, of `n`
+left from what it gives next, `1 + (n - 1) / step`, which is std's before
+its first item and after, of numbers, BigInts and `char`s, `$stepsLeft`'s
+past `usize::MAX`. A `step_by` of what no array's items bound
+(`bounded_by_items`) is `$stepBy(it, n)`, whose hint is `StepBy`'s; of an
+array's, the filter still, whose items bound it. No catalog of which
+forms hint as std's: a form that didn't would be a bug of that form's.
+Case N: the same panic at the same place, or the same items. Eight corpus
+cases' JS changed: a collect of a `step_by` of the crate's own iterator, of
+a range from a function, a `RangeFrom`'s, a `u64` range's reversed, asks
+`$roomForHint`, and two `step_by`s of what no array bounds are `$stepBy`,
+`$cycle(a).drop(2)`'s among them.
+
+- `test/corpus/counted_iterators_held_ask_room.rs` checks held forms and
+  ones a guard or an `unwrap`'s check holds, of `usize::MAX` and of five,
+  and `$lazyRangeBack`'s hint given to generic code, against native Rust.
+  The `option` and `rc-refcell` rewrites of `collected_counts_ask_room.rs`
+  run as native, taken off.
+- The mutations are `counted-collect-held-unasked` (`mir/iter/collect.ts`),
+  `step-by-of-unbounded-as-filter` (`combinators/adapters.ts`),
+  `lazy-range-back-unhinted` and `lazy-range-back-hint-counted-apart`
+  (`runtime/lazy_range.ts`).

@@ -497,4 +497,14 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = dropped;\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
+  {
+    name: "step-by-of-unbounded-as-filter",
+    breaks:
+      "`repeat(1u8).step_by(2).take(n)` held is a filter of every 2nd, whose hint is none at least, so its `collect()` of `usize::MAX` asks room for one and throws JS's `RangeError` where std's `StepBy` hints that many and panics `capacity overflow` (#1046)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    || !self.recognition().bounded_by_items(receiver_ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^counted_iterators_held_ask_room.rs$"],
+    snapshots: true,
+  },
 ];

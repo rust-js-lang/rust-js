@@ -21,6 +21,7 @@ import {
   $partiallyOrdered,
   $partition,
   $rangeInclusiveNext,
+  $roomForHint,
   $sortedEntries,
   $sortedKeys,
   $stepBy,
@@ -193,7 +194,7 @@ function main() {
   ).at(-1);
   console.log(`skip last ${value$4 == null ? "None" : `Some(${value$4})`}`);
   console.log(
-    `step_by [${Array.from($stepBy($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth), 2)).join(", ")}]`,
+    `step_by [${Array.from($roomForHint($stepBy($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth), 2), 4, false)).join(", ")}]`,
   );
   console.log(
     `take sum ${$iterator(

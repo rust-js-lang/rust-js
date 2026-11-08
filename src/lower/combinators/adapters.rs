@@ -501,6 +501,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // its source's fold, which drops the accumulator first
                     // (#773).
                     || self.steps_may_panic(receiver_ty.peel_refs())
+                    // And of a source no array's items bound: std's
+                    // `StepBy` hints its source's count `n` apart, which a
+                    // collect asks its room by, where a filter's hint is
+                    // none at least (#1046).
+                    || !self.recognition().bounded_by_items(receiver_ty)
                 {
                     let mut list = vec![items, n];
                     list.extend(self.item_drop_of(receiver_ty, span)?);

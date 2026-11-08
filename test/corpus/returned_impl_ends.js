@@ -22,7 +22,9 @@ import {
   $rangeNextBack,
   $rest,
   $rev,
+  $roomForHint,
   $rposition,
+  $stepBy,
   $tryOf,
 } from "@rust-js/runtime";
 
@@ -141,7 +143,7 @@ function main() {
     `${nth == null ? "None" : `Some(${nth})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   console.log(
-    `[${Array.from($iterator(ranged(), $rangeNextBack).filter((_, i) => i % 2 === 0)).join(", ")}]`,
+    `[${Array.from($roomForHint($stepBy($iterator(ranged(), $rangeNextBack), 2), 4, false)).join(", ")}]`,
   );
   console.log(
     `[${Array.from($rev($knowing(chained(), chainDoubleEndedIterator_nextBack, undefined, undefined, chainDoubleEndedIterator_nthBack, (iterator, init, f, broke, unwind, ends) => chainDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, { next: $next }, { next_back: $nextBack }, $tryOf(broke), undefined, undefined, unwind, ends))).take(3)).join(", ")}]`,

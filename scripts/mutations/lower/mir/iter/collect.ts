@@ -34,8 +34,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`repeat_n(1u8, *n.as_ref().unwrap()).collect::<Vec<_>>()` of `usize::MAX` asks no room, as its count is read through a call, so JS throws its own `RangeError` where std panics `capacity overflow` (#1044)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            Some(Err(Uncounted::RunsCode)) => true,\n",
-    replace: "            Some(Err(Uncounted::RunsCode)) => false,\n",
+    find: "            Some(Err(Uncounted::RunsCode | Uncounted::Unknown)) => true,\n",
+    replace: "            Some(Err(Uncounted::RunsCode)) => false,\n            Some(Err(Uncounted::Unknown)) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
   },
   {
@@ -66,6 +66,15 @@ export const mutations: Mutation[] = [
     replace: "                && item.is_some() =>\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
     snapshots: true,
+  },
+  {
+    name: "counted-collect-held-unasked",
+    breaks:
+      "`let it = repeat_n(1u8, n); it.collect::<Vec<_>>()` of `usize::MAX`, held in a variable, asks no room, as its count isn't read where it's made, so JS throws its own `RangeError` where std panics `capacity overflow` (#1046)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            Some(Err(Uncounted::RunsCode | Uncounted::Unknown)) => true,\n",
+    replace: "            Some(Err(Uncounted::RunsCode)) => true,\n            Some(Err(Uncounted::Unknown)) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^counted_iterators_held_ask_room.rs$"],
   },
   {
     name: "trusted-collect-by-next",

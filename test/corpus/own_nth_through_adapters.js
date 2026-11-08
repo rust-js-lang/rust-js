@@ -11,6 +11,7 @@ import {
   $next,
   $nth,
   $nthSome,
+  $roomForHint,
   $some,
   $someValue,
   $stepBy,
@@ -165,7 +166,7 @@ function main() {
     `step ${$stepBy($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth), 4).reduce((a, b) => (a + b) | 0, 0)}`,
   );
   console.log(
-    `step [${Array.from($stepBy($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth), 4)).join(", ")}]`,
+    `step [${Array.from($roomForHint($stepBy($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth), 4), 4, false)).join(", ")}]`,
   );
   const s = $stepBy(
     $iterator(

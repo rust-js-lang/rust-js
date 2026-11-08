@@ -330,13 +330,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // read where it's made, one read through a call,
         // `repeat_n(x, *n.as_ref().unwrap())`'s, which reading again would
         // run again; of one it would hold part of `it` to read; and of one
-        // that drops what it holds, which a panic asking it closes. Of
-        // adapters made in place of std's `repeat`s and ranges, whose hints
-        // are std's (#1044).
+        // that drops what it holds, which a panic asking it closes (#1044);
+        // and of one it doesn't count, one MIR held in a local first, of a
+        // value made before an `unwrap`'s check or under a guard, whose
+        // hint, as each runtime form's is, is std's (#1046).
         let by_hint = match &count {
             Some(Ok(_)) => room.is_some(),
-            Some(Err(Uncounted::RunsCode)) => true,
-            Some(Err(Uncounted::Unknown)) | None => false,
+            Some(Err(Uncounted::RunsCode | Uncounted::Unknown)) => true,
+            None => false,
         };
         let it = match room {
             // Of a count it reads, of one that drops nothing, as a panic

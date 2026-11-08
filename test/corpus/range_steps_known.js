@@ -9,6 +9,7 @@ import {
   $rangeLast,
   $rangeLen,
   $roomFor,
+  $roomForHint,
   $step,
 } from "@rust-js/runtime";
 
@@ -64,7 +65,7 @@ function main() {
   console.log(`[${Array.from(it$2).join(", ")}]`);
   const step$5 = $step((1 << 31) >>> 0);
   console.log(
-    `[${Array.from($lazyRangeBack(0n, 18446744073709551615n, step$5).take(3)).join(", ")}]`,
+    `[${Array.from($roomForHint($lazyRangeBack(0n, 18446744073709551615n, step$5).take(3), 8, false)).join(", ")}]`,
   );
   console.log(
     `[${Array.from($lazyRangeBack(1, 10, 3, true)).join(", ")}] [${Array.from($lazyRangeBack(1, 10, 3)).join(", ")}]`,

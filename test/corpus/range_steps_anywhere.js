@@ -35,11 +35,11 @@ function main() {
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const back = $iterator({ start: 0, end: 4294967295 }, $rangeNextBack);
   const step$1 = $step((1 << 30) >>> 0);
-  const w = Array.from($stepBy(back, step$1));
+  const w = Array.from($roomForHint($stepBy(back, step$1), 4, false));
   console.log(`[${w.join(", ")}]`);
   const skipped = $lazyRange(3, 4294967295);
   const step$2 = $step((1 << 31) >>> 0);
-  console.log(`[${Array.from($stepBy(skipped, step$2)).join(", ")}]`);
+  console.log(`[${Array.from($roomForHint($stepBy(skipped, step$2), 4, true)).join(", ")}]`);
   console.log(
     `${$debugStr(
       Array.from($stepBy($iterator({ start: "a", end: "k" }, $rangeNext), 3)).join(""),

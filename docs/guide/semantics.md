@@ -760,9 +760,11 @@ What's refused is in [the limitations](limitations.md).
   This doesn't happen with a `filter` before or after the `cycle()`, or
   with items of no size, which std collects as it goes
   ([0940](../decisions/0940-collect-asks-room-of-its-hint.md), amended). A
-  `collect()` of a count the program gives, made in place, asks room too:
+  `collect()` of a count the program gives asks room too:
   `repeat_n(x, n)`, `repeat(x).take(n)` or a range's `step_by(s)`, through
-  adapters that keep its count, `$roomFor(n, 1)` before it's stepped
+  adapters that keep its count, `$roomFor(n, 1)` before it's stepped where
+  it's made; where its count is read through a call, or it's held in a
+  variable first, the room its hint asks, `$roomForHint(it, 1, true)`
   ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md), amended).
   Where the crate's own `size_hint()` may run, every collect and `extend`
   asks it when std does ([1097](../decisions/1097-when-a-collect-asks-its-hint-is-hint-asks.md)):
