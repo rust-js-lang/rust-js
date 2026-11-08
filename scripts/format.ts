@@ -29,7 +29,7 @@ try {
   if (files.length === 0) {
     run(["cargo", "fmt", "--all", ...(check ? ["--check"] : [])]);
     files.push(...run([
-      "git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "wasm/web/rust/*.rs", "examples/pilot/*.rs", "scripts/crate-corpus/*.rs",
+      "git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "wasm/web/rust/*.rs", "examples/pilot/*.rs", "scripts/crate-corpus/*.rs", "scripts/metamorph/src/*.rs",
     ]).split("\0").filter(Boolean));
   }
   // The compiler given, as an installed one is qualified with (ADR 0094),

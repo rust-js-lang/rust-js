@@ -183,11 +183,12 @@ jobs:
   # The metamorphic net (#939, ADR 1104): every corpus case rewritten each
   # way scripts/metamorph keeps its meaning, in both builds against native
   # Rust, but the rewrites test/metamorphic-known.txt lists; each push runs
-  # one case in 128.
+  # one case in 128. Its 11 rewrites (#1008) are 110 core-minutes on the
+  # Mac, some 55 minutes of these 4 parts.
   metamorphic:
     name: metamorphic net
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2

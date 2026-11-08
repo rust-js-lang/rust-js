@@ -4,3 +4,198 @@
 // case. The nightly runs each, so the list only shrinks: one that runs as
 // Rust does is taken off. A rewrite that goes wrong for another reason is a
 // line under another issue.
+
+#1010 P0 (nones): Some(v) of a type whose JS value is undefined (io::stdout(), io/fmt::Result Ok, Backtrace) reads as None
+plain std option backtrace.rs
+plain std option fmt_write_function.rs
+plain std option io_unit_result.rs
+plain std option pointer_addresses.rs
+plain std option std_odds.rs
+
+#1011 P0 (formatting): Err(fmt::Error) made as a value throws $FmtError where it's made; a held one's is_ok() folds to true
+plain std option fmt_error_pieces.rs
+plain std option fmt_error_unwritten.rs
+plain std option fmt_error_unwritten_branches.rs
+plain std option fmt_error_write.rs
+plain std rc-refcell fmt_error_pieces.rs
+plain std rc-refcell fmt_write_function.rs
+plain std field fmt_error_pieces.rs
+plain std field fmt_error_write.rs
+plain std field fmt_write_function.rs
+
+#1012 P0 (drops): a closure that moves part of a value with a destructor (held.0), given to generic code, never drops it
+plain std field closures_made_and_folded.rs
+plain std field dyn_fn_generic_drops.rs
+plain std field dyn_fn_of_a_params_function_drops.rs
+
+#1013 P0 (iterators): an iterator held in a generic struct's field, stepped from its back, throws (toReversed / it.back is not a function)
+plain field backs_given_behind_impls.rs
+plain field iterator_values_meet.rs
+plain field returned_impl_ends.rs
+plain field returned_slice_iters.rs
+plain field std_iterator_clones.rs
+plain field std_rev.rs
+
+#1014 P0: mem::discriminant(a) == discriminant(b) in generic code is true for different variants
+plain std generic enum_discriminant.rs
+
+#1015 P0 (iterators): .inspect(fn_item).chain(arg) runs inspect before the chain's argument is evaluated
+plain closure-fn unread_collected_chain.rs
+
+#1016 P0 (iterators): an iterator held in an Rc<RefCell<..>> given to generic code through an associated type throws or drops a step late
+plain std rc-refcell associated_iterator_dropped.rs
+plain std rc-refcell associated_iterator_given_as_it_is.rs
+plain std rc-refcell generic_associated_types.rs
+plain std rc-refcell iterator_named_by_another_bound.rs
+plain std rc-refcell std_projection_drops.rs
+
+#1017 P1: two crashes in the rc-refcell rewrite: an ICE about a const param in the param-env, and a binder.rs panic
+plain std rc-refcell const_param_drops.rs
+plain std rc-refcell held_adapters_stepped_to_their_end.rs
+
+#1018 P0 (nones): a #[rust_js::nullable] value written through a borrow, beside a wrapper, reads stale
+plain std option nullable_field_borrow_given_whole.rs
+plain std option nullable_written_through_borrows.rs
+plain std rc-refcell nullable_written_through_borrows.rs
+plain std field nullable_written_through_borrows.rs
+
+#1019 P1 (pointers): an address of a value held in a struct field, and Rc::as_ptr equality, differ from native
+plain std field pointer_addresses.rs
+plain std field rc_as_ptr.rs
+
+#1020 P0 (copies): a Copy value read out of an Option (Some(*c.as_mut().unwrap())) is shared with the original
+plain std option wrapping_assign_of_a_copy.rs
+
+#1021 P0 (round-2 singles): a wrong panic payload, Some("top") read as None, a from_iter drop order, and a write lost before a panic
+plain std option collected_counts_ask_room.rs
+plain std option held_adapters_stepped_to_their_end.rs
+plain std option loop_exits.rs
+plain std rc-refcell written_through_before_a_panic.rs
+
+#1022 P2: a pointer read as another type's, in generic code, throws at run time instead of refusing at compile time
+plain std generic bytes_through_pointers.rs
+
+#1023 P0 (library): a library type's own Iterator methods (size_hint, nth_back, rfold, len) and own ne/max are unknown to the crate using it
+plain std library adapter_size_hints.rs
+plain library adapters_over_own_next_that_panics.rs
+plain std library back_folds_of_sources_made_knowing_their_back.rs
+plain std library back_predicate_unwinds.rs
+plain std library by_ref_lends.rs
+plain std library collect_as_vec_asks_hint.rs
+plain std library collect_asks_hint_as_it_grows.rs
+plain std library collect_closes_what_its_hint_panics.rs
+plain std library collect_into_results_asks_hint.rs
+plain std library default_method_clones.rs
+plain std library enumerate_of_own_iterator_folded_from_its_back.rs
+plain std library extend_asks_hint_as_it_fills.rs
+plain std library extend_asks_hint_capacity_unasked.rs
+plain std library extend_reserves_by_hint.rs
+plain std library fold_back_drops_what_it_takes.rs
+plain std library generic_extend_of_own_hints.rs
+plain std library held_back_folds_by_try_rfold.rs
+plain std library map_ends_size_hint.rs
+plain std library map_of_own_size_hint.rs
+plain std library ne_between_two_item_types.rs
+plain std library own_back_through_adapters.rs
+plain std library own_fold_unwind_given_on.rs
+plain library own_iterator_dropped_from_back.rs
+plain std library own_iterator_dropped_through_adapters.rs
+plain std library own_ne_max_min_clamp.rs
+plain library panic_in_own_rfold_drops.rs
+plain std library rev_in_place_through_adapters.rs
+plain std library rposition_of_lazy.rs
+plain std library size_hint_of_adapters.rs
+plain std library skip_of_a_peekable_from_back.rs
+plain std library skip_of_own_from_its_back_asks_len_once.rs
+plain std library std_inspect.rs
+plain std library std_map.rs
+plain std library step_by_folded_from_its_back_as_std.rs
+plain library step_by_nth_back.rs
+plain library step_by_source_dropped_at_its_folds_end.rs
+plain library take_of_own_nth_where_known_back.rs
+plain std library user_iterator_ends.rs
+plain library zip_from_its_back.rs
+plain library zip_of_own_from_its_back_asks_each_len_once.rs
+
+#1024 P0 (library): a library iterator stepped from its back in the using crate throws it.back is not a function
+plain library adapters_given_to_generic_backs.rs
+plain library chain_rev_own_back.rs
+plain library filters_held_double_ended.rs
+plain library generic_impl_stepped_from_its_back.rs
+plain library own_back_methods_given_dictionaries.rs
+plain library returned_impl_ends.rs
+
+#1025 P0 (library): a library's generic code given an IntoIterator dictionary throws IIntoIterator.intoIter is not a function
+plain std library fused_iterators.rs
+plain std library generic_into_iter_values.rs
+plain std library into_iter_held_by_a_sibling.rs
+plain std library std_fuse.rs
+
+#1026 P0 (library): a library's Debug/Display impl is compiled without the format options the using crate passes ({:#?}, widths, {:#x})
+plain std library assign_impl_on_number.rs
+plain std library closure_writes_captured_formatter.rs
+plain std library debug_builder_held.rs
+plain std library exp_forwarded.rs
+plain std library exp_precision.rs
+plain std library held_enumerate.rs
+plain std library held_peekable.rs
+plain std library pad_integral.rs
+plain std library writer_fn_pointer.rs
+
+#1027 P1 (library): a library's generic fn instance as a value is made per use in the using crate, and Rc::ptr_eq differs
+plain std library closure_converting_identity_read.rs
+plain std library fn_addr_eq_compares_functions.rs
+plain std library generic_fn_value_is_one_function.rs
+plain std library rc_fn_ptr_eq_of_cloned.rs
+plain std library rc_of_an_impls_parameter_counted_as_any.rs
+
+#1028 P0 (library): a library's changing static (an atomic) is read as a constant, its read moved past a write
+plain std library atomics.rs
+plain std library operands_before_replace.rs
+
+#1029 P1 (library): three crashes: generics_of unexpected node kind, and a panic at src/lower.rs:172
+plain std library closures_made_and_folded.rs
+plain std library equated_iterator_parameter.rs
+plain std library rc_fn_made_of_a_counted_rc.rs
+
+#1030 P0 (library): flattened state across crates (got_mut, lent_mut TypeError, replaced_with)
+plain std library flattened_state_got_mut.rs
+plain std library flattened_state_lent_mut.rs
+plain std library flattened_state_replaced_with.rs
+
+#1031 P0 (library): drop and unwind orders across crates, on generic and adapter paths (two abort)
+plain std library adapters_own_work_that_panics.rs
+plain std library array_vec_raw.rs
+plain std library btree_insert_drops_key_first.rs
+plain std library closure_stages_that_never_unwind_past_adapters.rs
+plain std library collected_in_place_dropped_as_the_rest_panics.rs
+plain std library compiled_adapters_closed_as_a_collect_unwinds.rs
+plain std library dyn_fn_generic_owned_drops.rs
+plain std library map_clear_unwinds_emptied.rs
+plain std library option_insert_unwinds_written.rs
+plain std library passed_item_drops_that_panic.rs
+plain std library skip_passed_item_drop_unwinds.rs
+plain std library unused_value_drops.rs
+plain std library vec_last_takes_its_back.rs
+plain std library yielded_item_drops.rs
+
+#1032 P0 (library): singles across crates: class methods, dyn writes, a lost RefCell borrow check, track_caller and others
+plain std library class_methods.rs
+plain std library class_trait_field_lent.rs
+plain std library dyn_of_a_generic_impl_written_whole.rs
+plain std library generic_associated_types.rs
+plain std library generic_dictionary_declared_once.rs
+plain std library impl_trait_clone.rs
+plain std library long_spreads.rs
+plain std library own_type_facts.rs
+plain std library refcell_borrow_while_mut.rs
+plain std library track_caller.rs
+plain std library unboxed_type_params.rs
+
+#1033 P0: a box in a struct field, or a field of a box, written in place: a read before the write is moved past it
+plain std field box_read_before_its_write.rs
+plain std field cache_node_walk.rs
+plain std field given_last_unwinds.rs
+plain std field swap_replace.rs
+plain std field tuple_scrutinee_calls.rs
+plain field unread_collected_chain.rs

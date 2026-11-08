@@ -17,10 +17,13 @@ import { root, target } from "./support";
 import { runSync } from "./child";
 
 /** Each rewrite, `metamorph`'s: `main`'s body outlined; each `let` of a
- * name bound once boxed; each reference parameter of a free function taken
- * as `&dyn` and as `&impl` of an identity trait; each owned one as `impl`
- * of one. */
-export const rewrites = ["outline", "boxed", "dyn-ref", "impl-ref", "impl-owned"] as const;
+ * name bound once moved into a box, an `Option`, an `Rc<RefCell>` and a
+ * struct's field; each reference parameter of a free function taken as
+ * `&dyn` and as `&impl` of an identity trait; each owned one as `impl` of
+ * one; a free function made generic over a type it takes; each closure
+ * that captures nothing made a `fn`, and each function given as a value a
+ * closure; every item but `main` moved into a library crate. */
+export const rewrites = ["outline", "boxed", "dyn-ref", "impl-ref", "impl-owned", "generic", "option", "rc-refcell", "field", "closure-fn", "library"] as const;
 export type Rewrite = (typeof rewrites)[number];
 
 /** Where the rewriter's crate is, and what it builds. */
@@ -34,12 +37,34 @@ export function buildRewriter(): void {
 }
 
 /** `rewrite` of the case `file`, of so many of the places it finds,
- * `limit`'s, or `undefined` where it changes nothing. */
-export function rewritten(rewrite: Rewrite, file: string, limit?: number): string | undefined {
-  const p = runSync([binary, rewrite, file, ...(limit === undefined ? [] : [String(limit)])], root, 60_000);
+ * `limit`'s, or `undefined` where it changes nothing: the program, and of
+ * `library`, the library it uses. `closure-fn` asks rustc for a closure's
+ * types, at the case's `edition`. */
+export function rewritten(rewrite: Rewrite, file: string, edition: string, limit?: number): { program: string; library?: string } | undefined {
+  const p = runSync([binary, rewrite, file, ...(limit === undefined ? [] : [String(limit)])], root, 60_000, { METAMORPH_EDITION: edition });
   if (p.code === 2) return undefined;
   if (p.code !== 0) throw new Error(`metamorph ${rewrite} ${file}: ${p.stderr}`);
-  return p.stdout;
+  if (rewrite !== "library") return { program: p.stdout };
+  const [library, program] = p.stdout.split(libraryEnds);
+  if (program === undefined) throw new Error(`metamorph library ${file}: no \`${libraryEnds.trim()}\` line`);
+  return { program, library };
+}
+
+/** The line `library` prints between the library and the program
+ * (`scripts/metamorph/src/library.rs`'s `MAIN`). */
+const libraryEnds = "\n// metamorph: main\n";
+
+/** The library crate `library`'s program uses, by its name. */
+export const libraryCrate = "metamorph_lib";
+
+/** Whether a native run of `rewrite` ended in a panic the rewrite made
+ * itself, not the case: two borrows of the `RefCell` an `rc-refcell` local
+ * is held in that overlap, which the case's own place never checked. Such
+ * a rewrite is no variant, as one rustc rejects is not. */
+export function overlapping(rewrite: Rewrite, outcome: unknown): boolean {
+  if (rewrite !== "rc-refcell" || typeof outcome !== "object" || outcome === null || !("panic" in outcome)) return false;
+  const message = String((outcome as { panic: unknown }).panic);
+  return message === "RefCell already borrowed" || message === "RefCell already mutably borrowed";
 }
 
 /** Why a case is no case of the net, or `undefined`: what its directives

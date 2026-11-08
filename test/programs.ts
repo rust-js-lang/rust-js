@@ -75,7 +75,15 @@ const rustString = (s: string) => JSON.stringify(s);
 // what the program writes. The case is included where it is, so what it
 // reads beside it, an `include_str!`, is found as the JS's compile finds it;
 // the wrapper is where its text says, so a case is one kept binary.
-export function runNative(file: string, dir: string, edition = "2024", target: "host" | "wasm32" = "host"): Run | string {
+export function runNative(
+  file: string,
+  dir: string,
+  edition = "2024",
+  target: "host" | "wasm32" = "host",
+  // rustc's flags besides: a library the case uses, `--extern
+  // metamorph_lib=<rlib>` (the metamorphic net's `library`).
+  rustc: string[] = [],
+): Run | string {
   if (target === "wasm32") return runWasm32(file, dir, edition);
   const source = `mod case {
     include!(${rustString(file)});
@@ -106,11 +114,14 @@ fn main() {
     std::fs::write(std::env::args().nth(1).expect("an outcome file"), outcome).expect("the outcome is written");
 }
 `;
-  const built = nativeBinary(source, contentDirectory(source), [`--edition=${edition}`, "-Coverflow-checks=off", "-Awarnings", remapRoot], compileTimeout);
+  const built = nativeBinary(source, contentDirectory(source), [...nativeFlags(edition), ...rustc], compileTimeout);
   if ("error" in built) return built.error;
   const outcomeFile = join(dir, "native.json");
   return execute([built.binary, outcomeFile], outcomeFile, built.built ? firstRunTimeout : timeout);
 }
+
+/** rustc's flags of a native build of a case, or of a library it uses. */
+export const nativeFlags = (edition: string) => [`--edition=${edition}`, "-Coverflow-checks=off", "-Awarnings", remapRoot];
 
 // For `wasm32-wasip1`, whose `usize` is rust-js's (ADR 0090): the case's
 // `main` as it is, run by Bun's WASI, which writes its outcome where it
@@ -157,6 +168,24 @@ export function compileJs(
 ): { js: string } | CompileError {
   const { cmd, js } = compileCommand(file, dir, edition, library, flags, rustc);
   return compiled(runSync(cmd, root, compileTimeout, env), js);
+}
+
+/** `file`, a library crate `crate` another compile uses, compiled into
+ * `dir/<crate>/lib.js`: the manifest and the metadata that compile is
+ * given, `--dependency <manifest> -- --extern <crate>=<rmeta>`. */
+export function compileJsLibrary(
+  file: string,
+  dir: string,
+  edition: string,
+  crate: string,
+  flags: string[] = [],
+): { manifest: string; rmeta: string } | CompileError {
+  const manifest = join(dir, crate, "lib.manifest.json");
+  const rmeta = join(dir, `lib${crate}.rmeta`);
+  const cmd = [compiler, file, "-o", join(dir, crate, "lib.js"), "--library", "--manifest", manifest, ...flags,
+    "--", "--crate-name", crate, `--emit=metadata=${rmeta}`, `--edition=${edition}`, "-Awarnings", remapRoot];
+  const done = compiled(runSync(cmd, root, compileTimeout), manifest);
+  return "js" in done ? { manifest, rmeta } : done;
 }
 
 /** `compileJs`, without blocking the others running: compiles of one

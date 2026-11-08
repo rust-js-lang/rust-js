@@ -1,7 +1,8 @@
 # The metamorphic net's rewriter (#939, test/metamorphic.ts): a corpus case
 # rewritten in a way that keeps its meaning wherever rustc still compiles
 # it. Its own crate, apart from the compiler's, built into
-# target/metamorph by the harness.
+# target/metamorph by the harness. `closure-fn` asks rustc (`rustc` on the
+# PATH, `METAMORPH_EDITION`'s edition) for a closure's types.
 [package]
 name = "metamorph"
 version = "0.0.0"
@@ -11,4 +12,6 @@ publish = false
 [dependencies]
 syn = { version = "2", features = ["full", "visit", "visit-mut", "printing", "parsing"] }
 quote = "1"
-proc-macro2 = "1"
+# Where a closure is, its line and column, to find its types in rustc's MIR
+# (`closure-fn`).
+proc-macro2 = { version = "1", features = ["span-locations"] }

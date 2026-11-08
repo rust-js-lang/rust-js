@@ -11,13 +11,14 @@
 //   target/metamorph/debug/metamorph <rewrite> test/corpus/<case>.rs       # a rewrite, by hand
 
 import { beforeAll, expect, test } from "bun:test";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { corpus } from "./corpus-cases";
-import { buildRewriter, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
-import { agree, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
-import { buildCompiler, fixture } from "./support";
+import { runSync } from "./child";
+import { buildRewriter, libraryCrate, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
+import { agree, compileJs, compileJsLibrary, nativeFlags, runJs, runNative, runtimes, show, type Run } from "./programs";
+import { buildCompiler, fixture, root } from "./support";
 import { shard } from "../scripts/shard";
 
 beforeAll(() => {
@@ -41,31 +42,60 @@ const builds: [string, string[]][] = [
   ["std", ["--std-iterators"]],
 ];
 
+/** `METAMORPHIC_TALLY=<file>`: a line of what each rewrite of each case
+ * made, `<rewrite> <case> <what>`, `unchanged`, `all` or `first` tried,
+ * and `variant` where rustc compiled it, for a run's counts (ADR 1104). */
+const tallied = process.env.METAMORPHIC_TALLY;
+const tally = (rewrite: Rewrite, name: string, what: string) => {
+  if (tallied) appendFileSync(tallied, `${rewrite} ${name} ${what}\n`);
+};
+
 /** What went wrong of `rewrite` of a case in each build, or nothing: its
  * JS run otherwise than native, or rust-js's crash. A refusal is safe, and
  * no wrong answer. */
 function wrong(rewrite: Rewrite, name: string, edition: string): Map<string, string> | undefined {
   const file = join(corpus, name);
   const dir = fixture(`metamorphic-${rewrite}-${name.replace(/\.rs$/, "")}`);
+  const variant = join(dir, "variant.rs");
+  const library = join(dir, "lib.rs");
   let native: Run | undefined;
-  let source: string | undefined;
+  let made: ReturnType<typeof rewritten>;
   // Of every place, then of its first alone.
   for (const limit of [undefined, 1]) {
-    source = rewritten(rewrite, file, limit);
-    if (source === undefined) return undefined;
-    writeFileSync(join(dir, "variant.rs"), source);
-    const ran = runNative(join(dir, "variant.rs"), dir, edition);
-    if (typeof ran !== "string") {
+    made = rewritten(rewrite, file, edition, limit);
+    tally(rewrite, name, made === undefined ? "unchanged" : limit === undefined ? "all" : "first");
+    if (made === undefined) return undefined;
+    writeFileSync(variant, made.program);
+    // `library`'s program uses its library, built first.
+    const rustc: string[] = [];
+    if (made.library !== undefined) {
+      writeFileSync(library, made.library);
+      const rlib = join(dir, `lib${libraryCrate}.rlib`);
+      const lib = runSync(["rustc", ...nativeFlags(edition), "--crate-type=rlib", `--crate-name=${libraryCrate}`, library, "-o", rlib], root, 120_000);
+      if (lib.code !== 0) continue;
+      rustc.push("--extern", `${libraryCrate}=${rlib}`);
+    }
+    const ran = runNative(variant, dir, edition, "host", rustc);
+    if (typeof ran !== "string" && !overlapping(rewrite, ran.outcome)) {
       native = ran;
+      tally(rewrite, name, "variant");
       break;
     }
   }
-  if (native === undefined) return undefined;
+  if (native === undefined || made === undefined) return undefined;
   const problems = new Map<string, string>();
   for (const [build, flags] of builds) {
     const own = join(dir, build);
     mkdirSync(own, { recursive: true });
-    const compiled = compileJs(join(dir, "variant.rs"), own, edition, false, {}, flags);
+    let compiled: ReturnType<typeof compileJs>;
+    if (made.library === undefined) {
+      compiled = compileJs(variant, own, edition, false, {}, flags);
+    } else {
+      const lib = compileJsLibrary(library, own, edition, libraryCrate, flags);
+      compiled = "rmeta" in lib
+        ? compileJs(variant, own, edition, false, {}, [...flags, "--dependency", lib.manifest], ["--extern", `${libraryCrate}=${lib.rmeta}`, "-L", own])
+        : lib;
+    }
     if (!("js" in compiled)) {
       if (compiled.kind === "crashed") problems.set(build, `rust-js crashed: ${compiled.reason}`);
       continue;
