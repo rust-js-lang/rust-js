@@ -511,20 +511,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(value) => Ty::new_tup(self.tcx, &[key, value]),
                 None => key,
             };
-            let key = crate::lower::recognition::class_key(key);
-            let ord = ty::TraitRef::new(self.tcx, self.ord_trait(), [key]);
-            let ord = self.dictionary(ord, span)?;
+            let (ord, partial) = self.tree_build_dictionaries(key, span)?;
             let (kind, size) = self.stable_sort_facts(entry, span)?;
-            let mut list = vec![Expr::new_(class, Vec::new()), items, ord, kind, size];
-            let given = !self.is_unknown(key) && !self.has_user_impl(self.ord_trait(), key);
-            let mut optional = drops;
-            if given {
-                for tr in [self.partial_eq_trait(), self.partial_ord_trait()] {
-                    let tr = ty::TraitRef::new_from_args(self.tcx, tr, self.args_of(tr, key));
-                    optional.push(Some(self.dictionary(tr, span)?));
-                }
-            }
-            list = Expr::optional_args(list, optional);
+            let list = vec![Expr::new_(class, Vec::new()), items, ord, kind, size];
+            let list = Expr::optional_args(list, drops.into_iter().chain(partial).collect());
             return Ok(Expr::call(Expr::helper("$treeFromSorted"), list));
         }
         let drops = Expr::optional_args(Vec::new(), drops);
@@ -550,6 +540,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => Expr::new_(class, vec![items]),
         })
+    }
+
+    /// What a bulk build of std's nodes of `key`s is given of their order
+    /// (#926): `TOrd`, the keys' `Ord` dictionary, and, of a std type's of
+    /// the crate's, `(K, u32)`, whose `Ord` has no `PartialOrd` and
+    /// `PartialEq` of its own to give, `[TPartialEq, TPartialOrd]`.
+    fn tree_build_dictionaries(&mut self, key: Ty<'tcx>, span: Span) -> R<(Expr, Vec<Option<Expr>>)> {
+        let key = crate::lower::recognition::class_key(key);
+        let ord = ty::TraitRef::new(self.tcx, self.ord_trait(), [key]);
+        let ord = self.dictionary(ord, span)?;
+        let mut partial = Vec::new();
+        if !self.is_unknown(key) && !self.has_user_impl(self.ord_trait(), key) {
+            for tr in [self.partial_eq_trait(), self.partial_ord_trait()] {
+                let tr = ty::TraitRef::new_from_args(self.tcx, tr, self.args_of(tr, key));
+                partial.push(Some(self.dictionary(tr, span)?));
+            }
+        }
+        Ok((ord, partial))
     }
 
     /// A map's or a set's method, of its arguments' values, `tys` their
@@ -691,14 +699,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let cmp = cmp.expect("a B-tree's order");
                 map_ops("$treeSetAlgebra", vec![arg(), arg(), Expr::str(name), cmp])
             }
-            MapOp::Algebra(name) | MapOp::SetOperator(name) => {
+            // A set of its own class, its receiver's, of the algebra's items
+            // each cloned, as std's operator is `from_sorted_iter` of
+            // `self.union(rhs).cloned()`, or a hashed set's `collect()`, so
+            // each is found by its order or its hash (#961). Of items std's
+            // nodes hold, std's build: what `!=` keeps of them as they're
+            // pulled, bulk-pushed (`$treeOfSorted`).
+            MapOp::SetOperator(name) => {
+                let item = types[0];
+                let class = self.map_class(true, self.is_sorted(receiver), Some(item), span)?;
+                let clone = self.clone_arg(item, span)?;
+                let cloned = |items: Expr| match clone.kind {
+                    js::ExprKind::Undefined => items,
+                    _ => method(items, "map", vec![clone.clone()]),
+                };
+                match seen_items {
+                    true => {
+                        let cmp = cmp.expect("a B-tree's order");
+                        let items = cloned(map_ops("$treeSetAlgebra", vec![arg(), arg(), Expr::str(name), cmp]));
+                        let (ord, partial) = self.tree_build_dictionaries(item, span)?;
+                        let list = vec![Expr::new_(class, Vec::new()), items, ord];
+                        map_ops("$treeOfSorted", Expr::optional_args(list, partial))
+                    }
+                    false => {
+                        let mut list = vec![arg(), arg(), Expr::str(name)];
+                        list.extend(cmp);
+                        Expr::new_(class, vec![cloned(map_ops("$setAlgebra", list))])
+                    }
+                }
+            }
+            MapOp::Algebra(name) => {
                 let mut list = vec![arg(), arg(), Expr::str(name)];
                 list.extend(cmp);
-                let items = map_ops("$setAlgebra", list);
-                match op {
-                    MapOp::SetOperator(_) => Expr::new_(Expr::var("Set"), vec![items]),
-                    _ => items,
-                }
+                map_ops("$setAlgebra", list)
             }
             MapOp::Subset { superset } if seen_items => {
                 let cmp = self.cmp_fn(types[0], false, span)?;

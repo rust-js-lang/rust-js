@@ -2004,16 +2004,16 @@ export class $OrdTree extends $OrdMap {
   // drops them; what's pushed is leaked, as std's root is.
   pushSorted(sorted, ne, drop) {
     let leaf = this.#root;
-    let i = 0;
+    const source = Array.isArray(sorted) ? $sortedArray(sorted) : sorted;
     const next = () => {
       for (;;) {
-        if (i >= sorted.length) return undefined;
-        const entry = sorted[i++];
-        if (i >= sorted.length) return entry;
-        const after =
-          drop && (() => $inTurn(() => $dropItems(sorted.slice(i + 1), drop), () => drop(sorted[i])));
+        const entry = source.take();
+        if (entry === undefined) return undefined;
+        const peeked = source.peek();
+        if (peeked === undefined) return entry;
+        const after = drop && (() => source.dropAfter(drop));
         const apart = $unwinds(
-          () => ne(entry[0], sorted[i][0]),
+          () => ne(entry[0], peeked[0]),
           drop && (() => drop(entry)),
           after,
         );
@@ -2057,6 +2057,62 @@ export class $OrdTree extends $OrdMap {
     }
     return this;
   }
+}
+
+// What a bulk build pushes, `DedupSortedIter`'s `Peekable`: each entry
+// taken, the next peeked, and, as a panic unwinds, what's left dropped,
+// those after the peeked one, then it, as its `Peekable` drops them. Of an
+// array, its entries; of a JS iterator `it`, each as it's asked, `[item,
+// item]` of a set's, those after the peeked one its own to drop, closed.
+export function $sortedArray(sorted) {
+  let i = 0;
+  return {
+    take: () => (i < sorted.length ? sorted[i++] : undefined),
+    peek: () => sorted[i],
+    dropAfter: (drop) =>
+      $inTurn(
+        () => $dropItems(sorted.slice(i + 1), drop),
+        () => drop(sorted[i]),
+      ),
+  };
+}
+
+export function $sortedSteps(it, set) {
+  let peeked;
+  const pull = () => {
+    const step = it.next();
+    if (step.done) return undefined;
+    return set ? [step.value, step.value] : step.value;
+  };
+  return {
+    take() {
+      if (peeked === undefined) return pull();
+      const entry = peeked.entry;
+      peeked = undefined;
+      return entry;
+    },
+    peek() {
+      peeked ??= { entry: pull() };
+      return peeked.entry;
+    },
+    dropAfter: (drop) =>
+      $inTurn(
+        () => it.return?.(),
+        () => peeked?.entry !== undefined && drop(peeked.entry),
+      ),
+  };
+}
+
+// `BTreeSet::from_sorted_iter(items)`, what a set's operator makes, `&a |
+// &b`'s (#961): its items, sorted already, a JS iterator, each kept that
+// `!=` doesn't find equal to the next, `DedupSortedIter`'s, pulled as the
+// build asks, then bulk-pushed into `tree`, a set of std's nodes. `eq` is
+// as `$treeFromSorted` finds it.
+export function $treeOfSorted(tree, items, TOrd, TPartialEq, TPartialOrd) {
+  const partialEq = TPartialEq ?? (TPartialOrd ?? TOrd.PartialOrd?.())?.PartialEq?.();
+  const eq = partialEq?.eq ?? ((a, b) => TOrd.cmp(a, b) === 0);
+  tree.items.pushSorted($sortedSteps(items, true), (a, b) => !eq(a, b));
+  return tree;
 }
 
 // What `found` gives of the entry `i` of `node`.

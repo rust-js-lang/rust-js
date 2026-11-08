@@ -346,3 +346,39 @@ Mutations `set-algebra-tipping-halved`, `set-merge-keeps-the-less`,
 (`lower/std_types/map.ts`). A set's operators, `&a | &b`, are the next
 issue: they made a plain `Set` of the items, which finds an object by
 identity.
+
+## Amendment: a set's operator makes a set of its own class (#961)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. `contains` was
+`false` where Rust's is `true`, and `insert` added an item the set held.
+
+`&a | &b`, `&`, `-` and `^` of sets, a `BTreeSet`'s and a `HashSet`'s,
+were `new Set($setAlgebra(..))`: a plain JS `Set`, which finds an item by
+identity. Of items that are objects, a derived `Ord` or `Hash` struct's or
+a tuple's, `u.contains(&P(2, 2))` was `false` and `u.insert(P(1, 1))` held
+two. std's operator is a set of the receiver's type made of
+`self.union(rhs).cloned()`, `from_sorted_iter` of a `BTreeSet`'s, a
+`collect()` of a `HashSet`'s.
+
+**The operator makes a set of its receiver's class**, `map_class`'s,
+`new $BTreeSet(..)` or `new $KeySet(..)`, of the algebra's items each
+cloned (`clone_arg`, `.map(clone)` where a clone isn't the value itself),
+which finds each by its order or its hash. **Of items std's nodes hold**
+(`tree_of_nodes`), it's std's build: `$treeOfSorted(new Class(), items,
+TOrd)`, its items `$treeSetAlgebra`'s lazy merge, each cloned as it's
+pulled, those `!=` keeps of each two, `DedupSortedIter`'s, pulled as the
+bulk build asks, so the merge's `cmp`, the clones and the `!=` interleave
+as std's do; then bulk-pushed (`pushSorted`, now of an array or of a JS
+iterator, `$sortedSteps`). The `TOrd`, `TPartialEq` and `TPartialOrd` a
+bulk build is given are one function's, `tree_build_dictionaries`,
+`made_of`'s and the operator's. `set_operators.js` reads `new
+$BTreeSet(..)` and `new $KeySet(..)` where it read `new Set(..)`. Corpus
+cases `set_operators_find_by_value.rs`, of a `BTreeSet` and a `HashSet`
+of a derived struct's and of tuples, and `btree_set_operators_seen.rs`,
+of an order and a clone that count their calls; both builds. Mutations
+`set-operator-a-plain-set`, `set-operator-seen-built-unseen`,
+`set-operator-items-uncloned` (`lower/std_types/map.ts`),
+`tree-of-sorted-keeps-all`, `sorted-steps-pulled-at-once`
+(`runtime/ord_tree.ts`); `set-operator-items`,
+`tree-from-sorted-dictionaries-ungiven` and `tree-bulk-ne-panic-leaks-rest`
+name their lines as they now read.

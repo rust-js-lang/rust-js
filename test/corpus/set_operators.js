@@ -9,19 +9,19 @@ export function entry() {
 function main() {
   const a = new $BTreeSet([1, 2, 3]);
   const b = new $BTreeSet([2, 3, 4]);
-  const value = new Set($setAlgebra(a, b, "difference", $cmp));
-  const value$1 = new Set($setAlgebra(a, b, "union", $cmp));
-  const value$2 = new Set($setAlgebra(a, b, "intersection", $cmp));
+  const value = new $BTreeSet($setAlgebra(a, b, "difference", $cmp));
+  const value$1 = new $BTreeSet($setAlgebra(a, b, "union", $cmp));
+  const value$2 = new $BTreeSet($setAlgebra(a, b, "intersection", $cmp));
   console.log(
-    `{${Array.from($sortedKeys(value, $cmp)).join(", ")}} {${Array.from($sortedKeys(value$1, $cmp)).join(", ")}} {${Array.from($sortedKeys(value$2, $cmp)).join(", ")}} {${Array.from($sortedKeys(new Set($setAlgebra(a, b, "symmetric", $cmp)), $cmp)).join(", ")}}`,
+    `{${Array.from($sortedKeys(value, $cmp)).join(", ")}} {${Array.from($sortedKeys(value$1, $cmp)).join(", ")}} {${Array.from($sortedKeys(value$2, $cmp)).join(", ")}} {${Array.from($sortedKeys(new $BTreeSet($setAlgebra(a, b, "symmetric", $cmp)), $cmp)).join(", ")}}`,
   );
-  const only = new Set($setAlgebra(a, b, "difference", $cmp));
+  const only = new $BTreeSet($setAlgebra(a, b, "difference", $cmp));
   console.log(`${only.has(1)} ${only.has(2)} ${only.size}`);
 
   const names = new $BTreeSet(["ann", "bo"].map((s) => s));
   const more = new $BTreeSet(["bo", "cy"].map((s) => s));
   console.log(
-    `{${Array.from($sortedKeys(new Set($setAlgebra(names, more, "union", $cmp)), $cmp))
+    `{${Array.from($sortedKeys(new $BTreeSet($setAlgebra(names, more, "union", $cmp)), $cmp))
       .map((item) => $debugStr(item))
       .join(", ")}}`,
   );
@@ -34,8 +34,8 @@ function main() {
     [2, "b"],
     [3, "c"],
   ]);
-  const both = Array.from(new Set($setAlgebra(pairs, others, "intersection")));
-  const either = Array.from(new Set($setAlgebra(pairs, others, "symmetric")));
+  const both = Array.from(new $KeySet($setAlgebra(pairs, others, "intersection")));
+  const either = Array.from(new $KeySet($setAlgebra(pairs, others, "symmetric")));
   both.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   either.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   console.log(

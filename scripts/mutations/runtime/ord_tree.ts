@@ -196,8 +196,8 @@ export const mutations: Mutation[] = [
     name: "tree-bulk-ne-panic-leaks-rest",
     breaks: "as a bulk build's `!=` panics, what it hasn't pushed leaks, where std drops it",
     file,
-    find: "          drop && (() => $inTurn(() => $dropItems(sorted.slice(i + 1), drop), () => drop(sorted[i])));\n",
-    replace: "          undefined;\n",
+    find: "        const after = drop && (() => source.dropAfter(drop));\n",
+    replace: "        const after = undefined;\n",
     tests: unwinds,
   },
   {
@@ -255,5 +255,21 @@ export const mutations: Mutation[] = [
     find: "          if (xn === undefined) return undefined;\n        }\n        y.next();\n",
     replace: "          if (xn === undefined) return undefined;\n          y.next();\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_set_algebra_seen.rs$"],
+  },
+  {
+    name: "tree-of-sorted-keeps-all",
+    breaks: "a B-tree set an operator makes keeps each of its items, asking no `!=` of each two, as std's `DedupSortedIter` asks (#961)",
+    file: "src/runtime/ord_tree.js",
+    find: "  tree.items.pushSorted($sortedSteps(items, true), (a, b) => !eq(a, b));\n",
+    replace: "  tree.items.pushSorted($sortedSteps(items, true), () => true);\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_set_operators_seen.rs$"],
+  },
+  {
+    name: "sorted-steps-pulled-at-once",
+    breaks: "a bulk build of a set's operator pulls its items all at once, so the merge's `cmp` calls come before the build's `!=` calls, where std's interleave (#961)",
+    file: "src/runtime/ord_tree.js",
+    find: "  tree.items.pushSorted($sortedSteps(items, true), (a, b) => !eq(a, b));\n",
+    replace: "  tree.items.pushSorted(Array.from(items, (item) => [item, item]), (a, b) => !eq(a, b));\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_set_operators_seen.rs$"],
   },
 ];
