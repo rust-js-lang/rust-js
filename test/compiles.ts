@@ -212,14 +212,19 @@ function found(dir: string, cwd: string, manifest: string | undefined): Exit | u
   return undefined;
 }
 
-/** Whether there's room to keep `bytes` more: the disk above its floor,
- * said once a process where it isn't; and the cache under its cap, as
- * the last prune found it with what this process has kept since, or
- * pruned to make room. */
+/** The space free on the disk the cache is on, as a compile's keep asks
+ * it: the real disk's, or what a test gives it (#963). */
+type Free = () => number;
+const diskFree: Free = () => freeBytes(target);
+
+/** Whether there's room to keep `bytes` more: the disk's space `free()`
+ * above its floor, said once a process where it isn't; and the cache under
+ * its cap, as the last prune found it with what this process has kept
+ * since, or pruned to make room. */
 let below = false;
 let keptSince = 0;
-function room(bytes: number): boolean {
-  const free = freeBytes(target);
+function room(bytes: number, freeNow: Free): boolean {
+  const free = freeNow();
   if (free < floorBytes + bytes) {
     if (!below) console.error(`compile cache: not kept, ${(free / 2 ** 30).toFixed(1)} GB free, under the ${floorBytes / 2 ** 30} GB floor`);
     below = true;
@@ -231,7 +236,7 @@ function room(bytes: number): boolean {
     size = Number(readFileSync(join(compileCache, "size"), "utf8"));
   } catch {}
   if (Number.isNaN(size) || size + keptSince > capBytes()) {
-    prune({ cap: capBytes() - bytes });
+    prune({ cap: capBytes() - bytes, free: freeNow });
     keptSince = bytes;
   }
   return true;
@@ -240,10 +245,10 @@ function room(bytes: number): boolean {
 /** `entry` of the compile kept in `dir`: its files written whole beside
  * it, then moved into place, so a process reading the cache never reads
  * half of one; one kept at the same time by another is the same. */
-function keep(dir: string, read: [string, string][], wrote: string[], cwd: string, p: Exit) {
+function keep(dir: string, read: [string, string][], wrote: string[], cwd: string, p: Exit, free: Free) {
   const files = wrote.map((file) => readFileSync(resolve(cwd, file)));
   const bytes = files.reduce((sum, file) => sum + file.length, 0) + p.bytes.stdout.length + p.bytes.stderr.length;
-  if (!room(bytes)) return;
+  if (!room(bytes, free)) return;
   const name = `${sha(JSON.stringify(read)).slice(0, 24)}-${bytes}`;
   if (existsSync(join(dir, name))) return;
   const building = join(dir, `.building-${process.pid}-${Math.random().toString(36).slice(2)}`);
@@ -280,7 +285,7 @@ function plan(cmd: string[], cwd: string, env: Record<string, string | undefined
 }
 
 /** Keep what `p`, the compile that wrote `record`, did, if it can be. */
-function settle(p: Exit, planned: NonNullable<ReturnType<typeof plan>>, cwd: string) {
+function settle(p: Exit, planned: NonNullable<ReturnType<typeof plan>>, cwd: string, free: Free) {
   const { dir, record, compiler } = planned;
   try {
     if (p.code !== 0 || p.signal || p.timedOut || p.overflowed || !existsSync(record)) return;
@@ -302,7 +307,7 @@ function settle(p: Exit, planned: NonNullable<ReturnType<typeof plan>>, cwd: str
     // An `env!`'s variable is in the key, as all the environment is.
     if (env.some((line) => unread.includes(line.slice("# env-dep:".length).split("=")[0]))) return;
     mkdirSync(dir, { recursive: true });
-    keep(dir, fingerprints, wrote, cwd, p);
+    keep(dir, fingerprints, wrote, cwd, p, free);
   } catch {
     // Not kept: compiled again next time.
   } finally {
@@ -315,7 +320,7 @@ function settle(p: Exit, planned: NonNullable<ReturnType<typeof plan>>, cwd: str
 const unrecordable = "--emit=dep-info can't say all a build reads";
 
 /** `cmd` run by `compile`, through the cache where it's a compile it keeps. */
-export function keptCompile(cmd: string[], cwd: string, env: Record<string, string | undefined>, compile: Compile): Exit {
+export function keptCompile(cmd: string[], cwd: string, env: Record<string, string | undefined>, compile: Compile, free: Free = diskFree): Exit {
   const planned = plan(cmd, cwd, env);
   if (!planned) return compile(cmd);
   if (existsSync(join(planned.dir, "unrecordable"))) return compile(cmd);
@@ -328,12 +333,18 @@ export function keptCompile(cmd: string[], cwd: string, env: Record<string, stri
     writeFileSync(join(planned.dir, "unrecordable"), "");
     return compile(cmd);
   }
-  settle(p, planned, cwd);
+  settle(p, planned, cwd, free);
   return p;
 }
 
 /** `keptCompile`, without blocking the others running. */
-export async function keptCompileAsync(cmd: string[], cwd: string, env: Record<string, string | undefined>, compile: CompileAsync): Promise<Exit> {
+export async function keptCompileAsync(
+  cmd: string[],
+  cwd: string,
+  env: Record<string, string | undefined>,
+  compile: CompileAsync,
+  free: Free = diskFree,
+): Promise<Exit> {
   const planned = plan(cmd, cwd, env);
   if (!planned) return compile(cmd);
   if (existsSync(join(planned.dir, "unrecordable"))) return compile(cmd);
@@ -346,7 +357,7 @@ export async function keptCompileAsync(cmd: string[], cwd: string, env: Record<s
     writeFileSync(join(planned.dir, "unrecordable"), "");
     return compile(cmd);
   }
-  settle(p, planned, cwd);
+  settle(p, planned, cwd, free);
   return p;
 }
 

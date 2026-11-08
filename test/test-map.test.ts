@@ -279,7 +279,9 @@ test("the maps kept are the three most recently used, fewer below the disk's flo
     writeFileSync(join(dir, `${i}.json`), "{}");
     utimesSync(join(dir, `${i}.json`), 1000 + i, 1000 + i);
   }
-  pruneMaps(dir);
+  // A disk with room, so only the cap decides, however full this
+  // machine's is (#963).
+  pruneMaps(dir, 3, () => Number.POSITIVE_INFINITY);
   expect(readdirSync(dir).sort()).toEqual(["2.json", "3.json", "4.json"]);
   pruneMaps(dir, 3, () => 0);
   expect(readdirSync(dir)).toEqual([]);

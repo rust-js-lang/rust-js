@@ -88,6 +88,7 @@ Also in use, with no single before and after:
 | A runtime mutant's tests import its runtime from their own target | ef6c983bf | Mutants can run beside check:fast in one checkout |
 | Landing on a moving `main`: re-check only what the incoming commits touch | 7677661a5 | A full re-run for every commit landed meanwhile never ends |
 | A suite past twice its minutes prints what it's waiting on, and past 25 is stopped | 97453543c, c5ec99a8e | A hang ends instead of being waited on |
+| A cache's test is given the disk's free space, not the machine's; one test of the real floor holds on any disk (#963) | `free` of `keptCompile`, `pruneKept` and `pruneMaps`; `test/compiles.test.ts`' "a compile is kept only where the real disk is above its floor" | Four cache tests read the real disk and failed on any machine under the 40 GiB floor, `check:fast --all` red on the M1 at 39 GiB free until `target/mutants` went. Given a disk with room, they pass at a floor of 10 TB too; the real floor's test asserts what this disk's free space says, kept above it and compiled again below |
 
 ## Dropped
 

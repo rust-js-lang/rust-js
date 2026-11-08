@@ -184,7 +184,9 @@ test("a kept cache keeps what was used this week, and drops the rest", () => {
   entry("mixed", "old", 9);
   entry("mixed", "new", 2);
   entry("crashed", ".building-1-2", 2);
-  pruneKept(cache, { now, days: 7 });
+  // A disk with room, so only age decides, however full this machine's is
+  // (#963).
+  pruneKept(cache, { now, days: 7, free: () => Number.POSITIVE_INFINITY });
   expect(["fresh/a", "stale", "mixed/old", "mixed/new", "crashed"].map((p) => existsSync(join(cache, p)))).toEqual([true, false, false, true, false]);
 });
 

@@ -9,8 +9,9 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, ut
 import { join } from "node:path";
 
 import type { Exit } from "./child";
-import { floorBytes } from "./bounded";
+import { floorBytes, freeBytes } from "./bounded";
 import { capBytes, compileCache, keptCompile, parseRecord, prune, unread } from "./compiles";
+import { target } from "./packages-of";
 import { buildCompiler, compiler, fixture, root } from "./support";
 
 beforeAll(buildCompiler, 600_000);
@@ -28,6 +29,10 @@ function counting() {
   return { ran, compile, own };
 }
 
+/** A disk with room, so what a test keeps is kept however full this
+ * machine's is (#963): a test of the real disk's floor is its own. */
+const room = () => Number.POSITIVE_INFINITY;
+
 const lib = `pub const TEXT: &str = include_str!("text.txt");\npub fn text() -> &'static str {\n    TEXT\n}\n`;
 
 test("a compile is given again only where all it's made of is the same", () => {
@@ -36,7 +41,7 @@ test("a compile is given again only where all it's made of is the same", () => {
   writeFileSync(join(dir, "text.txt"), "first");
   const js = join(dir, "lib.js");
   const { ran, compile, own } = counting();
-  const kept = (flags: string[] = [], env: Record<string, string> = {}) => keptCompile([compiler, join(dir, "lib.rs"), "-o", js, "--", "-Awarnings", ...flags], root, { ...own, ...env }, compile);
+  const kept = (flags: string[] = [], env: Record<string, string> = {}) => keptCompile([compiler, join(dir, "lib.rs"), "-o", js, "--", "-Awarnings", ...flags], root, { ...own, ...env }, compile, room);
 
   expect(kept().code).toBe(0);
   expect(ran.length).toBe(1);
@@ -87,16 +92,16 @@ test("another compiler's compiles, a failed compile and one that read what it wr
   const script = join(dir, "rust-js");
   writeFileSync(script, `#!/bin/sh\nexec ${JSON.stringify(compiler)} "$@"\n`);
   chmodSync(script, 0o755);
-  for (let i = 0; i < 2; i++) keptCompile([script, join(dir, "lib.rs"), "-o", join(dir, "a.js")], root, own, compile);
+  for (let i = 0; i < 2; i++) keptCompile([script, join(dir, "lib.rs"), "-o", join(dir, "a.js")], root, own, compile, room);
   expect(ran.length).toBe(2);
   // A compile that fails.
   writeFileSync(join(dir, "bad.rs"), "pub fn f() -> u8 { 300 }\n");
-  for (let i = 0; i < 2; i++) expect(keptCompile([compiler, join(dir, "bad.rs"), "-o", join(dir, "bad.js")], root, own, compile).code).not.toBe(0);
+  for (let i = 0; i < 2; i++) expect(keptCompile([compiler, join(dir, "bad.rs"), "-o", join(dir, "bad.js")], root, own, compile, room).code).not.toBe(0);
   expect(ran.length).toBe(4);
   // Its manifest written by a compile of another source, which it reads
   // for what's stale: compiled, and not kept.
   const manifest = join(dir, "m.json");
-  const withManifest = () => keptCompile([compiler, join(dir, "lib.rs"), "-o", join(dir, "m.js"), "--manifest", manifest], root, own, compile);
+  const withManifest = () => keptCompile([compiler, join(dir, "lib.rs"), "-o", join(dir, "m.js"), "--manifest", manifest], root, own, compile, room);
   withManifest();
   expect(ran.length).toBe(5);
   writeFileSync(join(dir, "lib.rs"), `${lib}pub mod more {}\n`);
@@ -106,6 +111,26 @@ test("another compiler's compiles, a failed compile and one that read what it wr
   withManifest();
   withManifest();
   expect(ran.length).toBe(7);
+});
+
+// The real disk's floor (#963): a compile is kept where the disk the cache
+// is on has room above it, and not where it hasn't, each as this machine's
+// disk is now, so the test holds on a full disk and an empty one alike.
+test("a compile is kept only where the real disk is above its floor", () => {
+  const dir = fixture("kept-floor");
+  writeFileSync(join(dir, "lib.rs"), lib);
+  writeFileSync(join(dir, "text.txt"), "floor");
+  const { ran, compile, own } = counting();
+  const kept = () => keptCompile([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "-Awarnings"], root, own, compile);
+  const above = freeBytes(target) >= floorBytes + 2 ** 30;
+  const below = freeBytes(target) < floorBytes;
+  kept();
+  kept();
+  // Kept, given again; or not kept, compiled again. Within a GB of the
+  // floor, where the compile's own bytes may cross it, either.
+  if (above) expect(ran.length).toBe(1);
+  if (below) expect(ran.length).toBe(2);
+  expect(ran.length).toBeGreaterThanOrEqual(1);
 });
 
 test("a file's record of its build says what it wrote and all it read, and changes nothing it writes", () => {
