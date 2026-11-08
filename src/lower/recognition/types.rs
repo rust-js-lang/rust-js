@@ -709,6 +709,9 @@ pub(crate) enum TypeFact {
     /// What std's unstable sort picks for its items by their layout, its
     /// small sort or partition (ADRs 0342, 0471).
     Sort,
+    /// What std's stable sort picks for its items by their type, its small
+    /// sort (ADR 0036, #925).
+    StableSort,
     /// Whether it's a `FusedIterator`, whose `Fuse` keeps it as it ends
     /// (ADRs 0473, 0543).
     Fused,
@@ -737,7 +740,7 @@ pub(crate) enum TypeFact {
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 18] = [
+    pub(crate) const ALL: [TypeFact; 19] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
@@ -748,6 +751,7 @@ impl TypeFact {
         TypeFact::TreeMap,
         TypeFact::TreeSet,
         TypeFact::Sort,
+        TypeFact::StableSort,
         TypeFact::Fused,
         TypeFact::ConstSize,
         TypeFact::OneShot,
@@ -769,6 +773,7 @@ impl TypeFact {
             TypeFact::NeedsDrop => "needs_drop",
             TypeFact::Map | TypeFact::Set | TypeFact::TreeMap | TypeFact::TreeSet => "a map's class",
             TypeFact::Sort => "an unstable sort",
+            TypeFact::StableSort => "a stable sort",
             TypeFact::Fused => "whether it's a `FusedIterator`",
             TypeFact::ConstSize => "its constant size",
             TypeFact::OneShot => "whether it's a `OneShot`",
@@ -798,6 +803,7 @@ impl TypeFact {
             TypeFact::TreeMap => "TreeMap",
             TypeFact::TreeSet => "TreeSet",
             TypeFact::Sort => "Sort",
+            TypeFact::StableSort => "StableSort",
             TypeFact::Fused => "Fused",
             TypeFact::ConstSize => "ConstSize",
             TypeFact::OneShot => "OneShot",

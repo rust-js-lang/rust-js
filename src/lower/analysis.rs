@@ -44,7 +44,7 @@ pub(super) use self_handles::SelfHandles;
 mod tests;
 mod throwing;
 mod unwinding;
-pub(super) use unwinding::never_unwinds_given;
+pub(in crate::lower) use unwinding::{never_unwinds_given, std_quiet};
 mod wholes;
 pub(super) use wholes::{Wholes, whole_locals};
 
@@ -547,16 +547,16 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Each generic function's type parameters it's given a size, an
     /// alignment or a name of (ADR 0145), by their indices.
     pub type_facts: IndexMap<DefId, Vec<(u32, TypeFact)>>,
-    /// The types built of each one's slots it's given a layout of, past its
-    /// associated types' slots (#737).
+    /// The types built of each one's slots it's given a layout of, past its associated types' (#737).
     pub built_slots: crate::lower::traits::BuiltSlots<'tcx>,
     /// The functions that may return `Err(fmt::Error)` (ADR 0187).
     pub failing: IndexSet<DefId>,
     /// The throwing functions, whose result is a throwing JS call's (ADR 0644).
     pub throwing: IndexSet<DefId>,
     /// The functions that never unwind, whose call throws only where what
-    /// it's given does (ADR 0902).
+    /// it's given does (ADR 0902); and those whose calls can't be seen (#925).
     pub never_unwinding: IndexSet<DefId>,
+    pub quiet_fns: IndexSet<DefId>,
     /// The functions that take their caller's location (ADR 0427).
     pub caller_locations: IndexSet<DefId>,
     /// Whether the crate asks a `Vec` its capacity (ADR 0419).
@@ -1343,7 +1343,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let (type_facts, built_slots) = type_fact_params(tcx, all_bodies, &fns, &foreign, given, &recognition, item_drops);
     let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
     let throwing = throwing::throwing_fns(tcx, &recognition, all_bodies);
-    let never_unwinding = unwinding::never_unwinding(tcx, &recognition, all_bodies, &runs);
+    let (never_unwinding, quiet_fns) = unwinding::found(tcx, &recognition, all_bodies, &runs);
     let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
     // A scope struct whose methods are given nothing besides their
     // arguments, no dictionary, fact, drop or location, as a function
@@ -1411,6 +1411,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         failing,
         throwing,
         never_unwinding,
+        quiet_fns,
         caller_locations,
         asks_capacity,
         generic_consts,

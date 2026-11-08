@@ -389,6 +389,8 @@ struct CrateFacts<'a, 'tcx> {
     /// The functions that never unwind, whose call throws only where what
     /// it's given does (ADR 0902).
     never_unwinding: &'a IndexSet<DefId>,
+    /// The functions and closures whose calls can't be seen (#925).
+    quiet_fns: &'a IndexSet<DefId>,
     /// The functions that read `js::arguments()`, each call of which gives
     /// every argument the Rust does (rd332).
     reads_arguments: &'a analysis::arguments::ReadsArguments<'tcx>,

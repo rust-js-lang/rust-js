@@ -6,8 +6,9 @@
 use super::iterator_steps::{body_aggregates, body_fn_defs};
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::recognition::{
-    StdItem, TypeFact, bound_by_any, debug_named, fact_specialization, map_of_param, phantom_named, pointer_target,
-    points_at_dyn_any, points_at_dyn_debug, std_item, trait_method, type_facts, unstable_sort_items,
+    StdItem, TypeFact, bound_by_any, cached_key_pairs, debug_named, fact_specialization, map_of_param, phantom_named,
+    pointer_target, points_at_dyn_any, points_at_dyn_debug, stable_sort_items, std_item, trait_method, type_facts,
+    unstable_sort_items,
 };
 use crate::lower::traits::{BuiltSlot, BuiltSlots, Given, bounds, drop_items, evidence_impl, slot_index as slot_of};
 use crate::lower::{Body, FnInfo, fn_def};
@@ -219,6 +220,24 @@ pub(super) fn type_fact_params<'tcx>(
             {
                 asking.asked.insert((caller, index, TypeFact::Sort));
                 continue;
+            }
+            // A stable sort of a type parameter's items, which is std's own
+            // where its caller's type's order may be seen: what it picks by
+            // their type and their size, `TStableSort` and `TSize` (#925).
+            if let Some(item) = stable_sort_items(tcx, callee, args)
+                && let Some(index) = slot_of(tcx, foreign, caller, item)
+            {
+                asking.asked.insert((caller, index, TypeFact::StableSort));
+                asking.asked.insert((caller, index, TypeFact::Size));
+                continue;
+            }
+            // `sort_by_cached_key` of a key that holds a type parameter, whose
+            // `(K, usize)` pairs std sorts unstably, as their type picks:
+            // their caller's, a built slot's (#925).
+            if let Some(pairs) = cached_key_pairs(tcx, callee, args)
+                && let Some(each) = asked_of(tcx, foreign, typing_env, caller, (pairs, TypeFact::Sort), &None)
+            {
+                asking.ask(caller, each);
             }
             // `==` of `Rc`s of a type parameter's value, whose `Eq` only the
             // caller knows, by which std's `RcEqIdent` asks whether they're
@@ -521,9 +540,11 @@ fn either_gates(a: &Gates, b: &Gates) -> Gates {
 
 /// Whether `ty`, of no slot of its own, is built of a function's, a type
 /// whose layout rustc can't say there, as only its caller knows it,
-/// `Held<J>`: a fact asked of it, its size or alignment, is its caller's.
+/// `Held<J>`: a fact asked of it, its size or alignment, or what std's
+/// unstable sort picks by it, `sort_by_cached_key`'s `(K, usize)`'s (#925),
+/// is its caller's.
 fn built_of<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: ty::Ty<'tcx>, fact: TypeFact) -> bool {
-    matches!(fact, TypeFact::Size | TypeFact::Align)
+    matches!(fact, TypeFact::Size | TypeFact::Align | TypeFact::Sort)
         && !crate::lower::recognition::known_by_bounds(ty)
         && ty.has_param()
         && tcx.layout_of(typing_env.as_query_input(ty)).is_err()

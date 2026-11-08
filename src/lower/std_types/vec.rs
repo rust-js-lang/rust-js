@@ -4,6 +4,7 @@ use crate::js;
 use crate::js::{Expr, Op, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::Std;
+use crate::lower::std_types::slice::SortWith;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty;
 
@@ -161,6 +162,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => Expr::call(Expr::member(items, "slice"), vec![]),
                 },
             },
+            // Where its comparator's calls can be seen, std's own (#925).
+            Std::SortBy if self.stable_sort_seen(SortWith::By, generic_args) => {
+                let values = vec![arg(), arg()];
+                self.stable_sort_call(SortWith::By, values, generic_args, span, out)?
+            }
             Std::SortBy => {
                 let (v, compare) = (arg(), arg());
                 match tys[0].peel_refs().kind() {

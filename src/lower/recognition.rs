@@ -13,6 +13,7 @@ mod owners;
 pub(super) mod registry;
 mod serde;
 mod slice_steps;
+mod sorts;
 mod specialization;
 mod std_crates;
 mod std_items;
@@ -21,8 +22,8 @@ mod types;
 mod wrappers;
 
 pub(super) use self::{
-    calls::*, fmt::*, iterators::*, json::*, serde::*, specialization::*, std_crates::*, std_items::*, traits::*,
-    types::*, wrappers::*,
+    calls::*, fmt::*, iterators::*, json::*, serde::*, sorts::*, specialization::*, std_crates::*, std_items::*,
+    traits::*, types::*, wrappers::*,
 };
 
 use super::combinators::{Comb, IterComb, IterSource, StepOp};

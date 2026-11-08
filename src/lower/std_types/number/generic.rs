@@ -366,6 +366,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if fact == TypeFact::Sort {
             return Ok(Expr::str(self.sort_kind(of, span)?));
         }
+        // What std's stable sort of it picks by its type (#925).
+        if fact == TypeFact::StableSort {
+            return Ok(Expr::str(self.stable_sort_kind(of, span)?));
+        }
         if !matches!(fact, TypeFact::Name | TypeFact::Id) {
             return Ok(Expr::int(self.layout_bytes((fact, false), of, span)?));
         }
@@ -429,6 +433,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (_, false) => "size_of",
             (_, true) => "size_of_val",
         };
+        // A std trait's associated type no caller gives the facts of,
+        // `<T as Iterator>::Item` of a `T` bounded by the crate's trait that
+        // extends `Iterator`, whose dictionary doesn't carry it (#934).
+        if let ty::Alias(
+            _,
+            ty::AliasTy {
+                kind: ty::Projection { def_id },
+                ..
+            },
+        ) = of.kind()
+            && crate::lower::recognition::is_std_crate(self.tcx, *def_id)
+        {
+            return Err(self.unsupported(
+                span,
+                &format!(
+                    "`{name}` of `{of}`, an associated type whose facts its caller's dictionary doesn't carry (#934)"
+                ),
+            ));
+        }
         if of.has_param() {
             return Err(self.unsupported(span, &format!("`{name}` of a type parameter")));
         }

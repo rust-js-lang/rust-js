@@ -4,7 +4,7 @@
 // could itself look like `None`: with `T = ()` or `T = Option<i32>`, a
 // `Some(x)` is a box, so it's still `Some`.
 
-import { $pop, $some, $someAt, $someValue, $sort, $unwrap } from "@rust-js/runtime";
+import { $pop, $some, $someAt, $someValue, $sortStable, $unwrap } from "@rust-js/runtime";
 
 /** `Some` of each element, counted: with `T = ()`, `Some(())` must be `Some`. */
 export function countSome(xs) {
@@ -163,8 +163,8 @@ function wrappedUnboxed(x) {
  * asked of each item, as Rust's is, not left last as JS's `sort` leaves
  * `undefined`.
  */
-export function sortWith(xs, compare) {
-  $sort(xs, compare);
+export function sortWith(xs, compare, TSize, TStableSort) {
+  $sortStable(xs, (a, b) => compare(a, b) < 0, TStableSort, TSize);
   return xs;
 }
 

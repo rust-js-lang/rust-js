@@ -12,7 +12,7 @@ function $sortUnstable(v, isLess, kind) {
     $insertionSort(v, 0, len, 1, isLess);
     return;
   }
-  const [runLength, reversed] = $existingRun(v, isLess);
+  const [runLength, reversed] = $existingRun(v, 0, len, isLess);
   if (runLength === len) {
     if (reversed) v.reverse();
     return;
@@ -62,12 +62,15 @@ function $insertionSort(v, start, end, offset, isLess) {
   }
 }
 
-function $existingRun(v, isLess) {
-  const len = v.length;
+// `find_existing_run` of `v[start..end]`: the length of the run it starts
+// with, and whether that's strictly descending.
+function $existingRun(v, start, end, isLess) {
+  const len = end - start;
+  if (len < 2) return [len, false];
   let run = 2;
-  const descending = isLess(v[1], v[0]);
-  if (descending) while (run < len && isLess(v[run], v[run - 1])) run++;
-  else while (run < len && !isLess(v[run], v[run - 1])) run++;
+  const descending = isLess(v[start + 1], v[start]);
+  if (descending) while (run < len && isLess(v[start + run], v[start + run - 1])) run++;
+  else while (run < len && !isLess(v[start + run], v[start + run - 1])) run++;
   return [run, descending];
 }
 

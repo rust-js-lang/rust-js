@@ -8,6 +8,7 @@ use super::bindings;
 use super::recognition::{OrderingCall, StdItem, std_item, trait_method};
 use super::representation::{Num, variant_field};
 use super::{FnCx, R, Shape};
+use crate::collections::IndexSet;
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use rustc_abi::VariantIdx;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -26,46 +27,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether comparing two `ty`s, by their `Ord` or `PartialOrd`, may
-    /// panic: an impl of the crate's or a library's, hand-written or
-    /// derived, any of whose methods may unwind (ADR 0902), a derived one's
-    /// as its fields' comparisons do; std's types' as what they hold's do;
-    /// a type parameter's, a `dyn`'s or an opaque type's, anyone's. Std's
-    /// order of numbers, text and `bool`s never does. The one answer of
-    /// whether what std holds as it compares, a heap's, a B-tree's, is
-    /// dropped as a comparison unwinds (#901, #911).
+    /// panic: `order_may`'s answer of an impl any of whose methods may
+    /// unwind (ADR 0902). The one answer of whether what std holds as it
+    /// compares, a heap's, a B-tree's, is dropped as a comparison unwinds
+    /// (#901, #911).
     pub(in crate::lower) fn order_may_panic(&self, ty: Ty<'tcx>) -> bool {
-        self.order_may_panic_in(ty, &mut Vec::new())
+        order_may(&self.recognition(), ty, &|imp| self.impl_may_unwind(imp))
     }
 
-    fn order_may_panic_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
-        let ty = ty.peel_refs();
-        if seen.contains(&ty) {
-            return false;
-        }
-        if let ty::Param(_) | ty::Dynamic(..) | ty::Alias(..) = ty.kind() {
-            return true;
-        }
-        seen.push(ty);
-        let recognition = self.recognition();
-        let impls: Vec<DefId> = [self.ord_trait(), self.partial_ord_trait()]
-            .into_iter()
-            .filter_map(|tr| {
-                recognition.user_impl(ty::TraitRef::new_from_args(self.tcx, tr, recognition.args_of(tr, ty)))
-            })
-            .collect();
-        let may = match ty.kind() {
-            _ if !impls.is_empty() => impls.iter().any(|&imp| self.impl_may_unwind(imp)),
-            // A derived order of the crate's type, as its fields' orders.
-            ty::Adt(adt, args) if self.is_rust_adt(adt.did()) => {
-                (adt.all_fields()).any(|f| self.order_may_panic_in(self.field_ty(f, args), seen))
+    /// Whether a comparison of two `ty`s, by their `Ord` or `PartialOrd`,
+    /// can be seen: `order_may`'s answer of an impl any of whose methods
+    /// isn't quiet (#925), one that prints, counts, panics or writes. The
+    /// one answer of whether a stable sort of `ty`s is std's own, step for
+    /// step, where JS's `sort` would ask another sequence (ADR 0036).
+    pub(in crate::lower) fn order_seen(&self, ty: Ty<'tcx>) -> bool {
+        order_may(&self.recognition(), ty, &|imp| {
+            !impl_quiet(self.tcx, self.krate.quiet_fns, imp)
+        })
+    }
+
+    /// Whether a call of `f`, a closure's or a function's type, can be seen
+    /// (#925): any but one of the crate's that's quiet, or std's a quiet
+    /// one would call, `Ord::cmp` of what `order_seen` says isn't; of
+    /// another, a `dyn Fn`'s or a type parameter's, anyone's.
+    pub(in crate::lower) fn call_seen(&self, f: Ty<'tcx>) -> bool {
+        match *self.reveal(f).kind() {
+            ty::Closure(def_id, _) => !self.krate.quiet_fns.contains(&def_id),
+            ty::FnDef(def_id, args) => {
+                !self.krate.quiet_fns.contains(&def_id)
+                    && !super::analysis::std_quiet(
+                        (self.tcx, &self.recognition()),
+                        (def_id, args.skip_binder(), false),
+                        &|imp| !impl_quiet(self.tcx, self.krate.quiet_fns, imp),
+                        &|id| self.krate.quiet_fns.contains(&id),
+                        &|ty| self.has_drops(ty),
+                    )
             }
-            ty::Adt(_, args) => args.types().any(|arg| self.order_may_panic_in(arg, seen)),
-            ty::Tuple(parts) => parts.iter().any(|part| self.order_may_panic_in(part, seen)),
-            ty::Array(item, _) | ty::Slice(item) => self.order_may_panic_in(*item, seen),
-            _ => false,
-        };
-        seen.pop();
-        may
+            _ => true,
+        }
     }
 
     /// Does JS's `<` order `ty` as Rust does? Numbers, `bool`s (`false <
@@ -634,4 +633,79 @@ fn any_shape(tcx: rustc_middle::ty::TyCtxt<'_>, ty: Ty<'_>) -> bool {
 
 fn is_var(e: &Expr, name: &str) -> bool {
     matches!(&e.kind, js::ExprKind::Var(n) if n == name)
+}
+
+/// Whether comparing two `ty`s, by their `Ord` or `PartialOrd`, may do what
+/// `may` says an impl's methods may: an impl of the crate's or a library's,
+/// hand-written or derived, `may`'s; a derived one's as its fields' orders;
+/// std's types' as what they hold's; a type parameter's, a `dyn`'s or an
+/// opaque type's, anyone's. Std's order of numbers, text and `bool`s does
+/// nothing. Of what may panic (`order_may_panic`) and of what can be seen
+/// (`order_seen`, #925), and of the quiet functions as they're found.
+pub(in crate::lower) fn order_may<'tcx>(
+    recognition: &super::recognition::Recognition<'_, 'tcx>,
+    ty: Ty<'tcx>,
+    may: &dyn Fn(DefId) -> bool,
+) -> bool {
+    let tcx = recognition.tcx;
+    let traits = [
+        std_item(tcx, StdItem::Ord),
+        tcx.require_lang_item(LangItem::PartialOrd, DUMMY_SP),
+    ];
+    order_may_in(recognition, ty, (&traits, may), &mut Vec::new())
+}
+
+/// `order_may`'s, of comparing two `ty`s by their `PartialEq`, `==`.
+pub(in crate::lower) fn eq_may<'tcx>(
+    recognition: &super::recognition::Recognition<'_, 'tcx>,
+    ty: Ty<'tcx>,
+    may: &dyn Fn(DefId) -> bool,
+) -> bool {
+    let traits = [recognition.tcx.require_lang_item(LangItem::PartialEq, DUMMY_SP)];
+    order_may_in(recognition, ty, (&traits, may), &mut Vec::new())
+}
+
+fn order_may_in<'tcx>(
+    recognition: &super::recognition::Recognition<'_, 'tcx>,
+    ty: Ty<'tcx>,
+    (traits, may): (&[DefId], &dyn Fn(DefId) -> bool),
+    seen: &mut Vec<Ty<'tcx>>,
+) -> bool {
+    let tcx = recognition.tcx;
+    let ty = ty.peel_refs();
+    if seen.contains(&ty) {
+        return false;
+    }
+    if let ty::Param(_) | ty::Dynamic(..) | ty::Alias(..) = ty.kind() {
+        return true;
+    }
+    seen.push(ty);
+    let impls: Vec<DefId> = (traits.iter().copied())
+        .filter_map(|tr| recognition.user_impl(ty::TraitRef::new_from_args(tcx, tr, recognition.args_of(tr, ty))))
+        .collect();
+    let rust_adt = |id: DefId| id.is_local() || recognition.foreign.in_library(id);
+    let result = match ty.kind() {
+        _ if !impls.is_empty() => impls.iter().any(|&imp| may(imp)),
+        // A derived order of the crate's type, as its fields' orders.
+        ty::Adt(adt, args) if rust_adt(adt.did()) => {
+            (adt.all_fields()).any(|f| order_may_in(recognition, recognition.field_ty(f, args), (traits, may), seen))
+        }
+        ty::Adt(_, args) => args
+            .types()
+            .any(|arg| order_may_in(recognition, arg, (traits, may), seen)),
+        ty::Tuple(parts) => parts
+            .iter()
+            .any(|part| order_may_in(recognition, part, (traits, may), seen)),
+        ty::Array(item, _) | ty::Slice(item) => order_may_in(recognition, *item, (traits, may), seen),
+        _ => false,
+    };
+    seen.pop();
+    result
+}
+
+/// Whether each method the impl `imp` writes is quiet (#925).
+pub(in crate::lower) fn impl_quiet(tcx: rustc_middle::ty::TyCtxt<'_>, quiet: &IndexSet<DefId>, imp: DefId) -> bool {
+    tcx.associated_item_def_ids(imp)
+        .iter()
+        .all(|&method| !matches!(tcx.def_kind(method), rustc_hir::def::DefKind::AssocFn) || quiet.contains(&method))
 }

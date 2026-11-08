@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "sort-cached-key-each-compare",
     breaks: "`sort_by_cached_key` calls the key at each comparison",
     file: "src/runtime/slice_ops.js",
-    find: "  const keyed = v.map((item, i) => [f(item), i, item]);\n  keyed.sort((a, b) => cmp(a[0], b[0]) || a[1] - b[1]);\n",
-    replace: "  const keyed = v.map((item, i) => [item, i, item]);\n  keyed.sort((a, b) => cmp(f(a[0]), f(b[0])) || a[1] - b[1]);\n",
+    find: "    keyed.sort((a, b) => cmp(a[0], b[0]) || a[1] - b[1]);\n",
+    replace: "    keyed.sort((a, b) => cmp(f(a[2]), f(b[2])) || a[1] - b[1]);\n",
     tests: ["test/corpus.test.ts", "-t", "slice_methods"],
   },
   {

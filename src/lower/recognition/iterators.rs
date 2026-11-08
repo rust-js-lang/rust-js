@@ -997,22 +997,6 @@ pub(in crate::lower) fn dyn_iter_trait<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) ->
         .filter(|&id| tcx.is_diagnostic_item(sym::Iterator, id) || is_double_ended(tcx, id))
 }
 
-/// The items of a slice `def_id`, std's, sorts by std's unstable algorithm,
-/// of its `args`, whose order its layout picks, which a caller of a generic
-/// one gives, `TSort` (ADR 0471).
-pub(crate) fn unstable_sort_items<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-    args: ty::GenericArgsRef<'tcx>,
-) -> Option<Ty<'tcx>> {
-    let imp = tcx.impl_of_assoc(def_id)?;
-    (is_std_crate(tcx, def_id)
-        && tcx.type_of(imp).skip_binder().is_slice()
-        && unstable_sort(tcx.item_name(def_id).as_str()).is_some())
-    .then(|| args.types().next())
-    .flatten()
-}
-
 /// What a `Copied` steps, its `I` of a `Copied<I>`, whose JS iterator it is,
 /// each item a number or what's copied as it is (ADR 0480).
 pub(crate) fn copied_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {

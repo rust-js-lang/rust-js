@@ -76,7 +76,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0024 The `webapi` crate: DOM bindings generated from WebIDL](0024-web-crate.md) *(extended by 0891: `new X` of a method)*
 - [0025 `Vec`, `for` loops, `RefCell` and `&mut` to objects](0025-vec-loops-refcell-mut.md) *(extended by 1042: a loop over an array counts its indices)*
 - [0034 String methods are JS's; a `char` is a one-character string; `format!` is `+`](0034-strings-and-chars.md)
-- [0036 An iterator is a JS array; `Ordering` is -1, 0 or 1](0036-iterators-and-sorting.md) *(extended by 0748: a `for` of a slice's first items; amended: `collect()` into `()`; amended: a key with a destructor, #776, #783)*
+- [0036 An iterator is a JS array; `Ordering` is -1, 0 or 1](0036-iterators-and-sorting.md) *(extended by 0748: a `for` of a slice's first items; amended: `collect()` into `()`; amended: a key with a destructor, #776, #783; amended: a stable sort whose calls can be seen is std's driftsort, #925)*
 - [0037 `thread_local!` is a variable of its module](0037-thread-locals.md) *(amended: a function of the crate's that only makes a value is made as its module loads; a boxed closure, `Box::new`, only makes a value; an initializer that reads what may change, prints, or gives std the crate's closure is made where it's first used, #376; a library's flag, and another module's, read as the module loads; a `pub` one made where it's first used refused; amended by 1006: a `pub` one is made as its module loads, then every one its module's load can make, rd120; what a binding's call runs is `loaded_by`'s)*
 - [0028 Imports from JS modules: `#[link_name = "module#path"]`](0028-js-module-imports.md) *(amended: a binding crate's static of a default export is imported by the name it gives, rd422)*
 - [0029 `async`/`.await` are JS's `async`/`await`; a future is a promise](0029-async-await.md)
@@ -390,7 +390,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0339 `get_disjoint_mut`: a `&mut` to each, checked as std checks them](0339-get-disjoint-mut.md)
 - [0340 A slice of `MaybeUninit`s, and a `const` block of no JS value](0340-uninit-slices-and-coded-const-blocks.md)
 - [0341 A byte slice's `escape_ascii` and `utf8_chunks`](0341-byte-slice-text.md)
-- [0342 An unstable sort is std's own, where its ties can be told apart](0342-unstable-sort.md) *(amended: a comparison that panics leaves each item once, #908)*
+- [0342 An unstable sort is std's own, where its ties can be told apart](0342-unstable-sort.md) *(amended: a comparison that panics leaves each item once, #908; amended: the stable sorts split the same way, #925)*
 - [0343 A `&mut` to what's in an `Option` or a `Result`](0343-option-result-mut.md)
 - [0344 `extract_if` is a lazy JS iterator](0344-extract-if.md)
 - [0345 A B-tree's `first_entry` and `last_entry`](0345-btree-end-entries.md)

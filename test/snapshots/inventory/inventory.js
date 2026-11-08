@@ -11,6 +11,7 @@ import {
   $mutGet,
   $orInsert,
   $partialCmp,
+  $sortStable,
   $toFixed,
   $unwrap,
 } from "@rust-js/runtime";
@@ -155,7 +156,7 @@ export function report() {
   out += `${storeDisplay_fmt(store)}\n[${store.log.map((item) => $debugStr(item)).join(", ")}]\n`;
   const half = discount(50);
   const prices = [3.5, 1.25, 9, 0.75];
-  prices.sort((a, b) => $unwrap($partialCmp(b, a)));
+  $sortStable(prices, (a, b) => $unwrap($partialCmp(b, a)) < 0, "general8", 8);
   const cheap = prices.map((p) => half(p));
   const arg = events.filter((e) => e.TAG === "Sale").length;
   out += `[${prices.map((item) => $debugF64(item)).join(", ")}] [${cheap.map((item) => $debugF64(item)).join(", ")}] ${arg}\n`;

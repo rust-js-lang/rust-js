@@ -566,6 +566,40 @@ export function dedup(v) {
 - `std::cmp::Reverse` sorts high to low.
 - A sort is stable, as JS's is.
 
+Where a sort's calls can be seen, its comparison is one that prints,
+counts or panics, or an `Ord` of your own that does, it's std's own sort,
+`$sortStable`, which asks what std asks in std's order and leaves what a
+panic leaves where std's does; its last two arguments are what std picks
+by the items' type and their size
+([ADR 0036](../../decisions/0036-iterators-and-sorting.md)). A comparison
+that only compares, as `byName`'s, stays JS's `sort`:
+
+```rust
+pub struct Entry {
+    pub name: String,
+    pub hits: u32,
+}
+
+pub fn by_hits(entries: &mut [Entry], asked: &mut u32) {
+    entries.sort_by(|a, b| {
+        *asked += 1;
+        b.hits.cmp(&a.hits)
+    });
+}
+```
+
+```js
+import { $cmp, $sortStable } from "@rust-js/runtime";
+
+export function byHits(entries, asked) {
+  function compare(a, b) {
+    asked.value = (asked.value + 1) >>> 0;
+    return $cmp(b.hits, a.hits);
+  }
+  $sortStable(entries, (a, b) => compare(a, b) < 0, "general8", 16);
+}
+```
+
 JS's own `sort()` orders strings by their UTF-16 units, which differs
 from Rust's code points where two strings first differ at a character past
 U+FFFF and one from U+E000 to U+FFFF. Rust says that order by comparing

@@ -11,6 +11,7 @@ import {
   $iter,
   $orInsert,
   $setEq,
+  $sortStable,
   $sortedKeys,
   $treeFrom,
 } from "@rust-js/runtime";
@@ -32,7 +33,7 @@ function counts(items, TPartialEq, THash, TMap) {
 function most(items, TPartialEq, THash, TOrd, TMap) {
   const counts$1 = counts(items, TPartialEq, THash, TMap);
   const best = Array.from(counts$1);
-  best.sort((a, b) => $cmp(b[1], a[1]) || TOrd.cmp(a[0], b[0]));
+  $sortStable(best, (a, b) => ($cmp(b[1], a[1]) || TOrd.cmp(a[0], b[0])) < 0, "general8", 8);
   return best[0];
 }
 

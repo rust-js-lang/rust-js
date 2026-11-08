@@ -3,7 +3,6 @@
 import {
   $catchUnwind,
   $closing,
-  $cmp,
   $dropEach,
   $holding,
   $iter,
@@ -11,6 +10,7 @@ import {
   $print,
   $range,
   $retain,
+  $sortStable,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -172,7 +172,7 @@ function main() {
       return (x + zero(g)) >>> 0;
     }
     try {
-      const value = v.sort((a, b) => $cmp(f(a), f(b)));
+      const value = $sortStable(v, (a, b) => f(a) < f(b), "general8", 4);
     } finally {
       dDrop_drop(g);
     }

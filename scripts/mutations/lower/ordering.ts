@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "order-of-fields-unasked",
     breaks: "a derived order of the crate's struct is taken never to panic, though a field's does: a heap of them leaks the top `pop` took as a comparison panics (#901)",
     file: "src/lower/ordering.rs",
-    find: "            ty::Adt(adt, args) if self.is_rust_adt(adt.did()) => {\n                (adt.all_fields()).any(|f| self.order_may_panic_in(self.field_ty(f, args), seen))\n            }\n",
+    find: "        ty::Adt(adt, args) if rust_adt(adt.did()) => {\n            (adt.all_fields()).any(|f| order_may_in(recognition, recognition.field_ty(f, args), (traits, may), seen))\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^heap_sift_unwinds.rs$"],
   },
@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "order-never-panics",
     breaks: "a hand-written order that may panic is taken never to, so what std drops as it unwinds leaks (#901)",
     file: "src/lower/ordering.rs",
-    find: "            _ if !impls.is_empty() => impls.iter().any(|&imp| self.impl_may_unwind(imp)),\n",
-    replace: "            _ if !impls.is_empty() => false,\n",
+    find: "        _ if !impls.is_empty() => impls.iter().any(|&imp| may(imp)),\n",
+    replace: "        _ if !impls.is_empty() => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^heap_sift_unwinds.rs$"],
   },
   {
@@ -393,5 +393,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
     snapshots: true,
+  },
+  {
+    name: "order-seen-impls-unasked",
+    breaks: "an `Ord` of the crate's that counts or prints is taken as unseen, so its sort is JS's and asks another sequence (#925)",
+    file: "src/lower/ordering.rs",
+    find: "        order_may(&self.recognition(), ty, &|imp| {\n            !impl_quiet(self.tcx, self.krate.quiet_fns, imp)\n        })",
+    replace: "        order_may(&self.recognition(), ty, &|_| false)",
+    tests: ["test/corpus.test.ts", "-t", "^sort_stable_seen.rs$"],
   },
 ];

@@ -16,6 +16,7 @@ import {
   $powf,
   $rcClone,
   $rcDrop,
+  $sortStable,
   $unwrap,
 } from "@rust-js/runtime";
 
@@ -85,7 +86,12 @@ function main() {
     throw error;
   }
   try {
-    sorted.sort((a, b) => $unwrap($partialCmp(a.impl.area(a.value), b.impl.area(b.value))));
+    $sortStable(
+      sorted,
+      (a, b) => $unwrap($partialCmp(a.impl.area(a.value), b.impl.area(b.value))) < 0,
+      "general8",
+      8,
+    );
   } catch (error) {
     for (const item of sorted) {
       $rcDrop(item);

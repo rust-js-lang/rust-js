@@ -344,3 +344,110 @@ Mutations: `sorted-dropping-replaced-kept`, `sorted-dropping-curr-kept`,
 (`lower/std_types/slice.ts`) and `is-sorted-by-key-leaves-none`
 (`lower/mir/iter/closing.ts`). The guide's limitations no longer list it.
 Kind: missing case, both. Area: iterators for #776, drops-unwind for #783.
+
+## Amendment: a stable sort whose calls can be seen is std's driftsort (2026-11-08, #925, #907)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept where they can; JS's `sort` stays where nothing
+can tell the two apart (case "none").
+
+`sort`, `sort_by` and `sort_by_key` were JS's `sort`, which is stable as
+Rust's is, but asks its comparator another sequence of calls. A comparator,
+an `Ord` or a key function that prints, counts or panics saw them:
+`[5, 3, 8, 1, 9, 2, 7].sort_by(..)` called `cmp 3 5, cmp 8 5, cmp 1 8 ..`
+natively and `cmp 3 5, cmp 8 3, cmp 8 5 ..` as JS; and a panic left
+another order, whose drops followed it (#907's 66 unwind-table rows).
+
+**Where a sort's calls can be seen, it's `$sortStable(v, isLess, kind,
+size)`, std's driftsort step for step** (`core::slice::sort::stable`,
+rustc 1.99): insertion sort up to 20; else runs found or made (`create_run`,
+`min_good_run_len`), merged lazily as powersort's tree has them
+(`merge_tree_depth`), each unsorted one quicksorted stably into scratch
+(`stable_partition`, std's pivot and its left ancestor), eager driftsort
+where the pivots are bad too often, and its small sort, `"general8"` or
+`"general"` (`small_sort_general` of a `Freeze` item of at most 16 bytes,
+or more) or `"fallback"` (insertion, of one that isn't `Freeze`, which also
+passes no ancestor pivot on). `size` sizes std's scratch, `max(len - len /
+2, min(len, 8 MB / size), 48)`, which decides whether two unsorted runs are
+merged lazily; a zero-sized item's sort asks nothing. `is_less` is std's:
+`T::lt`, `compare(a, b) == Less`, `f(a).lt(&f(b))`, as `sort_is_less` writes them for the unstable sort. Its guards are std's:
+`merge`'s `MergeState` writes what's left of its copy back as a comparison
+panics, a partition leaves the slice as it was, and the insertion and small
+sorts' (ADR 0342's #908) are shared with the unstable sort.
+
+```rust
+people.sort_by(|a, b| a.name.cmp(&b.name)); // JS's sort: nothing seen
+loud.sort(); // `Ord` that prints
+```
+
+```js
+people.sort((a, b) => $cmp(a.name, b.name));
+$sortStable(loud, (a, b) => loudOrd_cmp(a, b) < 0, "general8", 8);
+```
+
+**Whether a sort's calls can be seen has one owner each**:
+- `order_seen(T)` (src/lower/ordering.rs), `order_may_panic`'s shape with
+  "seen" for "may panic" (`order_may`, now the one walk of both): an impl
+  of the crate's or a library's any of whose methods isn't quiet, a derived
+  one as its fields', std's types as what they hold, a type parameter's, a
+  `dyn`'s or an opaque type's always.
+- `call_seen(F)`, the quiet functions (`analysis/unwinding.rs`'s `quiet`,
+  built on ADR 0902's `steps_on`): the crate's functions and closures that
+  never unwind, print nothing, write nothing but their own locals (no place
+  through a reference: a captured `&mut`, a `static mut`), and call only
+  quiet ones or std's `std_quiet` ones: comparisons and `==` of unseen
+  orders and equalities (`eq_may`, the same walk of `PartialEq`),
+  `Ordering`'s `then`, `reverse` and `then_with` of a quiet function,
+  arithmetic of numbers (a division or remainder only by a constant
+  neither 0 nor -1), a number's `total_cmp`, text's and a collection's
+  `len` and views, text's `chars()` and cases and a std iterator of them
+  counted or compared, `format!` of what can't fail to show, an
+  `Option`'s tests and `map` of a quiet function, a clone of text, and
+  JS's `localeCompare` (a builtins binding that reads only). An exhaustive
+  `match`'s impossible branch, which never runs, is no way to be seen.
+- `stable_sort_seen` (src/lower/std_types/slice.rs) asks them: of `sort()`,
+  the items' order; of `sort_by`, the comparator, unless it orders by UTF-16
+  units, JS's own string order (ADR 0945); of `sort_by_key`, the key's
+  function, its order and its drop, which runs after each comparison; of a
+  type parameter's items, always, as its caller's type may be seen.
+
+A type parameter's items are sorted as its caller's type picks: `kind` and
+`size` are its caller's, `TStableSort` (a new type fact) and `TSize`, as
+the unstable sort's `TSort` is (ADR 0471). A type whose layout is known
+though it holds one behind a reference, `(&T, usize)`, is its own. A
+generic caller bounded by the crate's trait that extends `Iterator` can't
+give them of `T::Item` (#934), as it couldn't the unstable sort's: refused,
+naming #934 (`extension_trait_sorted_refused`; `extension_trait_params`
+keeps its dictionaries' cases with a `reverse()` in the sort's place).
+
+`sort_by_cached_key` sorts its `(key, index)` pairs with std's unstable sort
+where the keys' order can be seen, `$sortUnstable` of the pairs by the
+tuple's `lt` (the keys' `partial_cmp`, then the indexes), as std does.
+Of a key that holds a type parameter, what that sort picks by `(K, usize)`
+is its caller's: a built slot's `Sort` fact, beside its `Size` and `Align`
+(#737), `KUsizeSort`, so itertools' `sorted_by_cached_key` still compiles,
+and is exact.
+
+**What moves to `$sortStable`**: a comparator or key that may panic,
+`partial_cmp(..).unwrap()` of floats (f32.js; #935 proposes proving the order
+a panic leaves unseen), a `%` by what may be zero, a key that may panic; a
+`dyn`'s or a generic impl's order; a type parameter's items
+(generic_from_iter_in_place.js, map_set_methods.js).
+
+**Tests.** `sort_stable_seen` runs lengths 0 to 300 of a counting
+comparator, and six shapes (random, few keys, sorted, reversed, runs, all
+equal) of a `Copy` item of 8 bytes, one of 24, one that isn't `Freeze`, a
+counting `Ord`, `String` pairs and `sort_by_cached_key`, against
+`wasm32-wasip1`'s native Rust (`//@ native: wasm32`), each sort's count,
+trace of calls and order. `sort_stable_unwinds` panics at the 1st to the
+1500th comparison of lengths 4 to 300, by `sort_by`, `sort_by_key` and
+`sort`. Before landing, a harness ran the runtime against native std on
+37,680 sorts (every length to 300, then up to 400,000, past the full
+scratch; three kinds, eight shapes, five panic points) with the same count,
+trace and order each. #907's 66 unwind-table case-builds pass. Mutations:
+scripts/mutations/runtime/sort_stable.ts, lower/std_types/slice.ts,
+lower/analysis/unwinding.ts, lower/ordering.ts.
+
+The B-tree's bulk build (`collect`, `append`) sorts with driftsort too;
+`$treeFrom` still sorts with JS's sort, and is #926's with the node layer.
+Kind: wrong decision. Area: iterators.

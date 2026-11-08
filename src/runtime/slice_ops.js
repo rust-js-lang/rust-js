@@ -350,9 +350,19 @@ function $splitChunk(v, n, last, cut = $copyOf) {
 
 // `sort_by_cached_key(f)`: `f` of each item once, in order, then sorted by
 // those keys, ties in the order they were.
-function $sortByCachedKey(v, f, cmp) {
+function $sortByCachedKey(v, f, cmp, kind) {
   const keyed = v.map((item, i) => [f(item), i, item]);
-  keyed.sort((a, b) => cmp(a[0], b[0]) || a[1] - b[1]);
+  // Where the keys' comparisons can be seen, std's unstable sort of the
+  // `(key, index)` pairs, by the tuple's `lt`: the keys' `partial_cmp`,
+  // then the indexes where they're equal (#925).
+  if (kind !== undefined) {
+    $sortUnstable(keyed, (a, b) => {
+      const order = cmp(a[0], b[0]);
+      return order === 0 ? a[1] < b[1] : order < 0;
+    }, kind);
+  } else {
+    keyed.sort((a, b) => cmp(a[0], b[0]) || a[1] - b[1]);
+  }
   keyed.forEach(([, , item], i) => (v[i] = item));
 }
 

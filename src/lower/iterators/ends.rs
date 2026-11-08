@@ -2,6 +2,7 @@
 //! source's that runs Rust.
 
 use super::*;
+use crate::lower::std_types::slice::SortWith;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `it.filter(test)`; of items with a destructor, `dropping`, each it
@@ -139,6 +140,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `v.sort()`, or `v.sort_by_key(key)`: in place (ADR 0036), of the items'
     /// value. JS's `sort()` compares as strings: right for `bool`s, and
     /// numbers need `a - b`, strings `$cmp`, by code point (ADR 0183).
+    /// Where its calls can be seen, std's own, `$sortStable` (#925).
     pub(in crate::lower) fn sort_values(
         &mut self,
         key: Option<Expr>,
@@ -149,6 +151,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let method = |items: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(items, name), list);
+        let with = if key.is_some() { SortWith::Key } else { SortWith::Order };
+        if self.stable_sort_seen(with, generic_args) {
+            let values = std::iter::once(items).chain(key).collect();
+            return self.stable_sort_call(with, values, generic_args, span, out);
+        }
         let (a, b) = (Expr::var("a"), Expr::var("b"));
         Ok(match key {
             // Sorting, in place (ADR 0036). JS's `sort()` compares as strings:

@@ -478,4 +478,12 @@ export const mutations: Mutation[] = [
     replace: "    size.into_iter().filter(|each| matches!(each, Asked::Slot(..))).collect()\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
   },
+  {
+    name: "built-slot-sort-unasked",
+    breaks: "generic code's `sort_by_cached_key` of a key that holds a type parameter is refused, its `(K, usize)` pairs' sort asked of no caller (#925)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "    matches!(fact, TypeFact::Size | TypeFact::Align | TypeFact::Sort)",
+    replace: "    matches!(fact, TypeFact::Size | TypeFact::Align)",
+    tests: ["test/corpus.test.ts", "-t", "^sort_stable_seen.rs$"],
+  },
 ];

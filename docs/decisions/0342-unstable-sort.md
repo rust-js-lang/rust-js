@@ -111,3 +111,15 @@ four calls, of lengths 4 to 90, a `Big` partitioned by Hoare's scheme and a
 `Celled` sorted by insertion alone, under panic points, the slice shown
 after each; its thirty, one small sort, from its first comparison to its
 merge's last. The unwind table's 62 case-builds of #908 pass.
+
+## Amendment: the stable sorts split the same way (2026-11-08, #925)
+
+The split this ADR made for the unstable sorts, JS's `sort` where nothing
+is seen and std's own where it can be, now holds for `sort`, `sort_by` and
+`sort_by_key` too: `$sortStable`, std's driftsort ([ADR 0036's
+amendment](0036-iterators-and-sorting.md)). It shares this sort's
+`$insertionSort`, `$smallSortGeneral`, `$choosePivot` and `$existingRun`
+(now of a range). Both sorts' `is_less` is one function,
+`sort_is_less`. `sort_by_cached_key`, which std sorts with this sort, is
+`$sortUnstable` of its `(key, index)` pairs where the keys' order can be
+seen.

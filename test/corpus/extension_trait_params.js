@@ -8,7 +8,6 @@ import {
   $iter,
   $next,
   $roomForHint,
-  $sort,
   $traitImpl,
 } from "@rust-js/runtime";
 
@@ -16,13 +15,13 @@ export function entry() {
   main();
 }
 
-const $iSorted = new WeakMap();
+const $iReversed = new WeakMap();
 
-function iSorted(IIterator, IItemSize) {
-  return $traitImpl($iSorted, [IIterator, IItemSize], () => ({
-    sorted(self, SelfItemOrd) {
+function iReversed(IIterator, IItemSize) {
+  return $traitImpl($iReversed, [IIterator, IItemSize], () => ({
+    reversed(self, SelfItemOrd) {
       const v = Array.from($roomForHint($given(self, IIterator, true), IItemSize, false));
-      $sort(v, SelfItemOrd.cmp);
+      v.reverse();
       return v;
     },
   }));
@@ -55,10 +54,10 @@ function countIterator_next(count) {
   count[0] = value;
   return ((count[0] * 3) & 255) % 5;
 }
-function through(t, TSorted, TItemOrd) {
-  return TSorted.sorted(t, TItemOrd);
+function through(t, TReversed, TItemOrd) {
+  return TReversed.reversed(t, TItemOrd);
 }
-function counted(t, TIterator, TSorted) {
+function counted(t, TIterator, TReversed) {
   return $count($given(t, TIterator, true));
 }
 function summed(t, TSummed) {
@@ -68,16 +67,16 @@ function dynamic(s) {
   return s.impl.total(s.value);
 }
 function main() {
-  const CountSorted = iSorted({ next: countIterator_next }, 1);
-  const IntoIterSorted = iSorted({ next: $next }, 4);
+  const CountReversed = iReversed({ next: countIterator_next }, 1);
+  const IntoIterReversed = iReversed({ next: $next }, 4);
   console.log(
-    `[${through($iter([5, 3, 9, 1]), IntoIterSorted, { cmp: $cmp }).join(
+    `[${through($iter([5, 3, 9, 1]), IntoIterReversed, { cmp: $cmp }).join(
       ", ",
-    )}] [${through([4], CountSorted, { cmp: $cmp }).join(", ")}]`,
+    )}] [${through([4], CountReversed, { cmp: $cmp }).join(", ")}]`,
   );
-  console.log(`[${CountSorted.sorted([5], { cmp: $cmp }).join(", ")}]`);
+  console.log(`[${CountReversed.reversed([5], { cmp: $cmp }).join(", ")}]`);
   console.log(
-    `${counted([3], { next: countIterator_next }, CountSorted)} ${counted($iter([1, 2]), { next: $next }, IntoIterSorted)}`,
+    `${counted([3], { next: countIterator_next }, CountReversed)} ${counted($iter([1, 2]), { next: $next }, IntoIterReversed)}`,
   );
   console.log(`${summed([3], countSummed)} ${summed($iter([1, 2]), intoIterSummed)}`);
   console.log(

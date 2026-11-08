@@ -273,6 +273,7 @@ const ownUnwinding: Record<string, string> = {
   "src/runtime/retain.js": "a `Vec`'s `retain` of a test that may panic, its items kept as std's guard keeps them",
   "src/runtime/should_panic.js": "a `#[should_panic]` test's panic caught, not a drop",
   "src/runtime/sift_down.js": "a `BinaryHeap`'s sift's hole written back as a comparison panics, as std's `Hole` writes it, not a drop (#901)",
+  "src/runtime/sort_stable.js": "a stable sort's merge, its copy written back where the gap is as a comparison panics, as std's `MergeState` writes it, not a drop (#925)",
   "src/runtime/sort_unstable.js": "an unstable sort's gaps, and its small sort's merge, written back as a comparison panics, as std's guards write them, not a drop (#908)",
   "src/runtime/sift_up.js": "a `BinaryHeap`'s sift's hole written back as a comparison panics, as std's `Hole` writes it, not a drop (#901)",
   "src/runtime/slice_ops.js": "a slice's `is_sorted_by` and `retain_mut` of a function that may panic",

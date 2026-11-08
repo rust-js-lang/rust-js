@@ -11,6 +11,7 @@ import {
   $partialCmp,
   $powiF32,
   $round,
+  $sortStable,
   $toFixed,
   $unwrap,
 } from "@rust-js/runtime";
@@ -96,7 +97,7 @@ function main() {
     `${$displayF32(temps.reduce((a, b) => Math.fround(a + b), -0))} ${$displayF32(temps.reduce((a, b) => Math.fround(a * b), 1))}`,
   );
   const sorted = temps.slice();
-  sorted.sort((a, b) => $unwrap($partialCmp(a, b)));
+  $sortStable(sorted, (a, b) => $unwrap($partialCmp(a, b)) < 0, "general8", 4);
   console.log(`[${sorted.map((item) => $debugF32(item)).join(", ")}]`);
   console.log(
     `${$displayF32(total(temps, 0, { add: (a, b) => Math.fround(a + b) }))} ${$displayF64(total([0.1, 0.2], 0, { add: (a, b) => a + b }))}`,

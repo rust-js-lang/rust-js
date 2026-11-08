@@ -393,6 +393,13 @@ pub(super) fn tool_link_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Symbol> {
         .value_str()
 }
 
+/// Whether `def_id` is the builtins' binding of JS's own
+/// `String.prototype.localeCompare`, which reads two strings and changes
+/// nothing: a comparison whose calls can't be seen (#925).
+pub(in crate::lower) fn is_locale_compare(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    is_binding(tcx, def_id) && tool_link_name(tcx, def_id).is_some_and(|name| name.as_str() == "localeCompare")
+}
+
 /// A constant's JS name, `#[rust_js::link_name = "Node.ELEMENT_NODE"]`, a
 /// binding crate's, webapi's of WebIDL's: what a read of it is, where its
 /// value is Rust's, which a `match` of it compares (ADR 0031, amended,
