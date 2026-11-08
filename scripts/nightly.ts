@@ -76,6 +76,15 @@ export const jobs: Record<string, Part[]> = {
     cores: 3,
     timeout: 20 * minutes,
   })),
+  // Each `Option` place's form, written each way and read each way, all 580
+  // programs (#855, ADR 1096).
+  nones: parts("nones", 4, (i) => ({
+    cmd: ["bun", "test", "--timeout=600000", "test/none-matrix.test.ts"],
+    env: { ...compiler, NONE_MATRIX: "all", RUST_JS_CASES: `${i}/4` },
+    after: ["build"],
+    cores: 3,
+    timeout: 20 * minutes,
+  })),
   // The day's seed's groups of the corpus's cases, each one crate (#853,
   // ADR 1103).
   neighbours: parts("neighbours", cores, (i) => ({

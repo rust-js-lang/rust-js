@@ -138,3 +138,33 @@ mutations of the askers routed to the owner retargeted, each caught (one,
 `optional-field-made-null`, removed with `null_where_made`, which
 `optional-field-none-as-null` covers); the architecture test, shown to
 fail of a predicate asked and a fact made outside the owner.
+
+## Amendment: the `None` matrix (2026-11-08, #855)
+
+Each writer asks a place's `NoneForm` and each reader what it may trust of
+it apart, so a writer and a reader of two forms are where they disagree:
+nullability had the highest share of regressions (7 of 24, #855). The
+space is small enough to run whole. `test/none-matrix.ts` writes a program
+for each **place** (a local; a plain, a nullable and a nullable optional
+field, its form `Nested` of an `Option<Option<i32>>` and `Value` of a `()`
+by its payload; a function's result and its parameter, each plain and
+`#[rust_js::nullable]`; a nullable thread-local's `RefCell`; a `Vec`'s
+item; a `RefCell`; and a `&mut`), each **payload** (`i32`, `String`, `()`,
+`Option<i32>` and a struct) and each **writer** (a literal, through a
+local, from a nullable field, from a function and a nullable function,
+`take`, `map`, `filter`, a cell's `take`, `pop`), its `Some` and its
+`None` each read by each **reader** (`{:?}`, `is_some` and `is_none`, a
+`match`, `== None`, `?`, `map_or`, `if let`, given to a nullable parameter
+and to a plain field): 580 programs, each in both builds, all a night and
+six per push where a `None`'s form changes (`check:fast`'s `nones`). The
+two places' payloads rust-js refuses by design, an optional field of `()`
+or of a nested `Option`, have no program, with why.
+
+Its first run: #957 (P0), a nested nullable field written from the
+crate's own nullable function's `None`, which is `null`, reads it as
+`Some(None)`, its conversion testing `=== undefined`; #958 (P1), a
+temporary cell's `take`, `Cell::new(x).take()`, crashes rust-js (58
+programs); and #959 (P3), the refusal of `optional` of a nested field
+names a `#[rust_js::nullable]` field as what it needs, which it is.
+`wrong` and `refused` list them, keyed `<build>:<program>`, so they only
+shrink.
