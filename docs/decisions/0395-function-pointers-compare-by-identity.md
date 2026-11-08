@@ -57,3 +57,26 @@ instance given its caller's dictionaries, taken in generic code, is still
 the arrow made where it's taken: one function for each time its maker
 runs. Corpus case `generic_fn_value_is_one_function`; the metamorphic net's
 `fn_pointer_eq` and `fn_compared_by_its_pointer` rewrites run as native.
+
+## Amendment: an instance may be two functions, as Rust promises one of none (#987)
+
+An instance given its caller's dictionaries, `shown::<T>` taken in generic
+code, stays the arrow made where it's taken. #987 asked for one function
+for each set of dictionaries, a `WeakMap` by them as `$traitImpl`'s. But a
+concrete caller makes its std dictionaries where it calls,
+`pick({ fmt: (value) => String(value) })`, so no cache keyed by them is
+one function across calls. #974's `const`s are one per module, so
+`shown::<u8>` taken in two modules is two functions too. Exactness would
+mean giving the instance to generic code as a dictionary is given, made
+once in the crate. The user decided against it (2026-11-08): Rust doesn't
+promise the answer either. rustc's `unpredictable_function_pointer_comparisons`
+lint warns of `==` of two function pointers, and std's `ptr::fn_addr_eq`
+says the same function may have different addresses. This is ADR 0262's
+second case, listed in its Consequences and in the guide's differences
+(`semantics.md`, 47). `test/lowering-fn-identity.test.ts` pins today's
+answers so they can't change unseen: in one body, across calls, across
+modules `false`, and in one module `true`.
+
+And `ptr::fn_addr_eq(f, g)`, which that lint suggests in place of `f ==
+g`, is `f === g`, as `==` of them is. It was refused as addressable
+memory. Corpus case `fn_addr_eq_compares_functions`.

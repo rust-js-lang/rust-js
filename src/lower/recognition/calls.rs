@@ -311,7 +311,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if diagnostic("mem_swap") {
             return Some(Some(Std::Swap));
         }
-        if diagnostic("ptr_eq") {
+        // `ptr::fn_addr_eq(f, g)`, what rustc's lint of `f == g` of two
+        // function pointers asks for: the same function, `===`, as `==` of
+        // them is (ADR 0395, #987).
+        if diagnostic("ptr_eq") || std_path(tcx, def_id) == "std::ptr::fn_addr_eq" {
             return Some(Some(Std::PtrEq));
         }
         // `ptr::hash(p, state)`, its pointer's address, as `*const T`'s

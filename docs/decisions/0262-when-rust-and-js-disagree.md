@@ -343,6 +343,20 @@ react.dev's TopNav passes the same closure instead.
   a DevTools listener list or a read of `.name` tells them apart, which
   React's code doesn't do; calling it does the same. Listed in the guide's
   differences (`semantics.md`, 43).
+- **A generic function's instance may be two functions**, the second
+  case's, which the user decided (2026-11-08, #987, ADR 0395, amended):
+  `shown::<T>` taken as a value in generic code, given its caller's
+  dictionaries, is the arrow made where it's taken, one for each time its
+  maker runs, so `pick::<u8>() == pick::<u8>()` is `false`; and an
+  instance its module knows whole is that module's `const`, one per
+  module, so `shown::<u8>` taken in two modules is two functions (#974).
+  Rust promises neither answer: rustc's
+  `unpredictable_function_pointer_comparisons` lint warns of `==` of two
+  function pointers, and std's `ptr::fn_addr_eq`, which it suggests, says
+  the same function may have different addresses and different ones the
+  same. Only a comparison of the pointers tells them apart; calling one
+  does the same. Pinned by `test/lowering-fn-identity.test.ts`. Listed in
+  the guide's differences (`semantics.md`, 47).
 
 ## Amendment: the stack's depth
 

@@ -1716,4 +1716,15 @@ React and JSX are [their own pages](README.md#react).
     `Option::unwrap()` on a `None` value``. Both throw there; only what
     catches it, JS or a `catch_unwind`, sees which (ADR 0262, the user's
     decision, 2026-11-02, rd519; [ADR 1066](../decisions/1066-a-getters-function-unwrapped-where-its-called-is-the-read.md)).
+47. A generic function's instance may be two functions. `shown::<T>`,
+    taken as a value in generic code, is made each time the function
+    that takes it runs, so `pick::<u8>() == pick::<u8>()` is `false`. And
+    `shown::<u8>` taken in two modules is two functions. Calling them
+    does the same; only a comparison of the pointers, `==` or
+    `ptr::fn_addr_eq`, tells them apart. Rust doesn't promise one answer
+    either, as rustc's `unpredictable_function_pointer_comparisons` lint
+    and `fn_addr_eq`'s docs say. Within one module, an instance of known
+    types, `shown::<u8>`, is one function (ADR 0262, the user's decision,
+    2026-11-08, #987; [ADR 0395](../decisions/0395-function-pointers-compare-by-identity.md),
+    amended).
 

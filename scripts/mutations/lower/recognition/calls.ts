@@ -26,13 +26,22 @@ export const mutations: Mutation[] = [
     breaks:
       "`std::ptr::eq` of JS objects is rejected as a call rust-js doesn't support",
     file: "src/lower/recognition/calls.rs",
-    find: '        if diagnostic("ptr_eq") {',
-    replace: "        if false {",
+    find: '        if diagnostic("ptr_eq") || std_path(tcx, def_id) == "std::ptr::fn_addr_eq" {',
+    replace: '        if std_path(tcx, def_id) == "std::ptr::fn_addr_eq" {',
     tests: [
       "test/lowering-bindings.test.ts",
       "-t",
       "ptr::eq of JS objects is whether they're one",
     ],
+  },
+  {
+    name: "fn-addr-eq-unrecognized",
+    breaks:
+      "`ptr::fn_addr_eq(f, g)`, what rustc's lint of `f == g` of two function pointers asks for, is refused as addressable memory (#987)",
+    file: "src/lower/recognition/calls.rs",
+    find: '        if diagnostic("ptr_eq") || std_path(tcx, def_id) == "std::ptr::fn_addr_eq" {',
+    replace: '        if diagnostic("ptr_eq") {',
+    tests: ["test/corpus.test.ts", "-t", "^fn_addr_eq_compares_functions.rs$"],
   },
   {
     name: "iter-source-unknown",
