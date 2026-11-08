@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "discriminant-of-a-callers-type-zero",
+    breaks:
+      "`mem::discriminant` of a type parameter's value is the constant `0`, so `discriminant(&Circle(1.0)) == discriminant(&Square(2.0))` in generic code is `true` (#1014)",
+    file: "src/lower/std_types/values.rs",
+    find: "                if self.is_unknown(of) {\n",
+    replace: "                if false && self.is_unknown(of) {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a discriminant in generic code"],
+  },
+  {
     name: "values-comb-subject-dropped",
     breaks:
       "an `Option`'s combinator is given its argument where its subject goes",

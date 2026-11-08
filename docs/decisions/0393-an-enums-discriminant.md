@@ -50,3 +50,22 @@ shape.TAG === "Circle" ? 0 : shape.TAG === "Square" ? 1 : 2;
   `tagged_enum_values.rs` casts a tagged enum where it runs; rustc's
   `enum-discriminant/discriminant_value-wrapper.rs` and
   `consts/const_discriminant.rs` pass.
+
+## Amendment: of a type only a caller knows, refused (#1014)
+
+`mem::discriminant` of a type parameter's value, or of an associated
+type's only a caller knows, `fn same_kind<T>(a: &T, b: &T) -> bool {
+discriminant(a) == discriminant(b) }`, was the constant `0` of a type
+that isn't an enum, so `same_kind(&Circle(1.0), &Square { .. })` was
+`true` where Rust's is `false`. Generic code is made once, and its `T`'s
+JS varies by type, a fieldless variant's name, `{ TAG }`, a nullable
+`Option`'s value or `undefined`, a struct's array: no test of the value
+alone tells which variant it is. It's refused where it's asked, "`mem::
+discriminant` of a type only a caller knows"
+([0262](0262-when-rust-and-js-disagree.md)'s fourth case, the user's
+decision, 2026-11-09). Its support, a discriminant function each caller
+gives for the type it has, as callers give drop functions, is #1040. Held
+by the diagnostics test `a discriminant in generic code`, the guide's
+limitations and the mutation `discriminant-of-a-callers-type-zero`; the
+net's `generic enum_discriminant` row, now refused, which the net counts as no
+wrong answer, is taken off.

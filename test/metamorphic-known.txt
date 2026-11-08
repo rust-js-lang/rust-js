@@ -17,9 +17,6 @@ plain std field fmt_error_pieces.rs
 plain std field fmt_error_write.rs
 plain std field fmt_write_function.rs
 
-#1014 P0: mem::discriminant(a) == discriminant(b) in generic code is true for different variants
-plain std generic enum_discriminant.rs
-
 #1017 P1: two crashes in the rc-refcell rewrite: an ICE about a const param in the param-env, and a binder.rs panic
 plain std rc-refcell const_param_drops.rs
 plain std rc-refcell held_adapters_stepped_to_their_end.rs

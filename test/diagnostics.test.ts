@@ -16,6 +16,9 @@ for (const [name, source, message, crate] of [
   // ADR 0390: addressable memory, which JavaScript has none of, says so.
   // ADR 0408: plain data is its numbers; a reference's bytes are an address.
   ["a transmute of a reference", "pub fn f(x: &u32) -> usize { unsafe { std::mem::transmute(x) } }", "does not support addressable memory yet: a `transmute` of `&u32` as `usize`, which aren't numbers alone"],
+  // A type only a caller knows, whose variant no test of the value tells
+  // (#1014): the constant `0` it was said the same of every one.
+  ["a discriminant in generic code", "pub fn same<T>(a: &T, b: &T) -> bool { std::mem::discriminant(a) == std::mem::discriminant(b) }", "does not support `mem::discriminant` of a type only a caller knows"],
   ["a zeroed std struct", "pub fn f() -> std::time::Duration { unsafe { std::mem::zeroed() } }", "does not support a zeroed `std::time::Duration`, which may be no value of it"],
   ["a zeroed std wrapper", "pub fn f() -> std::num::Wrapping<u32> { unsafe { std::mem::zeroed() } }", "does not support a zeroed `std::num::Wrapping<u32>`, which may be no value of it"],
   // ADR 0407: a raw pointer is a handle on its place; what reads memory by where it is isn't JS's.

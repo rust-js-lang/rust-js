@@ -564,6 +564,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Its variant's discriminant, of the enum it's a reference to.
             Std::Discriminant => {
                 let of = generic_args.types().next().expect("`discriminant`'s type argument");
+                // Of a type only a caller knows: generic code is made once,
+                // and no test of a value alone tells its variant, which the
+                // constant `0` of a type that isn't an enum would say of
+                // every one (#1014, ADR 0262's refusal; #1040).
+                if self.is_unknown(of) {
+                    return Err(self.unsupported(call.span, "`mem::discriminant` of a type only a caller knows"));
+                }
                 let big = crate::lower::Num::of(output).is_some_and(crate::lower::Num::big);
                 self.discriminant_value(arg(), of, big, out)
             }
