@@ -554,8 +554,11 @@ export function $shift(items) {
 // folds it from its back asks (ADR 0930).
 export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold, count) {
   // A range's, stepped by its own step, has std's `Range::nth` (#231), and
-  // its `size_hint`, exact, of its bounds (ADR 0918).
+  // from its back std's `Range::nth_back`, which a `rev()` of it is asked
+  // `nth` by, a `skip`'s, so neither steps each number (#950); and its
+  // `size_hint`, exact, of its bounds (ADR 0918).
   nth ??= $rangeNthOf(next);
+  nthBack ??= nextBack && $rangeNthOf(nextBack);
   hint ??= $rangeHintOf(next);
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = new $Steps(() => step(next(iterator)));

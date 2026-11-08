@@ -1374,3 +1374,28 @@ Mutations: `in-place-source-not-through-structs`,
 (`lower/iterators/source_iter.ts`) and `source-iter-step-not-through-some` (`lower/recognition/specialization.ts`).
 `in-place-guard-over-the-adapters` and `collect-end-unwound-leaks` name
 their lines as they now read.
+
+## Amendment: a range made knowing its back has std's `nth_back` (2026-11-08, #950)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. A run that ends in
+Rust didn't, in any time a program is given.
+
+`(0..u32::MAX).rev().skip(4_000_000_000).next()` is, alone, a range whose
+end the skip moves down (#163). Beside a function that steps a
+`Rev<Range<u32>>` from its back, that type's `rev()` is made knowing its
+back, `$rev($iterator(range, $rangeNext, false, $rangeNextBack))`, and its
+`skip` asks the `rev()`'s `nth` only where it's its own (`ownNth`), as
+std's `Skip::next` asks `self.iter.nth(n)`. `$rev`'s `nth` is its source's
+`nth_back`, own where the source's is; a range `$iterator` had std's
+`Range::nth` of its bounds (#231) but no `nth_back`, so the skip stepped
+each of the 4e9 numbers: 15 s, and of a `u64` range 43 s, where Rust's is
+instant. The neighbour shuffle (#853) found it beside another case.
+
+**A range `$iterator` stepped from its back has std's `Range::nth_back`**,
+`$rangeNthOf(nextBack)`, `$rangeNthBack` or its inclusive form, its own as
+its `nth` is, so a `rev()` of it, and a `skip` or a `step_by` over that,
+moves its end. No corpus snapshot changed. Corpus case
+`range_reversed_skipped_beside_its_back_stepped.rs` (43 s before, at the
+run's 10 s limit); the two pairs are off `test/neighbours-known.txt`.
+Mutation `range-nth-back-unasked` (`runtime/iterator.ts`).
+

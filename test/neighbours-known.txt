@@ -9,10 +9,6 @@
 // goes wrong beside another neighbour, for the same reason, is a line more
 // under the same issue.
 
-#950 P0: a per-type `rev()` fact steps a range's skip item by item
-plain range_own_steps.rs beside rev_made_knowing_its_back.rs slow
-plain range_steps_known.rs beside own_iterator_flattened_from_its_back.rs slow
-
 #951 P1: rust-js crashes, `fast_reject` kind mismatch, of two crates' `Circle`
 plain std - beside copied_default_own_params.rs dyn_ref_cells.rs
 plain std - beside std_errors_boxed.rs dyn_struct_tails.rs
