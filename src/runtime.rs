@@ -360,6 +360,7 @@ helpers! {
     CharPattern,
     CollectResults,
     CollectOptions,
+    ShuntStep,
     CollectsInPlace,
     CmpIn,
     CmpItems,
@@ -747,6 +748,7 @@ impl Helper {
             Helper::CharPattern => include_str!("runtime/char_pattern.js"),
             Helper::CollectResults => include_str!("runtime/collect_results.js"),
             Helper::CollectOptions => include_str!("runtime/collect_options.js"),
+            Helper::ShuntStep => include_str!("runtime/shunt_step.js"),
             Helper::CollectsInPlace => include_str!("runtime/collects_in_place.js"),
             // `partial_cmp` of `f64`s: `None` if either is `NaN`.
             Helper::PartialCmp => include_str!("runtime/partial_cmp.js"),

@@ -1415,3 +1415,22 @@ Every hint they ask is native Rust's. They found #1004: a collect into a
 `Result` or an `Option` steps its source by `next`, where `GenericShunt`
 steps it by `try_fold`, so `skip` and `step_by` call the crate's `nth`
 otherwise. Its 64 cases are listed under it.
+
+## Amendment: a collect into a `Result` or an `Option` steps by `try_fold` (#1004)
+
+Std's `GenericShunt::next` is `try_for_each(ControlFlow::Break)`: each
+step of a collect into a `Result` or an `Option` is its source's
+`try_fold`, broken at the first item. `$collectOptions` and
+`$collectResults` stepped it by `next`. That's the same for most adapters,
+but not for `skip(n)`, whose `try_fold` asks `nth(n - 1)` and then folds
+where its `next` asks `nth(n)`, nor for `step_by`, whose `try_fold` takes
+its first item by `next` where its `next` asks `nth(0)`. So the crate's
+own `nth` ran otherwise. Now each step is `$shuntStep`, its source's
+`tryFold` broken at the first item, or the `next` of a source with no
+`tryFold`. A source it finds ended is closed, unless it's held, as a done
+`next` closes it, so what a stopped `take_while` holds drops where the
+collect's temporary does. Results changed
+([0262](0262-when-rust-and-js-disagree.md)), so std's order is kept.
+Held by the conformance table's 48 cases and the points table's 16,
+listed under #1004 until the fix, the corpus case `shunt_steps_by_try_fold`,
+and the mutations `shunt-steps-by-next` and `shunt-end-left-open`.

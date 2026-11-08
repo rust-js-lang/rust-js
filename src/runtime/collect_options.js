@@ -15,7 +15,8 @@ function $collectOptions(items, boxed = false, into, drop, restFirst = false, si
   const it = items[Symbol.iterator]();
   const grown = size === undefined ? undefined : $shuntGrowth(it, size);
   $collectUnwinding(() => {
-    for (let step = it.next(); !step.done; step = it.next()) {
+    // Each step `GenericShunt`'s, by its source's `try_fold` (#1004).
+    for (let step = $shuntStep(it); !step.done; step = $shuntStep(it)) {
       const item = step.value;
       if (item == null) {
         failed = true;

@@ -19,9 +19,3 @@
 // generator format 36b87036c855
 // generator numbers 18046109df71
 // generator async 9fe3888b9e1a
-
-#1004 P0: a collect into Result<Vec>/Option<Vec> steps its source by next, where std's GenericShunt steps by try_fold: skip and step_by call nth differently
-conformance:plain 13909-13914,14785-14790,21197-21202,22073-22078
-conformance:std 13909-13914,14785-14790,21197-21202,22073-22078
-points:plain 4281-4282,4531-4532,6218-6219,6468-6469
-points:std 4281-4282,4531-4532,6218-6219,6468-6469
