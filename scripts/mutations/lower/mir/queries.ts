@@ -486,4 +486,12 @@ export const mutations: Mutation[] = [
     replace: "                && a.0.projection.is_empty()\n",
     tests: ["test/corpus.test.ts", "-t", "^box_read_before_its_write.rs$"],
   },
+  {
+    name: "count-place-written-is-indirect",
+    breaks: "a write through a box held in a field, `*w.0 = ..`, is taken for one through a reference, as MIR's `is_indirect` says, so `w` stays alike and a read of it is moved past the write (#1033)",
+    file: "src/lower/mir/queries.rs",
+    find: "        if written == Some(false) {\n",
+    replace: "        if written.is_some() && !place.is_indirect() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^box_held_in_a_field_written.rs$"],
+  },
 ];

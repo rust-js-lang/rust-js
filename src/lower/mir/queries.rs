@@ -940,7 +940,7 @@ pub(super) fn assert_operands<'m, 'tcx>(msg: &'m AssertKind<Operand<'tcx>>) -> V
 
 pub(super) fn count_operand(locals: &mut Locals, operand: &Operand<'_>) {
     if let Operand::Copy(place) | Operand::Move(place) = operand {
-        count_place(locals, place, false);
+        count_place(locals, place, None);
         if let [PlaceElem::Field(field, _)] = place.projection[..] {
             locals.fields[place.local].push(field.as_usize());
         }
@@ -948,15 +948,17 @@ pub(super) fn count_operand(locals: &mut Locals, operand: &Operand<'_>) {
 }
 
 /// A place's uses: its base read, unless it's written whole, and each
-/// index read.
-pub(super) fn count_place(locals: &mut Locals, place: &Place<'_>, written: bool) {
-    if written && place.projection.is_empty() {
+/// index read. Of a write, `written` says whether it's reached through a
+/// reference or a pointer (`body_queries::indirect`): through a box, as
+/// `*w.0` of a `W(Box<i32>)`, it's the local's own (#1033).
+pub(super) fn count_place(locals: &mut Locals, place: &Place<'_>, written: Option<bool>) {
+    if written.is_some() && place.projection.is_empty() {
         locals.writes[place.local] += 1;
     } else {
         locals.reads[place.local] += 1;
         // A part of its own written: the local is a variable. Through a
         // reference, it's what it refers to that's written.
-        if written && !place.is_indirect() {
+        if written == Some(false) {
             locals.borrowed[place.local] = true;
         }
     }
@@ -978,7 +980,7 @@ pub(super) fn count_rvalue(locals: &mut Locals, rvalue: &Rvalue<'_>, frozen: boo
         }
         Rvalue::Aggregate(_, operands) => operands.iter().for_each(|o| count_operand(locals, o)),
         Rvalue::Ref(_, kind, place) => {
-            count_place(locals, place, false);
+            count_place(locals, place, None);
             if let [PlaceElem::Field(field, _), PlaceElem::Deref] = place.projection[..]
                 && matches!(kind, BorrowKind::Shared)
             {
@@ -994,7 +996,7 @@ pub(super) fn count_rvalue(locals: &mut Locals, rvalue: &Rvalue<'_>, frozen: boo
             }
         }
         Rvalue::RawPtr(_, place) => {
-            count_place(locals, place, false);
+            count_place(locals, place, None);
             // A part of its own borrowed keeps its local a variable; the
             // whole borrowed is the value itself, read once, and a reborrow,
             // `&*r`, borrows what `r` refers to.
@@ -1002,7 +1004,7 @@ pub(super) fn count_rvalue(locals: &mut Locals, rvalue: &Rvalue<'_>, frozen: boo
                 locals.borrowed[place.local] = true;
             }
         }
-        Rvalue::Discriminant(place) | Rvalue::CopyForDeref(place) => count_place(locals, place, false),
+        Rvalue::Discriminant(place) | Rvalue::CopyForDeref(place) => count_place(locals, place, None),
         _ => {}
     }
 }

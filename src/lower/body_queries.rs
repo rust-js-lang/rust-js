@@ -31,7 +31,7 @@ pub(super) use constants::{
 pub(super) use ranges::{present_item_of_sized, ranges};
 pub(in crate::lower) use set_reads::is_option_unwrap;
 pub(super) use total_orders::orders_totally;
-pub(in crate::lower) use values::{assigned_once, through_box, value_local};
+pub(in crate::lower) use values::{assigned_once, indirect, through_box, value_local};
 use whole_casts::whole_casts;
 
 /// The parts of a `for pat in head { body }` (ADR 0025).

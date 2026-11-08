@@ -276,3 +276,27 @@ kept. Held by the corpus case `box_read_before_its_write`, the mutations
 `read-before-written-box-content-unwritten` and
 `local-reference-not-through-a-box`, and the metamorphic net's boxed
 rewrites.
+
+## Amendment: a box held in a field, or a field of a box, is its local's (#1033)
+
+The metamorphic net's `field` rewrite (#1008) moved #980's box into a
+struct's field, `let mut n = MetamorphField(Box::new(5))`, and the read
+was moved past the write again: `pair(*n.0, { *n.0 += 1; *n.0 })` gave
+`(6, 6)`, and a field of a box, `pair(p.x, { p.x += 10; p.x })` of a
+`Box<Point>`, `(11, 11)`. A write of a part of a local makes it a
+variable, which nothing reads as alike (`count_place`); a write through
+a reference is the write of what it points at, not of the local. That
+asked MIR's `is_indirect`, which counts a box's deref too, so `*n.0 = ..`
+and `(*p).x = ..` left the local alike. It asks `body_queries::indirect`
+now, a deref of anything but a box, from the one rule `through_box` gives
+of what a box's deref reaches. A borrow of such a part still asks
+`is_indirect`: no read is moved past a borrow, and asking `indirect`
+there made a `&*a.compute` of a `Box<dyn Fn>` a part of `a` that
+`addr_eq` couldn't size. Results changed
+([0262](0262-when-rust-and-js-disagree.md)), so Rust's order is kept.
+One corpus case's JS holds what a variable's bounds check reads,
+`const length = copy.rows.length;`, its `copy` now written through its
+boxed slice (the user's decision, 2026-11-08). Held by the corpus case
+`box_held_in_a_field_written`, the mutations `indirect-through-a-box`
+and `count-place-written-is-indirect`. The rewritten case's other lines,
+a reference held in a field set again, are #1034's.

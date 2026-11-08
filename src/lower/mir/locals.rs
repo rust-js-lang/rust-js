@@ -177,6 +177,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 user[pinned] = user[pin].clone();
             }
         }
+        let indirect = |place: &Place<'tcx>| crate::lower::body_queries::indirect(self.tcx, &body.local_decls, place);
         for (block, data) in body.basic_blocks.iter_enumerated() {
             // Of a cleanup, only the drop flag it tests, which optimized MIR
             // keeps, another crate's (ADRs 0561, 0914): read where it unwinds.
@@ -199,7 +200,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             true => &Place::from(place.local),
                             false => place,
                         };
-                        count_place(&mut locals, place, true);
+                        count_place(&mut locals, place, Some(indirect(place)));
                         // A shared borrow of a part nothing inside can change, a
                         // match guard's `&(k as Warn).level`: the value it is.
                         let frozen = matches!(rvalue, Rvalue::Ref(_, BorrowKind::Shared | BorrowKind::Fake(_), borrowed)
@@ -234,7 +235,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             locals.changed[borrowed.local] = true;
                         }
                     }
-                    StatementKind::SetDiscriminant { place, .. } => count_place(&mut locals, place, false),
+                    StatementKind::SetDiscriminant { place, .. } => count_place(&mut locals, place, None),
                     _ => {}
                 }
             }
@@ -250,7 +251,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     for arg in args {
                         count_operand(&mut locals, &arg.node);
                     }
-                    count_place(&mut locals, destination, true);
+                    count_place(&mut locals, destination, Some(indirect(destination)));
                 }
                 // A check left out, or made where the element is read, reads
                 // nothing here.

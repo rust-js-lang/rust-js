@@ -16,8 +16,9 @@ function main() {
   const h = { indices, rows };
   const copy = { ...h, indices: h.indices.slice(), rows: h.rows.map((item) => item.slice()) };
   copy.indices[$at(copy.indices, 0)] = 9;
-  if (1 >= copy.rows.length) {
-    throw new Error(`index out of bounds: the len is ${copy.rows.length} but the index is 1`);
+  const length = copy.rows.length;
+  if (1 >= length) {
+    throw new Error(`index out of bounds: the len is ${length} but the index is 1`);
   }
   copy.rows[1].push(4);
   console.log(`${holderDebug_fmt(h)} ${holderDebug_fmt(copy)}`);
