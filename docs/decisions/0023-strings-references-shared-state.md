@@ -104,3 +104,20 @@ written while what their call is given is made. Mutations
 `held-reference-place-rewritten` (`mir/assign.ts`),
 `write-through-reference-unseen` and `held-reference-of-field-unseen`
 (`mir/queries.ts`).
+
+## Amendment: what a place is the value of has one owner (#980, #997, #1000)
+
+A box is the value it holds, so `*b = v` writes `b` as `b = v` does.
+Each check of whether a local is written asked that again, of the local
+alone, and three read a box written through as unchanged: P0s #980, #997
+and #1000, found by the metamorphic net's `boxed` rewrite. Four more built
+the same map of what each local is assigned once, each its own copy.
+
+Now `body_queries/values.rs` owns the question. Its `through_box` is the
+one step through a box, which `value_local` (the local a MIR place is the
+value of), `assigned_once` and `FnCx::through_values`, behind `whole`,
+take. Of THIR, a variable set or lent through any deref is `changes`'s,
+which `unmet_in` asks. An architecture test
+(`test/architecture-writes.test.ts`) refuses a count or a map of whole
+assignments, or a THIR scan of `v = ..` by its `VarRef`, outside them, a
+site that counts by another rule listed with why.

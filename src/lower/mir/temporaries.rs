@@ -928,10 +928,11 @@ impl IterLocals {
         let mut writes: IndexVec<Local, usize> = IndexVec::from_elem_n(0, body.local_decls.len());
         for data in body.basic_blocks.iter() {
             for statement in &data.statements {
+                // Through its box too, `*it = other`, which is `it` (#980).
                 if let mir::StatementKind::Assign(assign) = &statement.kind
-                    && assign.0.projection.is_empty()
+                    && let Some(local) = crate::lower::body_queries::value_local(&body.local_decls, &assign.0)
                 {
-                    writes[assign.0.local] += 1;
+                    writes[local] += 1;
                 }
             }
             if let mir::TerminatorKind::Call { destination, .. } = &data.terminator().kind

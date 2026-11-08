@@ -1104,26 +1104,9 @@ impl<'c, 'q, 'a, 'tcx> Quiet<'c, 'q, 'a, 'tcx> {
         let ExprKind::VarRef { id: var } = thir[self.through_reads(*cell)].kind else {
             return None;
         };
-        // `v` itself, or what its box holds, `*v`, which is `v` (ADR 0023):
-        // `*v = other` sets it again as `v = other` does (#1000).
-        let is_var = |mut place: ExprId| {
-            loop {
-                place = strip(thir, place);
-                match thir[place].kind {
-                    ExprKind::Deref { arg } if thir[arg].ty.is_box() => place = arg,
-                    ExprKind::VarRef { id } => return id == var,
-                    _ => return false,
-                }
-            }
-        };
-        let changed = thir.exprs.iter().any(|e| match e.kind {
-            ExprKind::Assign { lhs, .. } | ExprKind::AssignOp { lhs, .. } => is_var(lhs),
-            ExprKind::Borrow {
-                borrow_kind: rustc_middle::mir::BorrowKind::Mut { .. },
-                arg,
-            } => is_var(arg),
-            _ => false,
-        });
+        // Set or lent `&mut`, in whole or in part, through its box too, `*v
+        // = other`, a box being the value it holds (`changes`, #1000).
+        let changed = crate::lower::body_queries::changes(thir).contains_key(&var);
         (!changed).then_some(var)
     }
 }

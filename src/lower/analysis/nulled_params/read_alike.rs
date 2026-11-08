@@ -145,15 +145,7 @@ impl<'u, 'tcx> Uses<'u, 'tcx> {
         body: &'u mir::Body<'tcx>,
         promoted: &'u rustc_index::IndexVec<mir::Promoted, mir::Body<'tcx>>,
     ) -> Self {
-        let mut assigned: IndexMap<Local, Option<&Rvalue<'tcx>>> = IndexMap::default();
-        for statement in body.basic_blocks.iter().flat_map(|data| &data.statements) {
-            if let StatementKind::Assign(assign) = &statement.kind
-                && assign.0.projection.is_empty()
-            {
-                let once = !assigned.contains_key(&assign.0.local);
-                assigned.insert(assign.0.local, once.then_some(&assign.1));
-            }
-        }
+        let assigned = crate::lower::body_queries::assigned_once(body);
         Uses {
             recognition,
             body,

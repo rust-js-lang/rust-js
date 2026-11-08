@@ -21,6 +21,7 @@ mod method_calls;
 mod ranges;
 mod set_reads;
 mod total_orders;
+mod values;
 mod whole_casts;
 
 use constants::constant_patterns;
@@ -30,6 +31,7 @@ pub(super) use constants::{
 pub(super) use ranges::{present_item_of_sized, ranges};
 pub(in crate::lower) use set_reads::is_option_unwrap;
 pub(super) use total_orders::orders_totally;
+pub(in crate::lower) use values::{assigned_once, through_box, value_local};
 use whole_casts::whole_casts;
 
 /// The parts of a `for pat in head { body }` (ADR 0025).
@@ -337,7 +339,7 @@ fn resumes<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, captured: bool) -> IndexS
 /// Where each variable is changed, as the body's order has it: set or lent
 /// as `&mut`, in whole or in part. A variable of the
 /// enclosing function a closure captures is the closure's too.
-fn changes(thir: &Thir<'_>) -> IndexMap<LocalVarId, Vec<Span>> {
+pub(in crate::lower) fn changes(thir: &Thir<'_>) -> IndexMap<LocalVarId, Vec<Span>> {
     let at = |span: Span| span.source_callsite();
     let root = |mut e: ExprId| loop {
         match thir[strip(thir, e)].kind {

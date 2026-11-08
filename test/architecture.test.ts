@@ -1197,17 +1197,6 @@ test("a std call's kind is chosen of what it reads alone", () => {
   expect(mutable).toEqual([]);
 });
 
-// Whether a local is written again after its first value is
-// `written_again`'s, which counts a parameter's argument as its first: a
-// variable read as never changing (`alike`) and a `move` closure's capture
-// each counted MIR's writes alone, so a `mut` parameter assigned once read
-// as never changing, and what was moved out of it read its new value (#99).
-test("a local written again is written_again's alone", () => {
-  const counting = files("src/lower").filter((file) => file.endsWith(".rs"))
-    .flatMap((file) => read(file).split("\n").filter((line) => /writes\[[^\]]+\]\s*(>|>=)\s*[12]\b/.test(line)).map((line) => `${file}: ${line.trim()}`));
-  expect(counting).toEqual([]);
-});
-
 // What a `&mut` to a type is in JS, a box, a generic code's box, the
 // object, a guard's object, a value given as it is or the value itself, is
 // `mut_ref_form`'s one answer, a `MutRefForm` each operation matches (ADR
@@ -1455,36 +1444,6 @@ test("a block label is matched at a word's start", () => {
     .filter((name) => name.endsWith(".ts") && name !== "architecture.test.ts")
     .filter((name) => /\/bb\\d\+/.test(read(join("test", name))));
   expect(bare).toEqual([]);
-});
-
-// Whether a tree sets a variable, and how often, is `js::Writes::sets` and
-// `Writes::count` (ADR 1088, #523): no pass searches a tree's statements
-// for an assignment of a variable by name of its own, which missed what
-// another counted, `x += ..`, `(x = ..)`, a closure's or a handle. What
-// each pass below looks for is a shape, the statement it rewrites, not
-// whether the tree sets the variable.
-test("whether a tree sets a variable is js::Writes' alone", () => {
-  const shapes = [
-    // The consecutive `name = value;`s hoisted before a `try` with it.
-    "src/prepare/catches.rs: .take_while(|s| {",
-    // The first statement of a `catch` that sets the variable afresh.
-    "src/js/applied.rs: let first_set = caught.iter().position(|s| {",
-    // Each mention of a temporary in a `switch` a case's assignment of it.
-    "src/lower/mir/tidy/switches.rs: .filter(",
-    // The first mention of a variable in a `try`, its assignment.
-    "src/lower/mir/tidy/bindings.rs: StmtKind::Try(body, _) | StmtKind::TryCatch(body, _, _) => body.iter().find(|s| mentions(s) > 0).is_some_and(",
-    // `let x; .. x = e;`'s first mention of `x`, the assignment it's declared at.
-    "src/lower/mir/tidy/bindings.rs: .find(|&j| js::mentions_in(&stmts[j..=j], name) > 0)",
-  ];
-  const searching = /(\.any\(|\.filter\(|\.position\(|\.find\(|\.take_while\(|\|=)[^;]{0,160}?StmtKind::Assign\([^;]{0,200}?ExprKind::Var\(\w+\)\s*if\s+\*?\w+\s*==/g;
-  const found = files("src")
-    .filter((file) => file.endsWith(".rs") && file !== "src/js/writes.rs")
-    .flatMap((file) => {
-      const text = read(file);
-      return [...text.matchAll(searching)].map((m) => `${file}: ${text.split("\n")[text.slice(0, m.index).split("\n").length - 1].trim()}`);
-    });
-  expect(found.filter((site) => !shapes.includes(site))).toEqual([]);
-  expect(shapes.filter((site) => !found.includes(site))).toEqual([]);
 });
 
 // A value read in place knows the name its temporary is given,

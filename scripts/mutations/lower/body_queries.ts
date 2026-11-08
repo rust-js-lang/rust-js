@@ -558,4 +558,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^zip_of_droppers_from_its_back.rs$"],
     snapshots: true,
   },
+  {
+    name: "changes-not-through-a-box",
+    breaks: "a variable set again through its box, `*into = Rc::clone(types)`, isn't changed, so a borrow guarded by `!into.borrow().contains(t)` goes unchecked and Rust's `RefCell already borrowed` panic is lost (#1000)",
+    file: "src/lower/body_queries.rs",
+    find: "            ExprKind::Field { lhs, .. } | ExprKind::Index { lhs, .. } | ExprKind::Deref { arg: lhs } => e = lhs,\n",
+    replace: "            ExprKind::Field { lhs, .. } | ExprKind::Index { lhs, .. } => e = lhs,\n            ExprKind::Deref { arg: lhs } if !thir[lhs].ty.is_box() => e = lhs,\n",
+    tests: ["test/corpus.test.ts", "-t", "^contains_guarded_set_through_a_box.rs$"],
+  },
 ];

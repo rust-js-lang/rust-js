@@ -18,17 +18,7 @@ impl<'a, 'tcx> crate::lower::recognition::Recognition<'a, 'tcx> {
     pub(in crate::lower) fn known_capacity_extends(&self, body: &mir::Body<'tcx>) -> IndexSet<BasicBlock> {
         let mut known = IndexSet::default();
         // Each local assigned once by a statement, and what it's assigned.
-        let mut assigned: IndexMap<Local, Option<&Rvalue<'tcx>>> = IndexMap::default();
-        for data in body.basic_blocks.iter() {
-            for statement in &data.statements {
-                if let StatementKind::Assign(assign) = &statement.kind
-                    && assign.0.projection.is_empty()
-                {
-                    let once = !assigned.contains_key(&assign.0.local);
-                    assigned.insert(assign.0.local, once.then_some(&assign.1));
-                }
-            }
-        }
+        let assigned = crate::lower::body_queries::assigned_once(body);
         // The variable a `&mut` lends, through its reborrows.
         let lent = |mut local: Local| -> Option<Local> {
             for _ in 0..body.local_decls.len() {

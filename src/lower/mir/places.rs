@@ -472,10 +472,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn through_local_reference(&self, body: &mir::Body<'tcx>, place: &Place<'tcx>) -> bool {
         let mut ty = body.local_decls[place.local].ty;
         for elem in place.projection {
-            match (elem, ty.boxed_ty()) {
-                (PlaceElem::Deref, _) if ty.is_ref() => return true,
-                (PlaceElem::Deref, Some(held)) => ty = held,
-                _ => return false,
+            match crate::lower::body_queries::through_box(elem, ty) {
+                _ if elem == PlaceElem::Deref && ty.is_ref() => return true,
+                Some(held) => ty = held,
+                None => return false,
             }
         }
         false
@@ -487,7 +487,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let through = match elem {
                 // Not through a `&mut` to a cell, a box's or a handle's `value`.
                 PlaceElem::Deref => {
-                    ty.ty.is_box()
+                    crate::lower::body_queries::through_box(elem, ty.ty).is_some()
                         || (read
                             && ty.ty.is_ref()
                             && !matches!(ty.ty.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if self.mut_ref_form(*inner).is_cell()))

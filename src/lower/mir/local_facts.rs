@@ -672,17 +672,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             |place| Some(crate::lower::representation::none_form(tcx, place)).filter(|form| form.stores_null());
         let momentary = self.momentary_borrows();
         // Each local assigned once, and what it's assigned.
-        let mut assigned: IndexMap<Local, Option<&Rvalue<'tcx>>> = IndexMap::default();
-        for data in body.basic_blocks.iter() {
-            for statement in &data.statements {
-                if let StatementKind::Assign(assign) = &statement.kind
-                    && assign.0.projection.is_empty()
-                {
-                    let once = !assigned.contains_key(&assign.0.local);
-                    assigned.insert(assign.0.local, once.then_some(&assign.1));
-                }
-            }
-        }
+        let assigned = crate::lower::body_queries::assigned_once(body);
         // The field `operand` lends, `&x.f`, where it's one of a struct's, or
         // of the variant its enum is read as, a pattern's binding of it,
         // `&((*e) as Effect).cleanup` (#503).

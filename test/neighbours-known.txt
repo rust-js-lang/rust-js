@@ -32,3 +32,14 @@ plain range_mapped_by_a_function.rs beside cloned_chains_and_cycles.rs
 #956 P2: a `pub` thread-local's initializer refused as one it can't follow
 plain std thread_local_made_by_boxed_closure.rs beside unwrap_dropping.rs
 plain std thread_local_made_by_boxed_closure.rs beside owner_handle_set_in_loop.rs
+plain std thread_local_made_by_boxed_closure.rs beside owner_handle_swapped.rs thread_local_lazy_where_observable.rs
+
+#1001 P2 (neighbours): a #[rust_js::class] constructor giving Rc<Request> is refused beside rc_counted_uses.rs
+plain std class_constructor_rc.rs beside rc_counted_uses.rs
+
+#1002 P2 (neighbours): cloning a Chain of slice iterators or of type parameters is refused beside another case that clones chains
+plain deque_slices.rs beside cloned_chains_and_cycles.rs
+plain generic_chain_nth_past_a_skipped_rev.rs beside lazy_iterator_clone.rs
+
+#1003 P2 (neighbours): LocalKey<RefCell<T>>::with_borrow_mut of a value with a destructor is refused beside self_handle_reads_mutably.rs
+plain std own_callback_params.rs beside self_handle_reads_mutably.rs

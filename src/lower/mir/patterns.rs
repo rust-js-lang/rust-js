@@ -108,15 +108,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let returns_nullable = none_form(self.tcx, NonePlace::FnResult(body.source.def_id())).stores_null();
         // Each local assigned once, and what it's assigned: what a
         // thread-local's key is read through (`queries::referred_key`).
-        let mut assigned: IndexMap<Local, Option<&Rvalue<'tcx>>> = Default::default();
-        for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
-            if let mir::StatementKind::Assign(assign) = &statement.kind
-                && assign.0.projection.is_empty()
-            {
-                let once = !assigned.contains_key(&assign.0.local);
-                assigned.insert(assign.0.local, once.then_some(&assign.1));
-            }
-        }
+        let assigned = crate::lower::body_queries::assigned_once(body);
         let statements = (body.basic_blocks.iter_enumerated())
             .flat_map(|(block, data)| data.statements.iter().enumerate().map(move |(i, s)| (block, i, s)));
         for (block, statement_index, statement) in statements {
@@ -533,9 +525,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut assigned: IndexMap<Local, usize> = IndexMap::default();
         for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
             if let mir::StatementKind::Assign(assign) = &statement.kind
-                && assign.0.projection.is_empty()
+                && let Some(local) = crate::lower::body_queries::value_local(&body.local_decls, &assign.0)
             {
-                *assigned.entry(assign.0.local).or_default() += 1;
+                *assigned.entry(local).or_default() += 1;
             }
             let assign = match &statement.kind {
                 mir::StatementKind::Assign(assign) => assign,

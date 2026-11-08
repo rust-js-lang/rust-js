@@ -223,8 +223,8 @@ export const mutations: Mutation[] = [
     name: "local-reference-not-through-a-box",
     breaks: "a place reached through a box of a reference written again, `&mut (**at).n` before `*at = b`, reads the new reference's (#980)",
     file: "src/lower/mir/places.rs",
-    find: "                (PlaceElem::Deref, Some(held)) => ty = held,",
-    replace: "                (PlaceElem::Deref, Some(_)) => return false,",
+    find: "                Some(held) => ty = held,\n                None => return false,",
+    replace: "                Some(_) => return false,\n                None => return false,",
     tests: ["test/corpus.test.ts", "-t", "^box_read_before_its_write.rs$"],
   },
 ];
