@@ -678,3 +678,26 @@ itself (ADR 0099), and was given the object: a `TypeError`.
 `unboxed_by_function` asks the function given, by its type, and leaves the
 box as it is where it takes one (`takes_box_itself`). Corpus case
 `generic_fn_value_is_one_function`.
+
+## Amended (2026-11-08, #988): every kept handle holds its place as it was made
+
+#968 held a `&mut dyn` pair's place as it was where it's made
+(`place_where_made`). A `&mut` to a number kept past where it's made, a
+handle, reads its place whenever its `value` is read too, and two of a
+place's parts may be set again while the borrow lasts, as borrowck lets
+them: an index a variable holds, `&mut c[k]` before `k = 2` (native `[11,
+2, 3]`, JS `[1, 2, 13]`), and the reference a field holds that the place
+is reached through, `&mut (*h.node).count` before `h.node = &mut other`.
+The one rule is where MIR makes the borrow, `Rvalue::Ref` of a `&mut` to
+what's a cell: an index MIR copied from a variable set again, or one set
+again itself, and a field's reference that the body assigns, name the
+place's parts as they are there, `const k$1 = k`, `const node = h.node`;
+a place of parts nothing sets again is as it was, no `const`. Found by the
+metamorphic net's `boxed` rewrite (kept_element_ref, mut_ref_local).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change;
+Rust's preserved. Held by corpus `kept_handle_of_a_place_set_again`
+(native-compared, both builds) and the mutations
+`kept-handle-index-read-later`, `kept-handle-field-reference-read-later`
+(`lower/mir/rvalues.ts`) and `kept-place-object-unnamed`
+(`lower/mir/temporaries.ts`).

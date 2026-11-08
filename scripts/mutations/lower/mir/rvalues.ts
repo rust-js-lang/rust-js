@@ -790,4 +790,20 @@ export const mutations: Mutation[] = [
     replace: "                && matches!(operand, Operand::Move(p) if p.projection.is_empty() && state.facts.unwritten(p.local) && false)\n",
     tests: ["test/tidy-stages.test.ts", "-t", "^value_cell_set_after_its_call after"],
   },
+  {
+    name: "kept-handle-index-read-later",
+    breaks: "a `&mut c[k]` kept past `k = 2` reads `c[k]` when it's used, the item at the new index (#988)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                        PlaceElem::Index(index) => written_again(state, index) || index_copied_from_set(state, index),\n",
+    replace: "                        PlaceElem::Index(index) => written_again(state, index),\n",
+    tests: ["test/corpus.test.ts", "-t", "^kept_handle_of_a_place_set_again.rs$"],
+  },
+  {
+    name: "kept-handle-field-reference-read-later",
+    breaks: "a `&mut (*h.node).count` kept past `h.node = &mut other` reads `h.node.count` when it's used, the other node's (#988)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                                && reference_written(state.body, place.local, &place.projection[..at])\n",
+    replace: "                                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^kept_handle_of_a_place_set_again.rs$"],
+  },
 ];

@@ -180,6 +180,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         false => target,
                     };
+                    // Through a reference a field holds, `&mut (*h.node).count`:
+                    // the place as it is now, `h.node` named, which `h.node =
+                    // other` may follow while it's borrowed (#988).
+                    // And an item at an index a variable set again holds,
+                    // `&mut a[i]` before `i = 2`, read as it is now.
+                    let through_field = (place.projection.iter().enumerate()).any(|(at, elem)| match elem {
+                        PlaceElem::Deref => {
+                            at > 0
+                                && matches!(place.projection[at - 1], PlaceElem::Field(..))
+                                && reference_written(state.body, place.local, &place.projection[..at])
+                        }
+                        PlaceElem::Index(index) => written_again(state, index) || index_copied_from_set(state, index),
+                        _ => false,
+                    });
+                    let target = match through_field {
+                        true => {
+                            self.flush(state, out)?;
+                            self.place_where_made(target, out)
+                        }
+                        false => target,
+                    };
                     // `&mut **u`, a reborrow of a cell a place holds, an
                     // `Option`'s `&mut` through a `ref mut`: that cell's
                     // `value`, the place kept as one that holds a cell, as a
@@ -1189,6 +1210,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => None,
         }
     }
+}
+
+/// Whether `index`, a temporary, is a copy of a variable set again,
+/// `_5 = copy i` before `i = 2`: what its read is folded into, the
+/// variable, is another value by the time a handle made of it is read
+/// (#988).
+fn index_copied_from_set(state: &State<'_, '_>, index: mir::Local) -> bool {
+    (state.body.basic_blocks.iter().flat_map(|block| &block.statements)).any(|statement| {
+        matches!(&statement.kind, StatementKind::Assign(assign)
+            if assign.0 == index.into()
+                && matches!(&assign.1, Rvalue::Use(mir::Operand::Copy(from) | mir::Operand::Move(from), _)
+                    if written_again(state, from.local)))
+    })
+}
+
+/// Whether the reference `local`'s field `field` holds, `h.node`, is given
+/// another anywhere in `body`, `h.node = &mut other`: a reborrow through
+/// it, `&mut (*h.node).count`, may outlive that write, as borrowck lets it
+/// (#988).
+fn reference_written<'tcx>(body: &mir::Body<'tcx>, local: mir::Local, field: &[PlaceElem<'tcx>]) -> bool {
+    (body.basic_blocks.iter().flat_map(|block| &block.statements)).any(|statement| {
+        matches!(&statement.kind, StatementKind::Assign(assign)
+            if assign.0.local == local && assign.0.projection.as_slice() == field)
+    })
 }
 
 /// Whether what the statement at `at` assigns, an `AddWithOverflow`'s pair,

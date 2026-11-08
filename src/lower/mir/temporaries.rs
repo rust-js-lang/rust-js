@@ -65,14 +65,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `e`, what a place is reached through, `place_where_made`'s: a
-    /// variable set again named as it is now, a place fixed in turn.
+    /// variable set again named as it is now; an object reached through
+    /// another's field or item, `h.node` of `h.node.count`, named as it is
+    /// now, as `h.node = other` may follow (#988).
     fn reached_where_made(&mut self, e: Expr, out: &mut Vec<Stmt>) -> Expr {
         match &e.kind {
             js::ExprKind::Var(name) if !self.alike_local(name) && !self.module_names.contains(name) => {
                 let name = name.clone();
                 self.spill(&name, e, out)
             }
-            js::ExprKind::Member(..) | js::ExprKind::Index(..) => self.place_where_made(e, out),
+            js::ExprKind::Member(_, field) => {
+                let field = field.clone();
+                self.spill(&field, e, out)
+            }
+            js::ExprKind::Index(..) => self.spill("item", e, out),
             _ => e,
         }
     }

@@ -637,7 +637,7 @@ const shapeTests: Record<string, [number, string]> = {
   "src/lower/mir/assign.rs boxed_args": [2, "JS's evaluation: a property place's object named once, so the place a call writes back is fixed (ADR 0099)"],
   "src/lower/mir/temporaries.rs flush": [2, "JS's evaluation: a property place's object named before a later argument changes it (#280)"],
   "src/lower/mir/temporaries.rs reads_same_anywhere": [2, "whether the JS reads the same anywhere: a property's read may be a getter's"],
-  "src/lower/mir/temporaries.rs reached_where_made": [2, "JS's evaluation: what a pair's place is reached through, named where it's made (#968)"],
+  "src/lower/mir/temporaries.rs reached_where_made": [1, "JS's evaluation: what a kept place is reached through, named where it's made (#968, #988)"],
 };
 /** Each function's tests of a JS member's or index's shape, its parts
  * unread: `js::ExprKind::Member(..)`, or bare `ExprKind::Index(_, _)` where

@@ -29,8 +29,6 @@ plain boxed owned_maps_asked_their_length.rs
 plain boxed std_rev.rs
 
 #988 P0 (mut-refs): a &mut v[i] or &mut r.field given into a call reads the index or reference as it is later, not as it was when borrowed
-plain std boxed kept_element_ref.rs
-plain std boxed mut_ref_local.rs
 
 #989 P0: a closure that captured a Box<Cell<_>> by move, then cloned, shares the cell (const counter2 = counter)
 plain std boxed closure_clone_cell.rs
