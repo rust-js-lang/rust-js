@@ -465,6 +465,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.through_values(body, place, false)
     }
 
+    /// Whether `place` is reached through a reference its local holds as
+    /// its value: `*r` of a `&T`, and `**b` of a `Box<&T>`, a box being the
+    /// value it holds (ADR 0023), so writing `*b = other` moves it, as
+    /// `r = other` does (#980).
+    pub(super) fn through_local_reference(&self, body: &mir::Body<'tcx>, place: &Place<'tcx>) -> bool {
+        let mut ty = body.local_decls[place.local].ty;
+        for elem in place.projection {
+            match (elem, ty.boxed_ty()) {
+                (PlaceElem::Deref, _) if ty.is_ref() => return true,
+                (PlaceElem::Deref, Some(held)) => ty = held,
+                _ => return false,
+            }
+        }
+        false
+    }
+
     pub(super) fn through_values(&self, body: &mir::Body<'tcx>, place: &Place<'tcx>, read: bool) -> bool {
         let mut ty = mir::PlaceTy::from_ty(body.local_decls[place.local].ty);
         for elem in place.projection {

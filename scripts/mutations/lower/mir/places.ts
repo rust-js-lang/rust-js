@@ -219,4 +219,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
     snapshots: true,
   },
+  {
+    name: "local-reference-not-through-a-box",
+    breaks: "a place reached through a box of a reference written again, `&mut (**at).n` before `*at = b`, reads the new reference's (#980)",
+    file: "src/lower/mir/places.rs",
+    find: "                (PlaceElem::Deref, Some(held)) => ty = held,",
+    replace: "                (PlaceElem::Deref, Some(_)) => return false,",
+    tests: ["test/corpus.test.ts", "-t", "^box_read_before_its_write.rs$"],
+  },
 ];

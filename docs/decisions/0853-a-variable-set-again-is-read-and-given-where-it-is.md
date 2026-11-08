@@ -247,3 +247,32 @@ runs between reads the variable through no closure that exists.
 - Mutations `given-last-made-before-in-its-block-unseen`,
   `given-last-made-around-unseen`; `given-last-of-a-captured` and
   `given-last-of-a-capture` moved.
+
+## Amendment: a box written through is set again (#980)
+
+A box is the value it holds (ADR 0023), so `*b = v` sets `b` again, as
+`b = v` sets a variable. The write count already said so (`whole`), but
+three rules asked only whether a statement assigned the local itself:
+
+- `once_each_way` took a box written through after its `let` for one
+  assigned once, so its value read the same anywhere (`alike`), and a read
+  of it was moved past the write: `pair(*n, { *n += 1; *n })` gave `(6, 6)`
+  where Rust gives `(5, 6)`.
+- `read_before_written` didn't see `*node = b` as the box's write, so a
+  `Cell` reached through `Box<&Node>` was set on the new node.
+- A place reached through a reference the variable holds, written again,
+  is held where it's made (`const node$1 = node`). That rule asked whether
+  the local's type is a reference. A `Box<&T>`'s isn't, so it read the new
+  reference. `through_local_reference` now looks through boxes too.
+
+Each now asks `whole`, the one rule for what's the local's value. So
+`written_apart` no longer asks whether the program named the local: that
+check stood in for MIR's `vec!` box, filled through after it's made, which
+`once_each_way` now counts as written again itself. The whole corpus's JS
+is the same without it (mutation `mir-alike-machine-once`, removed). Results
+changed ([0262](0262-when-rust-and-js-disagree.md)), so Rust's order is
+kept. Held by the corpus case `box_read_before_its_write`, the mutations
+`once-each-way-box-content-unwritten`,
+`read-before-written-box-content-unwritten` and
+`local-reference-not-through-a-box`, and the metamorphic net's boxed
+rewrites.

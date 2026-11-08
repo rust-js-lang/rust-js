@@ -275,9 +275,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `mut` parameter assigned once is read as what never changes, its argument not counted as its first value, so a read of it an operand takes before it's assigned, `n + { n += 1; n }`'s `n`, reads its new value, `n + n`",
     file: "src/lower/mir/queries.rs",
-    find: "    written_again(state, local)\n        && !(state.locals.user[local]",
-    replace:
-      "    (state.locals.writes[local] > 1)\n        && !(state.locals.user[local]",
+    find: "    written_again(state, local) && !(!is_parameter",
+    replace: "    (state.locals.writes[local] > 1) && !(!is_parameter",
     tests: ["test/corpus.test.ts", "-t", "^mut_param_moved_out.rs$"],
   },
   {
@@ -285,8 +284,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable each of a `match`'s arms assigns, `let variant = match ..`, isn't alike, so JSX holds `const Icon = variant.Icon` first, not `variant.Icon && <variant.Icon />`",
     file: "src/lower/mir/queries.rs",
-    find: "        && !(state.locals.user[local] && !is_parameter(state, local) && once_each_way(state.body, local))\n",
-    replace: "        && true\n",
+    find: "    written_again(state, local) && !(!is_parameter(state, local) && once_each_way(state.body, local, whole))\n",
+    replace: "    written_again(state, local)\n",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",
@@ -295,20 +294,6 @@ export const mutations: Mutation[] = [
       "test/jsx-react-dev.test.ts",
       "test/jsx-types.test.ts",
       "test/jsx.test.ts",
-    ],
-  },
-  {
-    name: "mir-alike-machine-once",
-    breaks:
-      "a local MIR assigns twice on separate ways, a `vec!`'s box, reads alike, and what's around it is held in `const`s first",
-    file: "src/lower/mir/queries.rs",
-    find: "        && !(state.locals.user[local] && !is_parameter(state, local) && once_each_way(state.body, local))\n",
-    replace:
-      "        && !(!is_parameter(state, local) && once_each_way(state.body, local))\n",
-    tests: [
-      "test/lowering-functions.test.ts",
-      "-t",
-      "a vec.s specs from MIR stay in place",
     ],
   },
   {
@@ -342,9 +327,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`node.v.set({ node = b; .. })` sets `b`'s, not the node `node` was where the `Cell` was reached",
     file: "src/lower/mir/queries.rs",
-    find: "                && a.0.local == local\n                && a.0.projection.is_empty()\n            {\n                return false;\n",
+    find: "                && a.0.local == local\n                && whole(&a.0)\n            {\n                return false;\n",
     replace:
-      "                && a.0.local == local\n                && a.0.projection.is_empty()\n            {\n                continue;\n",
+      "                && a.0.local == local\n                && whole(&a.0)\n            {\n                continue;\n",
     tests: ["test/corpus.test.ts", "-t", "^given_last_unwinds.rs$"],
   },
   {
@@ -484,5 +469,21 @@ export const mutations: Mutation[] = [
     replace: "            TerminatorKind::Goto { target } => target,\n",
     tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
     snapshots: true,
+  },
+  {
+    name: "once-each-way-box-content-unwritten",
+    breaks: "a box written through, `*n += 1`, is taken for assigned once, so a read of it before is read past the write, `pair(n, n)` where Rust reads 5 then 6 (#980)",
+    file: "src/lower/mir/queries.rs",
+    find: "                if place.local == local && whole(place) {",
+    replace: "                if place.local == local && place.projection.is_empty() {",
+    tests: ["test/corpus.test.ts", "-t", "^box_read_before_its_write.rs$"],
+  },
+  {
+    name: "read-before-written-box-content-unwritten",
+    breaks: "a `Cell` reached through a box of a reference, set after `*node = b`, is taken for read before the box is written, so it sets the new node's (#980)",
+    file: "src/lower/mir/queries.rs",
+    find: "                && whole(&a.0)\n",
+    replace: "                && a.0.projection.is_empty()\n",
+    tests: ["test/corpus.test.ts", "-t", "^box_read_before_its_write.rs$"],
   },
 ];

@@ -168,9 +168,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let target = self.mir_place(state, *place, span, out)?;
                     // Of a reference written again, `list` of `&mut list.value`
                     // in a loop that moves `list` on: what it is now, held.
-                    let root = place.projection.first() == Some(&PlaceElem::Deref)
-                        && written_again(state, place.local)
-                        && state.body.local_decls[place.local].ty.is_ref();
+                    let root = self.through_local_reference(state.body, place) && written_again(state, place.local);
                     let target = match root {
                         true => {
                             let name = state.locals.names[place.local].clone();
@@ -207,14 +205,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         || self
                             .place_field(state, *place)
                             .is_some_and(|field| self.property_cell(Some(field), pointee).is_some()))
-                    && place.projection.first() == Some(&PlaceElem::Deref)
+                    && self.through_local_reference(state.body, place)
                     && written_again(state, place.local)
-                    && state.body.local_decls[place.local].ty.is_ref()
                     && !state.locals.names[place.local].is_empty()
                     && !(self.is_std_type(pointee, StdItem::Cell)
-                        && read_before_written(state, (state.location(), rvalue), place.local, |t, made| {
-                            self.keeps_no_cell(t, made)
-                        }))
+                        && read_before_written(
+                            state,
+                            (state.location(), rvalue),
+                            place.local,
+                            |t, made| self.keeps_no_cell(t, made),
+                            |written| self.whole(state.body, written),
+                        ))
                 {
                     let target = self.mir_place(state, *place, span, out)?;
                     let name = state.locals.names[place.local].clone();

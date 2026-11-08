@@ -44,14 +44,16 @@ pub(super) fn tested_and_taken(body: &mir::Body<'_>, local: Local, variant: u32)
 
 /// Whether `local` is assigned once each way through `body`, as a `match`'s
 /// arms each assign what it gives: no assignment goes on to another, nor to
-/// itself again, as one in a loop would.
-pub(super) fn once_each_way(body: &mir::Body<'_>, local: Local) -> bool {
+/// itself again, as one in a loop would. An assignment is of what's its
+/// value, `whole`, as its writes are counted: a box's content too, `*b =
+/// ..`, which is the box (#980).
+pub(super) fn once_each_way<'tcx>(body: &mir::Body<'tcx>, local: Local, whole: impl Fn(&Place<'tcx>) -> bool) -> bool {
     let mut at: Vec<BasicBlock> = Vec::new();
     for (block, data) in body.basic_blocks.iter_enumerated() {
         for statement in &data.statements {
             if let StatementKind::Assign(assign) = &statement.kind {
                 let (place, rvalue) = &**assign;
-                if place.local == local && place.projection.is_empty() {
+                if place.local == local && whole(place) {
                     at.push(block);
                 }
                 // Borrowed mutably whole, it may be assigned through the borrow.
@@ -64,7 +66,7 @@ pub(super) fn once_each_way(body: &mir::Body<'_>, local: Local) -> bool {
         }
         if let TerminatorKind::Call { destination, .. } = &data.terminator().kind
             && destination.local == local
-            && destination.projection.is_empty()
+            && whole(destination)
         {
             at.push(block);
         }
@@ -601,11 +603,14 @@ pub(super) fn written_from(body: &mir::Body<'_>, from: BasicBlock, local: Local)
 /// was, so nothing need hold what `local` is meanwhile. What's written
 /// there is MIR's assignment of `local`: borrowck lets no `&mut` to `local`,
 /// a closure's capture of it, write it between, as `local` is read before.
+/// An assignment of `local` is of what's its value, `whole`: a box's
+/// content too, `*b = ..`, which is the box (#980).
 pub(super) fn read_before_written<'tcx>(
     state: &State<'_, 'tcx>,
     (at, rvalue): (mir::Location, &Rvalue<'tcx>),
     local: Local,
     takes: impl Fn(&mir::Terminator<'tcx>, Local) -> bool,
+    whole: impl Fn(&Place<'tcx>) -> bool,
 ) -> bool {
     /// Whether a statement or terminator names `local`.
     struct Names {
@@ -658,7 +663,7 @@ pub(super) fn read_before_written<'tcx>(
             }
             if let StatementKind::Assign(a) = &statement.kind
                 && a.0.local == local
-                && a.0.projection.is_empty()
+                && whole(&a.0)
             {
                 return false;
             }
@@ -1140,13 +1145,13 @@ pub(super) fn written_again(state: &State<'_, '_>, local: Local) -> bool {
 }
 
 /// Whether `local` may read differently where it's read: written again
-/// after its first value, a parameter's its argument; but for a variable
-/// the program names assigned once each way, as a `match`'s arms each
-/// assign `let variant = match ..`: not MIR's, a `vec!`'s box, say, filled
-/// through it after.
-pub(super) fn written_apart(state: &State<'_, '_>, local: Local) -> bool {
-    written_again(state, local)
-        && !(state.locals.user[local] && !is_parameter(state, local) && once_each_way(state.body, local))
+/// after its first value, a parameter's its argument; but for a local
+/// assigned once each way, as a `match`'s arms each assign `let variant =
+/// match ..`. A box filled through after it's made, a `vec!`'s, is written
+/// again (`whole`, #980), which a check that the program named the local
+/// stood in for.
+pub(super) fn written_apart<'tcx>(state: &State<'_, 'tcx>, local: Local, whole: impl Fn(&Place<'tcx>) -> bool) -> bool {
+    written_again(state, local) && !(!is_parameter(state, local) && once_each_way(state.body, local, whole))
 }
 
 /// Whether `local` is a parameter, whose first value its caller gives.

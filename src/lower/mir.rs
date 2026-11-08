@@ -1300,7 +1300,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             let plain = self.plain_type(mir_body.local_decls[local].ty);
-            if written_apart(&state, local) {
+            if written_apart(&state, local, |place| self.whole(mir_body, place)) {
                 if plain {
                     self.locals.mir.settled.insert(name.clone());
                 }

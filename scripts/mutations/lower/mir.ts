@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable assigned again reads alike, so JSX reads it later than Rust does",
     file: "src/lower/mir.rs",
-    find: "            if written_apart(&state, local) {\n",
+    find: "            if written_apart(&state, local, |place| self.whole(mir_body, place)) {\n",
     replace: "            if false {\n",
     tests: [
       "test/jsx-children.test.ts",

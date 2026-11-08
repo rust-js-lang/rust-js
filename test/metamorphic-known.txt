@@ -20,18 +20,17 @@ plain std impl-owned references_given_to_generics.rs
 plain std impl-owned unrun_function_drops.rs
 
 #980 P0: a read of what a `Box` holds, `*n`, moved past a later write of it, `pair(*n, { *n += 1; *n })`
-plain std boxed alias_reads.rs
-plain std boxed assignment_order.rs
-plain std boxed cache_node_walk.rs
 plain std boxed captured_copy_written_whole.rs
-plain std boxed closure_clone_cell.rs
-plain std boxed given_last_unwinds.rs
-plain std boxed kept_element_ref.rs
-plain std boxed mut_ref_local.rs
 
 #982 P1: a `let` boxed crashes: a boxed iterator stepped from its back or asked its length, `RefCell already borrowed`, an undeclared `place$5`, `debugStack` of `undefined`
 plain std boxed contains_guarded_set_again.rs
-plain std boxed else_break_ends_loop.rs
 plain std boxed nullable_written_through_borrows.rs
 plain boxed owned_maps_asked_their_length.rs
 plain boxed std_rev.rs
+
+#988 P0 (mut-refs): a &mut v[i] or &mut r.field given into a call reads the index or reference as it is later, not as it was when borrowed
+plain std boxed kept_element_ref.rs
+plain std boxed mut_ref_local.rs
+
+#989 P0: a closure that captured a Box<Cell<_>> by move, then cloned, shares the cell (const counter2 = counter)
+plain std boxed closure_clone_cell.rs

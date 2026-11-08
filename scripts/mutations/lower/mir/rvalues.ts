@@ -203,9 +203,8 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's `&mut list.value` of a `list` moved on later reads `list` where it's used",
     file: "src/lower/mir/rvalues.rs",
-    find: "                        && state.body.local_decls[place.local].ty.is_ref();\n                    let target = match root {\n",
-    replace:
-      "                        && false;\n                    let target = match root {\n",
+    find: "                    let root = self.through_local_reference(state.body, place) && written_again(state, place.local);\n",
+    replace: "                    let root = false;\n",
     tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
   },
   {
