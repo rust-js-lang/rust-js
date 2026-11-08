@@ -4,7 +4,7 @@
 //! Each decided by what it points at, a type and every type that may be it
 //! (ADR 0852).
 
-use crate::collections::IndexSet;
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::pointers::raw_pointee;
 use crate::lower::recognition::{
     compares_fn_identity, is_fn_dyn, is_rc_new, is_std_crate, known_by_bounds, rc_pointee, reads_rc_count, weak_pointee,
@@ -82,6 +82,13 @@ pub(in crate::lower) fn head<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(H
         ty::Slice(t) => named("[]", vec![t]),
         ty::Array(t, _) => named("[;]", vec![t]),
         ty::Tuple(ts) => named("()", ts.to_vec()),
+        // A `dyn Fn`'s, by what it takes, as one may be another only where
+        // each takes what the other does (#1003); its kind isn't compared,
+        // as one upcasts to another.
+        ty::Dynamic(predicates, ..) if is_fn_dyn(tcx, predicates) => {
+            let args = super::closures::fn_dyn_args(tcx, predicates).into_iter().collect();
+            named("dyn Fn", args)
+        }
         ty::Dynamic(predicates, ..) => match predicates.principal_def_id() {
             Some(id) => Some((Head::Def("dyn ", id), Vec::new())),
             None => named("dyn", Vec::new()),
@@ -153,7 +160,11 @@ pub(super) fn counted_rcs<'tcx>(
     let mut pointees: IndexSet<Ty<'tcx>> = counted.clone();
     // Each `Rc` in `ty`, through the fields of the crates' types a body
     // holds, `seen` once each.
-    let mut found = |ty: Ty<'tcx>, fields: bool, seen: &mut IndexSet<Ty<'tcx>>| {
+    // What holds an `Rc` of a type parameter's value: the function and the
+    // parameter's index, or `None` of a field's or an impl's, which any
+    // caller may give (#1001).
+    let mut holders: IndexSet<Option<(DefId, u32)>> = IndexSet::default();
+    let mut found = |ty: Ty<'tcx>, holder: Option<DefId>, fields: bool, seen: &mut IndexSet<Ty<'tcx>>| {
         let mut held = vec![ty];
         while let Some(ty) = held.pop() {
             if !seen.insert(ty) {
@@ -162,6 +173,9 @@ pub(super) fn counted_rcs<'tcx>(
             for part in ty.walk().filter_map(|part| part.as_type()) {
                 if let Some(pointee) = rc_pointee(tcx, part).or_else(|| weak_pointee(tcx, part)) {
                     pointees.insert(erased(pointee));
+                    if let ty::Param(param) = *pointee.kind() {
+                        holders.insert(holder.map(|holder| (holder, param.index)));
+                    }
                 }
                 // What a body holds of a type, its fields hold.
                 if fields
@@ -185,6 +199,9 @@ pub(super) fn counted_rcs<'tcx>(
     // clones: what else may be one JS function given it twice.
     let (mut copied, mut cloned): (IndexSet<Ty<'tcx>>, IndexSet<Ty<'tcx>>) = (IndexSet::default(), IndexSet::default());
     let mut points_at_functions = false;
+    // Each count read of a type parameter's `Rc`, by the function and the
+    // parameter's index, and the parameter.
+    let mut of_params: IndexSet<(DefId, u32, Ty<'tcx>)> = IndexSet::default();
     for body in all_bodies {
         let owner = tcx.typeck_root_def_id(body.def_id);
         let env = ty::TypingEnv::non_body_analysis(tcx, owner);
@@ -193,13 +210,13 @@ pub(super) fn counted_rcs<'tcx>(
         let mut owned_seen = IndexSet::default();
         // A parameter nothing reads is dropped where no expression is of it.
         for param in body.thir.params.iter() {
-            found(param.ty, true, &mut seen);
+            found(param.ty, Some(owner), true, &mut seen);
             if params_may_drop {
                 owned_dropping(tcx, (env, &given), param.ty, &mut owned_seen, &mut counted);
             }
         }
         for (id, expr) in body.thir.exprs.iter_enumerated() {
-            found(expr.ty, true, &mut seen);
+            found(expr.ty, Some(owner), true, &mut seen);
             points_at_functions |= raw_pointee(tcx, expr.ty).is_some_and(
                 |(pointee, _)| matches!(pointee.kind(), ty::Dynamic(predicates, ..) if is_fn_dyn(tcx, predicates)),
             );
@@ -238,7 +255,12 @@ pub(super) fn counted_rcs<'tcx>(
                 if reads_rc_count(tcx, def_id, args.types().next())
                     && !self_handles.asks_no_count(body.def_id, expr.span)
                 {
-                    counted.insert(erased(args.type_at(0)));
+                    // Of a type parameter's value, what the function's
+                    // callers give it, where they're seen (#1001).
+                    match *args.type_at(0).kind() {
+                        ty::Param(param) => _ = of_params.insert((owner, param.index, erased(args.type_at(0)))),
+                        _ => _ = counted.insert(erased(args.type_at(0))),
+                    }
                 } else if compares_fn_identity(tcx, def_id, args.types().next()) {
                     asked.insert(erased(args.type_at(0)));
                 }
@@ -269,6 +291,7 @@ pub(super) fn counted_rcs<'tcx>(
                 for field in tcx.adt_def(id).all_fields() {
                     found(
                         tcx.type_of(field.did).instantiate_identity().skip_normalization(),
+                        None,
                         false,
                         &mut seen,
                     );
@@ -276,6 +299,7 @@ pub(super) fn counted_rcs<'tcx>(
             }
             DefKind::Impl { .. } => found(
                 tcx.type_of(id).instantiate_identity().skip_normalization(),
+                None,
                 false,
                 &mut seen,
             ),
@@ -310,6 +334,12 @@ pub(super) fn counted_rcs<'tcx>(
             counted.insert(pointee);
         }
     }
+    // A type parameter's count read: the parameter, which settles as any
+    // other a function holds does, below.
+    for &(owner, index, param) in &of_params {
+        counted.insert(param);
+        holders.insert(Some((owner, index)));
+    }
     pointees.extend(counted.iter().copied());
     let mut counted = Counted {
         all: false,
@@ -317,14 +347,18 @@ pub(super) fn counted_rcs<'tcx>(
         points_at_functions,
         types: counted,
     };
-    loop {
+    // Settled to a fixed point; of a type parameter's resolved, `bare`
+    // false, never the parameter itself, which `may_be` would take for
+    // every type.
+    let settle = |counted: &mut Counted<'tcx>, bare: bool| loop {
         let mut more: Vec<Ty<'tcx>> = (pointees.iter())
             .filter(|&&pointee| !counted.types.contains(&pointee))
+            .filter(|&&pointee| bare || head(tcx, pointee).is_some())
             .filter(|&&pointee| {
                 // What may be one counted is: generic code's of its
                 // parameter's, and each it's of (ADR 0852).
                 counted.types.iter().any(|&t| may_be(tcx, t, pointee))
-                    || !pointee.has_non_region_param() && runs(&counted, pointee)
+                    || !pointee.has_non_region_param() && runs(counted, pointee)
             })
             .copied()
             .collect();
@@ -345,11 +379,79 @@ pub(super) fn counted_rcs<'tcx>(
             break;
         }
         counted.types.extend(more);
+    };
+    // What's counted before a type parameter's stands for every type.
+    let before = counted.types.clone();
+    settle(&mut counted, true);
+    // An `Rc` of a type parameter's value may be of any type; but where each
+    // function that holds one is seen given its types, those types alone,
+    // as what's given it may be no other (#1001).
+    if counted.types.iter().any(|&t| head(tcx, t).is_none()) {
+        let callers = callers_of(tcx, all_bodies);
+        let given: Option<Vec<IndexSet<Ty<'tcx>>>> = (holders.iter())
+            .map(|&holder| holder.and_then(|held| given_types(tcx, &callers, held, &mut IndexSet::default())))
+            .collect();
+        match given {
+            Some(given) => {
+                counted.types = before.into_iter().filter(|&t| head(tcx, t).is_some()).collect();
+                counted.types.extend(given.into_iter().flatten());
+                settle(&mut counted, false);
+            }
+            None => counted.all = true,
+        }
     }
-    // An `Rc` of a type parameter's value may be of any type.
-    counted.all = counted.types.iter().any(|&t| head(tcx, t).is_none());
     counted.compared_uncounted = !counted.all && asked.iter().any(|pointee| !counted.types.contains(pointee));
     counted
+}
+
+/// Each function the crate names, called or as a value, and each naming of
+/// it: by what, its body's owner, and its generic arguments there.
+type Callers<'tcx> = IndexMap<DefId, Vec<(DefId, ty::GenericArgsRef<'tcx>)>>;
+
+fn callers_of<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Callers<'tcx> {
+    let mut callers: Callers<'tcx> = IndexMap::default();
+    for body in all_bodies {
+        let caller = tcx.typeck_root_def_id(body.def_id);
+        for (callee, args, _) in crate::lower::instances::calls_of(body) {
+            callers.entry(callee).or_default().push((caller, args));
+        }
+    }
+    callers
+}
+
+/// Each type the crate's namings of `owner` give its type parameter of
+/// `index`, of a caller's own parameter what its callers give that, in
+/// turn: `None` where one can't be seen, so the parameter may be any type.
+/// A trait's or an impl's method is called through a dictionary; a `pub`
+/// function by JS, or a library's by its consumers; and one given what
+/// holds a type parameter, not one, is given what's resolved no further.
+fn given_types<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    callers: &Callers<'tcx>,
+    (owner, index): (DefId, u32),
+    seen: &mut IndexSet<(DefId, u32)>,
+) -> Option<IndexSet<Ty<'tcx>>> {
+    // Met again, a caller's own: what reaches it is what its other callers
+    // give, which they answer for.
+    if !seen.insert((owner, index)) {
+        return Some(IndexSet::default());
+    }
+    if tcx.trait_of_assoc(owner).is_some()
+        || tcx.trait_impl_of_assoc(owner).is_some()
+        || tcx.visibility(owner).is_public()
+    {
+        return None;
+    }
+    let mut given = IndexSet::default();
+    for &(caller, args) in callers.get(&owner).into_iter().flatten() {
+        let arg = tcx.erase_and_anonymize_regions(args.get(index as usize)?.as_type()?);
+        match *arg.kind() {
+            ty::Param(param) => given.extend(given_types(tcx, callers, (caller, param.index), seen)?),
+            _ if arg.has_non_region_param() => return None,
+            _ => _ = given.insert(arg),
+        }
+    }
+    Some(given)
 }
 
 /// Is `rc`, an `Rc` unsized, one made there of a JS function made there,

@@ -307,3 +307,28 @@ already was. No corpus snapshot changed. Corpus case
 `rc_of_an_impls_parameter_counted_as_any.rs`; the pair is off
 `test/neighbours-known.txt`. Mutation `impl-rc-pointees-unread`
 (`lower/analysis/rc_counts.ts`).
+
+## Amendment: a type parameter's `Rc`, of what its callers give (#1001, #1003)
+
+An `Rc` of a type parameter's value counted made every `Rc` counted
+(`Counted.all`), since the parameter may be any type. Beside a neighbour's
+`fn count<T>(rc: &Rc<T>) -> usize { Rc::strong_count(rc) }`, a class's
+constructor giving `Rc<Self>` was refused (#1001). Now, where each function
+that holds an `Rc` of a bare type parameter is seen given its types
+(`given_types`, through a caller's own parameter passed on), the `Rc`s of
+those types are counted, and the parameter stands for no other.
+`instances::calls_of` names each call of a function and each use of it as a
+value. Unresolved, so the parameter is still any type and every `Rc` is
+counted:
+- a trait's or an impl's method, called through a dictionary;
+- a `pub` function, which JS or a library's consumers call;
+- an `Rc<T>` a field or an impl holds;
+- a caller that gives what holds a type parameter, but isn't one.
+A `dyn Fn` may now be another only where it takes what the other does
+(`head`), so a neighbour's `ptr_eq` of an `Rc<dyn Fn(u32) -> u32>` no
+longer counts an `Rc<dyn Fn()>`, which made a closure holding one drop
+(#1003). Corpus cases `rc_counted_by_a_generic_beside_a_class`,
+`rc_counted_by_a_trait_method` and `rc_dyn_fn_counted_by_its_signature`;
+mutations `rc-param-resolution-unasked`, `rc-param-impl-method-resolved`
+and `rc-dyn-fn-any-other`. The `pub` and field cases guard callers outside
+the crate, which no one-crate case shows: they have no mutation.

@@ -17,8 +17,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate that counts one type's `Rc`s counts every one, React's context `{ value, strong, weak }` beside a counted `Rc<Slot<T>>` (ADR 0852)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "    counted.all = counted.types.iter().any(|&t| head(tcx, t).is_none());\n",
-    replace: "    counted.all = !counted.types.is_empty();\n",
+    find: "    if counted.types.iter().any(|&t| head(tcx, t).is_none()) {\n",
+    replace: "    counted.all = !counted.types.is_empty();\n    if counted.types.iter().any(|&t| head(tcx, t).is_none()) {\n",
     tests: ["test/crates.test.ts", "-t", "counts each type"],
   },
   {
@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc` of a value with a destructor isn't counted, and is refused",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "                    || !pointee.has_non_region_param() && runs(&counted, pointee)\n",
-    replace: "                    || false && runs(&counted, pointee)\n",
+    find: "                    || !pointee.has_non_region_param() && runs(counted, pointee)\n",
+    replace: "                    || false && runs(counted, pointee)\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_destructors.rs$"],
   },
   {
@@ -95,8 +95,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc` of a value that holds a counted `Rc` isn't counted, as its drop runs only once that one is",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "        counted.types.extend(more);\n    }\n",
-    replace: "        counted.types.extend(more);\n        break;\n    }\n",
+    find: "        counted.types.extend(more);\n    };\n",
+    replace: "        counted.types.extend(more);\n        break;\n    };\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_destructors.rs$"],
   },
   {
@@ -313,5 +313,29 @@ export const mutations: Mutation[] = [
     find: "            DefKind::Impl { .. } => found(\n",
     replace: "            DefKind::Impl { .. } if false => found(\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_of_an_impls_parameter_counted_as_any.rs$"],
+  },
+  {
+    name: "rc-param-resolution-unasked",
+    breaks: "a generic function's counted `Rc<T>` counts every `Rc`, though each of its callers is seen giving `T` a type, so a class constructor's `Rc<Self>` beside it is refused (#1001)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "        match given {\n",
+    replace: "        match given.filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_counted_by_a_generic_beside_a_class.rs$"],
+  },
+  {
+    name: "rc-param-impl-method-resolved",
+    breaks: "a trait impl's generic method that counts an `Rc<T>`, called through its trait by callers its own calls don't name, is taken for one given nothing, so the `Rc` it's given isn't counted and its count is wrong (#1001)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "        || tcx.trait_impl_of_assoc(owner).is_some()\n",
+    replace: "        || false\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_counted_by_a_trait_method.rs$"],
+  },
+  {
+    name: "rc-dyn-fn-any-other",
+    breaks: "an `Rc<dyn Fn()>` may be any other `dyn Fn`'s, so a neighbour's `ptr_eq` of an `Rc<dyn Fn(u32) -> u32>` counts it, and a closure holding it drops (#1003)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "            let args = super::closures::fn_dyn_args(tcx, predicates).into_iter().collect();\n",
+    replace: "            let args: Vec<Ty<'tcx>> = Vec::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_dyn_fn_counted_by_its_signature.rs$"],
   },
 ];
