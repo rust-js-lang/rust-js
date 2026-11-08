@@ -52,4 +52,12 @@ export const mutations: Mutation[] = [
     replace: "            HeapOp::Pop | HeapOp::IntoSorted | HeapOp::From => {\n",
     tests: ["test/lowering-std-unwinds.test.ts", "-t", "heap"],
   },
+  {
+    name: "heap-peek-mut-generic-unboxed",
+    breaks: "`BinaryHeap::peek_mut` in generic code gives the top, not a cell of it, so a write through it doesn't sift: the order's wrong (#1007)",
+    file: "src/lower/std_types/heap.rs",
+    find: "                    if self.mut_ref_form(item).is_cell() {\n",
+    replace: "                    if self.mut_ref_form(item).is_cell() && !self.is_unknown(item) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
+  },
 ];

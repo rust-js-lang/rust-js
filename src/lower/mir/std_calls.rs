@@ -613,7 +613,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut list = vec![items, start];
                 list.extend(end);
                 let view = this.view_call("$view", list);
-                match this.mut_ref_form(generic_args.type_at(0)) == MutRefForm::Box {
+                match this.mut_ref_form(generic_args.type_at(0)).is_cell() {
                     true => Expr::call_helper("$mutItems", vec![view]),
                     false => view,
                 }
@@ -997,7 +997,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             StepOp::Peek => Expr::call_helper("$peek", vec![it]),
                             // A handle on a number or text, else the item itself.
                             StepOp::PeekMut => match this.iterator_item(arg_tys[0].peel_refs()) {
-                                Some(item) if this.mut_ref_form(item) == MutRefForm::Box => {
+                                Some(item) if this.mut_ref_form(item).is_cell() => {
                                     Expr::call_helper("$peekCell", vec![it])
                                 }
                                 _ => Expr::call_helper("$peek", vec![it]),

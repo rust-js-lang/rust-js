@@ -4,7 +4,6 @@
 
 use crate::js::result;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
-use crate::lower::MutRefForm;
 use crate::lower::calls::Call;
 use crate::lower::recognition::{Std, TypeFact, any_trait, linked_twice};
 use crate::lower::{FnCx, R};
@@ -117,11 +116,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `&mut` to a number or text is the pair, whose `value` it is
             // (ADR 0074).
             AnyOp::DowncastMut => {
-                let found = if self.mut_ref_form(of) == MutRefForm::Box {
-                    pair
-                } else {
-                    inside
-                };
+                let found = if self.mut_ref_form(of).is_cell() { pair } else { inside };
                 Expr::cond(is, found, Expr::undefined())
             }
             // A counted `Rc`'s, itself, as what it points at is (ADR 0520).

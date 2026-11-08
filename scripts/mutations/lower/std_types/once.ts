@@ -7,9 +7,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`get_mut` of a number gives the number, so a write through it is lost",
     file: "src/lower/std_types/once.rs",
-    find: "            OnceOp::GetMut if self.mut_ref_form(item) == MutRefForm::Box => {\n",
+    find: "            OnceOp::GetMut if self.mut_ref_form(item).is_cell() => {\n",
     replace:
-      "            OnceOp::GetMut if false && self.mut_ref_form(item) == MutRefForm::Box => {\n",
+      "            OnceOp::GetMut if false && self.mut_ref_form(item).is_cell() => {\n",
     tests: ["test/corpus.test.ts", "-t", "once_cells"],
   },
   {
@@ -58,5 +58,13 @@ export const mutations: Mutation[] = [
       '        let unset = match true {\n            true => self.spill("unset", unset, out),\n',
     tests: ["test/corpus.test.ts", "-t", "^once_cell_known_empty.rs$"],
     snapshots: true,
+  },
+  {
+    name: "once-get-mut-generic-unboxed",
+    breaks: "`OnceCell::get_mut` in generic code gives the value, not the cell, which generic code writes as a box: JS throws (#1007)",
+    file: "src/lower/std_types/once.rs",
+    find: "            OnceOp::GetMut if self.mut_ref_form(item).is_cell() => {\n",
+    replace: "            OnceOp::GetMut if self.mut_ref_form(item).is_cell() && !self.is_unknown(item) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
   },
 ];

@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`force_mut` of a number gives the number, so a write through it is lost",
     file: "src/lower/std_types/lazy.rs",
-    find: "        if op == LazyOp::Force || op == LazyOp::ForceMut && self.mut_ref_form(item) != MutRefForm::Box {\n",
+    find: "        if op == LazyOp::Force || op == LazyOp::ForceMut && !self.mut_ref_form(item).is_cell() {\n",
     replace: "        if op == LazyOp::Force || op == LazyOp::ForceMut {\n",
     tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
   },
@@ -27,5 +27,13 @@ export const mutations: Mutation[] = [
     find: "        Ok(Some(Expr::cond(made, given, Expr::undefined())))\n",
     replace: "        Ok(Some(given))\n",
     tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
+  },
+  {
+    name: "lazy-force-mut-generic-unboxed",
+    breaks: "`LazyCell::force_mut` in generic code gives the value, which generic code writes as a box: JS throws (#1007)",
+    file: "src/lower/std_types/lazy.rs",
+    find: "        if op == LazyOp::Force || op == LazyOp::ForceMut && !self.mut_ref_form(item).is_cell() {\n",
+    replace: "        if op == LazyOp::Force || op == LazyOp::ForceMut && (!self.mut_ref_form(item).is_cell() || self.is_unknown(item)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
   },
 ];

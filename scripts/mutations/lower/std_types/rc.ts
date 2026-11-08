@@ -227,4 +227,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(false) | None => Ok(None),\n            #[allow(unreachable_patterns)]\n            _ => Ok(Some(Some(self.type_fact_value(\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_eq_generic_by_address_first.rs$"],
   },
+  {
+    name: "rc-get-mut-generic-unboxed",
+    breaks: "`Rc::get_mut` in generic code gives the value, not the `Rc`'s box, which generic code writes as a box: JS throws (#1007)",
+    file: "src/lower/std_types/rc.rs",
+    find: "        match self.mut_ref_form(item).is_cell() {\n",
+    replace: "        match self.mut_ref_form(item).is_cell() && !self.is_unknown(item) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
+  },
 ];

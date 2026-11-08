@@ -6,7 +6,6 @@ use crate::lower::calls::{Call, apply};
 use crate::lower::drops::Drops;
 
 use crate::js::result;
-use crate::lower::MutRefForm;
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -553,7 +552,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        if self.mut_ref_form(item) != MutRefForm::Box {
+        if !self.mut_ref_form(item).is_cell() {
             // The `Option` the `&mut` is to, through its cell.
             let (option, _) = self.through_refs(option, option_ref);
             return Ok(self.option_items(option, item, out));

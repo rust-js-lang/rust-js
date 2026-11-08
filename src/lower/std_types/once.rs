@@ -3,7 +3,6 @@
 //! it's set, and set where it's known empty by an assignment (ADR 0847).
 
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind, result};
-use crate::lower::MutRefForm;
 use crate::lower::calls::Call;
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
@@ -48,7 +47,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             OnceOp::GetMut if self.boxed_payload(item) => {
                 return Err(self.unsupported(span, &format!("`get_mut` of a `OnceCell` of `{item}`")));
             }
-            OnceOp::GetMut if self.mut_ref_form(item) == MutRefForm::Box => {
+            OnceOp::GetMut if self.mut_ref_form(item).is_cell() => {
                 let cell = arg();
                 let cell = if cell.reads_same() {
                     cell

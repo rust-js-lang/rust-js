@@ -305,7 +305,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a deque's `range_mut` of numbers from MIR gives the numbers, not boxes on them, so writing one changes nothing",
     file: "src/lower/mir/std_calls.rs",
-    find: '                match this.mut_ref_form(generic_args.type_at(0)) == MutRefForm::Box {\n                    true => Expr::call_helper("$mutItems", vec![view]),\n',
+    find: '                match this.mut_ref_form(generic_args.type_at(0)).is_cell() {\n                    true => Expr::call_helper("$mutItems", vec![view]),\n',
     replace:
       '                match false {\n                    true => Expr::call_helper("$mutItems", vec![view]),\n',
     tests: ["test/corpus.test.ts", "-t", "deque_range_mut"],
@@ -596,8 +596,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`peek_mut` of numbers gives the number, which a write changes nowhere",
     file: "src/lower/mir/std_calls.rs",
-    find: "                                Some(item) if this.mut_ref_form(item) == MutRefForm::Box => {\n",
-    replace: "                                Some(item) if false && this.mut_ref_form(item) == MutRefForm::Box => {\n",
+    find: "                                Some(item) if this.mut_ref_form(item).is_cell() => {\n",
+    replace: "                                Some(item) if false && this.mut_ref_form(item).is_cell() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_and_peek_mut.rs$"],
   },
   {
@@ -881,5 +881,21 @@ export const mutations: Mutation[] = [
     find: "                        Value::Ref(place) => this.box_of_place(state, place),\n",
     replace: "                        Value::Ref(_) => None,\n",
     tests: ["test/lowering-std-unwinds.test.ts", "-t", "generic clone_from"],
+  },
+  {
+    name: "peek-mut-generic-unboxed",
+    breaks: "`peek_mut` in generic code gives the item, not a cell of it, which generic code writes as a box: JS throws (#1007)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                                Some(item) if this.mut_ref_form(item).is_cell() => {\n",
+    replace: "                                Some(item) if this.mut_ref_form(item).is_cell() && !this.is_unknown(item) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
+  },
+  {
+    name: "deque-range-mut-generic-unboxed",
+    breaks: "`VecDeque::range_mut` in generic code steps the items, not cells of them, which generic code writes as boxes: JS throws (#1007)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                match this.mut_ref_form(generic_args.type_at(0)).is_cell() {\n",
+    replace: "                match this.mut_ref_form(generic_args.type_at(0)).is_cell() && !this.is_unknown(generic_args.type_at(0)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
   },
 ];

@@ -865,4 +865,20 @@ export const mutations: Mutation[] = [
     replace: "                if !boxed =>\n",
     tests: ["test/corpus.test.ts", "-t", "^option_chains_fused.rs$"],
   },
+  {
+    name: "result-as-mut-generic-unboxed",
+    breaks: "`Result::as_mut` in generic code gives a type parameter's `&mut` the value, which generic code writes as a box, `x.value = v`: JS throws (#1007)",
+    file: "src/lower/combinators.rs",
+    find: "                let boxed = |ty: Ty<'tcx>| self.mut_ref_form(ty).is_cell();\n",
+    replace: "                let boxed = |ty: Ty<'tcx>| self.mut_ref_form(ty).is_cell() && !self.is_unknown(ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
+  },
+  {
+    name: "dedup-by-generic-refused",
+    breaks: "`dedup_by` and `pop_if` of a `Vec<T>` in generic code are refused, as if its items' `&mut` couldn't be given to the closure (#1007)",
+    file: "src/lower/combinators.rs",
+    find: "                    .is_none_or(|item| !self.is_object(item) && !self.mut_ref_form(item).is_cell()) =>\n",
+    replace: "                    .is_none_or(|item| !self.is_object(item) && (!self.mut_ref_form(item).is_cell() || self.is_unknown(item))) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
+  },
 ];

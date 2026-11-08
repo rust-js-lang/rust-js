@@ -16,7 +16,6 @@ use super::recognition::trait_method;
 use super::{FnCx, R, representation::Num};
 use crate::js::result;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
-use crate::lower::MutRefForm;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -690,7 +689,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.unsupported(span, "this `Result`"));
                 };
                 let (ok_ty, err_ty) = (sides.type_at(0), sides.type_at(1));
-                let boxed = |ty: Ty<'tcx>| self.mut_ref_form(ty) == MutRefForm::Box;
+                let boxed = |ty: Ty<'tcx>| self.mut_ref_form(ty).is_cell();
                 let part = |boxed: bool| if boxed { Expr::handle(inside()) } else { inside() };
                 let ok = part(boxed(ok_ty));
                 match comb {
@@ -793,7 +792,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::DedupBy | Comb::DedupByKey | Comb::PopIf
                 if self
                     .slice_item(subject_ty)
-                    .is_none_or(|item| !self.is_object(item) && self.mut_ref_form(item) != MutRefForm::Box) =>
+                    .is_none_or(|item| !self.is_object(item) && !self.mut_ref_form(item).is_cell()) =>
             {
                 return Err(self.unsupported(span, "this call, of items a `&mut` can't be given to its closure"));
             }

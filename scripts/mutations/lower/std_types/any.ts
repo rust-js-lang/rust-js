@@ -68,8 +68,8 @@ export const mutations: Mutation[] = [
     name: "downcast-mut-copy",
     breaks: "`downcast_mut::<u8>()` gives the number, so `*n += 1` is lost",
     file: "src/lower/std_types/any.rs",
-    find: "                let found = if self.mut_ref_form(of) == MutRefForm::Box {\n                    pair\n",
-    replace: "                let found = if false {\n                    pair\n",
+    find: "                let found = if self.mut_ref_form(of).is_cell() { pair } else { inside };\n",
+    replace: "                let found = if false { pair } else { inside };\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
   },
   {

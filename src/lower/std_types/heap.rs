@@ -5,7 +5,6 @@ use rustc_middle::ty::Ty;
 use rustc_span::Span;
 
 use crate::js::Expr;
-use crate::lower::MutRefForm;
 use crate::lower::{FnCx, R};
 
 /// A `BinaryHeap`'s: a JS array kept in the order Rust's heap keeps it,
@@ -54,7 +53,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 HeapOp::PeekTop { mutable: false } => Expr::index(Expr::member(guard, "heap"), Expr::int(0)),
                 HeapOp::PeekTop { .. } => {
                     let mut given = vec![guard];
-                    if self.mut_ref_form(item) == MutRefForm::Box {
+                    if self.mut_ref_form(item).is_cell() {
                         given.push(Expr::bool(true));
                     }
                     Expr::call(Expr::helper("$peekMutTop"), given)

@@ -2,7 +2,6 @@
 //! `init` makes the first time it's used, as Rust's does.
 
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
-use crate::lower::MutRefForm;
 use crate::lower::calls::Call;
 use crate::lower::recognition::{Std, StdItem};
 use crate::lower::{FnCx, R};
@@ -53,7 +52,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => "$forceLock",
             false => "$force",
         };
-        if op == LazyOp::Force || op == LazyOp::ForceMut && self.mut_ref_form(item) != MutRefForm::Box {
+        if op == LazyOp::Force || op == LazyOp::ForceMut && !self.mut_ref_form(item).is_cell() {
             return Ok(Some(Expr::call(Expr::var(force), vec![lazy])));
         }
         if op == LazyOp::GetMut && self.boxed_payload(item) {
@@ -72,7 +71,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(StmtKind::Expr(force).at(self.js_span(span)));
                 return Ok(Some(lazy));
             }
-            LazyOp::GetMut if self.mut_ref_form(item) == MutRefForm::Box => lazy.clone(),
+            LazyOp::GetMut if self.mut_ref_form(item).is_cell() => lazy.clone(),
             LazyOp::Get if self.boxed_payload(item) => self.some(Expr::held(lazy.clone())),
             _ => Expr::held(lazy.clone()),
         };

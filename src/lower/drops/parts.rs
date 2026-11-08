@@ -2,7 +2,6 @@
 //! facts, found before it's lowered.
 
 use super::*;
-use crate::lower::MutRefForm;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a `ty`, an iterator, is dropped by closing it, `it.return()`:
@@ -320,7 +319,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // `drop(&mut self)`: a `&mut` to what isn't an object is a box of it
         // (ADR 0072).
-        let this = match self.mut_ref_form(ty) == MutRefForm::Box {
+        let this = match self.mut_ref_form(ty).is_cell() {
             true => Expr::object(vec![js::Prop::Field(js::HELD.into(), value)]),
             false => value,
         };

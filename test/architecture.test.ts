@@ -1206,8 +1206,9 @@ test("a std call's kind is chosen of what it reads alone", () => {
 // `retain_mut` in generic code asked `is_boxable` alone, giving a closure
 // that writes `x.value` the item itself (#131). A site that asks for a
 // concrete `Box` alone, not a generic one, gives a type parameter's `&mut`
-// another form than its parameter's: each is listed, so one more is a
-// choice someone made.
+// another form than its parameter's, which generic code reads as a box:
+// 17 such std calls gave it the value, and a write through threw (#1007).
+// None does now.
 test("a `&mut`'s JS form is mut_ref_form's alone", () => {
   const owner = "src/lower/representation/mut_ref.rs";
   const lowering = files("src/lower").filter((file) => file.endsWith(".rs") && file !== owner);
@@ -1219,19 +1220,7 @@ test("a `&mut`'s JS form is mut_ref_form's alone", () => {
   const boxAlone = Object.fromEntries(lowering
     .map((file) => [file, (read(file).match(/\bMutRefForm::Box\b/g) ?? []).length] as const)
     .filter(([, count]) => count > 0));
-  expect(boxAlone).toEqual({
-    "src/lower/combinators.rs": 2,
-    "src/lower/drops/parts.rs": 1,
-    "src/lower/mir/std_calls.rs": 2,
-    "src/lower/std_types/any.rs": 1,
-    "src/lower/std_types/heap.rs": 1,
-    "src/lower/std_types/lazy.rs": 2,
-    "src/lower/std_types/once.rs": 1,
-    "src/lower/std_types/option.rs": 1,
-    "src/lower/std_types/pin.rs": 4,
-    "src/lower/std_types/rc.rs": 1,
-    "src/lower/std_types/uninit.rs": 1,
-  });
+  expect(boxAlone).toEqual({});
 });
 
 // What a function's JS takes and gives is its `JsSignature`, lowering's

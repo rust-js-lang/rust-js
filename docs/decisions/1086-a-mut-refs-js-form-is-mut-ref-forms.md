@@ -121,7 +121,8 @@ The work lands in steps:
     gives its closure a handle it calls as the function;
   - the 21 sites that ask `Box` alone give a type parameter's `&mut` the
     value, where a parameter is a box: `Option::as_mut`, `Rc::get_mut`,
-    `Pin::set` and the others, in generic code;
+    `Pin::set` and the others, in generic code (a wrong answer, #1007:
+    each asks `is_cell` now, below);
   - `moved_out` copies apart a type parameter bound by `Fn` (`Itself`),
     which the form says isn't written in place.
   Each is a matrix case of step 2; one that's a wrong answer is filed and
@@ -217,6 +218,20 @@ take one too. The other 70 run as native Rust does.
   `moved_out`, and a cell of one moved whole out of its field by
   `moved_out_of_cell`; its `get_mut` and `try_borrow` lend the handle a
   `&mut` to it is (ADR 1044's amendment).
+- **#1007, a `&mut` a std call lends generic code is a box.** The 17
+  std calls that asked `mut_ref_form(item) == MutRefForm::Box`, a box of
+  a known type alone, gave a type parameter's `&mut`, `GenericBox`, the
+  value, which generic code reads as a box, as every `&mut T` there is
+  (ADR 0099): `Result::as_mut` and `iter_mut`, `Pin::set`, `Rc::get_mut`,
+  `OnceCell::get_mut`, `LazyCell::force_mut`, `Peekable::peek_mut` and
+  `VecDeque::range_mut` threw on the write in JS, `BinaryHeap::peek_mut`
+  didn't sift, and `dedup_by` and `pop_if` were refused. Each asks
+  `is_cell`, a box of either kind, as a parameter does; no site asks for
+  a known type's box alone. No corpus case or matrix program had reached
+  one with a type parameter: the corpus and every `&mut` matrix program
+  are byte-identical, and `generic_mut_lent_by_std.rs` holds each. Found
+  refactoring the sites into the form's methods (#821). Case (ADR 0262):
+  results change, so Rust's.
 
 ## Step 4: the matrix grown to the space (2026-11-08, #855)
 
