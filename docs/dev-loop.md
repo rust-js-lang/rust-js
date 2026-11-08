@@ -17,6 +17,12 @@ Measure before and after, on the same machine and under the same load, with
 `bun run check:fast --all --profile` for core use, and `bun run task` for a
 task's wall time against its check time (the ledger of task times is #882).
 
+**Benchmark only on a quiet machine** (the user, 2026-11-08). Nothing else may
+run while you time: no other agent's checks, builds, nets or regens, and no
+background job of your own. Check `uptime` and stop or wait for anything else
+before each timed run, and give each number with its load. A timing taken
+under load isn't a measurement, and doesn't go in this ledger.
+
 ## Active
 
 | Speed-up | Before | After | How | Where |
