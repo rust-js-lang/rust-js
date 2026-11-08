@@ -217,8 +217,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`...first` of an array whose items nothing changes stops a later call's value being read in place",
     file: "src/lower/mir/tidy.rs",
-    find: ' || plain.contains(&format!("...{v}"))',
-    replace: "",
+    find: '            if !set.contains(v) && plain.contains(&format!("...{v}"))),\n',
+    replace: "            if !set.contains(v) && false),\n",
     tests: [
       "test/lowering-collections.test.ts",
       "-t",
@@ -445,5 +445,13 @@ export const mutations: Mutation[] = [
     find: "    let stopped = |body: &mut Vec<Stmt>| (stages::GUARDED_CLEANUPS.run)(body, hints);\n",
     replace: "    let stopped = |_: &mut Vec<Stmt>| {};\n",
     tests: ["test/tidy-stages.test.ts", "-t", "unwinding_drop_aborts_locals"],
+  },
+  {
+    name: "plain-iterator-spread-passes",
+    breaks: "a spread of a plain value that's an iterator, a function's `inspect(see)`, is taken to do nothing, so `[...it, probe(9)]` runs `see` before `probe(9)` where Rust makes the chain's argument first (#1015)",
+    file: "src/lower/mir/tidy.rs",
+    find: "            if !set.contains(v) && plain.contains(&format!(\"...{v}\"))),\n",
+    replace: "            if !set.contains(v) && (plain.contains(v) || plain.contains(&format!(\"...{v}\")))),\n",
+    tests: ["test/corpus.test.ts", "-t", "^inspect_by_a_function_before_a_chain_argument.rs$"],
   },
 ];

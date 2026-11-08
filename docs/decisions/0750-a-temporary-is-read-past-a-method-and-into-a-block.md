@@ -301,3 +301,18 @@ a getter, an argument that replaces the function, and a setter, logging
 `get`, `arg`, the first function's call, then `set`; and the mutations
 `assigned-field-setter-first` and `assigned-field-object-unread`
 (`js/expr_walk.ts`). No corpus case's JS changes: a setter is JS's.
+
+## Amendment: a spread of what's plain but an array's items does something (#1015, 2026-11-08)
+
+ADR 0262's case: results change, so Rust's order is kept. `read_past_calls`
+let what acts move past `...v` of any plain value, but a value plain in
+Rust, a function's `inspect(see)` whose type holds no closure, may be an
+iterator, and spreading it steps it, running what it calls:
+`vec![probe(0)].into_iter().inspect(see).chain(vec![probe(9)])` collected
+was `[...value, probe(9)]`, which printed `see 0` before `probe 9`, where
+Rust makes the chain's argument first (the metamorphic net's round 2,
+#1008). Only an array's items, `...items` (`Locals::plain`'s), pass: a
+spread of another plain value is read where it is. A closure's adapter was
+right already, its type not plain. Corpus case
+`inspect_by_a_function_before_a_chain_argument`; mutation
+`plain-iterator-spread-passes`; no corpus snapshot changes.

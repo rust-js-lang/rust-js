@@ -39,9 +39,6 @@ plain field std_rev.rs
 #1014 P0: mem::discriminant(a) == discriminant(b) in generic code is true for different variants
 plain std generic enum_discriminant.rs
 
-#1015 P0 (iterators): .inspect(fn_item).chain(arg) runs inspect before the chain's argument is evaluated
-plain closure-fn unread_collected_chain.rs
-
 #1016 P0 (iterators): an iterator held in an Rc<RefCell<..>> given to generic code through an associated type throws or drops a step late
 plain std rc-refcell associated_iterator_dropped.rs
 plain std rc-refcell associated_iterator_given_as_it_is.rs

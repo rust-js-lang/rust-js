@@ -487,9 +487,11 @@ fn read_past_calls(e: &Expr, set: &IndexSet<String>, plain: &IndexSet<String>) -
                     if !set.contains(v) && matches!(v.as_str(), "Object" | "Math" | "JSON" | "Array" | "Number" | "String" | "console"))
         }
         ExprKind::Jsx(_) => inert_element(e, set),
-        // The items of an array nothing changes, `...first`.
+        // The items of an array nothing changes, `...first`; not a plain
+        // value's, an iterator's, a function's `inspect(see)`, which
+        // spreading steps, running what it calls (#1015).
         ExprKind::Spread(a) => matches!(&a.kind, ExprKind::Var(v)
-            if !set.contains(v) && (plain.contains(v) || plain.contains(&format!("...{v}")))),
+            if !set.contains(v) && plain.contains(&format!("...{v}"))),
         ExprKind::Unary(UnaryOp::Not, a) => past(a),
         ExprKind::Binary(
             Op::Eq
