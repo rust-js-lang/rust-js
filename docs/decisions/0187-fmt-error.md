@@ -129,3 +129,37 @@ is kept before the `try`. Found by the nightly's tidy stages (ADR 0659),
 whose `fmt_error_unwritten.rs` after `values` declared its string so. Held
 by `test/corpus/fmt_error_unwritten_branches.rs`, run as native Rust, and
 the mutation `mir-writer-const-string-in-try`.
+
+## Amendment: a write's result made as a value is its error, thrown where a function gives it back (#1011)
+
+"A `fmt::Result` as a value is `undefined`, or the error caught" held of
+what `$writeTry` caught, but `Err(fmt::Error)` made anywhere was thrown
+where it was made, `$fmtError()`: `let err: fmt::Result =
+Err(fmt::Error); println!("{}", err.is_ok())` threw where native prints
+`false`, and so did one made into a field, a `RefCell`, an array or a
+`Some`. And `is_ok()` was asked only of what `$writeTry` gave or a
+variable, so one held in a field or a `Some`, `held.0.is_ok()`, folded to
+`true`.
+
+- **`Err(fmt::Error)` made is its error, `new $FmtError()`**, and an
+  `io::Result<()>`'s `Err(e)` its `io::Error`, `e`, as what `$writeTry`
+  catches is (`adt_value`).
+- **Where a function gives one back, `_0 = ..`, it's thrown, as a call of
+  it throws** (`returned_write_result`): `Err(..)` made there as it was,
+  `$fmtError()` or `$ioThrow(e)`, and one held, `let r = ..; r`,
+  `$writeCheck(r)`, which gave the error back as a value before.
+- **Any read of one may be its error** where the crate makes one
+  (`may_be_write_error`): not `undefined`, nor a call of a function
+  `fmt_result_value` didn't catch, which can't fail; a variable, a field,
+  an item, a `Some`'s or a cell's.
+- **A `write!` to a `String` reached through a call,
+  `write!(*s.as_mut().unwrap(), ..)`,** holds the place first and is
+  caught piece by piece as one to a variable is; it threw past its
+  result.
+
+Results changed ([0262](0262-when-rust-and-js-disagree.md)), so Rust's
+are kept; the corpus's JS is otherwise the same. Held by the corpus case
+`fmt_error_as_a_value` and the mutations `fmt-error-value-thrown`,
+`returned-write-result-unchecked`, `held-write-error-taken-for-ok` and
+`string-write-through-a-call-uncaught`; the net's ten rows of #1011 run as
+native. A closure that gives back one that may fail is #1042.

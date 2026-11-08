@@ -196,14 +196,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 crate::js::result::ok(crate::lower::calls::apply(f, vec![Expr::undefined()]))
             }
         };
-        // Only what `$writeTry` caught may be an `Err`, or a variable it's in,
-        // and only where one may fail.
-        let may_be_err = may_fail
-            && match &result.kind {
-                js::ExprKind::Call(callee, _) => callee.helper_name() == Some("$writeTry"),
-                js::ExprKind::Var(_) => true,
-                _ => false,
-            };
+        // Only where one may fail, and not a call `fmt_result_value` didn't
+        // catch (`may_be_write_error`).
+        let may_be_err = may_fail && may_be_write_error(&result);
         if !may_be_err {
             for value in std::iter::once(result).chain(message) {
                 if value.has_effects() {
@@ -832,4 +827,17 @@ fn var_error_shown(value: Expr, (present, before, after): (&str, &str, &str)) ->
         Expr::str(present),
         unicode,
     )
+}
+
+/// Whether `result`, a write's result as a value, may be an `Err`, its
+/// error, where the crate makes one (ADR 0187): not `undefined`, nor a
+/// call of a function `fmt_result_value` didn't catch, which can't fail;
+/// what `$writeTry` caught, and one read where it's held, a variable's, a
+/// field's, a `Some`'s or a cell's, `let r = Err(fmt::Error)` (#1011).
+pub(in crate::lower) fn may_be_write_error(result: &Expr) -> bool {
+    match &result.kind {
+        js::ExprKind::Undefined => false,
+        js::ExprKind::Call(callee, _) => callee.helper_name().is_some(),
+        _ => true,
+    }
 }

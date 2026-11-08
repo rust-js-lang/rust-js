@@ -320,8 +320,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             unreachable!("an ADT's value")
         };
         let variant = adt_def.variant(variant_index);
-        // A write's result's `Ok` is nothing (ADRs 0054, 0132); its error is
-        // thrown, a `fmt::Error` (ADR 0187) or the `io::Error` (ADR 0462).
+        // A write's result's `Ok` is nothing (ADRs 0054, 0132); its `Err` as
+        // a value is its error, a `fmt::Error`'s `$FmtError` (ADR 0187) or
+        // the `io::Error` (ADR 0462), thrown where a function gives it back
+        // (`returned_write_result`, #1011).
         if self.is_write_result(ty) {
             return Ok(
                 match self
@@ -329,8 +331,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .is_lang_item(variant.def_id, rustc_hir::attrs::lang_items::LangItem::ResultOk)
                 {
                     true => Expr::undefined(),
-                    _ if self.is_fmt_result(ty) => Expr::call(Expr::helper("$fmtError"), Vec::new()),
-                    _ => Expr::call_helper("$ioThrow", fields),
+                    _ if self.is_fmt_result(ty) => Expr::new_(Expr::helper("$FmtError"), Vec::new()),
+                    _ => fields.into_iter().next().expect("an `io::Error`"),
                 },
             );
         }

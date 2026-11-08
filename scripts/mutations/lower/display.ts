@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "held-write-error-taken-for-ok",
+    breaks: "`is_ok()` of a `fmt::Result` held in a field or a `RefCell`, `held.0.is_ok()`, is `true`, only a variable's asked (#1011)",
+    file: "src/lower/display.rs",
+    find: "        _ => true,\n    }\n}\n",
+    replace: "        js::ExprKind::Var(_) => true,\n        _ => false,\n    }\n}\n",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_error_as_a_value.rs$"],
+  },
+  {
     name: "format-pieces-last-only",
     breaks: "a format string of `concat!`'s pieces is its last piece alone",
     file: "src/lower/display.rs",

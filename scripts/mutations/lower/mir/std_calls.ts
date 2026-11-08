@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "string-write-through-a-call-uncaught",
+    breaks: "`write!(*t.as_mut().unwrap(), ..)` of what fails throws past its `fmt::Result`, the place reached through a call not held (#1011)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    let place = match fmt && !fixed_place(&place) {\n",
+    replace: "                    let place = match false && !fixed_place(&place) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_error_as_a_value.rs$"],
+  },
+  {
     name: "wrapping-op-assign-written-through",
     breaks:
       "a `Wrapping`'s `op=` of a call's operand, through MIR's own `&mut b0`, is `$assign(b0, ..)`, written into the array its copies share: `17 (17, 17)` where Rust gives `1 (1, 17)` (#396)",
@@ -460,8 +468,8 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's `write!` of what may fail writes it whole, what came before the error lost",
     file: "src/lower/mir/std_calls.rs",
-    find: "                if matches!(given, Value::Fmt(Std::FmtNew, ..)) && fixed_place(&place) {\n",
-    replace: "                if false && fixed_place(&place) {\n",
+    find: "                    if fmt && fixed_place(&place) {\n",
+    replace: "                    if false && fixed_place(&place) {\n",
     tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {

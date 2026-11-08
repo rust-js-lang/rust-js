@@ -291,8 +291,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     let given = values.next().expect("what's pushed");
                     // A `write!` of what may fail: piece by piece, what came before
-                    // written, its `fmt::Result` the error, if any (ADR 0187).
-                    if matches!(given, Value::Fmt(Std::FmtNew, ..)) && fixed_place(&place) {
+                    // written, its `fmt::Result` the error, if any (ADR 0187); to a
+                    // place reached through a call, `*s.as_mut().unwrap()`, held (#1011).
+                    let fmt = matches!(given, Value::Fmt(Std::FmtNew, ..));
+                    let place = match fmt && !fixed_place(&place) {
+                        true => this.flush(state, out).map(|()| this.fixed_place_of(place, out))?,
+                        false => place,
+                    };
+                    if fmt && fixed_place(&place) {
                         let value = this.value_expr(given, span)?;
                         this.flush(state, out)?;
                         let js_span = this.js_span(span);

@@ -5,18 +5,6 @@
 // Rust does is taken off. A rewrite that goes wrong for another reason is a
 // line under another issue.
 
-#1011 P0 (formatting): Err(fmt::Error) made as a value throws $FmtError where it's made; a held one's is_ok() folds to true
-plain std option fmt_error_pieces.rs
-plain std option fmt_error_unwritten.rs
-plain std option fmt_error_unwritten_branches.rs
-plain std option fmt_error_write.rs
-plain std option fmt_write_function.rs
-plain std rc-refcell fmt_error_pieces.rs
-plain std rc-refcell fmt_write_function.rs
-plain std field fmt_error_pieces.rs
-plain std field fmt_error_write.rs
-plain std field fmt_write_function.rs
-
 #1017 P1: two crashes in the rc-refcell rewrite: an ICE about a const param in the param-env, and a binder.rs panic
 plain std rc-refcell const_param_drops.rs
 plain std rc-refcell held_adapters_stepped_to_their_end.rs

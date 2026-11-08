@@ -300,6 +300,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             false => value,
         };
+        let value = self.returned_write_result(state, (*place, rvalue), value, span)?;
         self.mir_store(state, *place, value, span, out)
     }
 

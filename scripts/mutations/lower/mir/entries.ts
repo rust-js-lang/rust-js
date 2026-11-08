@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "returned-write-result-unchecked",
+    breaks: "a function that gives back a `fmt::Result` it holds, `let r = Err(fmt::Error); r`, returns the error as a value, where a call of it throws, so `{:?}` of it reads `Ok(())` (#1011)",
+    file: "src/lower/mir/entries.rs",
+    find: "            _ if crate::lower::display::may_be_write_error(&result) && self.krate.any_failing => {\n",
+    replace: "            _ if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_error_as_a_value.rs$"],
+  },
+  {
     name: "write-all-value-its-length",
     breaks: "a `Vec`'s `write_all` as a value is `v.push(..)`'s length, an `io::Result<()>` read as an `Err` (#1010)",
     file: "src/lower/mir/entries.rs",

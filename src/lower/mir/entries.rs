@@ -272,6 +272,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// What a function gives back of a write's result, `_0 = ..` of a
+    /// `fmt::Result` or an `io::Result<()>`: its error thrown, as a call
+    /// of it throws (ADR 0187), `Err(fmt::Error)` made there `$fmtError()`,
+    /// `Err(e)` `$ioThrow(e)`, and one held, which may be its error as a
+    /// value, `let r = Err(fmt::Error); r`, `$writeCheck(r)` (#1011). Any
+    /// other, `value`.
+    pub(super) fn returned_write_result(
+        &mut self,
+        state: &State<'_, 'tcx>,
+        (place, rvalue): (Place<'tcx>, &Rvalue<'tcx>),
+        value: Value<'tcx>,
+        span: Span,
+    ) -> R<Value<'tcx>> {
+        let output = state.body.local_decls[mir::RETURN_PLACE].ty;
+        if place != Place::from(mir::RETURN_PLACE) || !self.is_write_result(output) {
+            return Ok(value);
+        }
+        let result = self.value_expr(value, span)?;
+        Ok(Value::Expr(match rvalue {
+            Rvalue::Aggregate(kind, _) if matches!(**kind, AggregateKind::Adt(_, variant, ..) if variant != VariantIdx::ZERO) => {
+                match self.is_fmt_result(output) {
+                    true => Expr::call(Expr::helper("$fmtError"), Vec::new()),
+                    false => Expr::call_helper("$ioThrow", vec![result]),
+                }
+            }
+            _ if crate::lower::display::may_be_write_error(&result) && self.krate.any_failing => {
+                Expr::call_helper("$writeCheck", vec![result])
+            }
+            _ => result,
+        }))
+    }
+
     /// The value of a std write that only adds what it's given, `write_all`
     /// of a `Vec<u8>`, `v.push(..)`, or of a standard stream,
     /// `$printBytes(..)`, whose JS gives a length: as the `io::Result<()>`

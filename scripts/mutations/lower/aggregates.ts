@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "fmt-error-value-thrown",
+    breaks: "`let err: fmt::Result = Err(fmt::Error)` throws where it's made, where it's a value, its `is_ok()` `false` (#1011)",
+    file: "src/lower/aggregates.rs",
+    find: "                    _ if self.is_fmt_result(ty) => Expr::new_(Expr::helper(\"$FmtError\"), Vec::new()),\n",
+    replace: "                    _ if self.is_fmt_result(ty) => Expr::call(Expr::helper(\"$fmtError\"), Vec::new()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_error_as_a_value.rs$"],
+  },
+  {
     name: "untagged-null-made-a-string",
     breaks:
       "an untagged enum's `#[rust_js::null]` variant is made its name's string",
@@ -128,18 +136,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "adt-value-fmt-ok-thrown",
-    breaks: "a `fmt::Result`'s `Ok` from MIR is thrown as an `Err` is",
+    breaks: "a `fmt::Result`'s `Ok` from MIR is its error, as an `Err` is",
     file: "src/lower/aggregates.rs",
     find: "                    true => Expr::undefined(),\n",
     replace: "                    true if false => Expr::undefined(),\n",
-    tests: ["test/corpus.test.ts", "-t", "write_to_string"],
+    tests: ["test/corpus.test.ts", "-t", "^(write_to_string|fmt_error_as_a_value).rs$"],
   },
   {
     name: "io-unit-err-not-thrown",
     breaks: "an `io::Result<()>`'s `Err` is `undefined`, `Ok`",
     file: "src/lower/aggregates.rs",
-    find: '                _ => Expr::call_helper("$ioThrow", fields),\n',
-    replace: "                _ => Expr::undefined(),\n",
+    find: '                    _ => fields.into_iter().next().expect("an `io::Error`"),\n',
+    replace: "                    _ => Expr::undefined(),\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
   {
