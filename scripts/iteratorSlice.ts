@@ -11,6 +11,11 @@
 //   bun scripts/iteratorSlice.ts run conformance [parts]   the conformance table's
 //   bun scripts/iteratorSlice.ts run forms [parts]         the corpus with std's iterator structs
 //   bun scripts/iteratorSlice.ts run rows [parts]          the rows of both tables the change names (scripts/iteratorRows.ts, #818)
+//   bun scripts/iteratorSlice.ts run format [parts]        the formatting grid's slice (#941), of a change to the formatting code
+//
+// And a change to the formatting code, `formatPaths`, runs the formatting
+// grid's slice (test/format-grid.ts, #941), each push's check's
+// `format-grid` and `check:fast`'s.
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
 import { noteRate, pick } from "./iteratorRows";
@@ -52,6 +57,37 @@ export const iteratorPaths = [
 
 const globs = iteratorPaths.map((path) => new Bun.Glob(path));
 
+/** The formatting code, as globs of the repository's paths: a
+ * placeholder's options and `format_args!`, `Display` and `Debug` and the
+ * `Formatter` the crate's own are given, and the runtime's helpers that
+ * write, pad and round what they show; and the grid that tests them. */
+export const formatPaths = [
+  "src/lower/format_spec.rs",
+  "src/lower/format_args.rs",
+  "src/lower/display.rs",
+  "src/lower/display/**",
+  "src/lower/recognition/fmt.rs",
+  "src/lower/analysis/debug.rs",
+  "src/lower/untagged/displayed.rs",
+  "src/runtime/debug*.js",
+  "src/runtime/display*.js",
+  "src/runtime/fmt_error.js",
+  "src/runtime/format_float.js",
+  "src/runtime/formatted.js",
+  "src/runtime/lower_exp.js",
+  "src/runtime/pad*.js",
+  "src/runtime/zero_pad.js",
+  "src/runtime/string_writer.js",
+  "test/format-grid.ts",
+];
+
+const formatGlobs = formatPaths.map((path) => new Bun.Glob(path));
+
+/** Whether a change of `files` touches the formatting code. */
+export function touchesFormatting(files: string[]): boolean {
+  return files.some((file) => formatGlobs.some((glob) => glob.match(file)));
+}
+
 /** Whether a change of `files` touches the iterators' code. */
 export function touchesIterators(files: string[]): boolean {
   return files.some((file) => globs.some((glob) => glob.match(file)));
@@ -66,6 +102,7 @@ export const runs = {
   matrix: [{ name: "the matrix's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "matrix" } }],
   conformance: [{ name: "the conformance table's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "conformance" } }],
   forms: [{ name: "the corpus with std's iterator structs", file: "test/iterator-forms.test.ts", env: { ITERATOR_FORMS: "corpus" } }],
+  format: [{ name: "the formatting grid's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "format" } }],
 } as const;
 
 /** `of`, in `parts` processes at once, each its share of the cases
@@ -124,7 +161,7 @@ function changeRows(parts: number): Run[] {
 
 if (import.meta.main) {
   const [command, of, count, list] = process.argv.slice(2);
-  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|rows [parts [cases]]");
+  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|rows [parts [cases]]");
   const parts = count === undefined ? caseParts(availableParallelism() * 2) : Number(count);
   process.exit((await run(of as keyof typeof runs | "rows", parts, list)) ? 0 : 1);
 }

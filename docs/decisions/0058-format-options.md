@@ -145,3 +145,14 @@ floatAsBinaryString's `{:064b}` of a `to_bits()` reads as its `{:032b}`.
 A signed one's, a float's, a `+`'s and a `#`'s stay `$zeroPad`'s. Held by
 the corpus's `stock_orders` and `matrix_integers`, and the mutations
 `signed-zero-pad-start` and `unsigned-big-zero-padded-by-helper`.
+
+## Amendment: a precision of a `bool` or of `()` (#941)
+
+`{:.2}` of a `bool`, its `Display` or `Debug`, and `{:.1?}` of `()` were
+refused. std writes each by `f.pad`, which cuts it to so many `char`s
+before it pads: `{:.2}` of `true` is `tr`, `{:>5.1?}` of `()` is `    (`.
+So they're `String(b).slice(0, 2)` and `"()".slice(0, 1)`, ASCII's, then
+padded as before. Found by the formatting grid (#941, ADR 1090, amended);
+held by `test/corpus/format_precision_of_bool_and_unit.rs` and the
+mutations `bool-precision-refused`, `unit-debug-precision-refused` and
+`bool-precision-uncut`.

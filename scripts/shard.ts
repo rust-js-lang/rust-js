@@ -158,6 +158,9 @@ export const parts: Part[] = [
   // rows it names, `pairs`, a sample of each adapter with each consumer, or
   // both (#818).
   { setting: "ITERATOR_MATRIX", value: "p.setting", runs: "push", by: "scripts/iteratorSlice.ts" },
+  // Of a change to the formatting code, the formatting grid's slice (#941);
+  // the nightly's `format` runs every batch.
+  { setting: "ITERATOR_TABLE", value: "format", runs: "push", by: "scripts/iteratorSlice.ts" },
   {
     setting: "ITERATOR_TABLE",
     value: "points",

@@ -68,6 +68,7 @@ jobs:
       since: ${{ steps.plan.outputs.since }}
       shards: ${{ steps.plan.outputs.shards }}
       iterators: ${{ steps.plan.outputs.iterators }}
+      formatting: ${{ steps.plan.outputs.formatting }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -172,6 +173,40 @@ jobs:
         env:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun scripts/iteratorSlice.ts run forms
+
+  # The formatting grid's slice (test/format-grid.ts, #941), of a check
+  # whose change is the formatting code, as `plan` says
+  # (scripts/iteratorSlice.ts's `formatPaths`): its fixed batches, of every
+  # spec, type and sink, in both builds against native Rust. The nightly's
+  # `format` runs every batch.
+  format-grid:
+    name: formatting grid slice
+    needs: plan
+    if: ${{ !inputs.nightly && needs.plan.outputs.formatting == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run the slice
+        env:
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: bun scripts/iteratorSlice.ts run format
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: format-grid-slice
+          path: target/iterator-matrix
+          if-no-files-found: ignore
+          retention-days: 14
 
   lint:
     runs-on: ubuntu-latest

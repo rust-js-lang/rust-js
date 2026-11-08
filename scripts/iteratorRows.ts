@@ -36,8 +36,9 @@ const shared = {
 };
 
 // The points tables, the iterators' (#817) and the unwind table's (#854),
-// have no rows a change picks yet: #818 decides.
-type Picking = Exclude<Table, "points" | "unwind">;
+// have no rows a change picks yet: #818 decides. The formatting grid
+// (#941) runs its slice of a change to the formatting code.
+type Picking = Exclude<Table, "points" | "unwind" | "format">;
 
 /** The seconds each table's rows a change runs take, all its picks
  * together: some 2.5 minutes of the matrix's and 40 s of the table's alone,

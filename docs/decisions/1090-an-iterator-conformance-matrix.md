@@ -349,3 +349,50 @@ once, and drops outside iterators had no such net.
   `VecDeque::retain_mut`'s eager drops (#909), `Rc`'s `==` by pointer
   (#910), and the order a stable sort (#907), a keyed `BTreeMap` (#911) and
   `max`, `min` and `clamp` (#912) call the crate's `Ord`.
+
+## Amendment: every format spec of each value, the formatting grid (#941, 2026-11-08)
+
+The user's decision, through m6-react: the generated tables found most of
+the wrong answers, and `format!`'s output, the most visible a program
+has, had no table.
+
+- **A fifth table, `ITERATOR_TABLE=format`** (`test/format-grid.ts`), run
+  by the same harness and oracle through its `TableOf`, each case a `Row`.
+  Its runner is its own two lines, `run(name, case)`: a case never panics,
+  so it needs no points.
+- **Its space is spec × value × sink:** 60 specs of the eight traits a
+  placeholder formats by (width, fill and alignment, a fill that isn't
+  ASCII, `+`, `#`, `0`, precision, each given by argument too, `{:1$}`,
+  `{:.*}`, `{:>w$.p$}`, `{:>1$?}`; `{:?}`, `{:#?}`, `{:x?}`; `{:x}`,
+  `{:X}`, `{:o}`, `{:b}`, `{:e}`, `{:E}` with their options), of each of
+  214 values of 53 types whose type has the trait: every integer type at
+  its bounds, 0, 1, 42 and -1, and values whose exponent's precision
+  rounds a tie or carries; `f32` and `f64` at their bounds, ±0, the
+  infinities, NaN, subnormals, ties of `{:.2}` and `{:.0}`, and the
+  exponent's thresholds of `{}` and `{:?}`; `char`s and strings with
+  escapes, wide and combining characters, a leading combining mark,
+  no-break and soft hyphen, private use and the last scalar; `bool`, `()`,
+  `Option`, `Result`, tuples, arrays, slices, `Vec`, a `HashMap` and a
+  `HashSet` of one entry, structs and enums with derived `Debug`, the
+  crate's own `Display` that pads (`f.pad`), asks `f.alternate()`, passes
+  its options on, writes past them, pads its own placeholders, and says
+  what its `Formatter` was asked; its own `Debug` by each of `Formatter`'s
+  builders; and `&`, `Box` and `Rc`. Each case writes its value bracketed,
+  `[{:>7}]`, by `println!`, `format!`, `write!` into a `String`, a
+  `panic!`'s message and `format_args!` given to a function, in turn:
+  9,146 cases in 153 programs.
+- **`isize` and `usize` are wasm32's, 32 bits** (ADR 0090), where the
+  native oracle's are 64: their bounds are written as wasm32's,
+  `0x7fff_ffff_isize`, and a negative one isn't written in a radix, whose
+  digits are as many as its width. Nothing else is left out by a list.
+- **When it runs:** every case each night, nightly.yml's `format`, one
+  machine of 4 parts; and its slice, 22 fixed batches covering every spec,
+  every type and every sink, per push whose change is the formatting code
+  (`formatPaths` in `scripts/iteratorSlice.ts`), check.yml's `format-grid`
+  and `check:fast`'s job, as #818's gate runs the iterators' slices. All of
+  it takes 32 s on the M1 in 8 parts; the slice 4 s.
+- **What it found:** no wrong answer: each of its 18,292 case-builds
+  printed what native Rust does. One refusal, a precision of a `bool`'s
+  `Display` or `Debug` or of `()`'s `Debug`, `{:.2}` of `true`, which std
+  writes by `f.pad` and so cuts, `tr`, is now written (ADR 0058, amended).
+  A break of `$zeroPad`'s sign fails 70 of the slice's case-builds.

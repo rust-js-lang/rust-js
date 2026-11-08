@@ -283,4 +283,28 @@ export const mutations: Mutation[] = [
     replace: "        if kind == Std::FmtDisplay\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_displayed_in_place.rs$"],
   },
+  {
+    name: "bool-precision-refused",
+    breaks: "`{:.2}` of a `bool`, or `{:.1?}` of `()`, is refused, where std's `f.pad` cuts it to so many `char`s (#941)",
+    file: "src/lower/format_spec.rs",
+    find: "                && (ty.is_bool() || (kind == Std::FmtDebug && ty.is_unit())) =>\n",
+    replace: "                && false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^format_precision_of_bool_and_unit.rs$"],
+  },
+  {
+    name: "unit-debug-precision-refused",
+    breaks: "`{:.1?}` of `()` is refused, where std's `Debug` of it is `f.pad(\"()\")`, which cuts it (#941)",
+    file: "src/lower/format_spec.rs",
+    find: "                && (ty.is_bool() || (kind == Std::FmtDebug && ty.is_unit())) =>\n",
+    replace: "                && ty.is_bool() =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^format_precision_of_bool_and_unit.rs$"],
+  },
+  {
+    name: "bool-precision-uncut",
+    breaks: "`{:.2}` of a `bool` writes it whole, `true`, where std's `f.pad` writes `tr` (#941)",
+    file: "src/lower/format_spec.rs",
+    find: "                Expr::call(Expr::member(text, \"slice\"), vec![Expr::int(0), digits])\n",
+    replace: "                {\n                    let _ = digits;\n                    text\n                }\n",
+    tests: ["test/corpus.test.ts", "-t", "^format_precision_of_bool_and_unit.rs$"],
+  },
 ];

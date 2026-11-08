@@ -137,6 +137,15 @@ export const jobs: Record<string, Part[]> = {
     cores: 1,
     timeout: 10 * minutes,
   })),
+  // Every format spec of each value it applies to, the formatting grid, in
+  // both builds (#941).
+  format: parts("format", cores, (i) => ({
+    cmd: ["bun", "test", "--timeout=900000", "test/iterator-matrix.test.ts"],
+    env: { ...compiler, ITERATOR_TABLE: "format", ITERATOR_MATRIX: "all", RUST_JS_CASES: `${i}/${cores}` },
+    after: ["build"],
+    cores: 1,
+    timeout: 10 * minutes,
+  })),
   // The day's 600 generated programs (ADR 0092).
   fuzz: parts("fuzz", 12, (i) => ({
     cmd: ["bun", "test", "--timeout=600000", "test/fuzz.test.ts"],

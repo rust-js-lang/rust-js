@@ -284,6 +284,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 Expr::call(Expr::member(kept, "join"), vec![Expr::str("")])
             }
+            // `{:.2}` of a `bool`, and `{:.1?}` of one or of `()`: what std's
+            // `f.pad` writes, its first so many `char`s, ASCII's (#941).
+            _ if let Some(digits) = precision.clone()
+                && (ty.is_bool() || (kind == Std::FmtDebug && ty.is_unit())) =>
+            {
+                let text = match kind {
+                    Std::FmtDisplay => self.display_string(value, ty, span)?,
+                    _ => self.debug_string(value, ty, span)?,
+                };
+                Expr::call(Expr::member(text, "slice"), vec![Expr::int(0), digits])
+            }
             // `{:.1?}` of text, a `str`'s or a `char`'s, which std's `Debug`
             // writes whole, as it writes it of no width either: its `Debug`.
             _ if precision.is_some() && num.is_none() && !(kind == Std::FmtDebug && self.is_string_like(ty)) => {
