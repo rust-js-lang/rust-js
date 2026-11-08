@@ -52,9 +52,6 @@ plain std field nullable_written_through_borrows.rs
 plain std field pointer_addresses.rs
 plain std field rc_as_ptr.rs
 
-#1020 P0 (copies): a Copy value read out of an Option (Some(*c.as_mut().unwrap())) is shared with the original
-plain std option wrapping_assign_of_a_copy.rs
-
 #1021 P0 (round-2 singles): a wrong panic payload, Some("top") read as None, a from_iter drop order, and a write lost before a panic
 plain std option collected_counts_ask_room.rs
 plain std option held_adapters_stepped_to_their_end.rs

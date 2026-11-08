@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1942
-lines	233261
+files	1948
+lines	233535
 temporaries	0	0
 labeled blocks	0	0
 while (true)	188	8.1
-$iter	2136	91.6
+$iter	2143	91.8
 Iterator.from	190	8.1
-return;	286	12.3
-renamed x$1	12033	515.9
+return;	286	12.2
+renamed x$1	12040	515.6
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0
 test/corpus/adapter_drops.js	1697	0	0	1	18	3	1	98
@@ -102,6 +102,7 @@ test/corpus/borrowed_loop_value_if.js	124	0	0	0	0	0	0	2
 test/corpus/bound_thunks.js	61	0	0	0	0	0	0	0
 test/corpus/bounds_by_a_value.js	123	0	0	0	0	0	0	0
 test/corpus/box_as_mut_and_ref.js	46	0	0	0	0	0	0	0
+test/corpus/box_held_in_a_field_written.js	40	0	0	0	0	0	0	4
 test/corpus/box_read_before_its_write.js	60	0	0	0	0	0	0	9
 test/corpus/box_uninit.js	36	0	0	0	0	0	0	0
 test/corpus/boxed_array_iter.js	43	0	0	0	0	0	0	0
@@ -114,7 +115,7 @@ test/corpus/boxed_option_places.js	117	0	0	0	1	0	0	10
 test/corpus/boxed_option_results.js	89	0	0	0	1	0	0	11
 test/corpus/boxed_option_unwraps.js	117	0	0	0	4	1	0	14
 test/corpus/boxed_slice_iter.js	27	0	0	0	0	0	0	0
-test/corpus/boxed_slice_values.js	26	0	0	0	0	0	0	0
+test/corpus/boxed_slice_values.js	27	0	0	0	0	0	0	0
 test/corpus/boxed_str.js	39	0	0	0	0	0	0	0
 test/corpus/boxed_value_partly_moved_drops.js	50	0	0	0	0	0	0	0
 test/corpus/branches_as_written.js	159	0	0	1	0	0	0	9
@@ -192,6 +193,7 @@ test/corpus/cell_taken_default_borrowed.js	35	0	0	0	0	0	0	2
 test/corpus/cell_taken_default_first.js	88	0	0	0	0	0	0	19
 test/corpus/chain_arm_of_a_std_call.js	37	0	0	0	0	0	0	0
 test/corpus/chain_nth_drops_what_it_passes.js	172	0	0	0	4	0	0	17
+test/corpus/chain_of_a_slice_cloned_apart.js	55	0	0	0	7	0	0	0
 test/corpus/chain_of_adapters_stepped_from_its_back.js	394	0	0	0	14	0	0	32
 test/corpus/chain_rev_own_back.js	134	0	0	0	2	0	0	0
 test/corpus/chain_side_panics_drops_the_other.js	192	0	0	0	5	0	0	0
@@ -1313,12 +1315,15 @@ test/corpus/rc_clone_aliases.js	60	0	0	0	0	0	0	0
 test/corpus/rc_clone_sees_owners.js	136	0	0	0	0	0	0	0
 test/corpus/rc_count_fn_value.js	90	0	0	0	0	0	0	0
 test/corpus/rc_count_through_generic.js	25	0	0	0	0	0	0	0
+test/corpus/rc_counted_by_a_generic_beside_a_class.js	33	0	0	0	0	0	0	0
+test/corpus/rc_counted_by_a_trait_method.js	48	0	0	0	0	0	0	0
 test/corpus/rc_counted_per_type.js	101	0	0	0	0	0	0	0
 test/corpus/rc_counted_uses.js	745	0	0	2	2	0	0	54
 test/corpus/rc_counts.js	395	0	0	0	0	0	0	46
 test/corpus/rc_destructors.js	146	0	0	0	0	0	0	0
 test/corpus/rc_dyn_auto_trait_dropped.js	34	0	0	0	0	0	0	0
 test/corpus/rc_dyn_destructors.js	122	0	0	0	0	0	0	0
+test/corpus/rc_dyn_fn_counted_by_its_signature.js	61	0	0	0	0	0	0	0
 test/corpus/rc_dyn_listeners.js	85	0	0	0	0	0	0	0
 test/corpus/rc_dyn_sinks.js	172	0	0	1	1	0	0	0
 test/corpus/rc_dyn_struct_tail.js	163	0	0	0	0	0	0	6
@@ -1857,10 +1862,11 @@ test/corpus/whole_counters.js	166	0	0	0	0	0	0	0
 test/corpus/whole_thread_locals.js	78	0	0	0	0	0	0	11
 test/corpus/wrapping.js	46	0	0	0	0	0	0	0
 test/corpus/wrapping_assign_of_a_copy.js	22	0	0	0	0	0	0	0
-test/corpus/wrapping_assigned_through_a_ref.js	38	0	0	0	0	0	0	0
+test/corpus/wrapping_assigned_through_a_ref.js	42	0	0	0	0	0	0	3
 test/corpus/wrapping_rem_zero.js	15	0	0	0	0	0	0	0
 test/corpus/wrapping_type.js	68	0	0	0	0	0	0	7
 test/corpus/wrapping_unary.js	12	0	0	0	0	0	0	0
+test/corpus/wrapping_written_through_a_reference.js	32	0	0	0	0	0	0	0
 test/corpus/write_to_string.js	45	0	0	0	0	0	0	0
 test/corpus/writer_callables.js	151	0	0	0	3	0	0	2
 test/corpus/writer_fn_pointer.js	61	0	0	0	0	0	0	0

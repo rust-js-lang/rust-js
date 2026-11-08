@@ -2,7 +2,7 @@
 //! it's read (ADR 0052).
 
 use crate::collections::{IndexMap, IndexSet};
-use crate::lower::recognition::{flattens_mut, replaces_whole};
+use crate::lower::recognition::{assign_operator, flattens_mut, replaces_whole};
 use crate::lower::{Body, FnInfo, fn_def, strip};
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -100,6 +100,27 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
             } = expr.kind
                 && let ExprKind::Deref { arg: boxed } = body.thir[strip(&body.thir, arg)].kind
                 && body.thir[boxed].ty.is_box()
+                && object_like(tcx, body.thir[arg].ty)
+            {
+                mutated.insert(body.thir[arg].ty);
+            }
+            // And std's `op=` of a value it writes whole, a `Wrapping`'s, of
+            // what a reference refers to, `*c.as_mut().unwrap() += d`'s `&mut
+            // *r`: written in place where it is, as a box's content is, where
+            // a variable's own `&mut` is the variable rebound (#1020).
+            if let ExprKind::Call { fun, ref args, .. } = expr.kind
+                && let ty::FnDef(def_id, _) = *body.thir[fun].ty.kind()
+                && tcx
+                    .trait_of_assoc(def_id)
+                    .is_some_and(|t| assign_operator(tcx, t).is_some())
+                && let Some(&target) = args.first()
+                && let ExprKind::Borrow {
+                    borrow_kind: BorrowKind::Mut { .. },
+                    arg,
+                } = body.thir[strip(&body.thir, target)].kind
+                && let ExprKind::Deref { arg: through } = body.thir[strip(&body.thir, arg)].kind
+                && body.thir[through].ty.is_ref()
+                && matches!(body.thir[arg].ty.kind(), ty::Adt(adt, _) if !adt.did().is_local())
                 && object_like(tcx, body.thir[arg].ty)
             {
                 mutated.insert(body.thir[arg].ty);

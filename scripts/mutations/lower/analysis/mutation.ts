@@ -283,6 +283,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^boxed_copy_written_whole.rs$"],
   },
   {
+    name: "op-assign-through-a-reference-unseen",
+    breaks: "std's `op=` of a `Wrapping` a reference refers to, `*c.as_mut().unwrap() += d`, isn't taken as a change in place, so a copy read out before, `Some(*c.as_mut().unwrap())`, shares the object the `$assign` changes (#1020)",
+    file: "src/lower/analysis/mutation.rs",
+    find: "                && body.thir[through].ty.is_ref()\n",
+    replace: "                && body.thir[through].ty.is_ref() && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^wrapping_written_through_a_reference.rs$"],
+  },
+  {
     name: "capture-written-through-a-box-unseen",
     breaks: "a closure's write of a `Copy` struct it took through a box, `|w| (*frame).size = Size { w }`, isn't counted as changing the type in place, so a copy read out before shares the object the write `$assign`s (#997)",
     file: "src/lower/analysis/mutation.rs",

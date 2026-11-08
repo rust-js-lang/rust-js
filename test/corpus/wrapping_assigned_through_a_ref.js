@@ -15,11 +15,15 @@ function halves(n) {
 }
 
 function mix(block) {
-  let [b0, b1] = halves(block);
+  const value = halves(block);
+  let b0 = [value[0][0]];
+  const b1 = [value[1][0]];
   for (let i = 0; i < 3; i++) {
-    b0 = [(b0[0] + ((b1[0] << 4) >>> 0)) >>> 0];
-    const wrapping = [b0[0] >>> 3];
-    b0 = [(b0[0] - ((wrapping[0] ^ b1[0]) >>> 0)) >>> 0];
+    const wrapping = [b1[0]];
+    b0 = [(b0[0] + ((wrapping[0] << 4) >>> 0)) >>> 0];
+    const wrapping$1 = [b0[0]];
+    const wrapping$2 = [wrapping$1[0] >>> 3];
+    b0 = [(b0[0] - ((wrapping$2[0] ^ b1[0]) >>> 0)) >>> 0];
   }
   return b0[0];
 }

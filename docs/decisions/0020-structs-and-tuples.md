@@ -263,3 +263,31 @@ matched against the capture's `Deref` projection: the box is the value it
 holds. Results changed ([0262](0262-when-rust-and-js-disagree.md)), so
 Rust's copy is kept. Held by the corpus case `boxed_copy_captured_written`
 and the mutation `capture-written-through-a-box-unseen`.
+
+## Amendment: std's `op=` through a reference (#1020)
+
+`*r += v` of a `Wrapping` a reference refers to, `*c.as_mut().unwrap()`
+of an `Option<Wrapping<u32>>`, a parameter's `w: &mut Wrapping<u32>`, or
+`iter_mut()`'s item, is std's `AddAssign::add_assign` of `&mut *r`, which
+writes the value whole where `r` refers, `$assign(value, ..)`, as #967's
+box's content is. Only a variable's own `&mut`, `w += v`, rebinds the
+variable. The type wasn't counted as changed in place, so a copy read out
+before, `Some(*c.as_mut().unwrap())`, shared the object the write changed:
+native `15 5`, JS `15 15`. A `&mut *r` through a reference given to std's
+`op=` (`assign_operator`) of a std type that's an object counts it as
+changed in place now; the crate's own types' `op=` impls write fields,
+counted where they're written. Found by the metamorphic net's `option`
+rewrite (#1008).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change;
+Rust's preserved. Held by corpus `wrapping_written_through_a_reference`
+(native-compared, both builds) and the mutation
+`op-assign-through-a-reference-unseen` (`lower/analysis/mutation.ts`).
+
+Its one cost in readability, accepted by the user (2026-11-08): copies
+are decided per type (ADR 0052), so `wrapping_assigned_through_a_ref`'s
+`mix`, which never writes a `Wrapping` through a reference, now copies
+each one it reads (`wrapping$1`, `wrapping$2`), and the corpus's renamed
+share rose from 515.9 to 516 in 10,000 lines. Those copies are consumed
+at once by by-value operators, so they can't be shared; #1039 removes
+them.
