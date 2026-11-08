@@ -1119,6 +1119,15 @@ fn std_impl_bounds<'tcx>(
     if ours || recognition.is_borrowed_cell(ty) || ty.has_aliases() {
         return None;
     }
+    // One of a const parameter, `[u8; SIZE]`, which only its own function's
+    // environment, not this one, says the type of, as selecting its impl
+    // asks (#1017).
+    if ty.walk().any(|part| {
+        part.as_const()
+            .is_some_and(|c| matches!(c.kind(), ty::ConstKind::Param(_)))
+    }) {
+        return None;
+    }
     // A trait alias, `ptr::Thin`, which may stand for any, and has no impls.
     if traits.iter().any(|&t| tcx.def_kind(t) != DefKind::Trait) {
         return None;

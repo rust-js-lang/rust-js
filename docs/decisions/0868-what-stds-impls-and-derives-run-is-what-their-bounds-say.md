@@ -167,3 +167,15 @@ Held by `test/lowering-cell-borrows.test.ts`'s "std's impl of a type of a
 type parameter runs what its bounds say", the graph's plain read and the
 slot's counted borrow, run; mutation
 `std-impl-bounds-of-a-param-type-unread` (`lower/analysis/cell_borrows.ts`).
+
+## Amendment: a type of a const parameter is no std impl's to select (#1017)
+
+The metamorphic net's `rc-refcell` rewrite put a `Buffer<SIZE>` of a const
+parameter in a `RefCell` an `Rc` holds, and asking what std's impls of
+it may run selected std's impl of `[u8; SIZE]` (`std_impl_bounds`) in
+an environment that doesn't say what `SIZE` is: a rustc ICE, "cannot find
+`SIZE/#0` in param-env". A type of a const parameter is no std impl's to
+select there: what it may run is asked of its parts, as of a type
+parameter's. Held by the corpus case `const_param_in_a_ref_cell` and the
+mutation `std-impl-of-a-const-params-type-selected`.
+

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "std-impl-of-a-const-params-type-selected",
+    breaks: "a `Buffer<SIZE>` in a `RefCell` an `Rc` holds asks std's impl of `[u8; SIZE]` where nothing says what `SIZE` is, a rustc ICE (#1017)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "    if ty.walk().any(|part| {\n        part.as_const()\n",
+    replace: "    if false && ty.walk().any(|part| {\n        part.as_const()\n",
+    tests: ["test/corpus.test.ts", "-t", "^const_param_in_a_ref_cell.rs$"],
+  },
+  {
     name: "cell-key-never-same",
     breaks:
       "a thread-local's borrow is never its own, so `LOG`'s second borrow in its own closure isn't counted and doesn't throw",
