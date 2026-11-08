@@ -1143,6 +1143,11 @@ its scope drops it where it leaves, `drop(guard); return result;`, never a
 process to end, the abort is thrown past `catch_unwind`'s `$catchUnwind`,
 though a `catch_unwind` written as JS's `try` catches it
 ([0660](../decisions/0660-catch-unwind-catches-what-js-throws.md), amended).
+So the abort comes where Rust's does in an iterator too: a `Vec`'s
+`IntoIter`'s `count` is std's, its `len()`, then what it holds dropped as
+one slice, `$count(it, drop)`, and a collect a panic stops drops what's
+left of its source and what it collected each as its own frame's, not as
+one value's parts (#862).
 A drop that can't panic keeps its `finally`; a generic `Drop` impl is
 judged for each use, so `Defer(|| DEPTH.set(previous))` of `impl<F:
 FnMut()> Drop for Defer<F>` is `finally { depth = previous; }`, and a

@@ -14,16 +14,16 @@ export const mutations: Mutation[] = [
     name: "collect-rest-first-ignored",
     breaks: "a `collect` std does otherwise than in place, a panic stopping it, drops what it collected before what's left, where std drops what's left first (#423)",
     file: "src/runtime/fold_of.js",
-    find: "  return restFirst ? () => $inTurn(rest, collected) : () => $inTurn(collected, rest);",
-    replace: "  return () => $inTurn(collected, rest);",
+    find: "  return restFirst ? $unwinds(run, rest, collected) : $unwinds(run, collected, rest);",
+    replace: "  return $unwinds(run, collected, rest);",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
     name: "fold-to-array-unwinds-nothing",
     breaks: "a compiled std struct's collect, a `zip`'s, a panic stopping it, drops neither what it collected nor what's left (#423)",
     file: "src/runtime/fold_of.js",
-    find: "  const unwinding = $collectUnwound(it, items, unwind === undefined ? drop : undefined, restFirst);\n",
-    replace: "  const unwinding = undefined;\n",
+    find: "  const unwinding = (run) => $collectUnwinding(run, it, items, unwind === undefined ? drop : undefined, restFirst);\n",
+    replace: "  const unwinding = (run) => run();\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "fold-to-array-collected-last",
     breaks: "a collect in place of std's struct, a `map`'s, a stage panicking, drops what's left before what it collected, where std's `InPlaceDrop` drops what it collected first (#423)",
     file: "src/runtime/fold_of.js",
-    find: "  const folded = $unwinds(() => it.tryFold(items, push, () => false, unwind), unwinding);\n",
-    replace: "  const folded = $unwinds(() => it.tryFold(items, push, () => false, undefined), unwinding);\n",
+    find: "  const folded = unwinding(() => it.tryFold(items, push, () => false, unwind));\n",
+    replace: "  const folded = unwinding(() => it.tryFold(items, push, () => false, undefined));\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^panic_mid_iteration_drops with"],
   },
   {
@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "fold-to-array-in-place-drops-again",
     breaks: "an in-place collect whose discarded item's drop panics drops what it collected, which std's `InPlaceDrop`, moved into the stage's result, leaks (#681)",
     file: "src/runtime/fold_of.js",
-    find: "  const unwinding = $collectUnwound(it, items, unwind === undefined ? drop : undefined, restFirst);\n",
-    replace: "  const unwinding = $collectUnwound(it, items, drop, restFirst);\n",
+    find: "  const unwinding = (run) => $collectUnwinding(run, it, items, unwind === undefined ? drop : undefined, restFirst);\n",
+    replace: "  const unwinding = (run) => $collectUnwinding(run, it, items, drop, restFirst);\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_leaks_what_a_discard_strands.rs$"],
   },
   {
@@ -88,8 +88,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a collect into a `Vec` in place of a `take(3)` closes the `take`'s source at its limit, inside its fold, so where the rest's drop panics what it collected is never dropped (#843)",
     file: "src/runtime/fold_of.js",
-    find: "  it.hold?.();\n  const folded = $unwinds(() => it.tryFold(",
-    replace: "  const folded = $unwinds(() => it.tryFold(",
+    find: "  it.hold?.();\n  const folded = unwinding(() => it.tryFold(",
+    replace: "  const folded = unwinding(() => it.tryFold(",
     tests: ["test/corpus.test.ts", "-t", "^collected_in_place_dropped_as_the_rest_panics.rs$"],
   },
   {
@@ -114,8 +114,8 @@ export const mutations: Mutation[] = [
     name: "in-place-by-fold",
     breaks: "an in-place collect folds, which moves a compiled `Map`'s function before what's left, where std's `try_fold` by `&mut` keeps it (#710)",
     file: "src/runtime/fold_of.js",
-    find: "  if (!inPlace || typeof it.tryFold !== \"function\") return $unwinds(() => it.fold(items, push, unwind), unwinding);\n",
-    replace: "  return $unwinds(() => it.fold(items, push, unwind), unwinding);\n",
+    find: "  if (!inPlace || typeof it.tryFold !== \"function\") return unwinding(() => it.fold(items, push, unwind));\n",
+    replace: "  return unwinding(() => it.fold(items, push, unwind));\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^fold_drops_moved_function_first with std"],
   },
   {
@@ -152,5 +152,13 @@ export const mutations: Mutation[] = [
     find: "      drop = () => holder.$steps.dropInner?.(holder);\n",
     replace: "      drop = () => {};\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^collected_in_place_dropped_as_the_rest_panics with std"],
+  },
+  {
+    name: "collect-unwound-as-glue",
+    breaks: "what's left of a collect's source and what it collected, each its own frame's, are dropped as one value's fields as a panic unwinds, so where the first's drop panics, the second is dropped before the abort Rust makes there (a wrong answer, #862)",
+    file: "src/runtime/fold_of.js",
+    find: "  return restFirst ? $unwinds(run, rest, collected) : $unwinds(run, collected, rest);\n",
+    replace: "  return restFirst ? $unwinds(run, () => $inTurn(rest, collected)) : $unwinds(run, () => $inTurn(collected, rest));\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_map_collect_second_panic_aborts.rs$"],
   },
 ];

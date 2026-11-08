@@ -491,12 +491,7 @@ function main() {
     }
     owned$live = false;
     try {
-      console.log(
-        `left ${$closing(owned, $dropEach(nDrop_drop)).reduce((n, item) => {
-          nDrop_drop(item);
-          return n + 1;
-        }, 0)}`,
-      );
+      console.log(`left ${$count($closing(owned, $dropEach(nDrop_drop)), nDrop_drop)}`);
     } catch (error) {
       for (const item of first) {
         nDrop_drop(item);

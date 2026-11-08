@@ -75,9 +75,20 @@ function $closing(it, drop, slices = true) {
     $closedAfter(ends, close);
     return folded;
   };
-  // Its `count`, the crate's own, likewise (#505).
-  $ownsAs(closing, it, "count");
-  const count = () => $takenBy(closing, () => it.count());
+  // Its `count`, the crate's own, likewise (#505). Of an array's items it
+  // owns, std's `IntoIter::count`, `len()`: how many it has left, then
+  // what it has left dropped as one slice, as it's dropped, where the
+  // default drops each as it's folded, so a panic of one of those drops
+  // the rest as it unwinds, its second aborting, not one more (#862).
+  if (it.ownCount || intoIter) $owns(closing, "count");
+  const count = () => {
+    if (intoIter) {
+      const n = it.len();
+      close();
+      return n;
+    }
+    return $takenBy(closing, () => it.count());
+  };
   // Its `last`, the crate's own, which takes it and drops what it has left
   // itself, as a `skip`'s `last` asks it (#494). Of an array's items it
   // owns, std's `IntoIter::last`, `next_back()`: its last item, then what
@@ -114,7 +125,7 @@ function $closing(it, drop, slices = true) {
     nth: own ? sliceNth : it.nth !== undefined ? (k, dropItem) => done(it.nth(k, dropItem)) : slice ? sliceNth : undefined,
     nthBack: own ? sliceNthBack : it.nthBack !== undefined ? (k) => done(it.nthBack(k)) : slice ? sliceNthBack : undefined,
     fold,
-    count: it.ownCount ? count : undefined,
+    count: it.ownCount || intoIter ? count : undefined,
     last: it.ownLast || intoIter ? last : undefined,
     rfold: it.rfold !== undefined ? rfold : undefined,
     tryRfold: "tryRfold",
@@ -204,7 +215,8 @@ function $advanceSlice(it, m, each, back = false) {
 // iterator after, or the items' own; given none, by its owner after,
 // generic code or std's compiled adapter: where one of those drops
 // panics, the item it took is leaked, as rustc doesn't drop what a
-// function gives back as a later drop unwinds (#648). Its caller, which
+// function gives back as a later drop unwinds (#648); and its `count`,
+// std's, `len()`, what it has left dropped likewise (#862). Its caller, which
 // knows its type, gives it so where it's given to what doesn't: generic
 // code, std's compiled adapters, a step whose helper sees only the JS
 // iterator. A `Drain`'s, a
@@ -233,8 +245,15 @@ function $slicing(it, drop) {
       if (each !== undefined) it.advanceBy(it.len(), each);
       return step;
     },
+    // Its `count`, std's `IntoIter::count`, `len()`, what it has left then
+    // dropped as one slice, as `last` drops it (#862).
+    count: (each = drop) => {
+      const n = it.len();
+      if (each !== undefined) it.advanceBy(n, each);
+      return n;
+    },
   });
-  $owns(it, "nth", "nthBack", "last");
+  $owns(it, "nth", "nthBack", "last", "count");
   it.dropItem = drop;
   return it;
 }

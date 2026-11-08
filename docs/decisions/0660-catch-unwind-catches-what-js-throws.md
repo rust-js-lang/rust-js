@@ -684,3 +684,47 @@ few too, `collected_adapters_dropped_after_a_predicates_panic_abort.rs`.
 Mutations: `drop-glue-cleanup-unguarded` (`lower/drops/parts.ts`),
 `inspect-item-undropped-as-it-panics` (`lower/combinators/adapters.ts`, of `panic_part_way_drops.rs`);
 `inspect-skipped` names its line as it now reads.
+
+## Amendment: an owning iterator's count and a collect's cleanup abort where Rust's do (#862, 2026-11-08)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results changed:
+where a drop panicked and a second drop panicked as the first unwound, the
+JS dropped more before the abort than Rust does. #847's iterator-matrix
+rows, `drop+drop`, found two runtime paths:
+
+- **A `Vec`'s, an array's or a `VecDeque`'s `IntoIter`'s `count` is std's,
+  `len()`**, then the iterator dropped as one slice, front to back, where
+  the JS folded it, dropping each item as it was counted. The drops are
+  the same until one panics: Rust's slice glue then drops the rest in its
+  cleanup, so the next to panic aborts there; the JS's fold closed what it
+  had left as drop glue, which went on past that one. `vec![D(1), ..,
+  D(5)].into_iter().count()` whose `D(3)` and then `D(4)` panic: Rust
+  drops 1 to 4, the JS 1 to 5. `$closing`'s and `$slicing`'s `count` is
+  now that (`count` of an `intoIter`, beside its `last`, #648), and the
+  lowering asks it, `$count(it, drop)`, of a `Vec`'s `IntoIter` whose
+  items have a drop (`drops_passed_as_slice`), where it was JS's `reduce`;
+  generic code's `$count` finds it on what its caller gives.
+- **What a collect a panic stopped holds drops as two frames' locals, not
+  one value's parts**: what's left of its source, which std's fold or
+  `extend` holds, and the `Vec` it collected, which `from_iter` holds, in
+  that order (or the other, in place). `$collectUnwound` gave `$unwinds`
+  one cleanup that ran them by `$inTurn`, drop glue's rule, so where the
+  first's drop panicked the second was dropped before the abort:
+  `rev().map(..).collect()` dropped the collected 105 and 104 after the
+  source's panic, where Rust aborts. `$collectUnwinding(run, it, items,
+  drop, restFirst)` now runs the collect's steps and gives them as two of
+  `$unwinds`' drops, each `$dropsUnwinding`'s, so the first's panic aborts
+  before the second. `$inTurn` stays drop glue's alone: a value's fields,
+  a pair's, an adapter's parts.
+
+One snapshot changes, `take_destructors.js`'s `count` of a `Vec`'s
+`IntoIter`, the `reduce` now `$count(..)`.
+
+Held by the corpus cases `vec_count_second_panic_aborts`,
+`generic_count_second_panic_aborts` and `rev_map_collect_second_panic_aborts`
+(`//@ run-abort`), against native Rust in both builds; the five
+iterator-matrix rows taken off `test/iterator-matrix-known.txt`; and the
+mutations `closing-slice-count-folds`, `slicing-count-folds`,
+`slicing-count-leaves-the-rest` (`runtime/closing.ts`),
+`collect-unwound-as-glue` (`runtime/fold_of.ts`) and `slice-count-folded`
+(`lower/mir/iter.ts`).

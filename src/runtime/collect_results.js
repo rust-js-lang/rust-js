@@ -13,7 +13,7 @@ function $collectResults(items, into, drop, restFirst = false, size) {
   let failed;
   const it = items[Symbol.iterator]();
   const grown = size === undefined ? undefined : $shuntGrowth(it, size);
-  $unwinds(() => {
+  $collectUnwinding(() => {
     for (let step = it.next(); !step.done; step = it.next()) {
       const item = step.value;
       if (item.TAG === "Err") {
@@ -26,7 +26,7 @@ function $collectResults(items, into, drop, restFirst = false, size) {
       );
       values.push(item._0);
     }
-  }, $collectUnwound(it, values, drop, restFirst));
+  }, it, values, drop, restFirst);
   if (failed === undefined) return { TAG: "Ok", _0: into ? into(values) : values };
   it.return?.();
   if (drop) $dropItems(values, drop);

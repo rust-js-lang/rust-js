@@ -2520,15 +2520,15 @@ export function $foldToArray(it, drop, restFirst = false, inPlace = drop !== und
   // std's `InPlaceDrop` is by the frame that holds it: not where a stage's
   // closure has moved it into what it gives, then panicked dropping an item
   // it discards, which leaks it (`$kept`, #681).
-  const unwinding = $collectUnwound(it, items, unwind === undefined ? drop : undefined, restFirst);
+  const unwinding = (run) => $collectUnwinding(run, it, items, unwind === undefined ? drop : undefined, restFirst);
   // In place, `inPlace`, std's `try_fold` by `&mut`, which moves no
   // adapter's function into the fold it asks, then what's left closed, an
   // adapter's function after it (#710).
-  if (!inPlace || typeof it.tryFold !== "function") return $unwinds(() => it.fold(items, push, unwind), unwinding);
+  if (!inPlace || typeof it.tryFold !== "function") return unwinding(() => it.fold(items, push, unwind));
   // Held, so nothing it steps closes inside the fold, a `take`'s source at
   // its limit, but all of it after, at the end (#843).
   it.hold?.();
-  const folded = $unwinds(() => it.tryFold(items, push, () => false, unwind), unwinding);
+  const folded = unwinding(() => it.tryFold(items, push, () => false, unwind));
   // Then what its source, the `Vec` whose buffer it reuses, has left
   // dropped, where a drop of it that panics drops what it collected as it
   // unwinds, after it, as std's in-place guard does once its fold is done
@@ -2580,25 +2580,28 @@ export function $collectEnded(close, items, drop) {
 // `Vec` (#423).
 export function $collectDropping(it, drop, restFirst = false) {
   const items = [];
-  $unwinds(() => {
+  $collectUnwinding(() => {
     for (let step = it.next(); !step.done; step = it.next()) items.push(step.value);
-  }, $collectUnwound(it, items, drop, restFirst));
+  }, it, items, drop, restFirst);
   // And at its end, as std's `collect` drops what it took then, what an
   // adapter that stops early left (ADR 0570), `$collectEnded`'s.
   $collectEnded(() => it.return?.(), items, drop);
   return items;
 }
 
-// What a collect a panic stopped holds, the drop it runs as it unwinds,
-// `$unwinds`': `items`, what it collected, by `drop`, and what's left of
-// `it`, closed, in turn in std's order; what's left first, `restFirst`,
-// where std's fold drops it before its `Vec` (#422, #423).
-export function $collectUnwound(it, items, drop, restFirst) {
+// `run()`, a collect's steps into `items`: where it throws, a panic, what
+// the collect holds dropped as it unwinds, `$unwinds`': `items`, what it
+// collected, by `drop`, and what's left of `it`, closed, in std's order;
+// what's left first, `restFirst`, where std's fold drops it before its
+// `Vec` (#422, #423). Each a local of its own frame, not a field of one
+// value's drop glue, `$inTurn`'s, so where the first's drop panics, the
+// process aborts before the second, as Rust's cleanup does (#862).
+export function $collectUnwinding(run, it, items, drop, restFirst) {
   const collected = () => {
     if (drop !== undefined) $dropItems(items, drop);
   };
   const rest = () => it.return?.();
-  return restFirst ? () => $inTurn(rest, collected) : () => $inTurn(collected, rest);
+  return restFirst ? $unwinds(run, rest, collected) : $unwinds(run, collected, rest);
 }
 
 // `it`, an iterator a variable or a temporary holds, which its owner drops
@@ -2748,9 +2751,20 @@ export function $closing(it, drop, slices = true) {
     $closedAfter(ends, close);
     return folded;
   };
-  // Its `count`, the crate's own, likewise (#505).
-  $ownsAs(closing, it, "count");
-  const count = () => $takenBy(closing, () => it.count());
+  // Its `count`, the crate's own, likewise (#505). Of an array's items it
+  // owns, std's `IntoIter::count`, `len()`: how many it has left, then
+  // what it has left dropped as one slice, as it's dropped, where the
+  // default drops each as it's folded, so a panic of one of those drops
+  // the rest as it unwinds, its second aborting, not one more (#862).
+  if (it.ownCount || intoIter) $owns(closing, "count");
+  const count = () => {
+    if (intoIter) {
+      const n = it.len();
+      close();
+      return n;
+    }
+    return $takenBy(closing, () => it.count());
+  };
   // Its `last`, the crate's own, which takes it and drops what it has left
   // itself, as a `skip`'s `last` asks it (#494). Of an array's items it
   // owns, std's `IntoIter::last`, `next_back()`: its last item, then what
@@ -2787,7 +2801,7 @@ export function $closing(it, drop, slices = true) {
     nth: own ? sliceNth : it.nth !== undefined ? (k, dropItem) => done(it.nth(k, dropItem)) : slice ? sliceNth : undefined,
     nthBack: own ? sliceNthBack : it.nthBack !== undefined ? (k) => done(it.nthBack(k)) : slice ? sliceNthBack : undefined,
     fold,
-    count: it.ownCount ? count : undefined,
+    count: it.ownCount || intoIter ? count : undefined,
     last: it.ownLast || intoIter ? last : undefined,
     rfold: it.rfold !== undefined ? rfold : undefined,
     tryRfold: "tryRfold",
@@ -2877,7 +2891,8 @@ export function $advanceSlice(it, m, each, back = false) {
 // iterator after, or the items' own; given none, by its owner after,
 // generic code or std's compiled adapter: where one of those drops
 // panics, the item it took is leaked, as rustc doesn't drop what a
-// function gives back as a later drop unwinds (#648). Its caller, which
+// function gives back as a later drop unwinds (#648); and its `count`,
+// std's, `len()`, what it has left dropped likewise (#862). Its caller, which
 // knows its type, gives it so where it's given to what doesn't: generic
 // code, std's compiled adapters, a step whose helper sees only the JS
 // iterator. A `Drain`'s, a
@@ -2906,8 +2921,15 @@ export function $slicing(it, drop) {
       if (each !== undefined) it.advanceBy(it.len(), each);
       return step;
     },
+    // Its `count`, std's `IntoIter::count`, `len()`, what it has left then
+    // dropped as one slice, as `last` drops it (#862).
+    count: (each = drop) => {
+      const n = it.len();
+      if (each !== undefined) it.advanceBy(n, each);
+      return n;
+    },
   });
-  $owns(it, "nth", "nthBack", "last");
+  $owns(it, "nth", "nthBack", "last", "count");
   it.dropItem = drop;
   return it;
 }
@@ -15285,7 +15307,7 @@ export function $collectResults(items, into, drop, restFirst = false, size) {
   let failed;
   const it = items[Symbol.iterator]();
   const grown = size === undefined ? undefined : $shuntGrowth(it, size);
-  $unwinds(() => {
+  $collectUnwinding(() => {
     for (let step = it.next(); !step.done; step = it.next()) {
       const item = step.value;
       if (item.TAG === "Err") {
@@ -15298,7 +15320,7 @@ export function $collectResults(items, into, drop, restFirst = false, size) {
       );
       values.push(item._0);
     }
-  }, $collectUnwound(it, values, drop, restFirst));
+  }, it, values, drop, restFirst);
   if (failed === undefined) return { TAG: "Ok", _0: into ? into(values) : values };
   it.return?.();
   if (drop) $dropItems(values, drop);
@@ -15321,7 +15343,7 @@ export function $collectOptions(items, boxed = false, into, drop, restFirst = fa
   let failed = false;
   const it = items[Symbol.iterator]();
   const grown = size === undefined ? undefined : $shuntGrowth(it, size);
-  $unwinds(() => {
+  $collectUnwinding(() => {
     for (let step = it.next(); !step.done; step = it.next()) {
       const item = step.value;
       if (item == null) {
@@ -15335,7 +15357,7 @@ export function $collectOptions(items, boxed = false, into, drop, restFirst = fa
       );
       values.push(value);
     }
-  }, $collectUnwound(it, values, drop, restFirst));
+  }, it, values, drop, restFirst);
   if (!failed) return into ? into(values) : values;
   it.return?.();
   if (drop) $dropItems(values, drop);

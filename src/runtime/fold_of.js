@@ -77,15 +77,15 @@ function $foldToArray(it, drop, restFirst = false, inPlace = drop !== undefined 
   // std's `InPlaceDrop` is by the frame that holds it: not where a stage's
   // closure has moved it into what it gives, then panicked dropping an item
   // it discards, which leaks it (`$kept`, #681).
-  const unwinding = $collectUnwound(it, items, unwind === undefined ? drop : undefined, restFirst);
+  const unwinding = (run) => $collectUnwinding(run, it, items, unwind === undefined ? drop : undefined, restFirst);
   // In place, `inPlace`, std's `try_fold` by `&mut`, which moves no
   // adapter's function into the fold it asks, then what's left closed, an
   // adapter's function after it (#710).
-  if (!inPlace || typeof it.tryFold !== "function") return $unwinds(() => it.fold(items, push, unwind), unwinding);
+  if (!inPlace || typeof it.tryFold !== "function") return unwinding(() => it.fold(items, push, unwind));
   // Held, so nothing it steps closes inside the fold, a `take`'s source at
   // its limit, but all of it after, at the end (#843).
   it.hold?.();
-  const folded = $unwinds(() => it.tryFold(items, push, () => false, unwind), unwinding);
+  const folded = unwinding(() => it.tryFold(items, push, () => false, unwind));
   // Then what its source, the `Vec` whose buffer it reuses, has left
   // dropped, where a drop of it that panics drops what it collected as it
   // unwinds, after it, as std's in-place guard does once its fold is done
@@ -137,23 +137,26 @@ function $collectEnded(close, items, drop) {
 // `Vec` (#423).
 function $collectDropping(it, drop, restFirst = false) {
   const items = [];
-  $unwinds(() => {
+  $collectUnwinding(() => {
     for (let step = it.next(); !step.done; step = it.next()) items.push(step.value);
-  }, $collectUnwound(it, items, drop, restFirst));
+  }, it, items, drop, restFirst);
   // And at its end, as std's `collect` drops what it took then, what an
   // adapter that stops early left (ADR 0570), `$collectEnded`'s.
   $collectEnded(() => it.return?.(), items, drop);
   return items;
 }
 
-// What a collect a panic stopped holds, the drop it runs as it unwinds,
-// `$unwinds`': `items`, what it collected, by `drop`, and what's left of
-// `it`, closed, in turn in std's order; what's left first, `restFirst`,
-// where std's fold drops it before its `Vec` (#422, #423).
-function $collectUnwound(it, items, drop, restFirst) {
+// `run()`, a collect's steps into `items`: where it throws, a panic, what
+// the collect holds dropped as it unwinds, `$unwinds`': `items`, what it
+// collected, by `drop`, and what's left of `it`, closed, in std's order;
+// what's left first, `restFirst`, where std's fold drops it before its
+// `Vec` (#422, #423). Each a local of its own frame, not a field of one
+// value's drop glue, `$inTurn`'s, so where the first's drop panics, the
+// process aborts before the second, as Rust's cleanup does (#862).
+function $collectUnwinding(run, it, items, drop, restFirst) {
   const collected = () => {
     if (drop !== undefined) $dropItems(items, drop);
   };
   const rest = () => it.return?.();
-  return restFirst ? () => $inTurn(rest, collected) : () => $inTurn(collected, rest);
+  return restFirst ? $unwinds(run, rest, collected) : $unwinds(run, collected, rest);
 }

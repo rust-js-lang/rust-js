@@ -724,4 +724,12 @@ export const mutations: Mutation[] = [
     replace: "        let ends = false || self.knows_its_length(output);\n",
     tests: ["test/corpus.test.ts", "-t", "^cloned_of_a_chain_stepped_from_its_back.rs$"],
   },
+  {
+    name: "slice-count-folded",
+    breaks: "a `Vec`'s `IntoIter`'s `count` of items with a destructor is a `reduce` dropping each as it's counted, where std's is its `len()`, then it dropped as one slice, so a second panic drops one more before it aborts (a wrong answer, #862)",
+    file: "src/lower/mir/iter.rs",
+    find: "            || slice_count\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^vec_count_second_panic_aborts.rs$"],
+  },
 ];

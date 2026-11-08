@@ -913,8 +913,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // hint first, where that may reach what the program sees (#733).
         let filter_asks = crate::lower::recognition::filtered_source(self.tcx, revealed)
             .is_some_and(|source| !self.compiled_struct(revealed, &it) && self.hint_reaches_own(source));
+        // And a `Vec`'s, an array's or a `VecDeque`'s `IntoIter`'s, `len()`,
+        // then what it has left dropped as one slice, where its items have
+        // a drop, which the default would drop each as it's folded (#862).
+        let slice_count = !body.is_empty() && self.recognition().drops_passed_as_slice(revealed);
         let own_count = matches!(revealed.kind(), ty::Param(_))
             || filter_asks
+            || slice_count
             || self.compiled_step(revealed, iterator, "count") && (!in_place_flatten || inners_own);
         if own_count {
             let mut given = vec![it];

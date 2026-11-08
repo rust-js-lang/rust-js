@@ -14,7 +14,7 @@ function $collectOptions(items, boxed = false, into, drop, restFirst = false, si
   let failed = false;
   const it = items[Symbol.iterator]();
   const grown = size === undefined ? undefined : $shuntGrowth(it, size);
-  $unwinds(() => {
+  $collectUnwinding(() => {
     for (let step = it.next(); !step.done; step = it.next()) {
       const item = step.value;
       if (item == null) {
@@ -28,7 +28,7 @@ function $collectOptions(items, boxed = false, into, drop, restFirst = false, si
       );
       values.push(value);
     }
-  }, $collectUnwound(it, values, drop, restFirst));
+  }, it, values, drop, restFirst);
   if (!failed) return into ? into(values) : values;
   it.return?.();
   if (drop) $dropItems(values, drop);

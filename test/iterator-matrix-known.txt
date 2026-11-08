@@ -14,10 +14,6 @@
 // generator points c0f0093cbab5
 // generator unwind 1a27ee232157
 
-#862 P0 (drops): before an abort, a Vec IntoIter's count, or a rev map collected in place, drops past the second panic where native Rust stops
-plain 107177,107212,107450
-std 107177,107450
-
 #911 P0 (unwind): a BTreeMap's or a BTreeSet's comparisons of keys with their own Ord are called with their arguments swapped, and the key given leaks as one panics
 unwind:plain 1414-1423
 unwind:std 1414-1423
