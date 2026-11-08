@@ -10,11 +10,23 @@ import {
   $eq,
   $iter,
   $orInsert,
+  $ordered,
+  $partialOrd,
   $setEq,
   $sortStable,
   $sortedKeys,
   $treeFromSorted,
 } from "@rust-js/runtime";
+
+const tuplePartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+});
+
+const tupleOrd = {
+  PartialOrd: () => tuplePartialOrd,
+  cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+};
 
 export function entry() {
   main();
@@ -54,7 +66,6 @@ function same(a, b, TPartialEq, THash, TSet) {
 }
 
 function main() {
-  const tupleOrd = { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) };
   const pairs = [
     [1, "a"],
     [2, "b"],
@@ -185,13 +196,13 @@ function main() {
         }
       },
     },
-    { cmp: $cmp },
+    $ordered,
     Map,
   );
   console.log(
     `${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${value$1[1]}))`} [${distinctSorted(
       words,
-      { cmp: $cmp },
+      $ordered,
       $BTreeSet,
     )
       .map((item) => $debugStr(item))

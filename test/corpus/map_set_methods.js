@@ -6,11 +6,14 @@ import {
   $cmp,
   $debugStr,
   $drainAll,
+  $eq,
   $extendMap,
   $getKeyValue,
   $isDisjoint,
   $isSubset,
   $iter,
+  $ordered,
+  $partialOrd,
   $removeEntry,
   $retainMap,
   $retainSet,
@@ -27,19 +30,28 @@ import {
   $treeSplitOff,
 } from "@rust-js/runtime";
 
+const tuplePartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+});
+
+const tupleOrd = {
+  PartialOrd: () => tuplePartialOrd,
+  cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+};
+
 export function entry() {
   main();
 }
 
 function sorted(items, TOrd, TClone, TSize, TStableSort) {
   items = Array.from($roomForHint(Iterator.from(items), TSize, false));
-  $sortStable(items, (a, b) => TOrd.cmp(a, b) < 0, TStableSort, TSize);
+  $sortStable(items, (a, b) => TOrd.PartialOrd().lt(a, b), TStableSort, TSize);
   return items;
 }
 
 function main() {
   const clone = { clone: (value) => value };
-  const tupleOrd = { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) };
   const scores = new Map();
   $tableRoomFor(scores.size + 8, 12, 4);
   $extendMap(
@@ -86,9 +98,9 @@ function main() {
     [2, "two"],
   ]);
   console.log(
-    `[${sorted($iter(Array.from(new Map(names).keys())), { cmp: $cmp }, clone, 4, "general8").join(", ")}] [${sorted(
+    `[${sorted($iter(Array.from(new Map(names).keys())), $ordered, clone, 4, "general8").join(", ")}] [${sorted(
       $iter(Array.from(new Map(names).values())),
-      { cmp: $cmp },
+      $ordered,
       clone,
       12,
       "general8",
@@ -102,10 +114,10 @@ function main() {
   const a = new Set([1, 2, 3]);
   const b = new Set([2, 3, 4]);
   console.log(
-    `[${sorted($iter($setAlgebra(a, b, "union")), { cmp: $cmp }, clone, 4, "general8").join(", ")}] [${sorted($iter($setAlgebra(a, b, "intersection")), { cmp: $cmp }, clone, 4, "general8").join(", ")}]`,
+    `[${sorted($iter($setAlgebra(a, b, "union")), $ordered, clone, 4, "general8").join(", ")}] [${sorted($iter($setAlgebra(a, b, "intersection")), $ordered, clone, 4, "general8").join(", ")}]`,
   );
   console.log(
-    `[${sorted($iter($setAlgebra(a, b, "difference")), { cmp: $cmp }, clone, 4, "general8").join(", ")}] [${sorted($iter($setAlgebra(a, b, "symmetric")), { cmp: $cmp }, clone, 4, "general8").join(", ")}]`,
+    `[${sorted($iter($setAlgebra(a, b, "difference")), $ordered, clone, 4, "general8").join(", ")}] [${sorted($iter($setAlgebra(a, b, "symmetric")), $ordered, clone, 4, "general8").join(", ")}]`,
   );
   console.log(
     `${$isSubset(a, b, false)} ${$isSubset(new Set([2]), a, false)} ${$isDisjoint(a, b)}`,
@@ -124,9 +136,7 @@ function main() {
     `${take == null ? "None" : `Some(${take})`} ${replace == null ? "None" : `Some(${replace})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
   $retainSet(taken, (x) => x % 2 === 1, taken);
-  console.log(
-    `[${sorted($iter(Array.from(taken)), { cmp: $cmp }, clone, 4, "general8").join(", ")}]`,
-  );
+  console.log(`[${sorted($iter(Array.from(taken)), $ordered, clone, 4, "general8").join(", ")}]`);
 
   const tree = new $BTreeMap([
     [5, "e"],

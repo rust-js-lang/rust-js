@@ -8,6 +8,7 @@ import {
   $iterator,
   $lazyZip,
   $max,
+  $partialOrd,
   $rangeFromStep,
   $rem,
   $roomFor,
@@ -41,11 +42,11 @@ function loudPartialEq_eq(loud, other) {
   return loud.key === other.key;
 }
 
-export const loudPartialOrd = {
+export const loudPartialOrd = $partialOrd({
   PartialEq: () => loudPartialEq,
   partialCmp: loudPartialOrd_partialCmp,
   $drop: loudDrop_drop,
-};
+});
 function loudPartialOrd_partialCmp(loud, other) {
   return loudOrd_cmp(loud, other);
 }

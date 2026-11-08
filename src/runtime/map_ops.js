@@ -158,13 +158,13 @@ function $treeEnd(m, cmp, last, set, pop, boxed = false) {
 // so does one equal to it that both exclude. Checked as `range` checks its
 // bounds where `checked`; `extract_if`'s aren't (ADR 0344).
 // Of a tree of its keys' own order whose order can be seen, std's search,
-// whose bounds are checked by `eq` and `partialCmp`, as std's are (#926).
-function $treeRange(m, cmp, set, name, start, end, checked = true, eq, partialCmp) {
+// whose bounds are checked by `eq` and `ord`'s `>`, as std's are (#926).
+function $treeRange(m, cmp, set, name, start, end, checked = true, eq, ord) {
   const tree = set ? m.items : m;
   if (tree?.range !== undefined) {
     // Unchecked, `extract_if`'s: the range it walks, unsearched.
-    if (!checked) return { start, end, partialCmp };
-    const found = tree.range(start, end, name, eq, partialCmp, checked);
+    if (!checked) return { start, end, ord };
+    const found = tree.range(start, end, name, eq, ord, checked);
     return found.map(([key, value]) => (set ? key : [key, value]));
   }
   if (checked && start !== "Unbounded" && end !== "Unbounded") {
@@ -529,26 +529,22 @@ function $treeFrom(tree, items, set, cmp, drop, dropKey) {
 // order is seen or not total, or a type parameter's (#926): of std's nodes,
 // std's bulk build. Its entries sorted by std's stable sort, `kind` and
 // `size` its entries', `(K, V)`'s or a set's `T`'s: a map's by `cmp` of
-// their keys, a set's by `<`, `partial_cmp`'s; as that panics, each
-// dropped in the order it's left. Then each kept that `!=` doesn't find
-// equal to the next, and bulk-pushed. `TOrd` is the keys' `Ord`
-// dictionary, whose `PartialOrd()`, and its `PartialEq()`, give
-// `partial_cmp` and `eq` where it has them; else `TPartialOrd` and
-// `TPartialEq` where they're given, a std type's of the crate's, `(K,
-// u32)`; else its `cmp`, a std type's own, which asks nothing. Of another
-// class, a sorted array's or numbers', `$treeFrom`'s.
-function $treeFromSorted(tree, items, TOrd, kind, size, drop, dropKey, TPartialEq, TPartialOrd) {
+// their keys, a set's by `<`, its `PartialOrd`'s `lt`; as that panics,
+// each dropped in the order it's left. Then each kept that `!=` doesn't
+// find equal to the next, and bulk-pushed. `TOrd` is the keys' `Ord`
+// dictionary, whose `PartialOrd()`, and its `PartialEq()`, give `lt` and
+// `eq` (#944). Of another class, a sorted array's or numbers',
+// `$treeFrom`'s.
+function $treeFromSorted(tree, items, TOrd, kind, size, drop, dropKey) {
   const set = tree instanceof Set;
   const nodes = set ? tree.items : tree;
   if (nodes?.pushSorted === undefined) return $treeFrom(tree, items, set, TOrd.cmp, drop, dropKey);
-  const partialOrd = TPartialOrd ?? TOrd.PartialOrd?.();
-  const partialEq = TPartialEq ?? partialOrd?.PartialEq?.();
-  const partialCmp = partialOrd?.partialCmp ?? TOrd.cmp;
-  const eq = partialEq?.eq ?? ((a, b) => TOrd.cmp(a, b) === 0);
+  const partialOrd = TOrd.PartialOrd();
+  const eq = partialOrd.PartialEq().eq;
   const sorted = Array.from(items, (item) => (set ? [item, item] : [item[0], item[1]]));
   if (sorted.length === 0) return tree;
   const dropEntry = set ? dropKey && (([item]) => dropKey(item)) : (drop || dropKey) && $entryDropping(false, drop, dropKey);
-  const isLess = set ? (a, b) => partialCmp(a[0], b[0]) < 0 : (a, b) => TOrd.cmp(a[0], b[0]) < 0;
+  const isLess = set ? (a, b) => partialOrd.lt(a[0], b[0]) : (a, b) => TOrd.cmp(a[0], b[0]) < 0;
   $unwinds(
     () => $sortStable(sorted, isLess, kind, size),
     dropEntry && (() => $dropItems(sorted, dropEntry)),

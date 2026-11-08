@@ -6,10 +6,21 @@ import {
   $maxByKey,
   $minBy,
   $nextSome,
+  $partialOrd,
   $some,
   $someValue,
   $unwrap,
 } from "@rust-js/runtime";
+
+const optionPartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: (a, b) => a == b }),
+  partialCmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+});
+
+const optionOrd = {
+  PartialOrd: () => optionPartialOrd,
+  cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+};
 
 export function entry() {
   main();
@@ -51,9 +62,6 @@ function unwraps(a, r) {
 }
 
 function main() {
-  const optionOrd = {
-    cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
-  };
   const a = $some(undefined);
   const value = firstOr(a, $iter([1]));
   console.log(

@@ -177,8 +177,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else if elem.is_bool() {
                     method(items, "sort", vec![])
                 } else {
-                    // By its `cmp`: JS's `sort` is stable too (ADR 0057).
-                    let compare = self.cmp_fn(elem, false, span)?;
+                    // By its `partial_cmp`, std's `lt`'s: JS's `sort` is
+                    // stable too (ADR 0057, #937).
+                    let compare = self.cmp_fn(elem, true, span)?;
                     self.sort_by_compare(items, compare, elem)
                 }
             }
@@ -189,14 +190,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.spill("key", key, out)
                 };
                 let js_span = self.js_span(span);
-                // The keys' `cmp`, which is `$cmp` for what JS orders.
+                // The keys' `partial_cmp`, std's `lt`'s (#937), which is
+                // `$cmp` for what JS orders.
                 let key_ty = generic_args.types().nth(1).expect("`sort_by_key` names its key");
                 let mut body = Vec::new();
                 let compare = self.cmp_value(
                     Expr::call(key.clone(), vec![a]),
                     Expr::call(key, vec![b]),
                     key_ty,
-                    false,
+                    true,
                     span,
                     &mut body,
                 )?;

@@ -10,9 +10,11 @@ import {
   $cloneIntoMap,
   $cloneIntoVec,
   $cmp,
+  $eq,
   $extendMap,
   $heapFrom,
   $madeEach,
+  $partialOrd,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -20,6 +22,11 @@ export function entry() {
 }
 
 let boom = 0;
+
+const dPartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(a[0], b[0]),
+});
 
 /**
  * Prints as it's cloned and dropped, and panics as it's cloned where its
@@ -298,9 +305,9 @@ function main() {
       }
     });
     run("BinaryHeap", boom, () => {
-      const v = $heapFrom([[3]], (a, b) => $cmp(a[0], b[0]));
+      const v = $heapFrom([[3]], dPartialOrd);
       try {
-        const w = $heapFrom([[7], [8]], (a, b) => $cmp(a[0], b[0]));
+        const w = $heapFrom([[7], [8]], dPartialOrd);
         try {
           $cloneIntoVec(w, v, (item) => dClone_clone(item), undefined, dDrop_drop);
           console.log(`${w.length}`);

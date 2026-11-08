@@ -3,24 +3,58 @@
 import {
   $cmp,
   $debugStr,
+  $eq,
   $heapFrom,
   $heapPop,
   $heapPush,
   $heapSorted,
   $iter,
   $nextSome,
+  $ordered,
+  $partialOrd,
+  $partiallyOrdered,
   $someValue,
 } from "@rust-js/runtime";
+
+const optionPartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: (a, b) => a == b }),
+  partialCmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+});
+
+const optionOrd = {
+  PartialOrd: () => optionPartialOrd,
+  cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+};
+
+const optionPartialOrd$1 = $partialOrd({
+  PartialEq: () => ({ eq: (a, b) => a == b }),
+  partialCmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+});
+
+const optionOrd$1 = {
+  PartialOrd: () => optionPartialOrd$1,
+  cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+};
+
+const tuplePartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+});
+
+const tupleOrd = {
+  PartialOrd: () => tuplePartialOrd,
+  cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+};
 
 export function entry() {
   main();
 }
 
 function inOrder(items, VOrd) {
-  const heap = $heapFrom(items.slice(), VOrd.cmp);
+  const heap = $heapFrom(items.slice(), VOrd.PartialOrd());
   const out = [];
   let pop;
-  while ((pop = $heapPop(heap, VOrd.cmp, true)) != null) {
+  while ((pop = $heapPop(heap, VOrd.PartialOrd(), true)) != null) {
     const v = $someValue(pop);
     out.push(v);
   }
@@ -34,36 +68,35 @@ function top(items, VOrd, VCopy) {
   while ((value = $nextSome(iter)) != null) {
     const value$1 = $someValue(value);
     const item = VCopy ? VCopy.copy(value$1) : value$1;
-    $heapPush(heap, VCopy ? VCopy.copy(item) : item, VOrd.cmp);
+    $heapPush(heap, VCopy ? VCopy.copy(item) : item, VOrd.PartialOrd());
   }
-  return $heapPop(heap, VOrd.cmp, true);
+  return $heapPop(heap, VOrd.PartialOrd(), true);
 }
 
 function main() {
-  const optionOrd = {
-    cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
-  };
-  console.log(`[${inOrder([3, 1, 4, 1, 5], { cmp: $cmp }).join(", ")}]`);
+  console.log(`[${inOrder([3, 1, 4, 1, 5], $ordered).join(", ")}]`);
   console.log(
     `[${inOrder([2, undefined, 7], optionOrd)
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );
-  const value = top([undefined], optionOrd);
-  const value$1 = top([], { cmp: $cmp });
+  const value = top([undefined], optionOrd$1);
+  const value$1 = top([], $ordered);
   const value$2 = top(
     [
       [1, "b"],
       [1, "a"],
     ],
-    { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
+    tupleOrd,
     { copy: (value) => [value[0], value[1]] },
   );
   console.log(
     `${value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some((${value$2[0]}, ${$debugStr(value$2[1], "'")}))`}`,
   );
-  const plain = $heapFrom([2, 9, 4], $cmp);
-  const pop = $heapPop(plain, $cmp);
-  console.log(`${pop == null ? "None" : `Some(${pop})`} [${$heapSorted(plain, $cmp).join(", ")}]`);
+  const plain = $heapFrom([2, 9, 4], $partiallyOrdered);
+  const pop = $heapPop(plain, $partiallyOrdered);
+  console.log(
+    `${pop == null ? "None" : `Some(${pop})`} [${$heapSorted(plain, $partiallyOrdered).join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

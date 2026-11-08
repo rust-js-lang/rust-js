@@ -2,7 +2,7 @@
 // std does. Of items with a destructor whose comparison may panic, `drop`:
 // where a comparison throws, each item the heap holds dropped, in order, as
 // std's `into_sorted_vec` drops its `self` as it unwinds (#901).
-function $heapSorted(items, cmp, drop) {
+function $heapSorted(items, ord, drop) {
   const heap = items.slice();
   let end = heap.length;
   $unwinds(
@@ -10,7 +10,7 @@ function $heapSorted(items, cmp, drop) {
       while (end > 1) {
         end--;
         [heap[0], heap[end]] = [heap[end], heap[0]];
-        $siftDown(heap, 0, end, cmp);
+        $siftDown(heap, 0, end, ord);
       }
     },
     drop && (() => $dropItems(heap, drop)),

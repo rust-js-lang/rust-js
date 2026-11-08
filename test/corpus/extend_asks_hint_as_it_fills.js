@@ -3,11 +3,11 @@
 import {
   $capacity,
   $catchUnwind,
-  $cmp,
   $extend,
   $grownBy,
   $heapExtend,
   $iterator,
+  $partiallyOrdered,
   $print,
   $range,
   $reserve,
@@ -116,7 +116,7 @@ function main() {
       $iterator(loud(6), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
       4,
     ),
-    $cmp,
+    $partiallyOrdered,
   );
   console.log(`heap ${h.length} ${h[0] == null ? "None" : `Some(${h[0]})`}`);
   const d = $withCapacity(10);

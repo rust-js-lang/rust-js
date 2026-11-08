@@ -343,6 +343,7 @@ helpers! {
     Range,
     Cmp,
     PartialCmp,
+    PartialOrd,
     ToFixed,
     DebugF64,
     DebugStr,
@@ -749,6 +750,9 @@ impl Helper {
             Helper::CollectsInPlace => include_str!("runtime/collects_in_place.js"),
             // `partial_cmp` of `f64`s: `None` if either is `NaN`.
             Helper::PartialCmp => include_str!("runtime/partial_cmp.js"),
+            // A `PartialOrd` dictionary, std's `lt` and the rest where its
+            // impl writes none, and std's quiet orders' shared ones (#944).
+            Helper::PartialOrd => include_str!("runtime/partial_ord.js"),
             // A fieldless enum's variants, in the order they're declared.
             Helper::CmpIn => include_str!("runtime/cmp_in.js"),
             // Item by item, then the shorter first, as Rust orders sequences.

@@ -7,13 +7,20 @@ import {
   $cmp,
   $count,
   $dropEach,
+  $eq,
   $heapFrom,
   $held,
   $iter,
   $lazySkipWhile,
   $lazyTakeWhile,
   $next,
+  $partialOrd,
 } from "@rust-js/runtime";
+
+const loudPartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(a[0], b[0]),
+});
 
 export function entry() {
   main();
@@ -84,7 +91,7 @@ function main() {
     loudDrop_drop(item);
   }
 
-  const heap = $heapFrom([[10], [11]], (a, b) => $cmp(a[0], b[0]));
+  const heap = $heapFrom([[10], [11]], loudPartialOrd);
   const some = $count(
     $closing($iter(heap), $dropEach(loudDrop_drop), false).take(1),
     loudDrop_drop,

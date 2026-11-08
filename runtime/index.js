@@ -1877,15 +1877,15 @@ export class $OrdTree extends $OrdMap {
     this.#length -= rest.#length;
     return rest;
   }
-  // `range`: the bounds checked by `eq` and `partialCmp`, `s == e` then
-  // `s > e`, as std's are; then the edges where they part, each side down
-  // to its leaf; what's between them, in order.
-  range(start, end, name, eq, partialCmp, checked) {
+  // `range`: the bounds checked by `eq` and `ord`, a `PartialOrd`
+  // dictionary, `s == e` then `s > e`, as std's are; then the edges where
+  // they part, each side down to its leaf; what's between them, in order.
+  range(start, end, name, eq, ord, checked) {
     if (checked && start !== "Unbounded" && end !== "Unbounded") {
       if (start.TAG === "Excluded" && end.TAG === "Excluded" && eq(start._0, end._0)) {
         throw new Error(`range start and end are equal and excluded in ${name}`);
       }
-      if (partialCmp(start._0, end._0) > 0) {
+      if (ord.gt(start._0, end._0)) {
         throw new Error(`range start is greater than range end in ${name}`);
       }
     }
@@ -1933,9 +1933,9 @@ export class $OrdTree extends $OrdMap {
     }
   };
   // `extract_if(range, f)`'s `ExtractIfInner`: from the start's lower
-  // bound, each entry to the end asked by `partialCmp` as it's reached,
-  // `<=` an included end or `<` an excluded one; each `f` keeps taken out.
-  extractIf(start, end, partialCmp, take) {
+  // bound, each entry to the end asked by `ord` as it's reached, `<=` an
+  // included end or `<` an excluded one; each `f` keeps taken out.
+  extractIf(start, end, ord, take) {
     let edge = this.#lowerBound($treeSearchBound(start));
     const tree = this;
     return {
@@ -1943,8 +1943,8 @@ export class $OrdTree extends $OrdMap {
         for (let kv = $treeNextKv(edge); kv !== undefined; kv = $treeNextKv(edge)) {
           const entry = kv.node.entries[kv.i];
           if (end !== "Unbounded") {
-            const order = partialCmp(entry[0], end._0);
-            if (!(end.TAG === "Included" ? order <= 0 : order < 0)) return undefined;
+            const within = end.TAG === "Included" ? ord.le(entry[0], end._0) : ord.lt(entry[0], end._0);
+            if (!within) return undefined;
           }
           if (take(entry)) {
             edge = tree.#remove(kv);
@@ -2107,10 +2107,10 @@ export function $sortedSteps(it, set) {
 // &b`'s (#961): its items, sorted already, a JS iterator, each kept that
 // `!=` doesn't find equal to the next, `DedupSortedIter`'s, pulled as the
 // build asks, then bulk-pushed into `tree`, a set of std's nodes. `eq` is
-// as `$treeFromSorted` finds it.
-export function $treeOfSorted(tree, items, TOrd, TPartialEq, TPartialOrd) {
-  const partialEq = TPartialEq ?? (TPartialOrd ?? TOrd.PartialOrd?.())?.PartialEq?.();
-  const eq = partialEq?.eq ?? ((a, b) => TOrd.cmp(a, b) === 0);
+// the `Ord` dictionary's `PartialOrd()`'s `PartialEq()`'s, as
+// `$treeFromSorted`'s (#944).
+export function $treeOfSorted(tree, items, TOrd) {
+  const eq = TOrd.PartialOrd().PartialEq().eq;
   tree.items.pushSorted($sortedSteps(items, true), (a, b) => !eq(a, b));
   return tree;
 }
@@ -7917,13 +7917,13 @@ export function $treeEnd(m, cmp, last, set, pop, boxed = false) {
 // so does one equal to it that both exclude. Checked as `range` checks its
 // bounds where `checked`; `extract_if`'s aren't (ADR 0344).
 // Of a tree of its keys' own order whose order can be seen, std's search,
-// whose bounds are checked by `eq` and `partialCmp`, as std's are (#926).
-export function $treeRange(m, cmp, set, name, start, end, checked = true, eq, partialCmp) {
+// whose bounds are checked by `eq` and `ord`'s `>`, as std's are (#926).
+export function $treeRange(m, cmp, set, name, start, end, checked = true, eq, ord) {
   const tree = set ? m.items : m;
   if (tree?.range !== undefined) {
     // Unchecked, `extract_if`'s: the range it walks, unsearched.
-    if (!checked) return { start, end, partialCmp };
-    const found = tree.range(start, end, name, eq, partialCmp, checked);
+    if (!checked) return { start, end, ord };
+    const found = tree.range(start, end, name, eq, ord, checked);
     return found.map(([key, value]) => (set ? key : [key, value]));
   }
   if (checked && start !== "Unbounded" && end !== "Unbounded") {
@@ -8288,26 +8288,22 @@ export function $treeFrom(tree, items, set, cmp, drop, dropKey) {
 // order is seen or not total, or a type parameter's (#926): of std's nodes,
 // std's bulk build. Its entries sorted by std's stable sort, `kind` and
 // `size` its entries', `(K, V)`'s or a set's `T`'s: a map's by `cmp` of
-// their keys, a set's by `<`, `partial_cmp`'s; as that panics, each
-// dropped in the order it's left. Then each kept that `!=` doesn't find
-// equal to the next, and bulk-pushed. `TOrd` is the keys' `Ord`
-// dictionary, whose `PartialOrd()`, and its `PartialEq()`, give
-// `partial_cmp` and `eq` where it has them; else `TPartialOrd` and
-// `TPartialEq` where they're given, a std type's of the crate's, `(K,
-// u32)`; else its `cmp`, a std type's own, which asks nothing. Of another
-// class, a sorted array's or numbers', `$treeFrom`'s.
-export function $treeFromSorted(tree, items, TOrd, kind, size, drop, dropKey, TPartialEq, TPartialOrd) {
+// their keys, a set's by `<`, its `PartialOrd`'s `lt`; as that panics,
+// each dropped in the order it's left. Then each kept that `!=` doesn't
+// find equal to the next, and bulk-pushed. `TOrd` is the keys' `Ord`
+// dictionary, whose `PartialOrd()`, and its `PartialEq()`, give `lt` and
+// `eq` (#944). Of another class, a sorted array's or numbers',
+// `$treeFrom`'s.
+export function $treeFromSorted(tree, items, TOrd, kind, size, drop, dropKey) {
   const set = tree instanceof Set;
   const nodes = set ? tree.items : tree;
   if (nodes?.pushSorted === undefined) return $treeFrom(tree, items, set, TOrd.cmp, drop, dropKey);
-  const partialOrd = TPartialOrd ?? TOrd.PartialOrd?.();
-  const partialEq = TPartialEq ?? partialOrd?.PartialEq?.();
-  const partialCmp = partialOrd?.partialCmp ?? TOrd.cmp;
-  const eq = partialEq?.eq ?? ((a, b) => TOrd.cmp(a, b) === 0);
+  const partialOrd = TOrd.PartialOrd();
+  const eq = partialOrd.PartialEq().eq;
   const sorted = Array.from(items, (item) => (set ? [item, item] : [item[0], item[1]]));
   if (sorted.length === 0) return tree;
   const dropEntry = set ? dropKey && (([item]) => dropKey(item)) : (drop || dropKey) && $entryDropping(false, drop, dropKey);
-  const isLess = set ? (a, b) => partialCmp(a[0], b[0]) < 0 : (a, b) => TOrd.cmp(a[0], b[0]) < 0;
+  const isLess = set ? (a, b) => partialOrd.lt(a[0], b[0]) : (a, b) => TOrd.cmp(a[0], b[0]) < 0;
   $unwinds(
     () => $sortStable(sorted, isLess, kind, size),
     dropEntry && (() => $dropItems(sorted, dropEntry)),
@@ -8634,20 +8630,21 @@ export function $clamp(x, min, max) {
   return x < min ? min : x > max ? max : x;
 }
 
-// `x.clamp(min, max)` of what `cmp` orders, `Ord`'s: `min` or `max` if it's
+// `x.clamp(min, max)` of what `ord` orders, a `PartialOrd` dictionary, by
+// std's `min <= max`, `x < min` and `x > max` (#937): `min` or `max` if it's
 // past either. Bounds the wrong way round panic as `Ord`'s default does,
 // or, given `show`, as a `char`'s does, each as `{:?}` shows it. Of a type
 // with a destructor, `drop`: the two not given back dropped, the later
 // parameter first, and all three as a comparison or the bounds' panic
 // unwinds, as std's `clamp` drops its parameters (#912).
-export function $clampBy(x, min, max, cmp, show, drop) {
+export function $clampBy(x, min, max, ord, show, drop) {
   const parts = [x, min, max];
   const at = $unwinds(
     () => {
-      if (cmp(min, max) > 0) {
+      if (!ord.le(min, max)) {
         throw new Error(show ? `min > max. min = ${show(min)}, max = ${show(max)}` : "assertion failed: min <= max");
       }
-      return cmp(x, min) < 0 ? 1 : cmp(x, max) > 0 ? 2 : 0;
+      return ord.lt(x, min) ? 1 : ord.gt(x, max) ? 2 : 0;
     },
     drop && (() => drop(max)),
     drop && (() => drop(min)),
@@ -8658,20 +8655,20 @@ export function $clampBy(x, min, max, cmp, show, drop) {
 }
 
 // `a.max(b)` and `a.min(b)` of a type with a destructor, std's `Ord`
-// defaults': `b` against `a`, `cmp(b, a) < 0`, picks; the one not given
+// defaults': `b` against `a`, `ord.lt(b, a)`, `PartialOrd`'s, picks (#937); the one not given
 // back dropped by `drop`, and both, `b` first, as the comparison panics, as
 // std's drops its parameters (#912).
-export function $maxOf(a, b, cmp, drop) {
-  return $keptOf(a, b, cmp, drop, true);
+export function $maxOf(a, b, ord, drop) {
+  return $keptOf(a, b, ord, drop, true);
 }
 
-export function $minOf(a, b, cmp, drop) {
-  return $keptOf(a, b, cmp, drop, false);
+export function $minOf(a, b, ord, drop) {
+  return $keptOf(a, b, ord, drop, false);
 }
 
-export function $keptOf(a, b, cmp, drop, max) {
+export function $keptOf(a, b, ord, drop, max) {
   const less = $unwinds(
-    () => cmp(b, a) < 0,
+    () => ord.lt(b, a),
     () => drop(b),
     () => drop(a),
   );
@@ -9330,11 +9327,11 @@ export function $mapExtractIf(m, f, entries, handles, set, drop) {
     return it;
   };
   if (tree?.extractIf !== undefined) {
-    const { start, end, partialCmp } = entries === m ? { start: "Unbounded", end: "Unbounded" } : entries;
+    const { start, end, ord } = entries === m ? { start: "Unbounded", end: "Unbounded" } : entries;
     const take = set
       ? ([item]) => f(item)
       : (entry) => f(entry[0], handles ? $entryHandle(entry) : entry[1]);
-    const walk = tree.extractIf(start, end, partialCmp, take);
+    const walk = tree.extractIf(start, end, ord, take);
     return steps(() => {
       const entry = walk.next();
       if (entry === undefined) return { done: true, value: undefined };
@@ -13598,14 +13595,14 @@ export function $debugParseError(message, name, options) {
 }
 
 // `sift_up(start, pos)`, std's: the item at `pos` moved up past each parent
-// less than it. Where a comparison throws, a panic, it's written where its
+// less than it, by `ord`'s `<=`, its `PartialOrd`'s, as std asks (#937). Where a comparison throws, a panic, it's written where its
 // hole is, as std's `Hole` writes it as it unwinds (#901).
-export function $siftUp(heap, start, pos, cmp) {
+export function $siftUp(heap, start, pos, ord) {
   const item = heap[pos];
   try {
     while (pos > start) {
       const parent = (pos - 1) >>> 1;
-      if (cmp(item, heap[parent]) <= 0) {
+      if (ord.le(item, heap[parent])) {
         break;
       }
       heap[pos] = heap[parent];
@@ -13621,22 +13618,22 @@ export function $siftUp(heap, start, pos, cmp) {
 // each child greater than it. Where a comparison throws, a panic, it's
 // written where its hole is, as std's `Hole` writes it as it unwinds, so
 // the heap holds each item once (#901).
-export function $siftDown(heap, pos, end, cmp) {
+export function $siftDown(heap, pos, end, ord) {
   const item = heap[pos];
   try {
     let child = 2 * pos + 1;
     while (child <= end - 2) {
-      if (cmp(heap[child], heap[child + 1]) <= 0) {
+      if (ord.le(heap[child], heap[child + 1])) {
         child++;
       }
-      if (cmp(item, heap[child]) >= 0) {
+      if (ord.ge(item, heap[child])) {
         return pos;
       }
       heap[pos] = heap[child];
       pos = child;
       child = 2 * pos + 1;
     }
-    if (child === end - 1 && cmp(item, heap[child]) < 0) {
+    if (child === end - 1 && ord.lt(item, heap[child])) {
       heap[pos] = heap[child];
       pos = child;
     }
@@ -13649,14 +13646,14 @@ export function $siftDown(heap, pos, end, cmp) {
 // `sift_down_to_bottom(0)`, `pop`'s: the item at the top moved down past
 // the greater child each time to the bottom, then sifted up; its hole
 // written as a comparison throws, as `$siftDown`'s is.
-export function $siftDownToBottom(heap, cmp) {
+export function $siftDownToBottom(heap, ord) {
   const end = heap.length;
   const item = heap[0];
   let pos = 0;
   try {
     let child = 1;
     while (child <= end - 2) {
-      if (cmp(heap[child], heap[child + 1]) <= 0) {
+      if (ord.le(heap[child], heap[child + 1])) {
         child++;
       }
       heap[pos] = heap[child];
@@ -13670,12 +13667,12 @@ export function $siftDownToBottom(heap, cmp) {
   } finally {
     heap[pos] = item;
   }
-  $siftUp(heap, 0, pos, cmp);
+  $siftUp(heap, 0, pos, ord);
 }
 
-export function $heapPush(heap, item, cmp) {
+export function $heapPush(heap, item, ord) {
   heap.push(item);
-  $siftUp(heap, 0, heap.length - 1, cmp);
+  $siftUp(heap, 0, heap.length - 1, ord);
 }
 
 // `BinaryHeap::pop`: `None` for an empty one, else its top, sifted out;
@@ -13683,7 +13680,7 @@ export function $heapPush(heap, item, cmp) {
 // Of items with a destructor whose comparison may panic, `drop`: where the
 // sift's comparison throws, the top it took dropped, as std's `pop` drops
 // it as it unwinds (#901).
-export function $heapPop(heap, cmp, boxed, drop) {
+export function $heapPop(heap, ord, boxed, drop) {
   if (heap.length === 0) {
     return undefined;
   }
@@ -13691,7 +13688,7 @@ export function $heapPop(heap, cmp, boxed, drop) {
   if (heap.length > 0) {
     [top, heap[0]] = [heap[0], top];
     $unwinds(
-      () => $siftDownToBottom(heap, cmp),
+      () => $siftDownToBottom(heap, ord),
       drop && (() => drop(top)),
     );
   }
@@ -13702,7 +13699,7 @@ export function $heapPop(heap, cmp, boxed, drop) {
 // std does. Of items with a destructor whose comparison may panic, `drop`:
 // where a comparison throws, each item the heap holds dropped, in order, as
 // std's `into_sorted_vec` drops its `self` as it unwinds (#901).
-export function $heapSorted(items, cmp, drop) {
+export function $heapSorted(items, ord, drop) {
   const heap = items.slice();
   let end = heap.length;
   $unwinds(
@@ -13710,7 +13707,7 @@ export function $heapSorted(items, cmp, drop) {
       while (end > 1) {
         end--;
         [heap[0], heap[end]] = [heap[end], heap[0]];
-        $siftDown(heap, 0, end, cmp);
+        $siftDown(heap, 0, end, ord);
       }
     },
     drop && (() => $dropItems(heap, drop)),
@@ -13723,14 +13720,14 @@ export function $heapSorted(items, cmp, drop) {
 // comparison may panic, `drop`: where a comparison throws, each item the
 // heap holds dropped, in order, as std's drops the heap it was making as it
 // unwinds (#901).
-export function $heapFrom(items, cmp, drop) {
+export function $heapFrom(items, ord, drop) {
   const heap = items.slice();
   let n = heap.length >>> 1;
   $unwinds(
     () => {
       while (n > 0) {
         n--;
-        $siftDown(heap, n, heap.length, cmp);
+        $siftDown(heap, n, heap.length, ord);
       }
     },
     drop && (() => $dropItems(heap, drop)),
@@ -13743,28 +13740,28 @@ export function $heapFrom(items, cmp, drop) {
 
 // Make a heap of the items from `start` on, as std does: all of it again,
 // or each sifted up, whichever std counts cheaper.
-export function $heapRebuildTail(heap, start, cmp) {
+export function $heapRebuildTail(heap, start, ord) {
   const len = heap.length;
   if (start === len) return;
   const tail = len - start;
   const better =
     start < tail ? true : len <= 2048 ? 2 * len < tail * (31 - Math.clz32(start)) : 2 * len < tail * 11;
   if (better) {
-    for (let n = len >>> 1; n > 0; ) $siftDown(heap, --n, len, cmp);
+    for (let n = len >>> 1; n > 0; ) $siftDown(heap, --n, len, ord);
   } else {
-    for (let i = start; i < len; i++) $siftUp(heap, 0, i, cmp);
+    for (let i = start; i < len; i++) $siftUp(heap, 0, i, ord);
   }
 }
 
 // `heap.append(&mut other)`: the smaller's items after the larger's, `other`
 // left empty.
-export function $heapAppend(heap, other, cmp) {
+export function $heapAppend(heap, other, ord) {
   const [first, rest] = heap.length < other.length ? [other.slice(), heap.slice()] : [heap.slice(), other.slice()];
   heap.length = 0;
   $extend(heap, first);
   $extend(heap, rest);
   other.length = 0;
-  $heapRebuildTail(heap, first.length, cmp);
+  $heapRebuildTail(heap, first.length, ord);
 }
 
 // `heap.retain(f)`: what `f` keeps, in order, rebuilt from the first it
@@ -13772,7 +13769,7 @@ export function $heapAppend(heap, other, cmp) {
 // before the next is asked, as std's `Vec::retain` of them does (ADR 0098);
 // where one throws, what's left as `$retain` leaves it, rebuilt, as std's
 // guard does (#416).
-export function $heapRetain(heap, f, cmp, drop) {
+export function $heapRetain(heap, f, ord, drop) {
   let from = heap.length;
   let kept = 0;
   let i = 0;
@@ -13792,15 +13789,15 @@ export function $heapRetain(heap, f, cmp, drop) {
     const rest = heap.length - i;
     if (rest > 0) heap.copyWithin(kept, i);
     heap.length = kept + rest;
-    $heapRebuildTail(heap, Math.min(from, heap.length), cmp);
+    $heapRebuildTail(heap, Math.min(from, heap.length), ord);
   }
 }
 
 // `peek_mut()`: a guard of its top, or `undefined` of an empty heap. A
 // `&mut` to the top marks it changed, and a guard of a changed top sifts it
 // down as it drops, as std's does; one only read compares nothing.
-export function $peekMut(heap, cmp) {
-  return heap.length === 0 ? undefined : { heap, cmp, changed: false };
+export function $peekMut(heap, ord) {
+  return heap.length === 0 ? undefined : { heap, ord, changed: false };
 }
 
 // The guard's `&mut` to its top: a handle on a number or text (ADR 0152).
@@ -13819,20 +13816,20 @@ export function $peekMutTop(guard, handle) {
 }
 
 export function $peekMutDrop(guard) {
-  if (guard.changed) $siftDown(guard.heap, 0, guard.heap.length, guard.cmp);
+  if (guard.changed) $siftDown(guard.heap, 0, guard.heap.length, guard.ord);
 }
 
 // `PeekMut::pop(guard)`: the top, changed or not, taken.
 export function $peekMutPop(guard) {
-  return $heapPop(guard.heap, guard.cmp);
+  return $heapPop(guard.heap, guard.ord);
 }
 
 // `heap.extend(items)`: each pushed at the end, then the heap rebuilt from
 // the first of them, as std's `RebuildOnDrop` does.
-export function $heapExtend(heap, items, cmp) {
+export function $heapExtend(heap, items, ord) {
   const start = heap.length;
   for (const item of items) heap.push(item);
-  $heapRebuildTail(heap, start, cmp);
+  $heapRebuildTail(heap, start, ord);
 }
 
 // `s.parse()` of an integer, or `from_str_radix(s, radix)`, as std reads it:
@@ -16177,6 +16174,29 @@ export function $cmp(a, b) {
 export function $partialCmp(a, b) {
   return a < b ? -1 : a > b ? 1 : a === b ? 0 : undefined;
 }
+
+// A `PartialOrd` dictionary (ADRs 0049, 0057): its `PartialEq()`, its
+// `partialCmp`, and `lt`, `le`, `gt` and `ge`, an impl's own where it writes
+// them, else std's provided bodies over its `partialCmp`, which `None`'s
+// `undefined` makes false (#937, #944). The one place std's defaults are.
+export function $partialOrd(dictionary) {
+  const partialCmp = dictionary.partialCmp;
+  dictionary.lt ??= (a, b) => partialCmp(a, b) < 0;
+  dictionary.le ??= (a, b) => partialCmp(a, b) <= 0;
+  dictionary.gt ??= (a, b) => partialCmp(a, b) > 0;
+  dictionary.ge ??= (a, b) => partialCmp(a, b) >= 0;
+  return dictionary;
+}
+
+// std's `PartialOrd` and `Ord` of what `$cmp` orders as Rust does and
+// nothing sees, numbers but floats, text, `char`s and `bool`s: one shared
+// dictionary each, `===` their `PartialEq` (#944).
+export const $partiallyOrdered = /* @__PURE__ */ $partialOrd({
+  PartialEq: () => ({ eq: (a, b) => a === b }),
+  partialCmp: $cmp,
+});
+
+export const $ordered = { PartialOrd: () => $partiallyOrdered, cmp: $cmp };
 
 export function $toFixed(value, digits) {
   if (Number.isNaN(value)) return "NaN";

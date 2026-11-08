@@ -418,3 +418,77 @@ pub mod hidden {
   const body = (js: string) => js.slice(js.indexOf("\n"));
   expect(body(readFileSync(join(library, "queue.js"), "utf8"))).toBe(body(queue));
 });
+
+// #944: an `Ord` dictionary holds its `PartialOrd()`, which holds its
+// `PartialEq()` and `lt`, `le`, `gt` and `ge`, as rustc's supertraits have
+// them, so generic code's `==`, `<` and `partial_cmp` are those, never
+// `cmp`: an impl's own `lt` where it writes one, else std's, which
+// `$partialOrd` gives. std's quiet orders share `$ordered` and
+// `$partiallyOrdered`; a derived type's is its module's `const`, made once,
+// as an impl's is.
+test("an Ord dictionary holds its PartialOrd, and that its PartialEq and operators", async () => {
+  const dir = fixture("ord-dictionary-supertraits");
+  writeFileSync(join(dir, "lib.rs"), `use std::cmp::Ordering;
+
+#[derive(PartialEq, Eq)]
+pub struct Odd(pub u32);
+
+impl PartialOrd for Odd {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+
+    fn lt(&self, other: &Self) -> bool {
+        self.0 > other.0
+    }
+}
+
+impl Ord for Odd {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
+fn same<T: Ord>(a: &T, b: &T) -> bool {
+    a == b
+}
+
+fn less<T: Ord>(a: &T, b: &T) -> bool {
+    a < b
+}
+
+fn order<T: Ord>(a: &T, b: &T) -> Option<Ordering> {
+    a.partial_cmp(b)
+}
+
+pub fn odd() -> (bool, bool, bool) {
+    (same(&Odd(1), &Odd(1)), less(&Odd(1), &Odd(2)), order(&Odd(1), &Odd(2)) == Some(Ordering::Less))
+}
+
+pub fn numbers() -> (bool, bool) {
+    (same(&1, &2), less(&1, &2))
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+pub struct Pair(pub u32, pub u32);
+
+pub fn pairs() -> (bool, bool) {
+    (less(&Pair(1, 2), &Pair(1, 3)), less(&Pair(2, 0), &Pair(1, 9)))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export const oddPartialOrd = $partialOrd({\n  PartialEq: () => ({ eq: $eq }),\n  partialCmp: oddPartialOrd_partialCmp,\n  lt: oddPartialOrd_lt,\n});");
+  expect(js).toContain("export const oddOrd = { PartialOrd: () => oddPartialOrd, cmp: oddOrd_cmp };");
+  expect(js).toContain("function same(a, b, TOrd) {\n  return TOrd.PartialOrd().PartialEq().eq(a, b);");
+  expect(js).toContain("function less(a, b, TOrd) {\n  return TOrd.PartialOrd().lt(a, b);");
+  expect(js).toContain("function order(a, b, TOrd) {\n  return TOrd.PartialOrd().partialCmp(a, b);");
+  expect(js).toContain("less(1, 2, $ordered)");
+  // A derived type's, its module's `const`, made once and read where given.
+  expect(js).toContain("const pairOrd = {\n  PartialOrd: () => pairPartialOrd,");
+  expect(js).toContain("const pairPartialOrd = $partialOrd({");
+  expect(js.match(/pairOrd\)/g)?.length).toBe(2);
+  const lib = await import(join(dir, "lib.js"));
+  // `Odd`'s own `lt` orders the other way, as generic `<` asks it.
+  expect([lib.odd(), lib.numbers(), lib.pairs()]).toEqual([[true, false, true], [false, true], [true, false]]);
+});

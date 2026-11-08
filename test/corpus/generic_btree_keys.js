@@ -9,10 +9,23 @@ import {
   $debugStr,
   $entry,
   $entryOrInsert,
+  $eq,
   $iter,
+  $ordered,
+  $partialOrd,
   $sortedEntries,
   $treeFromSorted,
 } from "@rust-js/runtime";
+
+const tuplePartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+});
+
+const tupleOrd = {
+  PartialOrd: () => tuplePartialOrd,
+  cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+};
 
 export function entry() {
   main();
@@ -35,22 +48,16 @@ function counts(xs, KOrd, KClone, KDebug, KTreeMap) {
 function main() {
   const clone = { clone: (value) => value };
   console.log(
-    `${distinct([3, 1, 3, 2], { cmp: $cmp }, 4, $BTreeSet, "general8")} ${distinct(
+    `${distinct([3, 1, 3, 2], $ordered, 4, $BTreeSet, "general8")} ${distinct(
       ["b", "a", "b"],
-      { cmp: $cmp },
+      $ordered,
       8,
       $BTreeSet,
       "general8",
     )}`,
   );
   console.log(
-    `[${counts(
-      ["x", "y", "x"],
-      { cmp: $cmp },
-      clone,
-      { fmt: (value) => $debugStr(value) },
-      $BTreeMap,
-    )
+    `[${counts(["x", "y", "x"], $ordered, clone, { fmt: (value) => $debugStr(value) }, $BTreeMap)
       .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
       .join(", ")}]`,
   );
@@ -61,7 +68,7 @@ function main() {
         [1, "a"],
         [2, "b"],
       ],
-      { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
+      tupleOrd,
       clone,
       { fmt: (value) => `(${value[0]}, ${$debugStr(value[1], "'")})` },
       $btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap),

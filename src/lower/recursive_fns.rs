@@ -4,7 +4,9 @@
 //! ended. Of a type its module knows, the module's own function, one for
 //! each type and module, which every place that compares, clones or orders
 //! one calls (#517); of one only a caller knows, made of a type parameter,
-//! the function's, which reads the dictionaries it was given.
+//! the function's, which reads the dictionaries it was given. And a type's
+//! dictionary of std's order its module makes, `pointPartialOrd`, made once,
+//! a `const` of its module, as the crate's own impls' are (#944).
 
 use super::{Dependencies, FnCx, R};
 use crate::collections::{IndexMap, IndexSet};
@@ -21,6 +23,8 @@ pub(super) enum Kind {
     Cmp {
         partial: bool,
     },
+    /// Its dictionary of the trait, made by rust-js, a `const`.
+    Dictionary(DefId),
 }
 
 /// The crate's modules' functions, made as their bodies are lowered: each
@@ -47,6 +51,23 @@ struct Made<'tcx> {
     calls: IndexSet<Key<'tcx>>,
     used_by: IndexSet<DefId>,
     written: bool,
+    /// A `const` of the value its function returns, not a function.
+    constant: bool,
+}
+
+/// What `written_before` gives an item to write before it: its module's
+/// functions, and its dictionaries' `const`s, which no load runs.
+#[derive(Default)]
+pub(super) struct WrittenBefore {
+    pub(super) functions: Vec<js::Function>,
+    pub(super) consts: Vec<js::Const>,
+}
+
+impl WrittenBefore {
+    /// Its `const`s' names, each a dictionary's.
+    pub(super) fn const_names(&self) -> impl Iterator<Item = String> + '_ {
+        self.consts.iter().map(|c| c.name.clone())
+    }
 }
 
 impl<'tcx> ModuleFns<'tcx> {
@@ -75,18 +96,40 @@ impl<'tcx> ModuleFns<'tcx> {
 
     /// The functions `item` calls not yet written, each then written: its
     /// module's, before `item`.
-    pub(super) fn written_before(&mut self, item: DefId) -> Vec<js::Function> {
+    pub(super) fn written_before(&mut self, item: DefId) -> WrittenBefore {
         let mut first: Vec<_> = (self.made.values_mut())
             .filter(|made| !made.written && made.used_by.contains(&item))
             .filter_map(|made| {
                 made.written = true;
                 made.lowered
                     .as_ref()
-                    .map(|(function, _)| (made.made_before, function.clone()))
+                    .map(|(function, _)| (made.made_before, made.constant, function.clone()))
             })
             .collect();
-        first.sort_by_key(|(made_before, _)| *made_before);
-        first.into_iter().map(|(_, function)| function).collect()
+        first.sort_by_key(|(made_before, ..)| *made_before);
+        let mut written = WrittenBefore::default();
+        for (_, constant, function) in first {
+            match (constant, function.body.as_slice()) {
+                (
+                    true,
+                    [
+                        js::Stmt {
+                            kind: StmtKind::Return(Some(value)),
+                            ..
+                        },
+                    ],
+                ) => written.consts.push(js::Const {
+                    name: function.name,
+                    value: value.clone(),
+                    mutable: false,
+                    fields: js::Fields::default(),
+                    export: false,
+                    span: js::Span::NONE,
+                }),
+                _ => written.functions.push(function),
+            }
+        }
+        written
     }
 }
 
@@ -111,6 +154,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if ty.has_param() || ty.has_aliases() {
             return self.local_recursive_fn((kind, ty, base), params, make, out);
         }
+        self.module_fn((kind, ty, base), params, make)
+    }
+
+    /// `ty`'s dictionary of the trait `trait_id` that `make` makes, std's
+    /// order of a type the module knows, a `const` of its module named
+    /// `base`, `pointPartialOrd`, made the first time it's asked; then read
+    /// (#944).
+    pub(super) fn module_dictionary(
+        &mut self,
+        (trait_id, ty, base): (DefId, Ty<'tcx>, &str),
+        make: impl FnOnce(&mut Self) -> R<Expr>,
+    ) -> R<Expr> {
+        let name = self.module_fn((Kind::Dictionary(trait_id), ty, base), &[], |cx, _, _| make(cx))?;
+        Ok(Expr::var(&name))
+    }
+
+    /// `recursive_fn`'s of a type its module knows: its module's function,
+    /// or of a dictionary its `const`.
+    fn module_fn(
+        &mut self,
+        (kind, ty, base): (Kind, Ty<'tcx>, &str),
+        params: &[&str],
+        make: impl FnOnce(&mut Self, Vec<Expr>, &mut Vec<Stmt>) -> R<Expr>,
+    ) -> R<String> {
         let key = (self.module, kind, self.tcx.erase_and_anonymize_regions(ty));
         let mut module_fns = self.krate.module_fns.borrow_mut();
         if module_fns.made.contains_key(&key) {
@@ -143,6 +210,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 calls: IndexSet::default(),
                 used_by: IndexSet::default(),
                 written: false,
+                constant: matches!(kind, Kind::Dictionary(_)),
             },
         );
         module_fns.called(key, self.item);

@@ -16,6 +16,8 @@ import {
   $orInsert,
   $ordMap,
   $ordSet,
+  $ordered,
+  $partialOrd,
   $remove,
   $setAlgebra,
   $sortedEntries,
@@ -43,10 +45,10 @@ function taskPartialEq_eq(task, other) {
   return task.id === other.id;
 }
 
-export const taskPartialOrd = {
+export const taskPartialOrd = $partialOrd({
   PartialEq: () => taskPartialEq,
   partialCmp: taskPartialOrd_partialCmp,
-};
+});
 function taskPartialOrd_partialCmp(task, other) {
   return taskOrd_cmp(task, other);
 }
@@ -61,10 +63,10 @@ function scoreDebug_fmt(score) {
   return `Score(${score[0]})`;
 }
 
-export const scorePartialOrd = {
+export const scorePartialOrd = $partialOrd({
   PartialEq: () => ({ eq: $eq }),
   partialCmp: scorePartialOrd_partialCmp,
-};
+});
 function scorePartialOrd_partialCmp(score, other) {
   return scoreOrd_cmp(score, other);
 }
@@ -74,10 +76,10 @@ function scoreOrd_cmp(score, other) {
   return $cmp(other[0], score[0]);
 }
 
-export const sizePartialOrd = {
+export const sizePartialOrd = $partialOrd({
   PartialEq: () => ({ eq: (a, b) => a === b }),
   partialCmp: sizePartialOrd_partialCmp,
-};
+});
 function sizePartialOrd_partialCmp(size, other) {
   return sizeOrd_cmp(size, other);
 }
@@ -197,13 +199,7 @@ function main() {
   console.log(
     `{${Array.from(
       $sortedEntries(
-        tally(
-          ["b", "a", "b"],
-          { cmp: $cmp },
-          clone,
-          { fmt: (value) => $debugStr(value) },
-          $BTreeMap,
-        ),
+        tally(["b", "a", "b"], $ordered, clone, { fmt: (value) => $debugStr(value) }, $BTreeMap),
         $cmp,
       ),
     )
@@ -234,7 +230,7 @@ function main() {
   console.log(
     `${distinct([task(1, 1, ""), task(1, 2, "")], taskOrd, 16, $ordSet(taskOrd_cmp), "general8")} ${distinct(
       [3, 1, 3],
-      { cmp: $cmp },
+      $ordered,
       4,
       $BTreeSet,
       "general8",

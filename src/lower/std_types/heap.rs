@@ -69,7 +69,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let heap = values.remove(0);
             return Ok(Expr::call(Expr::member(heap, "splice"), vec![Expr::int(0)]));
         }
-        let compare = self.cmp_fn(item, false, span)?;
+        // std's heap asks `<=`, `>=` and `<`, its `PartialOrd`'s (#937).
+        let compare = self.operators(item, span)?;
         values.push(compare);
         // What std's frame holds as a comparison unwinds, dropped then:
         // `pop`'s top, `into_sorted_vec`'s and `from`'s items, of items with

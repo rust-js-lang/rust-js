@@ -11,6 +11,8 @@ import {
   $iterator,
   $maxBy,
   $mutWriter,
+  $ordered,
+  $partialOrd,
   $rangeInclusiveNext,
   $rangeNext,
   $roomForHint,
@@ -18,6 +20,13 @@ import {
   $stringWriter,
   $unwrap,
 } from "@rust-js/runtime";
+
+const kPartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+});
+
+const kOrd = { PartialOrd: () => kPartialOrd, cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) };
 
 export function entry() {
   main();
@@ -79,7 +88,7 @@ function main() {
     `${show(a, { fmt: kDisplay_fmt })} ${show(b, { fmt: kDisplay_fmt })} ${dbg(a, { fmt: (value) => kDebug_fmt(value) })}`,
   );
   console.log(`${same(a, a, { eq: $eq })} ${same(a, b, { eq: $eq })}`);
-  const value = biggest([a, b, a], { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) });
+  const value = biggest([a, b, a], kOrd);
   console.log(`${value == null ? "None" : `Some(${kDebug_fmt(value)})`}`);
   console.log(
     `${
@@ -110,7 +119,7 @@ function main() {
   console.log(`${pathLen(p, asRef)} ${pathLen("x/y", asRef)}`);
   const names = ["bob", "al"];
   const refs = names.slice();
-  const value$1 = biggest(refs, { cmp: $cmp });
+  const value$1 = biggest(refs, $ordered);
   console.log(`${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`);
   console.log(`${show(5, { fmt: String })}`);
   const r = { start: 5, end: 9 };

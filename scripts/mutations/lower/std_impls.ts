@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "generic-eq-unrouted",
+    breaks: "`a == b` of a `T: Ord` finds no `PartialEq` through its `Ord`, rustc's supertrait route, where Rust calls its `eq`, a derived one by its fields (#944)",
+    file: "src/lower/std_impls.rs",
+    find: "            // Of a `T: Ord` or `T: PartialOrd` alone, its `PartialEq`, a\n            // supertrait's, `TOrd.PartialOrd().PartialEq()`: never `cmp`,\n            // which Rust doesn't tie to it (#944).\n            if let Some(dictionary) = self.evidence_for(tr) {\n",
+    replace: "            if let Some(dictionary) = self.evidence_for(tr).filter(|_| !self.has_evidence(ty::TraitRef::new(self.tcx, self.ord_trait(), [ty]))) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_compare_by_impls.rs$"],
+  },
+  {
     name: "map-keys-cloned-by-value-alone",
     breaks:
       "a clone of a B-tree of keys found by their own `cmp`, or a caller's class, shares its keys and never calls their `Clone`, as it did before #924",

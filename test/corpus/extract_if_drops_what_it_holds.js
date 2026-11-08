@@ -13,6 +13,7 @@ import {
   $mapExtractIf,
   $next,
   $ordTreeSet,
+  $partialOrd,
   $range,
   $sortedEntries,
   $sortedKeys,
@@ -38,11 +39,11 @@ function seenPartialEq_eq(seen, other) {
   return seenOrd_cmp(seen, other) === 0;
 }
 
-export const seenPartialOrd = {
+export const seenPartialOrd = $partialOrd({
   PartialEq: () => seenPartialEq,
   partialCmp: seenPartialOrd_partialCmp,
   $drop: seenDrop_drop,
-};
+});
 function seenPartialOrd_partialCmp(seen, other) {
   return seenOrd_cmp(seen, other);
 }
@@ -315,7 +316,7 @@ function main() {
           { TAG: "Excluded", _0: range$4.end },
           false,
           seenPartialEq_eq,
-          seenPartialOrd_partialCmp,
+          seenPartialOrd,
         ),
         false,
         true,

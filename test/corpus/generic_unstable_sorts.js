@@ -6,6 +6,7 @@ import {
   $given,
   $iter,
   $next,
+  $ordered,
   $roomForHint,
   $selectNthUnstable,
   $slice,
@@ -27,7 +28,7 @@ function sorted(items, compare, TSort) {
 }
 
 function smallest(items, k, TOrd, TSort) {
-  $selectNthUnstable(items, k, (a, b) => TOrd.cmp(a, b) < 0, TSort, true);
+  $selectNthUnstable(items, k, (a, b) => TOrd.PartialOrd().lt(a, b), TSort, true);
   return $slice(items, 0, k).map((item) => item);
 }
 
@@ -37,7 +38,7 @@ function iSorted(IIterator, IItemSize) {
   return $traitImpl($iSorted, [IIterator, IItemSize], () => ({
     sortedUnstable(self, SelfItemOrd, SelfItemSort) {
       const v = Array.from($roomForHint($given(self, IIterator, true), IItemSize, false));
-      $sortUnstable(v, (a, b) => SelfItemOrd.cmp(a, b) < 0, SelfItemSort);
+      $sortUnstable(v, (a, b) => SelfItemOrd.PartialOrd().lt(a, b), SelfItemSort);
       return v;
     },
   }));
@@ -58,10 +59,10 @@ function main() {
   ]);
   wide = sorted(wide, (a, b) => $cmp(a[0], b[0]), "general");
   console.log(`${$debugStr(wide.map((t) => t[3]).join(""))}`);
-  console.log(`[${smallest([9, 3, 7, 1, 8, 2], 3, { cmp: $cmp }, "network").join(", ")}]`);
+  console.log(`[${smallest([9, 3, 7, 1, 8, 2], 3, $ordered, "network").join(", ")}]`);
   console.log(
     `[${iSorted({ next: $next }, 4)
-      .sortedUnstable($iter([5, 3, 9, 1]), { cmp: $cmp }, "network")
+      .sortedUnstable($iter([5, 3, 9, 1]), $ordered, "network")
       .join(", ")}]`,
   );
 }

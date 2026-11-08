@@ -3,28 +3,28 @@
 
 // Make a heap of the items from `start` on, as std does: all of it again,
 // or each sifted up, whichever std counts cheaper.
-function $heapRebuildTail(heap, start, cmp) {
+function $heapRebuildTail(heap, start, ord) {
   const len = heap.length;
   if (start === len) return;
   const tail = len - start;
   const better =
     start < tail ? true : len <= 2048 ? 2 * len < tail * (31 - Math.clz32(start)) : 2 * len < tail * 11;
   if (better) {
-    for (let n = len >>> 1; n > 0; ) $siftDown(heap, --n, len, cmp);
+    for (let n = len >>> 1; n > 0; ) $siftDown(heap, --n, len, ord);
   } else {
-    for (let i = start; i < len; i++) $siftUp(heap, 0, i, cmp);
+    for (let i = start; i < len; i++) $siftUp(heap, 0, i, ord);
   }
 }
 
 // `heap.append(&mut other)`: the smaller's items after the larger's, `other`
 // left empty.
-function $heapAppend(heap, other, cmp) {
+function $heapAppend(heap, other, ord) {
   const [first, rest] = heap.length < other.length ? [other.slice(), heap.slice()] : [heap.slice(), other.slice()];
   heap.length = 0;
   $extend(heap, first);
   $extend(heap, rest);
   other.length = 0;
-  $heapRebuildTail(heap, first.length, cmp);
+  $heapRebuildTail(heap, first.length, ord);
 }
 
 // `heap.retain(f)`: what `f` keeps, in order, rebuilt from the first it
@@ -32,7 +32,7 @@ function $heapAppend(heap, other, cmp) {
 // before the next is asked, as std's `Vec::retain` of them does (ADR 0098);
 // where one throws, what's left as `$retain` leaves it, rebuilt, as std's
 // guard does (#416).
-function $heapRetain(heap, f, cmp, drop) {
+function $heapRetain(heap, f, ord, drop) {
   let from = heap.length;
   let kept = 0;
   let i = 0;
@@ -52,15 +52,15 @@ function $heapRetain(heap, f, cmp, drop) {
     const rest = heap.length - i;
     if (rest > 0) heap.copyWithin(kept, i);
     heap.length = kept + rest;
-    $heapRebuildTail(heap, Math.min(from, heap.length), cmp);
+    $heapRebuildTail(heap, Math.min(from, heap.length), ord);
   }
 }
 
 // `peek_mut()`: a guard of its top, or `undefined` of an empty heap. A
 // `&mut` to the top marks it changed, and a guard of a changed top sifts it
 // down as it drops, as std's does; one only read compares nothing.
-function $peekMut(heap, cmp) {
-  return heap.length === 0 ? undefined : { heap, cmp, changed: false };
+function $peekMut(heap, ord) {
+  return heap.length === 0 ? undefined : { heap, ord, changed: false };
 }
 
 // The guard's `&mut` to its top: a handle on a number or text (ADR 0152).
@@ -79,18 +79,18 @@ function $peekMutTop(guard, handle) {
 }
 
 function $peekMutDrop(guard) {
-  if (guard.changed) $siftDown(guard.heap, 0, guard.heap.length, guard.cmp);
+  if (guard.changed) $siftDown(guard.heap, 0, guard.heap.length, guard.ord);
 }
 
 // `PeekMut::pop(guard)`: the top, changed or not, taken.
 function $peekMutPop(guard) {
-  return $heapPop(guard.heap, guard.cmp);
+  return $heapPop(guard.heap, guard.ord);
 }
 
 // `heap.extend(items)`: each pushed at the end, then the heap rebuilt from
 // the first of them, as std's `RebuildOnDrop` does.
-function $heapExtend(heap, items, cmp) {
+function $heapExtend(heap, items, ord) {
   const start = heap.length;
   for (const item of items) heap.push(item);
-  $heapRebuildTail(heap, start, cmp);
+  $heapRebuildTail(heap, start, ord);
 }

@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "clamp-by-max-first",
     breaks: "`clamp` of text past both bounds takes the lower as the upper",
     file: "src/runtime/clamp.js",
-    find: "      return cmp(x, min) < 0 ? 1 : cmp(x, max) > 0 ? 2 : 0;\n",
-    replace: "      return cmp(x, min) < 0 ? 1 : cmp(x, max) > 0 ? 1 : 0;\n",
+    find: "      return ord.lt(x, min) ? 1 : ord.gt(x, max) ? 2 : 0;\n",
+    replace: "      return ord.lt(x, min) ? 1 : ord.gt(x, max) ? 1 : 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^(clamp_ord|clamp_char_bounds)\\.rs$"],
   },
   {
@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "kept-of-first-against-second",
     breaks: "`max` of a type with a destructor asks `cmp(a, b)`, where std's `max` asks `b < a` (#912)",
     file: "src/runtime/clamp.js",
-    find: "    () => cmp(b, a) < 0,\n",
-    replace: "    () => cmp(a, b) > 0,\n",
+    find: "    () => ord.lt(b, a),\n",
+    replace: "    () => ord.gt(a, b),\n",
     tests: ["test/corpus.test.ts", "-t", "^max_min_clamp_as_std_compares.rs$"],
   },
 ];

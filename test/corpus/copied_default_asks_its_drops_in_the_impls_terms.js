@@ -4,7 +4,6 @@ import { iterator_map, mapIterator___iteratorGetUnchecked } from "@rust-js/std/i
 import {
   $cleanup,
   $closing,
-  $cmp,
   $collectDropping,
   $collectsInPlace,
   $debugStr,
@@ -14,6 +13,7 @@ import {
   $iter,
   $iterator,
   $next,
+  $ordered,
   $roomForHint,
   $sortUnstable,
   $traitImpl,
@@ -49,7 +49,7 @@ function tExt(TInPlace, TItemSize, TItemAlign, dropT, dropTItem) {
       }
       const key$1 = (item) => key(item);
       try {
-        $sortUnstable(v, (a, b) => KOrd.cmp(key$1(a), key$1(b)) < 0, SelfItemSort);
+        $sortUnstable(v, (a, b) => KOrd.PartialOrd().lt(key$1(a), key$1(b)), SelfItemSort);
       } catch (error) {
         $cleanup(() => {
           $dropItems(v, (item) => {
@@ -80,7 +80,7 @@ function tExt(TInPlace, TItemSize, TItemAlign, dropT, dropTItem) {
             true,
           );
       try {
-        $sortUnstable(v, (a, b) => SelfItemOrd.cmp(a, b) < 0, SelfItemSort);
+        $sortUnstable(v, (a, b) => SelfItemOrd.PartialOrd().lt(a, b), SelfItemSort);
       } catch (error) {
         $cleanup(() => {
           $dropItems(v, (item) => {
@@ -140,7 +140,7 @@ function main() {
   const sorted = tExt(undefined, 4, 4, undefined, noisyDrop_drop).sortedByKeyUnstable(
     iterator_map($iter([3, 1, 2]), (value) => [value], { next: $next }, undefined, noisyDrop_drop),
     (n) => n[0],
-    { cmp: $cmp },
+    $ordered,
     "general8",
   );
   try {
@@ -157,7 +157,7 @@ function main() {
   const words = Array.from(
     tExt(undefined, 12, 4).sortedUnstable(
       $iter(["pear", "fig", "apple"].map((s) => s)),
-      { cmp: $cmp },
+      $ordered,
       "general8",
     ),
   );

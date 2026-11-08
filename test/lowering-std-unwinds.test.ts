@@ -111,7 +111,7 @@ pub fn boxed(v: &mut Vec<Box<Loud>>) {
 `,
   );
   expect(body(flat, "objects")).toContain("$dedupBy(v, (a, b) => a[0] === b[0], loudDrop_drop)");
-  // An \`Rc\`'s \`&mut\` is a cell: \`$dedupByCells\`, given the drop too.
+  // An `Rc`'s `&mut` is a cell: `$dedupByCells`, given the drop too.
   expect(body(flat, "counted")).toMatch(/\$dedupByCells\( v, \(a, b\) => a\.value\.value\[0\] === b\.value\.value\[0\], \(rc\) => \{ \$rcDrop\(rc, loudDrop_drop\); \},? \)/);
   expect(body(flat, "boxed")).toMatch(/\$dedupByCells\(.*loudDrop_drop\)/);
 });
@@ -246,8 +246,8 @@ pub fn clamped(x: Held, lo: Held, hi: Held) -> u32 {
   );
   expect(body(flat, "ranks")).toContain("rankOrd_cmp(b, a) < 0 ? a : b");
   expect(body(flat, "least")).toContain("rankOrd_cmp(b, a) < 0 ? b : a");
-  expect(body(flat, "held")).toMatch(/\$maxOf\( ?a, b, .*, heldDrop_drop,? \)/);
-  expect(body(flat, "heldLeast")).toMatch(/\$minOf\( ?a, b, .*, heldDrop_drop,? \)/);
+  expect(body(flat, "held")).toContain("$maxOf(a, b, heldPartialOrd, heldDrop_drop)");
+  expect(body(flat, "heldLeast")).toContain("$minOf(a, b, heldPartialOrd, heldDrop_drop)");
   expect(body(flat, "clamped")).toMatch(/\$clampBy\( ?x, lo, hi, .*, undefined, heldDrop_drop,? ?\)/);
 });
 
@@ -305,9 +305,11 @@ pub fn sorted(h: BinaryHeap<Loud>) -> usize {
 }
 `,
   );
-  expect(body(flat, "quiet")).toMatch(/\$heapPop\(h, \(a, b\) => \$cmp\(a\[0\], b\[0\]\)\)/);
-  expect(body(flat, "loud")).toContain("$heapPop(h, loudOrd_cmp, false, loudDrop_drop)");
-  expect(body(flat, "sorted")).toContain("$heapSorted(h, loudOrd_cmp, loudDrop_drop)");
+  // Given the items' `PartialOrd`, whose `<=`, `>=` and `<` std's heap asks (#937).
+  // A derived type's, its module's `const`, made once (#944).
+  expect(body(flat, "quiet")).toContain("$heapPop(h, quietPartialOrd)");
+  expect(body(flat, "loud")).toContain("$heapPop(h, loudPartialOrd, false, loudDrop_drop)");
+  expect(body(flat, "sorted")).toContain("$heapSorted(h, loudPartialOrd, loudDrop_drop)");
 });
 
 // #911: a B-tree's `insert` of keys whose order may panic is given the
@@ -437,9 +439,9 @@ pub fn generic<T: Ord>(xs: Vec<T>) -> BTreeSet<T> {
   );
   expect(body(flat, "quiet")).toContain("$treeFrom(new ($ordMap(quietOrd_cmp))(), $iter(xs), false, quietOrd_cmp)");
   expect(body(flat, "loud")).toContain('$treeFromSorted(new ($ordTreeMap(loudOrd_cmp))(), $iter(xs), loudOrd, "general8", 8)');
-  // A tuple's dictionary has no `PartialOrd()`: its `PartialEq` and
-  // `PartialOrd` given, a derived `==` field by field.
-  expect(body(flat, "pairs")).toContain('"general8", 8, undefined, undefined, { eq: $eq }, { partialCmp: (a, b) => loudPartialOrd_partialCmp(a[0], b[0])');
+  // A tuple's dictionary holds its `PartialOrd()` too, as every `Ord`
+  // dictionary does, its module's `const`, `tupleOrd` (#944).
+  expect(body(flat, "pairs")).toContain('$iter(xs), tupleOrd, "general8", 8, )');
   expect(body(flat, "generic")).toContain("$treeFromSorted(new TTreeSet(), $iter(xs), TOrd, TStableSort, TSize)");
 });
 

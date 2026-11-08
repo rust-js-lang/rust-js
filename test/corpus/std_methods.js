@@ -120,16 +120,17 @@ function main() {
   );
 
   const min = Math.min(3, 7);
-  const max = $bigMax(-2n, 5n);
   const left = [1, "x"];
   const right = [1, "w"];
-  const value$3 = $cmp("b", "a") < 0 ? "a" : "b";
+  const max = $bigMax(-2n, 5n);
   const left$1 = [2, "a"];
   const right$1 = [2, "a"];
   const version = ($cmp(right[0], left[0]) || $cmp(right[1], left[1])) < 0 ? right : left;
-  const value$4 =
+  const value$3 =
     ($cmp(right$1[0], left$1[0]) || $cmp(right$1[1], left$1[1])) < 0 ? left$1 : right$1;
-  console.log(`${min} ${max} ${value$3} ${versionDebug_fmt(version)} ${versionDebug_fmt(value$4)}`);
+  console.log(
+    `${min} ${max} ${"b" < "a" ? "a" : "b"} ${versionDebug_fmt(version)} ${versionDebug_fmt(value$3)}`,
+  );
   console.log(
     `${$asciiCase("HeLLo Ünï")} ${$asciiCase("abc é", true)} ${$asciiCase("Hello") === $asciiCase("hELLO")} ${$asciiCase("é") === $asciiCase("É")}`,
   );
@@ -145,9 +146,9 @@ function main() {
     .map((x) => (x * 2) | 0);
   console.log(`[${doubled.join(", ")}]`);
   const r = { TAG: "Ok", _0: "abc" };
-  const value$5 = r.TAG === "Ok" ? { TAG: "Ok", _0: r._0.toUpperCase() } : r;
+  const value$4 = r.TAG === "Ok" ? { TAG: "Ok", _0: r._0.toUpperCase() } : r;
   console.log(
-    `${value$5.TAG === "Ok" ? `Ok(${$debugStr(value$5._0)})` : `Err(${value$5._0})`} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : `Err(${r._0})`}`,
+    `${value$4.TAG === "Ok" ? `Ok(${$debugStr(value$4._0)})` : `Err(${value$4._0})`} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : `Err(${r._0})`}`,
   );
   const cell = [1];
   cell.push(2);
@@ -171,10 +172,10 @@ function main() {
   );
   const table = new $BTreeMap();
   table.set("k", 7);
-  const value$6 = ["a", "b"];
-  const value$7 = [new $BTreeMap()];
+  const value$5 = ["a", "b"];
+  const value$6 = [new $BTreeMap()];
   console.log(
-    `${lettersDebug_fmt([value$6])} ${tableDebug_fmt([table])} ${tableDebug_fmt(value$7)}`,
+    `${lettersDebug_fmt([value$5])} ${tableDebug_fmt([table])} ${tableDebug_fmt(value$6)}`,
   );
 }
 //# sourceMappingURL=case.js.map

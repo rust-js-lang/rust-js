@@ -18,6 +18,7 @@ import {
   $minByKey,
   $next,
   $nth,
+  $partiallyOrdered,
   $partition,
   $rangeInclusiveNext,
   $sortedEntries,
@@ -506,7 +507,7 @@ function main() {
       upIterator_fold,
       upIterator_nth,
     ),
-    $cmp,
+    $partiallyOrdered,
   );
   console.log(`extend heap ${heap.length}`);
   const vec = [0];

@@ -13,6 +13,7 @@ import {
   $next,
   $ordTreeMap,
   $ordTreeSet,
+  $partialOrd,
   $rem,
   $remove,
   $sortedEntries,
@@ -58,11 +59,11 @@ function keyPartialEq_eq(key, other) {
   return keyOrd_cmp(key, other) === 0;
 }
 
-export const keyPartialOrd = {
+export const keyPartialOrd = $partialOrd({
   PartialEq: () => keyPartialEq,
   partialCmp: keyPartialOrd_partialCmp,
   $drop: keyDrop_drop,
-};
+});
 function keyPartialOrd_partialCmp(key, other) {
   return keyOrd_cmp(key, other);
 }

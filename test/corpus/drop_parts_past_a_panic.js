@@ -20,6 +20,7 @@ import {
   $iter,
   $next,
   $nthBack,
+  $partiallyOrdered,
   $retain,
   $retainMap,
   $retainMut,
@@ -893,7 +894,7 @@ function main() {
   caught("heap retain", () => {
     const heap = [];
     for (const n of [40, 42, 41]) {
-      $heapPush(heap, n, $cmp);
+      $heapPush(heap, n, $partiallyOrdered);
     }
     const seen = [];
     $heapRetain(
@@ -906,7 +907,7 @@ function main() {
           return true;
         }
       },
-      $cmp,
+      $partiallyOrdered,
     );
     console.log(`heap [${seen.join(", ")}]`);
   });

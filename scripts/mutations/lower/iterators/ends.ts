@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "sort-comparator-by-cmp",
+    breaks: "JS's `sort` of a quiet order is given `cmp`, where std's sort asks `<`, `partial_cmp`'s (#937)",
+    file: "src/lower/iterators/ends.rs",
+    find: "                    let compare = self.cmp_fn(elem, true, span)?;\n                    self.sort_by_compare(items, compare, elem)\n",
+    replace: "                    let compare = self.cmp_fn(elem, false, span)?;\n                    self.sort_by_compare(items, compare, elem)\n",
+    tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
+  },
+  {
     name: "repeat-uncloned",
     breaks:
       "`repeat(vec![0])` gives the one `Vec` each time, where Rust clones it",

@@ -781,10 +781,12 @@ pub fn lower_crate<'tcx>(
         .filter(|(id, _)| !derived.contains(id) || reached.contains(id))
     {
         let module = fns[&def_id].module;
-        // Each recursive type's function it calls, its module's, before it
-        // where it's the first that calls it (`recursive_fns`).
+        // Each recursive type's function, and std order's dictionary (#944), it
+        // reads: its module's, before it where it's the first (`recursive_fns`).
         let first = module_fns.written_before(def_id);
-        pass.functions.entry(module).or_default().extend(first);
+        pass.dictionary_names.extend(first.const_names());
+        pass.functions.entry(module).or_default().extend(first.functions);
+        pass.local_consts.entry(module).or_default().extend(first.consts);
         let initializer = initialized.iter().any(|body| body.def_id == def_id);
         // Each copy of it its callers need besides, beside it (ADR 0051,
         // amended).

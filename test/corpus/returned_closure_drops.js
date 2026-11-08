@@ -4,11 +4,11 @@ import {
   $bigAbs,
   $byteLen,
   $cleanup,
-  $cmp,
   $dispose,
   $dropping,
   $iter,
   $next,
+  $ordered,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -83,7 +83,7 @@ function main() {
       const w = weights;
       return BigInt.asIntN(64, $bigAbs(BigInt.asIntN(64, BigInt(x) - BigInt(w[0]))));
     },
-    { cmp: $cmp },
+    $ordered,
     (value) => {
       console.log(`drop ${weights[0]}`);
     },

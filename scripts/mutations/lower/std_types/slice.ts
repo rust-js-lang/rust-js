@@ -279,14 +279,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "sort_unstable_ties"],
   },
   {
-    name: "less-value-le",
-    breaks: "a number key's `is_less` is `<=`",
-    file: "src/lower/std_types/slice.rs",
-    find: "            return Ok(Expr::bin(Op::Lt, a, b));",
-    replace: "            return Ok(Expr::bin(Op::Le, a, b));",
-    tests: ["test/corpus.test.ts", "-t", "sort_unstable_ties"],
-  },
-  {
     name: "compare-inline-le",
     breaks: "a comparator's `is_less` is `<= 0`",
     file: "src/lower/std_types/slice.rs",

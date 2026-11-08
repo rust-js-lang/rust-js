@@ -14,6 +14,8 @@ import {
   $ordMap,
   $ordSet,
   $ordTreeMap,
+  $ordered,
+  $partialOrd,
   $retainMap,
   $setReplace,
   $sortedEntries,
@@ -35,11 +37,11 @@ function quietPartialEq_eq(quiet, other) {
   return quiet[0] === other[0];
 }
 
-export const quietPartialOrd = {
+export const quietPartialOrd = $partialOrd({
   PartialEq: () => quietPartialEq,
   partialCmp: quietPartialOrd_partialCmp,
   $drop: quietDrop_drop,
-};
+});
 function quietPartialOrd_partialCmp(quiet, other) {
   return quietOrd_cmp(quiet, other);
 }
@@ -62,11 +64,11 @@ function shownPartialEq_eq(shown, other) {
   return shownOrd_cmp(shown, other) === 0;
 }
 
-export const shownPartialOrd = {
+export const shownPartialOrd = $partialOrd({
   PartialEq: () => shownPartialEq,
   partialCmp: shownPartialOrd_partialCmp,
   $drop: shownDrop_drop,
-};
+});
 function shownPartialOrd_partialCmp(shown, other) {
   return shownOrd_cmp(shown, other);
 }
@@ -388,7 +390,7 @@ function main() {
   appended(
     (i) => i,
     (k) => k,
-    { cmp: $cmp },
+    $ordered,
     $BTreeMap,
   );
   appended(

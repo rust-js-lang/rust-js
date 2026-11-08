@@ -3,6 +3,7 @@
 import {
   $cmp,
   $ordTreeSet,
+  $partialOrd,
   $range,
   $rem,
   $sortedKeys,
@@ -52,10 +53,10 @@ function keyPartialEq_eq(key, other) {
   return keyOrd_cmp(key, other) === 0;
 }
 
-export const keyPartialOrd = {
+export const keyPartialOrd = $partialOrd({
   PartialEq: () => keyPartialEq,
   partialCmp: keyPartialOrd_partialCmp,
-};
+});
 function keyPartialOrd_partialCmp(key, other) {
   return keyOrd_cmp(key, other);
 }

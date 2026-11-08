@@ -9,9 +9,12 @@ import {
   $cmp,
   $collectDropping,
   $debugStr,
+  $eq,
   $heapFrom,
   $heapSorted,
   $iterator,
+  $partialOrd,
+  $partiallyOrdered,
   $range,
   $roomForHint,
   $some,
@@ -19,6 +22,11 @@ import {
   $sortedKeys,
   $treeFrom,
 } from "@rust-js/runtime";
+
+const dPartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(a[0], b[0]),
+});
 
 export function entry() {
   main();
@@ -72,7 +80,7 @@ function main() {
             false,
           ),
         ),
-        $cmp,
+        $partiallyOrdered,
       ).length,
   );
   run(
@@ -176,7 +184,7 @@ function main() {
             false,
           ),
         ),
-        $cmp,
+        $partiallyOrdered,
       ).length,
   );
   run("heap, a hint panics as it grows", () => {
@@ -201,7 +209,7 @@ function main() {
         dDrop_drop,
         true,
       ),
-      (a, b) => $cmp(a[0], b[0]),
+      dPartialOrd,
     );
     for (const item of collect) {
       dDrop_drop(item);
@@ -314,9 +322,9 @@ function main() {
   // Of std's own iterators, whose hints the program doesn't see.
   const heap = $heapFrom(
     $range(1, 6).map((n) => (n * 3) >>> 0),
-    $cmp,
+    $partiallyOrdered,
   );
-  console.log(`[${$heapSorted(heap, $cmp).join(", ")}]`);
+  console.log(`[${$heapSorted(heap, $partiallyOrdered).join(", ")}]`);
   const set = new $BTreeSet([3, 1, 2, 1]);
   console.log(`{${Array.from($sortedKeys(set, $cmp)).join(", ")}}`);
   const map = new $BTreeMap([
@@ -336,7 +344,7 @@ function main() {
  * caller's dictionary passes on.
  */
 function heaped(it) {
-  return $heapFrom(Array.from($roomForHint(Iterator.from(it), 4, false)), $cmp);
+  return $heapFrom(Array.from($roomForHint(Iterator.from(it), 4, false)), $partiallyOrdered);
 }
 
 function sorted(it) {

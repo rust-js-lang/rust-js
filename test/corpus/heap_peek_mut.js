@@ -6,6 +6,8 @@ import {
   $eq,
   $heapFrom,
   $heapPush,
+  $partialOrd,
+  $partiallyOrdered,
   $peekMut,
   $peekMutDrop,
   $peekMutPop,
@@ -27,10 +29,10 @@ function loudOrd_cmp(loud, other) {
   return $cmp(loud[0], other[0]);
 }
 
-export const loudPartialOrd = {
+export const loudPartialOrd = $partialOrd({
   PartialEq: () => ({ eq: $eq }),
   partialCmp: loudPartialOrd_partialCmp,
-};
+});
 
 export const loudOrd = { PartialOrd: () => loudPartialOrd, cmp: loudOrd_cmp };
 
@@ -39,8 +41,8 @@ function loudPartialOrd_partialCmp(loud, other) {
 }
 
 function main() {
-  const heap = $heapFrom([3, 8, 5, 1], $cmp);
-  let top = $peekMut(heap, $cmp);
+  const heap = $heapFrom([3, 8, 5, 1], $partiallyOrdered);
+  let top = $peekMut(heap, $partiallyOrdered);
   if (top != null) {
     try {
       $peekMutTop(top, true).value = 0;
@@ -53,7 +55,7 @@ function main() {
     $peekMutDrop(top);
   }
   console.log(`[${heap.join(", ")}]`);
-  top = $unwrap($peekMut(heap, $cmp));
+  top = $unwrap($peekMut(heap, $partiallyOrdered));
   let tmp;
   try {
     tmp = $peekMutTop(top, true);
@@ -67,20 +69,20 @@ function main() {
   console.log(`${top.heap[0]} PeekMut(${top.heap[0]})`);
   $peekMutDrop(top);
   console.log(`[${heap.join(", ")}]`);
-  top = $unwrap($peekMut(heap, $cmp));
+  top = $unwrap($peekMut(heap, $partiallyOrdered));
   console.log(`popped ${$peekMutPop(top)}`);
   console.log(`[${heap.join(", ")}]`);
   const loud = [];
-  $heapPush(loud, [2], loudOrd_cmp);
-  $heapPush(loud, [7], loudOrd_cmp);
+  $heapPush(loud, [2], loudPartialOrd);
+  $heapPush(loud, [7], loudPartialOrd);
   console.log("read");
-  top = $peekMut(loud, loudOrd_cmp);
+  top = $peekMut(loud, loudPartialOrd);
   if (top != null) {
     console.log(`top ${top.heap[0][0]}`);
     $peekMutDrop(top);
   }
   console.log("write");
-  top = $peekMut(loud, loudOrd_cmp);
+  top = $peekMut(loud, loudPartialOrd);
   if (top != null) {
     try {
       $peekMutTop(top)[0] = 1;
@@ -92,7 +94,7 @@ function main() {
     }
     $peekMutDrop(top);
   }
-  const peekMut = $peekMut([], $cmp);
+  const peekMut = $peekMut([], $partiallyOrdered);
   try {
     console.log(`[${loud.map((item) => loudDebug_fmt(item)).join(", ")}] ${peekMut == null}`);
   } catch (error) {

@@ -90,7 +90,7 @@ test("heap modules import only their operations, and the package has what those 
   run(["rustc", "--edition=2024", "-Awarnings", join(dir, "native.rs"), "-o", join(dir, "native")]);
   const expected = run([join(dir, "native")]).trim().split("\n").map(line => JSON.parse(line));
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  for (const [i, name, imports] of [[0, "push_pop", "$cmp, $heapPop, $heapPush"], [1, "sorted", "$cmp, $heapFrom, $heapSorted"]] as const) {
+  for (const [i, name, imports] of [[0, "push_pop", "$heapPop, $heapPush, $partiallyOrdered"], [1, "sorted", "$heapFrom, $heapSorted, $partiallyOrdered"]] as const) {
     const file = join(dir, `${name}.js`);
     expect((await import(file)).run()).toEqual(expected[i]);
     const code = readFileSync(file, "utf8");

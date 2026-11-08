@@ -25,11 +25,23 @@ import {
   $maxBy,
   $minBy,
   $partialCmp,
+  $partialOrd,
+  $partiallyOrdered,
   $roomForHint,
   $some,
   $thenCmp,
   $traitImpl,
 } from "@rust-js/runtime";
+
+const semverPartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor),
+});
+
+const semverOrd = {
+  PartialOrd: () => semverPartialOrd,
+  cmp: (a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor),
+};
 
 export const configDefault = { default: configDefault_default };
 function configDefault_default() {
@@ -372,10 +384,10 @@ export function genericIterations() {
   ];
 }
 
-export const wordPartialOrd = {
+export const wordPartialOrd = $partialOrd({
   PartialEq: () => ({ eq: $eq }),
   partialCmp: wordPartialOrd_partialCmp,
-};
+});
 function wordPartialOrd_partialCmp(word, other) {
   return wordOrd_cmp(word, other);
 }
@@ -394,7 +406,7 @@ export function largest(xs, TOrd, TCopy) {
 }
 
 export function inOrder(a, b, TPartialOrd) {
-  return TPartialOrd.partialCmp(a, b) <= 0;
+  return TPartialOrd.le(a, b);
 }
 
 export function orderings() {
@@ -406,11 +418,7 @@ export function orderings() {
     ($cmp(a.major, b.major) || $cmp(a.minor, b.minor)) < 0,
     $eq(($cmp(b.major, a.major) || $cmp(b.minor, a.minor)) < 0 ? a : b, b),
     ($cmp(a.major, b.major) || $cmp(a.minor, b.minor)) === -1,
-    largest(
-      all,
-      { cmp: (a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor) },
-      { copy: (value) => ({ ...value }) },
-    )?.minor ?? 0,
+    largest(all, semverOrd, { copy: (value) => ({ ...value }) })?.minor ?? 0,
     $minBy(all, (a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor))?.minor ?? 0,
     all.map((v) => v.minor),
   ];
@@ -459,7 +467,7 @@ export function moreOrderings() {
     $index(priorities, 0) === "Low",
     (3 == null ? 0 : 1) > 0,
     sizes,
-    inOrder("abc", "abd", { partialCmp: $cmp }),
+    inOrder("abc", "abd", $partiallyOrdered),
     $index(byKey, 0).major,
   ];
 }

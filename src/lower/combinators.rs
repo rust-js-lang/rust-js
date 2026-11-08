@@ -1101,7 +1101,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let item = self
                 .slice_item(into)
                 .ok_or_else(|| self.unsupported(span, "this heap"))?;
-            let cmp = self.cmp_fn(item, false, span)?;
+            // std's heap asks `<=`, `>=` and `<`, its `PartialOrd`'s (#937).
+            let cmp = self.operators(item, span)?;
             return Ok(Expr::call_helper("$heapExtend", vec![collection, items, cmp]));
         }
         // Onto a `Vec`, an indexed list's items, a `NodeList`'s, an array's

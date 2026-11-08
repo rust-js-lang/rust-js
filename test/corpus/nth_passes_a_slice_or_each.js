@@ -11,6 +11,7 @@ import {
   $drain,
   $dropEach,
   $dropItems,
+  $eq,
   $given,
   $heapFrom,
   $held,
@@ -21,6 +22,7 @@ import {
   $nextBack,
   $nthBack,
   $nthDropping,
+  $partialOrd,
   $range,
   $rangeLen,
   $rangeNext,
@@ -36,6 +38,11 @@ export function entry() {
 }
 
 let boom = 0;
+
+const dPartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(a[0], b[0]),
+});
 
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
@@ -294,7 +301,7 @@ function main() {
   held(
     "held heap generic nth",
     6,
-    $iter($heapFrom(seven(), (a, b) => $cmp(a[0], b[0]))),
+    $iter($heapFrom(seven(), dPartialOrd)),
     (it) => nthOf(it, 3),
     $dropEach(dDrop_drop),
   );
@@ -744,7 +751,7 @@ function main() {
   }
   try {
     run("heap generic nth", 6, () =>
-      nthOf($iter($heapFrom(seven(), (a, b) => $cmp(a[0], b[0]))), 3, $dropEach(dDrop_drop)),
+      nthOf($iter($heapFrom(seven(), dPartialOrd)), 3, $dropEach(dDrop_drop)),
     );
   } catch (error) {
     $cleanup(() => {

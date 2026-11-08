@@ -2,6 +2,7 @@
 
 import {
   $cmp,
+  $eq,
   $heapAppend,
   $heapFrom,
   $heapPop,
@@ -9,7 +10,13 @@ import {
   $heapRetain,
   $heapSorted,
   $iter,
+  $partialOrd,
 } from "@rust-js/runtime";
+
+const oPartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(a[0], b[0]),
+});
 
 export function entry() {
   main();
@@ -21,10 +28,10 @@ function oDrop_drop(o) {
 function main() {
   const h = [];
   try {
-    $heapPush(h, [3], (a, b) => $cmp(a[0], b[0]));
-    $heapPush(h, [9], (a, b) => $cmp(a[0], b[0]));
-    $heapPush(h, [5], (a, b) => $cmp(a[0], b[0]));
-    const top = $heapPop(h, (a, b) => $cmp(a[0], b[0]));
+    $heapPush(h, [3], oPartialOrd);
+    $heapPush(h, [9], oPartialOrd);
+    $heapPush(h, [5], oPartialOrd);
+    const top = $heapPop(h, oPartialOrd);
     try {
       const value = top?.[0];
       console.log(`top ${value == null ? "None" : `Some(${value})`}`);
@@ -33,22 +40,19 @@ function main() {
         oDrop_drop(top);
       }
     }
-    const other = $heapFrom([[1], [7]], (a, b) => $cmp(a[0], b[0]));
+    const other = $heapFrom([[1], [7]], oPartialOrd);
     try {
-      $heapAppend(h, other, (a, b) => $cmp(a[0], b[0]));
+      $heapAppend(h, other, oPartialOrd);
       console.log(`len ${h.length} ${other.length}`);
       const drained = h.splice(0);
       console.log(`drained ${drained.length}`);
       for (const item of drained) {
         oDrop_drop(item);
       }
-      const sorted = $heapSorted(
-        $heapFrom([[4], [2], [6]], (a, b) => $cmp(a[0], b[0])),
-        (a, b) => $cmp(a[0], b[0]),
-      );
+      const sorted = $heapSorted($heapFrom([[4], [2], [6]], oPartialOrd), oPartialOrd);
       try {
         console.log(`[${sorted.map((o) => o[0]).join(", ")}]`);
-        const r = $heapFrom([[20], [25], [21], [30]], (a, b) => $cmp(a[0], b[0]));
+        const r = $heapFrom([[20], [25], [21], [30]], oPartialOrd);
         try {
           $heapRetain(
             r,
@@ -56,7 +60,7 @@ function main() {
               console.log(`keep ${o[0]}?`);
               return o[0] % 5 === 0;
             },
-            (a, b) => $cmp(a[0], b[0]),
+            oPartialOrd,
             oDrop_drop,
           );
           const o = r[0];
@@ -67,7 +71,7 @@ function main() {
             oDrop_drop(item);
           }
         }
-        const k = $heapFrom([[11], [12]], (a, b) => $cmp(a[0], b[0]));
+        const k = $heapFrom([[11], [12]], oPartialOrd);
         try {
           for (const item of $iter(k.splice(0))) {
             oDrop_drop(item);

@@ -12,6 +12,7 @@ import {
   $entryRemove,
   $getKeyValue,
   $ordSet,
+  $partialOrd,
   $pathCmp,
   $setReplace,
   $setTake,
@@ -31,10 +32,10 @@ function versionPartialEq_eq(version, other) {
   return version[0] === other[0];
 }
 
-export const versionPartialOrd = {
+export const versionPartialOrd = $partialOrd({
   PartialEq: () => versionPartialEq,
   partialCmp: versionPartialOrd_partialCmp,
-};
+});
 function versionPartialOrd_partialCmp(version, other) {
   return versionOrd_cmp(version, other);
 }

@@ -114,6 +114,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             || is_std_def(self.tcx, id, StdItem::BorrowMut)
             // `Try`'s its `FromResidual` (ADR 0913).
             || self.tcx.is_lang_item(id, LangItem::Try)
+            // `Ord`'s its `PartialOrd`, whose own holds its `PartialEq`:
+            // generic code's `==` and `<` are those, never `cmp` (#944).
+            || self.tcx.is_diagnostic_item(sym::Ord, id)
+            || self.tcx.is_lang_item(id, LangItem::PartialOrd)
     }
 
     /// Of those, std's.
@@ -192,10 +196,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Is `ty`'s impl of `trait_id` a `#[derive]`d one, whether or not
     /// rust-js lowers it: a derived `PartialEq` it never does.
     pub(in crate::lower) fn derives(&self, trait_id: DefId, ty: Ty<'tcx>) -> bool {
+        self.derived_impl(trait_id, ty).is_some()
+    }
+
+    /// `ty`'s `#[derive]`d impl of `trait_id`, whether or not rust-js
+    /// lowers it.
+    pub(in crate::lower) fn derived_impl(&self, trait_id: DefId, ty: Ty<'tcx>) -> Option<DefId> {
         let tr = ty::TraitRef::new_from_args(self.tcx, trait_id, self.args_of(trait_id, ty));
         let tr = self.tcx.erase_and_anonymize_regions(tr);
-        matches!(self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)),
-            Ok(ImplSource::UserDefined(imp)) if known_derive(self.tcx, imp.impl_def_id))
+        match self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)) {
+            Ok(ImplSource::UserDefined(imp)) if known_derive(self.tcx, imp.impl_def_id) => Some(imp.impl_def_id),
+            _ => None,
+        }
     }
 
     /// Whether `ty`, known here only by its bounds (`known_by_bounds`), is

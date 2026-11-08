@@ -19,6 +19,8 @@ import {
   $maxBy,
   $next,
   $partialCmp,
+  $partialOrd,
+  $partiallyOrdered,
   $range,
   $splitOff,
   $toFixed,
@@ -26,6 +28,11 @@ import {
   $traitImpl,
   $zeroPad,
 } from "@rust-js/runtime";
+
+const f64PartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: (a, b) => a === b }),
+  partialCmp: $partialCmp,
+});
 
 export const dogDescribe = {
   name: dogDescribe_name,
@@ -72,7 +79,7 @@ function largest(items, TPartialOrd) {
   if (value != null) {
     let best = value;
     for (const x of it) {
-      if (TPartialOrd.partialCmp(x, best) > 0) {
+      if (TPartialOrd.gt(x, best)) {
         best = x;
       }
     }
@@ -130,9 +137,9 @@ export function tour() {
     ratio: 0,
   };
   out += `${configDebug_fmt(c)}\n`;
-  const value$1 = largest([3, 9, 2], { partialCmp: $cmp });
-  const value$2 = largest([1.5, -2], { partialCmp: $partialCmp });
-  const value$3 = largest([], { partialCmp: $cmp });
+  const value$1 = largest([3, 9, 2], $partiallyOrdered);
+  const value$2 = largest([1.5, -2], f64PartialOrd);
+  const value$3 = largest([], $partiallyOrdered);
   out += `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${$debugF64(value$2)})`} ${value$3 == null ? "None" : `Some(${value$3})`}\n`;
   const running = Array.from(
     $lazyScan($iter([1, 2, 3, 4]), 0, (acc, x) => {

@@ -15,6 +15,8 @@ import {
   $heapPush,
   $heapSorted,
   $index,
+  $partialOrd,
+  $partiallyOrdered,
   $range,
   $removeOpt,
   $retainDeque,
@@ -63,6 +65,11 @@ export const Pipeline = {
   },
 };
 
+const reversePartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]),
+});
+
 function firstEvenSquare(v) {
   const e = v.find((x) => x % 2 === 0);
   if (e == null) {
@@ -84,11 +91,9 @@ export function dijkstra(edges, n, src) {
   const dist = new Array(n).fill(undefined);
   const heap = [];
   dist[$at(dist, src)] = 0;
-  $heapPush(heap, [[0, src]], (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]));
+  $heapPush(heap, [[0, src]], reversePartialOrd);
   let pop;
-  while (
-    (pop = $heapPop(heap, (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]))) != null
-  ) {
+  while ((pop = $heapPop(heap, reversePartialOrd)) != null) {
     const d = pop[0][0];
     const u = pop[0][1];
     const option = $index(dist, u);
@@ -100,7 +105,7 @@ export function dijkstra(edges, n, src) {
       const option = $index(dist, v);
       if (option == null || nd < option) {
         dist[v] = nd;
-        $heapPush(heap, [[nd, v]], (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]));
+        $heapPush(heap, [[nd, v]], reversePartialOrd);
       }
     }
   }
@@ -131,10 +136,10 @@ export function bfsOrder(n, edges) {
 function taskOrd_cmp(task, other) {
   return $cmp(task.pri, other.pri);
 }
-export const taskPartialOrd = {
+export const taskPartialOrd = $partialOrd({
   PartialEq: () => ({ eq: $eq }),
   partialCmp: taskPartialOrd_partialCmp,
-};
+});
 
 // Ordered by priority alone: which of two equal ones comes out first shows
 // whether the heap moves its items as Rust's does.
@@ -153,7 +158,7 @@ export function heaps() {
         pri,
         name: String.fromCharCode((97 + (i & 255)) & 255),
       },
-      taskOrd_cmp,
+      taskPartialOrd,
     );
     out += `${$debugStr(Array.from(Iterator.from(h).map((t) => t.name)).join(""))}\n`;
   }
@@ -161,19 +166,19 @@ export function heaps() {
   out += `peek ${name == null ? "None" : `Some(${$debugStr(name, "'")})`} len ${h.length}\n`;
   let popped = "";
   for (let i = 0; i < 4; i++) {
-    popped += $unwrap($heapPop(h, taskOrd_cmp)).name;
+    popped += $unwrap($heapPop(h, taskPartialOrd)).name;
     popped += Array.from(Iterator.from(h).map((t) => t.name)).join("") + " ";
   }
   out += `${popped}\n`;
-  const sorted = $heapSorted(h.slice(), taskOrd_cmp)
+  const sorted = $heapSorted(h.slice(), taskPartialOrd)
     .map((t) => t.name)
     .join("");
-  const from = $heapFrom([4, 8, 1, 9, 9, 2, 7, 3], $cmp);
-  const collected = $heapFrom([5, 1, 5, 2, 8], $cmp);
-  const arg = $heapSorted(from, $cmp);
+  const from = $heapFrom([4, 8, 1, 9, 9, 2, 7, 3], $partiallyOrdered);
+  const collected = $heapFrom([5, 1, 5, 2, 8], $partiallyOrdered);
+  const arg = $heapSorted(from, $partiallyOrdered);
   out += `${sorted} [${from.join(", ")}] [${collected.join(", ")}] [${arg.join(", ")}]\n`;
   const empty = [];
-  const pop = $heapPop(empty, $cmp);
+  const pop = $heapPop(empty, $partiallyOrdered);
   const peek = empty[0];
   out += `${pop == null ? "None" : `Some(${pop})`} ${peek == null ? "None" : `Some(${peek})`} ${empty.length === 0}\n`;
   return out;

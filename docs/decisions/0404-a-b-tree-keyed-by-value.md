@@ -248,12 +248,13 @@ Rust's behaviour is kept.
     given value leaked by std's return slot (also for B-trees not of nodes,
     whose `append` of values with a destructor is no longer refused);
   - a bulk build, `$treeFromSorted(tree, items, TOrd, kind, size, drop,
-    dropKey, TPartialEq, TPartialOrd)`: entries sorted by std's stable sort
-    (#925; a map's by `cmp`, a set's by `<`), deduplicated by `!=` as
-    `DedupSortedIter` does, then `bulk_push` and
-    `fix_right_border_of_plentiful`. `PartialOrd` and `PartialEq` are the
-    `Ord` dictionary's `PartialOrd()` and `PartialEq()` where a crate impl's
-    has them; a std type's of the crate's, `(K, u32)`, is given them. As the
+    dropKey)`: entries sorted by std's stable sort (#925; a map's by `cmp`,
+    a set's by `<`), deduplicated by `!=` as `DedupSortedIter` does, then
+    `bulk_push` and `fix_right_border_of_plentiful`. `PartialOrd` and
+    `PartialEq` are the `Ord` dictionary's `PartialOrd()` and its
+    `PartialEq()`, which every `Ord` dictionary holds since #944 (ADR 0057's
+    amendment), so `TPartialEq` and `TPartialOrd`, given before for a std
+    type's of the crate's, `(K, u32)`, are gone. As the
     sort panics, each entry is dropped in its place; as `!=` panics, the one
     asked, then those after the next, then the next; what's pushed leaks,
     as std's root does. Plain `$treeFrom` keeps its shape for other keys.

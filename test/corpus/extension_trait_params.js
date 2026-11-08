@@ -2,11 +2,11 @@
 
 import {
   $checked,
-  $cmp,
   $count,
   $given,
   $iter,
   $next,
+  $ordered,
   $roomForHint,
   $traitImpl,
 } from "@rust-js/runtime";
@@ -70,11 +70,11 @@ function main() {
   const CountReversed = iReversed({ next: countIterator_next }, 1);
   const IntoIterReversed = iReversed({ next: $next }, 4);
   console.log(
-    `[${through($iter([5, 3, 9, 1]), IntoIterReversed, { cmp: $cmp }).join(
+    `[${through($iter([5, 3, 9, 1]), IntoIterReversed, $ordered).join(
       ", ",
-    )}] [${through([4], CountReversed, { cmp: $cmp }).join(", ")}]`,
+    )}] [${through([4], CountReversed, $ordered).join(", ")}]`,
   );
-  console.log(`[${CountReversed.reversed([5], { cmp: $cmp }).join(", ")}]`);
+  console.log(`[${CountReversed.reversed([5], $ordered).join(", ")}]`);
   console.log(
     `${counted([3], { next: countIterator_next }, CountReversed)} ${counted($iter([1, 2]), { next: $next }, IntoIterReversed)}`,
   );

@@ -401,15 +401,15 @@ class $OrdTree extends $OrdMap {
     this.#length -= rest.#length;
     return rest;
   }
-  // `range`: the bounds checked by `eq` and `partialCmp`, `s == e` then
-  // `s > e`, as std's are; then the edges where they part, each side down
-  // to its leaf; what's between them, in order.
-  range(start, end, name, eq, partialCmp, checked) {
+  // `range`: the bounds checked by `eq` and `ord`, a `PartialOrd`
+  // dictionary, `s == e` then `s > e`, as std's are; then the edges where
+  // they part, each side down to its leaf; what's between them, in order.
+  range(start, end, name, eq, ord, checked) {
     if (checked && start !== "Unbounded" && end !== "Unbounded") {
       if (start.TAG === "Excluded" && end.TAG === "Excluded" && eq(start._0, end._0)) {
         throw new Error(`range start and end are equal and excluded in ${name}`);
       }
-      if (partialCmp(start._0, end._0) > 0) {
+      if (ord.gt(start._0, end._0)) {
         throw new Error(`range start is greater than range end in ${name}`);
       }
     }
@@ -457,9 +457,9 @@ class $OrdTree extends $OrdMap {
     }
   };
   // `extract_if(range, f)`'s `ExtractIfInner`: from the start's lower
-  // bound, each entry to the end asked by `partialCmp` as it's reached,
-  // `<=` an included end or `<` an excluded one; each `f` keeps taken out.
-  extractIf(start, end, partialCmp, take) {
+  // bound, each entry to the end asked by `ord` as it's reached, `<=` an
+  // included end or `<` an excluded one; each `f` keeps taken out.
+  extractIf(start, end, ord, take) {
     let edge = this.#lowerBound($treeSearchBound(start));
     const tree = this;
     return {
@@ -467,8 +467,8 @@ class $OrdTree extends $OrdMap {
         for (let kv = $treeNextKv(edge); kv !== undefined; kv = $treeNextKv(edge)) {
           const entry = kv.node.entries[kv.i];
           if (end !== "Unbounded") {
-            const order = partialCmp(entry[0], end._0);
-            if (!(end.TAG === "Included" ? order <= 0 : order < 0)) return undefined;
+            const within = end.TAG === "Included" ? ord.le(entry[0], end._0) : ord.lt(entry[0], end._0);
+            if (!within) return undefined;
           }
           if (take(entry)) {
             edge = tree.#remove(kv);
@@ -631,10 +631,10 @@ function $sortedSteps(it, set) {
 // &b`'s (#961): its items, sorted already, a JS iterator, each kept that
 // `!=` doesn't find equal to the next, `DedupSortedIter`'s, pulled as the
 // build asks, then bulk-pushed into `tree`, a set of std's nodes. `eq` is
-// as `$treeFromSorted` finds it.
-function $treeOfSorted(tree, items, TOrd, TPartialEq, TPartialOrd) {
-  const partialEq = TPartialEq ?? (TPartialOrd ?? TOrd.PartialOrd?.())?.PartialEq?.();
-  const eq = partialEq?.eq ?? ((a, b) => TOrd.cmp(a, b) === 0);
+// the `Ord` dictionary's `PartialOrd()`'s `PartialEq()`'s, as
+// `$treeFromSorted`'s (#944).
+function $treeOfSorted(tree, items, TOrd) {
+  const eq = TOrd.PartialOrd().PartialEq().eq;
   tree.items.pushSorted($sortedSteps(items, true), (a, b) => !eq(a, b));
   return tree;
 }

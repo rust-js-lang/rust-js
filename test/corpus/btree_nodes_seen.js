@@ -14,6 +14,7 @@ import {
   $mapExtractIf,
   $ordTreeMap,
   $ordTreeSet,
+  $partialOrd,
   $range,
   $rem,
   $remove,
@@ -73,10 +74,10 @@ function keyPartialEq_eq(key, other) {
   return keyOrd_cmp(key, other) === 0;
 }
 
-export const keyPartialOrd = {
+export const keyPartialOrd = $partialOrd({
   PartialEq: () => keyPartialEq,
   partialCmp: keyPartialOrd_partialCmp,
-};
+});
 function keyPartialOrd_partialCmp(key, other) {
   return keyOrd_cmp(key, other);
 }
@@ -96,10 +97,10 @@ function oddPartialEq_eq(odd, other) {
   return odd.k === other.k;
 }
 
-export const oddPartialOrd = {
+export const oddPartialOrd = $partialOrd({
   PartialEq: () => oddPartialEq,
   partialCmp: oddPartialOrd_partialCmp,
-};
+});
 function oddPartialOrd_partialCmp(odd, other) {
   return oddOrd_cmp(odd, other);
 }
@@ -190,7 +191,7 @@ function maps(n) {
           { TAG: "Excluded", _0: range.end },
           true,
           keyPartialEq_eq,
-          keyPartialOrd_partialCmp,
+          keyPartialOrd,
         )
           .map(([, v]) => v)
           .reduce((a, b) => (a + b) >>> 0, 0)) >>>
@@ -207,7 +208,7 @@ function maps(n) {
           { TAG: "Included", _0: range$1.end },
           true,
           keyPartialEq_eq,
-          keyPartialOrd_partialCmp,
+          keyPartialOrd,
         ).length) >>>
       0;
     const range$2 = { end: key(b) };
@@ -222,7 +223,7 @@ function maps(n) {
           { TAG: "Excluded", _0: range$2.end },
           true,
           keyPartialEq_eq,
-          keyPartialOrd_partialCmp,
+          keyPartialOrd,
         ).length) >>>
       0;
   }
@@ -288,7 +289,7 @@ function maps(n) {
       "Unbounded",
       false,
       keyPartialEq_eq,
-      keyPartialOrd_partialCmp,
+      keyPartialOrd,
     ),
     true,
     false,
@@ -310,7 +311,7 @@ function maps(n) {
       { TAG: "Excluded", _0: hi },
       false,
       keyPartialEq_eq,
-      keyPartialOrd_partialCmp,
+      keyPartialOrd,
     ),
     true,
     false,
@@ -331,7 +332,7 @@ function maps(n) {
           { TAG: "Included", _0: hi },
           false,
           keyPartialEq_eq,
-          keyPartialOrd_partialCmp,
+          keyPartialOrd,
         ),
         true,
         false,
@@ -388,7 +389,7 @@ function sets(n) {
     "Unbounded",
     true,
     keyPartialEq_eq,
-    keyPartialOrd_partialCmp,
+    keyPartialOrd,
   ).length;
   const tail = $treeSplitOff(s, key(random(span)), keyOrd_cmp, true);
   report(`set split_off ${inRange}`, n, ofSet(s));

@@ -7,6 +7,7 @@ import {
   $count,
   $debugStr,
   $dropEach,
+  $eq,
   $intoIter,
   $iterator,
   $lastDropping,
@@ -14,8 +15,39 @@ import {
   $maxByKey,
   $minBy,
   $minByKey,
+  $partialOrd,
   $someValue,
 } from "@rust-js/runtime";
+
+const loudPartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+});
+
+const loudOrd = {
+  PartialOrd: () => loudPartialOrd,
+  cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+};
+
+const optionPartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: (a, b) => a == b }),
+  partialCmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+});
+
+const optionOrd = {
+  PartialOrd: () => optionPartialOrd,
+  cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+};
+
+const optionPartialOrd$1 = $partialOrd({
+  PartialEq: () => ({ eq: (a, b) => a == b }),
+  partialCmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+});
+
+const optionOrd$1 = {
+  PartialOrd: () => optionPartialOrd$1,
+  cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+};
 
 export function entry() {
   main();
@@ -109,7 +141,6 @@ function countdownIterator_next(countdown) {
 }
 
 function main() {
-  const ord = { cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)) };
   const max = $maxBy(loud(), (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), false, loudDrop_drop);
   try {
     console.log(`${max == null ? "None" : `Some(${loudDebug_fmt(max)})`}`);
@@ -166,12 +197,7 @@ function main() {
       loudDrop_drop(value);
     }
   }
-  const value$1 = greatest(
-    loud(),
-    { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
-    loudDrop_drop,
-    $dropEach(loudDrop_drop),
-  );
+  const value$1 = greatest(loud(), loudOrd, loudDrop_drop, $dropEach(loudDrop_drop));
   try {
     console.log(`${value$1 == null ? "None" : `Some(${loudDebug_fmt(value$1)})`}`);
   } finally {
@@ -179,11 +205,11 @@ function main() {
       loudDrop_drop(value$1);
     }
   }
-  const value$2 = greatest([3, undefined, 1], ord);
+  const value$2 = greatest([3, undefined, 1], optionOrd);
   console.log(
     `${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
   );
-  const value$3 = greatest([undefined], ord);
+  const value$3 = greatest([undefined], optionOrd$1);
   console.log(
     `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`}`,
   );

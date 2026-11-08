@@ -39,11 +39,11 @@ function $mapExtractIf(m, f, entries, handles, set, drop) {
     return it;
   };
   if (tree?.extractIf !== undefined) {
-    const { start, end, partialCmp } = entries === m ? { start: "Unbounded", end: "Unbounded" } : entries;
+    const { start, end, ord } = entries === m ? { start: "Unbounded", end: "Unbounded" } : entries;
     const take = set
       ? ([item]) => f(item)
       : (entry) => f(entry[0], handles ? $entryHandle(entry) : entry[1]);
-    const walk = tree.extractIf(start, end, partialCmp, take);
+    const walk = tree.extractIf(start, end, ord, take);
     return steps(() => {
       const entry = walk.next();
       if (entry === undefined) return { done: true, value: undefined };

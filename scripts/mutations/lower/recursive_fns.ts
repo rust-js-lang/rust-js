@@ -5,6 +5,14 @@ const perModule = ["test/corpus.test.ts", "-t", "^recursive_fns_per_module.rs$"]
 
 export const mutations: Mutation[] = [
   {
+    name: "module-dictionary-as-function",
+    breaks: "a module's dictionary `const` is written as a function returning it, which generic code reads as the dictionary (#944)",
+    file: "src/lower/recursive_fns.rs",
+    find: "                constant: matches!(kind, Kind::Dictionary(_)),\n",
+    replace: "                constant: false,\n",
+    tests: ["test/lowering-dictionaries.test.ts", "-t", "an Ord dictionary holds its PartialOrd"],
+  },
+  {
     name: "recursive-fn-made-at-each-site",
     breaks:
       "each place that compares a recursive type makes its module's function again, which takes the first one's place, so the places before it call a function no module writes (#517)",

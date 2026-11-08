@@ -9,6 +9,7 @@ import {
   $maxBy,
   $ordSet,
   $partialCmp,
+  $partialOrd,
   $sortedEntries,
   $sortedKeys,
   $thenCmp,
@@ -22,10 +23,10 @@ export function entry() {
 function revOrd_cmp(rev, o) {
   return $cmp(o[0], rev[0]);
 }
-export const revPartialOrd = {
+export const revPartialOrd = $partialOrd({
   PartialEq: () => ({ eq: $eq }),
   partialCmp: revPartialOrd_partialCmp,
-};
+});
 
 export const revOrd = { PartialOrd: () => revPartialOrd, cmp: revOrd_cmp };
 function revPartialOrd_partialCmp(rev, o) {
@@ -77,7 +78,7 @@ function others() {
   console.log(
     `${
       ["Less", "Equal", "Greater"][cmp + 1]
-    } ${$cmpItems($sortedKeys(a, revOrd_cmp), $sortedKeys(b, revOrd_cmp), revPartialOrd_partialCmp) < 0}`,
+    } ${$cmpItems($sortedKeys(a, revOrd_cmp), $sortedKeys(b, revOrd_cmp), revOrd_cmp) < 0}`,
   );
   const x = new $BTreeMap([[1, NaN]]);
   const y = new $BTreeMap([[1, 2]]);

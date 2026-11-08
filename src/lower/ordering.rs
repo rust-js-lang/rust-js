@@ -210,6 +210,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether `ty` is ordered by std as `$cmp` orders it, asking nothing a
+    /// program sees: numbers but floats, `bool`s, text and `char`s, whose
+    /// dictionaries are the shared `$ordered` and `$partiallyOrdered` (#944).
+    pub(in crate::lower) fn quietly_ordered(&self, ty: Ty<'tcx>) -> bool {
+        let float = Num::of(ty.peel_refs()).is_some_and(Num::float);
+        (self.is_primitive_ord(ty) && !float) || self.is_text_ord(ty)
+    }
+
     /// Strings and `char`s, which `$cmp` orders by code point (ADR 0183).
     pub(super) fn is_text_ord(&self, ty: Ty<'tcx>) -> bool {
         !self.has_cell_layer(ty) && self.is_string_like(ty.peel_refs())
@@ -225,6 +233,99 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Expr::bin(op, a, b);
         }
         Expr::bin(op, Expr::call(Expr::helper("$cmp"), vec![a, b]), Expr::int(0))
+    }
+
+    /// What `partial_cmp` of a `ty` runs, as rustc's impls say (#937): its
+    /// hand-written impl's; its `cmp`, of a derive that wrote
+    /// `Some(Ord::cmp(self, other))`; else its parts' in turn.
+    pub(in crate::lower) fn partial_runs(&self, ty: Ty<'tcx>) -> PartialRuns {
+        let (ty, partial_ord) = (ty.peel_refs(), self.partial_ord_trait());
+        let tr = ty::TraitRef::new_from_args(self.tcx, partial_ord, self.args_of(partial_ord, ty));
+        // A hand-written one that's `Some(self.cmp(other))`, as clippy asks
+        // it to be, does nothing but call `cmp`, which is called in its
+        // place: nothing tells them apart (ADR 0262's "none").
+        match self.recognition().user_impl(tr) {
+            Some(imp) if partial_cmp_is_cmp(self.tcx, imp) => PartialRuns::Cmp,
+            Some(_) => PartialRuns::Own,
+            None => match self.recognition().derived_impl(partial_ord, ty) {
+                Some(imp) if partial_cmp_is_cmp(self.tcx, imp) => PartialRuns::Cmp,
+                _ => PartialRuns::Parts,
+            },
+        }
+    }
+
+    /// The crate's or a library's impl of `PartialOrd` for `ty` that writes
+    /// its own `<`, `<=`, `>` or `>=`, which std's comparisons call where
+    /// they ask one (#937).
+    pub(in crate::lower) fn own_operators(&self, ty: Ty<'tcx>) -> Option<DefId> {
+        let partial_ord = self.partial_ord_trait();
+        let tr = ty::TraitRef::new_from_args(self.tcx, partial_ord, self.args_of(partial_ord, ty.peel_refs()));
+        (self.recognition().user_impl(tr)).filter(|&imp| writes_own_operators(self.tcx, imp))
+    }
+
+    /// `a op b`, `<`, `<=`, `>` or `>=`, of two `ty`s, as std's
+    /// `PartialOrd::lt` and the rest are (#937): JS's own operator of what
+    /// it orders as Rust does; a hand-written impl's own `lt`, where it
+    /// writes one; else its `partial_cmp` against 0, which `None`'s
+    /// `undefined` makes false. The one answer of what a comparison, a
+    /// sort's `is_less`, and `max`'s and `min`'s `other < self` run.
+    pub(in crate::lower) fn operator_value(
+        &mut self,
+        op: Op,
+        a: Expr,
+        b: Expr,
+        ty: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let (_, inner) = self.through_refs(Expr::undefined(), ty);
+        // Of a type parameter, its `PartialOrd` dictionary's, which holds
+        // its impl's own or std's (#944).
+        if self.is_unknown(inner) {
+            let (a, _) = self.through_refs(a, ty);
+            let (b, _) = self.through_refs(b, ty);
+            let partial_ord = self.partial_ord_trait();
+            let tr = ty::TraitRef::new_from_args(self.tcx, partial_ord, self.args_of(partial_ord, inner));
+            let dictionary = self.evidence_for(tr).ok_or_else(|| self.no_evidence(span, tr))?;
+            return Ok(Expr::call(Expr::member(dictionary, operator_name(op)), vec![a, b]));
+        }
+        // JS's own `<` orders numbers and `bool`s as Rust does, and strings
+        // where one is a literal below U+D800 (ADR 0183); and a derived
+        // order of a `#[repr(transparent)]` struct of one, which is its
+        // field (ADR 0584). A value of any shape's `<` and `>` are JS's own;
+        // its `<=` isn't, which coerces, so it's its `partial_cmp`'s, below
+        // (ADR 0931).
+        let field = self.ordered_as(inner);
+        let shape = matches!(op, Op::Lt | Op::Gt) && any_shape(self.tcx, field);
+        if self.is_primitive_ord(field) || shape || self.is_text_ord(field) {
+            let (a, _) = self.through_refs(a, ty);
+            let (b, _) = self.through_refs(b, ty);
+            return Ok(match self.is_text_ord(field) {
+                true => self.text_compare(op, a, b),
+                false => Expr::bin(op, a, b),
+            });
+        }
+        if let Some(imp) = self.own_operators(inner) {
+            let name = operator_name(op);
+            if writes_operator(self.tcx, imp, name) {
+                let (a, _) = self.through_refs(a, ty);
+                let (b, _) = self.through_refs(b, ty);
+                let method = trait_method(self.tcx, self.partial_ord_trait(), name);
+                return self.impl_call(method, self.args_of(self.partial_ord_trait(), inner), vec![a, b], span);
+            }
+        }
+        let order = self.cmp_value(a, b, ty, true, span, out)?;
+        Ok(Expr::bin(op, order, Expr::int(0)))
+    }
+
+    /// The `PartialOrd` dictionary of `ty`s, whose `lt`, `le`, `gt` and
+    /// `ge` std's helpers that ask them are given, a heap's, `clamp`'s,
+    /// `max`'s: each its impl's own or std's, as `operator_value` runs them
+    /// (#937, #944).
+    pub(in crate::lower) fn operators(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let partial_ord = self.partial_ord_trait();
+        let tr = ty::TraitRef::new_from_args(self.tcx, partial_ord, self.args_of(partial_ord, ty));
+        self.dictionary(tr, span)
     }
 
     /// Is `ty` `Ord`, so that its `partial_cmp` is never `None`?
@@ -269,9 +370,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::call(Expr::helper("$ptrCmp"), vec![a, b, size]));
         }
         let (ord, partial_ord) = (self.ord_trait(), self.partial_ord_trait());
+        // Of a type parameter, its caller's impl's: `cmp` its `Ord`'s,
+        // `partial_cmp` its `PartialOrd`'s, `TOrd.PartialOrd()` of an `Ord`
+        // bound, as rustc's supertrait has it (#944).
         if self.is_unknown(ty) {
-            let total = ty::TraitRef::new(self.tcx, ord, [ty]);
-            if let Some(dictionary) = self.evidence_for(total) {
+            if !partial {
+                let total = ty::TraitRef::new(self.tcx, ord, [ty]);
+                let dictionary = self.evidence_for(total).ok_or_else(|| self.no_evidence(span, total))?;
                 return Ok(Expr::call(Expr::member(dictionary, "cmp"), vec![a, b]));
             }
             let tr = ty::TraitRef::new_from_args(self.tcx, partial_ord, self.args_of(partial_ord, ty));
@@ -279,17 +384,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let partial_cmp = super::bindings::trait_method_name(self.tcx, partial_ord, "partial_cmp");
             return Ok(Expr::call(Expr::member(dictionary, partial_cmp), vec![a, b]));
         }
-        // A hand-written one: `cmp`, or `partial_cmp` if that's what's asked
-        // for, or all there is.
-        let own_ord = self.has_user_impl(ord, ty);
-        let own_partial = self.has_user_impl(partial_ord, ty);
-        if own_ord && (!partial || !own_partial) {
+        // What rustc's impls say each runs, never one for the other (#937):
+        // a hand-written `cmp` is `Ord`'s alone, a hand-written
+        // `partial_cmp` `PartialOrd`'s alone; a derived `partial_cmp` its
+        // `cmp` where rustc's derive wrote it so, else its parts'.
+        if !partial && self.has_user_impl(ord, ty) {
             let cmp = trait_method(self.tcx, ord, "cmp");
             return self.impl_call(cmp, self.args_of(ord, ty), vec![a, b], span);
         }
-        if own_partial {
-            let cmp = trait_method(self.tcx, partial_ord, "partial_cmp");
-            return self.impl_call(cmp, self.args_of(partial_ord, ty), vec![a, b], span);
+        if partial {
+            match self.partial_runs(ty) {
+                PartialRuns::Own => {
+                    let cmp = trait_method(self.tcx, partial_ord, "partial_cmp");
+                    return self.impl_call(cmp, self.args_of(partial_ord, ty), vec![a, b], span);
+                }
+                PartialRuns::Cmp => return self.cmp_value(a, b, ty, false, span, out),
+                PartialRuns::Parts => {}
+            }
         }
         // Derived, of a `#[repr(transparent)]` struct, which is its field
         // (ADR 0584): the field's order.
@@ -635,7 +746,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // and all three as a comparison panics, as std's `clamp` drops its
         // parameters (#912).
         if matches!(call, OrderingCall::Clamp) {
-            let compare = self.cmp_fn(ty, false, span)?;
+            // std's `min <= max`, `self < min` and `self > max`, its
+            // `PartialOrd` dictionary's, an impl's own included (#937).
+            let compare = self.operators(ty, span)?;
             let mut args = values;
             args.push(compare);
             let show = ty.peel_refs().is_char().then(|| {
@@ -656,7 +769,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if matches!(call, OrderingCall::Max | OrderingCall::Min)
             && let Some(drop) = self.std_drop_function(ty, span)?
         {
-            let compare = self.cmp_fn(ty, partial, span)?;
+            let compare = self.operators(ty, span)?;
             let name = if matches!(call, OrderingCall::Max) {
                 "$maxOf"
             } else {
@@ -681,39 +794,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let Some(op) = operator.filter(|_| generic || self.is_user_impl(tr)) else {
                 return Ok(None);
             };
+            // Of a type parameter, its caller's impl's operator, its
+            // dictionary's (#944); of the crate's, its own where it writes
+            // one, else its `partial_cmp` against 0.
+            if generic {
+                let dictionary = self.dictionary(tr, span)?;
+                return Ok(Some(Expr::call(
+                    Expr::member(dictionary, operator_name(op)),
+                    vec![a, b],
+                )));
+            }
+            let imp = self.recognition().user_impl(tr);
+            if let Some(imp) = imp
+                && writes_operator(self.tcx, imp, operator_name(op))
+            {
+                let method = trait_method(self.tcx, tr.def_id, operator_name(op));
+                return Ok(Some(self.impl_call(method, tr.args, vec![a, b], span)?));
+            }
             let partial_cmp = trait_method(self.tcx, tr.def_id, "partial_cmp");
-            // Of a type parameter, its caller's impl, its dictionary's.
-            let order = match generic {
-                true => {
-                    let dictionary = self.dictionary(tr, span)?;
-                    let name = super::bindings::fn_name(self.tcx, partial_cmp);
-                    Expr::call(Expr::member(dictionary, name), vec![a, b])
-                }
-                false => self.impl_call(partial_cmp, tr.args, vec![a, b], span)?,
-            };
+            let order = self.impl_call(partial_cmp, tr.args, vec![a, b], span)?;
             return Ok(Some(Expr::bin(op, order, Expr::int(0))));
-        }
-        // JS's own `<` orders numbers and `bool`s as Rust does, and strings
-        // where one is a literal below U+D800 (ADR 0183); and a derived
-        // order of a `#[repr(transparent)]` struct of one, which is its
-        // field (ADR 0584).
-        let field = self.ordered_as(ty);
-        if let Some(op) = operator
-            && self.is_primitive_ord(field)
-        {
-            return Ok(Some(Expr::bin(op, a, b)));
-        }
-        // A value of any shape's `<` and `>` are JS's own; its `<=` isn't,
-        // which coerces, so it's its `partial_cmp`'s, below (ADR 0931).
-        if let Some(op @ (Op::Lt | Op::Gt)) = operator
-            && any_shape(self.tcx, field)
-        {
-            return Ok(Some(Expr::bin(op, a, b)));
-        }
-        if let Some(op) = operator
-            && self.is_text_ord(field)
-        {
-            return Ok(Some(self.text_compare(op, a, b)));
         }
         // `max` and `min` return one of them, so each is read twice.
         let (a, b) = if matches!(call, OrderingCall::Max | OrderingCall::Min) {
@@ -724,20 +824,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (a, b)
         };
         // `partial_cmp`'s `undefined` makes every one of these false, as `None` does.
-        // `max` and `min` ask std's `other < self`, the second against the
-        // first, as a comparison that prints or counts sees (#912).
-        let order = match call {
-            OrderingCall::Max | OrderingCall::Min => self.cmp_value(b.clone(), a.clone(), ty, partial, span, out)?,
-            _ => self.cmp_value(a.clone(), b.clone(), ty, partial, span, out)?,
-        };
-        let zero = || Expr::int(0);
+        // `max` and `min` ask std's `other < self`, `PartialOrd::lt` of the
+        // second against the first, as a comparison that prints or counts
+        // sees (#912, #937).
         Ok(Some(match call {
-            _ if let Some(op) = operator => Expr::bin(op, order, zero()),
+            _ if let Some(op) = operator => self.operator_value(op, a, b, ty, span, out)?,
             // The second when they're equal, as Rust's `max` does.
-            OrderingCall::Max => Expr::cond(Expr::bin(Op::Lt, order, zero()), a, b),
-            OrderingCall::Min => Expr::cond(Expr::bin(Op::Lt, order, zero()), b, a),
-            _ => order,
+            OrderingCall::Max => {
+                let less = self.operator_value(Op::Lt, b.clone(), a.clone(), ty, span, out)?;
+                Expr::cond(less, a, b)
+            }
+            OrderingCall::Min => {
+                let less = self.operator_value(Op::Lt, b.clone(), a.clone(), ty, span, out)?;
+                Expr::cond(less, b, a)
+            }
+            _ => self.cmp_value(a, b, ty, partial, span, out)?,
         }))
+    }
+}
+
+/// `PartialOrd`'s method of the operator `op`, `<`'s `lt`.
+fn operator_name(op: Op) -> &'static str {
+    match op {
+        Op::Lt => "lt",
+        Op::Le => "le",
+        Op::Gt => "gt",
+        _ => "ge",
     }
 }
 
@@ -819,6 +931,111 @@ fn order_may_in<'tcx>(
     };
     seen.pop();
     result
+}
+
+/// What a `partial_cmp` of a type runs, as rustc's impls say (#937): one
+/// rust-js never assumes from its `Ord`, which Rust doesn't tie to it.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(in crate::lower) enum PartialRuns {
+    /// Its hand-written impl's `partial_cmp`.
+    Own,
+    /// `Some(Ord::cmp(self, other))`, a derive's beside a derived `Ord`:
+    /// its `cmp`, whatever that is.
+    Cmp,
+    /// Its parts' `partial_cmp`s in turn: a derive's otherwise, or std's
+    /// of what holds them.
+    Parts,
+}
+
+/// Whether the impl `imp`'s `partial_cmp` is `Some(self.cmp(other))`,
+/// `Some(Ord::cmp(self, other))` as rustc's derive writes it beside a
+/// derived `Ord` (#937): its order its `cmp`'s, doing nothing else. Read
+/// from its HIR, which MIR building leaves; another crate's, which has
+/// none, isn't known to be.
+pub(in crate::lower) fn partial_cmp_is_cmp(tcx: rustc_middle::ty::TyCtxt<'_>, imp: DefId) -> bool {
+    use rustc_hir as hir;
+    let partial_cmp = trait_method(
+        tcx,
+        tcx.require_lang_item(LangItem::PartialOrd, DUMMY_SP),
+        "partial_cmp",
+    );
+    let Some(method) = (tcx.impl_item_implementor_ids(imp).get(&partial_cmp).copied()).and_then(DefId::as_local) else {
+        return false;
+    };
+    let Some(body) = tcx.hir_maybe_body_owned_by(method) else {
+        return false;
+    };
+    let params: Vec<hir::HirId> = (body.params.iter())
+        .filter_map(|param| match param.pat.kind {
+            hir::PatKind::Binding(_, id, ..) => Some(id),
+            _ => None,
+        })
+        .collect();
+    let [this, other] = params[..] else {
+        return false;
+    };
+    let results = tcx.typeck(method);
+    let ord_cmp = trait_method(tcx, std_item(tcx, StdItem::Ord), "cmp");
+    // The expression a block ends with, through `&*x`.
+    fn peel<'h>(mut e: &'h hir::Expr<'h>) -> &'h hir::Expr<'h> {
+        loop {
+            e = e.peel_drop_temps();
+            match e.kind {
+                hir::ExprKind::Block(block, _) if block.stmts.is_empty() && block.expr.is_some() => {
+                    e = block.expr.expect("its value")
+                }
+                hir::ExprKind::AddrOf(_, _, of) | hir::ExprKind::Unary(hir::UnOp::Deref, of) => e = of,
+                _ => return e,
+            }
+        }
+    }
+    let is_var = |e: &hir::Expr<'_>, var: hir::HirId| {
+        matches!(peel(e).kind, hir::ExprKind::Path(ref path) if results.qpath_res(path, e.hir_id) == hir::def::Res::Local(var))
+            || matches!(peel(e).kind, hir::ExprKind::Path(hir::QPath::Resolved(None, path)) if path.res == hir::def::Res::Local(var))
+    };
+    let hir::ExprKind::Call(some, [order]) = peel(body.value).kind else {
+        return false;
+    };
+    let is_some = super::fn_def(results.expr_ty_adjusted(some))
+        .is_some_and(|(ctor, _)| tcx.is_lang_item(tcx.parent(ctor), LangItem::OptionSome));
+    let order = peel(order);
+    let cmp_of_self = match order.kind {
+        hir::ExprKind::Call(callee, [a, b]) => {
+            super::fn_def(results.expr_ty_adjusted(callee)).is_some_and(|(f, _)| f == ord_cmp)
+                && is_var(a, this)
+                && is_var(b, other)
+        }
+        hir::ExprKind::MethodCall(_, receiver, [b], _) => {
+            results.type_dependent_def_id(order.hir_id) == Some(ord_cmp) && is_var(receiver, this) && is_var(b, other)
+        }
+        _ => false,
+    };
+    is_some && cmp_of_self
+}
+
+/// Whether `id` is `PartialOrd`'s `lt`, `le`, `gt` or `ge`, which a
+/// `PartialOrd` dictionary holds, an impl's own or std's (#944).
+pub(in crate::lower) fn is_operator_method(tcx: rustc_middle::ty::TyCtxt<'_>, id: DefId) -> bool {
+    let partial_ord = tcx.require_lang_item(LangItem::PartialOrd, DUMMY_SP);
+    OPERATORS
+        .into_iter()
+        .any(|name| trait_method(tcx, partial_ord, name) == id)
+}
+
+/// `PartialOrd`'s operators' methods, by name.
+const OPERATORS: [&str; 4] = ["lt", "le", "gt", "ge"];
+
+/// Whether the impl `imp`, a `PartialOrd`'s, writes its own `<`, `<=`, `>`
+/// or `>=`, which std's comparisons then call, not its `partial_cmp`.
+fn writes_own_operators(tcx: rustc_middle::ty::TyCtxt<'_>, imp: DefId) -> bool {
+    OPERATORS.into_iter().any(|name| writes_operator(tcx, imp, name))
+}
+
+/// Whether the impl `imp`, a `PartialOrd`'s, writes its own method `name`,
+/// `lt`, rather than keeping std's.
+fn writes_operator(tcx: rustc_middle::ty::TyCtxt<'_>, imp: DefId, name: &str) -> bool {
+    let method = trait_method(tcx, tcx.require_lang_item(LangItem::PartialOrd, DUMMY_SP), name);
+    tcx.impl_item_implementor_ids(imp).contains_key(&method)
 }
 
 /// Whether each method the impl `imp` writes is quiet (#925).

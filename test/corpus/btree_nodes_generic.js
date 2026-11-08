@@ -10,6 +10,7 @@ import {
   $lazyZip,
   $ordTreeMap,
   $ordTreeSet,
+  $partialOrd,
   $rangeFromStep,
   $sortedEntries,
   $sortedKeys,
@@ -40,10 +41,10 @@ function keyPartialEq_eq(key, other) {
   return keyOrd_cmp(key, other) === 0;
 }
 
-export const keyPartialOrd = {
+export const keyPartialOrd = $partialOrd({
   PartialEq: () => keyPartialEq,
   partialCmp: keyPartialOrd_partialCmp,
-};
+});
 function keyPartialOrd_partialCmp(key, other) {
   return keyOrd_cmp(key, other);
 }
@@ -54,10 +55,10 @@ function keyOrd_cmp(key, other) {
   return $cmp(key[0], other[0]);
 }
 
-export const derivedPartialOrd = {
+export const derivedPartialOrd = $partialOrd({
   PartialEq: () => ({ eq: $eq }),
   partialCmp: derivedPartialOrd_partialCmp,
-};
+});
 function derivedPartialOrd_partialCmp(derived, other) {
   seen(2n, derived[0], other[0]);
   return derivedOrd_cmp(derived, other);
@@ -100,8 +101,8 @@ function between(m, a, b, KOrd, KClone) {
     { TAG: "Included", _0: a },
     { TAG: "Excluded", _0: b },
     true,
-    (a, b) => KOrd.cmp(a, b) === 0,
-    KOrd.cmp,
+    (a, b) => KOrd.PartialOrd().PartialEq().eq(a, b),
+    KOrd.PartialOrd(),
   ).map(([, v]) => v);
 }
 

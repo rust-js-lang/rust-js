@@ -1143,19 +1143,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.partial_eq_trait(),
                 self.args_of(self.partial_eq_trait(), ty),
             );
+            // Of a `T: Ord` or `T: PartialOrd` alone, its `PartialEq`, a
+            // supertrait's, `TOrd.PartialOrd().PartialEq()`: never `cmp`,
+            // which Rust doesn't tie to it (#944).
             if let Some(dictionary) = self.evidence_for(tr) {
                 return Ok(Expr::call(Expr::member(dictionary, "eq"), vec![a, b]));
-            }
-            // A `T: Ord` or `T: PartialOrd` only: equal is `Equal` (ADR 0057).
-            let ord = ty::TraitRef::new(self.tcx, self.ord_trait(), [ty]);
-            let partial_ord = ty::TraitRef::new_from_args(
-                self.tcx,
-                self.partial_ord_trait(),
-                self.args_of(self.partial_ord_trait(), ty),
-            );
-            if self.has_evidence(ord) || self.has_evidence(partial_ord) {
-                let order = self.cmp_value(a, b, ty, !self.has_evidence(ord), span, out)?;
-                return Ok(Expr::bin(Op::Eq, order, Expr::int(0)));
             }
             return Err(self.no_evidence(span, tr));
         }

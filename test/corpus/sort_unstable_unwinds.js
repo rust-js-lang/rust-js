@@ -7,6 +7,7 @@ import {
   $collectDropping,
   $dropEach,
   $iter,
+  $partialOrd,
   $roomFor,
   $selectNthUnstable,
   $sortUnstable,
@@ -37,11 +38,11 @@ function dPartialEq_eq(d, other) {
   return d[0] === other[0];
 }
 
-export const dPartialOrd = {
+export const dPartialOrd = $partialOrd({
   PartialEq: () => dPartialEq,
   partialCmp: dPartialOrd_partialCmp,
   $drop: dDrop_drop,
-};
+});
 function dPartialOrd_partialCmp(d, other) {
   return dOrd_cmp(d, other);
 }

@@ -4,13 +4,13 @@ import {
   $catchUnwind,
   $cleanup,
   $closing,
-  $cmp,
   $collectDropping,
   $collectsInPlace,
   $dropEach,
   $dropItems,
   $foldToArray,
   $iter,
+  $ordered,
   $roomForHint,
   $sortStable,
 } from "@rust-js/runtime";
@@ -38,7 +38,7 @@ function all(iter, IInPlace, IItemSize, IItemAlign, dropIItem) {
 
 function sorted(iter, IItemOrd, IItemSize, IItemStableSort) {
   const v = Array.from($roomForHint(Iterator.from(iter), IItemSize, false));
-  $sortStable(v, (a, b) => IItemOrd.cmp(a, b) < 0, IItemStableSort, IItemSize);
+  $sortStable(v, (a, b) => IItemOrd.PartialOrd().lt(a, b), IItemStableSort, IItemSize);
   return v;
 }
 
@@ -63,7 +63,7 @@ function main() {
     throw error;
   }
   $dropItems(v, dDrop_drop);
-  console.log(`[${sorted($iter([3, 1, 2]), { cmp: $cmp }, 4, "general8").join(", ")}]`);
+  console.log(`[${sorted($iter([3, 1, 2]), $ordered, 4, "general8").join(", ")}]`);
   // Of one whose map drops what it's given, a panic: what it collected
   // and what's left dropped, as std's in-place collect drops them.
   const r = $catchUnwind(() => {

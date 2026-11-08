@@ -22,13 +22,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.found_by_cmp(key) && (self.order_seen(key) || !self.order_total(key))
     }
 
-    /// What std's nodes of `key`s ask besides `cmp`: `[eq, partialCmp]`,
-    /// `PartialEq::eq` and `PartialOrd::partial_cmp`, by which a range's
-    /// bounds are checked (`s == e`, `s > e`), `extract_if`'s end, `<=` or
-    /// `<`, a set's items sorted, `<`, and those a bulk build keeps, `!=`
-    /// (#926).
+    /// What std's nodes of `key`s ask besides `cmp`: `[eq, ord]`,
+    /// `PartialEq::eq` and the keys' `PartialOrd` dictionary, by which a
+    /// range's bounds are checked (`s == e`, `s > e`), and `extract_if`'s
+    /// end, `<=` or `<`: each operator the impl's own or std's (#926, #937).
     fn tree_order_fns(&mut self, key: Ty<'tcx>, span: Span) -> R<[Expr; 2]> {
-        Ok([self.eq_fn(key, span)?, self.cmp_fn(key, true, span)?])
+        Ok([self.eq_fn(key, span)?, self.operators(key, span)?])
     }
 
     /// `m.extract_if(f)`, or a B-tree's `extract_if(range, f)`, of the map's

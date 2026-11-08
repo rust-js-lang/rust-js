@@ -156,8 +156,17 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   an emoji before U+E000, which is JS's `sort()`
   ([0945](../decisions/0945-utf16-order-is-js-sort.md)).
 - **A type compared with another by its own `PartialOrd<B>`,** `cm < mm`
-  and `&cm < &mm` alike, is its `partial_cmp` against 0, in generic code
-  too, `fn less<A: PartialOrd<B>, B>(a: &A, b: &B) -> bool { a < b }`
+  and `&cm < &mm` alike, is its `partial_cmp` against 0, or its own `lt`
+  where it writes one; in generic code, `fn less<A: PartialOrd<B>, B>(a:
+  &A, b: &B) -> bool { a < b }`, its dictionary's `lt`
+  ([0057](../decisions/0057-ordering.md), amended).
+- **`==`, `<`, `partial_cmp` and `cmp` each run what Rust's impls say,**
+  never one for another: a derived `PartialOrd` beside your own `Ord`
+  compares the fields, and your own `PartialOrd` beside a derived `Ord` is
+  asked by `<`; std's sorts, heaps, `max`, `min` and `clamp` ask `<` and
+  `<=`, your `lt` where you write one. In generic code a `T: Ord`'s `==`,
+  `<` and `partial_cmp` are its `PartialEq`'s and `PartialOrd`'s, reached
+  as Rust's supertraits are: `TOrd.PartialOrd().lt(a, b)`
   ([0057](../decisions/0057-ordering.md), amended).
 
 - **A type's own `FromStr` is what `parse` calls,** `s.parse::<Role>()`

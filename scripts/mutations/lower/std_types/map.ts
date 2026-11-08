@@ -790,14 +790,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^btree_append_drops.rs$"],
   },
   {
-    name: "tree-from-sorted-dictionaries-ungiven",
-    breaks: "a bulk build of a std type's keys of the crate's, `(K, u32)`, dedups by `cmp`, not its `==` (#926)",
-    file: "src/lower/std_types/map.rs",
-    find: "        if !self.is_unknown(key) && !self.has_user_impl(self.ord_trait(), key) {\n",
-    replace: "        if false {\n",
-    tests: ["test/lowering-std-unwinds.test.ts", "-t", "bulk build"],
-  },
-  {
     name: "tree-set-algebra-unseen",
     breaks: "a B-tree set's algebra of items whose order can be seen is its items sorted and searched by `has`, asking `cmp` other calls than std's lazy iterators (#943)",
     file: "src/lower/std_types/map.rs",

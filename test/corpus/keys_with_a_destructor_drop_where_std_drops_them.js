@@ -15,6 +15,7 @@ import {
   $maxByKey,
   $minBy,
   $minByKey,
+  $partialOrd,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -32,11 +33,11 @@ function kDrop_drop(k) {
   }
 }
 
-export const kPartialOrd = {
+export const kPartialOrd = $partialOrd({
   PartialEq: () => ({ eq: $eq }),
   partialCmp: kPartialOrd_partialCmp,
   $drop: kDrop_drop,
-};
+});
 function kPartialOrd_partialCmp(k, other) {
   return kOrd_cmp(k, other);
 }
@@ -161,7 +162,7 @@ function main() {
   console.log(
     `${$isSortedBy(
       $iterator([0, 4], upIterator_next).map((x) => [x % 3]),
-      (a, b) => kPartialOrd_partialCmp(a, b) <= 0,
+      (a, b) => kOrd_cmp(a, b) <= 0,
       undefined,
       kDrop_drop,
     )}`,
@@ -169,7 +170,7 @@ function main() {
   console.log(
     `${$isSortedBy(
       $iterator([0, 3], upIterator_next).map((value) => [value]),
-      (a, b) => kPartialOrd_partialCmp(a, b) <= 0,
+      (a, b) => kOrd_cmp(a, b) <= 0,
       undefined,
       kDrop_drop,
     )}`,
@@ -177,7 +178,7 @@ function main() {
   console.log(
     `${$isSortedBy(
       $iterator([0, 0], upIterator_next).map((value) => [value]),
-      (a, b) => kPartialOrd_partialCmp(a, b) <= 0,
+      (a, b) => kOrd_cmp(a, b) <= 0,
       undefined,
       kDrop_drop,
     )}`,
@@ -185,7 +186,7 @@ function main() {
   console.log(
     `${$isSortedBy(
       [3, 1, 2].values().map((x) => [x]),
-      (a, b) => kPartialOrd_partialCmp(a, b) <= 0,
+      (a, b) => kOrd_cmp(a, b) <= 0,
       undefined,
       kDrop_drop,
     )}`,
@@ -197,7 +198,7 @@ function main() {
         dDrop_drop(d);
         return result;
       }),
-      (a, b) => kPartialOrd_partialCmp(a, b) <= 0,
+      (a, b) => kOrd_cmp(a, b) <= 0,
       undefined,
       kDrop_drop,
     )}`,
@@ -209,16 +210,16 @@ function main() {
         dDrop_drop(d);
         return result;
       }),
-      (a, b) => kPartialOrd_partialCmp(a, b) <= 0,
+      (a, b) => kOrd_cmp(a, b) <= 0,
       undefined,
       kDrop_drop,
     )}`,
   );
   // A slice's, `self.iter().is_sorted_by_key(f)` (#783).
   const v = [1, 3, 2, 4];
-  console.log(`${$isSortedByKey(v, (x) => [x], kPartialOrd_partialCmp, kDrop_drop)}`);
-  console.log(`${$isSortedByKey(v.slice(0, 2), (x) => [x], kPartialOrd_partialCmp, kDrop_drop)}`);
-  console.log(`${$isSortedByKey(v.slice(0, 0), (x) => [x], kPartialOrd_partialCmp, kDrop_drop)}`);
+  console.log(`${$isSortedByKey(v, (x) => [x], kOrd_cmp, kDrop_drop)}`);
+  console.log(`${$isSortedByKey(v.slice(0, 2), (x) => [x], kOrd_cmp, kDrop_drop)}`);
+  console.log(`${$isSortedByKey(v.slice(0, 0), (x) => [x], kOrd_cmp, kDrop_drop)}`);
 
   run("max_by_key's key", () => {
     const best = $maxByKey(
@@ -293,7 +294,7 @@ function main() {
         }
         return [x];
       }),
-      (a, b) => kPartialOrd_partialCmp(a, b) <= 0,
+      (a, b) => kOrd_cmp(a, b) <= 0,
       undefined,
       kDrop_drop,
     );
@@ -302,7 +303,7 @@ function main() {
   run("is_sorted_by_key's compare", () => {
     const sorted = $isSortedBy(
       $iterator([0, 3], upIterator_next).map((x) => [x === 2 ? 99 : x]),
-      (a, b) => kPartialOrd_partialCmp(a, b) <= 0,
+      (a, b) => kOrd_cmp(a, b) <= 0,
       undefined,
       kDrop_drop,
     );
@@ -315,7 +316,7 @@ function main() {
         dDrop_drop(d);
         return result;
       }),
-      (a, b) => kPartialOrd_partialCmp(a, b) <= 0,
+      (a, b) => kOrd_cmp(a, b) <= 0,
       undefined,
       kDrop_drop,
     );
@@ -357,11 +358,11 @@ function main() {
     }
   });
   run("a slice's is_sorted_by_key's compare", () => {
-    const sorted = $isSortedByKey([1, 99, 2], (x) => [x], kPartialOrd_partialCmp, kDrop_drop);
+    const sorted = $isSortedByKey([1, 99, 2], (x) => [x], kOrd_cmp, kDrop_drop);
     console.log(`${sorted}`);
   });
   run("a slice's is_sorted_by_key's replaced key", () => {
-    const sorted = $isSortedByKey([12, 13, 14], (x) => [x], kPartialOrd_partialCmp, kDrop_drop);
+    const sorted = $isSortedByKey([12, 13, 14], (x) => [x], kOrd_cmp, kDrop_drop);
     console.log(`${sorted}`);
   });
 }

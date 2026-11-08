@@ -356,16 +356,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let fmt = Expr::arrow(params, body);
                 return Ok(Expr::object(vec![Prop::Field("fmt".into(), fmt)]));
             }
+            // Each with its supertraits', as an impl's is, which generic code
+            // reaches by rustc's route, `TOrd.PartialOrd().lt` (#944): std's
+            // quiet orders' shared `$ordered` and `$partiallyOrdered`; a
+            // `PartialOrd`'s `lt` and the rest, std's, `$partialOrd`'s.
             if ord || partial_ord {
-                let (name, compare) = if ord {
-                    ("cmp", self.cmp_fn(ty, false, span)?)
-                } else {
-                    ("partial_cmp", self.cmp_fn(ty, true, span)?)
+                if self.quietly_ordered(ty) {
+                    return Ok(Expr::helper(if ord { "$ordered" } else { "$partiallyOrdered" }));
+                }
+                // Of a type its module knows, its module's `const`, made once
+                // and read wherever it's given, `pointPartialOrd`, as the
+                // crate's own impls' are.
+                let make = |cx: &mut Self| -> R<Expr> {
+                    let (name, compare) = if ord {
+                        ("cmp", cx.cmp_fn(ty, false, span)?)
+                    } else {
+                        ("partial_cmp", cx.cmp_fn(ty, true, span)?)
+                    };
+                    let mut props = cx.supertrait_entries(tr, span)?;
+                    props.push(Prop::Field(
+                        bindings::trait_method_name(cx.tcx, tr.def_id, name),
+                        compare,
+                    ));
+                    Ok(match ord {
+                        true => Expr::object(props),
+                        false => Expr::call(Expr::helper("$partialOrd"), vec![Expr::object(props)]),
+                    })
                 };
-                return Ok(Expr::object(vec![Prop::Field(
-                    bindings::trait_method_name(self.tcx, tr.def_id, name),
-                    compare,
-                )]));
+                if rustc_middle::ty::TypeVisitableExt::has_non_region_param(&tr)
+                    || ty.has_aliases()
+                    || self.in_copied_default()
+                {
+                    return make(self);
+                }
+                let base = self.dictionary_name(tr);
+                return self.module_dictionary((tr.def_id, ty, &base), make);
             }
             if display {
                 let fmt = self.display_fn(ty, span)?;

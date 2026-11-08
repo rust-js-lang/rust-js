@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "heap-by-cmp",
+    breaks: "a heap asks `cmp`, where std's asks `<=` and `>=`, `partial_cmp`'s (#937)",
+    file: "src/lower/std_types/heap.rs",
+    find: "        let compare = self.operators(item, span)?;\n        values.push(compare);\n",
+    replace: "        let compare = self.cmp_fn(item, false, span)?;\n        values.push(compare);\n",
+    tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
+  },
+  {
     name: "heap-pop-unboxed",
     breaks:
       "a `BinaryHeap`'s `pop()` of items that could look like `None` gives its top unboxed: a `None` it holds is an empty heap's `None` (#318)",

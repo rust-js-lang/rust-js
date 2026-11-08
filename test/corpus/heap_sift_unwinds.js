@@ -11,6 +11,7 @@ import {
   $heapSorted,
   $iter,
   $next,
+  $partialOrd,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -18,6 +19,11 @@ export function entry() {
 }
 
 let boom = 0;
+
+const pPartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: (a, b) => dPartialEq_eq(a.a, b.a) && a.b === b.b }),
+  partialCmp: (a, b) => dOrd_cmp(a.a, b.a) || $cmp(a.b, b.b),
+});
 
 function dDebug_fmt(d) {
   return `D(${d[0]})`;
@@ -32,11 +38,11 @@ function dPartialEq_eq(d, other) {
   return d[0] === other[0];
 }
 
-export const dPartialOrd = {
+export const dPartialOrd = $partialOrd({
   PartialEq: () => dPartialEq,
   partialCmp: dPartialOrd_partialCmp,
   $drop: dDrop_drop,
-};
+});
 function dPartialOrd_partialCmp(d, other) {
   return dOrd_cmp(d, other);
 }
@@ -81,7 +87,7 @@ function heap(items) {
       break;
     }
     try {
-      $heapPush(h, [n], dOrd_cmp);
+      $heapPush(h, [n], dPartialOrd);
     } catch (error) {
       for (const item of h) {
         dDrop_drop(item);
@@ -106,7 +112,7 @@ function main() {
     run("push", boom, () => {
       const h = heap([3, 1, 4, 1, 5]);
       try {
-        $heapPush(h, [9], dOrd_cmp);
+        $heapPush(h, [9], dPartialOrd);
         console.log(`${h.length}`);
       } finally {
         for (const item of h) {
@@ -117,7 +123,7 @@ function main() {
     run("pop", boom, () => {
       const h = heap([3, 1, 4, 1, 5, 9, 2]);
       try {
-        const top = $heapPop(h, dOrd_cmp, false, dDrop_drop);
+        const top = $heapPop(h, dPartialOrd, false, dDrop_drop);
         try {
           console.log(`${top == null ? "None" : `Some(${dDebug_fmt(top)})`} ${h.length}`);
         } finally {
@@ -134,7 +140,7 @@ function main() {
     run("pop of many", boom, () => {
       const h = heap([8, 3, 12, 1, 15, 6, 10, 2, 14, 5, 9, 13, 4, 11, 7]);
       try {
-        const top = $heapPop(h, dOrd_cmp, false, dDrop_drop);
+        const top = $heapPop(h, dPartialOrd, false, dDrop_drop);
         try {
           console.log(`${top == null ? "None" : `Some(${dDebug_fmt(top)})`} ${h.length}`);
         } finally {
@@ -153,7 +159,7 @@ function main() {
       try {
         const o = heap([2, 7]);
         try {
-          $heapAppend(h, o, dOrd_cmp);
+          $heapAppend(h, o, dPartialOrd);
           console.log(`${h.length} ${o.length}`);
         } finally {
           for (const item of o) {
@@ -169,7 +175,7 @@ function main() {
     run("extend", boom, () => {
       const h = heap([3, 1, 4]);
       try {
-        $heapExtend(h, [[2], [5]], dOrd_cmp);
+        $heapExtend(h, [[2], [5]], dPartialOrd);
         console.log(`${h.length}`);
       } finally {
         for (const item of h) {
@@ -179,7 +185,7 @@ function main() {
     });
     run("into_sorted_vec", boom, () => {
       const h = heap([3, 1, 4, 2]);
-      const v = $heapSorted(h, dOrd_cmp, dDrop_drop);
+      const v = $heapSorted(h, dPartialOrd, dDrop_drop);
       try {
         console.log(`[${v.map((item) => dDebug_fmt(item)).join(", ")}]`);
       } finally {
@@ -189,29 +195,20 @@ function main() {
       }
     });
     run("from", boom, () => {
-      const h = $heapFrom([[3], [1], [4], [2], [5]], dOrd_cmp, dDrop_drop);
+      const h = $heapFrom([[3], [1], [4], [2], [5]], dPartialOrd, dDrop_drop);
       console.log(`${h.length}`);
       for (const item of h) {
         dDrop_drop(item);
       }
     });
     run("pop of a struct", boom, () => {
-      const h = $heapFrom(
-        [p(3), p(1), p(4)],
-        (a, b) => dOrd_cmp(a.a, b.a) || $cmp(a.b, b.b),
-        (p) => {
-          dDrop_drop(p.a);
-        },
-      );
+      const h = $heapFrom([p(3), p(1), p(4)], pPartialOrd, (p) => {
+        dDrop_drop(p.a);
+      });
       try {
-        const top = $heapPop(
-          h,
-          (a, b) => dOrd_cmp(a.a, b.a) || $cmp(a.b, b.b),
-          false,
-          (p) => {
-            dDrop_drop(p.a);
-          },
-        );
+        const top = $heapPop(h, pPartialOrd, false, (p) => {
+          dDrop_drop(p.a);
+        });
         function map(p) {
           const result = p.a[0];
           dDrop_drop(p.a);
@@ -226,20 +223,12 @@ function main() {
       }
     });
     run("into_sorted_vec of a struct", boom, () => {
-      const h = $heapFrom(
-        [p(3), p(1), p(4)],
-        (a, b) => dOrd_cmp(a.a, b.a) || $cmp(a.b, b.b),
-        (p) => {
-          dDrop_drop(p.a);
-        },
-      );
-      const sortedVec = $heapSorted(
-        h,
-        (a, b) => dOrd_cmp(a.a, b.a) || $cmp(a.b, b.b),
-        (p) => {
-          dDrop_drop(p.a);
-        },
-      );
+      const h = $heapFrom([p(3), p(1), p(4)], pPartialOrd, (p) => {
+        dDrop_drop(p.a);
+      });
+      const sortedVec = $heapSorted(h, pPartialOrd, (p) => {
+        dDrop_drop(p.a);
+      });
       console.log(`${sortedVec.length}`);
       for (const item of sortedVec) {
         dDrop_drop(item.a);

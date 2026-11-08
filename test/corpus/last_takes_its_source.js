@@ -4,13 +4,13 @@ import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $cleanup,
   $closing,
-  $cmp,
   $held,
   $iterator,
   $last,
   $lastDropping,
   $lazyChain,
   $maxBy,
+  $ordered,
   $peek,
   $skipping,
 } from "@rust-js/runtime";
@@ -663,7 +663,7 @@ function main() {
       undefined,
       foldsIterator_fold,
     ),
-    { cmp: $cmp },
+    $ordered,
     (it) => {
       foldsDrop_drop(it.of);
     },
@@ -680,7 +680,7 @@ function main() {
       dDrop_drop(d);
       return result;
     }),
-    { cmp: $cmp },
+    $ordered,
     (map) => {
       map.return();
     },

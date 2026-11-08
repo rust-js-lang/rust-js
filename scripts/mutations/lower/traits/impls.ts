@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "own-operator-left-out-of-dictionary",
+    breaks: "a `PartialOrd`'s own `lt` isn't in its dictionary, so generic `<` and std's helpers run std's (#944)",
+    file: "src/lower/traits/impls.rs",
+    find: "                && !own_operator\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_compare_by_impls.rs$"],
+  },
+  {
     name: "entry-nested-mut-unadapted",
     breaks:
       "a dictionary's entry gives its impl what generic code gives within a parameter as it is, `Option<&mut Self>`'s box, where an object's impl takes the object (#686)",

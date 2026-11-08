@@ -3,7 +3,7 @@
 // Of items with a destructor whose comparison may panic, `drop`: where the
 // sift's comparison throws, the top it took dropped, as std's `pop` drops
 // it as it unwinds (#901).
-function $heapPop(heap, cmp, boxed, drop) {
+function $heapPop(heap, ord, boxed, drop) {
   if (heap.length === 0) {
     return undefined;
   }
@@ -11,7 +11,7 @@ function $heapPop(heap, cmp, boxed, drop) {
   if (heap.length > 0) {
     [top, heap[0]] = [heap[0], top];
     $unwinds(
-      () => $siftDownToBottom(heap, cmp),
+      () => $siftDownToBottom(heap, ord),
       drop && (() => drop(top)),
     );
   }

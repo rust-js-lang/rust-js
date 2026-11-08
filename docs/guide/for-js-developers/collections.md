@@ -685,12 +685,12 @@ pub fn first(a: Ticket, b: Ticket) -> u32 {
 ```
 
 ```js
-import { $cmp, $eq, $minOf } from "@rust-js/runtime";
+import { $cmp, $eq, $minOf, $partialOrd } from "@rust-js/runtime";
 
-export const rankPartialOrd = {
+export const rankPartialOrd = $partialOrd({
   PartialEq: () => ({ eq: $eq }),
   partialCmp: rankPartialOrd_partialCmp,
-};
+});
 function rankPartialOrd_partialCmp(rank, other) {
   return rankOrd_cmp(rank, other);
 }
@@ -709,11 +709,11 @@ function ticketPartialEq_eq(ticket, other) {
   return $eq(ticket[0], other[0]);
 }
 
-export const ticketPartialOrd = {
+export const ticketPartialOrd = $partialOrd({
   PartialEq: () => ticketPartialEq,
   partialCmp: ticketPartialOrd_partialCmp,
   $drop: ticketDrop_drop,
-};
+});
 function ticketPartialOrd_partialCmp(ticket, other) {
   return ticketOrd_cmp(ticket, other);
 }
@@ -732,7 +732,7 @@ export function higher(a, b) {
 }
 
 export function first(a, b) {
-  const min = $minOf(a, b, ticketOrd_cmp, ticketDrop_drop);
+  const min = $minOf(a, b, ticketPartialOrd, ticketDrop_drop);
   const result = min[0][0];
   ticketDrop_drop(min);
   return result;
@@ -1355,17 +1355,17 @@ pub fn releases() -> BTreeSet<Release> {
 ```
 
 ```js
-import { $cmp, $ordSet, $storedKey } from "@rust-js/runtime";
+import { $cmp, $ordSet, $partialOrd, $storedKey } from "@rust-js/runtime";
 
 export const releasePartialEq = { eq: releasePartialEq_eq };
 function releasePartialEq_eq(release, other) {
   return release.major === other.major;
 }
 
-export const releasePartialOrd = {
+export const releasePartialOrd = $partialOrd({
   PartialEq: () => releasePartialEq,
   partialCmp: releasePartialOrd_partialCmp,
-};
+});
 function releasePartialOrd_partialCmp(release, other) {
   return releaseOrd_cmp(release, other);
 }
@@ -1434,14 +1434,15 @@ import {
   $iterator,
   $lazyZip,
   $ordTreeMap,
+  $partialOrd,
   $rangeFromStep,
   $treeFromSorted,
 } from "@rust-js/runtime";
 
-export const loggedPartialOrd = {
+export const loggedPartialOrd = $partialOrd({
   PartialEq: () => ({ eq: $eq }),
   partialCmp: loggedPartialOrd_partialCmp,
-};
+});
 function loggedPartialOrd_partialCmp(logged, other) {
   return loggedOrd_cmp(logged, other);
 }

@@ -3,6 +3,86 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "less-value-le",
+    breaks: "a number key's `is_less` is `<=`",
+    file: "src/lower/ordering.rs",
+    find: "                false => Expr::bin(op, a, b),\n",
+    replace: "                false => Expr::bin(if op == Op::Lt { Op::Le } else { op }, a, b),\n",
+    tests: ["test/corpus.test.ts", "-t", "sort_unstable_ties"],
+  },
+  {
+    name: "generic-partial-cmp-by-cmp",
+    breaks: "`a.partial_cmp(b)` and `a < b` of a `T: Ord` call its `cmp`, where Rust calls its `PartialOrd`'s, which prints (#944)",
+    file: "src/lower/ordering.rs",
+    find: "        if self.is_unknown(ty) {\n            if !partial {\n",
+    replace: "        if self.is_unknown(ty) {\n            if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_compare_by_impls.rs$"],
+  },
+  {
+    name: "generic-operator-by-partial-cmp",
+    breaks: "`a < b` of a type parameter is its `partial_cmp` against 0, where Rust calls its `lt`, an impl's own (#944)",
+    file: "src/lower/ordering.rs",
+    find: "        if self.is_unknown(inner) {\n",
+    replace: "        if self.is_unknown(inner) && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_compare_by_impls.rs$"],
+  },
+  {
+    name: "partial-cmp-of-own-ord",
+    breaks: "a derived `partial_cmp` beside a hand-written `cmp` calls that `cmp`, where rustc's derive compares the fields: `<` and a sort answer by the other order (#937)",
+    file: "src/lower/ordering.rs",
+    find: "        if !partial && self.has_user_impl(ord, ty) {\n",
+    replace: "        if self.has_user_impl(ord, ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
+  },
+  {
+    name: "cmp-of-own-partial-cmp",
+    breaks: "a derived `cmp` beside a hand-written `partial_cmp` calls that `partial_cmp`, where rustc's derive compares the fields (#937)",
+    file: "src/lower/ordering.rs",
+    find: "        if partial {\n            match self.partial_runs(ty) {\n",
+    replace: "        if partial || self.partial_runs(ty) == PartialRuns::Own {\n            match self.partial_runs(ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
+  },
+  {
+    name: "derived-partial-cmp-never-cmp",
+    breaks: "a `partial_cmp` rustc's derive wrote as `Some(Ord::cmp(self, other))` compares the fields' `partial_cmp`s, which a field's that prints shows (#937)",
+    file: "src/lower/ordering.rs",
+    find: "    is_some && cmp_of_self\n",
+    replace: "    is_some && cmp_of_self && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
+  },
+  {
+    name: "derived-partial-cmp-always-cmp",
+    breaks: "a derived `partial_cmp` rustc wrote field by field, a derive apart from `Ord`'s, calls `cmp` (#937)",
+    file: "src/lower/ordering.rs",
+    find: "                Some(imp) if partial_cmp_is_cmp(self.tcx, imp) => PartialRuns::Cmp,\n                _ => PartialRuns::Parts,\n",
+    replace: "                Some(_) => PartialRuns::Cmp,\n                _ => PartialRuns::Parts,\n",
+    tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
+  },
+  {
+    name: "operator-by-cmp",
+    breaks: "`<`, a sort's `is_less` and `max`'s `other < self` ask `cmp`, where std asks `PartialOrd::lt`, its `partial_cmp`'s (#937)",
+    file: "src/lower/ordering.rs",
+    find: "        let order = self.cmp_value(a, b, ty, true, span, out)?;\n        Ok(Expr::bin(op, order, Expr::int(0)))\n",
+    replace: "        let order = self.cmp_value(a, b, ty, false, span, out)?;\n        Ok(Expr::bin(op, order, Expr::int(0)))\n",
+    tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
+  },
+  {
+    name: "own-lt-unasked",
+    breaks: "a `PartialOrd` that writes its own `lt` isn't asked it by a sort or `max`, which call its `partial_cmp` (#937)",
+    file: "src/lower/ordering.rs",
+    find: "        if let Some(imp) = self.own_operators(inner) {\n",
+    replace: "        if let Some(imp) = self.own_operators(inner).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
+  },
+  {
+    name: "clamp-by-cmp",
+    breaks: "`clamp` asks `cmp`, where std's asks `<=`, `<` and `>`, `partial_cmp`'s (#937)",
+    file: "src/lower/ordering.rs",
+    find: "            // `PartialOrd` dictionary's, an impl's own included (#937).\n            let compare = self.operators(ty, span)?;\n",
+    replace: "            // `PartialOrd` dictionary's, an impl's own included (#937).\n            let compare = self.cmp_fn(ty, false, span)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
+  },
+  {
     name: "order-of-fields-unasked",
     breaks: "a derived order of the crate's struct is taken never to panic, though a field's does: a heap of them leaks the top `pop` took as a comparison panics (#901)",
     file: "src/lower/ordering.rs",
@@ -22,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "max-first-against-second",
     breaks: "`max(a, b)` of a type with its own `Ord` asks `a` against `b`, where std's asks `b < a`: a comparison that prints says `cmp 1 2`, not `cmp 2 1` (#912)",
     file: "src/lower/ordering.rs",
-    find: "            OrderingCall::Max | OrderingCall::Min => self.cmp_value(b.clone(), a.clone(), ty, partial, span, out)?,\n",
-    replace: "            OrderingCall::Max | OrderingCall::Min => self.cmp_value(a.clone(), b.clone(), ty, partial, span, out)?,\n",
+    find: "                let less = self.operator_value(Op::Lt, b.clone(), a.clone(), ty, span, out)?;\n                Expr::cond(less, a, b)\n",
+    replace: "                let less = self.operator_value(Op::Lt, a.clone(), b.clone(), ty, span, out)?;\n                Expr::cond(less, a, b)\n",
     tests: ["test/corpus.test.ts", "-t", "^max_min_clamp_as_std_compares.rs$"],
   },
   {
@@ -47,9 +127,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`a < b` of two `js::Unknown`s is `$partialCmp(a, b) < 0`, not JS's `a < b`",
     file: "src/lower/ordering.rs",
-    find: "        if let Some(op @ (Op::Lt | Op::Gt)) = operator\n            && any_shape(self.tcx, field)\n",
-    replace:
-      "        if let Some(op @ (Op::Lt | Op::Gt)) = operator\n            && false && any_shape(self.tcx, field)\n",
+    find: "        let shape = matches!(op, Op::Lt | Op::Gt) && any_shape(self.tcx, field);\n",
+    replace: "        let shape = matches!(op, Op::Lt | Op::Gt) && false && any_shape(self.tcx, field);\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "js::Unknown's < is JS's"],
   },
   {
@@ -57,9 +136,8 @@ export const mutations: Mutation[] = [
     breaks:
       '`a <= b` of two `js::Unknown`s is JS\'s `a <= b`, which coerces `"1" <= 1` true where `partial_cmp` finds none',
     file: "src/lower/ordering.rs",
-    find: "        if let Some(op @ (Op::Lt | Op::Gt)) = operator\n            && any_shape(self.tcx, field)\n",
-    replace:
-      "        if let Some(op @ (Op::Lt | Op::Gt | Op::Le | Op::Ge)) = operator\n            && any_shape(self.tcx, field)\n",
+    find: "        let shape = matches!(op, Op::Lt | Op::Gt) && any_shape(self.tcx, field);\n",
+    replace: "        let shape = any_shape(self.tcx, field);\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "js::Unknown's < is JS's"],
   },
   {
@@ -111,8 +189,8 @@ export const mutations: Mutation[] = [
     name: "text-operator-by-units",
     breaks: "`a < b` of two strings is JS's `<`, by UTF-16 units",
     file: "src/lower/ordering.rs",
-    find: "            return Ok(Some(self.text_compare(op, a, b)));",
-    replace: "            return Ok(Some(Expr::bin(op, a, b)));",
+    find: "                true => self.text_compare(op, a, b),\n",
+    replace: "                true => Expr::bin(op, a, b),\n",
     tests: ["test/corpus.test.ts", "-t", "code_point_order"],
   },
   {
@@ -346,8 +424,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a transparent `EventPriority`'s derived `a < b` is `$cmp(a, b) < 0`, not its number's `<`",
     file: "src/lower/ordering.rs",
-    find: "        let field = self.ordered_as(ty);\n",
-    replace: "        let field = ty;\n",
+    find: "        let field = self.ordered_as(inner);\n",
+    replace: "        let field = inner;\n",
     tests: [
       "test/lowering-numbers.test.ts",
       "-t",

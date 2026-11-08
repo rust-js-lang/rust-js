@@ -2,16 +2,22 @@
 
 import {
   $capacity,
-  $cmp,
   $heapPop,
   $heapPush,
   $keepCapacity,
+  $partialOrd,
+  $partiallyOrdered,
   $reserve,
   $roomFor,
   $shrinkTo,
   $someAt,
   $withCapacity,
 } from "@rust-js/runtime";
+
+const unitPartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: (a, b) => a === b }),
+  partialCmp: (a, b) => 0,
+});
 
 export function entry() {
   main();
@@ -20,13 +26,13 @@ export function entry() {
 function main() {
   const heap = $withCapacity(10);
   console.log(`${$capacity(heap) >= 10} ${heap.length}`);
-  $heapPush(heap, 3, $cmp);
-  $heapPush(heap, 7, $cmp);
+  $heapPush(heap, 3, $partiallyOrdered);
+  $heapPush(heap, 7, $partiallyOrdered);
   $roomFor(heap.length + 20, 4);
   $reserve(heap, 20, 4);
   const value = $capacity(heap) >= 22;
   $keepCapacity(heap);
-  const value$1 = $heapPop(heap, $cmp);
+  const value$1 = $heapPop(heap, $partiallyOrdered);
   console.log(`${value} ${value$1 == null ? "None" : `Some(${value$1})`}`);
   $keepCapacity(heap);
   heap.length = 0;
@@ -36,7 +42,7 @@ function main() {
 
   const grown = [];
   for (let n = 0; n < 30; n++) {
-    $heapPush(grown, n, $cmp);
+    $heapPush(grown, n, $partiallyOrdered);
   }
   $keepCapacity(grown);
   grown.length = 0;
@@ -55,7 +61,7 @@ function main() {
 
   const units = [];
   for (let i = 0; i < 4; i++) {
-    $heapPush(units, undefined, (a, b) => 0);
+    $heapPush(units, undefined, unitPartialOrd);
   }
   console.log(
     `${units.length} ${Iterator.from(units).reduce((n) => n + 1, 0)} ${((value) => (value == null ? "None" : "Some(())"))($someAt(units, 0))}`,

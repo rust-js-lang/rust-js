@@ -4,12 +4,20 @@ import {
   $BTreeSet,
   $assign,
   $cmp,
+  $eq,
   $heapExtend,
   $heapFrom,
   $heapPop,
   $heapSorted,
+  $partialOrd,
+  $partiallyOrdered,
   $sortedKeys,
 } from "@rust-js/runtime";
+
+const reversePartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(b[0], a[0]),
+});
 
 export function entry() {
   main();
@@ -20,28 +28,28 @@ function add(e, EExtendI32) {
 }
 
 function main() {
-  const heap = $heapFrom([1], $cmp);
-  $heapExtend(heap, [100, -5], $cmp);
-  $heapExtend(heap, [8, 2], $cmp);
+  const heap = $heapFrom([1], $partiallyOrdered);
+  $heapExtend(heap, [100, -5], $partiallyOrdered);
+  $heapExtend(heap, [8, 2], $partiallyOrdered);
   console.log(`${heap[0] == null ? "None" : `Some(${heap[0]})`} [${heap.join(", ")}]`);
-  $heapExtend(heap, $heapFrom([50, 3], $cmp), $cmp);
-  $heapExtend(heap, $sortedKeys(new $BTreeSet([60]), $cmp), $cmp);
+  $heapExtend(heap, $heapFrom([50, 3], $partiallyOrdered), $partiallyOrdered);
+  $heapExtend(heap, $sortedKeys(new $BTreeSet([60]), $cmp), $partiallyOrdered);
   const e = { value: heap };
   add(e, {
     extend(collection, items) {
-      $heapExtend(collection.value, items, $cmp);
+      $heapExtend(collection.value, items, $partiallyOrdered);
     },
   });
   $assign(heap, e.value);
-  console.log(`[${$heapSorted(heap.slice(), $cmp).join(", ")}]`);
+  console.log(`[${$heapSorted(heap.slice(), $partiallyOrdered).join(", ")}]`);
 
   const low = [];
   $heapExtend(
     low,
     [5, 1, 9].values().map((x) => [x]),
-    (a, b) => $cmp(b[0], a[0]),
+    reversePartialOrd,
   );
-  const value = $heapPop(low, (a, b) => $cmp(b[0], a[0]));
+  const value = $heapPop(low, reversePartialOrd);
   console.log(`${value == null ? "None" : `Some(Reverse(${value[0]}))`}`);
 }
 //# sourceMappingURL=case.js.map

@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "derived-order-dictionary-inline",
+    breaks: "a derived type's `PartialOrd` and `Ord` dictionaries are made in place at each call, `$partialOrd({ .. })` again and again, not its module's `const` (#944)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                let base = self.dictionary_name(tr);\n                return self.module_dictionary((tr.def_id, ty, &base), make);\n",
+    replace: "                return make(self);\n",
+    tests: ["test/lowering-dictionaries.test.ts", "-t", "an Ord dictionary holds its PartialOrd"],
+  },
+  {
+    name: "std-ord-dictionary-without-supertraits",
+    breaks: "an `Ord` dictionary std's derive makes has no `PartialOrd()`, which generic `<` reads (#944)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                    let mut props = cx.supertrait_entries(tr, span)?;\n",
+    replace: "                    let mut props = Vec::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_compare_by_impls.rs$"],
+  },
+  {
     name: "generic-dictionary-repeats-unnamed",
     breaks:
       "a generic impl's dictionary a body asks twice or more, `holderTouch(TTouch)`, is written each time, not read once at its top (ADR 0979, amended, #691)",

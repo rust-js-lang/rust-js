@@ -1,5 +1,5 @@
 
-function $heapPush(heap, item, cmp) {
+function $heapPush(heap, item, ord) {
   heap.push(item);
-  $siftUp(heap, 0, heap.length - 1, cmp);
+  $siftUp(heap, 0, heap.length - 1, ord);
 }

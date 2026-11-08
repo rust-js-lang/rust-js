@@ -13,6 +13,8 @@ import {
   $madeInTurn,
   $ordTreeMap,
   $ordTreeSet,
+  $ordered,
+  $partialOrd,
   $sortedEntries,
   $sortedKeys,
 } from "@rust-js/runtime";
@@ -54,11 +56,11 @@ function dPartialEq_eq(d, other) {
   return d[0] % 100 === other[0] % 100;
 }
 
-export const dPartialOrd = {
+export const dPartialOrd = $partialOrd({
   PartialEq: () => dPartialEq,
   partialCmp: dPartialOrd_partialCmp,
   $drop: dDrop_drop,
-};
+});
 function dPartialOrd_partialCmp(d, other) {
   return dOrd_cmp(d, other);
 }
@@ -579,7 +581,7 @@ function main() {
   }
   try {
     console.log(
-      `{${Array.from($sortedEntries(cloned(numbers, { cmp: $cmp }, clone, $BTreeMap), $cmp))
+      `{${Array.from($sortedEntries(cloned(numbers, $ordered, clone, $BTreeMap), $cmp))
         .map(([key, value]) => `${key}: ${$debugStr(value)}`)
         .join(", ")}}`,
     );
@@ -603,7 +605,7 @@ function main() {
   try {
     console.log(
       `{${Array.from(
-        $sortedKeys(clonedSet(new $BTreeSet(["y", "x"]), { cmp: $cmp }, clone, $BTreeSet), $cmp),
+        $sortedKeys(clonedSet(new $BTreeSet(["y", "x"]), $ordered, clone, $BTreeSet), $cmp),
       )
         .map((item) => $debugStr(item))
         .join(", ")}}`,

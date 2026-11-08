@@ -10,6 +10,7 @@ import {
   $drain,
   $dropEach,
   $dropItems,
+  $eq,
   $flatMap,
   $foldOf,
   $heapFrom,
@@ -20,12 +21,18 @@ import {
   $lazyChain,
   $next,
   $nthBack,
+  $partialOrd,
   $peek,
   $skipping,
   $slicing,
   $some,
   $someValue,
 } from "@rust-js/runtime";
+
+const dPartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(a[0], b[0]),
+});
 
 export function entry() {
   main();
@@ -453,7 +460,7 @@ function main() {
   });
   run("heap", () => {
     const last = $lastDropping(
-      $closing($iter($heapFrom(ds(), (a, b) => $cmp(a[0], b[0]))), $dropEach(dDrop_drop), false),
+      $closing($iter($heapFrom(ds(), dPartialOrd)), $dropEach(dDrop_drop), false),
       dDrop_drop,
     );
     function map(d) {
@@ -464,7 +471,7 @@ function main() {
     return last != null ? map(last) : undefined;
   });
   run("heap nth_back", () => {
-    const value = $iter($heapFrom([[10], [20], [30], [40], [50]], (a, b) => $cmp(a[0], b[0])));
+    const value = $iter($heapFrom([[10], [20], [30], [40], [50]], dPartialOrd));
     let nthBack;
     function map(d) {
       const result = d[0] + 0;

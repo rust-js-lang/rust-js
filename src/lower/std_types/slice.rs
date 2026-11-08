@@ -642,6 +642,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match with {
             // A type parameter's items, its caller's type's, which may be seen.
             _ if self.is_unknown(item) => true,
+            // One whose `PartialOrd` writes its own `lt`, which no `Ordering`
+            // JS's `sort` is given asks, isn't `order_total`'s, which reads
+            // each method an impl writes (#937).
             SortWith::Order => self.order_seen(item) || !self.order_total(item),
             // One by UTF-16 units, JS's own order of strings, asks nothing
             // a program sees (ADR 0945).
@@ -713,7 +716,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut body = Vec::new();
         let (a, b) = (Expr::var("a"), Expr::var("b"));
         let less = match with {
-            SortWith::Order => self.less_value(a, b, item, span, &mut body)?,
+            SortWith::Order => self.operator_value(Op::Lt, a, b, item, span, &mut body)?,
             SortWith::By => {
                 let compare = by.expect("rustc checked the arguments");
                 if let js::ExprKind::Arrow(params, stmts) = &compare.kind
@@ -736,24 +739,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let key = self.named_once("key", by.expect("rustc checked the arguments"), out);
                 let key_ty = key_ty.expect("`_by_key` names its key");
                 let (a, b) = (Expr::call(key.clone(), vec![a]), Expr::call(key, vec![b]));
-                self.less_value(a, b, key_ty, span, &mut body)?
+                self.operator_value(Op::Lt, a, b, key_ty, span, &mut body)?
             }
         };
         body.push(StmtKind::Return(Some(less)).at(js::Span::NONE));
         Ok(Expr::arrow(vec!["a".into(), "b".into()], body))
-    }
-
-    /// `a < b` of `ty` values, as `PartialOrd::lt` has it: JS's `<` of
-    /// numbers and `bool`s, else of their `cmp`.
-    fn less_value(&mut self, a: Expr, b: Expr, ty: ty::Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let (_, inner) = self.through_refs(Expr::undefined(), ty);
-        if Num::of(inner).is_some() || inner.is_bool() {
-            let (a, _) = self.through_refs(a, ty);
-            let (b, _) = self.through_refs(b, ty);
-            return Ok(Expr::bin(Op::Lt, a, b));
-        }
-        let order = self.cmp_value(a, b, ty, false, span, out)?;
-        Ok(Expr::bin(Op::Lt, order, Expr::int(0)))
     }
 
     /// `$sortUnstable(items, isLess, kind)`, or `$selectNthUnstable` of an
@@ -1210,7 +1200,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         helper("$sortByCachedKey", vec![items, key, cmp, kind])
                     }
                     false => {
-                        let cmp = self.cmp_fn(key_ty, false, span)?;
+                        let cmp = self.cmp_fn(key_ty, true, span)?;
                         helper("$sortByCachedKey", vec![items, key, cmp])
                     }
                 }

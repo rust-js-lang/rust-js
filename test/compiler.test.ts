@@ -1199,7 +1199,7 @@ test("PartialOrd and Ord compare with $cmp, a hand-written cmp, or the parts in 
   expect(js).toContain("words.sort(wordOrd_cmp);");
   expect(js).toContain("lists.sort((a, b) => $cmpItems(a, b, $cmp));");
   // Generic: dictionaries, `{ cmp }` and `{ partialCmp }`.
-  expect(js).toContain("export function inOrder(a, b, TPartialOrd) {\n  return TPartialOrd.partialCmp(a, b) <= 0;");
+  expect(js).toContain("export function inOrder(a, b, TPartialOrd) {\n  return TPartialOrd.le(a, b);");
   // `NaN` isn't ordered: `$thenCmp` stops at an `undefined`, which `||` wouldn't.
   expect(js).toContain("$thenCmp($partialCmp(p.x, q.x), $partialCmp(p.y, q.y)) < 0");
 });

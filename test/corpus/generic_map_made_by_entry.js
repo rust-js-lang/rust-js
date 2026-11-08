@@ -12,9 +12,20 @@ import {
   $index,
   $mutGet,
   $orInsertWith,
+  $partialOrd,
   $sortedEntries,
   $treeFromSorted,
 } from "@rust-js/runtime";
+
+const tuplePartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+});
+
+const tupleOrd = {
+  PartialOrd: () => tuplePartialOrd,
+  cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+};
 
 export function entry() {
   main();
@@ -59,7 +70,6 @@ function neighbours(edges, VPartialEq, VHash, VCopy, VMap) {
 
 function main() {
   const tupleCopy = { copy: (value) => [value[0], value[1]] };
-  const tupleOrd = { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) };
   const graph = new ($btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap))();
   addEdge(
     graph,

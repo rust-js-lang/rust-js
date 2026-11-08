@@ -7,6 +7,7 @@ import {
   $iter,
   $iterator,
   $lazyZip,
+  $partialOrd,
   $rangeFromStep,
   $roomFor,
   $sortByCachedKey,
@@ -40,10 +41,10 @@ function report(name, len, ids) {
   console.log(`${name} ${len}: ${calls} calls, trace ${trace}, order ${order}`);
 }
 
-export const countedPartialOrd = {
+export const countedPartialOrd = $partialOrd({
   PartialEq: () => ({ eq: $eq }),
   partialCmp: countedPartialOrd_partialCmp,
-};
+});
 function countedPartialOrd_partialCmp(counted, other) {
   return countedOrd_cmp(counted, other);
 }
@@ -54,10 +55,10 @@ function countedOrd_cmp(counted, other) {
   return $cmp(counted.key, other.key);
 }
 
-export const shownPartialOrd = {
+export const shownPartialOrd = $partialOrd({
   PartialEq: () => ({ eq: $eq }),
   partialCmp: shownPartialOrd_partialCmp,
-};
+});
 function shownPartialOrd_partialCmp(shown, other) {
   return shownOrd_cmp(shown, other);
 }
@@ -184,7 +185,7 @@ function counted(shape, len) {
  * `K` picks how std sorts.
  */
 function sortedByCached(v, key, KOrd, KUsizeSort) {
-  $sortByCachedKey(v, key, KOrd.cmp, KUsizeSort);
+  $sortByCachedKey(v, key, (a, b) => KOrd.PartialOrd().partialCmp(a, b), KUsizeSort);
 }
 
 function cachedGeneric(shape, len) {
@@ -254,7 +255,7 @@ function cached(shape, len) {
     ),
   );
   start();
-  $sortByCachedKey(v, (t) => ({ key: t.key, id: t.id }), countedPartialOrd_partialCmp, "general8");
+  $sortByCachedKey(v, (t) => ({ key: t.key, id: t.id }), countedOrd_cmp, "general8");
   report(
     "cached",
     len,

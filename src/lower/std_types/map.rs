@@ -501,20 +501,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             });
         }
         // Of std's nodes, its bulk build, `$treeFromSorted(tree, items, TOrd,
-        // kind, size, drop, dropKey, TPartialEq, TPartialOrd)`: its entries
-        // sorted by std's stable sort, as their type picks, then kept by
-        // `!=` (#926). `PartialOrd` and `PartialEq` are the `Ord`
-        // dictionary's, where it has them, the crate's own impl's or a
-        // caller's; else, of a std type's of the crate's, `(K, u32)`, given.
+        // kind, size, drop, dropKey)`: its entries sorted by std's stable
+        // sort, as their type picks, then kept by `!=` (#926): a set's by
+        // `<`, `TOrd.PartialOrd().lt`, and `!=` its `PartialEq()`'s, the
+        // `Ord` dictionary's supertraits (#944).
         if let Some(key) = key.filter(|&key| sorted && self.tree_of_nodes(key)) {
             let entry = match value {
                 Some(value) => Ty::new_tup(self.tcx, &[key, value]),
                 None => key,
             };
-            let (ord, partial) = self.tree_build_dictionaries(key, span)?;
+            let ord = self.tree_build_dictionary(key, span)?;
             let (kind, size) = self.stable_sort_facts(entry, span)?;
-            let list = vec![Expr::new_(class, Vec::new()), items, ord, kind, size];
-            let list = Expr::optional_args(list, drops.into_iter().chain(partial).collect());
+            let list = Expr::optional_args(vec![Expr::new_(class, Vec::new()), items, ord, kind, size], drops);
             return Ok(Expr::call(Expr::helper("$treeFromSorted"), list));
         }
         let drops = Expr::optional_args(Vec::new(), drops);
@@ -543,21 +541,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What a bulk build of std's nodes of `key`s is given of their order
-    /// (#926): `TOrd`, the keys' `Ord` dictionary, and, of a std type's of
-    /// the crate's, `(K, u32)`, whose `Ord` has no `PartialOrd` and
-    /// `PartialEq` of its own to give, `[TPartialEq, TPartialOrd]`.
-    fn tree_build_dictionaries(&mut self, key: Ty<'tcx>, span: Span) -> R<(Expr, Vec<Option<Expr>>)> {
+    /// (#926): `TOrd`, the keys' `Ord` dictionary, whose `PartialOrd()` and
+    /// its `PartialEq()` give `<` and `!=`, as every `Ord` dictionary's do
+    /// (#944).
+    fn tree_build_dictionary(&mut self, key: Ty<'tcx>, span: Span) -> R<Expr> {
         let key = crate::lower::recognition::class_key(key);
-        let ord = ty::TraitRef::new(self.tcx, self.ord_trait(), [key]);
-        let ord = self.dictionary(ord, span)?;
-        let mut partial = Vec::new();
-        if !self.is_unknown(key) && !self.has_user_impl(self.ord_trait(), key) {
-            for tr in [self.partial_eq_trait(), self.partial_ord_trait()] {
-                let tr = ty::TraitRef::new_from_args(self.tcx, tr, self.args_of(tr, key));
-                partial.push(Some(self.dictionary(tr, span)?));
-            }
-        }
-        Ok((ord, partial))
+        self.dictionary(ty::TraitRef::new(self.tcx, self.ord_trait(), [key]), span)
     }
 
     /// A map's or a set's method, of its arguments' values, `tys` their
@@ -717,9 +706,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => {
                         let cmp = cmp.expect("a B-tree's order");
                         let items = cloned(map_ops("$treeSetAlgebra", vec![arg(), arg(), Expr::str(name), cmp]));
-                        let (ord, partial) = self.tree_build_dictionaries(item, span)?;
-                        let list = vec![Expr::new_(class, Vec::new()), items, ord];
-                        map_ops("$treeOfSorted", Expr::optional_args(list, partial))
+                        let ord = self.tree_build_dictionary(item, span)?;
+                        map_ops("$treeOfSorted", vec![Expr::new_(class, Vec::new()), items, ord])
                     }
                     false => {
                         let mut list = vec![arg(), arg(), Expr::str(name)];

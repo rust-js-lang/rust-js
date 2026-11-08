@@ -13,6 +13,7 @@ import {
   $collectOptions,
   $collectResults,
   $dropEach,
+  $eq,
   $extend,
   $filterDropping,
   $findDropping,
@@ -35,6 +36,7 @@ import {
   $maxByKey,
   $minBy,
   $next,
+  $partialOrd,
   $partition,
   $position,
   $range,
@@ -45,6 +47,11 @@ import {
   $sortedKeys,
   $treeFrom,
 } from "@rust-js/runtime";
+
+const dPartialOrd = $partialOrd({
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(a[0], b[0]),
+});
 
 export function entry() {
   main();
@@ -730,7 +737,7 @@ function main() {
         }),
         dDrop_drop,
       ),
-      (a, b) => $cmp(a[0], b[0]),
+      dPartialOrd,
     );
     console.log(`${x.length}`);
     for (const item of x) {

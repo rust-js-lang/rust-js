@@ -9,6 +9,8 @@ import {
   $iterator,
   $next,
   $nth,
+  $ordered,
+  $partialOrd,
   $some,
   $someValue,
   $traitImpl,
@@ -26,7 +28,7 @@ function tExt(TIterator) {
       let best;
       for (const item of $iterator(self, TIterator.next, true)) {
         const value = $someValue(best);
-        if (best == null || SelfItemOrd.cmp(item, value) > 0) {
+        if (best == null || SelfItemOrd.PartialOrd().gt(item, value)) {
           best = $some(item);
         }
       }
@@ -40,7 +42,17 @@ function tExt(TIterator) {
           nth: $nth,
           count: $count,
         }),
-        { cmp: (a, b) => SelfItemOrd.cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
+        {
+          PartialOrd: () =>
+            $partialOrd({
+              PartialEq: () => ({
+                eq: (a, b) => SelfItemOrd.PartialOrd().PartialEq().eq(a[0], b[0]) && a[1] === b[1],
+              }),
+              partialCmp: (a, b) =>
+                SelfItemOrd.PartialOrd().partialCmp(a[0], b[0]) || $cmp(a[1], b[1]),
+            }),
+          cmp: (a, b) => SelfItemOrd.cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+        },
       );
       return widest?.[1];
     },
@@ -49,11 +61,11 @@ function tExt(TIterator) {
 
 function main() {
   const EmptyExt = tExt({ next: $next });
-  const value = EmptyExt.positionMax($iter([3, 9, 4]), { cmp: $cmp });
+  const value = EmptyExt.positionMax($iter([3, 9, 4]), $ordered);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = EmptyExt.positionMax($iter(Array.from("bca")), { cmp: $cmp });
+  const value$1 = EmptyExt.positionMax($iter(Array.from("bca")), $ordered);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = EmptyExt.positionMax($iter([]), { cmp: $cmp });
+  const value$2 = EmptyExt.positionMax($iter([]), $ordered);
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
 }
 //# sourceMappingURL=case.js.map

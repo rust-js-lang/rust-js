@@ -17,6 +17,7 @@ import {
   $mapExtractIf,
   $ordTreeMap,
   $ordTreeSet,
+  $partialOrd,
   $rangeInclusiveNext,
   $rem,
   $remove,
@@ -67,11 +68,11 @@ function keyPartialEq_eq(key, other) {
   return keyOrd_cmp(key, other) === 0;
 }
 
-export const keyPartialOrd = {
+export const keyPartialOrd = $partialOrd({
   PartialEq: () => keyPartialEq,
   partialCmp: keyPartialOrd_partialCmp,
   $drop: keyDrop_drop,
-};
+});
 function keyPartialOrd_partialCmp(key, other) {
   return keyOrd_cmp(key, other);
 }
@@ -334,7 +335,7 @@ function main() {
             { TAG: "Excluded", _0: hi },
             true,
             keyPartialEq_eq,
-            keyPartialOrd_partialCmp,
+            keyPartialOrd,
           )
             .map(([k]) => k.k)
             .reduce((a, b) => (a + b) >>> 0, 0),
@@ -536,7 +537,7 @@ function main() {
               { TAG: "Excluded", _0: hi },
               false,
               keyPartialEq_eq,
-              keyPartialOrd_partialCmp,
+              keyPartialOrd,
             ),
             false,
             false,
