@@ -31,13 +31,6 @@ plain std field dyn_fn_of_a_params_function_drops.rs
 #1014 P0: mem::discriminant(a) == discriminant(b) in generic code is true for different variants
 plain std generic enum_discriminant.rs
 
-#1016 P0 (iterators): an iterator held in an Rc<RefCell<..>> given to generic code through an associated type throws or drops a step late
-plain std rc-refcell associated_iterator_dropped.rs
-plain std rc-refcell associated_iterator_given_as_it_is.rs
-plain std rc-refcell generic_associated_types.rs
-plain std rc-refcell iterator_named_by_another_bound.rs
-plain std rc-refcell std_projection_drops.rs
-
 #1017 P1: two crashes in the rc-refcell rewrite: an ICE about a const param in the param-env, and a binder.rs panic
 plain std rc-refcell const_param_drops.rs
 plain std rc-refcell held_adapters_stepped_to_their_end.rs
@@ -54,7 +47,6 @@ plain std field rc_as_ptr.rs
 
 #1021 P0 (round-2 singles): a wrong panic payload, Some("top") read as None, a from_iter drop order, and a write lost before a panic
 plain std option collected_counts_ask_room.rs
-plain std option held_adapters_stepped_to_their_end.rs
 plain std option loop_exits.rs
 plain std rc-refcell written_through_before_a_panic.rs
 

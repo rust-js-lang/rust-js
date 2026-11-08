@@ -12,10 +12,12 @@ use rustc_middle::ty::{self, Ty};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `guard`, a `Ref`, a `RefMut` or a lock's guard of type `ty`,
-    /// derefs to: its cell's `value`, or of a `&mut` to a number or text, the
-    /// cell, the `{ value }` box that is; a `RefCell<dyn T>`'s the cell, its
-    /// pair (ADRs 0328, 0397); a `RefCell` of an object's, the cell, the
-    /// object itself (ADR 0863).
+    /// derefs to: its cell's `value`, or of a `&mut` that's a box, to a
+    /// number, text or a type parameter (`mut_ref_form`), the cell, the `{
+    /// value }` box that is; a `RefCell<dyn T>`'s the cell, its pair (ADRs
+    /// 0328, 0397); a `RefCell` of an object's, the cell, the object itself
+    /// (ADR 0863). A `&mut` to a type parameter bound by `Iterator` is the
+    /// iterator, its `value`, as what's given it steps it (#1016).
     pub(in crate::lower) fn guard_value(&self, guard: Expr, ty: Ty<'tcx>, mutable: bool) -> Expr {
         let ty::Adt(_, args) = ty.peel_refs().kind() else {
             unreachable!("a guard")
@@ -24,7 +26,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.guards_value_cell(ty.peel_refs()) {
             return guard;
         }
-        match self.cell_dyn_trait(guarded).is_some() || (mutable && self.handles_mut(guarded)) {
+        match self.cell_dyn_trait(guarded).is_some() || (mutable && self.mut_ref_form(guarded).is_cell()) {
             true => guard,
             false => Expr::held(guard),
         }

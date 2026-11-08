@@ -51,7 +51,7 @@ And the operations that consume the choice, with what each asked:
 | reborrow, a held box given on | `mir/rvalues.rs`, `mir/assign.rs` `boxed_args` | `is_cell`, `param_is_box` (callee's environment), `is_cell_pointee` (caller's), `boxed_in_call`, `borrow_outlives_call`, and the JS shapes `Member(_, value)`, `held_cell`, `naming.boxes()` |
 | closure capture | `mir/closures.rs`, `mir/operands.rs` `captured_place`, `mir.rs` | `is_cell_pointee` of the capture's pointee |
 | `Cell::from_mut`, `get_mut` | `std_types/cell.rs` | `is_cell_pointee` (since 73f5056ec, #614) |
-| a std call's handle on an item | `std_types/slice.rs`, `map.rs`, `cell.rs` guards | `handles_mut` |
+| a std call's handle on an item | `std_types/slice.rs`, `map.rs` | `handles_mut`; a guard's deref, `cell.rs`, `mut_ref_form` (#1016) |
 | `.d.ts` of a `&mut` | `declarations.rs` | `is_cell_pointee` in the item's context (#619) |
 | flattened state's handle | `representation.rs` `project`, `js/make.rs` `Storage`, tidy's `read_handles` | the JS shape `Handle(_, Storage::InPlace)` |
 
@@ -281,3 +281,29 @@ Mac in 12 parts, but a flattened state's three operations that lend it past
 its class's guard to generic code or a trait's default method, which
 rust-js refuses (its borrows are its object's own keys, which count none),
 left out of its `field` holder with why.
+
+## Amendment: a guard of a caller's iterator derefs as `mut_ref_form` says (#1016)
+
+The metamorphic net's `rc-refcell` rewrite (#1008) put an iterator of a
+type only a caller knows in a `RefCell`, `Rc::new(RefCell::new(source
+.items()))` of an `S::Iter`, and stepped it through its guard,
+`(*items.borrow_mut()).next()`: it threw `it.next is not a function`, as
+did `step(&mut *held)` of an `I: Iterator`. A guard's `deref_mut` asked
+`handles_mut`, a std call's handle on an item, which is a handle of any
+type only a caller knows; a `&mut I` of an `I` bound by `Iterator` is the
+iterator itself (`MutRefForm::Itself`), which every other site, and the
+function it's given to, reads as it. A guard's deref now asks
+`mut_ref_form`, the cell, the box that is, of a `&mut` that's a cell, its
+`value` of any other, so a `&mut F` of an `F: FnMut` is the function, as
+it was. And std's `&mut` to a type only a caller knows is the place, not
+made a JS iterator, `Iterator.from(held.value)`, which `*held.borrow_mut()
+= other` couldn't write, a crash of the compiler: what's there is the JS
+iterator its caller gave (`std_lends_a_place`). The table's "a std call's handle on an item"
+keeps `handles_mut` for `retain_mut` and the like; a guard's deref is
+`mut_ref_form`'s. Results changed
+([0262](0262-when-rust-and-js-disagree.md)), so Rust's are kept; no other
+case's JS changed. Held by the corpus case
+`iterator_in_a_ref_cell_given_generic_code` and the mutations
+`guard-of-an-iterator-the-cell` and
+`std-mut-ref-of-a-callers-iterator-made-one`; the net's five
+`rc-refcell` lines of #1016 run as native.

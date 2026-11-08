@@ -4,6 +4,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "std-mut-ref-of-a-callers-iterator-made-one",
+    breaks:
+      "a guard's `&mut I` of an `I: Iterator` is made `Iterator.from(held.value)`, which `*held.borrow_mut() = other` can't write, a crash (#1016)",
+    file: "src/lower/representation/mut_ref.rs",
+    find: "            if !self.mut_ref_form(inner).is_the_value() || self.is_unknown(inner))\n",
+    replace: "            if !self.mut_ref_form(inner).is_the_value())\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_in_a_ref_cell_given_generic_code.rs$"],
+  },
+  {
     name: "generic-mut-object-unboxed",
     breaks:
       "`twice(&mut c)` of a generic `&mut T` gives the object `c`, where `twice` reads a box",

@@ -245,8 +245,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
+    /// Is `output`, what a std call gives, a `&mut` that's a place, not a
+    /// value made a JS iterator of: one to an iterator in a place, `&mut
+    /// items[1]` of a `Vec<Range<i32>>`'s, is what `mut_ref_form` says, the
+    /// place, which `r.next()` would otherwise step apart from the item
+    /// (#638); of one that's the value itself, a std iterator's, that value.
+    /// One to a type only a caller knows, a guard's `&mut I`, is the place
+    /// of the JS iterator its caller gave, which `*guard = other` writes
+    /// (#1016).
+    pub(in crate::lower) fn std_lends_a_place(&self, output: Ty<'tcx>) -> bool {
+        matches!(*output.kind(), ty::Ref(_, inner, Mutability::Mut)
+            if !self.mut_ref_form(inner).is_the_value() || self.is_unknown(inner))
+    }
+
     /// Is a `&mut` of a `ty` a handle, `{ value }`, where std gives one to a
-    /// closure, `retain_mut`'s, or a guard derefs to one: a cell's, or of a
+    /// closure, `retain_mut`'s: a cell's, or of a
     /// type only a caller knows, which generic code reads through its
     /// `value`, a box's (ADR 0454). Of a type parameter bound by `FnMut` or
     /// `Iterator`, or given as it is, a handle where `mut_ref_form` says the

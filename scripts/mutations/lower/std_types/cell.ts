@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "guard-of-an-iterator-the-cell",
+    breaks:
+      "`(*items.borrow_mut()).next()` of an `I: Iterator` steps the cell, `$next(borrowMut)`, where a `&mut I` is the iterator, which threw `it.next is not a function` (#1016)",
+    file: "src/lower/std_types/cell.rs",
+    find: "        match self.cell_dyn_trait(guarded).is_some() || (mutable && self.mut_ref_form(guarded).is_cell()) {\n",
+    replace: "        match self.cell_dyn_trait(guarded).is_some() || (mutable && self.handles_mut(guarded)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_in_a_ref_cell_given_generic_code.rs$"],
+  },
+  {
     name: "key-set-of-any-cell",
     breaks:
       "a thread-local's `set` asks whether any cell of its type is counted, not its own, so a hook's `HOOKS.set(..)` while its hooks run doesn't panic as Rust's does (ADR 0960, amended)",
@@ -85,7 +94,7 @@ export const mutations: Mutation[] = [
     name: "guard-value-unboxed",
     breaks: "`*m.lock().unwrap() += 2` of a number writes a copy",
     file: "src/lower/std_types/cell.rs",
-    find: "        match self.cell_dyn_trait(guarded).is_some() || (mutable && self.handles_mut(guarded)) {",
+    find: "        match self.cell_dyn_trait(guarded).is_some() || (mutable && self.mut_ref_form(guarded).is_cell()) {",
     replace: "        match self.cell_dyn_trait(guarded).is_some() {",
     tests: ["test/corpus.test.ts", "-t", "^locks"],
   },
@@ -236,7 +245,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `RefMut` of a type parameter derefs to its cell's `value`, which a `&mut` of the type parameter is read through again, `guard.value.value`",
     file: "src/lower/std_types/cell.rs",
-    find: "(mutable && self.handles_mut(guarded))",
+    find: "(mutable && self.mut_ref_form(guarded).is_cell())",
     replace: "(mutable && matches!(self.mut_ref_form(guarded), crate::lower::MutRefForm::Box))",
     tests: ["test/corpus.test.ts", "-t", "^refcell_generic_mut_method.rs$"],
   },
