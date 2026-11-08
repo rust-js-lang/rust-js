@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a reborrow of a `&mut` of a stepped local, `&mut (*_r)`, isn't taken for what it lends, so a value written beside it isn't made knowing its back (#851)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                            if matches!(of.projection.as_slice(), [mir::ProjectionElem::Deref])\n",
-    replace: "                            if false\n",
+    find: "                            if matches!(of.projection.as_slice(), [mir::ProjectionElem::Deref])\n                                && let Some(&lends) = lent.get(&of.local) =>\n",
+    replace: "                            if false\n                                && let Some(&lends) = lent.get(&of.local) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet.rs$"],
   },
   {
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a value given beside a `&mut` of a stepped local, which the callee may write there, isn't made knowing its back (#851)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                        if !other_lent && other != local && other_ty == ty {\n",
+    find: "                        if !other_lent && Some(other) != local && other_ty == ty {\n",
     replace: "                        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet.rs$"],
   },
@@ -593,5 +593,21 @@ export const mutations: Mutation[] = [
     replace: "                        let copy = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_skip_take_and_filter_stepped_from_back.rs$"],
     snapshots: true,
+  },
+  {
+    name: "beside-stepped-field-unmarked",
+    breaks: "a value given beside a `&mut` of a field stepped from its back, `replaced(&mut held.0, next)`, isn't made knowing its back, and its `next_back` there throws (#1013)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                let beside: Vec<(Option<mir::Local>, Ty<'tcx>)> =\n                    lent_stepped_locals.chain(lent_stepped_fields).collect();\n",
+    replace: "                let beside: Vec<(Option<mir::Local>, Ty<'tcx>)> =\n                    lent_stepped_locals.chain(lent_stepped_fields.filter(|_| false)).collect();\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterators_held_in_a_generic_structs_field.rs$"],
+  },
+  {
+    name: "field-reborrow-lends-nothing",
+    breaks: "a reborrow of a `&mut` of a field, `&mut (*_r)`, isn't taken for the field it lends, so a value given beside it isn't made knowing its back (#1013)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                                && let Some(&field) = lent_field.get(&of.local) =>\n",
+    replace: "                                && let Some(&field) = lent_field.get(&of.local).filter(|_| false) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterators_held_in_a_generic_structs_field.rs$"],
   },
 ];

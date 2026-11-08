@@ -125,11 +125,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A `$iter` of an array, `steps_an_array`'s, the one list (ADR 0530).
         let items = match self.steps_an_array(iter_ty).then_some(()) {
-            // One a variable or a field holds, or a function gives, its
-            // `$iter` or its array, stepped or not: what's left of it.
+            // One a variable or a field holds, a tuple struct's `it[0]` too
+            // (#1013), or a function gives, its `$iter` or its array,
+            // stepped or not: what's left of it.
             Some(_)
-                if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..))
-                    || given_by_a_call(&receiver) =>
+                if matches!(
+                    receiver.kind,
+                    js::ExprKind::Var(_) | js::ExprKind::Member(..) | js::ExprKind::Index(..)
+                ) || given_by_a_call(&receiver) =>
             {
                 Expr::call_helper("$rest", vec![receiver])
             }

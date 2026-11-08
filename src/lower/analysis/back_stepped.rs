@@ -688,6 +688,13 @@ pub(super) fn stepped_locals<'tcx>(
                             lent.insert(to.local, lends);
                             lent_at.insert(to.local, (block, at + 1));
                         }
+                        // And of a field's, what that lends (#1013).
+                        mir::Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of)
+                            if matches!(of.projection.as_slice(), [mir::ProjectionElem::Deref])
+                                && let Some(&field) = lent_field.get(&of.local) =>
+                        {
+                            lent_field.insert(to.local, field);
+                        }
                         mir::Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) => {
                             lent_field.insert(to.local, *of);
                         }
@@ -803,12 +810,24 @@ pub(super) fn stepped_locals<'tcx>(
                 // back, of its type, which the callee may write there,
                 // `replace_in(&mut it, next)`, its caller's own as one
                 // representation (#537): stepped so too (#851).
-                for &(local, lent, ty, _) in &given {
-                    if !lent || !stepped.contains_key(&(owner, local)) {
-                        continue;
+                // Beside a `&mut` of a field stepped from its back too,
+                // `replaced(&mut held.0, next)` (#1013).
+                let lent_stepped_fields = (args.iter()).filter_map(|arg| match &arg.node {
+                    mir::Operand::Move(place) | mir::Operand::Copy(place) => {
+                        let field = *lent_field.get(&place.as_local()?)?;
+                        (field_of(tcx, mir, field).is_some_and(|of| stepped_fields.contains(&of)))
+                            .then(|| (None, erased(field.ty(&mir.local_decls, tcx).ty)))
                     }
+                    _ => None,
+                });
+                let lent_stepped_locals = (given.iter())
+                    .filter(|&&(local, lent, ..)| lent && stepped.contains_key(&(owner, local)))
+                    .map(|&(local, _, ty, _)| (Some(local), ty));
+                let beside: Vec<(Option<mir::Local>, Ty<'tcx>)> =
+                    lent_stepped_locals.chain(lent_stepped_fields).collect();
+                for (local, ty) in beside {
                     for &(other, other_lent, other_ty, _) in &given {
-                        if !other_lent && other != local && other_ty == ty {
+                        if !other_lent && Some(other) != local && other_ty == ty {
                             mark(&mut stepped, (owner, other), SteppedLocal::Given);
                         }
                     }

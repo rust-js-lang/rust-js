@@ -236,4 +236,12 @@ export const mutations: Mutation[] = [
     replace: "                Some(_) => return false,\n                None => return false,",
     tests: ["test/corpus.test.ts", "-t", "^box_read_before_its_write.rs$"],
   },
+  {
+    name: "stepped-field-compiled-marked",
+    breaks: "std's compiled `Map` read from a generic struct's field another instantiation of which is stepped from its back is taken for one made knowing its back, never given its compiled back, and `it.back` throws (#1013)",
+    file: "src/lower/mir/places.rs",
+    find: "            && !self.compiled_struct(ty, &e)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^iterators_held_in_a_generic_structs_field.rs$"],
+  },
 ];

@@ -33,10 +33,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A field a back step is given, each value moved into which its
         // maker made knowing its back: a read of it is of one, marked so,
-        // as a local's value is by its maker (#851).
+        // as a local's value is by its maker (#851). Not std's compiled
+        // struct, which its maker never marks (`structure.rs`): the field of
+        // another instantiation of a generic struct, `Held(map).0` beside a
+        // `Held(range).0` stepped from its back, has a back only given it,
+        // `$knowing`'s (#1013).
         if let Some(field) = crate::lower::analysis::field_of(self.tcx, state.body, place)
             && self.krate.back_stepped.fields.contains(&field)
-            && self.back_by_value(self.reveal(place.ty(state.body, self.tcx).ty))
+            && let ty = self.reveal(place.ty(state.body, self.tcx).ty)
+            && self.back_by_value(ty)
+            && !self.compiled_struct(ty, &e)
         {
             e = crate::lower::iterators::made_knowing_its_back(e);
         }

@@ -28,14 +28,6 @@ plain std field closures_made_and_folded.rs
 plain std field dyn_fn_generic_drops.rs
 plain std field dyn_fn_of_a_params_function_drops.rs
 
-#1013 P0 (iterators): an iterator held in a generic struct's field, stepped from its back, throws (toReversed / it.back is not a function)
-plain field backs_given_behind_impls.rs
-plain field iterator_values_meet.rs
-plain field returned_impl_ends.rs
-plain field returned_slice_iters.rs
-plain field std_iterator_clones.rs
-plain field std_rev.rs
-
 #1014 P0: mem::discriminant(a) == discriminant(b) in generic code is true for different variants
 plain std generic enum_discriminant.rs
 
@@ -117,9 +109,6 @@ plain library zip_of_own_from_its_back_asks_each_len_once.rs
 #1024 P0 (library): a library iterator stepped from its back in the using crate throws it.back is not a function
 plain library adapters_given_to_generic_backs.rs
 plain library chain_rev_own_back.rs
-plain library filters_held_double_ended.rs
-plain library generic_impl_stepped_from_its_back.rs
-plain library own_back_methods_given_dictionaries.rs
 plain library returned_impl_ends.rs
 
 #1025 P0 (library): a library's generic code given an IntoIterator dictionary throws IIntoIterator.intoIter is not a function

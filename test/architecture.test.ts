@@ -627,7 +627,7 @@ const shapeTests: Record<string, [number, string]> = {
   "src/lower/std_types/cell.rs cell_call": [2, "a fact's to ask: a quiet `RefCell`'s object replaced in a field where the cell is the field's place, which a field holding a `&RefCell` is shaped as too"],
   "src/lower/std_types/map.rs first": [3, "JS's evaluation: what a statement evaluates first"],
   "src/lower/mir/iter/backs.rs closed_rev": [1, "JS's evaluation: a variable's or a field's read evaluates nothing, so the receiver is read as it is"],
-  "src/lower/mir/iter/backs.rs rev_items": [1, "JS's evaluation: a variable's or a field's read evaluates nothing, so the receiver is read as it is"],
+  "src/lower/mir/iter/backs.rs rev_items": [2, "JS's evaluation: a variable's or a field's read, a tuple struct's `held[0]` too (#1013), evaluates nothing, so the receiver is read as it is"],
   "src/lower/mir/iter/backs.rs reversed_inward": [1, "JS's call: a function value given as it is reads no index"],
   "src/lower/mir/places.rs mir_place": [1, "MIR's projection and `lasting` decide; the shape is that field's read"],
   "src/lower/mir/entries.rs read_once_tried": [3, "whether the JS reads the same again: a property's read may be a getter's"],

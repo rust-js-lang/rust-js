@@ -1320,3 +1320,30 @@ question, where one served both.
 The readability baseline moves by the new corpus case's `fuse()` and
 `peekable()` given their compiled backs, `$knowing(..)` (`Iterator.from`,
 8.1 to 8.2 in 10,000 lines), as they were made before.
+
+## Amendment: an iterator a generic struct's field holds (#1013, 2026-11-08)
+
+ADR 0262's case: results change, so Rust's are kept. The metamorphic net's
+round 2 (#1008) holds each iterator in a field of a generic tuple struct,
+`Held(v.iter()).0.rev()`, where three things threw:
+
+- `rev_items` took a variable's or a named field's array iterator for the
+  iterator, but a tuple struct's field reads `held[0]`, which it took for
+  its array, `held[0].toReversed()`: a read of an index is one too,
+  `$rest(held[0])`;
+- `BackStepped::fields` is a field of the struct, whatever it holds, so
+  `Held(range).0` stepped from its back marked the read of `Held(map).0`,
+  std's compiled `Map` (ADR 0871), made knowing its back, and it was given
+  no compiled back, `$rev(mapped[0])`: the read is marked only of what its
+  maker marks, never std's compiled struct, as `structure.rs` marks it;
+- a value given beside a `&mut` of a field stepped from its back,
+  `replaced(&mut held.0, next)`, which the callee may write there, is made
+  knowing its back as one beside a local's is (#537), through a reborrow
+  of the field's `&mut` too.
+
+The same field fact fixed three of the library rewrites (#1024):
+`filters_held_double_ended`, `generic_impl_stepped_from_its_back` and
+`own_back_methods_given_dictionaries`. Corpus case
+`iterators_held_in_a_generic_structs_field`; mutations
+`tuple-field-iterator-taken-for-its-array`, `stepped-field-compiled-marked`,
+`beside-stepped-field-unmarked` and `field-reborrow-lends-nothing`.

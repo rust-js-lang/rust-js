@@ -90,8 +90,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`rev()` of an iterator a variable holds wraps its `$iter` again, `it.toReversed()`, which throws",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..))\n",
-    replace: "                if false\n",
+    find: "                if matches!(\n                    receiver.kind,\n                    js::ExprKind::Var(_) | js::ExprKind::Member(..) | js::ExprKind::Index(..)\n                ) || given_by_a_call(&receiver) =>\n",
+    replace: "                if false || given_by_a_call(&receiver) =>\n",
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",
@@ -814,5 +814,13 @@ export const mutations: Mutation[] = [
     find: "            Some(crate::lower::analysis::SteppedLocal::Lent) => self.made_knowing_where_held(value, ty, span),\n",
     replace: "            Some(crate::lower::analysis::SteppedLocal::Lent) if false => self.made_knowing_where_held(value, ty, span),\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
+  },
+  {
+    name: "tuple-field-iterator-taken-for-its-array",
+    breaks: "an array's iterator a tuple struct's field holds, `held[0]`, is taken for its array, `held[0].toReversed()`, which throws (#1013)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                    js::ExprKind::Var(_) | js::ExprKind::Member(..) | js::ExprKind::Index(..)\n",
+    replace: "                    js::ExprKind::Var(_) | js::ExprKind::Member(..)\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterators_held_in_a_generic_structs_field.rs$"],
   },
 ];
