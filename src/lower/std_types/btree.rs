@@ -32,16 +32,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `m.extract_if(f)`, or a B-tree's `extract_if(range, f)`, of the map's
-    /// value and type, the range's, and the test's.
+    /// value and type, the range's, and the test's and its type. Closed,
+    /// it drops what it holds that has a destructor, `drop`: its test, then
+    /// its range, its bounds start then end, as std's `ExtractIf` drops its
+    /// `pred` then its `range` where its owner drops it (#945,
+    /// `closed_on_drop`).
     pub(in crate::lower) fn map_extract_if_values(
         &mut self,
         (m, receiver): (Expr, Ty<'tcx>),
         range: Option<(Expr, Ty<'tcx>)>,
-        f: Expr,
+        (f, f_ty): (Expr, Ty<'tcx>),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let set = self.is_set(receiver.peel_refs());
+        let mut held = Vec::new();
+        let mut hold = |this: &mut Self, name: &str, value: Expr, ty: Ty<'tcx>, out: &mut Vec<Stmt>| -> Expr {
+            match ty.needs_drop(this.tcx, this.typing_env) {
+                true => {
+                    let value = match value.reads_same() {
+                        true => value,
+                        false => this.spill(name, value, out),
+                    };
+                    held.push((value.clone(), ty));
+                    value
+                }
+                false => value,
+            }
+        };
+        let f = hold(self, "test", f, f_ty, out);
+        let range = range.map(|(range, ty)| (hold(self, "range", range, ty, out), ty));
+        let drop = match held.is_empty() {
+            true => None,
+            false => Some(Expr::arrow(Vec::new(), self.drop_each(held, span)?)),
+        };
         let (m, entries) = match range {
             Some(range) => {
                 let range = self.tree_range_of((m, receiver), range, (false, false), span, out)?;
@@ -54,9 +78,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let handles = !set
             && matches!(receiver.peel_refs().kind(), ty::Adt(_, map) if map.types().nth(1).is_some_and(|value| self.handles_mut(value)));
+        let list = vec![m, f, entries, Expr::bool(handles), Expr::bool(set)];
         Ok(Expr::call(
             Expr::helper("$mapExtractIf"),
-            vec![m, f, entries, Expr::bool(handles), Expr::bool(set)],
+            Expr::optional_args(list, vec![drop]),
         ))
     }
 

@@ -109,33 +109,29 @@ function main() {
       .join(", ")}}`,
   );
   console.log(
-    `${Iterator.from(
-      $mapExtractIf(
+    `${$mapExtractIf(
+      tree,
+      () => true,
+      $treeRange(
         tree,
-        () => true,
-        $treeRange(
-          tree,
-          $cmp,
-          false,
-          "BTreeMap",
-          { TAG: "Included", _0: 6 },
-          { TAG: "Excluded", _0: 2 },
-          false,
-        ),
-        true,
+        $cmp,
+        false,
+        "BTreeMap",
+        { TAG: "Included", _0: 6 },
+        { TAG: "Excluded", _0: 2 },
         false,
       ),
+      true,
+      false,
     ).reduce((n) => n + 1, 0)}`,
   );
   const keys = new $BTreeSet($range(1, 9));
-  const firsts = Iterator.from(
-    $mapExtractIf(
-      keys,
-      (k) => k > 2,
-      $treeRange(keys, $cmp, true, "BTreeSet", "Unbounded", "Unbounded", false),
-      false,
-      true,
-    ),
+  const firsts = $mapExtractIf(
+    keys,
+    (k) => k > 2,
+    $treeRange(keys, $cmp, true, "BTreeSet", "Unbounded", "Unbounded", false),
+    false,
+    true,
   );
   const next = $next(firsts);
   const value = $next(firsts);

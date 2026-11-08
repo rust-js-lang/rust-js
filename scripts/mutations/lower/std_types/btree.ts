@@ -44,4 +44,12 @@ export const mutations: Mutation[] = [
     replace: "        self.found_by_cmp(key) && !self.order_total(key)\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_seen.rs$"],
   },
+  {
+    name: "extract-if-holds-nothing-to-drop",
+    breaks: "a map's or a set's `extract_if` is given nothing to drop as it's closed, so its test and a B-tree's owned bounds are never dropped (#945)",
+    file: "src/lower/std_types/btree.rs",
+    find: "            false => Some(Expr::arrow(Vec::new(), self.drop_each(held, span)?)),\n",
+    replace: "            false => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^extract_if_drops_what_it_holds.rs$"],
+  },
 ];

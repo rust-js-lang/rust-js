@@ -576,7 +576,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         true => Some((exprs.remove(0), arg_tys[1])),
                         false => None,
                     };
-                    this.map_extract_if_values((m, arg_tys[0]), range, f, span, out)?
+                    let f_ty = *arg_tys.last().expect("the test's type");
+                    this.map_extract_if_values((m, arg_tys[0]), range, (f, f_ty), span, out)?
                 }))
             }),
             _ => return None,

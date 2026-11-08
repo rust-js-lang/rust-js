@@ -146,3 +146,35 @@ start: 2, end: 5 }; value.start`, so it never was one. With
 `range-bounds-literal-read` applied, the whole corpus and every other test
 file print the same JS (the Nightly of 85f123290). So the branch and its
 mutation are removed.
+
+## Amendment: an `extract_if` drops what it holds where it's dropped (#945)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. A key whose `Drop`
+prints printed nothing where Rust prints it.
+
+`m.extract_if(K(1)..K(4), f)` owns its range, and a map's or a set's
+`ExtractIf { pred, inner: { range, .. } }` drops its test, then its range,
+start then end, where it's dropped: after a collect or a `count` steps it
+to its end, or where a variable that holds it is. The JS never dropped
+either: `$treeRange` read the bounds, `$mapExtractIf` held nothing, and its
+`Iterator.from` closed it as its first step was done.
+
+**It's closed where it's dropped, and closing it drops what it holds**:
+`closed_on_drop` says of a B-tree's `ExtractIf` its test then its range,
+and of a hashed one's its test, each that has a destructor; the lowering
+holds those in variables and gives `$mapExtractIf` their drop, `drop_each`'s
+of the two in that order, which it runs once as it's closed (`$close`), a
+`$Steps` now, one of `ITERATOR_HELPERS`, no `Iterator.from` around it. Four
+snapshots read `$mapExtractIf(..)` where they read `Iterator.from(
+$mapExtractIf(..))`. An owned `RangeInclusive` of a key with a destructor
+is refused, as before, and so is `range` of owned bounds with one. Corpus
+case `extract_if_drops_what_it_holds.rs`: owned `Range`, `RangeFrom` and
+`RangeTo` bounds of a map's and a set's, of an order nothing sees and of
+one that can be seen, collected, counted and held then dropped early, and
+a hashed map's test that holds what drops; both builds. Mutations
+`btree-extract-if-not-closed-on-drop`, `hash-extract-if-not-closed-on-drop`
+(`lower/recognition/iterators.ts`), `extract-if-holds-nothing-to-drop`
+(`lower/std_types/btree.ts`), `map-extract-if-closes-dropping-nothing`
+(`runtime/extract_if.ts`); `scan-state-not-closed`,
+`map-extract-taken-stale`, `map-extract-kept` and `set-extract-kept` name
+their lines as they now read.

@@ -800,8 +800,8 @@ export const mutations: Mutation[] = [
     name: "scan-state-not-closed",
     breaks: "closing a `scan()` drops what its source holds and its function, not its state, so a compiled one of a state with a destructor over a range drops it twice (#741)",
     file: "src/lower/recognition/iterators.rs",
-    find: "                let own: Vec<Ty<'tcx>> = [function, state]\n",
-    replace: "                let own: Vec<Ty<'tcx>> = [function]\n",
+    find: "                self.closing_both(source, self.dropping_parts(&[function, state]))\n",
+    replace: "                self.closing_both(source, self.dropping_parts(&[function]))\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^a scan's state and function drop once"],
   },
   {
@@ -845,5 +845,21 @@ export const mutations: Mutation[] = [
     find: "                    | \"std::iter::Copied\"\n                    | \"std::iter::Cloned\"\n                    | \"std::iter::Enumerate\"\n",
     replace: "                    | \"std::iter::Copied\"\n                    | \"std::iter::Enumerate\"\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_cloned_items_whose_clone_runs.rs$"],
+  },
+  {
+    name: "btree-extract-if-not-closed-on-drop",
+    breaks: "a B-tree's `extract_if` of owned bounds with a destructor isn't closed where a variable that holds it is dropped, so its bounds are never dropped (#945)",
+    file: "src/lower/recognition/iterators.rs",
+    find: '            "std::collections::btree_map::ExtractIf" => {\n',
+    replace: '            "std::collections::btree_map::ExtractIf" if false => {\n',
+    tests: ["test/corpus.test.ts", "-t", "^extract_if_drops_what_it_holds.rs$"],
+  },
+  {
+    name: "hash-extract-if-not-closed-on-drop",
+    breaks: "a hashed map's `extract_if` whose test holds what has a destructor isn't closed where it's dropped, so its test is never dropped (#945)",
+    file: "src/lower/recognition/iterators.rs",
+    find: '            "std::collections::hash_map::ExtractIf" => self.dropping_parts(&[sources.nth(2)?]),\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^extract_if_drops_what_it_holds.rs$"],
   },
 ];

@@ -493,10 +493,11 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 /// `$filterEnds` (ADR 0526), `$filterDropping` (#651), `$enumerate` (ADR 0528), `$taking` and
 /// `$skipping` (ADR 0542), `$memchrIter` (ADR 0529), `$stdIterator` (ADR
 /// 0561), `$lazyScan` (ADR 0517) and `$lazyMapWhile`, not fused, a B-tree
-/// set's algebra, std's iterators (`$treeSetAlgebra`, #943), and each of
-/// its generators,
+/// set's algebra, std's iterators (`$treeSetAlgebra`, #943), a map's or a
+/// set's `extract_if`, closed where it's dropped (`$mapExtractIf`, #945),
+/// and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 36] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 37] = [
     "$stdIterator",
     "$memchrIter",
     "$mapEnds",
@@ -533,6 +534,7 @@ pub(crate) const ITERATOR_HELPERS: [&str; 36] = [
     "$successors",
     "$keysIn",
     "$treeSetAlgebra",
+    "$mapExtractIf",
 ];
 
 /// Whether `e` is a JS iterator: one its type says is (`Known::Iterator`),

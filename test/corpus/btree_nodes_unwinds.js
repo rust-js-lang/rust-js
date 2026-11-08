@@ -524,24 +524,22 @@ function main() {
       let taken;
       try {
         taken = Array.from(
-          Iterator.from(
-            $mapExtractIf(
+          $mapExtractIf(
+            m,
+            (k) => k.k % 2 === 0,
+            $treeRange(
               m,
-              (k) => k.k % 2 === 0,
-              $treeRange(
-                m,
-                keyOrd_cmp,
-                false,
-                "BTreeMap",
-                { TAG: "Included", _0: lo },
-                { TAG: "Excluded", _0: hi },
-                false,
-                keyPartialEq_eq,
-                keyPartialOrd_partialCmp,
-              ),
+              keyOrd_cmp,
               false,
+              "BTreeMap",
+              { TAG: "Included", _0: lo },
+              { TAG: "Excluded", _0: hi },
               false,
+              keyPartialEq_eq,
+              keyPartialOrd_partialCmp,
             ),
+            false,
+            false,
           ).map(([k, v]) => {
             const result = (k.k + v[0]) >>> 0;
             try {

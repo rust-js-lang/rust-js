@@ -339,17 +339,22 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // (#741, #748).
             "std::iter::Scan" => {
                 let (source, state, function) = (sources.next()?, sources.next()?, sources.next()?);
-                let own: Vec<Ty<'tcx>> = [function, state]
-                    .into_iter()
-                    .filter(|ty| ty.needs_drop(self.tcx, self.typing_env))
-                    .collect();
-                let own = match own.as_slice() {
-                    [] => None,
-                    [one] => Some(*one),
-                    _ => Some(Ty::new_tup(self.tcx, &own)),
-                };
-                self.closing_both(source, own)
+                self.closing_both(source, self.dropping_parts(&[function, state]))
             }
+            // A map's or a set's `extract_if`'s, its test then a B-tree's
+            // range, as `ExtractIf { pred, inner: { range, .. } }` drops
+            // them, of each that drops something (#945): what it takes out
+            // is given, and what it doesn't reach stays.
+            "std::collections::btree_map::ExtractIf" => {
+                let (range, test) = (sources.nth(2)?, sources.next()?);
+                self.dropping_parts(&[test, range])
+            }
+            "std::collections::btree_set::ExtractIf" => {
+                let (range, test) = (sources.nth(1)?, sources.next()?);
+                self.dropping_parts(&[test, range])
+            }
+            "std::collections::hash_map::ExtractIf" => self.dropping_parts(&[sources.nth(2)?]),
+            "std::collections::hash_set::ExtractIf" => self.dropping_parts(&[sources.nth(1)?]),
             "std::iter::Zip" | "std::iter::Chain" => {
                 let (a, b) = (sources.next()?, sources.next()?);
                 self.closing_both(a, self.closing_source(b)?)
@@ -376,6 +381,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 }
             }
             _ => None,
+        }
+    }
+
+    /// Of `parts`, in their order, those that drop something: none, the
+    /// one, or a tuple of them, what closing what holds them drops.
+    fn dropping_parts(&self, parts: &[Ty<'tcx>]) -> Option<Ty<'tcx>> {
+        let own: Vec<Ty<'tcx>> = (parts.iter().copied())
+            .filter(|ty| ty.needs_drop(self.tcx, self.typing_env))
+            .collect();
+        match own.as_slice() {
+            [] => None,
+            [one] => Some(*one),
+            _ => Some(Ty::new_tup(self.tcx, &own)),
         }
     }
 

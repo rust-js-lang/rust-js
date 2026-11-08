@@ -276,71 +276,65 @@ function maps(n) {
   report("extend", n, ofMap(m));
   const a = random(span);
   const range = { start: key(a) };
-  let taken = Iterator.from(
-    $mapExtractIf(
+  let taken = $mapExtractIf(
+    m,
+    (k) => k.k % 2 === 0,
+    $treeRange(
       m,
-      (k) => k.k % 2 === 0,
-      $treeRange(
-        m,
-        keyOrd_cmp,
-        false,
-        "BTreeMap",
-        { TAG: "Included", _0: range.start },
-        "Unbounded",
-        false,
-        keyPartialEq_eq,
-        keyPartialOrd_partialCmp,
-      ),
-      true,
+      keyOrd_cmp,
       false,
+      "BTreeMap",
+      { TAG: "Included", _0: range.start },
+      "Unbounded",
+      false,
+      keyPartialEq_eq,
+      keyPartialOrd_partialCmp,
     ),
+    true,
+    false,
   )
     .map(([k]) => k.k)
     .reduce((a, b) => (a + b) >>> 0, 0);
   report(`extract_if ${taken}`, n, ofMap(m));
   const lo = key(random(span));
   const hi = key(random(span));
-  taken = Iterator.from(
-    $mapExtractIf(
+  taken = $mapExtractIf(
+    m,
+    (k) => k.k % 3 !== 1,
+    $treeRange(
       m,
-      (k) => k.k % 3 !== 1,
-      $treeRange(
-        m,
-        keyOrd_cmp,
-        false,
-        "BTreeMap",
-        "Unbounded",
-        { TAG: "Excluded", _0: hi },
-        false,
-        keyPartialEq_eq,
-        keyPartialOrd_partialCmp,
-      ),
-      true,
+      keyOrd_cmp,
       false,
+      "BTreeMap",
+      "Unbounded",
+      { TAG: "Excluded", _0: hi },
+      false,
+      keyPartialEq_eq,
+      keyPartialOrd_partialCmp,
     ),
+    true,
+    false,
   )
     .map(([k]) => k.k)
     .reduce((a, b) => (a + b) >>> 0, 0);
   taken =
     (taken +
-      Iterator.from(
-        $mapExtractIf(
+      $mapExtractIf(
+        m,
+        (_, v) => v.value % 2 === 0,
+        $treeRange(
           m,
-          (_, v) => v.value % 2 === 0,
-          $treeRange(
-            m,
-            keyOrd_cmp,
-            false,
-            "BTreeMap",
-            { TAG: "Included", _0: lo },
-            { TAG: "Included", _0: hi },
-            false,
-            keyPartialEq_eq,
-            keyPartialOrd_partialCmp,
-          ),
-          true,
+          keyOrd_cmp,
           false,
+          "BTreeMap",
+          { TAG: "Included", _0: lo },
+          { TAG: "Included", _0: hi },
+          false,
+          keyPartialEq_eq,
+          keyPartialOrd_partialCmp,
         ),
+        true,
+        false,
       ).reduce((n) => n + 1, 0)) >>>
     0;
   report(`extract_if to an end ${taken}`, n, ofMap(m));

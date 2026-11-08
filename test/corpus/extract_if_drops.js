@@ -93,14 +93,12 @@ function fromMaps() {
   );
   let iter;
   try {
-    iter = Iterator.from(
-      $mapExtractIf(
-        m,
-        (k) => k === 2,
-        $treeRange(m, $cmp, false, "BTreeMap", "Unbounded", "Unbounded", false),
-        false,
-        false,
-      ),
+    iter = $mapExtractIf(
+      m,
+      (k) => k === 2,
+      $treeRange(m, $cmp, false, "BTreeMap", "Unbounded", "Unbounded", false),
+      false,
+      false,
     );
   } catch (error) {
     $cleanup(() => {
@@ -143,13 +141,10 @@ function fromMaps() {
   }
   let gone;
   try {
-    gone = Iterator.from($mapExtractIf(h, (_, l) => l[0] === 40, h, false, false)).reduce(
-      (n, item) => {
-        loudDrop_drop(item[1]);
-        return n + 1;
-      },
-      0,
-    );
+    gone = $mapExtractIf(h, (_, l) => l[0] === 40, h, false, false).reduce((n, item) => {
+      loudDrop_drop(item[1]);
+      return n + 1;
+    }, 0);
   } catch (error) {
     $cleanup(() => {
       for (const item of h.values()) {

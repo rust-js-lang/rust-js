@@ -28,38 +28,42 @@ function $extractIf(v, start, end, f, handle = false) {
 // `[key, value]`.
 // Of a tree whose keys' order can be seen, std's walk (#926): from where
 // its range starts, `$treeRange`'s unsearched range of it, or all of it.
-function $mapExtractIf(m, f, entries, handles, set) {
+function $mapExtractIf(m, f, entries, handles, set, drop) {
   const tree = set ? m.items : m;
+  // Closed once, what it holds dropped, `drop`'s, its predicate then its
+  // range's bounds, as std's `ExtractIf` drops its `pred` then its
+  // `range`, where its owner drops it, or as its consumer steps it to its
+  // end (#945).
+  const steps = (next) => {
+    const it = new $Steps(next, () => drop && $close(it, drop));
+    return it;
+  };
   if (tree?.extractIf !== undefined) {
     const { start, end, partialCmp } = entries === m ? { start: "Unbounded", end: "Unbounded" } : entries;
     const take = set
       ? ([item]) => f(item)
       : (entry) => f(entry[0], handles ? $entryHandle(entry) : entry[1]);
     const walk = tree.extractIf(start, end, partialCmp, take);
-    return Iterator.from({
-      next() {
-        const entry = walk.next();
-        if (entry === undefined) return { done: true, value: undefined };
-        return { done: false, value: set ? entry[0] : [entry[0], entry[1]] };
-      },
+    return steps(() => {
+      const entry = walk.next();
+      if (entry === undefined) return { done: true, value: undefined };
+      return { done: false, value: set ? entry[0] : [entry[0], entry[1]] };
     });
   }
   const each = Array.from(entries)[Symbol.iterator]();
-  return Iterator.from({
-    next() {
-      for (let step = each.next(); !step.done; step = each.next()) {
-        if (set) {
-          if (!f(step.value)) continue;
-          m.delete(step.value);
-          return { done: false, value: step.value };
-        }
-        const [key, value] = step.value;
-        if (!f(key, handles ? $mutGet(m, key) : value)) continue;
-        const taken = m.get(key);
-        m.delete(key);
-        return { done: false, value: [key, taken] };
+  return steps(() => {
+    for (let step = each.next(); !step.done; step = each.next()) {
+      if (set) {
+        if (!f(step.value)) continue;
+        m.delete(step.value);
+        return { done: false, value: step.value };
       }
-      return { done: true, value: undefined };
-    },
+      const [key, value] = step.value;
+      if (!f(key, handles ? $mutGet(m, key) : value)) continue;
+      const taken = m.get(key);
+      m.delete(key);
+      return { done: false, value: [key, taken] };
+    }
+    return { done: true, value: undefined };
   });
 }
