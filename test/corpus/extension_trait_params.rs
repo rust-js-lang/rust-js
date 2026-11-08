@@ -3,9 +3,9 @@
 // `T: Reversed`, is given as it is, as `Reversed`'s impl takes it, and given
 // `Iterator`'s dictionary too where it's stepped, as one bound by std's
 // extension of it is; and a `&mut dyn` of one is given its value, not its
-// pair, as generic code holds it (ADR 0511). Its sort, which a caller
-// bounded by `Sorted` can't give what std's sort picks by `T::Item`, is
-// `extension_trait_sorted_refused`'s (#934).
+// pair, as generic code holds it (ADR 0511). Its sort, given by a caller
+// bounded by `Sorted` what std's sort picks by `T::Item`, is
+// `extension_trait_sorted`'s (#934).
 trait Reversed: Iterator {
     fn reversed(self) -> Vec<Self::Item>
     where

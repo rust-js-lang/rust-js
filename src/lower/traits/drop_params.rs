@@ -341,10 +341,17 @@ fn drop_items_of<'tcx>(
         let self_ty = bound.self_ty();
         let slotted = matches!(self_ty.kind(), ty::Param(_))
             || (alias_of(self_ty).is_some() && items.iter().any(|&t| alias_of(t) == alias_of(self_ty)));
-        if !slotted || has_dictionary_of(tcx, foreign, bound.def_id(), self_ty) {
+        if !slotted {
             continue;
         }
+        // Of a trait with a dictionary, which carries its own associated
+        // types' facts, its supertraits' with none, std's `Iterator` of the
+        // crate's `T: Sorted`, as `T: Sorted + Iterator` would (#934).
+        let dictionary = has_dictionary_of(tcx, foreign, bound.def_id(), self_ty);
         for tr in supertrait_def_ids(tcx, bound.def_id()) {
+            if dictionary && (tr == bound.def_id() || has_dictionary_of(tcx, foreign, tr, self_ty)) {
+                continue;
+            }
             // A supertrait's of no parameter but `Self`, whose arguments are its.
             let args = match tr == bound.def_id() {
                 true => bound.trait_ref.args,

@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "dictionary-supertrait-items-unslotted",
+    breaks:
+      "a function bounded by the crate's trait that extends `Iterator`, `T: Sorted`, has no slot of `<T as Iterator>::Item`, so it can't give `sorted` its sort's facts: refused (#934)",
+    file: "src/lower/traits/drop_params.rs",
+    find: "            if dictionary && (tr == bound.def_id() || has_dictionary_of(tcx, foreign, tr, self_ty)) {\n",
+    replace: "            if dictionary {\n",
+    tests: ["test/corpus.test.ts", "-t", "^extension_trait_sorted.rs$"],
+  },
+  {
     name: "item-drop-of-made-iterator-itself",
     breaks:
       "an associated type's drop, of the crate's iterator generic code has as the JS iterator its dictionary made, drops that JS iterator as the struct: `drop at undefined` (#978)",
@@ -55,8 +64,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an associated type of a trait whose dictionary has its drop takes a drop of its own too, `dropZOffset?.(offset)` where its dictionary's `ZZone.$dropOffset?.(offset)` drops it",
     file: "src/lower/traits/drop_params.rs",
-    find: "        if !slotted || has_dictionary_of(tcx, foreign, bound.def_id(), self_ty) {\n",
-    replace: "        if !slotted {\n",
+    find: "        let dictionary = has_dictionary_of(tcx, foreign, bound.def_id(), self_ty);\n",
+    replace: "        let dictionary = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_type_drops.rs$"],
     snapshots: true,
   },

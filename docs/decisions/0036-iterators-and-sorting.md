@@ -415,10 +415,11 @@ A type parameter's items are sorted as its caller's type picks: `kind` and
 `size` are its caller's, `TStableSort` (a new type fact) and `TSize`, as
 the unstable sort's `TSort` is (ADR 0471). A type whose layout is known
 though it holds one behind a reference, `(&T, usize)`, is its own. A
-generic caller bounded by the crate's trait that extends `Iterator` can't
-give them of `T::Item` (#934), as it couldn't the unstable sort's: refused,
-naming #934 (`extension_trait_sorted_refused`; `extension_trait_params`
-keeps its dictionaries' cases with a `reverse()` in the sort's place).
+generic caller bounded by the crate's trait that extends `Iterator`, `T:
+Sorted`, gives them of `T::Item`: a supertrait's associated types of no
+dictionary, std's `Iterator`'s, are its slots, as they would be of `T:
+Sorted + Iterator` (`drop_items_of`, #934; it was refused, as the unstable
+sort's was). Corpus `extension_trait_sorted`.
 
 `sort_by_cached_key` sorts its `(key, index)` pairs with std's unstable sort
 where the keys' order can be seen, `$sortUnstable` of the pairs by the
