@@ -193,6 +193,7 @@ export const parts: Part[] = [
     why: "every corpus case compiled twice more, about 25 CPU-minutes: the corpus's own snapshots compare each push's one compile",
   },
   { setting: "MUT_REF_MATRIX", value: "all", runs: "nightly", by: ".github/workflows/nightly.yml", why: "all 210 programs: check:fast runs twelve where a `&mut` changes" },
+  { setting: "METAMORPHIC", value: "all", runs: "nightly", by: ".github/workflows/nightly.yml", why: "every corpus case's every rewrite, some 9,000 programs of each build: a push runs one case in 128 (#939)" },
   { setting: "NONE_MATRIX", value: "all", runs: "nightly", by: ".github/workflows/nightly.yml", why: "all 580 programs: check:fast runs six where a `None`'s form changes" },
   { setting: "NEIGHBOURS", value: "all", runs: "nightly", by: ".github/workflows/nightly.yml", why: "every group of the day's seed, some 120 crates of the corpus's cases: a push runs seed 0's first two and each listed pair (#853)" },
   { setting: "RUST_JS_DISTRIBUTION", value: "dist", runs: "nightly", by: "scripts/qualify.ts", why: "a release's packaged binary, which only qualification builds" },

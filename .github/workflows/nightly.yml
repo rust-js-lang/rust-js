@@ -180,6 +180,40 @@ jobs:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun test --timeout=600000 test/determinism.test.ts
 
+  # The metamorphic net (#939, ADR 1104): every corpus case rewritten each
+  # way scripts/metamorph keeps its meaning, in both builds against native
+  # Rust, but the rewrites test/metamorphic-known.txt lists; each push runs
+  # one case in 128.
+  metamorphic:
+    name: metamorphic net
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run its 4 parts
+        env:
+          METAMORPHIC: all
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: |
+          pids=()
+          for part in 1 2 3 4; do
+            RUST_JS_CASES=$part/4 bun test --timeout=1800000 test/metamorphic.test.ts > "metamorphic-$part.log" 2>&1 &
+            pids+=($!)
+          done
+          failed=0
+          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
+          cat metamorphic-*.log
+          exit $failed
+
   # The `None` matrix (#855, ADR 1096): an `Option` of each payload held in
   # each kind of place, each with its `NoneForm`, written each way and read
   # each way, in both builds, runs as native Rust does but the programs

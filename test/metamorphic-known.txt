@@ -1,0 +1,147 @@
+// The metamorphic net's rewrites (#939, test/metamorphic.ts) that don't run
+// as native Rust does yet, each under its issue, `#<issue> <title>`: a line a
+// rewrite of a case, its builds, `plain`, `std` or both, the rewrite, and the
+// case. The nightly runs each, so the list only shrinks: one that runs as
+// Rust does is taken off. A rewrite that goes wrong for another reason is a
+// line under another issue.
+
+#966 P0: a type parameter's value reached through a trait's method, not a parameter, is stepped without its dictionaries (`impl MetamorphIs<T>`)
+plain std impl-owned adapter_drops.rs
+plain std impl-owned adapter_of_a_value_given_as_it_is.rs
+plain std impl-owned adapters_given_to_generic_backs.rs
+plain std impl-owned associated_double_ended.rs
+plain std impl-owned back_predicate_unwinds.rs
+plain std impl-owned back_steps.rs
+plain std impl-owned by_ref_lends.rs
+std impl-owned cloned_items_from_both_ends.rs
+plain std impl-owned closing_maps_given_counted.rs
+plain std impl-owned closure_drops.rs
+plain std impl-owned closures_made_and_folded.rs
+plain std impl-owned collect_asks_hint_as_it_grows.rs
+plain std impl-owned copied_clone_of_its_own.rs
+plain std impl-owned copied_given_len.rs
+std impl-owned copied_given_to_generic_backs.rs
+plain std impl-owned copied_iterator_defaults.rs
+plain std impl-owned cycled_iterators.rs
+plain std impl-owned default_of_a_non_blanket_impl_steps_its_self.rs
+plain std impl-owned enumerate_counted_by_generic_code.rs
+std impl-owned enumerate_of_known_length.rs
+plain std impl-owned exact_size_len.rs
+plain std impl-owned extension_bound_iterators.rs
+plain std impl-owned extension_trait_params.rs
+plain std impl-owned filter_ends.rs
+plain impl-owned filters_held_double_ended.rs
+plain std impl-owned flatten_count_takes_each_inner_count.rs
+plain std impl-owned flatten_from_both_ends.rs
+plain std impl-owned fn_item_converting_argument.rs
+plain std impl-owned fn_pointer_eq.rs
+plain std impl-owned fuse_enumerate_ends.rs
+plain std impl-owned fused_iterators.rs
+plain std impl-owned generic_adapter_source_drops.rs
+plain std impl-owned generic_chain_of_into.rs
+plain std impl-owned generic_collect_grows_by_its_items_size.rs
+plain std impl-owned generic_double_ended.rs
+plain std impl-owned generic_folds_unwind.rs
+plain std impl-owned generic_for_over_own_iterator.rs
+plain std impl-owned generic_iterator_items.rs
+plain std impl-owned generic_rev_nths_its_own_back.rs
+plain std impl-owned given_iterator_extensions.rs
+plain std impl-owned held_adapters_of_by_ref.rs
+std impl-owned held_filter_map_reversed.rs
+plain std impl-owned held_fuse_back.rs
+plain std impl-owned held_fuse_back_drops.rs
+plain std impl-owned hint_through_a_given_value.rs
+plain std impl-owned impl_fn_mut_lent.rs
+plain std impl-owned into_iter_of_items.rs
+plain std impl-owned iterables_given_to_generics.rs
+plain std impl-owned iterator_adapters.rs
+plain std impl-owned iterator_read_as_itself.rs
+plain std impl-owned iterator_written_through.rs
+plain std impl-owned len_made_in_place.rs
+plain std impl-owned lengths_and_backs_given_on.rs
+plain std impl-owned nth_passes_a_slice_or_each.rs
+plain impl-owned own_back_methods_given_dictionaries.rs
+plain std impl-owned own_back_through_adapters.rs
+plain std impl-owned own_fold_unwind_given_on.rs
+plain std impl-owned own_nth_through_adapters.rs
+plain std impl-owned own_steps_a_type_parameter_may_reach.rs
+plain std impl-owned owned_maps_asked_their_length.rs
+plain std impl-owned range_hints_given.rs
+plain std impl-owned range_steps_anywhere.rs
+plain std impl-owned range_values.rs
+plain std impl-owned references_given_to_generics.rs
+plain std impl-owned result_given_as_items.rs
+plain std impl-owned rev_given_to_generic_code.rs
+plain std impl-owned rev_made_knowing_its_back.rs
+plain std impl-owned rfold_and_rev_close_what_they_step.rs
+plain std impl-owned std_enumerate.rs
+plain std impl-owned std_fuse.rs
+plain std impl-owned std_inspect.rs
+plain std impl-owned std_map.rs
+plain std impl-owned std_peekable.rs
+plain std impl-owned step_by_folded_from_its_back_as_std.rs
+plain std impl-owned unrun_function_drops.rs
+plain std impl-owned yielded_item_drops.rs
+
+#969 P0: a reference parameter taken as `&impl` of an identity trait (`&impl MetamorphGet<T>`)
+plain std impl-ref blanket_unsized_impl.rs
+plain std impl-ref by_ref_lends.rs
+plain std impl-ref exact_size_len.rs
+plain std impl-ref fn_compared_by_its_pointer.rs
+plain std impl-ref function_given_for_a_mut_param.rs
+plain std impl-ref into_iter_of_ref_param.rs
+plain std impl-ref lent_iterators.rs
+plain std impl-ref mut_ref_escapes.rs
+plain std impl-ref next_back_generic.rs
+plain std impl-ref nth_through_generics.rs
+plain std impl-ref option_slot_iterators.rs
+plain std impl-ref self_given_on_as_into_iter.rs
+plain std impl-ref transparent_transmute.rs
+plain std impl-ref try_for_each.rs
+
+#968 P0: a write through a `&mut dyn` of an identity trait read back as `&mut T` is lost
+plain std dyn-ref cell_from_mut_generic.rs
+plain std dyn-ref clone_from.rs
+plain std dyn-ref flattened_state_got_mut.rs
+plain std dyn-ref generic_associated_types.rs
+plain std dyn-ref generic_mut_moved_out.rs
+plain std dyn-ref generic_mut_moved_out_other_ways.rs
+plain std dyn-ref generic_mut_ref.rs
+plain std dyn-ref generic_mut_written_whole.rs
+plain std dyn-ref in_place_cell_replaced.rs
+plain std dyn-ref into_iter_of_ref_param.rs
+plain std dyn-ref mut_arg_before_its_index_changes.rs
+plain std dyn-ref mut_method_pointer_replaced.rs
+plain std dyn-ref mut_ref_reborrow_reassigned.rs
+plain std dyn-ref nullable_written_through_borrows.rs
+plain std dyn-ref range_defaults.rs
+plain std dyn-ref thread_local_lazy_by_field.rs
+
+#967 P0: a `let` boxed, `Box::new(e)`, each use read through it, `(*x)`
+plain std boxed adapters_over_own_next_that_panics.rs
+plain std boxed alias_reads.rs
+plain std boxed assignment_order.rs
+plain std boxed cache_node_walk.rs
+plain std boxed captured_copy_written_whole.rs
+plain std boxed catch_unwind_drops.rs
+plain std boxed closure_clone_cell.rs
+plain std boxed conditional_move_drops.rs
+plain std boxed contains_guarded_set_again.rs
+plain std boxed drop_partial.rs
+plain std boxed else_break_ends_loop.rs
+plain std boxed given_last_unwinds.rs
+plain std boxed kept_element_ref.rs
+plain std boxed mut_ref_local.rs
+plain std boxed nullable_written_through_borrows.rs
+plain std boxed object_made_past_a_drop.rs
+plain std boxed own_fold_unwind_given_on.rs
+plain std boxed own_steps_behind_adapters_unwind.rs
+plain boxed owned_maps_asked_their_length.rs
+plain std boxed panic_in_own_next_drops.rs
+plain std boxed parts_close_past_a_panic.rs
+plain std boxed scoped_drops_cross.rs
+plain boxed std_rev.rs
+plain std boxed struct_update_drops.rs
+plain std boxed untagged_enums.rs
+plain std boxed unwrap_dropping.rs
+plain std boxed wrapping_assign_of_a_copy.rs

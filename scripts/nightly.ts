@@ -76,6 +76,15 @@ export const jobs: Record<string, Part[]> = {
     cores: 3,
     timeout: 20 * minutes,
   })),
+  // Every corpus case rewritten each way that keeps its meaning (#939, ADR
+  // 1104).
+  metamorphic: parts("metamorphic", cores, (i) => ({
+    cmd: ["bun", "test", "--timeout=1800000", "test/metamorphic.test.ts"],
+    env: { ...compiler, METAMORPHIC: "all", RUST_JS_CASES: `${i}/${cores}` },
+    after: ["build"],
+    cores: 1,
+    timeout: 30 * minutes,
+  })),
   // Each `Option` place's form, written each way and read each way, all 580
   // programs (#855, ADR 1096).
   nones: parts("nones", 4, (i) => ({

@@ -1,0 +1,14 @@
+# The metamorphic net's rewriter (#939, test/metamorphic.ts): a corpus case
+# rewritten in a way that keeps its meaning wherever rustc still compiles
+# it. Its own crate, apart from the compiler's, built into
+# target/metamorph by the harness.
+[package]
+name = "metamorph"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+syn = { version = "2", features = ["full", "visit", "visit-mut", "printing", "parsing"] }
+quote = "1"
+proc-macro2 = "1"
