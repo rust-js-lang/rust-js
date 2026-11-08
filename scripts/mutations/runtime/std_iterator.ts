@@ -147,4 +147,13 @@ export const mutations: Mutation[] = [
     replace: "  const taking = (method, run) => (steps.takes?.includes(method) ? $takenBy(it, run) : run());\n",
     tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
   },
+  {
+    name: "std-struct-count-not-passed-on",
+    breaks:
+      "std's compiled `FlatMap` held, stepped from its back, then skipped, counts by `next`, not its compiled `count`, each inner iterator's own, which std's `Skip::count` asks of its source (#1048)",
+    file: "src/runtime/std_iterator.js",
+    find: '  if (steps.count !== undefined) $owns(it, "count");\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
+  },
 ];

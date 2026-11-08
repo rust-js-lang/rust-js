@@ -58,6 +58,10 @@ function $stdIterator(struct, steps) {
   });
   if (steps.nth !== undefined) $owns(it, "nth");
   if (steps.last !== undefined) $owns(it, "last");
+  // Its `count`, std's body, a flatten's of each inner iterator's own, which
+  // what holds it passes on, a `skip`'s, as std's `Skip::count` asks its
+  // source's: `ownCount` (#1048).
+  if (steps.count !== undefined) $owns(it, "count");
   it.knowing = (back, len, rfold, nthBack, tryRfold) => {
     if (back !== undefined) it.back = () => step(back(it));
     if (len !== undefined) it.len = () => len(it);

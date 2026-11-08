@@ -2,7 +2,12 @@
 
 import {
   flatMapDoubleEndedIterator_nextBack,
+  flatMapDoubleEndedIterator_rfold,
+  flatMapDoubleEndedIterator_tryRfold,
+  flattenDoubleEndedIterator_nextBack,
+  fuseDoubleEndedIterator_nextBack,
   iterator_flatMap,
+  iterator_flatten,
   iterator_fuse,
 } from "@rust-js/std/iter.js";
 import {
@@ -19,6 +24,7 @@ import {
   $lazyRange,
   $next,
   $nextBack,
+  $tryOf,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -110,7 +116,7 @@ function skippedFromItsBack(it) {
 }
 
 function main() {
-  const ownIntoIterator = {
+  const intoIterator = {
     intoIter: (items) => items,
     IntoIterIterator: () => ({ next: ownIterator_next, count: ownIterator_count }),
   };
@@ -157,7 +163,7 @@ function main() {
           $iter([2, 3]),
           (value) => [value],
           { next: $next },
-          ownIntoIterator,
+          intoIterator,
           true,
           undefined,
           false,
@@ -198,7 +204,7 @@ function main() {
     $iter([2, 3, 4]),
     (value) => [value],
     { next: $next },
-    ownIntoIterator,
+    intoIterator,
     true,
     undefined,
     false,
@@ -208,7 +214,7 @@ function main() {
     it,
     { next: $next },
     { next_back: $nextBack },
-    ownIntoIterator,
+    intoIterator,
     { next_back: ownDoubleEndedIterator_nextBack },
     true,
     false,
@@ -261,6 +267,112 @@ function main() {
       ),
     )}`,
   );
+  // Std's struct held, stepped from its back, then skipped: its own
+  // `count`, which the `skip`'s asks (#1048).
+  it = iterator_flatMap(
+    $iter([2, 3, 4]),
+    (value) => [value],
+    { next: $next },
+    intoIterator,
+    true,
+    undefined,
+    false,
+  );
+  const value$2 = flatMapDoubleEndedIterator_nextBack(
+    it,
+    { next: $next },
+    { next_back: $nextBack },
+    intoIterator,
+    { next_back: ownDoubleEndedIterator_nextBack },
+    true,
+    false,
+  );
+  console.log(`held back ${value$2 == null ? "None" : `Some(${value$2})`}`);
+  console.log(`held back skipped ${$count(it.drop(1))}`);
+  it = iterator_flatten(
+    $iter([[2], [3], [4]]),
+    { next: $next },
+    intoIterator,
+    true,
+    undefined,
+    false,
+  );
+  const value$3 = flattenDoubleEndedIterator_nextBack(
+    it,
+    { next_back: $nextBack },
+    intoIterator,
+    { next: ownIterator_next, count: ownIterator_count },
+    { next_back: ownDoubleEndedIterator_nextBack },
+    true,
+    false,
+  );
+  console.log(`held back ${value$3 == null ? "None" : `Some(${value$3})`}`);
+  console.log(`held back skipped ${$count(it.drop(2))}`);
+  it = iterator_fuse(
+    iterator_flatMap(
+      $iter([2, 3]),
+      (value) => [value],
+      { next: $next },
+      intoIterator,
+      true,
+      undefined,
+      false,
+    ),
+    { next: $next, fold: $foldOf, count: $count },
+    true,
+  );
+  const value$4 = fuseDoubleEndedIterator_nextBack(
+    it,
+    {
+      next_back: (iterator) =>
+        flatMapDoubleEndedIterator_nextBack(
+          iterator,
+          { next: $next },
+          { next_back: $nextBack },
+          intoIterator,
+          { next_back: ownDoubleEndedIterator_nextBack },
+          true,
+          false,
+        ),
+      rfold: (iterator, init, f, unwind, ends) =>
+        flatMapDoubleEndedIterator_rfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          intoIterator,
+          { next_back: ownDoubleEndedIterator_nextBack },
+          false,
+          undefined,
+          undefined,
+          undefined,
+          unwind,
+          ends,
+        ),
+      tryRfold: (iterator, init, f, broke, unwind, ends) =>
+        flatMapDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          intoIterator,
+          { next_back: ownDoubleEndedIterator_nextBack },
+          $tryOf(broke),
+          true,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          unwind,
+          ends,
+        ),
+    },
+    true,
+  );
+  console.log(`fused back ${value$4 == null ? "None" : `Some(${value$4})`}`);
+  console.log(`fused back skipped ${$count(it.drop(1))}`);
   // Std's own `count` of each inner, `Map`'s of the crate's, which isn't
   // the crate's: each stepped by `next`.
   console.log(
@@ -341,7 +453,7 @@ function main() {
         }),
     ).reduce((n) => n + 1, 0)}`,
   );
-  const value$2 = Array.from(
+  const value$5 = Array.from(
     $flatMap(
       $closing($iter([kept(42, 2), kept(43, 1)]), (intoIter) => {
         for (const item of intoIter) {
@@ -354,7 +466,7 @@ function main() {
         }),
     ),
   ).at(-1);
-  console.log(`kept last ${value$2 == null ? "None" : `Some(${value$2})`}`);
+  console.log(`kept last ${value$5 == null ? "None" : `Some(${value$5})`}`);
   let r = $catchUnwind(() =>
     $count(
       $flatMap($closing($iter([[20], [13], [21]]), $dropEach(dDrop_drop)), (item) =>

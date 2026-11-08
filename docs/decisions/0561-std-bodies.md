@@ -478,3 +478,19 @@ already. It's gone: what's asked is `array_source(..)` or
 `size-hint-of-projection-refused`, `compiled-iterator-size-hint-refused`
 and `held-size-hint-refused`, mutate `held_hint_known` now, in
 `iterators/knowing.rs`. Nothing that runs changes (case N).
+
+## Amendment: a compiled iterator's own `count` is passed on (2026-11-09, #1048)
+
+`let mut it = v.into_iter().flat_map(Own); it.next_back(); it.skip(1).count()`
+counted by `next`, where native Rust's `Skip::count` asks its source's
+`count`, the compiled `FlattenCompat::count`, which asks each inner
+iterator's own, the crate's `Own::count`, printing what it prints (native
+`own count 1`, `own count 3`, `own count 3`, JS none). `$stdIterator`
+forwarded the compiled `count` but didn't say it's its own, as it does of
+its `nth` and `last`, so `$skipping` (which passes a source's `count` on
+only where it's `ownCount`) stepped it. **A compiled iterator with a
+compiled `count` owns it, `$owns(it, "count")`**, as a `$flattenEnds` does
+already. ADR 0262's case: none, the same count by the body std runs. The
+corpus's JS is the same. Held by `flatten_count_takes_each_inner_count.rs`,
+of a held `flat_map`'s, `flatten()`'s and `fuse()`'s, and the mutation
+`std-struct-count-not-passed-on`.

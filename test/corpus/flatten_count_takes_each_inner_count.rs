@@ -4,7 +4,7 @@
 // default, which steps each by `next` (#736): made in place, given to
 // generic code, held in a variable, fused, skipped and stepped part-way
 // first, from both ends too, its back inner's own `count` last, stepped
-// from its back then skipped; of inner
+// from its back then skipped, std's struct held so too (#1048); of inner
 // iterators that hold what has a destructor, dropped as
 // each is counted, the crate's iterator with a destructor and std's
 // `count` and `last` too, whose drop is its value's (#766); and one whose
@@ -122,6 +122,17 @@ fn main() {
     // Stepped from its back, then skipped: each inner's own `count` still,
     // as a `skip`'s asks its source's.
     println!("back skipped {}", skipped_from_its_back(vec![2u32, 3, 4].into_iter().flat_map(Own)));
+    // Std's struct held, stepped from its back, then skipped: its own
+    // `count`, which the `skip`'s asks (#1048).
+    let mut it = vec![2u32, 3, 4].into_iter().flat_map(Own);
+    println!("held back {:?}", it.next_back());
+    println!("held back skipped {}", it.skip(1).count());
+    let mut it = vec![Own(2), Own(3), Own(4)].into_iter().flatten();
+    println!("held back {:?}", it.next_back());
+    println!("held back skipped {}", it.skip(2).count());
+    let mut it = vec![2u32, 3].into_iter().flat_map(Own).fuse();
+    println!("fused back {:?}", it.next_back());
+    println!("fused back skipped {}", it.skip(1).count());
     // Std's own `count` of each inner, `Map`'s of the crate's, which isn't
     // the crate's: each stepped by `next`.
     println!("mapped {}", vec![2u32, 3].into_iter().flat_map(|n| Own(n).map(|x| x + 1)).count());
