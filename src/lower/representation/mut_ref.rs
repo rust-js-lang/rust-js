@@ -14,9 +14,11 @@ use rustc_span::def_id::DefId;
 use serde_json::{Value, json};
 
 /// What a `&mut` to a value of some type is in JS (ADR 1086). Each
-/// operation on a `&mut` matches it, so a form an operation doesn't say
-/// what it does of is a compile error, not a silent choice.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+/// operation on a `&mut` asks it by a method of its own here, whose match
+/// names every form, so a form an operation doesn't say what it does of is
+/// a compile error, not a silent choice. Not comparable: a site that asked
+/// `== MutRefForm::Box` chose for every other form, a new one too (#821).
+#[derive(Clone, Copy, Debug)]
 pub(in crate::lower) enum MutRefForm {
     /// A box, `{ value }`, of a value JS can't change in place: a number,
     /// a `String`, an enum with a fieldless variant, a counted `Rc`, a
@@ -49,6 +51,18 @@ impl MutRefForm {
         match self {
             MutRefForm::Box | MutRefForm::GenericBox => true,
             MutRefForm::Object | MutRefForm::Guard | MutRefForm::GivenAsItIs | MutRefForm::Itself => false,
+        }
+    }
+
+    /// Generic code's box, `{ value }` of a type parameter (ADR 0099), which
+    /// a caller of an object gives an in-place cell of it, `$cellOf`, and a
+    /// dictionary's entry adapts (ADR 0454).
+    pub(in crate::lower) fn is_generic_box(self) -> bool {
+        match self {
+            MutRefForm::GenericBox => true,
+            MutRefForm::Box | MutRefForm::Object | MutRefForm::Guard | MutRefForm::GivenAsItIs | MutRefForm::Itself => {
+                false
+            }
         }
     }
 

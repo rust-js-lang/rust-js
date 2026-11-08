@@ -1,7 +1,8 @@
 # 1086. A `&mut`'s JS form is `MutRefForm`'s
 
 Status: Accepted (2026-11-04, steps 1 and 2 of 3; step 3 begun, its
-first operation, a move out, `moved_out`). Amends
+first operation, a move out, `moved_out`; 2026-11-08, every site asks
+the form by its methods, #821). Amends
 [0099](0099-mut-references.md) and [0454](0454-a-mut-given-as-a-type-parameter.md):
 what a `&mut` to a type is, a box, a generic code's box, the object, a
 guard's object, a value given as it is or the value itself, is one answer,
@@ -232,6 +233,25 @@ take one too. The other 70 run as native Rust does.
   are byte-identical, and `generic_mut_lent_by_std.rs` holds each. Found
   refactoring the sites into the form's methods (#821). Case (ADR 0262):
   results change, so Rust's.
+- **#821, every site asks the form by its methods.** Some 30 sites
+  outside `representation/mut_ref.rs` compared the form, `==
+  MutRefForm::Box` or `== MutRefForm::GenericBox`, each choosing for every
+  other form, a new one too, by its silence; the 17 of the first were
+  #1007. The rest, eight in `mut_refs.rs` of what generic code and its
+  dictionaries adapt, ask `is_generic_box`, a method beside `is_cell`,
+  `is_the_object`, `is_the_value` and `written_in_place`, each a match
+  that names every form; `traits/impls.rs` asks `is_cell` by a closure.
+  `MutRefForm` isn't comparable any more, and
+  `test/architecture-mut-refs.test.ts` refuses a form named outside its
+  module, but the one site that makes one, a trait's dictionary entry's
+  adapted parts, generic code's box whatever its impl's
+  (`traits.rs`), listed with why, and a method of the form's own whose
+  match has a `_` arm, a `matches!` or an `==`. Byte-identical: the
+  corpus, `METAMORPHIC=all` and every program of the `&mut` and `None`
+  matrices. What's left of step 3 is the operation-level forms, the
+  get/set handle of `borrow_outlives_call`, `$cellOf`, the flattened
+  handle and the copy-back's `$assign` or `=`, made one method,
+  `given_to(callee, i)`.
 
 ## Step 4: the matrix grown to the space (2026-11-08, #855)
 

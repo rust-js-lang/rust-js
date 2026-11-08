@@ -168,7 +168,7 @@ after it.
 | A readability rewrite moves, repeats or drops a read or a drop (`readability-passes` × `unsound optimization`) | 116 (116) | Tidy's stage differential, c4d2fa538 (10-25), didn't stop it: 31.5 a week to 22.1. ADR 1087's on/off oracle (2f4accd34) and ADR 1088's `js::Writes` (2bda1585a), 11-04 | 37.5 | 4.7, 2 fixes in 3 days: #779 and #756, neither an unsound rewrite | 0 | **Eliminated** |
 | A readability change regresses what worked | 37 regression fixes | ADR 1087, as above | 9 on 11-02, 5 on 11-03, 8 on 11-04 | 1 on 11-05, none since | 0 | **Eliminated** |
 | A `.d.ts` that says other than the JS does (`declarations` × `duplicated authority`) | 36 (16) | ADR 1091's `JsSignature` (bc4596c04), and generated TypeScript callers (15e262843), 11-04 | 6.5 | 0 | 1, #842: a representation gap, not two deciders | **Eliminated** |
-| One `&mut` with several JS forms (`mut-refs`, wrong answers) | 85 (85) | ADR 1086's `MutRefForm` (b96990796) and the `&mut` matrix (c84b56797), 11-04 | 25.0 | 2.3 | 1, #786 | **Shrinking**; step 3 is #821 |
+| One `&mut` with several JS forms (`mut-refs`, wrong answers) | 85 (85) | ADR 1086's `MutRefForm` (b96990796) and the `&mut` matrix (c84b56797), 11-04 | 25.0 | 2.3 | 1, #786 | **Shrinking**; step 3: every site asks the form by its methods (#821, which found #1007), its `given_to` left |
 | A module's loads and specifiers (`modules-linking`) | 66 (22) | Loads symbolic until output planning, relinked: e0d5b7077, 44b3e851f, 11-04 | 20.5 | 2.3 | 0 of loads; 7 of the area were dev-loop | **Shrinking** |
 | An adapter doesn't pass a step on (`iterators` × `protocol gap`, no panic) | 85 (79) | ADR 1089's `$forward` (5985f5dbe) and `OwnStep` catalog (0e82370f6), 11-04; ADR 1092's contract and conformance table (0ed9220b8, 85b1ad006), 11-05; `$owns` (331296c3b), 11-07 | 33.0 | 25.7 after 11-04, 17.5 after 11-05 | 14 after 11-04, mostly the new table's finds | **Still active**, draining: protocol-gap issues filed 16, 16 and 11 a day from 11-04, 1 on 11-07 so far |
 | Integers, floats, chars and ranges (`ranges-numbers`, wrong answers) | 60 (60) | Boundary matrices, 22d1e8a8a (10-05) | 7.9 | 10.6 over the next month; 4 in the week of 11-02 | 1 wrong answer since 11-03, #657 | **Shrinking**, by coverage rather than one refactor |
@@ -214,8 +214,9 @@ filed are listed with their issue.
 
 ### Already filed
 
-- **Finish `MutRefForm`'s operations exhaustive** (#821), with generated
-  `MutRefForm` × operation and `NoneForm` × writer × reader matrices (#855).
+- **Finish `MutRefForm`'s operations exhaustive** (#821, done: every site asks
+  the form by its methods; the operation-level `given_to` left, ADR 1086), with
+  generated `MutRefForm` × operation and `NoneForm` × writer × reader matrices (#855).
 - **The combinators' emitted unwinding onto `$unwinds`** (#860), and the
   std-shaped adapters' state as one explicit machine (#871): the panic and
   lifecycle clusters' remaining deciders.

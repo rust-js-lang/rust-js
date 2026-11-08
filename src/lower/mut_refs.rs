@@ -321,12 +321,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty = inner;
         }
         let pointee = match *ty.kind() {
-            ty::Ref(_, pointee, Mutability::Mut)
-                if self.mut_ref_form_in(pointee, param_env) == MutRefForm::GenericBox =>
-            {
+            ty::Ref(_, pointee, Mutability::Mut) if self.mut_ref_form_in(pointee, param_env).is_generic_box() => {
                 self.instantiated(pointee, generic_args)
             }
-            ty::Param(_) if self.mut_ref_form_in(ty, param_env) == MutRefForm::GenericBox => {
+            ty::Param(_) if self.mut_ref_form_in(ty, param_env).is_generic_box() => {
                 match *self.instantiated(ty, generic_args).kind() {
                     _ if self.given_as_the_value(def_id, ty, generic_args) => return None,
                     ty::Ref(_, pointee, Mutability::Mut) => pointee,
@@ -422,7 +420,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .enumerate()
             .map(|(at, passed)| {
                 matches!(*passed.kind(), ty::Ref(_, pointee, Mutability::Mut)
-                    if self.mut_ref_form_in(pointee, param_env) == MutRefForm::GenericBox
+                    if self.mut_ref_form_in(pointee, param_env).is_generic_box()
                         && !self.mut_ref_form(self.instantiated(pointee, generic_args)).is_cell())
                     && !given.is_some_and(|given| self.takes_box_itself(given, at))
             })
@@ -446,7 +444,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .skip_binder();
         sig.inputs().get(at).is_some_and(|&input| {
             matches!(*input.kind(), ty::Ref(_, pointee, Mutability::Mut)
-                if self.mut_ref_form_in(pointee, self.tcx.param_env(id)) == MutRefForm::GenericBox)
+                if self.mut_ref_form_in(pointee, self.tcx.param_env(id)).is_generic_box())
         })
     }
 
@@ -474,12 +472,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             at = inner;
         }
         match *at.kind() {
-            ty::Ref(_, pointee, Mutability::Mut)
-                if self.mut_ref_form_in(pointee, param_env) == MutRefForm::GenericBox =>
-            {
-                None
-            }
-            ty::Param(_) if self.mut_ref_form_in(at, param_env) == MutRefForm::GenericBox => None,
+            ty::Ref(_, pointee, Mutability::Mut) if self.mut_ref_form_in(pointee, param_env).is_generic_box() => None,
+            ty::Param(_) if self.mut_ref_form_in(at, param_env).is_generic_box() => None,
             _ => Some(ty),
         }
     }
@@ -497,7 +491,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> Within<'tcx> {
         let leaf = |ty: Ty<'tcx>| {
             matches!(*ty.kind(), ty::Ref(_, pointee, Mutability::Mut)
-                if self.mut_ref_form_in(pointee, env) == MutRefForm::GenericBox)
+                if self.mut_ref_form_in(pointee, env).is_generic_box())
         };
         let form = |given: Ty<'tcx>| self.mut_ref_form(given);
         within_shape(self.tcx, (declared, actual), (&leaf, &form), &|payload| {
@@ -678,7 +672,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Some(here);
                 }
                 if let ty::Ref(_, pointee, Mutability::Mut) = *part.kind()
-                    && self.mut_ref_form_in(pointee, param_env) == MutRefForm::GenericBox
+                    && self.mut_ref_form_in(pointee, param_env).is_generic_box()
                     && !self.mut_ref_form(self.instantiated(pointee, generic_args)).is_cell()
                 {
                     return Some(Ty::new_mut_ref(

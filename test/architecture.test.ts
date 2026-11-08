@@ -1197,32 +1197,6 @@ test("a std call's kind is chosen of what it reads alone", () => {
   expect(mutable).toEqual([]);
 });
 
-// What a `&mut` to a type is in JS, a box, a generic code's box, the
-// object, a guard's object, a value given as it is or the value itself, is
-// `mut_ref_form`'s one answer, a `MutRefForm` each operation matches (ADR
-// 1086). The predicates it's made of are its module's alone:
-// `Cell::from_mut` asked `is_boxable` where a parameter asked
-// `is_cell_pointee`, which disagree on a type parameter (#614), and
-// `retain_mut` in generic code asked `is_boxable` alone, giving a closure
-// that writes `x.value` the item itself (#131). A site that asks for a
-// concrete `Box` alone, not a generic one, gives a type parameter's `&mut`
-// another form than its parameter's, which generic code reads as a box:
-// 17 such std calls gave it the value, and a write through threw (#1007).
-// None does now.
-test("a `&mut`'s JS form is mut_ref_form's alone", () => {
-  const owner = "src/lower/representation/mut_ref.rs";
-  const lowering = files("src/lower").filter((file) => file.endsWith(".rs") && file !== owner);
-  const asking = lowering.flatMap((file) =>
-    read(file).split("\n")
-      .filter((line) => /\b(?:fn (?:is_boxable|is_generic_boxed|is_cell_pointee)\(|\.(?:is_boxable|is_generic_boxed|is_cell_pointee|written_in_place)\((?!\)))/.test(line) && !/\bstorage\s*\.written_in_place\(/.test(line))
-      .map((line) => `${file}: ${line.trim()}`));
-  expect(asking).toEqual([]);
-  const boxAlone = Object.fromEntries(lowering
-    .map((file) => [file, (read(file).match(/\bMutRefForm::Box\b/g) ?? []).length] as const)
-    .filter(([, count]) => count > 0));
-  expect(boxAlone).toEqual({});
-});
-
 // What a function's JS takes and gives is its `JsSignature`, lowering's
 // (ADR 1091): every declaration path prints it, and none decides on its
 // own which Rust parameters a function takes, what it takes after them or

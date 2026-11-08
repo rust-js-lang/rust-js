@@ -831,7 +831,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(imp) => {
                 let env = default_typing_env(self.tcx, imp, item, instance_args);
                 self.param_form_of(item, instance_args, env.param_env, i)
-                    .is_some_and(crate::lower::representation::MutRefForm::is_cell)
+                    .is_some_and(|form| form.is_cell())
             }
             None => self.param_is_box(method, i),
         };

@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
       "`twice(&mut c)` of a generic `&mut T` gives the object `c`, where `twice` reads a box",
     file: "src/lower/representation/mut_ref.rs",
     find: "        self.param_form(fn_id, i).is_some_and(MutRefForm::is_cell)\n",
-    replace: "        self.param_form(fn_id, i) == Some(MutRefForm::Box)\n",
+    replace: "        matches!(self.param_form(fn_id, i), Some(MutRefForm::Box))\n",
     tests: ["test/corpus.test.ts", "-t", "generic_mut_ref"],
   },
   {
@@ -137,7 +137,7 @@ export const mutations: Mutation[] = [
       "a `&mut` of a type parameter's item std gives a closure, generic `retain_mut`'s, is the item, where the closure made at the call writes its handle's `value`",
     file: "src/lower/representation/mut_ref.rs",
     find: "        self.mut_ref_form(ty).is_cell() || self.is_unknown(ty)\n",
-    replace: "        self.mut_ref_form(ty) == MutRefForm::Box\n",
+    replace: "        matches!(self.mut_ref_form(ty), MutRefForm::Box)\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -214,5 +214,14 @@ export const mutations: Mutation[] = [
     find: "            Expr::cond(test, copy(keys), otherwise)\n",
     replace: "            Expr::cond(test, copy(keys), copy(keys))\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_moved_out.rs$"],
+  },
+  {
+    name: "generic-box-never",
+    breaks:
+      "no `&mut` is generic code's box to the question each site asks of one, so a `&mut` to an object given as a type parameter's value is the object, which the generic function reads as a box: JS throws (#821)",
+    file: "src/lower/representation/mut_ref.rs",
+    find: "            MutRefForm::GenericBox => true,\n            MutRefForm::Box | MutRefForm::Object",
+    replace: "            MutRefForm::GenericBox | MutRefForm::Box | MutRefForm::Object",
+    tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
   },
 ];

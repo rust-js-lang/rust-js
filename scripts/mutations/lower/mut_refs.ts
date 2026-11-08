@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&mut` to an object given as a type parameter's value is the object, which an impl for `&mut T` reads as a box, and JS throws",
     file: "src/lower/mut_refs.rs",
-    find: "            ty::Param(_) if self.mut_ref_form_in(ty, param_env) == MutRefForm::GenericBox => {\n",
+    find: "            ty::Param(_) if self.mut_ref_form_in(ty, param_env).is_generic_box() => {\n",
     replace: "            ty::Param(_) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
   },
