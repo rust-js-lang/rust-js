@@ -228,12 +228,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `Vec`, refused: a chain of one is std's struct where it's cloned,
         // which its compiled `Clone` clones (#382).
         let iterates = matches!(parted, Parted::Map | Parted::Filter) || self.implements_iterator(other_ty);
-        if !iterates {
-            return Err(self.unsupported(
-                span,
-                &format!("cloning a `{output}` of a `{other_ty}` it makes an iterator of"),
-            ));
-        }
+        // A chain's other side given as what makes an iterator, `a.iter()
+        // .chain(b)` of a `&[i32]`: its iterator, the chain's second part,
+        // made where the chain is, so a clone clones how far it's stepped
+        // (#1002).
+        let (other, other_ty) = match iterates {
+            true => (other, other_ty),
+            false
+                if let ty::Adt(_, chained) = self.reveal(output).kind()
+                    && let Some(into) = chained.types().nth(1)
+                    && self.implements_iterator(into) =>
+            {
+                (self.as_js_iterator(other, other_ty, span)?, into)
+            }
+            false => {
+                return Err(self.unsupported(
+                    span,
+                    &format!("cloning a `{output}` of a `{other_ty}` it makes an iterator of"),
+                ));
+            }
+        };
         let parts = [receiver, other];
         let lent = matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut));
         let names = match parted {

@@ -732,4 +732,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_count_second_panic_aborts.rs$"],
   },
+  {
+    name: "chain-other-side-not-made-an-iterator",
+    breaks: "a chain cloned apart whose other side is given as what makes an iterator, `chain(&b)`, is refused, where its iterator is taken where the chain is made (#1002)",
+    file: "src/lower/mir/iter.rs",
+    find: "                && self.implements_iterator(into) =>\n",
+    replace: "                && self.implements_iterator(into)\n                && false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_of_a_slice_cloned_apart.rs$"],
+  },
 ];

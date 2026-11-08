@@ -135,3 +135,18 @@ Held by `test/corpus/copied_clone_of_its_own.rs`, against native Rust, and
 by the mutations `copied-own-clone-spread`, `copied-given-clone-by-dictionary`,
 `given-clone-of-the-wrapper`, `given-clone-unmarked`,
 `copied-dropped-clone-allowed` and `copied-copying-clone-allowed`.
+
+## Amendment: a chain's other side made an iterator (#1002)
+
+A chain cloned apart whose other side is given as what makes an iterator,
+`a.iter().chain(&b)` of a `Vec`, was refused: a clone of its parts would
+make `b`'s iterator again from its start. Now its iterator, the chain's
+second part, is taken where the chain is made (`as_js_iterator`), so each
+part is an iterator, and a clone clones how far it's stepped. Beside a
+neighbour that clones a chain of that type, one the crate never clones,
+`chain(&b).sum()`, is made so too (the neighbour shuffle, #1002). Corpus
+case `chain_of_a_slice_cloned_apart`, mutation
+`chain-other-side-not-made-an-iterator`. Generic code's chain that's lent
+or of a type parameter not bound by `Clone`, beside a neighbour that clones
+one of its type, is still refused: whether the made value can reach a
+clone at all is a flow question, #955's.
