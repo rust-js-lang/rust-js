@@ -985,15 +985,15 @@ fn valued(e: &Expr, switches: &[Switch]) -> bool {
 }
 
 /// Whether `e` holds only where `subject` is there: `subject === v` of a
-/// value `v`, an `&&` one of whose tests does, or an `||` each of whose
-/// alternatives does, `(x === 2 && n === 2) || (x === 3 && n === 3)` (#674).
+/// value `v`, or an `||` each of whose alternatives does, `x === 2 || x ===
+/// 3` (#674); an `||` of `&&`s, `(x === 2 && n === 2) || (x === 3 && n ===
+/// 3)`, is the decision tree's own, which no `x != null` reaches (#863).
 fn says(subject: &Expr, e: &Expr, valued: &dyn Fn(&Expr) -> bool) -> bool {
     match &e.kind {
         ExprKind::Binary(Op::Eq, a, b) => {
             (same_subject(a, subject) && valued(b)) || (same_subject(b, subject) && valued(a))
         }
         ExprKind::Binary(Op::Or, a, b) => says(subject, a, valued) && says(subject, b, valued),
-        ExprKind::Binary(Op::And, a, b) => says(subject, a, valued) || says(subject, b, valued),
         _ => false,
     }
 }

@@ -253,8 +253,6 @@ pub enum Known {
     IterClosing,
     /// One lent, `$lent(it)`, which nothing past it closes.
     IterLent,
-    /// A `flat_map()`'s closure whose result is made in place, as its `flat_map()` is.
-    IterResultInPlace,
     /// One stepped from its back, `$rev(it)`.
     IterRev,
     /// One stepped every `n`th item, `$stepBy(it, n, ..)`.

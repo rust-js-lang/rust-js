@@ -172,15 +172,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
   },
   {
-    name: "stepped-sources-one-deep",
-    breaks:
-      "a map two adapters inside a back-stepped one isn't made knowing its back (#218)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "            sources.push(held);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
-  },
-  {
     name: "chain-sides-unstepped",
     breaks:
       "a chain's sides aren't made knowing their back where they're made: `v.into_iter().filter(p).chain(w).rev()` of droppers, whose `a` MIR holds in a variable for `w`'s drop flag, is refused, a `Filter` as a `DoubleEndedIterator` (#718)",

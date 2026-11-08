@@ -593,7 +593,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a flatten of ranges made knowing its back takes what `each` gives as a range, and steps its JS iterator by its bounds",
     file: "src/lower/iterators/knowing.rs",
-    find: "                    let knowing = self.as_double_ended(taken, inner, span)?;\n",
+    find: "                    let knowing = self.as_double_ended(taken.clone(), inner, span)?;\n",
     replace:
       "                    let knowing = self.as_double_ended(Expr::call(each.clone(), vec![Expr::var(item)]), inner, span)?;\n",
     tests: [
@@ -818,14 +818,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "        if crate::lower::recognition::zipped_sources(self.tcx, ty).is_some() && self.knows_its_back(ty) {\n            return true;\n        }\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^zip_from_its_back.rs$"],
-  },
-  {
-    name: "rev-of-zip-not-made-knowing",
-    breaks: "a `rev()` of a zip stepped from its back isn't made knowing its back, and its `nth_back` is refused (#740)",
-    file: "src/lower/iterators/knowing.rs",
-    find: "            !self.is_unknown(source) || matches!(source.kind(), ty::Param(_))\n",
-    replace: "            (!self.is_unknown(source) || matches!(source.kind(), ty::Param(_)))\n                && crate::lower::recognition::zipped_sources(self.tcx, source).is_none()\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_from_its_back.rs$"],
   },
   {

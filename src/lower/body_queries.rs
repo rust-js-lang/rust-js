@@ -170,10 +170,6 @@ pub(super) struct BodyFacts<'tcx> {
     /// iterator's method steps where it's made, `in_place_adapters`'s: its
     /// maker marks what it makes so (`made_in_place`, #730).
     pub(super) in_place_adapters: IndexSet<Span>,
-    /// Of a closure a `flat_map()` made in place is given, that what it
-    /// gives is made in place too, `results_in_place`'s: its value's fact
-    /// (`Known::IterResultInPlace`).
-    pub(super) result_in_place: bool,
     /// Each value the body's patterns test and the `const` they name it by,
     /// where it's tested, `constant_patterns`'s (ADRs 0590, 0634).
     pub(super) constant_patterns: ConstantPatterns<'tcx>,
@@ -430,7 +426,6 @@ fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>], c
         }
         let stepped_result = flat_mapped.then_some(body.expr);
         body.facts.in_place_adapters = in_place_adapters(tcx, &body.thir, stepped_result, cloned);
-        body.facts.result_in_place = flat_mapped;
     }
 }
 

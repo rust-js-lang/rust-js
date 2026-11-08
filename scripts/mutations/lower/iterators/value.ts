@@ -191,12 +191,4 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_made_knowing_read_again.rs$"],
   },
-  {
-    name: "form-lacks-no-back-of-js-helpers",
-    breaks: "JS's own `.map(f)` and the like are said to have a back, so what asks it of an `inspect(f)`'s, of a chain stepped from its back elsewhere, trusts its type and throws (#851)",
-    file: "src/lower/iterators/value.rs",
-    find: "        (js::ExprKind::Member(_, method), _) => {\n            matches!(method.as_str(), \"map\" | \"filter\" | \"take\" | \"drop\" | \"flatMap\")\n        }\n",
-    replace: "        (js::ExprKind::Member(_, method), _) => {\n            false && matches!(method.as_str(), \"map\" | \"filter\" | \"take\" | \"drop\" | \"flatMap\")\n        }\n",
-    tests: ["test/corpus.test.ts", "-t", "^inspect_of_a_chain_stepped_from_its_back.rs$"],
-  },
 ];

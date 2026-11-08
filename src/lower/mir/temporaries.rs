@@ -181,8 +181,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let name = state.locals.names[local].clone();
             state.locals.declared[local] = true;
-            let expr =
-                self.written_knowing_its_back(local, (expr, state.body.local_decls[local].ty), Span::default())?;
             note_marks(state, local, &expr);
             made.push(StmtKind::Const(name, expr).at(js::Span::NONE));
         }

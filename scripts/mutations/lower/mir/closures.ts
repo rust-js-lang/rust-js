@@ -322,15 +322,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
   },
   {
-    name: "flat-map-closure-result-unmarked",
-    breaks:
-      "a closure a `flat_map()` made in place is given isn't marked as giving what's made in place, so its `map()` is taken for std's compiled `Map`, whose `next_back` steps the JS `.map()` chain not at all: `None` where Rust gives `Some(50)` (#716)",
-    file: "src/lower/mir/closures.rs",
-    find: "            true => crate::lower::iterators::gives_in_place(closure),\n",
-    replace: "            true => closure,\n",
-    tests: ["test/corpus.test.ts", "-t", "^flat_map_of_maps_from_its_back.rs$"],
-  },
-  {
     name: "default-closure-in-trait-terms",
     breaks:
       "a closure in a copied default is lowered in its trait's terms where its maker is in the impl's, so a `HashMap<Self::Item, _>` it fills drops its key with no drop given (#803)",

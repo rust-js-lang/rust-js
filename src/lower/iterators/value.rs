@@ -130,14 +130,13 @@ impl IterValue {
 }
 
 /// Each fact `emit` marks a value's JS with.
-const VALUE_FACTS: [Known; 12] = [
+const VALUE_FACTS: [Known; 11] = [
     Known::IterStepped,
     Known::IterRange,
     Known::IterOwn,
     Known::IterKnowing,
     Known::IterClosing,
     Known::IterLent,
-    Known::IterResultInPlace,
     Known::IterRev,
     Known::IterStepBy,
     Known::IterRepeatingN,
@@ -225,21 +224,6 @@ pub(in crate::lower) fn stepped_value(e: &Expr) -> Option<Expr> {
         return None;
     }
     steps(e).cloned()
-}
-
-/// `f`, the closure a `flat_map()` made in place is given, marked as
-/// one whose result is made in place too (`body_queries::results_in_place`,
-/// #716): what makes it knowing its back reads that of it, never std's
-/// compiled adapter's back. Not one a held `flat_map()` is given, std's
-/// compiled `FlatMap`'s (#726).
-pub(in crate::lower) fn gives_in_place(mut f: Expr) -> Expr {
-    f.facts = f.facts.with(Known::IterResultInPlace);
-    f
-}
-
-/// Whether `f`, a closure, gives what's made in place (`gives_in_place`).
-pub(in crate::lower) fn gives_made_in_place(f: &Expr) -> bool {
-    f.facts.has(Known::IterResultInPlace)
 }
 
 /// `e`, an adapter MIR made of a JS iterator `method_source` made one,
@@ -567,9 +551,10 @@ pub(in crate::lower) fn back_source(e: &Expr) -> Option<(&Expr, bool)> {
     args.first().map(|source| (source, same))
 }
 
-/// Whether `e`'s form says it has no back (#851): JS's own iterator helper,
-/// `.map(f)`, `.filter(p)`, `.take(n)`, `.drop(n)`, `.flatMap(f)`, which step
-/// only forward; or an adapter of one whose back is its source's. (Std's
+/// Whether `e`'s form says it has no back (#851): an adapter of one whose
+/// back is its source's, of what lacks one. (JS's own iterator helper,
+/// `.map(f)`, never reaches what asks it of a form: what's stepped from its
+/// back is made knowing it where it's made, #863.) (Std's
 /// compiled struct not given its compiled back is the lowering's question
 /// of its type, `compiled_struct`.) Not what its form doesn't say, a variable's,
 /// a field's, a function's result: what its maker made it, which the type
@@ -581,14 +566,10 @@ pub(in crate::lower) fn form_lacks_a_back(e: &Expr) -> bool {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return false;
     };
-    match (&callee.kind, callee.helper_name()) {
-        (js::ExprKind::Member(_, method), _) => {
-            matches!(method.as_str(), "map" | "filter" | "take" | "drop" | "flatMap")
+    match callee.helper_name() {
+        Some("$mapEnds" | "$filterEnds" | "$enumerate" | "$lent" | "$closing" | "$held" | "$taking" | "$skipping") => {
+            args.first().is_some_and(form_lacks_a_back)
         }
-        (
-            _,
-            Some("$mapEnds" | "$filterEnds" | "$enumerate" | "$lent" | "$closing" | "$held" | "$taking" | "$skipping"),
-        ) => args.first().is_some_and(form_lacks_a_back),
         _ => false,
     }
 }

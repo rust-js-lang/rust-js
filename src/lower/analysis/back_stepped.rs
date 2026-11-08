@@ -390,8 +390,7 @@ fn back_stepped_adapter<'tcx>(
 /// before the zip is made (#792).
 fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: IndexSet<Ty<'tcx>>) -> IndexSet<Ty<'tcx>> {
     let mut all = stepped.clone();
-    let mut sources: Vec<Ty<'tcx>> = stepped.into_iter().collect();
-    while let Some(ty) = sources.pop() {
+    for ty in stepped {
         // A chain's sides, a zip's, or the source of what steps from its back
         // where its source does.
         // A chain's side that's a `skip(n)` or a `take(n)` is a local's, its
@@ -411,7 +410,6 @@ fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: IndexSet<Ty<'tcx>>) ->
             {
                 all.insert(tcx.erase_and_anonymize_regions(held));
             }
-            sources.push(held);
         }
     }
     all

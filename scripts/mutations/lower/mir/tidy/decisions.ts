@@ -65,16 +65,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "says-of-an-and-unread",
-    breaks:
-      "an `||` of `&&`s, `(x === 2 && n === 2) || (x === 3 && n === 3)`, says nothing of `x`, so its path's `x != null` stays (#674)",
-    file: "src/lower/mir/tidy/decisions.rs",
-    find: "        ExprKind::Binary(Op::And, a, b) => says(subject, a, valued) || says(subject, b, valued),\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^or_pattern_option_order.rs$"],
-    snapshots: true,
-  },
-  {
     name: "present-said-of-any-tree",
     breaks:
       "a tree a `switch` takes, React's resolveThenable's inner `match`, is a chain first, what follows the outer `match` its `default`, `default: throw thenable;` (#412)",

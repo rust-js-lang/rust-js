@@ -271,7 +271,7 @@ export const mutations: Mutation[] = [
     find: "                    None if back && !self.has_a_back(iter_ty, receiver) => {\n",
     replace:
       "                    None if back && !self.has_a_back(iter_ty, receiver) && self.range_kind(iter_ty).is_none() => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(map_stepped_from_its_back|range_map_rfold_holding).rs$"],
   },
   {
     name: "map-ends-source-unclosed",

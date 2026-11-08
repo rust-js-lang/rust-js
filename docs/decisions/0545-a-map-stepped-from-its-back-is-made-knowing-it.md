@@ -1195,3 +1195,35 @@ once, the corpus, the matrix and the conformance table in full
 `$holding`'s source, are removed; the four older rules' code stays, as
 the kinds still on the set may need them, until phase C retires the set
 and them with it.
+
+## Amendment: what #851's per-value facts left dead, removed (2026-11-08, #863)
+
+#851's phases A and B moved what a value's back is from its type to the
+value. Fourteen mutations of the rules before them then survived (#863).
+Seven were the rules' own and only needed their tests named again:
+`held-adapter-not-back-stepped` built again, its `made` kept of its type;
+three name the corpus cases they fail now; three change a case's form, not
+whether it's refused, and are its snapshot's (`snapshots: true`).
+
+The other seven changed nothing a case shows: not the corpus, of either
+build, nor the rows of the matrix and the conformance table their hunks
+name. All seven at once failed one conformance case, `range | map | rfold
+holding`: two of them were one rule written twice, a temporary written at
+last before an argument's statement made knowing its back
+(`temporaries.rs`'s `written_knowing_its_back`) and the range a back-stepped
+map is made of made knowing it (`backs.rs`'s map arm, `as_double_ended`),
+each covering the other. With the first and five more removed, every case
+of the matrix, the conformance table, the points table and the corpus with
+std's iterator structs runs as before, and no corpus snapshot changed. So
+they're removed, with their mutations: the flushed temporary's
+`written_knowing_its_back`, which the map arm owns; a flat map's closure
+marked as giving what's made in place (`gives_in_place`,
+`gives_made_in_place`, `Known::IterResultInPlace`, a body's
+`result_in_place`); `with_stepped_sources`'s walk past a source's own
+sources; `form_lacks_a_back`'s arm of JS's own helpers, `.map(f)`, which no
+back step reaches; and tidy's `says` of an `&&`, which the decision tree
+covers. `rev-of-zip-not-made-knowing` added an exception rather than
+removing one, and is retired as equivalent. `back-stepped-source-raw`, of
+the map arm that now owns the case alone, is caught by its corpus case,
+`range_map_rfold_holding.rs`; `flatten-of-iterators-each-called` names its
+line as it now reads.
