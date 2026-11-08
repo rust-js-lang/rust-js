@@ -71,3 +71,7 @@ none of these would have, add it here in the same commit as the fix.
 | Matrices for `MutRefForm` × operation and `NoneForm` × writer × reader | #855 | The two clusters with the most P0s and regressions after iterators |
 | TypeScript callers of each `.d.ts` with `null`, `undefined` and absent keys | #822 | A `.d.ts` that promises more than the lowering trusts |
 | Crate-corpus probes run, not only compiled | #840 | Real crates' behaviour against native |
+| Metamorphic rewrites: each corpus case inlined, outlined, made generic, called through `dyn`, moved to a library | #939 | Answers that depend on the shape around a value, not on the value |
+| The numbers grid: every integer and float operation × type × boundary value | #940 | Overflow, wrapping, casts, shifts and float edge cases |
+| The formatting grid: every format spec × type | #941 | The most visible output a program has |
+| Async panic points: drops and panics across `.await` | #942 | Drop order in futures' state machines, cancellation and joins |
