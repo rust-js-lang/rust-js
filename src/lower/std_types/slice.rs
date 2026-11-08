@@ -629,28 +629,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// Whether a stable sort's calls can be seen (#925), so that it's std's
-    /// own, step for step, not JS's `sort`, which asks another sequence:
-    /// of a type parameter's items, its caller's type's, always; of its
-    /// items' order, `order_seen`'s; of a comparator, `call_seen`'s; of a
-    /// key, its function's, its order's, or its drop's, which runs after
-    /// each comparison. Of `sort`'s, `sort_by`'s or `sort_by_key`'s
-    /// `generic_args`.
-    pub(in crate::lower) fn stable_sort_seen(&self, with: SortWith, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
+    /// Whether a stable sort is std's own, step for step, not JS's `sort`,
+    /// which asks another sequence and, of an order that isn't total, leaves
+    /// another (#925, #936): where its calls can be seen, or its order may
+    /// not be total. Of a type parameter's items, its caller's type's,
+    /// always; of its items' order, `order_seen`'s and `order_total`'s; of a
+    /// comparator, `call_seen`'s and `call_total`'s; of a key, its
+    /// function's, its order's, or its drop's, which runs after each
+    /// comparison. Of `sort`'s, `sort_by`'s or `sort_by_key`'s `generic_args`.
+    pub(in crate::lower) fn stable_sort_is_std(&self, with: SortWith, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
         let item = generic_args.type_at(0);
         match with {
             // A type parameter's items, its caller's type's, which may be seen.
             _ if self.is_unknown(item) => true,
-            SortWith::Order => self.order_seen(item),
+            SortWith::Order => self.order_seen(item) || !self.order_total(item),
             // One by UTF-16 units, JS's own order of strings, asks nothing
             // a program sees (ADR 0945).
             SortWith::By => {
                 let compare = generic_args.type_at(1);
-                self.call_seen(compare) && !self.sorts_as_js_strings(compare, item)
+                (self.call_seen(compare) || !self.call_total(compare)) && !self.sorts_as_js_strings(compare, item)
             }
             SortWith::Key => {
                 let key = generic_args.type_at(1);
-                self.call_seen(generic_args.type_at(2)) || self.order_seen(key) || self.has_drops(key)
+                let order = self.order_seen(key) || !self.order_total(key);
+                self.call_seen(generic_args.type_at(2)) || order || self.has_drops(key)
             }
         }
     }

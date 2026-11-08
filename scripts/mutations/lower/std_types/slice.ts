@@ -621,8 +621,8 @@ export const mutations: Mutation[] = [
     name: "stable-key-order-unasked",
     breaks: "a quiet key of an order that counts is JS's sort, asking another sequence of the keys' comparisons (#925)",
     file: "src/lower/std_types/slice.rs",
-    find: "                self.call_seen(generic_args.type_at(2)) || self.order_seen(key) || self.has_drops(key)",
-    replace: "                self.call_seen(generic_args.type_at(2)) || self.has_drops(key)",
+    find: "                let order = self.order_seen(key) || !self.order_total(key);\n",
+    replace: "                let order = !self.order_total(key);\n",
     tests: ["test/corpus.test.ts", "-t", "^sort_stable_seen.rs$"],
   },
   {

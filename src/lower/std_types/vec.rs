@@ -163,7 +163,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 },
             },
             // Where its comparator's calls can be seen, std's own (#925).
-            Std::SortBy if self.stable_sort_seen(SortWith::By, generic_args) => {
+            Std::SortBy if self.stable_sort_is_std(SortWith::By, generic_args) => {
                 let values = vec![arg(), arg()];
                 self.stable_sort_call(SortWith::By, values, generic_args, span, out)?
             }

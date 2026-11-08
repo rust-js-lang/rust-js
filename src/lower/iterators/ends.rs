@@ -152,7 +152,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let method = |items: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(items, name), list);
         let with = if key.is_some() { SortWith::Key } else { SortWith::Order };
-        if self.stable_sort_seen(with, generic_args) {
+        if self.stable_sort_is_std(with, generic_args) {
             let values = std::iter::once(items).chain(key).collect();
             return self.stable_sort_call(with, values, generic_args, span, out);
         }

@@ -20,6 +20,7 @@ mod getter_unwraps;
 mod method_calls;
 mod ranges;
 mod set_reads;
+mod total_orders;
 mod whole_casts;
 
 use constants::constant_patterns;
@@ -28,6 +29,7 @@ pub(super) use constants::{
 };
 pub(super) use ranges::{present_item_of_sized, ranges};
 pub(in crate::lower) use set_reads::is_option_unwrap;
+pub(super) use total_orders::orders_totally;
 use whole_casts::whole_casts;
 
 /// The parts of a `for pat in head { body }` (ADR 0025).

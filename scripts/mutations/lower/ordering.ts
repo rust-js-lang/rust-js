@@ -402,4 +402,20 @@ export const mutations: Mutation[] = [
     replace: "        order_may(&self.recognition(), ty, &|_| false)",
     tests: ["test/corpus.test.ts", "-t", "^sort_stable_seen.rs$"],
   },
+  {
+    name: "comparator-always-total",
+    breaks: "every quiet comparator is taken as a total order, so a sort by `partial_cmp(..).unwrap_or(Equal)` of NaNs is JS's: another order, and no panic where std's panics (#936)",
+    file: "src/lower/ordering.rs",
+    find: "            ty::Closure(id, _) => self.body_orders_totally(id, seen),\n",
+    replace: "            ty::Closure(..) => true,\n",
+    tests: ["test/corpus.test.ts", "-t", "^sort_not_total.rs$"],
+  },
+  {
+    name: "hand-written-order-always-total",
+    breaks: "a hand-written `Ord` that isn't a total order is taken as one, so its `sort()` is JS's and leaves another order (#936)",
+    file: "src/lower/ordering.rs",
+    find: ".all(|&imp| self.tcx.is_automatically_derived(imp) || self.impl_orders_totally(imp, seen))",
+    replace: ".all(|&imp| self.tcx.is_automatically_derived(imp) || true)",
+    tests: ["test/corpus.test.ts", "-t", "^sort_not_total.rs$"],
+  },
 ];

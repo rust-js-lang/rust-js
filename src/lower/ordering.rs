@@ -46,6 +46,121 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
+    /// Whether comparing `ty`s, by their `Ord`, is a total order (#936), so
+    /// that any sort of them leaves them in one order: std's own of
+    /// numbers, text, `char`s and `bool`s, and of what holds them; a
+    /// derived one's, as its fields' are; a hand-written one's whose `cmp`
+    /// and `partial_cmp` `orders_totally` say is one. Not a type
+    /// parameter's, a `dyn`'s or an opaque type's.
+    pub(in crate::lower) fn order_total(&self, ty: Ty<'tcx>) -> bool {
+        self.order_total_in(ty, &Asking::default())
+    }
+
+    /// `order_total`, of the types `seen` asks it of already, each of which
+    /// is taken to be total where it's reached again, its own order's
+    /// `Some(self.cmp(other))`.
+    fn order_total_in(&self, ty: Ty<'tcx>, seen: &Asking<'tcx>) -> bool {
+        let ty = ty.peel_refs();
+        if seen.borrow().contains(&ty) {
+            return true;
+        }
+        if let ty::Param(_) | ty::Dynamic(..) | ty::Alias(..) = ty.kind() {
+            return false;
+        }
+        seen.borrow_mut().push(ty);
+        let recognition = self.recognition();
+        let impls: Vec<DefId> = [self.ord_trait(), self.partial_ord_trait()]
+            .into_iter()
+            .filter_map(|tr| {
+                recognition.user_impl(ty::TraitRef::new_from_args(self.tcx, tr, recognition.args_of(tr, ty)))
+            })
+            .collect();
+        let rust_adt = |id: DefId| id.is_local() || self.krate.foreign.in_library(id);
+        let total = match ty.kind() {
+            // A hand-written one, each of whose methods orders totally; a
+            // derived one, as its fields do.
+            _ if impls.iter().any(|&imp| !self.tcx.is_automatically_derived(imp)) => {
+                impls
+                    .iter()
+                    .all(|&imp| self.tcx.is_automatically_derived(imp) || self.impl_orders_totally(imp, seen))
+                    && self.fields_total(ty, seen)
+            }
+            ty::Adt(adt, _) if rust_adt(adt.did()) => self.fields_total(ty, seen),
+            ty::Adt(_, args) => args.types().all(|arg| self.order_total_in(arg, seen)),
+            ty::Tuple(parts) => parts.iter().all(|part| self.order_total_in(part, seen)),
+            ty::Array(item, _) | ty::Slice(item) => self.order_total_in(*item, seen),
+            _ => true,
+        };
+        seen.borrow_mut().pop();
+        total
+    }
+
+    /// Whether each field of the crate's `ty` orders totally, a derived
+    /// order's parts; true of a type whose order is all hand-written.
+    fn fields_total(&self, ty: Ty<'tcx>, seen: &Asking<'tcx>) -> bool {
+        let derived = [self.ord_trait(), self.partial_ord_trait()].into_iter().any(|tr| {
+            let tr = ty::TraitRef::new_from_args(self.tcx, tr, self.recognition().args_of(tr, ty));
+            self.recognition()
+                .user_impl(tr)
+                .is_some_and(|imp| self.tcx.is_automatically_derived(imp))
+        });
+        match ty.kind() {
+            ty::Adt(adt, args) if derived || !self.has_user_impl(self.ord_trait(), ty) => {
+                let recognition = self.recognition();
+                (adt.all_fields()).all(|f| self.order_total_in(recognition.field_ty(f, args), seen))
+            }
+            _ => true,
+        }
+    }
+
+    /// Whether each method the impl `imp` writes, its `cmp` or its
+    /// `partial_cmp`, orders totally, as `orders_totally` reads its body.
+    fn impl_orders_totally(&self, imp: DefId, seen: &Asking<'tcx>) -> bool {
+        self.tcx.associated_item_def_ids(imp).iter().all(|&method| {
+            !matches!(self.tcx.def_kind(method), rustc_hir::def::DefKind::AssocFn)
+                || self.body_orders_totally(method, seen)
+        })
+    }
+
+    /// Whether the crate's function or closure `id` gives a total order, as
+    /// `orders_totally` reads its body.
+    fn body_orders_totally(&self, id: DefId, seen: &Asking<'tcx>) -> bool {
+        let Some(body) = self.krate.bodies.get(&id).or_else(|| self.krate.closures.get(&id)) else {
+            return false;
+        };
+        let Some(root) = body.root() else {
+            return false;
+        };
+        let total_ty = |ty: Ty<'tcx>| self.order_total_in(ty, seen);
+        let total_fn = |f: Ty<'tcx>| self.call_total_in(f, seen);
+        super::body_queries::orders_totally(self.tcx, &body.thir, root, (&total_ty, &total_fn))
+    }
+
+    /// Whether a comparator, a closure's or a function's type, gives a total
+    /// order (#936): one of the crate's whose body `orders_totally` says
+    /// does, or std's `Ord::cmp` of a total order, a float's `total_cmp`, or
+    /// JS's `localeCompare`.
+    pub(in crate::lower) fn call_total(&self, f: Ty<'tcx>) -> bool {
+        self.call_total_in(f, &Asking::default())
+    }
+
+    fn call_total_in(&self, f: Ty<'tcx>, seen: &Asking<'tcx>) -> bool {
+        match *self.reveal(f).kind() {
+            ty::Closure(id, _) => self.body_orders_totally(id, seen),
+            ty::FnDef(id, args) if id.is_local() => args.skip_binder().is_empty() && self.body_orders_totally(id, seen),
+            ty::FnDef(id, args) => {
+                use super::recognition::{OrderingFn, ordering_fn};
+                let args = args.skip_binder();
+                match ordering_fn(self.tcx, id, args) {
+                    Some(OrderingFn::Cmp) => args.types().next().is_some_and(|ty| self.order_total_in(ty, seen)),
+                    Some(OrderingFn::TotalCmp | OrderingFn::LocaleCompare) => true,
+                    _ => false,
+                }
+            }
+            _ => false,
+        }
+    }
+
     /// Whether a call of `f`, a closure's or a function's type, can be seen
     /// (#925): any but one of the crate's that's quiet, or std's a quiet
     /// one would call, `Ord::cmp` of what `order_seen` says isn't; of
@@ -634,6 +749,9 @@ fn any_shape(tcx: rustc_middle::ty::TyCtxt<'_>, ty: Ty<'_>) -> bool {
 fn is_var(e: &Expr, name: &str) -> bool {
     matches!(&e.kind, js::ExprKind::Var(n) if n == name)
 }
+
+/// The types `order_total` is asking of, outermost first.
+type Asking<'tcx> = std::cell::RefCell<Vec<Ty<'tcx>>>;
 
 /// Whether comparing two `ty`s, by their `Ord` or `PartialOrd`, may do what
 /// `may` says an impl's methods may: an impl of the crate's or a library's,

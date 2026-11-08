@@ -571,8 +571,10 @@ counts or panics, or an `Ord` of your own that does, it's std's own sort,
 `$sortStable`, which asks what std asks in std's order and leaves what a
 panic leaves where std's does; its last two arguments are what std picks
 by the items' type and their size
-([ADR 0036](../../decisions/0036-iterators-and-sorting.md)). A comparison
-that only compares, as `byName`'s, stays JS's `sort`:
+([ADR 0036](../../decisions/0036-iterators-and-sorting.md)). So is a
+comparison that isn't a total order, `partial_cmp(..).unwrap_or(Equal)` of
+NaNs, of which each sort leaves its own order. A comparison that only
+compares, as `byName`'s, stays JS's `sort`:
 
 ```rust
 pub struct Entry {

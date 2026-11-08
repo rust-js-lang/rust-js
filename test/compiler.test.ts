@@ -424,8 +424,11 @@ test("the playground is Rust components, compiled to the JS main.ts starts", asy
   expect(compiler).toContain("  const started = $try(() => wasi.start(instance));");
   expect(compiler).toContain('  const ok = started.TAG === "Ok" && started._0 === 0;');
   expect(compiler).toContain("    if (entry instanceof Directory) {");
-  // The file tree: sorted with a comparator, a copy of the tree's entries.
-  expect(await read("tree.js")).toContain("  const entries = tree.slice();\n  entries.sort((a, b) => {");
+  // The file tree: a copy of the tree's entries, sorted by std's sort, as
+  // its comparator, which puts the first entry first by a test of each
+  // side, isn't provably a total order (#936).
+  expect(await read("tree.js")).toContain("  const entries = tree.slice();\n  function compare(a, b) {");
+  expect(await read("tree.js")).toContain('  $sortStable(entries, (a, b) => compare(a, b) < 0, "general8", 4);');
   // The browser links named and namespace imports as real ES modules.
   const programs = await read("programs.js");
   expect(programs).toContain('type="importmap"');

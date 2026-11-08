@@ -451,3 +451,47 @@ lower/analysis/unwinding.ts, lower/ordering.ts.
 The B-tree's bulk build (`collect`, `append`) sorts with driftsort too;
 `$treeFrom` still sorts with JS's sort, and is #926's with the node layer.
 Kind: wrong decision. Area: iterators.
+
+## Amendment: JS's sort only of a total order (2026-11-08, #936)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept.
+
+A comparator whose calls can't be seen isn't therefore a total order, and
+of one that isn't, each sort leaves its own order: `v.sort_by(|a, b|
+a.partial_cmp(b).unwrap_or(Equal))` of 40 floats with NaNs panicked
+natively, "user-provided comparison function does not correctly implement a
+total order", where JS's `sort` ended and printed another order.
+
+**JS's `sort` stays only of a quiet comparison that is a total order**
+(`stable_sort_is_std`, beside `call_seen` and `order_seen`):
+- `call_total(F)` (src/lower/ordering.rs): a closure or function whose body
+  `orders_totally` (src/lower/body_queries.rs) says gives one: `Ord::cmp` of
+  a type `order_total` says orders totally, a float's `total_cmp`, JS's
+  `localeCompare`, `Equal`, and their `reverse()`, `then(..)` and
+  `then_with(f)` of a total `f`; `then` written out, `if o != Equal { o }
+  else { p }` (or its `==` the other way round) and `match o { Equal => p,
+  o => o }`, through a `let` of `o`; std's `Ord::cmp` and `total_cmp`
+  given as functions. Not a constant `Less`, which contradicts itself.
+- `order_total(T)`: std's orders of numbers, text, `char`s and `bool`s and
+  of what holds them; a derived one's, as its fields'; a hand-written one's
+  whose `cmp` and `partial_cmp` bodies order totally (`Some(self.cmp(o))`
+  too); never a type parameter's.
+- Anything else, `partial_cmp(..).unwrap_or(..)`, an `if` of `<`, a
+  `match` of the items, is `$sortStable`, exact for any comparator, since it
+  is std's own.
+
+`sort_not_total` checks it against native Rust: a derived order, a
+`then_with`, `total_cmp` stay JS's; a hand-written rock-paper-scissors
+`Ord` of 20 leaves std's order; NaNs by `unwrap_or(Equal)` leave std's
+order of 6, then panic as std's merge does of 40. `sort_total_written_out`
+keeps the written-out `then`s on JS's sort, examples/std_traits.rs's `Word`
+among them, and one that isn't `then` on std's. No other corpus case's JS
+changes; one snapshot does, approved: the playground's file explorer,
+whose comparator puts the first entry first by a test of each side, total
+only because one entry is, which a compiler can't prove, is
+`$sortStable(entries, (a, b) => compare(a, b) < 0, "general8", 4)`.
+Mutations: `orders-totally-any-call`, `comparator-always-total`,
+`hand-written-order-always-total`, `orders-totally-written-then-unasked`,
+`orders-totally-written-then-kept-unasked`, `orders-totally-match-unasked`.
+Kind: wrong decision. Area: iterators.
