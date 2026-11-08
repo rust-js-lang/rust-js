@@ -26,11 +26,6 @@ plain std library closures_made_and_folded.rs
 plain std library equated_iterator_parameter.rs
 plain std library rc_fn_made_of_a_counted_rc.rs
 
-#1030 P0 (library): flattened state across crates (got_mut, lent_mut TypeError, replaced_with)
-plain std library flattened_state_got_mut.rs
-plain std library flattened_state_lent_mut.rs
-plain std library flattened_state_replaced_with.rs
-
 #1031 P0 (library): drop and unwind orders across crates, on generic and adapter paths (two abort)
 plain std library adapters_own_work_that_panics.rs
 plain std library array_vec_raw.rs

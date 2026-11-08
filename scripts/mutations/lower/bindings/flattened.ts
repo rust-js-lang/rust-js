@@ -66,4 +66,13 @@ export const mutations: Mutation[] = [
     replace: "                drop(at);\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "contract"],
   },
+  {
+    name: "library-flattened-state-unseen",
+    breaks:
+      "a library's class's flattened state is no state to its consumer, so `mem::replace(task.state.get_mut(), ..)` moves out the class's object itself, `const old = task`, which the write then changes (#1030)",
+    file: "src/lower/bindings/flattened.rs",
+    find: "                        found.states.insert(state.did());\n",
+    replace: "                        let _ = state;\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_flattened_state"],
+  },
 ];

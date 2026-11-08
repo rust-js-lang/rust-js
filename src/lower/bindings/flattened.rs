@@ -236,6 +236,14 @@ pub(in crate::lower) fn flattened<'tcx>(
                 keyed.insert(adt.did());
             }
             if adt.is_struct() && !found.params.contains_key(&adt.did()) {
+                // And a library's class's flattened state, its object's keys
+                // as the crate's own is, which a `replace` of copies (#1030).
+                for field in (adt.non_enum_variant().fields.iter()).filter(|field| is_flatten(tcx, field)) {
+                    let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+                    if let Some((state, _)) = flattened_state(tcx, ty) {
+                        found.states.insert(state.did());
+                    }
+                }
                 let at: Vec<u32> = (adt.non_enum_variant().fields.iter())
                     .filter(|field| is_flatten(tcx, field))
                     .filter_map(|field| {

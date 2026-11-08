@@ -751,3 +751,19 @@ Rust's value is kept; P0. Held by corpus
 `flattened_state_replaced_after_a_call`, against native Rust in both
 builds. Mutation `ref-cell-replace-of-a-held-state-aliased`
 (`std_types/cell.ts`).
+
+## Amendment: a library's class's state is flattened for its consumer too (#1030)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results changed:
+`Flattened::states`, the enums a class holds as its object's keys, listed
+only the crate's own structs' flattened fields, so a library's class's
+state was none to its consumer, which laid it out flattened all the same:
+`mem::replace(task.state.get_mut(), Status::Halted)` moved out the class's
+object, `const old = task`, which the write then changed, where a copy of
+its variant's keys is moved (`state_copied`); a `RefCell::replace` and a
+`&mut` lent to the library's function went alike. Each library struct
+the crate names adds its flattened states, read of its field's attribute
+as its flattened type parameters already were. Pair test
+`library_flattened_state`; mutation `library-flattened-state-unseen`
+(`lower/bindings/flattened.ts`). #1030's three library rewrites run as
+native.
