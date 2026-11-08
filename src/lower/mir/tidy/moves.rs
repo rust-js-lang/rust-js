@@ -188,6 +188,14 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     // nothing and reads what no call changes, past any statement that
     // assigns nothing it reads, a loop's too.
     let at = (rest.iter()).position(|s| js::mentions_in(std::slice::from_ref(s), name) > 0)?;
+    // Not into a `&mut`'s handle's or a `dyn`'s pair's place, which reads
+    // it whenever its `value` is read or written: a value made there, `{
+    // n: 3 }`, would be another each time (#985). A variable is a place.
+    if !matches!(value.kind, ExprKind::Var(_))
+        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name)
+    {
+        return None;
+    }
     let mut reads = Vec::new();
     value.visit_vars(&mut |v| reads.push(v.to_string()));
     // Of what does something, past what does nothing: a `const` of a

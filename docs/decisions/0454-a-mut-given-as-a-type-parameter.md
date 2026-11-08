@@ -653,3 +653,17 @@ Rust's preserved. Held by corpus `stored_place_made_a_mut_dyn`
 `flattened_state_got_mut` and `nullable_written_through_borrows` taken off
 its list, and the mutation `pair-of-a-handle-stores-as-given`
 (`lower/mir/tidy/values.ts`).
+
+## Amended (2026-11-08, #985): a pair's place is named once
+
+#968's in-place pair took a value that reads the same for its place, and
+an object made where it's borrowed, `&mut Count { n: 3 }`, reads the same
+by that rule: each read of the pair's `value` made another `{ n: 3 }`, so
+`while let Some(x) = s.next_item()` never ended (a regression of
+f54145bb3, found by the metamorphic net run whole). MIR's lowering names
+it once, `const count = { n: 3 }`, and tidy's `inlined` moved that
+temporary into the pair's place, read once where it's written, but read
+again whenever the pair is: it moves no temporary but a variable into a
+handle's or a pair's place now (`handles_read`). Held by corpus
+`temporary_made_a_mut_dyn_stepped` and the mutation
+`temporary-moved-into-a-pair` (`lower/mir/tidy/moves.ts`).

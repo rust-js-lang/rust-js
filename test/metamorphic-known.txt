@@ -60,7 +60,3 @@ plain std impl-ref fn_compared_by_its_pointer.rs
 
 #975 P0: a reference parameter taken as `&impl` of an identity trait, a transmute's and a function's given for a `&mut` parameter
 plain std impl-ref function_given_for_a_mut_param.rs
-
-#985 P0: a `&mut dyn` made of a temporary reads a new one each time, its getter the temporary's expression, so a loop over it never ends
-plain std dyn-ref associated_types.rs
-plain std dyn-ref generic_traits.rs
