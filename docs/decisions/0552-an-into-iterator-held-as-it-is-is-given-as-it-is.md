@@ -139,3 +139,19 @@ there, not as ADR 0976's `zip` takes a `&mut [T]` as it is. A `&mut` to an
 iterator given so is still read as the iterator (#966's
 `iterables_given_to_generics`). Corpus case
 `into_iterator_named_by_another_bound`.
+
+## Amendment: a library's own types hold it too (#1025)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results changed:
+`into_iter_held_as_it_is` counted a struct, or an `impl Trait`'s hidden
+type, as one that holds an `IntoIter` as it is when it was the compiling
+crate's own, `is_local()`. A library's `both<I, J>(..) -> Both<I::IntoIter,
+J::IntoIter>` took `IIntoIterator` and `JIntoIterator` in its own compile,
+where `Both` was local, and its consumer, where it isn't, gave none:
+`IIntoIterator.intoIter is not a function`. The rule now asks of a type of
+the function's own crate, `adt.did().krate == id.krate`, a pure answer of
+its signature that the library and its consumers read alike; a crate's
+own function is asked as before. #1025's four library rewrites run as
+native. Pair test `library_into_iter_held_as_it_is`; mutations
+`into-iter-held-in-a-library-type-unseen` and
+`into-iter-hidden-by-a-library-unseen` (`lower/iterators.ts`).

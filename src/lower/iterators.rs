@@ -195,8 +195,11 @@ pub(in crate::lower) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id:
         .any(|p| is_its_iter(p.self_ty().skip_binder()) && reads_its_value(tcx, p.def_id()));
     let holds = |ty: Ty<'tcx>| {
         ty.walk().any(|part| match part.as_type().map(|t| *t.kind()) {
+            // A type of `id`'s own crate, which a library's consumer asks
+            // as the library's own compile did, whose answer is the
+            // dictionaries its JS takes (#1025).
             Some(ty::Adt(adt, args))
-                if adt.did().is_local() || super::recognition::is_compiled_std_type(tcx, adt.did()) =>
+                if adt.did().krate == id.krate || super::recognition::is_compiled_std_type(tcx, adt.did()) =>
             {
                 args.types()
                     .any(|arg| arg.walk().any(|part| part.as_type().is_some_and(is_its_iter)))
@@ -223,7 +226,7 @@ pub(in crate::lower) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id:
                     args,
                     ..
                 },
-            )) if def_id.is_local() => holds(tcx.type_of(def_id).instantiate(tcx, args).skip_normalization()),
+            )) if def_id.krate == id.krate => holds(tcx.type_of(def_id).instantiate(tcx, args).skip_normalization()),
             _ => false,
         })
     };

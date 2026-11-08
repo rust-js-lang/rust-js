@@ -48,12 +48,6 @@ plain std rc-refcell written_through_before_a_panic.rs
 #1022 P2: a pointer read as another type's, in generic code, throws at run time instead of refusing at compile time
 plain std generic bytes_through_pointers.rs
 
-#1025 P0 (library): a library's generic code given an IntoIterator dictionary throws IIntoIterator.intoIter is not a function
-plain std library fused_iterators.rs
-plain std library generic_into_iter_values.rs
-plain std library into_iter_held_by_a_sibling.rs
-plain std library std_fuse.rs
-
 #1026 P0 (library): a library's Debug/Display impl is compiled without the format options the using crate passes ({:#?}, widths, {:#x})
 plain std library assign_impl_on_number.rs
 plain std library closure_writes_captured_formatter.rs

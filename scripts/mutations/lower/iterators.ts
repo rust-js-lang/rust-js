@@ -348,4 +348,22 @@ export const mutations: Mutation[] = [
     replace: "        method == \"map\" && f.reads_only_vars()\n",
     tests: ["test/corpus.test.ts", "-t", "^unread_map_of_a_held_iterator.rs$"],
   },
+  {
+    name: "into-iter-held-in-a-library-type-unseen",
+    breaks:
+      "whether a function holds what an `IntoIterator` makes as it is asks of a type of the crate compiling, so a library's `both` returning its own `Both<I::IntoIter, J::IntoIter>` takes its dictionaries and its consumer gives none, `IIntoIterator.intoIter is not a function` (#1025)",
+    file: "src/lower/iterators.rs",
+    find: "                if adt.did().krate == id.krate || super::recognition::is_compiled_std_type(tcx, adt.did()) =>\n",
+    replace: "                if adt.did().is_local() || super::recognition::is_compiled_std_type(tcx, adt.did()) =>\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_into_iter_held_as_it_is"],
+  },
+  {
+    name: "into-iter-hidden-by-a-library-unseen",
+    breaks:
+      "whether a function holds what an `IntoIterator` makes as it is, behind an `impl Iterator` it gives, asks of an opaque type of the crate compiling, so a library's `chained`'s consumer gives no dictionary its JS takes (#1025)",
+    file: "src/lower/iterators.rs",
+    find: "            )) if def_id.krate == id.krate => holds(tcx.type_of(def_id).instantiate(tcx, args).skip_normalization()),\n",
+    replace: "            )) if def_id.is_local() => holds(tcx.type_of(def_id).instantiate(tcx, args).skip_normalization()),\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_into_iter_held_as_it_is"],
+  },
 ];
