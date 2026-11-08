@@ -138,6 +138,58 @@ pub fn nested(w: &mut [Vec<Loud>], v: Vec<Loud>) {
   expect(body(flat, "nested")).toContain("(items, i, from) => { $cloneIntoVec(items[i], from, (item) => loudClone_clone(item), undefined, loudDrop_drop); }");
 });
 
+// #928: generic code's `clone_from` asks the caller's `Clone` dictionary
+// for its `cloneFrom` first, of a `T` and of an `Option<T>`'s value, and is
+// `*dest = source.clone()` where it has none. A std type's dictionary has
+// one only where std's is in place and seen, a `Vec<Loud>`'s, not a
+// `Vec<String>`'s; concrete code is as it was.
+test("a generic clone_from asks its dictionary's cloneFrom first, which a std type's has where std's is in place", () => {
+  const flat = compiled(
+    "std-unwinds-generic-clone-from",
+    `${types}
+pub fn assign<T: Clone>(dest: &mut T, source: &T) {
+    dest.clone_from(source);
+}
+
+pub fn assign_option<T: Clone>(dest: &mut Option<T>, source: &Option<T>) {
+    dest.clone_from(source);
+}
+
+pub fn loud(w: &mut Vec<Loud>, v: &Vec<Loud>) {
+    assign(w, v);
+}
+
+pub fn texts(w: &mut Vec<String>, v: &Vec<String>) {
+    assign(w, v);
+}
+
+pub fn loud_option(w: &mut Option<Vec<Loud>>, v: &Option<Vec<Loud>>) {
+    assign_option(w, v);
+}
+
+/// Given no caller's dictionary: its T is a value JS gives.
+pub fn alone<T: Clone>(dest: &mut Option<T>, source: &Option<T>) {
+    dest.clone_from(source);
+}
+
+pub fn concrete(w: &mut Option<Vec<Loud>>, v: &Option<Vec<Loud>>) {
+    w.clone_from(v);
+}
+`,
+  );
+  expect(body(flat, "assign")).toContain(
+    "if (TClone.cloneFrom) { TClone.cloneFrom(dest, source); } else { const old = $apart(dest.value); dest.value = TClone.clone(source); dropT?.(old); }",
+  );
+  expect(body(flat, "assignOption")).toContain(
+    "if (dest.value != null && source != null && TClone.cloneFrom) { TClone.cloneFrom(dest, source); } else {",
+  );
+  expect(body(flat, "loud")).toContain("cloneFrom(to, from) { $cloneIntoVec(to.value, from, (item) => loudClone_clone(item), undefined, loudDrop_drop); }");
+  expect(body(flat, "texts")).not.toContain("cloneFrom");
+  expect(body(flat, "alone")).not.toContain("cloneFrom");
+  expect(body(flat, "concrete")).toContain("if (w.value != null && v != null) { $cloneIntoVec(w.value, v,");
+  expect(body(flat, "concrete")).not.toContain("cloneFrom");
+});
+
 // #912: `max`, `min` and `clamp` of a type with a destructor drop what they
 // don't give back, and all they were given as a comparison panics, by the
 // runtime's `$maxOf`, `$minOf` and `$clampBy`'s `drop`; of one with

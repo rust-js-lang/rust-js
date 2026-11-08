@@ -230,7 +230,7 @@ panic, the form is as it was.
 `Result`'s, a `Reverse`'s, an `Option` of a boxed payload):
 `forwards_clone_from`, held by `test/corpus/clone_from_option_own.rs`.
 Before, each was `*dest = source.clone()`, which never called the crate's
-`clone_from`; the refusal says what to write instead, and #927 asks for the forwarding. A generic `Option<T>`'s is still `*dest = source.clone()`, #928.
+`clone_from`; the refusal says what to write instead, and #927 asks for the forwarding. A generic `Option<T>`'s was still `*dest = source.clone()`, which #928 made the caller's type's (below).
 
 Corpus: `clone_from_std_own`, each of the types under clones that panic,
 with and without destructors, against native Rust in both builds, failing
@@ -257,3 +257,49 @@ Held by `test/corpus/hash_map_drop_stops_at_a_panic.rs`: values alone,
 keys and values, a set, `clear()`, and a B-tree's beside them, each entry
 dropping alike so a hashed map's order doesn't show. Mutations
 `hash-map-*drop-goes-on`.
+
+## Amendment: a generic `clone_from` is the caller's type's (2026-11-08, #928)
+
+Generic code compiles once, so its `clone_from` of a `T`, a `Box<T>` or
+an `Option<T>` was `*dest = source.clone()`, every clone and then the old
+value dropped, though the caller's `T` was a `Vec<D>`, whose `clone_from`
+std writes in place, or a type with its own `clone_from`, which it never
+called. Results change (0262); Rust's behaviour is preserved, decided by
+the caller's type, as a monomorphised instance is.
+
+**A `Clone` dictionary carries its `clone_from` where it's its own, and
+generic code asks it first:**
+
+- An impl's own `clone_from` was in its dictionary already (ADR 0507). A
+  std type's dictionary now has one where std's is in place and seen,
+  `clone_into`'s or an `Option`'s of its value's (`dictionary_clone_from`,
+  `std_types/slice.rs`): `{ clone(value) {..}, cloneFrom(to, from) {
+  $cloneIntoVec(to.value, from, ..); } }`. One whose clone is quiet, a
+  `Vec<String>`'s, has none, as it had.
+- Generic code's `clone_from` of a `T` or a `Box<T>`: `if (TClone.cloneFrom)
+  TClone.cloneFrom(dest, source); else { <*dest = source.clone()> }`; of an
+  `Option<T>`, the same where both are `Some`, `dest.value != null &&
+  source != null && TClone.cloneFrom` (`written_over`, the one answer
+  `clone_from`, an `Option`'s and `clone_over`'s items ask). The box given
+  is the one generic code has of the `&mut`, or, of a local of its own, a
+  box of it, what it wrote taken back.
+- Only a dictionary a caller gives is asked (`clone_given`): one made where
+  none is given, of a value JS gives, has no `cloneFrom`.
+- Concrete code is as it was.
+
+**Refused, not approximated** (#927 asks for each): a generic `Result<T,
+E>`'s or `Reverse<T>`'s `clone_from`, whose std forwarding to the value's
+rust-js doesn't write, and a `Clone` dictionary given to generic code of a
+type whose `clone_from` forwards where rust-js doesn't write it, an
+`Option<Counted>` of a `Counted` with its own: generic code would ask its
+`cloneFrom` and find none.
+
+Corpus: `clone_from_generic_std_own`, a `T`, a `VecDeque` as `T`, an
+`Option<T>`, a `Box<T>`, items of `Option<T>`s and a local, of `Vec<D>`s
+with clones that panic and of a crate type with its own `clone_from`,
+against native Rust in both builds, failing before;
+`clone_from_generic_result_refused`, `clone_from_generic_option_own_refused`;
+the lowering test pins both branches and concrete code's form; mutations
+`generic-clone-from-*`, `generic-option-clone-from-unasked`,
+`dictionary-clone-from-forwarded-unrefused`,
+`std-clone-dictionary-without-clone-from`; the guide's `assign_items`.

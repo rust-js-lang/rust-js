@@ -1040,6 +1040,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// change in place is a box, named for its parameter, copied back once
     /// the call returns (ADR 0074). What's given before it that does
     /// something runs first, before the box reads the place.
+    /// The box `place` is the `value` of, given on as it is where a `&mut`
+    /// to it goes in a box: one this function was given, `dest` of
+    /// `dest.value`, and a cell a place holds, a reborrow's, `&mut **self`
+    /// of an impl's for `&mut T`; not a box of a copy. `None` of another.
+    pub(super) fn box_of_place(&self, state: &State<'_, 'tcx>, place: &Expr) -> Option<Expr> {
+        if let js::ExprKind::Member(boxed, field) = &place.kind
+            && field == js::HELD
+            && let js::ExprKind::Var(name) = &boxed.kind
+            && state.naming.boxes().contains(name)
+        {
+            return Some((**boxed).clone());
+        }
+        self.held_cell(place)
+    }
+
     pub(super) fn boxed_args(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -1159,19 +1174,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 exprs.push(place);
                 continue;
             }
-            // A box this function was given, given on as it is, and a cell a
-            // place holds, a reborrow's, `&mut **self` of an impl's for
-            // `&mut T`: the cell, not a box of a copy.
-            if let js::ExprKind::Member(boxed, field) = &place.kind
-                && field == js::HELD
-                && let js::ExprKind::Var(name) = &boxed.kind
-                && state.naming.boxes().contains(name)
-            {
-                exprs.push((**boxed).clone());
-                continue;
-            }
-            if let Some(cell) = self.held_cell(&place) {
-                exprs.push(cell);
+            if let Some(boxed) = self.box_of_place(state, &place) {
+                exprs.push(boxed);
                 continue;
             }
             // Its lifetimes, the signature's own, erased: a type with them

@@ -20,7 +20,11 @@ function loudDrop_drop(loud) {
 }
 
 function copyInto(dest, source, TClone) {
-  dest.value = TClone.clone(source);
+  if (TClone.cloneFrom) {
+    TClone.cloneFrom(dest, source);
+  } else {
+    dest.value = TClone.clone(source);
+  }
 }
 
 function main() {

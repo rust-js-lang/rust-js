@@ -866,4 +866,20 @@ export const mutations: Mutation[] = [
     replace: "                    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_option_own.rs$"],
   },
+  {
+    name: "generic-clone-from-place-not-given-back",
+    breaks: "a generic `clone_from` of a local, given its dictionary's `cloneFrom` in a box of it, never takes back what it wrote: a `None` written over by a `Some` stays `None` (#928)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                                StmtKind::Assign(to.clone(), Expr::member(Expr::var(name), js::HELD))\n",
+    replace: "                                StmtKind::Expr(Expr::member(Expr::var(name), js::HELD))\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_generic_std_own.rs$"],
+  },
+  {
+    name: "generic-clone-from-box-made-again",
+    breaks: "a generic `clone_from` of what its `&mut T` points at gives its dictionary a box of a copy, `{ value: dest.value }`, not the box it was given (#928)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                        Value::Ref(place) => this.box_of_place(state, place),\n",
+    replace: "                        Value::Ref(_) => None,\n",
+    tests: ["test/lowering-std-unwinds.test.ts", "-t", "generic clone_from"],
+  },
 ];

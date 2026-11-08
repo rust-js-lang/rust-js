@@ -1166,20 +1166,61 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         out.push(StmtKind::Expr(into.call(dest, source)).at(this.js_span(span)));
                         return Ok(Value::Expr(Expr::undefined()));
                     }
+                    // Of an `Option`, its value's, where both are `Some`; of a
+                    // value only the caller knows, a `T` or a `Box<T>`, or an
+                    // `Option` of one, its dictionary's `clone_from`, where
+                    // the caller's type has one, asked first (#928): given
+                    // the box generic code has of `dest`, or one of its place
+                    // here, written back.
                     let inner = this.option_of(ty).filter(|&inner| !this.boxed_payload(inner));
-                    if let Some(into) = inner.map(|inner| this.clone_into(inner, span)).transpose()?.flatten() {
+                    let to = this.dest_place(&dest, ty, span)?;
+                    let given_box = match &dest {
+                        Value::Ref(place) => this.box_of_place(state, place),
+                        _ => Some(this.value_expr(dest.clone(), span)?),
+                    };
+                    let made = given_box.is_none().then(|| this.fresh("to"));
+                    let pointer = given_box.unwrap_or_else(|| Expr::var(made.as_deref().expect("a box made")));
+                    let held = inner.unwrap_or(ty);
+                    if this
+                        .written_over(held, (to.clone(), pointer.clone()), source.clone(), span)?
+                        .is_some()
+                    {
                         this.flush(state, out)?;
+                        // Read again by what's asked and by the clone.
                         let source = match source.reads_same() {
                             true => source,
                             false => this.spill("source", source, out),
                         };
-                        let to = this.dest_place(&dest, ty, span)?;
+                        let (asked, written) = this
+                            .written_over(held, (to.clone(), pointer), source.clone(), span)?
+                            .expect("written over, as asked above");
+                        // The box made of the place, where a dictionary's is
+                        // given it, not `clone_into`'s, which writes the place.
+                        let made = made.filter(|_| asked.is_some());
                         let some = |e: &Expr| Expr::bin(Op::LooseNe, e.clone(), Expr::null());
-                        let both = Expr::bin(Op::And, some(&to), some(&source));
-                        let written = vec![StmtKind::Expr(into.call(to, source.clone())).at(this.js_span(span))];
+                        let both = inner.map(|_| Expr::bin(Op::And, some(&to), some(&source)));
+                        let test = match (both, asked) {
+                            (Some(both), Some(asked)) => Expr::bin(Op::And, both, asked),
+                            (Some(test), None) | (None, Some(test)) => test,
+                            (None, None) => unreachable!("`clone_into`'s is written above"),
+                        };
+                        let mut then = Vec::new();
+                        if let Some(name) = &made {
+                            then.push(
+                                StmtKind::Const(name.clone(), crate::lower::mut_refs::boxed(to.clone()))
+                                    .at(this.js_span(span)),
+                            );
+                        }
+                        then.push(StmtKind::Expr(written).at(this.js_span(span)));
+                        if let Some(name) = &made {
+                            then.push(
+                                StmtKind::Assign(to.clone(), Expr::member(Expr::var(name), js::HELD))
+                                    .at(this.js_span(span)),
+                            );
+                        }
                         let mut replaced = Vec::new();
                         this.replace_with_clone(state, (dest, source), (ty, def_id), arg_tys, span, &mut replaced)?;
-                        out.push(StmtKind::If(both, written, Some(replaced)).at(this.js_span(span)));
+                        out.push(StmtKind::If(test, then, Some(replaced)).at(this.js_span(span)));
                         return Ok(Value::Expr(Expr::undefined()));
                     }
                     if this.forwards_clone_from(ty, span)? {

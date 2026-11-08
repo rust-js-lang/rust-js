@@ -969,7 +969,14 @@ duplicate as it's found, of a `Box`'s or an `Rc`'s too; and a `Vec`'s
 source's length, writes over each it keeps, then clones the rest on; a
 `VecDeque`'s clears, then clones, `$cloneIntoDeque`; a `HashMap`'s drops
 its entries, then clones, `$cloneIntoMap`; an array's writes each item
-over; and an `Option`'s or a `Box`'s is its value's. A `HashMap`'s drop,
+over; and an `Option`'s or a `Box`'s is its value's. Generic code's
+`clone_from` of a `T`, a `Box<T>` or an `Option<T>`'s value asks the
+caller's `Clone` dictionary for its `cloneFrom` first, which a std type's
+has where std's is in place, as an impl's own is, and is `*dest =
+source.clone()` where it has none; a generic `Result`'s, and a dictionary
+given to generic code of a type whose forwarding rust-js doesn't write
+yet, an `Option<T>` whose `T` has its own `clone_from`, are refused
+(#927). A `HashMap`'s drop,
 and its `clear()`, stop at an entry whose drop panics, a plain `for` loop,
 as hashbrown's do, where a `BTreeMap`'s go on; a `BTreeMap`'s `insert` of a
 key it holds drops the key given before it writes the value, `$insert(..,
@@ -1014,10 +1021,28 @@ pub fn copy_into(into: &mut Vec<Loud>, from: &Vec<Loud>) {
 pub fn queue_into(into: &mut VecDeque<Loud>, from: &VecDeque<Loud>) {
     into.clone_from(from);
 }
+
+fn assign<T: Clone>(dest: &mut T, source: &T) {
+    dest.clone_from(source);
+}
+
+pub fn assign_items(into: &mut Vec<Loud>, from: &Vec<Loud>) {
+    assign(into, from);
+}
 ```
 
 ```js
-import { $cloneIntoDeque, $cloneIntoVec, $cmp, $dropItems, $sortedEntries } from "@rust-js/runtime";
+import {
+  $apart,
+  $assign,
+  $cleanup,
+  $cloneIntoDeque,
+  $cloneIntoVec,
+  $cmp,
+  $dropEach,
+  $dropItems,
+  $sortedEntries,
+} from "@rust-js/runtime";
 
 export const loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
 function loudClone_clone(loud) {
@@ -1057,6 +1082,41 @@ export function copyInto(into, from) {
 
 export function queueInto(into, from) {
   $cloneIntoDeque(into, from, (item) => loudClone_clone(item), loudDrop_drop);
+}
+
+function assign(dest, source, TClone, dropT) {
+  if (TClone.cloneFrom) {
+    TClone.cloneFrom(dest, source);
+  } else {
+    const old = $apart(dest.value);
+    dest.value = TClone.clone(source);
+    dropT?.(old);
+  }
+}
+
+export function assignItems(into, from) {
+  const dest = { value: into };
+  try {
+    assign(
+      dest,
+      from,
+      {
+        clone(value) {
+          return value.map((item) => loudClone_clone(item));
+        },
+        cloneFrom(to, from) {
+          $cloneIntoVec(to.value, from, (item) => loudClone_clone(item), undefined, loudDrop_drop);
+        },
+      },
+      $dropEach(loudDrop_drop),
+    );
+  } catch (error) {
+    $cleanup(() => {
+      $assign(into, dest.value);
+    });
+    throw error;
+  }
+  $assign(into, dest.value);
 }
 ```
 

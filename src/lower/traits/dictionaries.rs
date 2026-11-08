@@ -392,7 +392,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             if clone {
                 let clone = self.clone_fn("value", ty, span)?;
-                return Ok(Expr::object(vec![Prop::Field("clone".into(), clone)]));
+                let mut props = vec![Prop::Field("clone".into(), clone)];
+                // And its `clone_from`, where std's is its own, which generic
+                // code asks first (#928).
+                if let Some(clone_from) = self.dictionary_clone_from(ty, span)? {
+                    let name = bindings::trait_method_name(self.tcx, tr.def_id, "clone_from");
+                    props.push(Prop::Field(name, clone_from));
+                }
+                return Ok(Expr::object(props));
             }
         }
         // std's `AsRef` of text as a `str`, or of a `Vec`, an array or a slice

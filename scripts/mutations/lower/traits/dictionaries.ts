@@ -614,4 +614,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_collect.rs$"],
     snapshots: true,
   },
+  {
+    name: "std-clone-dictionary-without-clone-from",
+    breaks: "a `Vec<D>`'s `Clone` dictionary has no `cloneFrom`, so a generic `clone_from` of it clones every item before the old ones drop, not std's in place (#928)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                    props.push(Prop::Field(name, clone_from));\n",
+    replace: "                    let _ = (name, clone_from);\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_generic_std_own.rs$"],
+  },
 ];

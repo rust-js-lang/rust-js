@@ -274,11 +274,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A type parameter's, or an associated type's, `A::Item`.
         if self.is_unknown(item) {
             let clone = self.clone_arg(item, span)?;
-            let dictionary = self.dictionary(ty::TraitRef::new(self.tcx, self.clone_trait(), [item]), span)?;
-            let clone_from = Expr::member(
-                dictionary,
-                crate::lower::bindings::trait_method_name(self.tcx, self.clone_trait(), "clone_from"),
-            );
+            let clone_from = self.given_clone_from(item, span)?;
             let place = Expr::call(Expr::helper("$ptr"), vec![Expr::var("items"), Expr::var("i")]);
             let called = Expr::call(clone_from.clone(), vec![place, Expr::var("from")]);
             return Ok((Some(clone), Some(Expr::bin(Op::And, clone_from, written(called)))));
@@ -292,7 +288,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // An `Option`'s: its value's, where both are `Some`, and otherwise
         // a clone written over it, what it held dropped (#922).
-        if let Some(over) = self.option_clone_over(item, slot(), Expr::var("from"), span)? {
+        let pointer = Expr::call(Expr::helper("$ptr"), vec![Expr::var("items"), Expr::var("i")]);
+        if let Some(over) = self.option_clone_over(item, (slot(), pointer), Expr::var("from"), span)? {
             return Ok((
                 None,
                 Some(Expr::arrow(vec!["items".into(), "i".into(), "from".into()], over)),
@@ -308,35 +305,125 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `to.clone_from(from)` of an `Option` whose value is written in place,
-    /// `clone_into`'s, as std's is: of two `Some`s, its value's; otherwise
+    /// `written_over`'s, as std's is: of two `Some`s, its value's; otherwise
     /// `*to = from.clone()`, the clone written over it, then what it held
-    /// dropped (#922). `to` is a place, read more than once, as `from` is.
-    /// `None` where its value isn't written in place.
+    /// dropped (#922). `to` is a place, read more than once, as `from` is,
+    /// and the box generic code has of it, which is its value's too, as a
+    /// `Some` of it is the value. `None` where its value isn't written in
+    /// place.
     pub(in crate::lower) fn option_clone_over(
         &mut self,
         ty: ty::Ty<'tcx>,
-        to: Expr,
+        (to, pointer): (Expr, Expr),
         from: Expr,
         span: Span,
     ) -> R<Option<Vec<Stmt>>> {
         let Some(inner) = self.option_of(ty).filter(|&inner| !self.boxed_payload(inner)) else {
             return Ok(None);
         };
-        let Some(into) = self.clone_into(inner, span)? else {
+        let Some((asked, written)) = self.written_over(inner, (to.clone(), pointer), from.clone(), span)? else {
             return Ok(None);
         };
         let some = |e: &Expr| Expr::bin(Op::LooseNe, e.clone(), Expr::null());
-        let both = Expr::bin(Op::And, some(&to), some(&from));
+        let mut both = Expr::bin(Op::And, some(&to), some(&from));
+        if let Some(asked) = asked {
+            both = Expr::bin(Op::And, both, asked);
+        }
         let mut replaced = Vec::new();
         let clone = self.clone_value(from.clone(), ty, span, &mut replaced)?;
         let old = self.fresh("old");
         replaced.push(StmtKind::Const(old.clone(), to.clone()).at(js::Span::NONE));
         replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));
         self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;
-        let written = StmtKind::Expr(into.call(to, from)).at(js::Span::NONE);
+        let written = StmtKind::Expr(written).at(js::Span::NONE);
         Ok(Some(vec![
             StmtKind::If(both, vec![written], Some(replaced)).at(js::Span::NONE),
         ]))
+    }
+
+    /// `held` at `place`, `pointer` the box generic code has of it, written
+    /// over in place by `from` as std's `clone_from` of it writes it, where
+    /// that isn't `*place = from.clone()`: `clone_into`'s, a `Box`'s its
+    /// value's; or of a type only a caller knows, its `Clone` dictionary's
+    /// `clone_from`, which the caller's type has where std's or its impl's
+    /// is its own (`dictionary_clone_from`), so the JS asks it first (#928):
+    /// what's asked, and the call. `None` where it's `*place =
+    /// from.clone()` here.
+    pub(in crate::lower) fn written_over(
+        &mut self,
+        held: ty::Ty<'tcx>,
+        (place, pointer): (Expr, Expr),
+        from: Expr,
+        span: Span,
+    ) -> R<Option<(Option<Expr>, Expr)>> {
+        if let Some(into) = self.clone_into(held, span)? {
+            return Ok(Some((None, into.call(place, from))));
+        }
+        let mut value = held;
+        while value.is_box() {
+            value = value.boxed_ty().expect("a `Box`");
+        }
+        if !self.clone_given(value) {
+            return Ok(None);
+        }
+        let clone_from = self.given_clone_from(value, span)?;
+        Ok(Some((
+            Some(clone_from.clone()),
+            Expr::call(clone_from, vec![pointer, from]),
+        )))
+    }
+
+    /// Whether `ty` is a type only a caller knows whose `Clone` dictionary
+    /// a caller gives. Where none does, its dictionary is made here, of a
+    /// value JS gives, and its `clone_from` is std's provided.
+    pub(in crate::lower) fn clone_given(&self, ty: ty::Ty<'tcx>) -> bool {
+        self.is_unknown(ty) && (self.evidence_for(ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]))).is_some()
+    }
+
+    /// The `clone_from` of a type only a caller knows, its `Clone`
+    /// dictionary's, `TClone.cloneFrom`: `undefined` where it's std's
+    /// provided `*dest = source.clone()`.
+    fn given_clone_from(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
+        let dictionary = self.dictionary(ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]), span)?;
+        Ok(Expr::member(
+            dictionary,
+            crate::lower::bindings::trait_method_name(self.tcx, self.clone_trait(), "clone_from"),
+        ))
+    }
+
+    /// The `clone_from` of a std type's `Clone` dictionary, where std's
+    /// isn't `*dest = source.clone()`, `(to, from) => ..`, `to` the box
+    /// generic code has of its `&mut`: `clone_into`'s, an `Option`'s of its
+    /// value's (`written_over`), so a generic `clone_from` of it is std's
+    /// (#928), as an impl's own `clone_from` is its dictionary's. `None`
+    /// where std's is the provided one. Refused where std's forwards to a
+    /// value's that rust-js doesn't write (#927), which a generic caller's
+    /// `clone_from` would otherwise skip.
+    pub(in crate::lower) fn dictionary_clone_from(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        // A type only a caller knows, whose dictionary is made here, of no
+        // caller's: its `clone_from` is no caller's either, std's provided.
+        if self.is_unknown(ty) {
+            return Ok(None);
+        }
+        let (to, from) = (Expr::var("to"), Expr::var("from"));
+        let place = Expr::member(to.clone(), js::HELD);
+        let body = match self.written_over(ty, (place.clone(), to.clone()), from.clone(), span)? {
+            Some((None, written)) => vec![StmtKind::Expr(written).at(js::Span::NONE)],
+            // A `Box` of a type parameter's, which is its value: the
+            // value's dictionary's, given, where it has one.
+            Some((Some(given), _)) => return Ok(Some(given)),
+            None => match self.option_clone_over(ty, (place, to), from, span)? {
+                Some(over) => over,
+                None if self.forwards_clone_from(ty, span)? => {
+                    return Err(self.unsupported(
+                        span,
+                        &format!("a `Clone` dictionary of `{ty}` given to generic code, whose std `clone_from` is its value's, which the crate's or std's own writes in place (#927)"),
+                    ));
+                }
+                None => return Ok(None),
+            },
+        };
+        Ok(Some(Expr::arrow(vec!["to".into(), "from".into()], body)))
     }
 
     /// How a `ty`, a JS object, is written over in place by a clone of
