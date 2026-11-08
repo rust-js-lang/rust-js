@@ -1227,3 +1227,17 @@ removing one, and is retired as equivalent. `back-stepped-source-raw`, of
 the map arm that now owns the case alone, is caught by its corpus case,
 `range_map_rfold_holding.rs`; `flatten-of-iterators-each-called` names its
 line as it now reads.
+
+## Amendment: a generic function's `impl`, in its own terms (#993)
+
+What a caller steps from its back that a function gives behind an `impl`
+is made knowing its back where it's made, but the set had it in the
+caller's terms, `Filter<Range<u32>, {closure}<bool>>` of a call of
+`evens_or_tens::<bool>`, where the generic maker's body asks of
+`Filter<Range<u32>, {closure}<B>>`: its filter made as JS's own, which
+`Two`'s `next_back` found no back of, `it.back is not a function`. Each
+type of the `impl`'s hidden type is recorded in the maker's terms too, as
+`type_of` of the `impl` gives it, matched to the caller's by instantiating
+it with the `impl`'s arguments (`made_generically`), and given to the
+maker's own set, which its callers instantiate in turn (#388). Corpus case
+`generic_impl_stepped_from_its_back`.

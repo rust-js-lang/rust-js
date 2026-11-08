@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "generic-impl-unstepped",
+    breaks:
+      "a generic function's `impl DoubleEndedIterator` held in a struct isn't made knowing its back in its own terms: `it.back is not a function` (#993)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                if given && !length {\n",
+    replace: "                if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_impl_stepped_from_its_back.rs$"],
+  },
+  {
     name: "enumerate-of-compiled-struct-stepped-unrecorded",
     breaks:
       "an enumeration of std's compiled `Fuse` of numbers whose own `next_back()` or `rfold` the crate calls isn't recorded stepped from its back: `$enumerate` of it, made knowing neither, is refused (#712)",

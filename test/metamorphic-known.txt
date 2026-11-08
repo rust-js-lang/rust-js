@@ -8,19 +8,11 @@
 #989 P0: a closure that captured a Box<Cell<_>> by move, then cloned, shares the cell (const counter2 = counter)
 plain std boxed closure_clone_cell.rs
 
-#993 P0: a generic function's `impl DoubleEndedIterator` return held in a struct isn't made knowing its back
-plain impl-owned filters_held_double_ended.rs
-plain impl-owned own_back_methods_given_dictionaries.rs
-
 #994 P0: `by_ref()` of a type parameter given as it is passes the crate's own `fold` on
 plain std impl-owned by_ref_lends.rs
 
 #997 P0: captured_copy_written_whole (metamorphic boxed) is still wrong after #979 and #980: a Copy struct in a box, captured and written whole
 plain std boxed captured_copy_written_whole.rs
-
-#999 P1: a map of items with a destructor given whole to generic code, then stepped from its back, crashes (it.back / it.len is not a function)
-plain boxed owned_maps_asked_their_length.rs
-plain boxed std_rev.rs
 
 #1000 P0: a RefCell borrow_mut that native panics on goes unchecked when the cell's Rc is held in a Box and reassigned through *b
 plain std boxed contains_guarded_set_again.rs

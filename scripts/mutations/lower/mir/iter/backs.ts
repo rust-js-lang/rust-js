@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "compiled-map-reversed-unknowing",
+    breaks:
+      "a compiled `Map` of items with a destructor given back by a call is reversed as it is, `$rev(it)`, which finds no back (#999)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                true => self.as_double_ended(receiver, iter_ty, span)?,\n",
+    replace: "                true => receiver,\n",
+    tests: ["test/corpus.test.ts", "-t", "^compiled_map_given_back_reversed.rs$"],
+  },
+  {
     name: "given-as-it-is-rev-unclosed",
     breaks:
       "`rev()` of a type parameter given as it is, stepped by its dictionary's `next_back`, never drops it: `drop a at 0` is lost (#971)",
@@ -339,9 +348,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`rev().rev()` of an array's items with a destructor takes them out, `$rest(..).toReversed()`, nothing closing what's left (#205)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            return Ok(self\n                .reversed_in_order(iter_ty)\n",
+    find: "            if !self.reversed_in_order(iter_ty) {\n",
     replace:
-      "            return Ok((false && self.reversed_in_order(iter_ty))\n",
+      "            if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_closed_items.rs$"],
   },
   {

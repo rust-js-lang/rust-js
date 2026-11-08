@@ -23,6 +23,58 @@ use crate::lower::{Body, fn_def};
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
+/// Of each `impl` in `ty` a generic function gives, the function, its
+/// hidden type as the caller has it, and what each type in that is in the
+/// function's own
+/// terms, `Filter<Range<u32>, {closure}<B>>` of `evens_or_tens::<B>`'s
+/// `impl DoubleEndedIterator` of a `bool` caller's: what its body makes
+/// (#993). The two are alike but where the function's has a type
+/// parameter, walked side by side.
+fn made_generically<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    recognition: Recognition<'_, 'tcx>,
+    ty: Ty<'tcx>,
+) -> Vec<(
+    rustc_span::def_id::DefId,
+    Ty<'tcx>,
+    impl Fn(Ty<'tcx>) -> Option<Ty<'tcx>> + 'tcx,
+)> {
+    let mut found = Vec::new();
+    for part in ty.walk().filter_map(|part| part.as_type()) {
+        let ty::Alias(
+            _,
+            ty::AliasTy {
+                kind: ty::Opaque { def_id },
+                args,
+                ..
+            },
+        ) = *part.kind()
+        else {
+            continue;
+        };
+        let own = tcx.type_of(def_id).instantiate_identity().skip_normalization();
+        if !rustc_middle::ty::TypeVisitableExt::has_non_region_param(&own) {
+            continue;
+        }
+        let concrete = tcx.erase_and_anonymize_regions(recognition.reveal(part));
+        // Each type in its own terms, by what it is of the caller's arguments.
+        let theirs: Vec<(Ty<'tcx>, Ty<'tcx>)> = (own.walk().filter_map(|part| part.as_type()))
+            .map(|ours| {
+                let theirs = ty::EarlyBinder::bind(tcx, ours)
+                    .instantiate(tcx, args)
+                    .skip_normalization();
+                (
+                    tcx.erase_and_anonymize_regions(recognition.reveal(theirs)),
+                    tcx.erase_and_anonymize_regions(ours),
+                )
+            })
+            .collect();
+        let own_of = move |t: Ty<'tcx>| (theirs.iter()).find(|&&(their, _)| their == t).map(|&(_, our)| our);
+        found.push((tcx.parent(def_id), concrete, own_of));
+    }
+    found
+}
+
 /// What `all_bodies` step from their back: the types (`back_stepped`), of
 /// them those whose question is a type's, each local by its body
 /// (`stepped_locals`), and each `&mut` of a local (`borrows`).
@@ -57,6 +109,9 @@ pub(super) fn back_stepped<'tcx>(
     let mut typed: IndexSet<Ty<'tcx>> = IndexSet::default();
     // Each body's own, by its function: what a caller's call of it makes too.
     let mut of_body: IndexMap<rustc_span::def_id::DefId, IndexSet<Ty<'tcx>>> = IndexMap::default();
+    // What a generic function makes behind an `impl` a caller steps from
+    // its back, in its own terms, its own (#993).
+    let mut generic_made: Vec<(rustc_span::def_id::DefId, Ty<'tcx>)> = Vec::new();
     let rev = crate::lower::recognition::compiled_provided_method(tcx, "Iterator", "rev");
     let zip = crate::lower::recognition::compiled_provided_method(tcx, "Iterator", "zip");
     for body in all_bodies {
@@ -169,6 +224,20 @@ pub(super) fn back_stepped<'tcx>(
                 // One a function gives behind an `impl`, which its caller
                 // can't make knowing its back: made so where it's made.
                 let given = hidden != asked;
+                // And in the terms of a generic function that makes it,
+                // `evens_or_tens::<B>`'s filter of a closure of its `B`, which
+                // its body asks, not the caller's `bool`'s (#993).
+                if given && !length {
+                    for (maker, concrete, own) in made_generically(tcx, recognition, hidden) {
+                        let adapters: Vec<Ty<'tcx>> = (concrete.walk().filter_map(|part| part.as_type()))
+                            .filter(|held| matches!(held.kind(), ty::Adt(a, _) if is_iter_adapter_def(tcx, a.did())))
+                            .collect();
+                        for held in adapters {
+                            let made = back_stepped_adapter(tcx, recognition, held, true, &drops);
+                            generic_made.extend(made.into_iter().filter_map(&own).map(|t| (maker, t)));
+                        }
+                    }
+                }
                 // One held where it's given, made knowing its back where
                 // it's made, as one given behind an `impl` is: asked its
                 // back, not its length alone.
@@ -266,6 +335,10 @@ pub(super) fn back_stepped<'tcx>(
                 false => stepped.extend(back_stepped_adapter(tcx, recognition, adapter, false, &drops)),
             }
         }
+    }
+    for (maker, made) in generic_made {
+        typed.insert(made);
+        of_body.entry(maker).or_default().insert(made);
     }
     stepped.extend(of_body.values().flatten().copied());
     // And of a generic function's type parameters, `Filter<I, P>` a function

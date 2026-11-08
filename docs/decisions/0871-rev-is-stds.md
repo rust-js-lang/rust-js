@@ -420,3 +420,13 @@ a variable's is. Mutations
 `given-as-it-is-not-in-input` follow the code; `holder-param-steps-js`,
 `lent-param-meets-unseen`, `apart-std-struct-shares-steps`,
 `assign-std-struct-methods` and `std-iterator-copy-opened` are new.
+
+## Amendment: a compiled struct a call gives back, reversed (#999)
+
+A `rev()` of a map of items with a destructor, `closed_rev`'s, took what
+it reverses for a JS form closed already, `$rev(it)`, but a map given
+whole to generic code and back, `hold(v.into_iter().map(f))`, is std's
+compiled struct, which knows its back only given it: `it.back is not a
+function`. Where `compiled_struct` says it's one, it's made knowing its
+back first, `as_double_ended`'s `$knowing` of its compiled `next_back`.
+Corpus case `compiled_map_given_back_reversed`.

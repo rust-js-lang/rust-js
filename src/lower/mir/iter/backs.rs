@@ -20,10 +20,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `reversed_in_place` turns it inward (#205). Not an `enumerate`'s,
         // whose index from the back is its length's, which `$closing`
         // doesn't know: refused as before.
+        // Of std's compiled struct, which knows its back only given it,
+        // `$knowing`'s, made so (#999).
         if self.array_source(iter_ty).is_none() {
-            return Ok(self
-                .reversed_in_order(iter_ty)
-                .then(|| crate::lower::iterators::reversed_by(receiver)));
+            if !self.reversed_in_order(iter_ty) {
+                return Ok(None);
+            }
+            let it = match self.compiled_struct(self.reveal(iter_ty), &receiver) {
+                true => self.as_double_ended(receiver, iter_ty, span)?,
+                false => receiver,
+            };
+            return Ok(Some(crate::lower::iterators::reversed_by(it)));
         }
         let it = match self.array_source(iter_ty) {
             Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => receiver,
