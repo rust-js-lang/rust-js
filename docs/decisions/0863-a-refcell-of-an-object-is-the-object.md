@@ -1380,3 +1380,16 @@ counted, its type drops, and it was declared first as one that does. A
 checked one's, a momentary borrow's, is elaborated still, releasing
 nothing where it's lowered. It's [ADR 1044's amendment](1044-a-flattened-state-is-its-classs-own-keys.md#amended-700-its-guards-drop-drops-nothing-beside-a-counted-cell-of-its-type-too),
 where a flattened state met it.
+
+## Amendment: a handle set again through its box (#1000)
+
+A borrow guarded by `!v.borrow().contains(t)` meets none of the loop's
+only if `v` is never set again. That check matched only `v = ..` and
+`&mut v`. With the handle held in a box, `*into = Rc::clone(types)` sets
+`into` again, since a box is the value it holds (ADR 0023), but the check
+didn't see it. The `then`'s `borrow_mut` was taken for one that meets
+nothing and went unchecked, so Rust's `RefCell already borrowed` panic was
+lost. A box's deref is now `v` itself in that check. Results changed
+([0262](0262-when-rust-and-js-disagree.md)), so Rust's panic is kept. Held
+by the corpus case `contains_guarded_set_through_a_box` and the mutation
+`unmet-box-content-set-unseen`.

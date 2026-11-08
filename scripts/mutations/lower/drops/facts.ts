@@ -506,4 +506,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_replaced_with.rs$"],
   },
+  {
+    name: "unmet-box-content-set-unseen",
+    breaks: "a guarded variable set again through its box, `*into = Rc::clone(types)`, is taken for never set again, so the `then`'s `borrow_mut` goes unchecked and Rust's `RefCell already borrowed` panic is lost (#1000)",
+    file: "src/lower/drops/facts.rs",
+    find: "                    ExprKind::Deref { arg } if thir[arg].ty.is_box() => place = arg,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^contains_guarded_set_through_a_box.rs$"],
+  },
 ];
