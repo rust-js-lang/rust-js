@@ -613,4 +613,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
   },
+  {
+    name: "presence-says-none-is-undefined",
+    breaks: "every `Option`'s presence test says its `None` is `undefined`, `x !== undefined`, so a `None` a `.d.ts` admits as `null`, given by JS, is read as a `Some` (#822)",
+    file: "src/js/make.rs",
+    find: "        let none = option.facts.of_presence();\n",
+    replace: "        let none = Facts::of(Known::NoneUndefined);\n",
+    tests: ["test/declarations-conformance.test.ts"],
+  },
 ];

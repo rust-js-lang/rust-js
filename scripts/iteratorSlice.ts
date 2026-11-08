@@ -13,12 +13,15 @@
 //   bun scripts/iteratorSlice.ts run rows [parts]          the rows of both tables the change names (scripts/iteratorRows.ts, #818)
 //   bun scripts/iteratorSlice.ts run format [parts]        the formatting grid's slice (#941), of a change to the formatting code
 //   bun scripts/iteratorSlice.ts run numbers [parts]       the numbers grid's slice (#940), of a change to the numbers' code
+//   bun scripts/iteratorSlice.ts run declarations 1        the declarations' TypeScript callers (#822), of a change to what a `None` is at the JS boundary
 //
 // And a change to the formatting code, `formatPaths`, runs the formatting
 // grid's slice (test/format-grid.ts, #941), each push's check's
 // `format-grid` and `check:fast`'s; and to the numbers' code,
 // `numberPaths`, the numbers grid's (test/number-grid.ts, #940),
-// `number-grid`.
+// `number-grid`; and to what a `None` is where JS gives or takes it,
+// `declarationPaths`, every TypeScript caller of the declarations
+// (test/declarations-conformance.test.ts, #822), `declarations`.
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
 import { noteRate, pick } from "./iteratorRows";
@@ -108,6 +111,27 @@ export const numberPaths = [
 
 const numberGlobs = numberPaths.map((path) => new Bun.Glob(path));
 
+/** What a `None` is at the JS boundary, as globs of the repository's
+ * paths: the `.d.ts` printer, the one owner of how a place holds a `None`
+ * (`NoneForm`) and of what may look like one, the bindings' nullability,
+ * and the presence test JS reads it by; and the callers that test them. */
+export const declarationPaths = [
+  "src/typescript.rs",
+  "src/lower/representation/nones.rs",
+  "src/lower/representation/options.rs",
+  "src/lower/bindings/nullable.rs",
+  "src/js/make.rs",
+  "src/js/stmt_walk.rs",
+  "test/declarations-conformance.test.ts",
+];
+
+const declarationGlobs = declarationPaths.map((path) => new Bun.Glob(path));
+
+/** Whether a change of `files` touches what a `None` is at the JS boundary. */
+export function touchesDeclarations(files: string[]): boolean {
+  return files.some((file) => declarationGlobs.some((glob) => glob.match(file)));
+}
+
 /** Whether a change of `files` touches the numbers' code. */
 export function touchesNumbers(files: string[]): boolean {
   return files.some((file) => numberGlobs.some((glob) => glob.match(file)));
@@ -129,6 +153,8 @@ export const runs = {
   forms: [{ name: "the corpus with std's iterator structs", file: "test/iterator-forms.test.ts", env: { ITERATOR_FORMS: "corpus" } }],
   format: [{ name: "the formatting grid's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "format" } }],
   numbers: [{ name: "the numbers grid's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "numbers" } }],
+  // All of it, in one part: some 20 s.
+  declarations: [{ name: "the declarations' TypeScript callers", file: "test/declarations-conformance.test.ts", env: {} }],
 } as const;
 
 /** `of`, in `parts` processes at once, each its share of the cases
@@ -187,7 +213,7 @@ function changeRows(parts: number): Run[] {
 
 if (import.meta.main) {
   const [command, of, count, list] = process.argv.slice(2);
-  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|rows [parts [cases]]");
+  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|declarations|rows [parts [cases]]");
   const parts = count === undefined ? caseParts(availableParallelism() * 2) : Number(count);
   process.exit((await run(of as keyof typeof runs | "rows", parts, list)) ? 0 : 1);
 }

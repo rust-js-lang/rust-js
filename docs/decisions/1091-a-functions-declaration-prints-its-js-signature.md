@@ -250,3 +250,42 @@ Self` anywhere else, `Vec<&mut Self>`, is still left out.
 `test/declarations-ungiven.test.ts` holds both, and
 `test/declarations-conformance.test.ts` calls
 `nested_mut_self_through_a_dictionary`'s functions as declared.
+
+## Amended (#822): every `None` form a declaration admits, of every case whose API holds an `Option`
+
+The second half of ADR 1085's change 6: a test at the JS boundary of what
+each `.d.ts` says a `None` may be.
+
+- **The cases:** besides the nine above, each corpus case whose public
+  functions or structs hold an `Option`, but a `//@ compile-fail` case's,
+  each a test of its own: 86 cases, 88 tests with the nine's and a count's, about 20 s.
+- **Each `None` form its declaration admits:** a function is called once
+  more for each of `null`, `undefined` and an absent key that some
+  `Option` among its parameters, or among their structs' fields, is
+  declared to take: `null` where its type says `| null`, `undefined` where
+  it says `| undefined` or its key or parameter is `?`, and absent where
+  it's `?`, a parameter left out where none after it is given, a key left
+  out of its object. Each `Option` whose declaration admits the call's form
+  is given it; Rust is given what that form is, `None`, or of a nullable
+  `Option<Option<T>>` field's `null`, `Some(None)` (ADR 1017). The
+  declarations are read as rust-js prints them: `export function`'s
+  parameters, `?` kept, and each `export interface`'s fields.
+- **What it gives, shown by its type:** a TypeScript show written for each
+  result's type, a `None` `null` whatever its JS form and a struct each of
+  its fields in order, as Rust's `Show` writes them, so a key JS leaves out
+  shows as Rust's `None` does; `JSON.stringify` drops it.
+- **The values it makes more of:** a struct with `Option` fields, a `Box`,
+  a struct that holds itself (`None` past three levels), and tuples of up
+  to six, as results.
+- **When it runs:** in full in the nightly's suite, as before; and per push
+  whose change is what a `None` is at the JS boundary (`declarationPaths`
+  in `scripts/iteratorSlice.ts`: the `.d.ts` printer, `nones.rs`,
+  `options.rs`, the bindings' nullability and the presence test's JS),
+  check.yml's `declarations` and a `check:fast` job, 18 s.
+- **What it found:** no wrong answer: 59 calls give a `None` as `null`,
+  `undefined` or no key, of 12 cases, and each does what Rust's `None`
+  does. A presence test made to say every `None` is `undefined` (`!==
+  undefined`) fails seven of its tests; a final test fails where no call
+  gives each form, so the net can't go empty unseen. Of the 74 cases whose
+  calls give no `None`, most take a struct of a `Cell`, an `Rc`, an enum
+  or a tuple struct, which the generator has no value of.

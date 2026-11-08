@@ -70,6 +70,7 @@ jobs:
       iterators: ${{ steps.plan.outputs.iterators }}
       formatting: ${{ steps.plan.outputs.formatting }}
       numbers: ${{ steps.plan.outputs.numbers }}
+      declarations: ${{ steps.plan.outputs.declarations }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -242,6 +243,33 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+
+  # Every TypeScript caller of the declarations (#822), of a check whose
+  # change is what a `None` is at the JS boundary, as `plan` says
+  # (scripts/iteratorSlice.ts's `declarationPaths`): each exported function
+  # given `null`, `undefined` and an absent key where its `.d.ts` admits
+  # them, against native Rust. The nightly's suite runs it too.
+  declarations:
+    name: declarations' TypeScript callers
+    needs: plan
+    if: ${{ !inputs.nightly && needs.plan.outputs.declarations == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run the callers
+        env:
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: bun scripts/iteratorSlice.ts run declarations 1
 
   lint:
     runs-on: ubuntu-latest

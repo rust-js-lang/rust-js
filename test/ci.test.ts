@@ -81,7 +81,7 @@ test("the files only the nightly runs are test files, which its check runs", () 
 // alone, went red on `main` unseen (801d40c55, 336984bff).
 // Of a change to the iterators' code, the formatting code and the numbers', whose
 // jobs check.yml runs where its change is one (scripts/iteratorSlice.ts).
-const checkJobs = jobs({ all: true, changed: [], branch: ["src/runtime/steps.js", "src/runtime/pad.js", "src/runtime/div.js"], added: [], extra: [], cores: 4 });
+const checkJobs = jobs({ all: true, changed: [], branch: ["src/runtime/steps.js", "src/runtime/pad.js", "src/runtime/div.js", "src/typescript.rs"], added: [], extra: [], cores: 4 });
 const ranHere = checkJobs.jobs;
 
 test("each command a push's check runs is check:fast --all's, or left to CI by name", () => {
@@ -175,16 +175,17 @@ test("each part of a test file a setting selects runs where `parts` says", () =>
 // jobs and of the check it calls, check.yml's, by name, but `plan`, which
 // picks the mutations a branch's check runs, `seeds`, the day's number, and
 // `issue`, which files a red night as an issue; and `iterators`,
-// `iterator-conformance`, `iterator-forms`, `format-grid` and
-// `number-grid`, the tables' slices and the corpus with std's iterator
-// structs, which the nightly skips, as its `matrix`, `conformance`,
-// `forms`, `format` and `numbers` run all of each.
+// `iterator-conformance`, `iterator-forms`, `format-grid`, `number-grid`
+// and `declarations`, the tables' slices, the corpus with std's iterator
+// structs and the declarations' callers, which the nightly skips, as its
+// `matrix`, `conformance`, `forms`, `format` and `numbers` run all of
+// each, and its suite the callers.
 test("the nightly, here, has each job the nightly has", () => {
   const ids = (file: string) => {
     const text = readFileSync(join(root, ".github/workflows", file), "utf8");
     return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
   };
-  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators", "iterator-conformance", "iterator-forms", "format-grid", "number-grid"].includes(id));
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators", "iterator-conformance", "iterator-forms", "format-grid", "number-grid", "declarations"].includes(id));
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 

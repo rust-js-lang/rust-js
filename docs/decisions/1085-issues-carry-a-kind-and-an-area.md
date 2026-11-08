@@ -154,3 +154,11 @@ one agent:
 Changes 1 and 3 are oracles: they automate the hand probes that found 35
 of the 83 and the ports that found 28. Changes 2, 4, 5 and 6 are the
 ownership refactors that stop each family from recurring.
+
+## Amended: change 6's JS-boundary test (#822)
+
+Change 6's first half, one owner of a place's `None`, is #819's `NoneForm`
+(ADR 1096). Its second half, the test of what each `.d.ts` permits, is
+#822's: every TypeScript caller of the declarations gives each `None` form
+a declaration admits, `null`, `undefined` and an absent key, against native
+Rust (ADR 1091, amended).
