@@ -3,6 +3,60 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "given-whole-call-unstepped",
+    breaks:
+      "what a closure gives back that its caller gives whole to `rfold` isn't made knowing its back there, whose step finds none (#851)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                if !destination.projection.is_empty() || !stepped.contains_key(&at) && !asked.contains(&at) {\n",
+    replace: "                if !destination.projection.is_empty() || !stepped.contains_key(&at) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^filter_given_back_stepped_from_its_back.rs$"],
+  },
+  {
+    name: "held-rev-source-unmarked",
+    breaks:
+      "what a `rev()` held in a variable is given, std's `Rev` stepping it by `next_back`, isn't made knowing its back (#851)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                if Some(callee) == rev\n",
+    replace: "                if false\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_revs_of_lazy_sources.rs$"],
+  },
+  {
+    name: "reborrow-lends-nothing",
+    breaks:
+      "a reborrow of a `&mut` of a stepped local, `&mut (*_r)`, isn't taken for what it lends, so a value written beside it isn't made knowing its back (#851)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                            if matches!(of.projection.as_slice(), [mir::ProjectionElem::Deref])\n",
+    replace: "                            if false\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet.rs$"],
+  },
+  {
+    name: "values-given-beside-unmet",
+    breaks:
+      "a value given beside a `&mut` of a stepped local, which the callee may write there, isn't made knowing its back (#851)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                        if !other_lent && other != local && other_ty == ty {\n",
+    replace: "                        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet.rs$"],
+  },
+  {
+    name: "struct-held-source-untyped",
+    breaks:
+      "the source a std struct holds, which asks its dictionary by type alone, isn't recorded as a type's question, and its `DoubleEndedIterator` is refused (#851)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                                typed_sources.insert(ty);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
+  },
+  {
+    name: "return-place-unstepped",
+    breaks:
+      "what a function or a closure gives back to be stepped from its back isn't made knowing it there (#851)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                    mark(&mut stepped, (made_by, mir::RETURN_PLACE), SteppedLocal::Given);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^filter_given_back_stepped_from_its_back.rs$"],
+  },
+  {
     name: "generic-impl-unstepped",
     breaks:
       "a generic function's `impl DoubleEndedIterator` held in a struct isn't made knowing its back in its own terms: `it.back is not a function` (#993)",
@@ -133,27 +187,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "held-adapter-asked-itself",
-    breaks:
-      "the adapter a `rev()` asks to be double-ended is made knowing its back where it's made, not by its `rev()`",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                        if held != asked\n                            || given\n                            || held_rev\n                            || held_arg\n                            || dropping_items(recognition, held, &drops)\n",
-    replace: "                        if true\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_lazy_range.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "rev-of-dropping-map-unasked",
-    breaks:
-      "`rev()` of a map of a `Vec`'s items with a destructor, held in a variable, isn't made knowing its back where it's made, `$mapEnds`, but reversed after, `$rev($closing(..)).map(f)` (#205)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                        if held != asked\n                            || given\n                            || held_rev\n                            || held_arg\n                            || dropping_items(recognition, held, &drops)\n",
-    replace:
-      "                        if held != asked\n                            || given\n                            || held_rev\n                            || held_arg\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_skip_take_and_filter_stepped_from_back.rs$"],
-    snapshots: true,
-  },
-  {
     name: "flatten-back-stepped-unseen",
     breaks:
       "a flatten held in a variable, then stepped from its back, is made as it is, not knowing its back",
@@ -222,19 +255,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "held-rev-source-unstepped",
-    breaks:
-      "the source of a held `rev()` isn't made knowing its back where it's made",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "            let held_rev = Some(callee) == rev",
-    replace: "            let held_rev = false && Some(callee) == rev",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(range_mapped_by_a_function|held_revs_of_lazy_sources).rs$",
-    ],
-  },
-  {
     name: "filter-map-unstepped-from-back",
     breaks: "a `filter_map` the crate steps from its back isn't one the analysis marks, so one held in a variable before it's stepped, a library's, isn't made knowing its back, and is refused (#473)",
     file: "src/lower/analysis/back_stepped.rs",
@@ -256,8 +276,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a map of an array's items held in a variable and reversed is taken to step from its back by its own form, which a variable doesn't show, and is refused (#484)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                            let made_apart = given || held_rev || held_arg;\n",
-    replace: "                            let made_apart = given || held_rev;\n",
+    find: "                            let made_apart = given || held_arg;\n",
+    replace: "                            let made_apart = given;\n",
     tests: ["test/corpus.test.ts", "-t", "^rposition_of_held_map.rs$"],
   },
   {

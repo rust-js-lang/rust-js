@@ -3,6 +3,24 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "lent-adapter-unmarked",
+    breaks:
+      "a filter made into a temporary lent to `next_back` isn't marked made knowing its back, so its step refuses it (#851)",
+    file: "src/lower/mir/structure.rs",
+    find: "                        if self.local_stepped_from_its_back(local).is_some()\n",
+    replace: "                        if self.local_stepped_from_its_back(local) == Some(crate::lower::analysis::SteppedLocal::Given)\n",
+    tests: ["test/corpus.test.ts", "-t", "^next_back_lazy.rs$"],
+  },
+  {
+    name: "given-back-adapter-unmarked",
+    breaks:
+      "a filter a function gives back, made knowing its back there, isn't marked so at its call, whose `next_back` refuses it (#851)",
+    file: "src/lower/mir/structure.rs",
+    find: "                            && (given_back\n",
+    replace: "                            && (false\n",
+    tests: ["test/corpus.test.ts", "-t", "^filter_given_back_stepped_from_its_back.rs$"],
+  },
+  {
     name: "alike-arms-tested",
     breaks:
       "an untagged enum's arms that each do the same JS still test the variant, `source instanceof Document ? source.firstChild : source.firstChild`, which throws a ReferenceError in a host without the `Document` global where Rust runs on (a wrong answer, rd687)",

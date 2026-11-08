@@ -22,9 +22,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its local, `has_a_back`'s.
     pub(in crate::lower) fn stepped_from_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.tcx.erase_and_anonymize_regions(self.reveal(ty.peel_refs()));
-        // A map's by its value, its maker's MIR identity (#851 phase B);
-        // another kind's by back_stepped's set still.
-        if crate::lower::recognition::mapped_source(self.tcx, ty).is_none() || self.by_set.get() {
+        if !self.back_by_value(ty) || self.by_set.get() {
             return (self.krate.back_stepped.types).contains(&ty);
         }
         let stepped = self.krate.back_stepped.typed.contains(&ty)
@@ -51,6 +49,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
         }
         stepped
+    }
+
+    /// Whether whether a `ty` is made knowing its back is its value's fact,
+    /// its maker's MIR identity, not back_stepped's per-type set: a map's or
+    /// a filter's (#851 phase B); another kind's by the set still. The one
+    /// answer of what's asked and what's marked.
+    pub(in crate::lower) fn back_by_value(&self, ty: ty::Ty<'tcx>) -> bool {
+        crate::lower::recognition::mapped_source(self.tcx, ty).is_some()
+            || crate::lower::recognition::filtered_source(self.tcx, ty).is_some()
     }
 
     /// Whether `local`, of the body being lowered, holds what the crate

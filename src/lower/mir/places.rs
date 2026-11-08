@@ -31,6 +31,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             e.facts = e.facts.with(js::Known::Lasting);
         }
+        // A field a back step is given, each value moved into which its
+        // maker made knowing its back: a read of it is of one, marked so,
+        // as a local's value is by its maker (#851).
+        if let Some(field) = crate::lower::analysis::field_of(self.tcx, state.body, place)
+            && self.krate.back_stepped.fields.contains(&field)
+            && self.back_by_value(self.reveal(place.ty(state.body, self.tcx).ty))
+        {
+            e = crate::lower::iterators::made_knowing_its_back(e);
+        }
         // An `Option` whose `None` is only one of `undefined` and `null`,
         // its own or through a reference to it: its read says which (ADR
         // 0298, amended).

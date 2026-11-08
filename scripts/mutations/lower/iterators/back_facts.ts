@@ -3,10 +3,20 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "filter-stepped-by-its-type",
+    breaks:
+      "a filter's question of whether the crate steps it from its back is its type's in back_stepped's set, so one only folded forward of a type stepped from its back elsewhere is `$filterEnds` (#851)",
+    file: "src/lower/iterators/back_facts.rs",
+    find: "            || crate::lower::recognition::filtered_source(self.tcx, ty).is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_map_folded_and_rfolded.rs$"],
+    snapshots: true,
+  },
+  {
     name: "map-stepped-by-its-type",
     breaks: "a map's question of whether the crate steps it from its back is its type's in back_stepped's set, not its value's, so a map only folded forward, of a type folded from its back elsewhere, is `$mapEnds` where JS's own `.map` reads (#851)",
     file: "src/lower/iterators/back_facts.rs",
-    find: "        if crate::lower::recognition::mapped_source(self.tcx, ty).is_none() || self.by_set.get() {\n",
+    find: "        if !self.back_by_value(ty) || self.by_set.get() {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_map_folded_and_rfolded.rs$"],
     snapshots: true,

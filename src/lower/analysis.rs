@@ -3,7 +3,7 @@
 pub(super) mod arguments;
 mod back_stepped;
 use crate::collections::{IndexMap, IndexSet};
-pub(in crate::lower) use back_stepped::{BackStepped, SteppedLocal};
+pub(in crate::lower) use back_stepped::{BackStepped, SteppedLocal, field_of, made_by};
 mod callers_decide;
 mod cell_borrows;
 mod cell_flow;

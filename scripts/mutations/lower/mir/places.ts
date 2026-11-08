@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "stepped-field-read-unmarked",
+    breaks:
+      "a read of a field a back step reads, each value moved into which its maker made knowing its back, isn't marked so, and its `next_back` refuses it (#851)",
+    file: "src/lower/mir/places.rs",
+    find: "            && self.krate.back_stepped.fields.contains(&field)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_adapters_by_ref.rs$"],
+  },
+  {
     name: "nested-field-payload-boxed",
     breaks: "what a nested field's `Some` holds is read through the box, `$someValue(candidate.line)` (#470)",
     file: "src/lower/mir/places.rs",

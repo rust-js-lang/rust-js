@@ -757,13 +757,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Of std's own adapter methods alone, whose makers ask it, not
                 // what a function gives, nor std's compiled struct, which no
                 // maker makes knowing it.
-                let callee = fn_def(func.ty(&state.body.local_decls, self.tcx)).map(|(def_id, _)| def_id);
+                let call_of = fn_def(func.ty(&state.body.local_decls, self.tcx));
+                let callee = call_of.map(|(def_id, _)| def_id);
+                // Or what a function or a closure of the crate's makes it into,
+                // its return place, made knowing its back there (#851).
+                let given_back = call_of.is_some_and(|(def_id, args)| {
+                    let made_by = crate::lower::analysis::made_by(self.tcx, def_id, args);
+                    self.krate
+                        .back_stepped
+                        .locals
+                        .contains_key(&(made_by, mir::RETURN_PLACE))
+                });
                 let value = match (value, into) {
                     (Value::Expr(e), Some((local, made)))
-                        if self.local_stepped_from_its_back(local)
-                            == Some(crate::lower::analysis::SteppedLocal::Given)
-                            && crate::lower::recognition::mapped_source(self.tcx, made).is_some()
-                            && callee.is_some_and(|callee| self.recognition().iterator_method(callee).is_some())
+                        if self.local_stepped_from_its_back(local).is_some()
+                            && self.back_by_value(made)
+                            && (given_back
+                                || callee
+                                    .is_some_and(|callee| self.recognition().iterator_method(callee).is_some()))
                             && !self.compiled_struct(made, &e) =>
                     {
                         Value::Expr(crate::lower::iterators::made_knowing_its_back(e))

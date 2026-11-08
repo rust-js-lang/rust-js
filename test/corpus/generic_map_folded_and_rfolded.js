@@ -55,7 +55,7 @@ function kept(_) {
 
 const Wrap = {
   countKept(wrap, IIterator) {
-    return $count($filterEnds($given(wrap.inner, IIterator, true), kept));
+    return $count($given(wrap.inner, IIterator, true).filter(kept));
   },
   lastKept(wrap, IIterator, IDoubleEndedIterator) {
     return $nextBackSome(

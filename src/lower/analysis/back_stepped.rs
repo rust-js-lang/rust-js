@@ -84,13 +84,15 @@ pub(super) fn of_crate<'tcx>(
     all_bodies: &[&Body<'tcx>],
     drops: impl Fn(Ty<'tcx>) -> bool + Copy,
 ) -> BackStepped<'tcx> {
-    let (types, typed) = back_stepped(tcx, recognition, all_bodies, drops);
-    let locals = stepped_locals(tcx, recognition, all_bodies, &types, drops);
+    let (types, mut typed) = back_stepped(tcx, recognition, all_bodies, drops);
+    let (locals, fields, typed_sources) = stepped_locals(tcx, recognition, all_bodies, &types, drops);
+    typed.extend(typed_sources);
     BackStepped {
         types,
         typed,
         borrows: borrows(all_bodies),
         locals,
+        fields,
     }
 }
 
@@ -112,15 +114,10 @@ pub(super) fn back_stepped<'tcx>(
     // What a generic function makes behind an `impl` a caller steps from
     // its back, in its own terms, its own (#993).
     let mut generic_made: Vec<(rustc_span::def_id::DefId, Ty<'tcx>)> = Vec::new();
-    let rev = crate::lower::recognition::compiled_provided_method(tcx, "Iterator", "rev");
     let zip = crate::lower::recognition::compiled_provided_method(tcx, "Iterator", "zip");
     for body in all_bodies {
         let typing_env = ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(body.def_id));
         let stepped = of_body.entry(body.def_id).or_default();
-        // A `rev()` held, std's compiled `Rev`, which steps what it's given
-        // by its dictionary, not one a std iterator's method steps where
-        // it's made, which the recognizers reverse (ADR 0871).
-        let in_place = &body.facts.in_place_adapters;
         let called: IndexMap<ExprId, (rustc_span::Span, &[ExprId])> = (body.thir.exprs.iter())
             .filter_map(|e| match e.kind {
                 ExprKind::Call {
@@ -147,7 +144,6 @@ pub(super) fn back_stepped<'tcx>(
                     stepped.extend(back_stepped_adapter(tcx, recognition, b, false, &drops));
                 }
             }
-            let held_rev = Some(callee) == rev && called.get(&at).is_none_or(|(span, _)| !in_place.contains(span));
             // `DoubleEndedIterator`'s own method, `next_back()`, which asks
             // it of what it's called on: below, of each adapter.
             let own_method = tcx.trait_of_assoc(callee).is_some_and(|tr| is_double_ended(tcx, tr));
@@ -266,8 +262,6 @@ pub(super) fn back_stepped<'tcx>(
                         // The type asked itself too where it's of an array's
                         // items with a destructor, which `rev()` can't step
                         // from its back once it's held in a variable.
-                        // A held `Rev`'s, of an array's items too, which no
-                        // form of the caller's reverses once it's held.
                         // And a map whose closure has a destructor, held in a
                         // variable too. Not a flatten the `rev()` asks itself,
                         // which stays made in place up to its `rev()`, past
@@ -278,13 +272,12 @@ pub(super) fn back_stepped<'tcx>(
                         // (#712).
                         if held != asked
                             || given
-                            || held_rev
                             || held_arg
                             || dropping_items(recognition, held, &drops)
                             || closure_drops(tcx, held, &drops)
                             || enumerates_a_compiled_struct(tcx, held)
                         {
-                            let made_apart = given || held_rev || held_arg;
+                            let made_apart = given || held_arg;
                             let made = back_stepped_adapter(tcx, recognition, held, made_apart, &drops);
                             if given {
                                 typed.extend(made);
@@ -542,7 +535,36 @@ pub(in crate::lower) struct BackStepped<'tcx> {
     pub(in crate::lower) borrows:
         IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), rustc_middle::mir::Local>,
     pub(in crate::lower) locals: IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), SteppedLocal>,
+    /// Each field of a struct or an enum's variant a back step is given,
+    /// each value MIR moves into it marked `Given` (`stepped_locals`'s): a
+    /// read of it is of a value made knowing its back (#851).
+    pub(in crate::lower) fields: IndexSet<SteppedField>,
 }
+
+/// The body that makes what a call of `callee` with `args` gives: its own,
+/// or of a closure called through its `Fn` trait, the closure's (#851).
+pub(in crate::lower) fn made_by<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    callee: rustc_span::def_id::DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> rustc_span::def_id::DefId {
+    match args.types().next().map(|t| *t.kind()) {
+        Some(ty::Closure(closure, _)) if tcx.fn_trait_kind_from_def_id(tcx.parent(callee)).is_some() => closure,
+        _ => callee,
+    }
+}
+
+/// What `stepped_locals` finds: each local stepped from its back, each
+/// field, and the types a std struct holding them asks by type alone.
+type SteppedValues<'tcx> = (
+    IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), SteppedLocal>,
+    IndexSet<SteppedField>,
+    IndexSet<Ty<'tcx>>,
+);
+
+/// A field of a struct or an enum's variant: its ADT, its variant and its
+/// index.
+pub(in crate::lower) type SteppedField = (rustc_span::def_id::DefId, rustc_abi::VariantIdx, rustc_abi::FieldIdx);
 
 /// How a local the crate steps from its back holds its value
 /// (`stepped_locals`).
@@ -579,12 +601,13 @@ pub(super) fn stepped_locals<'tcx>(
     all_bodies: &[&Body<'tcx>],
     types: &IndexSet<Ty<'tcx>>,
     drops: impl Fn(Ty<'tcx>) -> bool,
-) -> IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), SteppedLocal> {
+) -> SteppedValues<'tcx> {
     use rustc_middle::mir;
     let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(recognition.reveal(ty.peel_refs()));
     let zip = crate::lower::recognition::compiled_provided_method(tcx, "Iterator", "zip");
+    let rev = crate::lower::recognition::compiled_provided_method(tcx, "Iterator", "rev");
     let Some(double_ended) = recognition.double_ended_iterator() else {
-        return IndexMap::default();
+        return Default::default();
     };
     let mut stepped: IndexMap<(rustc_span::def_id::DefId, mir::Local), SteppedLocal> = IndexMap::default();
     // Each temporary given whole to what asks its back, made in place,
@@ -597,8 +620,8 @@ pub(super) fn stepped_locals<'tcx>(
     // lent or whole, `self.it.next_back()` of `struct Evens { it: Filter<..> }`:
     // each value MIR moves into it as it makes one, made knowing its back by
     // its maker (#851).
-    let mut stepped_fields: IndexSet<(rustc_span::def_id::DefId, rustc_abi::VariantIdx, rustc_abi::FieldIdx)> =
-        IndexSet::default();
+    let mut stepped_fields: IndexSet<SteppedField> = IndexSet::default();
+    let mut typed_sources: IndexSet<Ty<'tcx>> = IndexSet::default();
     let mark = |stepped: &mut IndexMap<_, _>, at, how| {
         // `Given` wins: its maker makes it, wherever it's lent besides.
         let held = stepped.entry(at).or_insert(how);
@@ -655,6 +678,15 @@ pub(super) fn stepped_locals<'tcx>(
                             lent.insert(to.local, of.local);
                             lent_at.insert(to.local, (block, at + 1));
                         }
+                        // A reborrow of one, `&mut (*_r)` of an `_r = &mut x`:
+                        // what that lends.
+                        mir::Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of)
+                            if matches!(of.projection.as_slice(), [mir::ProjectionElem::Deref])
+                                && let Some(&lends) = lent.get(&of.local) =>
+                        {
+                            lent.insert(to.local, lends);
+                            lent_at.insert(to.local, (block, at + 1));
+                        }
                         mir::Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) => {
                             lent_field.insert(to.local, *of);
                         }
@@ -707,6 +739,7 @@ pub(super) fn stepped_locals<'tcx>(
                     func,
                     args,
                     destination,
+                    fn_span,
                     ..
                 } = &data.terminator().kind
                 else {
@@ -715,6 +748,18 @@ pub(super) fn stepped_locals<'tcx>(
                 let Some((callee, generic_args)) = func.const_fn_def() else {
                     continue;
                 };
+                // A `rev()` held, std's compiled `Rev`, which steps what it's
+                // given by its `next_back`, not one a std method's form
+                // reverses where it's made (ADR 0871): what it's given made
+                // knowing its back (#851).
+                if Some(callee) == rev
+                    && !body.facts.in_place_adapters.contains(fn_span)
+                    && let Some(arg) = args.first()
+                    && let mir::Operand::Move(place) | mir::Operand::Copy(place) = &arg.node
+                    && let Some(local) = place.as_local()
+                {
+                    mark(&mut stepped, (owner, origin(local)), SteppedLocal::Given);
+                }
                 // A zip that reads its sides by index (ADR 0973), which asks
                 // the length of `b`, a map whose closure has a destructor:
                 // made knowing its length where it's made, as `back_stepped`'s
@@ -753,6 +798,20 @@ pub(super) fn stepped_locals<'tcx>(
                         _ => None,
                     })
                     .collect();
+                // A value given beside a `&mut` of a local stepped from its
+                // back, of its type, which the callee may write there,
+                // `replace_in(&mut it, next)`, its caller's own as one
+                // representation (#537): stepped so too (#851).
+                for &(local, lent, ty, _) in &given {
+                    if !lent || !stepped.contains_key(&(owner, local)) {
+                        continue;
+                    }
+                    for &(other, other_lent, other_ty, _) in &given {
+                        if !other_lent && other != local && other_ty == ty {
+                            mark(&mut stepped, (owner, other), SteppedLocal::Given);
+                        }
+                    }
+                }
                 // What asks its back: a clause of the callee's.
                 for (clause, _) in tcx.clauses_of(callee).instantiate(tcx, generic_args) {
                     let Some(clause) = clause.skip_normalization().as_trait_clause() else {
@@ -767,7 +826,11 @@ pub(super) fn stepped_locals<'tcx>(
                         let (mir::Operand::Move(place) | mir::Operand::Copy(place)) = &arg.node else {
                             continue;
                         };
-                        let place = match place.as_local().and_then(|local| lent_field.get(&local)) {
+                        // Through a `&mut` of it too, `next_back(&mut r)` of
+                        // an `r = it.by_ref()`.
+                        let place = match place.as_local().and_then(|local| {
+                            (lent_field.get(&local)).or_else(|| lent.get(&local).and_then(|of| lent_field.get(of)))
+                        }) {
                             Some(lent) => *lent,
                             None => *place,
                         };
@@ -855,13 +918,44 @@ pub(super) fn stepped_locals<'tcx>(
                         .into_iter()
                         .collect(),
                 };
+                // Held by std's struct, which asks the dictionary of what it
+                // holds by its type alone, `mapDoubleEndedIterator_nextBack`'s:
+                // a question of the type (#851).
+                let held_by_struct = crate::lower::recognition::is_held_compiled(tcx, made)
+                    && mir.local_decls[destination.local].is_user_variable();
                 for source in sources.into_iter().map(erased) {
                     for &(local, _, ty, _) in &given {
                         let user = mir.local_decls[local].is_user_variable();
                         if ty == source && (chain && made_stepped || user) {
                             mark(&mut stepped, (owner, local), SteppedLocal::Given);
+                            if held_by_struct {
+                                typed_sources.insert(ty);
+                            }
                         }
                     }
+                }
+            }
+        }
+        // What a call gives that's stepped from its back, lent or given whole,
+        // `make().rfold(..)`'s, made by the function called, the crate's own
+        // or a closure called through its `Fn` trait: its return place,
+        // which its maker makes it into or moves it to (#851).
+        for body in all_bodies {
+            let Some(mir) = body.mir.as_ref() else { continue };
+            for data in mir.body.basic_blocks.iter() {
+                let mir::TerminatorKind::Call { func, destination, .. } = &data.terminator().kind else {
+                    continue;
+                };
+                let at = (body.def_id, destination.local);
+                if !destination.projection.is_empty() || !stepped.contains_key(&at) && !asked.contains(&at) {
+                    continue;
+                }
+                let Some((callee, generic_args)) = func.const_fn_def() else {
+                    continue;
+                };
+                let made_by = made_by(tcx, callee, generic_args);
+                if all_bodies.iter().any(|b| b.def_id == made_by) {
+                    mark(&mut stepped, (made_by, mir::RETURN_PLACE), SteppedLocal::Given);
                 }
             }
         }
@@ -873,7 +967,7 @@ pub(super) fn stepped_locals<'tcx>(
             for at in held_whole {
                 stepped.entry(at).or_insert(SteppedLocal::Lent);
             }
-            return stepped;
+            return (stepped, stepped_fields, typed_sources);
         }
     }
 }
@@ -918,11 +1012,11 @@ fn held_across(
 
 /// The field `place` is, of a struct or of an enum's variant, a field
 /// projection last: `(*_1).0`, `((_2 as Some).0)`.
-fn field_of<'tcx>(
+pub(in crate::lower) fn field_of<'tcx>(
     tcx: TyCtxt<'tcx>,
     mir: &rustc_middle::mir::Body<'tcx>,
     place: rustc_middle::mir::Place<'tcx>,
-) -> Option<(rustc_span::def_id::DefId, rustc_abi::VariantIdx, rustc_abi::FieldIdx)> {
+) -> Option<SteppedField> {
     use rustc_middle::mir::ProjectionElem;
     let (last, base) = place.projection.split_last()?;
     let ProjectionElem::Field(field, _) = last else {

@@ -1241,3 +1241,37 @@ type of the `impl`'s hidden type is recorded in the maker's terms too, as
 it with the `impl`'s arguments (`made_generically`), and given to the
 maker's own set, which its callers instantiate in turn (#388). Corpus case
 `generic_impl_stepped_from_its_back`.
+
+## Amendment: a filter's too (2026-11-08, #851 phase B, filters)
+
+ADR 0262's case: none where its JS changes for what ran as Rust does; two
+snapshots change, a filter only stepped forward, of a type stepped from its
+back elsewhere, now JS's own `filter` or `$filterDropping` where it was
+`$filterEnds`. Whether a `filter(p)` is made knowing its back is its
+value's fact too (`back_by_value`, back_facts.rs, the one answer of what's
+asked and what's marked). What `stepped_locals` records grows by what the
+set covered of a filter's values:
+
+- the source of a `rev()` held in a variable, std's compiled `Rev`, which
+  steps it by its `next_back` (the set's `held_rev`, retired);
+- a value given beside a `&mut` of a local stepped from its back, of its
+  type, which the callee may write there, `replace_in(&mut it, next)`
+  (#537), through a reborrow `&mut (*_r)` too;
+- what a call gives that's stepped from its back, lent or given whole,
+  made by the crate's function or a closure called through its `Fn` trait
+  (`made_by`): its return place, and the call's value marked so where it's
+  made;
+- the source a std struct holds, which asks the dictionary of what it
+  holds by its type alone, `mapDoubleEndedIterator_nextBack`'s: recorded as
+  a type's question (`typed`);
+- a field a back step reads: a read of it marked made knowing its back, as
+  a local's value is (`BackStepped::fields`, places.rs).
+
+A temporary lent to its step, `v.iter().filter(p).next_back()`, is marked
+too, not only one given whole. The set's rules a map's and a filter's
+values no longer reach, `held_rev` and two mutations of what an adapter of
+an array's items with a destructor asks (`held-adapter-asked-itself`,
+`rev-of-dropping-map-unasked`), are retired with the set in phase C.
+Corpus case `filter_given_back_stepped_from_its_back`; the full iterator
+matrix, conformance, points and unwind tables, the metamorphic net and the
+corpus in both builds run as before.

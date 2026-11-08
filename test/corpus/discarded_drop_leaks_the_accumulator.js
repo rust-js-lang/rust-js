@@ -91,7 +91,7 @@ function run(name, boom$1, case$) {
 function main() {
   run("filter fold", 4, () => {
     const fold = $foldDropping(
-      $filterEnds($closing($iter(ds()), $dropEach(dDrop_drop)), odd, dDrop_drop),
+      $filterDropping($closing($iter(ds()), $dropEach(dDrop_drop)), odd, dDrop_drop),
       [0],
       add,
       accDrop_drop,
@@ -113,7 +113,7 @@ function main() {
   });
   run("filter try_fold", 4, () => {
     const filter = $held(
-      $filterEnds($closing($iter(ds()), $dropEach(dDrop_drop)), odd, dDrop_drop),
+      $filterDropping($closing($iter(ds()), $dropEach(dDrop_drop)), odd, dDrop_drop),
     );
     let r;
     try {
@@ -246,10 +246,13 @@ function main() {
     return r.TAG === "Ok" ? map(r._0) : 0;
   });
   run("filter count", 4, () =>
-    $filterEnds($closing($iter(ds()), $dropEach(dDrop_drop)), odd, dDrop_drop).reduce((n, item) => {
-      dDrop_drop(item);
-      return n + 1;
-    }, 0),
+    $filterDropping($closing($iter(ds()), $dropEach(dDrop_drop)), odd, dDrop_drop).reduce(
+      (n, item) => {
+        dDrop_drop(item);
+        return n + 1;
+      },
+      0,
+    ),
   );
   run("predicate panics", 0, () => {
     function keep(d) {
