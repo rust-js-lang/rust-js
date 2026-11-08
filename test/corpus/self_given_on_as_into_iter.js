@@ -5,6 +5,7 @@ import {
   $intoIter,
   $iter,
   $iterator,
+  $lent,
   $next,
   $rangeNext,
   $traitImpl,
@@ -30,7 +31,7 @@ const $iExt = new WeakMap();
 
 function iExt(IIterator) {
   return $traitImpl($iExt, [IIterator], () => ({
-    nextPair: (self, TCollect) => TCollect.fromIterNoBuf($given(self, IIterator)),
+    nextPair: (self, TCollect) => TCollect.fromIterNoBuf($lent($given(self, IIterator))),
   }));
 }
 

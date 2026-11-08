@@ -8,8 +8,5 @@
 #989 P0: a closure that captured a Box<Cell<_>> by move, then cloned, shares the cell (const counter2 = counter)
 plain std boxed closure_clone_cell.rs
 
-#994 P0: `by_ref()` of a type parameter given as it is passes the crate's own `fold` on
-plain std impl-owned by_ref_lends.rs
-
 #1000 P0: a RefCell borrow_mut that native panics on goes unchecked when the cell's Rc is held in a Box and reassigned through *b
 plain std boxed contains_guarded_set_again.rs

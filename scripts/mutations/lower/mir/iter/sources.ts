@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "given-by-ref-unlent",
+    breaks:
+      "`by_ref().sum()` of a type parameter given as it is calls its own `fold`, which takes it and drops it before the sum's done (#994)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "                ty::Ref(_, _, Mutability::Mut) => self.lent_iterator(it),\n",
+    replace: "                ty::Ref(_, _, Mutability::Mut) => it,\n",
+    tests: ["test/corpus.test.ts", "-t", "^by_ref_of_held_iterator.rs$"],
+  },
+  {
     name: "held-into-iter-param-from-js",
     breaks:
       "a collection's `extend` of an `IntoIterator` type parameter held as it is steps its caller's own value as a JS iterable (#966)",
@@ -314,9 +323,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an adapter's `I` summed is `Iterator.from` of it, not stepped by its dictionary",
     file: "src/lower/mir/iter/sources.rs",
-    find: "            None if let Some(it) = self.given_js_iterator(value.clone(), ty, false, false) => Ok(it),\n",
+    find: "            None if let Some(it) = self.given_js_iterator(value.clone(), ty, false, false) => Ok(match ty.kind() {\n",
     replace:
-      "            None if let Some(it) = self.given_js_iterator(value.clone(), ty, false, false).filter(|_| false) => Ok(it),\n",
+      "            None if let Some(it) = self.given_js_iterator(value.clone(), ty, false, false).filter(|_| false) => Ok(match ty.kind() {\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
   {

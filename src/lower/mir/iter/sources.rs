@@ -23,8 +23,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.user_iterator(value, ty, trait_id, "next", span)
             }
             // One given its dictionary, stepped by it, its `Some` unboxed
-            // (ADR 0411).
-            None if let Some(it) = self.given_js_iterator(value.clone(), ty, false, false) => Ok(it),
+            // (ADR 0411); through a `&mut`, `by_ref()`'s, lent, as std's `&mut
+            // I` passes on its `next` and not its own `fold`, which would
+            // take it (ADR 0928, #994).
+            None if let Some(it) = self.given_js_iterator(value.clone(), ty, false, false) => Ok(match ty.kind() {
+                ty::Ref(_, _, Mutability::Mut) => self.lent_iterator(it),
+                _ => it,
+            }),
             // A type parameter's whose `IntoIterator` is held as it is, its
             // caller's own value: its dictionary's `into_iter` (#966).
             None if matches!(ty.kind(), ty::Param(_))

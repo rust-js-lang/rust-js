@@ -35,3 +35,14 @@ isn't called. ADR 0912 found the same of `fold`, and gave a `&mut I`'s
   std's structs alone; `rev_own_back_methods.rs` joins the suite's few.
 - The normal build's JS doesn't change.
 - Mutations: `lent-rfold-passed`.
+
+## Amendment: a type parameter's given as it is, lent (#994)
+
+`held.by_ref().sum()` of a type parameter given as it is gave the sum
+`$given(held, IIterator)`, which carries the crate's own `fold`: the sum
+ran it, which took the iterator, printed what it does and dropped it
+before the sum was done, where std's `&mut I` steps it by `try_fold`'s
+`next` and it's dropped where its function ends. A `&mut` of one given its
+dictionary is lent, `$lent($given(..))`, as the crate's own iterator
+through a `&mut` is (`as_js_iterator`). Corpus case
+`by_ref_of_held_iterator`.
