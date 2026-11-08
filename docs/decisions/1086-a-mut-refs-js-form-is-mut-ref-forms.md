@@ -217,3 +217,32 @@ take one too. The other 70 run as native Rust does.
   `moved_out`, and a cell of one moved whole out of its field by
   `moved_out_of_cell`; its `get_mut` and `try_borrow` lend the handle a
   `&mut` to it is (ADR 1044's amendment).
+
+## Step 4: the matrix grown to the space (2026-11-08, #855)
+
+The matrix's 72 programs were 9 pointees × 8 holders through 8 operations,
+in the default build alone. #855 grows it to the space the forms meet:
+
+- **Pointees** (14): a `bool` and an `f64`, boxes as a number is; an
+  `Option<i32>`, whose `None` is a value of its own; a tuple, an array JS
+  changes in place; and a `Box<i32>`, its value.
+- **Holders** (15): an `Option`'s payload, a tuple's field, a `Box`'s
+  value, a `RefCell`'s guard (`MutRefForm::Guard`, which no holder had
+  given), each item `iter_mut` steps, a method's field of `self`, and a
+  `BTreeMap`'s value by `get_mut`.
+- **Operations** (14): a reborrow changed; the `&mut` given on to the
+  pointee's own method, to generic code, and to generic code that panics
+  after its change, which a box copies back as it unwinds (#487); `*self`
+  written whole by a trait's default method; and a closure that captures
+  it, called twice.
+
+210 programs, each built twice, plain and `--std-iterators` (#855 asks
+both): all 210 a night, twelve in the nightly's suite and in `check:fast`
+where a `&mut` changes, the seven of before and five of the new holders.
+`refused` and `wrong` are keyed `<build>:<program>`; an operation refused
+of one holder alone is `<op>@<holder>` in its pointee's `refused`. Its first
+run: every program runs as native Rust does in both builds, 10.5 s on the
+Mac in 12 parts, but a flattened state's three operations that lend it past
+its class's guard to generic code or a trait's default method, which
+rust-js refuses (its borrows are its object's own keys, which count none),
+left out of its `field` holder with why.

@@ -85,7 +85,7 @@ export const jobs: Record<string, Part[]> = {
     cores: 1,
     timeout: 30 * minutes,
   })),
-  // Each `&mut` form through each operation, all 72 programs (ADR 1086).
+  // Each `&mut` form through each operation, all 210 programs (ADR 1086).
   "mut-refs": [{
     id: "mut-refs",
     cmd: ["bun", "test", "--timeout=600000", "test/mut-ref-matrix.test.ts"],

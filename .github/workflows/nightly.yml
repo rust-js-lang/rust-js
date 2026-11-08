@@ -217,7 +217,8 @@ jobs:
           exit $failed
 
   # The `&mut` matrix (ADR 1086): each pointee of a `&mut`, held each way,
-  # through each operation, runs as native Rust does; each push runs a sample.
+  # through each operation, in both builds, runs as native Rust does; each
+  # push runs a sample.
   mut-refs:
     name: mut-ref matrix
     runs-on: ubuntu-latest

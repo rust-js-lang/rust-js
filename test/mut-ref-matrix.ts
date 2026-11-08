@@ -18,7 +18,8 @@ type Pointee = {
    * state's, its class's field, through its guard and lent to a function. */
   held?: (name: string, op: string) => { items: string; main: string };
   /** The operations rust-js refuses of it, each with why, so the list
-   * only shrinks: each is left out of its programs. */
+   * only shrinks: each is left out of its programs; `<op>@<holder>` of one
+   * held so alone. */
   refused?: Record<string, string>;
 };
 
@@ -138,6 +139,14 @@ impl Task {
     field: (p) => `if let Status::Pending { tries } = &mut ${p} {
         *tries = 7;
     }`,
+    // Given on to generic code, or to a trait's default method, from its
+    // class's guard: refused, as a flattened state's borrows are its
+    // object's own keys, which count none (#855's first run).
+    refused: {
+      "passed_to_generic@field": "a flattened state lent past its guard, its borrows uncounted",
+      "panic_in_callee@field": "a flattened state lent past its guard, its borrows uncounted",
+      "self_replaced@field": "a flattened state lent past its guard, its borrows uncounted",
+    },
     // Through its guard, and lent to a function whose `&mut` its box is,
     // `{ value: task }`, the class's object (#658).
     held: (name, op) => ({
@@ -163,6 +172,33 @@ impl Task {
     alt: "7..9",
     change: (p) => `${p}.next();`,
   },
+  // The space's other values (#855): a `bool` and an `f64`, boxes as a
+  // number is; an `Option`, whose `None` is a value of its own; a tuple,
+  // an array JS changes in place; and a `Box`, its value.
+  boolean: { ty: "bool", decl: "", init: "true", alt: "false", change: (p) => `${p} = !${p};` },
+  float: { ty: "f64", decl: "", init: "1.5", alt: "-2.25", change: (p) => `${p} += 0.5;` },
+  option: {
+    ty: "Option<i32>",
+    decl: "",
+    init: "Some(1)",
+    alt: "None",
+    change: (p) => `match &mut ${p} {
+        Some(n) => *n += 10,
+        none => *none = Some(0),
+    }`,
+    field: (p) => `if let Some(n) = &mut ${p} {
+        *n = 7;
+    }`,
+  },
+  tuple: {
+    ty: "(i32, String)",
+    decl: "",
+    init: `(1, String::from("t"))`,
+    alt: `(5, String::from("u"))`,
+    change: (p) => `${p}.0 += 10;`,
+    field: (p) => `${p}.1 = String::from("w");`,
+  },
+  boxed: { ty: "Box<i32>", decl: "", init: "Box::new(1)", alt: "Box::new(5)", change: (p) => `**&mut ${p} += 10;` },
 };
 
 /** Each operation through `r`, a `&mut` of the pointee, `alt` its other
@@ -192,6 +228,23 @@ const operations: Record<string, Op> = {
             panic!("after the write");
         }));
         println!("caught {}", caught.is_err());`,
+  // The space's other operations (#855): a reborrow changed; the `&mut`
+  // given on, to the pointee's own method, to generic code, and to generic
+  // code that panics after its change, which a box copies back as it
+  // unwinds (#487); `*self` written whole by a trait's default method; and
+  // a closure that captures it, called.
+  reborrow: (r, _, change) => `let s = &mut *${r};
+        ${change("(*s)")}`,
+  passed_on: (r) => `Change::change(&mut *${r});`,
+  passed_to_generic: (r) => `changed_by(&mut *${r});`,
+  panic_in_callee: (r) => `let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| changed_then_panics(&mut *${r})));
+        println!("caught {}", caught.is_err());`,
+  self_replaced: (r) => `${r}.reset();`,
+  closure_captures: (r, _, change) => `let mut by = || {
+            ${change(`(*${r})`)}
+        };
+        by();
+        by();`,
 };
 
 /** Where the `&mut` is held, and how the program makes it: `op` is the
@@ -280,6 +333,101 @@ struct Holder${camel(name)} {
     println!("{v:?}");`,
     }),
   },
+  // The space's other holders (#855): an `Option`'s payload, a tuple's
+  // field, a `Box`'s value, a `RefCell`'s guard, each item stepped by
+  // `iter_mut`, a method's field of `self`, and a map's value.
+  option_payload: {
+    generic: false,
+    program: (p, _, op) => ({
+      items: "",
+      main: `let mut opt: Option<${p.ty}> = Some(${p.init});
+    if let Some(r) = &mut opt {
+        ${op}
+    }
+    println!("{opt:?}");`,
+    }),
+  },
+  tuple_field: {
+    generic: false,
+    program: (p, _, op) => ({
+      items: "",
+      main: `let mut t: (u8, ${p.ty}) = (3, ${p.init});
+    {
+        let r = &mut t.1;
+        ${op}
+    }
+    println!("{t:?}");`,
+    }),
+  },
+  boxed_value: {
+    generic: false,
+    program: (p, _, op) => ({
+      items: "",
+      main: `let mut b: Box<${p.ty}> = Box::new(${p.init});
+    {
+        let r = &mut *b;
+        ${op}
+    }
+    println!("{b:?}");`,
+    }),
+  },
+  cell_guard: {
+    generic: false,
+    program: (p, _, op) => ({
+      items: "",
+      main: `let cell = std::cell::RefCell::new(${p.init});
+    {
+        let mut guard = cell.borrow_mut();
+        let r = &mut *guard;
+        ${op}
+    }
+    println!("{:?}", cell.borrow());`,
+    }),
+  },
+  iter_mut: {
+    generic: false,
+    program: (p, _, op) => ({
+      items: "",
+      main: `let mut items: Vec<${p.ty}> = vec![${p.init}, ${p.alt}];
+    for r in items.iter_mut() {
+        ${op}
+    }
+    println!("{items:?}");`,
+    }),
+  },
+  method_self: {
+    generic: false,
+    program: (p, name, op) => ({
+      items: `#[derive(Debug)]
+struct Owner${camel(name)} {
+    f: ${p.ty},
+    n: u32,
+}
+
+impl Owner${camel(name)} {
+    fn ${name}(&mut self) {
+        let r = &mut self.f;
+        ${op}
+    }
+}
+`,
+      main: `let mut o = Owner${camel(name)} { f: ${p.init}, n: 3 };
+    o.${name}();
+    println!("{o:?}");`,
+    }),
+  },
+  map_value: {
+    generic: false,
+    program: (p, _, op) => ({
+      items: "",
+      main: `let mut m: std::collections::BTreeMap<u8, ${p.ty}> = std::collections::BTreeMap::new();
+    m.insert(1, ${p.init});
+    if let Some(r) = m.get_mut(&1) {
+        ${op}
+    }
+    println!("{m:?}");`,
+    }),
+  },
   generic_fn: {
     generic: true,
     program: (p, name, op) => ({
@@ -319,6 +467,21 @@ const camel = (name: string) => name.replace(/(?:^|_)(\w)/g, (_, c: string) => c
 const change = (p: Pointee) => `trait Change {
     fn change(&mut self);
     fn other() -> Self;
+    fn reset(&mut self)
+    where
+        Self: Sized,
+    {
+        *self = Self::other();
+    }
+}
+
+fn changed_by<U: Change>(x: &mut U) {
+    x.change();
+}
+
+fn changed_then_panics<U: Change>(x: &mut U) {
+    x.change();
+    panic!("after the change");
 }
 
 impl Change for ${p.ty} {
@@ -344,7 +507,8 @@ export function programs(): Record<string, string> {
         // changed by its trait; it has no field to write.
         const alt = h.generic ? "Change::other()" : p.alt;
         const changed = h.generic ? (place: string) => `${place.replace(/^\(\*(\w+)\)$/, "$1")}.change();` : p.change;
-        const left = (h.generic && operation === "field_write") || operation in (p.refused ?? {});
+        const left =
+          (h.generic && operation === "field_write") || operation in (p.refused ?? {}) || `${operation}@${holder}` in (p.refused ?? {});
         const body = left ? undefined : op("r", alt, changed, p.field);
         if (body === undefined) continue;
         const made = h.program(p, operation, body);
@@ -377,4 +541,11 @@ export const sample = [
   "iterator__parameter",
   "iterator__item",
   "vec__trait_default",
+  // And of the space #855 grew it to, a guard's, an `iter_mut` item's, a
+  // method's field of `self`, a map's value and an `Option`'s payload.
+  "option__cell_guard",
+  "boolean__iter_mut",
+  "tuple__method_self",
+  "float__map_value",
+  "boxed__option_payload",
 ];
