@@ -90,6 +90,20 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
             {
                 mutated.insert(body.thir[lhs].ty);
             }
+            // And a `&mut *b` of what a `Box` holds, `*c += v`'s of a
+            // `Wrapping`, which may write it whole: the box's value is the
+            // object itself, so that write is in place, where a variable's
+            // `&mut` is a box copied back into it (#967).
+            if let ExprKind::Borrow {
+                borrow_kind: BorrowKind::Mut { .. },
+                arg,
+            } = expr.kind
+                && let ExprKind::Deref { arg: boxed } = body.thir[strip(&body.thir, arg)].kind
+                && body.thir[boxed].ty.is_box()
+                && object_like(tcx, body.thir[arg].ty)
+            {
+                mutated.insert(body.thir[arg].ty);
+            }
             if let ExprKind::Call { fun, ref args, .. } = expr.kind
                 && let ty::FnDef(def_id, _) = *body.thir[fun].ty.kind()
                 && replaces_whole(tcx, def_id)

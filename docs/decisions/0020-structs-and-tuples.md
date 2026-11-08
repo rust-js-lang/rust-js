@@ -230,3 +230,22 @@ though each rust-js lowers copies what it gives where it's read, so no
 case yet fails beyond them. Held by `test/corpus/owned_items_uncopied.rs`
 against native Rust, an array read after its loop as it was, and the
 mutations `owned-item-*` (`mir/operands.ts`).
+
+## Amendment: what a `Box` holds, lent `&mut`, is changed in place (#967)
+
+A `Box`'s value is the object it holds, so `&mut *b` is the object
+itself, and what's given it, `AddAssign::add_assign` of `*c += v` of a
+`Box<Wrapping<u32>>`, writes it whole in place, `$assign(c, ..)`, where a
+variable's `&mut` is a box copied back, which gives the variable another
+object. The type wasn't counted as changed in place (`mutated_types`),
+so a copy read out of it before, `let d = Box::new(*c)`, was the same
+object, and changed with it: native `15 5`, JS `15 15`. A `&mut` of what
+a `Box` holds counts its type as changed in place now; a whole
+assignment, `*b = v`, gives the variable another object, as a variable's
+does, and counts nothing. Found by the metamorphic net's `boxed` rewrite
+(#939).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change;
+Rust's preserved. Held by corpus `boxed_copy_written_whole`
+(native-compared, both builds) and the mutation `boxed-whole-write-unseen`
+(`lower/analysis/mutation.ts`).

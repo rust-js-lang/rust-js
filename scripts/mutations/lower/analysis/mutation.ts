@@ -274,4 +274,12 @@ export const mutations: Mutation[] = [
     replace: "            && captured.place.projections.is_empty()\n",
     tests: ["test/corpus.test.ts", "-t", "^captured_copy_written_whole.rs$"],
   },
+  {
+    name: "boxed-whole-write-unseen",
+    breaks: "a whole write of what a `Box` holds, `*c += *d << 1` of a `Box<Wrapping<u32>>`, isn't taken as a change in place, so `Box::new(*c)` isn't copied and the `$assign` changes it too (#967)",
+    file: "src/lower/analysis/mutation.rs",
+    find: "                && body.thir[boxed].ty.is_box()\n",
+    replace: "                && body.thir[boxed].ty.is_box() && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_copy_written_whole.rs$"],
+  },
 ];

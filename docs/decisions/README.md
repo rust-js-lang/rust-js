@@ -34,7 +34,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0013 Fieldless enum variants are strings](0013-fieldless-enums.md) *(extended by 0722: a `#[repr(..)]` one's are numbers)*
 - [0033 Enums with fields are ReScript's tagged objects](0033-enums-with-fields.md) *(extended by 0716: std's enums whose `PartialEq` or order is derived)*
 - [0035 JS that throws is a `Result`; `?` returns early](0035-results-and-throwing-js.md) *(amended by 0637: a `match` of its `Result` is `try` and `catch`; 0643: its `unwrap()` is the call; amended: what `?` tries is read once)*
-- [0020 Structs are objects, tuples are arrays](0020-structs-and-tuples.md) *(amended by 0674: a literal's fields are listed as written; 0775: a `()` given to JS is `undefined`; 1084: no field's JS name is `__proto__`)*
+- [0020 Structs are objects, tuples are arrays](0020-structs-and-tuples.md) *(amended by 0674: a literal's fields are listed as written; 0775: a `()` given to JS is `undefined`; 1084: no field's JS name is `__proto__`; amended: what a `Box` holds, lent `&mut`, is changed in place, #967)*
 - [1084 A field whose JS name is `__proto__` is refused](1084-a-field-named-proto-is-refused.md) *(rd754)*
 - [0049 Trait dictionaries, generics, and read-only trait objects](0049-traits-and-generics.md)
 - [0047 Methods are an object of functions named after their type](0047-methods.md) *(extended by 1043: a function's scope struct's are functions declared in it; extended by 0761: a `#[rust_js::class]`'s are its prototype's; extended by 0943: a `#[rust_js::object]`'s its literal's own; amended: a `self` a pointer holds is named after its type; amended: its object is declared in the `.d.ts`)*
