@@ -797,4 +797,20 @@ export const mutations: Mutation[] = [
     replace: "            let given = false;\n",
     tests: ["test/lowering-std-unwinds.test.ts", "-t", "bulk build"],
   },
+  {
+    name: "tree-set-algebra-unseen",
+    breaks: "a B-tree set's algebra of items whose order can be seen is its items sorted and searched by `has`, asking `cmp` other calls than std's lazy iterators (#943)",
+    file: "src/lower/std_types/map.rs",
+    find: "            MapOp::Algebra(name) if seen_items => {\n",
+    replace: "            MapOp::Algebra(name) if seen_items && false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_set_algebra_seen.rs$"],
+  },
+  {
+    name: "tree-subset-unseen",
+    breaks: "a B-tree set's `is_subset` of items whose order can be seen searches each item, not std's walk of both, asking other calls (#943)",
+    file: "src/lower/std_types/map.rs",
+    find: "            MapOp::Subset { superset } if seen_items => {\n",
+    replace: "            MapOp::Subset { superset } if seen_items && false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_set_algebra_seen.rs$"],
+  },
 ];

@@ -587,6 +587,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (true, Some(&key)) => Some(self.cmp_fn(key, false, span)?),
             _ => None,
         };
+        // A B-tree set of items std's own nodes hold, whose order can be
+        // seen or isn't total (`tree_of_nodes`, #926): its algebra std's.
+        let seen_items = set && self.is_sorted(receiver) && types.first().is_some_and(|&item| self.tree_of_nodes(item));
         let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
         let map_ops = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
@@ -681,6 +684,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 map_ops("$setReplace", with_drops(vec![arg(), arg()], vec![drop]))
             }
+            // Of items whose order can be seen, std's own lazy iterators,
+            // which ask `cmp` what std's ask as they're stepped (#943); of
+            // others, its items, which no one sees asked.
+            MapOp::Algebra(name) if seen_items => {
+                let cmp = cmp.expect("a B-tree's order");
+                map_ops("$treeSetAlgebra", vec![arg(), arg(), Expr::str(name), cmp])
+            }
             MapOp::Algebra(name) | MapOp::SetOperator(name) => {
                 let mut list = vec![arg(), arg(), Expr::str(name)];
                 list.extend(cmp);
@@ -689,6 +699,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     MapOp::SetOperator(_) => Expr::new_(Expr::var("Set"), vec![items]),
                     _ => items,
                 }
+            }
+            MapOp::Subset { superset } if seen_items => {
+                let cmp = self.cmp_fn(types[0], false, span)?;
+                map_ops("$treeIsSubset", vec![arg(), arg(), Expr::bool(superset), cmp])
+            }
+            MapOp::Disjoint if seen_items => {
+                let cmp = self.cmp_fn(types[0], false, span)?;
+                map_ops("$treeIsDisjoint", vec![arg(), arg(), cmp])
             }
             MapOp::Subset { superset } => map_ops("$isSubset", vec![arg(), arg(), Expr::bool(superset)]),
             MapOp::Disjoint => map_ops("$isDisjoint", vec![arg(), arg()]),

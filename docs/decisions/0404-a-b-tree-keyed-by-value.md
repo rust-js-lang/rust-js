@@ -306,3 +306,43 @@ case-builds pass. `test/lowering-std-unwinds.test.ts` pins both build forms.
 - `extract_if`'s owned bounds aren't dropped (#945);
 - a panic inside `split_off` leaves std's nodes unfixed, which native Rust
   traps on, so it isn't compared (#947).
+
+## Amendment: a set's algebra is std's lazy iterators, where its order can be seen (#943)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. An `Ord` that
+prints, counts or panics saw other calls, at other times.
+
+A B-tree set's `union`, `intersection`, `difference` and
+`symmetric_difference` were its items sorted by JS's `sort` and searched
+by `has`, all at once (`$setAlgebra`); `is_subset`, `is_superset` and
+`is_disjoint` searched each item. std's are lazy iterators
+(`alloc/src/collections/btree/set.rs`): `union` and `symmetric_difference`
+step a `MergeIterInner`, asking `cmp(a, b)` of each pair of heads and
+holding back the greater; `intersection` and `difference` ask their ends'
+`(self_min.cmp(other_max), self_max.cmp(other_min))` where they're made,
+then answer from an end, stitch the two walks together, or search the
+larger for each of the smaller's items where it's 16 times the size
+(`ITER_PERFORMANCE_TIPPING_SIZE_DIFF`); `is_subset` asks its ends, then
+searches or walks both, `other1.cmp(self1)`; `is_disjoint` is
+`intersection(..).next().is_none()`. Each step is asked as the consumer
+asks it.
+
+**Of items std's own nodes hold** (`tree_of_nodes`: an order that can be
+seen or isn't total, #926), each is std's, step for step
+(`$treeSetAlgebra`, `$treeIsSubset`, `$treeIsDisjoint`, `ord_tree.js`):
+a `$Steps` whose `next` takes one of std's steps, its size hint std's.
+Stepping a set's items asks nothing, so each reads them as an array;
+`contains` is the set's own search, `has`. `$treeSetAlgebra` is one of
+`ITERATOR_HELPERS`, a JS iterator already. Of a quiet and total order,
+which no one sees asked, they're as they were, `$setAlgebra`'s array (no
+difference). No corpus snapshot changed. Corpus case
+`btree_set_algebra_seen.rs`: sets of 0 to 300 items of an order that
+counts and traces its calls, each operation of each pair of a large, a
+smaller, a much smaller, a subset and two ends, stepped with the calls by
+each item, and taken only so far; against native Rust in both builds.
+Mutations `set-algebra-tipping-halved`, `set-merge-keeps-the-less`,
+`set-subset-walk-asked-the-other-way`, `set-difference-stitch-steps-both`
+(`runtime/ord_tree.ts`), `tree-set-algebra-unseen` and `tree-subset-unseen`
+(`lower/std_types/map.ts`). A set's operators, `&a | &b`, are the next
+issue: they made a plain `Set` of the items, which finds an object by
+identity.

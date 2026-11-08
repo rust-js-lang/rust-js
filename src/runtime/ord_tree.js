@@ -685,3 +685,245 @@ function $ordTreeSet(cmp) {
     }
   };
 }
+
+// A B-tree set's algebra of items whose order can be seen, std's lazy
+// iterators step for step (alloc/src/collections/btree/set.rs, rustc 1.99;
+// #943): which items each asks `cmp` of, in what order, and when, a step
+// at a time as its consumer asks, as `Union`, `SymmetricDifference`,
+// `Intersection` and `Difference` do, and `is_subset` and `is_disjoint`'s
+// walks. Stepping a set's items asks nothing, so each is read as an array.
+// `contains` is the set's own search, `has`, which asks `cmp(item, held)`.
+const $SET_TIPPING = 16; // ITER_PERFORMANCE_TIPPING_SIZE_DIFF
+
+// A walk of `items` from `start` to `end`, std's `Iter` of a set: its
+// `next`, `{ v }` or `undefined` past its end, its `next_back`, its
+// `peek`, a `Peekable`'s, and its `len`.
+function $setWalk(items, start = 0, end = items.length) {
+  let peeked;
+  const walk = {
+    next() {
+      if (peeked !== undefined) {
+        const step = peeked;
+        peeked = undefined;
+        return step;
+      }
+      return start < end ? { v: items[start++] } : undefined;
+    },
+    nextBack() {
+      return start < end ? { v: items[--end] } : undefined;
+    },
+    peek() {
+      peeked ??= start < end ? { v: items[start++] } : undefined;
+      return peeked;
+    },
+    len: () => Math.max(0, end - start) + (peeked === undefined ? 0 : 1),
+  };
+  return walk;
+}
+
+// What a set's algebra's `next` gives, `{ v }` or none, as a JS iterator,
+// its size hint `hint`'s.
+function $setSteps(next, hint) {
+  const it = new $Steps(() => {
+    const step = next();
+    return step === undefined ? { done: true, value: undefined } : { done: false, value: step.v };
+  });
+  it.sizeHint = hint;
+  return it;
+}
+
+// `MergeIterInner::nexts`: each side's next, the one `cmp` says is the
+// greater held back for the next step, `(a_next, b_next)`.
+function $setMerge(a, b, cmp) {
+  let peeked;
+  const merge = {
+    nexts() {
+      let an;
+      let bn;
+      if (peeked?.side === "a") [an, bn] = [peeked.step, b.next()];
+      else if (peeked?.side === "b") [an, bn] = [a.next(), peeked.step];
+      else [an, bn] = [a.next(), b.next()];
+      peeked = undefined;
+      if (an !== undefined && bn !== undefined) {
+        const order = cmp(an.v, bn.v);
+        if (order < 0) [peeked, bn] = [{ side: "b", step: bn }, undefined];
+        else if (order > 0) [peeked, an] = [{ side: "a", step: an }, undefined];
+      }
+      return [an, bn];
+    },
+    lens: () => [a.len() + (peeked?.side === "a" ? 1 : 0), b.len() + (peeked?.side === "b" ? 1 : 0)],
+  };
+  return merge;
+}
+
+// `a.union(&b)`, `a.intersection(&b)`, `a.difference(&b)` or
+// `a.symmetric_difference(&b)` (`op`, as `$setAlgebra` names them) of two
+// sets ordered by `cmp`: std's iterator of it, made as std's is, which
+// asks of `intersection` and `difference` its ends' `cmp` where it's made.
+function $treeSetAlgebra(a, b, op, cmp) {
+  const [xs, ys] = [Array.from(a), Array.from(b)];
+  if (op === "union" || op === "symmetric") {
+    const merge = $setMerge($setWalk(xs), $setWalk(ys), cmp);
+    if (op === "union") {
+      return $setSteps(
+        () => {
+          const [an, bn] = merge.nexts();
+          return an ?? bn;
+        },
+        () => {
+          const [x, y] = merge.lens();
+          return [Math.max(x, y), x + y];
+        },
+      );
+    }
+    return $setSteps(
+      () => {
+        for (;;) {
+          const [an, bn] = merge.nexts();
+          if (an === undefined || bn === undefined) return an ?? bn;
+        }
+      },
+      () => {
+        const [x, y] = merge.lens();
+        return [0, x + y];
+      },
+    );
+  }
+  // Its ends' order, `(self_min.cmp(other_max), self_max.cmp(other_min))`,
+  // each asked, of two sets neither empty.
+  const ends =
+    xs.length > 0 && ys.length > 0 ? [cmp(xs[0], ys[ys.length - 1]), cmp(xs[xs.length - 1], ys[0])] : undefined;
+  if (op === "intersection") return $setIntersection(a, b, xs, ys, ends, cmp);
+  return $setDifference(b, xs, ys, ends, cmp);
+}
+
+function $setIntersection(a, b, xs, ys, ends, cmp) {
+  // `IntersectionInner::Answer`: none, or one end, given once.
+  const answer = (step) =>
+    $setSteps(
+      () => {
+        const given = step;
+        step = undefined;
+        return given;
+      },
+      () => (step === undefined ? [0, 0] : [1, 1]),
+    );
+  if (ends === undefined || ends[0] > 0 || ends[1] < 0) return answer(undefined);
+  if (ends[0] === 0) return answer({ v: xs[0] });
+  if (ends[1] === 0) return answer({ v: xs[xs.length - 1] });
+  // `Search`: the smaller's each item searched for in the larger.
+  const search = (small, large) =>
+    $setSteps(
+      () => {
+        for (;;) {
+          const step = small.next();
+          if (step === undefined || large.has(step.v)) return step;
+        }
+      },
+      () => [0, small.len()],
+    );
+  if (xs.length <= Math.floor(ys.length / $SET_TIPPING)) return search($setWalk(xs), b);
+  if (ys.length <= Math.floor(xs.length / $SET_TIPPING)) return search($setWalk(ys), a);
+  // `Stitch`: both walked, each step from the next of each.
+  const [x, y] = [$setWalk(xs), $setWalk(ys)];
+  return $setSteps(
+    () => {
+      let an = x.next();
+      if (an === undefined) return undefined;
+      let bn = y.next();
+      if (bn === undefined) return undefined;
+      for (;;) {
+        const order = cmp(an.v, bn.v);
+        if (order === 0) return an;
+        if (order < 0) an = x.next();
+        else bn = y.next();
+        if (an === undefined || bn === undefined) return undefined;
+      }
+    },
+    () => [0, Math.min(x.len(), y.len())],
+  );
+}
+
+function $setDifference(b, xs, ys, ends, cmp) {
+  // `DifferenceInner::Iterate`: its own items, of the first's or the last's
+  // left out where it's the other's.
+  const iterate = (walk) => $setSteps(() => walk.next(), () => [walk.len(), walk.len()]);
+  if (ends === undefined || ends[0] > 0 || ends[1] < 0) return iterate($setWalk(xs));
+  if (ends[0] === 0) return iterate($setWalk(xs, 1));
+  if (ends[1] === 0) return iterate($setWalk(xs, 0, xs.length - 1));
+  const x = $setWalk(xs);
+  if (xs.length <= Math.floor(ys.length / $SET_TIPPING)) {
+    // `Search`: its each item not found in the other.
+    return $setSteps(
+      () => {
+        for (;;) {
+          const step = x.next();
+          if (step === undefined || !b.has(step.v)) return step;
+        }
+      },
+      () => [Math.max(0, x.len() - ys.length), x.len()],
+    );
+  }
+  // `Stitch`: its walk against the other's, peeked.
+  const y = $setWalk(ys);
+  return $setSteps(
+    () => {
+      let xn = x.next();
+      if (xn === undefined) return undefined;
+      for (;;) {
+        const yn = y.peek();
+        const order = yn === undefined ? -1 : cmp(xn.v, yn.v);
+        if (order < 0) return xn;
+        if (order === 0) {
+          xn = x.next();
+          if (xn === undefined) return undefined;
+        }
+        y.next();
+      }
+    },
+    () => [Math.max(0, x.len() - y.len()), x.len()],
+  );
+}
+
+// `a.is_subset(&b)`, or `a.is_superset(&b)`, std's `b.is_subset(&a)`, of
+// two sets ordered by `cmp`: its ends asked first, then each of its items
+// searched for in the other, or both walked, by their sizes.
+function $treeIsSubset(a, b, superset, cmp) {
+  if (superset) [a, b] = [b, a];
+  if (a.size > b.size) return false;
+  const [xs, ys] = [Array.from(a), Array.from(b)];
+  if (xs.length === 0) return true;
+  if (ys.length === 0) return false;
+  let [start, end] = [0, xs.length];
+  const low = cmp(xs[0], ys[0]);
+  if (low < 0) return false;
+  if (low === 0) start++;
+  const high = cmp(xs[xs.length - 1], ys[ys.length - 1]);
+  if (high > 0) return false;
+  if (high === 0) end = Math.max(start, end - 1);
+  if (end - start <= Math.floor(ys.length / $SET_TIPPING)) {
+    for (let i = start; i < end; i++) if (!b.has(xs[i])) return false;
+    return true;
+  }
+  // Each of its items against the other's walk past both its ends, which
+  // aren't its, `other1.cmp(self1)`.
+  let at = 1;
+  const last = ys.length - 1;
+  for (let i = start; i < end; i++) {
+    let found = false;
+    while (at < last) {
+      const order = cmp(ys[at++], xs[i]);
+      if (order < 0) continue;
+      if (order > 0) return false;
+      found = true;
+      break;
+    }
+    if (!found) return false;
+  }
+  return true;
+}
+
+// `a.is_disjoint(&b)`: `a.intersection(&b).next().is_none()`.
+function $treeIsDisjoint(a, b, cmp) {
+  return $treeSetAlgebra(a, b, "intersection", cmp).next().done;
+}
