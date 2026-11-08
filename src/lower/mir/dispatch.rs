@@ -119,13 +119,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut operands: Vec<&Operand<'tcx>> = vec![func];
             operands.extend(args.iter().map(|a| &a.node));
             let values = self.take_operands(state, &operands, out)?;
-            let mut exprs = values
+            let exprs = values
                 .into_iter()
                 .map(|v| self.value_expr(v, span))
                 .collect::<R<Vec<_>>>()?;
-            let callee = exprs.remove(0);
-            crate::lower::calls::given_to_js(&mut exprs);
-            return Ok(Value::Expr(Expr::call(callee, exprs)));
+            // Its write's result caught as a call's by name is (#1042).
+            let called = crate::lower::calls::called_given_to_js(exprs);
+            return Ok(Value::Expr(self.fmt_result_value(def_id, generic_args, called)));
         }
         // `js::import!(f)`: what `f` names imported, not its value.
         if bindings::is_binding(self.tcx, def_id)

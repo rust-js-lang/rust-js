@@ -30,8 +30,9 @@ pub(super) fn failing_fns<'tcx>(
     let mut failing: IndexSet<DefId> = IndexSet::default();
     let mut calls: Vec<(DefId, Callee)> = Vec::new();
     for body in all_bodies {
-        let caller = tcx.typeck_root_def_id(body.def_id);
-        let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
+        // A closure's own, which its call resolves to, not its maker's (#1042).
+        let caller = body.def_id;
+        let typing_env = ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(caller));
         // A write's error made, `Err(fmt::Error)`.
         if makes_write_error(tcx, body) {
             failing.insert(caller);
@@ -82,12 +83,16 @@ pub(super) fn failing_fns<'tcx>(
                 calls.push((caller, Callee::Unknown));
                 continue;
             }
+            // As the caller has it, a closure's `<F as FnOnce>::Output` the
+            // `fmt::Result` its bound says (#1042).
             let output = tcx
                 .fn_sig(callee)
                 .instantiate(tcx, args)
                 .skip_normalization()
                 .skip_binder()
                 .output();
+            let output =
+                (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(output))).unwrap_or(output);
             // A `Result`'s method that makes one of a value's `Result`
             // of a write's error, `map` of an `io::Result<usize>`: its
             // `Err`, given on.
@@ -140,17 +145,27 @@ pub(super) fn failing_fns<'tcx>(
     // Only one that returns a write's result passes its error on; another
     // that formats one panics, as std's `format!` does.
     failing.retain(|&id| {
-        tcx.def_kind(id).is_fn_like()
-            && is_write_result_type(
-                tcx,
-                tcx.fn_sig(id)
-                    .instantiate_identity()
-                    .skip_normalization()
-                    .skip_binder()
-                    .output(),
-            )
+        tcx.def_kind(id).is_fn_like() && output_of(tcx, id).is_some_and(|output| is_write_result_type(tcx, output))
     });
     failing
+}
+
+/// What the function or closure `id` gives back, as it's declared; `None`
+/// of a coroutine's body, an `async` block's.
+fn output_of<'tcx>(tcx: TyCtxt<'tcx>, id: DefId) -> Option<ty::Ty<'tcx>> {
+    match tcx.def_kind(id) {
+        rustc_hir::def::DefKind::Closure => match *tcx.type_of(id).instantiate_identity().skip_normalization().kind() {
+            ty::Closure(_, args) => Some(args.as_closure().sig().skip_binder().output()),
+            _ => None,
+        },
+        _ => Some(
+            tcx.fn_sig(id)
+                .instantiate_identity()
+                .skip_normalization()
+                .skip_binder()
+                .output(),
+        ),
+    }
 }
 
 /// Whether `body` makes a write's error, `Err(fmt::Error)`, of its THIR. A

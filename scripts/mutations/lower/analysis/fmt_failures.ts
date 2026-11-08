@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "failing-closure-its-makers",
+    breaks: "a closure that gives back a write's error is taken for its maker, so its call isn't caught and its throw goes past what reads it (#1042)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "        let caller = body.def_id;\n",
+    replace: "        let caller = tcx.typeck_root_def_id(body.def_id);\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_giving_back_a_write_error.rs$"],
+  },
+  {
+    name: "closure-output-unnormalized",
+    breaks: "a generic `F: Fn() -> fmt::Result` called, `<F as FnOnce>::Output`, isn't a write's result, so its caller isn't found to fail (#1042)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "                (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(output))).unwrap_or(output);\n",
+    replace: "                output;\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_giving_back_a_write_error.rs$"],
+  },
+  {
     name: "fmt-error-never-made",
     breaks:
       "a writer that returns `Err(fmt::Error)` is taken as one that never fails",

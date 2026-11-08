@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "closure-call-of-a-write-error-uncaught",
+    breaks: "a call of a closure that may give back a write's error isn't caught, `$writeTry`, so `{:?}` of it throws (#1042)",
+    file: "src/lower/mir/calls.rs",
+    find: "                if writes.is_none() && self.is_write_result(output) && self.closure_may_fail(arg_tys[0]) =>\n",
+    replace: "                if false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_giving_back_a_write_error.rs$"],
+  },
+  {
     name: "closure-arguments-unplaced",
     breaks:
       "a `dyn Fn` call's arguments have no place, so a comment before the first is after it, `d.two(href, /* two */ n)`, or, of one argument, before the statement (rd657)",
@@ -457,7 +465,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `dyn Fn`'s or a generic `F`'s call through a field is `p[0]()`, giving it `p` as its `this` (#402)",
     file: "src/lower/mir/calls.rs",
-    find: "            Some((state, output)) if !own => {\n                self.called_unbound(state, (call, Called::Function(arg_tys[0], arg_tys[1], output)))\n            }\n",
+    find: "            Some((state, output)) if !own => {\n                self.called_unbound(state, (call, Called::Function(arg_tys[0], arg_tys[1], output)))?\n            }\n",
     replace: "",
     tests: [
       "test/js-functions.test.ts",

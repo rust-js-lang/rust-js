@@ -241,12 +241,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             exprs.extend(self.given_to_writer(None));
         }
         let call = Value::Expr(Expr::call(callee, exprs));
-        match unbound {
+        let output = unbound.as_ref().map(|&(_, output)| output);
+        let call = match unbound {
             Some((state, output)) if !own => {
-                self.called_unbound(state, (call, Called::Function(arg_tys[0], arg_tys[1], output)))
+                self.called_unbound(state, (call, Called::Function(arg_tys[0], arg_tys[1], output)))?
             }
-            _ => Ok(call),
-        }
+            _ => call,
+        };
+        // Of one that may give back a write's error, as a function's call is
+        // (`fmt_result_value`): what it throws, caught, its result a value
+        // (#1042). Not a writer's, whose `Formatter` it's given.
+        Ok(match (call, output) {
+            (Value::Expr(called), Some(output))
+                if writes.is_none() && self.is_write_result(output) && self.closure_may_fail(arg_tys[0]) =>
+            {
+                Value::Expr(self.fmt_try(vec![StmtKind::Return(Some(called)).at(js::Span::NONE)]))
+            }
+            (call, _) => call,
+        })
+    }
+
+    /// Whether a call of `callee`, a closure's type or what may be one, may
+    /// give back a write's error (ADR 0187): the crate's own closure that
+    /// `fmt_failures` found may, a function's as `call_may_fail` says, and
+    /// any other, a `dyn Fn`'s or a type parameter's, where any may.
+    fn closure_may_fail(&self, callee: Ty<'tcx>) -> bool {
+        self.krate.any_failing
+            && match *callee.peel_refs().kind() {
+                ty::Closure(id, _) => self.krate.failing.contains(&id),
+                ty::FnDef(id, args) => self.call_may_fail(id, args.skip_binder()),
+                _ => true,
+            }
     }
 
     /// `a += b` of a number or a string, through its `&mut`: the place

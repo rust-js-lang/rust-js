@@ -108,6 +108,14 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
     }
 }
 
+/// A call of `exprs`' first, a function value, of the rest, given to JS
+/// (`given_to_js`): a function a variable holds, `js::import!(f)`'s.
+pub(super) fn called_given_to_js(mut exprs: Vec<Expr>) -> Expr {
+    let callee = exprs.remove(0);
+    given_to_js(&mut exprs);
+    Expr::call(callee, exprs)
+}
+
 /// Arguments given to JS: a trailing `undefined` is one it's given,
 /// `GivenUndefined`, which no pass leaves out, as what it calls may count
 /// its arguments, `Math.max(1, undefined)` (ADR 0330).

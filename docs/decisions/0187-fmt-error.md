@@ -163,3 +163,29 @@ are kept; the corpus's JS is otherwise the same. Held by the corpus case
 `returned-write-result-unchecked`, `held-write-error-taken-for-ok` and
 `string-write-through-a-call-uncaught`; the net's ten rows of #1011 run as
 native. A closure that gives back one that may fail is #1042.
+
+## Amendment: a closure that gives back a write's error (#1042)
+
+Which functions may give back a write's error was asked of each body's
+maker, `typeck_root_def_id`: a closure that makes one, or passes one on,
+`|| -> fmt::Result { made(true)?; Ok(()) }`, marked the function it's
+made in, never itself, so its call wasn't caught and its throw went past
+what read it, `{:?}` of `checked()` an uncaught `$FmtError` where native
+prints `Err(Error)`. And a generic `F: Fn(bool) -> fmt::Result` called,
+`f(true)`, gives `<F as FnOnce>::Output`, which wasn't taken for a write's
+result, so `run(f)` wasn't found to fail. `fmt_failures` keys each body
+by its own id now, a closure's its own, its output its closure signature's
+(`output_of`), and normalizes a callee's output as the caller has it. A
+closure's call is caught as a function's is (`closure_may_fail`): of the
+crate's closure, where `fmt_failures` found it may; of a function, as
+`call_may_fail` says; of a `dyn Fn` or a type parameter's, where any
+may; and a function a variable holds, `let held = named; held()`, called
+as that variable, as its name's call is (`fmt_result_value`), which the
+net's `closure-fn` rewrite of the case found. Results changed
+([0262](0262-when-rust-and-js-disagree.md)), so Rust's are kept; the
+corpus's JS is otherwise the same. Held by the corpus case
+`closure_giving_back_a_write_error` and the mutations
+`failing-closure-its-makers`, `closure-output-unnormalized`,
+`closure-call-of-a-write-error-uncaught` and
+`held-function-write-error-uncaught`.
+

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "held-function-write-error-uncaught",
+    breaks: "a function a variable holds, `let held = named; held()`, that gives back a write's error isn't caught, so `{:?}` of it throws (#1042)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            return Ok(Value::Expr(self.fmt_result_value(def_id, generic_args, called)));\n",
+    replace: "            return Ok(Value::Expr(called));\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_giving_back_a_write_error.rs$"],
+  },
+  {
     name: "lent-iterator-place-made-a-js-iterator",
     breaks:
       "a `&mut` to a `Range` that's a `Vec`'s item, `&mut items[1]`, is a new JS iterator of it, `Iterator.from($index(items, 1))`, which `r.next()` steps apart from the item (#638)",
