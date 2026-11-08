@@ -1399,3 +1399,19 @@ moves its end. No corpus snapshot changed. Corpus case
 run's 10 s limit); the two pairs are off `test/neighbours-known.txt`.
 Mutation `range-nth-back-unasked` (`runtime/iterator.ts`).
 
+
+## Amendment: each path that asks the hint is a row (#820)
+
+When a collect asks its iterator's `size_hint` is one model,
+`iterators/hint_asks.rs`. The table now holds each path of it beside the
+`Vec` collect's `capacity`: a collect into a `Result` or an `Option` of a
+`Vec`, through `GenericShunt`'s hint; a `Vec`'s `extend` as it fills, from
+none and from room of its own; and the up-front reserves of a `VecDeque`'s,
+a `String`'s and a hash map's `extend`. A consumer that asks the hint runs
+only of the sources that print theirs, `own Hints`, `own Exact`, `own
+Every` and `generic own Every`, since no other shows when it's asked:
+2,114 cases more, 23,708 in all, in 396 programs, and 602 more points.
+Every hint they ask is native Rust's. They found #1004: a collect into a
+`Result` or an `Option` steps its source by `next`, where `GenericShunt`
+steps it by `try_fold`, so `skip` and `step_by` call the crate's `nth`
+otherwise. Its 64 cases are listed under it.

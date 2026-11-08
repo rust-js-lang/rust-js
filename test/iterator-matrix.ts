@@ -302,6 +302,10 @@ type Consumer = {
   /** Whether it takes `it` by `&mut` where `it` is an expression, so a
    * generic case's parameter alone is `mut`. */
   lends?: boolean;
+  /** Whether what it collects into asks the iterator's `size_hint`, which
+   * only a source that prints its own shows: the conformance table runs it
+   * of those alone (#820). */
+  asks?: boolean;
 };
 
 /** A consumer's closure's start: its call counted, and a panic at the
@@ -676,6 +680,65 @@ const stepConsumers: Consumer[] = [
     takes: any,
     text: (it) => `let v: Vec<_> = ${it}.collect();\n    println!("vec{} room {}", show(&v), v.capacity() >= v.len());`,
   },
+  // Each other path std asks the hint by (#820, `iterators/hint_asks.rs`):
+  // a collect into a `Result` or an `Option` of a `Vec`, through
+  // `GenericShunt`'s hint; a `Vec`'s `extend` as it fills, from none and
+  // from room of its own; a `VecDeque`'s, a `String`'s and a hash map's
+  // `extend`, each reserving up front.
+  {
+    name: "result vec",
+    closure: false,
+    takes: any,
+    asks: true,
+    text: (it) =>
+      `let r: Result<Vec<_>, u8> = ${it}.map(Ok).collect();\n    if let Ok(v) = r {\n        println!("result vec{} room {}", show(&v), v.capacity() >= v.len());\n    }`,
+  },
+  {
+    name: "option vec",
+    closure: false,
+    takes: any,
+    asks: true,
+    text: (it) =>
+      `let o: Option<Vec<_>> = ${it}.map(Some).collect();\n    if let Some(v) = o {\n        println!("option vec{} room {}", show(&v), v.capacity() >= v.len());\n    }`,
+  },
+  {
+    name: "extend vec",
+    closure: false,
+    takes: any,
+    asks: true,
+    text: (it) => `let mut v = Vec::new();\n    v.extend(${it});\n    println!("extend vec{} room {}", show(&v), v.capacity() >= v.len());`,
+  },
+  {
+    name: "extend vec with room",
+    closure: false,
+    takes: any,
+    asks: true,
+    text: (it) =>
+      `let mut v = Vec::with_capacity(2);\n    v.extend(${it});\n    println!("extend room vec{} room {}", show(&v), v.capacity() >= v.len());`,
+  },
+  {
+    name: "extend deque",
+    closure: false,
+    takes: any,
+    asks: true,
+    text: (it) => `let mut q = std::collections::VecDeque::new();\n    q.extend(${it});\n    println!("extend deque{}", show(q.make_contiguous()));`,
+  },
+  {
+    name: "extend string",
+    closure: false,
+    takes: any,
+    asks: true,
+    text: (it) =>
+      `let mut s = String::new();\n    s.extend(${it}.map(|x| char::from(b'a' + (x.v() % 26) as u8)));\n    println!("extend string {s:?}");`,
+  },
+  {
+    name: "extend hash map",
+    closure: false,
+    takes: any,
+    asks: true,
+    text: (it) =>
+      `let mut m = HashMap::new();\n    m.extend(${it}.map(|x| (x.v() % 3, x.v())));\n    println!("extend map {:?}", sorted(m.into_iter().collect()));`,
+  },
   { name: "len", closure: false, takes: (shape) => shape.exact, text: (it) => `let it = ${it};\n    println!("len {}", it.len());` },
   {
     name: "for_each",
@@ -730,6 +793,9 @@ const stepConsumers: Consumer[] = [
 // The crate's own `Hints` and `Exact` print as their `size_hint` runs, which
 // a collect into a `Vec` reserves by (#733).
 const tableSources = ["vec", "rev vec", "range", "vec iter", "own Plain", "own Hints", "own Exact", "own Every", "own Backs", "generic vec", "generic own Every"];
+// The sources whose `size_hint` prints as it runs, of which alone a
+// consumer that asks it shows when (#820).
+const hinting = ["own Hints", "own Exact", "own Every", "generic own Every"];
 
 /** Every case of the conformance table, in one order: each source alone and
  * through each adapter, each step that takes it, each panic site. */
@@ -746,6 +812,7 @@ export function conformanceCases(): Case[] {
       const shapes = [source.shape, shape];
       for (const consumer of steps) {
         if (!consumer.takes(shape)) continue;
+        if (consumer.asks && !hinting.includes(source.name)) continue;
         // A closure made by a block given to the call (#759): a few of it,
         // of a `Vec`'s, the consumer's alone and the adapter's folded, the
         // statement form's other shapes being the same closure.
