@@ -1376,7 +1376,8 @@ export function prepare(moduleLoading) {
   f(entry.value.flatten())` `() => f(entry.value)`. Given whole to code
   that boxes, `{:?}` or a
   generic function, it's ADR 0051's box there, and what's given it of
-  one, `x === undefined ? undefined : $someValue(x) ?? null`. Its `.d.ts`
+  one, `x == null ? undefined : $someValue(x) ?? null`, whose `== null` is
+  its `None` of either form, a nullable function's `null` too (#957). Its `.d.ts`
   is `sdpMid?: string | null | undefined`. Of a `T` that may look like
   `None`, as generic code's box asks it, a `()`, a type parameter, an
   `Option`, a `Weak`, a `MaybeUninit` or a unit struct, through
@@ -1386,8 +1387,9 @@ export function prepare(moduleLoading) {
   states stay apart (#836). That's of a struct kept to the crate: a `pub`
   one's `.d.ts` declares the field `T | null`, which the box isn't, so it
   holds a `T` that's never `None`-like. The field is set whole, never
-  through a `&mut`. Each is an error (#470, ADRs 0051 and 0810, amended,
-  the user's decision):
+  through a `&mut`, and isn't `#[rust_js::optional]`, whose `None` it
+  leaves out already (#959). Each is an error (#470, ADRs 0051 and 0810,
+  amended, the user's decision):
 
 ```rust
 use js::Unknown;

@@ -225,6 +225,14 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
                     let message = "rust-js: a `#[rust_js::nullable]` field of an `Option` of what may be `undefined` holds its `Some` as it is, `undefined` too, so it can't be `#[rust_js::optional]`, absent for `None`: its `None` is `null` where it's made";
                     tcx.dcx().span_err(tcx.def_span(field.did), message);
                     valid = false;
+                } else if is_optional(tcx, field) && holds_nested(tcx, field) {
+                    // A nested one's `None` is left out already, its
+                    // `Some(None)` `null` (ADR 1017), which the general
+                    // message below, asking for a nullable field, misnamed:
+                    // this one is (#959).
+                    let message = "rust-js: a `#[rust_js::nullable]` field of an `Option` of an `Option` is left out already for `None` and `null` for `Some(None)`, so `#[rust_js::optional]` says nothing more of it; remove it";
+                    tcx.dcx().span_err(tcx.def_span(field.did), message);
+                    valid = false;
                 } else if is_optional(tcx, field) && !is_nullable(tcx, field) && !once && !cell_of_option {
                     let message = "rust-js: `#[rust_js::optional]` is of a cell, a `Cell<Option<T>>`, a `RefCell` of one or a `OnceCell`, left out where it's made `None` or empty, or of a `#[rust_js::nullable]` field, whose `None` is then left out where its struct is made and `null` where it's set; an `Option` field's `None` is left out already";
                     tcx.dcx().span_err(tcx.def_span(field.did), message);

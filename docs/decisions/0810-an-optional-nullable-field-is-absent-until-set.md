@@ -389,3 +389,17 @@ the one that decided: its mutation, `set-first-optional`, survived. The
 set now holds each nullable field set first, and `set-first-unnullable`
 holds its one test, that the field is nullable: a plain `Cell` field set
 first is still given `?? null`.
+
+## Amendment: optional of a nested field says what's so of it (2026-11-08, #959)
+
+`#[rust_js::optional]` of a nullable `Option<Option<T>>` field, whose
+`None` is left out already and its `Some(None)` `null` (ADR 1017), was
+refused by the general message, which names a `#[rust_js::nullable]`
+field as what `optional` needs: a nested field isn't `is_nullable`'s, so
+it fell through, though it says it's nullable. It's refused by a message
+of its own now, "a `#[rust_js::nullable]` field of an `Option` of an
+`Option` is left out already for `None` and `null` for `Some(None)`, so
+`#[rust_js::optional]` says nothing more of it; remove it". The guide's
+types page says it beside the nested field's other errors. Corpus case
+`optional_of_a_nested_nullable_field_refused.rs`; mutation
+`optional-of-nested-misnamed` (`lower/bindings.ts`).

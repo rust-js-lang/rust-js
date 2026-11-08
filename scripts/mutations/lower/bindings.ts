@@ -713,4 +713,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => {}",
     tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
   },
+  {
+    name: "optional-of-nested-misnamed",
+    breaks: "`#[rust_js::optional]` of a nested nullable field is refused by the general message, which asks for a nullable field, which it is (#959)",
+    file: "src/lower/bindings.rs",
+    find: "                } else if is_optional(tcx, field) && holds_nested(tcx, field) {\n",
+    replace: "                } else if is_optional(tcx, field) && holds_nested(tcx, field) && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^optional_of_a_nested_nullable_field_refused.rs$"],
+  },
 ];
