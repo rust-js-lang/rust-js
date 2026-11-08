@@ -20,6 +20,7 @@ use crate::lower::recognition::{
     zipped_sources,
 };
 use crate::lower::{Body, fn_def};
+use rustc_hir::def::DefKind;
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
@@ -82,9 +83,9 @@ pub(super) fn of_crate<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
-    drops: impl Fn(Ty<'tcx>) -> bool + Copy,
+    (library, drops): (bool, impl Fn(Ty<'tcx>) -> bool + Copy),
 ) -> BackStepped<'tcx> {
-    let (types, mut typed) = back_stepped(tcx, recognition, all_bodies, drops);
+    let (types, mut typed) = back_stepped(tcx, recognition, all_bodies, (library, drops));
     let (locals, fields, typed_sources) = stepped_locals(tcx, recognition, all_bodies, &types, drops);
     typed.extend(typed_sources);
     BackStepped {
@@ -105,7 +106,7 @@ pub(super) fn back_stepped<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
-    drops: impl Fn(Ty<'tcx>) -> bool,
+    (library, drops): (bool, impl Fn(Ty<'tcx>) -> bool),
 ) -> (IndexSet<Ty<'tcx>>, IndexSet<Ty<'tcx>>) {
     let mut stepped = IndexSet::default();
     let mut typed: IndexSet<Ty<'tcx>> = IndexSet::default();
@@ -143,6 +144,17 @@ pub(super) fn back_stepped<'tcx>(
                 if closure_drops(tcx, b, &drops) {
                     stepped.extend(back_stepped_adapter(tcx, recognition, b, false, &drops));
                 }
+            }
+            // A library's function given a std adapter of a type parameter
+            // its clauses make double-ended, `back<I, P>(it: Filter<I, P>)`
+            // of an `I: DoubleEndedIterator`: its body, which may step it
+            // from its back, is the library's, which the crate can't see, so
+            // what it's given is made knowing its back where it's made
+            // (#1024).
+            if recognition.foreign.is_library(callee.krate) {
+                let made = library_backs(tcx, recognition, callee, args, &drops);
+                typed.extend(made.iter().copied());
+                stepped.extend(made);
             }
             // `DoubleEndedIterator`'s own method, `next_back()`, which asks
             // it of what it's called on: below, of each adapter.
@@ -315,17 +327,60 @@ pub(super) fn back_stepped<'tcx>(
             match hidden != adapter {
                 // Given behind an `impl`: each adapter in it.
                 true => {
-                    let made: Vec<Ty<'tcx>> = (adapter.walk().filter_map(|part| part.as_type()))
-                        .filter_map(|held| {
-                            matches!(held.kind(), ty::Adt(a, _) if is_iter_adapter_def(tcx, a.did()))
-                                .then(|| back_stepped_adapter(tcx, recognition, held, true, &drops))
-                                .flatten()
-                        })
-                        .collect();
+                    let made = given_behind_an_impl(tcx, recognition, adapter, &drops);
                     typed.extend(made.iter().copied());
                     stepped.extend(made);
                 }
                 false => stepped.extend(back_stepped_adapter(tcx, recognition, adapter, false, &drops)),
+            }
+        }
+    }
+    // A library's function its consumers call, which gives what's behind
+    // an `impl DoubleEndedIterator`: they step it from its back where the
+    // library can't see, so each adapter in it is made knowing its back
+    // where it's made, as one its own callers step is (#1024).
+    if library {
+        for body in all_bodies {
+            let Some(local) = body.def_id.as_local() else { continue };
+            if !matches!(tcx.def_kind(body.def_id), DefKind::Fn | DefKind::AssocFn)
+                || !tcx.effective_visibilities(()).is_reachable(local)
+            {
+                continue;
+            }
+            // What its consumers give it, a std adapter of a double-ended
+            // source, which it may step from its back: each made knowing it,
+            // by their makers as by its body (`library_backs`).
+            let identity = ty::GenericArgs::identity_for_item(tcx, body.def_id);
+            let given = library_backs(tcx, recognition, body.def_id, identity, &drops);
+            typed.extend(given.iter().copied());
+            stepped.extend(given);
+            // Its regions erased, those it binds too.
+            let output = tcx
+                .instantiate_bound_regions_with_erased(
+                    tcx.fn_sig(body.def_id).instantiate_identity().skip_normalization(),
+                )
+                .output();
+            for hidden in output.walk().filter_map(|part| part.as_type()) {
+                let ty::Alias(
+                    _,
+                    ty::AliasTy {
+                        kind: ty::Opaque { def_id },
+                        ..
+                    },
+                ) = *hidden.kind()
+                else {
+                    continue;
+                };
+                let asked = (tcx.item_bounds(def_id).skip_binder().iter()).any(|clause| {
+                    clause
+                        .as_trait_clause()
+                        .is_some_and(|bound| is_double_ended(tcx, bound.def_id()))
+                });
+                if asked {
+                    let made = given_behind_an_impl(tcx, recognition, recognition.reveal(hidden), &drops);
+                    typed.extend(made.iter().copied());
+                    stepped.extend(made);
+                }
             }
         }
     }
@@ -373,6 +428,59 @@ pub(super) fn back_stepped<'tcx>(
         }
     }
     (with_stepped_sources(tcx, stepped), with_stepped_sources(tcx, typed))
+}
+
+/// Of a library's function `callee`, called with `args`, each std adapter
+/// a parameter of it is, of a source a type parameter its clauses bound by
+/// `DoubleEndedIterator`, which its body may step from its back: as it's
+/// given, made knowing its back where it's made, regions erased.
+fn library_backs<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    recognition: Recognition<'_, 'tcx>,
+    callee: rustc_span::def_id::DefId,
+    args: ty::GenericArgsRef<'tcx>,
+    drops: impl Fn(Ty<'tcx>) -> bool,
+) -> Vec<Ty<'tcx>> {
+    let double_ended: Vec<Ty<'tcx>> = (tcx.clauses_of(callee).instantiate_identity(tcx).into_iter())
+        .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+        .filter(|bound| is_double_ended(tcx, bound.def_id()))
+        .map(|bound| bound.self_ty().skip_binder())
+        .collect();
+    let inputs =
+        tcx.instantiate_bound_regions_with_erased(tcx.fn_sig(callee).instantiate_identity().skip_normalization());
+    (inputs
+        .inputs()
+        .iter()
+        .flat_map(|input| input.walk().filter_map(|part| part.as_type())))
+    .filter(|held| {
+        matches!(held.kind(), ty::Adt(a, _) if is_iter_adapter_def(tcx, a.did()))
+            && back_stepped_source(tcx, *held).is_some_and(|source| double_ended.contains(&source))
+    })
+    .filter_map(|held| {
+        let given = ty::EarlyBinder::bind(tcx, held)
+            .instantiate(tcx, args)
+            .skip_normalization();
+        back_stepped_adapter(tcx, recognition, recognition.reveal(given), true, &drops)
+    })
+    .collect()
+}
+
+/// Each adapter in `adapter`, given behind an `impl` its callers step from
+/// its back, that's made knowing its back where it's made, regions erased
+/// (`back_stepped_adapter`'s, of one given).
+fn given_behind_an_impl<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    recognition: Recognition<'_, 'tcx>,
+    adapter: Ty<'tcx>,
+    drops: impl Fn(Ty<'tcx>) -> bool,
+) -> Vec<Ty<'tcx>> {
+    (adapter.walk().filter_map(|part| part.as_type()))
+        .filter_map(|held| {
+            matches!(held.kind(), ty::Adt(a, _) if is_iter_adapter_def(tcx, a.did()))
+                .then(|| back_stepped_adapter(tcx, recognition, held, true, &drops))
+                .flatten()
+        })
+        .collect()
 }
 
 /// `adapter`, regions erased, where it's a map or a filter of a source not

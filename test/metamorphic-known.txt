@@ -66,11 +66,6 @@ plain std library default_method_clones.rs
 plain std library ne_between_two_item_types.rs
 plain std library own_ne_max_min_clamp.rs
 
-#1024 P0 (library): a library iterator stepped from its back in the using crate throws it.back is not a function
-plain library adapters_given_to_generic_backs.rs
-plain library chain_rev_own_back.rs
-plain library returned_impl_ends.rs
-
 #1025 P0 (library): a library's generic code given an IntoIterator dictionary throws IIntoIterator.intoIter is not a function
 plain std library fused_iterators.rs
 plain std library generic_into_iter_values.rs

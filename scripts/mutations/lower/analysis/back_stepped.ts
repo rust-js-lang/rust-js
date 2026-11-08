@@ -610,4 +610,28 @@ export const mutations: Mutation[] = [
     replace: "                                && let Some(&field) = lent_field.get(&of.local).filter(|_| false) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^iterators_held_in_a_generic_structs_field.rs$"],
   },
+  {
+    name: "library-impl-backs-unmade",
+    breaks: "a library's public function that gives a filter behind an `impl DoubleEndedIterator` makes JS's own `.filter`, and its consumer's `next_back` throws `it.back is not a function` (#1024)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                if asked {\n                    let made = given_behind_an_impl(tcx, recognition, recognition.reveal(hidden), &drops);\n",
+    replace: "                if false {\n                    let made = given_behind_an_impl(tcx, recognition, recognition.reveal(hidden), &drops);\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: iterators_stepped_from_their_back_across_crates"],
+  },
+  {
+    name: "library-given-backs-unmade",
+    breaks: "a filter a crate gives a library's generic function that steps it from its back is JS's own `.filter`, and the library's `next_back` throws (#1024)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "            if recognition.foreign.is_library(callee.krate) {\n",
+    replace: "            if false {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: iterators_stepped_from_their_back_across_crates"],
+  },
+  {
+    name: "library-own-params-unstepped",
+    breaks: "a library's public generic function given a `Filter<I, P>` of an `I: DoubleEndedIterator`, stepped from its back where no caller of the crate's asks it, is refused, though its consumers make it knowing its back (#1024)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "            let given = library_backs(tcx, recognition, body.def_id, identity, &drops);\n",
+    replace: "            let given: Vec<Ty<'tcx>> = Vec::new();\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: iterators_stepped_from_their_back_across_crates"],
+  },
 ];

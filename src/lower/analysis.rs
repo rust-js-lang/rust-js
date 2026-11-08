@@ -1056,7 +1056,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // What it steps from its back (ADR 0545, #814, #851), and of an array's
     // items with a destructor, which its native forms don't step.
     let drop_runs = |item| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, item);
-    let back_stepped = back_stepped::of_crate(tcx, recognition, all_bodies, drop_runs);
+    let back_stepped = back_stepped::of_crate(tcx, recognition, all_bodies, (library, drop_runs));
     // What generic code compares by `eq` of two `TrustedLen` iterators
     // given it, which it can't count: refused where comparing runs code
     // (#386).

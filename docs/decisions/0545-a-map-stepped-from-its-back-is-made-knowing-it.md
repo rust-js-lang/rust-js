@@ -1347,3 +1347,33 @@ The same field fact fixed three of the library rewrites (#1024):
 `iterators_held_in_a_generic_structs_field`; mutations
 `tuple-field-iterator-taken-for-its-array`, `stepped-field-compiled-marked`,
 `beside-stepped-field-unmarked` and `field-reborrow-lends-nothing`.
+
+## Amendment: what crosses a library's boundary (#1024, 2026-11-08)
+
+ADR 0262's case: results change, so Rust's are kept. Two crates, each
+compiled on its own (ADR 0100), each blind to where the other steps a value
+from its back (the metamorphic net's library rewrites, #1008):
+
+- **What a library gives behind an `impl DoubleEndedIterator`.** Its
+  consumers step it from its back where it can't see, so in a library each
+  public function's return behind such an `impl` is asked as one the
+  crate's own callers step is: each adapter in it is made knowing its back
+  where it's made, a filter `$filterEnds`, where JS's own `.filter` threw
+  `it.back is not a function` (`given_behind_an_impl`, shared with the
+  in-crate rule). The signature's late-bound regions are erased with the
+  rest, as the made value's type has them.
+- **What a crate gives a library's generic function.** A parameter that's
+  a std adapter of a source the function's clauses bound by
+  `DoubleEndedIterator`, `back<I, P>(it: Filter<I, P>)`, is one its body
+  may step from its back; the crate can't see the body, so the adapter it
+  gives is made knowing its back where it's made, and the library, which
+  can't see its callers, takes each such parameter for one so made
+  (`library_backs`, read on both sides from the signature alone: one
+  contract). A library with no caller of its own was refused, `next_back()`
+  of a generic `Filter`.
+
+Std's compiled structs a library gives (`iterator_map`, `iterator_chain`)
+were right already: their consumers step them by their dictionaries.
+Two-crate case `iterators_stepped_from_their_back_across_crates`; mutations
+`library-impl-backs-unmade`, `library-given-backs-unmade` and
+`library-own-params-unstepped`.
