@@ -1459,13 +1459,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// either, `HighlightStyle.define`, as `reads_alike` has them.
     fn plain_names(&self) -> IndexSet<String> {
         let mut plain = self.locals.mir.plain.clone();
-        plain.extend(
-            self.krate
-                .imports
-                .get(&self.module)
-                .into_iter()
-                .flat_map(|imports| imports.values().cloned()),
-        );
+        let Some(imports) = self.krate.imports.get(&self.module) else {
+            return plain;
+        };
+        // But a library's static whose value changes in place, read here
+        // (`Dependencies::changing_imports`, #1028).
+        let changing = &self.dependencies.borrow().changing_imports;
+        plain.extend(imports.values().filter(|name| !changing.contains(*name)).cloned());
         plain
     }
 }

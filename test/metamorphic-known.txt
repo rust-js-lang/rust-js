@@ -23,10 +23,6 @@ plain std library generic_fn_value_is_one_function.rs
 plain std library rc_fn_ptr_eq_of_cloned.rs
 plain std library rc_of_an_impls_parameter_counted_as_any.rs
 
-#1028 P0 (library): a library's changing static (an atomic) is read as a constant, its read moved past a write
-plain std library atomics.rs
-plain std library operands_before_replace.rs
-
 #1029 P1 (library): three crashes: generics_of unexpected node kind, and a panic at src/lower.rs:172
 plain std library closures_made_and_folded.rs
 plain std library equated_iterator_parameter.rs

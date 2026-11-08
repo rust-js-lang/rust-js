@@ -521,6 +521,10 @@ struct Dependencies {
     /// refused where that copy isn't alike it (rd311, ADRs 0051, 1037).
     through_copies: Vec<(DefId, usize, rustc_span::Span)>,
     package_uses: IndexSet<(LocalModId, Export)>,
+    /// Each import read whose fields change in place, a library's static
+    /// of a type that does, an atomic's `{ value }`, which a read of moves
+    /// past no write (#1028).
+    changing_imports: IndexSet<String>,
     uses: Vec<(DefId, DefId)>,
     /// Each binding a module reads through another of the crate's that
     /// holds it, by its `const`'s name there and whether it's that

@@ -326,3 +326,23 @@ use; `test/corpus/std_map_const.rs`, a constant `BTreeMap` grown by
 `extend` and by a function given it; and the mutations
 `library-struct-unshareable` and `std-struct-shareable`.
 
+
+## Amendment: a library's static that changes in place is no plain import (#1028)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results changed:
+tidy's plain reads (`plain_reads`) fold `const t = x.f` into where `t`
+is read when `x` is plain, and the module's imports were all plain, "whose
+fields JS's modules never change". A library's static whose value changes
+in place, an atomic's or a `Cell`'s, is its `{ value }`, written through
+the import, `HITS.value = ..`: `HITS.load()` then `HITS.fetch_add(10)` in
+one `println!` read `HITS.value` after the write (native `1 1`, JS
+`11 1`). A read of a library's static of a type that isn't `Freeze`, by
+its import's name or through its module's namespace, marks that import
+as one whose fields change (`read_import_of`,
+`Dependencies::changing_imports`), which `plain_names` leaves out. The
+crate's own statics were right already: a module's own is a `let`, and
+another module's is read through its namespace's symbol, never plain.
+Pair test `library_static_changing_in_place`; mutations
+`changing-static-import-plain`, `changing-static-by-name-unmarked`,
+`changing-static-through-namespace-unmarked` (`lower/items.ts`) and
+`plain-names-of-changing-imports` (`lower/mir.ts`).

@@ -82,7 +82,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .borrow_mut()
                 .package_uses
                 .insert((self.module, export.clone()));
-            let reference = Expr::var(&self.krate.imports[&self.module][&export]);
+            let local = &self.krate.imports[&self.module][&export];
+            self.read_import_of(def_id, local);
+            let reference = Expr::var(local);
             return match &item.member {
                 Some(method) => Expr::member(reference, method.clone()),
                 None => reference.item(),
@@ -99,6 +101,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
         }
         self.own_fn_ref(def_id, None)
+    }
+
+    /// Of a read of `def_id`, a library's item, through the import `local`,
+    /// its own or its module's namespace's: where it's a static whose value
+    /// changes in place, an atomic's or a `Cell`'s `{ value }` (ADR 0096),
+    /// the import is one whose fields change, which tidy's plain reads
+    /// never move past a write (`Dependencies::changing_imports`, #1028).
+    fn read_import_of(&self, def_id: DefId, local: &str) {
+        if matches!(self.tcx.def_kind(def_id), rustc_hir::def::DefKind::Static { .. })
+            && !(self.tcx.type_of(def_id).instantiate_identity().skip_normalization())
+                .is_freeze(self.tcx, self.typing_env)
+        {
+            self.dependencies
+                .borrow_mut()
+                .changing_imports
+                .insert(local.to_string());
+        }
     }
 
     /// Whether `def_id` is a library's the crate compiles itself where it
@@ -189,6 +208,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let namespace = (from, js::NAMESPACE.to_string());
             if let Some(local) = self.krate.imports[&self.module].get(&namespace) {
                 let local = local.clone();
+                self.read_import_of(def_id, &local);
                 (self.dependencies.borrow_mut().package_uses).insert((self.module, namespace));
                 return Expr::member(Expr::var(&local), export).item();
             }

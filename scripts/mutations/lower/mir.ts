@@ -125,9 +125,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an import's member, `tags.link`, made before a branch that calls, is held, `const link = tags.link`, not read where it's given",
     file: "src/lower/mir.rs",
-    find: "                .flat_map(|imports| imports.values().cloned()),\n",
-    replace:
-      "                .flat_map(|imports| imports.values().cloned())\n                .filter(|_| false),\n",
+    find: "        plain.extend(imports.values().filter(|name| !changing.contains(*name)).cloned());\n",
+    replace: "        plain.extend(imports.values().filter(|_| false).cloned());\n",
     tests: [
       "test/lowering-moves.test.ts",
       "-t",
@@ -585,5 +584,13 @@ export const mutations: Mutation[] = [
     replace: "            }\n        }\n        // An optimized body's",
     tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
     snapshots: true,
+  },
+  {
+    name: "plain-names-of-changing-imports",
+    breaks: "every import is plain to tidy, a library's changing static's too, its read moved past a write (#1028)",
+    file: "src/lower/mir.rs",
+    find: "        plain.extend(imports.values().filter(|name| !changing.contains(*name)).cloned());\n",
+    replace: "        plain.extend(imports.values().filter(|name| changing.len() < usize::MAX || !changing.contains(*name)).cloned());\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_static_changing_in_place"],
   },
 ];

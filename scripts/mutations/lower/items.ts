@@ -411,4 +411,30 @@ export const mutations: Mutation[] = [
     replace: "                return Expr::member(Expr::call(Expr::var(\"require\"), vec![Expr::str(&export.0)]), export.1);",
     tests: ["test/require.test.ts", "-t", "below the root"],
   },
+  {
+    name: "changing-static-import-plain",
+    breaks:
+      "a library's static whose value changes in place, an atomic, is read through an import tidy takes for plain, so `HITS.load()` is read after the `fetch_add` that follows it (#1028)",
+    file: "src/lower/items.rs",
+    find: "                .insert(local.to_string());\n",
+    replace: "                .shift_remove(local);\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_static_changing_in_place"],
+  },
+  {
+    name: "changing-static-by-name-unmarked",
+    breaks: "a library's changing static read by its import's name is taken for plain, its read moved past a write (#1028)",
+    file: "src/lower/items.rs",
+    find: "            self.read_import_of(def_id, local);\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_static_changing_in_place"],
+  },
+  {
+    name: "changing-static-through-namespace-unmarked",
+    breaks:
+      "a library's changing static read through its module's namespace, `Counters.HITS.value`, is taken for plain, its read moved past a write (#1028)",
+    file: "src/lower/items.rs",
+    find: "                self.read_import_of(def_id, &local);\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_static_changing_in_place"],
+  },
 ];
