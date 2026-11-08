@@ -20,6 +20,7 @@ plain std yielded_item_drops.rs beside drop_guard_of_a_closure.rs
 plain std iterator_read_as_itself.rs beside long_spreads.rs
 plain std std_enumerate.rs beside fmt_error_unwritten_branches.rs
 plain std slice_iter_debug.rs beside writer_callables.rs
+plain std slice_iter_debug.rs beside debug_hex_composite.rs
 
 #954 P2: `Rc<System<K>>` refused as holding a value with a destructor
 plain std scope_struct_of_type_parameters.rs beside self_handle_reads_mutably.rs
@@ -43,3 +44,6 @@ plain generic_chain_nth_past_a_skipped_rev.rs beside lazy_iterator_clone.rs
 
 #1003 P2 (neighbours): LocalKey<RefCell<T>>::with_borrow_mut of a value with a destructor is refused beside self_handle_reads_mutably.rs
 plain std own_callback_params.rs beside self_handle_reads_mutably.rs
+
+#1006 P2: a `RefCell` of a struct whose last field is a `dyn` refused beside another case
+plain std dyn_tail_in_a_ref_cell.rs beside dyn_ref_cell_drop.rs
