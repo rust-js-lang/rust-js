@@ -504,6 +504,19 @@ pub(super) fn exports<'tcx>(
             keys.sort();
             keys
         },
+        // Its impls whose `partial_cmp` is `Some(self.cmp(other))`, read of
+        // their HIR, which a consumer has none of (#964).
+        partial_cmp_is_cmp: {
+            let partial_ord =
+                tcx.require_lang_item(rustc_hir::attrs::lang_items::LangItem::PartialOrd, rustc_span::DUMMY_SP);
+            let mut keys: Vec<String> = (tcx.all_local_trait_impls(()).get(&partial_ord).into_iter().flatten())
+                .map(|imp| imp.to_def_id())
+                .filter(|&imp| super::ordering::partial_cmp_is_cmp(tcx, imp))
+                .map(|imp| key(tcx, imp))
+                .collect();
+            keys.sort();
+            keys
+        },
         displays_value: {
             let mut keys: Vec<String> = (displays_value.iter())
                 .filter(|&&id| reachable(tcx, id))
@@ -1202,6 +1215,16 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             && self
                 .library(id.krate)
                 .is_some_and(|library| library.gives_argument.contains(&key(self.tcx, id)))
+    }
+
+    /// Is `imp`, a library's impl of `PartialOrd`, one whose `partial_cmp`
+    /// is `Some(self.cmp(other))`, as its contract says, its own compile
+    /// having read its HIR (#964)?
+    pub(super) fn partial_cmp_is_cmp(&self, imp: DefId) -> bool {
+        !imp.is_local()
+            && self
+                .library(imp.krate)
+                .is_some_and(|library| library.partial_cmp_is_cmp.contains(&key(self.tcx, imp)))
     }
 
     /// Does `id`, a library's untagged enum, `Display` each variant's value

@@ -696,4 +696,20 @@ export const mutations: Mutation[] = [
     replace: "        let Some(of) = built_types::template(tcx, foreign, id, slot.ty).filter(|_| false) else {\n",
     tests: ["test/crates.test.ts", "-t", "built_layout_of_a_library"],
   },
+  {
+    name: "partial-cmp-is-cmp-unread",
+    breaks: "a consumer reads no library impl's `partial_cmp` as `Some(self.cmp(other))`, whatever its contract lists (#964)",
+    file: "src/lower/library.rs",
+    find: "                .is_some_and(|library| library.partial_cmp_is_cmp.contains(&key(self.tcx, imp)))\n",
+    replace: "                .is_some_and(|library| library.partial_cmp_is_cmp.is_empty())\n",
+    tests: ["test/crates.test.ts", "-t", "derived_partial_cmp_is_cmp"],
+  },
+  {
+    name: "partial-cmp-is-cmp-unlisted",
+    breaks: "a library's contract lists none of its impls whose `partial_cmp` is `Some(self.cmp(other))`, so a consumer's `partial_cmp` of a derived one compares the fields' `partial_cmp`s (#964)",
+    file: "src/lower/library.rs",
+    find: "                .filter(|&imp| super::ordering::partial_cmp_is_cmp(tcx, imp))\n",
+    replace: "                .filter(|_| false)\n",
+    tests: ["test/crates.test.ts", "-t", "derived_partial_cmp_is_cmp"],
+  },
 ];

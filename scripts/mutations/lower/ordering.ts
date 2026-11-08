@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "derived-partial-cmp-always-cmp",
     breaks: "a derived `partial_cmp` rustc wrote field by field, a derive apart from `Ord`'s, calls `cmp` (#937)",
     file: "src/lower/ordering.rs",
-    find: "                Some(imp) if partial_cmp_is_cmp(self.tcx, imp) => PartialRuns::Cmp,\n                _ => PartialRuns::Parts,\n",
+    find: "                Some(imp) if self.partial_cmp_runs_cmp(imp) => PartialRuns::Cmp,\n                _ => PartialRuns::Parts,\n",
     replace: "                Some(_) => PartialRuns::Cmp,\n                _ => PartialRuns::Parts,\n",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
   },
@@ -576,5 +576,13 @@ export const mutations: Mutation[] = [
     replace: "        self.quietly_ordered(ty) || (float && false)\n",
     tests: ["test/snapshots.test.ts", "-t", "^versions"],
     snapshots: true,
+  },
+  {
+    name: "library-partial-cmp-never-cmp",
+    breaks: "a library's impl whose `partial_cmp` is `Some(self.cmp(other))` is taken as its parts', as its consumer has no HIR of it (#964)",
+    file: "src/lower/ordering.rs",
+    find: "            false => self.krate.foreign.partial_cmp_is_cmp(imp),\n",
+    replace: "            false => false,\n",
+    tests: ["test/crates.test.ts", "-t", "derived_partial_cmp_is_cmp"],
   },
 ];

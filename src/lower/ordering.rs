@@ -284,12 +284,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // it to be, does nothing but call `cmp`, which is called in its
         // place: nothing tells them apart (ADR 0262's "none").
         match self.recognition().user_impl(tr) {
-            Some(imp) if partial_cmp_is_cmp(self.tcx, imp) => PartialRuns::Cmp,
+            Some(imp) if self.partial_cmp_runs_cmp(imp) => PartialRuns::Cmp,
             Some(_) => PartialRuns::Own,
             None => match self.recognition().derived_impl(partial_ord, ty) {
-                Some(imp) if partial_cmp_is_cmp(self.tcx, imp) => PartialRuns::Cmp,
+                Some(imp) if self.partial_cmp_runs_cmp(imp) => PartialRuns::Cmp,
                 _ => PartialRuns::Parts,
             },
+        }
+    }
+
+    /// Whether the impl `imp`'s `partial_cmp` is `Some(self.cmp(other))`:
+    /// of the crate's, as its HIR reads (`partial_cmp_is_cmp`); of a
+    /// library's, as its contract says, which its own compile read so, a
+    /// consumer having no HIR of it (#964).
+    fn partial_cmp_runs_cmp(&self, imp: DefId) -> bool {
+        match imp.is_local() {
+            true => partial_cmp_is_cmp(self.tcx, imp),
+            false => self.krate.foreign.partial_cmp_is_cmp(imp),
         }
     }
 
@@ -1003,8 +1014,9 @@ pub(in crate::lower) enum PartialRuns {
 /// Whether the impl `imp`'s `partial_cmp` is `Some(self.cmp(other))`,
 /// `Some(Ord::cmp(self, other))` as rustc's derive writes it beside a
 /// derived `Ord` (#937): its order its `cmp`'s, doing nothing else. Read
-/// from its HIR, which MIR building leaves; another crate's, which has
-/// none, isn't known to be.
+/// from its HIR, which MIR building leaves, of the crate's impls; a
+/// library's own compile lists its own in its contract, which its
+/// consumers read (`partial_cmp_runs_cmp`, #964).
 pub(in crate::lower) fn partial_cmp_is_cmp(tcx: rustc_middle::ty::TyCtxt<'_>, imp: DefId) -> bool {
     use rustc_hir as hir;
     let partial_cmp = trait_method(

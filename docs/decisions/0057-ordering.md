@@ -1,6 +1,6 @@
 # 0057. `PartialOrd` and `Ord`: an `Ordering`, and the parts in turn
 
-Status: Accepted. Each comparison runs its own impl, and dictionaries hold their supertraits (#937, #944) and std's provided `ne`, `max`, `min` and `clamp` (#962), amendments below. `Reverse` compares the other way round, and another crate's struct is an error rather than field by field ([0068](0068-queues.md)). Extends [0036](0036-iterators-and-sorting.md) and [0053](0053-partial-eq.md).
+Status: Accepted. Each comparison runs its own impl, and dictionaries hold their supertraits (#937, #944) and std's provided `ne`, `max`, `min` and `clamp` (#962), a library's `partial_cmp` as its contract says (#964), amendments below. `Reverse` compares the other way round, and another crate's struct is an error rather than field by field ([0068](0068-queues.md)). Extends [0036](0036-iterators-and-sorting.md) and [0053](0053-partial-eq.md).
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -301,3 +301,26 @@ forms. The mutations are in `std_impls/not_equal.ts`, `ordering.ts`,
 `std_impls.ts`, `traits/calls.ts`, `traits/dictionaries.ts`, `slice.ts`,
 `btree.ts`, `runtime/partial_ord.ts`, `runtime/clamp.ts`,
 `runtime/map_ops.ts` and `runtime/ord_tree.ts`.
+
+## Amendment: a library's `partial_cmp` is its contract's (#964)
+
+`partial_runs` read whether an impl's `partial_cmp` is
+`Some(self.cmp(other))` from the impl's HIR, which a library's consumer
+hasn't: a library's derived `PartialOrd` beside its derived `Ord`, in one
+`#[derive]` of a type without parameters, whose `partial_cmp` rustc writes
+as `Some(Ord::cmp(self, other))`, was taken as its fields' `partial_cmp`s,
+which a field whose `partial_cmp` and `cmp` disagree shows. Results change
+(ADR 0262): Rust's behaviour is kept.
+
+- **The library's own compile reads its HIR, and its contract lists the
+  answer**, `partial_cmp_is_cmp`, the keys of its `PartialOrd` impls that
+  are so; a consumer's `partial_runs` reads it (`partial_cmp_runs_cmp`),
+  the one rule read once, where the HIR is, and carried as a fact, as
+  ADR 0864's identities are. Not the impl's MIR: a library built
+  optimized may have `cmp` inlined into it, no longer one call to read.
+- The library ABI is 19: a library before it lists none.
+
+`test/crates/pairs/derived_partial_cmp_is_cmp` runs a derive in one
+`#[derive]`, one in two, and a hand-written `Some(self.cmp(other))`, each
+concrete and through generic code, against native Rust, failing before;
+the mutations are in `ordering.ts` and `library.ts`.

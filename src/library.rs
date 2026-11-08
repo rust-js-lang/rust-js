@@ -46,8 +46,10 @@ use std::path::Path;
 /// before it gives a consumer after it less than that consumer's impl takes.
 /// 18: a `PartialEq` dictionary holds `ne` and an `Ord` dictionary `max`,
 /// `min` and `clamp`, `$partialEq`'s and `$ord`'s (#962), which a
-/// consumer's generic code calls.
-pub const VERSION: u32 = 18;
+/// consumer's generic code calls. 19: its impls whose `partial_cmp` is
+/// `Some(self.cmp(other))`, `partial_cmp_is_cmp`, which a consumer's
+/// `partial_cmp` of one runs as its `cmp` (#964).
+pub const VERSION: u32 = 19;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -396,6 +398,12 @@ pub struct Library {
     /// one is the value in place, `${id}`, and calls no dictionary.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub displays_value: Vec<String>,
+    /// The keys of its impls of `PartialOrd` whose `partial_cmp` is
+    /// `Some(self.cmp(other))`, rustc's derive's beside a derived `Ord` or
+    /// a hand-written one, which its own compile reads of their HIR
+    /// (#937): a consumer's `partial_cmp` of one runs its `cmp` (#964).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub partial_cmp_is_cmp: Vec<String>,
     /// The keys of the structs its code makes values of, its own or a
     /// library's, a literal's (ADR 1022, amended): the
     /// program's own data, whose fields a consumer reads in place, whatever
@@ -590,6 +598,9 @@ pub struct Exports {
     /// Its untagged enums whose `Display` writes each variant's value as
     /// it is, by their keys (rd730).
     pub displays_value: IndexSet<String>,
+    /// Its impls whose `partial_cmp` is `Some(self.cmp(other))`, by their
+    /// keys (#964).
+    pub partial_cmp_is_cmp: IndexSet<String>,
     /// The structs its code makes values of, by their keys (ADR 1022,
     /// amended).
     pub built: IndexSet<String>,
@@ -677,6 +688,7 @@ impl Dependencies {
                 eq_by_address: library.eq_by_address.into_iter().collect(),
                 gives_argument: library.gives_argument.into_iter().collect(),
                 displays_value: library.displays_value.into_iter().collect(),
+                partial_cmp_is_cmp: library.partial_cmp_is_cmp.into_iter().collect(),
                 built: library.built.into_iter().collect(),
                 fields: library
                     .fields
@@ -852,6 +864,7 @@ impl Dependencies {
             eq_by_address: library.eq_by_address.into_iter().collect(),
             gives_argument: library.gives_argument.into_iter().collect(),
             displays_value: library.displays_value.into_iter().collect(),
+            partial_cmp_is_cmp: library.partial_cmp_is_cmp.into_iter().collect(),
             built: library.built.into_iter().collect(),
             fields: library
                 .fields
