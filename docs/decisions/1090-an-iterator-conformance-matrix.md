@@ -446,3 +446,45 @@ numbers, where JS and Rust differ most, get a table.
   truncated as an `f64` (ADR 0064, amended); and one refusal, 2,216 cases a
   build, `overflowing_div_euclid` and `overflowing_rem_euclid`, now
   written. Each of its 166,034 case-builds now prints what native Rust does.
+
+## Amendment: panic points across `.await`, the async table (#942, 2026-11-08)
+
+The user's decision, through m6-react: #817's and #854's points cover
+synchronous code; an async body holds its locals across `.await`, and what
+it drops as a panic unwinds there had no net.
+
+- **A seventh table, `ITERATOR_TABLE=async`** (`test/async-points.ts`), of
+  #817's counter, `point()`, now `test/panic-points.ts`'s `pointCounter`,
+  which its sync runner and an async one, `asyncPointsRunner`, share; the
+  other tables' programs are as before, byte for byte.
+- **Its space is family × shape × point:** 12 families of async bodies,
+  values live across one await or more, one dropped between them, made by
+  an async fn and given to one, held by an async block, an `async move`
+  block and an async closure, in a loop, past an early return by `?`, a
+  block's local across its await, an awaited value given to an await, a
+  `match` on what's awaited; of each of 7 shapes, a `D`, a struct with and
+  without a `Drop` of its own, a tuple, `Box`, `Option` and `Vec`: 84
+  cases, each run once a point, each make and drop of a `D`, each drop of a
+  struct with its own `Drop` and each await of the crate's `leaf`.
+- **Within what rust-js maps futures to:** a future is a promise, which runs
+  as it's made, where Rust's waits until it's polled (ADR 0029). So each
+  future is awaited where it's made, which runs each body in the same order
+  either way; one made and awaited later, dropped unawaited, joined or
+  selected differs by that decision, and std has no `join` or `select` (a
+  crate's own `Future` is never lowered, ADR 0425).
+- **Its oracle:** each run natively by a `block_on` of no waker, each
+  future ready when it's first polled, its panic caught by `catch_unwind`;
+  as JS, awaited by `js::settle(js::promise(..))`, its panic its `Err`. The
+  program is the same but for that runner, by `cfg(rust_js)`. Its programs
+  use the `js` crate, which a table now says it needs: `TableOf`'s
+  `prepare`, React's build, gives rustc `--extern js=..` (`compileJs`'s
+  `rustc`).
+- **When it runs:** each night, nightly.yml's `async`; and, all of it, per
+  push whose change is how a future awaits and drops (`asyncPaths` in
+  `scripts/iteratorSlice.ts`: `.await`'s lowering, the drops' and their
+  unwinding's owners, the table and its runner), check.yml's
+  `async-points` and a `check:fast` job, 7 s.
+- **What it found:** no wrong answer: 688 runs that panic, 7,073 lines, as
+  native Rust prints them in both builds. An `.await` made to unwind past
+  its cleanup, dropping nothing of the body (`awaits.rs`), fails all 84
+  cases.

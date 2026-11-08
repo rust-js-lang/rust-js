@@ -17,6 +17,7 @@
 //   ITERATOR_TABLE=unwind ITERATOR_MATRIX=all bun test test/iterator-matrix.test.ts  # operations beyond iterators at each panic point (#854)
 //   ITERATOR_TABLE=format ITERATOR_MATRIX=all bun test test/iterator-matrix.test.ts  # every format spec of each value (#941)
 //   ITERATOR_TABLE=numbers ITERATOR_MATRIX=all bun test test/iterator-matrix.test.ts # every number operation of each type's boundary values (#940)
+//   ITERATOR_TABLE=async bun test test/iterator-matrix.test.ts                   # panic points across `.await` (#942)
 //   bun scripts/iteratorSlice.ts run                                             # both tables' slices, in parts at once (#731)
 //
 // A case that doesn't run as Rust does fails its batch, but those
@@ -35,7 +36,13 @@ import { aborted, compileJs, runJs, runNative, runtimes, show, type Run } from "
 import { buildCompiler, fixture } from "./support";
 import { shard } from "../scripts/shard";
 
-beforeAll(buildCompiler);
+// What rustc's told of a crate of rust-js's bindings the table's programs
+// use, which its `prepare` builds (#942).
+let rustc: string[] = [];
+beforeAll(() => {
+  buildCompiler();
+  rustc = of.prepare?.() ?? [];
+}, 900_000);
 
 const which = process.env.ITERATOR_MATRIX;
 const issue = /^#(\d+)$/.exec(which ?? "")?.[1];
@@ -149,7 +156,7 @@ function judge(cases: Row[], native: Map<string, string>, dir: string, build: st
     const at = join(dir, `${build}-${round}`);
     writeFileSync(file, text);
     mkdirSync(at, { recursive: true });
-    const compiled = compileJs(file, at, "2024", false, {}, flags);
+    const compiled = compileJs(file, at, "2024", false, {}, flags, rustc);
     if ("error" in compiled) {
       const refused = compiled.kind === "rejected" ? refusedCases(compiled.error, text, pending, file) : new Map<Row, string>();
       if (refused.size === 0) {

@@ -155,6 +155,18 @@ export const jobs: Record<string, Part[]> = {
     cores: 1,
     timeout: 15 * minutes,
   })),
+  // Each family of async bodies of each shape at each panic point across
+  // `.await`, the async table, in both builds (#942).
+  async: [
+    {
+      id: "async",
+      cmd: ["bun", "test", "--timeout=900000", "test/iterator-matrix.test.ts"],
+      env: { ...compiler, ITERATOR_TABLE: "async", ITERATOR_MATRIX: "all" },
+      after: ["build"],
+      cores: 1,
+      timeout: 10 * minutes,
+    },
+  ],
   // The day's 600 generated programs (ADR 0092).
   fuzz: parts("fuzz", 12, (i) => ({
     cmd: ["bun", "test", "--timeout=600000", "test/fuzz.test.ts"],

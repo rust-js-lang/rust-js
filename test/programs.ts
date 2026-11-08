@@ -151,8 +151,11 @@ export function compileJs(
   // rust-js's own flags besides, `--tidy-until <pass>` say; then the JS is
   // named for them, so each set's JS is kept apart in one `dir`.
   flags: string[] = [],
+  // And rustc's, after `--`: a crate of rust-js's bindings it uses, `--extern
+  // js=..` (#942).
+  rustc: string[] = [],
 ): { js: string } | CompileError {
-  const { cmd, js } = compileCommand(file, dir, edition, library, flags);
+  const { cmd, js } = compileCommand(file, dir, edition, library, flags, rustc);
   return compiled(runSync(cmd, root, compileTimeout, env), js);
 }
 
@@ -173,7 +176,7 @@ export async function compileJsAsync(
 /** How `file` is compiled into `dir`, and where its JS goes: its wrapper
  * written, where it isn't already, so a compile that's reading it isn't
  * given it emptied by another's write. */
-function compileCommand(file: string, dir: string, edition: string, library: boolean, flags: string[]): { cmd: string[]; js: string } {
+function compileCommand(file: string, dir: string, edition: string, library: boolean, flags: string[], rustc: string[] = []): { cmd: string[]; js: string } {
   const wrapper = join(dir, "lib.rs");
   const text = `include!(${rustString(file)});\npub fn entry() {\n    main()\n}\n`;
   if (!existsSync(wrapper) || readFileSync(wrapper, "utf8") !== text) writeFileSync(wrapper, text);
@@ -185,7 +188,7 @@ function compileCommand(file: string, dir: string, edition: string, library: boo
   const name = flags.length === 0 ? "case" : `case-${short}`;
   const js = library ? join(dir, "library", `${name}.js`) : join(dir, `${name}.js`);
   const mode = library ? ["--library", "--manifest", join(dir, "library", `${name}.manifest.json`)] : [];
-  return { cmd: [compiler, wrapper, "-o", js, ...mode, ...flags, "--", `--edition=${edition}`, "-Awarnings", remapRoot], js };
+  return { cmd: [compiler, wrapper, "-o", js, ...mode, ...flags, "--", `--edition=${edition}`, "-Awarnings", remapRoot, ...rustc], js };
 }
 
 /** A compile's JS, or how it failed. */

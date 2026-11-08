@@ -71,6 +71,7 @@ jobs:
       formatting: ${{ steps.plan.outputs.formatting }}
       numbers: ${{ steps.plan.outputs.numbers }}
       declarations: ${{ steps.plan.outputs.declarations }}
+      async: ${{ steps.plan.outputs.async }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -270,6 +271,40 @@ jobs:
         env:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun scripts/iteratorSlice.ts run declarations 1
+
+  # The async table (test/async-points.ts, #942), of a check whose change is
+  # how a future awaits and drops, as `plan` says (scripts/iteratorSlice.ts's
+  # `asyncPaths`): each family of async bodies of each shape at each panic
+  # point, in both builds against native Rust; all of it, its slice. The
+  # nightly's `async` runs it too.
+  async-points:
+    name: async table
+    needs: plan
+    if: ${{ !inputs.nightly && needs.plan.outputs.async == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run the table
+        env:
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: bun scripts/iteratorSlice.ts run async
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: async-table
+          path: target/iterator-matrix
+          if-no-files-found: ignore
+          retention-days: 14
 
   lint:
     runs-on: ubuntu-latest

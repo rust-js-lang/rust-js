@@ -13,7 +13,7 @@
 import { mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
-import { touchesDeclarations, touchesFormatting, touchesIterators, touchesNumbers } from "./iteratorSlice";
+import { touchesAsync, touchesDeclarations, touchesFormatting, touchesIterators, touchesNumbers } from "./iteratorSlice";
 import { changedSince } from "./mutations";
 import { shardTimings } from "./shard";
 import { timed, timings } from "./timing";
@@ -190,6 +190,7 @@ async function plan(given?: string) {
   console.log(`formatting=${touchesFormatting(changed)}`);
   console.log(`numbers=${touchesNumbers(changed)}`);
   console.log(`declarations=${touchesDeclarations(changed)}`);
+  console.log(`async=${touchesAsync(changed)}`);
 }
 
 /** An artifact a run uploaded, as GitHub lists them, the newest first. */

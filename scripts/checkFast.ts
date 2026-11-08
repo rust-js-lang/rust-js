@@ -23,7 +23,7 @@ import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, sta
 import { availableParallelism, cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
-import { runs, touchesDeclarations, touchesFormatting, touchesIterators, touchesNumbers } from "./iteratorSlice";
+import { runs, touchesAsync, touchesDeclarations, touchesFormatting, touchesIterators, touchesNumbers } from "./iteratorSlice";
 import { mappedFiles, pickChange } from "./testMap";
 import { browsers, caseParts, nightly, plainSuiteFiles, pooledParts } from "./shard";
 import { elapsed, loadScale, median, timed, timings } from "./timing";
@@ -111,6 +111,8 @@ export function jobs({ all, changed, branch, added, extra, cores, picked }: Scop
   // And to what a `None` is at the JS boundary, the declarations'
   // TypeScript callers, in one part (#822).
   const declarations = touchesDeclarations([...changed, ...branch]);
+  // And to how a future awaits and drops, the async table (#942).
+  const awaits = touchesAsync([...changed, ...branch]);
 
   // What a script that runs its own parts at once runs in, the iterator
   // slices' (scripts/shard.ts).
@@ -249,6 +251,15 @@ export function jobs({ all, changed, branch, added, extra, cores, picked }: Scop
             job(runs.declarations[0].name, ["bun", "scripts/iteratorSlice.ts", "run", "declarations", "1"], {
               timeout: 300,
               ci: "bun scripts/iteratorSlice.ts run declarations 1",
+            }),
+          ]
+        : []),
+      ...(awaits
+        ? [
+            job(runs.async[0].name, ["bun", "scripts/iteratorSlice.ts", "run", "async", "2"], {
+              timeout: 300,
+              weight: 2,
+              ci: "bun scripts/iteratorSlice.ts run async",
             }),
           ]
         : []),

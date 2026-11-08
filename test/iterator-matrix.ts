@@ -26,10 +26,11 @@ import { join } from "node:path";
 
 import { random } from "./generate";
 import { pointsRunner } from "./panic-points";
+import { asyncCases, asyncProgram, asyncStrata, type AsyncCase } from "./async-points";
 import { formatCases, formatProgram, formatStrata, type FormatCase } from "./format-grid";
 import { numberCases, numberProgram, numberStrata, type NumberCase } from "./number-grid";
 import { unwindCases, unwindProgram, unwindStrata, type UnwindCase } from "./unwind-points";
-import { root, target } from "./support";
+import { buildReact, root, target } from "./support";
 
 /** The builds each case is compiled in: the recognizers' rewrites, and
  * std's iterator structs alone (ADR 0908). */
@@ -42,10 +43,11 @@ export const builds: [name: string, flags: string[]][] = [
  * table (ADR 1092), the panic points of the conformance table's cases
  * (#817), the panic points of operations beyond iterators, the unwind
  * table (#854), every format spec of each value, the formatting grid
- * (#941), or every number operation of each type's boundary values, the
- * numbers grid (#940), `ITERATOR_TABLE`'s. */
-export type Table = "matrix" | "conformance" | "points" | "unwind" | "format" | "numbers";
-export const tables: Table[] = ["matrix", "conformance", "points", "unwind", "format", "numbers"];
+ * (#941), every number operation of each type's boundary values, the
+ * numbers grid (#940), or the panic points across `.await`, the async
+ * table (#942), `ITERATOR_TABLE`'s. */
+export type Table = "matrix" | "conformance" | "points" | "unwind" | "format" | "numbers" | "async";
+export const tables: Table[] = ["matrix", "conformance", "points", "unwind", "format", "numbers", "async"];
 export const table: Table = (() => {
   const which = process.env.ITERATOR_TABLE ?? "matrix";
   if (!(tables as string[]).includes(which)) throw new Error(`ITERATOR_TABLE=${which}: ${tables.map((t) => `\`${t}\``).join(", ")}`);
@@ -783,13 +785,16 @@ export type Row = { n: number; id: string };
  * of some, each case's function `case_<i>`, `i` its index among them, run
  * in turn by `main`, each printing `case <id>` first; the cases in
  * programs; the programs a run without `ITERATOR_MATRIX` runs; and, of a
- * table of adapters and consumers, so many of each pairing (#818). */
+ * table of adapters and consumers, so many of each pairing (#818); and,
+ * of one whose programs use a crate of rust-js's bindings, what builds it,
+ * which gives what rustc is told of it as JS's are compiled (#942). */
 export type TableOf<C extends Row> = {
   cases(): C[];
   program(cases: C[]): string;
   batches(cases: C[]): C[][];
   slice(all: C[][]): number[];
   pairs?(cases: C[], perPair: number): C[];
+  prepare?(): string[];
 };
 
 /** `of`, an iterator table, as the harness runs it. */
@@ -826,11 +831,25 @@ const numbersTable: TableOf<NumberCase> = {
   slice: (all) => slice(all, numberStrata),
 };
 
+/** The async table (#942), test/async-points.ts's cases: its programs
+ * await by the `js` crate's `settle`, which React's build makes. */
+const asyncTable: TableOf<AsyncCase> = {
+  cases: asyncCases,
+  program: asyncProgram,
+  batches: (all) => batches(all),
+  slice: (all) => slice(all, asyncStrata),
+  prepare: () => {
+    buildReact();
+    return ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  },
+};
+
 /** The table `of`, as test/iterator-matrix.test.ts runs it. */
 export function tableOf(of: Table): TableOf<Row> {
   if (of === "unwind") return unwindTable;
   if (of === "format") return formatTable;
   if (of === "numbers") return numbersTable;
+  if (of === "async") return asyncTable;
   return iteratorTable(of, of === "matrix" ? allCases : of === "conformance" ? conformanceCases : pointsCases);
 }
 
@@ -1255,12 +1274,14 @@ export function segments(stdout: string): Map<string, string> {
 
 const header = `// The iterator matrix's cases (ADR 1090), the conformance table's (ADR
 // 1092), the points table's (#817), the unwind table's (#854), the
-// formatting grid's (#941) and the numbers grid's (#940) that don't run
-// as native Rust does yet, each under its issue, \`#<issue>
+// formatting grid's (#941), the numbers grid's (#940) and the async
+// table's (#942) that don't run as native Rust does yet, each under its
+// issue, \`#<issue>
 // <title>\`: a line a build, \`plain\` or \`std\` of the matrix's,
 // \`conformance:plain\` or \`unwind:std\` of a table's, the numbers of its
 // cases in \`allCases()\`, \`conformanceCases()\`, \`pointsCases()\`,
-// \`unwindCases()\`, \`formatCases()\` or \`numberCases()\` as ranges. Each listed
+// \`unwindCases()\`, \`formatCases()\`, \`numberCases()\` or
+// \`asyncCases()\` as ranges. Each listed
 // must still fail, so the list only shrinks: \`bun test/iterator-matrix.ts
 // take-off\` takes off what the last runs found fixed. Its numbers are of
 // each table's generator version below; a change to a table's cases makes

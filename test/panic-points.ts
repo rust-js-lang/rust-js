@@ -10,7 +10,10 @@
  * program calls `point()`. One panic a run, so native Rust never aborts on
  * a second. Its program has `catch_unwind`, `AtomicU32` and the atomic
  * `Ordering` in scope. */
-export const pointsRunner = `
+/** The one event counter of every table's points: \`point()\`, which
+ * panics where it's the run's \`k\`th. Its program has \`AtomicU32\` and the
+ * atomic \`Ordering\` in scope. */
+export const pointCounter = `
 /** The point that panics, the \`k\`th of a run, or none; and how many a
  * run has passed. */
 static POINT: AtomicU32 = AtomicU32::new(0);
@@ -26,7 +29,9 @@ fn point() {
     }
 }
 
-fn run_points(name: &str, case: fn()) {
+`;
+
+export const pointsRunner = pointCounter + `fn run_points(name: &str, case: fn()) {
     println!("case {name}");
     let mut k = 1;
     loop {
@@ -45,5 +50,73 @@ fn run_points(name: &str, case: fn()) {
         }
         k += 1;
     }
+}
+`;
+
+/** The runner of an async table's cases (#942): \`run_points!(name, case)\`
+ * runs \`case()\`, an async fn, once a point, as \`run_points\` runs a
+ * function, each run awaited to its end before the next. Natively each is
+ * driven by \`block_on\`, its panic caught by \`catch_unwind\`; as JS, where
+ * a future is a promise that runs as it's made (the guide's async), each is
+ * awaited by \`js::settle\`, its panic its \`Err\`. Its program's \`main\`
+ * runs \`run_all\`, which it writes of the cases, \`async fn run_all() {
+ * run_points!(..); .. }\`. */
+export const asyncPointsRunner = pointCounter + `
+#[cfg(not(rust_js))]
+fn block_on<F: std::future::Future>(f: F) -> F::Output {
+    let mut f = std::pin::pin!(f);
+    let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
+    loop {
+        if let std::task::Poll::Ready(v) = f.as_mut().poll(&mut cx) {
+            return v;
+        }
+    }
+}
+
+/** A run of \`case\`, and what its panic said. */
+#[cfg(not(rust_js))]
+macro_rules! ran {
+    ($case:ident) => {
+        std::panic::catch_unwind(|| block_on($case())).map_err(|p| p.downcast_ref::<&str>().copied().unwrap_or("?").to_string())
+    };
+}
+#[cfg(rust_js)]
+macro_rules! ran {
+    ($case:ident) => {
+        js::settle(js::promise($case())).await.map_err(|e| e.message())
+    };
+}
+
+macro_rules! run_points {
+    ($name:expr, $case:ident) => {{
+        println!("case {}", $name);
+        let mut k = 1;
+        loop {
+            POINTS.store(0, Ordering::Relaxed);
+            POINT.store(k, Ordering::Relaxed);
+            println!("point {k}");
+            let ended = ran!($case);
+            let fired = POINT.load(Ordering::Relaxed) == 0;
+            POINT.store(0, Ordering::Relaxed);
+            match ended {
+                Ok(()) => println!("ended"),
+                Err(message) => println!("panicked: {message}"),
+            }
+            if !fired || k == 200 {
+                break;
+            }
+            k += 1;
+        }
+    }};
+}
+
+#[cfg(not(rust_js))]
+fn main() {
+    block_on(run_all());
+}
+
+#[cfg(rust_js)]
+fn main() {
+    js::spawn(Box::new(run_all()));
 }
 `;

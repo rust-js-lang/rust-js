@@ -529,6 +529,38 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  # The async table (#942): each family of async bodies, values live across
+  # `.await`, of each shape, at each panic point, in both builds against
+  # native Rust, but the `async:` rows of test/iterator-matrix-known.txt.
+  async:
+    name: panic points across await
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run it
+        env:
+          ITERATOR_TABLE: async
+          ITERATOR_MATRIX: all
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: bun test --timeout=900000 test/iterator-matrix.test.ts
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: async-table
+          path: target/iterator-matrix
+          if-no-files-found: ignore
+          retention-days: 14
+
   # The crates from crates.io the guide says run (docs/crate-corpus.md):
   # each compiled with every crate it uses, its probe run beside native
   # Rust, a crate doing worse than its row says failing the job, as chrono
@@ -601,7 +633,7 @@ jobs:
   # again that day, commented on, naming each failed job with its link: the
   # issue watch gives it an owner that day, and no one polls for it.
   issue:
-    needs: [check, seeds, fuzz, stages, programs, forms, determinism, mut-refs, matrix, conformance, points, unwind, format, numbers, crates, port]
+    needs: [check, seeds, fuzz, stages, programs, forms, determinism, mut-refs, matrix, conformance, points, unwind, format, numbers, async, crates, port]
     if: always() && github.ref == 'refs/heads/main' && contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 10

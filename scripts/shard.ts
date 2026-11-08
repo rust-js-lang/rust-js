@@ -163,6 +163,8 @@ export const parts: Part[] = [
   { setting: "ITERATOR_TABLE", value: "format", runs: "push", by: "scripts/iteratorSlice.ts" },
   // Of a change to the numbers' code, the numbers grid's slice (#940).
   { setting: "ITERATOR_TABLE", value: "numbers", runs: "push", by: "scripts/iteratorSlice.ts" },
+  // Of a change to how a future awaits and drops, the async table (#942).
+  { setting: "ITERATOR_TABLE", value: "async", runs: "push", by: "scripts/iteratorSlice.ts" },
   {
     setting: "ITERATOR_TABLE",
     value: "points",
