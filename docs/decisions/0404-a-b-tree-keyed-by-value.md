@@ -383,3 +383,15 @@ of an order and a clone that count their calls; both builds. Mutations
 (`runtime/ord_tree.ts`); `set-operator-items`,
 `tree-from-sorted-dictionaries-ungiven` and `tree-bulk-ne-panic-leaks-rest`
 name their lines as they now read.
+
+## Amendment: a library without `alloc` has no B-tree (#983)
+
+`tree_built_entries` asked whether what a generic call makes is a B-tree by
+looking up std's `BTreeMap` and `BTreeSet`. A `#![no_std]` library that
+loads only `core`, such as powerfmt (of time) or yoke (of url), has neither,
+so rust-js crashed compiling it. Now it asks `is_std_def` of the made
+type's own item, which answers no where the crate never loaded `alloc`.
+The other std items those facts look up (`Ord`, `FromIterator`, `From`,
+`Into`, `Iterator`) are `core`'s, which every crate has. Held by the pair
+case `no_std_without_alloc` (`test/crates.test.ts`) and the mutation
+`tree-built-entries-tree-expected`.

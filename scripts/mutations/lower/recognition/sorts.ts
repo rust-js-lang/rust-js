@@ -1,4 +1,4 @@
-// Mutations of src/lower/recognition/sorts.rs (ADRs 0342, 0471; #925, #936).
+// Mutations of src/lower/recognition/sorts.rs (ADRs 0342, 0471; #925, #936, #983).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -26,5 +26,13 @@ export const mutations: Mutation[] = [
     find: "    Some(match map {\n        true => Ty::new_tup(tcx, &[key, of.types().nth(1)?]),\n",
     replace: "    Some(match true {\n        true => Ty::new_tup(tcx, &[key, of.types().nth(1).unwrap_or(key)]),\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_generic.rs$|^btree_own_ord.rs$"],
+  },
+  {
+    name: "tree-built-entries-tree-expected",
+    breaks: "what a call makes is asked whether it's a B-tree by looking up std's, which a `#![no_std]` library without `alloc` hasn't loaded, so rust-js crashes compiling it (#983)",
+    file: "src/lower/recognition/sorts.rs",
+    find: "    let map = is_std_def(tcx, adt.did(), StdItem::BTreeMap);",
+    replace: "    let map = adt.did() == std_item(tcx, StdItem::BTreeMap);",
+    tests: ["test/crates.test.ts", "-t", "two crates: no_std_without_alloc"],
   },
 ];

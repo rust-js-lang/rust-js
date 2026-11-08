@@ -126,8 +126,9 @@ pub(crate) fn tree_built_entries<'tcx>(
         _ => return None,
     };
     let ty::Adt(adt, of) = made.kind() else { return None };
-    let map = adt.did() == std_item(tcx, StdItem::BTreeMap);
-    let set = adt.did() == std_item(tcx, StdItem::BTreeSet);
+    // `alloc`'s, which a `#![no_std]` crate may not load (#983).
+    let map = is_std_def(tcx, adt.did(), StdItem::BTreeMap);
+    let set = is_std_def(tcx, adt.did(), StdItem::BTreeSet);
     let key = of.types().next()?;
     if !(map || set) || !key.has_param() {
         return None;

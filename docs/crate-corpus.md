@@ -189,3 +189,6 @@ TypeScript's printer wasn't found, and three crates stopped there. It's
   error (ADR 0106).
 - **A `#![no_std]` crate's trait call crashed rust-js,** which looked up
   `alloc`'s `ToString` there: bitflags', num-traits'.
+- **A `#![no_std]` crate's generic `into()` or `collect()` crashed
+  rust-js,** which looked up `alloc`'s `BTreeMap` there: powerfmt's,
+  yoke's (#983).
