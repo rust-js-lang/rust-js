@@ -35,7 +35,8 @@ counts each function's runs (`-C instrument-coverage`), given to each file
 of the plain suites and each corpus case, through a stand-in
 (`scripts/testMapCompiler.ts`) that keeps the functions each compile ran,
 a bit each, for the test it ran for: a corpus compile for the case its
-wrapper includes. Kept in `target/test-map/maps/<commit>.json`.
+wrapper includes. Kept by its commit, for every worktree of the machine
+(#932, below).
 
 Plain `check:fast` reads the newest map of HEAD or an ancestor and the
 working tree's difference from its commit. Where each changed line is a
@@ -133,7 +134,7 @@ each one that failed was one the map picked.
   committing a change outside `src/`: about 130 s on 12 cores.
 - The map's build, `target/test-map/build`, is kept for the next
   recording, one build as `target/debug` is; the maps, three, each about
-  7 MB, the least recently used going first.
+  12 MB, the least recently used going first, the machine's since #932.
 - `--all` is unchanged: what a push's check runs.
 
 ## Amended: the corpus with std's iterator structs, by case (#876)
@@ -164,3 +165,57 @@ before.
   the conformance table's 21,594 cases are the matrix's of the same code,
   but in other batches, whose make-up changes a compile (#826, #835), and
   the table's budget is 40 s: at most 4 s, not taken.
+
+## Amended: the maps are the machine's (#932)
+
+Each worktree recorded its own maps, in its `target/test-map/maps/`, and
+each task starts in a fresh one: `bun run test-map` took 261 s there on
+the 12-core M6 (unwindD), 46 s of it the worktree's counting build, though
+a commit's map is the same in every checkout of it.
+
+- **One store for the machine's worktrees**, `~/.cache/rust-js/test-maps/`
+  (`mapStore`), outside any `target/`, so `cargo clean` keeps it. A map's
+  file is named by its key, its commit, the toolchain's commit hash
+  (`rustc -vV`'s, its `rust-toolchain.toml`'s) and the layout's version:
+  a check reads only one of its own toolchain and layout.
+- **A check reads the map of HEAD's nearest ancestor**, not the newest
+  read: of maps another worktree recorded, one of a commit a few back
+  says more than one of a commit far back read since. A commit the
+  worktree hasn't, another clone's, is no ancestor of it.
+- **`bun run test-map` of a commit recorded ends at once**, saying whose;
+  `--keep` records again, its counts kept.
+- **Written whole, then named**, so another worktree never reads half of
+  one; one half written by a recording that stopped is never read, and
+  goes as the least recently used do.
+- **Bounded as before** (test/bounded.ts): three, the least recently used
+  going first, none kept below the disk's floor, and a map of another
+  toolchain or layout, a stale key, removed as a recording ends.
+
+Why it's sound: what a map records is its commit's compiler and tests, run
+each in a target of its own, the same in any checkout of the commit with
+the same toolchain; a failed or uncounted test of one recording runs on
+every change, which only picks more.
+
+**The counting build stays the worktree's.** It took 46 s fresh: the
+compiler's own crate 27 s, counted and incremental, which sccache never
+keeps, and its dependencies 19 s. The recording gave it its target as
+`CARGO_TARGET_DIR`, which sccache's key holds (rustc's environment's
+`CARGO_*`), so no crate of it ever hit; given as `--target-dir`, 90 of
+its 146 crates do, but not the 56 a proc macro builds or is, whose
+dylibs differ by target, so it's 44 s still. A target the worktrees
+share isn't sound: Cargo takes a path package's build as fresh by its
+files' times, so a worktree whose files are older than another's build
+of another commit would count that build's compiler. With the store, it's
+built once a commit on the machine, not once a worktree.
+
+Measured on the 12-core M6 (2026-11-08), a fresh worktree of a commit
+another had recorded: `bun run test-map` 0 s, not 195–261 s (46 s the
+build, then 149 s of the suite with the natives' builds kept, 261 s from a
+cold store); its first plain `check:fast` of a statement added to drops'
+`glue_place`, the build of `target/debug` included, 140 s, the map picking
+91 of 104 files and 1,249 of 1,831 cases, where with no map it ran what
+the paths say, 157 s. A task's start and first check: about 140 s, not
+352–418 s.
+
+Not done: a map recorded by CI of each push and fetched. CI's runners are
+Linux's, whose `cfg`s compile other functions, so its map isn't the Mac's.

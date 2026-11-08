@@ -7,7 +7,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { hunksOf, joinedSpans, linesAtCommit, nestedItem, pick, pruneMaps, readsSources, type Change, type TestMap } from "../scripts/testMap";
+import { hunksOf, joinedSpans, linesAtCommit, mapFile, mapVersion, nearestMap, nestedItem, pick, pruneMaps, readsSources, type Change, type TestMap } from "../scripts/testMap";
 import { jobs } from "../scripts/checkFast";
 import { caseShard, fixture } from "./support";
 
@@ -24,6 +24,7 @@ const bits = (...functions: number[]) => {
 const map: TestMap = {
   version: 1,
   commit: "0",
+  toolchain: "0",
   made: 0,
   functions: [
     { file: "src/a.rs", spans: [[10, 20]] },
@@ -282,4 +283,60 @@ test("the maps kept are the three most recently used, fewer below the disk's flo
   expect(readdirSync(dir).sort()).toEqual(["2.json", "3.json", "4.json"]);
   pruneMaps(dir, 3, () => 0);
   expect(readdirSync(dir)).toEqual([]);
+
+  // A map of another toolchain, a stale key, goes however recently used.
+  const current = mapFile(dir, "a".repeat(40), "1234567890abcdef");
+  const other = mapFile(dir, "b".repeat(40), "fedcba0987654321");
+  writeFileSync(current, "{}");
+  writeFileSync(other, "{}");
+  pruneMaps(dir, 3, () => Number.POSITIVE_INFINITY, "1234567890abcdef");
+  expect(readdirSync(dir).map((name) => join(dir, name))).toEqual([current]);
+});
+
+// The maps are the machine's (#932): a new worktree reads one another
+// worktree recorded of its commit or an ancestor's, the nearest, of its
+// toolchain, never one of a commit it doesn't descend from.
+test("a worktree reads the map another recorded of its commit or its nearest ancestor", () => {
+  const dir = fixture("test-map-store");
+  rmSync(dir, { recursive: true, force: true });
+  const [repo, other, store] = ["repo", "other", "store"].map((name) => join(dir, name));
+  mkdirSync(repo, { recursive: true });
+  mkdirSync(store);
+  const git = (cwd: string, ...args: string[]) => {
+    const p = Bun.spawnSync(["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", ...args], { cwd, stdout: "pipe", stderr: "pipe" });
+    expect(p.exitCode).toBe(0);
+    return p.stdout.toString().trim();
+  };
+  git(repo, "init", "-q", "-b", "main");
+  const commit = (cwd: string, text: string) => {
+    writeFileSync(join(cwd, "a.txt"), text);
+    git(cwd, "add", "a.txt");
+    git(cwd, "commit", "-q", "-m", text);
+    return git(cwd, "rev-parse", "HEAD");
+  };
+  const first = commit(repo, "1");
+  const second = commit(repo, "2");
+  git(repo, "worktree", "add", "-q", "-b", "side", other, first);
+  const side = commit(other, "side");
+  const write = (at: string, toolchain = "abc") => {
+    const path = mapFile(store, at, toolchain);
+    writeFileSync(path, JSON.stringify({ ...map, version: mapVersion, commit: at, toolchain }));
+    return path;
+  };
+  // Recorded by the first worktree, of its first commit: the other, on a
+  // commit after it, reads it.
+  write(first);
+  expect(nearestMap(store, other, "abc")?.commit).toBe(first);
+  // Not of another toolchain, nor a commit it doesn't descend from.
+  expect(nearestMap(store, other, "abd")).toBeUndefined();
+  write(second);
+  expect(nearestMap(store, other, "abc")?.commit).toBe(first);
+  // Of two ancestors, the nearest, though the other was read since.
+  const own = write(side);
+  utimesSync(own, 1000, 1000);
+  expect(nearestMap(store, other, "abc")?.commit).toBe(side);
+  expect(nearestMap(store, repo, "abc")?.commit).toBe(second);
+  // One half written isn't read.
+  writeFileSync(own, "{");
+  expect(nearestMap(store, other, "abc")?.commit).toBe(first);
 });

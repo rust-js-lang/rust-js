@@ -5,10 +5,16 @@
 // this says which go.
 
 import { lstatSync, readdirSync, rmSync, type Stats, statfsSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 
 /** The disk's floor, DEVELOPMENT.md's: below it nothing's kept. */
 export const floorBytes = 40 * 2 ** 30;
+
+/** Where what the loop keeps for every checkout of the machine goes,
+ * outside any worktree's `target/`, so a new worktree finds it and `cargo
+ * clean` keeps it: a task's times, the test maps (#932). */
+export const machineStore = join(homedir(), ".cache", "rust-js");
 
 /** The space free on the disk `path` is on; where it can't be asked, no
  * bound. */

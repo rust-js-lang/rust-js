@@ -11,13 +11,14 @@
 // corpus, mutations, a port's regen, a matrix run.
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
 import { join } from "node:path";
+
+import { machineStore } from "../test/bounded";
 
 type Entry = { kind: "start"; name: string; at: number } | { kind: "run"; label: string; at: number; seconds: number; code: number };
 
 const branch = Bun.spawnSync(["git", "rev-parse", "--abbrev-ref", "HEAD"]).stdout.toString().trim() || "detached";
-const dir = join(homedir(), ".cache", "rust-js", "tasks");
+const dir = join(machineStore, "tasks");
 const file = join(dir, `${branch.replaceAll("/", "_")}.jsonl`);
 
 function entries(): Entry[] {

@@ -6,7 +6,8 @@
 // change can affect, and the mutation runner which cases reach a
 // mutation's site, whose snapshots judge one of how the JS reads (#864).
 //
-//   bun run test-map           record HEAD's, of a clean tree: about 130 s on 12 cores
+//   bun run test-map           record HEAD's, of a clean tree: about 130 s on 12 cores,
+//                              none where any worktree of the machine recorded it
 //   bun run test-map --keep    and keep what it recorded, to see why a test runs always
 //   bun run test-map pick      what the working tree's change picks, and why
 //
@@ -25,27 +26,33 @@
 // aborted), or that failed, runs on every change, as does one that reads
 // the compiler's sources itself (`readsSources`).
 //
-// Kept by the commit it's of in `target/test-map/maps/`, the three most
-// recently used, about 7 MB each, and the counting build in
-// `target/test-map/build`, one, as `target/debug` is. A change is what the
-// working tree differs from that commit by, so a map of an earlier commit
-// stays good while what's changed since is functions' code; one whose
-// commit isn't HEAD's ancestor, or of another version, is never read.
+// Kept by the commit it's of and the toolchain's, for every worktree of the
+// machine, in `~/.cache/rust-js/test-maps/` (#932): a map is the same in
+// any checkout of its commit, so a new worktree reads one another recorded,
+// and `bun run test-map` of a commit one's recorded for ends at once. The
+// three most recently used, about 12 MB each. The counting build is the
+// worktree's, `target/test-map/build`, one, as `target/debug` is. A change
+// is what the working tree differs from the map's commit by, so a map of an
+// earlier commit stays good while what's changed since is functions' code;
+// of those of HEAD's ancestors, the nearest is read. One whose commit isn't
+// HEAD's ancestor, or of another version or toolchain, is never read.
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 
-import { bytesOf, evict, freeBytes } from "../test/bounded";
+import { bytesOf, evict, freeBytes, machineStore } from "../test/bounded";
 import { plainSuiteFiles, shard } from "./shard";
 
 const root = join(import.meta.dir, "..");
-/** Where maps are kept, and what records one. */
+/** What records a map, the worktree's: its counting build and a recording's
+ * counts. */
 export const mapDir = join(root, "target", "test-map");
-const maps = join(mapDir, "maps");
+/** Where maps are kept, the machine's, every worktree's (#932). */
+export const mapStore = join(machineStore, "test-maps");
 /** The layout's version, which a change to it or to what's recorded bumps. */
-const VERSION = 2;
-/** The most maps kept: each about 6 MB. */
+export const mapVersion = 3;
+/** The most maps kept: each about 12 MB. */
 export const keptMaps = 3;
 
 /** Each of the compiler's functions, by its index: the file it's in and the
@@ -54,6 +61,8 @@ export const keptMaps = 3;
 export type TestMap = {
   version: number;
   commit: string;
+  /** The toolchain it was recorded with, `rustc -vV`'s commit hash. */
+  toolchain: string;
   made: number;
   functions: { file: string; spans: [number, number][] }[];
   units: Record<string, string | null>;
@@ -90,10 +99,27 @@ export function caseUnit(file: string, name: string): string | undefined {
   return undefined;
 }
 
-const git = (args: string[]) => {
-  const p = Bun.spawnSync(["git", ...args], { cwd: root, stdout: "pipe", stderr: "pipe" });
+const git = (args: string[], cwd = root) => {
+  const p = Bun.spawnSync(["git", ...args], { cwd, stdout: "pipe", stderr: "pipe" });
   return { code: p.exitCode, out: p.stdout.toString() };
 };
+
+/** The toolchain a checkout builds with, `rustc -vV`'s commit hash, its
+ * `rust-toolchain.toml`'s: what a map is of besides its commit. */
+export function toolchainOf(checkout = root): string {
+  const said = Bun.spawnSync(["rustc", "-vV"], { cwd: checkout, stdout: "pipe", stderr: "pipe" }).stdout.toString();
+  return /^commit-hash: (\S+)$/m.exec(said)?.[1] ?? "unknown";
+}
+
+/** The file of the map of `commit` with `toolchain` in `store`, of this
+ * layout: its name is its key. */
+export function mapFile(store: string, commit: string, toolchain: string): string {
+  return join(store, `${commit}${keySuffix(toolchain)}`);
+}
+
+/** What a map's file is named after its commit: the toolchain's and the
+ * layout's. */
+const keySuffix = (toolchain: string) => `-${toolchain.slice(0, 12)}-v${mapVersion}.json`;
 
 /** The test files the map records, by their suites (scripts/shard.ts). */
 export function mappedFiles(): string[] {
@@ -243,51 +269,68 @@ export function hunksOf(diff: string): Change[] {
   return changes;
 }
 
-/** The maps kept, newest first, each touched as it's read: the least
- * recently used go first past `keptMaps`. */
-function keptMapFiles(): string[] {
-  if (!existsSync(maps)) return [];
-  return readdirSync(maps)
-    .filter((name) => name.endsWith(".json"))
-    .map((name) => join(maps, name))
-    .sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs);
-}
-
 /** Hold the maps to `cap` of them, the least recently used going first, or
- * fewer, where the disk's below its floor. */
-export function pruneMaps(dir = maps, cap = keptMaps, free = () => freeBytes(dir)) {
+ * fewer, where the disk's below its floor: each touched as it's read. What
+ * a recording was writing when it stopped, a `.tmp`, counts as a map, and
+ * goes as the least recently used do. */
+export function pruneMaps(dir = mapStore, cap = keptMaps, free = () => freeBytes(dir), toolchain?: string) {
   if (!existsSync(dir)) return { removed: 0, size: 0 };
-  const kept = readdirSync(dir).map((name) => {
-    const path = join(dir, name);
-    return { path, bytes: bytesOf(path), used: statSync(path).mtimeMs };
-  });
+  // A map of another toolchain or layout than `toolchain`'s, a stale key,
+  // which no check of this one reads, goes whatever its use.
+  const stale = (name: string) => toolchain !== undefined && name.endsWith(".json") && !name.endsWith(keySuffix(toolchain));
+  const names = readdirSync(dir);
+  const kept = names
+    .filter((name) => !stale(name))
+    .map((name) => {
+      const path = join(dir, name);
+      return { path, bytes: bytesOf(path), used: statSync(path).mtimeMs };
+    });
   const newest = [...kept].sort((a, b) => b.used - a.used);
-  const past = newest.slice(cap);
+  const past = [...names.filter(stale).map((name) => join(dir, name)), ...newest.slice(cap).map(({ path }) => path)];
   const within = evict(newest.slice(0, cap), { cap: Number.POSITIVE_INFINITY, free });
-  for (const { path } of past) rmSync(path, { force: true });
+  for (const path of past) rmSync(path, { force: true });
   return { removed: past.length + within.removed, size: within.size };
 }
 
-/** The newest map of an ancestor of HEAD, touched as it's read, and the
- * working tree's changes since its commit, new files' too; or why there's
- * none. */
-function headMap(): { map: TestMap; changes: Change[] } | string {
-  for (const path of keptMapFiles()) {
+/** Of the maps in `store`, any worktree's, the one of `checkout`'s HEAD or
+ * its nearest ancestor, of this layout and `toolchain`, touched as it's
+ * read; or none. A commit `checkout` doesn't have, another clone's, is no
+ * ancestor of it. */
+export function nearestMap(store: string, checkout: string, toolchain: string): TestMap | undefined {
+  if (!existsSync(store)) return undefined;
+  // By its file's name, `mapFile`'s, the commits of HEAD's ancestors, the
+  // nearest first: only that one's read, where it's whole and of this layout.
+  const ancestors = readdirSync(store)
+    .flatMap((name) => {
+      if (!name.endsWith(keySuffix(toolchain))) return [];
+      const commit = name.slice(0, -keySuffix(toolchain).length);
+      if (!/^[0-9a-f]{40}$/.test(commit) || git(["merge-base", "--is-ancestor", commit, "HEAD"], checkout).code !== 0) return [];
+      return [{ path: join(store, name), behind: Number(git(["rev-list", "--count", `${commit}..HEAD`], checkout).out.trim()) }];
+    })
+    .sort((a, b) => a.behind - b.behind);
+  for (const { path } of ancestors) {
     let map: TestMap;
     try {
       map = JSON.parse(readFileSync(path, "utf8"));
     } catch {
       continue;
     }
-    if (map.version !== VERSION) continue;
-    if (git(["merge-base", "--is-ancestor", map.commit, "HEAD"]).code !== 0) continue;
+    if (map.version !== mapVersion || map.toolchain !== toolchain) continue;
     const now = Date.now() / 1000;
     utimesSync(path, now, now);
-    const diff = git(["diff", "-U0", "--no-color", "--no-ext-diff", "--no-renames", map.commit]).out;
-    const untracked = git(["ls-files", "--others", "--exclude-standard"]).out.split("\n").filter(Boolean);
-    return { map, changes: [...hunksOf(diff), ...untracked.map((file): Change => ({ file, hunks: "new" }))] };
+    return map;
   }
-  return "no test map of HEAD or an ancestor of it: `bun run test-map` records one";
+  return undefined;
+}
+
+/** The map of HEAD or its nearest ancestor, and the working tree's changes
+ * since its commit, new files' too; or why there's none. */
+function headMap(): { map: TestMap; changes: Change[] } | string {
+  const map = nearestMap(mapStore, root, toolchainOf());
+  if (map === undefined) return "no test map of HEAD or an ancestor of it on this machine: `bun run test-map` records one";
+  const diff = git(["diff", "-U0", "--no-color", "--no-ext-diff", "--no-renames", map.commit]).out;
+  const untracked = git(["ls-files", "--others", "--exclude-standard"]).out.split("\n").filter(Boolean);
+  return { map, changes: [...hunksOf(diff), ...untracked.map((file): Change => ({ file, hunks: "new" }))] };
 }
 
 /** `picked`, its reason saying which map said it. */
@@ -482,15 +525,25 @@ async function runUnits(units: { name: string; cmd: string[]; env: Record<string
 /** Record HEAD's map: the counting build, then each test, then which
  * functions each ran. */
 async function record(keep: boolean) {
+  const commit = git(["rev-parse", "HEAD"]).out.trim();
+  const toolchain = toolchainOf();
+  const file = mapFile(mapStore, commit, toolchain);
+  // One any worktree recorded of this commit is this one's (#932); `--keep`
+  // records again, to see why a test runs on every change.
+  if (!keep && nearestMap(mapStore, root, toolchain)?.commit === commit) {
+    console.log(`the test map of ${commit.slice(0, 9)} is recorded already, by this worktree or another: ${file}`);
+    return;
+  }
   if (git(["status", "--porcelain"]).out.trim() !== "") {
     console.error("the test map is of a commit: commit or remove what the working tree changes first");
     process.exit(1);
   }
-  const commit = git(["rev-parse", "HEAD"]).out.trim();
   const started = Date.now();
   const tools = llvmTools();
   // The counting build, in a target of its own, so `target/debug`'s isn't
-  // built again; its dependencies are sccache's, as `cargo build`'s are.
+  // built again. Its dependencies are sccache's, as `cargo build`'s are:
+  // the target given as `--target-dir`, as `CARGO_TARGET_DIR` in rustc's
+  // environment is in sccache's key, which missed every crate (#932).
   const build = join(mapDir, "build");
   // Where a run of it writes its counts given no `LLVM_PROFILE_FILE`, as
   // where a test starts it with an environment of its own: there, not in
@@ -502,12 +555,11 @@ async function record(keep: boolean) {
   mkdirSync(lost, { recursive: true });
   writeFileSync(join(mapDir, "lost.c"), `char __llvm_profile_filename[] = ${JSON.stringify(join(lost, "%p.profraw"))};\n`);
   if (Bun.spawnSync(["cc", "-c", join(mapDir, "lost.c"), "-o", join(mapDir, "lost.o")], { stdout: "inherit", stderr: "inherit" }).exitCode !== 0) process.exit(1);
-  const built = Bun.spawnSync(["cargo", "rustc", "--locked", "--quiet", "--bin", "rust-js", "--", "-C", "instrument-coverage", "-C", `link-arg=${join(mapDir, "lost.o")}`], {
-    cwd: root,
-    env: { ...process.env, CARGO_TARGET_DIR: build },
-    stdout: "inherit",
-    stderr: "inherit",
-  });
+  const { CARGO_TARGET_DIR: _, ...env } = process.env;
+  const built = Bun.spawnSync(
+    ["cargo", "rustc", "--locked", "--quiet", "--target-dir", build, "--bin", "rust-js", "--", "-C", "instrument-coverage", "-C", `link-arg=${join(mapDir, "lost.o")}`],
+    { cwd: root, env, stdout: "inherit", stderr: "inherit" },
+  );
   if (built.exitCode !== 0) process.exit(1);
   const binary = join(build, "debug", "rust-js");
   console.log(`the counting build: ${((Date.now() - started) / 1000).toFixed(0)} s`);
@@ -617,10 +669,13 @@ async function record(keep: boolean) {
   }
   // The plain suites' files that read the corpus's files: each says where.
   const corpusReaders = files.filter((file) => /\bcorpus\b/.test(readFileSync(join(root, file), "utf8")));
-  const map: TestMap = { version: VERSION, commit, made: Date.now(), functions, units: units_, includes: includes(), corpusReaders };
-  mkdirSync(maps, { recursive: true });
-  writeFileSync(join(maps, `${commit}.json`), JSON.stringify(map));
-  pruneMaps();
+  const map: TestMap = { version: mapVersion, commit, toolchain, made: Date.now(), functions, units: units_, includes: includes(), corpusReaders };
+  // Written whole, then named, so another worktree never reads half of it.
+  mkdirSync(mapStore, { recursive: true });
+  const writing = `${file}.${process.pid}.tmp`;
+  writeFileSync(writing, JSON.stringify(map));
+  renameSync(writing, file);
+  pruneMaps(mapStore, keptMaps, () => freeBytes(mapStore), toolchain);
   // What only this recording needed, its counts and each test's target,
   // kept with `--keep`, to see why a test runs on every change. Its build is
   // kept, one, as `target/debug` is, so the next recording builds only
