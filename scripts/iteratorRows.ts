@@ -129,7 +129,28 @@ function steps(line: string): string[] {
   return [...line.matchAll(/(?:\.|::)([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(|\b)/g)].map((m) => m[1]);
 }
 
-export type Hunk = { file: string; at: number; added: string[]; removed: string[]; head: string; arm?: string };
+export type Hunk = { file: string; at: number; added: string[]; removed: string[]; head: string; arm?: string; outside?: boolean };
+
+/** Whether the line at `at` of `lines` is outside any function: none
+ * above it, or the one above it closed before it, its braces counted past
+ * its head, comments and strings left out (#986). A hunk there, a comment
+ * after the last function, names no rows. */
+export function outsideFunctions(lines: string[], head: number, at: number): boolean {
+  if (head < 0) return true;
+  let depth = 0;
+  let opened = false;
+  for (let i = head; i < at; i++) {
+    const code = lines[i].replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`/g, "").replace(/\/\/.*$/, "");
+    for (const c of code) {
+      if (c === "{") {
+        depth++;
+        opened = true;
+      } else if (c === "}") depth--;
+    }
+    if (opened && depth <= 0) return true;
+  }
+  return false;
+}
 
 /** The arm of a `match` the line at `at` of `lines` is in, the nearest
  * above it of less indentation that has a `=>`: `Some(IterMethod::Copied |
@@ -182,6 +203,7 @@ function hunks(base: string, head: string | undefined, files: string[]): Hunk[] 
     let at = Math.min(hunk.at, lines.length) - 1;
     while (at > 0 && !isHead(lines[at])) at--;
     if (isHead(lines[at])) hunk.head = lines[at];
+    hunk.outside = outsideFunctions(lines, isHead(lines[at]) ? at : -1, Math.min(hunk.at, lines.length) - 1);
     hunk.arm = enclosingArm(lines, Math.min(hunk.at, lines.length) - 1);
   }
   return out.filter((hunk) => !unnamed(hunk.file));
@@ -248,6 +270,11 @@ export function pick(base: string, head: string | undefined, files: string[], pa
     const removing = new Set<string>();
     let everyAdapter = false;
     for (const hunk of found) {
+      // Outside any function, a comment after the last one: no rows (#986).
+      if (hunk.outside) {
+        why.push(`${hunk.file}:${hunk.at}: outside any function: none`);
+        continue;
+      }
       const { adapters: a, consumers: c, generic, shared: sharedHunk, removes } = named(hunk, adapters, consumers);
       // What's taken away more than put back decides for each row of what
       // it names: every one runs (#823).

@@ -254,6 +254,14 @@ test("plain check:fast runs each suite's file as a job, and of a change the map 
   expect(forms({ ...iterators, picked: { ...given, files: new Set(), cases: [], forms: ["a.rs"] } })?.cmd).toEqual(["bun", "scripts/iteratorSlice.ts", "run", "forms", "6", "/forms.txt"]);
   expect(forms({ ...iterators, picked: { ...given, files: new Set(), cases: [], forms: [] } })).toBeUndefined();
   expect(forms({ ...iterators, picked: { ...given, files: new Set(["test/iterator-forms.test.ts"]), cases: [], forms: [] } })).toBeDefined();
+
+  // Of `--all`, the corpus whole in its plain build, and in std's the cases
+  // the map picks where it can say, none where it picks none (#986).
+  const all = { ...iterators, all: true };
+  expect(jobs({ ...all, forms: { forms: ["a.rs"], formsList: "/forms.txt" } }).jobs.filter((job) => job.name.startsWith("corpus ")).length).toBe(12);
+  expect(forms({ ...all, forms: { forms: ["a.rs"], formsList: "/forms.txt" } })?.cmd).toEqual(["bun", "scripts/iteratorSlice.ts", "run", "forms", "6", "/forms.txt"]);
+  expect(forms({ ...all, forms: { forms: [], formsList: "/forms.txt" } })).toBeUndefined();
+  expect(forms(all)?.cmd).toEqual(["bun", "scripts/iteratorSlice.ts", "run", "forms", "6"]);
 });
 
 test("`RUST_JS_CASES=i/n:<file>` is a part of the cases the file names", () => {

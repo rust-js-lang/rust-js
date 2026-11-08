@@ -5,7 +5,7 @@
 
 import { expect, test } from "bun:test";
 
-import { budgetOf, enclosingArm, named, pattern, rowsPerPart, type Hunk } from "../scripts/iteratorRows";
+import { budgetOf, enclosingArm, named, outsideFunctions, pattern, rowsPerPart, type Hunk } from "../scripts/iteratorRows";
 
 const adapters = new Set(["map", "filter", "skip", "take", "fuse", "enumerate", "chain", "rev", "step_by", "zip", "take_while", "copied", "cloned"]);
 const consumers = new Set(["fold", "rfold", "any", "all", "count", "nth", "for", "nth_back"]);
@@ -103,3 +103,9 @@ test("a change's rows are as many as its parts run in its time", () => {
   }
 });
 
+test("a hunk outside any function names no rows: a comment after the last one, or before the first", () => {
+  const lines = ["// the file's head", "fn a() {", "    let s = \"}\"; // a `}` in text", "    b();", "}", "", "// after the last"];
+  expect(outsideFunctions(lines, 1, 3)).toBe(false);
+  expect(outsideFunctions(lines, 1, 6)).toBe(true);
+  expect(outsideFunctions(lines, -1, 0)).toBe(true);
+});

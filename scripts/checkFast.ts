@@ -44,7 +44,11 @@ export type Job = { name: string; cmd: string[]; env: Record<string, string>; ti
  * named; the machine's cores; and, of a plain check whose change the test
  * map can say, the test files and corpus cases it can affect, the cases
  * written to `caseList`, a line each, and those built with std's iterator
- * structs, to `formsList` (scripts/testMap.ts, #877, #876). */
+ * structs, to `formsList` (scripts/testMap.ts, #877, #876); and of `--all`,
+ * those with std's iterator structs alone, `forms`, where the map can say:
+ * the corpus whole runs in its plain build, as a push's check runs it, and
+ * in std's of the cases whose compiles ran what the change touches, the
+ * nightly and CI running it whole (#986). */
 export type Scope = {
   all: boolean;
   changed: string[];
@@ -53,6 +57,7 @@ export type Scope = {
   extra: string[];
   cores: number;
   picked?: { files: Set<string>; cases: string[]; caseList: string; forms: string[]; formsList: string };
+  forms?: { forms: string[]; formsList: string };
 };
 
 const job = (name: string, cmd: string[], more: Partial<Job> = {}): Job => ({ name, cmd, env: {}, timeout: 290, weight: 1, ...more });
@@ -83,7 +88,7 @@ export const leftToCi: { run: string; why: string }[] = [
  * `--all`, what a push's check runs (check.yml); else the suites the
  * change can touch, as it touches them, `shared` saying whether that's what
  * the snapshots and the diagnostics read. */
-export function jobs({ all, changed, branch, added, extra, cores, picked }: Scope): { jobs: Job[]; shared: boolean } {
+export function jobs({ all, changed, branch, added, extra, cores, picked, forms }: Scope): { jobs: Job[]; shared: boolean } {
   // What the snapshots and the diagnostics read: the compiler and the runtime.
   const shared = all || changed.some((file) => file.startsWith("src/") || file.startsWith("runtime/"));
   const jsx = all || changed.some((file) => /^src\/(lower\/jsx|jsx_syntax)|^react\//.test(file));
@@ -210,7 +215,11 @@ export function jobs({ all, changed, branch, added, extra, cores, picked }: Scop
               // Of a change the test map can say, the corpus with std's
               // iterator structs runs the cases it picked, none where it
               // picked none, nor the file's own tests (#876).
-              .filter((of) => of !== "forms" || !picked || picked.forms.length > 0 || picked.files.has("test/iterator-forms.test.ts"))
+              .filter(
+                (of) =>
+                  of !== "forms" ||
+                  (picked ? picked.forms.length > 0 || picked.files.has("test/iterator-forms.test.ts") : !forms || forms.forms.length > 0),
+              )
               .map((of) =>
                 // The rows a change names: a removal's run whole, some 28,000
                 // of the matrix's, about 4 min alone and twice that beside the
@@ -218,7 +227,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked }: Scop
                 // Each `parts` processes at once, throughout (m6-lily, #857).
                 job(
                   of === "rows" ? "the rows the change names" : runs[of][0].name,
-                  ["bun", "scripts/iteratorSlice.ts", "run", of, String(parts), ...(of === "forms" && picked ? [picked.formsList] : [])],
+                  ["bun", "scripts/iteratorSlice.ts", "run", of, String(parts), ...(of === "forms" && (picked ?? forms) ? [(picked ?? forms)!.formsList] : [])],
                   {
                     timeout: of === "rows" ? 1200 : 600,
                     weight: parts,
@@ -589,6 +598,19 @@ if (import.meta.main) {
   // the test map (scripts/testMap.ts, #877); or, where it can't say, what
   // the change's paths run.
   let picked: Scope["picked"];
+  let forms: Scope["forms"];
+  // Of `--all`, the cases built with std's iterator structs the map picks,
+  // where it can say (#986).
+  if (all) {
+    const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
+    const pick = pickChange(mappedFiles(), cases);
+    if (pick.kind === "picked") {
+      const formsList = join(own, "forms.txt");
+      writeFileSync(formsList, pick.forms.map((name) => `${name}\n`).join(""));
+      forms = { forms: pick.forms, formsList };
+      console.log(`${pick.why}: ${pick.forms.length} of ${cases.length} corpus cases with std's iterator structs where the change is the iterators'`);
+    } else console.log(`${pick.why}: the corpus with std's iterator structs runs whole`);
+  }
   if (!all) {
     const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
     const files = mappedFiles();
@@ -604,7 +626,7 @@ if (import.meta.main) {
       );
     } else console.log(`${pick.why}: the change's paths say what runs`);
   }
-  const check = jobs({ all, changed, branch, added, extra, cores: availableParallelism(), picked });
+  const check = jobs({ all, changed, branch, added, extra, cores: availableParallelism(), picked, forms });
   const cores = availableParallelism();
   const clock: Clock = { began: Date.now(), samples: [] };
   const results = await run(check.jobs, compiler, cores, clock);
