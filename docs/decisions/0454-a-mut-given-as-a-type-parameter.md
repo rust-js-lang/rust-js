@@ -632,3 +632,24 @@ its list (`dyn-ref` and `impl-ref` `into_iter_of_ref_param`, `impl-ref`
 `mut_ref_escapes` and `transparent_transmute`), and the mutations
 `bound-lifetime-unread`, `type-parameter-given-back-unseen` and
 `static-result-of-a-type-parameter-unseen` (`lower/mut_refs.ts`).
+
+## Amended (2026-11-08, #977): a pair on a handle stores as the handle does
+
+A `&mut` to a place that stores what's written its own way, a
+`#[rust_js::nullable]` field's `None` as `null` (ADR 0772) or a class's
+flattened state's keys on its object (ADR 1044), is a handle that carries
+its `Storage`, held in a `const` (`through_handle`). Made a `&mut dyn`, its
+pair was on the handle's `value`, and tidy's `read_handles` read that as
+the handle's place, so the pair's setter assigned the place as it's given:
+`fiber.owner = value` left `undefined` where Rust's `None` is `null`, and
+`task = value` replaced the variable holding the class's object instead of
+setting its keys. Now a pair on a handle's `value` is a pair on its place
+that stores as the handle does (`Expr::stored_pair`, #968's), its setter
+`fiber.owner = value ?? null` or each key set.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change;
+Rust's preserved. Held by corpus `stored_place_made_a_mut_dyn`
+(native-compared, both builds), the metamorphic net's `dyn-ref`
+`flattened_state_got_mut` and `nullable_written_through_borrows` taken off
+its list, and the mutation `pair-of-a-handle-stores-as-given`
+(`lower/mir/tidy/values.ts`).

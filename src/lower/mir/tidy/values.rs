@@ -691,6 +691,24 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::L
             }
         }
     });
+    // A `dyn`'s pair on a handle's `value`, `&mut fiber.owner as &mut dyn
+    // Trait`'s: a pair on the handle's place that stores as it does, a
+    // nullable field's `null` or a flattened state's keys, not one whose
+    // setter assigns the place as it's given (#977).
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Pair(place, dictionary, js::Storage::AsGiven) = &e.kind
+            && let ExprKind::Member(of, key) = &place.kind
+            && key == js::HELD
+            && let ExprKind::Var(v) = &of.kind
+            && let Some((_, on, _, storage)) = handles.iter().find(|(name, ..)| name == v)
+            && *storage != js::Storage::AsGiven
+        {
+            *e = Expr {
+                span: e.span,
+                ..Expr::stored_pair(on.clone(), (**dictionary).clone(), *storage)
+            };
+        }
+    });
     // A handle on a flattened state's handle's `value`, `&mut *state` given
     // on, `Cell::from_mut(&mut *state)`'s or a call's that keeps it: that
     // handle, whose setter sets each key, not one on its place, whose

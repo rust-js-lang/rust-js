@@ -65,7 +65,3 @@ plain std impl-ref fn_compared_by_its_pointer.rs
 
 #975 P0: a reference parameter taken as `&impl` of an identity trait, a transmute's and a function's given for a `&mut` parameter
 plain std impl-ref function_given_for_a_mut_param.rs
-
-#977 P0: a `&mut` to a place with special storage, a flattened state's keys or a nullable field's `null`, loses it when made a `&mut dyn`
-plain std dyn-ref flattened_state_got_mut.rs
-plain std dyn-ref nullable_written_through_borrows.rs

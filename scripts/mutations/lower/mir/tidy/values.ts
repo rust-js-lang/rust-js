@@ -481,4 +481,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^unread_map_of_a_held_iterator.rs$"],
   },
+  {
+    name: "pair-of-a-handle-stores-as-given",
+    breaks: "a `&mut dyn`'s pair on a nullable field's or a flattened state's handle assigns the place as it's given, `fiber.owner = value`, `task = value`, so a `None` is `undefined` and the class's object is replaced (#977)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "            && *storage != js::Storage::AsGiven\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^stored_place_made_a_mut_dyn.rs$"],
+  },
 ];
