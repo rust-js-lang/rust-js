@@ -170,6 +170,10 @@ are built, in `RUST_JS_APPS` ([ADR 0360](../docs/decisions/0360-the-app-is-a-pro
 and its crates of crates.io's or git's, which rust-js compiles where it can,
 in `RUST_JS_DEPENDENCIES`, their JS the app's, in `rust-js/crates/`
 ([ADR 0415](../docs/decisions/0415-a-crate-of-crates-io-in-an-app.md)).
+Which Prettier lays out their JS, `rust-js --layout-identity`'s hash, asked
+once a build, is `RUST_JS_LAYOUT`, which each crate rust-js compiles names
+in its dep-info, so an upgrade of it builds them again
+([ADR 1003](../docs/decisions/1003-a-compilers-build-is-its-identity.md), amended).
 Each of those that `frontend` uses, the crate of an npm package too, and
 `frontend` itself, is JS in Cargo's target directory, beside the metadata
 of that build of it, importing the others, then written beside its Rust. A

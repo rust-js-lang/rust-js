@@ -54,9 +54,10 @@ test("what follows -- is the runner's, its name pattern picking the tests to run
 // Cargo gives a crate the same unit's directory wherever its package is, a
 // project moved or another of the same name sharing its target: the second
 // build's JS replaces the first's there, each crate's tests its own. Outside
-// the checkout, where no Prettier is found: a crate's Prettier puts its
-// directory in rust-js's `rustc -vV`, and so in the unit's (ADR 1003,
-// #684), which a fixture here, finding the checkout's, would.
+// the checkout, where no Prettier is found, as before #892 a crate's
+// Prettier put its directory in rust-js's `rustc -vV`, and so in the
+// unit's; now each crate names it in its dep-info alone (ADR 1003,
+// amended).
 test("two crates of one name at two paths, one target, each run their own tests", () => {
   const top = outsideFixture("test-namesakes");
   const shared = join(top, "target");

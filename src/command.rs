@@ -22,6 +22,11 @@ pub(crate) enum Command {
     Checks(Checks),
     /// A crate, compiled.
     Build(Build),
+    /// `--layout-identity`: which Prettier lays out the JS of the crates
+    /// the tooling lists, `RUST_JS_CRATES` and `RUST_JS_DEPENDENCIES`, a
+    /// hash, or an empty line where none has one: what the tooling gives
+    /// Cargo as `RUST_JS_LAYOUT`, once a build (ADR 1003, amended; #892).
+    LayoutIdentity,
     /// `--tidy-passes`: each of tidy's passes, a line each, in the order
     /// they run, what `--tidy-until` may name (ADR 0659).
     TidyPasses,
@@ -92,6 +97,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         Some("--runtime-module") if args.len() == 1 => return Ok(Command::RuntimeModule),
         Some("--version-json") if args.len() == 1 => return Ok(Command::VersionJson),
         Some("--version") if args.len() == 1 => return Ok(Command::Version),
+        Some("--layout-identity") if args.len() == 1 => return Ok(Command::LayoutIdentity),
         Some("--tidy-passes") if args.len() == 1 => return Ok(Command::TidyPasses),
         Some("--prepare-passes") if args.len() == 1 => return Ok(Command::PreparePasses),
         Some("--rustc") => return Ok(Command::Rustc(args[1..].to_vec())),

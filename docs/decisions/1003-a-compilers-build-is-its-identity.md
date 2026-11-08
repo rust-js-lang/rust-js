@@ -211,3 +211,39 @@ upgraded alone at the same path, each of its files dated as before, and
 the next build's JS its layout. Mutations `prettier-identity-without-plugins`,
 `prettier-plugin-found-nowhere` and `prettier-plugins-of-no-file`
 (`prettier.rs`).
+
+## Amendment: the layout is each crate's, not the build's `-vV` (#892)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, as above.
+
+Cargo hashes the `-vV` line into every crate's `-C metadata`, and the
+`prettier <hash>` the line carried since #684 named each app's crate
+directories. That had two costs. A binding crate, which rustc builds and
+Prettier never touches, was another build in every app: `webapi` 31 times
+under 31 keys in a `check:fast --all`. And each `-vV` started a Node
+session, four for each Cargo build, about 75 CPU-seconds of that check.
+
+**The Prettier's hash is each compiled crate's, in its dep-info**: the
+tooling asks it once a build, `rust-js --layout-identity`, the same
+`prettier::identity` of the same crates, and gives it to Cargo as
+`RUST_JS_LAYOUT` (`cargoEnv`, `layoutIdentity`). Each crate rust-js
+compiles names that variable in its dep-info, as it names `RUST_JS_APPS`,
+so another value builds those crates again. No crate rustc builds names
+it. The `-vV` line is the compiler's alone, its build and its
+declarations' printer, and starts no Node.
+
+- **What changes rebuilds what**: an upgrade of the app's Prettier, or of
+  a plugin, at the same path, still rebuilds every crate rust-js
+  compiles, as before. It no longer rebuilds the binding crates or the
+  host's build scripts and proc macros, whose output it can't change.
+- **One key for a binding crate in every app**: two apps' `webapi` are the
+  same unit now. Each test's target is still its own, so the tests share
+  no build yet.
+- **Cargo run without the tooling**: no `RUST_JS_LAYOUT`, and no crate
+  rust-js compiles, as `RUST_JS_CRATES` is the tooling's too.
+
+What holds it: `test/cargo-workspace.test.ts`, "Cargo is told which
+Prettier lays out the app's JS" and "Cargo is told which Prettier plugins
+lay out the app's JS", as before. Mutations `cargo-layout-untracked`
+(`main.rs`), which replaces `cargo-version-without-prettier`, and
+`cargo-prettier-of-no-crate` (`cargo.rs`).

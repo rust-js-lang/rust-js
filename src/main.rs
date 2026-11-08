@@ -265,9 +265,13 @@ impl Callbacks for RustJs {
         // reads of the dep-info, as of an `env!`: another value is another
         // build (ADR 0360).
         // And whether a program writes its tests' contract, `rust-js test`'s
-        // (ADR 1076, amended).
+        // (ADR 1076, amended). And which Prettier lays its JS out, the
+        // tooling's `RUST_JS_LAYOUT`: Cargo's `-vV` line named it, so every
+        // crate of a build, a binding crate's too, was another build in
+        // each app, and each `-vV` started a Node session (ADR 1003,
+        // amended; #892).
         if self.cargo {
-            for var in [cargo::APPS, cargo::TEST_BUILD] {
+            for var in [cargo::APPS, cargo::TEST_BUILD, cargo::LAYOUT] {
                 let value = std::env::var(var).ok().map(|value| Symbol::intern(&value));
                 compiler.sess.env_depinfo.lock().insert((Symbol::intern(var), value));
             }
@@ -431,6 +435,18 @@ fn run() -> ExitCode {
     };
     let build = match command::parse(args) {
         Ok(command::Command::Build(build)) => build,
+        Ok(command::Command::LayoutIdentity) => {
+            return match cargo::layout() {
+                Ok(identity) => {
+                    println!("{}", identity.unwrap_or_default());
+                    ExitCode::SUCCESS
+                }
+                Err(error) => {
+                    eprintln!("rust-js: {error}");
+                    ExitCode::FAILURE
+                }
+            };
+        }
         Ok(command::Command::TidyPasses) => {
             for pass in lower::tidy_pass_names() {
                 println!("{pass}");

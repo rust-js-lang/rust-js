@@ -28,6 +28,12 @@ import { buildCompiler, buildNode, buildReact, buildReactNative, buildSerde, car
 const check = process.argv.includes("--check");
 const guide = join(root, "docs/guide");
 const work = join(target, "docs");
+/** The apps' one Cargo target in a run, removed as it ends: each app's own
+ * built `webapi`, `react` and `js` again, about 4 CPU-seconds of each of
+ * the 14, where since #892 they're one unit in every app, its key the
+ * compiler's alone (ADR 1003, amended). Cargo holds it for one build at a
+ * time, each after the first finding them built. */
+const appsTarget = join(work, ".apps-target");
 
 type Fence = { info: string; body: string; start: number; end: number };
 /** An example: its files, its output fences, and, of an app `rust-js build`
@@ -188,7 +194,7 @@ async function compile(example: Example, n: number): Promise<{ bodies: string[];
           "--crate-name=example", ...crates(code)],
     dir,
     280_000,
-    { RUST_JS_COMPILER: compiler },
+    { RUST_JS_COMPILER: compiler, ...(app ? { CARGO_TARGET_DIR: appsTarget } : {}) },
   );
   const [stderr, exit] = [ran.stderr, ran.timedOut ? 1 : (ran.code ?? 1)];
   built?.done();
@@ -260,6 +266,7 @@ async function main() {
       }
     }),
   );
+  if (!process.env.RUST_JS_KEEP_FIXTURES) rmSync(appsTarget, { recursive: true, force: true });
   const stale: string[] = [];
   for (const page of pages) {
     let text = texts.get(page)!;

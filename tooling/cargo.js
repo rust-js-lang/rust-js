@@ -1,6 +1,6 @@
 // Cargo's builds of rust-js crates (ADR 0101). Cargo owns resolution; this
 // adapter does not infer dependencies from source files or run build scripts.
-import { execFile, spawn } from "node:child_process";
+import { execFile, spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -27,7 +27,10 @@ const execute = promisify(execFile);
  * @param {{ apps: string[], crates: string[], dependencies?: { dir: string }[] }} build
  * @param {{ tests?: boolean }} [options] `rust-js test`'s build: each app
  * writes a contract too, `RUST_JS_TEST_BUILD`, its integration tests'
- * (ADR 1076, amended).
+ * (ADR 1076, amended). And which Prettier lays out the JS of the crates
+ * rust-js compiles, `RUST_JS_LAYOUT`, asked of the compiler once a build,
+ * which each of those crates names in its dep-info (ADR 1003, amended;
+ * #892).
  * @returns {NodeJS.ProcessEnv} */
 export function cargoEnv(compiler, react, { apps, crates, dependencies = [] }, { tests = false } = {}) {
   const env = {
@@ -39,6 +42,7 @@ export function cargoEnv(compiler, react, { apps, crates, dependencies = [] }, {
     RUST_JS_DEPENDENCIES: JSON.stringify(dependencies.map(({ dir }) => dir)),
     RUST_JS_TYPESCRIPT: createRequire(import.meta.url).resolve("@rust-js/typescript"),
   };
+  env.RUST_JS_LAYOUT = layoutIdentity(compiler, env);
   if (react) env.RUST_JS_REACT = react;
   else delete env.RUST_JS_REACT;
   if (tests) env.RUST_JS_TEST_BUILD = "1";
@@ -141,6 +145,23 @@ export async function nativeCheck({ manifestPath, except }) {
       .on("error", failed)
       .on("close", (code) => done(code ?? 1));
   });
+}
+
+/** Which Prettier lays out the JS of the crates `env` lists, as `compiler`
+ * says, `rust-js --layout-identity`: a hash, or `""` where none has one.
+ * Cargo's `-vV` line named it, each `-vV` a Node session, four a build, and
+ * every crate of a build, a binding crate's too, another in each app (ADR
+ * 1003, amended; #892). Now each crate rust-js compiles names it, as an
+ * `env!`'s variable, and a change rebuilds those alone.
+ * @param {string} compiler
+ * @param {NodeJS.ProcessEnv} env
+ * @returns {string} */
+export function layoutIdentity(compiler, env) {
+  const asked = spawnSync(resolve(compiler), ["--layout-identity"], { env, encoding: "utf8" });
+  if (asked.status !== 0) {
+    throw new Error(`rust-js can't say which Prettier lays out the app's JS:\n${(asked.stderr || String(asked.error ?? "")).trim()}`);
+  }
+  return asked.stdout.trim();
 }
 
 /** Cargo's rustc, for every crate it compiles: rust-js's `--rustc`, rustc

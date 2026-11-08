@@ -55,6 +55,13 @@ pub const CRATES: &str = "RUST_JS_CRATES";
 /// types alone (ADR 0415).
 pub const DEPENDENCIES: &str = "RUST_JS_DEPENDENCIES";
 
+/// Which Prettier lays out the JS of the crates rust-js compiles, `layout`'s
+/// hash, as the tooling asks it once a build: each crate rust-js compiles
+/// names it in its dep-info, as an `env!`'s variable, so another is a
+/// build of those crates again, and of no crate rustc builds, a binding
+/// crate's or a host's (ADR 1003, amended; #684, #892).
+pub const LAYOUT: &str = "RUST_JS_LAYOUT";
+
 /// Set in the process that tries a dependency, which compiles it as its own.
 const TRYING: &str = "RUST_JS_TRYING";
 
@@ -495,7 +502,9 @@ fn expand(given: &[String]) -> Result<Vec<String>, String> {
 /// another checkout's or worktree's, is another build (ADR 1003). And the
 /// `@rust-js/typescript` that prints its `.d.ts`, which isn't in the binary:
 /// another, at the same path, is another build too (ADR 1003, amended; #675).
-/// So is another of the app's Prettier, which lays its JS out (#684).
+/// The app's Prettier, which lays its JS out (#684), isn't: it's the
+/// crates' own, `RUST_JS_LAYOUT` in each one's dep-info, so a binding
+/// crate's build is one in every app, and a `-vV` starts no Node (#892).
 fn verbose_version(rustc: &str) -> Invocation {
     let output = match std::process::Command::new(rustc).arg("-vV").output() {
         Ok(output) => output,
@@ -523,20 +532,11 @@ fn verbose_version(rustc: &str) -> Invocation {
             return Invocation::Rustc(ExitCode::FAILURE);
         }
     };
-    // And the app's Prettier, which lays out the JS of the crates it
-    // compiles, a package Cargo dates nothing of (#684).
-    let layout = match layout() {
-        Ok(layout) => layout.map(|hash| format!(", prettier {hash}")).unwrap_or_default(),
-        Err(error) => {
-            eprintln!("rust-js: {error}");
-            return Invocation::Rustc(ExitCode::FAILURE);
-        }
-    };
     let mut out = std::io::stdout().lock();
     match out.write_all(&output.stdout).and_then(|()| {
         writeln!(
             out,
-            "rust-js: {version}, Rust {toolchain}, ABI {abi}, build {build}{printer}{layout}"
+            "rust-js: {version}, Rust {toolchain}, ABI {abi}, build {build}{printer}"
         )
     }) {
         Ok(()) => Invocation::Rustc(ExitCode::SUCCESS),
@@ -549,8 +549,9 @@ fn verbose_version(rustc: &str) -> Invocation {
 
 /// Which Prettier lays out the JS of the crates rust-js compiles, of the
 /// app's own and of crates.io's, as the tooling lists them: none where it
-/// lists none, outside its build.
-fn layout() -> Result<Option<String>, String> {
+/// lists none, outside its build. `rust-js --layout-identity`'s, which the
+/// tooling asks once a build and gives Cargo as `RUST_JS_LAYOUT` (#892).
+pub fn layout() -> Result<Option<String>, String> {
     let mut dirs = Vec::new();
     for var in [CRATES, DEPENDENCIES] {
         if std::env::var_os(var).is_some() {
