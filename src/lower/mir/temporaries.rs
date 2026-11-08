@@ -50,10 +50,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// reached through that a variable set again holds, `x` of a reborrow's
     /// `x.value`, or an index that one is, `i` of `v[i]`, named as it is
     /// now, as Rust's borrow keeps the place it was made of (#968). A
-    /// variable that's the place itself, `n`, is the place.
+    /// variable that's the place itself, `n`, is the place. A handle on a
+    /// place, a `Cell` a field is's, is one on it fixed so (#1034).
     pub(in crate::lower) fn place_where_made(&mut self, place: Expr, out: &mut Vec<Stmt>) -> Expr {
         let (span, facts) = (place.span, place.facts);
         let fixed = match place.kind {
+            js::ExprKind::Handle(on, storage) => Expr::stored_handle(self.place_where_made(*on, out), storage),
             js::ExprKind::Member(object, field) => Expr::member(self.reached_where_made(*object, out), &field),
             js::ExprKind::Index(object, index) => {
                 let object = self.reached_where_made(*object, out);

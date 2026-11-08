@@ -203,8 +203,8 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's `&mut list.value` of a `list` moved on later reads `list` where it's used",
     file: "src/lower/mir/rvalues.rs",
-    find: "                    let root = self.through_local_reference(state.body, place) && written_again(state, place.local);\n",
-    replace: "                    let root = false;\n",
+    find: "                    let target = match self.local_reference_written(state, place) {\n",
+    replace: "                    let target = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
   },
   {
@@ -794,16 +794,43 @@ export const mutations: Mutation[] = [
     name: "kept-handle-index-read-later",
     breaks: "a `&mut c[k]` kept past `k = 2` reads `c[k]` when it's used, the item at the new index (#988)",
     file: "src/lower/mir/rvalues.rs",
-    find: "                        PlaceElem::Index(index) => written_again(state, index) || index_copied_from_set(state, index),\n",
-    replace: "                        PlaceElem::Index(index) => written_again(state, index),\n",
+    find: "                PlaceElem::Index(index) => written_again(state, index) || index_copied_from_set(state, index),\n",
+    replace: "                PlaceElem::Index(index) => written_again(state, index),\n",
     tests: ["test/corpus.test.ts", "-t", "^kept_handle_of_a_place_set_again.rs$"],
   },
   {
     name: "kept-handle-field-reference-read-later",
     breaks: "a `&mut (*h.node).count` kept past `h.node = &mut other` reads `h.node.count` when it's used, the other node's (#988)",
     file: "src/lower/mir/rvalues.rs",
-    find: "                                && reference_written(state.body, place.local, &place.projection[..at])\n",
-    replace: "                                && false\n",
+    find: "                            || reference_written(body, place.local, &place.projection[..at]))\n",
+    replace: "                            || false)\n",
     tests: ["test/corpus.test.ts", "-t", "^kept_handle_of_a_place_set_again.rs$"],
+  },
+  {
+    name: "cell-through-a-field-reference-read-later",
+    breaks:
+      "`node.0.v.set({ node.0 = b; .. })` sets `b`'s, the `Cell` reached through the field read after the write, not the node it was (#1034)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                        self.reached_through_written(state, place),\n",
+    replace: "                        false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^reference_a_field_holds_set_again.rs$"],
+  },
+  {
+    name: "field-reference-holder-set-whole-unseen",
+    breaks:
+      "`node.0.v.set({ node = Plain(b); .. })` sets `b`'s, the holder of the reference set again whole taken for one never written (#1034)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                        && ((own && written_again(state, place.local))\n",
+    replace: "                        && ((own && false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^reference_a_field_holds_set_again.rs$"],
+  },
+  {
+    name: "field-reference-box-set-again-unseen",
+    breaks:
+      "`held.0.v.set({ held.0 = Box::new(c); .. })` of a `Box<&Node>` field sets `c`'s, a write of what holds the reference not counted as its (#1034)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                && holder.starts_with(written.projection.as_slice())\n",
+    replace: "                && holder == written.projection.as_slice()\n",
+    tests: ["test/corpus.test.ts", "-t", "^reference_a_field_holds_set_again.rs$"],
   },
 ];

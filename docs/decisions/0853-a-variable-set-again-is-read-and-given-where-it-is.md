@@ -300,3 +300,39 @@ boxed slice (the user's decision, 2026-11-08). Held by the corpus case
 `box_held_in_a_field_written`, the mutations `indirect-through-a-box`
 and `count-place-written-is-indirect`. The rewritten case's other lines,
 a reference held in a field set again, are #1034's.
+
+## Amendment: a reference a field holds, set again (#1034)
+
+The `field` rewrite's other lines put the reference itself in a field:
+`node.0.v.set({ node.0 = &b; node.0.v.get() + 1 })` of a `Plain<'a>(&'a
+Node)` set `b`'s where Rust sets `a`'s (native `11 10`, JS `10 11`), and
+so did the reference set again through a box the field holds, `*held.0
+= &d`, and the holder set again whole, `node = Plain(&b)`. The shared
+borrow of a `Cell` asked only `through_local_reference`, a reference the
+local is; a `&mut` already asked, of a field's reference, whether it's
+given another (#988), by its exact place. Both branches now ask the same
+two questions: `local_reference_written`, the reference the local is
+set again, which holds the local where the borrow's made; and
+`reached_through_written`, a reference a part of the local holds given
+another, by an assignment of it or of what holds it (`held.0 =
+Box::new(..)`), or lent to a closure that sets it, `|| node.0 = b`
+(`written_or_lent`), the local set again whole, or an index set again, which
+names the place as it is there (`place_where_made`, which now fixes a
+handle's place too, the form a `Cell` a field is takes). Holding the
+local can't serve the field: `node.0 = b` changes the array the local
+holds in place. `read_before_written` is told what's written by one
+rule, `writes_reach`: the place or what holds it, or an index it's at,
+assigned or lent to be written; a `get` before the write still holds
+nothing. Lent was missed of a variable that's the reference too:
+`node.v.set({ let mut swap = || node = &b; swap(); 30 })` set `b`'s, as
+only an assignment of `node` was counted, though borrowck lets a `&mut
+node` be made while `(*node).v` is borrowed. Results changed
+([0262](0262-when-rust-and-js-disagree.md)), so Rust's order is kept; no
+other case's JS changed. Held by the corpus case
+`reference_a_field_holds_set_again` and the mutations
+`cell-through-a-field-reference-read-later`,
+`field-reference-holder-set-whole-unseen`,
+`field-reference-box-set-again-unseen`,
+`place-where-made-handle-unfixed`, `written-or-lent-lends-nothing` and
+`read-before-written-box-content-unwritten`; the net's two `field` lines
+of #1034 run as native, and #1035's `given_last_unwinds`.

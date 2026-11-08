@@ -327,9 +327,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`node.v.set({ node = b; .. })` sets `b`'s, not the node `node` was where the `Cell` was reached",
     file: "src/lower/mir/queries.rs",
-    find: "                && a.0.local == local\n                && whole(&a.0)\n            {\n                return false;\n",
-    replace:
-      "                && a.0.local == local\n                && whole(&a.0)\n            {\n                continue;\n",
+    find: "            if written_or_lent(statement).any(&written) {\n                return false;\n",
+    replace: "            if written_or_lent(statement).any(&written) {\n                continue;\n",
     tests: ["test/corpus.test.ts", "-t", "^given_last_unwinds.rs$"],
   },
   {
@@ -479,12 +478,26 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^box_read_before_its_write.rs$"],
   },
   {
-    name: "read-before-written-box-content-unwritten",
-    breaks: "a `Cell` reached through a box of a reference, set after `*node = b`, is taken for read before the box is written, so it sets the new node's (#980)",
+    name: "written-or-lent-lends-nothing",
+    breaks:
+      "`node.v.set({ let mut swap = || node = &b; swap(); 30 })` sets `b`'s, a `&mut node` lent to be written taken for no write of it, and a field's reference a closure sets, `|| node.0 = b`, never set again (#1034)",
     file: "src/lower/mir/queries.rs",
-    find: "                && whole(&a.0)\n",
-    replace: "                && a.0.projection.is_empty()\n",
-    tests: ["test/corpus.test.ts", "-t", "^box_read_before_its_write.rs$"],
+    find: "        Rvalue::Ref(_, BorrowKind::Mut { .. }, lent) | Rvalue::RawPtr(mir::RawPtrKind::Mut, lent) => Some(lent),\n",
+    replace:
+      "        Rvalue::Ref(_, BorrowKind::Mut { .. }, lent) | Rvalue::RawPtr(mir::RawPtrKind::Mut, lent) if false => Some(lent),\n",
+    tests: ["test/corpus.test.ts", "-t", "^reference_a_field_holds_set_again.rs$"],
+  },
+  {
+    name: "read-before-written-box-content-unwritten",
+    breaks: "a `Cell` reached through a box of a reference, set after `*node = b`, or through a field's reference set after `node.0 = b`, is taken for read before what it's reached through is written, so it sets the new node's (#980, #1034)",
+    file: "src/lower/mir/queries.rs",
+    find: "    (written.local == place.local && place.projection.as_slice().starts_with(written.projection.as_slice()))\n",
+    replace: "    (written.local == place.local && written.projection.is_empty())\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(box_read_before_its_write|reference_a_field_holds_set_again).rs$",
+    ],
   },
   {
     name: "count-place-written-is-indirect",

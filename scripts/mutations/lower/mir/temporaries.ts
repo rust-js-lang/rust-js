@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "place-where-made-handle-unfixed",
+    breaks:
+      "a handle on a `Cell` a field is, `node.0.v` borrowed before `node.0 = b`, isn't fixed where it's made, so `set` writes the new node's (#1034)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            js::ExprKind::Handle(on, storage) => Expr::stored_handle(self.place_where_made(*on, out), storage),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^reference_a_field_holds_set_again.rs$"],
+  },
+  {
     name: "cell-box-captured-as-value",
     breaks:
       "a cell's box held apart from a later field, `Cell::new(Some(point))`, is named after the box's key, `const value`, not after what it holds, `point` (rd413)",

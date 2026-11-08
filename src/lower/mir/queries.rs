@@ -597,20 +597,18 @@ pub(super) fn written_from(body: &mir::Body<'_>, from: BasicBlock, local: Local)
 }
 
 /// Whether what the statement at `at` makes, a temporary MIR reads once, a
-/// `&(*node).v` through `local`, a reference written again, is read by
-/// `takes`, a call of what keeps nothing of it, before `local` is written,
-/// every way from `at` (ADR 0853): its place, read there, is the one it
-/// was, so nothing need hold what `local` is meanwhile. What's written
-/// there is MIR's assignment of `local`: borrowck lets no `&mut` to `local`,
-/// a closure's capture of it, write it between, as `local` is read before.
-/// An assignment of `local` is of what's its value, `whole`: a box's
-/// content too, `*b = ..`, which is the box (#980).
+/// `&(*node).v` through a reference written again, is read by `takes`, a
+/// call of what keeps nothing of it, before what it's reached through is
+/// written, every way from `at` (ADR 0853): its place, read there, is the
+/// one it was, so nothing need hold what that is meanwhile. What's written
+/// there is MIR's assignment of a place `written` says reaches it
+/// (`writes_reach`): borrowck lets no `&mut` to it, a closure's capture of
+/// it, write it between, as it's read before.
 pub(super) fn read_before_written<'tcx>(
     state: &State<'_, 'tcx>,
     (at, rvalue): (mir::Location, &Rvalue<'tcx>),
-    local: Local,
     takes: impl Fn(&mir::Terminator<'tcx>, Local) -> bool,
-    whole: impl Fn(&Place<'tcx>) -> bool,
+    written: impl Fn(&Place<'tcx>) -> bool,
 ) -> bool {
     /// Whether a statement or terminator names `local`.
     struct Names {
@@ -661,10 +659,7 @@ pub(super) fn read_before_written<'tcx>(
             if names(&|n| n.visit_statement(statement, here)) {
                 return false;
             }
-            if let StatementKind::Assign(a) = &statement.kind
-                && a.0.local == local
-                && whole(&a.0)
-            {
+            if written_or_lent(statement).any(&written) {
                 return false;
             }
         }
@@ -680,13 +675,35 @@ pub(super) fn read_before_written<'tcx>(
             return false;
         }
         if let TerminatorKind::Call { destination, .. } = &terminator.kind
-            && destination.local == local
+            && written(destination)
         {
             return false;
         }
         next.extend(terminator.successors().map(|b| (b, 0)));
     }
     true
+}
+
+/// The places `statement` writes, or lends to be written: an assignment's
+/// place, and what a `&mut` or a `*mut` it makes is of, `&mut node.0`
+/// that a closure's capture writes, `|| node.0 = b` (#1034).
+pub(super) fn written_or_lent<'a, 'tcx>(statement: &'a mir::Statement<'tcx>) -> impl Iterator<Item = &'a Place<'tcx>> {
+    let StatementKind::Assign(assign) = &statement.kind else {
+        return None.into_iter().flatten();
+    };
+    let lent = match &assign.1 {
+        Rvalue::Ref(_, BorrowKind::Mut { .. }, lent) | Rvalue::RawPtr(mir::RawPtrKind::Mut, lent) => Some(lent),
+        _ => None,
+    };
+    Some(std::iter::once(&assign.0).chain(lent)).into_iter().flatten()
+}
+
+/// Whether writing `written` changes what `place` is: it's the place or
+/// what holds it, `node` or `node.0` of `(*node.0).v`, a box's content of
+/// `**b`, or an index it's at, `i` of `v[i]` (#1034).
+pub(super) fn writes_reach<'tcx>(place: &Place<'tcx>, written: &Place<'tcx>) -> bool {
+    (written.local == place.local && place.projection.as_slice().starts_with(written.projection.as_slice()))
+        || (written.projection.is_empty() && place.projection.contains(&PlaceElem::Index(written.local)))
 }
 
 /// Where the program wrote what `block` does first: a macro's, where it

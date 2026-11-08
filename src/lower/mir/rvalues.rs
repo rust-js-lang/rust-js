@@ -168,8 +168,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let target = self.mir_place(state, *place, span, out)?;
                     // Of a reference written again, `list` of `&mut list.value`
                     // in a loop that moves `list` on: what it is now, held.
-                    let root = self.through_local_reference(state.body, place) && written_again(state, place.local);
-                    let target = match root {
+                    let target = match self.local_reference_written(state, place) {
                         true => {
                             let name = state.locals.names[place.local].clone();
                             self.flush(state, out)?;
@@ -180,21 +179,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         false => target,
                     };
-                    // Through a reference a field holds, `&mut (*h.node).count`:
-                    // the place as it is now, `h.node` named, which `h.node =
-                    // other` may follow while it's borrowed (#988).
-                    // And an item at an index a variable set again holds,
-                    // `&mut a[i]` before `i = 2`, read as it is now.
-                    let through_field = (place.projection.iter().enumerate()).any(|(at, elem)| match elem {
-                        PlaceElem::Deref => {
-                            at > 0
-                                && matches!(place.projection[at - 1], PlaceElem::Field(..))
-                                && reference_written(state.body, place.local, &place.projection[..at])
-                        }
-                        PlaceElem::Index(index) => written_again(state, index) || index_copied_from_set(state, index),
-                        _ => false,
-                    });
-                    let target = match through_field {
+                    // Through a reference a field holds, `&mut (*h.node).count`,
+                    // or an item at an index set again: the place as it is
+                    // now (`reached_through_written`).
+                    let target = match self.reached_through_written(state, place) {
                         true => {
                             self.flush(state, out)?;
                             self.place_where_made(target, out)
@@ -216,33 +204,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return self.nullable_ref(state, *place, target, out);
                 }
                 // `&error.title` of a `Cell` a field holds, a handle on it,
-                // through a reference written again, `error = other` after:
-                // of what `error` is now, held, as a `&mut`'s above. Not where
-                // the handle's read by its `Cell`'s `get` or `set` before
-                // `error` is set again, `error.title.get()`: the place it
-                // reads then is the one it was (ADR 0853).
-                if matches!(kind, BorrowKind::Shared)
+                // through a reference written again, `error = other` after,
+                // or through one a field holds, `node.0 = other` (#1034): of
+                // the place as it is now, as a `&mut`'s above. Not where the
+                // handle's read by its `Cell`'s `get` or `set` before what
+                // it's reached through is set again, `error.title.get()`: the
+                // place it reads then is the one it was (ADR 0853).
+                let (local, within) = match matches!(kind, BorrowKind::Shared)
                     && (self.is_std_type(pointee, StdItem::Cell)
                         || self
                             .place_field(state, *place)
                             .is_some_and(|field| self.property_cell(Some(field), pointee).is_some()))
-                    && self.through_local_reference(state.body, place)
-                    && written_again(state, place.local)
-                    && !state.locals.names[place.local].is_empty()
+                {
+                    true => (
+                        self.local_reference_written(state, place) && !state.locals.names[place.local].is_empty(),
+                        self.reached_through_written(state, place),
+                    ),
+                    false => (false, false),
+                };
+                if (local || within)
                     && !(self.is_std_type(pointee, StdItem::Cell)
                         && read_before_written(
                             state,
                             (state.location(), rvalue),
-                            place.local,
                             |t, made| self.keeps_no_cell(t, made),
-                            |written| self.whole(state.body, written),
+                            |written| writes_reach(place, written),
                         ))
                 {
-                    let target = self.mir_place(state, *place, span, out)?;
-                    let name = state.locals.names[place.local].clone();
+                    let mut target = self.mir_place(state, *place, span, out)?;
                     self.flush(state, out)?;
-                    let held = self.spill(&name, Expr::var(&name), out);
-                    let target = (target.substitute(&|v| (v == name).then(|| held.clone()))).unwrap_or(target);
+                    if local {
+                        let name = state.locals.names[place.local].clone();
+                        let held = self.spill(&name, Expr::var(&name), out);
+                        target = (target.substitute(&|v| (v == name).then(|| held.clone()))).unwrap_or(target);
+                    }
+                    if within {
+                        target = self.place_where_made(target, out);
+                    }
                     return Ok(Value::Place(target));
                 }
                 if self.through_values(state.body, place, true) {
@@ -1225,15 +1223,65 @@ fn index_copied_from_set(state: &State<'_, '_>, index: mir::Local) -> bool {
     })
 }
 
-/// Whether the reference `local`'s field `field` holds, `h.node`, is given
-/// another anywhere in `body`, `h.node = &mut other`: a reborrow through
-/// it, `&mut (*h.node).count`, may outlive that write, as borrowck lets it
-/// (#988).
-fn reference_written<'tcx>(body: &mir::Body<'tcx>, local: mir::Local, field: &[PlaceElem<'tcx>]) -> bool {
+/// Whether the reference a part of `local` holds, `holder`, `h.node` or a
+/// box's `*h.node`, is given another anywhere in `body`, `h.node = &mut
+/// other`, or what holds it is, `h.node = Box::new(..)`, or either is lent
+/// to be written, `|| h.node = other` (`written_or_lent`): a borrow
+/// through it, `&mut (*h.node).count`, may outlive that write, as borrowck
+/// lets it (#988, #1034).
+fn reference_written<'tcx>(body: &mir::Body<'tcx>, local: mir::Local, holder: &[PlaceElem<'tcx>]) -> bool {
     (body.basic_blocks.iter().flat_map(|block| &block.statements)).any(|statement| {
-        matches!(&statement.kind, StatementKind::Assign(assign)
-            if assign.0.local == local && assign.0.projection.as_slice() == field)
+        written_or_lent(statement).any(|written| {
+            written.local == local
+                && !written.projection.is_empty()
+                && holder.starts_with(written.projection.as_slice())
+        })
     })
+}
+
+impl<'tcx> FnCx<'_, 'tcx> {
+    /// Whether `place` is reached through a reference its local holds as
+    /// its value, `*r` (`through_local_reference`), and the local is set
+    /// again, `r = other`: a borrow through it is of what it is now, the
+    /// local held where the borrow's made.
+    fn local_reference_written(&self, state: &State<'_, 'tcx>, place: &Place<'tcx>) -> bool {
+        self.through_local_reference(state.body, place) && written_again(state, place.local)
+    }
+
+    /// Whether `place` is reached through what's set again within its
+    /// local while a borrow of it lives: a reference a part of the local
+    /// holds, `(*h.node).count`, given another, `h.node = other` (#988), or
+    /// the local set again whole, `h = H(other)` (#1034); or an item at an
+    /// index a variable set again holds, `a[i]` before `i = 2`. A borrow of
+    /// it is of the place as it is now (`place_where_made`). The reference
+    /// the local is, `r` of `(*r).next` set again, is the local's own
+    /// (`local_reference_written`).
+    fn reached_through_written(&self, state: &State<'_, 'tcx>, place: &Place<'tcx>) -> bool {
+        let body = state.body;
+        let mut ty = mir::PlaceTy::from_ty(body.local_decls[place.local].ty);
+        // What's reached so far: the local's value, through its boxes; a
+        // part of it; or what a reference refers to.
+        let (mut value, mut own) = (true, true);
+        for (at, elem) in place.projection.iter().enumerate() {
+            let written = match elem {
+                PlaceElem::Deref if ty.ty.is_ref() => {
+                    !value
+                        && ((own && written_again(state, place.local))
+                            || reference_written(body, place.local, &place.projection[..at]))
+                }
+                PlaceElem::Index(index) => written_again(state, index) || index_copied_from_set(state, index),
+                _ => false,
+            };
+            if written {
+                return true;
+            }
+            let boxed = crate::lower::body_queries::through_box(elem, ty.ty).is_some();
+            value &= boxed;
+            own &= boxed || !matches!(elem, PlaceElem::Deref);
+            ty = ty.projection_ty(self.tcx, elem);
+        }
+        false
+    }
 }
 
 /// Whether what the statement at `at` assigns, an `AddWithOverflow`'s pair,
