@@ -106,23 +106,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty: Ty<'tcx>,
         made: &mut Vec<Stmt>,
     ) -> Option<Expr> {
+        self.counted_in_place(it, ty, made).ok()
+    }
+
+    /// `len_in_place`'s count, or why there's none: `Uncounted::RunsCode`
+    /// where a count it reads, `repeat_n(x, n)`'s `n`, a `take(n)`'s, a
+    /// `skip(n)`'s or a `step_by(s)`'s `s`, or a `map`'s function, runs
+    /// code where it's read, `*n.as_ref().unwrap()`, so reading it again
+    /// would run it again, asked once what it's made of is counted (#1044).
+    pub(in crate::lower::mir) fn counted_in_place(
+        &mut self,
+        it: &Expr,
+        ty: Ty<'tcx>,
+        made: &mut Vec<Stmt>,
+    ) -> Result<Expr, Uncounted> {
         use crate::lower::recognition as r;
+        use Uncounted::{RunsCode, Unknown};
+        // A count read, unless reading it runs code.
+        let read = |count: &Expr| match count.has_effects() {
+            true => Err(RunsCode),
+            false => Ok(count.clone()),
+        };
         let ty = self.reveal(ty.peel_refs());
         if crate::lower::iterators::is_stepped_items(it) {
-            return Some(self.items_left(it.clone(), made));
+            return Ok(self.items_left(it.clone(), made));
         }
         if let Some(kind) = self.range_kind(ty) {
             let range = crate::lower::iterators::steps(it).unwrap_or(it);
-            return self.range_len(range, ty, kind);
+            return self.range_len(range, ty, kind).ok_or(Unknown);
         }
         // A zip made here, the fewer of its sides', as std's `Zip`'s is
         // (#740).
         if let (Some((a_ty, b_ty)), Some(zip)) =
             (r::zipped_sources(self.tcx, ty), crate::lower::iterators::zip_parts(it))
         {
-            let a = self.counted_before_stepping(zip.a, a_ty, made)?;
-            let b = self.counted_before_stepping(zip.b, b_ty, made)?;
-            return Some(Expr::call(Expr::member(Expr::var("Math"), "min"), vec![a, b]));
+            let a = self.counted_before_stepping(zip.a, a_ty, made).ok_or(Unknown)?;
+            let b = self.counted_before_stepping(zip.b, b_ty, made).ok_or(Unknown)?;
+            return Ok(Expr::call(Expr::member(Expr::var("Math"), "min"), vec![a, b]));
         }
         // A `skip(n)` or a `take(n)` made knowing its back where it's made,
         // `$skipping` or `$taking`, or a `rev()` of one, as its maker marked
@@ -133,13 +153,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             base = self.reveal(source.peel_refs());
         }
         if r::counted_source(self.tcx, base).is_some() && crate::lower::iterators::was_made_knowing_its_back(it) {
-            return Some(Expr::call(Expr::member(it.clone(), "len"), Vec::new()));
+            return Ok(Expr::call(Expr::member(it.clone(), "len"), Vec::new()));
         }
         // A generic one's or a `dyn`'s, given knowing its length (ADR 0456):
         // its own, not `Iterator.from`'s of it.
         if (self.is_unknown(ty) || r::dyn_iter_trait(self.tcx, ty).is_some()) && self.knows_its_length(ty) {
             let given = crate::lower::iterators::iterated(it.clone());
-            return Some(Expr::call(Expr::member(given, "len"), Vec::new()));
+            return Ok(Expr::call(Expr::member(given, "len"), Vec::new()));
         }
         // Its source's, `$rev(source)`, a range's stepped from its back,
         // `$iterator(range, $rangeNextBack)`, or an array's items reversed
@@ -150,17 +170,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(source) = r::reversed_source(self.tcx, ty) {
             let source_value = match &it.kind {
                 _ if let Some(source) = crate::lower::iterators::reversed_of(it) => source,
-                _ if it.reads_same() => crate::lower::iterators::steps(it)?,
+                _ if it.reads_same() => crate::lower::iterators::steps(it).ok_or(Unknown)?,
                 _ => crate::lower::iterators::steps(it).unwrap_or(it),
             };
-            return self.len_in_place(&source_value.clone(), source, made);
+            return self.counted_in_place(&source_value.clone(), source, made);
         }
-        // `repeat_n(x, n)`, `$repeatingN(x, n)`: `n`.
+        // `repeat_n(x, n)`, `$repeatingN(x, n)`, of a value cloned and
+        // dropped as it says too, `$repeatingN(x, n, clone, drop)`: `n`.
         if r::is_repeat_n(self.tcx, ty)
-            && let Some([_, n]) = crate::lower::iterators::repeating_n_parts(it)
-            && !n.has_effects()
+            && let Some([_, n, ..]) = crate::lower::iterators::repeating_n_parts(it)
         {
-            return Some(n.clone());
+            return read(n);
         }
         // A `step_by(s)`, a range's `$stepBy(range, s)` or another's filter of
         // every `s`th (`stepped_by_parts`): its source's count `s` apart, as
@@ -168,29 +188,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // range's `Math.ceil(Math.max(b - a, 0) / s)` (#811).
         if let Some(source) = r::stepped_by_source(self.tcx, ty)
             && let Some((source_value, step)) = crate::lower::iterators::stepped_by_parts(it)
-            && !step.has_effects()
         {
-            let count = self.len_in_place(&source_value, source.peel_refs(), made)?;
+            let mut counting = Vec::new();
+            let count = self.counted_in_place(&source_value, source.peel_refs(), &mut counting)?;
+            let step = read(&step)?;
+            made.append(&mut counting);
             // Of numbers known, the number, `(0..10).step_by(3)`'s 4.
             if let (Some(count), Some(step)) = (count.as_int(), step.as_int())
                 && step > 0
             {
-                return Some(Expr::int((count.max(0) + step - 1) / step));
+                return Ok(Expr::int((count.max(0) + step - 1) / step));
             }
             // Of every item, `step_by(1)`'s, its source's count.
             if step.as_int() == Some(1) {
-                return Some(count);
+                return Ok(count);
             }
             let ceil = Expr::member(Expr::var("Math"), "ceil");
-            return Some(Expr::call(ceil, vec![Expr::bin(Op::Div, count, step.clone())]));
+            return Ok(Expr::call(ceil, vec![Expr::bin(Op::Div, count, step)]));
         }
         // A copy of its source's items, which is its source in JS (ADR 0547).
         if let Some(source) = r::copied_source(self.tcx, ty) {
-            return self.len_in_place(it, source, made);
+            return self.counted_in_place(it, source, made);
         }
         if let Some(source) = r::enumerated_source(self.tcx, ty) {
-            let source_value = crate::lower::iterators::enumerated_of(it)?.source.clone();
-            return self.len_in_place(&source_value, source, made);
+            let source_value = crate::lower::iterators::enumerated_of(it)
+                .ok_or(Unknown)?
+                .source
+                .clone();
+            return self.counted_in_place(&source_value, source, made);
         }
         // `source.map(f)`, `f` made and not called.
         if let Some(source) = r::mapped_source(self.tcx, ty)
@@ -198,9 +223,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let js::ExprKind::Member(source_value, method) = &callee.kind
             && method == "map"
             && let [f] = args.as_slice()
-            && !f.has_effects()
         {
-            return self.len_in_place(&source_value.clone(), source, made);
+            let mut counting = Vec::new();
+            let count = self.counted_in_place(&source_value.clone(), source, &mut counting)?;
+            read(f)?;
+            made.append(&mut counting);
+            return Ok(count);
         }
         // `source.take(n)` or `$taking(source, n)`, `Math.min(len, n)`;
         // `source.drop(n)` or `$skipping(source, n)`, `Math.max(len - n,
@@ -216,19 +244,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => None,
             }
-            && !n.has_effects()
         {
             if !skip && self.recognition().endless_by_type(source) {
-                return Some(n.clone());
+                return read(n);
             }
-            let len = self.len_in_place(&source_value.clone(), source, made)?;
+            let mut counting = Vec::new();
+            let len = self.counted_in_place(&source_value.clone(), source, &mut counting)?;
+            let n = read(n)?;
+            made.append(&mut counting);
             let math = |name: &str, args| Expr::call(Expr::member(Expr::var("Math"), name), args);
-            return Some(match skip {
-                true => math("max", vec![Expr::bin(Op::Sub, len, n.clone()), Expr::int(0)]),
-                false => math("min", vec![len, n.clone()]),
+            return Ok(match skip {
+                true => math("max", vec![Expr::bin(Op::Sub, len, n), Expr::int(0)]),
+                false => math("min", vec![len, n]),
             });
         }
-        None
+        Err(Unknown)
     }
 
     /// How many `it`, an iterator of type `ty`, has left before it's
@@ -535,4 +565,13 @@ pub(in crate::lower::mir) fn counted_chain(e: &Expr) -> bool {
         at = source;
     }
     stages > 0 && crate::lower::iterators::is_stepped_items(at)
+}
+
+/// Why `counted_in_place` has no count of an iterator made in place.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(in crate::lower::mir) enum Uncounted {
+    /// Its form isn't one it counts.
+    Unknown,
+    /// A count it reads runs code where it's read (#1044).
+    RunsCode,
 }

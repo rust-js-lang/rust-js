@@ -30,6 +30,44 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
   },
   {
+    name: "counted-collect-of-a-called-count-unasked",
+    breaks:
+      "`repeat_n(1u8, *n.as_ref().unwrap()).collect::<Vec<_>>()` of `usize::MAX` asks no room, as its count is read through a call, so JS throws its own `RangeError` where std panics `capacity overflow` (#1044)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            Some(Err(Uncounted::RunsCode)) => true,\n",
+    replace: "            Some(Err(Uncounted::RunsCode)) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
+  },
+  {
+    name: "counted-collect-asked-by-hint-unmarked",
+    breaks:
+      "`repeat(1u8).take(*n.as_ref().unwrap()).collect()` asked its room by its hint loses its marks, so it's taken for std's struct, asked again and collected by `$foldToArray` (#1044)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                        asked.facts = marks;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "counted-collect-of-what-drops-asked-in-place",
+    breaks:
+      "`repeat_n(Dropped(1), usize::MAX).collect()` asks `$roomFor(n, size)` in place, whose panic doesn't close the iterator, so its value is never dropped where Rust drops it as the collect unwinds (#1044)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            Some((len, size)) if held.is_empty() && !drops => {\n",
+    replace: "            Some((len, size)) if held.is_empty() => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
+  },
+  {
+    name: "counted-collect-asked-by-hint-twice",
+    breaks:
+      "`repeat(1).chain(own).take(counted(n)).collect()`, whose hint runs the crate's own `size_hint`, is asked its room by its hint as it's counted and again as a `Vec` grows it (#1044)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                && item.is_some()\n                && (self.grown_ask(output, item, iter_ty, self.compiled_struct(iter_ty, &it), span)?).is_none() =>\n",
+    replace: "                && item.is_some() =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
+    snapshots: true,
+  },
+  {
     name: "trusted-collect-by-next",
     breaks:
       "`collect()` of std's struct that's `TrustedLen`, a zip's, steps it by `next()`, not its `fold` as std's `extend_trusted` does: its closure runs once more (#380)",

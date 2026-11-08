@@ -55,8 +55,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`repeat_n(x, n)` made in place has no count, so its `collect()` asks no room: `capacity overflow` unasked (#246)",
     file: "src/lower/mir/iter/sources.rs",
-    find: "            && let Some([_, n]) = crate::lower::iterators::repeating_n_parts(it)\n",
-    replace: "            && let Some([_, n]) = crate::lower::iterators::repeating_n_parts(it).filter(|_| false)\n",
+    find: "            && let Some([_, n, ..]) = crate::lower::iterators::repeating_n_parts(it)\n",
+    replace: "            && let Some([_, n, ..]) = crate::lower::iterators::repeating_n_parts(it).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
   },
   {
@@ -74,9 +74,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`len()` of a `map` made in place isn't its source's: `v.iter().map(f).len()` is refused (ADR 0986)",
     file: "src/lower/mir/iter/sources.rs",
-    find: '            && method == "map"\n            && let [f] = args.as_slice()\n            && !f.has_effects()\n',
-    replace:
-      '            && method == "mapped"\n            && let [f] = args.as_slice()\n            && !f.has_effects()\n',
+    find: '            && method == "map"\n            && let [f] = args.as_slice()\n',
+    replace: '            && method == "mapped"\n            && let [f] = args.as_slice()\n',
     tests: ["test/corpus.test.ts", "-t", "^len_made_in_place.rs$"],
   },
   {
@@ -84,8 +83,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`len()` of a `take(n)` made in place is more than `n`: `v.iter().take(2).map(f).len()` is 5, not 2 (ADR 0986)",
     file: "src/lower/mir/iter/sources.rs",
-    find: '                false => math("min", vec![len, n.clone()]),\n',
-    replace: '                false => math("max", vec![len, n.clone()]),\n',
+    find: '                false => math("min", vec![len, n]),\n',
+    replace: '                false => math("max", vec![len, n]),\n',
     tests: ["test/corpus.test.ts", "-t", "^len_made_in_place.rs$"],
   },
   {
@@ -93,8 +92,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`len()` of a `skip(n)` past its end, made in place, is below zero: `-4`, not `0` (ADR 0986)",
     file: "src/lower/mir/iter/sources.rs",
-    find: '                true => math("max", vec![Expr::bin(Op::Sub, len, n.clone()), Expr::int(0)]),\n',
-    replace: "                true => Expr::bin(Op::Sub, len, n.clone()),\n",
+    find: '                true => math("max", vec![Expr::bin(Op::Sub, len, n), Expr::int(0)]),\n',
+    replace: "                true => Expr::bin(Op::Sub, len, n),\n",
     tests: ["test/corpus.test.ts", "-t", "^len_made_in_place.rs$"],
   },
   {
@@ -454,7 +453,7 @@ export const mutations: Mutation[] = [
     breaks:
       "the `size_hint()` of a reversed range held, std's compiled `Rev`, is counted from its own fields as a range's, `it.end - it.start`, which it hasn't: `NaN` (#745)",
     file: "src/lower/mir/iter/sources.rs",
-    find: "                _ if it.reads_same() => crate::lower::iterators::steps(it)?,\n",
+    find: "                _ if it.reads_same() => crate::lower::iterators::steps(it).ok_or(Unknown)?,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
   },
@@ -462,8 +461,8 @@ export const mutations: Mutation[] = [
     name: "zip-len-the-longer",
     breaks: "`len()` of a zip made here is the longer of its sides' (#740)",
     file: "src/lower/mir/iter/sources.rs",
-    find: "            return Some(Expr::call(Expr::member(Expr::var(\"Math\"), \"min\"), vec![a, b]));\n",
-    replace: "            return Some(Expr::call(Expr::member(Expr::var(\"Math\"), \"max\"), vec![a, b]));\n",
+    find: "            return Ok(Expr::call(Expr::member(Expr::var(\"Math\"), \"min\"), vec![a, b]));\n",
+    replace: "            return Ok(Expr::call(Expr::member(Expr::var(\"Math\"), \"max\"), vec![a, b]));\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_from_its_back.rs$"],
   },
   {
@@ -491,5 +490,23 @@ export const mutations: Mutation[] = [
     find: "        if r::counted_source(self.tcx, base).is_some() && crate::lower::iterators::was_made_knowing_its_back(it) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
+  },
+  {
+    name: "count-read-through-a-call-read-again",
+    breaks:
+      "`repeat_n(1u16, counted(n)).map(f).collect()` reads its count twice, `$roomFor(counted(n), 2)` and the iterator's, so `counted` runs twice where Rust runs it once (#1044)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            true => Err(RunsCode),\n",
+    replace: "            true => Ok(count.clone()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
+  },
+  {
+    name: "repeat-n-of-a-cloned-value-uncounted",
+    breaks:
+      "`repeat_n(Dropped(1), usize::MAX).collect()`, `$repeatingN(x, n, clone, drop)`, has no count read, so no room is asked and JS collects until memory runs out where std panics `capacity overflow` (#1044)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            && let Some([_, n, ..]) = crate::lower::iterators::repeating_n_parts(it)\n",
+    replace: "            && let Some([_, n]) = crate::lower::iterators::repeating_n_parts(it)\n",
+    tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
   },
 ];

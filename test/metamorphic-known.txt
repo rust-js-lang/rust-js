@@ -69,5 +69,6 @@ plain std field swap_replace.rs
 plain std field tuple_scrutinee_calls.rs
 plain field unread_collected_chain.rs
 
-#1044 P0 (iterators): a collect of repeat_n(x, n) / repeat(x).take(n) whose count is read through a call never asks its room, so capacity overflow isn't std's panic
+#1046 P0 (iterators): a counted iterator held in a local when it's collected asks no room, so capacity overflow isn't std's panic
 plain std option collected_counts_ask_room.rs
+plain std rc-refcell collected_counts_ask_room.rs

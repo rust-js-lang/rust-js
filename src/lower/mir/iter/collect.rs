@@ -272,9 +272,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a `capacity overflow` panic past `isize::MAX` bytes (#246). Of a
     /// `TrustedLen` one, before it's stepped; of another, which std steps
     /// once first, one whose steps run no code. What makes it, where that
-    /// runs code, held first. `receiver`, the type `collect` is given, an
-    /// inclusive range lent, `&mut r`, is what's collected as that, by its
-    /// `fold` (#414).
+    /// runs code, held first. Of a count read through a call, or of one
+    /// that drops what it holds, the room its hint asks (#1044).
+    /// `receiver`, the type `collect` is given, an inclusive range lent,
+    /// `&mut r`, is what's collected as that, by its `fold` (#414).
     pub(in crate::lower::mir) fn collected_counted(
         &mut self,
         it: Expr,
@@ -315,21 +316,58 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.mapped_range(&it, iter_ty, item).is_none()
             && !self.compiled_struct(iter_ty, &it);
         let mut held = Vec::new();
-        let room = match (counted, item) {
-            (true, Some(item)) => self.len_in_place(&it, iter_ty, &mut held).and_then(|len| {
-                let size = self.room_size_of(&len, item)?;
-                Some((len, size))
-            }),
+        let count = match counted {
+            true => Some(self.counted_in_place(&it, iter_ty, &mut held)),
+            false => None,
+        };
+        // The room it asks of a count it reads, none where that surely fits.
+        let room = match (&count, item) {
+            (Some(Ok(len)), Some(item)) => self.room_size_of(len, item).map(|size| (len.clone(), size)),
             _ => None,
         };
+        let drops = self.drops(iter_ty) != crate::lower::drops::Drops::Nothing;
+        // Where it asks the room its hint asks instead: of a count it can't
+        // read where it's made, one read through a call,
+        // `repeat_n(x, *n.as_ref().unwrap())`'s, which reading again would
+        // run again; of one it would hold part of `it` to read; and of one
+        // that drops what it holds, which a panic asking it closes. Of
+        // adapters made in place of std's `repeat`s and ranges, whose hints
+        // are std's (#1044).
+        let by_hint = match &count {
+            Some(Ok(_)) => room.is_some(),
+            Some(Err(Uncounted::RunsCode)) => true,
+            Some(Err(Uncounted::Unknown)) | None => false,
+        };
         let it = match room {
-            Some((len, size)) if held.is_empty() => {
+            // Of a count it reads, of one that drops nothing, as a panic
+            // asking it doesn't close it: `$roomFor(n, size)`.
+            Some((len, size)) if held.is_empty() && !drops => {
                 let it = match it.has_effects() {
                     true => self.spill("it", it, made),
                     false => it,
                 };
                 self.room_for((None, len), size, span, made);
                 it
+            }
+            // The room its hint asks, `$roomForHint`, as std's
+            // `SpecFromIter` asks it, its hint std's, unless what it's
+            // collected into asks it already, of one whose hint may run the
+            // crate's own, `repeat(x).chain(own).take(n)`'s (`grown_ask`).
+            // It's `it` itself, which `$roomForHint` returns, marked as it
+            // is, so it's collected as one made in place still.
+            _ if by_hint
+                && item.is_some()
+                && (self.grown_ask(output, item, iter_ty, self.compiled_struct(iter_ty, &it), span)?).is_none() =>
+            {
+                match self.grown_ask(output, item, iter_ty, true, span)? {
+                    Some(grown) => {
+                        let marks = crate::lower::iterators::held_marks(it.facts);
+                        let mut asked = self.grown_by_hint(it, grown, iter_ty, None, span)?;
+                        asked.facts = marks;
+                        asked
+                    }
+                    None => it,
+                }
             }
             _ => it,
         };

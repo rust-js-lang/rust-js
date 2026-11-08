@@ -290,3 +290,49 @@ before. Case N: the same items in the same order, the same check first.
 Held by `test/corpus/range_map_collected.rs` against native Rust, 13
 other corpus cases reading so, and the mutations `counted-range-*`
 (`mir/iter/sources.ts`, `mir/iter/collect.ts`).
+
+## Amendment: a count read through a call asks its room by the hint (#1044)
+
+`std::iter::repeat_n(1u8, *all.as_ref().unwrap()).collect::<Vec<_>>()` of
+`usize::MAX` threw JS's `RangeError`, or ran on, where native Rust panics
+`capacity overflow`. `len_in_place` reads a count only where reading it
+again runs nothing, so of `$unwrap(all)` it had no count, and
+`collected_counted` asked no room. The same of `repeat(x).take(n)`'s and
+a `step_by(s)`'s count read through a call; of a `repeat_n` of a value it
+clones or drops, `$repeatingN(x, n, clone, drop)`, whose count it never
+read; and of an iterator that drops what it holds, `repeat_n(Dropped(1),
+n)`, whose `$roomFor(n, size)` in place threw without closing it, so the
+value wasn't dropped as Rust's unwinding drops it.
+
+**`counted_in_place` says why it has no count: `Uncounted::RunsCode` where
+a count it reads runs code where it's read, after what it's made of is
+counted, else `Uncounted::Unknown`; `len_in_place` is its answer as an
+`Option`.** Of a count that runs code, of one it would hold part of the
+iterator to read, and of an iterator that drops what it holds,
+`collected_counted` asks the room its hint asks, `$roomForHint(it, size,
+trusted)` (ADR 0940's `grown_by_hint`), as std's `SpecFromIter` does, the
+count read once where the iterator is made; the hint ask closes the
+iterator where it throws. It's the iterator itself, marked as it is, so
+it's collected as one made in place still. Not where what it's collected
+into asks its hint already (`grown_ask`), of one whose hint may run the
+crate's own, `repeat(1).chain(own).take(counted(n))`'s, asked once. A
+count it reads of an iterator that drops nothing is `$roomFor(n, size)` as
+before; one known to fit, nothing. Case N for each: the same panic at the
+same place, or the same items. No other corpus case's JS changes.
+
+Only of adapters made in place of std's `repeat`s and ranges, whose JS
+hints are std's. An iterator MIR holds in a local before it's collected,
+of a value made before an `unwrap`'s check, or under a `RefCell` guard's
+`finally`, is no form whose count it reads, and asks no room still: not
+every JS form hints as std's, `$lazyRangeBack` none, so its hint isn't
+asked of it (#1046).
+
+- `test/corpus/collected_counts_ask_room.rs` checks counts held and read
+  through a call, a dropped value repeated, and a crate's own hint asked
+  once, against native Rust.
+- The mutations are `counted-collect-of-a-called-count-unasked`,
+  `counted-collect-asked-by-hint-unmarked`,
+  `counted-collect-of-what-drops-asked-in-place`,
+  `counted-collect-asked-by-hint-twice` (`mir/iter/collect.ts`),
+  `count-read-through-a-call-read-again` and
+  `repeat-n-of-a-cloned-value-uncounted` (`mir/iter/sources.ts`).

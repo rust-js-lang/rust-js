@@ -4,7 +4,10 @@
 // `capacity overflow` panic past `isize::MAX` bytes before any item is made,
 // a `TrustedLen` one's closure never called, what it's made of made first
 // (#246). And the `len()` of a range's `step_by(s)`, counted where it's
-// made.
+// made. And of a count read through a call, `*n.as_ref().unwrap()`, the
+// call run once, its room asked by the iterator's hint; and of
+// `repeat_n(x, n)` of a value it clones, `n`; a hint the crate writes
+// asked once (#1044).
 use std::any::Any;
 use std::panic::{self, AssertUnwindSafe};
 
@@ -28,6 +31,34 @@ fn check<T: std::fmt::Debug>(what: &str, f: impl FnOnce() -> T) {
 fn made() -> u8 {
     println!("made");
     7
+}
+
+#[derive(Clone)]
+struct Dropped(u8);
+
+impl Drop for Dropped {
+    fn drop(&mut self) {
+        println!("dropped {}", self.0);
+    }
+}
+
+struct Up(u32);
+
+impl Iterator for Up {
+    type Item = u32;
+    fn next(&mut self) -> Option<u32> {
+        self.0 += 1;
+        (self.0 < 6).then_some(self.0)
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        println!("hinted {}", self.0);
+        (0, Some(6))
+    }
+}
+
+fn counted(n: usize) -> usize {
+    println!("counted");
+    n
 }
 
 fn main() {
@@ -57,4 +88,39 @@ fn main() {
     check("step_by of few", || (0..10).step_by(few).collect::<Vec<_>>());
     check("step_by len", || (0..10usize).step_by(few).len());
     check("step_by len past", || (12..few).step_by(2).len());
+    let held = Some(all);
+    check("repeat_n of a held count", || {
+        std::iter::repeat_n(1u8, *held.as_ref().unwrap()).collect::<Vec<_>>().len()
+    });
+    check("repeat take of a held count", || {
+        std::iter::repeat(1u8).take(*held.as_ref().unwrap()).collect::<Vec<_>>().len()
+    });
+    check("step_by of a held step", || {
+        (0..all).step_by(*Some(1).as_ref().unwrap()).collect::<Vec<_>>().len()
+    });
+    check("repeat_n map of a counted count", || {
+        std::iter::repeat_n(1u16, counted(all))
+            .map(|x| {
+                println!("mapped {x}");
+                x + 1
+            })
+            .collect::<Vec<_>>()
+            .len()
+    });
+    check("repeat_n of a dropped value", || {
+        std::iter::repeat_n(Dropped(1), all).collect::<Vec<_>>().len()
+    });
+    check("own step_by of a counted step", || {
+        Up(0).step_by(counted(2)).collect::<Vec<_>>()
+    });
+    check("own chained take of a counted count", || {
+        std::iter::repeat(1u32).chain(Up(0)).take(counted(few)).collect::<Vec<_>>()
+    });
+    let few_held = Some(few);
+    check("repeat_n of a held few", || {
+        std::iter::repeat_n(5u32, *few_held.as_ref().unwrap()).collect::<Vec<_>>()
+    });
+    check("repeat take map of a counted few", || {
+        std::iter::repeat(made()).take(counted(few)).map(|x| x * 2).collect::<Vec<_>>()
+    });
 }
