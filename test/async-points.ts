@@ -10,10 +10,12 @@
 //
 // Within what rust-js maps futures to (the guide's async): a future is a
 // promise, which runs as it's made, where Rust's waits until it's polled.
-// So each future here is awaited where it's made, `f().await`, an async
-// block's too, which runs each body in the same order either way; one made
-// and awaited later, dropped unawaited, joined or selected runs otherwise
-// by that decision (ADR 0029), and std has no `join` or `select`. Natively
+// That's kept where nothing can tell (ADR 0029, amended, #965): a future
+// awaited where it's made, `f().await`, an async block's too, one held past
+// only what can't be seen, or one whose body can't be seen, dropped
+// unawaited too; rust-js refuses the rest, held past what may be seen or
+// dropped unawaited, each a refusal here. std has no `join` or `select`.
+// Natively
 // each run is driven by a `block_on` of no waker, each future ready when
 // it's first polled; as JS, awaited by `js::settle`
 // (`asyncPointsRunner`).
@@ -69,6 +71,16 @@ export const families: Family[] = [
     name: "an awaited value given to an await",
     body: (M) => `let a = ${M(1)};\nlet n = leaf(leaf(1).await + 1).await;\nlet b = ${M(2)};\nleaf(n).await;\nlet _ = (&a, &b);`,
   },
+  // Held and awaited later (#965): past what can't be seen, a ready
+  // future's await too, as native Rust; past what may be, refused.
+  { name: "held past nothing seen", body: (M) => `let a = ${M(1)};\nlet f = leaf(1);\nlet n = 2 + 3;\nlet _ = f.await + n;\nlet _ = &a;` },
+  { name: "held past a ready future's await", body: () => `let f = leaf(1);\nlet n = std::future::ready(2).await;\nlet _ = f.await + n;` },
+  { name: "held past what's made", body: (M) => `let f = leaf(1);\nlet a = ${M(2)};\nf.await;\nlet _ = &a;` },
+  { name: "held past an await", body: (M) => `let a = ${M(1)};\nlet f = leaf(1);\nleaf(2).await;\nf.await;\nlet _ = &a;` },
+  // Dropped unawaited: of a body that can't be seen, as native Rust; of one
+  // that may be, refused.
+  { name: "dropped unawaited, its body quiet", body: (M) => `async fn five() -> u32 {\n    5\n}\nlet f = five();\nlet a = ${M(1)};\ndrop(f);\nlet _ = &a;` },
+  { name: "dropped unawaited", body: (M) => `let a = ${M(1)};\nlet f = leaf(1);\ndrop(f);\nlet _ = &a;` },
   {
     name: "a match on what's awaited",
     body: (M) => `let a = ${M(1)};\nmatch leaf(1).await {\n    1 => {\n        let b = ${M(2)};\n        leaf(2).await;\n        let _ = &b;\n    }\n    _ => {}\n}\nlet _ = &a;`,

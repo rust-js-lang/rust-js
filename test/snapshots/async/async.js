@@ -52,10 +52,14 @@ export async function blocks(x) {
   return ((await block) + (await add(10))) >>> 0;
 }
 
-/** A future held in a variable, awaited later. */
+/**
+ * A JS promise held in a variable, awaited later: a binding's, which JS
+ * has running by then, as it would in Rust (#965). A future of the crate's
+ * held so, past an `.await`, is refused: it runs as it's made.
+ */
 export async function held() {
   const first = setTimeout(5, 1);
-  const second = double(2);
+  const second = setTimeout(1, 4);
   return ((await first) + (await second)) >>> 0;
 }
 

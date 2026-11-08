@@ -45,8 +45,9 @@ export function mb(n) {
  */
 export async function load(stat) {
   const start = performance.now();
-  // All downloads start here, together: a JS promise runs as soon as it's made
-  // (ADR 0029). Awaiting them one by one below only collects the results.
+  // All downloads start here, together, each a JS promise, which runs as
+  // it's made (ADR 0029, amended). Awaiting them one by one below only
+  // collects the results.
   const module = loadCompiler(start, stat);
   const sysroot = loadSysroot(start, stat);
   const crates = reactLibs.map((name) => [name, loadBindingCrate(name, start, stat)]);
@@ -145,7 +146,8 @@ async function fetchExampleFile(name, path) {
 
 /** An example's files, `path → text`, in the order it lists them. */
 export async function loadExample(name, paths) {
-  // All at once: each download starts as it's made (ADR 0029).
+  // All at once: each download a JS promise, which starts as it's made
+  // (ADR 0029, amended).
   const downloads = [];
   for (let i = 0; i < paths.length; i++) {
     const path = paths[i];

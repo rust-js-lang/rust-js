@@ -170,3 +170,71 @@ closure does, and one whose body took part of it drops what's left. What a
 closure, an `async` closure or an `async` block holds is one answer,
 `held_types`. Held by `test/lowering-functions.test.ts`, "an async block or
 closure drops what it took".
+
+## Amendment: a future runs as it's made only where nothing can tell (#965, the user's decision, 2026-11-08)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N where nothing can tell
+a promise's running as it's made from Rust's future, which runs once it's
+polled; R where results change, which is refused, as no lowering of a
+future that runs once it's polled is a JS promise.
+
+A rust-js future is a promise, which runs as it's made. Rust's does
+nothing until it's polled. So a future held while code that may be seen
+runs, then awaited, runs its body before that code in JS and after it in
+Rust; one dropped unawaited never runs in Rust and has run in JS. #942's
+async table left those cases out, and ADR 0262 listed no exception.
+
+**Kept where nothing can tell, refused where it shows**
+(`analysis/unwinding/eager_futures.rs`):
+
+- A future of the crate's, an `async fn`'s, an `async` block's or an
+  async closure's, is followed from where it's made through what holds
+  it, a move, a borrow, `pin!`, `Box::new`, `Box::pin` or a field of a
+  local, to where it's awaited, dropped, given back to its caller or
+  given to a binding.
+- **Kept:** awaited where it's made, or past only code that can't be seen
+  (`unwinding::quiet`'s rule, of each statement and call: no write but to
+  the body's own locals, no call but a quiet one, no panic, no drop that
+  runs code); an `.await` of what runs nothing, `ready(v)` or a quiet async
+  body, pinned or not, is one too. A future whose own body can't be seen,
+  `async fn five() -> u32 { 5 }`, is kept wherever it goes, dropped
+  unawaited too: its running can't be told. An async fn that only awaits
+  the futures its caller gives, `async fn awaited(f: impl Future)`, is
+  quiet where each it's given is (`quiet_but_their_parameters`).
+- **The JS boundary's:** a future given to a binding, `js::promise`,
+  `js::spawn`, `webapi`'s functions, is a running promise by design, as a
+  JS caller's is; given back to its caller, its caller's to say.
+- **Refused,** naming where: one held past what may be seen and awaited
+  after ("code that may be seen runs before it's awaited"), one dropped
+  unawaited ("it's dropped unawaited"), and one given where its `.await`
+  can't be followed, a Rust function's parameter or a value of another
+  crate ("it's given where rust-js can't follow when it's awaited"). To
+  start futures together, as the playground's downloads do, each is
+  `js::promise(f)`, a running promise held and awaited in turn.
+
+The quiet owner learns async bodies: a coroutine is a candidate, its
+`yield` and its end where its future is dropped (`CoroutineDrop`) run
+nothing, an `.await`'s `get_context`, `into_future` and `poll` of a quiet
+future are quiet (`awaits_quietly`), a drop by a quiet `Drop`, its fields'
+too, is (`quiet_drops`), and so are a pin's or a box's making and a pin's
+views, and `future::ready`.
+
+The amendment above's "one dropped unawaited has run" (#173) is of a
+future whose body can't be seen alone now; `lowering-functions`' test of
+it drops no block unawaited. `test/async.rs`'s `held` awaited `double(2)`'s
+future past `first.await`:
+refused now, it holds two binding promises instead. The playground's
+loader (`wasm/web/rust/compiler.rs`) started its downloads by holding
+futures: each is `js::promise(..)` now, as the boundary takes them.
+
+Held by the corpus cases `future_held_past_what_is_seen_refused`,
+`future_dropped_unawaited_refused`, `future_held_in_a_field_refused`
+(`//@ compile-fail`) and `future_held_where_nothing_shows`; the async
+table's families "held past nothing seen", "held past a ready future's
+await", "dropped unawaited, its body quiet" (as native Rust), and "held
+past what's made", "held past an await" and "dropped unawaited"
+(refused), ADR 1090, amended; and the mutations of
+`lower/analysis/unwinding/eager_futures.ts` and `unwinding.ts`'s `yield-seen`,
+`coroutine-drop-seen`, `quiet-drop-impl-seen`, `get-context-seen`,
+`parameters-future-awaited-seen`, `pin-views-seen`, `ready-made-seen` and
+`ready-awaited-seen`.

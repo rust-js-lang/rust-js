@@ -450,3 +450,17 @@ with what it isn't (ADR 0605, amended):
 Held by `test/lowering-passed-on.test.ts` and the corpus's
 `once_callback_passed_on.rs`, against native Rust, and
 `scripts/mutations/lower/passed_on.ts`.
+
+## Amendment: a future that runs as it's made (#965, the user's decision, 2026-11-08)
+
+ADR 0029 made a future a promise, which runs as it's made, where Rust's
+runs once it's polled, and listed it as no exception here: a result that
+changes, a print before another's or a body that ran unawaited, with no
+user's decision. It's decided now by this ADR's table: kept where nothing
+can tell (case N, a future awaited before anything that may be seen runs,
+or whose body can't be seen), refused where results change (case R,
+none preserves Rust's order in a promise): held past what may be seen and
+awaited after, dropped unawaited, or given where its `.await` can't be
+followed. A future given to a binding is the JS boundary's, a running
+promise by design (ADR 0029, amended).
+

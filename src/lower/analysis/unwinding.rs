@@ -14,17 +14,19 @@ use rustc_middle::mir::{self, TerminatorKind};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
 
-/// `never_unwinding`'s, and `quiet`'s.
+mod eager_futures;
+
+/// `never_unwinding`'s, and `quiet`'s; and, of what's quiet, each future
+/// whose running as it's made would be seen, refused (#965).
 pub(super) fn found<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: &Recognition<'_, 'tcx>,
     bodies: &[&Body<'tcx>],
     runs: &dyn Fn(Ty<'tcx>, DefId) -> bool,
 ) -> (IndexSet<DefId>, IndexSet<DefId>) {
-    (
-        never_unwinding(tcx, recognition, bodies, runs),
-        quiet(tcx, recognition, bodies, runs),
-    )
+    let quiet = quiet(tcx, recognition, bodies, runs);
+    eager_futures::refuse_where_eagerness_shows(tcx, recognition, bodies, &quiet, runs);
+    (never_unwinding(tcx, recognition, bodies, runs), quiet)
 }
 
 /// The crate's functions and closures that never unwind: of no type parameters, no
@@ -89,8 +91,11 @@ pub(super) fn quiet<'tcx>(
     bodies: &[&Body<'tcx>],
     runs: &dyn Fn(Ty<'tcx>, DefId) -> bool,
 ) -> IndexSet<DefId> {
+    // An async body too, a coroutine's, whose future may run as it's made
+    // without that being seen where it's quiet (#965): one that awaits
+    // isn't, as its `yield` doesn't step on.
     let candidates: Vec<(DefId, &mir::Body<'tcx>, IndexSet<mir::BasicBlock>)> = (bodies.iter())
-        .filter(|body| candidate(tcx, body.def_id))
+        .filter(|body| candidate(tcx, body.def_id) || (body.def_id.is_local() && tcx.is_coroutine(body.def_id)))
         .filter_map(|body| {
             let mir = &body.mir.as_ref()?.body;
             let mut dead = crate::lower::mir::dead_drops(tcx, mir, &|ty| runs(ty, body.def_id));
@@ -107,27 +112,21 @@ pub(super) fn quiet<'tcx>(
         let seen: Vec<DefId> = (candidates.iter())
             .filter(|(id, mir, dead)| {
                 let typing_env = ty::TypingEnv::post_analysis(tcx, *id);
+                // And a drop of what drops only by `quiet`'s `Drop`s,
+                // `impl Drop for Big { fn drop(&mut self) {} }`'s, or of an
+                // async body's own state that drops nothing (#965).
+                let mut dead = dead.clone();
+                dead.extend(quiet_drops(tcx, mir, &quiet, &|ty| runs(ty, *id)));
                 quiet.contains(id)
-                    && !steps_on((mir, dead, true), &mut |callee, args, operands| {
-                        if quiet.contains(&callee) {
-                            return true;
-                        }
-                        let resolved = crate::lower::items::resolve_instance_in(tcx, typing_env, callee, args);
-                        if let Ok(Some(ty::Instance {
-                            def: ty::InstanceKind::Item(def),
-                            ..
-                        })) = resolved
-                            && def.is_local()
-                        {
-                            return quiet.contains(&def);
-                        }
-                        std_quiet(
-                            (tcx, recognition),
-                            (callee, args, nonzero_divisor(operands)),
-                            &|imp| !crate::lower::ordering::impl_quiet(tcx, &quiet, imp),
-                            &|f| quiet.contains(&f),
-                            &|ty| runs(ty, *id),
-                        )
+                    && !steps_on((mir, &dead, true), &mut |callee, args, operands| {
+                        awaits_quietly((tcx, recognition, typing_env), &quiet, (callee, args)).unwrap_or_else(|| {
+                            quiet_call(
+                                (tcx, recognition, typing_env),
+                                &quiet,
+                                (callee, args, operands),
+                                &|ty| runs(ty, *id),
+                            )
+                        })
                     })
             })
             .map(|&(id, ..)| id)
@@ -141,24 +140,202 @@ pub(super) fn quiet<'tcx>(
     }
 }
 
+/// Each `Drop` of `mir` of what drops only by `Drop`s `quiet` holds, its
+/// fields' too, `drops` saying where a type runs code as it's dropped.
+fn quiet_drops<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    mir: &mir::Body<'tcx>,
+    quiet: &IndexSet<DefId>,
+    drops: &dyn Fn(Ty<'tcx>) -> bool,
+) -> Vec<mir::BasicBlock> {
+    (mir.basic_blocks.iter_enumerated())
+        .filter(|(_, block)| {
+            matches!(&block.terminator().kind, TerminatorKind::Drop { place, .. }
+                if drops_quietly(tcx, place.ty(mir, tcx).ty, quiet, drops, 0))
+        })
+        .map(|(at, _)| at)
+        .collect()
+}
+
+/// Whether a drop of `ty` runs only what `quiet` holds: nothing, or its
+/// `Drop`'s, one `quiet` holds, then its fields', each likewise.
+fn drops_quietly<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    ty: Ty<'tcx>,
+    quiet: &IndexSet<DefId>,
+    drops: &dyn Fn(Ty<'tcx>) -> bool,
+    depth: usize,
+) -> bool {
+    if !drops(ty) {
+        return true;
+    }
+    if depth > 8 || ty.has_param() {
+        return false;
+    }
+    let quietly = |t: Ty<'tcx>| drops_quietly(tcx, t, quiet, drops, depth + 1);
+    match ty.kind() {
+        ty::Adt(adt, args) if adt.is_box() => quietly(args.type_at(0)),
+        ty::Adt(adt, args) => {
+            adt.did().is_local()
+                && tcx.adt_destructor(adt.did()).is_none_or(|d| quiet.contains(&d.did))
+                && adt.all_fields().all(|f| quietly(f.ty(tcx, args).skip_normalization()))
+        }
+        ty::Tuple(items) => items.iter().all(quietly),
+        ty::Array(item, _) => quietly(*item),
+        _ => false,
+    }
+}
+
 /// Whether `mir` writes no place through a reference or a pointer: a
 /// captured `&mut`'s, a `static mut`'s, a `&mut` parameter's. Its own locals
 /// only, which no caller sees.
 fn writes_only_locals(mir: &mir::Body<'_>) -> bool {
-    let local = |place: &mir::Place<'_>| !place.is_indirect();
     mir.basic_blocks.iter().filter(|block| !block.is_cleanup).all(|block| {
-        block.statements.iter().all(|statement| match &statement.kind {
-            mir::StatementKind::Assign(assign) => local(&assign.0),
-            mir::StatementKind::SetDiscriminant { place, .. } => local(place),
-            _ => true,
-        }) && block
-            .terminator
-            .as_ref()
-            .is_none_or(|terminator| match &terminator.kind {
-                TerminatorKind::Call { destination, .. } => local(destination),
-                _ => true,
-            })
+        block.statements.iter().all(writes_a_local) && block.terminator.as_ref().is_none_or(destined_locally)
     })
+}
+
+/// Whether `statement` writes only its body's own locals, no place through
+/// a reference or a pointer.
+pub(super) fn writes_a_local(statement: &mir::Statement<'_>) -> bool {
+    match &statement.kind {
+        mir::StatementKind::Assign(assign) => !assign.0.is_indirect(),
+        mir::StatementKind::SetDiscriminant { place, .. } => !place.is_indirect(),
+        _ => true,
+    }
+}
+
+/// Whether `terminator`, a call's, gives what it gives to its body's own
+/// locals.
+pub(super) fn destined_locally(terminator: &mir::Terminator<'_>) -> bool {
+    match &terminator.kind {
+        TerminatorKind::Call { destination, .. } => !destination.is_indirect(),
+        _ => true,
+    }
+}
+
+/// Of a call that awaits, an `.await`'s `into_future`, its loop's `poll` or
+/// its `get_context`, whether what it awaits runs nothing a program can
+/// see: `future::ready`'s future, or an async body `quiet` holds, pinned,
+/// boxed or lent (#965); of another call, none.
+pub(super) fn awaits_quietly<'tcx>(
+    (tcx, recognition, typing_env): (TyCtxt<'tcx>, &Recognition<'_, 'tcx>, ty::TypingEnv<'tcx>),
+    quiet: &IndexSet<DefId>,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Option<bool> {
+    let awaited = awaited_future((tcx, typing_env), (callee, args))?;
+    Some(awaited.is_none_or(|awaited| quiet_future(recognition, quiet, awaited)))
+}
+
+/// Whether `future`, a future's type, runs nothing a program can see:
+/// `future::ready`'s, or an async body `quiet` holds.
+fn quiet_future<'tcx>(recognition: &Recognition<'_, 'tcx>, quiet: &IndexSet<DefId>, future: Ty<'tcx>) -> bool {
+    match future.kind() {
+        ty::Coroutine(body, _) => quiet.contains(body),
+        _ => recognition.is_std_type(future, crate::lower::recognition::StdItem::FutureReady),
+    }
+}
+
+/// Of a call of an `.await`'s, what it awaits, revealed and taken out of
+/// its pin, box or reference: `Some(Some(ty))` of an `into_future` or a
+/// `poll`, `Some(None)` of a `get_context`, which reads the context its body
+/// was resumed with and awaits nothing; of another call, none.
+fn awaited_future<'tcx>(
+    (tcx, typing_env): (TyCtxt<'tcx>, ty::TypingEnv<'tcx>),
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Option<Option<Ty<'tcx>>> {
+    if tcx.is_lang_item(callee, LangItem::GetContext) {
+        return Some(None);
+    }
+    if !(tcx.is_lang_item(callee, LangItem::IntoFutureIntoFuture) || tcx.is_lang_item(callee, LangItem::FuturePoll)) {
+        return None;
+    }
+    let awaited = args.types().next()?;
+    let mut awaited = tcx
+        .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(awaited))
+        .unwrap_or(awaited);
+    loop {
+        match awaited.kind() {
+            ty::Ref(_, inner, _) => awaited = *inner,
+            ty::Adt(adt, inner) if adt.is_box() || tcx.is_lang_item(adt.did(), LangItem::Pin) => {
+                awaited = inner.type_at(0)
+            }
+            _ => return Some(Some(awaited)),
+        }
+    }
+}
+
+/// The crate's async bodies, `quiet` holds none of, that are quiet but for
+/// awaiting a future of a type parameter's and dropping what's of one:
+/// `async fn use_future(fut: impl Future) { fut.await }`'s. Its future is
+/// quiet where each of those its caller gives is (`eager_futures`, #965).
+fn quiet_but_their_parameters<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    recognition: &Recognition<'_, 'tcx>,
+    bodies: &[&Body<'tcx>],
+    quiet: &IndexSet<DefId>,
+    runs: &dyn Fn(Ty<'tcx>, DefId) -> bool,
+) -> IndexSet<DefId> {
+    (bodies.iter())
+        .filter(|body| body.def_id.is_local() && tcx.is_coroutine(body.def_id) && !quiet.contains(&body.def_id))
+        .filter(|body| {
+            let Some(mir) = body.mir.as_ref().map(|m| &m.body) else {
+                return false;
+            };
+            let drops = |ty: Ty<'tcx>| !ty.has_param() && runs(ty, body.def_id);
+            let mut dead = crate::lower::mir::dead_drops(tcx, mir, &drops);
+            // What's of a type parameter, its caller's to say.
+            dead.extend((mir.basic_blocks.iter_enumerated()).filter(|(_, block)| {
+                matches!(&block.terminator().kind, TerminatorKind::Drop { place, .. } if place.ty(mir, tcx).ty.has_param())
+            }).map(|(at, _)| at));
+            let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
+            writes_only_locals(mir)
+                && steps_on((mir, &dead, true), &mut |callee, args, operands| {
+                    match awaited_future((tcx, typing_env), (callee, args)) {
+                        Some(None) => true,
+                        Some(Some(awaited)) => awaited.has_param() || quiet_future(recognition, quiet, awaited),
+                        None => quiet_call((tcx, recognition, typing_env), quiet, (callee, args, operands), &|ty| runs(ty, body.def_id)),
+                    }
+                })
+        })
+        .map(|body| body.def_id)
+        .collect()
+}
+
+/// Whether a call of `callee`, given `args` and `operands`, in `typing_env`,
+/// does nothing a program can see, `quiet`'s question of each call: one of
+/// `quiet`'s functions, or the crate's one it resolves to, or std's that
+/// `std_quiet` says can't be seen, `drops` saying what a drop of a type
+/// runs. Asked too of what runs before a future is awaited (#965).
+pub(super) fn quiet_call<'tcx>(
+    (tcx, recognition, typing_env): (TyCtxt<'tcx>, &Recognition<'_, 'tcx>, ty::TypingEnv<'tcx>),
+    quiet: &IndexSet<DefId>,
+    (callee, args, operands): (
+        DefId,
+        ty::GenericArgsRef<'tcx>,
+        &[rustc_span::Spanned<mir::Operand<'tcx>>],
+    ),
+    drops: &dyn Fn(Ty<'tcx>) -> bool,
+) -> bool {
+    if quiet.contains(&callee) {
+        return true;
+    }
+    let resolved = crate::lower::items::resolve_instance_in(tcx, typing_env, callee, args);
+    if let Ok(Some(ty::Instance {
+        def: ty::InstanceKind::Item(def),
+        ..
+    })) = resolved
+        && def.is_local()
+    {
+        return quiet.contains(&def);
+    }
+    std_quiet(
+        (tcx, recognition),
+        (callee, args, nonzero_divisor(operands)),
+        &|imp| !crate::lower::ordering::impl_quiet(tcx, quiet, imp),
+        &|f| quiet.contains(&f),
+        drops,
+    )
 }
 
 /// Whether a call's divisor, its second operand, is a constant neither 0 nor
@@ -181,7 +358,8 @@ fn nonzero_divisor(operands: &[rustc_span::Spanned<mir::Operand<'_>>]) -> bool {
 /// `quiet` holds; a number's `total_cmp`, `abs`, `min` and `max`; text's and
 /// a collection's `len`, `is_empty` and views, `as_str`, `deref`; an
 /// `Option`'s `is_some` and `as_ref`; a clone of std's text; an enum's
-/// discriminant, which a derived order reads; and JS's `localeCompare`.
+/// discriminant, which a derived order reads; a pin or a box made of what
+/// it's given, and a pin's views; and JS's `localeCompare`.
 /// Nothing else, none that prints, writes a cell or may panic.
 pub(in crate::lower) fn std_quiet<'tcx>(
     (tcx, recognition): (TyCtxt<'tcx>, &Recognition<'_, 'tcx>),
@@ -281,6 +459,22 @@ pub(in crate::lower) fn std_quiet<'tcx>(
             _ => false,
         },
         _ if name == "discriminant_value" => true,
+        // A pin, or a box, of what it's given, and a pin's views: a pointer
+        // to what's held, as `pin!` and `Box::pin` make one of a future
+        // (#965), which runs nothing.
+        _ if own_is(LangItem::Pin) => matches!(
+            name,
+            "new" | "new_unchecked" | "as_mut" | "as_ref" | "get_mut" | "get_ref" | "into_ref"
+        ),
+        _ if own_is(LangItem::OwnedBox) => matches!(name, "new" | "pin"),
+        // `future::ready(v)`, a future already done, which runs nothing.
+        _ if matches!(
+            recognition.classify(callee, args),
+            Some(crate::lower::recognition::Std::Future(_))
+        ) =>
+        {
+            true
+        }
         // `format!` of what can't fail to show, which only allocates.
         // `format!` of what can't fail to show, whose `Arguments` say so, and
         // which only allocates; its `must_use`, which gives what it's given.
@@ -466,9 +660,15 @@ fn steps_on<'tcx>(
             };
             match &terminator.kind {
                 TerminatorKind::Drop { .. } => dead.contains(&at),
+                // And an async body's end where its future is dropped
+                // before it's done, which runs nothing more, and its
+                // waiting on what it awaits, which runs nothing itself:
+                // what's awaited is its `poll`'s, a call (#965).
+                TerminatorKind::Yield { .. } => true,
                 TerminatorKind::Goto { .. }
                 | TerminatorKind::SwitchInt { .. }
                 | TerminatorKind::Return
+                | TerminatorKind::CoroutineDrop
                 | TerminatorKind::FalseEdge { .. }
                 | TerminatorKind::FalseUnwind { .. } => true,
                 TerminatorKind::Unreachable => unreachable,

@@ -1038,10 +1038,10 @@ pub async fn made() -> u32 {
 });
 
 // #173: an \`async move\` block drops what it took as its body ends, where
-// Rust's future, awaited, is dropped; one dropped unawaited has run, as a
-// promise does (ADR 0029), and dropped it then. An \`async\` closure drops
-// what it took where it's dropped, as a closure does; an \`async fn\` its
-// arguments, once.
+// Rust's future, awaited, is dropped; one dropped unawaited, whose drop may
+// be seen, is refused, as it would have run, a promise (#965, ADR 0029,
+// amended). An \`async\` closure drops what it took where it's dropped, as
+// a closure does; an \`async fn\` its arguments, once.
 test("an async block or closure drops what it took", async () => {
   const dir = fixture("async-drops");
   writeFileSync(join(dir, "lib.rs"), `pub struct D(pub &'static str, pub std::rc::Rc<std::cell::RefCell<Vec<String>>>);
@@ -1049,9 +1049,6 @@ impl Drop for D {
     fn drop(&mut self) {
         self.1.borrow_mut().push(format!("drop {}", self.0));
     }
-}
-fn size(d: &D) -> usize {
-    d.0.len()
 }
 async fn consume(d: D) {
     d.1.borrow_mut().push(format!("consume {}", d.0));
@@ -1064,9 +1061,6 @@ pub async fn report() -> Vec<String> {
     }
     .await;
     log.borrow_mut().push("after".to_string());
-    let g = D("g", log.clone());
-    let unawaited = async move { size(&g) };
-    drop(unawaited);
     let c = D("c", log.clone());
     let call = async move || {
         c.1.borrow_mut().push(format!("call {}", c.0));
@@ -1088,7 +1082,7 @@ pub async fn report() -> Vec<String> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const { report } = await import(join(dir, "lib.js"));
-  expect(await report()).toEqual(["in d", "drop d", "after", "drop g", "call c", "call c", "drop c", "took e", "drop e", "consume f", "drop f", "end"]);
+  expect(await report()).toEqual(["in d", "drop d", "after", "call c", "call c", "drop c", "took e", "drop e", "consume f", "drop f", "end"]);
 });
 
 // A future's output a promise would adopt, a thenable, is boxed where the

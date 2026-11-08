@@ -1262,9 +1262,17 @@ block or an `async` closure is an async arrow
 - **A future starts when it's made,** runs to its first `await` at once,
   and runs to its end though nothing awaits it, as a JS promise does.
   Rust's waits until it's polled. This is what lets JS call an `async fn`
-  and get an ordinary promise, with no Rust executor. What an `async move`
-  block took is dropped as its body ends, where Rust's awaited future is
-  dropped; one never awaited has run and dropped it by then.
+  and get an ordinary promise, with no Rust executor. It's kept where
+  nothing can tell: a future awaited where it's made, `f().await`, or
+  past only code that can't be seen (no print, no write but to the
+  function's own variables, no panic), or one whose body can't be seen.
+  Where it would show, it's refused at compile time: a future of the
+  crate's held while code that may be seen runs and awaited after, one
+  dropped unawaited, and one given where its `.await` can't be followed
+  ([0029](../decisions/0029-async-await.md), amended). To start futures
+  together, hold each as `js::promise(f)`, a running promise, and await
+  them in turn. What an `async move` block took is dropped as its body
+  ends, where Rust's awaited future is dropped.
 - **`js::spawn` starts a future no one awaits;** `js::settle(p).await`
   makes a rejected promise an `Err` ([0102](../decisions/0102-js-and-webapi.md)).
 - **There's one thread.** `std::thread::spawn` is refused; a channel is a

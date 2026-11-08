@@ -62,10 +62,12 @@ pub async fn blocks(x: u32) -> u32 {
     block.await + add(10).await
 }
 
-/// A future held in a variable, awaited later.
+/// A JS promise held in a variable, awaited later: a binding's, which JS
+/// has running by then, as it would in Rust (#965). A future of the crate's
+/// held so, past an `.await`, is refused: it runs as it's made.
 pub async fn held() -> u32 {
     let first = later(5, 1);
-    let second = double(2);
+    let second = later(1, 4);
     first.await + second.await
 }
 

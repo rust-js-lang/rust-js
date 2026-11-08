@@ -1200,6 +1200,9 @@ pub(crate) enum StdItem {
     SliceIndex,
     /// `OnceCell` or `OnceLock`, which have no diagnostic items.
     OnceCell,
+    /// `std::future::Ready`, a future already done, which has none either:
+    /// an `.await` of it runs nothing (#965).
+    FutureReady,
     Ord,
     Rc,
     RefCell,
@@ -1263,6 +1266,7 @@ impl StdItem {
             StdItem::RangeBounds => Symbol::intern("RangeBounds"),
             StdItem::SliceIndex => Symbol::intern("SliceIndex"),
             StdItem::OnceCell => Symbol::intern("OnceCell"),
+            StdItem::FutureReady => Symbol::intern("FutureReady"),
             StdItem::Ord => sym::Ord,
             StdItem::Rc => sym::Rc,
             StdItem::RefCell => Symbol::intern("RefCell"),
@@ -1314,6 +1318,12 @@ pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
     match item {
         // Known by its crate and name: `core`'s `OnceCell` and `LazyCell`,
         // `std`'s `OnceLock` and `LazyLock`.
+        // `core`'s `future::Ready`, by its crate and name.
+        StdItem::FutureReady => {
+            tcx.def_kind(id) == DefKind::Struct
+                && tcx.item_name(id).as_str() == "Ready"
+                && of_std_crate(tcx, id, StdCrate::Core)
+        }
         StdItem::OnceCell | StdItem::LazyCell => {
             let (cell, lock) = match item {
                 StdItem::OnceCell => ("OnceCell", "OnceLock"),

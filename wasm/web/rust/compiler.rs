@@ -18,7 +18,7 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
-use js::{JsError, JsObject, Promise, Uint8Array, js_error, number, uint8_array};
+use js::{JsError, JsObject, Promise, Uint8Array, js_error, number, promise, uint8_array};
 use webapi::{
     Response, WebAssemblyInstance, WebAssemblyMemory, WebAssemblyModule, performance, text_decoder, text_encoder,
     web_assembly, window,
@@ -262,15 +262,16 @@ pub fn mb(n: f64) -> String {
 /// giving `stat` each one's time as it arrives.
 pub async fn load(stat: Stat) -> Loaded {
     let start = performance.now();
-    // All downloads start here, together: a JS promise runs as soon as it's made
-    // (ADR 0029). Awaiting them one by one below only collects the results.
-    let module = load_compiler(start, stat.clone());
-    let sysroot = load_sysroot(start, stat.clone());
+    // All downloads start here, together, each a JS promise, which runs as
+    // it's made (ADR 0029, amended). Awaiting them one by one below only
+    // collects the results.
+    let module = promise(load_compiler(start, stat.clone()));
+    let sysroot = promise(load_sysroot(start, stat.clone()));
     let crates: Vec<_> = (react_libs.iter())
-        .map(|name| (name.to_string(), load_binding_crate(name, start, stat.clone())))
+        .map(|name| (name.to_string(), promise(load_binding_crate(name, start, stat.clone()))))
         .collect();
-    let packages = load_packages(start, stat.clone());
-    let examples = load_examples();
+    let packages = promise(load_packages(start, stat.clone()));
+    let examples = promise(load_examples());
     let (modules, styles) = packages.await;
     let mut crate_files = Vec::new();
     for (name, file) in crates {
@@ -302,7 +303,7 @@ async fn load_sysroot(start: f64, stat: Stat) -> HashMap<String, &'static WasiFi
     // Every file's download starts before the first is awaited.
     let mut downloads = Vec::new();
     for name in names {
-        downloads.push(load_sysroot_file(name));
+        downloads.push(promise(load_sysroot_file(name)));
     }
     let mut entries = Vec::new();
     let mut size = 0.0;
@@ -369,10 +370,11 @@ async fn fetch_example_file(name: String, path: String) -> (String, String) {
 
 /// An example's files, `path → text`, in the order it lists them.
 pub async fn load_example(name: String, paths: Vec<String>) -> Vec<(String, String)> {
-    // All at once: each download starts as it's made (ADR 0029).
+    // All at once: each download a JS promise, which starts as it's made
+    // (ADR 0029, amended).
     let mut downloads = Vec::new();
     for path in paths {
-        downloads.push(fetch_example_file(name.clone(), path));
+        downloads.push(promise(fetch_example_file(name.clone(), path)));
     }
     let mut texts = Vec::new();
     for download in downloads {
