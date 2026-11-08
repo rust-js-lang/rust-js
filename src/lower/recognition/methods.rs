@@ -125,6 +125,8 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
         "cast_signed" if !float && !signed => NumOp::CastSign,
         "wrapping_rem_euclid" if !float => NumOp::WrappingEuclid { div: false },
         "wrapping_div_euclid" if !float => NumOp::WrappingEuclid { div: true },
+        "overflowing_rem_euclid" if !float => NumOp::OverflowingEuclid { div: false },
+        "overflowing_div_euclid" if !float => NumOp::OverflowingEuclid { div: true },
         "checked_next_multiple_of" if !float && !signed => NumOp::NextMultipleOf { checked: true },
         "next_multiple_of" if !float && !signed => NumOp::NextMultipleOf { checked: false },
         "ilog" if !float => NumOp::IlogBase { checked: false },

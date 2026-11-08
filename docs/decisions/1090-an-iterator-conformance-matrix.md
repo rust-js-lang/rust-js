@@ -396,3 +396,53 @@ has, had no table.
   `Display` or `Debug` or of `()`'s `Debug`, `{:.2}` of `true`, which std
   writes by `f.pad` and so cuts, `tr`, is now written (ADR 0058, amended).
   A break of `$zeroPad`'s sign fails 70 of the slice's case-builds.
+
+## Amendment: every number operation of each type's boundary values, the numbers grid (#940, 2026-11-08)
+
+The user's decision, through m6-react: after the formatting grid (#941),
+numbers, where JS and Rust differ most, get a table.
+
+- **A sixth table, `ITERATOR_TABLE=numbers`** (`test/number-grid.ts`), run
+  by the same harness and oracle through its `TableOf`, in programs of 200,
+  as each case is one line: 416 programs, not 1,400.
+- **Its space is operation × type × value × second operand:** of each of
+  the 12 integer types, `+`, `-`, `*`, `/` and the `div`s, `%` and the
+  `rem`s, `div_euclid` and `rem_euclid`, `pow`, `<<` and `>>`, each in each
+  of its forms (plain, `wrapping_`, `checked_`, `saturating_`,
+  `overflowing_` where std has it), the rotations, `&`, `|`, `^`, `!`,
+  negation, `abs` and its forms, `abs_diff`, `signum`, the bit counts,
+  `swap_bytes`, `reverse_bits`, the powers of two, the `ilog`s, `isqrt`
+  and `to_string`; of `f32` and `f64`, the arithmetic and `%`, the
+  `_euclid`s, `copysign`, `mul_add`, `powi`, negation, rounding, `sqrt`,
+  `signum`, `recip`, `to_bits`, `to_string` and each `is_` and `classify`;
+  `as` between every pair of the 14 types; and `parse` and
+  `from_str_radix` (2, 8, 16, 36) of strings that overflow by one, carry a
+  sign, an underscore, a space or no digits. The values are each type's 0,
+  ±1, ±2, MIN, MIN+1, MAX-1, MAX and those about 2^31, 2^32, 2^53 and 2^63
+  it holds; a float's ±0, ±inf, NaN, a subnormal, `MIN_POSITIVE`,
+  `EPSILON`, ties and the integers about 2^24 and 2^53. 83,017 cases, each
+  printed by `{:?}`, or its panic's message.
+- **Overflow wraps, as a release build's does** (the guide's semantics), and
+  the oracle is built so, `-Coverflow-checks=off`; what panics in either is
+  what a release build keeps, a division by zero, `MIN / -1`, an `ilog` of
+  zero, whose messages are compared.
+- **`isize` and `usize` are rust-js's, wasm32's** (ADR 0090), and the oracle
+  holds them exactly: a case writes them `Isz` and `Usz`, `isize` and
+  `usize` where `target_pointer_width` is 32, and `i32` and `u32` where it
+  isn't, native Rust's. Each value is given through `black_box`, so rustc
+  folds none of them.
+- **The cases are interleaved** by a hash of each id, so each program holds
+  many operations of many types, and the slice, the fewest whole batches
+  that hold each operation, each type and each operation of each kind of
+  type, is 7 programs.
+- **When it runs:** every case each night, nightly.yml's `numbers`, one
+  machine of 4 parts; its slice per push whose change is the numbers' code
+  (`numberPaths` in `scripts/iteratorSlice.ts`), check.yml's `number-grid`
+  and `check:fast`'s job. All of it takes 81 s on the M1 in 8 parts; the
+  slice 3 s. A `$divEuclid` that didn't step a negative quotient down
+  failed the slice.
+- **What it found:** one wrong answer, #960, an `f32`'s `div_euclid`, whose
+  quotient std rounds to an `f32` before it truncates it and the JS
+  truncated as an `f64` (ADR 0064, amended); and one refusal, 2,216 cases a
+  build, `overflowing_div_euclid` and `overflowing_rem_euclid`, now
+  written. Each of its 166,034 case-builds now prints what native Rust does.

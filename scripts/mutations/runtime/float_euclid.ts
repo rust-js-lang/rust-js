@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "  return a - b;\n",
     tests: ["test/corpus.test.ts", "-t", "^float_methods_more.rs$"],
   },
+  {
+    name: "float-euclid-quotient-unrounded",
+    breaks: "an `f32`'s `div_euclid` truncates its quotient as an `f64`, so `16777218_f32.div_euclid(-3.5)` is -4793490, where std rounds it to an `f32` first, -4793491 (a wrong answer, #960)",
+    file: "src/runtime/float_euclid.js",
+    find: "  const q = Math.trunc(round === undefined ? a / b : round(a / b));\n",
+    replace: "  const q = Math.trunc(a / b);\n",
+    tests: ["test/corpus.test.ts", "-t", "^f32_div_euclid_rounds_its_quotient.rs$"],
+  },
 ];

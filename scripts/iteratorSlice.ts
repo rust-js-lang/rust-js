@@ -12,10 +12,13 @@
 //   bun scripts/iteratorSlice.ts run forms [parts]         the corpus with std's iterator structs
 //   bun scripts/iteratorSlice.ts run rows [parts]          the rows of both tables the change names (scripts/iteratorRows.ts, #818)
 //   bun scripts/iteratorSlice.ts run format [parts]        the formatting grid's slice (#941), of a change to the formatting code
+//   bun scripts/iteratorSlice.ts run numbers [parts]       the numbers grid's slice (#940), of a change to the numbers' code
 //
 // And a change to the formatting code, `formatPaths`, runs the formatting
 // grid's slice (test/format-grid.ts, #941), each push's check's
-// `format-grid` and `check:fast`'s.
+// `format-grid` and `check:fast`'s; and to the numbers' code,
+// `numberPaths`, the numbers grid's (test/number-grid.ts, #940),
+// `number-grid`.
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
 import { noteRate, pick } from "./iteratorRows";
@@ -88,6 +91,28 @@ export function touchesFormatting(files: string[]): boolean {
   return files.some((file) => formatGlobs.some((glob) => glob.match(file)));
 }
 
+/** The numbers' code, as globs of the repository's paths: their operators,
+ * methods and casts, the methods' recognition, and the runtime's helpers
+ * that compute, wrap, check, convert and parse them; and the grid that
+ * tests them. */
+export const numberPaths = [
+  "src/lower/std_types/number.rs",
+  "src/lower/std_types/number/**",
+  "src/lower/recognition/methods.rs",
+  "src/runtime/big_*.js",
+  "src/runtime/{add,checked,checked_div,checked_pow,checked_rem,count_ones,div,div_ceil,div_euclid,float_euclid,float_from_bits,float_midpoint,float_to_bits,ilog,int_bits,isqrt}.js",
+  "src/runtime/{mul_add,mul_add_f32,overflowing,pow,powf,powi,powi_f32,rem,rem_euclid,round,saturating_pow,signum,trailing_zeros,wrapping_div,wrapping_rem}.js",
+  "src/runtime/{rotate_bits,rotate_left,rotate_right,f32_digits,f64_to_big,f64_to_int,parse_big,parse_f32,parse_f64,parse_int}.js",
+  "test/number-grid.ts",
+];
+
+const numberGlobs = numberPaths.map((path) => new Bun.Glob(path));
+
+/** Whether a change of `files` touches the numbers' code. */
+export function touchesNumbers(files: string[]): boolean {
+  return files.some((file) => numberGlobs.some((glob) => glob.match(file)));
+}
+
 /** Whether a change of `files` touches the iterators' code. */
 export function touchesIterators(files: string[]): boolean {
   return files.some((file) => globs.some((glob) => glob.match(file)));
@@ -103,6 +128,7 @@ export const runs = {
   conformance: [{ name: "the conformance table's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "conformance" } }],
   forms: [{ name: "the corpus with std's iterator structs", file: "test/iterator-forms.test.ts", env: { ITERATOR_FORMS: "corpus" } }],
   format: [{ name: "the formatting grid's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "format" } }],
+  numbers: [{ name: "the numbers grid's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "numbers" } }],
 } as const;
 
 /** `of`, in `parts` processes at once, each its share of the cases
@@ -161,7 +187,7 @@ function changeRows(parts: number): Run[] {
 
 if (import.meta.main) {
   const [command, of, count, list] = process.argv.slice(2);
-  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|rows [parts [cases]]");
+  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|rows [parts [cases]]");
   const parts = count === undefined ? caseParts(availableParallelism() * 2) : Number(count);
   process.exit((await run(of as keyof typeof runs | "rows", parts, list)) ? 0 : 1);
 }

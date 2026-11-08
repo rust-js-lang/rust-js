@@ -16,3 +16,10 @@ function $wrappingDivEuclid(a, b, min) {
   if (a === min && b == -1) return a;
   return typeof a === "bigint" ? $bigDivEuclid(a, b, min) : $divEuclid(a, b, min);
 }
+
+// `a.overflowing_div_euclid(b)`, `div`, or `overflowing_rem_euclid`: what
+// its `wrapping_` gives, and whether it wrapped, `MIN` by `-1`'s (#940).
+function $overflowingEuclid(a, b, min, div) {
+  const made = div ? $wrappingDivEuclid(a, b, min) : $wrappingRemEuclid(a, b, min);
+  return [made, a === min && b == -1];
+}

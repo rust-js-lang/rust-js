@@ -4370,6 +4370,13 @@ export function $wrappingDivEuclid(a, b, min) {
   return typeof a === "bigint" ? $bigDivEuclid(a, b, min) : $divEuclid(a, b, min);
 }
 
+// `a.overflowing_div_euclid(b)`, `div`, or `overflowing_rem_euclid`: what
+// its `wrapping_` gives, and whether it wrapped, `MIN` by `-1`'s (#940).
+export function $overflowingEuclid(a, b, min, div) {
+  const made = div ? $wrappingDivEuclid(a, b, min) : $wrappingRemEuclid(a, b, min);
+  return [made, a === min && b == -1];
+}
+
 export function $divEuclid(a, b, min) {
   const q = Math.trunc($div(a, b, min)) + 0;
   return a % b < 0 ? (b > 0 ? q - 1 : q + 1) : q;
@@ -9133,11 +9140,13 @@ export function $jsonCollectMap(json, entries, key, write) {
 }
 
 // A float's `rem_euclid(rhs)`, or `div_euclid(rhs)`, as std computes it: the
-// remainder made non-negative, and the quotient that goes with it.
-export function $floatEuclid(a, b, rem) {
+// remainder made non-negative, and the quotient that goes with it, of
+// `self / rhs` as its type rounds it, `round`, an `f32`'s `Math.fround`,
+// before it's truncated (#940).
+export function $floatEuclid(a, b, rem, round) {
   const r = a % b;
   if (rem) return r < 0 ? r + Math.abs(b) : r;
-  const q = Math.trunc(a / b);
+  const q = Math.trunc(round === undefined ? a / b : round(a / b));
   if (r < 0) return b > 0 ? q - 1 : q + 1;
   return q;
 }

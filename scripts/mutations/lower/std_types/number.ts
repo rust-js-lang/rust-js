@@ -439,4 +439,20 @@ export const mutations: Mutation[] = [
     replace: "                    false => (by, 32 - by),\n",
     tests: ["test/corpus.test.ts", "-t", "^rotate_32_shifts.rs$"],
   },
+  {
+    name: "f32-euclid-quotient-unrounded",
+    breaks: "an `f32`'s `div_euclid` isn't given `Math.fround`, so its quotient is truncated as an `f64` (a wrong answer, #960)",
+    file: "src/lower/std_types/number.rs",
+    find: "            NumOp::FloatEuclid { rem: false } if num == Num::F32 => rounded(helper(\n",
+    replace: "            NumOp::FloatEuclid { rem: false } if false => rounded(helper(\n",
+    tests: ["test/corpus.test.ts", "-t", "^f32_div_euclid_rounds_its_quotient.rs$"],
+  },
+  {
+    name: "overflowing-euclid-of-the-other",
+    breaks: "`overflowing_div_euclid` gives `overflowing_rem_euclid`'s remainder, and the other way round (#940)",
+    file: "src/lower/std_types/number.rs",
+    find: "                helper(\"$overflowingEuclid\", vec![a, b, min, Expr::bool(div)])\n",
+    replace: "                helper(\"$overflowingEuclid\", vec![a, b, min, Expr::bool(!div)])\n",
+    tests: ["test/corpus.test.ts", "-t", "^overflowing_euclid.rs$"],
+  },
 ];

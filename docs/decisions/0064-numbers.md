@@ -196,3 +196,25 @@ numbers is the same whichever way it's grouped, NaN and -0 included. Not
 a helper's, `$f64Min`'s or `$bigMin`'s, which take two. Held by
 `test/corpus/min_max_chains.rs` and the mutations `min-chain-nested` and
 `min-chain-of-a-helper-flattened`.
+
+## Amendment: an `f32`'s `div_euclid`, and the overflowing `_euclid`s (#940, #960)
+
+The numbers grid (#940, ADR 1090, amended) found an `f32`'s `div_euclid`
+wrong, #960: std's is `let q = (self / rhs).trunc(); ..` in `f32`, the
+quotient rounded to an `f32` before it's truncated, where `$floatEuclid`
+divided in `f64` and rounded only its result. `16777218_f32.div_euclid(-3.5)`
+was -4793490, where std's is -4793491, as -4793490.857.. rounds to
+-4793491 as an `f32`. Case R of ADR 0262: results change. So an `f32`'s
+is `$floatEuclid(a, b, false, Math.fround)`, its quotient rounded before
+`Math.trunc`; an `f64`'s, whose quotient is JS's own, is as it was. Its
+`rem_euclid`, one operation of an exact remainder, is as it was too.
+
+And `overflowing_div_euclid` and `overflowing_rem_euclid`, refused, are
+`$overflowingEuclid(a, b, min, div)`: what their `wrapping_` gives, and
+whether it wrapped, `MIN` by `-1`'s, as `overflowing_div`'s is.
+
+Held by `test/corpus/f32_div_euclid_rounds_its_quotient.rs` and
+`test/corpus/overflowing_euclid.rs`, and the mutations
+`float-euclid-quotient-unrounded`, `f32-euclid-quotient-unrounded`,
+`overflowing-euclid-of-the-other`, `overflowing-euclid-never-wraps` and
+`overflowing-div-euclid-unrecognized`.

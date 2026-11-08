@@ -13,7 +13,7 @@
 import { mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
-import { touchesFormatting, touchesIterators } from "./iteratorSlice";
+import { touchesFormatting, touchesIterators, touchesNumbers } from "./iteratorSlice";
 import { changedSince } from "./mutations";
 import { shardTimings } from "./shard";
 import { timed, timings } from "./timing";
@@ -166,7 +166,8 @@ async function check(branch: string, shards: string | undefined, since?: string)
  * last check whose mutations passed, or the commit before, or since `given`,
  * a check started by hand's; how many machines they take; and whether what
  * changed is the iterators' code, which runs the iterator matrix's slice,
- * or the formatting code, which runs the formatting grid's
+ * or the formatting code or the numbers', which run the formatting grid's
+ * and the numbers grid's
  * (scripts/iteratorSlice.ts): as GitHub's step outputs. */
 async function plan(given?: string) {
   let since = given ?? "HEAD~1";
@@ -187,6 +188,7 @@ async function plan(given?: string) {
   console.log(`shards=${mutationShards(count)}`);
   console.log(`iterators=${touchesIterators(changed)}`);
   console.log(`formatting=${touchesFormatting(changed)}`);
+  console.log(`numbers=${touchesNumbers(changed)}`);
 }
 
 /** An artifact a run uploaded, as GitHub lists them, the newest first. */

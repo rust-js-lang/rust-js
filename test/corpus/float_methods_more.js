@@ -48,7 +48,7 @@ function main() {
   const remEuclid = Math.fround($floatEuclid(-7.5, 2, true));
   const x$4 = Math.abs(3);
   console.log(
-    `${$debugF32(remEuclid)} ${$debugF32(Math.fround($floatEuclid(-7.5, 2, false)))} ${$debugF32($signNegative(-0) ? -x$4 : x$4)}`,
+    `${$debugF32(remEuclid)} ${$debugF32(Math.fround($floatEuclid(-7.5, 2, false, Math.fround)))} ${$debugF32($signNegative(-0) ? -x$4 : x$4)}`,
   );
   // `midpoint`: halfway, an `f64`'s without going past its largest, a
   // tiny one kept whole; an `f32`'s, `f64`s' sum halved.

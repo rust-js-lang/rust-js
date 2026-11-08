@@ -214,6 +214,12 @@ pub(in crate::lower) enum NumOp {
     WrappingEuclid {
         div: bool,
     },
+    /// `a.overflowing_rem_euclid(b)`, or `overflowing_div_euclid`, `div`:
+    /// what its `wrapping_` gives and whether it wrapped, `MIN` by `-1`'s
+    /// (#940).
+    OverflowingEuclid {
+        div: bool,
+    },
     /// `a.checked_next_multiple_of(b)` of an unsigned integer, or
     /// `next_multiple_of`, which wraps past its range, `checked: false`.
     NextMultipleOf {
@@ -404,6 +410,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             (NumOp::SaturatingDiv, Some(b)) => helper("$saturatingDiv", vec![a, b, min, num.literal(hi as i128)]),
             (NumOp::IsMultipleOf, Some(b)) => helper("$isMultipleOf", vec![a, b]),
+            (NumOp::OverflowingEuclid { div }, Some(b)) => {
+                helper("$overflowingEuclid", vec![a, b, min, Expr::bool(div)])
+            }
             (NumOp::WrappingEuclid { div }, Some(b)) => {
                 let name = if div {
                     "$wrappingDivEuclid"
@@ -567,6 +576,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | NumOp::IsMultipleOf
             | NumOp::CastSign
             | NumOp::WrappingEuclid { .. }
+            | NumOp::OverflowingEuclid { .. }
             | NumOp::NextMultipleOf { .. }
             | NumOp::UnboundedShift { .. }
             | NumOp::IlogBase { .. }
@@ -837,6 +847,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     rounded(math("cos", vec![x])),
                 ])
             }
+            // An `f32`'s quotient rounded as an `f32` before it's truncated.
+            NumOp::FloatEuclid { rem: false } if num == Num::F32 => rounded(helper(
+                "$floatEuclid",
+                vec![
+                    arg(),
+                    arg(),
+                    Expr::bool(false),
+                    Expr::member(Expr::var("Math"), "fround"),
+                ],
+            )),
             NumOp::FloatEuclid { rem } => rounded(helper("$floatEuclid", vec![arg(), arg(), Expr::bool(rem)])),
             NumOp::AbsSub => rounded(helper("$absSub", vec![arg(), arg()])),
             NumOp::FloatMidpoint if num == Num::F32 => {

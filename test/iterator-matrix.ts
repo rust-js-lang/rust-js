@@ -27,6 +27,7 @@ import { join } from "node:path";
 import { random } from "./generate";
 import { pointsRunner } from "./panic-points";
 import { formatCases, formatProgram, formatStrata, type FormatCase } from "./format-grid";
+import { numberCases, numberProgram, numberStrata, type NumberCase } from "./number-grid";
 import { unwindCases, unwindProgram, unwindStrata, type UnwindCase } from "./unwind-points";
 import { root, target } from "./support";
 
@@ -40,10 +41,11 @@ export const builds: [name: string, flags: string[]][] = [
 /** Which table a run makes: the matrix (ADR 1090), the conformance
  * table (ADR 1092), the panic points of the conformance table's cases
  * (#817), the panic points of operations beyond iterators, the unwind
- * table (#854), or every format spec of each value, the formatting grid
- * (#941), `ITERATOR_TABLE`'s. */
-export type Table = "matrix" | "conformance" | "points" | "unwind" | "format";
-export const tables: Table[] = ["matrix", "conformance", "points", "unwind", "format"];
+ * table (#854), every format spec of each value, the formatting grid
+ * (#941), or every number operation of each type's boundary values, the
+ * numbers grid (#940), `ITERATOR_TABLE`'s. */
+export type Table = "matrix" | "conformance" | "points" | "unwind" | "format" | "numbers";
+export const tables: Table[] = ["matrix", "conformance", "points", "unwind", "format", "numbers"];
 export const table: Table = (() => {
   const which = process.env.ITERATOR_TABLE ?? "matrix";
   if (!(tables as string[]).includes(which)) throw new Error(`ITERATOR_TABLE=${which}: ${tables.map((t) => `\`${t}\``).join(", ")}`);
@@ -815,10 +817,20 @@ const formatTable: TableOf<FormatCase> = {
   slice: (all) => slice(all, formatStrata),
 };
 
+/** The numbers grid (#940), test/number-grid.ts's cases. */
+const numbersTable: TableOf<NumberCase> = {
+  cases: numberCases,
+  program: numberProgram,
+  // Of 200, as each case is one line: some 400 programs, not 1,400.
+  batches: (all) => batches(all, 200),
+  slice: (all) => slice(all, numberStrata),
+};
+
 /** The table `of`, as test/iterator-matrix.test.ts runs it. */
 export function tableOf(of: Table): TableOf<Row> {
   if (of === "unwind") return unwindTable;
   if (of === "format") return formatTable;
+  if (of === "numbers") return numbersTable;
   return iteratorTable(of, of === "matrix" ? allCases : of === "conformance" ? conformanceCases : pointsCases);
 }
 
@@ -1242,13 +1254,13 @@ export function segments(stdout: string): Map<string, string> {
 }
 
 const header = `// The iterator matrix's cases (ADR 1090), the conformance table's (ADR
-// 1092), the points table's (#817), the unwind table's (#854) and the
-// formatting grid's (#941) that don't run as native Rust does yet, each
-// under its issue, \`#<issue>
+// 1092), the points table's (#817), the unwind table's (#854), the
+// formatting grid's (#941) and the numbers grid's (#940) that don't run
+// as native Rust does yet, each under its issue, \`#<issue>
 // <title>\`: a line a build, \`plain\` or \`std\` of the matrix's,
 // \`conformance:plain\` or \`unwind:std\` of a table's, the numbers of its
 // cases in \`allCases()\`, \`conformanceCases()\`, \`pointsCases()\`,
-// \`unwindCases()\` or \`formatCases()\` as ranges. Each listed
+// \`unwindCases()\`, \`formatCases()\` or \`numberCases()\` as ranges. Each listed
 // must still fail, so the list only shrinks: \`bun test/iterator-matrix.ts
 // take-off\` takes off what the last runs found fixed. Its numbers are of
 // each table's generator version below; a change to a table's cases makes

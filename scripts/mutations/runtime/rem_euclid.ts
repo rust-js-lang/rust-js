@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "  return typeof a === \"bigint\" ? $bigRemEuclid",
     tests: ["test/corpus.test.ts", "-t", "^int_shift_multiple_methods.rs$"],
   },
+  {
+    name: "overflowing-euclid-never-wraps",
+    breaks: "`i8::MIN.overflowing_div_euclid(-1)` says it didn't wrap, `(-128, false)`, where std says `(-128, true)` (#940)",
+    file: "src/runtime/rem_euclid.js",
+    find: "  return [made, a === min && b == -1];\n",
+    replace: "  return [made, false];\n",
+    tests: ["test/corpus.test.ts", "-t", "^overflowing_euclid.rs$"],
+  },
 ];

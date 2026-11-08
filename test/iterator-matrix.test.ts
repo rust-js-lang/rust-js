@@ -16,6 +16,7 @@
 //   ITERATOR_TABLE=points ITERATOR_MATRIX=all bun test test/iterator-matrix.test.ts  # its cases at each panic point (#817)
 //   ITERATOR_TABLE=unwind ITERATOR_MATRIX=all bun test test/iterator-matrix.test.ts  # operations beyond iterators at each panic point (#854)
 //   ITERATOR_TABLE=format ITERATOR_MATRIX=all bun test test/iterator-matrix.test.ts  # every format spec of each value (#941)
+//   ITERATOR_TABLE=numbers ITERATOR_MATRIX=all bun test test/iterator-matrix.test.ts # every number operation of each type's boundary values (#940)
 //   bun scripts/iteratorSlice.ts run                                             # both tables' slices, in parts at once (#731)
 //
 // A case that doesn't run as Rust does fails its batch, but those

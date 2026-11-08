@@ -111,4 +111,12 @@ export const mutations: Mutation[] = [
     replace: '        "splitn" => TextOp::SplitN,\n',
     tests: ["test/corpus.test.ts", "-t", "^splitn_by.rs$"],
   },
+  {
+    name: "overflowing-div-euclid-unrecognized",
+    breaks: "`overflowing_div_euclid` is refused, where it's what `wrapping_div_euclid` gives and whether it wrapped (#940)",
+    file: "src/lower/recognition/methods.rs",
+    find: "        \"overflowing_div_euclid\" if !float => NumOp::OverflowingEuclid { div: true },\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^overflowing_euclid.rs$"],
+  },
 ];

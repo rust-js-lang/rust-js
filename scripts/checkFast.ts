@@ -23,7 +23,7 @@ import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, sta
 import { availableParallelism, cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
-import { runs, touchesFormatting, touchesIterators } from "./iteratorSlice";
+import { runs, touchesFormatting, touchesIterators, touchesNumbers } from "./iteratorSlice";
 import { mappedFiles, pickChange } from "./testMap";
 import { browsers, caseParts, nightly, plainSuiteFiles, pooledParts } from "./shard";
 import { elapsed, loadScale, median, timed, timings } from "./timing";
@@ -106,6 +106,8 @@ export function jobs({ all, changed, branch, added, extra, cores, picked }: Scop
   // And a change to the formatting code, the formatting grid's slice, as a
   // push's check runs it (#941).
   const formatting = touchesFormatting([...changed, ...branch]);
+  // And to the numbers' code, the numbers grid's slice (#940).
+  const numbers = touchesNumbers([...changed, ...branch]);
 
   // What a script that runs its own parts at once runs in, the iterator
   // slices' (scripts/shard.ts).
@@ -227,6 +229,15 @@ export function jobs({ all, changed, branch, added, extra, cores, picked }: Scop
               timeout: 600,
               weight: parts,
               ci: "bun scripts/iteratorSlice.ts run format",
+            }),
+          ]
+        : []),
+      ...(numbers
+        ? [
+            job(runs.numbers[0].name, ["bun", "scripts/iteratorSlice.ts", "run", "numbers", String(parts)], {
+              timeout: 600,
+              weight: parts,
+              ci: "bun scripts/iteratorSlice.ts run numbers",
             }),
           ]
         : []),

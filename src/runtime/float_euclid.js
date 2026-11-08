@@ -1,9 +1,11 @@
 // A float's `rem_euclid(rhs)`, or `div_euclid(rhs)`, as std computes it: the
-// remainder made non-negative, and the quotient that goes with it.
-function $floatEuclid(a, b, rem) {
+// remainder made non-negative, and the quotient that goes with it, of
+// `self / rhs` as its type rounds it, `round`, an `f32`'s `Math.fround`,
+// before it's truncated (#940).
+function $floatEuclid(a, b, rem, round) {
   const r = a % b;
   if (rem) return r < 0 ? r + Math.abs(b) : r;
-  const q = Math.trunc(a / b);
+  const q = Math.trunc(round === undefined ? a / b : round(a / b));
   if (r < 0) return b > 0 ? q - 1 : q + 1;
   return q;
 }

@@ -161,6 +161,8 @@ export const parts: Part[] = [
   // Of a change to the formatting code, the formatting grid's slice (#941);
   // the nightly's `format` runs every batch.
   { setting: "ITERATOR_TABLE", value: "format", runs: "push", by: "scripts/iteratorSlice.ts" },
+  // Of a change to the numbers' code, the numbers grid's slice (#940).
+  { setting: "ITERATOR_TABLE", value: "numbers", runs: "push", by: "scripts/iteratorSlice.ts" },
   {
     setting: "ITERATOR_TABLE",
     value: "points",
