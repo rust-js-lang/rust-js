@@ -106,3 +106,14 @@ is the arrow of its call, `(x) => total(x == null ? [] : [x])`. One whose
 call gives each argument as it is stays its name, `map(total)` of `Vec`s.
 `fn_item_converting_argument` runs both against native Rust, and the
 mutation `fn-item-conversion-unasked` is caught.
+
+## Amendment: only where an iterator goes (#991)
+
+The crate's own iterator given for a type parameter was made a JS
+iterator whatever the parameter's bounds, `$iterator(value, next)`, so a
+`T: Debug`'s dictionary read the wrapper as the struct, `Gen(undefined)`,
+and a `T: Clone`'s cloned it. `given_as_iterator` asks the callee's bound
+first, as its doc said: one bound by `Iterator` or `IntoIterator` is given
+the JS iterator, one bound by neither the value itself, which its
+dictionaries and its drop read (`iterated_slot` asks the same). Corpus
+case `iterator_given_where_no_iterator_goes`.

@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "held-into-iter-drop-of-its-of",
+    breaks:
+      "the drop of an `IntoIterator`'s `IntoIter` held as it is reads `.of` of the value `$given` gave as itself: `undefined is not iterable` (#966)",
+    file: "src/lower/drops/functions.rs",
+    find: "        if crate::lower::recognition::known_by_bounds(ty) {\n",
+    replace: "        if matches!(ty.kind(), ty::Param(_)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iterator_named_by_another_bound.rs$"],
+  },
+  {
     name: "generic-drop-not-passed-on",
     breaks:
       "a generic function that passes its `T` to another doesn't pass its drop on",

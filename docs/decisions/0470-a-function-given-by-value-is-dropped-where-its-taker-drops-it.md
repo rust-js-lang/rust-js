@@ -307,3 +307,13 @@ panics on the first item and on a later one. Mutations
 `keyed-extreme-unclosed` (`mir/iter/collect.ts`) and
 `keyed-extreme-dropped-after` (`mir/iter.ts`). The guide's limitation is
 gone.
+
+## Amendment: given through another bound (#966)
+
+A closure called by `&` that holds a value with a destructor, given for
+an `impl Is<F>` whose `F: FnOnce()` the callee calls once, reached `F`
+through `Is`'s method, which `check_called_once` didn't see: its captures
+were never dropped. A parameter whose own bound takes such an `F` as it
+is, an argument of a trait not `Fn`'s, is refused as `F` itself is. Corpus
+case `fn_once_through_another_bound_refused`; supporting it, an `Fn`
+closure's drop after a generic `FnOnce` call, is #995.

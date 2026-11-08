@@ -116,11 +116,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<()> {
         let inputs = self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
+        let tcx = self.tcx;
+        let once = |input: Ty<'tcx>| {
+            crate::lower::recognition::function_kind(tcx, callee, input) == Some(ty::ClosureKind::FnOnce)
+        };
+        // Or one whose own bound takes such a one as it is, `impl Is<F>` of
+        // an `F: FnOnce()`, whose value is that one's (#966).
+        let through = |input: Ty<'tcx>| {
+            (tcx.clauses_of(callee).instantiate_identity(tcx).into_iter())
+                .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+                .map(|bound| bound.skip_binder().trait_ref)
+                .filter(|tr| tr.self_ty() == input && tcx.fn_trait_kind_from_def_id(tr.def_id).is_none())
+                .any(|tr| {
+                    tr.args
+                        .types()
+                        .skip(1)
+                        .any(|arg| matches!(arg.kind(), ty::Param(_)) && once(arg))
+                })
+        };
         for (&ty, &input) in tys.iter().zip(inputs) {
             let kind = crate::lower::recognition::function_kind(self.tcx, self.frame.owner, ty);
             if kind.is_some_and(|kind| kind != ty::ClosureKind::FnOnce)
                 && !matches!(*ty.kind(), ty::Closure(id, _) if self.krate.closure_facts.called_once(id))
-                && crate::lower::recognition::function_kind(self.tcx, callee, input) == Some(ty::ClosureKind::FnOnce)
+                && (once(input) || matches!(input.kind(), ty::Param(_)) && through(input))
                 && self.drops_function(ty)
             {
                 let name = self.tcx.item_name(callee);

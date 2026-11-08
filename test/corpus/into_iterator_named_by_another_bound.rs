@@ -1,4 +1,3 @@
-//@ library-differs
 // An `IntoIterator` type parameter another bound names, `impl Is<I>`'s,
 // arrives as that one's value, its caller's own: held as it is, made an
 // iterator by its dictionary's `into_iter`, in a loop, a sum and a
@@ -13,6 +12,15 @@ impl Iterator for Quiet {
     fn next(&mut self) -> Option<u32> {
         self.0 = self.0.checked_sub(1)?;
         Some(self.0)
+    }
+}
+
+#[derive(PartialEq)]
+struct Loud(u32);
+
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
     }
 }
 
@@ -52,6 +60,15 @@ fn fill<C: Extend<u32>, I: IntoIterator<Item = u32>>(c: &mut C, items: impl Is<I
     c.extend(items);
 }
 
+fn equal<I: IntoIterator, J: IntoIterator>(a: impl Is<I>, b: impl Is<J>) -> bool
+where
+    I::Item: PartialEq<J::Item>,
+{
+    let a: I = a.is();
+    let b: J = b.is();
+    a.into_iter().eq(b)
+}
+
 fn main() {
     let mut v = vec![1u32, 2, 3];
     println!("{} {}", total(&v), total(&[4u32, 5]));
@@ -63,4 +80,5 @@ fn main() {
     fill(&mut out, Quiet(3));
     fill(&mut out, [9, 8]);
     println!("{out:?}");
+    println!("{}", equal(vec![Loud(1), Loud(2)], vec![Loud(1), Loud(3)]));
 }

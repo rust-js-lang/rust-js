@@ -5,20 +5,6 @@
 // Rust does is taken off. A rewrite that goes wrong for another reason is a
 // line under another issue.
 
-#966 P0: a type parameter's value reached through a trait's method, not a parameter, is stepped without its dictionaries (`impl MetamorphIs<T>`)
-plain std impl-owned adapter_drops.rs
-plain std impl-owned by_ref_lends.rs
-plain std impl-owned closure_drops.rs
-plain std impl-owned copied_iterator_defaults.rs
-plain impl-owned filters_held_double_ended.rs
-plain std impl-owned impl_fn_mut_lent.rs
-plain std impl-owned iterables_given_to_generics.rs
-plain std impl-owned nth_passes_a_slice_or_each.rs
-plain impl-owned own_back_methods_given_dictionaries.rs
-plain std impl-owned own_back_through_adapters.rs
-plain std impl-owned references_given_to_generics.rs
-plain std impl-owned unrun_function_drops.rs
-
 #980 P0: a read of what a `Box` holds, `*n`, moved past a later write of it, `pair(*n, { *n += 1; *n })`
 plain std boxed captured_copy_written_whole.rs
 
@@ -32,3 +18,16 @@ plain boxed std_rev.rs
 
 #989 P0: a closure that captured a Box<Cell<_>> by move, then cloned, shares the cell (const counter2 = counter)
 plain std boxed closure_clone_cell.rs
+
+#992 P0: a `&mut` to an object given for `impl Is<X>` arrives in ADR 0454's box, which what it's read as reads as the value itself
+plain std impl-owned iterables_given_to_generics.rs
+plain std impl-owned impl_fn_mut_lent.rs
+plain std impl-owned references_given_to_generics.rs
+plain std impl-owned nth_passes_a_slice_or_each.rs
+
+#993 P0: a generic function's `impl DoubleEndedIterator` return held in a struct isn't made knowing its back
+plain impl-owned filters_held_double_ended.rs
+plain impl-owned own_back_methods_given_dictionaries.rs
+
+#994 P0: `by_ref()` of a type parameter given as it is passes the crate's own `fold` on
+plain std impl-owned by_ref_lends.rs

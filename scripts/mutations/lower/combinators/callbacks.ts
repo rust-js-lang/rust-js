@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "called-once-through-bound-unrefused",
+    breaks:
+      "a closure called by `&` that holds a value with a destructor, given through `impl Is<F>` to an `F: FnOnce`, is given and its captures never dropped, where Rust drops them once it's run (#966)",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "                && (once(input) || matches!(input.kind(), ty::Param(_)) && through(input))\n",
+    replace: "                && once(input)\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_once_through_another_bound_refused.rs$"],
+  },
+  {
     name: "kept-of-an-impl-unseen",
     breaks:
       "a closure `Rc::new` or `Box::new` is given, of a function that gives back `Rc<impl Fn>`, is dropped as the call returns as well as by the `Rc`'s last clone (#464)",
@@ -142,7 +151,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `F: Fn` given on to a function that calls it once by `FnOnce` is never dropped",
     file: "src/lower/combinators/callbacks.rs",
-    find: "                && crate::lower::recognition::function_kind(self.tcx, callee, input) == Some(ty::ClosureKind::FnOnce)\n",
+    find: "                && (once(input) || matches!(input.kind(), ty::Param(_)) && through(input))\n",
     replace: "                && false\n",
     tests: [
       "test/diagnostics.test.ts",

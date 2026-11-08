@@ -2,14 +2,23 @@
 
 import { iterator_skip, skipIterator___iteratorGetUnchecked } from "@rust-js/std/iter.js";
 import {
+  $advanceSlice,
   $assign,
   $checked,
+  $cleanup,
+  $closing,
+  $dropEach,
+  $eq,
   $extend,
   $foldOf,
   $given,
+  $givenDrop,
   $iter,
+  $iterEq,
   $mutItems,
   $next,
+  $partialEq,
+  $traitImpl,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -25,8 +34,16 @@ function quietIterator_next(quiet) {
   return quiet[0];
 }
 
-const tIsT = { is: tIsT_is };
-function tIsT_is(self) {
+function loudDrop_drop(loud) {
+  console.log(`drop ${loud[0]}`);
+}
+
+const $tIsT = new WeakMap();
+
+function tIsT(dropT) {
+  return $traitImpl($tIsT, [dropT], () => ({ is: (arg0) => tIsT_is(arg0, dropT), $drop: dropT }));
+}
+function tIsT_is(self, dropT) {
   return self;
 }
 
@@ -72,7 +89,82 @@ function fill(c, items, CExtendU32, IIntoIterator, IsI, IIntoIterInPlace) {
   );
 }
 
+function equal(
+  a,
+  b,
+  IIntoIterator,
+  JIntoIterator,
+  IItemPartialEqJItem,
+  IsI,
+  IsJ,
+  dropI,
+  dropJ,
+  dropIs,
+  dropIItem,
+  dropIIntoIter,
+  dropJItem,
+) {
+  let a$1;
+  try {
+    a$1 = IsI.is(a);
+  } catch (error) {
+    $cleanup(() => {
+      dropIs?.(b);
+    });
+    throw error;
+  }
+  let b$1;
+  try {
+    b$1 = IsJ.is(b);
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(a$1);
+    });
+    throw error;
+  }
+  let b$1$live = true;
+  let iter;
+  try {
+    iter = IIntoIterator.intoIter(a$1);
+    b$1$live = false;
+  } catch (error) {
+    $cleanup(() => {
+      if (b$1$live) {
+        dropJ?.(b$1);
+      }
+    });
+    throw error;
+  }
+  let result;
+  try {
+    result = $iterEq(
+      $closing(
+        $given(iter, IIntoIterator.IntoIterIterator(), true),
+        $givenDrop(dropIIntoIter),
+        false,
+      ),
+      $closing(
+        $given(JIntoIterator.intoIter(b$1), JIntoIterator.IntoIterIterator(), true),
+        $givenDrop(dropJ),
+        false,
+      ),
+      (a, b) => IItemPartialEqJItem.eq(a, b),
+      dropIItem,
+      dropJItem,
+    );
+  } catch (error) {
+    $cleanup(() => {
+      dropIIntoIter?.(iter);
+    });
+    throw error;
+  }
+  dropIIntoIter?.(iter);
+  return result;
+}
+
 function main() {
+  const u32ArrayIs_u32__2_ = tIsT();
+  const VecIsVec = tIsT($dropEach(loudDrop_drop));
   const quietIntoIterator = {
     intoIter: (items) => items,
     IntoIterIterator: () => ({ next: quietIterator_next }),
@@ -87,13 +179,19 @@ function main() {
     IntoIterIterator: () => ({ next: $next }),
   };
   const intoIterator = { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) };
+  const vecIntoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+  };
   const v = [1, 2, 3];
-  console.log(`${total(v, intoIterator, tIsT)} ${total([4, 5], intoIterator, tIsT)}`);
+  console.log(
+    `${total(v, intoIterator, u32ArrayIs_u32__2_)} ${total([4, 5], intoIterator, u32ArrayIs_u32__2_)}`,
+  );
   const items = { value: v };
   bump(
     items,
     { intoIter: (cell) => $iter($mutItems(cell.value)), IntoIterIterator: () => ({ next: $next }) },
-    tIsT,
+    u32ArrayIs_u32__2_,
   );
   $assign(v, items.value);
   bump(
@@ -106,26 +204,29 @@ function main() {
         getUnchecked: skipIterator___iteratorGetUnchecked,
       }),
     },
-    tIsT,
+    u32ArrayIs_u32__2_,
   );
   console.log(`[${v.join(", ")}]`);
   console.log(
-    `${count([4], quietIntoIterator, tIsT)} ${count(
+    `${count([4], quietIntoIterator, u32ArrayIs_u32__2_)} ${count(
       7,
       {
         intoIter: (items) => $iter(items == null ? [] : [items]),
         IntoIterIterator: () => ({ next: $next }),
       },
-      tIsT,
-    )} ${count(["a", "b"], intoIterator$1, tIsT)}`,
+      u32ArrayIs_u32__2_,
+    )} ${count(["a", "b"], intoIterator$1, u32ArrayIs_u32__2_)}`,
   );
   const out = [];
   const c = { value: out };
-  fill(c, [3], vecExtend, quietIntoIterator, tIsT);
+  fill(c, [3], vecExtend, quietIntoIterator, u32ArrayIs_u32__2_);
   $assign(out, c.value);
   const c$1 = { value: out };
-  fill(c$1, [9, 8], vecExtend, intoIterator$1, tIsT);
+  fill(c$1, [9, 8], vecExtend, intoIterator$1, u32ArrayIs_u32__2_);
   $assign(out, c$1.value);
   console.log(`[${out.join(", ")}]`);
+  console.log(
+    `${equal([[1], [2]], [[1], [3]], vecIntoIterator, vecIntoIterator, $partialEq({ eq: $eq }), VecIsVec, VecIsVec, $dropEach(loudDrop_drop), $dropEach(loudDrop_drop), $dropEach(loudDrop_drop), loudDrop_drop, $dropEach(loudDrop_drop), loudDrop_drop)}`,
+  );
 }
 //# sourceMappingURL=case.js.map

@@ -180,13 +180,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         }
         let ty = self.reveal(ty);
-        if self.is_user_iterator(ty) {
-            return true;
-        }
-        // A range, or a parameter of this function's given as it is, made a
-        // JS iterator by its dictionary (ADR 0551), where the callee bounds
-        // it so.
-        if self.range_kind(ty.peel_refs()).is_none() && !self.iterator_given_as_it_is(ty.peel_refs()) {
+        // The crate's own, a range, or a parameter of this function's given
+        // as it is, made a JS iterator by its dictionary (ADR 0551), where
+        // the callee bounds it so; given for one bound by neither, `T:
+        // Debug`'s, its own value, which that one's dictionaries read
+        // (#991).
+        if !self.is_user_iterator(ty)
+            && self.range_kind(ty.peel_refs()).is_none()
+            && !self.iterator_given_as_it_is(ty.peel_refs())
+        {
             return false;
         }
         // Bound so where the callee says, as `declared_bounds` reads it.

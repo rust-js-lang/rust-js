@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unbounded-param-given-crate-iterator-wrapped",
+    breaks:
+      "the crate's iterator given for a `T: Debug` is made a JS iterator, which its dictionary reads as the struct: `Gen(undefined)` (#991)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "        if !self.is_user_iterator(ty)\n            && self.range_kind(ty.peel_refs()).is_none()\n",
+    replace: "        if self.is_user_iterator(ty) {\n            return true;\n        }\n        if self.range_kind(ty.peel_refs()).is_none()\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_given_where_no_iterator_goes.rs$"],
+  },
+  {
     name: "result-items-unstepped",
     breaks:
       "a `Result` given to `chain` or `extend` is spread as the object it is: `TypeError: ... is not iterable` where Rust steps its `Ok` value (ADR 0923)",
@@ -17,9 +26,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a range given where any `T: Clone` goes is its items, not the range",
     file: "src/lower/iterators/stepping.rs",
-    find: "        if self.range_kind(ty.peel_refs()).is_none() && !self.iterator_given_as_it_is(ty.peel_refs()) {\n            return false;\n        }",
+    find: "            && self.range_kind(ty.peel_refs()).is_none()\n            && !self.iterator_given_as_it_is(ty.peel_refs())\n        {\n            return false;\n        }",
     replace:
-      "        if self.range_kind(ty.peel_refs()).is_some() {\n            return true;\n        }\n        if !self.iterator_given_as_it_is(ty.peel_refs()) {\n            return false;\n        }",
+      "            && self.range_kind(ty.peel_refs()).is_none()\n            && !self.iterator_given_as_it_is(ty.peel_refs())\n        {\n            return false;\n        }\n        if self.range_kind(ty.peel_refs()).is_some() {\n            return true;\n        }",
     tests: ["test/corpus.test.ts", "-t", "range_values"],
   },
   {

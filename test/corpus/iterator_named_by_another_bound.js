@@ -150,6 +150,7 @@ function made(make, IIterator, dropI) {
 }
 
 function main() {
+  const CountdownIsCountdown = tIsT(countdownDrop_drop);
   const countdownExactSizeIterator = {
     len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)),
   };
@@ -158,30 +159,19 @@ function main() {
       [3, "a"],
       { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
       { next_back: countdownDoubleEndedIterator_nextBack },
-      tIsT((it) => {
-        countdownDrop_drop(it.of);
-      }),
+      CountdownIsCountdown,
       countdownDrop_drop,
     ).join(", ")}]`,
   );
   console.log(
-    `${length(
-      [4, "b"],
-      countdownExactSizeIterator,
-      tIsT((it) => {
-        countdownDrop_drop(it.of);
-      }),
-      countdownDrop_drop,
-    )}`,
+    `${length([4, "b"], countdownExactSizeIterator, CountdownIsCountdown, countdownDrop_drop)}`,
   );
   const value = lastCounted(
     [3, "e"],
     { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
     { next_back: countdownDoubleEndedIterator_nextBack },
     countdownExactSizeIterator,
-    tIsT((it) => {
-      countdownDrop_drop(it.of);
-    }),
+    CountdownIsCountdown,
     countdownDrop_drop,
   );
   console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);

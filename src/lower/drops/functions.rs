@@ -161,7 +161,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !iterated || !self.has_drops(ty) {
             return self.drop_function(ty, span);
         }
-        if matches!(ty.kind(), ty::Param(_)) {
+        // A type parameter's, or an associated type's of one, `I::IntoIter`
+        // of an `IntoIterator` held as it is (ADR 0552): `$given`'s, which
+        // is the value itself where its dictionary steps it (#766, #966).
+        if crate::lower::recognition::known_by_bounds(ty) {
             let Some(drop) = self.drop_function(ty, span)? else {
                 return Ok(None);
             };
