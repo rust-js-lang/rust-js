@@ -328,6 +328,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             ty::Param(_) if self.mut_ref_form_in(ty, param_env) == MutRefForm::GenericBox => {
                 match *self.instantiated(ty, generic_args).kind() {
+                    _ if self.given_as_the_value(def_id, ty, generic_args) => return None,
                     ty::Ref(_, pointee, Mutability::Mut) => pointee,
                     _ => return None,
                 }
@@ -336,6 +337,53 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         (!self.mut_ref_form(pointee).is_cell())
             .then(|| Ty::new_mut_ref(self.tcx, self.tcx.lifetimes.re_erased, pointee))
+    }
+
+    /// Whether `declared`, a type parameter of `def_id`'s, given a `&mut` to
+    /// a function or an iterator in a call of it, `generic_args`, takes it
+    /// as it is, not in generic code's box: where its value is read as
+    /// another type parameter its bound names that's called or stepped,
+    /// `P: Is<F>` of `F: FnMut()`, `I: Iterator` or `I: IntoIterator`, as
+    /// that one is given it, its form's (`mut_ref_form`), the function, the
+    /// iterator or the range itself (#992). A collection given for an
+    /// `IntoIterator` is boxed still, as its dictionary takes its cell.
+    pub(in crate::lower) fn given_as_the_value(
+        &self,
+        def_id: DefId,
+        declared: Ty<'tcx>,
+        generic_args: ty::GenericArgsRef<'tcx>,
+    ) -> bool {
+        matches!(declared.kind(), ty::Param(_))
+            && matches!(*self.instantiated(declared, generic_args).kind(),
+                ty::Ref(_, pointee, Mutability::Mut) if self.is_callable(pointee) || self.implements_iterator(pointee))
+            && self.read_as_stepped(self.tcx.param_env(def_id), declared)
+    }
+
+    /// Whether `param`'s value is read as another type parameter its bound
+    /// names, `P: Is<F>`, that's called or stepped, bound by a function
+    /// trait, `Iterator` or `IntoIterator`, which is given a function or an
+    /// iterator as it is (#992).
+    fn read_as_stepped(&self, param_env: ty::ParamEnv<'tcx>, param: Ty<'tcx>) -> bool {
+        (param_env.caller_bounds().iter())
+            .filter_map(|clause| clause.as_trait_clause())
+            .filter(|bound| bound.self_ty().skip_binder() == param)
+            .flat_map(|bound| bound.skip_binder().trait_ref.args.types().skip(1))
+            .any(|named| {
+                matches!(named.kind(), ty::Param(_))
+                    && self.declared_bounds(named, param_env).into_iter().any(|id| {
+                        self.tcx.fn_trait_kind_from_def_id(id).is_some()
+                            || crate::lower::recognition::is_std_def(
+                                self.tcx,
+                                id,
+                                crate::lower::recognition::StdItem::Iterator,
+                            )
+                            || crate::lower::recognition::is_std_def(
+                                self.tcx,
+                                id,
+                                crate::lower::recognition::StdItem::IntoIterator,
+                            )
+                    })
+            })
     }
 
     /// Of a function value given for `def_id`'s parameter `i`, an `F:

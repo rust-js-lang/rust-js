@@ -1127,6 +1127,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     exprs.push(crate::lower::mut_refs::boxed(object));
                     continue;
                 }
+                // A `&mut` to a function or an iterator given for a type
+                // parameter read as one that's called or stepped, `P: Is<F>`:
+                // the function or the iterator itself (#992).
+                Value::Ref(place)
+                    if callee.is_some_and(|(id, args)| {
+                        let sig = self.tcx.instantiate_bound_regions_with_erased(
+                            self.tcx.fn_sig(id).instantiate_identity().skip_normalization(),
+                        );
+                        sig.inputs()
+                            .get(i)
+                            .is_some_and(|&input| self.given_as_the_value(id, input, args))
+                    }) =>
+                {
+                    exprs.push(place);
+                    continue;
+                }
                 Value::Ref(place) => place,
                 // An object given where a box goes, a generic `&mut T`'s: boxed,
                 // and copied back where it's a place.

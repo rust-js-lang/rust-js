@@ -14,16 +14,8 @@ plain std boxed nullable_written_through_borrows.rs
 plain boxed owned_maps_asked_their_length.rs
 plain boxed std_rev.rs
 
-#988 P0 (mut-refs): a &mut v[i] or &mut r.field given into a call reads the index or reference as it is later, not as it was when borrowed
-
 #989 P0: a closure that captured a Box<Cell<_>> by move, then cloned, shares the cell (const counter2 = counter)
 plain std boxed closure_clone_cell.rs
-
-#992 P0: a `&mut` to an object given for `impl Is<X>` arrives in ADR 0454's box, which what it's read as reads as the value itself
-plain std impl-owned iterables_given_to_generics.rs
-plain std impl-owned impl_fn_mut_lent.rs
-plain std impl-owned references_given_to_generics.rs
-plain std impl-owned nth_passes_a_slice_or_each.rs
 
 #993 P0: a generic function's `impl DoubleEndedIterator` return held in a struct isn't made knowing its back
 plain impl-owned filters_held_double_ended.rs

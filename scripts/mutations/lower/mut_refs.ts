@@ -343,4 +343,20 @@ export const mutations: Mutation[] = [
     replace: "                Some(erased(pointee)) == lent_to\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_kept_by_what_a_call_gives_back.rs$"],
   },
+  {
+    name: "parameter-read-as-a-function-boxed",
+    breaks: "a `&mut` to a closure or an iterator given for `impl Is<F>` of `F: FnMut()` or `I: Iterator` is generic code's box, which `f()` calls and `next()` steps: `f is not a function`, `[]` (#992)",
+    file: "src/lower/mut_refs.rs",
+    find: "            && self.read_as_stepped(self.tcx.param_env(def_id), declared)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_given_for_a_parameter_read_as_another.rs$"],
+  },
+  {
+    name: "collection-for-an-into-iterator-unboxed",
+    breaks: "a `&mut Vec` given for `impl Is<I>` of `I: IntoIterator` is the array, where its dictionary's `into_iter` takes its cell, `cell.value` undefined (#992)",
+    file: "src/lower/mut_refs.rs",
+    find: "                ty::Ref(_, pointee, Mutability::Mut) if self.is_callable(pointee) || self.implements_iterator(pointee))\n",
+    replace: "                ty::Ref(..))\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_given_for_a_parameter_read_as_another.rs$"],
+  },
 ];

@@ -701,3 +701,27 @@ Rust's preserved. Held by corpus `kept_handle_of_a_place_set_again`
 `kept-handle-index-read-later`, `kept-handle-field-reference-read-later`
 (`lower/mir/rvalues.ts`) and `kept-place-object-unnamed`
 (`lower/mir/temporaries.ts`).
+
+## Amended (2026-11-08, #992): a `&mut` given for a parameter read as another is as that one takes it
+
+A `&mut` given for a type parameter is generic code's box where its caller
+has an object (above): `P` of `twice(f: impl Is<F>)` is bound by nothing
+that calls or steps it. But its value is read as `F`, `let f: F =
+f.is()`, a function bound by `FnMut()`, which takes a `&mut` closure as
+the closure itself, and so with `I: Iterator`, which takes a `&mut` range
+or iterator as itself: the box was called, `f is not a function`, and
+stepped, `[]` where native gives `[1, 2]`. Now a `&mut` to a function or
+an iterator given for a type parameter whose bound names one called or
+stepped (`F`, `I: Iterator` or `I: IntoIterator`) is given as that one
+takes it, the value itself (`given_as_the_value`, which `boxed_in_call`
+and a call's arguments both ask); a collection given for an
+`IntoIterator` is still its cell, as its dictionary's `into_iter` takes
+it. Found by the metamorphic net's `impl-owned` rewrite.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change;
+Rust's preserved. Held by corpus `mut_given_for_a_parameter_read_as_another`
+(native-compared, both builds), the net's `impl-owned` impl_fn_mut_lent,
+iterables_given_to_generics, nth_passes_a_slice_or_each and
+references_given_to_generics taken off its list, and the mutations
+`parameter-read-as-a-function-boxed` and
+`collection-for-an-into-iterator-unboxed` (`lower/mut_refs.ts`).
