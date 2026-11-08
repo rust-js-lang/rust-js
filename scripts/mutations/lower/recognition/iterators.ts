@@ -416,7 +416,7 @@ export const mutations: Mutation[] = [
     find: '                "std::iter::Map"\n                    | "std::iter::Filter"\n                    | "std::iter::FilterMap"\n',
     replace:
       '                "std::iter::Filter"\n                    | "std::iter::FilterMap"\n',
-    tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(back_steps|std_rev|held_enumerate).rs$"],
   },
   {
     name: "enumerate-length-unknown",

@@ -656,7 +656,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "        let reversed = self.reversed_knowing(reversed, output, span)?;\n",
     replace: "        let reversed = reversed;\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(own_iterator_flattened_from_its_back|std_rev|rev_range_counted_beside_its_rfold).rs$"],
+    snapshots: true,
   },
   {
     name: "rev-of-mut-closed",

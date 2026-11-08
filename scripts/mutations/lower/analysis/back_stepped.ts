@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
       "a filter or a map a type holds, asked to be double-ended by the call that asks it of that type, isn't made knowing its back",
     file: "src/lower/analysis/back_stepped.rs",
     find: "                            let made = back_stepped_adapter(tcx, recognition, held, made_apart, &drops);\n",
-    replace: "                            let made = None;\n",
+    replace: "                            let made = back_stepped_adapter(tcx, recognition, held, made_apart, &drops).filter(|_| false);\n",
     tests: [
       "test/corpus.test.ts",
       "-t",

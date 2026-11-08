@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "                || self.stepped_from_its_back(ty);\n",
     replace: ";\n",
-    tests: ["test/corpus.test.ts", "-t", "^(enumerate_of_droppers_from_back|enumerate_made_knowing_read_again|enumerate_of_a_reversible_source).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(enumerate_of_droppers_from_back|enumerate_made_knowing_read_again|enumerate_of_a_reversible_source|enumerate_made_in_place_from_back).rs$"],
     snapshots: true,
   },
   {
@@ -727,7 +727,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "            return self\n                .reversed_user_knowing(value, source, (true, true), span)\n                .map(made_knowing_its_back);\n",
     replace: "            return Ok(value);\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(own_iterator_flattened_from_its_back|std_rev).rs$"],
+    snapshots: true,
   },
   {
     name: "compiled-fold-f-undropped",
@@ -744,7 +745,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "            !self.is_unknown(source) || matches!(source.kind(), ty::Param(_))\n",
     replace: "            !self.is_unknown(source)\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_made_knowing_its_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(rev_made_knowing_its_back|rev_of_a_type_parameter_held_as_it_is).rs$"],
   },
   {
     name: "compiled-try-fold-given-no-ends",

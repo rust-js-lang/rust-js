@@ -19,7 +19,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls.rs",
     find: "                        IterComb::Inspect,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^inspect_from_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(inspect_from_back|move_closure_adapter_from_its_back).rs$"],
   },
   {
     name: "combinator-function-undropped",
