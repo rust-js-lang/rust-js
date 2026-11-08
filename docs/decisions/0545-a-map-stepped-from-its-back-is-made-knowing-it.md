@@ -1411,3 +1411,20 @@ enumeration is made knowing its back is its value's fact
 (`unread`, which marks one held where it's stepped from its back), so the
 set's two are gone, with their mutations; `unread`'s has one,
 `enumerate-of-compiled-struct-held-unread`.
+
+## Amendment: a flatten's too (2026-11-09, #851 phase B, flattens)
+
+ADR 0262's case: none where its JS changes for what ran as Rust does; five
+snapshots change, a `flatten()` or a `flat_map` only stepped forward, of a
+type stepped from its back elsewhere, now `$flatMap(..)` where it was
+`$flattenEnds(..)`, and what it's made of with it: a map of the crate's
+iterator under it JS's own `.map`, its `$iterator` given no `nextBack`.
+Whether a flatten is made knowing its back is its value's fact
+(`back_by_value`). `$flattenEnds`'s own `count`, which a `skip`'s passes on,
+was read only by a case now `$flatMap`; `flatten_count_takes_each_inner_count`
+asks it of one made in place and given to generic code that steps it from
+its back, then skips (`flatten-ends-count-not-passed-on`). The variable
+rule `compiled-variable-trusted` guards is held by `returned_impl_ends`, as
+`flatten_from_its_back`'s flatten no longer reaches it. Std's compiled
+`FlatMap` held in a variable, stepped from its back, then skipped, counts by
+`next`, not each inner's own `count`, as before this: #1048.

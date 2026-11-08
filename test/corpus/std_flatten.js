@@ -11,7 +11,6 @@ import {
   $debugStr,
   $dropEach,
   $flatMap,
-  $flattenEnds,
   $held,
   $iter,
   $knowing,
@@ -313,10 +312,7 @@ function main() {
 
   // Made in place, stepped where it's made; asked its hint where it's
   // made, std's, which knows it.
-  const total = $flattenEnds($iter([[1, 2], [3]]), (item) => $iter(item)).reduce(
-    (a, b) => (a + b) | 0,
-    0,
-  );
+  const total = [[1, 2], [3]].flat().reduce((a, b) => (a + b) | 0, 0);
   const arg = $sizeHint(
     iterator_flatten(
       $iter([

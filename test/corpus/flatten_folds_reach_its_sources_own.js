@@ -5,6 +5,7 @@ import {
   $cleanup,
   $closing,
   $dropEach,
+  $flatMap,
   $flattenEnds,
   $foldBack,
   $iter,
@@ -297,27 +298,24 @@ function main() {
     )}`,
   );
   console.log(
-    `fold ${$flattenEnds(
-      $mapEnds(
-        $closing(
-          $iterator(
-            [0, 3],
-            foldsIterator_next,
-            false,
-            foldsDoubleEndedIterator_nextBack,
-            undefined,
-            undefined,
-            foldsIterator_fold,
-            undefined,
-            undefined,
-            foldsDoubleEndedIterator_rfold,
-          ),
-          (it) => {
-            foldsDrop_drop(it.of);
-          },
+    `fold ${$flatMap(
+      $closing(
+        $iterator(
+          [0, 3],
+          foldsIterator_next,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          foldsIterator_fold,
+          undefined,
+          undefined,
+          foldsDoubleEndedIterator_rfold,
         ),
-        pair,
-      ),
+        (it) => {
+          foldsDrop_drop(it.of);
+        },
+      ).map(pair),
       (item) => $closing($iter(item), $dropEach(dDrop_drop)),
     ).reduce(sum, 0)}`,
   );
@@ -376,13 +374,13 @@ function main() {
     [5, 7],
   ];
   console.log(
-    `inners fold ${$flattenEnds($closing($iter(inners), $dropEach(foldsDrop_drop)), (item) =>
+    `inners fold ${$flatMap($closing($iter(inners), $dropEach(foldsDrop_drop)), (item) =>
       $closing(
         $iterator(
           item,
           foldsIterator_next,
           false,
-          foldsDoubleEndedIterator_nextBack,
+          undefined,
           undefined,
           undefined,
           foldsIterator_fold,
@@ -440,27 +438,24 @@ function main() {
   });
   console.log(`panicked ${ended.TAG === "Err"}`);
   ended = $catchUnwind(() => {
-    const n = $flattenEnds(
-      $mapEnds(
-        $closing(
-          $iterator(
-            [0, 3],
-            foldsIterator_next,
-            false,
-            foldsDoubleEndedIterator_nextBack,
-            undefined,
-            undefined,
-            foldsIterator_fold,
-            undefined,
-            undefined,
-            foldsDoubleEndedIterator_rfold,
-          ),
-          (it) => {
-            foldsDrop_drop(it.of);
-          },
+    const n = $flatMap(
+      $closing(
+        $iterator(
+          [0, 3],
+          foldsIterator_next,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          foldsIterator_fold,
+          undefined,
+          undefined,
+          foldsDoubleEndedIterator_rfold,
         ),
-        pair,
-      ),
+        (it) => {
+          foldsDrop_drop(it.of);
+        },
+      ).map(pair),
       (item) => $closing($iter(item), $dropEach(dDrop_drop)),
     ).reduce((a, d) => {
       try {

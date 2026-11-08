@@ -53,8 +53,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether whether a `ty` is made knowing its back is its value's fact,
     /// its maker's MIR identity, not back_stepped's per-type set: a map's, a
-    /// filter's, a chain's, a copy's, a zip's or an enumeration's (#851
-    /// phase B); another kind's by the set still. The one answer of what's
+    /// filter's, a chain's, a copy's, a zip's, an enumeration's or a
+    /// flatten's (#851 phase B); another kind's by the set still. The one answer of what's
     /// asked and what's marked.
     pub(in crate::lower) fn back_by_value(&self, ty: ty::Ty<'tcx>) -> bool {
         crate::lower::recognition::mapped_source(self.tcx, ty).is_some()
@@ -64,6 +64,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || crate::lower::recognition::cloned_source(self.tcx, ty).is_some()
             || crate::lower::recognition::zipped_sources(self.tcx, ty).is_some()
             || crate::lower::recognition::enumerated_source(self.tcx, ty).is_some()
+            || crate::lower::recognition::flattened_source(self.tcx, ty).is_some()
     }
 
     /// Whether `local`, of the body being lowered, holds what the crate

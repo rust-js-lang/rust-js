@@ -3,7 +3,8 @@
 // the one it's in first, then each its source makes, not `Iterator`'s
 // default, which steps each by `next` (#736): made in place, given to
 // generic code, held in a variable, fused, skipped and stepped part-way
-// first, from both ends too, its back inner's own `count` last; of inner
+// first, from both ends too, its back inner's own `count` last, stepped
+// from its back then skipped; of inner
 // iterators that hold what has a destructor, dropped as
 // each is counted, the crate's iterator with a destructor and std's
 // `count` and `last` too, whose drop is its value's (#766); and one whose
@@ -93,6 +94,11 @@ fn counted_from_both_ends<I: DoubleEndedIterator<Item = u32>>(mut it: I) -> usiz
     it.count()
 }
 
+fn skipped_from_its_back<I: DoubleEndedIterator<Item = u32>>(mut it: I) -> usize {
+    println!("back {:?}", it.next_back());
+    it.skip(1).count()
+}
+
 fn main() {
     println!("{}", vec![2u32, 3].into_iter().flat_map(Own).count());
     println!("{}", vec![Own(2), Own(3)].into_iter().flatten().count());
@@ -113,6 +119,9 @@ fn main() {
     println!("next {:?} back {:?}", it.next(), it.next_back());
     println!("ends {}", it.count());
     println!("ends {}", counted_from_both_ends(vec![2u32, 3, 4].into_iter().flat_map(Own)));
+    // Stepped from its back, then skipped: each inner's own `count` still,
+    // as a `skip`'s asks its source's.
+    println!("back skipped {}", skipped_from_its_back(vec![2u32, 3, 4].into_iter().flat_map(Own)));
     // Std's own `count` of each inner, `Map`'s of the crate's, which isn't
     // the crate's: each stepped by `next`.
     println!("mapped {}", vec![2u32, 3].into_iter().flat_map(|n| Own(n).map(|x| x + 1)).count());

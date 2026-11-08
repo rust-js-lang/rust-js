@@ -103,13 +103,19 @@ function countedFromBothEnds(it) {
   return $count(Iterator.from(it));
 }
 
+function skippedFromItsBack(it) {
+  const value = $nextBack(it);
+  console.log(`back ${value == null ? "None" : `Some(${value})`}`);
+  return $count(Iterator.from(it).drop(1));
+}
+
 function main() {
   const ownIntoIterator = {
     intoIter: (items) => items,
     IntoIterIterator: () => ({ next: ownIterator_next, count: ownIterator_count }),
   };
   console.log(
-    `${$count($flattenEnds($iter([2, 3]), (value) => $iterator([value], ownIterator_next, false, ownDoubleEndedIterator_nextBack, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, ownIterator_count)))}`,
+    `${$count($flatMap($iter([2, 3]), (value) => $iterator([value], ownIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, ownIterator_count)))}`,
   );
   console.log(
     `${$count($flatMap($iter([[2], [3]]), (item) => $iterator(item, ownIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, ownIterator_count)))}`,
@@ -121,17 +127,17 @@ function main() {
     `${$count($flatMap($iter([2, 3]), (n) => $iterator([n], ownIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, ownIterator_count)))}`,
   );
   console.log(
-    `generic ${counted($flattenEnds($iter([2, 3]), (value) => $iterator([value], ownIterator_next, false, ownDoubleEndedIterator_nextBack, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, ownIterator_count)))}`,
+    `generic ${counted($flatMap($iter([2, 3]), (value) => $iterator([value], ownIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, ownIterator_count)))}`,
   );
   console.log(
     `generic ${counted($flatMap($iter([[1], [4]]), (item) => $iterator(item, ownIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, ownIterator_count)))}`,
   );
-  const held = $flattenEnds($iter([5, 6]), (value) =>
+  const held = $flatMap($iter([5, 6]), (value) =>
     $iterator(
       [value],
       ownIterator_next,
       false,
-      ownDoubleEndedIterator_nextBack,
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -162,17 +168,17 @@ function main() {
     )}`,
   );
   console.log(
-    `skipped ${$count($flattenEnds($iter([2, 3]), (value) => $iterator([value], ownIterator_next, false, ownDoubleEndedIterator_nextBack, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, ownIterator_count)).drop(1))}`,
+    `skipped ${$count($flatMap($iter([2, 3]), (value) => $iterator([value], ownIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, ownIterator_count)).drop(1))}`,
   );
   console.log(
     `skipped ${$count($flatMap($iter([[2], [3]]), (item) => $iterator(item, ownIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, ownIterator_count)).drop(1))}`,
   );
-  let it = $flattenEnds($iter([2, 3, 4]), (value) =>
+  let it = $flatMap($iter([2, 3, 4]), (value) =>
     $iterator(
       [value],
       ownIterator_next,
       false,
-      ownDoubleEndedIterator_nextBack,
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -213,6 +219,29 @@ function main() {
   console.log(`ends ${$count(it)}`);
   console.log(
     `ends ${countedFromBothEnds(
+      $flattenEnds($iter([2, 3, 4]), (value) =>
+        $iterator(
+          [value],
+          ownIterator_next,
+          false,
+          ownDoubleEndedIterator_nextBack,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          ownIterator_count,
+        ),
+      ),
+    )}`,
+  );
+  // Stepped from its back, then skipped: each inner's own `count` still,
+  // as a `skip`'s asks its source's.
+  console.log(
+    `back skipped ${skippedFromItsBack(
       $flattenEnds($iter([2, 3, 4]), (value) =>
         $iterator(
           [value],

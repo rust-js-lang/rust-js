@@ -151,7 +151,7 @@ function main() {
   console.log(
     `${rfind == null ? "None" : `Some(${rfind})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );
-  const value$5 = Array.from($flattenEnds($iter(v), (item) => $iter(item))).at(-1);
+  const value$5 = v.flat().at(-1);
   console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
   fused();
 }

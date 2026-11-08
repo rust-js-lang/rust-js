@@ -40,11 +40,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "compiled-variable-trusted",
-    breaks: "a variable holding std's compiled struct is taken to have a back by its type, though it has one only given it, so a `flat_map`'s `rev()` throws `it.back is not a function` (#856, #851)",
+    breaks: "a variable holding std's compiled struct is taken to have a back by its type, though it has one only given it, so a `rev()` of what a function returns throws `it.back is not a function` (#856, #851)",
     file: "src/lower/iterators/back_facts.rs",
     find: "                    && !self.compiled_struct(self.reveal(ty), value)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_from_its_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
   },
   {
     name: "chain-stepped-by-its-type",

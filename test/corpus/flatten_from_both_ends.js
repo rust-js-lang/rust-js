@@ -150,10 +150,7 @@ function main() {
   console.log(
     `${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`} ${value$13 == null ? "None" : `Some(${value$13})`}`,
   );
-  const h = $flattenEnds(
-    $iterator([0], flakyIterator_next, false, flakyDoubleEndedIterator_nextBack),
-    (item) => $iter(item),
-  );
+  const h = $iterator([0], flakyIterator_next).flatMap((item) => item);
   const value$14 = $next(h);
   const value$15 = $next(h);
   const value$16 = $next(h);
