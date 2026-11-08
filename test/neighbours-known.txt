@@ -9,13 +9,6 @@
 // goes wrong beside another neighbour, for the same reason, is a line more
 // under the same issue.
 
-#951 P1: rust-js crashes, `fast_reject` kind mismatch, of two crates' `Circle`
-plain std - beside copied_default_own_params.rs dyn_ref_cells.rs
-plain std - beside std_errors_boxed.rs dyn_struct_tails.rs
-
-#952 P1: rust-js crashes, `fn_arg_idents` of a `Loud` constructor
-plain std yielded_item_drops.rs beside drop_guard_of_a_closure.rs
-
 #953 P2: `{:?}` of a slice's iterator refused as `{:#?}`
 plain std iterator_read_as_itself.rs beside long_spreads.rs
 plain std std_enumerate.rs beside fmt_error_unwritten_branches.rs

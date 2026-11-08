@@ -51,3 +51,15 @@ test("a drop slot is numbered by drop_params.rs alone", () => {
   const lowering = sources.filter(file => /^src\/lower\/(drops|traits)/.test(file) || file === "src/lower/drops.rs");
   expect(lowering.filter(file => /u32::MAX/.test(read(file)))).toEqual([]);
 });
+
+// A trait's arguments of a type, its `Self` and each parameter, are
+// `args_of`'s alone (recognition/traits.rs): each parameter its kind's, a
+// lifetime erased. One built by repeating the type, of a trait of a
+// lifetime, `Spans<'a>`, was a trait ref rustc can't select by, and
+// rust-js crashed (#951).
+test("a trait's arguments of a type are args_of's alone", () => {
+  const repeated = files("src/lower")
+    .filter((file) => file.endsWith(".rs") && file !== "src/lower/recognition/traits.rs")
+    .flatMap((file) => (/mk_args_from_iter\(\s*std::iter::repeat_n\(/.test(read(file)) ? [file] : []));
+  expect(repeated).toEqual([]);
+});

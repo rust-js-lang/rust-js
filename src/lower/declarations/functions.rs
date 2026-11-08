@@ -106,8 +106,13 @@ fn given_values(tcx: TyCtxt<'_>, item: DefId) -> Vec<Option<DefId>> {
 impl<'tcx> Declarations<'_, 'tcx> {
     /// Each of `function`'s parameters, a fn's or a closure's, by its name
     /// as `function`'s declaration names it; `None` of a pattern or a `_`,
-    /// which names none.
+    /// which names none, and of a tuple struct's or variant's constructor,
+    /// `make: Loud`, whose fields have no names (#952).
     fn parameter_names(&self, function: DefId) -> Vec<Option<String>> {
+        if matches!(self.tcx.def_kind(function), rustc_hir::def::DefKind::Ctor(..)) {
+            let inputs = self.tcx.fn_sig(function).skip_binder().skip_binder().inputs().len();
+            return vec![None; inputs];
+        }
         let inputs = match self.tcx.is_closure_like(function) {
             true => None,
             false => Some(

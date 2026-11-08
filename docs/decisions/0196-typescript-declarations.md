@@ -220,3 +220,12 @@ words). Case N: nothing runs a declaration. Held by
 test/declarations-function-types.test.ts's "declarations name a function
 type's parameter apart from a word JS keeps" and the mutation
 `kept-word-parameter-declared`.
+
+## Amendment: a constructor names no parameters (#952)
+
+A field of a function type filled by a tuple struct's or a variant's
+constructor, `Make { make: Loud }`, declares its parameters with none of
+the constructor's names, since its fields have none. Asking rustc for the
+names of a constructor's arguments crashed rust-js. Corpus case
+`constructor_given_as_a_field_function`, mutation
+`constructor-parameters-asked`.

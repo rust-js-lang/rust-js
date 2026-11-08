@@ -71,3 +71,16 @@ for (const s of shapes) {
   reads it but a `dyn`'s call.
 - The diagnostics test holds the refusals: a counted one, two traits of
   one method name, a generic one's two bounds, an upcast.
+
+## Amendment: each trait asked of in its own arguments (#951)
+
+A cell made a `dyn` is checked against each other trait of the crate its
+value has (`dyn_cell_clash`). The trait refs for that check were built by
+repeating the value's type for every parameter, so a trait of a lifetime,
+`Spans<'a>`, was given the type for its lifetime, and rustc's
+`fast_reject` crashed on it. `args_of` now makes each parameter of its
+kind: a type parameter the type, a lifetime erased. A trait with a const
+parameter has no impl these checks ask of. An architecture test
+(`test/architecture-traits.test.ts`) keeps a trait's arguments of a type
+`args_of`'s alone. Corpus case `dyn_cell_beside_a_lifetime_trait`, mutation
+`trait-args-lifetime-a-type`.

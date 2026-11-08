@@ -602,4 +602,12 @@ export const mutations: Mutation[] = [
       "        ty::Adt(adt, args) if false && super::wrappers::is_assert_unwind_safe(tcx, adt.did()) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_assert_drops.rs$"],
   },
+  {
+    name: "trait-args-lifetime-a-type",
+    breaks: "a trait of a lifetime, `Spans<'a>`, is given the type for its lifetime, a trait ref rustc can't select by, so asking whether a cell made a `dyn` clashes with it crashes rust-js (#951)",
+    file: "src/lower/recognition/traits.rs",
+    find: "            ty::GenericParamDefKind::Lifetime => self.tcx.lifetimes.re_erased.into(),\n",
+    replace: "            ty::GenericParamDefKind::Lifetime => ty.into(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_cell_beside_a_lifetime_trait.rs$"],
+  },
 ];

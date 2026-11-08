@@ -19,20 +19,36 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// `trait_id`'s arguments of `ty`: `ty` its `Self` and each type
+    /// parameter, `PartialEq<Rhs = Self>`'s `Rhs` too, and each lifetime
+    /// one erased, `CollectSlice<'a>`'s, where `ty` given for it made a
+    /// trait ref rustc can't select by (#951). Not of a trait with a const
+    /// parameter, which `has_user_impl` asks no impl of.
     pub(in crate::lower) fn args_of(&self, trait_id: DefId, ty: Ty<'tcx>) -> ty::GenericArgsRef<'tcx> {
         let ty = self.tcx.erase_and_anonymize_regions(ty);
-        self.tcx.mk_args_from_iter(std::iter::repeat_n(
-            ty::GenericArg::from(ty),
-            self.tcx.generics_of(trait_id).count(),
-        ))
+        ty::GenericArgs::for_item(self.tcx, trait_id, |param, _| match param.kind {
+            ty::GenericParamDefKind::Lifetime => self.tcx.lifetimes.re_erased.into(),
+            ty::GenericParamDefKind::Type { .. } => ty.into(),
+            ty::GenericParamDefKind::Const { .. } => {
+                unreachable!("a trait with a const parameter, which has_user_impl skips")
+            }
+        })
     }
 
     pub(in crate::lower) fn has_user_impl(&self, trait_id: DefId, ty: Ty<'tcx>) -> bool {
-        self.is_user_impl(ty::TraitRef::new_from_args(
-            self.tcx,
-            trait_id,
-            self.args_of(trait_id, ty),
-        ))
+        let generics = self.tcx.generics_of(trait_id);
+        let consts = (0..generics.count()).any(|at| {
+            matches!(
+                generics.param_at(at, self.tcx).kind,
+                ty::GenericParamDefKind::Const { .. }
+            )
+        });
+        !consts
+            && self.is_user_impl(ty::TraitRef::new_from_args(
+                self.tcx,
+                trait_id,
+                self.args_of(trait_id, ty),
+            ))
     }
 
     pub(in crate::lower) fn is_user_impl(&self, tr: ty::TraitRef<'tcx>) -> bool {

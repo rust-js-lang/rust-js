@@ -220,4 +220,12 @@ export const mutations: Mutation[] = [
     replace: "                    name\n",
     tests: ["test/declarations-function-types.test.ts"],
   },
+  {
+    name: "constructor-parameters-asked",
+    breaks: "a field's function filled by a tuple struct's constructor, `make: Loud`, has its parameters' names asked of rustc, which has none of a constructor, and rust-js crashes (#952)",
+    file: "src/lower/declarations/functions.rs",
+    find: "        if matches!(self.tcx.def_kind(function), rustc_hir::def::DefKind::Ctor(..)) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^constructor_given_as_a_field_function.rs$"],
+  },
 ];
