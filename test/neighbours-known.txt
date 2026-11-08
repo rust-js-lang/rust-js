@@ -1,0 +1,40 @@
+// The neighbour shuffle's pairs (#853, test/neighbours.ts) that don't run as
+// native Rust does yet, each under its issue, `#<issue> <title>`: a line a
+// pair, its builds, `plain`, `std` or both, the case that goes wrong, `-` of
+// a crash that points at none, `beside`, and the fewest neighbours that make
+// it go wrong, as the shuffle narrows it; `slow` of one that runs as Rust
+// does but too long to finish, its range stepped where alone it's moved.
+// Each still goes wrong: `bun test test/neighbours.test.ts` compiles each
+// pair alone, so the list only shrinks. A group of a later seed whose case
+// goes wrong beside another neighbour, for the same reason, is a line more
+// under the same issue.
+
+#949 P0: a `TypeError` reading `reduce`, of a guard's deref given by a dictionary beside an `Rc<fn>`'s
+plain std guard_deref_dictionary.rs beside rc_fn_ptr_eq_of_cloned.rs
+
+#950 P0: a per-type `rev()` fact steps a range's skip item by item
+plain range_own_steps.rs beside rev_made_knowing_its_back.rs slow
+plain range_steps_known.rs beside own_iterator_flattened_from_its_back.rs slow
+
+#951 P1: rust-js crashes, `fast_reject` kind mismatch, of two crates' `Circle`
+plain std - beside copied_default_own_params.rs dyn_ref_cells.rs
+plain std - beside std_errors_boxed.rs dyn_struct_tails.rs
+
+#952 P1: rust-js crashes, `fn_arg_idents` of a `Loud` constructor
+plain std yielded_item_drops.rs beside drop_guard_of_a_closure.rs
+
+#953 P2: `{:?}` of a slice's iterator refused as `{:#?}`
+plain std iterator_read_as_itself.rs beside long_spreads.rs
+plain std std_enumerate.rs beside fmt_error_unwritten_branches.rs
+plain std slice_iter_debug.rs beside writer_callables.rs
+
+#954 P2: `Rc<System<K>>` refused as holding a value with a destructor
+plain std scope_struct_of_type_parameters.rs beside self_handle_reads_mutably.rs
+plain std rc_of_functions_of_a_param.rs beside dyn_fn_of_a_params_function_drops.rs
+plain std rc_of_functions_of_a_param.rs beside dyn_fn_once_drops_itself.rs
+
+#955 P2: cloning a `Map<I, F>` refused where `I` isn't bound by `Clone`
+plain range_mapped_by_a_function.rs beside cloned_chains_and_cycles.rs
+
+#956 P2: a `pub` thread-local's initializer refused as one it can't follow
+plain std thread_local_made_by_boxed_closure.rs beside unwrap_dropping.rs

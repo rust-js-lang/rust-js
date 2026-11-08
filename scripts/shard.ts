@@ -185,6 +185,7 @@ export const parts: Part[] = [
     why: "every corpus case compiled twice more, about 25 CPU-minutes: the corpus's own snapshots compare each push's one compile",
   },
   { setting: "MUT_REF_MATRIX", value: "all", runs: "nightly", by: ".github/workflows/nightly.yml", why: "all 72 programs: check:fast runs seven where a `&mut` changes" },
+  { setting: "NEIGHBOURS", value: "all", runs: "nightly", by: ".github/workflows/nightly.yml", why: "every group of the day's seed, some 120 crates of the corpus's cases: a push runs seed 0's first two and each listed pair (#853)" },
   { setting: "RUST_JS_DISTRIBUTION", value: "dist", runs: "nightly", by: "scripts/qualify.ts", why: "a release's packaged binary, which only qualification builds" },
 ];
 
@@ -196,6 +197,7 @@ export const harness = [
   "CHILD_LEFT_OUT",
   "FUZZ_REPORT",
   "ITERATOR_MATRIX_REPORT",
+  "NEIGHBOURS_SEED",
   "PATH",
   "PILOT_API",
   "RUSTC_BOOTSTRAP",

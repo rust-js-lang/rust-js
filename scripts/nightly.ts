@@ -76,6 +76,15 @@ export const jobs: Record<string, Part[]> = {
     cores: 3,
     timeout: 20 * minutes,
   })),
+  // The day's seed's groups of the corpus's cases, each one crate (#853,
+  // ADR 1103).
+  neighbours: parts("neighbours", cores, (i) => ({
+    cmd: ["bun", "test", "--timeout=1800000", "test/neighbours.test.ts"],
+    env: { ...compiler, NEIGHBOURS: "all", NEIGHBOURS_SEED: String(fuzzStart), RUST_JS_CASES: `${i}/${cores}` },
+    after: ["build"],
+    cores: 1,
+    timeout: 30 * minutes,
+  })),
   // Each `&mut` form through each operation, all 72 programs (ADR 1086).
   "mut-refs": [{
     id: "mut-refs",
