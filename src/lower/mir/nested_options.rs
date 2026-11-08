@@ -265,9 +265,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// ADR 0051's box of an `Option` of type `ty`, `boxed`, held as its
     /// payload, as a field held where it's made holds it (`nested_field`):
     /// of an `Option` of an `Option`, `undefined` of its `None`, and else
-    /// what its `Some` holds, its `None` `null`, `boxed === undefined ?
+    /// what its `Some` holds, its `None` `null`, `boxed == null ?
     /// undefined : $someValue(boxed) ?? null`; of one of a value never
-    /// `null`, `boxed === undefined ? null : $someValue(boxed)` (rd645). Of
+    /// `null`, `boxed == null ? null : $someValue(boxed)` (rd645). Of
     /// what `boxed_of_held` made, what it was made of.
     pub(super) fn held_of_boxed(&mut self, boxed: Expr, ty: Ty<'tcx>, out: &mut Vec<Stmt>) -> Expr {
         let none = self.held_none(ty);
@@ -305,7 +305,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => value,
             false => NoneForm::Nested.of_some().storage().written(value, false),
         };
-        Expr::cond(Expr::bin(Op::Eq, boxed, Expr::undefined()), none, held)
+        // Its `None` of any form, `undefined` or a nullable place's `null`,
+        // a nullable function's result say: its `Some` is never either, as
+        // `$some` boxes the `None` an `Option` of an `Option` holds, so `==
+        // null` tells it, where `=== undefined` took a nullable result's
+        // `None` for `Some(None)` (#957).
+        Expr::cond(Expr::bin(Op::LooseEq, boxed, Expr::null()), none, held)
     }
 
     /// The locals `OptionWrites::nested` says (ADR 1017): each an `Option`

@@ -476,3 +476,25 @@ against native Rust in both builds), diagnostics.test.ts's refusals of a
 `pub` struct's, and the mutations `nested-payload-unchecked`,
 `nested-none-like-of-private-refused` (`lower/bindings/nullable.ts`).
 
+
+## Amended (2026-11-08, #957): a `None` of any form is told by `== null`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. `Some(None)` where
+native Rust has `None`.
+
+A nullable field of an `Option<Option<i32>>`, held as its payload, written
+from the crate's own `#[rust_js::nullable]` function, `h.v = given(None)`,
+was given that function's `None`, `null` (ADR 0578), and told it apart by
+`=== undefined` (`held_of_boxed`): the `null` was taken for a `Some` and
+held as `Some(None)`. The `None` matrix (#855) found it, a writer of one
+`NoneForm` meeting a place of another.
+
+**`held_of_boxed` tells a `None` by `== null`.** What it's given is an
+`Option` of an `Option` as ADR 0051 boxes it, whose `Some` is never
+`undefined` nor `null`: `$some` boxes the `None` it holds. So `== null` is
+its `None` of either form, a plain place's `undefined` and a nullable
+place's `null`, and nothing else. Four corpus snapshots read `value == null
+?` where they read `value === undefined ?`. Corpus case
+`nested_option_field_written_from_a_nullable_result.rs`; the `None`
+matrix's program is off `wrong`. Mutation
+`held-of-boxed-none-undefined-only` (`lower/mir/nested_options.ts`).

@@ -75,7 +75,7 @@ function counted(entry) {
   }
   const first = bump();
   const second = bump();
-  entry.value = value === undefined ? undefined : ($someValue(value) ?? null);
+  entry.value = value == null ? undefined : ($someValue(value) ?? null);
   return (((first * 10) >>> 0) + second) >>> 0;
 }
 
@@ -110,7 +110,7 @@ function main() {
     return {
       done: at === 0,
       value: at === 0 ? undefined : at === 1 ? null : at,
-      name: value === undefined ? undefined : ($someValue(value) ?? null),
+      name: value == null ? undefined : ($someValue(value) ?? null),
     };
   }
   for (const at of [0, 1, 2, 13]) {

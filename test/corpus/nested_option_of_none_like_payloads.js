@@ -56,9 +56,9 @@ function make(i, n) {
       const value$1 = $some($some(undefined));
       const value$2 = $some($some(undefined));
       return {
-        weak: value === undefined ? undefined : ($someValue(value) ?? null),
-        pin: value$1 === undefined ? undefined : ($someValue(value$1) ?? null),
-        uninit: value$2 === undefined ? undefined : ($someValue(value$2) ?? null),
+        weak: value == null ? undefined : ($someValue(value) ?? null),
+        pin: value$1 == null ? undefined : ($someValue(value$1) ?? null),
+        uninit: value$2 == null ? undefined : ($someValue(value$2) ?? null),
         unit: $some(undefined),
       };
     }
@@ -69,7 +69,7 @@ function make(i, n) {
     default: {
       const value = $some($some(undefined));
       return {
-        pin: value === undefined ? undefined : ($someValue(value) ?? null),
+        pin: value == null ? undefined : ($someValue(value) ?? null),
         uninit: 1,
         unit: $some(undefined),
       };
@@ -79,8 +79,8 @@ function make(i, n) {
 
 function given(weak, unit) {
   return {
-    weak: weak === undefined ? undefined : ($someValue(weak) ?? null),
-    unit: unit === undefined ? undefined : ($someValue(unit) ?? null),
+    weak: weak == null ? undefined : ($someValue(weak) ?? null),
+    unit: unit == null ? undefined : ($someValue(unit) ?? null),
   };
 }
 
@@ -258,7 +258,7 @@ function main() {
       }
     }
   } catch (error) {
-    h.weak = value$1 === undefined ? undefined : ($someValue(value$1) ?? null);
+    h.weak = value$1 == null ? undefined : ($someValue(value$1) ?? null);
     if (h.weak != null) {
       if ($someValue(h.weak) != null) {
         $weakDrop($someValue(h.weak));
@@ -267,7 +267,7 @@ function main() {
     $rcDrop(n);
     throw error;
   }
-  h.weak = value$1 === undefined ? undefined : ($someValue(value$1) ?? null);
+  h.weak = value$1 == null ? undefined : ($someValue(value$1) ?? null);
   h.unit = $some(undefined);
   try {
     show(h);
@@ -290,7 +290,7 @@ function main() {
           }
         }
       } finally {
-        h.weak = value$2 === undefined ? undefined : ($someValue(value$2) ?? null);
+        h.weak = value$2 == null ? undefined : ($someValue(value$2) ?? null);
       }
       h.unit = undefined;
       show(h);
@@ -312,7 +312,7 @@ function genericState(g) {
 }
 
 function genericMade(held) {
-  return { held: held === undefined ? undefined : ($someValue(held) ?? null) };
+  return { held: held == null ? undefined : ($someValue(held) ?? null) };
 }
 
 export function generics() {

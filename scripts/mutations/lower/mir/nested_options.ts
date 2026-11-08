@@ -50,8 +50,8 @@ export const mutations: Mutation[] = [
     name: "nested-field-given-none-undefined",
     breaks: "a boxed `Some(None)` given a nested field is `undefined`, read back as `None` (#470)",
     file: "src/lower/mir/nested_options.rs",
-    find: "            false => NoneForm::Nested.of_some().storage().written(value, false),\n        };\n        Expr::cond(",
-    replace: "            false => value,\n        };\n        Expr::cond(",
+    find: "            false => NoneForm::Nested.of_some().storage().written(value, false),\n        };\n        // Its `None` of any form",
+    replace: "            false => value,\n        };\n        // Its `None` of any form",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_nullable_field.rs$"],
   },
   {
@@ -393,5 +393,14 @@ export const mutations: Mutation[] = [
     find: "        match bindings::is_held(self.tcx, field) && !local.is_some_and(|place| self.held_nested(state, place, 0)) {\n",
     replace: "        match bindings::holds_nested(self.tcx, field) && !local.is_some_and(|place| self.held_nested(state, place, 0)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
+  },
+  {
+    name: "held-of-boxed-none-undefined-only",
+    breaks:
+      "an `Option` of an `Option` held as its payload, a nullable field's, given a `None` that's `null`, a nullable function's result, tells it `=== undefined`, so it holds `Some(None)` where native Rust has `None` (#957)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "        Expr::cond(Expr::bin(Op::LooseEq, boxed, Expr::null()), none, held)\n",
+    replace: "        Expr::cond(Expr::bin(Op::Eq, boxed, Expr::undefined()), none, held)\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_field_written_from_a_nullable_result.rs$"],
   },
 ];

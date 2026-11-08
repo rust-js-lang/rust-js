@@ -63,7 +63,7 @@ function made(at, mid) {
   }
   return {
     candidate: `c${at}`,
-    sdpMid: mid === undefined ? undefined : ($someValue(mid) ?? null),
+    sdpMid: mid == null ? undefined : ($someValue(mid) ?? null),
     line,
   };
 }

@@ -46,10 +46,7 @@ const refused: Record<string, string> = keyed(
 
 /** The programs that run and differ from native Rust, each a wrong answer
  * filed P0, by its issue. One that agrees is taken off with its fix. */
-const wrong: Record<string, string> = keyed(
-  ["nullable_field__option__from_a_nullable_function"],
-  "#957: a nested nullable field written from a nullable function's `None` reads `Some(None)`",
-);
+const wrong: Record<string, string> = {};
 
 test("the sample, the refusals and the wrong answers are the matrix's programs", () => {
   const keyed = [...Object.keys(refused), ...Object.keys(wrong)];

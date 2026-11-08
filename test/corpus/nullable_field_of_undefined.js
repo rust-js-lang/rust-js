@@ -69,7 +69,7 @@ function made(at, mode) {
   return {
     name: `c${at}${shown}`,
     map,
-    mode: mode === undefined ? null : $someValue(mode),
+    mode: mode == null ? null : $someValue(mode),
     unit,
   };
 }
@@ -124,10 +124,10 @@ function main() {
   changed.map = null;
   changed.unit = undefined;
   console.log(`${shown(changed)} ${shown(constants[1])}`);
-  changed.map = GIVEN === undefined ? null : $someValue(GIVEN);
+  changed.map = GIVEN == null ? null : $someValue(GIVEN);
   const given = {
     name: "given",
-    map: GIVEN === undefined ? null : $someValue(GIVEN),
+    map: GIVEN == null ? null : $someValue(GIVEN),
     mode: null,
     unit: null,
   };
