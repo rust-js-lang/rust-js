@@ -903,4 +903,14 @@ export const mutations: Mutation[] = [
     replace: "        let outer = self.by_set.replace(false);\n",
     tests: ["test/corpus.test.ts", "-t", "^owned_maps_asked_their_length.rs$"],
   },
+  {
+    name: "source-iter-steps-unwritten",
+    breaks:
+      "std's compiled structs are made with no `inner`, their `SourceIter::as_inner`'s step, so a collect in place guards a `map`'s whole close, its function's drop too (#852)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        props.extend(self.source_iter_steps(ty, span)?);\n",
+    replace: "",
+    tests: ["test/std-package.test.ts", "-t", "committed @rust-js/std is std's bodies"],
+  },
+
 ];

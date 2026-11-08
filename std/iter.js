@@ -8835,6 +8835,12 @@ export function iterator_peekable(self, SelfIterator = { next: $next }, dropSelf
           }
         }
       },
+      inner(iterator) {
+        return iterator.iter;
+      },
+      dropInner(iterator) {
+        dropSelf?.(iterator.iter);
+      },
     },
   );
 }
@@ -8899,6 +8905,12 @@ export function iterator_fuse(
         if (iterator.iter != null) {
           dropSelf?.($someValue(iterator.iter));
         }
+      },
+      inner(iterator) {
+        return $someValue(iterator.iter);
+      },
+      dropInner(iterator) {
+        dropSelf?.($someValue(iterator.iter));
       },
     },
   );
@@ -9018,6 +9030,12 @@ export function iterator_enumerate(self, SelfIterator = { next: $next }, dropSel
       close(iterator) {
         dropSelf?.(iterator.iter);
       },
+      inner(iterator) {
+        return iterator.iter;
+      },
+      dropInner(iterator) {
+        dropSelf?.(iterator.iter);
+      },
     },
   );
 }
@@ -9079,6 +9097,12 @@ export function iterator_map(
           throw error;
         }
         dropF?.(iterator.f);
+      },
+      inner(iterator) {
+        return iterator.iter;
+      },
+      dropInner(iterator) {
+        dropSelf?.(iterator.iter);
       },
     },
   );
@@ -9142,6 +9166,12 @@ export function iterator_filter(
         }
         dropP?.(iterator.predicate);
       },
+      inner(iterator) {
+        return iterator.iter;
+      },
+      dropInner(iterator) {
+        dropSelf?.(iterator.iter);
+      },
     },
   );
 }
@@ -9188,6 +9218,12 @@ export function iterator_copied(self, SelfIterator = { next: $next }, TCopy, dro
       close(iterator) {
         dropSelf?.(iterator.it);
       },
+      inner(iterator) {
+        return iterator.it;
+      },
+      dropInner(iterator) {
+        dropSelf?.(iterator.it);
+      },
     },
   );
 }
@@ -9231,6 +9267,12 @@ export function iterator_cloned(self, SelfIterator = { next: $next }, TClone, dr
       },
       takes: ["fold"],
       close(iterator) {
+        dropSelf?.(iterator.it);
+      },
+      inner(iterator) {
+        return iterator.it;
+      },
+      dropInner(iterator) {
         dropSelf?.(iterator.it);
       },
     },
@@ -9302,6 +9344,12 @@ export function iterator_filterMap(
         }
         dropF?.(iterator.f);
       },
+      inner(iterator) {
+        return iterator.iter;
+      },
+      dropInner(iterator) {
+        dropSelf?.(iterator.iter);
+      },
     },
   );
 }
@@ -9361,6 +9409,12 @@ export function iterator_takeWhile(
         }
         dropP?.(iterator.predicate);
       },
+      inner(iterator) {
+        return iterator.iter;
+      },
+      dropInner(iterator) {
+        dropSelf?.(iterator.iter);
+      },
     },
   );
 }
@@ -9419,6 +9473,12 @@ export function iterator_skipWhile(
           throw error;
         }
         dropP?.(iterator.predicate);
+      },
+      inner(iterator) {
+        return iterator.iter;
+      },
+      dropInner(iterator) {
+        dropSelf?.(iterator.iter);
       },
     },
   );
@@ -9488,6 +9548,12 @@ export function iterator_mapWhile(
           throw error;
         }
         dropP?.(iterator.predicate);
+      },
+      inner(iterator) {
+        return iterator.iter;
+      },
+      dropInner(iterator) {
+        dropSelf?.(iterator.iter);
       },
     },
   );
@@ -9578,6 +9644,12 @@ export function iterator_scan(
         }
         dropSt?.(iterator.state);
       },
+      inner(iterator) {
+        return iterator.iter;
+      },
+      dropInner(iterator) {
+        dropSelf?.(iterator.iter);
+      },
     },
   );
 }
@@ -9636,6 +9708,12 @@ export function iterator_inspect(
           throw error;
         }
         dropF?.(iterator.f);
+      },
+      inner(iterator) {
+        return iterator.iter;
+      },
+      dropInner(iterator) {
+        dropSelf?.(iterator.iter);
       },
     },
   );
@@ -9774,6 +9852,12 @@ export function iterator_flatten(
           dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
         }
       },
+      inner(iterator) {
+        return iterator.inner.iter;
+      },
+      dropInner(iterator) {
+        iterator.inner.iter.return();
+      },
     },
   );
 }
@@ -9901,6 +9985,12 @@ export function iterator_flatMap(
                 iterator.iter.return();
               }
             },
+            inner(iterator) {
+              return $someValue(iterator.iter);
+            },
+            dropInner(iterator) {
+              $someValue(iterator.iter).return();
+            },
           },
         ),
       },
@@ -10024,6 +10114,12 @@ export function iterator_flatMap(
           dropUIntoIter?.($someValue(iterator.inner.backiter));
         }
       },
+      inner(iterator) {
+        return iterator.inner.iter;
+      },
+      dropInner(iterator) {
+        iterator.inner.iter.return();
+      },
     },
   );
 }
@@ -10080,6 +10176,12 @@ export function iterator_skip(self, n, SelfIterator = { next: $next }, dropSelf,
       close(iterator) {
         dropSelf?.(iterator.iter);
       },
+      inner(iterator) {
+        return iterator.iter;
+      },
+      dropInner(iterator) {
+        dropSelf?.(iterator.iter);
+      },
     },
   );
 }
@@ -10131,6 +10233,12 @@ export function iterator_take(self, n, SelfIterator = { next: $next }, dropSelf,
       },
       takes: ["fold", "count"],
       close(iterator) {
+        dropSelf?.(iterator.iter);
+      },
+      inner(iterator) {
+        return iterator.iter;
+      },
+      dropInner(iterator) {
         dropSelf?.(iterator.iter);
       },
     },
@@ -13317,6 +13425,12 @@ export function zipZipImplAB_new(
         }
         dropB?.(iterator.b);
       },
+      inner(iterator) {
+        return iterator.a;
+      },
+      dropInner(iterator) {
+        dropA?.(iterator.a);
+      },
     },
   );
 }
@@ -13432,6 +13546,12 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_new(
         }
         dropB?.(iterator.b);
       },
+      inner(iterator) {
+        return iterator.a;
+      },
+      dropInner(iterator) {
+        dropA?.(iterator.a);
+      },
     },
   );
 }
@@ -13531,6 +13651,12 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
           throw error;
         }
         dropB?.(iterator.b);
+      },
+      inner(iterator) {
+        return iterator.a;
+      },
+      dropInner(iterator) {
+        dropA?.(iterator.a);
       },
     },
   );

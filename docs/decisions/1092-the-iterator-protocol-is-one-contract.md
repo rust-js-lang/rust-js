@@ -1110,8 +1110,8 @@ or dropped what rustc leaks, as one of those points unwound:
   its result, which rustc leaks as an adapter's function's drop panics
   (rust-lang/rust#47949). `$collectEnded` is the one end of a collect,
   `$collectDropping`'s too. A compiled struct has no `from`, so its whole
-  close is guarded: right for its source's rest and wrong for its function,
-  which is #852, listed in iterator-forms' `differs`.
+  close was guarded: right for its source's rest and wrong for its
+  function. #852 fixed that (amendment below).
 - **A `skip()` drops the item its first `nth(n - 1)` gives back inside
   that step** (#844), as std's `Skip` drops it in the frame that holds
   `self`, `init` and `f`: its `fold`, `try_fold`, `count` and `last`, and
@@ -1315,3 +1315,62 @@ of no `ends`, now gets `undefined` where it got a function that did
 nothing. Each fold it reaches runs the same either way: `$endsAfter`,
 `$foldBy`, `$foldDropping` and `$closedAfter` drop nothing for both.
 `holding-function-dropped-twice` is new.
+
+## Amendment: a collect in place reaches its source through std's own structs (2026-11-08, #852)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. A drop more changed
+what a program prints, so Rust's behavior is kept.
+
+With `--std-iterators`, a collect in place of `map(f)` whose `f` held a
+value that panicked as it was dropped at the collect's end dropped what
+it collected. Native Rust leaks it: std's `from_iter` has forgotten its
+in-place guard and made the `Vec` its result by then
+(rust-lang/rust#47949). `$inPlaceSource` reached the source only through
+the runtime adapters' `from[0]`. A compiled struct (`$stdIterator`) has no
+`from`, so the collect closed the whole struct under the guard,
+`f`'s drop included. The same held for a `filter`'s predicate, a `zip`
+then a `map`, and an `enumerate().skip(1).map(f)`, which also dropped what
+it collected after the rest.
+
+std reaches the buffer it reuses by `SourceIter::as_inner`, one step per
+adapter. Each compiled struct that is a `SourceIter` now carries that step:
+
+- **`inner`** gives what the struct holds there: `iterator.iter` of a
+  `Map`, `iterator.a` of a `Zip`, `$someValue(iterator.iter)` of a `Fuse`,
+  `iterator.inner.iter` of a `Flatten`.
+- **`dropInner`** drops it, the field's own drop. It is written only where
+  that field has a drop.
+
+The step is read from std's MIR of the impl's `as_inner`, not from a list
+(`source_iter_step`, `recognition/specialization.rs`, beside
+`in_place_source`). That MIR gives on one borrow of a place of `*self`,
+which `borrowed_from_self` follows through copies and through the `Some`
+that a `Fuse`'s inlined `as_mut` makes of it. Recognition gives
+it as `SourceStep`s, a struct's field or an `Option`'s `Some`, and
+`std_iterator_steps` writes their JS, each field's key and the `Option`'s
+owner's `some_value` (`source_iter_steps`, `iterators/source_iter.rs`).
+
+`$inPlaceSource` follows each runtime adapter's `from[0]` and each
+struct's `inner` to the root, and returns what drops what's left of it.
+At a runtime adapter that is closing it, and at a struct that is its
+`dropInner`, std's `forget_allocation_drop_remaining`. `$collectEnded`
+runs that under the guard, which drops what it collected as a panic there
+unwinds. The adapters are then closed unguarded, as before. A struct's
+later close drops its source again, and finds nothing left.
+
+Corpus cases, both builds, against native Rust:
+`collected_in_place_leaked_past_an_adapters_drop.rs` (off iterator-forms'
+`differs`, which is now empty),
+`collected_in_place_leaked_past_a_filters_drop.rs`,
+`collected_in_place_through_adapters_leaked_past_their_drop.rs` and
+`collected_in_place_zipped_leaked_past_a_maps_drop.rs`. The last three
+were also wrong on main with `--std-iterators`. They and
+`collected_in_place_dropped_as_the_rest_panics.rs` are among iterator-forms'
+few. The points table's 4 case-builds under #852 are off its list.
+Mutations: `in-place-source-not-through-structs`,
+`in-place-source-struct-closed-whole`, `in-place-source-rest-unguarded`
+(`runtime/fold_of.ts`), `source-iter-steps-unwritten`
+(`lower/iterators/knowing.ts`), `source-iter-inner-undropped`
+(`lower/iterators/source_iter.ts`) and `source-iter-step-not-through-some` (`lower/recognition/specialization.ts`).
+`in-place-guard-over-the-adapters` and `collect-end-unwound-leaks` name
+their lines as they now read.

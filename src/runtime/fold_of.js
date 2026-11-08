@@ -97,23 +97,36 @@ function $foldToArray(it, drop, restFirst = false, inPlace = drop !== undefined 
   return folded;
 }
 
-// What a collect in place of `it` reuses the buffer of, a `Vec`'s
-// `IntoIter`: the source at its root, each adapter's first, `from[0]`,
-// that closes.
+// What's left of what a collect in place of `it` reuses the buffer of, a
+// `Vec`'s `IntoIter`, dropped, std's `forget_allocation_drop_remaining`: of
+// the source at its root, as std's `SourceIter::as_inner` reaches it,
+// through each runtime adapter's first, `from[0]`, that closes, closing
+// it; and through each compiled struct's `inner`, its `as_inner`'s step,
+// its `dropInner`, which drops what it holds there. No adapter's function
+// with it, which std drops after, unguarded (#852).
 function $inPlaceSource(it) {
-  let source = it;
-  while (source.from?.[0]?.return !== undefined) source = source.from[0];
-  return source;
+  let drop = () => it.return?.();
+  for (let source = it; ; ) {
+    const holder = source;
+    const inner = holder.$steps?.inner?.(holder);
+    if (inner != null) {
+      drop = () => holder.$steps.dropInner?.(holder);
+      source = inner;
+    } else if (holder.from?.[0]?.return !== undefined) {
+      const from = holder.from[0];
+      drop = () => from.return();
+      source = from;
+    } else {
+      return drop;
+    }
+  }
 }
 
-// `it` closed at the end of a collect into `items`, which is dropped by
-// `drop` as a panic of that close unwinds, as std's `from_iter` drops the
-// `Vec` it holds then (#677, #843).
-function $collectEnded(it, items, drop) {
-  $unwinds(
-    () => it.return?.(),
-    () => drop && $dropItems(items, drop),
-  );
+// `close`, what's left at the end of a collect into `items` dropped, which
+// is dropped by `drop` as a panic of that close unwinds, as std's
+// `from_iter` drops the `Vec` it holds then (#677, #843).
+function $collectEnded(close, items, drop) {
+  $unwinds(close, () => drop && $dropItems(items, drop));
 }
 
 // `collect()` into a `Vec` of what may throw as it's stepped, a panic in a
@@ -129,7 +142,7 @@ function $collectDropping(it, drop, restFirst = false) {
   }, $collectUnwound(it, items, drop, restFirst));
   // And at its end, as std's `collect` drops what it took then, what an
   // adapter that stops early left (ADR 0570), `$collectEnded`'s.
-  $collectEnded(it, items, drop);
+  $collectEnded(() => it.return?.(), items, drop);
   return items;
 }
 

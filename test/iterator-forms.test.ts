@@ -174,6 +174,15 @@ const few = [
   // A `cloned()` of an array's items stepped from its back, std's struct
   // given its compiled back where its step asks it (#856).
   "array_cloned_stepped_from_its_back.rs",
+  // A collect in place through std's structs, what's left of its source
+  // alone dropped under the guard, reached through each one's `inner`, its
+  // `SourceIter::as_inner`; the adapters after, a function's or a
+  // predicate's drop, unguarded (#852).
+  "collected_in_place_leaked_past_an_adapters_drop.rs",
+  "collected_in_place_dropped_as_the_rest_panics.rs",
+  "collected_in_place_leaked_past_a_filters_drop.rs",
+  "collected_in_place_through_adapters_leaked_past_their_drop.rs",
+  "collected_in_place_zipped_leaked_past_a_maps_drop.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus")
@@ -185,10 +194,7 @@ const chosen = which === "corpus" ? caseShard(cases) : few;
 /** The cases whose std-struct build doesn't run as native Rust yet, each
  * with why: what's left to do, which only shrinks. One that runs as Rust
  * does is taken off. */
-const differs: Record<string, string> = {
-  "collected_in_place_leaked_past_an_adapters_drop.rs":
-    "#852: a compiled adapter's in-place collect guards its whole close, its function's drop too",
-};
+const differs: Record<string, string> = {};
 
 test("the cases a run of a few names are the corpus's, and each listed difference is one", () => {
   for (const name of [...few, ...Object.keys(differs)])

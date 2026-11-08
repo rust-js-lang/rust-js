@@ -14,9 +14,6 @@
 // generator points c0f0093cbab5
 // generator unwind 1a27ee232157
 
-#852 P0: --std-iterators: an in-place collect whose compiled adapter's function's drop panics at its end drops what it collected
-points:std 560,571,5593,5604
-
 #862 P0 (drops): before an abort, a Vec IntoIter's count, or a rev map collected in place, drops past the second panic where native Rust stops
 plain 107177,107212,107450
 std 107177,107450

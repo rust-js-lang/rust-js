@@ -117,4 +117,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-std-unwinds.test.ts", "-t", "generic code asks"],
   },
+  {
+    name: "source-iter-step-not-through-some",
+    breaks: "a `Fuse`'s `as_inner`, which gives on the borrow it made a `Some` of, has no step, which std's compile asserts (#852)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "        ) if matches!(**kind, mir::AggregateKind::Adt(_, made, ..) if made == *variant) => {\n",
+    replace: "        ) if false => {\n",
+    tests: ["test/std-package.test.ts", "-t", "committed @rust-js/std is std's bodies"],
+  },
 ];

@@ -5,6 +5,7 @@
 //! the impl rustc selects (`optimized_default`).
 
 use super::*;
+use rustc_middle::mir;
 
 /// A call of a std trait's method whose impl rustc leaves to the caller's
 /// type, `FuseImpl::next(self)` of a `Fuse<I>` or `FlattenCompat`'s
@@ -373,6 +374,102 @@ pub(crate) fn in_place_source<'tcx>(
             source,
         )?)),
         false => Some(InPlaceSource::Never),
+    }
+}
+
+/// What std's adapter `adt` holds that it reaches its in-place source
+/// through, its `SourceIter::as_inner`'s one step: the place its body
+/// gives on to the `as_inner` of what it holds, `&mut self.iter` of a
+/// `Map`'s, `&mut self.a` of a `Zip`'s, `self.iter`'s `Some` of a `Fuse`'s,
+/// `&mut self.inner.iter` of a `Flatten`'s, each step from `*self`.
+/// A collect in place drops what's left of the source alone under its
+/// guard, the adapters after it (#852). `None` of one that's no
+/// `SourceIter`.
+pub(crate) fn source_iter_step(tcx: TyCtxt<'_>, adt: DefId) -> Option<Vec<SourceStep>> {
+    let [_, source_iter] = in_place_traits(tcx)?;
+    let as_inner = trait_method(tcx, source_iter, "as_inner");
+    let imp = (tcx.all_impls(source_iter)).find(|&imp| {
+        matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
+            ty::Adt(of, _) if of.did() == adt)
+    })?;
+    let method = *tcx.impl_item_implementor_ids(imp).get(&as_inner)?;
+    let body = tcx.optimized_mir(method);
+    let mut steps = (body.basic_blocks.iter()).filter_map(|data| {
+        let TerminatorKind::Call { func, args, .. } = &data.terminator().kind else {
+            return None;
+        };
+        let (callee, _) = func.const_fn_def()?;
+        let [arg] = &args[..] else {
+            return None;
+        };
+        (callee == as_inner).then(|| borrowed_from_self(body, arg.node.place()?))?
+    });
+    let step = steps.next();
+    debug_assert!(
+        step.is_some() && steps.next().is_none(),
+        "`{}`'s `as_inner` gives on one place of its own",
+        tcx.def_path_str(adt)
+    );
+    // Each projection, of the type it's of: a struct's field, or the
+    // payload of an `Option`'s `Some`, its downcast then its field.
+    let mut of = mir::PlaceTy::from_ty(tcx.type_of(adt).instantiate_identity().skip_normalization());
+    let mut found = Vec::new();
+    for elem in step? {
+        match (elem, of.ty.kind()) {
+            (mir::ProjectionElem::Downcast(..), ty::Adt(option, _))
+                if tcx.is_diagnostic_item(sym::Option, option.did()) => {}
+            (mir::ProjectionElem::Field(..), ty::Adt(option, _))
+                if tcx.is_diagnostic_item(sym::Option, option.did()) =>
+            {
+                found.push(SourceStep::SomeValue)
+            }
+            (mir::ProjectionElem::Field(field, _), ty::Adt(of, _)) if of.is_struct() => {
+                found.push(SourceStep::Field(field))
+            }
+            _ => unreachable!("`as_inner` reads a field of a struct or an `Option`'s `Some`, not {elem:?}"),
+        }
+        of = of.projection_ty(tcx, elem);
+    }
+    Some(found)
+}
+
+/// One step of a `SourceIter::as_inner`'s place (`source_iter_step`).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum SourceStep {
+    /// A struct's field.
+    Field(rustc_abi::FieldIdx),
+    /// What an `Option`'s `Some` holds.
+    SomeValue,
+}
+
+/// What `place` of `body` holds, followed through what it's assigned, a
+/// copy or a `Some` made of one, to a borrow of a place of `*self`,
+/// `&mut (*_1).0`: that place's projections from `*self`. A `Fuse`'s
+/// `as_inner` matches its `Option` by `as_mut`, inlined, its `Some` made
+/// of the borrow then read (#852).
+fn borrowed_from_self<'tcx>(body: &mir::Body<'tcx>, place: mir::Place<'tcx>) -> Option<Vec<mir::PlaceElem<'tcx>>> {
+    let assigned =
+        (body.basic_blocks.iter().flat_map(|data| &data.statements)).find_map(|statement| match &statement.kind {
+            mir::StatementKind::Assign(assign) if assign.0.as_local() == Some(place.local) => Some(&assign.1),
+            _ => None,
+        })?;
+    let from_operand = |operand: &mir::Operand<'tcx>| borrowed_from_self(body, operand.place()?);
+    match (assigned, &place.projection[..]) {
+        (mir::Rvalue::Ref(_, _, of), []) if of.local == mir::Local::from_u32(1) => match &of.projection[..] {
+            [mir::ProjectionElem::Deref, rest @ ..] => Some(rest.to_vec()),
+            _ => None,
+        },
+        (mir::Rvalue::Use(operand, _), []) => from_operand(operand),
+        (
+            mir::Rvalue::Aggregate(kind, operands),
+            [
+                mir::ProjectionElem::Downcast(_, variant),
+                mir::ProjectionElem::Field(field, _),
+            ],
+        ) if matches!(**kind, mir::AggregateKind::Adt(_, made, ..) if made == *variant) => {
+            from_operand(&operands[*field])
+        }
+        _ => None,
     }
 }
 

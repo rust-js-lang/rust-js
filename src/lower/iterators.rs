@@ -10,6 +10,7 @@ mod ends;
 mod hint_asks;
 mod in_place;
 mod knowing;
+mod source_iter;
 mod stepping;
 mod value;
 

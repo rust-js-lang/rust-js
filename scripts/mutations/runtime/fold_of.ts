@@ -79,8 +79,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a collect into a `Vec` whose last drop of what it steps panics, a `take()`'s of a flatten, leaks what it collected, where std's `from_iter` drops the `Vec` it holds as it unwinds (#677)",
     file: "src/runtime/fold_of.js",
-    find: "    () => drop && $dropItems(items, drop),\n  );\n}\n",
-    replace: "    () => undefined,\n  );\n}\n",
+    find: "  $unwinds(close, () => drop && $dropItems(items, drop));\n",
+    replace: "  $unwinds(close, () => undefined);\n",
     tests: ["test/corpus.test.ts", "-t", "^(collect_close_panics|collected_in_place_dropped_as_the_rest_panics).rs$"],
   },
   {
@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
       "a collect into a `Vec` in place of a `map(f)` whose `f` holds what panics as it's dropped at the end drops what it collected, which std's `from_iter` has made its result by then and rustc leaks (#843)",
     file: "src/runtime/fold_of.js",
     find: "  $collectEnded($inPlaceSource(it), items, drop);\n",
-    replace: "  $collectEnded(it, items, drop);\n",
+    replace: "  $collectEnded(() => it.return?.(), items, drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_in_place_leaked_past_an_adapters_drop.rs$"],
   },
   {
@@ -125,5 +125,32 @@ export const mutations: Mutation[] = [
     find: "  it.hold?.();\n  const close = () => it.return?.();\n",
     replace: "  const close = () => it.return?.();\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
+  },
+  {
+    name: "in-place-source-not-through-structs",
+    breaks:
+      "a collect in place of std's compiled `map(f)` guards the struct's whole close, so `f`'s drop's panic drops what it collected, which std's `from_iter` has made its result by then and rustc leaks (#852)",
+    file: "src/runtime/fold_of.js",
+    find: "    const inner = holder.$steps?.inner?.(holder);\n",
+    replace: "    const inner = undefined;\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^collected_in_place_(leaked_past_an_adapters_drop|through_adapters_leaked_past_their_drop) with std"],
+  },
+  {
+    name: "in-place-source-struct-closed-whole",
+    breaks:
+      "a collect in place through std's compiled structs closes the struct that holds its source whole under the guard, a `map`'s function's drop too, so its panic drops what it collected (#852)",
+    file: "src/runtime/fold_of.js",
+    find: "      drop = () => holder.$steps.dropInner?.(holder);\n",
+    replace: "      drop = () => holder.return();\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^collected_in_place_leaked_past_an_adapters_drop with std"],
+  },
+  {
+    name: "in-place-source-rest-unguarded",
+    breaks:
+      "a collect in place of std's compiled `take(3)` drops what's left of its source with no guard, after the adapters, so the rest's drop's panic leaks what it collected, where std's in-place guard drops it (#843, #852)",
+    file: "src/runtime/fold_of.js",
+    find: "      drop = () => holder.$steps.dropInner?.(holder);\n",
+    replace: "      drop = () => {};\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^collected_in_place_dropped_as_the_rest_panics with std"],
   },
 ];

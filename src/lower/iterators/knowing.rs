@@ -1029,6 +1029,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ));
             }
         }
+        props.extend(self.source_iter_steps(ty, span)?);
         Ok(Expr::object(props))
     }
 
