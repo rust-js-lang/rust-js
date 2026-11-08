@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "held-into-iter-param-from-js",
+    breaks:
+      "a collection's `extend` of an `IntoIterator` type parameter held as it is steps its caller's own value as a JS iterable (#966)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            None if matches!(ty.kind(), ty::Param(_))\n                && let Some(items) = self.items_by_dictionary(value.clone(), ty, span)? =>\n",
+    replace: "            None if false\n                && let Some(items) = self.items_by_dictionary(value.clone(), ty, span)? =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iterator_named_by_another_bound.rs$"],
+  },
+  {
     name: "step-by-count-unfolded",
     breaks:
       "a `step_by` of numbers known, `(0..10).step_by(3)` collected, asks room for `Math.ceil(10 / 3)`, not the 4 that surely fits",

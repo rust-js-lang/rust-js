@@ -120,3 +120,22 @@ whose `next` prints, generic over its iterator, over its items, an impl's
 method looping `for _ in self`, and a loop that drops a value and breaks,
 against native Rust in both builds. Mutation:
 `generic-own-iterator-into-iter-refused`.
+
+## Amendment: an `IntoIterator` another bound names is held as it is (#966)
+
+`fn total<I: IntoIterator>(items: impl Is<I>)` gives its body an `I` no
+parameter of type `I` holds: `items.is()` gives what the caller gave as
+`impl Is<I>`, its own value, which no caller made the JS iterator of its
+items. It was stepped as one, `for (const x of items)`, a `TypeError` of a
+crate's iterator or a `Vec`'s `IntoIter`. `into_iter_held_as_it_is` answers
+yes of a type parameter another bound names (`named_by_another_bound`, the
+one answer `given_as_it_is` reads too, ADR 0411), and the parameter that
+names it is given as it is with it, one value, one representation. Its
+items are its dictionary's `into_iter`'s wherever it's stepped, a
+collection's `extend` too (`items_by_dictionary`). A `&mut` collection
+given so arrives as the naming parameter's value, in the box generic code
+holds a `&mut` to an object in (ADR 0454), so its `IntoIterator` reads it
+there, not as ADR 0976's `zip` takes a `&mut [T]` as it is. A `&mut` to an
+iterator given so is still read as the iterator (#966's
+`iterables_given_to_generics`). Corpus case
+`into_iterator_named_by_another_bound`.

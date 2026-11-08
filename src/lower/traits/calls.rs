@@ -164,9 +164,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let erased = self.tcx.erase_and_anonymize_regions(bound);
                     // A type parameter bound by `IntoIterator` given a `&C`
                     // or a `&mut C`, `zip`'s `U`, held as it is, never in a
-                    // box (ADR 0976).
-                    let as_it_is =
-                        matches!(declared.self_ty().kind(), ty::Param(_)) && self.ref_into_iter_of_collection(bound);
+                    // box (ADR 0976); not one another bound names, `impl
+                    // Is<I>`'s, whose value arrives as that one's, in the box
+                    // generic code holds a `&mut` to an object in (#966).
+                    let as_it_is = matches!(*declared.self_ty().kind(), ty::Param(p)
+                        if !crate::lower::iterators::named_by_another_bound(self.tcx, id, p))
+                        && self.ref_into_iter_of_collection(bound);
                     match given
                         .iter()
                         .find(|(of, _)| self.tcx.erase_and_anonymize_regions(*of) == erased)

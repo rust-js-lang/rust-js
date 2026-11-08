@@ -25,6 +25,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // One given its dictionary, stepped by it, its `Some` unboxed
             // (ADR 0411).
             None if let Some(it) = self.given_js_iterator(value.clone(), ty, false, false) => Ok(it),
+            // A type parameter's whose `IntoIterator` is held as it is, its
+            // caller's own value: its dictionary's `into_iter` (#966).
+            None if matches!(ty.kind(), ty::Param(_))
+                && let Some(items) = self.items_by_dictionary(value.clone(), ty, span)? =>
+            {
+                Ok(items)
+            }
             // A type parameter's, which may be given an array (ADR 0061): JS's
             // iterator of it. An associated type's is what a dictionary
             // gives, a JS iterator already.

@@ -176,6 +176,15 @@ pub(in crate::lower) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id:
     {
         return true;
     }
+    // A type parameter another bound names, `impl Is<T>`'s: its caller's
+    // own value, as it's given it, never the JS iterator a caller makes of
+    // what it gives for it (#966).
+    if let ty::Param(param) = *into.kind()
+        && bound_as_iterator(tcx, id, param)
+        && named_by_another_bound(tcx, id, param)
+    {
+        return true;
+    }
     let is_its_iter = |ty: Ty<'tcx>| {
         matches!(*ty.kind(), ty::Alias(_, ty::AliasTy {
             kind: ty::Projection { def_id }, args, ..
@@ -353,15 +362,34 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
             let inside = inputs.iter().any(|&input| !itself(input.peel_refs()) && has(input));
             has(sig.output()) || meet || inside
         };
-    // Another bound that names it, of another type's, `A: Into<I>`, an
-    // `impl Is<I>` parameter's, `F: FnMut(I)`: what that one's methods give
-    // of it, or are given, is its caller's own value, which knows it as the
-    // type it is, never a JS iterator made for it (#966, #969).
-    let named = (tcx.clauses_of(id).instantiate_identity(tcx).into_iter()).any(|(clause, _)| {
+    // Another bound that names it, `impl Is<I>`'s (#966, #969).
+    let named = named_by_another_bound(tcx, id, param);
+    held || signature || read || named
+}
+
+/// Whether another bound of `id` names its type parameter `param`, of
+/// another type's, `A: Into<I>`, an `impl Is<I>` parameter's, `F:
+/// FnMut(I)`: what that one's methods give of it, or are given, is its
+/// caller's own value, which knows it as the type it is, never a JS
+/// iterator made for it (#966, #969). Not in a projection, `Vec<I::Item>`.
+pub(in crate::lower) fn named_by_another_bound<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy) -> bool {
+    let itself = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Param(p) if p.index == param.index);
+    let has = |ty: Ty<'tcx>| {
+        let mut walk = ty.walk();
+        while let Some(arg) = walk.next() {
+            match arg.as_type().map(|t| *t.kind()) {
+                Some(ty::Alias(..)) => walk.skip_current_subtree(),
+                Some(ty::Param(p)) if p.index == param.index => return true,
+                _ => {}
+            }
+        }
+        false
+    };
+    (tcx.clauses_of(id).instantiate_identity(tcx).into_iter()).any(|(clause, _)| {
         let clause = clause.skip_normalization();
         if let Some(bound) = clause.as_trait_clause() {
             let bound = bound.skip_binder();
-            return !matches!(bound.self_ty().kind(), ty::Param(p) if p.index == param.index)
+            return !itself(bound.self_ty())
                 && bound
                     .trait_ref
                     .args
@@ -371,7 +399,7 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
         }
         clause.as_projection_clause().is_some_and(|p| {
             let p = p.skip_binder();
-            !matches!(p.self_ty().kind(), ty::Param(q) if q.index == param.index)
+            !itself(p.self_ty())
                 && (p
                     .projection_term
                     .args
@@ -380,12 +408,12 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
                     .any(|arg| arg.as_type().is_some_and(has))
                     || p.term.as_type().is_some_and(has))
         })
-    });
-    held || signature || read || named
+    })
 }
 
 /// Whether a bound of `id`'s type parameter `param`, itself no iterator,
-/// names another, bound by `Iterator`, that's given as it is, `I` of `P:
+/// names another, bound by `Iterator` and given as it is, or an
+/// `IntoIterator` held as it is (`into_iter_held_as_it_is`), `I` of `P:
 /// Is<I>`, `A: Into<I>` or `F: FnOnce() -> I`: the one value passes between
 /// them, so one representation (#966, #969).
 fn names_given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy) -> bool {
@@ -405,6 +433,14 @@ fn names_given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::Param
             match arg.as_type().map(|t| *t.kind()) {
                 Some(ty::Alias(..)) => walk.skip_current_subtree(),
                 Some(ty::Param(p)) if p.index != param.index && stepped(p) && given_as_it_is(tcx, id, p) => {
+                    return true;
+                }
+                // An `IntoIterator` held as it is, `impl Is<T>`'s `T`.
+                Some(ty::Param(p))
+                    if p.index != param.index
+                        && bound_as_iterator(tcx, id, p)
+                        && into_iter_held_as_it_is(tcx, id, Ty::new_param(tcx, p.index, p.name)) =>
+                {
                     return true;
                 }
                 _ => {}

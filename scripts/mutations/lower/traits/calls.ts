@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "named-into-iter-unboxed",
+    breaks:
+      "an `IntoIterator` of a `&mut Vec` reached through `impl Is<I>` reads the array where generic code has its box: `bump(&mut v)` writes nothing (#966)",
+    file: "src/lower/traits/calls.rs",
+    find: "                        if !crate::lower::iterators::named_by_another_bound(self.tcx, id, p))\n",
+    replace: "                        if true)\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iterator_named_by_another_bound.rs$"],
+  },
+  {
     name: "default-dictionaries-kept",
     breaks:
       "a compiled std function's call writes each default dictionary it takes where it's given none, `{ next: $next }`, at its end (ADR 0995)",

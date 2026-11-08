@@ -11,18 +11,12 @@ plain std impl-owned by_ref_lends.rs
 plain std impl-owned closure_drops.rs
 plain std impl-owned copied_iterator_defaults.rs
 plain impl-owned filters_held_double_ended.rs
-plain std impl-owned fn_item_converting_argument.rs
-plain std impl-owned fused_iterators.rs
-plain std impl-owned generic_chain_of_into.rs
 plain std impl-owned impl_fn_mut_lent.rs
-plain std impl-owned into_iter_of_items.rs
 plain std impl-owned iterables_given_to_generics.rs
 plain std impl-owned nth_passes_a_slice_or_each.rs
 plain impl-owned own_back_methods_given_dictionaries.rs
 plain std impl-owned own_back_through_adapters.rs
 plain std impl-owned references_given_to_generics.rs
-plain std impl-owned result_given_as_items.rs
-plain std impl-owned std_fuse.rs
 plain std impl-owned unrun_function_drops.rs
 
 #980 P0: a read of what a `Box` holds, `*n`, moved past a later write of it, `pair(*n, { *n += 1; *n })`

@@ -3,6 +3,24 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "into-iter-named-not-held",
+    breaks:
+      "an `IntoIterator` type parameter `impl Is<I>` names is made a JS iterator by `Iterator.from` where its caller gave its own value, a crate's iterator struct (#966)",
+    file: "src/lower/iterators.rs",
+    find: "        && bound_as_iterator(tcx, id, param)\n        && named_by_another_bound(tcx, id, param)\n",
+    replace: "        && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iterator_named_by_another_bound.rs$"],
+  },
+  {
+    name: "naming-parameter-of-into-iter-boxed",
+    breaks:
+      "`impl Is<I>` of an `IntoIterator` held as it is goes as a JS iterator its caller makes, where `I`, the same value, is held as it is (#966)",
+    file: "src/lower/iterators.rs",
+    find: "                        && into_iter_held_as_it_is(tcx, id, Ty::new_param(tcx, p.index, p.name)) =>\n",
+    replace: "                        && false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iterator_named_by_another_bound.rs$"],
+  },
+  {
     name: "reversal-of-range-chain-as-items",
     breaks:
       "a map of a range stepped from its end, made in place, is read as its source's map, which steps the range forward: `Some(2)` where Rust gives `Some(9)` (ADR 0987)",
@@ -99,8 +117,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`all<I>(i) -> Vec<I::Item>`, which gives back only its items, takes its `I` as it is, with a dictionary",
     file: "src/lower/iterators.rs",
-    find: "                Some(ty::Alias(..)) => walk.skip_current_subtree(),\n                Some(ty::Param(p)) if p.index == param.index => return true,\n",
-    replace: "                Some(ty::Param(p)) if p.index == param.index => return true,\n",
+    find: "    // projection isn't given back.\n    let has = |ty: Ty<'tcx>| {\n        let mut walk = ty.walk();\n        while let Some(arg) = walk.next() {\n            match arg.as_type().map(|t| *t.kind()) {\n                Some(ty::Alias(..)) => walk.skip_current_subtree(),\n",
+    replace: "    // projection isn't given back.\n    let has = |ty: Ty<'tcx>| {\n        let mut walk = ty.walk();\n        while let Some(arg) = walk.next() {\n            match arg.as_type().map(|t| *t.kind()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_types.rs$"],
     snapshots: true,
   },

@@ -398,17 +398,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(value)
     }
 
-    /// The JS iterator of `value`'s items, of `ty`, an associated type whose
-    /// `IntoIterator` this function holds as it is, `I::Item`'s (ADR 0552,
-    /// #278): its dictionary's `into_iter`, stepped by the `Iterator` that
-    /// carries, `$given(IItemIntoIterator.intoIter(item), ..)`.
+    /// The JS iterator of `value`'s items, of `ty`, an associated type or a
+    /// type parameter whose `IntoIterator` this function holds as it is,
+    /// `I::Item`'s (ADR 0552, #278), `impl Is<I>`'s `I` (#966): its
+    /// dictionary's `into_iter`, stepped by the `Iterator` that carries,
+    /// `$given(IItemIntoIterator.intoIter(item), ..)`.
     pub(in crate::lower) fn items_by_dictionary(
         &mut self,
         value: Expr,
         ty: ty::Ty<'tcx>,
         span: Span,
     ) -> R<Option<Expr>> {
-        if !matches!(ty.kind(), ty::Alias(..)) || !self.holds_into_iter(ty) {
+        if !matches!(ty.kind(), ty::Alias(..) | ty::Param(_)) || !self.holds_into_iter(ty) {
             return Ok(None);
         }
         let into_iterator = std_item(self.tcx, StdItem::IntoIterator);
