@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "given-function-box-unboxed",
+    breaks:
+      "a function given for an `F: FnMut(&mut T)` that takes generic code's box itself, `bumped::<Counter>`, is given the object out of it: `undefined` (#975)",
+    file: "src/lower/mut_refs.rs",
+    find: "                    && !given.is_some_and(|given| self.takes_box_itself(given, at))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fn_value_is_one_function.rs$"],
+  },
+  {
     name: "into-iter-self-items-given",
     breaks:
       "`for x in &mut v` steps `v`'s numbers, not a handle on each: `into_iter`'s own `self`, bound by `IntoIterator`, counted as giving the `&mut`s it makes (ADR 0926)",

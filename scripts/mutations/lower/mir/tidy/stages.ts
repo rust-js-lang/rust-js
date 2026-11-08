@@ -3,6 +3,15 @@
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
+  {
+    name: "unread-instance-value-kept",
+    breaks: "a `const` nothing reads of an instance's value, `const twice = count4`, is kept, and so the value it reads (#974)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                                    || matches!(value.kind, js::ExprKind::Var(_)) && value.facts.has(js::Known::Item)))\n",
+    replace: "                                    || false))\n",
+    tests: ["test/corpus.test.ts", "-t", "^const_generics.rs$"],
+    snapshots: true,
+  },
 
   {
     name: "chains-continued-off",
@@ -1111,8 +1120,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding's value MIR held in a variable nothing reads is kept, `export const NAMED = (() => { const value = (value) => String(value); return make(String); })();` (rd542)",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "                                && matches!(value.kind, js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..)))\n",
-    replace: "                                && false)\n",
+    find: "                                && (matches!(value.kind, js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..))\n",
+    replace: "                                && (false\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "dyn Fn is what its call gave it"],
   },
   {

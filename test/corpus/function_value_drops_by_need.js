@@ -10,6 +10,8 @@ import {
   $next,
 } from "@rust-js/runtime";
 
+const firstLoud = (arg0) => first(arg0, loudDrop_drop);
+
 export function entry() {
   main();
 }
@@ -55,7 +57,7 @@ function main() {
             loudDrop_drop(item$1);
           }
         }
-      }).map((arg0) => first(arg0, loudDrop_drop)),
+      }).map(firstLoud),
       (option) => {
         if (option != null) {
           loudDrop_drop(option);

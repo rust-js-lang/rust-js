@@ -734,11 +734,13 @@ pub(super) const STAGES: &[Stage] = &[
                     // A function made that nothing reads, which making does
                     // nothing: a binding's value MIR held in a variable of
                     // its function's type, whose `&` is read by the type,
-                    // `make(&text_of)` of a thread-local's initializer (rd542).
+                    // `make(&text_of)` of a thread-local's initializer (rd542);
+                    // or read, the program's, an instance's `noopU32` (#974).
                     s.retain(|stmt| {
                         !matches!(&stmt.kind, StmtKind::Const(name, value)
                             if !mentions.contains_key(name)
-                                && matches!(value.kind, js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..)))
+                                && (matches!(value.kind, js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..))
+                                    || matches!(value.kind, js::ExprKind::Var(_)) && value.facts.has(js::Known::Item)))
                     })
                 })
             }),

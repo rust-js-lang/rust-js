@@ -1138,7 +1138,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // it gives the object, `(x) => f(x.value)` (ADR 0454).
                 value => {
                     let f = self.value_expr(value, span)?;
-                    let unboxed = callee.and_then(|(id, args)| self.unboxed_by_function(id, i, args));
+                    let given = arg_tys.get(i).copied();
+                    let unboxed = callee.and_then(|(id, args)| self.unboxed_by_function(id, i, args, given));
                     exprs.push(match unboxed {
                         Some(unboxed) => {
                             let params: Vec<String> =

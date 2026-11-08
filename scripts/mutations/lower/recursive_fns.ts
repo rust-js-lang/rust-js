@@ -5,11 +5,29 @@ const perModule = ["test/corpus.test.ts", "-t", "^recursive_fns_per_module.rs$"]
 
 export const mutations: Mutation[] = [
   {
+    name: "instance-value-alias-written",
+    breaks: "an instance's value its drops left the function itself is written as an alias, `const keepLoud = keep`, and read as one (#974)",
+    file: "src/lower/recursive_fns.rs",
+    find: "        let aliases = self.take_aliases();\n",
+    replace: "        let aliases: IndexMap<String, Expr> = IndexMap::default();\n",
+    tests: ["test/corpus.test.ts", "-t", "^function_value_drops_by_need.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "instance-value-unread-written",
+    breaks: "an instance's value nothing reads, `count4` of a direct call, is written (#974)",
+    file: "src/lower/recursive_fns.rs",
+    find: "        self.drop_unread_values(&read);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^const_generics.rs$"],
+    snapshots: true,
+  },
+  {
     name: "module-dictionary-as-function",
     breaks: "a module's dictionary `const` is written as a function returning it, which generic code reads as the dictionary (#944)",
     file: "src/lower/recursive_fns.rs",
-    find: "                constant: matches!(kind, Kind::Dictionary(_)),\n",
-    replace: "                constant: false,\n",
+    find: "                constant: matches!(kind, Kind::Dictionary(_) | Kind::FnValue),\n",
+    replace: "                constant: matches!(kind, Kind::FnValue),\n",
     tests: ["test/lowering-dictionaries.test.ts", "-t", "an Ord dictionary holds its PartialOrd"],
   },
   {

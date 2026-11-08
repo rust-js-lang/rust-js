@@ -342,12 +342,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// FnOnce(&mut T)` of `and_then_or_clear`'s, in a call of it,
     /// `generic_args`: which of the function's parameters generic code gives
     /// a box of what the caller has as an object, `&mut T` of a `T` that's
-    /// one here (ADR 0454). `None` where none is.
+    /// one here (ADR 0454). `None` where none is. Not where the function
+    /// given, `given`'s, a function of the crate's, takes a box there
+    /// itself, a `&mut` of its own type parameter's, `bump(c: &mut impl
+    /// GetMut<Counter>)` (#975).
     pub(super) fn unboxed_by_function(
         &self,
         def_id: DefId,
         i: usize,
         generic_args: ty::GenericArgsRef<'tcx>,
+        given: Option<Ty<'tcx>>,
     ) -> Option<Vec<bool>> {
         let sig = self
             .tcx
@@ -367,13 +371,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .type_at(1)
             .tuple_fields()
             .iter()
-            .map(|given| {
-                matches!(*given.kind(), ty::Ref(_, pointee, Mutability::Mut)
+            .enumerate()
+            .map(|(at, passed)| {
+                matches!(*passed.kind(), ty::Ref(_, pointee, Mutability::Mut)
                     if self.mut_ref_form_in(pointee, param_env) == MutRefForm::GenericBox
                         && !self.mut_ref_form(self.instantiated(pointee, generic_args)).is_cell())
+                    && !given.is_some_and(|given| self.takes_box_itself(given, at))
             })
             .collect();
         unboxed.iter().any(|&unboxed| unboxed).then_some(unboxed)
+    }
+
+    /// Whether `given`, the type of a function of the crate's given as a
+    /// value, takes a box at its parameter `at` by its own declaration: a
+    /// `&mut` of its own type parameter's, which its body reads as generic
+    /// code's box (ADR 0099), whatever its instance is (#975).
+    fn takes_box_itself(&self, given: Ty<'tcx>, at: usize) -> bool {
+        let Some((id, _)) = crate::lower::fn_def(given) else {
+            return false;
+        };
+        let sig = self
+            .tcx
+            .fn_sig(id)
+            .instantiate_identity()
+            .skip_normalization()
+            .skip_binder();
+        sig.inputs().get(at).is_some_and(|&input| {
+            matches!(*input.kind(), ty::Ref(_, pointee, Mutability::Mut)
+                if self.mut_ref_form_in(pointee, self.tcx.param_env(id)) == MutRefForm::GenericBox)
+        })
     }
 
     /// The methods of `trait_id`, a trait of the crate's, that generic code

@@ -2,6 +2,8 @@
 
 import { $debugStr, $index } from "@rust-js/runtime";
 
+const hereValue = () => here({ file: "test/corpus/track_caller.rs", line: 13, column: 1 });
+
 export function entry() {
   main();
 }
@@ -42,7 +44,7 @@ function main() {
   console.log(`(${value[0]}, ${value[1]})`);
   const grid = [[4, 5]];
   console.log(`${gridIndexUsize_index(grid, 1)}`);
-  const pointer = () => here({ file: "test/corpus/track_caller.rs", line: 13, column: 1 });
+  const pointer = hereValue;
   console.log(`${pointer().line} ${pointer().column}`);
   const lines = [undefined, undefined].map(
     () => here({ file: "test/corpus/track_caller.rs", line: 59, column: 50 }).line,

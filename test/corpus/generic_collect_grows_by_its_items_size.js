@@ -16,6 +16,8 @@ import {
   $treeFromSorted,
 } from "@rust-js/runtime";
 
+const endlessU32 = () => endless({ default: () => 0 });
+
 export function entry() {
   main();
 }
@@ -423,7 +425,7 @@ function main() {
       ).length
     }`,
   );
-  const overflowed = $catchUnwind(() => endless({ default: () => 0 }));
+  const overflowed = $catchUnwind(endlessU32);
   const value = overflowed.TAG === "Ok" ? overflowed._0 : undefined;
   console.log(`endless ${value == null ? "None" : `Some(${value})`}`);
 }

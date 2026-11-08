@@ -2,6 +2,8 @@
 
 import { $ptrTo } from "@rust-js/runtime";
 
+const showOfU32 = (arg0) => showOf(arg0, { fmt: String });
+
 export function entry() {
   main();
 }
@@ -20,12 +22,14 @@ function showOf(p, EDisplay) {
 
 const NUMBER = {
   name: "number",
-  show: (arg0) => showOf(arg0, { fmt: String }),
+  show: showOfU32,
 };
+
+const showOfRefStr = (arg0) => showOf(arg0, { fmt: (value) => value });
 
 const TEXT = {
   name: "text",
-  show: (arg0) => showOf(arg0, { fmt: (value) => value }),
+  show: showOfRefStr,
 };
 
 function erased(inner) {

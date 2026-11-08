@@ -601,9 +601,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a function given to generic code for its `F: FnMut(&mut T)` of an object `T` is given as it is, and called with generic code's box of the object",
     file: "src/lower/mir/assign.rs",
-    find: "                    let unboxed = callee.and_then(|(id, args)| self.unboxed_by_function(id, i, args));\n",
+    find: "                    let unboxed = callee.and_then(|(id, args)| self.unboxed_by_function(id, i, args, given));\n",
     replace:
-      "                    let unboxed = callee.and_then(|(id, args)| self.unboxed_by_function(id, i, args)).filter(|_| false);\n",
+      "                    let unboxed = callee.and_then(|(id, args)| self.unboxed_by_function(id, i, args, given)).filter(|_| false);\n",
     tests: ["test/corpus.test.ts", "-t", "^function_given_for_a_mut_param.rs$"],
   },
   {

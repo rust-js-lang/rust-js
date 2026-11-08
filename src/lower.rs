@@ -967,25 +967,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // One given its caller's location is called where it's defined,
             // as rustc's shim of it calls it (ADR 0427).
             let location = self.location_at(self.tcx.def_span(def_id));
-            let evidence = self.evidence_args_with(def_id, args, location, span)?;
-            return Ok(Some(if evidence.is_empty() {
-                callee
-            } else {
-                let count = self
-                    .tcx
-                    .fn_sig(def_id)
-                    .instantiate(self.tcx, args)
-                    .skip_normalization()
-                    .skip_binder()
-                    .inputs()
-                    .len();
+            if self
+                .evidence_args_with(def_id, args, location.clone(), span)?
+                .is_empty()
+            {
+                return Ok(Some(callee));
+            }
+            let count = (self.tcx.fn_sig(def_id).instantiate(self.tcx, args))
+                .skip_normalization()
+                .skip_binder()
+                .inputs()
+                .len();
+            let name = match &callee.kind {
+                js::ExprKind::Var(name) => name.clone(),
+                _ => camel_case(self.tcx.item_name(def_id).as_str()),
+            };
+            let made = move |cx: &mut Self| {
+                let evidence = cx.evidence_args_with(def_id, args, location, span)?;
                 let params: Vec<String> = (0..count).map(|i| format!("arg{i}")).collect();
                 let values = params.iter().map(|name| Expr::var(name)).chain(evidence).collect();
-                Expr::arrow(
+                Ok(Expr::arrow(
                     params.into_iter().map(Into::into).collect(),
                     vec![StmtKind::Return(Some(Expr::call(callee, values))).at(js_span)],
-                )
-            }));
+                ))
+            };
+            // Of an instance its module knows whole, its module's `const`,
+            // so each use is the one function, as Rust's pointer to it is
+            // (ADR 0395, #974); of one given its caller's dictionaries, the
+            // arrow of them, a function of the call that made it.
+            let whole = !args.has_non_region_param() && !args.has_aliases() && !self.in_copied_default();
+            if whole {
+                let base = traits::instance_name(self.tcx, &name, args);
+                return self.module_fn_value((ty, &base), made).map(Some);
+            }
+            return made(self).map(Some);
         }
         let known = self.recognition().classify(def_id, args);
         if let Some(known) = known

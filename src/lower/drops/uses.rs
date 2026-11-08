@@ -148,7 +148,9 @@ impl DropsObserved {
         takes_used: &TakesUsed,
         drop_params: &IndexMap<DefId, Vec<u32>>,
         items: impl Iterator<Item = (DefId, &'l mut crate::lower::LoweredFn)>,
+        module_fns: &mut crate::lower::recursive_fns::ModuleFns<'_>,
     ) -> IndexMap<DefId, Vec<u32>> {
+        let mut items: Vec<(DefId, &'l mut crate::lower::LoweredFn)> = items.collect();
         let mut drop_params = drop_params.clone();
         let mut kept = self.used;
         let mut changed = true;
@@ -165,7 +167,8 @@ impl DropsObserved {
                 indices.retain(|&index| kept.contains(&(*id, index)));
             }
         }
-        for (id, item) in items {
+        for (id, item) in items.iter_mut() {
+            let id = *id;
             if let Some(names) = self.names.get(&id) {
                 let unused: IndexSet<&str> = names
                     .iter()
@@ -178,6 +181,13 @@ impl DropsObserved {
             }
             js::each_expr_mut(&mut item.function.body, &mut |e| keep_arguments(e, &kept));
         }
+        // A module's own, which call the items as they do; an instance's
+        // value its drops left the function itself read as it, one nothing
+        // reads never written (#974).
+        for function in module_fns.functions_mut() {
+            js::each_expr_mut(&mut function.body, &mut |e| keep_arguments(e, &kept));
+        }
+        module_fns.settle_values(items.into_iter().map(|(_, item)| &mut item.function));
         drop_params
     }
 }

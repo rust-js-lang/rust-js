@@ -3,6 +3,15 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "instance-value-made-at-each-use",
+    breaks:
+      "a generic function's instance taken as a value is a new arrow at each use, so `f == table[0]` of `double::<i32>` taken twice is false (#974)",
+    file: "src/lower.rs",
+    find: "            let whole = !args.has_non_region_param() && !args.has_aliases() && !self.in_copied_default();\n",
+    replace: "            let whole = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fn_value_is_one_function.rs$"],
+  },
+  {
     name: "path-directory-ignored",
     breaks: "a module in a `#[path]` directory has its JS where its module path says",
     file: "src/lower.rs",
@@ -262,8 +271,8 @@ export const mutations: Mutation[] = [
     name: "pointer-shim-given-location",
     breaks: "a tracked function as a value taken inside another that tracks its caller is given that one's location, not its own definition's",
     file: "src/lower.rs",
-    find: "            let location = self.location_at(self.tcx.def_span(def_id));\n            let evidence = self.evidence_args_with(def_id, args, location, span)?;\n",
-    replace: "            let location = self.caller_location(self.tcx.def_span(def_id));\n            let evidence = self.evidence_args_with(def_id, args, location, span)?;\n",
+    find: "            let location = self.location_at(self.tcx.def_span(def_id));\n            if self\n",
+    replace: "            let location = self.caller_location(self.tcx.def_span(def_id));\n            if self\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
   },
   {

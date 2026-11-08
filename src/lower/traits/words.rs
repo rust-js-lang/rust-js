@@ -161,6 +161,25 @@ pub(super) fn evidence_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
     }
 }
 
+/// A function's instance's name as a value, of the function's JS `name`
+/// and its arguments' words, its types' and its consts', `noopU32` of
+/// `noop::<u32>`, `count4` of `count::<4>`; of one of none, given its
+/// caller's location alone, `hereValue` (#974).
+pub(in crate::lower) fn instance_name<'tcx>(tcx: TyCtxt<'tcx>, name: &str, args: ty::GenericArgsRef<'tcx>) -> String {
+    let words: String = (args.iter())
+        .filter_map(|arg| match arg.kind() {
+            ty::GenericArgKind::Type(ty) => Some(full_type_word(tcx, ty)),
+            ty::GenericArgKind::Const(c) => Some(c.to_string()),
+            ty::GenericArgKind::Lifetime(_) => None,
+        })
+        .map(|word| crate::lower::upper_first(&js_word(&word)))
+        .collect();
+    match words.is_empty() {
+        true => format!("{name}Value"),
+        false => format!("{name}{words}"),
+    }
+}
+
 /// A type as a word of a JS name: an ADT's own name, `Meters` of
 /// `Meters<T>`; a reference's, `RefFlags` of `&'a Flags` and `RefMutI32`
 /// of `&mut i32`, with no lifetime, which isn't in the JS.

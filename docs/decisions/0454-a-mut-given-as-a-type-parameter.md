@@ -667,3 +667,14 @@ again whenever the pair is: it moves no temporary but a variable into a
 handle's or a pair's place now (`handles_read`). Held by corpus
 `temporary_made_a_mut_dyn_stepped` and the mutation
 `temporary-moved-into-a-pair` (`lower/mir/tidy/moves.ts`).
+
+## Amendment: a function given that takes the box itself is given it (#975)
+
+A function of the crate's given for an `F: FnMut(&mut T)` of a `T` that's
+an object here was always given generic code's box taken apart, `(x0) =>
+f(x0.value)`. One whose own parameter there is a `&mut` of its own type
+parameter's, `bump(c: &mut impl GetMut<Counter>)`, reads generic code's box
+itself (ADR 0099), and was given the object: a `TypeError`.
+`unboxed_by_function` asks the function given, by its type, and leaves the
+box as it is where it takes one (`takes_box_itself`). Corpus case
+`generic_fn_value_is_one_function`.

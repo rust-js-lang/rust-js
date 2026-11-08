@@ -721,10 +721,10 @@ pub fn lower_crate<'tcx>(
     }
     let no_drops = std::mem::take(&mut drops_observed.no_drops);
     // Only the drops each function uses (ADR 0300), of each copy of one its
-    // callers need too.
+    // callers need too, and of the module's own functions (#974).
     let lowered = (lowered_items.iter_mut().map(|(id, item)| (*id, item)))
         .chain(lowered_copies.iter_mut().map(|((id, _), item)| (*id, item)));
-    let kept_drop_params = drops_observed.keep(&takes_used_drops, &drop_params, lowered);
+    let kept_drop_params = drops_observed.keep(&takes_used_drops, &drop_params, lowered, &mut module_fns);
     // The copies made alike another left out, each call of one calling that
     // one (ADR 0051, amended).
     let through = (lowered_items

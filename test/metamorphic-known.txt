@@ -53,10 +53,3 @@ plain std boxed struct_update_drops.rs
 plain std boxed untagged_enums.rs
 plain std boxed unwrap_dropping.rs
 plain std boxed wrapping_assign_of_a_copy.rs
-
-#974 P0: a generic function item as a value is a new arrow at each use, so `ptr::eq` of it is false
-plain std impl-owned fn_pointer_eq.rs
-plain std impl-ref fn_compared_by_its_pointer.rs
-
-#975 P0: a reference parameter taken as `&impl` of an identity trait, a transmute's and a function's given for a `&mut` parameter
-plain std impl-ref function_given_for_a_mut_param.rs

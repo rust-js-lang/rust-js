@@ -37,3 +37,23 @@ console.log(`${f === table[0]} ${g == square}`);
   of. JS never does either: one function is equal to itself alone.
 - `{:?}` of a function pointer, its address, is still an error: it changes
   from run to run.
+
+## Amendment: a generic function's instance is one function (#974)
+
+A generic function taken as a value is the arrow that gives it its
+dictionaries, `(arg0) => noop(arg0, tMetamorphGetT)`, which was made again
+at each use: `std::ptr::eq(handler, &noop)` and `f == table[0]` of
+`double::<i32>` taken twice were false where Rust's are true. An instance
+its module knows whole, its arguments of no type parameter, is its module's
+`const`, made the first time it's taken and named for the function and its
+arguments, `const noopU32 = (arg0) => noop(arg0, tMetamorphGetT)`,
+`count4`, `hereValue` of a `#[track_caller]` one given its location alone
+(`module_fn_value`, `Kind::FnValue`, as std's order dictionaries are
+`const`s of their module, #944): each use is the one function. Its drop
+arguments are settled as an item's are (ADR 0300); where its drops leave the
+function itself, `keep`, each use reads the function, and one nothing reads
+is never written. Rust's answer is kept (ADR 0262's third case). An
+instance given its caller's dictionaries, taken in generic code, is still
+the arrow made where it's taken: one function for each time its maker
+runs. Corpus case `generic_fn_value_is_one_function`; the metamorphic net's
+`fn_pointer_eq` and `fn_compared_by_its_pointer` rewrites run as native.

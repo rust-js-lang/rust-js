@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "instance-value-drops-unsettled",
+    breaks:
+      "an instance's value given its drop, `firstLoud`, keeps its drop's argument unsettled: rust-js refuses its own output (#974)",
+    file: "src/lower/drops/uses.rs",
+    find: "            js::each_expr_mut(&mut function.body, &mut |e| keep_arguments(e, &kept));\n        }\n        module_fns",
+    replace: "        }\n        module_fns",
+    tests: ["test/corpus.test.ts", "-t", "^function_value_drops_by_need.rs$"],
+  },
+  {
     name: "drops-by-need-passed-ignored",
     breaks:
       "a drop passed on to a function that uses it isn't kept, so `discard` drops nothing",
