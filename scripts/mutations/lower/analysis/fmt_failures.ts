@@ -30,12 +30,12 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-failing-call-of-mir-unseen",
     breaks:
-      "a library's function its consumer compiles from its MIR, which writes what may fail, is taken as one that never fails, and its error escapes `{:?}` of its result (ADR 0914, amended)",
+      "a library's function its consumer compiles from its MIR, which writes what may fail, is taken as one that never fails, and its error escapes `{:?}` of its result: a private helper an instance calls, which no manifest lists (ADR 0914, amended; #1043)",
     file: "src/lower/analysis/fmt_failures.rs",
     find: "        for (callee, args, _) in crate::lower::instances::calls_of(body) {\n",
     replace:
       "        for (callee, args, _) in crate::lower::instances::calls_of(body).into_iter().filter(|_| body.root().is_some()) {\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+    tests: ["test/crates.test.ts", "-t", "two crates: library_private_writer_fails"],
   },
   {
     name: "fmt-error-not-passed-on",
