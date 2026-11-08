@@ -50,4 +50,31 @@ export const mutations: Mutation[] = [
       "                .any(|piece| matches!(piece, Piece::Argument(_, spec) if spec.debug_hex.is_some() && false))\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_hex_composite.rs$"],
   },
+  {
+    name: "formatter-options-never-read",
+    breaks:
+      "no body reads its `Formatter`'s options, so a library lists no writer that does and its consumer giving them imports each, `{j:>4}` dropped (#1026)",
+    file: "src/lower/analysis/debug.rs",
+    find: "            && !writes.contains(&id)\n",
+    replace: "            && !writes.contains(&id)\n            && false\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_writers_given_options"],
+  },
+  {
+    name: "formatter-written-reads-options",
+    breaks:
+      "a body that only writes its text through its `Formatter`, `write!(f, ..)`, reads its options, so a library's `Hour` is compiled where its consumer gives options, no longer the library's (#1026)",
+    file: "src/lower/analysis/debug.rs",
+    find: "                args.first().and_then(|&f| named(f))\n",
+    replace: "                args.first().and_then(|&f| named(f)).filter(|_| false)\n",
+    tests: ["test/crates.test.ts", "-t", "a library's generic function is its program's, alone"],
+  },
+  {
+    name: "pretty-flag-off",
+    breaks:
+      "a crate that shows a value with `{:#?}` gives its `Debug`s no `alternate`, and they're plain",
+    file: "src/lower/analysis/debug.rs",
+    find: "            pretty_debug: std_bodies || uses_pretty_debug(tcx, all_bodies),",
+    replace: "            pretty_debug: std_bodies || (false && uses_pretty_debug(tcx, all_bodies)),",
+    tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
+  },
 ];

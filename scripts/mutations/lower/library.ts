@@ -729,4 +729,31 @@ export const mutations: Mutation[] = [
     replace: "        let item = self.item(id).or_else(|| self.item(self.tcx.trait_impl_of_assoc(id)?));\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
   },
+  {
+    name: "writer-given-options-the-librarys",
+    breaks:
+      "a library's writer that reads its `Formatter`'s options, its library's JS taking none, is its import where the crate gives it a placeholder's options, `{j:>4}` and `{j:#x}` dropped (#1026)",
+    file: "src/lower/library.rs",
+    find: "            _ if self.writes.options && !library.writers_take_options => \"a placeholder's options, `{:>4}` or `{:#?}`\",\n",
+    replace: "            _ if false && self.writes.options && !library.writers_take_options => \"a placeholder's options, `{:>4}` or `{:#?}`\",\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_writers_given_options"],
+  },
+  {
+    name: "writer-given-debug-hex-the-librarys",
+    breaks:
+      "a library's writer that gives its `Formatter` on, its library asking no `{:x?}`, is its import where the crate asks `{:x?}` of it, which writes decimal (#1026)",
+    file: "src/lower/library.rs",
+    find: "            _ if self.writes.hex && !library.debug_hex => \"an integer's `{:?}` in hex, `{:x?}`\",\n",
+    replace: "            _ if false && self.writes.hex && !library.debug_hex => \"an integer's `{:?}` in hex, `{:x?}`\",\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_writer_given_debug_hex"],
+  },
+  {
+    name: "writer-reading-nothing-compiled",
+    breaks:
+      "every library writer is compiled where the crate's writers take options, one that only writes its text too, `hourDisplay_fmt` no longer the library's (#1026)",
+    file: "src/lower/library.rs",
+    find: "        let reads = |f: DefId| library.reads_formatter_options.contains(&key(tcx, f));\n",
+    replace: "        let reads = |f: DefId| library.reads_formatter_options.contains(&key(tcx, f)) || f.krate == id.krate;\n",
+    tests: ["test/crates.test.ts", "-t", "a library's generic function is its program's, alone"],
+  },
 ];

@@ -540,7 +540,7 @@ test("a library's function its consumer compiles is refused where it reads its l
   const dir = fixture("instance-private-state");
   const lib = join(dir, "dep");
   mkdirSync(lib, { recursive: true });
-  const dep = "use std::cell::Cell;\n\nthread_local! {\n    static COUNT: Cell<u32> = const { Cell::new(0) };\n}\n\npub static NAME: &str = \"dep\";\n\npub fn discard<T>(value: T) -> u32 {\n    COUNT.set(COUNT.get() + 1);\n    drop(value);\n    COUNT.get()\n}\n\npub fn named<T>(value: T) -> &'static str {\n    drop(value);\n    NAME\n}\n\n#[cfg_attr(rust_js, rust_js::link_name = \"./stack.js#size\")]\npub fn size() -> u32 {\n    unreachable!()\n}\n\npub fn sized<T>(value: T) -> u32 {\n    let n = size();\n    drop(value);\n    n\n}\n\nunsafe extern \"Rust\" {\n    #[link_name = \"Infinity\"]\n    pub safe static INFINITE: f64;\n    #[link_name = \"./stack.js#limit\"]\n    pub safe static LIMIT: u32;\n}\n\npub fn unbounded<T>(value: T) -> bool {\n    drop(value);\n    INFINITE > 1.0\n}\n\npub fn limited<T>(value: T) -> u32 {\n    drop(value);\n    LIMIT\n}\n\nthread_local! {\n    pub static LAST: Cell<u32> = const { Cell::new(0) };\n}\n\npub fn remember<T>(tag: u32, value: T) {\n    LAST.set(tag);\n    drop(value);\n}\n\npub fn last() -> u32 {\n    LAST.get()\n}\n\npub struct Counted;\n\nimpl Drop for Counted {\n    fn drop(&mut self) {\n        COUNT.set(COUNT.get() + 1);\n    }\n}\n";
+  const dep = "use std::cell::Cell;\n\nthread_local! {\n    static COUNT: Cell<u32> = const { Cell::new(0) };\n}\n\npub static NAME: &str = \"dep\";\n\npub fn discard<T>(value: T) -> u32 {\n    COUNT.set(COUNT.get() + 1);\n    drop(value);\n    COUNT.get()\n}\n\npub fn named<T>(value: T) -> &'static str {\n    drop(value);\n    NAME\n}\n\n#[cfg_attr(rust_js, rust_js::link_name = \"./stack.js#size\")]\npub fn size() -> u32 {\n    unreachable!()\n}\n\npub fn sized<T>(value: T) -> u32 {\n    let n = size();\n    drop(value);\n    n\n}\n\nunsafe extern \"Rust\" {\n    #[link_name = \"Infinity\"]\n    pub safe static INFINITE: f64;\n    #[link_name = \"./stack.js#limit\"]\n    pub safe static LIMIT: u32;\n}\n\npub fn unbounded<T>(value: T) -> bool {\n    drop(value);\n    INFINITE > 1.0\n}\n\npub fn limited<T>(value: T) -> u32 {\n    drop(value);\n    LIMIT\n}\n\nthread_local! {\n    pub static LAST: Cell<u32> = const { Cell::new(0) };\n}\n\npub fn remember<T>(tag: u32, value: T) {\n    LAST.set(tag);\n    drop(value);\n}\n\npub fn last() -> u32 {\n    LAST.get()\n}\n\npub struct Counted;\n\nimpl Drop for Counted {\n    fn drop(&mut self) {\n        COUNT.set(COUNT.get() + 1);\n    }\n}\n\npub struct Shown;\n\nimpl std::fmt::Display for Shown {\n    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {\n        COUNT.set(COUNT.get() + 1);\n        std::fmt::Display::fmt(&COUNT.get(), f)\n    }\n}\n";
   writeFileSync(join(dir, "dep.rs"), dep);
   writeFileSync(join(lib, "stack.js"), "export function size() {\n  return 1;\n}\n\nexport const limit = 2;\n");
   run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
@@ -576,6 +576,12 @@ test("a library's function its consumer compiles is refused where it reads its l
   // runs where it drops one (ADR 0914, amended).
   expect(() => app("let _counted = dep::Counted;")).toThrow(
     "this crate compiles `<dep::Counted as std::ops::Drop>::drop` itself, as its library's JS has none it can call",
+  );
+  // And a writer given a placeholder's options its library's JS doesn't
+  // take, which gives its `Formatter` on, compiled here to take them
+  // (#1026), names what it's given.
+  expect(() => app("println!(\"[{:>7}]\", dep::Shown);")).toThrow(
+    "this crate compiles `<dep::Shown as std::fmt::Display>::fmt` itself, as its library's JS has none it can call: a writer given a placeholder's options, `{:>4}` or `{:#?}`, which its library's JS doesn't take; but it reads `dep::COUNT`, private to its library",
   );
 }, 300_000);
 

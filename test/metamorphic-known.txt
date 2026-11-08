@@ -21,17 +21,6 @@ plain std rc-refcell written_through_before_a_panic.rs
 #1022 P2: a pointer read as another type's, in generic code, throws at run time instead of refusing at compile time
 plain std generic bytes_through_pointers.rs
 
-#1026 P0 (library): a library's Debug/Display impl is compiled without the format options the using crate passes ({:#?}, widths, {:#x})
-plain std library assign_impl_on_number.rs
-plain std library closure_writes_captured_formatter.rs
-plain std library debug_builder_held.rs
-plain std library exp_forwarded.rs
-plain std library exp_precision.rs
-plain std library held_enumerate.rs
-plain std library held_peekable.rs
-plain std library pad_integral.rs
-plain std library writer_fn_pointer.rs
-
 #1027 P1 (library): a library's generic fn instance as a value is made per use in the using crate, and Rc::ptr_eq differs
 plain std library closure_converting_identity_read.rs
 plain std library fn_addr_eq_compares_functions.rs
@@ -76,7 +65,6 @@ plain std library dyn_of_a_generic_impl_written_whole.rs
 plain std library generic_associated_types.rs
 plain std library generic_dictionary_declared_once.rs
 plain std library impl_trait_clone.rs
-plain std library long_spreads.rs
 plain std library refcell_borrow_while_mut.rs
 plain std library track_caller.rs
 plain std library unboxed_type_params.rs

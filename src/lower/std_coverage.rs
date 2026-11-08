@@ -54,7 +54,7 @@ impl Body {
 /// memory, 2 none`.
 pub fn report<'tcx>(tcx: TyCtxt<'tcx>, dependencies: &crate::library::Dependencies) -> String {
     let instances = super::Instances::default();
-    let foreign = super::library::Foreign::new(tcx, dependencies, &instances);
+    let foreign = super::library::Foreign::new(tcx, dependencies, &instances, Default::default());
     let mut bodies = Bodies::default();
     let mut out = String::new();
     for (name, measured) in registry::measured(tcx) {

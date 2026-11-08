@@ -62,6 +62,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// The text a write appends to, given by `value` of the `&mut` type
+    /// `ty`: a place it refers to, or one given as it is, `copy _1` of a
+    /// parameter or `quoted[0]` of a held `Formatter`, its cell, whose
+    /// `value` is the text (ADR 0099), as a body's THIR writes `s.value +=
+    /// t` (#1026). `None` of another.
+    pub(super) fn text_place(&self, value: Option<Value<'tcx>>, ty: Ty<'tcx>) -> Option<Expr> {
+        match value? {
+            Value::Ref(place) => Some(place),
+            Value::Expr(place)
+                if matches!(
+                    place.kind,
+                    js::ExprKind::Var(_) | js::ExprKind::Member(..) | js::ExprKind::Index(..)
+                ) =>
+            {
+                Some(self.through_refs(place, ty).0)
+            }
+            _ => None,
+        }
+    }
+
     /// A call of a writer's: a step of its `Debug` builder, kept till its
     /// `finish`, which writes what it's been given (ADR 0136); or a write to
     /// its `Formatter`, `f += s` (ADR 0054). `None` of another.
@@ -113,7 +133,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 // Held in a variable: its parts so far, none perhaps, where a
                 // struct's or a tuple's is its name alone (ADR 0532).
+                // Kept: a loop's exit, its `finish`, may be lowered before the
+                // steps its body makes (#1026).
                 (BuilderStep::Finish { non_exhaustive }, Some(parts)) => {
+                    state
+                        .built
+                        .insert(root, (kind, type_name.clone(), Vec::new(), Some(parts.clone())));
                     let all = vec![crate::lower::display::BuilderPart::Many(Expr::var(&parts))];
                     let written = self.builder_assembled(kind, type_name.clone(), all, non_exhaustive);
                     let written = match (kind, type_name) {

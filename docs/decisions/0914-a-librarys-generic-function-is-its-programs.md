@@ -1017,3 +1017,46 @@ Pair test `library_own_methods_through_its_dictionary`; mutations
 `impl-defaults-unasked`, `derive-asked-as-its-library`
 (`lower/instances.ts`) and `held-field-unnormalized` (`lower/copies.ts`).
 #1023's forty library rewrites all run as native.
+
+## Amendment: a writer given more options than its library's JS takes (#1026)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results changed:
+whether a crate's writers take their `Formatter`'s options, and whether an
+integer's `{:?}` may be hex, is answered crate-wide, of what its own code
+formats (ADRs 0137, 0559). A library whose code passes no `{:>4}`,
+`{:#?}` or `{:x?}` wrote writers that take none, and its consumer's
+`{j:>4}`, `{j:#x}`, `{:#?}` of a debug builder and `{:x?}` were dropped.
+
+The contract holds: a library's JS is its program's alone, and a consumer
+compiles what it gives more of. A library's manifest says what its writers
+take, `writers_take_options` and now `debug_hex`, and lists
+`reads_formatter_options`, its functions that read a `Formatter`'s options:
+anything done with one but its text written, `write!(f, ..)`,
+`write_str` or `write_char`; `f.width()`, `f.pad(s)`, a debug builder and
+`f` given on read them (`analysis/debug.rs`). A consumer whose writers
+take what a library's don't compiles its own of each such writer it
+reaches, an impl with one among its methods (`Foreign::writes_more`, asked
+by `compiles`); a writer that only writes its text, `write!(f, "{:02}h",
+..)`, which no width pads in Rust either, stays the library's.
+`@rust-js/std` is not asked, compiled once for every program (ADR 0561).
+
+A library's writer given as a value to a compiled one, `quoted` as a
+`fn(&u32, &mut Formatter)`, is its import, which a pointer's call gives the
+options a writer's caller gives, one that takes none leaving them, as the
+crate's own is given by name; it was the arrow of its call as MIR's, which
+took the `Formatter` for a `&mut` cell. A refusal of what a compiled writer
+can't reach names what it was given: "a writer given a placeholder's
+options, `{:>4}` or `{:#?}`, which its library's JS doesn't take", one
+answer (`compiled_because`) of why a function is compiled here, which
+each refusal's message asks.
+
+Pair tests `library_writers_given_options` (a callback writer, a builder
+stepped in a loop, a writer that only writes) and
+`library_writer_given_debug_hex`; the private-state refusal test's
+`dep::Shown`; mutations `writer-given-options-the-librarys`,
+`writer-given-debug-hex-the-librarys`, `writer-reading-nothing-compiled`
+(`lower/library.ts`), `formatter-options-never-read`,
+`formatter-written-reads-options` (`lower/analysis/debug.ts`),
+`library-writer-value-a-call-arrow` (`lower.ts`) and
+`writer-refusal-unnamed` (`lower/instances.ts`). #1026's nine library
+rewrites run as native.

@@ -893,6 +893,16 @@ pub(in crate::lower) fn holds_param(ty: Ty<'_>, index: u32) -> bool {
     false
 }
 
+/// Why the crate compiles `root`, a library's function, itself, as each
+/// refusal of what it then can't reach says: a writer given more than its
+/// library's JS takes names what (#1026); another, why any is.
+fn compiled_because(foreign: &super::library::Foreign<'_, '_>, root: DefId) -> String {
+    match foreign.writes_more(root) {
+        Some(more) => format!("a writer given {more}, which its library's JS doesn't take"),
+        None => "one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place".to_string(),
+    }
+}
+
 /// Refuses an instance's read of its library's private state: a static or
 /// a thread-local its library doesn't export, which a function compiled in
 /// another crate can't reach, as its library's own code has the one there
@@ -933,8 +943,9 @@ fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Bo
         if state && !binding && !def.is_local() && calls.foreign.item(def).is_none() {
             let root = tcx.typeck_root_def_id(id);
             tcx.dcx().err(format!(
-                "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place; but it reads `{}`, private to its library, which only that library's code can reach (ADR 0914): make it `pub`",
+                "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: {}; but it reads `{}`, private to its library, which only that library's code can reach (ADR 0914): make it `pub`",
                 tcx.def_path_str(root),
+                compiled_because(calls.foreign, root),
                 tcx.def_path_str(def),
             ));
         }
@@ -964,8 +975,9 @@ fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Bo
         if sets && let Some(&key) = keys.iter().find(|&&key| held(key).is_some() && held(key) == of) {
             let root = tcx.typeck_root_def_id(id);
             tcx.dcx().err(format!(
-                "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place; but it sets `{}`, its library's module variable, which JS lets only that module set (ADR 0270, amended): set it in a `pub fn` of that library that takes nothing to copy or drop, and call that",
+                "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: {}; but it sets `{}`, its library's module variable, which JS lets only that module set (ADR 0270, amended): set it in a `pub fn` of that library that takes nothing to copy or drop, and call that",
                 tcx.def_path_str(root),
+                compiled_because(calls.foreign, root),
                 tcx.def_path_str(key),
             ));
         }
@@ -988,8 +1000,9 @@ fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Bo
         {
             let root = tcx.typeck_root_def_id(id);
             tcx.dcx().err(format!(
-                "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place; but it {} `{}`, which its library binds to `{from}`, a module by a path relative to that library's own file, not this crate's (ADR 0914): have its library bind it by a package's path, which this crate can import too",
+                "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: {}; but it {} `{}`, which its library binds to `{from}`, a module by a path relative to that library's own file, not this crate's (ADR 0914): have its library bind it by a package's path, which this crate can import too",
                 tcx.def_path_str(root),
+                compiled_because(calls.foreign, root),
                 if tcx.is_foreign_item(binding) && matches!(tcx.def_kind(binding), DefKind::Static { .. }) { "reads" } else { "calls" },
                 tcx.def_path_str(binding),
             ));

@@ -64,7 +64,7 @@ use crate::lower::recognition::{
 };
 pub(super) use closures::{ClosureFacts, borrowed_fixed_bindings, clone_shares, taken_by_value};
 pub(super) use debug::{FormatCall, format_calls};
-use debug::{uses_debug_hex, uses_format_options, uses_pretty_debug};
+pub(super) use debug::{WriterFacts, Writes};
 use drops::drop_params;
 use generic_consts::generic_consts;
 pub(super) use mutation::{clone_bounded, clones_itself, copies_itself, copy_bounded};
@@ -562,14 +562,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Whether the crate asks a `Vec` its capacity (ADR 0419).
     pub asks_capacity: bool,
     pub generic_consts: IndexSet<DefId>,
-    /// Whether the crate shows anything with `{:#?}`, or asks a `Formatter`
-    /// if it's alternate: then its `Debug` functions take whether (ADR 0137).
-    pub pretty_debug: bool,
-    /// Whether the crate gives a placeholder's options to a value it doesn't
-    /// apply them to itself: then its writers take them (ADR 0058).
-    pub format_options: bool,
-    /// Whether the crate asks `{:x?}` of anything (ADR 0559).
-    pub debug_hex: bool,
+    /// What its writers take beyond their arguments, and which of its
+    /// functions read a `Formatter`'s options (ADRs 0058, 0137, 0559).
+    pub writer_facts: WriterFacts,
     /// The thread-locals only read and set in their own module, which
     /// `plain_statics` makes plain: what their borrows' closures are given is
     /// what's in them, as nothing borrows them meanwhile (ADR 0328).
@@ -614,16 +609,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     (library, std_bodies): (bool, bool),
     (instances, made_where_used): (&super::Instances, &IndexSet<LocalDefId>),
 ) -> Option<AnalyzedCrate<'a, 'tcx>> {
-    let foreign = super::library::Foreign::new(tcx, dependencies, instances);
-    if !bindings::validate(tcx)
-        || !super::declarations::validate_types(tcx)
-        || !traits::validate(tcx, &foreign)
-        || !super::jsx_api::validate(tcx)
-        || !super::untagged::validate(tcx, &foreign)
-        || !foreign.check()
-    {
-        return None;
-    }
     // With `--test`, rustc adds a harness: a `const` per test, marked
     // `#[rustc_test_marker]`, and a `main` that runs them with libtest. The
     // JS runner takes their place (ADR 0026), so they're left out.
@@ -643,6 +628,19 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         Some(root) == harness_main || markers.iter().any(|&(marker, _)| marker.to_def_id() == root)
     };
     let all_bodies: Vec<&Body<'tcx>> = all_bodies.iter().filter(|body| !is_harness(body.def_id)).collect();
+    // Before its libraries are asked, whose writers it reaches are
+    // compiled here where they take less (ADR 0914, amended; #1026).
+    let writer_facts = WriterFacts::of(tcx, &all_bodies, std_bodies);
+    let foreign = super::library::Foreign::new(tcx, dependencies, instances, writer_facts.writes());
+    if !bindings::validate(tcx)
+        || !super::declarations::validate_types(tcx)
+        || !traits::validate(tcx, &foreign)
+        || !super::jsx_api::validate(tcx)
+        || !super::untagged::validate(tcx, &foreign)
+        || !foreign.check()
+    {
+        return None;
+    }
 
     let flattened = bindings::flattened(tcx, &all_bodies, &foreign);
     if !reject_unsupported(tcx, &foreign, &markers)
@@ -1362,11 +1360,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let generic_consts = generic_consts(tcx, all_bodies);
     // A program its tests use whose dictionaries lack a constant (#597).
     programs::refuse_lacked_consts(tcx, &foreign, &generic_consts);
-    // `@rust-js/std`'s writers take whether they're pretty: its consumers
-    // are every program, any of which may ask `{:#?}` of a `Peekable`.
-    let pretty_debug = std_bodies || uses_pretty_debug(tcx, all_bodies);
-    let format_options = uses_format_options(tcx, all_bodies);
-    let debug_hex = uses_debug_hex(tcx, all_bodies);
 
     Some(AnalyzedCrate {
         bodies,
@@ -1415,9 +1408,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         caller_locations,
         asks_capacity,
         generic_consts,
-        pretty_debug,
-        format_options,
-        debug_hex,
+        writer_facts,
         quiet_locals,
         quiet_library_keys,
         lazy_locals,

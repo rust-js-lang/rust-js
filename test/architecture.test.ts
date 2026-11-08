@@ -632,7 +632,7 @@ const shapeTests: Record<string, [number, string]> = {
   "src/lower/mir/places.rs mir_place": [1, "MIR's projection and `lasting` decide; the shape is that field's read"],
   "src/lower/mir/entries.rs read_once_tried": [3, "whether the JS reads the same again: a property's read may be a getter's"],
   "src/lower/mir/entries.rs mir_swap_or_replace": [1, "`borrows_field` decides; the shape is the field written as a place"],
-  "src/lower/mir/std_calls.rs mir_text_call": [3, "JS's assignment: a formatter's text written back needs a target JS can assign"],
+  "src/lower/mir/writer.rs text_place": [2, "JS's assignment: text written back, a formatter's or a string's, needs a target JS can assign"],
   "src/lower/mir/assign.rs mir_store": [4, "`place_reference` decides `*r = v`'s place (#466); and a fact's to ask: a temporary `&mut` kept as the JS place it was read from"],
   "src/lower/mir/assign.rs boxed_args": [2, "JS's evaluation: a property place's object named once, so the place a call writes back is fixed (ADR 0099)"],
   "src/lower/mir/temporaries.rs flush": [2, "JS's evaluation: a property place's object named before a later argument changes it (#280)"],

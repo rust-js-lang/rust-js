@@ -257,18 +257,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::FmtTo(operation) => lower(move |this, state, values, out| {
                 Ok(Value::Expr({
                     let shown = this.value_expr(values.next().expect("what's shown"), span)?;
-                    let place = match values.next() {
-                        Some(Value::Ref(place)) => place,
-                        Some(Value::Expr(place))
-                            if matches!(
-                                place.kind,
-                                js::ExprKind::Var(_) | js::ExprKind::Member(..) | js::ExprKind::Index(..)
-                            ) =>
-                        {
-                            place
-                        }
-                        _ => return Err(this.unsupported(span, "this `Formatter`")),
-                    };
+                    let place = this
+                        .text_place(values.next(), arg_tys[1])
+                        .ok_or_else(|| this.unsupported(span, "this `Formatter`"))?;
                     let pretty = crate::lower::display::Pretty::Plain;
                     let written = this.written_of(operation, def_id, generic_args, vec![shown], &pretty, span, out)?;
                     this.flush(state, out)?;
@@ -280,15 +271,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // gets a new one.
             Std::PushStr => lower(move |this, state, values, out| {
                 Ok(Value::Expr({
-                    let place = match values.next() {
-                        Some(Value::Ref(place)) => place,
-                        Some(Value::Expr(place))
-                            if matches!(place.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) =>
-                        {
-                            place
-                        }
-                        _ => return Err(this.unsupported(span, "`push_str` on this, from its MIR")),
-                    };
+                    let place = this
+                        .text_place(values.next(), arg_tys[0])
+                        .ok_or_else(|| this.unsupported(span, "`push_str` on this, from its MIR"))?;
                     let given = values.next().expect("what's pushed");
                     // A `write!` of what may fail: piece by piece, what came before
                     // written, its `fmt::Result` the error, if any (ADR 0187); to a

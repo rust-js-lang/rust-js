@@ -48,8 +48,11 @@ use std::path::Path;
 /// `min` and `clamp`, `$partialEq`'s and `$ord`'s (#962), which a
 /// consumer's generic code calls. 19: its impls whose `partial_cmp` is
 /// `Some(self.cmp(other))`, `partial_cmp_is_cmp`, which a consumer's
-/// `partial_cmp` of one runs as its `cmp` (#964).
-pub const VERSION: u32 = 19;
+/// `partial_cmp` of one runs as its `cmp` (#964). 20: whether its writers
+/// may write an integer's `{:?}` in hex, `debug_hex`, and its functions
+/// that read a `Formatter`'s options, `reads_formatter_options`, of which a
+/// consumer whose writers take more compiles its own (#1026).
+pub const VERSION: u32 = 20;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -317,6 +320,16 @@ pub struct Library {
     /// only then.
     #[serde(default)]
     pub writers_take_options: bool,
+    /// Whether an integer's `{:?}` its writers write may be hex, `{:x?}`
+    /// (ADR 0559): a consumer that asks it compiles its own of a library's
+    /// that don't (ADR 0914, amended; #1026).
+    #[serde(default)]
+    pub debug_hex: bool,
+    /// The keys of its functions that read a `Formatter`'s options, which
+    /// a consumer whose writers take more than its own compiles its own of
+    /// (ADR 0914, amended; #1026).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub reads_formatter_options: Vec<String>,
     /// Whether it makes a `dyn Any` of a value that drops, or of a type
     /// parameter's (ADR 0691, amended): a consumer's `dyn Any`, what a
     /// `catch_unwind` caught among it, may then hold one. A library a
@@ -567,6 +580,9 @@ pub struct Exports {
     pub builtin: bool,
     pub keeps_capacity: bool,
     pub writers_take_options: bool,
+    pub debug_hex: bool,
+    /// Its functions that read a `Formatter`'s options, by key (#1026).
+    pub reads_formatter_options: IndexSet<String>,
     /// Whether it makes a `dyn Any` of what drops (ADR 0691, amended).
     pub makes_dropping_anys: bool,
     /// Whether it makes a `dyn Fn` of what drops (ADR 0626, amended).
@@ -683,6 +699,8 @@ impl Dependencies {
                 dictionary_consts: library.dictionary_consts.map(|keys| keys.into_iter().collect()),
                 dyns_drop_nothing: library.dyns_drop_nothing.into_iter().collect(),
                 writers_take_options: library.writers_take_options,
+                debug_hex: library.debug_hex,
+                reads_formatter_options: library.reads_formatter_options.into_iter().collect(),
                 identities: library.identities.into_iter().collect(),
                 keyed: library.keyed.into_iter().collect(),
                 eq_by_address: library.eq_by_address.into_iter().collect(),
@@ -859,6 +877,8 @@ impl Dependencies {
             dictionary_consts: library.dictionary_consts.map(|keys| keys.into_iter().collect()),
             dyns_drop_nothing: library.dyns_drop_nothing.into_iter().collect(),
             writers_take_options: library.writers_take_options,
+            debug_hex: library.debug_hex,
+            reads_formatter_options: library.reads_formatter_options.into_iter().collect(),
             identities: library.identities.into_iter().collect(),
             keyed: library.keyed.into_iter().collect(),
             eq_by_address: library.eq_by_address.into_iter().collect(),

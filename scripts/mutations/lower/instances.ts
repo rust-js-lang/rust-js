@@ -346,4 +346,13 @@ export const mutations: Mutation[] = [
     replace: "                        Some(callee) if self.recognition.foreign.is_library(callee.krate) => {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
   },
+  {
+    name: "writer-refusal-unnamed",
+    breaks:
+      "a writer compiled here for the options it's given, refused where it reads its library's private state, says it's compiled for a copy or a drop, not what it's given (#1026)",
+    file: "src/lower/instances.rs",
+    find: "    match foreign.writes_more(root) {\n",
+    replace: "    match foreign.writes_more(root).filter(|_| false) {\n",
+    tests: ["test/crates.test.ts", "-t", "refused where it reads its library's private state"],
+  },
 ];

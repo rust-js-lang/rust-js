@@ -1002,6 +1002,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return made(self).map(Some);
         }
+        // A library's writer, given a `Formatter` and no other `&mut`: its
+        // import, which a pointer's call gives what a writer's caller gives
+        // after its arguments, its options, and which gives its text, one
+        // that takes no options leaving them, as the crate's own is given
+        // by name (ADR 0137; #1026). Not the arrow of a call as MIR's,
+        // which takes the `Formatter` for a `&mut` cell.
+        if self.krate.foreign.item(def_id).is_some() && !args.has_non_region_param() {
+            let inputs = (self.tcx.fn_sig(def_id).instantiate(self.tcx, args))
+                .skip_normalization()
+                .skip_binder()
+                .inputs()
+                .to_vec();
+            let formatter = |t: Ty<'tcx>| self.recognition().is_formatter_type(t.peel_refs());
+            if inputs.iter().any(|&t| formatter(t))
+                && !inputs
+                    .iter()
+                    .any(|&t| t.is_ref() && t.is_mutable_ptr() && !formatter(t))
+                && self.evidence_args(def_id, args, span)?.is_empty()
+            {
+                return Ok(Some(self.fn_ref(def_id)));
+            }
+        }
         let known = self.recognition().classify(def_id, args);
         if let Some(known) = known
             && let Some(f) = self.std_fn_value(known, ty, span)?

@@ -386,4 +386,13 @@ export const mutations: Mutation[] = [
     replace: "        if self.tcx.trait_of_assoc(def_id).is_none()\n            && let Some(why) = self.krate.foreign.unlisted(def_id)\n        {\n            return Err(self.tcx.dcx().span_err(span, why));\n        }\n        if matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) {\n            return self.constructor_value(def_id, args, span).map(Some);\n        }\n",
     tests: ["test/crates.test.ts", "-t", "library_constructor_value"],
   },
+  {
+    name: "library-writer-value-a-call-arrow",
+    breaks:
+      "a library's writer given as a value, `quoted` to a `fn(&u32, &mut Formatter)`, is the arrow of its call as MIR's, which takes the `Formatter` for a `&mut` cell, `b.value` of the options it's given (#1026)",
+    file: "src/lower.rs",
+    find: "        if self.krate.foreign.item(def_id).is_some() && !args.has_non_region_param() {\n",
+    replace: "        if false && self.krate.foreign.item(def_id).is_some() && !args.has_non_region_param() {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_writers_given_options"],
+  },
 ];

@@ -68,3 +68,15 @@ unchanged.
 - Mutations take a held builder for a chain, add no part, add `entries`
   as one part, write a struct given no field as `Row()`, refuse its `let`,
   and write an empty non-exhaustive struct `Open {..}`.
+
+## Amendment: kept after its `finish` (#1026)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Compiled from MIR
+alone, a library's writer its consumer compiles (ADR 0914), a builder
+stepped in a loop, `for x in &self.0 { row.field(x); } row.finish()`, was
+refused: the loop's exit, its `finish`, is lowered before its body, and
+`finish` let go of the builder, whose steps then found none. A held
+builder's parts are its array's, which a later step pushes to and its
+`finish` reads, so it's kept. Mutation `held-builder-finished-first-lost`
+(`lower/mir/writer.ts`), by the pair test
+`library_writers_given_options`'s `Row`.

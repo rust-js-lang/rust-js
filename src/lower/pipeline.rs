@@ -147,9 +147,7 @@ pub fn lower_crate<'tcx>(
         caller_locations,
         asks_capacity,
         generic_consts,
-        pretty_debug,
-        format_options,
-        debug_hex,
+        writer_facts,
         quiet_locals,
         quiet_library_keys,
         lazy_locals,
@@ -191,7 +189,7 @@ pub fn lower_crate<'tcx>(
     if library {
         called_from_elsewhere.extend(codecs.iter().copied().filter(|&id| super::library::reachable(tcx, id)));
     }
-    let foreign = super::library::Foreign::new(tcx, dependencies, instances);
+    let foreign = super::library::Foreign::new(tcx, dependencies, instances, writer_facts.writes());
     // Which of its libraries' functions may copy what the crate changes in place, which their
     // JS, copying what their own crates change, may share (ADR 0914, amended).
     let changed = super::copies::Changed {
@@ -505,9 +503,9 @@ pub fn lower_crate<'tcx>(
         module_paths: &module_paths,
         trait_impls: &trait_impls,
         serde_attrs,
-        pretty_debug,
-        format_options,
-        debug_hex,
+        pretty_debug: writer_facts.pretty_debug,
+        format_options: writer_facts.format_options,
+        debug_hex: writer_facts.debug_hex,
         tidy_until,
         ref_cells: &ref_cells,
         own_callbacks: &own_callbacks,
@@ -1470,6 +1468,8 @@ pub fn lower_crate<'tcx>(
                         reads_arguments: &reads_arguments,
                         keeps_capacity,
                         writers_take_options,
+                        debug_hex: writer_facts.debug_hex,
+                        reads_formatter_options: &writer_facts.reads_options,
                         makes_dropping_anys: closure_facts.any_dyns_drop,
                         makes_dropping_fn_dyns: closure_facts.fn_dyns_drop.any(),
                         program: tested,

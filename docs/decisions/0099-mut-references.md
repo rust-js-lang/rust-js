@@ -607,3 +607,18 @@ anywhere. The copy-back a `&mut` method made a value runs in its arrow
 changes only JS (`mut_method_pointer.rs`): the callee changes the object
 in place, so `$assign(a, self.value)` copies an object onto itself. Whether
 to drop it is a choice of output form, left to the user.
+
+## Amendment: a write from MIR to text a `&mut` gives writes the cell's value (#1026)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results changed: a
+body lowered from its MIR alone, a library's impl its consumer compiles
+(ADR 0914), given a `&mut String` as it is, `copy _1` of `push(&mut
+self)`'s receiver, wrote `string += "<"`, the cell's variable, where its
+THIR writes `string.value += "<"`; and `Display::fmt(&x, self.0)` of a
+`Formatter` a struct holds, `Quoted`'s `write_str`, wrote `quoted[0] +=
+..`. What a library's `impl AddAssign<Tag> for String` pushed and what
+`Quoted` wrote were lost. Both read the place they write through its
+references (`text_place`), as a value of its type is. Pair tests
+`library_string_pushed_through_a_reference` and
+`library_writers_given_options`'s `Message`; mutation
+`text-place-through-a-cell-unread` (`lower/mir/std_calls.ts`).

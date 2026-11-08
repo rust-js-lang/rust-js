@@ -121,16 +121,6 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "js::import"],
   },
   {
-    name: "pretty-flag-off",
-    breaks:
-      "a crate that shows a value with `{:#?}` gives its `Debug`s no `alternate`, and they're plain",
-    file: "src/lower/analysis.rs",
-    find: "    let pretty_debug = std_bodies || uses_pretty_debug(tcx, all_bodies);",
-    replace:
-      "    let pretty_debug = std_bodies || (false && uses_pretty_debug(tcx, all_bodies));",
-    tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
-  },
-  {
     name: "user-hash-lowered",
     breaks:
       "a type's own `Hash`'s `hash`, and its `Future`'s `poll`, are lowered, and what they call refused, though nothing calls them",

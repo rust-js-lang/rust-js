@@ -1,7 +1,7 @@
 //! What `Debug` takes, crate-wide: whether anything shows a value pretty,
 //! `{:#?}`, and which derives are shown (ADRs 0060, 0137).
 
-use crate::collections::IndexMap;
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::format_args::{Piece, decode_template};
 use crate::lower::recognition::{
     FormatterQuery, formatter_query, is_arguments_new, is_debug_argument, is_formatter_pad,
@@ -181,4 +181,98 @@ pub(super) fn uses_format_options(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> 
             })
         })
     })
+}
+
+/// Whether `body` reads the options of a `Formatter` it's given or
+/// captures, where a caller's `{:>4}`, `{:#?}` or `{:x?}` changes what it
+/// writes: anything done with one but its text written, `write!(f, ..)`,
+/// `f.write_str(s)` or `f.write_char(c)`, which a placeholder's options
+/// leave alone. `f.width()`, `f.pad(s)`, a debug builder, and `f` given on,
+/// `self.0.fmt(f)` or to a closure, read them (#1026).
+pub(super) fn reads_formatter_options(tcx: TyCtxt<'_>, body: &Body<'_>) -> bool {
+    let thir = &body.thir;
+    let formatter = |ty: ty::Ty<'_>| {
+        matches!(ty.peel_refs().kind(), ty::Adt(adt, _)
+            if crate::lower::recognition::is_std_def(tcx, adt.did(), crate::lower::recognition::StdItem::Formatter))
+    };
+    let named = |e: ExprId| {
+        let mut e = e;
+        loop {
+            e = strip(thir, e);
+            match thir[e].kind {
+                ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => e = arg,
+                ExprKind::VarRef { .. } | ExprKind::UpvarRef { .. } => break Some(e),
+                _ => break None,
+            }
+        }
+    };
+    // Each `f` its text is written through, the first argument of a write.
+    let writes: Vec<ExprId> = (thir.exprs.iter())
+        .filter_map(|expr| match &expr.kind {
+            ExprKind::Call { fun, args, .. }
+                if fn_def(thir[*fun].ty).is_some_and(|(id, _)| {
+                    matches!(tcx.item_name(id).as_str(), "write_fmt" | "write_str" | "write_char")
+                }) =>
+            {
+                args.first().and_then(|&f| named(f))
+            }
+            _ => None,
+        })
+        .collect();
+    (thir.exprs.iter_enumerated()).any(|(id, expr)| {
+        matches!(expr.kind, ExprKind::VarRef { .. } | ExprKind::UpvarRef { .. })
+            && formatter(expr.ty)
+            && !writes.contains(&id)
+    })
+}
+
+/// What a crate's writers take beyond their arguments, its own answer of
+/// what its code formats, and which of its functions read a `Formatter`'s
+/// options, which a library's manifest says (ADRs 0058, 0137, 0559).
+pub(in crate::lower) struct WriterFacts {
+    /// Whether it shows anything with `{:#?}`, or asks a `Formatter` if
+    /// it's alternate: then its `Debug` functions take whether (ADR 0137).
+    /// `@rust-js/std`'s do: its consumers are every program.
+    pub(in crate::lower) pretty_debug: bool,
+    /// Whether it gives a placeholder's options to a value it doesn't apply
+    /// them to itself: then its writers take them (ADR 0058).
+    pub(in crate::lower) format_options: bool,
+    /// Whether it asks `{:x?}` of anything (ADR 0559).
+    pub(in crate::lower) debug_hex: bool,
+    /// Its functions, closures' by their own, that read a `Formatter`'s
+    /// options (`reads_formatter_options`, #1026).
+    pub(in crate::lower) reads_options: IndexSet<DefId>,
+}
+
+impl WriterFacts {
+    pub(super) fn of<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], std_bodies: bool) -> Self {
+        WriterFacts {
+            pretty_debug: std_bodies || uses_pretty_debug(tcx, all_bodies),
+            format_options: uses_format_options(tcx, all_bodies),
+            debug_hex: uses_debug_hex(tcx, all_bodies),
+            reads_options: (all_bodies.iter())
+                .filter(|body| reads_formatter_options(tcx, body))
+                .map(|body| tcx.typeck_root_def_id(body.def_id))
+                .collect(),
+        }
+    }
+
+    /// What its writers take, which a library's writer it reaches is
+    /// compiled here to take where its library's doesn't (#1026).
+    pub(in crate::lower) fn writes(&self) -> Writes {
+        Writes {
+            options: self.pretty_debug || self.format_options,
+            hex: self.debug_hex,
+        }
+    }
+}
+
+/// What a crate's writers take beyond their arguments: their `Formatter`'s
+/// options, whether to be pretty or a placeholder's (ADRs 0058, 0137); and
+/// whether an integer's `{:?}` may be hex (ADR 0559). A crate's own answer,
+/// `WriterFacts::writes`; a library's in its manifest.
+#[derive(Clone, Copy, Default)]
+pub(in crate::lower) struct Writes {
+    pub(in crate::lower) options: bool,
+    pub(in crate::lower) hex: bool,
 }
