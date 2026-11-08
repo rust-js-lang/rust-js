@@ -345,8 +345,8 @@ export const mutations: Mutation[] = [
     name: "slice-iter-debug-unnamed",
     breaks: "`{:?}` of a slice's iterator is its items alone, not `Iter([..])`",
     file: "src/lower/display/debug.rs",
-    find: '            let shown = join(vec![Expr::str("Iter("), shown, Expr::str(")")]);\n',
-    replace: "",
+    find: '            let plain = join(vec![Expr::str("Iter("), shown.clone(), Expr::str(")")]);\n',
+    replace: "            let plain = shown.clone();\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_iter_debug.rs$"],
   },
   {
@@ -463,8 +463,8 @@ export const mutations: Mutation[] = [
     name: "drain-debug-unnamed",
     breaks: "a string Drain's Debug names it",
     file: "src/lower/display/debug.rs",
-    find: 'Expr::str("Drain("), left,',
-    replace: 'Expr::str("("), left,',
+    find: 'Expr::str("Drain("), left.clone(),',
+    replace: 'Expr::str("("), left.clone(),',
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
   {
@@ -493,5 +493,21 @@ export const mutations: Mutation[] = [
     replace: "                    true if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_field_cells.rs$"],
     snapshots: true,
+  },
+  {
+    name: "slice-iter-pretty-plain",
+    breaks: "`{:#?}` of a slice's iterator is shown plain, `Iter([2, 3])`, where std's `debug_tuple` puts its slice on lines of its own (#953)",
+    file: "src/lower/display/debug.rs",
+    find: '            let shown = self.pretty_or(pretty, plain, "Iter(", Expr::array(vec![shown]), ")");\n',
+    replace: "            let shown = plain;\n",
+    tests: ["test/corpus.test.ts", "-t", "^pretty_debug_of_std_iterators.rs$"],
+  },
+  {
+    name: "string-drain-pretty-plain",
+    breaks: "`{:#?}` of a string's `drain(range)` is shown plain, `Drain(\"bcd\")`, where std's `debug_tuple` puts it on a line of its own (#953)",
+    file: "src/lower/display/debug.rs",
+    find: '            return Ok(self.pretty_or(pretty, plain, "Drain(", Expr::array(vec![left]), ")"));\n',
+    replace: "            return Ok(plain);\n",
+    tests: ["test/corpus.test.ts", "-t", "^pretty_debug_of_std_iterators.rs$"],
   },
 ];

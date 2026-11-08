@@ -253,10 +253,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A slice's iterator, `Iter([2, 3])`: what's left of it, as its
         // `as_slice()` gives it (ADR 0453).
+        // Pretty, std's `debug_tuple("Iter")`'s, its slice on a line of its
+        // own (#953).
         if self.is_std_type(ty, StdItem::SliceIter) {
-            if pretty.known() != Some(false) {
-                return Err(self.unsupported(span, "`{:#?}` of a slice's iterator"));
-            }
             let item = self.iterator_item(ty).expect("an iterator's item").peel_refs();
             // Read twice, `it.items.slice(it.at, it.end)`: in place where it
             // reads the same, or is `$iter(v)`, whose rest is `v`; else as an
@@ -268,7 +267,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let left = self.stepped_left(it, ty, false, span)?;
             let shown = self.debug_string_with(left, Ty::new_slice(self.tcx, item), span, pretty)?;
-            let shown = join(vec![Expr::str("Iter("), shown, Expr::str(")")]);
+            let plain = join(vec![Expr::str("Iter("), shown.clone(), Expr::str(")")]);
+            let shown = self.pretty_or(pretty, plain, "Iter(", Expr::array(vec![shown]), ")");
             return Ok(match in_place {
                 true => shown,
                 false => Expr::call(
@@ -283,24 +283,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A string's `chars()`, `Chars(['b', 'c'])`: the `char`s it has
         // left, as a slice's iterator shows what it has (#118).
         if self.recognition().is_str_chars(ty) {
-            if pretty.known() != Some(false) {
-                return Err(self.unsupported(span, "`{:#?}` of a string's `chars()`"));
-            }
             let left = Expr::call(
                 Expr::member(Expr::var("Array"), "from"),
                 vec![Expr::call_helper("$restStr", vec![value])],
             );
             let shown = self.debug_string_with(left, Ty::new_slice(self.tcx, self.tcx.types.char), span, pretty)?;
+            // Std's own, `Chars(` a debug list `)`, pretty or not (#953).
             return Ok(join(vec![Expr::str("Chars("), shown, Expr::str(")")]));
         }
         // A string's `drain(range)`, `Drain("bc")`: what it has left, as
         // a `&str` (#118).
         if self.recognition().is_string_drain(ty) {
-            if pretty.known() != Some(false) {
-                return Err(self.unsupported(span, "`{:#?}` of a string's `drain(range)`"));
-            }
             let left = Expr::call_helper("$debugStr", vec![Expr::call_helper("$restStr", vec![value])]);
-            return Ok(join(vec![Expr::str("Drain("), left, Expr::str(")")]));
+            let plain = join(vec![Expr::str("Drain("), left.clone(), Expr::str(")")]);
+            return Ok(self.pretty_or(pretty, plain, "Drain(", Expr::array(vec![left]), ")"));
         }
         // A path shows its text as a string does (ADR 0173).
         if self.recognition().is_path_like(ty) {

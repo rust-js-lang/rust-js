@@ -45,3 +45,15 @@ console.log(`Iter([${it.items.slice(it.at, it.end).map((item) => String(item)).j
 - **It's tested**: a corpus case shows one stepped, one just made, one a
   struct holds and one a call gives, against native Rust; a mutation of
   each part is caught.
+
+## Amendment: `{:#?}` too (#953)
+
+`{:#?}` of a slice's iterator, a string's `Chars` and a string's `Drain`
+was refused, and so was a derived `Debug` holding one once any body of the
+crate showed anything with `{:#?}`. Then the derived `Debug`'s pretty flag
+is its caller's, so a neighbour's `{:#?}` refused it (the neighbour
+shuffle, #953). Each is now std's own: a slice's `Iter` and a `Drain` are
+`debug_tuple`s, their slice or text on a line of their own
+(`pretty_or`); `Chars` is `Chars(` and a debug list, pretty as the list
+is. Corpus case `pretty_debug_of_std_iterators`, mutations
+`slice-iter-pretty-plain` and `string-drain-pretty-plain`.

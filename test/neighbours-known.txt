@@ -9,12 +9,6 @@
 // goes wrong beside another neighbour, for the same reason, is a line more
 // under the same issue.
 
-#953 P2: `{:?}` of a slice's iterator refused as `{:#?}`
-plain std iterator_read_as_itself.rs beside long_spreads.rs
-plain std std_enumerate.rs beside fmt_error_unwritten_branches.rs
-plain std slice_iter_debug.rs beside writer_callables.rs
-plain std slice_iter_debug.rs beside debug_hex_composite.rs
-
 #954 P2: `Rc<System<K>>` refused as holding a value with a destructor
 plain std scope_struct_of_type_parameters.rs beside self_handle_reads_mutably.rs
 plain std rc_of_functions_of_a_param.rs beside dyn_fn_of_a_params_function_drops.rs
