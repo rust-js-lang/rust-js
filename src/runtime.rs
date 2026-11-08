@@ -67,6 +67,7 @@ helpers! {
     KeySet,
     Id,
     OrdMap,
+    OrdTree,
     BTree,
     Steps,
     SortedEntries,
@@ -812,6 +813,7 @@ impl Helper {
             // A B-tree of keys found by their own `Ord` (ADR 0404): its entries
             // kept sorted, each found by a binary search of `cmp`.
             Helper::OrdMap => include_str!("runtime/ord_map.js"),
+            Helper::OrdTree => include_str!("runtime/ord_tree.js"),
             // A B-tree of keys a hashed map finds, read in its keys' order (#237).
             Helper::BTree => include_str!("runtime/btree.js"),
             // An iterator stepped as Rust's is, its adapters std's, which pass

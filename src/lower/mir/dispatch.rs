@@ -1375,7 +1375,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `*m.entry(k).or_insert(0) += 1`, a handle on the key's value,
         // `$mutGet`'s (ADR 0152). The entry is `$entry(m, k)`, `{ TAG, _0: [m, k] }`.
         if let Std::Map(op @ (MapOp::OrInsert | MapOp::OrInsertWith { .. } | MapOp::OrDefault)) = known {
-            return self.or_insert_values(state, op, values, (generic_args, output), span, out);
+            return self.or_insert_values(state, op, values, (generic_args, arg_tys[0], output), span, out);
         }
         if let Some(same) = self.same_reference(known, output, &values) {
             return Ok(same);

@@ -7,8 +7,8 @@ use super::iterator_steps::{body_aggregates, body_fn_defs};
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::recognition::{
     StdItem, TypeFact, bound_by_any, cached_key_pairs, debug_named, fact_specialization, map_of_param, phantom_named,
-    pointer_target, points_at_dyn_any, points_at_dyn_debug, stable_sort_items, std_item, trait_method, type_facts,
-    unstable_sort_items,
+    pointer_target, points_at_dyn_any, points_at_dyn_debug, stable_sort_items, std_item, trait_method,
+    tree_built_entries, type_facts, unstable_sort_items,
 };
 use crate::lower::traits::{BuiltSlot, BuiltSlots, Given, bounds, drop_items, evidence_impl, slot_index as slot_of};
 use crate::lower::{Body, FnInfo, fn_def};
@@ -230,6 +230,17 @@ pub(super) fn type_fact_params<'tcx>(
                 asking.asked.insert((caller, index, TypeFact::StableSort));
                 asking.asked.insert((caller, index, TypeFact::Size));
                 continue;
+            }
+            // A B-tree built of items, of a key that holds a type parameter,
+            // whose class may be std's nodes, which sort its entries by std's
+            // stable sort, as their type picks: their caller's, a slot's or a
+            // built slot's (#926).
+            if let Some(entries) = tree_built_entries(tcx, callee, args) {
+                for fact in [TypeFact::StableSort, TypeFact::Size] {
+                    if let Some(each) = asked_of(tcx, foreign, typing_env, caller, (entries, fact), &None) {
+                        asking.ask(caller, each);
+                    }
+                }
             }
             // `sort_by_cached_key` of a key that holds a type parameter, whose
             // `(K, usize)` pairs std sorts unstably, as their type picks:
@@ -544,8 +555,10 @@ fn either_gates(a: &Gates, b: &Gates) -> Gates {
 /// unstable sort picks by it, `sort_by_cached_key`'s `(K, usize)`'s (#925),
 /// is its caller's.
 fn built_of<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: ty::Ty<'tcx>, fact: TypeFact) -> bool {
-    matches!(fact, TypeFact::Size | TypeFact::Align | TypeFact::Sort)
-        && !crate::lower::recognition::known_by_bounds(ty)
+    matches!(
+        fact,
+        TypeFact::Size | TypeFact::Align | TypeFact::Sort | TypeFact::StableSort
+    ) && !crate::lower::recognition::known_by_bounds(ty)
         && ty.has_param()
         && tcx.layout_of(typing_env.as_query_input(ty)).is_err()
 }

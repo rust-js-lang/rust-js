@@ -7,27 +7,27 @@ import {
   $btreeMap,
   $cmp,
   $debugStr,
+  $entry,
+  $entryOrInsert,
   $iter,
-  $orInsert,
   $sortedEntries,
-  $treeFrom,
+  $treeFromSorted,
 } from "@rust-js/runtime";
 
 export function entry() {
   main();
 }
 
-function distinct(xs, TOrd, TTreeSet) {
-  return $treeFrom(new TTreeSet(), $iter(xs), true, TOrd.cmp).size;
+function distinct(xs, TOrd, TSize, TTreeSet, TStableSort) {
+  return $treeFromSorted(new TTreeSet(), $iter(xs), TOrd, TStableSort, TSize).size;
 }
 
 function counts(xs, KOrd, KClone, KDebug, KTreeMap) {
   const seen = new KTreeMap();
   for (let i = 0; i < xs.length; i++) {
     const x = xs[i];
-    const key = KClone.clone(x);
-    const current = $orInsert(seen, key, 0);
-    seen.set(key, (current + 1) >>> 0);
+    const orInsert = $entryOrInsert($entry(seen, KClone.clone(x)), 0, true);
+    orInsert.value = (orInsert.value + 1) >>> 0;
   }
   return $sortedEntries(seen, KOrd.cmp);
 }
@@ -35,10 +35,12 @@ function counts(xs, KOrd, KClone, KDebug, KTreeMap) {
 function main() {
   const clone = { clone: (value) => value };
   console.log(
-    `${distinct([3, 1, 3, 2], { cmp: $cmp }, $BTreeSet)} ${distinct(
+    `${distinct([3, 1, 3, 2], { cmp: $cmp }, 4, $BTreeSet, "general8")} ${distinct(
       ["b", "a", "b"],
       { cmp: $cmp },
+      8,
       $BTreeSet,
+      "general8",
     )}`,
   );
   console.log(

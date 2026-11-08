@@ -1,11 +1,15 @@
 // A B-tree of keys it finds by their own `Ord` (ADR 0404): its entries
 // kept in `cmp`'s order, each found by one search, so a key `cmp` says is
 // `Equal` to one it holds finds that one, as std's B-tree does. The search
-// asks `cmp(key, held)`, the key given against each it holds, as std's
-// does; of up to eleven entries, one node of std's, each from the first in
-// turn, as std's search of a node, so a `cmp` that prints or panics sees
-// what std's sees. Past eleven, std's nodes are another shape, which this
-// isn't: a halving search, in std's argument order (#911).
+// asks `cmp(key, held)`, the key given against one it holds, as std's
+// does, halving: of an order nothing sees, a quiet and total one, which
+// asks what it asks unseen. One whose order can be seen is `$OrdTree`,
+// std's nodes (#926).
+//
+// What a search found, `found(key)`'s, is what its writes are given, so
+// that nothing searches twice: `putFound`, `deleteFound`, `replaceFound`
+// and an entry's methods (`$entry`). Each entry is `[key, value]`, the
+// one array wherever it's kept, so a handle on it (`entryHandles`) holds.
 class $OrdMap extends Map {
   #entries = [];
   constructor(cmp, entries) {
@@ -17,54 +21,58 @@ class $OrdMap extends Map {
       }
     }
   }
-  // One made of `entries` in their order, each key once, as a clone's
-  // are: kept as they are, asking nothing, as std's `clone_subtree` asks
-  // nothing (#924).
-  static ofSorted(entries) {
-    return new this().inOrder(entries);
+  // One made of `entries` in their order, each key once, a clone's of
+  // `from`: kept as they are, asking nothing, as std's `clone_subtree`
+  // asks nothing (#924); a tree's in `from`'s shape.
+  static ofSorted(entries, from) {
+    return new this().inOrder(entries, from);
   }
   inOrder(entries) {
-    this.#entries = Array.from(entries);
+    this.#entries = Array.from(entries, ([key, value]) => [key, value]);
     return this;
   }
-  // Where `key` is, or would go: its index, and whether it's there.
-  at(key) {
+  // One search's answer: whether `key` is there, the key it holds equal to
+  // it, its value and its entry, and where.
+  found(key) {
     const entries = this.#entries;
-    if (entries.length <= 11) {
-      for (let i = 0; i < entries.length; i++) {
-        const order = this.cmp(key, entries[i][0]);
-        if (order === 0) return [i, true];
-        if (order < 0) return [i, false];
-      }
-      return [entries.length, false];
-    }
     let low = 0;
     let high = entries.length;
     while (low < high) {
       const mid = (low + high) >>> 1;
       const order = this.cmp(key, entries[mid][0]);
-      if (order === 0) return [mid, true];
+      if (order === 0) return this.#at(mid);
       if (order > 0) low = mid + 1;
       else high = mid;
     }
-    return [low, false];
+    return { there: false, i: low };
   }
-  // One search's answer, `$found`'s: whether `key` is there, the key it
-  // holds equal to it and its value, and where.
-  found(key) {
-    const [i, there] = this.at(key);
-    const entry = there ? this.#entries[i] : undefined;
-    return { there, key: entry?.[0], value: entry?.[1], i };
+  #at = (i) => {
+    const entry = this.#entries[i];
+    return { there: true, key: entry[0], value: entry[1], entry, i };
+  };
+  // The least entry's, or the greatest's (`last`), as `found` gives one,
+  // asking nothing; `undefined` where it's empty.
+  endFound(last) {
+    const length = this.#entries.length;
+    return length === 0 ? undefined : this.#at(last ? length - 1 : 0);
   }
-  // What a search found, `found`, given `value`, or `key` and `value` put
-  // where it would go; or taken out; or those from it on taken out,
-  // `split_off`'s: no search again.
+  // What a search found given `value`, or `key` and `value` put where it
+  // would go: the entry written. Or taken out, or the key it holds given
+  // `key` in its place, a set's `replace`: no search again.
   putFound(found, key, value) {
-    if (found.there) this.#entries[found.i][1] = value;
-    else this.#entries.splice(found.i, 0, [key, value]);
+    if (found.there) {
+      found.entry[1] = value;
+      return found.entry;
+    }
+    const entry = [key, value];
+    this.#entries.splice(found.i, 0, entry);
+    return entry;
   }
   deleteFound(found) {
     if (found.there) this.#entries.splice(found.i, 1);
+  }
+  replaceFound(found, key) {
+    found.entry[0] = key;
   }
   // The entry of `key`, one it holds, taken out by what it is, asking
   // nothing, as std's `retain` takes out what it walks to (#911).
@@ -75,30 +83,29 @@ class $OrdMap extends Map {
   // Each key of `entries`, some it holds, with a handle on its value,
   // `$mutEntries`', each on the entry itself, asking nothing.
   entryHandles(entries) {
-    const of = new Map(this.#entries.map((entry) => [entry[0], entry]));
-    return Array.from(entries, ([key]) => {
-      const entry = of.get(key);
-      return [
-        key,
-        {
-          get value() {
-            return entry[1];
-          },
-          set value(item) {
-            entry[1] = item;
-          },
-        },
-      ];
-    });
+    const of = new Map(Array.from(this.held(), (entry) => [entry[0], entry]));
+    return Array.from(entries, ([key]) => [key, $entryHandle(of.get(key))]);
   }
-  splitFound(found) {
-    // A set's own map is an `$OrdMap` of its `cmp`, a map's of its class.
-    const rest = this.constructor === $OrdMap ? new $OrdMap(this.cmp) : new this.constructor();
-    rest.#entries = this.#entries.splice(found.i);
+  // Those from `key` on, taken out, in one of its own: one search.
+  splitOff(key) {
+    const rest = this.made();
+    rest.#entries = this.#entries.splice(this.found(key).i);
     return rest;
+  }
+  // An empty one of its kind: a set's own map is one of its `cmp`, a map's
+  // of its class.
+  made() {
+    return this.constructor === $OrdMap ? new $OrdMap(this.cmp) : new this.constructor();
+  }
+  // Its entries as it holds them, in order.
+  held() {
+    return this.#entries;
   }
   get size() {
     return this.#entries.length;
+  }
+  clear() {
+    this.#entries = [];
   }
   get(key) {
     return this.found(key).value;
@@ -108,7 +115,7 @@ class $OrdMap extends Map {
     return this;
   }
   has(key) {
-    return this.at(key)[1];
+    return this.found(key).there;
   }
   // The key it holds equal to `key` (ADR 0467).
   storedKey(key) {
@@ -119,21 +126,18 @@ class $OrdMap extends Map {
     this.deleteFound(found);
     return found.there;
   }
-  clear() {
-    this.#entries = [];
-  }
   *entries() {
-    for (const [key, value] of this.#entries) {
+    for (const [key, value] of this.held()) {
       yield [key, value];
     }
   }
   *keys() {
-    for (const [key] of this.#entries) {
+    for (const [key] of this.held()) {
       yield key;
     }
   }
   *values() {
-    for (const [, value] of this.#entries) {
+    for (const [, value] of this.held()) {
       yield value;
     }
   }
@@ -147,22 +151,38 @@ class $OrdMap extends Map {
   }
 }
 
+// A handle on an entry's value, `$mutGet`'s kind.
+function $entryHandle(entry) {
+  return {
+    get value() {
+      return entry[1];
+    },
+    set value(item) {
+      entry[1] = item;
+    },
+  };
+}
+
 // A set of items it finds by their own `Ord`: an `$OrdMap` of each to
-// itself, each of its calls one search.
+// itself, or an `$OrdTree` (`Items`), each of its calls one search.
 class $OrdSet extends Set {
   #items;
-  constructor(cmp, items) {
+  constructor(cmp, items, Items = $OrdMap) {
     super();
-    this.#items = new $OrdMap(cmp);
+    this.#items = new Items(cmp);
     if (items) {
       for (const item of items) {
         this.add(item);
       }
     }
   }
-  static ofSorted(items) {
+  static ofSorted(items, from) {
     const set = new this();
-    set.#items.inOrder(Array.from(items, (item) => [item, item]));
+    const shape = from !== undefined && #items in from ? from.#items : undefined;
+    set.#items.inOrder(
+      Array.from(items, (item) => [item, item]),
+      shape,
+    );
     return set;
   }
   get size() {
@@ -171,20 +191,30 @@ class $OrdSet extends Set {
   found(item) {
     return this.#items.found(item);
   }
+  endFound(last) {
+    return this.#items.endFound(last);
+  }
   putFound(found, item) {
     // One equal to it held stays: only its value, unread, is written.
-    this.#items.putFound(found, item, item);
+    return this.#items.putFound(found, item, item);
   }
   deleteFound(found) {
     this.#items.deleteFound(found);
   }
+  replaceFound(found, item) {
+    this.#items.replaceFound(found, item);
+  }
   deleteHeld(item) {
     this.#items.deleteHeld(item);
   }
-  splitFound(found) {
+  splitOff(item) {
     const rest = new this.constructor();
-    rest.#items = this.#items.splitFound(found);
+    rest.#items = this.#items.splitOff(item);
     return rest;
+  }
+  // Its own map, which a tree's operations are of.
+  get items() {
+    return this.#items;
   }
   add(item) {
     this.putFound(this.found(item), item);

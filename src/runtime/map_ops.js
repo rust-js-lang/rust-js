@@ -108,6 +108,11 @@ function $setReplace(s, x, drop) {
     () => $found(s, x),
     drop && (() => drop(x)),
   );
+  // A B-tree's in its place, `mem::replace` of the key it holds.
+  if (found.there && s.replaceFound !== undefined) {
+    s.replaceFound(found, x);
+    return found.key;
+  }
   $deleteFound(s, found, x);
   $putFound(s, { ...found, there: false }, x);
   return found.key;
@@ -124,6 +129,15 @@ function $setTake(s, x) {
 // keys' order `cmp`; `undefined` where it's empty. `pop`: taken out too.
 // `boxed`: a set's item that may look like `None`, boxed (ADR 0051).
 function $treeEnd(m, cmp, last, set, pop, boxed = false) {
+  // Of its keys' own order, its first or last as it holds them, asking
+  // nothing, as std's walk down its edge asks nothing (#926).
+  if (m.endFound !== undefined) {
+    const end = m.endFound(last);
+    if (end === undefined) return undefined;
+    if (pop) m.deleteFound(end);
+    const item = set ? end.key : [end.key, end.value];
+    return boxed ? $some(item) : item;
+  }
   let found;
   let seen = false;
   for (const entry of m) {
@@ -143,7 +157,16 @@ function $treeEnd(m, cmp, last, set, pop, boxed = false) {
 // `"Unbounded"`, in order; a start past the end panics, as std's does, and
 // so does one equal to it that both exclude. Checked as `range` checks its
 // bounds where `checked`; `extract_if`'s aren't (ADR 0344).
-function $treeRange(m, cmp, set, name, start, end, checked = true) {
+// Of a tree of its keys' own order whose order can be seen, std's search,
+// whose bounds are checked by `eq` and `partialCmp`, as std's are (#926).
+function $treeRange(m, cmp, set, name, start, end, checked = true, eq, partialCmp) {
+  const tree = set ? m.items : m;
+  if (tree?.range !== undefined) {
+    // Unchecked, `extract_if`'s: the range it walks, unsearched.
+    if (!checked) return { start, end, partialCmp };
+    const found = tree.range(start, end, name, eq, partialCmp, checked);
+    return found.map(([key, value]) => (set ? key : [key, value]));
+  }
   if (checked && start !== "Unbounded" && end !== "Unbounded") {
     const order = cmp(start._0, end._0);
     if (order > 0) {
@@ -171,8 +194,8 @@ function $treeRange(m, cmp, set, name, start, end, checked = true) {
 // `m.split_off(&key)` of a B-tree: those from `key` on, taken out, in a map
 // of its own.
 function $treeSplitOff(m, key, cmp, set) {
-  // Of its keys' own order, one search, as std's split does (#911).
-  if (m.splitFound !== undefined) return m.splitFound(m.found(key));
+  // Of its keys' own order, its own search, as std's split's (#911, #926).
+  if (m.splitOff !== undefined) return m.splitOff(key);
   const rest = new m.constructor();
   for (const entry of Array.from(m)) {
     const k = set ? entry : entry[0];
@@ -186,13 +209,70 @@ function $treeSplitOff(m, key, cmp, set) {
 }
 
 // `m.append(&mut other)`: all of `other`'s in `m`, its values over `m`'s,
-// and `other` empty.
-function $treeAppend(m, other, set) {
-  for (const entry of other) {
-    if (set) m.add(entry);
-    else m.set(entry[0], entry[1]);
+// and `other` empty, what it replaces dropped as std's merge drops it,
+// `$merging`'s (#926). Of a tree whose keys' order can be seen, std's
+// merge itself.
+function $treeAppend(m, other, set, drop, dropKey) {
+  if (set ? m.items?.append !== undefined : m.append !== undefined) {
+    if (set) m.items.append(other.items, undefined, dropKey);
+    else m.append(other, drop, dropKey);
+    return;
   }
+  const items = Array.from(other, (entry) => (set ? [entry, entry] : entry));
   other.clear();
+  $merging(items, drop, dropKey, ([key, value]) => {
+    if (!m.has(key)) {
+      if (set) m.add(key);
+      else m.set(key, value);
+      return undefined;
+    }
+    const own = $storedKey(m, key);
+    const held = [own, set ? own : m.get(key)];
+    m.delete(key);
+    return { held, putBack: () => (set ? m.add(own) : m.set(own, value)) };
+  });
+}
+
+// std's `merge`'s drops (`append`'s, #926), of `other`'s entries `items`,
+// `[key, value]`, in order, each given to `step(entry, first, unwinding)`,
+// which puts it in, or, where an equal key's held, takes that entry out
+// and gives it, `{ held, putBack }`: its value dropped by `drop`, the
+// conflict's, then `putBack()` puts its key back with the entry's value,
+// then the entry's key is dropped by `dropKey` as its loop's turn ends, the
+// first's at `merge`'s end, its binding's. As `step` panics, a comparison,
+// `unwinding` drops what std's frames hold: the entry's value, then its
+// key, then the rest of `other`'s, each its key then its value, then the
+// first's key where it's held. As a held value's drop panics, its key,
+// then the entry's, whose value std's return slot leaks, then the same.
+function $merging(items, drop, dropKey, step) {
+  let firstHeld = false;
+  const firstKey = () => {
+    if (firstHeld) dropKey?.(items[0][0]);
+  };
+  const rest = (n) => () => $dropItems(items.slice(n), $entryDropping(false, drop, dropKey));
+  for (let n = 0; n < items.length; n++) {
+    const entry = items[n];
+    const first = n === 0;
+    const after = first ? [rest(1)] : [rest(n + 1), firstKey];
+    const unwinding = () =>
+      $inTurn(
+        () => drop?.(entry[1]),
+        () => dropKey?.(entry[0]),
+        ...after,
+      );
+    const taken = step(entry, first, unwinding);
+    if (taken === undefined) continue;
+    $unwinds(
+      () => drop?.(taken.held[1]),
+      () => dropKey?.(taken.held[0]),
+      () => dropKey?.(entry[0]),
+      ...after,
+    );
+    taken.putBack();
+    if (first) firstHeld = true;
+    else $unwinds(() => dropKey?.(entry[0]), ...after);
+  }
+  firstKey();
 }
 
 // A set's `union`, `intersection`, `difference` or `symmetric_difference`:
@@ -241,6 +321,23 @@ function $isDisjoint(a, b) {
 // does, `$insert`'s (#921).
 function $extendMap(m, items, set, drop, dropKey, sorted) {
   const put = (item) => {
+    // Of its keys' own order, `insert`'s one search (#926).
+    if (m.found !== undefined) {
+      if (set) {
+        $add(m, item, dropKey);
+        return;
+      }
+      const [key, value] = item;
+      const found = $unwinds(
+        () => m.found(key),
+        dropKey && (() => dropKey(key)),
+        drop && (() => drop(value)),
+      );
+      if (found.there) $unwinds(() => dropKey?.(key), drop && (() => drop(value)));
+      m.putFound(found, key, value);
+      if (found.there) drop?.(found.value);
+      return;
+    }
     if (set) {
       if (m.has(item)) dropKey?.(item);
       else m.add(item);
@@ -298,6 +395,10 @@ function $mapFrom(m, items, set, drop, dropKey) {
 // A B-tree's `first_entry()`, or `last_entry()` (`last`): its least or
 // greatest key's `OccupiedEntry`, `[m, key]`, or `undefined` (ADR 0345).
 function $endEntry(m, cmp, last) {
+  if (m.endFound !== undefined) {
+    const end = m.endFound(last);
+    return end && [m, end.key, end];
+  }
   let end;
   for (const key of m.keys()) {
     if (end === undefined || (last ? cmp(key, end[1]) > 0 : cmp(key, end[1]) < 0)) end = [m, key];
@@ -305,20 +406,32 @@ function $endEntry(m, cmp, last) {
   return end;
 }
 
-// An `OccupiedEntry`'s `get()`, or a handle on what's there (`handle`).
-function $entryGet([m, key], handle) {
+// An `OccupiedEntry`'s `get()`, or a handle on what's there (`handle`):
+// of a map of its keys' own order, of what its search `found`, asking
+// nothing again, as std's entry holds where it is (#926).
+function $entryGet([m, key, found], handle) {
+  if (found !== undefined) return handle ? $entryHandle(found.entry) : found.entry[1];
   return handle ? $mutGet(m, key) : m.get(key);
 }
 
 // Its `insert(v)`: what was there.
-function $entryInsert([m, key], value) {
+function $entryInsert([m, key, found], value) {
+  if (found !== undefined) {
+    const old = found.entry[1];
+    found.entry[1] = value;
+    return old;
+  }
   const old = m.get(key);
   m.set(key, value);
   return old;
 }
 
 // Its `remove()`, or `remove_entry()` (`entry`): what's taken out.
-function $entryRemove([m, key], entry) {
+function $entryRemove([m, key, found], entry) {
+  if (found !== undefined) {
+    m.deleteFound(found);
+    return entry ? [found.key, found.entry[1]] : found.entry[1];
+  }
   const value = m.get(key);
   m.delete(key);
   return entry ? [key, value] : value;
@@ -329,7 +442,18 @@ function $entryRemove([m, key], entry) {
 // methods are of (ADR 0345); where
 // it's there, the key given dropped by `dropKey`, of keys with a destructor
 // (ADR 0467).
+// Of a map of its keys' own order, one search, its key given dropped as
+// the search panics, and what it found kept for the entry's methods: `[m,
+// key, found]` (#926).
 function $entry(m, key, dropKey) {
+  if (m.found !== undefined) {
+    const found = $unwinds(
+      () => m.found(key),
+      dropKey && (() => dropKey(key)),
+    );
+    if (found.there) dropKey?.(key);
+    return { TAG: found.there ? "Occupied" : "Vacant", _0: [m, found.there ? found.key : key, found] };
+  }
   const there = m.has(key);
   if (there) dropKey?.(key);
   return { TAG: there ? "Occupied" : "Vacant", _0: [m, there ? $storedKey(m, key) : key] };
@@ -338,18 +462,48 @@ function $entry(m, key, dropKey) {
 // An entry's `and_modify(f)`: `f` given its value where its key is there,
 // a handle on a number or text (`handle`), and the entry, for `or_insert`.
 function $andModify(entry, f, handle) {
-  if (entry.TAG === "Occupied") {
-    const [m, key] = entry._0;
-    f(handle ? $mutGet(m, key) : m.get(key));
-  }
+  if (entry.TAG === "Occupied") f($entryGet(entry._0, handle));
   return entry;
 }
 
 // A `VacantEntry`'s `insert(v)`: `v` put in, and a `&mut` to it, a handle
 // on a number or text (`handle`).
-function $vacantInsert([m, key], value, handle) {
+function $vacantInsert([m, key, found], value, handle) {
+  if (found !== undefined) {
+    const entry = m.putFound(found, key, value);
+    return handle ? $entryHandle(entry) : value;
+  }
   m.set(key, value);
   return handle ? $mutGet(m, key) : value;
+}
+
+// An entry's `or_insert(value)`, `$entry`'s, of a map whose search can be
+// seen (#926): what `$entry`'s search found written, no search again. Its
+// value, or a handle on it (`handle`); where it's there, `value` dropped by
+// `drop`.
+function $entryOrInsert(entry, value, handle, drop) {
+  if (entry.TAG === "Occupied") {
+    drop?.(value);
+    return $entryGet(entry._0, handle);
+  }
+  return $vacantInsert(entry._0, value, handle);
+}
+
+// Its `or_insert_with(make)`, or `or_insert_with_key` (`keyed`), `make`
+// given its key: where it's there, `make` dropped unrun by `dropMake`;
+// where it isn't and `make` panics, the key by `dropKey`, as std's
+// `VacantEntry` drops it.
+function $entryOrInsertWith(entry, make, handle, dropKey, dropMake, keyed) {
+  if (entry.TAG === "Occupied") {
+    dropMake?.(make);
+    return $entryGet(entry._0, handle);
+  }
+  const key = entry._0[1];
+  const value = $unwinds(
+    () => (keyed ? make(key) : make()),
+    dropKey && (() => dropKey(key)),
+  );
+  return $vacantInsert(entry._0, value, handle);
 }
 
 // A B-tree made of `items`, its entries or a set's items, sorted by their
@@ -368,6 +522,38 @@ function $treeFrom(tree, items, set, cmp, drop, dropKey) {
     if (set) tree.add(item);
     else tree.set(item[0], item[1]);
   }
+  return tree;
+}
+
+// A B-tree made of `items` whose keys' order may be seen, of keys whose
+// order is seen or not total, or a type parameter's (#926): of std's nodes,
+// std's bulk build. Its entries sorted by std's stable sort, `kind` and
+// `size` its entries', `(K, V)`'s or a set's `T`'s: a map's by `cmp` of
+// their keys, a set's by `<`, `partial_cmp`'s; as that panics, each
+// dropped in the order it's left. Then each kept that `!=` doesn't find
+// equal to the next, and bulk-pushed. `TOrd` is the keys' `Ord`
+// dictionary, whose `PartialOrd()`, and its `PartialEq()`, give
+// `partial_cmp` and `eq` where it has them; else `TPartialOrd` and
+// `TPartialEq` where they're given, a std type's of the crate's, `(K,
+// u32)`; else its `cmp`, a std type's own, which asks nothing. Of another
+// class, a sorted array's or numbers', `$treeFrom`'s.
+function $treeFromSorted(tree, items, TOrd, kind, size, drop, dropKey, TPartialEq, TPartialOrd) {
+  const set = tree instanceof Set;
+  const nodes = set ? tree.items : tree;
+  if (nodes?.pushSorted === undefined) return $treeFrom(tree, items, set, TOrd.cmp, drop, dropKey);
+  const partialOrd = TPartialOrd ?? TOrd.PartialOrd?.();
+  const partialEq = TPartialEq ?? partialOrd?.PartialEq?.();
+  const partialCmp = partialOrd?.partialCmp ?? TOrd.cmp;
+  const eq = partialEq?.eq ?? ((a, b) => TOrd.cmp(a, b) === 0);
+  const sorted = Array.from(items, (item) => (set ? [item, item] : [item[0], item[1]]));
+  if (sorted.length === 0) return tree;
+  const dropEntry = set ? dropKey && (([item]) => dropKey(item)) : (drop || dropKey) && $entryDropping(false, drop, dropKey);
+  const isLess = set ? (a, b) => partialCmp(a[0], b[0]) < 0 : (a, b) => TOrd.cmp(a[0], b[0]) < 0;
+  $unwinds(
+    () => $sortStable(sorted, isLess, kind, size),
+    dropEntry && (() => $dropItems(sorted, dropEntry)),
+  );
+  nodes.pushSorted(sorted, (a, b) => !eq(a, b), dropEntry);
   return tree;
 }
 

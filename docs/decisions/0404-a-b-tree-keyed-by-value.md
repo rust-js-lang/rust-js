@@ -212,3 +212,97 @@ value's clone, and in generic code of keys found by `cmp` and by value;
 the mutations `map-keys-*`, `btree-clone-searched`, `ord-*-of-sorted-*` and
 `btree-*-of-sorted-empty`. The unwind table's 20 `clone` cases, 40
 case-builds, pass.
+
+## Amendment: std's nodes, where a key's order can be seen (#926)
+
+The amendments above were exact up to eleven keys, std's one leaf. Past
+that, std's tree has more than one node, and the comparisons a search asks
+follow the nodes' shape: `$OrdMap` halved there. `entry` searched twice,
+and `collect` and `append` sorted with JS's `sort` and searched each key.
+A program whose `Ord` prints, counts or panics, or isn't a total order,
+saw other calls, other drops, and of an order that isn't total, another
+order. Results change ([0262](0262-when-rust-and-js-disagree.md)), so
+Rust's behaviour is kept.
+
+- **The class:** keys found by their own `cmp` whose comparisons can be seen
+  (`order_seen`) or whose order may not be total (`order_total`, #936) are
+  `$ordTreeMap(cmp)` and `$ordTreeSet(cmp)`: `$OrdTree`, src/runtime/ord_tree.js,
+  a port of alloc/src/collections/btree (rustc 1.99). Its nodes hold up to
+  eleven entries (B = 6), each searched from its first, `cmp(given, held)`.
+  The owner is `tree_of_nodes` (src/lower/std_types/map.rs). A quiet and
+  total order keeps `$ordMap`, a sorted array, now halving only, which no
+  one sees (ADR 0262, none).
+- **Its operations are std's, node for node:**
+  - `insert_recursing`'s `splitpoint` splits, and a new root;
+  - `remove_kv_tracking`: a leaf's steal or merge, an internal key swapped
+    with its predecessor, `fix_node_and_affected_ancestors`, and the
+    emptied root popped;
+  - `split_off`'s per-level `move_suffix` and border fixes;
+  - `range`'s bifurcation search, its bounds checked first by `==` and `>`
+    as std's are;
+  - `extract_if`'s `lower_bound` and its lazy `<=`/`<` end check;
+  - `append`, 1.99's `merge`: a cursor from `lower_bound`, `cmp(held,
+    given)`, an equal key's entry taken out and put back. `$merging` drops
+    as std's frames do: the held value, then the given key, the first key at
+    the end; as a held value's drop panics, its key then the given key, the
+    given value leaked by std's return slot (also for B-trees not of nodes,
+    whose `append` of values with a destructor is no longer refused);
+  - a bulk build, `$treeFromSorted(tree, items, TOrd, kind, size, drop,
+    dropKey, TPartialEq, TPartialOrd)`: entries sorted by std's stable sort
+    (#925; a map's by `cmp`, a set's by `<`), deduplicated by `!=` as
+    `DedupSortedIter` does, then `bulk_push` and
+    `fix_right_border_of_plentiful`. `PartialOrd` and `PartialEq` are the
+    `Ord` dictionary's `PartialOrd()` and `PartialEq()` where a crate impl's
+    has them; a std type's of the crate's, `(K, u32)`, is given them. As the
+    sort panics, each entry is dropped in its place; as `!=` panics, the one
+    asked, then those after the next, then the next; what's pushed leaks,
+    as std's root does. Plain `$treeFrom` keeps its shape for other keys.
+    The user chose a helper of its own over extending `$treeFrom`'s arguments;
+  - `clone_subtree`: the clone in its source's shape, `ofSorted(made,
+    source)`, and as a clone panics, each node's frame drops what it made,
+    a later edge's panic first dropping the key and value made before it,
+    the value first (`$madeEach(.., dropKey, dropValue)`);
+  - `first`, `last` and `pop_*`, and `retain` and `iter`, which ask nothing.
+- **One search per entry:** `$entry(m, k)` keeps what it found, `[m, key,
+  found]`. `or_insert`, `or_insert_with` and `or_default` of a tree that may
+  be nodes are `$entryOrInsert($entry(m, k), v, handle, drop)` and
+  `$entryOrInsertWith(..)`, which write it without searching again, and
+  make the entry before the value, as Rust does. `$mutGet`, `$someGet` and
+  `extend` of a map found by `cmp` search once.
+- **Generic code:** a B-tree of a type parameter's keys is its caller's
+  class, which may be nodes (`tree_of_nodes`, as `order_seen` says a type
+  parameter's order may be seen). Its calls are given what
+  nodes ask: `$treeRange`'s `eq` and `partialCmp`, the entry forms,
+  `ofSorted`'s source, and `$treeFromSorted`'s `TStableSort` and `TSize` of
+  its entries, a slot's or a built slot's (`tree_built_entries`).
+
+```js
+const m = new ($ordTreeMap(keyOrd_cmp))();
+const orInsert = $entryOrInsert($entry(m, key(random(span))), 0, true);
+return $treeFromSorted(new TTreeSet(), $iter(xs), TOrd, TStableSort, TSize);
+```
+
+**Proof.** The corpus runs these against native Rust:
+- `btree_nodes_seen` (wasm32): maps and sets of 0 to 300 keys of a counting
+  order, and of one that isn't total, each operation's calls, trace and
+  order;
+- `btree_nodes_unwinds`: each operation panicking at its first forty and
+  last ten comparisons;
+- `btree_nodes_generic`;
+- `btree_append_drops`: quiet, numbers and seen keys, with a value's drop
+  panicking;
+- `btree_clone_nodes_unwinds`.
+
+A sweep of 360 seeds of the first two matched native Rust with no
+difference: 47,520 operations over 27.3 million comparisons, and 243,552
+unwind runs, 183,842 of them panicking at a chosen comparison. The sweep
+found `merge`'s first key dropped at its end. #911's 20 `entry`
+case-builds pass. `test/lowering-std-unwinds.test.ts` pins both build forms.
+
+**Left, and filed:**
+- a set's `union`, `intersection` and the rest are std's lazy merges (#943);
+- generic `==` and `<` under `T: Ord` ask `cmp` (#944, ADR 0057). A
+  dictionary without `PartialOrd()` still dedups by `cmp`;
+- `extract_if`'s owned bounds aren't dropped (#945);
+- a panic inside `split_off` leaves std's nodes unfixed, which native Rust
+  traps on, so it isn't compared (#947).

@@ -5,13 +5,15 @@ import {
   $btreeMap,
   $cmp,
   $debugStr,
+  $entry,
+  $entryOrInsertWith,
   $eq,
   $extendMap,
   $index,
   $mutGet,
   $orInsertWith,
   $sortedEntries,
-  $treeFrom,
+  $treeFromSorted,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -19,13 +21,14 @@ export function entry() {
 }
 
 function addEdge(graph, v1, v2, c, VOrd, VCopy, VTreeMap) {
-  const key = VCopy ? VCopy.copy(v1) : v1;
-  $orInsertWith(graph, key, () => new VTreeMap()).set(VCopy ? VCopy.copy(v2) : v2, c);
-  const key$1 = VCopy ? VCopy.copy(v2) : v2;
-  $orInsertWith(graph, key$1, () => new VTreeMap());
+  $entryOrInsertWith($entry(graph, VCopy ? VCopy.copy(v1) : v1), () => new VTreeMap()).set(
+    VCopy ? VCopy.copy(v2) : v2,
+    c,
+  );
+  $entryOrInsertWith($entry(graph, VCopy ? VCopy.copy(v2) : v2), () => new VTreeMap());
 }
 
-function singles(pairs, VOrd, VCopy, VTreeMap) {
+function singles(pairs, VOrd, VCopy, VTreeMap, VU32Size, VU32StableSort) {
   return Array.from(
     pairs
       .values()
@@ -33,7 +36,7 @@ function singles(pairs, VOrd, VCopy, VTreeMap) {
         const pair = [VCopy ? VCopy.copy(_2[0]) : _2[0], _2[1]];
         return [[VCopy ? VCopy.copy(pair[0]) : pair[0], pair[1]]];
       })
-      .map((x) => $treeFrom(new VTreeMap(), x, false, VOrd.cmp)),
+      .map((x) => $treeFromSorted(new VTreeMap(), x, VOrd, VU32StableSort, VU32Size)),
   );
 }
 
@@ -114,6 +117,8 @@ function main() {
     tupleOrd,
     tupleCopy,
     $btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap),
+    12,
+    "general8",
   );
   const value = $index(maps, 0);
   const merged = new ($btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap))(value);

@@ -509,8 +509,13 @@ export function $someAt(items, index) {
 }
 
 // `Some` of a map's value at `key`, boxed where it looks like `None`, or
-// `None` when there's none there.
+// `None` when there's none there: of a map of its keys' own order, one
+// search (#926).
 export function $someGet(map, key) {
+  if (map.found !== undefined) {
+    const found = map.found(key);
+    return found.there ? $some(found.value) : undefined;
+  }
   return map.has(key) ? $some(map.get(key)) : undefined;
 }
 
@@ -1199,11 +1204,15 @@ export function $id(object) {
 // A B-tree of keys it finds by their own `Ord` (ADR 0404): its entries
 // kept in `cmp`'s order, each found by one search, so a key `cmp` says is
 // `Equal` to one it holds finds that one, as std's B-tree does. The search
-// asks `cmp(key, held)`, the key given against each it holds, as std's
-// does; of up to eleven entries, one node of std's, each from the first in
-// turn, as std's search of a node, so a `cmp` that prints or panics sees
-// what std's sees. Past eleven, std's nodes are another shape, which this
-// isn't: a halving search, in std's argument order (#911).
+// asks `cmp(key, held)`, the key given against one it holds, as std's
+// does, halving: of an order nothing sees, a quiet and total one, which
+// asks what it asks unseen. One whose order can be seen is `$OrdTree`,
+// std's nodes (#926).
+//
+// What a search found, `found(key)`'s, is what its writes are given, so
+// that nothing searches twice: `putFound`, `deleteFound`, `replaceFound`
+// and an entry's methods (`$entry`). Each entry is `[key, value]`, the
+// one array wherever it's kept, so a handle on it (`entryHandles`) holds.
 export class $OrdMap extends Map {
   #entries = [];
   constructor(cmp, entries) {
@@ -1215,54 +1224,58 @@ export class $OrdMap extends Map {
       }
     }
   }
-  // One made of `entries` in their order, each key once, as a clone's
-  // are: kept as they are, asking nothing, as std's `clone_subtree` asks
-  // nothing (#924).
-  static ofSorted(entries) {
-    return new this().inOrder(entries);
+  // One made of `entries` in their order, each key once, a clone's of
+  // `from`: kept as they are, asking nothing, as std's `clone_subtree`
+  // asks nothing (#924); a tree's in `from`'s shape.
+  static ofSorted(entries, from) {
+    return new this().inOrder(entries, from);
   }
   inOrder(entries) {
-    this.#entries = Array.from(entries);
+    this.#entries = Array.from(entries, ([key, value]) => [key, value]);
     return this;
   }
-  // Where `key` is, or would go: its index, and whether it's there.
-  at(key) {
+  // One search's answer: whether `key` is there, the key it holds equal to
+  // it, its value and its entry, and where.
+  found(key) {
     const entries = this.#entries;
-    if (entries.length <= 11) {
-      for (let i = 0; i < entries.length; i++) {
-        const order = this.cmp(key, entries[i][0]);
-        if (order === 0) return [i, true];
-        if (order < 0) return [i, false];
-      }
-      return [entries.length, false];
-    }
     let low = 0;
     let high = entries.length;
     while (low < high) {
       const mid = (low + high) >>> 1;
       const order = this.cmp(key, entries[mid][0]);
-      if (order === 0) return [mid, true];
+      if (order === 0) return this.#at(mid);
       if (order > 0) low = mid + 1;
       else high = mid;
     }
-    return [low, false];
+    return { there: false, i: low };
   }
-  // One search's answer, `$found`'s: whether `key` is there, the key it
-  // holds equal to it and its value, and where.
-  found(key) {
-    const [i, there] = this.at(key);
-    const entry = there ? this.#entries[i] : undefined;
-    return { there, key: entry?.[0], value: entry?.[1], i };
+  #at = (i) => {
+    const entry = this.#entries[i];
+    return { there: true, key: entry[0], value: entry[1], entry, i };
+  };
+  // The least entry's, or the greatest's (`last`), as `found` gives one,
+  // asking nothing; `undefined` where it's empty.
+  endFound(last) {
+    const length = this.#entries.length;
+    return length === 0 ? undefined : this.#at(last ? length - 1 : 0);
   }
-  // What a search found, `found`, given `value`, or `key` and `value` put
-  // where it would go; or taken out; or those from it on taken out,
-  // `split_off`'s: no search again.
+  // What a search found given `value`, or `key` and `value` put where it
+  // would go: the entry written. Or taken out, or the key it holds given
+  // `key` in its place, a set's `replace`: no search again.
   putFound(found, key, value) {
-    if (found.there) this.#entries[found.i][1] = value;
-    else this.#entries.splice(found.i, 0, [key, value]);
+    if (found.there) {
+      found.entry[1] = value;
+      return found.entry;
+    }
+    const entry = [key, value];
+    this.#entries.splice(found.i, 0, entry);
+    return entry;
   }
   deleteFound(found) {
     if (found.there) this.#entries.splice(found.i, 1);
+  }
+  replaceFound(found, key) {
+    found.entry[0] = key;
   }
   // The entry of `key`, one it holds, taken out by what it is, asking
   // nothing, as std's `retain` takes out what it walks to (#911).
@@ -1273,30 +1286,29 @@ export class $OrdMap extends Map {
   // Each key of `entries`, some it holds, with a handle on its value,
   // `$mutEntries`', each on the entry itself, asking nothing.
   entryHandles(entries) {
-    const of = new Map(this.#entries.map((entry) => [entry[0], entry]));
-    return Array.from(entries, ([key]) => {
-      const entry = of.get(key);
-      return [
-        key,
-        {
-          get value() {
-            return entry[1];
-          },
-          set value(item) {
-            entry[1] = item;
-          },
-        },
-      ];
-    });
+    const of = new Map(Array.from(this.held(), (entry) => [entry[0], entry]));
+    return Array.from(entries, ([key]) => [key, $entryHandle(of.get(key))]);
   }
-  splitFound(found) {
-    // A set's own map is an `$OrdMap` of its `cmp`, a map's of its class.
-    const rest = this.constructor === $OrdMap ? new $OrdMap(this.cmp) : new this.constructor();
-    rest.#entries = this.#entries.splice(found.i);
+  // Those from `key` on, taken out, in one of its own: one search.
+  splitOff(key) {
+    const rest = this.made();
+    rest.#entries = this.#entries.splice(this.found(key).i);
     return rest;
+  }
+  // An empty one of its kind: a set's own map is one of its `cmp`, a map's
+  // of its class.
+  made() {
+    return this.constructor === $OrdMap ? new $OrdMap(this.cmp) : new this.constructor();
+  }
+  // Its entries as it holds them, in order.
+  held() {
+    return this.#entries;
   }
   get size() {
     return this.#entries.length;
+  }
+  clear() {
+    this.#entries = [];
   }
   get(key) {
     return this.found(key).value;
@@ -1306,7 +1318,7 @@ export class $OrdMap extends Map {
     return this;
   }
   has(key) {
-    return this.at(key)[1];
+    return this.found(key).there;
   }
   // The key it holds equal to `key` (ADR 0467).
   storedKey(key) {
@@ -1317,21 +1329,18 @@ export class $OrdMap extends Map {
     this.deleteFound(found);
     return found.there;
   }
-  clear() {
-    this.#entries = [];
-  }
   *entries() {
-    for (const [key, value] of this.#entries) {
+    for (const [key, value] of this.held()) {
       yield [key, value];
     }
   }
   *keys() {
-    for (const [key] of this.#entries) {
+    for (const [key] of this.held()) {
       yield key;
     }
   }
   *values() {
-    for (const [, value] of this.#entries) {
+    for (const [, value] of this.held()) {
       yield value;
     }
   }
@@ -1345,22 +1354,38 @@ export class $OrdMap extends Map {
   }
 }
 
+// A handle on an entry's value, `$mutGet`'s kind.
+export function $entryHandle(entry) {
+  return {
+    get value() {
+      return entry[1];
+    },
+    set value(item) {
+      entry[1] = item;
+    },
+  };
+}
+
 // A set of items it finds by their own `Ord`: an `$OrdMap` of each to
-// itself, each of its calls one search.
+// itself, or an `$OrdTree` (`Items`), each of its calls one search.
 export class $OrdSet extends Set {
   #items;
-  constructor(cmp, items) {
+  constructor(cmp, items, Items = $OrdMap) {
     super();
-    this.#items = new $OrdMap(cmp);
+    this.#items = new Items(cmp);
     if (items) {
       for (const item of items) {
         this.add(item);
       }
     }
   }
-  static ofSorted(items) {
+  static ofSorted(items, from) {
     const set = new this();
-    set.#items.inOrder(Array.from(items, (item) => [item, item]));
+    const shape = from !== undefined && #items in from ? from.#items : undefined;
+    set.#items.inOrder(
+      Array.from(items, (item) => [item, item]),
+      shape,
+    );
     return set;
   }
   get size() {
@@ -1369,20 +1394,30 @@ export class $OrdSet extends Set {
   found(item) {
     return this.#items.found(item);
   }
+  endFound(last) {
+    return this.#items.endFound(last);
+  }
   putFound(found, item) {
     // One equal to it held stays: only its value, unread, is written.
-    this.#items.putFound(found, item, item);
+    return this.#items.putFound(found, item, item);
   }
   deleteFound(found) {
     this.#items.deleteFound(found);
   }
+  replaceFound(found, item) {
+    this.#items.replaceFound(found, item);
+  }
   deleteHeld(item) {
     this.#items.deleteHeld(item);
   }
-  splitFound(found) {
+  splitOff(item) {
     const rest = new this.constructor();
-    rest.#items = this.#items.splitFound(found);
+    rest.#items = this.#items.splitOff(item);
     return rest;
+  }
+  // Its own map, which a tree's operations are of.
+  get items() {
+    return this.#items;
   }
   add(item) {
     this.putFound(this.found(item), item);
@@ -1433,6 +1468,694 @@ export function $ordMap(cmp) {
 
 export function $ordSet(cmp) {
   return class extends $OrdSet {
+    constructor(items) {
+      super(cmp, items);
+    }
+  };
+}
+
+// std's B-tree, node for node (alloc/src/collections/btree, rustc 1.99;
+// ADR 0404, amended; #926): the map of keys whose order can be seen, one
+// that prints, counts, may panic or isn't a total order (`order_seen`,
+// `order_total`). Which keys a search asks of, and in what order, is its
+// nodes' shape, which insert's splits, remove's merges and steals, a bulk
+// build's right border, `split_off`'s borders and `append`'s cursor leave:
+// each is std's, so each search asks `cmp(key, held)` what std's asks.
+//
+// A node holds up to eleven entries, `[key, value]`, the one array
+// wherever it moves, so a handle on its value holds; an internal one, at
+// `height` above the leaves, an edge more, each a child, which knows its
+// parent and its place there, as std's nodes do.
+export const $TREE_CAPACITY = 11;
+export const $TREE_MIN_LEN = 5;
+
+export function $treeNode(height) {
+  return { entries: [], edges: height > 0 ? [] : undefined, height, parent: undefined, at: 0 };
+}
+
+// Each child of `node` from `from` on told where it is,
+// `correct_childrens_parent_links`.
+export function $treeAdopt(node, from) {
+  for (let i = from; i < node.edges.length; i++) {
+    node.edges[i].parent = node;
+    node.edges[i].at = i;
+  }
+}
+
+// `find_key_index`: from `start`, `cmp(key, held)` of each entry in turn,
+// to the first not less: `[i, true]` where it's equal, else the edge `i`
+// it goes down.
+export function $treeIndex(node, key, cmp, start) {
+  const entries = node.entries;
+  for (let i = start; i < entries.length; i++) {
+    const order = cmp(key, entries[i][0]);
+    if (order === 0) return [i, true];
+    if (order < 0) return [i, false];
+  }
+  return [entries.length, false];
+}
+
+// `splitpoint`: where a full node of an insert at edge `i` splits, and
+// which half, and where in it, the insert goes.
+export function $treeSplitPoint(i) {
+  if (i < 5) return [4, false, i];
+  if (i === 5) return [5, false, i];
+  if (i === 6) return [5, true, 0];
+  return [6, true, i - 7];
+}
+
+// `insert_fit`, of a leaf, or of an internal node an edge too, right of
+// the entry.
+export function $treeFit(node, i, entry, edge) {
+  node.entries.splice(i, 0, entry);
+  if (edge === undefined) return;
+  node.edges.splice(i + 1, 0, edge);
+  $treeAdopt(node, i + 1);
+}
+
+// `split` at the entry `middle`: the node left of it, the entry, and a
+// new node of what's right of it.
+export function $treeSplit(node, middle) {
+  const right = $treeNode(node.height);
+  right.entries = node.entries.splice(middle + 1);
+  const entry = node.entries.pop();
+  if (node.height > 0) {
+    right.edges = node.edges.splice(middle + 1);
+    $treeAdopt(right, 0);
+  }
+  return { left: node, entry, right };
+}
+
+// `do_merge` of the children each side of the parent's entry `i`: the
+// entry and the right one's put at the left one's end, the right one gone.
+export function $treeMerge(parent, i) {
+  const left = parent.edges[i];
+  const right = parent.edges[i + 1];
+  const length = left.entries.length;
+  left.entries = left.entries.concat(parent.entries.splice(i, 1), right.entries);
+  parent.edges.splice(i + 1, 1);
+  $treeAdopt(parent, i + 1);
+  if (left.height > 0) {
+    left.edges = left.edges.concat(right.edges);
+    $treeAdopt(left, length + 1);
+  }
+  return left;
+}
+
+// Whether the children each side of the parent's entry `i` fit one node.
+export function $treeCanMerge(parent, i) {
+  return parent.edges[i].entries.length + 1 + parent.edges[i + 1].entries.length <= $TREE_CAPACITY;
+}
+
+// `bulk_steal_left`: `count` entries of the left child through the
+// parent's entry `i` to the right one's front, and their edges.
+export function $treeStealLeft(parent, i, count) {
+  const left = parent.edges[i];
+  const right = parent.edges[i + 1];
+  const moved = left.entries.splice(left.entries.length - count);
+  right.entries = moved.slice(1).concat([parent.entries[i]], right.entries);
+  parent.entries[i] = moved[0];
+  if (left.height > 0) {
+    right.edges = left.edges.splice(left.edges.length - count).concat(right.edges);
+    $treeAdopt(right, 0);
+  }
+}
+
+// `bulk_steal_right`: the right child's first `count` through the
+// parent's entry `i` to the left one's end, and their edges.
+export function $treeStealRight(parent, i, count) {
+  const left = parent.edges[i];
+  const right = parent.edges[i + 1];
+  const moved = right.entries.splice(0, count);
+  left.entries = left.entries.concat([parent.entries[i]], moved.slice(0, count - 1));
+  parent.entries[i] = moved[count - 1];
+  if (left.height > 0) {
+    const edges = left.edges.length;
+    left.edges = left.edges.concat(right.edges.splice(0, count));
+    $treeAdopt(left, edges);
+    $treeAdopt(right, 0);
+  }
+}
+
+// The leaf edges at either end of `node`'s subtree.
+export function $treeFirstLeaf(node) {
+  while (node.height > 0) node = node.edges[0];
+  return node;
+}
+
+export function $treeLastLeaf(node) {
+  while (node.height > 0) node = node.edges[node.entries.length];
+  return node;
+}
+
+// `next_kv` of the leaf edge `edge`: the entry right of it, `{ node, i }`,
+// up from a node's end; `undefined` past the last.
+export function $treeNextKv({ node, i }) {
+  while (i >= node.entries.length) {
+    if (node.parent === undefined) return undefined;
+    i = node.at;
+    node = node.parent;
+  }
+  return { node, i };
+}
+
+// `next_leaf_edge` of the entry `kv`: the leaf edge right after it.
+export function $treeNextLeafEdge({ node, i }) {
+  if (node.height === 0) return { node, i: i + 1 };
+  return { node: $treeFirstLeaf(node.edges[i + 1]), i: 0 };
+}
+
+// `find_lower_bound_index` and `find_upper_bound_index` of a `SearchBound`
+// (`{ TAG: "Included" | "Excluded", _0: key }`, or "AllIncluded" or
+// "AllExcluded"): the edge it's at, and the bound below it.
+export function $treeLowerIndex(node, bound, cmp) {
+  if (bound === "AllIncluded") return [0, bound];
+  if (bound === "AllExcluded") return [node.entries.length, bound];
+  const [i, there] = $treeIndex(node, bound._0, cmp, 0);
+  if (!there) return [i, bound];
+  return bound.TAG === "Included" ? [i, "AllExcluded"] : [i + 1, "AllIncluded"];
+}
+
+export function $treeUpperIndex(node, bound, cmp, start) {
+  if (bound === "AllIncluded") return [node.entries.length, bound];
+  if (bound === "AllExcluded") return [start, bound];
+  const [i, there] = $treeIndex(node, bound._0, cmp, start);
+  if (!there) return [i, bound];
+  return bound.TAG === "Included" ? [i + 1, "AllExcluded"] : [i, "AllIncluded"];
+}
+
+// A `Bound` as a `SearchBound`, `from_range`'s.
+export function $treeSearchBound(bound) {
+  return bound === "Unbounded" ? "AllIncluded" : bound;
+}
+
+export class $OrdTree extends $OrdMap {
+  #root = $treeNode(0);
+  #length = 0;
+  // Its entries put in once its own fields are made, after `super`'s.
+  constructor(cmp, entries) {
+    super(cmp);
+    if (entries) {
+      for (const [key, value] of entries) {
+        this.set(key, value);
+      }
+    }
+  }
+  made() {
+    return this.constructor === $OrdTree ? new $OrdTree(this.cmp) : new this.constructor();
+  }
+  // `search_tree`: down from the root, each node searched from its first.
+  found(key) {
+    let node = this.#root;
+    for (;;) {
+      const [i, there] = $treeIndex(node, key, this.cmp, 0);
+      if (there) return $treeFound(node, i);
+      if (node.height === 0) return { there, node, i };
+      node = node.edges[i];
+    }
+  }
+  endFound(last) {
+    if (this.#length === 0) return undefined;
+    const leaf = last ? $treeLastLeaf(this.#root) : $treeFirstLeaf(this.#root);
+    return $treeFound(leaf, last ? leaf.entries.length - 1 : 0);
+  }
+  putFound(found, key, value) {
+    if (found.there) {
+      found.entry[1] = value;
+      return found.entry;
+    }
+    const entry = [key, value];
+    this.#insert(found, entry);
+    return entry;
+  }
+  deleteFound(found) {
+    if (found.there) this.#remove(found);
+  }
+  replaceFound(found, key) {
+    found.entry[0] = key;
+  }
+  deleteHeld(key) {
+    const kv = this.#held(this.#root, key);
+    if (kv !== undefined) this.#remove(kv);
+  }
+  // The entry `{ node, i }` whose key is `key` itself, in order.
+  #held = (node, key) => {
+    for (let i = 0; i <= node.entries.length; i++) {
+      if (node.height > 0) {
+        const kv = this.#held(node.edges[i], key);
+        if (kv !== undefined) return kv;
+      }
+      if (i < node.entries.length && node.entries[i][0] === key) return { node, i };
+    }
+    return undefined;
+  };
+  held() {
+    return $treeEntries(this.#root, []);
+  }
+  get size() {
+    return this.#length;
+  }
+  clear() {
+    this.#root = $treeNode(0);
+    this.#length = 0;
+  }
+  // In `from`'s shape, a clone's, `clone_subtree`'s.
+  inOrder(entries, from) {
+    const made = Array.from(entries, ([key, value]) => [key, value]);
+    let next = 0;
+    const copy = (node) => {
+      const copied = $treeNode(node.height);
+      for (let i = 0; i <= node.entries.length; i++) {
+        if (node.height > 0) copied.edges.push(copy(node.edges[i]));
+        if (i < node.entries.length) copied.entries.push(made[next++]);
+      }
+      if (node.height > 0) $treeAdopt(copied, 0);
+      return copied;
+    };
+    this.#root = copy(from.#root);
+    this.#length = made.length;
+    return this;
+  }
+  // `clone_subtree`'s making, in order: each entry made by `make`, node by
+  // node. As one panics, what its node's frame made is dropped by `drop`,
+  // in order; of a later edge's, first the frame's entry made before it,
+  // its locals, by `held`, then what the frame made before that entry.
+  madeEach(make, drop, held) {
+    const dropMade = (made) => drop && (() => $dropItems(made, drop));
+    const clone = (node) => {
+      if (node.height === 0) {
+        const made = [];
+        $unwinds(() => {
+          for (const entry of node.entries) made.push(make(entry));
+        }, dropMade(made));
+        return made;
+      }
+      let made = clone(node.edges[0]);
+      for (let i = 0; i < node.entries.length; i++) {
+        const entry = $unwinds(() => make(node.entries[i]), dropMade(made));
+        const below = $unwinds(
+          () => clone(node.edges[i + 1]),
+          held && (() => held(entry)),
+          dropMade(made),
+        );
+        made = made.concat([entry], below);
+      }
+      return made;
+    };
+    return clone(this.#root);
+  }
+  // `insert_recursing` at the leaf edge `{ node, i }`: split up to a new
+  // root where each is full; where it went, `{ node, i }`.
+  #insert = ({ node, i }, entry) => {
+    let split;
+    let at;
+    if (node.entries.length < $TREE_CAPACITY) {
+      $treeFit(node, i, entry);
+      at = { node, i };
+    } else {
+      const [middle, right, index] = $treeSplitPoint(i);
+      split = $treeSplit(node, middle);
+      at = { node: right ? split.right : split.left, i: index };
+      $treeFit(at.node, index, entry);
+    }
+    while (split !== undefined) {
+      const parent = split.left.parent;
+      if (parent === undefined) {
+        const root = $treeNode(split.left.height + 1);
+        root.entries.push(split.entry);
+        root.edges.push(split.left, split.right);
+        $treeAdopt(root, 0);
+        this.#root = root;
+        break;
+      }
+      const edge = split.left.at;
+      if (parent.entries.length < $TREE_CAPACITY) {
+        $treeFit(parent, edge, split.entry, split.right);
+        break;
+      }
+      const [middle, right, index] = $treeSplitPoint(edge);
+      const next = $treeSplit(parent, middle);
+      $treeFit(right ? next.right : next.left, index, split.entry, split.right);
+      split = next;
+    }
+    this.#length++;
+    return at;
+  };
+  // `remove_kv_tracking` of the entry `{ node, i }`, and the root popped
+  // where it's left empty: the leaf edge where it was, `{ node, i }`.
+  #remove = ({ node, i }) => {
+    let at;
+    if (node.height === 0) {
+      at = this.#removeLeaf(node, i);
+    } else {
+      // Of an internal node, the greatest left of it taken out of its
+      // leaf and put in its place, found again past the hole.
+      const leaf = $treeLastLeaf(node.edges[i]);
+      const left = leaf.entries[leaf.entries.length - 1];
+      const hole = this.#removeLeaf(leaf, leaf.entries.length - 1);
+      const kv = $treeNextKv(hole);
+      kv.node.entries[kv.i] = left;
+      at = $treeNextLeafEdge(kv);
+    }
+    this.#length--;
+    const root = this.#root;
+    if (root.height > 0 && root.entries.length === 0) {
+      this.#root = root.edges[0];
+      this.#root.parent = undefined;
+    }
+    return at;
+  };
+  // `remove_leaf_kv`: a leaf left under five entries steals from or
+  // merges with its left sibling, else its right; then its ancestors.
+  #removeLeaf = (node, i) => {
+    node.entries.splice(i, 1);
+    if (node.entries.length >= $TREE_MIN_LEN || node.parent === undefined) return { node, i };
+    const parent = node.parent;
+    let at;
+    if (node.at > 0) {
+      const left = parent.edges[node.at - 1];
+      const length = left.entries.length;
+      if ($treeCanMerge(parent, node.at - 1)) {
+        $treeMerge(parent, node.at - 1);
+        at = { node: left, i: length + 1 + i };
+      } else {
+        $treeStealLeft(parent, node.at - 1, 1);
+        at = { node, i: 1 + i };
+      }
+    } else {
+      if ($treeCanMerge(parent, 0)) $treeMerge(parent, 0);
+      else $treeStealRight(parent, 0, 1);
+      at = { node, i };
+    }
+    $treeFixUp(at.node.parent);
+    return at;
+  };
+  // `split_off`: down both sides of where `key` goes, each node's suffix
+  // moved to the right tree's, then each tree's border fixed.
+  splitOff(key) {
+    const rest = this.made();
+    if (this.#length === 0) return rest;
+    const pillar = $treeNode(this.#root.height);
+    for (let node = pillar; node.height > 0; node = node.edges[0]) {
+      node.edges.push($treeNode(node.height - 1));
+      $treeAdopt(node, 0);
+    }
+    let left = this.#root;
+    let right = pillar;
+    for (;;) {
+      const [i] = $treeIndex(left, key, this.cmp, 0);
+      right.entries = left.entries.splice(i);
+      if (left.height === 0) break;
+      right.edges = right.edges.concat(left.edges.splice(i + 1));
+      $treeAdopt(right, 1);
+      left = left.edges[i];
+      right = right.edges[0];
+    }
+    this.#root = $treeFixBorder(this.#root, true);
+    rest.#root = $treeFixBorder(pillar, false);
+    rest.#length = $treeCount(rest.#root);
+    this.#length -= rest.#length;
+    return rest;
+  }
+  // `range`: the bounds checked by `eq` and `partialCmp`, `s == e` then
+  // `s > e`, as std's are; then the edges where they part, each side down
+  // to its leaf; what's between them, in order.
+  range(start, end, name, eq, partialCmp, checked) {
+    if (checked && start !== "Unbounded" && end !== "Unbounded") {
+      if (start.TAG === "Excluded" && end.TAG === "Excluded" && eq(start._0, end._0)) {
+        throw new Error(`range start and end are equal and excluded in ${name}`);
+      }
+      if (partialCmp(start._0, end._0) > 0) {
+        throw new Error(`range start is greater than range end in ${name}`);
+      }
+    }
+    let node = this.#root;
+    let lower = $treeSearchBound(start);
+    let upper = $treeSearchBound(end);
+    for (;;) {
+      const [low, lowerBelow] = $treeLowerIndex(node, lower, this.cmp);
+      const [high, upperBelow] = $treeUpperIndex(node, upper, this.cmp, low);
+      lower = lowerBelow;
+      upper = upperBelow;
+      if (low < high) {
+        let front = { node, i: low };
+        let back = { node, i: high };
+        while (front.node.height > 0) {
+          const below = front.node.edges[front.i];
+          const [i, bound] = $treeLowerIndex(below, lower, this.cmp);
+          front = { node: below, i };
+          lower = bound;
+          const under = back.node.edges[back.i];
+          const [j, other] = $treeUpperIndex(under, upper, this.cmp, 0);
+          back = { node: under, i: j };
+          upper = other;
+        }
+        const found = [];
+        for (let edge = front; edge.node !== back.node || edge.i !== back.i; ) {
+          const kv = $treeNextKv(edge);
+          found.push(kv.node.entries[kv.i]);
+          edge = $treeNextLeafEdge(kv);
+        }
+        return found;
+      }
+      if (node.height === 0) return [];
+      node = node.edges[low];
+    }
+  }
+  // `lower_bound`: the leaf edge before the first key the bound holds.
+  #lowerBound = (bound) => {
+    let node = this.#root;
+    for (;;) {
+      const [i, below] = $treeLowerIndex(node, bound, this.cmp);
+      if (node.height === 0) return { node, i };
+      node = node.edges[i];
+      bound = below;
+    }
+  };
+  // `extract_if(range, f)`'s `ExtractIfInner`: from the start's lower
+  // bound, each entry to the end asked by `partialCmp` as it's reached,
+  // `<=` an included end or `<` an excluded one; each `f` keeps taken out.
+  extractIf(start, end, partialCmp, take) {
+    let edge = this.#lowerBound($treeSearchBound(start));
+    const tree = this;
+    return {
+      next() {
+        for (let kv = $treeNextKv(edge); kv !== undefined; kv = $treeNextKv(edge)) {
+          const entry = kv.node.entries[kv.i];
+          if (end !== "Unbounded") {
+            const order = partialCmp(entry[0], end._0);
+            if (!(end.TAG === "Included" ? order <= 0 : order < 0)) return undefined;
+          }
+          if (take(entry)) {
+            edge = tree.#remove(kv);
+            return entry;
+          }
+          edge = $treeNextLeafEdge(kv);
+        }
+        return undefined;
+      },
+    };
+  }
+  // `append`'s `merge` of `other`, emptied: of each of its entries in
+  // order, a cursor of this one stepped to the first not less, `cmp(held,
+  // given)`, and there it's put before; where they're equal, the one held
+  // taken out and put back with `other`'s value, as `$merging` drops what
+  // it replaces, and what's left as a comparison panics.
+  append(other, drop, dropKey) {
+    if (other.#length === 0) return;
+    // Of an empty one, `other`'s tree, swapped in.
+    if (this.#length === 0) {
+      [this.#root, other.#root] = [other.#root, this.#root];
+      [this.#length, other.#length] = [other.#length, 0];
+      return;
+    }
+    const items = Array.from(other.held());
+    other.clear();
+    let edge;
+    $merging(items, drop, dropKey, (entry, first, unwinding) => {
+      // The first of `other`'s found by `lower_bound`, the cursor's start.
+      if (first) edge = $unwinds(() => this.#lowerBound({ TAG: "Included", _0: entry[0] }), unwinding);
+      for (;;) {
+        const kv = $treeNextKv(edge);
+        const held = kv && kv.node.entries[kv.i];
+        const order = kv && $unwinds(() => this.cmp(held[0], entry[0]), unwinding);
+        if (kv === undefined || order > 0) {
+          const at = this.#insert(edge, entry);
+          edge = { node: at.node, i: at.i + 1 };
+          return undefined;
+        }
+        if (order === 0) {
+          edge = this.#remove(kv);
+          const putBack = () => {
+            held[1] = entry[1];
+            edge = this.#insert(edge, held);
+          };
+          return { held: [held[0], held[1]], putBack };
+        }
+        edge = $treeNextLeafEdge(kv);
+      }
+    });
+  }
+  // A bulk build's (`bulk_build_from_sorted_iter`): each entry of `sorted`
+  // whose key `ne` says isn't the next one's pushed at the right border,
+  // each kept dropped as `DedupSortedIter` drops it, its key then its value;
+  // then the right border filled. As `ne` or a drop panics, the one asked
+  // dropped, then those after the next, then the next, as its `Peekable`
+  // drops them; what's pushed is leaked, as std's root is.
+  pushSorted(sorted, ne, drop) {
+    let leaf = this.#root;
+    let i = 0;
+    const next = () => {
+      for (;;) {
+        if (i >= sorted.length) return undefined;
+        const entry = sorted[i++];
+        if (i >= sorted.length) return entry;
+        const after =
+          drop && (() => $inTurn(() => $dropItems(sorted.slice(i + 1), drop), () => drop(sorted[i])));
+        const apart = $unwinds(
+          () => ne(entry[0], sorted[i][0]),
+          drop && (() => drop(entry)),
+          after,
+        );
+        if (apart) return entry;
+        if (drop) $unwinds(() => drop(entry), after);
+      }
+    };
+    for (let entry = next(); entry !== undefined; entry = next()) {
+      if (leaf.entries.length < $TREE_CAPACITY) {
+        leaf.entries.push(entry);
+      } else {
+        let open = leaf.parent;
+        while (open !== undefined && open.entries.length >= $TREE_CAPACITY) open = open.parent;
+        if (open === undefined) {
+          const root = $treeNode(this.#root.height + 1);
+          root.edges.push(this.#root);
+          $treeAdopt(root, 0);
+          this.#root = root;
+          open = root;
+        }
+        let pillar = $treeNode(open.height - 1);
+        const top = pillar;
+        while (pillar.height > 0) {
+          pillar.edges.push($treeNode(pillar.height - 1));
+          $treeAdopt(pillar, 0);
+          pillar = pillar.edges[0];
+        }
+        open.entries.push(entry);
+        open.edges.push(top);
+        $treeAdopt(open, open.edges.length - 1);
+        leaf = $treeLastLeaf(open);
+      }
+      this.#length++;
+    }
+    // `fix_right_border_of_plentiful`.
+    for (let node = this.#root; node.height > 0; ) {
+      const last = node.entries.length - 1;
+      const right = node.edges[last + 1];
+      if (right.entries.length < $TREE_MIN_LEN) $treeStealLeft(node, last, $TREE_MIN_LEN - right.entries.length);
+      node = right;
+    }
+    return this;
+  }
+}
+
+// What `found` gives of the entry `i` of `node`.
+export function $treeFound(node, i) {
+  const entry = node.entries[i];
+  return { there: true, key: entry[0], value: entry[1], entry, node, i };
+}
+
+// Its entries in order, put in `into`.
+export function $treeEntries(node, into) {
+  for (let i = 0; i <= node.entries.length; i++) {
+    if (node.height > 0) $treeEntries(node.edges[i], into);
+    if (i < node.entries.length) into.push(node.entries[i]);
+  }
+  return into;
+}
+
+export function $treeCount(node) {
+  let count = node.entries.length;
+  if (node.height > 0) for (const edge of node.edges) count += $treeCount(edge);
+  return count;
+}
+
+// `fix_node_and_affected_ancestors`: each node under five entries, up
+// from `node`, merged with or stolen into from its left sibling, else its
+// right, until one isn't.
+export function $treeFixUp(node) {
+  while (node !== undefined && node.entries.length < $TREE_MIN_LEN) {
+    const parent = node.parent;
+    if (parent === undefined) return;
+    const length = node.entries.length;
+    if (node.at > 0) {
+      if ($treeCanMerge(parent, node.at - 1)) {
+        $treeMerge(parent, node.at - 1);
+      } else {
+        $treeStealLeft(parent, node.at - 1, $TREE_MIN_LEN - length);
+        return;
+      }
+    } else if ($treeCanMerge(parent, 0)) {
+      $treeMerge(parent, 0);
+    } else {
+      $treeStealRight(parent, 0, $TREE_MIN_LEN - length);
+      return;
+    }
+    node = parent;
+  }
+}
+
+// `fix_right_border`, or `fix_left_border` (`!right`), of a split's tree:
+// empty roots popped, then down its border each child merged with its
+// sibling or filled from it to six, then empty roots popped again.
+export function $treeFixBorder(root, right) {
+  root = $treeFixTop(root);
+  if (root.entries.length === 0) return root;
+  for (let node = root; node.height > 0; ) {
+    const i = right ? node.entries.length - 1 : 0;
+    if ($treeCanMerge(node, i)) {
+      node = $treeMerge(node, i);
+      continue;
+    }
+    const child = node.edges[right ? i + 1 : i];
+    const count = $TREE_MIN_LEN + 1 - child.entries.length;
+    if (count > 0) {
+      if (right) $treeStealLeft(node, i, count);
+      else $treeStealRight(node, i, count);
+    }
+    node = child;
+  }
+  return $treeFixTop(root);
+}
+
+// `fix_top`: an empty internal root popped, again and again.
+export function $treeFixTop(root) {
+  while (root.height > 0 && root.entries.length === 0) {
+    root = root.edges[0];
+    root.parent = undefined;
+  }
+  return root;
+}
+
+// A set of items whose order can be seen: an `$OrdTree` of each to itself.
+export class $OrdTreeSet extends $OrdSet {
+  constructor(cmp, items) {
+    super(cmp, items, $OrdTree);
+  }
+}
+
+// The class of a B-tree of keys whose order can be seen, ordered by `cmp`,
+// as `$ordMap`'s is made.
+export function $ordTreeMap(cmp) {
+  return class extends $OrdTree {
+    constructor(entries) {
+      super(cmp, entries);
+    }
+  };
+}
+
+export function $ordTreeSet(cmp) {
+  return class extends $OrdTreeSet {
     constructor(items) {
       super(cmp, items);
     }
@@ -4869,7 +5592,13 @@ export function $handleOn(object, key) {
 
 // `m.get_mut(k)` of a map whose values are numbers or strings: a handle on
 // the key's value, which writes the map, or `undefined`, `None` (ADR 0152).
+//
+// Of a map of its keys' own order, on its entry, one search (#926).
 export function $mutGet(m, key) {
+  if (m.found !== undefined) {
+    const found = m.found(key);
+    return found.there ? $entryHandle(found.entry) : undefined;
+  }
   if (!m.has(key)) return undefined;
   return {
     get value() {
@@ -6833,6 +7562,11 @@ export function $setReplace(s, x, drop) {
     () => $found(s, x),
     drop && (() => drop(x)),
   );
+  // A B-tree's in its place, `mem::replace` of the key it holds.
+  if (found.there && s.replaceFound !== undefined) {
+    s.replaceFound(found, x);
+    return found.key;
+  }
   $deleteFound(s, found, x);
   $putFound(s, { ...found, there: false }, x);
   return found.key;
@@ -6849,6 +7583,15 @@ export function $setTake(s, x) {
 // keys' order `cmp`; `undefined` where it's empty. `pop`: taken out too.
 // `boxed`: a set's item that may look like `None`, boxed (ADR 0051).
 export function $treeEnd(m, cmp, last, set, pop, boxed = false) {
+  // Of its keys' own order, its first or last as it holds them, asking
+  // nothing, as std's walk down its edge asks nothing (#926).
+  if (m.endFound !== undefined) {
+    const end = m.endFound(last);
+    if (end === undefined) return undefined;
+    if (pop) m.deleteFound(end);
+    const item = set ? end.key : [end.key, end.value];
+    return boxed ? $some(item) : item;
+  }
   let found;
   let seen = false;
   for (const entry of m) {
@@ -6868,7 +7611,16 @@ export function $treeEnd(m, cmp, last, set, pop, boxed = false) {
 // `"Unbounded"`, in order; a start past the end panics, as std's does, and
 // so does one equal to it that both exclude. Checked as `range` checks its
 // bounds where `checked`; `extract_if`'s aren't (ADR 0344).
-export function $treeRange(m, cmp, set, name, start, end, checked = true) {
+// Of a tree of its keys' own order whose order can be seen, std's search,
+// whose bounds are checked by `eq` and `partialCmp`, as std's are (#926).
+export function $treeRange(m, cmp, set, name, start, end, checked = true, eq, partialCmp) {
+  const tree = set ? m.items : m;
+  if (tree?.range !== undefined) {
+    // Unchecked, `extract_if`'s: the range it walks, unsearched.
+    if (!checked) return { start, end, partialCmp };
+    const found = tree.range(start, end, name, eq, partialCmp, checked);
+    return found.map(([key, value]) => (set ? key : [key, value]));
+  }
   if (checked && start !== "Unbounded" && end !== "Unbounded") {
     const order = cmp(start._0, end._0);
     if (order > 0) {
@@ -6896,8 +7648,8 @@ export function $treeRange(m, cmp, set, name, start, end, checked = true) {
 // `m.split_off(&key)` of a B-tree: those from `key` on, taken out, in a map
 // of its own.
 export function $treeSplitOff(m, key, cmp, set) {
-  // Of its keys' own order, one search, as std's split does (#911).
-  if (m.splitFound !== undefined) return m.splitFound(m.found(key));
+  // Of its keys' own order, its own search, as std's split's (#911, #926).
+  if (m.splitOff !== undefined) return m.splitOff(key);
   const rest = new m.constructor();
   for (const entry of Array.from(m)) {
     const k = set ? entry : entry[0];
@@ -6911,13 +7663,70 @@ export function $treeSplitOff(m, key, cmp, set) {
 }
 
 // `m.append(&mut other)`: all of `other`'s in `m`, its values over `m`'s,
-// and `other` empty.
-export function $treeAppend(m, other, set) {
-  for (const entry of other) {
-    if (set) m.add(entry);
-    else m.set(entry[0], entry[1]);
+// and `other` empty, what it replaces dropped as std's merge drops it,
+// `$merging`'s (#926). Of a tree whose keys' order can be seen, std's
+// merge itself.
+export function $treeAppend(m, other, set, drop, dropKey) {
+  if (set ? m.items?.append !== undefined : m.append !== undefined) {
+    if (set) m.items.append(other.items, undefined, dropKey);
+    else m.append(other, drop, dropKey);
+    return;
   }
+  const items = Array.from(other, (entry) => (set ? [entry, entry] : entry));
   other.clear();
+  $merging(items, drop, dropKey, ([key, value]) => {
+    if (!m.has(key)) {
+      if (set) m.add(key);
+      else m.set(key, value);
+      return undefined;
+    }
+    const own = $storedKey(m, key);
+    const held = [own, set ? own : m.get(key)];
+    m.delete(key);
+    return { held, putBack: () => (set ? m.add(own) : m.set(own, value)) };
+  });
+}
+
+// std's `merge`'s drops (`append`'s, #926), of `other`'s entries `items`,
+// `[key, value]`, in order, each given to `step(entry, first, unwinding)`,
+// which puts it in, or, where an equal key's held, takes that entry out
+// and gives it, `{ held, putBack }`: its value dropped by `drop`, the
+// conflict's, then `putBack()` puts its key back with the entry's value,
+// then the entry's key is dropped by `dropKey` as its loop's turn ends, the
+// first's at `merge`'s end, its binding's. As `step` panics, a comparison,
+// `unwinding` drops what std's frames hold: the entry's value, then its
+// key, then the rest of `other`'s, each its key then its value, then the
+// first's key where it's held. As a held value's drop panics, its key,
+// then the entry's, whose value std's return slot leaks, then the same.
+export function $merging(items, drop, dropKey, step) {
+  let firstHeld = false;
+  const firstKey = () => {
+    if (firstHeld) dropKey?.(items[0][0]);
+  };
+  const rest = (n) => () => $dropItems(items.slice(n), $entryDropping(false, drop, dropKey));
+  for (let n = 0; n < items.length; n++) {
+    const entry = items[n];
+    const first = n === 0;
+    const after = first ? [rest(1)] : [rest(n + 1), firstKey];
+    const unwinding = () =>
+      $inTurn(
+        () => drop?.(entry[1]),
+        () => dropKey?.(entry[0]),
+        ...after,
+      );
+    const taken = step(entry, first, unwinding);
+    if (taken === undefined) continue;
+    $unwinds(
+      () => drop?.(taken.held[1]),
+      () => dropKey?.(taken.held[0]),
+      () => dropKey?.(entry[0]),
+      ...after,
+    );
+    taken.putBack();
+    if (first) firstHeld = true;
+    else $unwinds(() => dropKey?.(entry[0]), ...after);
+  }
+  firstKey();
 }
 
 // A set's `union`, `intersection`, `difference` or `symmetric_difference`:
@@ -6966,6 +7775,23 @@ export function $isDisjoint(a, b) {
 // does, `$insert`'s (#921).
 export function $extendMap(m, items, set, drop, dropKey, sorted) {
   const put = (item) => {
+    // Of its keys' own order, `insert`'s one search (#926).
+    if (m.found !== undefined) {
+      if (set) {
+        $add(m, item, dropKey);
+        return;
+      }
+      const [key, value] = item;
+      const found = $unwinds(
+        () => m.found(key),
+        dropKey && (() => dropKey(key)),
+        drop && (() => drop(value)),
+      );
+      if (found.there) $unwinds(() => dropKey?.(key), drop && (() => drop(value)));
+      m.putFound(found, key, value);
+      if (found.there) drop?.(found.value);
+      return;
+    }
     if (set) {
       if (m.has(item)) dropKey?.(item);
       else m.add(item);
@@ -7023,6 +7849,10 @@ export function $mapFrom(m, items, set, drop, dropKey) {
 // A B-tree's `first_entry()`, or `last_entry()` (`last`): its least or
 // greatest key's `OccupiedEntry`, `[m, key]`, or `undefined` (ADR 0345).
 export function $endEntry(m, cmp, last) {
+  if (m.endFound !== undefined) {
+    const end = m.endFound(last);
+    return end && [m, end.key, end];
+  }
   let end;
   for (const key of m.keys()) {
     if (end === undefined || (last ? cmp(key, end[1]) > 0 : cmp(key, end[1]) < 0)) end = [m, key];
@@ -7030,20 +7860,32 @@ export function $endEntry(m, cmp, last) {
   return end;
 }
 
-// An `OccupiedEntry`'s `get()`, or a handle on what's there (`handle`).
-export function $entryGet([m, key], handle) {
+// An `OccupiedEntry`'s `get()`, or a handle on what's there (`handle`):
+// of a map of its keys' own order, of what its search `found`, asking
+// nothing again, as std's entry holds where it is (#926).
+export function $entryGet([m, key, found], handle) {
+  if (found !== undefined) return handle ? $entryHandle(found.entry) : found.entry[1];
   return handle ? $mutGet(m, key) : m.get(key);
 }
 
 // Its `insert(v)`: what was there.
-export function $entryInsert([m, key], value) {
+export function $entryInsert([m, key, found], value) {
+  if (found !== undefined) {
+    const old = found.entry[1];
+    found.entry[1] = value;
+    return old;
+  }
   const old = m.get(key);
   m.set(key, value);
   return old;
 }
 
 // Its `remove()`, or `remove_entry()` (`entry`): what's taken out.
-export function $entryRemove([m, key], entry) {
+export function $entryRemove([m, key, found], entry) {
+  if (found !== undefined) {
+    m.deleteFound(found);
+    return entry ? [found.key, found.entry[1]] : found.entry[1];
+  }
   const value = m.get(key);
   m.delete(key);
   return entry ? [key, value] : value;
@@ -7054,7 +7896,18 @@ export function $entryRemove([m, key], entry) {
 // methods are of (ADR 0345); where
 // it's there, the key given dropped by `dropKey`, of keys with a destructor
 // (ADR 0467).
+// Of a map of its keys' own order, one search, its key given dropped as
+// the search panics, and what it found kept for the entry's methods: `[m,
+// key, found]` (#926).
 export function $entry(m, key, dropKey) {
+  if (m.found !== undefined) {
+    const found = $unwinds(
+      () => m.found(key),
+      dropKey && (() => dropKey(key)),
+    );
+    if (found.there) dropKey?.(key);
+    return { TAG: found.there ? "Occupied" : "Vacant", _0: [m, found.there ? found.key : key, found] };
+  }
   const there = m.has(key);
   if (there) dropKey?.(key);
   return { TAG: there ? "Occupied" : "Vacant", _0: [m, there ? $storedKey(m, key) : key] };
@@ -7063,18 +7916,48 @@ export function $entry(m, key, dropKey) {
 // An entry's `and_modify(f)`: `f` given its value where its key is there,
 // a handle on a number or text (`handle`), and the entry, for `or_insert`.
 export function $andModify(entry, f, handle) {
-  if (entry.TAG === "Occupied") {
-    const [m, key] = entry._0;
-    f(handle ? $mutGet(m, key) : m.get(key));
-  }
+  if (entry.TAG === "Occupied") f($entryGet(entry._0, handle));
   return entry;
 }
 
 // A `VacantEntry`'s `insert(v)`: `v` put in, and a `&mut` to it, a handle
 // on a number or text (`handle`).
-export function $vacantInsert([m, key], value, handle) {
+export function $vacantInsert([m, key, found], value, handle) {
+  if (found !== undefined) {
+    const entry = m.putFound(found, key, value);
+    return handle ? $entryHandle(entry) : value;
+  }
   m.set(key, value);
   return handle ? $mutGet(m, key) : value;
+}
+
+// An entry's `or_insert(value)`, `$entry`'s, of a map whose search can be
+// seen (#926): what `$entry`'s search found written, no search again. Its
+// value, or a handle on it (`handle`); where it's there, `value` dropped by
+// `drop`.
+export function $entryOrInsert(entry, value, handle, drop) {
+  if (entry.TAG === "Occupied") {
+    drop?.(value);
+    return $entryGet(entry._0, handle);
+  }
+  return $vacantInsert(entry._0, value, handle);
+}
+
+// Its `or_insert_with(make)`, or `or_insert_with_key` (`keyed`), `make`
+// given its key: where it's there, `make` dropped unrun by `dropMake`;
+// where it isn't and `make` panics, the key by `dropKey`, as std's
+// `VacantEntry` drops it.
+export function $entryOrInsertWith(entry, make, handle, dropKey, dropMake, keyed) {
+  if (entry.TAG === "Occupied") {
+    dropMake?.(make);
+    return $entryGet(entry._0, handle);
+  }
+  const key = entry._0[1];
+  const value = $unwinds(
+    () => (keyed ? make(key) : make()),
+    dropKey && (() => dropKey(key)),
+  );
+  return $vacantInsert(entry._0, value, handle);
 }
 
 // A B-tree made of `items`, its entries or a set's items, sorted by their
@@ -7093,6 +7976,38 @@ export function $treeFrom(tree, items, set, cmp, drop, dropKey) {
     if (set) tree.add(item);
     else tree.set(item[0], item[1]);
   }
+  return tree;
+}
+
+// A B-tree made of `items` whose keys' order may be seen, of keys whose
+// order is seen or not total, or a type parameter's (#926): of std's nodes,
+// std's bulk build. Its entries sorted by std's stable sort, `kind` and
+// `size` its entries', `(K, V)`'s or a set's `T`'s: a map's by `cmp` of
+// their keys, a set's by `<`, `partial_cmp`'s; as that panics, each
+// dropped in the order it's left. Then each kept that `!=` doesn't find
+// equal to the next, and bulk-pushed. `TOrd` is the keys' `Ord`
+// dictionary, whose `PartialOrd()`, and its `PartialEq()`, give
+// `partial_cmp` and `eq` where it has them; else `TPartialOrd` and
+// `TPartialEq` where they're given, a std type's of the crate's, `(K,
+// u32)`; else its `cmp`, a std type's own, which asks nothing. Of another
+// class, a sorted array's or numbers', `$treeFrom`'s.
+export function $treeFromSorted(tree, items, TOrd, kind, size, drop, dropKey, TPartialEq, TPartialOrd) {
+  const set = tree instanceof Set;
+  const nodes = set ? tree.items : tree;
+  if (nodes?.pushSorted === undefined) return $treeFrom(tree, items, set, TOrd.cmp, drop, dropKey);
+  const partialOrd = TPartialOrd ?? TOrd.PartialOrd?.();
+  const partialEq = TPartialEq ?? partialOrd?.PartialEq?.();
+  const partialCmp = partialOrd?.partialCmp ?? TOrd.cmp;
+  const eq = partialEq?.eq ?? ((a, b) => TOrd.cmp(a, b) === 0);
+  const sorted = Array.from(items, (item) => (set ? [item, item] : [item[0], item[1]]));
+  if (sorted.length === 0) return tree;
+  const dropEntry = set ? dropKey && (([item]) => dropKey(item)) : (drop || dropKey) && $entryDropping(false, drop, dropKey);
+  const isLess = set ? (a, b) => partialCmp(a[0], b[0]) < 0 : (a, b) => TOrd.cmp(a[0], b[0]) < 0;
+  $unwinds(
+    () => $sortStable(sorted, isLess, kind, size),
+    dropEntry && (() => $dropItems(sorted, dropEntry)),
+  );
+  nodes.pushSorted(sorted, (a, b) => !eq(a, b), dropEntry);
   return tree;
 }
 
@@ -8095,7 +9010,24 @@ export function $extractIf(v, start, end, f, handle = false) {
 // handle on a value that's a number or text (`handles`), or each item of a
 // set (`set`). Each it holds of is taken out and given, a map's as
 // `[key, value]`.
+// Of a tree whose keys' order can be seen, std's walk (#926): from where
+// its range starts, `$treeRange`'s unsearched range of it, or all of it.
 export function $mapExtractIf(m, f, entries, handles, set) {
+  const tree = set ? m.items : m;
+  if (tree?.extractIf !== undefined) {
+    const { start, end, partialCmp } = entries === m ? { start: "Unbounded", end: "Unbounded" } : entries;
+    const take = set
+      ? ([item]) => f(item)
+      : (entry) => f(entry[0], handles ? $entryHandle(entry) : entry[1]);
+    const walk = tree.extractIf(start, end, partialCmp, take);
+    return Iterator.from({
+      next() {
+        const entry = walk.next();
+        if (entry === undefined) return { done: true, value: undefined };
+        return { done: false, value: set ? entry[0] : [entry[0], entry[1]] };
+      },
+    });
+  }
   const each = Array.from(entries)[Symbol.iterator]();
   return Iterator.from({
     next() {
@@ -13671,8 +14603,21 @@ export function $madeInTurn(build) {
 // `Array.from(items, make)`, a clone of a slice's items, a `VecDeque`'s or
 // a map's entries: where a `make` throws, a panic, what it made already is
 // dropped by `drop`, in order, as std's clone drops what its guard holds;
-// then what was thrown goes on (#897).
-export function $madeEach(items, make, drop) {
+// then what was thrown goes on (#897). Of a B-tree of std's nodes, as its
+// `clone_subtree` makes them, node by node (`madeEach`), a map's entry
+// made before a later edge's panic dropped as its key and value are,
+// `dropKey` and `dropValue` (#926).
+export function $madeEach(items, make, drop, dropKey, dropValue) {
+  const tree = items instanceof Set ? items.items : items;
+  if (tree?.madeEach !== undefined) {
+    if (items instanceof Set) return tree.madeEach(([item]) => make(item), drop, drop);
+    const held = (entry) =>
+      $inTurn(
+        () => dropValue?.(entry[1]),
+        () => dropKey?.(entry[0]),
+      );
+    return tree.madeEach(make, drop, held);
+  }
   const made = [];
   $unwinds(
     () => {

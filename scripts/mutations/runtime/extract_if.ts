@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","extract_if"],
   },
+  {
+    name: "extract-if-tree-eager",
+    breaks: "`extract_if` of a tree whose order can be seen takes a snapshot and deletes by search, where std's walks and removes where it is (#926)",
+    file: "src/runtime/extract_if.js",
+    find: "  if (tree?.extractIf !== undefined) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_nodes_seen.rs$"],
+  },
 ];

@@ -13,7 +13,3 @@
 // generator conformance 65f45efb5849
 // generator points c0f0093cbab5
 // generator unwind 1a27ee232157
-
-#911 P0 (unwind): a BTreeMap's or a BTreeSet's comparisons of keys with their own Ord are called with their arguments swapped, and the key given leaks as one panics
-unwind:plain 1414-1423
-unwind:std 1414-1423

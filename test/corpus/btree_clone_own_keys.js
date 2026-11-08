@@ -11,8 +11,8 @@ import {
   $insert,
   $madeEach,
   $madeInTurn,
-  $ordMap,
-  $ordSet,
+  $ordTreeMap,
+  $ordTreeSet,
   $sortedEntries,
   $sortedKeys,
 } from "@rust-js/runtime";
@@ -81,7 +81,7 @@ function main() {
   const clone = { clone: (value) => value };
   for (const boom of [0, 1, 3, 12]) {
     run("map", boom, () => {
-      const m = new ($ordMap(dOrd_cmp))();
+      const m = new ($ordTreeMap(dOrd_cmp))();
       let insert;
       try {
         insert = $insert(m, [3], [13], dDrop_drop, dDrop_drop);
@@ -159,7 +159,7 @@ function main() {
       }
       let w;
       try {
-        w = $ordMap(dOrd_cmp).ofSorted(
+        w = $ordTreeMap(dOrd_cmp).ofSorted(
           $madeEach(
             m,
             ([key, value]) =>
@@ -168,7 +168,10 @@ function main() {
               dDrop_drop(value[0]);
               dDrop_drop(value[1]);
             },
+            dDrop_drop,
+            dDrop_drop,
           ),
+          m,
         );
       } catch (error) {
         $cleanup(() => {
@@ -237,7 +240,7 @@ function main() {
       }
     });
     run("set", boom, () => {
-      const s = new ($ordSet(dOrd_cmp))();
+      const s = new ($ordTreeSet(dOrd_cmp))();
       try {
         $add(s, [3], dDrop_drop);
       } catch (error) {
@@ -270,7 +273,10 @@ function main() {
       }
       let t;
       try {
-        t = $ordSet(dOrd_cmp).ofSorted($madeEach(s, (item) => dClone_clone(item), dDrop_drop));
+        t = $ordTreeSet(dOrd_cmp).ofSorted(
+          $madeEach(s, (item) => dClone_clone(item), dDrop_drop),
+          s,
+        );
       } catch (error) {
         $cleanup(() => {
           for (const key of $sortedKeys(s, dOrd_cmp)) {
@@ -330,7 +336,7 @@ function main() {
     });
   }
   // Of a value with no destructor.
-  const m = new ($ordMap(dOrd_cmp))();
+  const m = new ($ordTreeMap(dOrd_cmp))();
   try {
     $insert(m, [2], 2, dDrop_drop);
   } catch (error) {
@@ -354,14 +360,16 @@ function main() {
   let w;
   // In generic code, its class its caller's.
   try {
-    w = $ordMap(dOrd_cmp).ofSorted(
+    w = $ordTreeMap(dOrd_cmp).ofSorted(
       $madeEach(
         m,
         ([key, value]) => [dClone_clone(key), value],
         (value) => {
           dDrop_drop(value[0]);
         },
+        dDrop_drop,
       ),
+      m,
     );
   } catch (error) {
     $cleanup(() => {
@@ -391,7 +399,7 @@ function main() {
   }
   let w$1;
   try {
-    w$1 = cloned(w, dOrd, dClone, $ordMap(dOrd_cmp), dDrop_drop);
+    w$1 = cloned(w, dOrd, dClone, $ordTreeMap(dOrd_cmp), dDrop_drop);
   } catch (error) {
     $cleanup(() => {
       for (const [key, ,] of $sortedEntries(w, dOrd_cmp)) {
@@ -425,7 +433,7 @@ function main() {
   }
   let s;
   try {
-    s = new ($ordSet(dOrd_cmp))();
+    s = new ($ordTreeSet(dOrd_cmp))();
   } catch (error) {
     $cleanup(() => {
       for (const [key, ,] of $sortedEntries(w$1, dOrd_cmp)) {
@@ -480,7 +488,7 @@ function main() {
   }
   let tmp;
   try {
-    tmp = clonedSet(s, dOrd, dClone, $ordSet(dOrd_cmp), dDrop_drop);
+    tmp = clonedSet(s, dOrd, dClone, $ordTreeSet(dOrd_cmp), dDrop_drop);
   } catch (error) {
     $cleanup(() => {
       for (const key of $sortedKeys(s, dOrd_cmp)) {
@@ -675,11 +683,16 @@ function cloned(m, KOrd, KClone, KTreeMap, dropK) {
       (value) => {
         dropK?.(value[0]);
       },
+      dropK,
     ),
+    m,
   );
 }
 
 function clonedSet(s, TOrd, TClone, TTreeSet, dropT) {
-  return TTreeSet.ofSorted($madeEach(s, (item) => TClone.clone(item), dropT));
+  return TTreeSet.ofSorted(
+    $madeEach(s, (item) => TClone.clone(item), dropT),
+    s,
+  );
 }
 //# sourceMappingURL=case.js.map

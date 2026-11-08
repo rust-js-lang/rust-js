@@ -115,6 +115,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             // What it splits off it moves into the map it
                             // gives, dropping none (#171).
                             | MapOp::TreeSplitOff
+                            // Moves each of the other's in, dropping the
+                            // value an equal key held, then the key given,
+                            // as std's merge does (#926).
+                            | MapOp::TreeAppend
                     )
                     // A cell keeps it, and gives the old one back; a `Cell` of one is
                     // refused by its type (ADR 0320).

@@ -4,7 +4,7 @@
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 
-use crate::lower::recognition::{StdItem, TypeFact, std_item, trait_method};
+use crate::lower::recognition::TypeFact;
 use crate::lower::representation::Num;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -375,10 +375,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(key) if self.recognition().is_path(key) => ["$PathMap", "$PathSet"][usize::from(set)],
             // `Cow`s, each kept under what it borrows (ADR 0402).
             Some(key) if self.is_cow_key(key) => ["$CowMap", "$CowSet"][usize::from(set)],
-            // Kept in its `cmp`'s order, each found by it (ADR 0404).
+            // Kept in its `cmp`'s order, each found by it (ADR 0404): in
+            // std's nodes where its comparisons can be seen (#926).
             Some(key) if sorted && self.found_by_cmp(key) => {
                 let cmp = self.cmp_fn(key, false, span)?;
-                return Ok(Expr::call_helper(["$ordMap", "$ordSet"][usize::from(set)], vec![cmp]));
+                let names = match self.tree_of_nodes(key) {
+                    true => ["$ordTreeMap", "$ordTreeSet"],
+                    false => ["$ordMap", "$ordSet"],
+                };
+                return Ok(Expr::call_helper(names[usize::from(set)], vec![cmp]));
             }
             // One holding a part found by itself, each kept under its key's
             // parts, that one's `$id` (ADR 1015, amended).
@@ -494,6 +499,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(ty) => self.std_drop_function(ty, span)?,
                 None => None,
             });
+        }
+        // Of std's nodes, its bulk build, `$treeFromSorted(tree, items, TOrd,
+        // kind, size, drop, dropKey, TPartialEq, TPartialOrd)`: its entries
+        // sorted by std's stable sort, as their type picks, then kept by
+        // `!=` (#926). `PartialOrd` and `PartialEq` are the `Ord`
+        // dictionary's, where it has them, the crate's own impl's or a
+        // caller's; else, of a std type's of the crate's, `(K, u32)`, given.
+        if let Some(key) = key.filter(|&key| sorted && self.tree_of_nodes(key)) {
+            let entry = match value {
+                Some(value) => Ty::new_tup(self.tcx, &[key, value]),
+                None => key,
+            };
+            let key = crate::lower::recognition::class_key(key);
+            let ord = ty::TraitRef::new(self.tcx, self.ord_trait(), [key]);
+            let ord = self.dictionary(ord, span)?;
+            let (kind, size) = self.stable_sort_facts(entry, span)?;
+            let mut list = vec![Expr::new_(class, Vec::new()), items, ord, kind, size];
+            let given = !self.is_unknown(key) && !self.has_user_impl(self.ord_trait(), key);
+            let mut optional = drops;
+            if given {
+                for tr in [self.partial_eq_trait(), self.partial_ord_trait()] {
+                    let tr = ty::TraitRef::new_from_args(self.tcx, tr, self.args_of(tr, key));
+                    optional.push(Some(self.dictionary(tr, span)?));
+                }
+            }
+            list = Expr::optional_args(list, optional);
+            return Ok(Expr::call(Expr::helper("$treeFromSorted"), list));
         }
         let drops = Expr::optional_args(Vec::new(), drops);
         let made = Expr::new_(class.clone(), Vec::new());
@@ -674,7 +706,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let cmp = cmp.expect("a B-tree's order");
                 map_ops("$treeSplitOff", vec![m, key, cmp, Expr::bool(set)])
             }
-            MapOp::TreeAppend => map_ops("$treeAppend", vec![arg(), arg(), Expr::bool(set)]),
+            // std's merge, which drops the value an equal key held, then the
+            // key given, by their drops (#926).
+            MapOp::TreeAppend => {
+                let list = vec![arg(), arg(), Expr::bool(set)];
+                let value = match types.get(1) {
+                    Some(&value) if !set => self.std_drop_function(value, span)?,
+                    _ => None,
+                };
+                let key = match types.first() {
+                    Some(&key) => self.std_drop_function(key, span)?,
+                    None => None,
+                };
+                map_ops("$treeAppend", with_drops(list, vec![value, key]))
+            }
             MapOp::Extend => {
                 let (m, items) = (arg(), arg());
                 // By `for_each`, std's, so through the crate's own `fold`:
@@ -902,83 +947,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             false => listed,
         })
-    }
-
-    /// `m.extract_if(f)`, or a B-tree's `extract_if(range, f)`, of the map's
-    /// value and type, the range's, and the test's.
-    pub(in crate::lower) fn map_extract_if_values(
-        &mut self,
-        (m, receiver): (Expr, Ty<'tcx>),
-        range: Option<(Expr, Ty<'tcx>)>,
-        f: Expr,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        let set = self.is_set(receiver.peel_refs());
-        let (m, entries) = match range {
-            Some(range) => {
-                let range = self.tree_range_values((m, receiver), range, false, span, out)?;
-                let js::ExprKind::Call(callee, mut list) = range.kind else {
-                    unreachable!("a B-tree's range is `$treeRange`'s")
-                };
-                list.push(Expr::bool(false));
-                (list[0].clone(), Expr::call(*callee, list))
-            }
-            None => (m.clone(), m),
-        };
-        let handles = !set
-            && matches!(receiver.peel_refs().kind(), ty::Adt(_, map) if map.types().nth(1).is_some_and(|value| self.handles_mut(value)));
-        Ok(Expr::call(
-            Expr::helper("$mapExtractIf"),
-            vec![m, f, entries, Expr::bool(handles), Expr::bool(set)],
-        ))
-    }
-
-    /// A B-tree's range of its keys (ADR 0325), of the tree's value and
-    /// type, and the range's.
-    pub(in crate::lower) fn tree_range_values(
-        &mut self,
-        (m, receiver): (Expr, Ty<'tcx>),
-        (range, bounds): (Expr, Ty<'tcx>),
-        mutable: bool,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        let receiver = receiver.peel_refs();
-        let set = self.is_set(receiver);
-        let ty::Adt(adt, map) = receiver.kind() else {
-            unreachable!("a B-tree's `range` is of a B-tree")
-        };
-        let name = self.tcx.item_name(adt.did()).to_string();
-        // Its `Bound`s, as `start_bound()` and `end_bound()` give them, of a
-        // range of std's or a pair of `Bound`s.
-        let key = map.type_at(0);
-        let range_bounds = std_item(self.tcx, StdItem::RangeBounds);
-        let start_bound = trait_method(self.tcx, range_bounds, "start_bound");
-        let bound = self.tcx.instantiate_and_normalize_erasing_regions(
-            self.tcx.mk_args(&[bounds.peel_refs().into(), key.into()]),
-            self.typing_env,
-            self.tcx.fn_sig(start_bound).map_bound(|sig| sig.skip_binder().output()),
-        );
-        let Some([start, end]) = self.range_bound_values(range, bounds.peel_refs(), bound, span, out)? else {
-            return Err(self.unsupported(span, "a B-tree's range of bounds that aren't a range"));
-        };
-        let cmp = self.cmp_fn(key, false, span)?;
-        // `range_mut` of numbers or strings: each value a handle on it, as
-        // `iter_mut`'s is (ADR 0152).
-        let handles = mutable && self.handles_mut(map.type_at(1));
-        let m = match handles && !m.reads_same() {
-            true => self.spill("map", m, out),
-            false => m,
-        };
-        let range = Expr::call(
-            Expr::helper("$treeRange"),
-            vec![m.clone(), cmp, Expr::bool(set), Expr::str(&name), start, end],
-        );
-        if !handles {
-            return Ok(range);
-        }
-        Ok(Expr::call(Expr::helper("$mutEntries"), vec![m, range]))
     }
 
     /// Eligibility for JS Map/Set equality. A string-shaped enum alone is

@@ -35,6 +35,7 @@
 pub(super) mod alloc;
 pub(super) mod any;
 pub(super) mod backtrace;
+mod btree;
 pub(super) mod cell;
 pub(super) mod channel;
 pub(super) mod clock;

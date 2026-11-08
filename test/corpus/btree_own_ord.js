@@ -6,6 +6,8 @@ import {
   $add,
   $cmp,
   $debugStr,
+  $entry,
+  $entryOrInsert,
   $eq,
   $getKeyValue,
   $insert,
@@ -21,6 +23,7 @@ import {
   $storedKey,
   $treeEnd,
   $treeFrom,
+  $treeFromSorted,
   $treeRange,
 } from "@rust-js/runtime";
 
@@ -92,15 +95,14 @@ function tally(items, KOrd, KClone, KDebug, KTreeMap) {
   const counts = new KTreeMap();
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    const key = KClone.clone(item);
-    const current = $orInsert(counts, key, 0);
-    counts.set(key, (current + 1) >>> 0);
+    const orInsert = $entryOrInsert($entry(counts, KClone.clone(item)), 0, true);
+    orInsert.value = (orInsert.value + 1) >>> 0;
   }
   return counts;
 }
 
-function distinct(items, TOrd, TTreeSet) {
-  return $treeFrom(new TTreeSet(), $iter(items), true, TOrd.cmp).size;
+function distinct(items, TOrd, TSize, TTreeSet, TStableSort) {
+  return $treeFromSorted(new TTreeSet(), $iter(items), TOrd, TStableSort, TSize).size;
 }
 
 function main() {
@@ -230,10 +232,12 @@ function main() {
   );
 
   console.log(
-    `${distinct([task(1, 1, ""), task(1, 2, "")], taskOrd, $ordSet(taskOrd_cmp))} ${distinct(
+    `${distinct([task(1, 1, ""), task(1, 2, "")], taskOrd, 16, $ordSet(taskOrd_cmp), "general8")} ${distinct(
       [3, 1, 3],
       { cmp: $cmp },
+      4,
       $BTreeSet,
+      "general8",
     )}`,
   );
 }

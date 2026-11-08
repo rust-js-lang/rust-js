@@ -128,4 +128,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         Ok(Expr::call(Expr::member(items, "map"), vec![make]))
     }
+
+    /// `made_each` of a map that may be std's nodes, `map`'s `args` its key
+    /// and value: `$madeEach(m, make, drop, dropKey, dropValue)`, each node's
+    /// clone a frame of its own, whose key and value made before a later
+    /// edge's panic are dropped as its locals are, the value first (#926).
+    pub(super) fn made_each_of_nodes(
+        &mut self,
+        items: Expr,
+        make: Expr,
+        entry: Ty<'tcx>,
+        map: ty::GenericArgsRef<'tcx>,
+        span: Span,
+    ) -> R<Expr> {
+        let mut list = vec![items, make];
+        list.push(self.drop_function(entry, span)?.unwrap_or_else(Expr::undefined));
+        let parts = [map.type_at(0), map.type_at(1)]
+            .into_iter()
+            .map(|part| self.std_drop_function(part, span))
+            .collect::<R<Vec<_>>>()?;
+        Ok(Expr::call_helper("$madeEach", Expr::optional_args(list, parts)))
+    }
 }

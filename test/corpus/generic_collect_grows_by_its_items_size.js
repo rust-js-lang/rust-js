@@ -13,7 +13,7 @@ import {
   $roomForHint,
   $some,
   $traitImpl,
-  $treeFrom,
+  $treeFromSorted,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -108,12 +108,24 @@ function taggedRelayed(it, UU8Size) {
 }
 
 /** Into a B-tree, which std collects as a `Vec` first. */
-function sortedSet(it, TOrd, TSize, TTreeSet) {
-  return $treeFrom(new TTreeSet(), $roomForHint(Iterator.from(it), TSize, false), true, TOrd.cmp);
+function sortedSet(it, TOrd, TSize, TTreeSet, TStableSort) {
+  return $treeFromSorted(
+    new TTreeSet(),
+    $roomForHint(Iterator.from(it), TSize, false),
+    TOrd,
+    TStableSort,
+    TSize,
+  );
 }
 
-function sortedMap(it, KOrd, KTreeMap, KVSize) {
-  return $treeFrom(new KTreeMap(), $roomForHint(Iterator.from(it), KVSize, false), false, KOrd.cmp);
+function sortedMap(it, KOrd, KTreeMap, KVSize, KVStableSort) {
+  return $treeFromSorted(
+    new KTreeMap(),
+    $roomForHint(Iterator.from(it), KVSize, false),
+    KOrd,
+    KVStableSort,
+    KVSize,
+  );
 }
 
 /**
@@ -382,6 +394,7 @@ function main() {
         { cmp: $cmp },
         1,
         $BTreeSet,
+        "general8",
       ).size
     }`,
   );
@@ -399,6 +412,7 @@ function main() {
         { cmp: $cmp },
         $BTreeMap,
         16,
+        "general8",
       ).size
     }`,
   );

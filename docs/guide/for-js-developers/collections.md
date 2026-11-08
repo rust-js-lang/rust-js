@@ -1385,6 +1385,94 @@ export function releases() {
 }
 ```
 
+An `Ord` that prints, counts, may panic, or isn't a total order sees each
+comparison std's B-tree asks, so the map is std's own nodes, an
+`$ordTreeMap`: up to eleven keys a node, each searched from its first, and
+split, merged and rebuilt as std's are. `entry` searches once, and
+`collect` sorts as std's stable sort does, keeping by `!=` what std keeps:
+
+```rust
+use std::cmp::Ordering;
+use std::collections::BTreeMap;
+
+#[derive(PartialEq, Eq)]
+pub struct Logged(pub u32);
+
+impl PartialOrd for Logged {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Logged {
+    fn cmp(&self, other: &Self) -> Ordering {
+        println!("compare {} {}", self.0, other.0);
+        self.0.cmp(&other.0)
+    }
+}
+
+pub fn tally(words: Vec<Logged>) -> BTreeMap<Logged, u32> {
+    let mut counts = BTreeMap::new();
+    for word in words {
+        *counts.entry(word).or_insert(0) += 1;
+    }
+    counts
+}
+
+pub fn indexed(words: Vec<Logged>) -> BTreeMap<Logged, usize> {
+    words.into_iter().zip(0..).collect()
+}
+```
+
+```js
+import {
+  $cmp,
+  $entry,
+  $entryOrInsert,
+  $eq,
+  $iter,
+  $iterator,
+  $lazyZip,
+  $ordTreeMap,
+  $rangeFromStep,
+  $treeFromSorted,
+} from "@rust-js/runtime";
+
+export const loggedPartialOrd = {
+  PartialEq: () => ({ eq: $eq }),
+  partialCmp: loggedPartialOrd_partialCmp,
+};
+function loggedPartialOrd_partialCmp(logged, other) {
+  return loggedOrd_cmp(logged, other);
+}
+
+export const loggedOrd = { PartialOrd: () => loggedPartialOrd, cmp: loggedOrd_cmp };
+function loggedOrd_cmp(logged, other) {
+  console.log(`compare ${logged[0]} ${other[0]}`);
+  return $cmp(logged[0], other[0]);
+}
+
+export function tally(words) {
+  const counts = new ($ordTreeMap(loggedOrd_cmp))();
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    const orInsert = $entryOrInsert($entry(counts, word), 0, true);
+    orInsert.value = (orInsert.value + 1) >>> 0;
+  }
+  return counts;
+}
+
+export function indexed(words) {
+  return $treeFromSorted(
+    new ($ordTreeMap(loggedOrd_cmp))(),
+    $lazyZip($iter(words), $iterator({ start: 0 }, $rangeFromStep(0, 4294967295))),
+    loggedOrd,
+    "general8",
+    8,
+  );
+}
+```
+
 ([ADR 0059](../../decisions/0059-hashmap.md), [ADR 0121](../../decisions/0121-value-keys.md), [ADR 0404](../../decisions/0404-a-b-tree-keyed-by-value.md).)
 
 ## Objects as dictionaries

@@ -297,7 +297,8 @@ export function middle(items) {
 - **A `BTreeMap` is a `Map` and a `BTreeSet` a `Set`,** iterated in key
   order by Rust and by the JS it's given alike, whatever its key: a
   `$BTreeMap`, a `$btreeMap(cmp, $KeyMap)` of a key compared by value, or
-  an `$ordMap(cmp)` of a key with an `Ord` of its own, each a `Map`.
+  an `$ordMap(cmp)` of a key with an `Ord` of its own, or an
+  `$ordTreeMap(cmp)`, std's nodes, of one whose order can be seen, each a `Map`.
   Rust reads a `Map` JS gives it in key order too
   ([ADR 0404](../../decisions/0404-a-b-tree-keyed-by-value.md), amended).
 - **A `js::Map` is JS's `Map` of any key**, as TypeScript's `Map<K, V>`

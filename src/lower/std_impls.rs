@@ -496,16 +496,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let key_ty = args.type_at(0);
                 // A B-tree of keys found by their own `cmp`, or its caller's,
                 // made of its entries in their order, asking it nothing, as
-                // std's `clone_subtree` asks nothing (#924): `ofSorted`.
+                // std's `clone_subtree` asks nothing (#924): `ofSorted`; of
+                // std's nodes, in its source's shape (#926).
                 let in_order = sorted && self.found_by_cmp(key_ty);
+                let shape = (sorted && self.tree_of_nodes(key_ty)).then(|| place.clone());
                 let made_in_order = |made: Expr| match in_order {
-                    true => Expr::call(Expr::member(class.clone(), "ofSorted"), vec![made]),
+                    true => Expr::call(
+                        Expr::member(class.clone(), "ofSorted"),
+                        [made].into_iter().chain(shape.clone()).collect(),
+                    ),
                     false => Expr::new_(class.clone(), vec![made]),
                 };
                 let Some((f, entry, may_panic)) = self.entry_clone(ty, span, out)? else {
                     return Ok(made_in_order(place));
                 };
                 let made = match may_panic && self.drops(entry) != super::drops::Drops::Nothing {
+                    // Of std's nodes, given its key's and value's drops (#926).
+                    true if shape.is_some() && !set => self.made_each_of_nodes(place, f, entry, args, span)?,
                     true => self.made_each(place, f, (entry, true), span)?,
                     false => {
                         let all = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![place]);

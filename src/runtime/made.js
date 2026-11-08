@@ -19,8 +19,21 @@ function $madeInTurn(build) {
 // `Array.from(items, make)`, a clone of a slice's items, a `VecDeque`'s or
 // a map's entries: where a `make` throws, a panic, what it made already is
 // dropped by `drop`, in order, as std's clone drops what its guard holds;
-// then what was thrown goes on (#897).
-function $madeEach(items, make, drop) {
+// then what was thrown goes on (#897). Of a B-tree of std's nodes, as its
+// `clone_subtree` makes them, node by node (`madeEach`), a map's entry
+// made before a later edge's panic dropped as its key and value are,
+// `dropKey` and `dropValue` (#926).
+function $madeEach(items, make, drop, dropKey, dropValue) {
+  const tree = items instanceof Set ? items.items : items;
+  if (tree?.madeEach !== undefined) {
+    if (items instanceof Set) return tree.madeEach(([item]) => make(item), drop, drop);
+    const held = (entry) =>
+      $inTurn(
+        () => dropValue?.(entry[1]),
+        () => dropKey?.(entry[0]),
+      );
+    return tree.madeEach(make, drop, held);
+  }
   const made = [];
   $unwinds(
     () => {

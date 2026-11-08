@@ -34,4 +34,20 @@ export const mutations: Mutation[] = [
     replace: "    () => $dropItems(made.reverse(), drop),\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_unwinds_what_it_made.rs$"],
   },
+  {
+    name: "made-each-tree-flat",
+    breaks: "a clone of std's nodes drops what it made in order as one panics, where std's frames drop it node by node (#926)",
+    file: "src/runtime/made.js",
+    find: "  if (tree?.madeEach !== undefined) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_clone_nodes_unwinds.rs$"],
+  },
+  {
+    name: "made-each-held-key-first",
+    breaks: "a clone's key and value held as a later edge panics are dropped key first, where std drops its locals value first (#926)",
+    file: "src/runtime/made.js",
+    find: "        () => dropValue?.(entry[1]),\n        () => dropKey?.(entry[0]),\n",
+    replace: "        () => dropKey?.(entry[0]),\n        () => dropValue?.(entry[1]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_clone_nodes_unwinds.rs$"],
+  },
 ];

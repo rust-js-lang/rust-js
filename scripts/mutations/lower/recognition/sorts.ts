@@ -19,4 +19,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^sort_total_written_out.rs$"],
     snapshots: true,
   },
+  {
+    name: "tree-built-entries-set-pair",
+    breaks: "a set's bulk build of a type parameter's items asks its caller the stable sort of a pair, not of its items (#926)",
+    file: "src/lower/recognition/sorts.rs",
+    find: "    Some(match map {\n        true => Ty::new_tup(tcx, &[key, of.types().nth(1)?]),\n",
+    replace: "    Some(match true {\n        true => Ty::new_tup(tcx, &[key, of.types().nth(1).unwrap_or(key)]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_nodes_generic.rs$|^btree_own_ord.rs$"],
+  },
 ];

@@ -263,4 +263,12 @@ export const mutations: Mutation[] = [
       "        let given = vec![dest, Value::Expr(source)];\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
   },
+  {
+    name: "entry-or-insert-unfused-for-nodes",
+    breaks: "`or_insert` of a tree that may be std's nodes is `$orInsert` and `$mutGet`, which search again (#926)",
+    file: "src/lower/mir/entries.rs",
+    find: "        if nodes {\n            let entry = exprs.next().expect(\"the entry\");\n",
+    replace: "        if false {\n            let entry = exprs.next().expect(\"the entry\");\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_nodes_seen.rs$|^btree_nodes_generic.rs$"],
+  },
 ];

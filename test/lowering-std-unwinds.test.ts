@@ -374,6 +374,75 @@ pub fn loud_replace(s: &mut BTreeSet<Loud>, x: Loud) -> bool {
   expect(body(flat, "loudReplace")).toContain("$setReplace(s, x, loudDrop_drop)");
 });
 
+// #926: a B-tree of keys whose order can be seen, or of a type parameter's,
+// may be std's nodes: built by `$treeFromSorted`, given the keys' `Ord`
+// dictionary, whose `PartialOrd()` and `PartialEq()` a crate impl's has,
+// else, of a std type's of the crate's, those dictionaries; and what std's
+// sort picks by the entries' type. One of a quiet and total order keeps
+// `$treeFrom`, a sorted array's, in today's shape.
+test("a B-tree built of items is std's bulk build where its keys' order may be seen", () => {
+  const flat = compiled(
+    "std-unwinds-btree-built",
+    `
+use std::cmp::Ordering;
+use std::collections::{BTreeMap, BTreeSet};
+
+#[derive(PartialEq, Eq)]
+pub struct Quiet(pub u32);
+
+impl PartialOrd for Quiet {
+    fn partial_cmp(&self, other: &Quiet) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Quiet {
+    fn cmp(&self, other: &Quiet) -> Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
+#[derive(PartialEq, Eq)]
+pub struct Loud(pub u32);
+
+impl PartialOrd for Loud {
+    fn partial_cmp(&self, other: &Loud) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Loud {
+    fn cmp(&self, other: &Loud) -> Ordering {
+        println!("cmp");
+        self.0.cmp(&other.0)
+    }
+}
+
+pub fn quiet(xs: Vec<(Quiet, u32)>) -> BTreeMap<Quiet, u32> {
+    xs.into_iter().collect()
+}
+
+pub fn loud(xs: Vec<(Loud, u32)>) -> BTreeMap<Loud, u32> {
+    xs.into_iter().collect()
+}
+
+pub fn pairs(xs: Vec<(Loud, u32)>) -> BTreeSet<(Loud, u32)> {
+    xs.into_iter().collect()
+}
+
+pub fn generic<T: Ord>(xs: Vec<T>) -> BTreeSet<T> {
+    xs.into_iter().collect()
+}
+`,
+  );
+  expect(body(flat, "quiet")).toContain("$treeFrom(new ($ordMap(quietOrd_cmp))(), $iter(xs), false, quietOrd_cmp)");
+  expect(body(flat, "loud")).toContain('$treeFromSorted(new ($ordTreeMap(loudOrd_cmp))(), $iter(xs), loudOrd, "general8", 8)');
+  // A tuple's dictionary has no `PartialOrd()`: its `PartialEq` and
+  // `PartialOrd` given, a derived `==` field by field.
+  expect(body(flat, "pairs")).toContain('"general8", 8, undefined, undefined, { eq: $eq }, { partialCmp: (a, b) => loudPartialOrd_partialCmp(a[0], b[0])');
+  expect(body(flat, "generic")).toContain("$treeFromSorted(new TTreeSet(), $iter(xs), TOrd, TStableSort, TSize)");
+});
+
 // #931: `==` of two `Rc`s in generic code bounded by `T: PartialEq` asks
 // whether they're one allocation first where its caller's `T` is `Eq`, as
 // std's `RcEqIdent` specializes each instance: `TEq`, the caller's, `true`

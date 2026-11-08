@@ -26,7 +26,24 @@ function $extractIf(v, start, end, f, handle = false) {
 // handle on a value that's a number or text (`handles`), or each item of a
 // set (`set`). Each it holds of is taken out and given, a map's as
 // `[key, value]`.
+// Of a tree whose keys' order can be seen, std's walk (#926): from where
+// its range starts, `$treeRange`'s unsearched range of it, or all of it.
 function $mapExtractIf(m, f, entries, handles, set) {
+  const tree = set ? m.items : m;
+  if (tree?.extractIf !== undefined) {
+    const { start, end, partialCmp } = entries === m ? { start: "Unbounded", end: "Unbounded" } : entries;
+    const take = set
+      ? ([item]) => f(item)
+      : (entry) => f(entry[0], handles ? $entryHandle(entry) : entry[1]);
+    const walk = tree.extractIf(start, end, partialCmp, take);
+    return Iterator.from({
+      next() {
+        const entry = walk.next();
+        if (entry === undefined) return { done: true, value: undefined };
+        return { done: false, value: set ? entry[0] : [entry[0], entry[1]] };
+      },
+    });
+  }
   const each = Array.from(entries)[Symbol.iterator]();
   return Iterator.from({
     next() {

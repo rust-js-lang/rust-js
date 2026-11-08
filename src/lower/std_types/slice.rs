@@ -669,19 +669,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let item = generic_args.type_at(0);
-        // Of a type whose layout is known here, though it holds a type
-        // parameter behind a reference, `(&T, usize)`: its own; else its
-        // caller's.
-        let (kind, size) = match self.tcx.layout_of(self.typing_env.as_query_input(item)) {
-            Ok(layout) if item.has_param() => (
-                Expr::str(self.stable_sort_kind_of(item, layout.size.bytes())),
-                Expr::int(layout.size.bytes().into()),
-            ),
-            _ => (
-                self.type_fact_value(item, TypeFact::StableSort, span)?,
-                self.type_fact_value(item, TypeFact::Size, span)?,
-            ),
-        };
+        let (kind, size) = self.stable_sort_facts(item, span)?;
         let mut values = values.into_iter();
         let items = values.next().expect("the items");
         let key_ty = (with == SortWith::Key).then(|| generic_args.type_at(1));
@@ -690,6 +678,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Expr::helper("$sortStable"),
             vec![items, is_less, kind, size],
         ))
+    }
+
+    /// What std's stable sort picks by an `item`'s type, and its size, as
+    /// `$sortStable` is given them: of a type whose layout is known here,
+    /// though it holds a type parameter behind a reference, `(&T, usize)`,
+    /// its own; else its caller's, `TStableSort` and `TSize` (#925).
+    pub(in crate::lower) fn stable_sort_facts(&mut self, item: ty::Ty<'tcx>, span: Span) -> R<(Expr, Expr)> {
+        Ok(match self.tcx.layout_of(self.typing_env.as_query_input(item)) {
+            Ok(layout) if item.has_param() => (
+                Expr::str(self.stable_sort_kind_of(item, layout.size.bytes())),
+                Expr::int(layout.size.bytes().into()),
+            ),
+            _ => (
+                self.type_fact_value(item, TypeFact::StableSort, span)?,
+                self.type_fact_value(item, TypeFact::Size, span)?,
+            ),
+        })
     }
 
     /// std's `is_less` of a sort of `item`s by `with`, given its comparator

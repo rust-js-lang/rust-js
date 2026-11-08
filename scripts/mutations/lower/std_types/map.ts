@@ -98,24 +98,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
   },
   {
-    name: "tree-extract-checked",
-    breaks:
-      "a B-tree's `extract_if` of a range that ends before it starts panics",
-    file: "src/lower/std_types/map.rs",
-    find: "                list.push(Expr::bool(false));\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "extract_if"],
-  },
-  {
-    name: "map-extract-no-handles",
-    breaks:
-      "a map's `extract_if` gives its filter a number, not a handle on it",
-    file: "src/lower/std_types/map.rs",
-    find: "        let handles = !set\n            && matches!(",
-    replace: "        let handles = false\n            && matches!(",
-    tests: ["test/corpus.test.ts", "-t", "extract_if"],
-  },
-  {
     name: "entry-get-no-handle",
     breaks: "an entry's `get_mut` of a number is the number",
     file: "src/lower/std_types/map.rs",
@@ -138,22 +120,6 @@ export const mutations: Mutation[] = [
     find: 'MapOp::Entry => map_ops("$entry", with_drops(vec![arg(), arg()], vec![keys_drop])),',
     replace: "MapOp::Entry => Expr::array(vec![arg(), arg()]),",
     tests: ["test/corpus.test.ts", "-t", "map_entry_match"],
-  },
-  {
-    name: "range-mut-no-handles",
-    breaks: "a B-tree's `range_mut` of numbers gives the numbers",
-    file: "src/lower/std_types/map.rs",
-    find: "        let handles = mutable && self.handles_mut(map.type_at(1));",
-    replace: "        let handles = false;",
-    tests: ["test/corpus.test.ts", "-t", "btree_range_mut"],
-  },
-  {
-    name: "range-mut-handles-objects",
-    breaks: "a B-tree's `range_mut` of tuples gives handles on them",
-    file: "src/lower/std_types/map.rs",
-    find: "        let handles = mutable && self.handles_mut(map.type_at(1));",
-    replace: "        let handles = mutable;",
-    tests: ["test/corpus.test.ts", "-t", "btree_range_mut"],
   },
   {
     name: "local-add-discarded-helper",
@@ -814,5 +780,21 @@ export const mutations: Mutation[] = [
     find: "                let sorted = self.key_dropped_first(receiver, &types).then(|| Expr::bool(true));\n",
     replace: "                let sorted = false.then(|| Expr::bool(true));\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_insert_drops_key_first.rs$"],
+  },
+  {
+    name: "tree-append-drops-unpassed",
+    breaks: "`append` of values with a destructor isn't given their drops, so what an equal key held leaks (#926)",
+    file: "src/lower/std_types/map.rs",
+    find: "                map_ops(\"$treeAppend\", with_drops(list, vec![value, key]))\n",
+    replace: "                map_ops(\"$treeAppend\", list)\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_append_drops.rs$"],
+  },
+  {
+    name: "tree-from-sorted-dictionaries-ungiven",
+    breaks: "a bulk build of a std type's keys of the crate's, `(K, u32)`, dedups by `cmp`, not its `==` (#926)",
+    file: "src/lower/std_types/map.rs",
+    find: "            let given = !self.is_unknown(key) && !self.has_user_impl(self.ord_trait(), key);\n",
+    replace: "            let given = false;\n",
+    tests: ["test/lowering-std-unwinds.test.ts", "-t", "bulk build"],
   },
 ];

@@ -13,7 +13,7 @@ import {
   $setEq,
   $sortStable,
   $sortedKeys,
-  $treeFrom,
+  $treeFromSorted,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -38,7 +38,7 @@ function most(items, TPartialEq, THash, TOrd, TMap) {
 }
 
 function distinctSorted(items, TOrd, TTreeSet) {
-  const set = $treeFrom(new TTreeSet(), $iter(items), true, TOrd.cmp);
+  const set = $treeFromSorted(new TTreeSet(), $iter(items), TOrd, "general8", 4);
   return $sortedKeys(set, TOrd.cmp);
 }
 

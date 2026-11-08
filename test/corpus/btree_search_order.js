@@ -11,7 +11,8 @@ import {
   $lazyRange,
   $next,
   $ordMap,
-  $ordSet,
+  $ordTreeMap,
+  $ordTreeSet,
   $remove,
   $removeItem,
   $retainMap,
@@ -67,7 +68,7 @@ function dOrd_cmp(d, other) {
 function map(keys) {
   const boom$1 = boom;
   boom = 0;
-  const m = new ($ordMap(dOrd_cmp))();
+  const m = new ($ordTreeMap(dOrd_cmp))();
   let iter;
   try {
     iter = $iter(keys);
@@ -112,7 +113,7 @@ function map(keys) {
 function set(keys) {
   const boom$1 = boom;
   boom = 0;
-  const s = new ($ordSet(dOrd_cmp))();
+  const s = new ($ordTreeSet(dOrd_cmp))();
   let iter;
   try {
     iter = $iter(keys);
@@ -216,7 +217,7 @@ function main() {
     run("insert of a value with a drop", boom$1, () => {
       const boom$1 = boom;
       boom = 0;
-      const m = new ($ordMap(dOrd_cmp))();
+      const m = new ($ordTreeMap(dOrd_cmp))();
       let insert;
       try {
         insert = $insert(m, [2], [102], dDrop_drop, dDrop_drop);

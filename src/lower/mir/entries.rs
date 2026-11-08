@@ -12,7 +12,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state: &mut State<'_, 'tcx>,
         op: MapOp,
         values: Vec<Value<'tcx>>,
-        (generic_args, output): (ty::GenericArgsRef<'tcx>, Ty<'tcx>),
+        (generic_args, entry_ty, output): (ty::GenericArgsRef<'tcx>, Ty<'tcx>, Ty<'tcx>),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
@@ -21,6 +21,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|v| self.value_expr(v, span))
             .collect::<R<Vec<_>>>()?
             .into_iter();
+        // Of a B-tree that may be std's nodes, of the entry itself, whose
+        // one search is what std asks (#926).
+        let nodes = self.is_std_type(entry_ty.peel_refs(), StdItem::BTreeEntry)
+            && generic_args.types().next().is_some_and(|key| self.tree_of_nodes(key));
+        if nodes {
+            let entry = exprs.next().expect("the entry");
+            let given = match op {
+                MapOp::OrDefault => None,
+                _ => Some(exprs.next().expect("the value")),
+            };
+            return self.entry_or_inserted(op, (entry, given), (generic_args, output), span);
+        }
         let entry = self.after_and_modify(exprs.next().expect("the entry"), span, out);
         // Made here, `$entry(m, k)`, the key given's to drop where it's
         // there, `or_inserted`'s; of one made before, `$entry`'s, which
@@ -78,6 +90,65 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.flush(state, out)?;
         out.push(StmtKind::Expr(inserted).at(self.js_span(span)));
         Ok(Value::Expr(Expr::call(Expr::helper("$mutGet"), vec![map, key])))
+    }
+
+    /// An entry's `or_insert(v)`, `$entryOrInsert(entry, v, handle, drop)`,
+    /// or `or_insert_with(f)` or `or_default()`, `$entryOrInsertWith(entry,
+    /// f, handle, dropKey, dropMake, keyed)`, of what its search found, no
+    /// search again (#926): its value, or a handle on a number's or text's
+    /// (`handle`, ADR 0152). The entry, `$entry(m, k)`'s, made before the
+    /// value, as Rust's is.
+    fn entry_or_inserted(
+        &mut self,
+        op: MapOp,
+        (entry, given): (Expr, Option<Expr>),
+        (generic_args, output): (ty::GenericArgsRef<'tcx>, Ty<'tcx>),
+        span: Span,
+    ) -> R<Value<'tcx>> {
+        let mut types = generic_args.types();
+        let (key, value) = (types.next(), types.next());
+        let cell = self.is_cell(output);
+        // `handle`, `false` where an argument after it's given.
+        let handle = |after: &[Option<Expr>]| (cell || after.iter().any(Option::is_some)).then(|| Expr::bool(cell));
+        let drop_of = |this: &mut Self, ty: Option<Ty<'tcx>>| -> R<Option<Expr>> {
+            Ok(match ty {
+                Some(ty) => this.std_drop_function(ty, span)?,
+                None => None,
+            })
+        };
+        let (name, list, optional) = match op {
+            MapOp::OrInsert => {
+                let drop = drop_of(self, value)?;
+                let given = given.expect("the value");
+                (
+                    "$entryOrInsert",
+                    vec![entry, given],
+                    vec![handle(std::slice::from_ref(&drop)), drop],
+                )
+            }
+            _ => {
+                let make = match given {
+                    Some(make) => make,
+                    None => {
+                        let value = value.ok_or_else(|| self.unsupported(span, "this entry"))?;
+                        let value = self.default_value(value, span)?;
+                        Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(value)).at(js::Span::NONE)])
+                    }
+                };
+                let keyed = matches!(op, MapOp::OrInsertWith { keyed: true }).then(|| Expr::bool(true));
+                let drop_key = drop_of(self, key)?;
+                let drop_make = match (op, generic_args.types().last()) {
+                    (MapOp::OrInsertWith { .. }, Some(make)) if self.drops_unrun(make) => drop_of(self, Some(make))?,
+                    _ => None,
+                };
+                let after = [drop_key, drop_make, keyed];
+                let mut optional = vec![handle(&after)];
+                optional.extend(after);
+                ("$entryOrInsertWith", vec![entry, make], optional)
+            }
+        };
+        let list = Expr::optional_args(list, optional);
+        Ok(Value::Expr(Expr::call(Expr::helper(name), list)))
     }
 
     /// `$orInsert(m, key, value)`, or `$orInsertWith(m, key, f)` of `op`, of

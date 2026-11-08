@@ -1077,4 +1077,12 @@ export const mutations: Mutation[] = [
     replace: "                true => (a.clone(), b.clone()),\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_eq_by_address_first.rs$"],
   },
+  {
+    name: "clone-of-nodes-unshaped",
+    breaks: "a clone of a tree that may be std's nodes isn't given its source, so it's made in another shape (#926)",
+    file: "src/lower/std_impls.rs",
+    find: "                let shape = (sorted && self.tree_of_nodes(key_ty)).then(|| place.clone());\n",
+    replace: "                let shape = None::<Expr>;\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_clone_nodes_unwinds.rs$|^btree_nodes_seen.rs$"],
+  },
 ];

@@ -108,7 +108,8 @@ test("a function whose JS takes a fact of a type or a dictionary is a note, not 
   expect(declarations).toContain(note("drops", "`T`'s needs_drop"));
   expect(declarations).toContain(note("counted", "`T`'s a map's class"));
   expect(declarations).toContain(note("distinct", "`T`'s a map's class"));
-  expect(declarations).toContain(note("ordered", "`T`'s a map's class"));
+  // Its stable sort's too, of std's nodes (#926): the first it takes, `TSize`.
+  expect(declarations).toContain(note("ordered", "`T`'s size_of"));
   expect(declarations).toContain(note("sorted", "`T`'s an unstable sort"));
   expect(declarations).toContain(note("shown", "`T`'s `Display` dictionary"));
   for (const name of ["size", "alignment", "named", "isU32", "boxed", "drops", "counted", "distinct", "ordered", "sorted", "shown"]) {

@@ -106,6 +106,38 @@ pub(crate) fn cached_key_pairs<'tcx>(
     .then(|| Ty::new_tup(tcx, &[key, tcx.types.usize]))
 }
 
+/// The entries a B-tree's bulk build sorts, of a call of std's `def_id`
+/// given `args` that makes a `BTreeMap` or a `BTreeSet` of items, its
+/// `collect()`, `from_iter`, or `from` or `into` of an array: `(K, V)` of a
+/// map's, `T` of a set's, where its key holds a type parameter, whose
+/// caller's type picks how std's stable sort sorts them, `TStableSort` and
+/// `TSize` (#926).
+pub(crate) fn tree_built_entries<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<Ty<'tcx>> {
+    let trait_id = tcx.trait_of_assoc(def_id)?;
+    let made = match tcx.item_name(def_id).as_str() {
+        "collect" if is_iterator_trait(tcx, trait_id) => args.types().nth(1)?,
+        "from_iter" if trait_id == std_item(tcx, StdItem::FromIterator) => args.types().next()?,
+        "from" if trait_id == std_item(tcx, StdItem::From) => args.types().next()?,
+        "into" if trait_id == std_item(tcx, StdItem::Into) => args.types().nth(1)?,
+        _ => return None,
+    };
+    let ty::Adt(adt, of) = made.kind() else { return None };
+    let map = adt.did() == std_item(tcx, StdItem::BTreeMap);
+    let set = adt.did() == std_item(tcx, StdItem::BTreeSet);
+    let key = of.types().next()?;
+    if !(map || set) || !key.has_param() {
+        return None;
+    }
+    Some(match map {
+        true => Ty::new_tup(tcx, &[key, of.types().nth(1)?]),
+        false => key,
+    })
+}
+
 /// Whether `def_id` is std's `max` or `min` function, `std::cmp::max(a, b)`.
 pub(crate) fn is_cmp_max_or_min(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     matches!(
