@@ -93,7 +93,10 @@ test("the known failures are of these cases, each one a case", () => {
   expect(mineListed.filter((name) => !names.has(name))).toEqual([]);
 });
 
-type Verdict = { kind: "same" } | { kind: "refused"; why: string } | { kind: "differs"; js: string; why?: string } | { kind: "crashed"; why: string };
+// A refusal its error points at the case of (`refusedCases`), `own`; or one
+// told apart only by compiling the case alone, which a refusal of the
+// program's prelude is too (#854).
+type Verdict = { kind: "same" } | { kind: "refused"; why: string; own?: boolean } | { kind: "differs"; js: string; why?: string } | { kind: "crashed"; why: string };
 
 /** Of a batch of one whose native run aborted (#847): the same where the
  * JS's aborted too, `{ exit: 134 }`, after it printed what native Rust did;
@@ -162,7 +165,7 @@ function judge(cases: Row[], native: Map<string, string>, dir: string, build: st
         });
         return verdicts;
       }
-      for (const [c, why] of refused) verdicts.set(c, { kind: "refused", why });
+      for (const [c, why] of refused) verdicts.set(c, { kind: "refused", why, own: true });
       pending = pending.filter((c) => !refused.has(c));
       continue;
     }
@@ -222,7 +225,7 @@ for (const index of mine) {
         const listed = listedBuild(build);
         const name = `${listed}: ${c.id}`;
         const issue = known.get(`${listed} ${c.n}`);
-        if (verdict.kind === "refused") refused++;
+        if (verdict.kind === "refused" && !verdict.own) refused++;
         if (verdict.kind === "same" || verdict.kind === "refused") {
           if (issue === undefined) continue;
           // What `bun test/iterator-matrix.ts take-off` takes off the list.
@@ -246,8 +249,10 @@ for (const index of mine) {
       }
     }
     if (refused > 0 && process.env.ITERATOR_MATRIX_REPORT) console.log(`batch ${index + 1}: ${refused} refused`);
-    // Every case refused is the program's own code refused, its prelude's,
-    // where each case would pass by refusing (#854).
+    // Every case refused, none by an error that points at it, is the
+    // program's own code refused, its prelude's, where each case would pass
+    // by refusing (#854). A batch a pattern picks may be all of one
+    // refused family, each refused where it's written (#945's rows).
     if (batch.length > 1 && refused === batch.length * builds.length) problems.push("every case of the batch is refused: its prelude is, not a case");
     expect(problems.join("\n\n")).toBe("");
   }, 900_000);
