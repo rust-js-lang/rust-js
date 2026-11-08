@@ -88,8 +88,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an iterator of the crate's with std's `size_hint` is given it as its own, a call of the provided method",
     file: "src/lower/recognition/lengths.rs",
-    find: "            .is_some_and(|instance| instance.def_id() != size_hint && compiled(instance.def_id()))\n",
-    replace: "            .is_some_and(|_| true)\n",
+    find: "                instance.def_id() != size_hint\n                    && (instance.def_id().is_local() || self.foreign.compiled(instance.def_id()))\n",
+    replace: "                true\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
   },
   {

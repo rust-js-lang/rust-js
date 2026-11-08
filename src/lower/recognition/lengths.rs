@@ -11,11 +11,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let size_hint = trait_method(self.tcx, iterator, "size_hint");
         let args = self.args_of(iterator, ty.peel_refs());
-        let compiled = |id: DefId| id.is_local() || self.foreign.item(id).is_some() || self.foreign.compiles(id);
         crate::lower::items::resolve_instance_in(self.tcx, self.typing_env, size_hint, args)
             .ok()
             .flatten()
-            .is_some_and(|instance| instance.def_id() != size_hint && compiled(instance.def_id()))
+            .is_some_and(|instance| {
+                instance.def_id() != size_hint
+                    && (instance.def_id().is_local() || self.foreign.compiled(instance.def_id()))
+            })
     }
 
     /// Whether asking `size_hint` of an iterator of type `ty` may run what

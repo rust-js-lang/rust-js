@@ -578,8 +578,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's impl its JS doesn't make has no evidence where its consumer gives it to generic code, and is refused (ADR 0914, amended)",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                || self.krate.foreign.compiles(impl_id))\n",
-    replace: ")\n",
+    find: "            && (self.krate.trait_impls.contains(&impl_id) || self.krate.foreign.compiled(impl_id))\n",
+    replace: "            && (self.krate.trait_impls.contains(&impl_id))\n",
     tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
   },
   {

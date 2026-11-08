@@ -712,4 +712,12 @@ export const mutations: Mutation[] = [
     replace: "                .filter(|_| false)\n",
     tests: ["test/crates.test.ts", "-t", "derived_partial_cmp_is_cmp"],
   },
+  {
+    name: "compiled-not-an-instance",
+    breaks: "a library's item the program has compiled itself already, an instance, isn't one it can call, so a library iterator's own `size_hint`, once called, is std's `(0, None)` to generic code (#1023)",
+    file: "src/lower/library.rs",
+    find: "        !id.is_local() && (self.item(id).is_some() || self.is_instance(id) || self.compiles(id))\n",
+    replace: "        !id.is_local() && (self.item(id).is_some() || self.compiles(id))\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_iterator_own_size_hint"],
+  },
 ];

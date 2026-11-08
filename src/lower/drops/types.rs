@@ -144,7 +144,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
     /// which its library's JS doesn't export (ADR 0914, amended)?
     pub(in crate::lower) fn runs_drop(&self, drop: DefId) -> bool {
         let foreign = self.recognition.foreign;
-        drop.is_local() || foreign.item(drop).is_some() || foreign.is_instance(drop) || foreign.compiles(drop)
+        drop.is_local() || foreign.compiled(drop)
     }
 
     /// Does making a `from` a `to` lose a drop: what owns it, `target`, a

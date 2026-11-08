@@ -62,46 +62,9 @@ plain std rc-refcell written_through_before_a_panic.rs
 plain std generic bytes_through_pointers.rs
 
 #1023 P0 (library): a library type's own Iterator methods (size_hint, nth_back, rfold, len) and own ne/max are unknown to the crate using it
-plain std library adapter_size_hints.rs
-plain library adapters_over_own_next_that_panics.rs
-plain std library back_folds_of_sources_made_knowing_their_back.rs
-plain std library back_predicate_unwinds.rs
-plain std library by_ref_lends.rs
-plain std library collect_as_vec_asks_hint.rs
-plain std library collect_asks_hint_as_it_grows.rs
-plain std library collect_closes_what_its_hint_panics.rs
-plain std library collect_into_results_asks_hint.rs
 plain std library default_method_clones.rs
-plain std library enumerate_of_own_iterator_folded_from_its_back.rs
-plain std library extend_asks_hint_as_it_fills.rs
-plain std library extend_asks_hint_capacity_unasked.rs
-plain std library extend_reserves_by_hint.rs
-plain std library fold_back_drops_what_it_takes.rs
-plain std library generic_extend_of_own_hints.rs
-plain std library held_back_folds_by_try_rfold.rs
-plain std library map_ends_size_hint.rs
-plain std library map_of_own_size_hint.rs
 plain std library ne_between_two_item_types.rs
-plain std library own_back_through_adapters.rs
-plain std library own_fold_unwind_given_on.rs
-plain library own_iterator_dropped_from_back.rs
-plain std library own_iterator_dropped_through_adapters.rs
 plain std library own_ne_max_min_clamp.rs
-plain library panic_in_own_rfold_drops.rs
-plain std library rev_in_place_through_adapters.rs
-plain std library rposition_of_lazy.rs
-plain std library size_hint_of_adapters.rs
-plain std library skip_of_a_peekable_from_back.rs
-plain std library skip_of_own_from_its_back_asks_len_once.rs
-plain std library std_inspect.rs
-plain std library std_map.rs
-plain std library step_by_folded_from_its_back_as_std.rs
-plain library step_by_nth_back.rs
-plain library step_by_source_dropped_at_its_folds_end.rs
-plain library take_of_own_nth_where_known_back.rs
-plain std library user_iterator_ends.rs
-plain library zip_from_its_back.rs
-plain library zip_of_own_from_its_back_asks_each_len_once.rs
 
 #1024 P0 (library): a library iterator stepped from its back in the using crate throws it.back is not a function
 plain library adapters_given_to_generic_backs.rs

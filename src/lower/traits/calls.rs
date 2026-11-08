@@ -515,6 +515,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(instance) = self.resolve_self_instance(id, generic_args)?
             && self.is_rust_fn(instance.def_id())
             && (self.tcx.trait_of_assoc(instance.def_id()).is_none()
+                // Not an instance: a library's default its exported
+                // dictionary has is called through it (`through_dictionary`).
                 || self.krate.foreign.item(instance.def_id()).is_some()
                 || self.krate.foreign.compiles(instance.def_id()))
         {

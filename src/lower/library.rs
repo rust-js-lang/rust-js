@@ -916,6 +916,17 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         (!id.is_local() && !self.is_instance(id) && self.item(id).is_none() && self.item(imp).is_some()).then_some(imp)
     }
 
+    /// Whether `id`, a library's, has JS the program calls: one its
+    /// manifest exports, or one the crate compiles itself, which it may have
+    /// compiled already, an instance (ADR 0914). The one answer, which each
+    /// question of whether a library's item can be reached asks, the crate's
+    /// own beside it where it asks of those too: one asked of `compiles`
+    /// alone, false once it's an instance, took a library's own `size_hint`
+    /// for std's after its first call (#1023).
+    pub(in crate::lower) fn compiled(&self, id: DefId) -> bool {
+        !id.is_local() && (self.item(id).is_some() || self.is_instance(id) || self.compiles(id))
+    }
+
     /// Why `id` can't be used, if it's a library's its manifest doesn't list
     /// and the crate can't compile itself (`compiles`).
     pub(super) fn unlisted(&self, id: DefId) -> Option<String> {

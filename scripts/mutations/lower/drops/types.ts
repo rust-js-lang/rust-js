@@ -82,8 +82,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's type's destructor isn't run by a crate that drops a value of it",
     file: "src/lower/drops/types.rs",
-    find: "        drop.is_local() || foreign.item(drop).is_some() || foreign.is_instance(drop) || foreign.compiles(drop)\n",
-    replace: "        drop.is_local() || foreign.is_instance(drop)\n",
+    find: "        drop.is_local() || foreign.compiled(drop)\n",
+    replace: "        drop.is_local() || (foreign.compiled(drop) && foreign.item(drop).is_none() && !foreign.compiles(drop))\n",
     tests: ["test/crates.test.ts", "-t", "two crates: drop"],
   },
   {

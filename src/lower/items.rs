@@ -477,9 +477,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// by its name: the crate's own, one a library exports (ADRs 0100,
     /// 0770), or a library's the crate compiles itself (ADR 0914, amended)?
     pub(super) fn is_rust_fn(&self, def_id: DefId) -> bool {
-        self.krate.fns.contains_key(&def_id)
-            || self.krate.foreign.item(def_id).is_some()
-            || self.krate.foreign.compiles(def_id)
+        self.krate.fns.contains_key(&def_id) || self.krate.foreign.compiled(def_id)
     }
 
     /// Does this body read `def_id`, an item rust-js compiled that's made

@@ -967,3 +967,19 @@ parameter's (#934's and its kind); the two closures compile. Held by
 the consumer's items with a destructor, against native Rust; and the
 mutations `foreign-closure-captures-unread` and `foreign-closure-drop-refused`
 (`lower/drops/types.ts`).
+
+## Amendment: whether a library's item has JS the program calls is one answer (#1023)
+
+Whether a library's item can be reached was asked five ways: of the
+manifest's items, of `compiles`, of an instance, or of some of them. One
+asked of `compiles` alone, as a library iterator's own `size_hint` was, and
+`compiles` is false once the program has compiled the item itself, an
+instance. So the first call of the library's `size_hint` made each later
+generic ask of it std's `(0, None)`. Now `Foreign::compiled` is the one
+answer: an item the manifest exports, one the crate compiles itself, or
+one it already has. A drop's, an impl's dictionary's, `is_rust_fn`'s and
+`writes_size_hint`'s questions each ask it. A trait default's call doesn't:
+one whose impl's dictionary the library exports is called through it
+(`through_dictionary`), the instance aside. Thirty-seven of
+#1023's forty library rewrites run as native. Pair test
+`library_iterator_own_size_hint`, mutation `compiled-not-an-instance`.

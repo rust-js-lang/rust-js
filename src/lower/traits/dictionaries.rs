@@ -855,9 +855,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // blanket impl's.
         let typing_env = self.typing_env;
         if let Some((impl_id, impl_args)) = evidence_impl(self.tcx, typing_env, tr)
-            && (self.krate.trait_impls.contains(&impl_id)
-                || self.krate.foreign.item(impl_id).is_some()
-                || self.krate.foreign.compiles(impl_id))
+            && (self.krate.trait_impls.contains(&impl_id) || self.krate.foreign.compiled(impl_id))
         {
             // A `&mut` to an object its generic code gives within what a
             // bound trait's method takes, which `T`'s dictionary's entry
