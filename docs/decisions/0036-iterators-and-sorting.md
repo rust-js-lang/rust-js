@@ -495,3 +495,16 @@ Mutations: `orders-totally-any-call`, `comparator-always-total`,
 `hand-written-order-always-total`, `orders-totally-written-then-unasked`,
 `orders-totally-written-then-kept-unasked`, `orders-totally-match-unasked`.
 Kind: wrong decision. Area: iterators.
+
+## Amendment: a `Some` of what's collected that could look like `None` (#984)
+
+`$collectOptions` gives `into(values)`, the collection, as its `Some`. Of
+an `Option<()>`, an `Option<Option<_>>` or an `Option<V>` of a generic `V`,
+that `Some` is boxed (`boxed_payload`, ADR 0051): a unit's `undefined`
+read as `None`, so `[Some(()), Some(())].into_iter().collect::<Option<()>>()`
+gave `None`. Results change ([0262](0262-when-rust-and-js-disagree.md)),
+so the `Some` is boxed where any such `Some` is:
+`$collectOptions(it, true, (values) => $some(values.forEach(() => {})))`.
+Held by the corpus case `collect_into_option_of_unit` and the mutations
+`collected-some-unboxed` and `collected-some-always-boxed`, the second of
+an `Option<Vec<_>>`, whose `Some` is the vector itself.

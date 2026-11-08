@@ -31,7 +31,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             unreachable!("a `Result` or an `Option`")
         };
         let collection = target_args.type_at(0);
-        let into = match self.is_vec_like(collection) || collection.boxed_ty().is_some_and(|t| t.is_slice()) {
+        // An `Option`'s `Some` of a collection that could look like `None`,
+        // a `()`, is boxed (ADR 0051): what's collected made into it (#984).
+        let boxed_some = matches!(self.option_of(target), Some(payload) if self.boxed_payload(payload));
+        let into = match !boxed_some
+            && (self.is_vec_like(collection) || collection.boxed_ty().is_some_and(|t| t.is_slice()))
+        {
             true => None,
             false => {
                 let values = self.fresh("values");
@@ -41,6 +46,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => None,
                 });
                 let made = self.collected_into(Expr::var(&values), collection, value, None, span)?;
+                let made = match boxed_some {
+                    true => self.some(made),
+                    false => made,
+                };
                 Some(match made.kind {
                     // A function that only takes them, a `from_iter`: the function.
                     js::ExprKind::Call(f, args) if matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(v) if *v == values)) => {

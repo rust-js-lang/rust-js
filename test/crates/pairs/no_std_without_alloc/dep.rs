@@ -1,9 +1,15 @@
 //! A `#![no_std]` library that loads only `core`, as powerfmt does: it
 //! has no `alloc`, so no B-tree, which the facts of what a call makes
-//! asked for (#983).
+//! asked for (#983); and a `collect()` into `core`'s `Option<()>`,
+//! whose `Some` is boxed (#984).
 #![no_std]
 
 /// A generic `into()` of `core`'s `From<T>` for `Option<T>`.
 pub fn some<T>(value: T) -> Option<T> {
     value.into()
+}
+
+/// A generic `collect()` into `core`'s `Option<()>`.
+pub fn all_some<I: Iterator<Item = Option<()>>>(items: I) -> Option<()> {
+    items.collect()
 }

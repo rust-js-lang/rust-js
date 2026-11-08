@@ -27,8 +27,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`collect()` into a `Result` of a map, a set or text is `Ok` of an array, not of it",
     file: "src/lower/iterators/stepping.rs",
-    find: "        let into = match self.is_vec_like(collection) || collection.boxed_ty().is_some_and(|t| t.is_slice()) {\n",
-    replace: "        let into = match true {\n",
+    find: "            && (self.is_vec_like(collection) || collection.boxed_ty().is_some_and(|t| t.is_slice()))\n",
+    replace: "            && true\n",
     tests: ["test/corpus.test.ts", "-t", "collect_fallible_into"],
   },
   {
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
       "a crate's iterator given as a JS iterator is dropped as the JS iterator, not what it's of",
     file: "src/lower/iterators/stepping.rs",
     find: "            && self.given_as_iterator(callee, ty::Ty::new_param(self.tcx, param.index, param.name), given)\n",
-    replace: "            && false\n",
+    replace: "            && true\n",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
   },
   {
@@ -386,5 +386,22 @@ export const mutations: Mutation[] = [
     find: "        Ok(Some(crate::lower::iterators::stepped_by_ends(source_value, step, drop)))\n",
     replace: "        Ok(Some(crate::lower::iterators::stepped_by_ends(source_value, step, None.or(drop.filter(|_| false)))))\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_of_own_iterator_folded_from_its_back.rs$"],
+  },
+  {
+    name: "collected-some-unboxed",
+    breaks: "a `collect()` into an `Option<()>`, or any `Option` whose `Some` could look like `None`, gives the collection itself as its `Some`, which reads as `None` (#984)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "let boxed_some = matches!(self.option_of(target), Some(payload) if self.boxed_payload(payload));",
+    replace: "let boxed_some = false;",
+    tests: ["test/corpus.test.ts", "-t", "^collect_into_option_of_unit.rs$"],
+  },
+  {
+    name: "collected-some-always-boxed",
+    breaks: "a `collect()` into an `Option<Vec<_>>`, whose `Some` can't look like `None`, boxes it anyway: `$some` where the vector itself is its `Some` (#984)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "let boxed_some = matches!(self.option_of(target), Some(payload) if self.boxed_payload(payload));",
+    replace: "let boxed_some = self.option_of(target).is_some();",
+    tests: ["test/corpus.test.ts", "-t", "^collect_fallible.rs$"],
+    snapshots: true,
   },
 ];
