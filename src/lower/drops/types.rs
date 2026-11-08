@@ -300,10 +300,53 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
 
     /// Whether a closure's drop drops what it holds whole: one that takes
     /// no part of a value, or another crate's its maker gives back, which
-    /// carries its drop (ADRs 0484, 0523).
+    /// carries its drop (ADRs 0484, 0523), or that its maker's MIR makes of
+    /// whole values (`foreign_takes_whole`, #840).
     fn takes_whole(&self, closure: DefId) -> bool {
         self.held(closure).is_some()
-            || !closure.is_local() && crate::lower::recognition::given_back(self.recognition.tcx, closure)
+            || !closure.is_local()
+                && (crate::lower::recognition::given_back(self.recognition.tcx, closure)
+                    || self.foreign_takes_whole(closure))
+    }
+
+    /// Whether another crate's closure takes what it holds that drops whole:
+    /// where its maker's MIR, which its lowering reads (ADR 0914), makes it,
+    /// `Aggregate(Closure(..), operands)`, each operand it moves of a type
+    /// that drops is a whole local, `move _n`, not a part, `move (_3.0)`
+    /// (#840). Its captures are what rustc's `closure_captures` doesn't give
+    /// of another crate's closure; these are the places its drop drops,
+    /// `closure_made`'s. A library rust-js compiles refuses a closure of its
+    /// own that takes a part already; a part here is std's, of its MIR.
+    fn foreign_takes_whole(&self, closure: DefId) -> bool {
+        let tcx = self.recognition.tcx;
+        let Some(maker) = tcx.opt_parent(closure) else {
+            return false;
+        };
+        if !tcx.is_mir_available(maker) {
+            return false;
+        }
+        let mir = tcx.optimized_mir(maker);
+        let mut made = mir.basic_blocks.iter().flat_map(|block| &block.statements).filter_map(|statement| {
+            match &statement.kind {
+                rustc_middle::mir::StatementKind::Assign(assign) => match &assign.1 {
+                    rustc_middle::mir::Rvalue::Aggregate(kind, operands)
+                        if matches!(**kind, rustc_middle::mir::AggregateKind::Closure(id, _) if id == closure) =>
+                    {
+                        Some(operands)
+                    }
+                    _ => None,
+                },
+                _ => None,
+            }
+        });
+        made.next().is_some_and(|operands| {
+            operands.iter().all(|operand| match operand {
+                rustc_middle::mir::Operand::Move(place) => {
+                    place.projection.is_empty() || self.drops(place.ty(mir, tcx).ty) == Drops::Nothing
+                }
+                _ => true,
+            })
+        }) && made.next().is_none()
     }
 
     /// The parts a pattern moves out of what it's matched against, by value:

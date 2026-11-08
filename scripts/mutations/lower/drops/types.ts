@@ -315,9 +315,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure another crate gives back, holding a value with a destructor, is refused where it's dropped",
     file: "src/lower/drops/types.rs",
-    find: "            || !closure.is_local() && crate::lower::recognition::given_back(self.recognition.tcx, closure)\n",
-    replace:
-      "            || false && crate::lower::recognition::given_back(self.recognition.tcx, closure)\n",
+    find: "            || !closure.is_local()\n                && (crate::lower::recognition::given_back(self.recognition.tcx, closure)\n",
+    replace: "            || false\n                && (crate::lower::recognition::given_back(self.recognition.tcx, closure)\n",
     tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
   },
   {
@@ -414,5 +413,13 @@ export const mutations: Mutation[] = [
     find: "            Some(parts) => all(self, &mut parts.into_iter(), walk),\n",
     replace: "            Some(_) => Drops::Nothing,\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_parts_past_a_panic.rs$"],
+  },
+  {
+    name: "foreign-closure-captures-unread",
+    breaks: "another crate's closure holding a value with a destructor, its maker's MIR making it of whole values, is refused as one that holds part of one (#840)",
+    file: "src/lower/drops/types.rs",
+    find: "                    || self.foreign_takes_whole(closure))\n",
+    replace: "                    || false && self.foreign_takes_whole(closure))\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: closure_of_another_crate"],
   },
 ];

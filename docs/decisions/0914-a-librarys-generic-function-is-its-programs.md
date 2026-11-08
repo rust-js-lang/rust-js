@@ -939,3 +939,31 @@ asked while it's still being asked answers what the first of them will,
 and all are kept with the first's answer, each walked once (ADR 1100).
 The answer is the least that holds, as before. Mutation
 `copies-settled-alone` (`lower/instances.ts`).
+
+## Amendment: another crate's closure, read from where it's made (#840)
+
+A library's generic code its consumer compiles makes closures of the
+library's own, itertools' `Product::next`'s `.map(|a| (a.clone(), elt_b))`
+and `kmerge`'s `head.map(|h| Self { head: h, tail: it })`. Holding a value
+with a destructor, an item of the consumer's, each was refused as "a
+closure that holds part of a value with a destructor": whether a closure
+takes what it holds whole was asked of rustc's `closure_captures`, which
+gives the crate's own closures alone.
+
+What a closure's drop drops was already read from where it's made, the
+MIR its maker is lowered from (`drops::closure_made`), another crate's
+too. So whether it takes them whole is too: `drops::types::foreign_takes_whole`
+finds, in its maker's `optimized_mir`, the `Aggregate(Closure(..))` that
+makes it, and it takes them whole where each operand it moves of a type
+that drops is a whole local, `move _n`; a part, `move (_3.0)`, or no
+aggregate found, stays refused. A library rust-js compiles refuses a
+closure of its own that takes a part already, so a part here is std's,
+of its MIR.
+
+itertools' probe is refused at 9 places now, each a type fact of a type
+parameter's (#934's and its kind); the two closures compile. Held by
+`test/crates/pairs/closure_of_another_crate`, a library's iterator whose
+`next` gives its item to `Option::map`'s closure, which `None` drops, of
+the consumer's items with a destructor, against native Rust; and the
+mutations `foreign-closure-captures-unread` and `foreign-closure-drop-refused`
+(`lower/drops/types.ts`).
