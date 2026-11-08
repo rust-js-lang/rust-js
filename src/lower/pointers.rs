@@ -900,11 +900,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .and_then(|t| super::recognition::rc_pointee(self.tcx, t.peel_refs()))
                     .expect("an `Rc`");
                 let rc = arg();
-                let place = match self.krate.counted.counts(self.tcx, pointee) {
-                    true => self.counted_pointee(rc, pointee),
-                    false => rc,
-                };
-                self.pointer_to(place, pointee, None, span)?
+                match self.krate.counted.counts(self.tcx, pointee) {
+                    true => self.pointer_to(self.counted_pointee(rc, pointee), pointee, None, span)?,
+                    // An uncounted one's object, wherever the `Rc` is read from,
+                    // not the item of an array that holds it, `held[0]` of a
+                    // tuple struct's field (#1019).
+                    false if self.is_object(pointee) && !self.mut_ref_form(pointee).is_cell() => {
+                        helper("$ptrTo", vec![rc])
+                    }
+                    false => self.pointer_to(rc, pointee, None, span)?,
+                }
             }
             PointerOp::Replace => helper("$ptrReplace", vec![arg(), arg()]),
             PointerOp::Swap => helper("$ptrSwap", vec![arg(), arg()]),

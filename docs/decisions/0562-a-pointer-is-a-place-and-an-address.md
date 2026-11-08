@@ -552,3 +552,19 @@ a fn item, two closures that capture nothing and one that does, compared
 through a `&dyn Fn` parameter, a thread-local's `Option<&'static dyn Fn>`
 and a `*const dyn Fn`; and the mutations `function-pointer-an-address`,
 `function-pointer-made-dyn-undefined` and `closure-pointer-an-address`.
+
+## Amendment: `Rc::as_ptr` of an `Rc` an item holds (#1019)
+
+`Rc::as_ptr(&first.0)` of an uncounted `Rc` a tuple struct holds, the
+net's `field` rewrite of `rc_as_ptr`, was `$ptr(first, 0)`: `pointer_to`
+was given the `Rc`'s read, an array's item, and made a pointer to the
+item, the `Rc`'s place, so two clones' pointers differed (native `true`,
+JS `false`). What an uncounted `Rc` of an object points at is the object,
+wherever the `Rc` is read from: `$ptrTo(first[0])`. A counted one's is
+its box's `value`, as it was. Held by the corpus case
+`rc_as_ptr_of_a_held_rc` and the mutation
+`rc-as-ptr-of-a-held-rc-its-slot`. The net's `field` rewrite of
+`pointer_addresses`, the address of a struct a tuple struct's field
+holds, `&raw const held.0`, an item's handle where its fields' are the
+object's, stays #1019's.
+

@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "rc-as-ptr-of-a-held-rc-its-slot",
+    breaks: "`Rc::as_ptr(&first.0)` of an `Rc` a tuple struct holds points at the array item holding it, `$ptr(first, 0)`, so two clones' pointers differ (#1019)",
+    file: "src/lower/pointers.rs",
+    find: "                    false if self.is_object(pointee) && !self.mut_ref_form(pointee).is_cell() => {\n",
+    replace: "                    false if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_as_ptr_of_a_held_rc.rs$"],
+  },
+  {
     name: "function-pointer-an-address",
     breaks:
       "a pointer to a fn item, `&raw const *&noop`, is an address, not the function, so `std::ptr::eq(handler, &noop)` is `handler === undefined`",
@@ -730,9 +738,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a counted `Rc`'s `as_ptr` points at the `Rc` itself, not its value's place, which JS can't point at",
     file: "src/lower/pointers.rs",
-    find: "                    true => self.counted_pointee(rc, pointee),\n                    false => rc,\n",
-    replace:
-      "                    true => rc,\n                    false => rc,\n",
+    find: "                    true => self.pointer_to(self.counted_pointee(rc, pointee), pointee, None, span)?,\n",
+    replace: "                    true => self.pointer_to(rc, pointee, None, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_as_ptr.rs$"],
   },
   {
