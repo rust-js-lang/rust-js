@@ -816,6 +816,25 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::L
     if handles.is_empty() {
         return;
     }
+    // A handle on another's `value`, `&mut` of a `Box<&mut T>`'s content
+    // given whole, `{ get value() { return place.value; }, .. }`: the other's
+    // place, stored as it stores, as reading or writing through it reads or
+    // writes there; else the other, whose `const` goes, is named where this
+    // one's read (#982).
+    while let Some((at, on)) = handles.iter().enumerate().find_map(|(at, (_, place, ..))| {
+        let ExprKind::Member(of, key) = &place.kind else {
+            return None;
+        };
+        let ExprKind::Var(v) = &of.kind else { return None };
+        let on = handles.iter().position(|(name, _, at_once, _)| name == v && !at_once)?;
+        (key == js::HELD && on != at).then_some((at, on))
+    }) {
+        let (place, storage) = (handles[on].1.clone(), handles[on].3);
+        handles[at].1 = place;
+        if handles[at].3 == js::Storage::AsGiven {
+            handles[at].3 = storage;
+        }
+    }
     let read = |name: &str| (handles.iter()).find(|(h, ..)| h == name);
     // What's written through one, as its storage stores it: a nullable
     // field's `None`, `null` (ADR 0791).

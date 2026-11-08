@@ -122,3 +122,18 @@ nullable field's cell. It's held by a variable, as a guard's is, since
 `Expr::held` of a handle is its place alone. The same goes for what a nullable
 thread-local that's its module's variable lends, resolved where its closure is
 applied in place ([ADR 1078](1078-a-nullable-place-stores-null-however-its-written.md)).
+
+## Amendment: a handle on a handle stores as the first does (#982)
+
+A `&mut` to a nullable field given whole, `Box::new(&mut fiber.owner)`,
+is a handle on the first handle's `value`. Tidy's `read_handles` reads both
+as their places in one sweep. It dropped the first handle's `const`, and
+then wrote the second's place, `place.value`, where it was used, so the
+program threw `place is not defined`. Now a handle on another read handle's
+`value` is composed first: it takes that handle's place, and, where it
+stores what it's given, that handle's storage. Writing through it is then
+the field's own write, `fiber.owner = noneOf(1) ?? null`. The program can't
+run otherwise, so Rust's behaviour is kept
+([0262](0262-when-rust-and-js-disagree.md)). Held by the corpus case
+`nullable_field_borrow_given_whole` and the mutation
+`handle-on-a-handle-uncomposed`.

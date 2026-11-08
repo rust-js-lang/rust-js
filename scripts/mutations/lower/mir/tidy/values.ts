@@ -489,4 +489,12 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^stored_place_made_a_mut_dyn.rs$"],
   },
+  {
+    name: "handle-on-a-handle-uncomposed",
+    breaks: "a handle on another read handle's `value`, `Box::new(&mut fiber.owner)` written through, is read as the other's `value` after that one's `const` is gone: `place is not defined` (#982)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        (key == js::HELD && on != at).then_some((at, on))\n",
+    replace: "        (key == js::HELD && on != at && false).then_some((at, on))\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_borrow_given_whole.rs$"],
+  },
 ];
