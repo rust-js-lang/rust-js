@@ -11,7 +11,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { markUsed, verifiedRuns } from "./kept";
+import { markUsed, mayKeep, verifiedRuns } from "./kept";
 import { node } from "./programs";
 import { root, run, runtimeDir, stdDir } from "./support";
 
@@ -33,8 +33,11 @@ export function verified(key: string, cache = verifiedRuns): boolean {
   return true;
 }
 
-/** Runs of `key` verified now, `note` saying whose. */
+/** Runs of `key` verified now, `note` saying whose; not kept below the
+ * disk's floor (test/bounded.ts). */
 export function record(key: string, note: string, cache = verifiedRuns) {
+  mkdirSync(cache, { recursive: true });
+  if (!mayKeep(cache)) return;
   mkdirSync(join(cache, key), { recursive: true });
   writeFileSync(join(cache, key, "passed"), `${note}\n`);
 }

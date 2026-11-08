@@ -177,7 +177,7 @@ check pruned most of them, and every task, each in a worktree of its own,
 built them all again, as it built the corpus's.
 
 **The kept builds are the machine's, `~/.cache/rust-js/native-cache/`**
-(`nativeCache`, `test/kept.ts`), held to 12 GB, the least recently used
+(`nativeCache`, `test/kept.ts`), held to 10 GB, the least recently used
 going first and none kept below the disk's floor. A build is the same in
 any checkout of the same sources, as `--remap-path-prefix` leaves the
 checkout's root out of it; so what keys it is said from the root,
@@ -188,4 +188,4 @@ not its time: the net builds its `.rlib` anew on each run, so each of
 `library`'s programs was built again every time. Held by
 `test/support.test.ts`' "a native program is kept by what it was built
 from, said from the checkout's root". The wrappers stay the checkout's,
-64 MB.
+64 MB. Below the disk's floor nothing is kept, a build there made in a fixture of the test's and used from it, a verified run not recorded (`mayKeep`); and the checkout's stores from before, `target/native-cache` and `target/corpus-cache`, are removed as the stores are pruned (`retiredStores`).

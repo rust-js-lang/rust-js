@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, sym
 import { basename, dirname, join, relative } from "node:path";
 
 import { bytesOf, floorBytes } from "./bounded";
-import { keptStores, nativeCache, pruneKept } from "./kept";
+import { keptStores, mayKeep, nativeCache, pruneKept, pruneKeptStores, retiredStores } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
 import { runSync } from "./child";
@@ -250,10 +250,22 @@ test("a kept cache is held to its cap, the least recently used first, and to the
   expect([newer, newest].map(existsSync)).toEqual([false, true]);
   // Each store's cap.
   expect(keptStores.map(({ dir, cap }) => [basename(dir), cap / 2 ** 20])).toEqual([
-    ["native-cache", 12288],
+    ["native-cache", 10240],
     ["native-sources", 64],
     ["verified-runs", 512],
   ]);
+});
+
+// Nothing's kept below the disk's floor, a native program's build or a
+// verified run: what's made is used, not kept (#1047). And the checkout's
+// stores from before they were the machine's go as the stores are pruned.
+test("a store keeps nothing below the disk's floor, and a retired store is removed", () => {
+  const dir = fixture("floor");
+  expect(mayKeep(dir, () => floorBytes)).toBe(true);
+  expect(mayKeep(dir, () => floorBytes - 1)).toBe(false);
+  for (const retired of retiredStores) mkdirSync(join(retired, "left"), { recursive: true });
+  pruneKeptStores();
+  expect(retiredStores.map(existsSync)).toEqual([false, false]);
 });
 
 // Each fixture a test claims is removed once its file's tests end

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 
 import { runSync, stopped } from "./child";
-import { markUsed, nativeCache } from "./kept";
+import { markUsed, mayKeep, nativeCache } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
 import { shard } from "../scripts/shard";
 import { checkoutTarget, runtimeDir, stdDir, target } from "./packages-of";
@@ -113,7 +113,16 @@ export function nativeBinary(source: string, dir: string, flags: string[], timeo
     }
   }
   // Built beside the others, then moved in whole, as the build of what it
-  // read: a test file running beside this one never runs half of one.
+  // read: a test file running beside this one never runs half of one. Below
+  // the disk's floor, built in a fixture of the test's, used and not kept
+  // (test/bounded.ts).
+  if (!mayKeep(nativeCache)) {
+    const unkept = fixture("native-unkept");
+    const p = runSync(["rustc", ...flags, wrapper, "-o", join(unkept, "native")], root, timeout);
+    const why = stopped(p, timeout);
+    if (why || p.code !== 0) return { error: `rustc can't compile it${why ? `: it ${why}` : ""}:\n${p.stderr}` };
+    return { binary: join(unkept, "native"), built: true };
+  }
   const building = join(program, `.building-${process.pid}-${Date.now()}`);
   mkdirSync(building);
   const depInfo = join(building, "native.d");

@@ -9,7 +9,7 @@
 import { readdirSync, rmSync, statSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 
-import { bytesOf, evict, freeBytes, machineStore, type Kept } from "./bounded";
+import { bytesOf, evict, floorBytes, freeBytes, machineStore, type Kept } from "./bounded";
 import { checkoutTarget, target } from "./packages-of";
 
 const day = 24 * 60 * 60;
@@ -36,7 +36,7 @@ export const verifiedRuns = target === checkoutTarget ? machineVerifiedRuns : jo
  * and the corpus's verified runs, about 8 MB for each build of it, a week
  * of builds about 500 MB (#914), and the net's about 100 MB more. */
 export const keptStores = [
-  { dir: nativeCache, cap: 12 * 2 ** 30 },
+  { dir: nativeCache, cap: 10 * 2 ** 30 },
   { dir: join(checkoutTarget, "native-sources"), cap: 64 * 2 ** 20 },
   { dir: verifiedRuns, cap: 512 * 2 ** 20 },
 ];
@@ -95,7 +95,19 @@ export function pruneKept(
   return { removed: removed + evicted.removed, size: evicted.size };
 }
 
-/** Each store of `keptStores` pruned, each to its cap. */
+/** The checkout's stores before they were the machine's (#1047): native
+ * programs' builds and verified runs, which nothing reads now. */
+export const retiredStores = [join(checkoutTarget, "native-cache"), join(checkoutTarget, "corpus-cache")];
+
+/** Each store of `keptStores` pruned, each to its cap, and each retired
+ * store removed whole. */
 export function pruneKeptStores() {
+  for (const dir of retiredStores) if (dir !== verifiedRuns) rmSync(dir, { recursive: true, force: true });
   for (const { dir, cap } of keptStores) pruneKept(dir, { cap });
+}
+
+/** Whether a store may keep what it's about to write: not below the disk's
+ * floor (test/bounded.ts), where what's made is used and not kept. */
+export function mayKeep(dir: string, free = () => freeBytes(dir)): boolean {
+  return free() >= floorBytes;
 }
