@@ -120,3 +120,42 @@ crashed rust-js. `library` found the most: what a crate knows of its own
 items, an iterator's own `size_hint`, a `Debug` impl called with `{:#?}`,
 a static's value that changes, isn't known of another crate's.
 Each family is an issue, #1010 to #1033, its cases listed under it.
+
+## Amended: the whole net, its runs kept by what they ran, and its native programs the machine's (#1047)
+
+A fix the net found runs the whole net before it's pushed (#985), every
+case's every rewrite: on the 12-core M6 in 12 parts, quiet, 830 s in a
+fresh worktree (load 1.80), 501 s after a change to the compiler in a
+worktree that had run it (load 3.87).
+
+**Not taken: the cases the test map says a change reaches.** #1047 asked
+for the net of only the cases whose compiles ran a function the change
+touches (ADR 1101), each rewrite of each, and the cases the list names.
+Built and measured before it landed, of the map of 1f0f4a45c: each of
+the eight latest net-found fixes taken back out of the working tree
+picks 1,880 to 1,883 of the 1,883 cases, or the map can't say of it, a
+function added or a line between two (four of the eight). The place,
+`&mut` and tidy's functions they change run in nearly every case's
+compile. And it's unsound where it would save: #1016's `guard_value`
+line alone picks 272 cases, but four of the five `rc-refcell` rows it
+fixed aren't among them, as the rewrite borrows a `RefCell` in a case
+that never did; a rewritten case runs what its rewrite adds. The whole
+net stays the rule (main, on the user's behalf, 2026-11-09).
+
+**What its time was, and what's kept now:**
+
+- **Its runs, by what they ran** (ADR 0567): the rewrite's program, its
+  JS, every file, native Rust's output and end, what every case's runs
+  share and the net's own harness. A run the same as one that agreed
+  before isn't run again; its compiles always are, as they're what's
+  checked. After a fix, most rewrites' JS is as it was.
+- **Its native programs, the machine's** (ADR 0104, amended): about
+  14,000 of them, 7 GB, in a store each worktree used to hold to 3 GB, so
+  a worktree's next check pruned most of them, and every task, in a
+  worktree of its own, built them all again. And `library`'s were built
+  again on every run, as their key held the library's `.rlib` by its
+  time, which the run builds anew: now by what it holds.
+
+On the M6, quiet, after a change to the compiler: 299 s (load 2.54), not
+501 s; and in a fresh worktree, 295 s (load 2.67), no native program built again, not 830 s. A store's first run is
+as before, 830 s (load 2.78).

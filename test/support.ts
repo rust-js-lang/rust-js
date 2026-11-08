@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 
 import { runSync, stopped } from "./child";
-import { markUsed } from "./kept";
+import { markUsed, nativeCache } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
 import { shard } from "../scripts/shard";
 import { checkoutTarget, runtimeDir, stdDir, target } from "./packages-of";
@@ -61,11 +61,12 @@ export function writeWhole(path: string, text: string) {
 
 /** A directory of the checkout's `target/` named by `contents`: the same
  * contents, the same directory, in any run, of any target's tests
- * (`checkoutTarget`). Where a native program's wrapper goes, so the same
- * program is the same kept binary (`nativeBinary`). */
+ * (`checkoutTarget`), and the same name in any worktree, the checkout's
+ * root said as `<root>` (`portable`). Where a native program's wrapper
+ * goes, so the same program is the same kept binary (`nativeBinary`). */
 export function contentDirectory(...contents: string[]): string {
   const hash = createHash("sha256");
-  for (const content of contents) hash.update(`${content.length}:${content}`);
+  for (const content of contents.map(portable)) hash.update(`${content.length}:${content}`);
   const dir = join(checkoutTarget, "native-sources", hash.digest("hex").slice(0, 32));
   mkdirSync(dir, { recursive: true });
   return dir;
@@ -73,15 +74,19 @@ export function contentDirectory(...contents: string[]): string {
 
 /**
  * A native program, `source` written to `dir/native.rs` and built by rustc
- * with `flags`: its binary, kept in the checkout's `target/native-cache/`,
- * whichever target the tests run in (`checkoutTarget`), and used again
- * while nothing it was built from has changed. That's rustc's version, the
- * flags, the source and where it is, since `include!("cases.rs")` is of the
- * file beside it, and the libraries a flag names, as `--extern
- * serde=libserde.rlib` does, which name where it's kept; and what rustc
- * says the build read, each file an `include!`, a `mod` or an
- * `include_str!` reached, however deep, and each variable an `env!` read,
- * which are checked each time it's used. A new build of it is kept beside
+ * with `flags`: its binary, kept in the machine's `native-cache`
+ * (`nativeCache`), every worktree's and whichever target the tests run in,
+ * and used again while nothing it was built from has changed. That's
+ * rustc's version, the flags, the source and where it is, since
+ * `include!("cases.rs")` is of the file beside it, and the libraries a
+ * flag names, as `--extern serde=libserde.rlib` does, each by what it
+ * holds; and what rustc says the build read, each file an `include!`, a
+ * `mod` or an `include_str!` reached, however deep, and each variable an
+ * `env!` read, which are checked each time it's used. A path in the
+ * checkout is said from the checkout's root (`portable`), which a build
+ * leaves out of what it makes (`--remap-path-prefix`), so another
+ * worktree's build of the same sources is this one's (#1047). A new build
+ * of it is kept beside
  * the ones before, which stay: another test file may be running one. Each
  * use marks it used, and a run drops what no test used for a week when it
  * starts (`pruneKept`).
@@ -93,13 +98,13 @@ export function contentDirectory(...contents: string[]): string {
 export function nativeBinary(source: string, dir: string, flags: string[], timeout = 120_000): { binary: string; built: boolean } | { error: string } {
   rustcVersion ??= run(["rustc", "-vV"]);
   const wrapper = resolve(dir, "native.rs");
-  const hash = createHash("sha256").update(rustcVersion).update(JSON.stringify(flags)).update(wrapper).update(source);
+  const hash = createHash("sha256").update(rustcVersion).update(portable(JSON.stringify(flags))).update(portable(wrapper)).update(portable(source));
   for (const flag of flags) {
     const path = flag.slice(flag.indexOf("=") + 1);
-    if (path.startsWith("/") && existsSync(path) && statSync(path).isFile()) hash.update(`${path} ${statSync(path).mtimeMs} ${statSync(path).size}`);
+    if (path.startsWith("/") && existsSync(path) && statSync(path).isFile()) hash.update(`${portable(path)} ${sha256(path)}`);
   }
   writeWhole(wrapper, source);
-  const program = join(checkoutTarget, "native-cache", hash.digest("hex").slice(0, 32));
+  const program = join(nativeCache, hash.digest("hex").slice(0, 32));
   mkdirSync(program, { recursive: true });
   for (const kept of readdirSync(program).filter((name) => !name.startsWith("."))) {
     if (unchanged(join(program, kept, "inputs.json"))) {
@@ -118,7 +123,7 @@ export function nativeBinary(source: string, dir: string, flags: string[], timeo
     rmSync(building, { recursive: true, force: true });
     return { error: `rustc can't compile it${why ? `: it ${why}` : ""}:\n${p.stderr}` };
   }
-  const read = JSON.stringify(inputs(readFileSync(depInfo, "utf8")));
+  const read = JSON.stringify(inputs(readFileSync(depInfo, "utf8"), wrapper));
   writeFileSync(join(building, "inputs.json"), read);
   const kept = join(program, createHash("sha256").update(read).digest("hex").slice(0, 32));
   try {
@@ -130,17 +135,27 @@ export function nativeBinary(source: string, dir: string, flags: string[], timeo
   return { binary: join(kept, "native"), built: true };
 }
 
+/** `text` with the checkout's root, where it says it, said as `<root>`: a
+ * kept build's key and inputs, the same in every worktree (#1047). */
+export const portable = (text: string) => text.replaceAll(`${root}/`, "<root>/");
+/** A path `portable` said, in this checkout. */
+const inCheckout = (path: string) => path.replace(/^<root>\//, `${root}/`);
+/** A variable's value, portable, or `null` where it's unset. */
+const fromRoot = (value: string | undefined) => (value === undefined ? null : portable(value));
+
 /** What a build read, from rustc's dep-info: a line `<file>:` for each file,
- * spaces escaped, and `# env-dep:<NAME>=<value>` for each variable. */
-function inputs(depInfo: string): Inputs {
+ * spaces escaped, and `# env-dep:<NAME>=<value>` for each variable; but
+ * its `wrapper`, whose source the key holds said from the root, as the
+ * wrapper's text names the checkout where it `include!`s (#1047). */
+function inputs(depInfo: string, wrapper: string): Inputs {
   const files: [string, string][] = [];
   const env: [string, string | null][] = [];
   for (const line of depInfo.split("\n")) {
     const variable = line.match(/^# env-dep:([^=]+)/);
-    if (variable) env.push([variable[1], process.env[variable[1]] ?? null]);
+    if (variable) env.push([variable[1], fromRoot(process.env[variable[1]])]);
     else if (/[^\\]:$/.test(line) && !line.includes(": ")) {
       const file = line.slice(0, -1).replaceAll("\\ ", " ");
-      files.push([file, sha256(file)]);
+      if (file !== wrapper) files.push([portable(file), sha256(file)]);
     }
   }
   return { files, env };
@@ -150,7 +165,10 @@ function inputs(depInfo: string): Inputs {
 function unchanged(record: string): boolean {
   if (!existsSync(record)) return false;
   const { files, env }: Inputs = JSON.parse(readFileSync(record, "utf8"));
-  return files.every(([file, hash]) => existsSync(file) && sha256(file) === hash) && env.every(([name, value]) => (process.env[name] ?? null) === value);
+  return (
+    files.every(([file, hash]) => existsSync(inCheckout(file)) && sha256(inCheckout(file)) === hash) &&
+    env.every(([name, value]) => fromRoot(process.env[name]) === value)
+  );
 }
 
 /**

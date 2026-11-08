@@ -11,7 +11,7 @@
 //   target/metamorph/debug/metamorph <rewrite> test/corpus/<case>.rs       # a rewrite, by hand
 
 import { beforeAll, expect, test } from "bun:test";
-import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { corpus } from "./corpus-cases";
@@ -19,6 +19,7 @@ import { runSync } from "./child";
 import { buildRewriter, libraryCrate, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
 import { agree, compileJs, compileJsLibrary, nativeFlags, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, fixture, root } from "./support";
+import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
 import { shard } from "../scripts/shard";
 
 beforeAll(() => {
@@ -35,6 +36,10 @@ const all = rewritable();
 const picked = which === "all" ? all : all.filter(({ name }) => sampled(name));
 const [part, parts] = (process.env.RUST_JS_CASES ?? "1/1").split("/").map(Number);
 const chosen = new Set(shard(picked.map(({ name }) => name), part, parts));
+
+/** The net's own harness, its text, which a kept run's key holds as
+ * `shared()` holds the corpus's. */
+const netHarness = ["metamorphic.test.ts", "metamorphic.ts"].map((file) => readFileSync(join(import.meta.dir, file), "utf8"));
 
 /** The two builds: the default, and std's iterator structs (ADR 0908). */
 const builds: [string, string[]][] = [
@@ -100,9 +105,28 @@ function wrong(rewrite: Rewrite, name: string, edition: string): Map<string, str
       if (compiled.kind === "crashed") problems.set(build, `rust-js crashed: ${compiled.reason}`);
       continue;
     }
+    // Its run, kept by what it ran (ADR 0567): the rewrite, the JS, what
+    // native Rust printed and how it ended, what every case's runs share
+    // and the net's harness. The same as a run that agreed before isn't run
+    // again; the compile is, each time, as it's what's checked (#1047).
+    const key = runKey([
+      `metamorphic ${build}`,
+      made.program,
+      made.library ?? "",
+      ...generatedTexts(own),
+      native.bytes.stdout,
+      native.bytes.stderr,
+      show(native.outcome),
+      shared(),
+      ...netHarness,
+    ]);
+    if (verified(key)) continue;
     const [runtime, cmd] = runtimes[0];
     const ran = runJs(cmd, compiled.js, own, runtime);
-    if (agree(ran, native)) continue;
+    if (agree(ran, native)) {
+      record(key, `${rewrite} ${name} ${build}`);
+      continue;
+    }
     const [a, b] = [native.stdout.split("\n"), ran.stdout.split("\n")];
     const at = a.findIndex((line, i) => line !== b[i]);
     problems.set(

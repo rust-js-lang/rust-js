@@ -3,19 +3,17 @@
 // imports, the harness that runs and compares them, and the runtimes'
 // versions. The same again, the runs would say the same, so they're not run
 // again; the compiles are, each time, as they're what's checked of the
-// compiler. Kept in `target/corpus-cache/<key>/passed`, as native programs
-// are kept (`kept.ts`): each use marked, a week unused dropped.
+// compiler. Kept in the machine's `verified-runs/<key>/passed`, every
+// worktree's, as native programs are kept (`kept.ts`): each use marked, a
+// week unused dropped.
 
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { markUsed } from "./kept";
+import { markUsed, verifiedRuns } from "./kept";
 import { node } from "./programs";
-import { root, run, runtimeDir, stdDir, target } from "./support";
-
-/** Where the corpus's verified runs are kept. */
-export const verifiedRuns = join(target, "corpus-cache");
+import { root, run, runtimeDir, stdDir } from "./support";
 
 /** A key of `parts`, in their order, each whole: `["ab", "c"]` is not
  * `["a", "bc"]`. */

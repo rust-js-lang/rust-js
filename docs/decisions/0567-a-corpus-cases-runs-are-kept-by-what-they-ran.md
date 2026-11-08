@@ -77,3 +77,17 @@ given again where all of it is the same (`test/compiles.ts`). They still
 run on CI, which keeps nothing, after any change to the compiler, whose
 build is then another, and in the determinism net, which keeps none. The
 snapshot is still checked of the JS each run, compiled or given again.
+
+## Amendment: the machine's, and the metamorphic net's runs too (#1047)
+
+A run's key is what it ran, the JS and native Rust's output, not where:
+so the verified runs are the machine's, `~/.cache/rust-js/verified-runs/`
+(`verifiedRuns`, `test/kept.ts`), every worktree's, as each task starts in
+a worktree of its own, held to 512 MB. A mutant's tests keep theirs in
+their own target still, as above, and each test the test map records
+reads the machine's.
+
+And the metamorphic net's runs are kept so (ADR 1104, amended): a
+rewrite's program, its JS, native Rust's output and end, `shared()`, and
+the net's harness. After a change to the compiler, the net's whole run on
+the 12-core M6 is 299 s, not 501 s.

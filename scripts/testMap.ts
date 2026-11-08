@@ -42,6 +42,7 @@ import { availableParallelism } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 
 import { bytesOf, evict, freeBytes, machineStore } from "../test/bounded";
+import { machineVerifiedRuns } from "../test/kept";
 import { plainSuiteFiles, shard } from "./shard";
 
 const root = join(import.meta.dir, "..");
@@ -498,10 +499,10 @@ async function runUnits(units: { name: string; cmd: string[]; env: Record<string
       const own = join(record, "targets", String(at));
       mkdirSync(own, { recursive: true });
       // What's kept by source alone, verified runs, no compile of rust-js's,
-      // shared, as native programs' builds are in any target (`checkoutTarget`,
-      // #875); all else the unit's own.
-      mkdirSync(join(root, "target", "corpus-cache"), { recursive: true });
-      symlinkSync(join(root, "target", "corpus-cache"), join(own, "corpus-cache"));
+      // the machine's, as native programs' builds are in any target (#875,
+      // #1047); all else the unit's own.
+      mkdirSync(machineVerifiedRuns, { recursive: true });
+      symlinkSync(machineVerifiedRuns, join(own, "corpus-cache"));
       const start = Date.now();
       const p = Bun.spawn(unit.cmd, {
         cwd: root,

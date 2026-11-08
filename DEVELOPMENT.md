@@ -253,9 +253,9 @@ one way a store is held to its cap; each store says what its things are.
 | What | Where | Bound | Held by |
 |---|---|---|---|
 | The tests' compiles to JS (above) | `target/compile-cache/` | 2 GB; another build's dropped as a run starts; nothing written below the floor | `test/compiles.test.ts` |
-| Native programs' builds | `target/native-cache/`, the checkout's whatever `RUST_JS_TARGET` a mutant's or the test map's tests run in (#875) | 3 GB, and a week unused; pruned as each `check:fast` (while the compiler builds) and `bun run test` starts, and below the floor until it's back | `test/support.test.ts` |
+| Native programs' builds | `~/.cache/rust-js/native-cache/`, the machine's, every worktree's and whatever `RUST_JS_TARGET` a mutant's or the test map's tests run in (#875, #1047), keyed by what they're built from said from the checkout's root | 12 GB, the corpus's and the metamorphic net's about 8 GB, and a week unused; pruned as each `check:fast` (while the compiler builds) and `bun run test` starts, and below the floor until it's back | `test/support.test.ts` |
 | Native programs' wrappers | `target/native-sources/`, the checkout's likewise | 64 MB, and a week unused, the same way: about 8 MB | `test/support.test.ts` |
-| A corpus case's verified runs (ADR 0567) | `target/corpus-cache/` | 256 MB, a week unused, the same way: about 8 MB a build of the compiler | `test/support.test.ts` |
+| A corpus case's and a metamorphic rewrite's verified runs (ADR 0567) | `~/.cache/rust-js/verified-runs/`, the machine's (#1047); a mutant's tests', their target's `corpus-cache/` | 512 MB, a week unused, the same way: about 8 MB a build of the compiler of the corpus, 100 MB of the net | `test/support.test.ts` |
 | A test's fixtures | `target/fixtures/`, `$TMPDIR/rust-js-fixtures/` | Removed as its file's tests end (`test/setup.ts`'s `afterAll`; Bun's test runner never emits `exit`) or a script exits; one a killed process left, by the next process's first claim. `RUST_JS_KEEP_FIXTURES=1` keeps a run's to look at | `test/support.test.ts` |
 | The apps' Cargo targets' seed, the binding crates checked (#1005) | `target/check-fast/<pid>/apps-seed/`, `check:fast`'s run's; else a fixture of the file that asks | One a run, about 330 MB, 260 of it rustc's incremental state, which the targets made of it don't take; gone as `check:fast` exits, or with the file's fixtures; one a killed run left, by the next `check:fast` | `test/support.test.ts` |
 | The guide's examples, `bun run docs` | `target/docs/` | Each removed once its output's read, as each run makes it anew; an app's Cargo build there is 290 MB | |
@@ -385,7 +385,8 @@ What keeps them there:
   crate's compile answers each question once: on the 12-core M6, 75 s
   after a change to `src/`, not 504 s, the reconciler 23 s.
 - **A corpus case's runs are kept by what they ran** (ADR 0567), in
-  `target/corpus-cache`: the same JS, native output, runtime modules and
+  the machine's `~/.cache/rust-js/verified-runs`, as the metamorphic net's
+  are (#1047): the same JS, native output, runtime modules and
   harness again, its four runs aren't run again; its two compiles always
   are, and its snapshot is always checked. A `check:fast` whose change
   leaves most cases' JS as it was runs the corpus in half the time.

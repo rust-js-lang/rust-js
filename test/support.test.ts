@@ -4,14 +4,14 @@
 
 import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, join, relative } from "node:path";
 
 import { bytesOf, floorBytes } from "./bounded";
-import { keptStores, pruneKept } from "./kept";
+import { keptStores, nativeCache, pruneKept } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
 import { runSync } from "./child";
-import { cargoApp, fixture, nativeBinary, once, root, run, seeded } from "./support";
+import { cargoApp, contentDirectory, fixture, nativeBinary, once, portable, root, run, seeded } from "./support";
 
 // Found in review: a file the case includes was changed, and the kept
 // binary, of the file before, answered for it.
@@ -120,6 +120,38 @@ console.log(JSON.stringify(nativeBinary(source, contentDirectory(source), ${JSON
   expect(run([other]).trim()).toBe("kept for any target");
 });
 
+// And for any worktree of the machine (#1047): what it was built from is
+// said from the checkout's root, `<root>/`, its key and the files it read,
+// which another worktree finds in its own checkout.
+test("a native program is kept by what it was built from, said from the checkout's root", () => {
+  expect(portable(`include!("${root}/target/x/variant.rs");`)).toBe('include!("<root>/target/x/variant.rs");');
+  expect(portable(`--remap-path-prefix=${root}/=`)).toBe("--remap-path-prefix=<root>/=");
+  // Another path that begins as the root does isn't in it.
+  expect(portable(`${root}-other/x.rs`)).toBe(`${root}-other/x.rs`);
+  // The wrapper's place is named so too: another worktree's is this one's.
+  expect(contentDirectory(`include!("${root}/x.rs");`)).toBe(contentDirectory('include!("<root>/x.rs");'));
+  const dir = fixture("native-portable");
+  writeFileSync(join(dir, "read.rs"), 'fn main() {\n    println!("read from the checkout");\n}\n');
+  const source = `include!(${JSON.stringify(join(dir, "read.rs"))});\n`;
+  const built = nativeBinary(source, contentDirectory(source), ["--edition=2024"]);
+  if ("error" in built) throw new Error(built.error);
+  expect(dirname(dirname(built.binary)).startsWith(nativeCache)).toBe(true);
+  const { files } = JSON.parse(readFileSync(join(dirname(built.binary), "inputs.json"), "utf8")) as { files: [string, string][] };
+  expect(files.map(([file]) => file)).toContain(`<root>/${relative(root, join(dir, "read.rs"))}`);
+  expect(files.every(([file]) => !file.startsWith(root))).toBe(true);
+  // Its wrapper, whose text names the checkout, is the key's, not an input.
+  expect(files.some(([file]) => file.endsWith("/native.rs"))).toBe(false);
+  // Found again, and built again once what it read changes, to what no
+  // run before built, as the store is the machine's.
+  expect(nativeBinary(source, contentDirectory(source), ["--edition=2024"])).toEqual({ binary: built.binary, built: false });
+  const changed = `changed ${process.pid} ${Date.now()}`;
+  writeFileSync(join(dir, "read.rs"), `fn main() {\n    println!("${changed}");\n}\n`);
+  const again = nativeBinary(source, contentDirectory(source), ["--edition=2024"]);
+  if ("error" in again) throw new Error(again.error);
+  expect(again.built).toBe(true);
+  expect(run([again.binary]).trim()).toBe(changed);
+});
+
 // The compiler's build, once for a run: one process does it, those at the
 // same time wait for it, and none takes it over.
 test("work claimed once runs once, however many ask at the same time", async () => {
@@ -218,9 +250,9 @@ test("a kept cache is held to its cap, the least recently used first, and to the
   expect([newer, newest].map(existsSync)).toEqual([false, true]);
   // Each store's cap.
   expect(keptStores.map(({ dir, cap }) => [basename(dir), cap / 2 ** 20])).toEqual([
-    ["native-cache", 3072],
+    ["native-cache", 12288],
     ["native-sources", 64],
-    ["corpus-cache", 256],
+    ["verified-runs", 512],
   ]);
 });
 

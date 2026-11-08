@@ -9,21 +9,36 @@
 import { readdirSync, rmSync, statSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 
-import { bytesOf, evict, freeBytes, type Kept } from "./bounded";
+import { bytesOf, evict, freeBytes, machineStore, type Kept } from "./bounded";
 import { checkoutTarget, target } from "./packages-of";
 
 const day = 24 * 60 * 60;
 
+/** Where native programs' builds are kept: the machine's, every
+ * worktree's, as a build is the same in any checkout of the same sources
+ * (`nativeBinary`, #1047). */
+export const nativeCache = join(machineStore, "native-cache");
+
+/** Where runs verified by what they ran are kept (ADR 0567): the
+ * machine's, every worktree's, as a run's key is what it ran, not where
+ * (#1047); but a target's own given one, `RUST_JS_TARGET`, a mutant's,
+ * so none of a mutant's runs is skipped for one the compiler verified (ADR
+ * 0093), and each test the test map records, which shares the machine's
+ * (scripts/testMap.ts). */
+export const machineVerifiedRuns = join(machineStore, "verified-runs");
+export const verifiedRuns = target === checkoutTarget ? machineVerifiedRuns : join(target, "corpus-cache");
+
 /** The stores of what the tests keep, and the most each keeps: a
  * `check:fast --all` from nothing keeps about 1 GB of native programs,
- * which a change to the compiler keeps, and 8 MB of their wrappers, each
- * the checkout's whichever target the tests run in (#875); and 8 MB of
- * verified runs, made again for each build of it, a week of builds about
- * 500 MB (#914). */
+ * which a change to the compiler keeps, and the metamorphic net's every
+ * rewrite of every case about 7 GB more, the machine's (#1047); 8 MB of
+ * their wrappers, the checkout's whichever target the tests run in (#875);
+ * and the corpus's verified runs, about 8 MB for each build of it, a week
+ * of builds about 500 MB (#914), and the net's about 100 MB more. */
 export const keptStores = [
-  { dir: join(checkoutTarget, "native-cache"), cap: 3 * 2 ** 30 },
+  { dir: nativeCache, cap: 12 * 2 ** 30 },
   { dir: join(checkoutTarget, "native-sources"), cap: 64 * 2 ** 20 },
-  { dir: join(target, "corpus-cache"), cap: 256 * 2 ** 20 },
+  { dir: verifiedRuns, cap: 512 * 2 ** 20 },
 ];
 
 /** Mark `entry`, a kept one, used now: what's used stays. */

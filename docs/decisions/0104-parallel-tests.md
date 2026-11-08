@@ -168,3 +168,24 @@ store of their own, held to 64 MB and a week unused like the rest
 (`test/kept.ts`); they grew without a bound. Held by `test/support.test.ts`'s
 "a native program is kept once for any target, and built again by another
 toolchain".
+
+## Amendment: the native programs are the machine's (#1047)
+
+The checkout's store held each worktree's builds, to 3 GB. The metamorphic
+net builds about 14,000 programs, 7 GB (ADR 1104): a worktree's next
+check pruned most of them, and every task, each in a worktree of its own,
+built them all again, as it built the corpus's.
+
+**The kept builds are the machine's, `~/.cache/rust-js/native-cache/`**
+(`nativeCache`, `test/kept.ts`), held to 12 GB, the least recently used
+going first and none kept below the disk's floor. A build is the same in
+any checkout of the same sources, as `--remap-path-prefix` leaves the
+checkout's root out of it; so what keys it is said from the root,
+`<root>/` (`portable`): the wrapper's source and its place
+(`contentDirectory`), the flags, and each file the build read. A library
+a flag names, `--extern metamorph_lib=<rlib>`, is keyed by what it holds,
+not its time: the net builds its `.rlib` anew on each run, so each of
+`library`'s programs was built again every time. Held by
+`test/support.test.ts`' "a native program is kept by what it was built
+from, said from the checkout's root". The wrappers stay the checkout's,
+64 MB.
