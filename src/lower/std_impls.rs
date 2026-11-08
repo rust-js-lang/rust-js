@@ -1458,11 +1458,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut body = Vec::new();
         let other = Expr::index(b.clone(), Expr::var(&i));
         // std's slice `==` asks each two `x != y`, until one is: of items
-        // whose `!=` is more than `!(x == y)`, theirs (#962).
-        let same = match by_ne && item.peel_refs() == other_item.peel_refs() && self.own_ne(item) {
+        // whose `!=` is more than `!(x == y)`, theirs (#962), of two item
+        // types too, `A: PartialEq<B>`'s (#970).
+        let same = match by_ne && self.own_ne_between(item, other_item) {
             true => Expr::unary(
                 js::UnaryOp::Not,
-                self.ne_value(Expr::var(&x), other, item, span, &mut body)?,
+                self.ne_values(Expr::var(&x), other, (item, other_item), span, &mut body)?,
             ),
             false => self.eq_values(Expr::var(&x), other, (item, other_item), span, &mut body)?,
         };

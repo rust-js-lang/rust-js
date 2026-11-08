@@ -1097,8 +1097,8 @@ export const mutations: Mutation[] = [
     name: "slice-eq-by-eq",
     breaks: "std's slice `==` asks each two `==`, where it asks `!=`, an impl's own `ne` (#962)",
     file: "src/lower/std_impls.rs",
-    find: "        let same = match by_ne && item.peel_refs() == other_item.peel_refs() && self.own_ne(item) {\n",
-    replace: "        let same = match false && by_ne && item.peel_refs() == other_item.peel_refs() && self.own_ne(item) {\n",
+    find: "        let same = match by_ne && self.own_ne_between(item, other_item) {\n",
+    replace: "        let same = match false && by_ne && self.own_ne_between(item, other_item) {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
   },
   {
@@ -1108,5 +1108,13 @@ export const mutations: Mutation[] = [
     find: "                let by_ne = !std(StdItem::LinkedList);\n",
     replace: "                let by_ne = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
+  },
+  {
+    name: "eq-items-ne-of-one-type",
+    breaks: "a slice's `==` asks items' `!=` only of one item type, so `[A] == [B]` asks `eq` where std asks `A`'s own `ne` (a wrong answer, #970)",
+    file: "src/lower/std_impls.rs",
+    find: "        let same = match by_ne && self.own_ne_between(item, other_item) {\n",
+    replace: "        let same = match by_ne && item.peel_refs() == other_item.peel_refs() && self.own_ne(item) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^ne_between_two_item_types.rs$"],
   },
 ];

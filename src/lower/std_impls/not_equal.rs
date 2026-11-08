@@ -51,6 +51,54 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.recognition().user_impl(tr)
     }
 
+    /// Whether `a != b` of a `ty` and a `rhs` runs more than `!(a == b)`, as
+    /// `own_ne` asks of one type (#970): of two, the crate's or a library's
+    /// impl of `PartialEq<rhs>` for `ty`, where it writes its own `ne`, or a
+    /// type parameter's, whose dictionary may hold one; of one, `own_ne`'s.
+    pub(in crate::lower) fn own_ne_between(&self, ty: Ty<'tcx>, rhs: Ty<'tcx>) -> bool {
+        let (ty, rhs) = (ty.peel_refs(), rhs.peel_refs());
+        if ty == rhs {
+            return self.own_ne(ty);
+        }
+        if self.is_unknown(ty) || self.is_unknown(rhs) {
+            return true;
+        }
+        let tr = ty::TraitRef::new(self.tcx, self.partial_eq_trait(), [ty, rhs]);
+        self.recognition().user_impl(tr).is_some_and(|imp| self.writes_ne(imp))
+    }
+
+    /// `a != b` of a `ty` and a `rhs`, as std's `PartialEq<rhs>::ne` runs
+    /// (#970): of two types, a type parameter's dictionary's `ne`,
+    /// `TPartialEq.ne(a, b)`, or an impl's own `ne`, where `own_ne_between`
+    /// says it's more than `!(a == b)`; of one, `ne_value`'s.
+    pub(in crate::lower) fn ne_values(
+        &mut self,
+        a: Expr,
+        b: Expr,
+        (ty, rhs): (Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let (x, lhs) = self.through_refs(a.clone(), ty);
+        let (y, other) = self.through_refs(b.clone(), rhs);
+        if lhs == other {
+            return self.ne_value(a, b, ty, span, out);
+        }
+        if !self.own_ne_between(lhs, other) {
+            return Ok(Expr::unary(
+                js::UnaryOp::Not,
+                self.eq_values(a, b, (ty, rhs), span, out)?,
+            ));
+        }
+        let tr = ty::TraitRef::new(self.tcx, self.partial_eq_trait(), [lhs, other]);
+        if self.is_unknown(lhs) || self.is_unknown(other) {
+            let dictionary = self.evidence_for(tr).ok_or_else(|| self.no_evidence(span, tr))?;
+            return Ok(Expr::call(Expr::member(dictionary, "ne"), vec![x, y]));
+        }
+        let ne = crate::lower::recognition::trait_method(self.tcx, self.partial_eq_trait(), "ne");
+        self.impl_call(ne, tr.args, vec![x, y], span)
+    }
+
     /// Whether the impl `imp`, a `PartialEq`'s, writes its own `ne`.
     fn writes_ne(&self, imp: DefId) -> bool {
         let ne = crate::lower::recognition::trait_method(self.tcx, self.partial_eq_trait(), "ne");

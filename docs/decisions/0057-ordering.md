@@ -324,3 +324,26 @@ which a field whose `partial_cmp` and `cmp` disagree shows. Results change
 `#[derive]`, one in two, and a hand-written `Some(self.cmp(other))`, each
 concrete and through generic code, against native Rust, failing before;
 the mutations are in `ordering.ts` and `library.ts`.
+
+## Amendment: `!=` between two types (#970)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results changed:
+#962 made a slice's `==` ask each two items' `!=`, as std's
+`SlicePartialEq::equal` does, but only of one item type. Between two,
+`[A] == [B]` of `A: PartialEq<B>`, and generic code's `[T] == [U]` of `T:
+PartialEq<U>`, it asked `eq` of each two, so an impl whose own `ne` isn't
+`!eq` gave another answer, and printed another sequence of calls.
+
+`not_equal.rs` answers `!=` of two types as it does of one:
+`own_ne_between(ty, rhs)`, whether it runs more than `!(a == b)`, an impl
+of `PartialEq<rhs>` for `ty` that writes its own `ne` or a type
+parameter's dictionary; and `ne_values(a, b, (ty, rhs))`, that `ne`, the
+dictionary's `TPartialEqU.ne(a, b)` or the impl's `aPartialEqB_ne(a, b)`,
+else `!(a == b)`. A slice's `==` asks them of its two item types, so
+`eq_two_types`' generic `[A::Item] == [B::Item]` asks its dictionary's
+`ne`, `!AItemPartialEqBItem.ne(x, y)`, where it asked `eq`. Held by
+`test/corpus/ne_between_two_item_types.rs`, concrete and generic, an
+array's, a slice's and a `Vec`'s, against native Rust in both builds, and
+the mutations `ne-between-own-ne-unasked`, `ne-between-parameters-known`
+(`lower/std_impls/not_equal.ts`) and `eq-items-ne-of-one-type`
+(`lower/std_impls.ts`).

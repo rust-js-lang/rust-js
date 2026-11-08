@@ -60,4 +60,20 @@ export const mutations: Mutation[] = [
     replace: "                        Some(any) => Expr::bin(Op::And, any, ne),\n",
     tests: own,
   },
+  {
+    name: "ne-between-own-ne-unasked",
+    breaks: "an impl of `PartialEq<B>` for `A` that writes its own `ne` isn't asked it: `[A] == [B]` asks `eq` of each two, where std's slice `==` asks `!=` (a wrong answer, #970)",
+    file: "src/lower/std_impls/not_equal.rs",
+    find: "        self.recognition().user_impl(tr).is_some_and(|imp| self.writes_ne(imp))\n",
+    replace: "        false\n",
+    tests: ["test/corpus.test.ts", "-t", "^ne_between_two_item_types.rs$"],
+  },
+  {
+    name: "ne-between-parameters-known",
+    breaks: "generic `[T] == [U]` of `T: PartialEq<U>` asks the dictionary's `eq` of each two, where std's slice `==` asks its `ne` (a wrong answer, #970)",
+    file: "src/lower/std_impls/not_equal.rs",
+    find: "        if self.is_unknown(ty) || self.is_unknown(rhs) {\n            return true;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^ne_between_two_item_types.rs$"],
+  },
 ];
