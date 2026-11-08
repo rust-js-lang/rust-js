@@ -94,30 +94,27 @@ function main() {
     throw error;
   }
   const value$2 = $held(
-    $mapEnds(
-      $rev(
-        $zipEnds(
-          $closing(value$1, $dropEach(dDrop_drop)),
-          $closing($iter(tmp$1), $dropEach(dDrop_drop)),
-          dDrop_drop,
-          dDrop_drop,
-          true,
-        ),
+    $rev(
+      $zipEnds(
+        $closing(value$1, $dropEach(dDrop_drop)),
+        $closing($iter(tmp$1), $dropEach(dDrop_drop)),
+        dDrop_drop,
+        dDrop_drop,
+        true,
       ),
-      ([x, y]) => {
-        const result = Math.imul(x[0], y[0]) >>> 0;
-        try {
-          dDrop_drop(y);
-        } catch (error) {
-          $cleanup(() => {
-            dDrop_drop(x);
-          });
-          throw error;
-        }
-        dDrop_drop(x);
-        return result;
-      },
-    ),
+    ).map(([x, y]) => {
+      const result = Math.imul(x[0], y[0]) >>> 0;
+      try {
+        dDrop_drop(y);
+      } catch (error) {
+        $cleanup(() => {
+          dDrop_drop(x);
+        });
+        throw error;
+      }
+      dDrop_drop(x);
+      return result;
+    }),
   );
   let last;
   try {

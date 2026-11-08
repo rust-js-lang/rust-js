@@ -816,8 +816,8 @@ export const mutations: Mutation[] = [
     name: "zip-not-counted-held",
     breaks: "a zip the crate steps from its back, held in a variable, doesn't know its length, and its `len()` reads an array's (#740)",
     file: "src/lower/iterators/knowing.rs",
-    find: "        if crate::lower::recognition::zipped_sources(self.tcx, ty).is_some() && self.knows_its_back(ty) {\n            return true;\n        }\n",
-    replace: "",
+    find: "        if crate::lower::recognition::zipped_sources(self.tcx, ty).is_some() && {\n",
+    replace: "        if false && {\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_from_its_back.rs$"],
   },
   {
@@ -905,5 +905,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "committed @rust-js/std is std's bodies"],
   },
-
+  {
+    name: "zip-length-by-set",
+    breaks: "a zip's length is its type's in back_stepped's set while its back is its value's, so `zip(..).len()` of one made forward, `$trustedZip`, calls a `len` it hasn't and throws (#851)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            let outer = self.by_set.replace(false);\n",
+    replace: "            let outer = self.by_set.replace(true);\n",
+    tests: ["test/corpus.test.ts", "-t", "^(zip_of_cloned_items_whose_clone_runs|zip_from_its_back|zip_of_droppers_from_its_back).rs$"],
+    snapshots: true,
+  },
 ];

@@ -1377,3 +1377,23 @@ were right already: their consumers step them by their dictionaries.
 Two-crate case `iterators_stepped_from_their_back_across_crates`; mutations
 `library-impl-backs-unmade`, `library-given-backs-unmade` and
 `library-own-params-unstepped`.
+
+## Amendment: a zip's too (2026-11-09, #851 phase B, zips)
+
+ADR 0262's case: none where its JS changes for what ran as Rust does; three
+snapshots change, a zip only stepped forward, of a type stepped from its
+back elsewhere, now `$trustedZip(..)` where it was `$trustedZipEnds(..)`,
+and a map of a `rev()` stepped forward JS's own `.map` where it was
+`$mapEnds`. Whether a zip is made knowing its back is its value's fact
+(`back_by_value`), and so is whether it knows its length, which only
+`$zipEnds` does: `knows_its_length` reads the zip's back by its value, not
+by the set, so `zip(..).len()` of one made forward never calls a `len` it
+hasn't. What `stepped_locals` records grows by what the set covered:
+
+- a zip whose length `len()` asks, a side of which MIR holds in a variable
+  before the zip is made, no form left to count it in place, is made
+  knowing its back and length, `$zipEnds`; not one of an array's iterator
+  a variable holds, counted as it is, `Math.min(it.end - it.at, ..)`;
+- a shared borrow, `len(&self)`'s, lends what it borrows, as a `&mut`
+  does, in `stepped_locals` and in the borrows a call's locals are read
+  through.

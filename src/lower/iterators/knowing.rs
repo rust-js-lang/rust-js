@@ -284,8 +284,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && self.stepped_from_its_back(ty);
         }
         // A zip the crate steps from its back, made knowing its length too,
-        // `$zipEnds` (#740).
-        if crate::lower::recognition::zipped_sources(self.tcx, ty).is_some() && self.knows_its_back(ty) {
+        // `$zipEnds` (#740): by its value's fact, as its back is (#851).
+        if crate::lower::recognition::zipped_sources(self.tcx, ty).is_some() && {
+            let outer = self.by_set.replace(false);
+            let knows = self.knows_its_back(ty);
+            self.by_set.set(outer);
+            knows
+        } {
             return true;
         }
         if let Some(id) = crate::lower::recognition::dyn_iter_trait(self.tcx, ty) {

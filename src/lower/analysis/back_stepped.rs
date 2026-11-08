@@ -725,6 +725,9 @@ pub(super) fn stepped_locals<'tcx>(
     // (#790).
     let mut asked: IndexSet<(rustc_span::def_id::DefId, mir::Local)> = IndexSet::default();
     let mut held_whole: IndexSet<(rustc_span::def_id::DefId, mir::Local)> = IndexSet::default();
+    // Each zip a side of which MIR holds in a variable before it's made, no
+    // form of the side left to count in place.
+    let mut zips_of_held: IndexSet<(rustc_span::def_id::DefId, mir::Local)> = IndexSet::default();
     // Each field of a struct or an enum's variant a back step is given,
     // lent or whole, `self.it.next_back()` of `struct Evens { it: Filter<..> }`:
     // each value MIR moves into it as it makes one, made knowing its back by
@@ -744,6 +747,7 @@ pub(super) fn stepped_locals<'tcx>(
             stepped.values().filter(|h| **h == SteppedLocal::Given).count(),
             asked.len(),
             stepped_fields.len(),
+            zips_of_held.len(),
         );
         for body in all_bodies {
             let Some(mir) = body.mir.as_ref() else { continue };
@@ -784,6 +788,12 @@ pub(super) fn stepped_locals<'tcx>(
                     }
                     match rvalue {
                         mir::Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) if of.projection.is_empty() => {
+                            lent.insert(to.local, of.local);
+                            lent_at.insert(to.local, (block, at + 1));
+                        }
+                        // A shared one too, `len(&self)`'s, which reads it
+                        // where it's lent as a `&mut` step does (#851).
+                        mir::Rvalue::Ref(_, mir::BorrowKind::Shared, of) if of.projection.is_empty() => {
                             lent.insert(to.local, of.local);
                             lent_at.insert(to.local, (block, at + 1));
                         }
@@ -946,7 +956,12 @@ pub(super) fn stepped_locals<'tcx>(
                         continue;
                     };
                     let asked_ty = erased(clause.self_ty().skip_binder());
-                    if clause.def_id() != double_ended {
+                    // Or a zip's length, of one a side of which MIR holds, no
+                    // form left to count it by in place: made knowing its back
+                    // and length, `$zipEnds`, the one form that knows it
+                    // (#740, #851).
+                    let zip_length = is_exact_size(tcx, clause.def_id()) && zipped_sources(tcx, asked_ty).is_some();
+                    if clause.def_id() != double_ended && !zip_length {
                         continue;
                     }
                     // A field it's given, lent or whole, of the type asked.
@@ -1002,7 +1017,9 @@ pub(super) fn stepped_locals<'tcx>(
                         };
                         let held = held || unread();
                         match (ty == asked_ty, lent, user) {
-                            (true, true, false) if counted || held => {
+                            (true, true, false)
+                                if counted || held || zip_length && zips_of_held.contains(&(owner, local)) =>
+                            {
                                 mark(&mut stepped, (owner, local), SteppedLocal::Lent)
                             }
                             (true, false, true) => mark(&mut stepped, (owner, local), SteppedLocal::Given),
@@ -1026,6 +1043,12 @@ pub(super) fn stepped_locals<'tcx>(
                     continue;
                 }
                 let made = erased(destination.ty(&mir.local_decls, tcx).ty);
+                // Not an array's iterator, which is counted as it is.
+                if zipped_sources(tcx, made).is_some()
+                    && (given.iter()).any(|&(_, _, ty, held)| held && recognition.array_source(ty).is_none())
+                {
+                    zips_of_held.insert((owner, destination.local));
+                }
                 let made_stepped = stepped.contains_key(&(owner, destination.local)) || types.contains(&made);
                 let made_asked = made_stepped || asked.contains(&(owner, destination.local));
                 if !made_asked {
@@ -1103,7 +1126,14 @@ pub(super) fn stepped_locals<'tcx>(
             }
         }
         let given = stepped.values().filter(|h| **h == SteppedLocal::Given).count();
-        if (stepped.len(), given, asked.len(), stepped_fields.len()) == before {
+        if (
+            stepped.len(),
+            given,
+            asked.len(),
+            stepped_fields.len(),
+            zips_of_held.len(),
+        ) == before
+        {
             // And each temporary given whole held across what acts before
             // its step, `map(f).rfold({ k += 1; k }, g)`'s, as one lent: its
             // step reads the form of one made in place (#811).
@@ -1176,7 +1206,7 @@ pub(in crate::lower) fn field_of<'tcx>(
     }
 }
 
-/// Each `&mut` MIR lends a whole local by, `_3 = &mut _4`, by its body: the
+/// Each `&mut` or `&` MIR lends a whole local by, `_3 = &mut _4`, by its body: the
 /// local it lends, which a call given `_3` is given the value of, an
 /// adapter made in place where it's stepped (#851). Not a fact of its own.
 pub(super) fn borrows<'tcx>(
@@ -1189,7 +1219,8 @@ pub(super) fn borrows<'tcx>(
         for data in mir.body.basic_blocks.iter() {
             for statement in &data.statements {
                 if let mir::StatementKind::Assign(assign) = &statement.kind
-                    && let (to, mir::Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of)) = &**assign
+                    && let (to, mir::Rvalue::Ref(_, mir::BorrowKind::Mut { .. } | mir::BorrowKind::Shared, of)) =
+                        &**assign
                     && to.projection.is_empty()
                     && of.projection.is_empty()
                 {

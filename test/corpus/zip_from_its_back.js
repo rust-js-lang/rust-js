@@ -12,7 +12,6 @@ import {
   $held,
   $iter,
   $iterator,
-  $mapEnds,
   $next,
   $nextBack,
   $nthBack,
@@ -278,7 +277,7 @@ function main() {
   let pairs;
   try {
     pairs = $collectDropping(
-      $mapEnds($rev(tmp$8), ([x, y]) => {
+      $rev(tmp$8).map(([x, y]) => {
         const result = [x[0], y[0]];
         dDrop_drop(y);
         dDrop_drop(x);
@@ -352,7 +351,7 @@ function main() {
   }
   try {
     pairs = $collectDropping(
-      $mapEnds($rev(tmp$11), ([x, y]) => {
+      $rev(tmp$11).map(([x, y]) => {
         const result = [x[0], y[0]];
         dDrop_drop(y);
         dDrop_drop(x);

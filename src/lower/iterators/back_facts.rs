@@ -61,6 +61,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || crate::lower::recognition::chained_sources(self.tcx, ty).is_some()
             || crate::lower::recognition::copied_source(self.tcx, ty).is_some()
             || crate::lower::recognition::cloned_source(self.tcx, ty).is_some()
+            || crate::lower::recognition::zipped_sources(self.tcx, ty).is_some()
     }
 
     /// Whether `local`, of the body being lowered, holds what the crate
