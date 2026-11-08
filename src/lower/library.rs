@@ -940,10 +940,16 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     }
 
     /// May `id`, a library's, return `Err(fmt::Error)` (ADR 0187)?
-    /// Of a method called through its impl's dictionary, its dictionary's
-    /// (ADR 0914, amended).
+    /// Of an impl's method, its dictionary's, the library's answer of the
+    /// impl's code wherever it's compiled: called through the dictionary, or
+    /// an instance the crate compiles itself (ADR 0914, amended; #1023).
     pub(super) fn fails(&self, id: DefId) -> bool {
-        let item = self.item(id).or_else(|| self.item(self.through_dictionary(id)?));
+        // As its manifest lists it, which `item` doesn't of an instance.
+        let listed = |id: DefId| match id.is_local() || super::recognition::not_compiled_for_build(self.tcx, id) {
+            true => None,
+            false => self.library(id.krate)?.items.get(&key(self.tcx, id)),
+        };
+        let item = listed(id).or_else(|| listed(self.tcx.trait_impl_of_assoc(id)?));
         item.is_some_and(|item| item.calling.has(ItemFact::Fails))
     }
 

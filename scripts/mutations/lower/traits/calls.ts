@@ -491,10 +491,20 @@ export const mutations: Mutation[] = [
     breaks:
       "`a * b` of a library's type whose `mul` its JS reaches only through the dictionary it exports, rust_decimal's `Decimal`'s, is refused, `calling std::ops::Mul::mul`, where it's `digitsMul.mul(a, b)` (#468, ADR 0914, amended)",
     file: "src/lower/traits/calls.rs",
-    find: "            if let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)? {\n",
+    find: "        if !identity && let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)? {\n",
     replace:
-      "            if false\n                && let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)?\n            {\n",
+      "        if false\n            && let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)?\n        {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: operator_through_dictionary"],
+  },
+  {
+    name: "own-method-through-dictionary-skipped",
+    breaks:
+      "a call of a library's impl's own method its JS reaches only through the dictionary it exports, `Picky`'s own `max`, an `A: PartialEq<B>`'s own `ne`, is taken for std's of what it's recognized as, written in place (#1023)",
+    file: "src/lower/traits/calls.rs",
+    find: "        if !identity && let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)? {\n",
+    replace:
+      "        if !identity\n            && !matches!(self.recognition().trait_call(id, trait_id), Some(TraitCall::Equality { .. } | TraitCall::Ordering))\n            && let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)?\n        {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
   },
   {
     name: "subclass-getter-read-called",
@@ -516,16 +526,17 @@ export const mutations: Mutation[] = [
     name: "generic-ne-by-eq",
     breaks: "generic `a != b` is `!(a == b)`, where Rust calls `ne`, an impl's own (#962)",
     file: "src/lower/traits/calls.rs",
-    find: "            if negate && !identity {\n",
-    replace: "            if negate && !identity && false {\n",
+    find: "            if negate && !identity && self.own_ne_between(lhs, rhs) {\n",
+    replace: "            if negate && !identity && false && self.own_ne_between(lhs, rhs) {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
   },
   {
-    name: "generic-ne-of-other-type-by-eq",
-    breaks: "generic `a != b` of `T: PartialEq<U>` is `!(a == b)`, where Rust calls its `ne`, an impl's own (#962)",
+    name: "ne-between-types-by-eq",
+    breaks:
+      "`a != b` of two types, a generic `T: PartialEq<U>`'s or `&a != &b` of an `A: PartialEq<B>` that writes its own `ne`, is `!(a == b)`, where Rust calls its `ne` (#962, #1023)",
     file: "src/lower/traits/calls.rs",
-    find: "                if lhs.peel_refs() != rhs.peel_refs()\n",
-    replace: "                if lhs.peel_refs() != rhs.peel_refs() && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
+    find: "            if negate && !identity && self.own_ne_between(lhs, rhs) {\n",
+    replace: "            if negate && !identity && lhs.peel_refs() == rhs.peel_refs() && self.own_ne(lhs) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(own_ne_max_min_clamp|ne_between_references_of_two_types).rs$"],
   },
 ];

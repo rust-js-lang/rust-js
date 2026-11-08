@@ -339,4 +339,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
     snapshots: true,
   },
+  {
+    name: "held-field-unnormalized",
+    breaks:
+      "whether a value may hold what the crate changes reads a field's `T::Item` as it's written, not as the bounds where it's asked say, a `Vec`, so a library's generic default's clone of a `Holder<T>` is shared (#1023)",
+    file: "src/lower/copies.rs",
+    find: "                        .unwrap_or(ty)\n",
+    replace: "                        .map(|_| ty)\n                        .unwrap_or(ty)\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
+  },
 ];

@@ -61,11 +61,6 @@ plain std rc-refcell written_through_before_a_panic.rs
 #1022 P2: a pointer read as another type's, in generic code, throws at run time instead of refusing at compile time
 plain std generic bytes_through_pointers.rs
 
-#1023 P0 (library): a library type's own Iterator methods (size_hint, nth_back, rfold, len) and own ne/max are unknown to the crate using it
-plain std library default_method_clones.rs
-plain std library ne_between_two_item_types.rs
-plain std library own_ne_max_min_clamp.rs
-
 #1025 P0 (library): a library's generic code given an IntoIterator dictionary throws IIntoIterator.intoIter is not a function
 plain std library fused_iterators.rs
 plain std library generic_into_iter_values.rs
@@ -128,7 +123,6 @@ plain std library generic_associated_types.rs
 plain std library generic_dictionary_declared_once.rs
 plain std library impl_trait_clone.rs
 plain std library long_spreads.rs
-plain std library own_type_facts.rs
 plain std library refcell_borrow_while_mut.rs
 plain std library track_caller.rs
 plain std library unboxed_type_params.rs

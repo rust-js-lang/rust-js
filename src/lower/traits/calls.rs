@@ -536,6 +536,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let called = Expr::call(self.fn_ref(instance.def_id()), values);
             return Ok(Some(self.fmt_result_value(instance.def_id(), instance.args, called)));
         }
+        // A library's impl's method its JS reaches only through the impl's
+        // dictionary, which it exports, called through it as the crate's own
+        // impl's is called above, before std's own of what it's recognized
+        // as: `a * b` of rust_decimal's `Decimal`, `pickyOrd.max(a, b)` of an
+        // own `max` (ADR 0914, amended; #1023).
+        if !identity && let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)? {
+            let called = Expr::call(entry, values);
+            return Ok(Some(self.fmt_result_value(instance.def_id(), instance.args, called)));
+        }
         // What rust-js writes itself, in place: `c.clone()` of a struct is a
         // copy of it, not a dictionary's `clone` (ADR 0052).
         let known = self.recognition().trait_call(id, trait_id);
@@ -553,19 +562,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // an impl's own, a type parameter's dictionary's, or std's that
             // asks its parts' (#962).
             let (lhs, rhs) = (tr.self_ty(), tr.args.type_at(1));
-            if negate && !identity {
-                if lhs.peel_refs() == rhs.peel_refs() && self.own_ne(lhs) {
-                    return Ok(Some(self.ne_value(a, b, lhs, span, out)?));
-                }
-                let tr = ty::TraitRef::new(self.tcx, trait_id, [lhs.peel_refs(), rhs.peel_refs()]);
-                if lhs.peel_refs() != rhs.peel_refs()
-                    && tr.args.has_non_region_param()
-                    && let Some(dictionary) = self.evidence_for(tr)
-                {
-                    let (a, _) = self.through_refs(a, lhs);
-                    let (b, _) = self.through_refs(b, rhs);
-                    return Ok(Some(Expr::call(Expr::member(dictionary, "ne"), vec![a, b])));
-                }
+            if negate && !identity && self.own_ne_between(lhs, rhs) {
+                return Ok(Some(self.ne_values(a, b, (lhs, rhs), span, out)?));
             }
             // A hand-written `PartialEq<Rhs>` is its own `eq`, whatever `Rhs`
             // is; but not one of a type equal only to itself.
@@ -610,15 +608,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || conversion)
             && (!tr.args.has_non_region_param() || (conversion && self.evidence_for(tr).is_none()))
         {
-            // A library's impl's method its JS reaches only through the
-            // impl's dictionary, which it exports, `a * b` of rust_decimal's
-            // `Decimal`, whose `Mul` its `CheckedMul` reads: called through
-            // it, `decimalMul.mul(a, b)`, as `impl_call`'s are (ADR 0914,
-            // amended).
-            if let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)? {
-                let called = Expr::call(entry, values);
-                return Ok(Some(self.fmt_result_value(instance.def_id(), instance.args, called)));
-            }
             return Ok(None);
         }
         // Not an `IntoIterator` whose `IntoIter` is held as it is, its

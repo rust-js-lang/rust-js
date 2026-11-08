@@ -84,6 +84,14 @@ pub(super) fn asked(tcx: TyCtxt<'_>, asked: Vec<(DefId, LocalModId)>) -> Vec<(De
     more
 }
 
+/// The provided methods of `imp`'s trait that `imp` doesn't write.
+fn defaults_used(tcx: TyCtxt<'_>, imp: DefId) -> impl Iterator<Item = DefId> + '_ {
+    let written = tcx.impl_item_implementor_ids(imp);
+    (tcx.provided_trait_methods(tcx.impl_trait_id(imp)))
+        .map(|item| item.def_id)
+        .filter(move |method| !written.contains_key(method))
+}
+
 /// Which of a library's functions and impls may copy, or clone, a value
 /// of what the crate changes in place, which its library's JS, copying
 /// what its own crate changes, may then share: the crate compiles its own
@@ -149,8 +157,11 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
         let depth = self.asking.borrow().len();
         self.asking.borrow_mut().insert(id);
         let (copies, read) = match tcx.def_kind(id) {
-            DefKind::Impl { of_trait: true } => (tcx.associated_item_def_ids(id).iter())
-                .map(|&method| self.copies_below(method))
+            // Its methods, and its trait's defaults it doesn't write, which
+            // its dictionary holds too (#1023).
+            DefKind::Impl { of_trait: true } => (tcx.associated_item_def_ids(id).iter().copied())
+                .chain(defaults_used(tcx, id))
+                .map(|method| self.copies_below(method))
                 .fold((false, usize::MAX), |(a, at), (b, bt)| (a || b, at.min(bt))),
             DefKind::Fn | DefKind::AssocFn | DefKind::Closure if tcx.is_mir_available(id) => {
                 self.body_copies(tcx.optimized_mir(id))
@@ -257,9 +268,21 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
                             None => callee,
                         }
                     });
+                    // A derive's, which rust-js writes in place where it's
+                    // called, of the caller's types (ADR 0052): its library
+                    // has no JS of it, so it's asked as std's, of what it
+                    // makes here, a `Holder<T>` whose `T::Item` the caller's
+                    // bounds say is a `Vec` (#1023). Not a serde derive's
+                    // codec, which its library exports (ADR 0077).
+                    let derived = |callee: DefId| {
+                        tcx.trait_impl_of_assoc(callee).is_some_and(|imp| {
+                            tcx.is_automatically_derived(imp)
+                                && super::serde::serde_trait(tcx, tcx.impl_trait_id(imp)).is_none()
+                        })
+                    };
                     self.copies |= match resolved {
                         // Its library's, which may copy one itself.
-                        Some(callee) if self.recognition.foreign.is_library(callee.krate) => {
+                        Some(callee) if self.recognition.foreign.is_library(callee.krate) && !derived(callee) => {
                             self.ask(callee);
                             false
                         }

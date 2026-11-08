@@ -517,12 +517,19 @@ pub(super) fn may_hold_changed<'tcx>(
             {
                 false
             }
+            // A field's type as the bounds where it's asked say it is, a
+            // `T::Item` of `T: Iterator<Item = Vec<u32>>` a `Vec` (#1023).
             ty::Adt(adt, args) => {
+                let field_ty = |field: &ty::FieldDef| {
+                    let ty = field.ty(tcx, args).skip_normalization();
+                    (tcx.try_normalize_erasing_regions(recognition.typing_env, ty::Unnormalized::new_wip(ty)))
+                        .unwrap_or(ty)
+                };
                 args.types().any(|arg| walk(recognition, changed, arg, seen))
                     || (!super::recognition::is_std_crate(tcx, adt.did())
                         && adt
                             .all_fields()
-                            .any(|field| walk(recognition, changed, field.ty(tcx, args).skip_normalization(), seen)))
+                            .any(|field| walk(recognition, changed, field_ty(field), seen)))
             }
             _ => false,
         };

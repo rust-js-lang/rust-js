@@ -983,3 +983,37 @@ one whose impl's dictionary the library exports is called through it
 (`through_dictionary`), the instance aside. Thirty-seven of
 #1023's forty library rewrites run as native. Pair test
 `library_iterator_own_size_hint`, mutation `compiled-not-an-instance`.
+
+The last three, amended with the next two answers:
+
+- **An impl's own method its exported dictionary holds is called through
+  it wherever it's called.** The crate's own impl's method a call resolves
+  to is called before std's recognitions of the call; a library's that its
+  JS reaches only through its dictionary was called through it only of an
+  operator, so `Picky(1, 'a').max(..)` of an own `max` and `A(1) != B(2)`
+  of an own `ne` ran std's `max` and `!eq`. `dictionary_entry` is asked
+  where the crate's own is, `pickyOrd.max(a, b)`, `aPartialEqB.ne(a, b)`,
+  and the operator's own ask of it is gone.
+- **Whether a library's impl copies what the crate changes asks its
+  trait's defaults too.** `Copying::copies` of an impl walked the methods
+  it writes, not the defaults its dictionary holds, so a generic default's
+  `h.clone()` of a `Holder<T>` whose `T::Item` is a `Vec` the crate
+  changes was the library's `(h) => h`. A derive the default calls is
+  asked as std's, of the caller's types, rust-js writing it in place, and
+  a field's type as the caller's bounds say, `T::Item` a `Vec`. The crate
+  compiles `sTr` itself and calls it through its own dictionary, as #483
+  calls a default. The contract holds: a consumer's changes are its own,
+  and it compiles what of a library copies them.
+
+- **Whether an impl's method may fail is its library's answer, wherever
+  it's compiled.** A method whose dictionary entry takes `&mut self` boxed
+  is one the crate compiles itself, a writer's `write_str`, and `fails`
+  asked `item`, which lists no instance, so its `fmt::Error` was thrown
+  where Rust gives an `Err`. It reads the manifest's listing of the impl.
+
+Pair test `library_own_methods_through_its_dictionary`; mutations
+`own-method-through-dictionary-skipped` (`lower/traits/calls.ts`),
+`fails-of-an-instance-unlisted` (`lower/library.ts`),
+`impl-defaults-unasked`, `derive-asked-as-its-library`
+(`lower/instances.ts`) and `held-field-unnormalized` (`lower/copies.ts`).
+#1023's forty library rewrites all run as native.

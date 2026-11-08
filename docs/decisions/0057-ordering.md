@@ -347,3 +347,17 @@ array's, a slice's and a `Vec`'s, against native Rust in both builds, and
 the mutations `ne-between-own-ne-unasked`, `ne-between-parameters-known`
 (`lower/std_impls/not_equal.ts`) and `eq-items-ne-of-one-type`
 (`lower/std_impls.ts`).
+
+## Amendment: `!=` asks one answer, of two types as of one (#1023)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results changed:
+the `!=` operator asked `own_ne` of one type, and of two only a type
+parameter's dictionary. `&a != &b` of an `A: PartialEq<B>` that writes its
+own `ne` is std's `impl PartialEq<&B> for &A`, whose `ne` calls `A`'s, and
+it was `!aPartialEqB_eq(a, b)`, printing `eq` where Rust prints `ne`; in a
+single crate too. Now the operator asks `own_ne_between(lhs, rhs)` and
+lowers by `ne_values`, the one answer slices ask (#970), which covers one
+type, two, and a type parameter's. Held by
+`test/corpus/ne_between_references_of_two_types.rs` against native Rust,
+and the mutations `generic-ne-by-eq` and `ne-between-types-by-eq`
+(`lower/traits/calls.ts`).

@@ -328,4 +328,22 @@ export const mutations: Mutation[] = [
       "a library's generic function is its program's",
     ],
   },
+  {
+    name: "impl-defaults-unasked",
+    breaks:
+      "whether a library's impl copies what the crate changes asks only the methods it writes, not its trait's defaults its exported dictionary holds, so a generic default's clone of a `Vec` the crate changes is shared (#1023)",
+    file: "src/lower/instances.rs",
+    find: "                .chain(defaults_used(tcx, id))\n",
+    replace: "                .chain(defaults_used(tcx, id).filter(|_| false))\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
+  },
+  {
+    name: "derive-asked-as-its-library",
+    breaks:
+      "a library's derive a body calls, which rust-js writes in place of the caller's types, is asked generically as its library's code, so a `Holder<T>`'s clone where `T::Item` is a `Vec` the crate changes is shared (#1023)",
+    file: "src/lower/instances.rs",
+    find: "                        Some(callee) if self.recognition.foreign.is_library(callee.krate) && !derived(callee) => {\n",
+    replace: "                        Some(callee) if self.recognition.foreign.is_library(callee.krate) => {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
+  },
 ];

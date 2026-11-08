@@ -720,4 +720,13 @@ export const mutations: Mutation[] = [
     replace: "        !id.is_local() && (self.item(id).is_some() || self.compiles(id))\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_iterator_own_size_hint"],
   },
+  {
+    name: "fails-of-an-instance-unlisted",
+    breaks:
+      "whether a library's impl's method may fail asks `item`, which has none of an instance, so a writer's own `write_str` the program compiles itself throws its `fmt::Error` where it's an `Err` (#1023)",
+    file: "src/lower/library.rs",
+    find: "        let item = listed(id).or_else(|| listed(self.tcx.trait_impl_of_assoc(id)?));\n",
+    replace: "        let item = self.item(id).or_else(|| self.item(self.tcx.trait_impl_of_assoc(id)?));\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
+  },
 ];
