@@ -82,51 +82,9 @@ function main() {
   const value = peek?.[0];
   console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   console.log(
-    `count ${$count(
-      $enumerate(
-        $knowing(
-          it,
-          (iterator) =>
-            peekableDoubleEndedIterator_nextBack(
-              iterator,
-              { next_back: $nextBack },
-              $dropEach(dDrop_drop),
-              dDrop_drop,
-            ),
-          (iterator) => $exactLen($sizeHint(iterator)),
-          (iterator, init, f, unwind, ends) =>
-            peekableDoubleEndedIterator_rfold(
-              iterator,
-              init,
-              f,
-              { next: $next, advanceBy: $advanceSlice },
-              { next_back: $nextBack },
-              $dropEach(dDrop_drop),
-              unwind,
-              ends,
-              dDrop_drop,
-            ),
-          undefined,
-          (iterator, init, f, broke, unwind, ends) =>
-            peekableDoubleEndedIterator_tryRfold(
-              iterator,
-              init,
-              f,
-              { next: $next, advanceBy: $advanceSlice },
-              { next_back: $nextBack },
-              $tryOf(broke),
-              $dropEach(dDrop_drop),
-              unwind,
-              ends,
-              undefined,
-              dDrop_drop,
-            ),
-        ),
-      ),
-      (value) => {
-        dDrop_drop(value[1]);
-      },
-    )}`,
+    `count ${$count($enumerate(it), (value) => {
+      dDrop_drop(value[1]);
+    })}`,
   );
   it = $held(
     iterator_peekable(
@@ -151,42 +109,7 @@ function main() {
     })}`,
   );
   console.log(
-    `count ${$count(
-      $enumerate(
-        $knowing(
-          iterator_fuse({ start: 1, end: 5 }, { next: $rangeNext }, true),
-          (iterator) =>
-            fuseDoubleEndedIterator_nextBack(
-              iterator,
-              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              true,
-            ),
-          (iterator) => fuseExactSizeIterator_len(iterator, { len: $rangeLen }),
-          undefined,
-          (iterator, k) =>
-            fuseDoubleEndedIterator_nthBack(
-              iterator,
-              k,
-              { next: $rangeNext },
-              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              true,
-            ),
-          (iterator, init, f, broke, unwind, ends) =>
-            fuseDoubleEndedIterator_tryRfold(
-              iterator,
-              init,
-              f,
-              { next: $rangeNext },
-              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              $tryOf(broke),
-              true,
-              undefined,
-              unwind,
-              ends,
-            ),
-        ),
-      ),
-    )}`,
+    `count ${$count($enumerate(iterator_fuse({ start: 1, end: 5 }, { next: $rangeNext }, true)))}`,
   );
 
   // Stepped from its back.

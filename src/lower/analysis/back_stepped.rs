@@ -279,15 +279,11 @@ pub(super) fn back_stepped<'tcx>(
                         // which stays made in place up to its `rev()`, past
                         // calls that unwind to the same cleanup (#723), and is
                         // made `$flattenEnds` there.
-                        // And an enumeration of std's struct, `$enumerate` of
-                        // it, which no form of its own steps from the back
-                        // (#712).
                         if held != asked
                             || given
                             || held_arg
                             || dropping_items(recognition, held, &drops)
                             || closure_drops(tcx, held, &drops)
-                            || enumerates_a_compiled_struct(tcx, held)
                         {
                             let made_apart = given || held_arg;
                             let made = back_stepped_adapter(tcx, recognition, held, made_apart, &drops);
@@ -520,14 +516,12 @@ fn back_stepped_adapter<'tcx>(
     // `rev()`, a `skip(n)`, a `take(n)` or a `step_by(n)`, whose form there
     // steps only forward, `$iterator(it, nextBack)` with no back (#823). And
     // of a map or a filter of an array's items with a destructor, held to
-    // drop them whatever it gives (#764); or of std's struct compiled
-    // wherever it's made, `$enumerate` of it, of whatever items (#712).
+    // drop them whatever it gives (#764). One of std's struct, `$enumerate`
+    // of it, is its value's, `unread` (#712, #851).
     if let Some(source) = enumerated_source(tcx, adapter) {
         let item = recognition.iterator_item(adapter);
-        return (item.is_some_and(&drops)
-            || dropping_items(recognition, source.peel_refs(), &drops)
-            || enumerates_a_compiled_struct(tcx, adapter))
-        .then(|| tcx.erase_and_anonymize_regions(adapter));
+        return (item.is_some_and(&drops) || dropping_items(recognition, source.peel_refs(), &drops))
+            .then(|| tcx.erase_and_anonymize_regions(adapter));
     }
     // An `inspect(f)` is made as a map, stepped from its back as one is.
     let mapped = mapped_source(tcx, adapter).or_else(|| inspected_source(tcx, adapter));

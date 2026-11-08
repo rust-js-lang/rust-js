@@ -1397,3 +1397,17 @@ hasn't. What `stepped_locals` records grows by what the set covered:
 - a shared borrow, `len(&self)`'s, lends what it borrows, as a `&mut`
   does, in `stepped_locals` and in the borrows a call's locals are read
   through.
+
+## Amendment: an enumeration's too (2026-11-09, #851 phase B, enumerations)
+
+ADR 0262's case: none where its JS changes for what ran as Rust does; one
+snapshot changes, `enumerate_of_a_reversible_source`'s `count()` of an
+enumeration of std's compiled `Peekable` and `Fuse`, stepped only forward,
+now `$enumerate(it)` where it was `$enumerate($knowing(it, ..))`, as only
+another value of its type is stepped from its back. Whether an
+enumeration is made knowing its back is its value's fact
+(`back_by_value`). What the set covered, an enumeration of std's struct a
+`rev()` asks and `back_stepped_adapter`'s of one, is the value's own rule
+(`unread`, which marks one held where it's stepped from its back), so the
+set's two are gone, with their mutations; `unread`'s has one,
+`enumerate-of-compiled-struct-held-unread`.
