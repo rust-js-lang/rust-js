@@ -174,6 +174,7 @@ function main() {
         console.log(`${noisyShape_name(boxed)}`);
       } catch (error) {
         $cleanup(() => {
+          noisyDrop_drop(boxed);
           holder.shape.impl.$drop?.(holder.shape.value);
         });
         throw error;
@@ -186,6 +187,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           noisyDrop_drop(unboxed);
+          noisyDrop_drop(boxed);
           holder.shape.impl.$drop?.(holder.shape.value);
         });
         throw error;

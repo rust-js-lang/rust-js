@@ -25,31 +25,19 @@ plain std impl-owned result_given_as_items.rs
 plain std impl-owned std_fuse.rs
 plain std impl-owned unrun_function_drops.rs
 
-#967 P0: a `let` boxed, `Box::new(e)`, each use read through it, `(*x)`
-plain std boxed adapters_over_own_next_that_panics.rs
+#980 P0: a read of what a `Box` holds, `*n`, moved past a later write of it, `pair(*n, { *n += 1; *n })`
 plain std boxed alias_reads.rs
 plain std boxed assignment_order.rs
 plain std boxed cache_node_walk.rs
 plain std boxed captured_copy_written_whole.rs
-plain std boxed catch_unwind_drops.rs
 plain std boxed closure_clone_cell.rs
-plain std boxed conditional_move_drops.rs
-plain std boxed contains_guarded_set_again.rs
-plain std boxed drop_partial.rs
-plain std boxed else_break_ends_loop.rs
 plain std boxed given_last_unwinds.rs
 plain std boxed kept_element_ref.rs
 plain std boxed mut_ref_local.rs
+
+#982 P1: a `let` boxed crashes: a boxed iterator stepped from its back or asked its length, `RefCell already borrowed`, an undeclared `place$5`, `debugStack` of `undefined`
+plain std boxed contains_guarded_set_again.rs
+plain std boxed else_break_ends_loop.rs
 plain std boxed nullable_written_through_borrows.rs
-plain std boxed object_made_past_a_drop.rs
-plain std boxed own_fold_unwind_given_on.rs
-plain std boxed own_steps_behind_adapters_unwind.rs
 plain boxed owned_maps_asked_their_length.rs
-plain std boxed panic_in_own_next_drops.rs
-plain std boxed parts_close_past_a_panic.rs
-plain std boxed scoped_drops_cross.rs
 plain boxed std_rev.rs
-plain std boxed struct_update_drops.rs
-plain std boxed untagged_enums.rs
-plain std boxed unwrap_dropping.rs
-plain std boxed wrapping_assign_of_a_copy.rs

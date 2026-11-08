@@ -1563,3 +1563,21 @@ form tried first: in the first, a chain it then makes leaves the last
 pass seed 2's `m38` labeled. 214 of 960 functions, from 221.
 `param_after_call` against native Rust; mutations `fixed-params-none` and
 `fixed-params-in-the-first-pass`.
+
+## Amendment: what's left of a `Box`'s value is dropped (#967)
+
+rustc's drop elaboration, which `mir/drops.rs` follows, drops a `Box`
+some of whose value has moved, `take(*n)` on one way or `Pair { a, ..*p }`,
+by `open_drop_for_box_contents`: what's left of the value, as its own move
+path says, then the box's memory. `open_drop` took a `Box` for the struct
+it is, its pointer and allocator, which drop nothing in JS, so what the box
+still held was never dropped: native `drop kept`, JS nothing. Now a `Box`'s
+open drop is its value's, `*b`, elaborated as its path says, and its flag
+cleared after, as a struct's is. Found by the metamorphic net's `boxed`
+rewrite (#939), 13 of its rewrites.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change;
+Rust's preserved. Held by corpus `boxed_value_partly_moved_drops`
+(native-compared, both builds) and the mutations
+`box-contents-open-drop-as-a-struct` and `box-contents-left-undropped`
+(`lower/mir/drops.ts`).

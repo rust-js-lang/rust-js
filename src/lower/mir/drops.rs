@@ -545,6 +545,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<()> {
         let tcx = self.tcx;
         let ty = place.ty(&state.body.local_decls, tcx).ty;
+        // rustc's `open_drop_for_box_contents`: of a `Box` what it holds of
+        // which has moved, `take(*n)` on one way, `Partial { y, ..*p }`,
+        // what's left of what it holds, as its own path says; its pointer
+        // and allocator drop nothing in JS. Not its fields, which hold
+        // nothing that drops (#967).
+        if ty.is_box() {
+            let interior = tcx.mk_place_deref(place);
+            let drops = state.facts.drops().expect("elaborated");
+            let interior_path =
+                move_path_children_matching(&drops.move_data, path, |elem| matches!(elem, ProjectionElem::Deref));
+            match interior_path {
+                Some(inner) if drops.style(block, inner, true) == Style::Dead => {}
+                Some(inner) => self.elaborate_drop(state, block, (interior, inner), cleanup, span, out)?,
+                None => self.complete_drop(state, block, (interior, path), span, out)?,
+            }
+            if !cleanup && let Some(flag) = &state.naming.flags()[path] {
+                out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js::Span::NONE));
+            }
+            return Ok(());
+        }
         let fields: Vec<Ty<'tcx>> = match ty.kind() {
             ty::Tuple(items) => items.iter().collect(),
             ty::Closure(..) | ty::Coroutine(..) | ty::CoroutineClosure(..) => {

@@ -337,4 +337,20 @@ export const mutations: Mutation[] = [
     replace: "                if drops.drops(block, place) {\n                    let _ = first;\n                    return Some(start);\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps_beside_a_live_drop.rs$"],
   },
+  {
+    name: "box-contents-open-drop-as-a-struct",
+    breaks: "a `Box` whose value moved out on one way, `take(*n)`, is dropped as a struct of its pointer and allocator, which drop nothing, so what it still holds is never dropped (#967)",
+    file: "src/lower/mir/drops.rs",
+    find: "        if ty.is_box() {\n",
+    replace: "        if false && ty.is_box() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_value_partly_moved_drops.rs$"],
+  },
+  {
+    name: "box-contents-left-undropped",
+    breaks: "what's left of a `Box`'s value some of which has moved, `Pair { a, ..*p }`'s `b`, is never dropped (#967)",
+    file: "src/lower/mir/drops.rs",
+    find: "                Some(inner) => self.elaborate_drop(state, block, (interior, inner), cleanup, span, out)?,\n",
+    replace: "                Some(_) => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_value_partly_moved_drops.rs$"],
+  },
 ];
