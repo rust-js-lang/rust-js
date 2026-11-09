@@ -15,9 +15,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a struct with a function named `then` an async fn gives is adopted as a thenable, and its `.await` never resolves",
     file: "src/lower/std_types/future.rs",
-    find: '                field.name.as_str() == "then" && (self.is_callable(held) || self.is_unknown(held))\n',
-    replace:
-      '                false && field.name.as_str() == "then" && (self.is_callable(held) || self.is_unknown(held))\n',
+    find: "                    && (self.is_callable(held) || self.is_unknown(held))\n",
+    replace: "                    && false\n",
     tests: ["test/lowering-functions.test.ts", "-t", "thenable"],
   },
   {
@@ -28,5 +27,21 @@ export const mutations: Mutation[] = [
     find: "            ty::Adt(..) if let Some(inner) = self.option_of(ty) => self.may_be_thenable(inner),\n",
     replace: "",
     tests: ["test/lowering-functions.test.ts", "-t", "thenable"],
+  },
+  {
+    name: "thenable-method-unsettled",
+    breaks: "a class's or an object's value whose method is `then` is resolved as it is, and the promise adopts it: its `.await` never ends (#1071)",
+    file: "src/lower/std_types/future.rs",
+    find: '            ty::Adt(adt, _) if crate::lower::classes::has_method_named(self.tcx, adt.did(), "then") => true,\n',
+    replace: "",
+    tests: ["test/lowering-thenables.test.ts"],
+  },
+  {
+    name: "thenable-field-by-rust-name",
+    breaks: "a field whose JS name is `then`, by `#[rust_js::name]`, is taken for one that isn't, and its value is adopted where it's awaited (#1071)",
+    file: "src/lower/std_types/future.rs",
+    find: '                crate::lower::bindings::field_key(self.tcx, field).name() == Some("then")\n',
+    replace: '                field.name.as_str() == "then"\n',
+    tests: ["test/lowering-thenables.test.ts"],
   },
 ];

@@ -657,4 +657,12 @@ export const mutations: Mutation[] = [
     replace: "                if let Some(at) = None::<rustc_span::Span> {\n",
     tests: ["test/es-classes.test.ts", "-t", "field named constructor is refused"],
   },
+  {
+    name: "thenable-trait-method-unseen",
+    breaks: "a class's method of a trait of classes isn't asked, so its `then` is adopted where its value is awaited (#1071)",
+    file: "src/lower/classes.rs",
+    find: "    inherent.chain(traits).any(named)\n",
+    replace: "    inherent.chain(traits.filter(|_| false)).any(named)\n",
+    tests: ["test/lowering-thenables.test.ts"],
+  },
 ];

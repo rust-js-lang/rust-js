@@ -238,3 +238,24 @@ past what's made", "held past an await" and "dropped unawaited"
 `coroutine-drop-seen`, `quiet-drop-impl-seen`, `get-context-seen`,
 `parameters-future-awaited-seen`, `pin-views-seen`, `ready-made-seen` and
 `ready-awaited-seen`.
+
+## Amendment: a value is a thenable where its JS has a callable `then` (2026-11-09, #1071)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results changed, so
+Rust's are kept. `may_be_thenable` (#172) took a struct for a thenable only
+where a field *named* `then` in Rust held a function, so seven shapes a
+probe of each against native found were adopted where they were awaited,
+the `.await` never ending: a `#[rust_js::class]`'s method `then`, its
+prototype's, of a value an `async fn` gives, in an `Option`, made by an
+`async` block, or given to `std::future::ready`; a `#[rust_js::object]`'s
+method `then`, its own property; a class's method `then` of a trait of
+classes (rd283); and a field given the JS name `then` by
+`#[rust_js::name]`. **A struct may be a thenable where its JS has a
+callable `then`**: a field whose JS key is `then` (`field_key`), and a
+class's or an object's method whose JS name is `then`, of its impls or of a
+trait of classes it implements, the trait's default too
+(`classes::has_method_named`, the classes owner's answer). Each is
+`$settled` and `$unsettled` as #172's are; nothing else changes.
+Held by `test/lowering-thenables.test.ts`, each shape's value native
+Rust's, and the mutations `thenable-method-unsettled`,
+`thenable-field-by-rust-name` and `thenable-trait-method-unseen`.

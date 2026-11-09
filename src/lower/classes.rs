@@ -283,6 +283,31 @@ pub(crate) fn own_methods(tcx: TyCtxt<'_>, adt: DefId) -> Vec<DefId> {
         .collect()
 }
 
+/// Whether a value of `adt`, a class or an object of methods, has a method
+/// whose JS name is `name`, which JS calls of it as it would any property:
+/// its own, an object's (ADR 0943); its prototype's, a class's, of its
+/// impls or of a trait of classes it implements, the trait's default too
+/// (rd283). A promise resolved with one that has a `then` adopts it (#1071).
+pub(crate) fn has_method_named(tcx: TyCtxt<'_>, adt: DefId, name: &str) -> bool {
+    if !is_class(tcx, adt) && !is_object(tcx, adt) {
+        return false;
+    }
+    let named = |item: DefId| {
+        tcx.def_kind(item) == DefKind::AssocFn
+            && tcx.associated_item(item).is_method()
+            && crate::lower::bindings::fn_name(tcx, item) == name
+    };
+    let inherent = (tcx.inherent_impls(adt).iter()).flat_map(|&imp| tcx.associated_item_def_ids(imp).iter().copied());
+    let traits = (tcx.all_local_trait_impls(()).iter())
+        .filter(|(_, impls)| {
+            impls
+                .iter()
+                .any(|imp| trait_impl_class(tcx, imp.to_def_id()) == Some(adt))
+        })
+        .flat_map(|(&trait_id, _)| tcx.associated_item_def_ids(trait_id).iter().copied());
+    inherent.chain(traits).any(named)
+}
+
 /// Is `adt` a JS class, a struct marked `#[rust_js::class]`?
 pub(crate) fn is_class(tcx: TyCtxt<'_>, adt: DefId) -> bool {
     tcx.def_kind(adt) == DefKind::Struct && marked(tcx, adt)

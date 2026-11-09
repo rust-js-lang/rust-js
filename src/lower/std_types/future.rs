@@ -48,8 +48,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a future's output of type `ty` may be a JS thenable, which
     /// a promise resolved with it would adopt (#172): a future itself, a
     /// promise, or what holds one as its value, an `Option`'s, a `Box`'s;
-    /// a struct with a function named `then`; or a type only a caller
-    /// knows. What resolves one gives `$settled(value)`, and its `.await`
+    /// a struct whose JS has a callable `then`, a field's of that JS name
+    /// or a class's or an object's method's (#1071); or a type only a
+    /// caller knows. What resolves one gives `$settled(value)`, and its `.await`
     /// takes `$unsettled(..)` of it: the one answer, of both.
     pub(in crate::lower) fn may_be_thenable(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty.peel_refs());
@@ -73,6 +74,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if let Some(pointer) = self.recognition().pinned(ty) => self.may_be_thenable(pointer),
             // A function, or an `Option` or a `Box` of one, each the function
             // in JS, or what may be one.
+            ty::Adt(adt, _) if crate::lower::classes::has_method_named(self.tcx, adt.did(), "then") => true,
             ty::Adt(adt, args) if adt.is_struct() => adt.non_enum_variant().fields.iter().any(|field| {
                 let held = self.field_ty(field, args);
                 let mut held = self.option_of(held).unwrap_or(held);
@@ -82,7 +84,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     held = inner.type_at(0);
                 }
-                field.name.as_str() == "then" && (self.is_callable(held) || self.is_unknown(held))
+                crate::lower::bindings::field_key(self.tcx, field).name() == Some("then")
+                    && (self.is_callable(held) || self.is_unknown(held))
             }),
             _ => false,
         }
