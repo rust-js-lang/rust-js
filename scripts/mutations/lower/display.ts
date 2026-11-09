@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "time-shown-as-a-number",
+    breaks:
+      "a clock's time or error, its nanoseconds in JS, is padded as a number, `{:>20?}` of a `SystemTimeError` its text as a whole, where std's gives the width to each field",
+    file: "src/lower/display.rs",
+    find: "    Num::of(ty).filter(|_| crate::lower::recognition::clock_type_of(ty).is_none())",
+    replace: "    Num::of(ty)",
+    tests: ["test/corpus.test.ts", "-t", "^(time_debug_as_unix|system_time_error_width_refused)\\.rs$"],
+  },
+  {
     name: "unwrap-err-of-a-failed-write-unread",
     breaks: "`unwrap_err()` of a write that may fail is read as one that never does, and panics though it failed",
     file: "src/lower/display.rs",

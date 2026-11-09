@@ -167,7 +167,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(super::display::shown_text(value));
         }
-        let num = Num::of(ty);
+        let num = super::display::shown_num(ty);
         // `{:x?}` of an integer: its hex, as `{:x}` shows it (ADR 0559). Of
         // another leaf, a string, a float or a `bool`, nothing: std's `fmt`
         // of it reads no hex flag. A composite's passes it to each part, as

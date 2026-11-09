@@ -1322,7 +1322,9 @@ block or an `async` closure is an async arrow
 - **The time is JS's clocks'.** A `SystemTime` and an `Instant` are their
   nanoseconds, a BigInt; `SystemTime::now()` is `Date.now()`'s, to the
   millisecond, and `Instant::now()` is `performance`'s, which only goes
-  forward ([0447](../decisions/0447-the-clock.md)).
+  forward ([0447](../decisions/0447-the-clock.md)). Its `{:?}` is unix's
+  and wasip1's, `SystemTime { tv_sec: 1700000000, tv_nsec: 123000000 }`:
+  rust-js's platform for time is theirs, a platform with a clock.
 
 What's refused of async, threads and time is in
 [the limitations](limitations.md#async-threads-and-time).

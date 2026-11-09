@@ -53,7 +53,7 @@ console.log(`${$debugDuration($instantSince(t2, start))}`);
 5. **A `SystemTimeError`'s `Display` is std's message**, "second time
    provided was later than self", and its `{:?}` is
    `SystemTimeError(1.5s)`. A time's `{:?}` is its platform's fields,
-   which JS hasn't: refused.
+   which JS hasn't: refused (since amended: unix's, below).
 
 ### `a += b` of a number whose `+` is its own
 
@@ -103,3 +103,41 @@ by its value, as it was by its shape before.
   counts from its boot; what an `Instant` is is opaque in std, so only
   its differences are read.
 - A time's `{:?}` is refused, listed in [the limitations](../guide/limitations.md).
+
+## Amendment: a time's `{:?}` is unix's and wasip1's (2026-11-10)
+
+A time's `{:?}` was refused as its platform's fields (#1159), which
+chrono's `test_from_system_time` reaches through `assert_eq!`. **rust-js's
+std platform for time is wasip1's, which is unix's: a `SystemTime`'s
+`{:?}` is `SystemTime { tv_sec: 1700000000, tv_nsec: 123000000 }`, an
+`Instant`'s `Instant { tv_sec: .., tv_nsec: .. }`, its `Timespec`'s
+seconds, before the epoch below zero, and the nanoseconds past them,
+`$timeDebug(name, nanos, options)`; each field is an integer given the
+placeholder's options, as std's `debug_struct` gives them, `{:#?}`'s
+lines, a width, a sign, zeros and `{:x?}`'s hex, an `i64`'s and a `u32`'s.**
+Why unix's, not wasm32-unknown-unknown's `SystemTime(1700000000.123s)`,
+the `_` arm of std's `sys/time` that rustc checks rust-js against: rust-js's
+time already isn't unknown-unknown's, whose `now()` panics "time not
+implemented on this platform", where rust-js's reads the host's clock, as
+wasip1's and unix's do. Its model is a platform with a clock, whose native
+reference is wasip1, which the corpus runs (`//@ native: wasm32`), and it's
+what the same type prints on a native server, Rust across the stack. Case
+1 of ADR 0262 for the target's form: no result changes, `Debug`'s output
+being unstable, and the time shown the same. An `Instant` begins at the
+host's `performance` origin, past the epoch, as a platform's begins past
+its boot: as in std, only the difference of two is meaningful, and its
+fields' values are not the native platform's.
+
+A clock's time and error are their nanoseconds in JS, a `Num`, and a
+struct to their `fmt`s, so a placeholder's options of one aren't applied to
+its text as a whole, as a number's are (`display::shown_num`, the one
+answer `format_value` and `is_debug_leaf` ask): `{:>20?}` of a
+`SystemTimeError` was its text padded, `[    SystemTimeError(1.5s)]`,
+where std's gives the width to its `Duration`, `[SystemTimeError(
+1.5s)]` padded inside, a wrong answer; it's refused, as its other options
+were. Held by `time_debug_as_unix.rs` against wasip1's std and the Mac's,
+`system_time_error_width_refused.rs`, and the mutations
+`time-debug-as-its-error`, `time-shown-as-a-number`,
+`time-debug-options-dropped`, `time-debug-before-epoch-unborrowed` and
+`time-debug-hex-unread`.
+

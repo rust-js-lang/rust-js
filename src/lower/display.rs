@@ -342,7 +342,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A part of a `{:?}` that applies its options itself, as std's `fmt`
     /// does: a number, a `bool` and `()` pad, and a string doesn't.
     pub(super) fn is_debug_leaf(&self, ty: Ty<'tcx>) -> bool {
-        Num::of(ty).is_some() || ty.is_bool() || ty.is_unit() || self.is_string_like(ty)
+        shown_num(ty).is_some() || ty.is_bool() || ty.is_unit() || self.is_string_like(ty)
     }
 
     /// A number, a `bool`, `()` or a string shown in a writer given options
@@ -887,4 +887,12 @@ fn evaluated_first(evaluated: Option<Expr>, shown: Expr) -> Expr {
         Some(value) if !shown.has_effects() => Expr::sequence(vec![value, shown]),
         _ => shown,
     }
+}
+
+/// The number a value of `ty` is to its `fmt`s, which apply a placeholder's
+/// options to its text as a whole: its `Num`, but for a clock's time or
+/// error, its nanoseconds in JS and a struct to its `Debug`, which gives
+/// each field the options (ADR 0447).
+pub(super) fn shown_num(ty: Ty<'_>) -> Option<Num> {
+    Num::of(ty).filter(|_| crate::lower::recognition::clock_type_of(ty).is_none())
 }

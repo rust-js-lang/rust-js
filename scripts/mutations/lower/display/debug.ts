@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "time-debug-as-its-error",
+    breaks: "`{:?}` of a `SystemTime` or an `Instant` is shown as a `SystemTimeError`, `SystemTimeError(1700000000.123s)`",
+    file: "src/lower/display/debug.rs",
+    find: "            if let ClockType::System | ClockType::Instant = clock {",
+    replace: "            if false {",
+    tests: ["test/corpus.test.ts", "-t", "^time_debug_as_unix\\.rs$"],
+  },
+  {
+    name: "time-debug-options-dropped",
+    breaks: "`{:12?}` of a time gives its fields none of the placeholder's options, which are padded in std's",
+    file: "src/lower/display/debug.rs",
+    find: "                if !matches!(pretty, Pretty::Plain) {",
+    replace: "                if pretty.known() != Some(false) {",
+    tests: ["test/corpus.test.ts", "-t", "^time_debug_as_unix\\.rs$"],
+  },
+  {
     name: "numbered-debug-table",
     breaks:
       'a numbered enum\'s `{:?}` reads a table keyed by number, `{ 0: "Empty", .. }[kind]`, where they count from 0 and an array is the table',

@@ -111,11 +111,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::str(" }"),
             ]));
         }
-        // A `SystemTimeError`'s, its `Duration`'s; a time's is its platform's
-        // fields, which JS has none of (ADR 0447).
+        // A `SystemTimeError`'s, its `Duration`'s; a time's is unix's and
+        // wasip1's, its seconds and nanoseconds, rust-js's platform's for
+        // time (ADR 0447).
         if let Some(clock) = crate::lower::recognition::clock_type_of(ty) {
-            if clock != crate::lower::recognition::ClockType::Error {
-                return Err(self.unsupported(span, &format!("`{{:?}}` of a `{ty}`, its platform's fields")));
+            use crate::lower::recognition::ClockType;
+            if let ClockType::System | ClockType::Instant = clock {
+                let name = if clock == ClockType::System {
+                    "SystemTime"
+                } else {
+                    "Instant"
+                };
+                let mut args = vec![Expr::str(name), value];
+                if !matches!(pretty, Pretty::Plain) {
+                    args.push(pretty.options());
+                }
+                return Ok(Expr::call_helper("$timeDebug", args));
             }
             if self.writing.options.is_some() || matches!(pretty, Pretty::Given(..)) {
                 return Err(self.unsupported(span, "options for a `SystemTimeError`'s `{:?}`"));

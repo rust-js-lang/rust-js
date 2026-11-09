@@ -201,7 +201,7 @@ There's one thread ([the semantics](semantics.md#async-threads-and-time)).
 
 - Spawning a thread: `let h = std::thread::spawn(|| 1); println!("{}", h.join().unwrap());`
 - Sleeping: `std::thread::sleep(std::time::Duration::from_millis(1));`
-- A time's `{:?}`, its platform's fields: `println!("{:?}", std::time::Instant::now());`
+- A placeholder's options of a `SystemTimeError`'s `{:?}`, which std's gives its `Duration`: `let e = std::time::UNIX_EPOCH.duration_since(std::time::SystemTime::now()).unwrap_err(); println!("{e:>20?}");`
 - `future::poll_fn`: `let f = std::future::poll_fn(|_| std::task::Poll::Ready(1)); let _ = f;`
 - A future of the crate's held while code that may be seen runs, then awaited, which runs as it's made in JS (#965, [ADR 0029](../decisions/0029-async-await.md), amended): `async fn greet() { println!("hi"); } async fn later() { let f = greet(); println!("first"); f.await; }`
 - A future of the crate's dropped unawaited, whose body may be seen: `async fn greet() { println!("hi"); } async fn never() { let f = greet(); drop(f); }`
