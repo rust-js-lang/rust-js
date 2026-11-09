@@ -1072,6 +1072,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         let tr = tcx.trait_of_assoc(def_id)?;
         let self_ty = args.types().next()?;
+        // `BuildHasherDefault<H>`'s, of std's `BuildHasher` (#1155).
+        if std_path(tcx, tr) == "std::hash::BuildHasher"
+            && matches!(self_ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::BuildHasherDefault))
+        {
+            return match tcx.item_name(def_id).as_str() {
+                "build_hasher" => Some(HashOp::BuildHasher),
+                "hash_one" => Some(HashOp::HashOne),
+                _ => None,
+            };
+        }
         if is_hasher(tcx, tr) && self.std_hasher(self_ty).is_some() {
             return Some(HashOp::Own);
         }

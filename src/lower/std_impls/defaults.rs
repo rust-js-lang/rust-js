@@ -177,6 +177,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .ok_or_else(|| self.unsupported(span, &format!("`Default` of `{ty}`")))?;
                 self.unit_variant(adt.did(), adt.variant_with_ctor_id(variant))
             }
+            // `BuildHasherDefault`'s, which holds nothing but the hasher's
+            // type, a `PhantomData`, as an empty struct's (#1155).
+            ty::Adt(..) if std(StdItem::BuildHasherDefault) => Expr::undefined(),
             // A std hasher's, as its `new()` (ADR 0463).
             ty::Adt(..) if let Some(which) = self.recognition().std_hasher(ty) => {
                 std_types::hash::new_hasher(which, Vec::new())

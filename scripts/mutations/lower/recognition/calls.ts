@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "build-hasher-unrecognized",
+    breaks: "`build_hasher()` of a `BuildHasherDefault` isn't std's, so a call of it is refused (#1155)",
+    file: "src/lower/recognition/calls.rs",
+    find: '                "build_hasher" => Some(HashOp::BuildHasher),\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^build_hasher_default.rs$"],
+  },
+  {
     name: "bool-operator-by-ref-unknown",
     breaks:
       "a `bool`'s `&`, `|` or `^` of `&bool`s, std's forwarding impl, is refused (#319)",

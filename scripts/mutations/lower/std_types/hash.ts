@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "hash-one-of-nothing",
+    breaks: "`hash_one(x)` of a `BuildHasherDefault<DefaultHasher>` writes nothing of `x`, every value's hash an empty hasher's (#1155)",
+    file: "src/lower/std_types/hash.rs",
+    find: "                self.hash_writes(value, call.generic_args.type_at(1), &hasher, call.span, out)?;\n",
+    replace: "                let _ = (value, &hasher);\n",
+    tests: ["test/corpus.test.ts", "-t", "^build_hasher_default.rs$"],
+  },
+  {
     name: "hash-default-hasher-rounds",
     breaks: "`DefaultHasher` is SipHash-2-4, `SipHasher`'s, not SipHash-1-3",
     file: "src/lower/std_types/hash.rs",

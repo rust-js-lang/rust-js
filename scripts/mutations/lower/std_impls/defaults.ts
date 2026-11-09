@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "build-hasher-default-refused",
+    breaks: "`BuildHasherDefault::<DefaultHasher>::default()`, which holds nothing, is refused, so uuid's `test_compare` is (#1155)",
+    file: "src/lower/std_impls/defaults.rs",
+    find: "            ty::Adt(..) if std(StdItem::BuildHasherDefault) => Expr::undefined(),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^build_hasher_default.rs$"],
+  },
+  {
     name: "default-never-panics",
     breaks: "a hand-written `Default` is taken to never panic, so a derived one's fields made before it leak as it does (#902)",
     file: "src/lower/std_impls/defaults.rs",

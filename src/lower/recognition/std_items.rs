@@ -1131,6 +1131,9 @@ pub(crate) fn is_compiled_std_type(tcx: TyCtxt<'_>, id: DefId) -> bool {
 pub(crate) enum StdItem {
     Any,
     Arc,
+    /// `hash::BuildHasherDefault<H>`, which holds nothing, building an
+    /// `H::default()` (#1155).
+    BuildHasherDefault,
     ArrayIntoIter,
     AsMut,
     AsRef,
@@ -1242,6 +1245,7 @@ impl StdItem {
             StdItem::SliceIndex => Symbol::intern("SliceIndex"),
             StdItem::OnceCell => Symbol::intern("OnceCell"),
             StdItem::FutureReady => Symbol::intern("FutureReady"),
+            StdItem::BuildHasherDefault => Symbol::intern("BuildHasherDefault"),
             StdItem::Ord => sym::Ord,
             StdItem::Rc => sym::Rc,
             StdItem::RefCell => Symbol::intern("RefCell"),
@@ -1294,6 +1298,12 @@ pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
         StdItem::FutureReady => {
             tcx.def_kind(id) == DefKind::Struct
                 && tcx.item_name(id).as_str() == "Ready"
+                && of_std_crate(tcx, id, StdCrate::Core)
+        }
+        // `core`'s `hash::BuildHasherDefault`, by its crate and name.
+        StdItem::BuildHasherDefault => {
+            tcx.def_kind(id) == DefKind::Struct
+                && tcx.item_name(id).as_str() == "BuildHasherDefault"
                 && of_std_crate(tcx, id, StdCrate::Core)
         }
         StdItem::OnceCell | StdItem::LazyCell => {

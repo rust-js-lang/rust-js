@@ -37,6 +37,12 @@ pub(in crate::lower) enum HashOp {
     /// `ptr::hash(p, state)`: its pointer's address, as a `*const T`'s
     /// `hash` writes it (ADRs 0562, 0864).
     Address,
+    /// `BuildHasherDefault::<H>`'s `build_hasher()`: an `H::default()`
+    /// (#1155).
+    BuildHasher,
+    /// `BuildHasherDefault::<H>`'s `hash_one(x)`, std's provided body: an
+    /// `H::default()`, `x`'s `Hash` written into it, its `finish()` (#1155).
+    HashOne,
 }
 
 /// What std's `Hash` of a type writes, by the impl's shape.
@@ -135,6 +141,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     &crate::lower::bindings::fn_name(self.tcx, call.def_id),
                     values.collect(),
                 )
+            }
+            HashOp::BuildHasher => {
+                let built = call.generic_args.type_at(0);
+                let ty::Adt(_, of) = built.kind() else {
+                    unreachable!("a `BuildHasherDefault`")
+                };
+                self.default_value(of.type_at(0), call.span)?
+            }
+            HashOp::HashOne => {
+                let built = call.generic_args.type_at(0);
+                let ty::Adt(_, of) = built.kind() else {
+                    unreachable!("a `BuildHasherDefault`")
+                };
+                let hasher_ty = of.type_at(0);
+                let _built = values.next();
+                let value = values.next().expect("what's hashed");
+                let made = self.default_value(hasher_ty, call.span)?;
+                let state = self.spill("hasher", made, out);
+                let hasher = self.hasher(state, hasher_ty, call.span, out)?;
+                self.hash_writes(value, call.generic_args.type_at(1), &hasher, call.span, out)?;
+                hasher.call("finish", Vec::new())
             }
             HashOp::Hash | HashOp::HashSlice | HashOp::Address => {
                 let value = values.next().expect("what's hashed");

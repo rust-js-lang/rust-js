@@ -133,3 +133,19 @@ lang item or name, as `MaybeUninit`, `OnceCell` and `LazyCell`.
 - Mutations: `phantom-data-hash-unrecognized` (`recognition/types.rs`)
   and `nothing-written-looped` (`std_types/hash.rs`).
 - The first bad commit, bisected: 88383e402, this decision's.
+
+## Amendment: `BuildHasherDefault` (2026-11-10, #1155)
+
+uuid's `test_compare` hashes its ids by
+`BuildHasherDefault::<DefaultHasher>::default().hash_one(a)`, refused at
+its `Default`. `BuildHasherDefault<H>` holds nothing but its hasher's type,
+a `PhantomData`, so its `default()` is `undefined`, as an empty struct's
+is (`StdItem::BuildHasherDefault`, `core`'s by its name). Its
+`build_hasher()` is an `H::default()`. Its `hash_one(x)` is std's provided
+body: an `H::default()`, `x`'s `Hash` written into it as `x.hash(&mut h)`
+writes it, and its `finish()`. Of `DefaultHasher`, `new $SipHasher(1, 3)`.
+Case N: the hashes are native Rust's.
+
+Held by the corpus case `build_hasher_default.rs`, against native Rust in
+both builds, and the mutations `build-hasher-default-refused`,
+`hash-one-of-nothing` and `build-hasher-unrecognized`, caught.
