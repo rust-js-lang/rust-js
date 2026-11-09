@@ -17,6 +17,16 @@ impl LineStarts {
         LineStarts(starts)
     }
 
+    /// How many lines the text has: its newlines and one.
+    pub(crate) fn count(&self) -> usize {
+        self.0.len()
+    }
+
+    /// Where line `line`, from 0, starts, if the text has it.
+    pub(crate) fn start(&self, line: usize) -> Option<u32> {
+        self.0.get(line).copied()
+    }
+
     /// The line `offset` is on, from 0: how many newlines are before it,
     /// `text[..offset].matches('\n').count()`.
     pub(crate) fn line(&self, offset: usize) -> u32 {

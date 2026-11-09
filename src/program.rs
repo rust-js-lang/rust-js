@@ -185,9 +185,12 @@ impl Sources {
     /// The line of `text` `offset` is on, from 0: how many newlines are
     /// before it.
     pub fn line_of(&self, offset: usize) -> u32 {
-        self.lines
-            .get_or_init(|| crate::lines::LineStarts::of(&self.text))
-            .line(offset)
+        self.line_starts().line(offset)
+    }
+
+    /// Where each line of `text` starts, found once.
+    pub fn line_starts(&self) -> &crate::lines::LineStarts {
+        self.lines.get_or_init(|| crate::lines::LineStarts::of(&self.text))
     }
 
     /// Which of `files` the arena's `line` is in: the last that starts at or

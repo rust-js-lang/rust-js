@@ -240,11 +240,23 @@ pub fn emit(
     // first (ADR 0658): its line split where its value's JS starts.
     let mut splits: IndexMap<u32, Vec<(u32, &[String])>> = IndexMap::default();
     if let Some(map) = &generated.map {
-        // Where each line of the Rust starts, to read a token's place in it.
-        let line_starts: Vec<u32> = std::iter::once(0)
-            .chain(text.match_indices('\n').map(|(i, _)| i as u32 + 1))
+        // Where each line of the Rust starts, to read a token's place in it:
+        // the crate's text's, found once a crate (`Sources::line_starts`),
+        // then this module's own after it, its comments' text. Each module
+        // found the whole text's, the crate's size again for each (#882).
+        let base = sources.line_starts();
+        let past = sources.text.len();
+        let added: Vec<u32> = (text[past..].match_indices('\n'))
+            .map(|(i, _)| (past + i) as u32 + 1)
             .collect();
-        let offset = |line: u32, column: u32| line_starts.get(line as usize).map(|start| start + column);
+        let offset = |line: u32, column: u32| {
+            let line = line as usize;
+            let start = match line < base.count() {
+                true => base.start(line),
+                false => added.get(line - base.count()).copied(),
+            };
+            start.map(|start| start + column)
+        };
         for (lo, hi, operator, texts) in &arms {
             // The branch's first JS the map places, and back from it, on its
             // line, to the operator it's after, `?`, `:`, `+` or `&&`: an
