@@ -890,9 +890,12 @@ fn evaluated_first(evaluated: Option<Expr>, shown: Expr) -> Expr {
 }
 
 /// The number a value of `ty` is to its `fmt`s, which apply a placeholder's
-/// options to its text as a whole: its `Num`, but for a clock's time or
-/// error, its nanoseconds in JS and a struct to its `Debug`, which gives
-/// each field the options (ADR 0447).
+/// options to its text as a whole: its `Num`, but for a `Duration` or a
+/// clock's time or error, its nanoseconds in JS, whose `Debug` applies the
+/// options by its own rules, a `Duration`'s padding to the left and never
+/// by zeros, a time's to each field (ADRs 0188, 0447).
 pub(super) fn shown_num(ty: Ty<'_>) -> Option<Num> {
-    Num::of(ty).filter(|_| crate::lower::recognition::clock_type_of(ty).is_none())
+    let own_rules =
+        crate::lower::recognition::clock_type_of(ty).is_some() || crate::lower::recognition::is_duration_ty(ty);
+    Num::of(ty).filter(|_| !own_rules)
 }

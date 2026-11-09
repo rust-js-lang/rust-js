@@ -251,9 +251,9 @@ export const mutations: Mutation[] = [
     name: "duration-precision-dropped",
     breaks: "`{:.2?}` of a `Duration` shows it in full, its precision dropped",
     file: "src/lower/format_spec.rs",
-    find: '                Expr::call(Expr::helper("$debugDuration"), vec![value, digits])\n',
+    find: '            return Ok(Expr::call(Expr::helper("$debugDuration"), vec![value, digits]));\n',
     replace:
-      '                Expr::call(Expr::helper("$debugDuration"), vec![value])\n',
+      '            return Ok(Expr::call(Expr::helper("$debugDuration"), vec![value]));\n',
     tests: ["test/corpus.test.ts", "-t", "^format_options_reached.rs$"],
   },
   {

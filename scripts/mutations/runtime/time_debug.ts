@@ -19,4 +19,20 @@ export const mutations: Mutation[] = [
     replace: "    $formatted(String(n), options, true);\n",
     tests: ["test/corpus.test.ts", "-t", "^time_debug_as_unix\\.rs$"],
   },
+  {
+    name: "duration-debug-zero-padded",
+    breaks: "`{:010?}` of a `Duration` is padded by zeros, which std's never is",
+    file: "src/runtime/time_debug.js",
+    find: "  return $pad(text, options.width, align, options.fill);\n",
+    replace: "  return options.zero ? $zeroPad(text, options.width) : $pad(text, options.width, align, options.fill);\n",
+    tests: ["test/corpus.test.ts", "-t", "^duration_debug_options\\.rs$"],
+  },
+  {
+    name: "duration-debug-right-aligned",
+    breaks: "`{:10?}` of a `Duration` is padded to the right, as a number's is, where std's pads it to the left",
+    file: "src/runtime/time_debug.js",
+    find: '  const align = { Left: "<", Right: ">", Center: "^" }[options.align] ?? "<";\n',
+    replace: '  const align = { Left: "<", Right: ">", Center: "^" }[options.align] ?? ">";\n',
+    tests: ["test/corpus.test.ts", "-t", "^duration_debug_options\\.rs$"],
+  },
 ];

@@ -128,17 +128,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 return Ok(Expr::call_helper("$timeDebug", args));
             }
-            if self.writing.options.is_some() || matches!(pretty, Pretty::Given(..)) {
-                return Err(self.unsupported(span, "options for a `SystemTimeError`'s `{:?}`"));
+            // Its `Duration`'s, given the options as std's `debug_tuple`
+            // gives them.
+            if !matches!(pretty, Pretty::Plain) {
+                return Ok(Expr::call_helper(
+                    "$systemTimeErrorDebug",
+                    vec![value, pretty.options()],
+                ));
             }
             let duration = Expr::call(Expr::helper("$debugDuration"), vec![value]);
             return Ok(join(vec![Expr::str("SystemTimeError("), duration, Expr::str(")")]));
         }
-        // A `Duration`'s, in its largest whole unit, `1.5s` (ADR 0188). With
-        // options, std rounds and pads it by its own rules: not yet.
+        // A `Duration`'s, in its largest whole unit, `1.5s` (ADR 0188); given
+        // options, rounded to its precision and padded by std's own rules.
         if crate::lower::recognition::is_duration_ty(ty) {
-            if self.writing.options.is_some() || matches!(pretty, Pretty::Given(..)) {
-                return Err(self.unsupported(span, "options for a `Duration`'s `{:?}`"));
+            if !matches!(pretty, Pretty::Plain) {
+                return Ok(Expr::call_helper("$debugDurationWith", vec![value, pretty.options()]));
             }
             return Ok(Expr::call(Expr::helper("$debugDuration"), vec![value]));
         }

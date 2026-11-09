@@ -201,6 +201,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || spec.align.is_some()
             || spec.fill != ' '
             || spec.zero;
+        // `{:.2?}` of a `Duration`, a precision alone: its fraction to that
+        // many digits, rounded as std's `Debug` rounds it (ADR 0188).
+        if kind == Std::FmtDebug
+            && let Some(digits) = precision.clone()
+            && width.is_none()
+            && !spec.plus
+            && crate::lower::recognition::is_duration_ty(shown)
+        {
+            return Ok(Expr::call(Expr::helper("$debugDuration"), vec![value, digits]));
+        }
         if options && !leaf && matches!(kind, Std::FmtDisplay | Std::FmtDebug) {
             let given = Pretty::Given(options_object(spec, &width, &precision), spec.alternate);
             let options = Options { spec, width, precision };
@@ -260,14 +270,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.unsupported(span, &format!("`{{:e}}` of a `{ty}`")));
                 };
                 exp_text(value, num, upper, precision.clone())
-            }
-            // `{:.2?}` of a `Duration`: its fraction to that many digits,
-            // rounded as std's `Debug` rounds it (ADR 0188).
-            Std::FmtDebug
-                if let Some(digits) = precision.clone()
-                    && crate::lower::recognition::is_duration_ty(ty) =>
-            {
-                Expr::call(Expr::helper("$debugDuration"), vec![value, digits])
             }
             // `{:.2}` of an `f64`: exact, and rounded as Rust rounds.
             _ if let Some(digits) = precision.clone()

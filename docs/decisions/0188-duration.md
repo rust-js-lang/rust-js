@@ -58,3 +58,14 @@ of nanoseconds under one, which rust-js had no value for.
 - **Every operation is of a BigInt,** as a `u64`'s is (ADR 0086).
 - **`*`, `/`, `+=`, `-=`, `sum()` and the other methods are errors** until
   something needs them.
+
+## Amendment: a placeholder's other options (2026-11-10)
+
+A `Duration`'s `{:?}` given a width, a sign, a fill or an alignment was
+padded as a number's text, `{:10?}` to the right and `{:010?}` by zeros,
+where std's `fmt_decimal` pads it to the left and never by zeros, and a
+derived `Debug` holding one gave it no options. **It applies them by std's
+rules, `$debugDurationWith(d, options)`: the precision's digits, a `+`,
+then the width, padded by the fill, to the left where it's not aligned.**
+`{:.2?}`, a precision alone, is `$debugDuration(d, 2)`, as it was. See
+ADR 0447's amendment of 2026-11-10.

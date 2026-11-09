@@ -3746,6 +3746,23 @@ export function $timeDebug(name, nanos, options) {
   const fields = [`tv_sec: ${shown(seconds, 64)}`, `tv_nsec: ${shown(past, 32)}`];
   return options?.alternate ? $pretty(`${name} {`, fields, "}") : `${name} { ${fields.join(", ")} }`;
 }
+// `{:?}` of a `Duration` given a placeholder's options, as std's
+// `fmt_decimal` applies them: `{:.3?}`'s digits, `+`'s sign, then its
+// width, padded by the fill, to the left where it's not aligned, and never
+// by zeros (ADR 0188).
+export function $debugDurationWith(duration, options) {
+  let text = $debugDuration(duration, options?.precision);
+  if (options?.plus) text = "+" + text;
+  if (options?.width === undefined) return text;
+  const align = { Left: "<", Right: ">", Center: "^" }[options.align] ?? "<";
+  return $pad(text, options.width, align, options.fill);
+}
+// `{:?}` of a `SystemTimeError`, its `Duration`'s given the options, as
+// std's derived `debug_tuple` gives them (ADR 0447).
+export function $systemTimeErrorDebug(duration, options) {
+  const shown = $debugDurationWith(duration, options);
+  return options?.alternate ? $pretty("SystemTimeError(", [shown], ")") : `SystemTimeError(${shown})`;
+}
 
 // `a.duration_since(b)` of two `SystemTime`s: `Ok` of the time from `b`
 // to `a`, or `Err` of a `SystemTimeError` of the time `b` is after (ADR

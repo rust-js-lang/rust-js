@@ -7,9 +7,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a clock's time or error, its nanoseconds in JS, is padded as a number, `{:>20?}` of a `SystemTimeError` its text as a whole, where std's gives the width to each field",
     file: "src/lower/display.rs",
-    find: "    Num::of(ty).filter(|_| crate::lower::recognition::clock_type_of(ty).is_none())",
+    find: "    Num::of(ty).filter(|_| !own_rules)",
     replace: "    Num::of(ty)",
-    tests: ["test/corpus.test.ts", "-t", "^(time_debug_as_unix|system_time_error_width_refused)\\.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(time_debug_as_unix|duration_debug_options)\\.rs$"],
   },
   {
     name: "unwrap-err-of-a-failed-write-unread",

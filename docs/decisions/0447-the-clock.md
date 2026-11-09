@@ -128,16 +128,25 @@ host's `performance` origin, past the epoch, as a platform's begins past
 its boot: as in std, only the difference of two is meaningful, and its
 fields' values are not the native platform's.
 
-A clock's time and error are their nanoseconds in JS, a `Num`, and a
-struct to their `fmt`s, so a placeholder's options of one aren't applied to
-its text as a whole, as a number's are (`display::shown_num`, the one
-answer `format_value` and `is_debug_leaf` ask): `{:>20?}` of a
-`SystemTimeError` was its text padded, `[    SystemTimeError(1.5s)]`,
-where std's gives the width to its `Duration`, `[SystemTimeError(
-1.5s)]` padded inside, a wrong answer; it's refused, as its other options
-were. Held by `time_debug_as_unix.rs` against wasip1's std and the Mac's,
-`system_time_error_width_refused.rs`, and the mutations
+A clock's time and error, and a `Duration`, are their nanoseconds in JS, a
+`Num`, which `format_value` padded as a number, its text as a whole; their
+`Debug` applies a placeholder's options by its own rules
+(`display::shown_num`, the one answer `format_value` and `is_debug_leaf`
+ask). A `Duration`'s, std's `fmt_decimal`, rounds to the precision, puts
+a `+` first, then pads to the width by the fill, to the left where it's
+not aligned, and never by zeros; a `SystemTimeError`'s, std's derived
+`debug_tuple`, gives them to its `Duration` (`$debugDurationWith`,
+`$systemTimeErrorDebug`), and a derived `Debug` of the crate's that holds
+one, given options as it runs, gives them on. Three wrong answers were
+found so: `{:>20?}` of a `SystemTimeError` was `[    SystemTimeError(1.5s)]`,
+std's `[SystemTimeError(                1.5s)]`; `{:10?}` of a `Duration`
+was padded to the right, std's to the left, and `{:010?}` by zeros, which
+std's never are; and `{:10?}` of a derived `Debug` holding one left it
+unpadded. `{:.2?}` of one, a precision alone, is `$debugDuration(d, 2)`,
+as it was. Held by `time_debug_as_unix.rs` against wasip1's std and the
+Mac's, `duration_debug_options.rs` against native Rust, and the mutations
 `time-debug-as-its-error`, `time-shown-as-a-number`,
-`time-debug-options-dropped`, `time-debug-before-epoch-unborrowed` and
-`time-debug-hex-unread`.
-
+`time-debug-options-dropped`, `time-debug-before-epoch-unborrowed`,
+`time-debug-hex-unread`, `duration-debug-zero-padded`,
+`duration-debug-right-aligned`, `duration-options-dropped` and
+`system-time-error-options-dropped`.

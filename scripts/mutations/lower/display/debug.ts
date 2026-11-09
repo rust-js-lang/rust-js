@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "duration-options-dropped",
+    breaks: "a `Duration`'s `{:?}` given options, `{:10?}` or a derived `Debug`'s given them as it runs, applies none",
+    file: "src/lower/display/debug.rs",
+    find: "                return Ok(Expr::call_helper(\"$debugDurationWith\", vec![value, pretty.options()]));",
+    replace: "                return Ok(Expr::call(Expr::helper(\"$debugDuration\"), vec![value]));",
+    tests: ["test/corpus.test.ts", "-t", "^duration_debug_options\\.rs$"],
+  },
+  {
+    name: "system-time-error-options-dropped",
+    breaks: "`{:>20?}` of a `SystemTimeError` gives its `Duration` none of the options",
+    file: "src/lower/display/debug.rs",
+    find: "                    \"$systemTimeErrorDebug\",\n                    vec![value, pretty.options()],",
+    replace: "                    \"$systemTimeErrorDebug\",\n                    vec![value],",
+    tests: ["test/corpus.test.ts", "-t", "^duration_debug_options\\.rs$"],
+  },
+  {
     name: "time-debug-as-its-error",
     breaks: "`{:?}` of a `SystemTime` or an `Instant` is shown as a `SystemTimeError`, `SystemTimeError(1700000000.123s)`",
     file: "src/lower/display/debug.rs",
