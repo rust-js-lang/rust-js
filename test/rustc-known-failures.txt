@@ -8,7 +8,6 @@ async-await/async-fn-size-moved-locals.rs	error: rust-js does not support `BigFu
 async-await/async-fn-size-uninit-locals.rs	error: rust-js: this future runs as it's made, as a JS promise does, but it's given where rust-js can't follow when it's awaited (ADR 0029)
 async-await/in-trait/async-default-fn-overridden.rs	error: rust-js does not support calling `std::pin::pin_new_unchecked_in_helper` yet
 async-await/issue-73137.rs	error: rust-js does not support user implementations of `std::task::Wake` yet
-async-await/issues/issue-55809.rs	error: rust-js does not support a `&mut` of a number given back, from its MIR yet
 bench/issue-32062.rs	error: rust-js does not support stepping `I`, which rust-js found nothing here steps yet
 binding/func-arg-incomplete-pattern.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 binding/zero_sized_subslice_match.rs	error: rust-js does not support addressable memory yet: a pointer into what JS may hold a copy of
