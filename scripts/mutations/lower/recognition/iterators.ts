@@ -406,7 +406,7 @@ export const mutations: Mutation[] = [
     find: '                "std::iter::Map"\n                    | "std::iter::Filter"\n                    | "std::iter::FilterMap"\n',
     replace:
       '                "std::iter::Map"\n                    | "std::iter::Filter"\n',
-    tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(filter_ends|held_filter_map_from_its_back).rs$"],
   },
   {
     name: "map-back-unknown",

@@ -1463,3 +1463,15 @@ the set's rules of lengths (`closing-map-asked-unrecorded`,
 `zip-sides-not-back-stepped`, `cloned-source-not-recorded`) no longer
 change what's made, their mutations surviving, as the twelve phase B left
 before: phase C retires them with the set.
+
+## Amendment: a `filter_map`'s and an `inspect`'s too (2026-11-09, #851 phase C)
+
+ADR 0262's case: none; the corpus's JS is the same. Whether a
+`filter_map` or an `inspect` is made knowing its back is its value's fact
+(`back_by_value`), as a map's and a filter's, whose forms they're made
+of, are; a variable that holds one is marked so (`structure.rs`), and a
+`rev()` of it reads the mark. Four more of the set's rules no longer
+change what's made, their mutations surviving the whole corpus
+(`held-given-unrecorded`, `path-call-uncalled`, `chain-sides-unstepped`,
+`chain-side-a-unstepped`): phase C retires them with the set. Left on
+the set: a `rev()`'s, a `skip(n)`'s, a `take(n)`'s and a `step_by(n)`'s.
