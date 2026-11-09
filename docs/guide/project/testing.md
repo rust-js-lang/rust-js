@@ -94,11 +94,13 @@ its library's and its integration tests', `tests/*.rs`. Cargo builds them,
 with rust-js as its wrapper, each dependency compiled to JS as `rust-js
 build` compiles it, and the crate's test runner runs them, Node's by
 default. It writes nothing beside the Rust; what follows `--` is the
-runner's.
+runner's. `--features` and `--no-default-features` are Cargo's, given it
+as they are.
 
 ```bash
 rust-js test
 rust-js test --package models -- --test-name-pattern=quadruples
+rust-js test --no-default-features --features std,v4
 ```
 
 ### The runner

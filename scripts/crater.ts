@@ -399,8 +399,11 @@ async function measure(crate: Crate, build: string): Promise<Verdict> {
   cpSync(from, dir, { recursive: true });
   // Its own lock where it packs one, as its tests were run against.
   const locked = existsSync(join(dir, "Cargo.lock")) ? ["--locked"] : [];
+  // The features its row names, its default ones off, Cargo's own flags,
+  // the same to both runs (#1121).
+  const featured = crate.features ? ["--no-default-features", "--features", crate.features.join(",")] : [];
   const native = await spawned(
-    ["cargo", "test", "--lib", "--no-fail-fast", ...locked],
+    ["cargo", "test", "--lib", "--no-fail-fast", ...locked, ...featured],
     dir,
     { CARGO_TARGET_DIR: join(work, "native"), TZ: zone },
     900,
@@ -443,7 +446,7 @@ async function measure(crate: Crate, build: string): Promise<Verdict> {
   let verdict: Verdict | undefined;
   for (let round = 0; round < 12 && !verdict; round++) {
     const js = await spawned(
-      ["bun", join(root, "tooling", "cli.js"), "test"],
+      ["bun", join(root, "tooling", "cli.js"), "test", ...featured],
       jsDir,
       { RUST_JS_COMPILER: compiler, CARGO_TARGET_DIR: join(work, "js"), TZ: zone },
       1200,

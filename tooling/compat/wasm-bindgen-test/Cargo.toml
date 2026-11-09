@@ -1,0 +1,29 @@
+# rust-js's own wasm-bindgen-test, which an app's dependencies use in place
+# of crates.io's (ADR 1112): `#[wasm_bindgen_test]` is a `#[test]`, which
+# `rust-js test` runs in the JS host. Its version is the newest of
+# crates.io's of its minor, so each `^` requirement takes it.
+[package]
+name = "wasm-bindgen-test"
+version = "0.3.80"
+edition = "2024"
+description = "rust-js's wasm-bindgen-test: a crate's wasm tests as `#[test]`s"
+license = "MIT"
+repository = "https://github.com/rust-js-lang/rust-js"
+publish = false
+
+[lib]
+name = "wasm_bindgen_test"
+path = "src/lib.rs"
+
+[dependencies]
+wasm-bindgen-test-macro = "=0.3.80"
+
+# crates.io's features, by name, so a dependent's ask resolves.
+[features]
+default = ["std"]
+std = []
+
+# A binding crate: rustc checks it and rust-js reads its metadata (ADRs
+# 0024, 0414).
+[package.metadata.rust-js]
+bindings = true

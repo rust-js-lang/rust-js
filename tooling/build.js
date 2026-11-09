@@ -373,10 +373,10 @@ export async function clippyApp({ app, packageNames, lints }) {
  * `[package.metadata.rust-js.test]` names, Node's by default, each module's
  * `.test.js` given it, and `args` before them. Packages of one runner run
  * together; the first exit code that isn't 0, or 0.
- * @param {{ app: string, packageNames?: string[], args?: string[] }} options
+ * @param {{ app: string, packageNames?: string[], features?: string[], noDefaultFeatures?: boolean, args?: string[] }} options
  * @returns {Promise<number>}
  */
-export async function testApp({ app, packageNames = [], args = [] }) {
+export async function testApp({ app, packageNames = [], features = [], noDefaultFeatures = false, args = [] }) {
   const { writePatch } = await import("./patch.js");
   const { runnerCommand } = await import("./runners.js");
   const packages = existsSync(join(app, "package.json")) ? writePatch(app).map(({ name, dir }) => ({ name, dir })) : [];
@@ -393,7 +393,7 @@ export async function testApp({ app, packageNames = [], args = [] }) {
   // done for the next (ADR 0360, amended). Each runner's files, together.
   const byRunner = new Map();
   for (const packageName of named) {
-    const { tests } = await builder.checkCargo({ manifestPath, packageNames: [packageName], packages, targetDir, tests: true, integrationTests: integrationTests.get(packageName) ?? [] });
+    const { tests } = await builder.checkCargo({ manifestPath, packageNames: [packageName], features, noDefaultFeatures, packages, targetDir, tests: true, integrationTests: integrationTests.get(packageName) ?? [] });
     for (const { runner, files } of tests) byRunner.set(runner, [...(byRunner.get(runner) ?? []), ...files]);
   }
   // A crate of no `#[test]`, or none its configuration builds, has no test

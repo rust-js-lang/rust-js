@@ -286,3 +286,31 @@ console.log(JSON.stringify([Math.abs(app.now() - Date.now()) < 1000, app.offsetO
   // chrono's own, natively in New York: 300 minutes west in winter, 240 in summer.
   expect(JSON.parse(ran.stdout)).toEqual([true, 300, 240, 300, 240]);
 }, 600_000);
+
+// A crate's wasm tests, `#[wasm_bindgen_test]`, are `#[test]`s, which
+// `rust-js test` runs as JS, of the features `--features` names, Cargo's
+// own flag; an `async` one, which it runs none of yet, a compile error
+// saying so, never a test left out. Upstream's own wasm-bindgen-test's
+// dependencies, wasm-bindgen-futures, don't keep the patch off: the patch
+// replaces them (ADR 1112).
+test("a crate's #[wasm_bindgen_test]s are #[test]s rust-js test runs, of the features it's given", () => {
+  const dir = fixture("compat-wasm-tests");
+  const tests = (body: string) => `pub fn answer() -> u32 {\n    42\n}\n\n#[cfg(test)]\nmod tests {\n    use wasm_bindgen_test::*;\n\n    wasm_bindgen_test_configure!(run_in_browser);\n\n${body}}\n`;
+  const sync = tests("    #[wasm_bindgen_test]\n    fn answers() {\n        assert_eq!(super::answer(), 42);\n    }\n\n    #[cfg(feature = \"extra\")]\n    #[wasm_bindgen_test]\n    fn extra() {\n        assert_eq!(super::answer() + 1, 43);\n    }\n");
+  const crate = join(dir, "getrandom");
+  mkdirSync(join(crate, "src"), { recursive: true });
+  writeFileSync(join(crate, "Cargo.toml"), '[package]\nname = "getrandom"\nversion = "0.3.4"\nedition = "2024"\n\n[features]\nextra = []\n\n[dev-dependencies]\nwasm-bindgen-test = "0.3"\n');
+  writeFileSync(join(crate, "Cargo.toml.orig"), readFileSync(join(crate, "Cargo.toml"), "utf8"));
+  writeFileSync(join(crate, "src", "lib.rs"), sync);
+  writePatch(crate, [...compatCrates().keys()]);
+  const test = (...args: string[]) => runSync([process.execPath, cli, "test", ...args], crate, 300_000, { RUST_JS_COMPILER: compiler });
+  const ran = test("--features", "extra");
+  expect(ran.code).toBe(0);
+  expect(ran.stdout + ran.stderr).toContain("answers");
+  expect(ran.stdout + ran.stderr).toContain("extra");
+  expect(config(crate)).toContain("wasm-bindgen-test = { path");
+  writeFileSync(join(crate, "src", "lib.rs"), tests("    #[wasm_bindgen_test]\n    async fn later() {}\n"));
+  const refused = test();
+  expect(refused.code).not.toBe(0);
+  expect(refused.stdout + refused.stderr).toContain("rust-js's wasm-bindgen-test doesn't run an `async` test yet");
+}, 600_000);

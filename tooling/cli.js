@@ -9,23 +9,32 @@
 // rust-js reads it, its lint flags after `--`, `-- -D warnings`, as `cargo
 // clippy`'s are (ADR 0888). `rust-js test` runs its library's `#[test]`s as
 // JS, as `cargo test` runs them natively, by the test runner the crate names,
-// its flags after `--` (ADRs 0916, 1076).
+// its flags after `--` (ADRs 0916, 1076), and the crate's features
+// `--features` names and `--no-default-features`, Cargo's own flags,
+// given it as they are.
 // The compiler is this command's, not the app's to run.
 import { buildApp, clippyApp, testApp } from "./build.js";
 
 const usage = (said) => {
-  process.stderr.write(`rust-js: ${said}\nusage: rust-js build [--package <name>]... [--check]\n       rust-js clippy [--package <name>]... [-- <lint flags>]\n       rust-js test [--package <name>]... [-- <test runner flags>]\n`);
+  process.stderr.write(`rust-js: ${said}\nusage: rust-js build [--package <name>]... [--check]\n       rust-js clippy [--package <name>]... [-- <lint flags>]\n       rust-js test [--package <name>]... [--features <features>] [--no-default-features] [-- <test runner flags>]\n`);
   process.exit(2);
 };
 const [command, ...rest] = process.argv.slice(2);
 if (command !== "build" && command !== "clippy" && command !== "test") usage(command === undefined ? "no command" : `unknown command ${command}`);
 let check = false, lints = [];
 const packageNames = [];
+const features = [];
+let noDefaultFeatures = false;
 for (let i = 0; i < rest.length; i++) {
   if (rest[i] === "--check" && command === "build") check = true;
   else if (rest[i] === "--" && (command === "clippy" || command === "test")) {
     lints = rest.slice(i + 1);
     break;
+  } else if (rest[i] === "--no-default-features" && command === "test") noDefaultFeatures = true;
+  else if (rest[i] === "--features" && command === "test") {
+    const list = rest[++i];
+    if (!list || list.startsWith("-")) usage("--features needs the features, `v4,js`");
+    features.push(...list.split(/[,\s]+/).filter(Boolean));
   } else if (rest[i] === "--package") {
     const name = rest[++i];
     if (!name || name.startsWith("-")) usage("--package needs the package's name");
@@ -34,7 +43,7 @@ for (let i = 0; i < rest.length; i++) {
 }
 try {
   if (command === "clippy") process.exitCode = await clippyApp({ app: process.cwd(), packageNames, lints });
-  else if (command === "test") process.exitCode = await testApp({ app: process.cwd(), packageNames, args: lints });
+  else if (command === "test") process.exitCode = await testApp({ app: process.cwd(), packageNames, features, noDefaultFeatures, args: lints });
   else await buildApp({ app: process.cwd(), packageNames, check });
 } catch (error) {
   process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);

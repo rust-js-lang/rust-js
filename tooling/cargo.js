@@ -122,16 +122,28 @@ export async function cargoBuild({ manifestPath, toolchain, offline = false }) {
 /**
  * The crates of Cargo's graph that use one of rust-js's own wasm-bindgen,
  * js-sys or web-sys, or crates.io's of their names, but aren't one of
- * those: each's name and version (ADR 1112, #1129).
+ * those: each's name and version (ADR 1112, #1129). Of the crates reached
+ * from the workspace's members past none of those, whose own dependencies,
+ * crates.io's wasm-bindgen-test's wasm-bindgen-futures say, the patch
+ * replaces with rust-js's.
  * @param {any} metadata Cargo's
  * @param {Map<string, unknown>} compat
  * @returns {{ name: string, version: string }[]}
  */
 function compatDependents(metadata, compat) {
   const byId = new Map(metadata.packages.map((pkg) => [pkg.id, pkg]));
-  return (metadata.resolve?.nodes ?? [])
-    .map((node) => ({ pkg: byId.get(node.id), deps: node.deps.map((dep) => byId.get(dep.pkg)) }))
-    .filter(({ pkg, deps }) => pkg && !compat.has(pkg.name) && deps.some((dep) => dep && compat.has(dep.name)))
+  const nodes = new Map((metadata.resolve?.nodes ?? []).map((node) => [node.id, node]));
+  const reached = new Set();
+  const queue = [...metadata.workspace_members];
+  while (queue.length > 0) {
+    const id = queue.shift();
+    if (reached.has(id) || compat.has(byId.get(id)?.name)) continue;
+    reached.add(id);
+    queue.push(...(nodes.get(id)?.deps ?? []).map((dep) => dep.pkg));
+  }
+  return [...reached]
+    .map((id) => ({ pkg: byId.get(id), deps: (nodes.get(id)?.deps ?? []).map((dep) => byId.get(dep.pkg)) }))
+    .filter(({ pkg, deps }) => pkg && deps.some((dep) => dep && compat.has(dep.name)))
     .map(({ pkg }) => ({ name: pkg.name, version: pkg.version }));
 }
 

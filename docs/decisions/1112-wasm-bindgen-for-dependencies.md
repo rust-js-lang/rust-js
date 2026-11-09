@@ -271,3 +271,28 @@ features, through `rust-js build`, matched native Rust in `America/New_York`
 of chrono's own tests now gets past wasm-bindgen, to chrono's `tz_data.rs`,
 which its tests build: `CStr::from_bytes_with_nul_unchecked` and
 `io::Read::read_exact`, gaps of their own (#1153).
+
+## Amendment: wasm-bindgen-test, and a test's features (2026-11-10, #1121)
+
+uuid's own tests, as many crates' are on wasm32, are `#[wasm_bindgen_test]`
+under `src/`, so the Crater can't leave its dev-dependency out.
+
+- **rust-js has its own wasm-bindgen-test and wasm-bindgen-test-macro**
+  (0.3.80), of the catalog. `#[wasm_bindgen_test]` is a `#[test]`, which
+  `rust-js test` runs as JS. An `async` one is a compile error saying
+  `rust-js test` runs none yet, and so is one of options, `unsupported =
+  test`: never a test left out. `wasm_bindgen_test_configure!(..)` is
+  nothing. Where a test runs, `run_in_browser`, is `rust-js test`'s
+  runner's, which the crate's configuration names (ADR 1076): its tests
+  already run in a JS host, and one that needs a browser says so with
+  `#[cfg_attr(not(browser), ignore)]`.
+- **The patch's gate counts the crates reached past none of rust-js's**:
+  crates.io's wasm-bindgen-test's own wasm-bindgen-futures, which isn't
+  covered, is of a subtree the patch replaces, and no longer holds it off.
+- **`rust-js test` takes Cargo's `--features` and `--no-default-features`**,
+  given as they are, and the Crater gives both runs those its row names,
+  its default ones off, as `docs/crate-corpus.md` says a row's are.
+
+Held by `test/compat.test.ts`: a crate's `#[wasm_bindgen_test]`s run by
+`rust-js test --features extra`, the one of that feature's too, and an
+`async` one refused, saying why.
