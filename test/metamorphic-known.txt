@@ -14,36 +14,34 @@ plain std generic bytes_through_pointers.rs
 plain std library refcell_borrow_while_mut.rs
 
 
-// Round 3 (#939): the families its rewrites found, each under `#0` until
-// it's filed, one issue each, and then under that issue.
-#0 (to file, A) a `&mut` held in an array or a tuple, of a place through a reference an array's item holds, `[&mut cur[0].count]`, reads `cur[0]` again where it's used, not where it's made
+#1075 P0: a &mut stored in an aggregate, of a place reached through a reference held in an array element, re-reads the element where it's used
 plain std array box_read_before_its_write.rs
 plain std array cache_node_walk.rs
 plain std array given_last_unwinds.rs
 plain std array mut_ref_local.rs
 plain std array reference_a_field_holds_set_again.rs
 
-#0 (to file, B) a write through a `for_each` closure's binding of `iter_mut()`'s item isn't a change in place, so `[(1, 'a'); 3].to_vec()` and `vec![row; n]` share one item
+#1076 P0 (copies): a write through a for_each closure's binding of an iter_mut() item isn't an in-place change, so to_vec()/vec![row; n] items share one value
 plain std for-each enumerate_mut_patterns.rs
 plain std for-each table_rows_kept_by_views.rs
 
-#0 (to file, C) a closure read by its address inside another closure that captures it, `|| std::ptr::eq(handler, &loud)`, is `undefined`
+#1077 P0: a closure variable used only as let r: &dyn Fn = &f is merged into function r, so f's other use inside a closure reads undefined
 plain std for-each fn_compared_by_its_pointer.rs
 
-#0 (to file, D) a closure in a closure that sets a variable they capture, `d = D(..)`, names its new value as the variable, `const d = ..; $assign(d, d)`, which hides it
+#1078 P0: in a closure nested two deep, temporaries_names names a new value after the captured variable it shadows: $assign(d, d)
 plain std for-each drop_reassigned_in_inner_loop.rs
 
-#0 (to file, E) an iterator with a destructor that `for_each` consumes isn't dropped where its closure panics
+#1079 P0: an iterator with a destructor consumed by for_each isn't dropped when its closure panics
 plain std for-each copied_iterator_defaults.rs
 
-#0 (to file, F) a generic impl's own method, `Self::Item: IntoIterator`, drops what its `Held<<I::Item as IntoIterator>::IntoIter>`s hold without their field's drop, in std's iterator structs' build
+#1080 P0 (std build): a generic impl's method where Self::Item: IntoIterator drops Held<..IntoIter> without its field's drop
 std default-copy default_of_a_non_blanket_impl_steps_its_self.rs
 
-#0 (to file, H) the address of a numbered field of a tuple struct another tuple struct's field holds, `&raw const held.0.1`, isn't the struct's and its offset
+#1081 P0 (pointers): the address of a numbered field of a repr(C) tuple struct held in a tuple struct's field is off (4100 vs 4)
 plain std tuple-struct address_of_a_struct_a_field_holds.rs
 
-#0 (to file, I) a generic tuple struct's `RefCell<T>` field is made a cell, `[{ value }]`, where it's read as its value, `c[0].push(3)`
+#1082 P0: a generic tuple struct's RefCell<T> field is made as a cell but read as its value, so c[0].push throws
 plain std tuple-struct refcell_generic_field_made.rs
 
-#0 (to file, J) an untagged enum's member tested as an array matches its `otherwise` member too where that's a tuple struct, an array, its overlap never refused
+#1083 P0: an untagged enum's array-tested member also matches a tuple-struct otherwise member, and the overlap isn't refused
 plain std tuple-struct untagged_ref_cells.rs
