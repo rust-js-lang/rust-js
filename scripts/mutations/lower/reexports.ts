@@ -236,16 +236,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "glob-module-left-out",
-    breaks:
-      "a `pub use m::*;` of a module holding a module leaves its namespace out, not refused (rd153)",
-    file: "src/lower/reexports.rs",
-    find: "            DefKind::Mod | DefKind::Struct if matches!(kind, DefKind::Mod) || super::classes::is_class(tcx, id) => {\n",
-    replace:
-      "            DefKind::Struct if super::classes::is_class(tcx, id) => {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "every name of a module"],
-  },
-  {
     name: "forwarded-methods-unexported",
     breaks:
       "a namespace's method that's the function it passes its parameters on to isn't re-exported, so its module has no `batchedUpdates` (rd292b)",
@@ -489,5 +479,22 @@ export const mutations: Mutation[] = [
     find: '        super::bindings::then_export_refused(tcx, *at, &format!("a `pub use` of `{export}`"), alias);\n',
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "another module's function by a pub use as then"],
+  },
+  {
+    name: "glob-module-left-out",
+    breaks:
+      "a glob's module, libm's `support` of `pub use self::math::*;`, isn't re-exported, so a JS importer of `support` gets `undefined`, where a `pub use` of it by its name gives its namespace (#1102)",
+    file: "src/lower/reexports.rs",
+    find: "            DefKind::Mod => match id\n",
+    replace: "            DefKind::Mod if false => match id\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "glob's module is its namespace"],
+  },
+  {
+    name: "glob-class-left-out",
+    breaks: "a `pub use m::*;` of a module holding a class leaves the class out, where it's refused, as it can't be re-exported yet (rd153)",
+    file: "src/lower/reexports.rs",
+    find: "            DefKind::Struct if super::classes::is_class(tcx, id) => {\n",
+    replace: "            DefKind::Struct if false && super::classes::is_class(tcx, id) => {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a pub use of every name of a module, of a class"],
   },
 ];

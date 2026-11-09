@@ -543,9 +543,28 @@ fn globbed(
                     );
                 }
             }
-            DefKind::Mod | DefKind::Struct if matches!(kind, DefKind::Mod) || super::classes::is_class(tcx, id) => {
+            // A module, its namespace, `export * as support from`, as a
+            // `pub use` of it by its name gives it (#1102): the crate's, of
+            // its file; one with no JS, of types alone, nothing; another
+            // crate's of rust-js's has no namespace a consumer knows.
+            DefKind::Mod => match id
+                .as_local()
+                .and_then(|local| paths.get(&LocalModId::new_unchecked(local)))
+            {
+                Some(from) => found.push((
+                    written,
+                    js::ImportFrom::Module(from.clone()),
+                    ("*".to_string(), super::camel_case(&name)),
+                )),
+                None if !id.is_local() && foreign.is_library(id.krate) => refuse(
+                    format!("a `pub use` of every name of a module, of another crate's module `{name}`"),
+                    "`pub use` each of its items by its name",
+                ),
+                None => {}
+            },
+            DefKind::Struct if super::classes::is_class(tcx, id) => {
                 refuse(
-                    format!("a `pub use` of every name of a module, of its module or class `{name}`"),
+                    format!("a `pub use` of every name of a module, of its class `{name}`"),
                     "`pub use` each of its names that has JS by its name",
                 );
             }

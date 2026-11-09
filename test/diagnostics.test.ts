@@ -41,7 +41,7 @@ for (const [name, source, message, crate] of [
   ["a pub use of std's function", "pub use std::cmp::max;\npub fn f() -> u32 { 1 }", "does not support a `pub use` of `std::cmp::max` yet"],
   // Each of a glob's names is re-exported (rd153); a module among them,
   // whose namespace it would be, refused.
-  ["a pub use of every name of a module, of a module", "mod m {\n    pub mod n {\n        pub fn g() -> u32 { 1 }\n    }\n}\npub use m::*;\npub fn f() -> u32 { m::n::g() }", "does not support a `pub use` of every name of a module, of its module or class `n` yet: `pub use` each of its names that has JS by its name"],
+  ["a pub use of every name of a module, of a class", "mod m {\n    #[rust_js::class]\n    pub struct C {\n        pub n: u32,\n    }\n    #[rust_js::class]\n    impl C {\n        pub fn new(n: u32) -> C { C { n } }\n    }\n}\npub use m::*;\npub fn f() -> u32 { m::C::new(1).n }", "does not support a `pub use` of every name of a module, of its class `C` yet: `pub use` each of its names that has JS by its name"],
   ["fields that are one JS property", 'pub struct P { pub first: u32, #[rust_js::name = "first"] pub other: u32 }\npub fn f(p: &P) -> u32 { p.first + p.other }', "both `first` in JS"],
   // A field whose JS name is `__proto__` would set or read its object's
   // prototype where it isn't the object's own (rd754): of each kind.

@@ -436,8 +436,13 @@ its manifest says the file exports
 one that leaves any out, a
 private item the module exports for a module of its own, or a name a
 private `use` shadows, keeps its list
-([ADR 0874, amended](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md#amendment-a-glob-of-every-export-is-export--from-593)). One that has JS but can't be re-exported yet,
-a glob's module or class, or std's function, is refused, never left out
+([ADR 0874, amended](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md#amendment-a-glob-of-every-export-is-export--from-593)).
+A module a glob gives is its namespace, `export * as support from
+"./math/support.js"`, as a `pub use` of it by its name gives it, libm's
+`pub use self::math::*;`
+([ADR 0874, amended](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md#amendment-a-globs-module-is-its-namespace-1102)).
+One that has JS but can't be re-exported yet,
+a glob's class, another crate's module, or std's function, is refused, never left out
 ([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md)):
 
 ```rust

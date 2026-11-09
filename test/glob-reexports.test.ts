@@ -174,6 +174,43 @@ pub fn total() -> u32 {
   expect((await import(join(dir, "out", "lib.js"))).total()).toBe(21);
 });
 
+// libm's `pub use self::math::*;`, whose `math` holds `pub mod support`,
+// was refused, and so num-traits with `libm`, and every crate implementing
+// a num-traits trait, chrono's library among them (#1102): a glob's module
+// is its namespace, `export * as support from`, as a `pub use` of it by
+// its name gives it.
+test("a glob's module is its namespace, as a pub use of it by its name gives it", async () => {
+  const dir = fixture("glob-of-a-module");
+  writeFileSync(join(dir, "lib.rs"), `pub mod math {
+    pub mod support {
+        pub fn helper() -> u32 {
+            7
+        }
+    }
+
+    pub fn floor_of(n: u32) -> u32 {
+        support::helper() + n
+    }
+}
+
+pub use self::math::*;
+
+pub mod named {
+    pub use crate::math::support;
+}
+
+pub fn total() -> u32 {
+    floor_of(1) + support::helper() + named::support::helper()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "out", "lib.js"), "--", ...js]);
+  const read = (file: string) => readFileSync(join(dir, "out", file), "utf8");
+  expect(read("lib.js")).toContain('export * as support from "./math/support.js";\n');
+  expect(read("named.js")).toContain('export * as support from "./math/support.js";\n');
+  const lib = await import(join(dir, "out", "lib.js"));
+  expect([lib.total(), lib.floorOf(2), lib.support.helper()]).toEqual([22, 9, 7]);
+});
+
 // React's markup Flight client config, `pub use
 // react_client::react_client_console_config_plain::*;`, printed `export
 // {bindToConsole} from 'react-client/src/ReactClientConsoleConfigPlain'`,

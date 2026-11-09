@@ -651,3 +651,19 @@ and one of whose names the module's own item shadows, run); mutations
 `library-glob-listed` (`output.ts`), `library-file-exports-unsaid`,
 `library-file-exports-with-default` (`library.ts`),
 `library-glob-file-unasked` (`lower/reexports.ts`).
+
+## Amendment: a glob's module is its namespace (#1102)
+
+A glob's module was refused, "a `pub use` of every name of a module, of its
+module or class": libm's `pub use self::math::*;`, whose `math` holds `pub
+mod support`, so libm, num-traits with its `libm` feature and each crate
+implementing a num-traits trait were types alone, chrono's library in its
+test build among them. A glob's names are rustc's resolution of the
+module's children (`module_children`), and a module among them is now what
+a `pub use` of it by its name gives: the crate's, its namespace, `export *
+as support from "./math/support.js"`; one of types alone, with no JS,
+nothing; another crate's of rust-js's, refused as a `pub use` of it by its
+name is. A class a glob gives stays refused. Held by
+`test/glob-reexports.test.ts` (libm's shape, its namespace imported and
+called) and the mutation `glob-module-left-out`; the class's refusal by
+`test/diagnostics.test.ts` and `glob-class-left-out`.
