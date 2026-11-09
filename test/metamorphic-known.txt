@@ -12,6 +12,3 @@ plain std generic bytes_through_pointers.rs
 
 #rd360 a guard that's only a call's receiver is held while the call runs, of what its arguments run only a borrow rust-js sees asking (ADR 0863, the guide's differences 39): a library's `total(&held)` doesn't
 plain std library refcell_borrow_while_mut.rs
-
-#1077 P0: a closure variable used only as let r: &dyn Fn = &f is merged into function r, so f's other use inside a closure reads undefined
-plain std for-each fn_compared_by_its_pointer.rs

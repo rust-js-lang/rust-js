@@ -173,12 +173,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return None,
         };
-        let closure = matches!(
-            state.body.local_decls[place.local].ty.peel_refs().kind(),
-            ty::Closure(..) | ty::Coroutine(..) | ty::CoroutineClosure(..)
-        );
+        if state.facts.captured_field(place) != Some(field) {
+            return None;
+        }
         let (capture, is_place) = state.facts.captures().get(field.as_usize())?.clone();
-        (closure && is_place).then_some(capture)
+        is_place.then_some(capture)
     }
 
     fn mir_operand_read(

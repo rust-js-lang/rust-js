@@ -95,3 +95,32 @@ Captures:
 - A closure's `clone()` is the same JS function, which shares what it
   captured: only one that never changes what it holds, and holds no
   `Cell` by value, can be cloned. Another is rejected (ADR 0089).
+
+## Amendment: only a closure's own environment is read through its captures (#1077)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, the results changed.
+A closure's body reads what it captured through its environment, `_1`,
+`(*_1).0` its first capture's JS. Which local that was was told by its
+type: any whose type, references peeled, was a closure's. But a closure
+that captures another by reference holds a local of that other's type,
+`_6 = copy (*_1).1`, `&loud`, and a place through it, `&raw const (*_6)`,
+was taken for the environment, read only through its fields, so
+`undefined`: `let check = || std::ptr::eq(handler, &loud)` was `handler
+=== undefined`, `false` where native Rust prints `true`, and the
+metamorphic net's `for-each` rewrite of `fn_compared_by_its_pointer` the
+same of each handler.
+
+**The environment is `_1` of a body given captures, and a capture is its
+field there, `(*_1).k`, or `_1.k` of one called once**:
+`LocalFacts::is_environment` and `LocalFacts::captured_field`, the one
+answer `place_expr`, its projections and `captured_place` ask. A pointer
+through such a local to a closure of no size is the closure's function, as
+anywhere; one to a closure that captures something, never a place JS
+names, is refused as any such pointer is ("a raw pointer to this place"),
+where it was `undefined`.
+
+Held by the corpus case `closure_captures_a_closure_by_reference`, against
+native Rust, and the mutation `environment-any-closure-local`
+(`lower/mir/local_facts.ts`). The net's `for-each` rewrite of
+`fn_compared_by_its_pointer`, now refused at its capturing closure's
+pointer, is off its list.

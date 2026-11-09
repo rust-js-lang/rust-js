@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "environment-any-closure-local",
+    breaks: "a closure's body's local of a closure's type, `&loud` it holds of a closure it captured, is taken for its own environment, read only through its fields: `handler === undefined` where native Rust compares `true` (#1077)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "        !self.captures.is_empty() && local == Local::from_u32(1)\n",
+    replace: "        !self.captures.is_empty() && (local == Local::from_u32(1) || local.as_u32() > 1)\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_captures_a_closure_by_reference.rs$"],
+  },
+  {
     name: "quiet-with-borrow-of-another-module",
     breaks:
       "another module's quiet thread-local's `with_borrow` is given its value where it's lowered, not as that module's import reads it (ADR 0866, amended)",

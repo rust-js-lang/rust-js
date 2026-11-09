@@ -217,8 +217,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&mut` of a number a closure captured as its place, copied into a local by optimized MIR, is read as a box, `take.n.value`, in std's `Take::try_fold` (ADR 0913)",
     file: "src/lower/mir/operands.rs",
-    find: "        (closure && is_place).then_some(capture)\n",
-    replace: "        (closure && is_place && false).then_some(capture)\n",
+    find: "        is_place.then_some(capture)\n",
+    replace: "        (is_place && false).then_some(capture)\n",
     tests: [
       "test/std-package.test.ts",
       "-t",

@@ -120,11 +120,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 }
             }
-        } else if matches!(
-            state.body.local_decls[place.local].ty.peel_refs().kind(),
-            ty::Closure(..) | ty::Coroutine(..) | ty::CoroutineClosure(..)
-        ) && !state.facts.captures().is_empty()
-        {
+        } else if state.facts.is_environment(place.local) {
             // A closure's environment, read only through its fields.
             Expr::undefined()
         } else {
@@ -184,10 +180,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             placed = false;
-            value = match (ty.ty.peel_refs().kind(), elem) {
+            value = match elem {
                 // Of a closure's environment, `(*_1).0`: what it captured.
-                (ty::Closure(..) | ty::Coroutine(..) | ty::CoroutineClosure(..), PlaceElem::Field(field, _))
-                    if !state.facts.captures().is_empty() =>
+                PlaceElem::Field(field, _)
+                    if place.projection[..at].iter().all(|e| *e == PlaceElem::Deref)
+                        && state.facts.captured_field(&place) == Some(field) =>
                 {
                     let (capture, is_place) = state.facts.captures()[field.as_usize()].clone();
                     placed = is_place;

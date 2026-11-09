@@ -265,6 +265,28 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
         &self.captures
     }
 
+    /// The capture `place` reads, of a closure's or a coroutine's body that
+    /// captured something: its environment's field, `(*_1).0`, or `_1.0`
+    /// of one called once, its `_1`. Not a field of another local of a
+    /// closure's type, `&loud` the body holds of a closure it captured,
+    /// whose own captures these aren't (#1077).
+    pub(super) fn captured_field(&self, place: &Place<'_>) -> Option<FieldIdx> {
+        if self.captures.is_empty() || place.local != Local::from_u32(1) {
+            return None;
+        }
+        match place.projection.as_slice() {
+            [PlaceElem::Deref, PlaceElem::Field(field, _), ..] | [PlaceElem::Field(field, _), ..] => Some(*field),
+            _ => None,
+        }
+    }
+
+    /// Whether `local` is the environment of a closure's or a coroutine's
+    /// body that captured something, `_1`, read only through its fields
+    /// (`captured_field`).
+    pub(super) fn is_environment(&self, local: Local) -> bool {
+        !self.captures.is_empty() && local == Local::from_u32(1)
+    }
+
     pub(super) fn quiet_cells(&self) -> &QuietCells {
         &self.quiet_cells
     }
