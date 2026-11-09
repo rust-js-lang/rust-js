@@ -132,15 +132,7 @@ export const mutations: Mutation[] = [
     replace: "        let _ = (clauses, param_env);\n",
     tests: ["test/corpus.test.ts", "-t", "^default_where_clause_item_drops.rs$"],
   },
-  {
-    name: "default-where-clause-unnormalized",
-    breaks:
-      "a copied default's where clause of a non-blanket impl, `<Wrapper<I> as Iterator>::Item: IntoIterator`, isn't in the impl's terms as its body is, `I::Item`, so its `Held`'s `iter` is never dropped (#803)",
-    file: "src/lower/traits/drop_params.rs",
-    find: "                (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(clause))).unwrap_or(clause)\n",
-    replace: "                clause\n",
-    tests: ["test/corpus.test.ts", "-t", "^(default_of_a_non_blanket_impl_steps_its_self).rs$"],
-  },
+
   {
     name: "unmet-slot-fact-given",
     breaks:
@@ -167,5 +159,21 @@ export const mutations: Mutation[] = [
     replace: "        ty::Param(param) => Some(param.index),\n",
     tests: ["test/corpus.test.ts", "-t", "^default_own_param_numbered_as_the_impls.rs$"],
     snapshots: true,
+  },
+  {
+    name: "impl-written-clauses-unslotted",
+    breaks: "a method an impl writes, `where Self::Item: IntoIterator`, isn't given its items' iterator's drop by the impl's dictionary, so a caller through it drops each `Held` without its field's (#1080)",
+    file: "src/lower/traits/drop_params.rs",
+    find: "    for &own in tcx.associated_item_def_ids(id) {\n        if !matches!(tcx.def_kind(own), DefKind::AssocFn) {\n",
+    replace: "    for &own in tcx.associated_item_def_ids(id) {\n        if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_method_drops_its_items_iterator.rs$"],
+  },
+  {
+    name: "bound-self-unnormalized",
+    breaks: "a bound on an impl's `Self::Item`, `<Wrapper<I> as Iterator>::Item`, isn't seen as one on `<I as Iterator>::Item`, a slot, so the method reads its items' iterator's drop of std's `IntoIterator` dictionary, which carries none, and drops each `Held` without its field's (#1080)",
+    file: "src/lower/traits/drop_params.rs",
+    find: "        let self_ty = (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(bound.self_ty())))\n            .unwrap_or(bound.self_ty());\n",
+    replace: "        let self_ty = bound.self_ty();\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_method_drops_its_items_iterator.rs$"],
   },
 ];

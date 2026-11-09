@@ -274,8 +274,8 @@ pub(in crate::lower) fn drop_items<'tcx>(
 /// IntoIterator` of a `Self::Item: IntoIterator`, where the impl's bounds
 /// and it hold: the impl's dictionary is given the drops a default copied
 /// into it asks of them, as no caller of the default gives any (ADR 0478,
-/// #798). Not one of the default's own parameters, which its caller gives
-/// (`own_drop_params`).
+/// #798); and each method's the impl writes, alike (#1080). Not one of the
+/// default's own parameters, which its caller gives (`own_drop_params`).
 fn slot_bounds<'tcx>(tcx: TyCtxt<'tcx>, id: DefId) -> Vec<(Vec<ty::Clause<'tcx>>, ty::TypingEnv<'tcx>)> {
     let typing_env = ty::TypingEnv::non_body_analysis(tcx, id);
     let own = (tcx.clauses_of(id).instantiate_identity(tcx).into_iter())
@@ -288,6 +288,7 @@ fn slot_bounds<'tcx>(tcx: TyCtxt<'tcx>, id: DefId) -> Vec<(Vec<ty::Clause<'tcx>>
     let tr = tcx.impl_trait_ref(id).instantiate_identity().skip_normalization();
     let overridden = tcx.impl_item_implementor_ids(id);
     let trait_count = tcx.generics_of(tr.def_id).count() as u32;
+    let mut methods: Vec<Vec<ty::Clause<'tcx>>> = Vec::new();
     for item in tcx.associated_items(tr.def_id).in_definition_order() {
         // A default the impl keeps.
         if !matches!(item.kind, ty::AssocKind::Fn { .. })
@@ -304,20 +305,35 @@ fn slot_bounds<'tcx>(tcx: TyCtxt<'tcx>, id: DefId) -> Vec<(Vec<ty::Clause<'tcx>>
         // A trait's bound or an associated type's equality, of the impl's
         // parameters alone: none of the default's own, which aren't the
         // impl's, and its caller gives the drops of.
-        let clauses: Vec<ty::Clause<'tcx>> = (tcx.clauses_of(item.def_id).clauses.iter())
-            .filter(|&&(clause, _)| names_only(clause, |index| index < trait_count))
-            // As the impl's bounds name them, as its body has them: `I::Item`
-            // of a `Wrapper<I>`'s `Self::Item` (#803).
-            .map(|&(clause, _)| {
-                let clause = ty::EarlyBinder::bind(tcx, clause)
-                    .instantiate(tcx, args)
-                    .skip_normalization();
-                (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(clause))).unwrap_or(clause)
-            })
-            .collect();
-        if clauses.is_empty() {
+        methods.push(
+            (tcx.clauses_of(item.def_id).clauses.iter())
+                .filter(|&&(clause, _)| names_only(clause, |index| index < trait_count))
+                .map(|&(clause, _)| {
+                    ty::EarlyBinder::bind(tcx, clause)
+                        .instantiate(tcx, args)
+                        .skip_normalization()
+                })
+                .collect(),
+        );
+    }
+    // And each method the impl writes itself, as a default it keeps: its own
+    // where clause of the impl's parameters alone, `Self::Item:
+    // IntoIterator` of a `Wrapper<I>`'s `held`, `<I as Iterator>::Item:
+    // IntoIterator` in the impl's terms, whose drops its dictionary is given
+    // too, as no caller through it knows them (#1080).
+    let impl_count = tcx.generics_of(id).count() as u32;
+    for &own in tcx.associated_item_def_ids(id) {
+        if !matches!(tcx.def_kind(own), DefKind::AssocFn) {
             continue;
         }
+        methods.push(
+            (tcx.clauses_of(own).clauses.iter())
+                .filter(|&&(clause, _)| names_only(clause, |index| index < impl_count))
+                .map(|&(clause, _)| clause)
+                .collect(),
+        );
+    }
+    for clauses in methods.into_iter().filter(|clauses| !clauses.is_empty()) {
         let held =
             (typing_env.param_env.caller_bounds().iter()).chain(ty::elaborate::elaborate(tcx, clauses.iter().copied()));
         let param_env = ty::ParamEnv::new(tcx.mk_clauses_from_iter(held));
@@ -338,7 +354,11 @@ fn drop_items_of<'tcx>(
         let Some(bound) = clause.as_trait_clause().and_then(|b| b.no_bound_vars()) else {
             continue;
         };
-        let self_ty = bound.self_ty();
+        // As the bounds here say it is, as the body has it: an impl's
+        // `Self::Item`, `<Wrapper<I> as Iterator>::Item`, is `<I as
+        // Iterator>::Item`, a slot (#803, #1080).
+        let self_ty = (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(bound.self_ty())))
+            .unwrap_or(bound.self_ty());
         let slotted = matches!(self_ty.kind(), ty::Param(_))
             || (alias_of(self_ty).is_some() && items.iter().any(|&t| alias_of(t) == alias_of(self_ty)));
         if !slotted {
@@ -354,7 +374,9 @@ fn drop_items_of<'tcx>(
             }
             // A supertrait's of no parameter but `Self`, whose arguments are its.
             let args = match tr == bound.def_id() {
-                true => bound.trait_ref.args,
+                true => {
+                    tcx.mk_args_from_iter(std::iter::once(self_ty.into()).chain(bound.trait_ref.args.iter().skip(1)))
+                }
                 false if tcx.generics_of(tr).count() == 1 => tcx.mk_args(&[self_ty.into()]),
                 false => continue,
             };

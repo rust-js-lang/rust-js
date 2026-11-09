@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1980
-lines	237442
+files	1983
+lines	237715
 temporaries	0	0
 labeled blocks	0	0
 while (true)	190	8
-$iter	2182	91.9
+$iter	2183	91.8
 Iterator.from	193	8.1
-return;	291	12.3
-renamed x$1	12228	515
+return;	291	12.2
+renamed x$1	12240	514.9
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0
 test/corpus/adapter_drops.js	1697	0	0	1	18	3	1	98
@@ -262,6 +262,7 @@ test/corpus/closure_folded_by_value_panics.js	222	0	0	0	4	0	0	20
 test/corpus/closure_function_comments.js	55	0	0	0	0	0	0	0
 test/corpus/closure_giving_back_a_write_error.js	66	0	0	0	0	0	0	0
 test/corpus/closure_holding_part_of_a_value.js	154	0	0	0	0	0	0	10
+test/corpus/closure_in_closure_sets_a_capture.js	33	0	0	0	0	0	0	4
 test/corpus/closure_mut_ref.js	58	0	0	0	0	0	0	0
 test/corpus/closure_once_cloned.js	57	0	0	0	0	0	0	9
 test/corpus/closure_returned_early_set.js	89	0	0	0	0	0	0	8
@@ -325,8 +326,9 @@ test/corpus/const_returned_copied.js	31	0	0	0	0	0	0	0
 test/corpus/const_too_large.js	13	0	0	0	0	0	0	0
 test/corpus/constructor_given_as_a_field_function.js	16	0	0	0	0	0	0	0
 test/corpus/consumed_adapter_drops.js	33	0	0	0	3	0	0	0
+test/corpus/consumed_iterator_dropped_as_its_function_panics.js	109	0	0	0	0	0	0	8
 test/corpus/consumed_own_iterator_dropped_once.js	427	0	0	0	0	1	0	8
-test/corpus/consumer_closure_dropped_first.js	540	0	0	0	3	0	0	48
+test/corpus/consumer_closure_dropped_first.js	539	0	0	0	3	0	0	48
 test/corpus/consumer_drops_what_is_left.js	573	0	0	0	20	0	0	44
 test/corpus/consumers_step_each.js	58	0	0	0	0	0	0	0
 test/corpus/contains_guarded_borrow.js	28	0	0	0	0	0	0	0
@@ -658,7 +660,7 @@ test/corpus/fn_pointer_closure_borrows_held.js	29	0	0	0	0	0	0	0
 test/corpus/fn_pointer_eq.js	28	0	0	0	0	0	0	0
 test/corpus/fn_pointer_of_borrowed_struct.js	18	0	0	0	0	0	0	0
 test/corpus/fold_back_drops_what_it_takes.js	109	0	0	0	0	0	0	0
-test/corpus/fold_drops_moved_function_first.js	1743	0	0	1	42	0	1	121
+test/corpus/fold_drops_moved_function_first.js	1742	0	0	1	42	0	1	121
 test/corpus/fold_from_none.js	36	0	0	0	0	0	0	6
 test/corpus/folded_call_panic_drops.js	24	0	0	0	0	0	0	0
 test/corpus/folded_functions_drop_before_the_rest.js	882	0	0	1	6	0	1	150
@@ -835,6 +837,7 @@ test/corpus/impl_const_size.js	28	0	0	0	0	0	0	0
 test/corpus/impl_const_string.js	36	0	0	0	0	0	0	0
 test/corpus/impl_fn_consts.js	59	0	0	0	0	0	0	0
 test/corpus/impl_fn_mut_lent.js	31	0	0	0	0	0	0	3
+test/corpus/impl_method_drops_its_items_iterator.js	135	0	0	0	1	0	0	0
 test/corpus/impl_named_like_a_function.js	61	0	0	0	0	0	0	3
 test/corpus/impl_names.js	81	0	0	0	0	0	0	0
 test/corpus/impl_trait_clone.js	50	0	0	0	0	0	0	2
@@ -886,7 +889,7 @@ test/corpus/io_write_impl.js	114	0	0	0	0	0	0	0
 test/corpus/io_write_mut_generic.js	47	0	0	0	0	0	0	9
 test/corpus/io_writers.js	78	0	0	0	0	0	0	3
 test/corpus/is_sorted_items.js	56	0	0	0	2	0	0	0
-test/corpus/item_keyed_map.js	152	0	0	0	3	0	0	2
+test/corpus/item_keyed_map.js	151	0	0	0	3	0	0	2
 test/corpus/item_written_of_its_own_read.js	21	0	0	0	0	0	0	0
 test/corpus/iter_by_ref.js	85	0	0	0	1	0	0	10
 test/corpus/iter_compare.js	52	0	0	0	10	0	0	0
@@ -932,7 +935,7 @@ test/corpus/lane_bits.js	154	0	0	0	0	0	0	3
 test/corpus/last_fold_gives_back_what_it_kept.js	221	0	0	0	8	0	0	0
 test/corpus/last_kept_drop_panics.js	126	0	0	0	6	1	0	0
 test/corpus/last_option_drops.js	125	0	0	0	5	0	0	0
-test/corpus/last_takes_its_source.js	738	0	0	1	0	4	4	32
+test/corpus/last_takes_its_source.js	737	0	0	1	0	4	4	32
 test/corpus/late_let_before_written_else.js	56	0	0	0	0	0	0	0
 test/corpus/layout_new.js	20	0	0	0	0	0	0	0
 test/corpus/lazy_cell_reentrant.js	21	0	0	0	0	0	0	0

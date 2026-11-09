@@ -547,6 +547,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // as: `a * b` of rust_decimal's `Decimal`, `pickyOrd.max(a, b)` of an
         // own `max` (ADR 0914, amended; #1023).
         if !identity && let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)? {
+            // Given as through any dictionary, its own bounds' evidence too,
+            // `Self::Item: IntoIterator`'s dictionary of a `held` (#1080).
+            let values = self.through_dictionary(id, generic_args, values, span, out)?;
             let called = Expr::call(entry, values);
             return Ok(Some(self.fmt_result_value(instance.def_id(), instance.args, called)));
         }
@@ -636,24 +639,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if operational(self.tcx, self.krate.foreign, trait_id) {
             // Of the impl's terms, in a copied default (ADR 0495).
             let dictionary = self.dictionary(tr, span)?;
-            let mut values = values;
-            // A range or an iterator of the crate's, or one given as it is,
-            // where a method's own generic `IntoIterator` goes, a JS iterator,
-            // as a function's (ADRs 0445, 0551).
-            let given = (self.tcx.fn_sig(id).instantiate(self.tcx, generic_args))
-                .skip_normalization()
-                .skip_binder()
-                .inputs()
-                .to_vec();
-            self.given_iterators(id, &mut values, &given, span, out)?;
-            let location = self.caller_location(span);
-            values.extend(self.own_evidence(id, generic_args, Some(location), span)?);
+            let values = self.through_dictionary(id, generic_args, values, span, out)?;
             return Ok(Some(Expr::call(
                 Expr::member(dictionary, bindings::fn_name(self.tcx, id)),
                 values,
             )));
         }
         Ok(None)
+    }
+
+    /// `values`, the arguments of trait method `id` called through a
+    /// dictionary, a type parameter's or one a library exports, as it takes
+    /// them there: a range or an iterator of the crate's, or one given as it
+    /// is, where a method's own generic `IntoIterator` goes, a JS iterator, as
+    /// a function's (ADRs 0445, 0551), then its own bounds' evidence
+    /// (`own_evidence`).
+    fn through_dictionary(
+        &mut self,
+        id: DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        mut values: Vec<Expr>,
+        span: Span,
+        out: &mut Vec<js::Stmt>,
+    ) -> R<Vec<Expr>> {
+        let given = (self.tcx.fn_sig(id).instantiate(self.tcx, generic_args))
+            .skip_normalization()
+            .skip_binder()
+            .inputs()
+            .to_vec();
+        self.given_iterators(id, &mut values, &given, span, out)?;
+        let location = self.caller_location(span);
+        values.extend(self.own_evidence(id, generic_args, Some(location), span)?);
+        Ok(values)
     }
 
     /// What a trait's generic method is given where it's called through a

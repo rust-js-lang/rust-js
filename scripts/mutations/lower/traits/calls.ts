@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`SShape.describe(s, label)` in generic code isn't given `T`'s `Display`, and the entry reads `undefined`",
     file: "src/lower/traits/calls.rs",
-    find: "            let location = self.caller_location(span);\n            values.extend(self.own_evidence(id, generic_args, Some(location), span)?);\n",
+    find: "        let location = self.caller_location(span);\n        values.extend(self.own_evidence(id, generic_args, Some(location), span)?);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "generic_trait_methods"],
   },
@@ -299,8 +299,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a range given a trait's method through its dictionary, `c.extend(0..n)` of a `C: Extend`, or a `&mut Self` given as it is, isn't a JS iterator",
     file: "src/lower/traits/calls.rs",
-    find: "            self.given_iterators(id, &mut values, &given, span, out)?;\n            let location",
-    replace: "            let location",
+    find: "        self.given_iterators(id, &mut values, &given, span, out)?;\n        let location",
+    replace: "        let location",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -538,5 +538,14 @@ export const mutations: Mutation[] = [
     find: "            if negate && !identity && self.own_ne_between(lhs, rhs) {\n",
     replace: "            if negate && !identity && lhs.peel_refs() == rhs.peel_refs() && self.own_ne(lhs) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(own_ne_max_min_clamp|ne_between_references_of_two_types).rs$"],
+  },
+
+  {
+    name: "library-entry-own-evidence-ungiven",
+    breaks: "a consumer's call of a library impl's own generic method through its exported dictionary gives its arguments alone, none of the method's own bounds' evidence, `Self::Item: IntoIterator`'s dictionary: `TypeError` reading `intoIter` (#1080)",
+    file: "src/lower/traits/calls.rs",
+    find: "            let values = self.through_dictionary(id, generic_args, values, span, out)?;\n            let called = Expr::call(entry, values);\n",
+    replace: "            let called = Expr::call(entry, values);\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_impl_method_where_clause"],
   },
 ];
