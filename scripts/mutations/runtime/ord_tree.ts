@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
     file,
     find: "          held && (() => held(entry)),\n          dropMade(made),\n",
     replace: "          dropMade(made),\n          held && (() => held(entry)),\n",
-    tests: ["test/corpus.test.ts", "-t", "^btree_nodes_seen.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(btree_nodes_seen|btree_clone_panics_in_a_later_edge).rs$"],
   },
   {
     name: "tree-clone-unshaped",
