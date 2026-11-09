@@ -327,14 +327,16 @@ test("a consumer's fact of a library's associated type its dictionaries don't ca
 }, 300_000);
 
 // #1029: a closure a library's instance makes of a function rustc inlined
-// into it, `joined`'s in `fold_with`, is placed where the instance is: a
-// refusal of what its closures hold, not a panic of no module for it.
+// into it, `joined`'s in `fold_with`, is placed where the instance is, not
+// a panic of no module for it. #1051: the closures the crate gives that
+// instance, which hold a value with a destructor, are its to drop, as the
+// crate's own function's are (ADR 0470), and `joined`, whose closure holds
+// them, is compiled here too, its closure carrying their drop.
 test("a closure an instance makes of an inlined function is placed where the instance is", () => {
-  const native = chain(join(root, "test", "crates", "refused"), "closure_made_by_an_inlined_function", ["dep", "app"], [
-    "rust-js does not support a closure that holds a value with a destructor, given away without being called once yet",
-    "app.rs:15:",
-  ]);
-  expect(native).toBe("drop g\ndrop f\n246\n");
+  const out = chain(pairs, "closure_made_by_an_inlined_function", ["dep", "app"]);
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("function foldWith(it, f, init, g, dropF, dropG) {\n  const value$1 = joined(f, g, dropF, dropG);\n");
+  expect(app).toContain("function joined(f, g, dropFnMut, dropFnMut$1) {\n  return $dropping(\n");
 }, 300_000);
 
 // #1052, ADR 0914, amended: a library that compares no function's identity

@@ -114,7 +114,7 @@ impl<'tcx> ClosureFacts<'tcx> {
             _ => None,
         };
         let (handed, made): (Vec<_>, Vec<_>) = (all_bodies.iter())
-            .flat_map(|body| fn_dyn_sources(tcx, &body.thir))
+            .flat_map(|body| fn_dyn_sources(tcx, body))
             .partition(|&(_, _, handed, _)| handed);
         let made_fn_dyns: IndexSet<DefId> = made.into_iter().filter_map(|(_, ty, _, _)| closure_of(ty)).collect();
         let called_once = (all_bodies.iter())
@@ -319,7 +319,7 @@ pub(super) fn dropping_fn_dyns<'tcx>(
     (all_bodies.iter())
         .flat_map(|body| {
             let owner = tcx.typeck_root_def_id(body.def_id);
-            fn_dyn_sources(tcx, &body.thir).map(move |source| (owner, source))
+            fn_dyn_sources(tcx, body).into_iter().map(move |source| (owner, source))
         })
         .filter_map(|(owner, (span, function, handed, to))| {
             if handed {
@@ -486,7 +486,7 @@ pub(super) fn dropping_dyn_of<'tcx>(
 /// function made one whose drop runs code makes every `dyn Fn`'s drop run.
 pub(super) fn handed_fn_dyns<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Vec<Ty<'tcx>> {
     let mut functions: Vec<Ty<'tcx>> = (all_bodies.iter())
-        .flat_map(|body| fn_dyn_sources(tcx, &body.thir))
+        .flat_map(|body| fn_dyn_sources(tcx, body))
         .filter_map(|(_, function, handed, _)| handed.then_some(function))
         .collect();
     functions.dedup();
@@ -496,16 +496,53 @@ pub(super) fn handed_fn_dyns<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]
 /// The functions `thir` makes `dyn Fn`s of, `Box<F>` to `Box<dyn Fn()>`'s
 /// `F`, each with where it's made one and whether it's a closure made one
 /// only to hand it to JS.
-fn fn_dyn_sources<'a, 'tcx>(
-    tcx: TyCtxt<'tcx>,
-    thir: &'a Thir<'tcx>,
-) -> impl Iterator<Item = (Span, Ty<'tcx>, bool, Ty<'tcx>)> + 'a {
+/// And of a library's function the crate compiles itself, of MIR alone
+/// (ADR 0914), each of its own coercions, none handed to JS: what it's
+/// given, a closure that holds a value with a destructor, may be made a
+/// `dyn Fn` there, `node`'s `Box::new(run)` of its `F` (#1051).
+fn fn_dyn_sources<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<(Span, Ty<'tcx>, bool, Ty<'tcx>)> {
+    if body.root().is_none()
+        && !crate::lower::recognition::is_std_crate(tcx, body.def_id)
+        && let Some(mir) = &body.mir
+    {
+        return mir_fn_dyn_sources(tcx, &mir.body);
+    }
+    let thir = &body.thir;
     let handed = handed_to_js(tcx, thir);
-    dyn_sources(tcx, thir, move |predicates| is_fn_dyn(tcx, predicates)).map(move |(at, from)| {
-        let handed = matches!(from.kind(), ty::Closure(..)) && handed.contains(&at);
-        let to = pointee(tcx, thir[at].ty).expect("a `dyn`'s pointer");
-        (thir[at].span, from, handed, to)
-    })
+    dyn_sources(tcx, thir, move |predicates| is_fn_dyn(tcx, predicates))
+        .map(move |(at, from)| {
+            let handed = matches!(from.kind(), ty::Closure(..)) && handed.contains(&at);
+            let to = pointee(tcx, thir[at].ty).expect("a `dyn`'s pointer");
+            (thir[at].span, from, handed, to)
+        })
+        .collect()
+}
+
+/// The functions a body of MIR alone makes `dyn Fn`s of, as `dyn_sources`
+/// finds them in THIR: each unsizing to a pointer to one.
+fn mir_fn_dyn_sources<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &rustc_middle::mir::Body<'tcx>,
+) -> Vec<(Span, Ty<'tcx>, bool, Ty<'tcx>)> {
+    use rustc_middle::mir::{CastKind, Rvalue, StatementKind};
+    (body.basic_blocks.iter())
+        .flat_map(|block| block.statements.iter())
+        .filter_map(|statement| {
+            let StatementKind::Assign(assign) = &statement.kind else {
+                return None;
+            };
+            let Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize, _), operand, to) = &assign.1 else {
+                return None;
+            };
+            let to = pointee(tcx, *to)?;
+            let ty::Dynamic(predicates, ..) = to.kind() else {
+                return None;
+            };
+            is_fn_dyn(tcx, predicates).then_some(())?;
+            let from = pointee(tcx, operand.ty(&body.local_decls, tcx))?;
+            Some((statement.source_info.span, from, false, to))
+        })
+        .collect()
 }
 
 /// The coercions to a `dyn Fn` in `thir` handed straight to JS (ADR 0873):

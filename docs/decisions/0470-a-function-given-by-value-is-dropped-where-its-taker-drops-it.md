@@ -317,3 +317,47 @@ were never dropped. A parameter whose own bound takes such an `F` as it
 is, an argument of a trait not `Fn`'s, is refused as `F` itself is. Corpus
 case `fn_once_through_another_bound_refused`; supporting it, an `Fn`
 closure's drop after a generic `FnOnce` call, is #995.
+
+## Amendment: a library's function the crate compiles itself (#1051)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): a refusal lifted, with
+no wrong answer before it. Another crate's function given a closure that
+holds a value with a destructor was refused. That includes a library's
+generic function the crate compiles itself, because it's given closures
+that drop (ADR 0914). The same program compiles in one crate:
+`fold_with(1..4, move |x| .., 0, move |s, x| ..)` of a closure that
+holds a `Loud`. Such an instance is the crate's own function. It takes
+each drop its caller gives, `dropF?.(f)`, as the crate's own does, so
+`drops_given` answers for it as for the crate's own
+(`foreign.is_instance`). Another crate's JS stays refused as before.
+
+What `fold_with` gives its closures to must take their drops too.
+`joined(f, g)` makes `move |acc, x| g(acc, f(x))` and gives it back,
+and the closure carries its drop (ADR 0484). Its library's JS takes no
+drop, so its closure carried none, and `fold`'s end dropped neither. So
+a library function that makes a closure of what holds its type
+parameter may drop it (`body_may_drop`'s `closes_over`), and the crate
+compiles its own of it where it gives it a value that drops. It's
+compiled as the crate's own `joined` is, `joined(f, g, dropFnMut,
+dropFnMut$1)`, its closure `$dropping`.
+
+What an instance makes of a closure it's given is the crate's to see, as
+the crate's own function's is. A `dyn Fn` it makes, `node`'s
+`Box::new(run)` of its `F`, is one of the crate's `dyn Fn`s that may drop
+(ADR 0626, amended). Its MIR's coercions are read where it has no THIR
+(`fn_dyn_sources`). Where the library's `dyn Fn`s drop nothing, the
+crate is refused as ADR 0626 refuses a crate's own: "this crate's `dyn
+Fn`s may hold a value with a destructor, which their drop runs, but
+`app`, a rust-js library whose `dyn Fn`s drop nothing, holds one of
+them", naming `node`'s coercion. An integration test that gave a
+program's `node` such a closure was refused as given away. Without this
+it compiled, and its `dyn Fn` dropped nothing.
+
+The pairs `closure_made_by_an_inlined_function`, moved from
+`test/crates/refused/` to `test/crates/pairs/`, and
+`instance_makes_a_dyn_of_what_drops` run as native. The refusal is
+`test/rust-js-test-programs.test.ts`'s "boxes as one that drops nothing",
+its message now ADR 0626's. The mutations are
+`instance-given-closures-another-crates` (`lower/drops/facts.ts`),
+`closure-of-a-parameter-drops-nothing` (`lower/instances.ts`) and
+`instance-dyn-fns-unseen` (`lower/analysis/closures.ts`).

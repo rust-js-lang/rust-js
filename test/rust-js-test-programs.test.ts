@@ -192,7 +192,7 @@ fn dropped() {
     assert_eq!(drops.get(), 1);
 }
 `,
-    "a closure that holds a value with a destructor",
+    "but `app`, a rust-js library whose `dyn Fn`s drop nothing, holds one of them",
   ],
   [
     "holds a borrow of a RefCell the program borrows unchecked while the program's code runs",

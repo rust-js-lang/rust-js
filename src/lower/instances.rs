@@ -815,6 +815,25 @@ fn body_may_drop<'tcx>(
             work.extend(body.basic_blocks[block].terminator().successors());
         }
     }
+    // A closure it makes of one, which carries its drop where it's given
+    // back or made a `dyn Fn` (ADRs 0484, 0521), `joined`'s `move |acc, x|
+    // g(acc, f(x))`: a drop it's given is that closure's (#1051).
+    let closes_over = (body.basic_blocks.iter())
+        .flat_map(|data| data.statements.iter())
+        .any(|statement| match &statement.kind {
+            mir::StatementKind::Assign(assign) => match &assign.1 {
+                mir::Rvalue::Aggregate(kind, operands) if matches!(**kind, mir::AggregateKind::Closure(..)) => {
+                    operands.iter().any(|operand| match operand {
+                        mir::Operand::Move(place) | mir::Operand::Copy(place) => {
+                            holds(place.ty(&body.local_decls, tcx).ty)
+                        }
+                        _ => false,
+                    })
+                }
+                _ => false,
+            },
+            _ => false,
+        });
     let drops = body
         .basic_blocks
         .iter_enumerated()
@@ -892,6 +911,7 @@ fn body_may_drop<'tcx>(
             }
             _ => false,
         });
+    let drops = closes_over || drops;
     seen.insert((id, index), drops);
     drops
 }

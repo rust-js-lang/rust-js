@@ -118,8 +118,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure called by `&` given by value to std, which drops it as it returns, is refused",
     file: "src/lower/drops/facts.rs",
-    find: "            && (def_id.is_local() || crate::lower::recognition::is_std_crate(tcx, def_id))\n",
-    replace: "            && def_id.is_local()\n",
+    find: "                || crate::lower::recognition::is_std_crate(tcx, def_id)\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^given_function_drops.rs$"],
   },
   {
@@ -505,5 +505,14 @@ export const mutations: Mutation[] = [
     find: "        self.replaced_with(id);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_replaced_with.rs$"],
+  },
+  {
+    name: "instance-given-closures-another-crates",
+    breaks:
+      "a library's function the crate compiles itself, given closures that hold a value with a destructor, is taken for another crate's JS, and the call is refused (#1051)",
+    file: "src/lower/drops/facts.rs",
+    find: "                || self.cx.recognition.foreign.is_instance(def_id))\n",
+    replace: "                || false && self.cx.recognition.foreign.is_instance(def_id))\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: closure_made_by_an_inlined_function"],
   },
 ];

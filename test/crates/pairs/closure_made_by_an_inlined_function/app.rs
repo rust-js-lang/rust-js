@@ -1,4 +1,4 @@
-//! Refused for now, not a crash.
+//! Each closure dropped as Rust drops it (#1051).
 use dep::fold_with;
 
 struct Loud(&'static str);

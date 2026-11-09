@@ -316,3 +316,18 @@ the `Rc`.
   Its closure's count is read now, so both builds count it, and
   `rc-made-of-counted-uncounted` still holds it. Its `library-differs`
   went.
+
+## Amendment: a `dyn Fn` an instance makes (#1051)
+
+A library's function the crate compiles itself (ADR 0914) can make a
+`dyn Fn` of a closure the crate gives it. `node(run)` boxes its `F`,
+`Box::new(run)`. That `dyn Fn` is the crate's, and it may hold a value
+with a destructor, so it's one of the crate's `dyn Fn`s that drop. The
+crate's facts of what it makes a `dyn Fn` of read such a function's MIR
+too, where it has no THIR (`closures::fn_dyn_sources`, one answer for
+`ClosureFacts`, `dropping_fn_dyns` and `handed_fn_dyns`). Where the
+library's own `dyn Fn`s drop nothing, the crate is refused here, as it
+is for its own coercion. Held by the pair
+`instance_makes_a_dyn_of_what_drops` and the integration test
+"boxes as one that drops nothing"; mutation `instance-dyn-fns-unseen`
+(`lower/analysis/closures.ts`). See ADR 0470, amended, #1051.

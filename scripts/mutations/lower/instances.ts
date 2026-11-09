@@ -433,4 +433,13 @@ export const mutations: Mutation[] = [
     replace: "        None if false => \"one whose JS may give one function where Rust makes two, which this crate compares\".to_string(),\n",
     tests: ["test/crates.test.ts", "-t", "may merge what its consumer compares"],
   },
+  {
+    name: "closure-of-a-parameter-drops-nothing",
+    breaks:
+      "a library function that makes a closure of its type parameter's value and gives it back, `joined`, isn't compiled where it's given closures that drop, so its library's closure, carrying no drop, drops neither as `fold` ends (#1051)",
+    file: "src/lower/instances.rs",
+    find: "    let drops = closes_over || drops;\n",
+    replace: "    let drops = drops;\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: closure_made_by_an_inlined_function"],
+  },
 ];

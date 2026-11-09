@@ -264,4 +264,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(dyn_fn_drops_by_its_signature|dyn_fn_generic_closure_drops|dyn_fn_of_a_borrowed_function).rs$"],
     snapshots: true,
   },
+  {
+    name: "instance-dyn-fns-unseen",
+    breaks:
+      "a `dyn Fn` a library's function the crate compiles itself makes of a closure it's given, which holds a value with a destructor, is unseen: the crate's `dyn Fn`s drop nothing, so a program's `node`, whose `dyn Fn`s drop nothing, isn't refused, and its `dyn Fn` never drops what it holds (#1051)",
+    file: "src/lower/analysis/closures.rs",
+    find: "        return mir_fn_dyn_sources(tcx, &mir.body);\n",
+    replace: "        return Vec::new();\n",
+    tests: ["test/rust-js-test-programs.test.ts", "-t", "boxes as one that drops nothing"],
+  },
 ];

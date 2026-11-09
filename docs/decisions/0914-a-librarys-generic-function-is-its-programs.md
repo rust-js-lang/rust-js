@@ -1234,3 +1234,15 @@ Mutations: `crate-reads-no-fn-identity`,
 compiles of its libraries itself, and why, is one module now,
 `library/compiled_here.rs`. #1052's three `library` rows of the
 metamorphic net run as native, taken off.
+
+## Amendment: the closures an instance is given are its to drop (#1051)
+
+#1029 left `fold_with` refused, given closures that hold a value with a
+destructor: "a closure that holds a value with a destructor, given away
+without being called once". Its consumer compiles `fold_with` because
+those closures drop, so it takes their drops as the crate's own function
+does. ADR 0470, amended, answers for it as for the crate's own. A
+library function that makes a closure of what holds its type parameter,
+`joined`, is compiled too where it's given a value that drops, so its
+closure carries the drop. The pair `closure_made_by_an_inlined_function`
+now runs as native.

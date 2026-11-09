@@ -62,6 +62,15 @@ impl<T> Slots<T> {
     }
 }
 
+/// What `at` points to, dropped there: given nothing but the pointer,
+/// which owns none.
+///
+/// # Safety
+/// `at` points to a value nothing drops again.
+pub unsafe fn drop_at<T>(at: *mut T) {
+    unsafe { ptr::drop_in_place(at) }
+}
+
 /// A drop that panics on its third item.
 pub struct Fragile(pub u8);
 
