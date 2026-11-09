@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "closure-param-binding-unchanging",
+    breaks:
+      "a `for_each` closure's pattern binding a tuple's part `&mut`, `|(i, (a, b))|`, isn't a change of the tuple in place, so `[(1, 'a'); 3].to_vec()`'s items are one, each written thrice (#1076)",
+    file: "src/lower/analysis/mutation.rs",
+    find: "            if let Some(pattern) = &param.pat {\n",
+    replace: "            if let Some(pattern) = param.pat.as_ref().filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^for_each_changes_items_in_place.rs$"],
+  },
+  {
     name: "replaced-whole-not-mutation",
     breaks:
       "`*p = P::default()` through a `&mut` isn't a change in place, so `let b = a` shares `a`'s object, and resetting `b` resets `a`",

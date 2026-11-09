@@ -51,8 +51,8 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
     /// Whether a table lent as a view of its rows, `board.iter_mut()`'s
     /// `&mut *board`, keeps its rows' lengths: where nothing the body
     /// does can resize a row of its type, no call but a view's, an index's
-    /// or a length's given a `&mut` of one, no closure holding one, and no
-    /// row assigned whole (#372).
+    /// or a length's given a `&mut` of one, no closure holding one or given
+    /// one, and no row assigned whole (#372, #1076).
     pub(super) fn rows_kept(&self, table: ExprId) -> bool {
         let thir = self.thir;
         let ty::Adt(_, args) = thir[strip(thir, table)].ty.peel_refs().kind() else {
@@ -70,16 +70,26 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     )
             })
         };
-        !(thir.exprs.iter()).any(|e| match &e.kind {
+        // What's called, which a call's own arguments say of.
+        let called: Vec<ExprId> = (thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                ExprKind::Call { fun, .. } => Some(strip(thir, fun)),
+                _ => None,
+            })
+            .collect();
+        !(thir.exprs.iter_enumerated()).any(|(id, e)| match &e.kind {
             ExprKind::Call { fun, args, .. } => args.iter().any(|&arg| lent_row(thir[arg].ty)) && !safe(*fun),
-            ExprKind::Closure(closure) => (closure.upvars.iter()).any(|&upvar| {
-                thir[upvar]
-                    .ty
-                    .walk()
-                    .filter_map(|part| part.as_type())
-                    .any(|t| lent_row(t) || is_row(t))
-            }),
+            // A closure that holds a row, or is given one `&mut`, of its
+            // type, which says both: what it captures, and its signature's,
+            // `board.iter_mut().for_each(|row| row.pop())` (#1076).
+            ExprKind::Closure(_) => (e.ty.walk().filter_map(|part| part.as_type())).any(|t| lent_row(t) || is_row(t)),
             ExprKind::Assign { lhs, .. } => is_row(thir[*lhs].ty),
+            // And a function given as a value that's given one `&mut`,
+            // `for_each(pop_row)`, a function item's signature's or a
+            // pointer's (#1076).
+            _ if !called.contains(&id) && matches!(e.ty.kind(), ty::FnDef(..) | ty::FnPtr(..)) => {
+                (e.ty.fn_sig(self.tcx).skip_binder().inputs().iter()).any(|&t| lent_row(t))
+            }
             _ => false,
         })
     }

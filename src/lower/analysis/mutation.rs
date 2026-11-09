@@ -19,9 +19,16 @@ use rustc_span::def_id::DefId;
 pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> IndexSet<Ty<'tcx>> {
     let mut mutated = IndexSet::default();
     for body in all_bodies {
-        // A `let`'s pattern's too, `let (a, _) = &mut t;`.
+        // A `let`'s pattern's too, `let (a, _) = &mut t;`, and a closure's
+        // or a function's parameter's, `|(a, b)|` of `iter_mut()`'s items,
+        // `for_each(|(a, b)| *a += 1)` as a `for` loop's pattern (#1076).
         for stmt in body.thir.stmts.iter() {
             if let rustc_middle::thir::StmtKind::Let { ref pattern, .. } = stmt.kind {
+                ref_mut_holders(tcx, pattern, &mut mutated);
+            }
+        }
+        for param in body.thir.params.iter() {
+            if let Some(pattern) = &param.pat {
                 ref_mut_holders(tcx, pattern, &mut mutated);
             }
         }

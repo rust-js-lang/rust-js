@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "rows-kept-past-a-function-given-one",
+    breaks:
+      "a table's rows are kept as long as they were where a function given one `&mut` is given as a value, `for_each(pop_row)`, so `board[1][1]` isn't checked, `undefined` where Rust panics (#1076)",
+    file: "src/lower/body_queries/ranges/tables.rs",
+    find: "            _ if !called.contains(&id) && matches!(e.ty.kind(), ty::FnDef(..) | ty::FnPtr(..)) => {\n",
+    replace: "            _ if false && !called.contains(&id) && matches!(e.ty.kind(), ty::FnDef(..) | ty::FnPtr(..)) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^for_each_changes_items_in_place.rs$"],
+  },
+  {
     name: "same-length-of-len-unknown",
     breaks:
       "`vec![0.0; terraces.len()]` isn't known as long as `terraces` (#362)",
@@ -60,10 +69,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a table whose loop gives a row to a closure that pops it is taken to keep its rows' lengths, so a read past its end reads `undefined` (#372)",
     file: "src/lower/body_queries/ranges/tables.rs",
-    find: "            ExprKind::Closure(closure) => (closure.upvars.iter()).any(|&upvar| {\n",
-    replace:
-      "            ExprKind::Closure(closure) => false && (closure.upvars.iter()).any(|&upvar| {\n",
-    tests: ["test/corpus.test.ts", "-t", "^table_rows_kept_by_views.rs$"],
+    find: "            ExprKind::Closure(_) => (e.ty.walk().filter_map(|part| part.as_type())).any(|t| lent_row(t) || is_row(t)),\n",
+    replace: "            ExprKind::Closure(_) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^(table_rows_kept_by_views|for_each_changes_items_in_place).rs$"],
   },
   {
     name: "rows-kept-of-a-row-assigned",

@@ -291,3 +291,19 @@ each one it reads (`wrapping$1`, `wrapping$2`), and the corpus's renamed
 share rose from 515.9 to 516 in 10,000 lines. Those copies are consumed
 at once by by-value operators, so they can't be shared; #1039 removes
 them.
+
+## Amendment: a closure's parameter's pattern changes what it binds a part of (#1076)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's. A type is changed in place where a `ref mut` binding of a part of
+it may be written (`analysis/mutation.rs`'s `ref_mut_holders`): a `let`'s
+pattern's, a `match`'s, a `for` loop's. Not a closure's parameter's, `|(i,
+(a, b))|` of `iter_mut().enumerate()`'s items given to `for_each`, whose
+`*a *= 2` changes the tuple as the `for` loop's did; so `[(1, 'a');
+3].to_vec()` was `new Array(3).fill([1, "a"])` and a shallow copy, its
+three items one, `[(4, 'z'), ..]` where native Rust prints `[(2, 'z'),
+..]`. Each parameter's pattern of each body is read so now, a closure's or
+a function's. The metamorphic net's `for-each` rewrite of
+`enumerate_mut_patterns` found it. Held by the corpus case
+`for_each_changes_items_in_place` against native Rust; mutation
+`closure-param-binding-unchanging` (`lower/analysis/mutation.ts`).

@@ -421,3 +421,21 @@ the rule away whole. A `return` alone left out of it is no mutation:
 the statement's scope around it, or the argument's, is of type `!` too.
 A loop's walk moved to `ranges/loops.rs`, as it was, to keep ranges.rs
 under the cap (ADR 0572).
+
+## Amendment: a table's rows aren't kept past a closure given one (#1076)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's. A table lent as a view of its rows, `board.iter_mut()`, keeps its
+rows' lengths only where nothing the body does may resize one (#372): no
+call given a `&mut` of one, no closure holding one. A closure given one
+as its parameter, `for_each(|row| row.pop())`, was none of those, so
+`board[0][width - 1]` after it read past the row's end, `undefined`, where
+native Rust panics. A closure whose signature takes a row `&mut` is one
+now, by its type, which says what it captures too, the one check of a
+closure; and so is a function given as a value whose signature takes one,
+`for_each(pop_row)`, the net's `closure-fn` rewrite of the case below. The
+metamorphic net's `for-each` rewrite of `table_rows_kept_by_views` found
+it. Held by the corpus case `for_each_changes_items_in_place`; mutations
+`rows-kept-of-a-closure`, retargeted, and
+`rows-kept-past-a-function-given-one`
+(`lower/body_queries/ranges/tables.ts`).
