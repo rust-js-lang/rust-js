@@ -91,3 +91,25 @@ const grown = $realloc($ptrBytes(ptr), old, new$.size);
 - hashbrown keeps its control bytes and its items in one allocation, and
   reaches items by stepping a byte pointer: bytes and items in one array,
   which this doesn't give.
+
+## Amended: an allocation used as its bytes (2026-11-09, #1099)
+
+`alloc(layout)` gave a view of no bytes, cast back only, so bytes written
+through its `*mut u8` threw where they're written: semver's identifiers of
+more than 8 bytes, its length's varint and its text in an allocation of
+their own, failed as JS and ran natively (found by the small Crater's
+integration tests, #1087). An allocation is still an array of slots, as
+its first use says: written or read through a byte pointer, each slot is a
+byte, as wasm32's are, so a varint, a copy of a string's bytes, a slice of
+them, an integer read unaligned and a `Vec<u8>` made of them read as
+native Rust's; cast to another type's pointer first, its slots are that
+type's items, as before. The other use after it, an allocation's bytes
+and its items both, a cast to another type past its first byte, and a
+`Vec` of its bytes as wider items would each read one type's memory as
+another's: rust-js's error where it's done, a panic that says so, as the
+guide's limitations list. Case C: Rust's bytes kept, else refused.
+`test/corpus/alloc_bytes_written_and_read.rs`, against native Rust;
+`test/runtime-package.test.ts`'s "an allocation's bytes and its items
+aren't both used"; mutations `alloc-bytes-opaque`,
+`alloc-vec-of-wider-bytes`, `allocation-uses-unchecked`,
+`allocation-items-past-start`.

@@ -32,7 +32,9 @@ at an address. rust-js gives raw pointers, `transmute` and the like the
 meaning Rust's have where it can model them: a raw pointer to a local or
 into an array, its `add` and `offset_from`, a `transmute` between types of
 numbers alone (`u16` to `[u8; 2]`, a struct of two `u32`s to a `u64`),
-`slice::from_raw_parts` of an array's pointer. A `#[repr(transparent)]`
+`slice::from_raw_parts` of an array's pointer, its items read as the
+pointer's type, an allocation of `std::alloc::alloc`'s used as its bytes
+([ADR 0417](../decisions/0417-an-allocation-is-an-array-of-slots.md)). A `#[repr(transparent)]`
 struct is its field, so a `transmute` between them, by value or through
 either reference, is the value itself
 ([ADR 0584](../decisions/0584-a-transparent-struct-is-its-field.md)). What
@@ -59,6 +61,9 @@ depends on what the program does:
   ([ADR 0562](../decisions/0562-a-pointer-is-a-place-and-an-address.md)).
 - A pointer to what has no bytes, a `String`, read as bytes; a pointer
   stepped outside an array or into what JS holds as a copy.
+- An allocation of `alloc`'s used as its bytes and as another type's
+  items both, or cast to another type's pointer past its first byte
+  ([ADR 0417](../decisions/0417-an-allocation-is-an-array-of-slots.md)).
 
 ## Types
 

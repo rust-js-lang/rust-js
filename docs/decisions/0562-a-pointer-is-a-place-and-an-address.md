@@ -670,3 +670,16 @@ root and its offset there"; mutations `nested-place-unrooted`,
 (`lower/mir/rvalues.ts`) and `rooted-place-its-objects-own`
 (`runtime/pointers.ts`), and #1019's and #1081's retargeted to the
 reference case.
+
+## Amendment: a slice of a byte pointer's items is of its type (#1107)
+
+`slice::from_raw_parts(p, n)` of bytes retyped as a wider integer's,
+`a.as_ptr() as *const u32`, read a byte for each item, `[1, 0]` where
+native Rust's is `[1, 258]`, silently: `$ptrSlice` took the view's bytes
+and not its width. Each item is read as the view reads one, `width` bytes
+apart, little-endian, signed as its type is, or a `[u8; N]`'s bytes; and
+`from_raw_parts_mut` of a byte view is a view of its slots only where
+they're its items, unsigned bytes, not an `*mut i8`'s, which is rust-js's
+error. Case C. `test/corpus/slice_of_words_through_a_byte_pointer.rs`,
+against native Rust; mutations `byte-slice-its-bytes`,
+`signed-bytes-mut-unsigned` (found fixing #1099).

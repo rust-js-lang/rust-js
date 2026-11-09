@@ -657,6 +657,70 @@ pub fn distance() -> isize {
   expect(call("distance")).toBe("rust-js does not support the distance between pointers to two places, which reads memory by where it is\n");
 });
 
+// An allocation of `alloc`'s is used as its first use says, its bytes or
+// the items of a type it's cast to (ADR 0417, amended, #1099): the other
+// use after it, a cast to another type past its first byte, and a `Vec` of
+// its bytes as wider items, are rust-js's errors, never one type's memory
+// read as another's.
+test("an allocation's bytes and its items aren't both used", () => {
+  const dir = fixture("allocation-uses");
+  writeFileSync(join(dir, "lib.rs"), `use std::alloc::{Layout, alloc};
+
+pub fn bytes_then_items() -> String {
+    unsafe {
+        let p = alloc(Layout::new::<String>());
+        p.write(1);
+        let s = p as *mut String;
+        s.write(String::from("x"));
+        (*s).clone()
+    }
+}
+
+pub fn items_then_bytes() -> u8 {
+    unsafe {
+        let p = alloc(Layout::new::<String>());
+        (p as *mut String).write(String::from("x"));
+        *p
+    }
+}
+
+pub fn items_past_its_start() -> String {
+    unsafe {
+        let p = alloc(Layout::from_size_align(48, 4).unwrap());
+        let s = p.add(24) as *mut String;
+        s.write(String::from("x"));
+        (*s).clone()
+    }
+}
+
+pub fn vec_of_words() -> usize {
+    unsafe {
+        let p = alloc(Layout::from_size_align(8, 4).unwrap());
+        (p as *mut u32).write(1);
+        (p.add(4) as *mut u32).write(2);
+        Vec::from_raw_parts(p as *mut u32, 2, 2).len()
+    }
+}
+
+pub fn signed_bytes_mut() -> i8 {
+    let mut a = [255u8, 1];
+    let s = unsafe { std::slice::from_raw_parts_mut(a.as_mut_ptr() as *mut i8, 2) };
+    s[0]
+}
+`);
+  const out = join(dir, "lib.js");
+  run([compiler, join(dir, "lib.rs"), "-o", out]);
+  const call = (name: string) =>
+    run([node ?? "node", "--input-type=module", "--eval", `try { console.log((await import(${JSON.stringify(out)})).${name}()); } catch (e) { console.log(e.message); }`]);
+  const both = "rust-js does not support an allocation's bytes and its items of another type both, which reads memory by where it is\n";
+  expect(call("bytesThenItems")).toBe(both);
+  expect(call("itemsThenBytes")).toBe(both);
+  expect(call("itemsPastItsStart")).toBe("rust-js does not support a pointer into an allocation's bytes as one to another type, which reads memory by where it is\n");
+  expect(call("vecOfWords")).toBe("rust-js does not support a `Vec` of what isn't an array's first item, which reads memory by where it is\n");
+  // Its slots are unsigned bytes, never an `i8`'s (#1107).
+  expect(call("signedBytesMut")).toBe("rust-js does not support a mutable slice of another type's bytes, which reads memory by where it is\n");
+});
+
 // A raw pointer to a place reached through more than one field or item is
 // given the root its place starts from and its byte offset there, rustc's
 // layout, so its address is in the root's allocation (#1089, the user's

@@ -3,6 +3,38 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "allocation-uses-unchecked",
+    breaks: "an allocation's bytes written and then its slots read as a `String`'s, or the reverse, one type's memory read as another's (#1099)",
+    file: "src/runtime/pointers.js",
+    find: "  else if (used !== use) {\n",
+    replace: "  else if (false) {\n",
+    tests: ["test/runtime-package.test.ts", "-t", "allocation's bytes and its items"],
+  },
+  {
+    name: "allocation-items-past-start",
+    breaks: "a pointer 24 bytes into an allocation cast to `*mut String` is its first slot (#1099)",
+    file: "src/runtime/pointers.js",
+    find: "    if (view.at !== 0) {\n      throw new Error(\"rust-js does not support a pointer into an allocation's bytes as one to another type",
+    replace: "    if (false) {\n      throw new Error(\"rust-js does not support a pointer into an allocation's bytes as one to another type",
+    tests: ["test/runtime-package.test.ts", "-t", "allocation's bytes and its items"],
+  },
+  {
+    name: "byte-slice-its-bytes",
+    breaks: "`from_raw_parts` of a byte pointer cast to `*const u32` is its bytes, `[1, 0]` where native Rust's is `[1, 258]` (#1107)",
+    file: "src/runtime/pointers.js",
+    find: "    return Array.from({ length: count }, (_, i) => $byteView({ ...pointer, at: pointer.at + i * pointer.width }).value);\n",
+    replace: "    return Array.from({ length: count }, (_, i) => $byteAt(pointer, i));\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_of_words_through_a_byte_pointer.rs$"],
+  },
+  {
+    name: "signed-bytes-mut-unsigned",
+    breaks: "`from_raw_parts_mut` of a `*mut i8` cast from `u8`s is a view of its unsigned slots (#1107)",
+    file: "src/runtime/pointers.js",
+    find: " && pointer.width === 1 && pointer.signed === false) {\n",
+    replace: " && pointer.width === 1) {\n",
+    tests: ["test/runtime-package.test.ts", "-t", "allocation's bytes and its items"],
+  },
+  {
     name: "rooted-place-its-objects-own",
     breaks: "a field's pointer of a struct an array's item or a struct's field is, given its root, is at the inner object's own address, 4096 from the root's where native Rust's is 8 (#1089)",
     file: "src/runtime/pointers.js",

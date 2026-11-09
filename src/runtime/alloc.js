@@ -1,7 +1,10 @@
 // The allocator (ADR 0417): an allocation is an array of slots, given as a
-// pointer to its first's bytes, which it's cast back from to its items'.
+// pointer to its first's bytes, which it's cast back from to its items', or
+// whose bytes are read and written through it, each slot a byte (#1099): as
+// its first use says, the other use after it rust-js's error.
 function $alloc(layout) {
-  return $ptrBytes($ptr([], 0));
+  const slots = [];
+  return $byteView({ of: slots, at: 0, stride: 1, typed: $ptr(slots, 0), allocated: true });
 }
 
 // `realloc(p, layout, size)`: the same allocation, as an array grows.
@@ -29,6 +32,11 @@ function $debugLayout(layout) {
 // `Vec::from_raw_parts(p, len, cap)`: the array `p` points to the first of,
 // `len` long. Of another place, rust-js's error.
 function $vecFromRaw(pointer, length) {
+  // Of bytes, a `Vec<u8>`'s alone, whose items are the bytes' slots.
+  if (pointer?.bytes !== undefined && (pointer.width !== 1 || pointer.signed !== false || pointer.stride !== 1)) {
+    throw new Error("rust-js does not support a `Vec` of what isn't an array's first item, which reads memory by where it is");
+  }
+  if (pointer?.bytes !== undefined) $allocUsed(pointer, "bytes");
   if (pointer === null || !Array.isArray(pointer.of) || pointer.at !== 0) {
     throw new Error("rust-js does not support a `Vec` of what isn't an array's first item, which reads memory by where it is");
   }

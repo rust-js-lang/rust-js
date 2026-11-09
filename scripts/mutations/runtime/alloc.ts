@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "alloc-bytes-opaque",
+    breaks: "an allocation's bytes written through its `*mut u8` throw, `alloc` giving a view of no bytes, as semver's identifiers did (#1099)",
+    file: "src/runtime/alloc.js",
+    find: "  return $byteView({ of: slots, at: 0, stride: 1, typed: $ptr(slots, 0), allocated: true });\n",
+    replace: "  return $ptrBytes($ptr(slots, 0));\n",
+    tests: ["test/corpus.test.ts", "-t", "^alloc_bytes_written_and_read.rs$"],
+  },
+  {
+    name: "alloc-vec-of-wider-bytes",
+    breaks: "`Vec::from_raw_parts` of an allocation's bytes cast to `*mut u32` is a `Vec` of its bytes (#1099)",
+    file: "src/runtime/alloc.js",
+    find: "  if (pointer?.bytes !== undefined && (pointer.width !== 1 || pointer.signed !== false || pointer.stride !== 1)) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/runtime-package.test.ts", "-t", "allocation's bytes and its items"],
+  },
+  {
     name: "vec-from-raw-untruncated",
     breaks: "`Vec::from_raw_parts(p, len, cap)` keeps the allocation's slots past `len`",
     file: "src/runtime/alloc.js",

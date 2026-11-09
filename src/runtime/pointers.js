@@ -426,9 +426,13 @@ function $ptrCopy(src, dst, count, copy) {
 }
 
 // `slice::from_raw_parts(p, n)`: the `n` items from where `p` points, a
-// copy, as a shared subslice is, or all of an array, the array itself.
+// copy, as a shared subslice is, or all of an array, the array itself. Of
+// a pointer to bytes, each item read as it's typed, `width` bytes apart: a
+// `*const u32`'s words, not its bytes (#1107).
 function $ptrSlice(pointer, count) {
-  if (pointer.bytes !== undefined) return Array.from({ length: count }, (_, i) => $byteAt(pointer, i));
+  if (pointer.bytes !== undefined) {
+    return Array.from({ length: count }, (_, i) => $byteView({ ...pointer, at: pointer.at + i * pointer.width }).value);
+  }
   const [items, start] = $ptrItems(pointer, count);
   return start === 0 && count === items.length ? items : $slots(items, start, count);
 }
@@ -438,7 +442,8 @@ function $ptrSlice(pointer, count) {
 function $ptrSliceMut(pointer, count) {
   // A byte slice's own bytes write through; another's, read as bytes, don't.
   if (pointer.bytes !== undefined) {
-    if (pointer.plain === undefined && pointer.stride === 1 && pointer.width === 1) {
+    if (pointer.plain === undefined && pointer.stride === 1 && pointer.width === 1 && pointer.signed === false) {
+      $allocUsed(pointer, "bytes");
       return $view(pointer.of, pointer.at, pointer.at + count);
     }
     throw new Error("rust-js does not support a mutable slice of another type's bytes, which reads memory by where it is");
@@ -543,8 +548,24 @@ function $bytesOf(view) {
   return view.plain !== undefined ? view.plain : view.of;
 }
 
+// An allocation of `alloc`'s and how it's used, by its slots: as bytes,
+// read or written through a byte pointer, or as the items of a type it's
+// cast to (ADR 0417). The first use says which; the other after it would be
+// one type's memory read as another's (#1099).
+const $allocUses = new WeakMap();
+
+function $allocUsed(view, use) {
+  if (view.allocated === undefined) return;
+  const used = $allocUses.get(view.of);
+  if (used === undefined) $allocUses.set(view.of, use);
+  else if (used !== use) {
+    throw new Error("rust-js does not support an allocation's bytes and its items of another type both, which reads memory by where it is");
+  }
+}
+
 // The byte `i` past where `view` is.
 function $byteAt(view, i) {
+  $allocUsed(view, "bytes");
   const at = view.at + i;
   if (view.plain !== undefined) return view.encode(view.plain.value)[at];
   if (view.stride === 1) return $slot(view.of, at);
@@ -553,6 +574,7 @@ function $byteAt(view, i) {
 }
 
 function $byteSet(view, i, byte) {
+  $allocUsed(view, "bytes");
   const at = view.at + i;
   if (view.plain !== undefined) {
     const bytes = view.encode(view.plain.value);
@@ -574,7 +596,10 @@ function $byteSet(view, i, byte) {
 // there, little-endian, `signed` as the type is; `write_unaligned` the
 // reverse.
 function $readInt(view, width, signed) {
-  if (width === 1 && view.plain === undefined && view.stride === 1 && !signed) return $slot(view.of, view.at);
+  if (width === 1 && view.plain === undefined && view.stride === 1 && !signed) {
+    $allocUsed(view, "bytes");
+    return $slot(view.of, view.at);
+  }
   const bytes = Array.from({ length: width }, (_, i) => $byteAt(view, i));
   return $fromBytes(bytes, width, true, signed);
 }
@@ -590,6 +615,15 @@ function $writeInt(view, width, value) {
 function $ptrTyped(view) {
   if (view === null || view.bytes === undefined) return view;
   if (view.opaque) return view.typed;
+  // An allocation's first slot, its items' (ADR 0417); one past it, whose
+  // item that is its type's size says, which JS hasn't here.
+  if (view.allocated !== undefined) {
+    if (view.at !== 0) {
+      throw new Error("rust-js does not support a pointer into an allocation's bytes as one to another type, which reads memory by where it is");
+    }
+    $allocUsed(view, "items");
+    return view.typed;
+  }
   if (view.typed !== undefined && view.at === view.typed.at * view.stride) return view.typed;
   if (view.plain !== undefined && view.at === 0) return view.plain;
   if (view.of !== undefined && view.at % view.stride === 0) return $ptr(view.of, view.at / view.stride);
