@@ -376,4 +376,20 @@ export const mutations: Mutation[] = [
     replace: "        let compare = self.cmp_fn(",
     tests: ["test/corpus.test.ts", "-t", "^iterator_comparisons_drop_as_std.rs$"],
   },
+  {
+    name: "partition-of-param-dropped-after",
+    breaks: "`partition` and `unzip` of a type parameter's iterator drop it after the call, so as a panic unwinds what they collected is dropped before what's left of their source, where std's fold drops that first (#1150, #1161)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "                Some(IterMethod::Partition | IterMethod::Unzip) => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
+  },
+  {
+    name: "unzip-method-leaves-some",
+    breaks: "`unzip` of items with a destructor is refused as one that may leave some undropped, where it keeps each (#1150)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "                    | IterMethod::Unzip\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
+  },
 ];

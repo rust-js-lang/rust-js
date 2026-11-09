@@ -14,8 +14,16 @@ export const mutations: Mutation[] = [
     name: "extend-by-next",
     breaks: "an `extend` of a `TrustedLen` iterator steps it by `next`, so a `map`'s function drops after what it left, where `extend_trusted` folds it (#710)",
     file: "src/runtime/extend.js",
-    find: "  if (byFold && typeof items.fold === \"function\") {\n",
-    replace: "  if (false) {\n",
+    find: "  if ((byFold || items.byItsFold) && typeof items.fold === \"function\") {\n",
+    replace: "  if (items.byItsFold && typeof items.fold === \"function\") {\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
+  },
+  {
+    name: "extend-of-folded-by-next",
+    breaks: "an `extend` of what `$folded` made, a type parameter's or the crate's own, steps it by `next`, which lists it whole first, so what a step panics past is never put in, a `LinkedList`'s in generic code (#1161)",
+    file: "src/runtime/extend.js",
+    find: "  if ((byFold || items.byItsFold) && typeof items.fold === \"function\") {\n",
+    replace: "  if (byFold && typeof items.fold === \"function\") {\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
   },
 ];

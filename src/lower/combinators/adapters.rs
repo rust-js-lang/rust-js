@@ -610,7 +610,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !sides.iter().all(|&side| self.is_vec_like(side) || self.is_map(side)) {
                     return Err(self.unsupported(span, "`unzip` into what isn't a `Vec`, a map or a set"));
                 }
-                let pairs = Expr::call(Expr::helper("$unzip"), vec![items]);
+                // What each side collected dropped as a panic stepping it
+                // unwinds, `A`'s then `B`'s (#1150).
+                let mut args = vec![items];
+                let drops = [generic_args.types().nth(1), generic_args.types().nth(2)]
+                    .into_iter()
+                    .map(|side| match side {
+                        Some(side) => self.std_drop_function(side, span),
+                        None => Ok(None),
+                    })
+                    .collect::<R<Vec<_>>>()?;
+                if let Some(last) = drops.iter().rposition(Option::is_some) {
+                    args.extend(
+                        drops
+                            .into_iter()
+                            .take(last + 1)
+                            .map(|drop| drop.unwrap_or_else(Expr::undefined)),
+                    );
+                }
+                let pairs = Expr::call(Expr::helper("$unzip"), args);
                 if sides.iter().all(|&side| self.is_vec_like(side)) {
                     return Ok(pairs);
                 }

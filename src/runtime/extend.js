@@ -3,9 +3,11 @@
 // the iterator it was given as it unwinds; what it pushed stays, `v`'s
 // (#422). `byFold`, of a `TrustedLen` iterator, by its fold, as std's
 // `extend_trusted` steps it, which drops what it holds where its fold
-// does, a `map`'s function before what it hasn't given (#710).
+// does, a `map`'s function before what it hasn't given (#710); and of one
+// `$folded` made, by its fold, as std's consumer that routes through it is
+// (#1161).
 function $extend(v, items, byFold = false) {
-  if (byFold && typeof items.fold === "function") {
+  if ((byFold || items.byItsFold) && typeof items.fold === "function") {
     items.fold(undefined, (_, x) => {
       v.push(x);
     });

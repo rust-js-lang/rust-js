@@ -194,4 +194,12 @@ export const mutations: Mutation[] = [
     replace: "  if (Array.isArray(it)) return Array.from(it);\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic.rs$"],
   },
+  {
+    name: "collect-dropping-of-folded-by-next",
+    breaks: "a collect of what `$folded` made steps it by `next`, which lists it whole first, so what it collected before a step panics is leaked, a `LinkedList`'s in generic code (#1161)",
+    file: "src/runtime/fold_of.js",
+    find: "    it.byItsFold && typeof it.fold === \"function\"\n",
+    replace: "    false\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
+  },
 ];

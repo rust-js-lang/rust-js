@@ -14,8 +14,16 @@ export const mutations: Mutation[] = [
     name: "unzip-steps",
     breaks: "`unzip` of the crate's iterator steps it by `next`, not by its own `fold`",
     file: "src/runtime/unzip.js",
-    find: "  Iterator.from(pairs).forEach(([x, y]) => {\n",
-    replace: "  Iterator.prototype.forEach.call(Iterator.from(pairs), ([x, y]) => {\n",
+    find: "    () => (typeof pairs.fold === \"function\" ? pairs.fold(undefined, (_, pair) => put(pair)) : $eachOf(pairs, put)),\n",
+    replace: "    () => $eachOf(pairs, put),\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
+  },
+  {
+    name: "unzip-collected-leaked",
+    breaks: "`unzip` whose source's step panics never drops what it unzipped, which std's `(A, B)` drops as it unwinds (#1150)",
+    file: "src/runtime/unzip.js",
+    find: "    dropA && (() => $dropItems(a, dropA)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
   },
 ];

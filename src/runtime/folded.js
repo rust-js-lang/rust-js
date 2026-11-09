@@ -26,7 +26,13 @@ function $folded(it, firstByNext = false) {
   const folded = Iterator.from({ next: () => listed().next() });
   // Its hint, before it's folded, what it folds' (#733).
   folded.sizeHint = () => (items === undefined ? $sizeHint(it) : [0, undefined]);
-  return $forward(folded, it, {
+  const made = $forward(folded, it, {
     fold: (init, f, unwind, ends) => (items === undefined ? foldOf(init, f, unwind, ends) : listed().reduce(f, init)),
   });
+  // Consumed by its fold, as std's consumer that routes through it is, by
+  // the runtime's stepping helpers that take it, each item put where it
+  // goes as the fold gives it: what's put before a step panics stays, or is
+  // dropped where the consumer's frame drops it, as std's does (#1161).
+  made.byItsFold = true;
+  return made;
 }

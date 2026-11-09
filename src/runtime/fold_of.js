@@ -175,9 +175,14 @@ function $collectEnded(close, items, drop) {
 // `Vec` (#423).
 function $collectDropping(it, drop, restFirst = false) {
   const items = [];
-  $collectUnwinding(() => {
-    for (let step = it.next(); !step.done; step = it.next()) items.push(step.value);
-  }, it, items, drop, restFirst);
+  // Of one `$folded` made, by its fold, each collected as it's given (#1161).
+  const run =
+    it.byItsFold && typeof it.fold === "function"
+      ? () => it.fold(undefined, (_, item) => void items.push(item))
+      : () => {
+          for (let step = it.next(); !step.done; step = it.next()) items.push(step.value);
+        };
+  $collectUnwinding(run, it, items, drop, restFirst);
   // And at its end, as std's `collect` drops what it took then, what an
   // adapter that stops early left (ADR 0570), `$collectEnded`'s.
   $collectEnded(() => it.return?.(), items, drop);

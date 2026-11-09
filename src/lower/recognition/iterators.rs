@@ -679,6 +679,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "__iterator_get_unchecked" => IterMethod::GetUnchecked,
             "advance_by" => IterMethod::AdvanceBy,
             "partition" => IterMethod::Partition,
+            "unzip" => IterMethod::Unzip,
             "is_sorted" => IterMethod::IsSorted,
             "is_sorted_by" => IterMethod::IsSortedBy,
             "is_sorted_by_key" => IterMethod::IsSortedByKey,
@@ -1442,6 +1443,8 @@ pub(crate) enum IterMethod {
     /// crate's: `Ok(())`, or `Err` of how many there weren't (ADR 0913).
     AdvanceBy,
     Partition,
+    /// `unzip()`: each pair's sides, into two collections (#1150).
+    Unzip,
     Collect,
 }
 

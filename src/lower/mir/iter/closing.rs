@@ -111,7 +111,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Not of one lent, its lender's; nor of a type parameter's, its own
     /// drop after, which MIR writes, unwinding too; nor a `collect()` of
     /// an adapter, which runs nothing of its own as it steps, its adapters'
-    /// closing their source already. A `collect()` of the crate's iterator
+    /// closing their source already. A `partition` or an `unzip` closes a
+    /// type parameter's too, as std's fold drops it before what they
+    /// collected (#1150, #1161). A `collect()` of the crate's iterator
     /// itself, or of a type parameter's, which may be one, closes it, so a
     /// panic in its `next` drops it before what it collected, as std's
     /// collect frame holds it inside the one that holds its `Vec` (#655,
@@ -133,6 +135,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(IterMethod::Collect) => {
                     self.is_user_iterator(iter_ty) || crate::lower::recognition::known_by_bounds(iter_ty)
                 }
+                // A `partition` or an `unzip`, of a type parameter's too,
+                // whose source std's fold drops as a panic unwinds, before
+                // what it collected (#1150, #1161).
+                Some(IterMethod::Partition | IterMethod::Unzip) => true,
                 _ => !crate::lower::recognition::known_by_bounds(iter_ty),
             }
             && self.closes_to_drop(iter_ty)
@@ -525,6 +531,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::AdvanceBy
                     | IterMethod::Find
                     | IterMethod::Partition
+                    | IterMethod::Unzip
                     | IterMethod::Filter
                     | IterMethod::SkipWhile
                     // Std's `self.map(f).is_sorted()`, which moves each into

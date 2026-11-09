@@ -3666,9 +3666,14 @@ export function $collectEnded(close, items, drop) {
 // `Vec` (#423).
 export function $collectDropping(it, drop, restFirst = false) {
   const items = [];
-  $collectUnwinding(() => {
-    for (let step = it.next(); !step.done; step = it.next()) items.push(step.value);
-  }, it, items, drop, restFirst);
+  // Of one `$folded` made, by its fold, each collected as it's given (#1161).
+  const run =
+    it.byItsFold && typeof it.fold === "function"
+      ? () => it.fold(undefined, (_, item) => void items.push(item))
+      : () => {
+          for (let step = it.next(); !step.done; step = it.next()) items.push(step.value);
+        };
+  $collectUnwinding(run, it, items, drop, restFirst);
   // And at its end, as std's `collect` drops what it took then, what an
   // adapter that stops early left (ADR 0570), `$collectEnded`'s.
   $collectEnded(() => it.return?.(), items, drop);
@@ -15172,9 +15177,11 @@ export function $charIndicesOffset(it) {
 // the iterator it was given as it unwinds; what it pushed stays, `v`'s
 // (#422). `byFold`, of a `TrustedLen` iterator, by its fold, as std's
 // `extend_trusted` steps it, which drops what it holds where its fold
-// does, a `map`'s function before what it hasn't given (#710).
+// does, a `map`'s function before what it hasn't given (#710); and of one
+// `$folded` made, by its fold, as std's consumer that routes through it is
+// (#1161).
 export function $extend(v, items, byFold = false) {
-  if (byFold && typeof items.fold === "function") {
+  if ((byFold || items.byItsFold) && typeof items.fold === "function") {
     items.fold(undefined, (_, x) => {
       v.push(x);
     });
@@ -16438,14 +16445,22 @@ export function $fromFn(f, boxed = false) {
 
 // `unzip()` of `pairs`, an array or an iterator of pairs: each side's
 // items, put in as each pair comes, by std's `fold`, which an iterator
-// rust-js makes routes through the crate's own (#162).
-export function $unzip(pairs) {
+// rust-js makes routes through the crate's own (#162). Where a step throws,
+// a panic, what's left of `pairs` closed by its fold, then what each side
+// collected dropped, `dropA`'s then `dropB`'s, as std's `(A, B)` drops its
+// fields as it unwinds (#1150).
+export function $unzip(pairs, dropA, dropB) {
   const a = [];
   const b = [];
-  Iterator.from(pairs).forEach(([x, y]) => {
+  const put = ([x, y]) => {
     a.push(x);
     b.push(y);
-  });
+  };
+  $unwinds(
+    () => (typeof pairs.fold === "function" ? pairs.fold(undefined, (_, pair) => put(pair)) : $eachOf(pairs, put)),
+    dropA && (() => $dropItems(a, dropA)),
+    dropB && (() => $dropItems(b, dropB)),
+  );
   return [a, b];
 }
 
@@ -16999,9 +17014,15 @@ export function $folded(it, firstByNext = false) {
   const folded = Iterator.from({ next: () => listed().next() });
   // Its hint, before it's folded, what it folds' (#733).
   folded.sizeHint = () => (items === undefined ? $sizeHint(it) : [0, undefined]);
-  return $forward(folded, it, {
+  const made = $forward(folded, it, {
     fold: (init, f, unwind, ends) => (items === undefined ? foldOf(init, f, unwind, ends) : listed().reduce(f, init)),
   });
+  // Consumed by its fold, as std's consumer that routes through it is, by
+  // the runtime's stepping helpers that take it, each item put where it
+  // goes as the fold gives it: what's put before a step panics stays, or is
+  // dropped where the consumer's frame drops it, as std's does (#1161).
+  made.byItsFold = true;
+  return made;
 }
 
 // `advance_by(m)` of `it`, by its dictionary, `iterator`: its own, which

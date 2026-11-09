@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
   },
+  {
+    name: "folded-listed-by-next",
+    breaks: "what `$folded` made isn't marked to be consumed by its fold, so a `LinkedList`'s `extend` and `collect` in generic code list it whole first, losing or leaking what a step panics past (#1161)",
+    file: "src/runtime/folded.js",
+    find: "  made.byItsFold = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
+  },
 ];

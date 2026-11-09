@@ -2387,3 +2387,40 @@ that panic. Mutations `debug-entries-items-undropped`,
 `debug-entries-iterator-undropped`, `debug-entries-dropping-items-unasked`
 (`lower/display/written.ts`) and `entries-shown-unwound-undropped`
 (`runtime/debug.ts`).
+
+## Amendment: what a consumer built before its source's step panics (#1150, #1161)
+
+The consumer net and its generic callers (ADR 1090) found three ways a
+consumer lost what it had built where its source's step panicked:
+
+- `$unzip` was given no drops: what it unzipped leaked (#1150).
+- `$folded`, the items the crate's own `fold` gives, listed whole before
+  a consumer stepping it by `next` saw any, `extend` and `collect` of a
+  `LinkedList` and a hash map's or a set's in generic code among them:
+  where the fold panicked, what it had listed was neither put in nor
+  dropped (#1161). Even without a panic, a consumer whose work shows,
+  a map dropping a key's old value, saw all of the fold's steps first.
+- `partition` and `unzip` of a type parameter's iterator dropped it after
+  the call, as generic code drops what it consumes, so as a panic
+  unwound what they had collected was dropped before what was left of
+  their source, which std's fold drops first, as its parameter (#1161).
+
+**What `$folded` makes is consumed by its fold** (`byItsFold`): `$extend`
+and `$collectDropping` fold it, each item put where it goes as the fold
+gives it, so what's put before a panic stays, or is dropped by the
+consumer's own unwind. **`$unzip` is given each side's drop**, `A`'s
+then `B`'s, as `(A, B)` drops its fields, and steps by its source's fold.
+**`partition` and `unzip` close what they consume, a type parameter's
+too** (`consumer_closes`, `IterMethod::Unzip`), so it's dropped where
+their fold unwinds, before what they collected.
+
+Held by `test/corpus/consumers_keep_what_they_built_on_a_panic.rs`, of
+the case's own code and of generic code's, against native Rust in both
+builds, and by the net, whose rows under #1150 and #1161 are off its
+list. Mutations `extend-of-folded-by-next` (`runtime/extend.ts`),
+`unzip-collected-leaked` (`runtime/unzip.ts`), `folded-listed-by-next`
+(`runtime/folded.ts`), `collect-dropping-of-folded-by-next`
+(`runtime/fold_of.ts`), `unzip-drops-ungiven`
+(`lower/combinators/adapters.ts`), `partition-of-param-dropped-after` and
+`unzip-method-leaves-some` (`lower/mir/iter/closing.ts`) new; `extend-by-next`
+and `unzip-steps` refitted.

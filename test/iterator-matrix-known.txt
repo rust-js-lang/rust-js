@@ -21,17 +21,9 @@
 // generator async 9fe3888b9e1a
 // generator consumers fedf533331c1
 
-#1150 `unzip` leaks what it unzipped where its source's step panics
-consumers:plain 604,1631,2088,5796
-consumers:std 604,1631,2088,5796
-
 #1151 `char::decode_utf16` steps its whole source before it yields its first `char`
 consumers:plain 6874
 consumers:std 6874
-
-#1161 generic code loses or leaks what a `LinkedList`'s `extend` and `collect` and a `partition` built before its source's step panics
-consumers:plain 1075,1508,1937,1993,2120,2358,2646,2790,4740,5254,5753,6071,6652,6845
-consumers:std 1075,1508,1937,1993,2120,2358,2646,2790,4740,5254,5753,6071,6652,6845
 
 #1162 `repeat(x).zip(arg)` in generic code clones `x` once more than native Rust, in the std build
 consumers:std 3319,4308
