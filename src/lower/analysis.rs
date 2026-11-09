@@ -522,7 +522,7 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub back_stepped: BackStepped<'tcx>,
     pub changed_vecs: IndexSet<Ty<'tcx>>,
     /// The types whose objects say where they're stored (#1113).
-    pub stored_places: StoredPlaces,
+    pub stored_places: StoredPlaces<'tcx>,
     /// Each generic function's type parameters it's given a drop function
     /// for (ADR 0098), by their indices.
     pub drop_params: IndexMap<DefId, Vec<u32>>,

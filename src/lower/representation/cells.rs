@@ -156,3 +156,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 }
+
+/// Of a cell field's JS that's the property it holds, a handle on it,
+/// `Handle(x.f)`, or its one cell, `$fieldCell(x, "f")` (ADRs 0288, 0863):
+/// the struct's object and the field's key.
+pub(in crate::lower) fn property_of_cell(e: &Expr) -> Option<(Expr, String)> {
+    match &e.kind {
+        js::ExprKind::Handle(read, _) => match &read.kind {
+            js::ExprKind::Member(object, key) => Some(((**object).clone(), key.clone())),
+            _ => None,
+        },
+        js::ExprKind::Call(callee, given) if callee.helper_name() == Some("$fieldCell") => match given.as_slice() {
+            [object, key, ..] => match &key.kind {
+                js::ExprKind::Str(key) => Some((object.clone(), key.clone())),
+                _ => None,
+            },
+            _ => None,
+        },
+        _ => None,
+    }
+}

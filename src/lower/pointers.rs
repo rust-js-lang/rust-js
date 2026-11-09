@@ -710,19 +710,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let js::ExprKind::Index(object, index) = place.kind {
             return Ok(handle(*object, *index, offset));
         }
+        // A cell field that's its property, a handle or `$fieldCell`: the
+        // field's place in its struct, not the handle's own (#1114).
+        if let Some((object, key)) = crate::lower::representation::property_of_cell(&place) {
+            return Ok(handle(object, Expr::str(&key), offset));
+        }
         // An object's, by the object, wherever it's reached from: a copy of
         // what a pointer points to is a copy (`mutation.rs`), so the object
         // is the place's. A `dyn Fn`'s, by the JS function it is, as a
         // JS object's is (ADR 0653): `std::ptr::eq(a, b)` is `a === b`.
         let function = matches!(pointee.kind(), ty::Dynamic(..)) && self.is_callable(pointee);
+        // Of one that's the object it holds, what holds it (#1114).
         if (self.is_object(pointee) || function) && !self.mut_ref_form(pointee).is_cell() {
-            return Ok(Expr::call(Expr::helper("$ptrTo"), vec![place]));
+            return self.object_pointer(place, pointee, span);
         }
         // A type parameter's value, an object or not as its caller gives
         // it: `$ptrTo`, which refuses a value JS holds as itself where it
         // runs (ADR 0562).
-        if self.is_unknown(pointee) && !matches!(place.kind, js::ExprKind::Member(..)) {
-            return Ok(Expr::call(Expr::helper("$ptrTo"), vec![place]));
+        // And an `Option` of an object, which JS holds as it (#1114).
+        let outer = matches!(self.object_within(pointee), crate::lower::lent::Within::At(1..));
+        if (self.is_unknown(pointee) || outer) && !matches!(place.kind, js::ExprKind::Member(..)) {
+            return self.object_pointer(place, pointee, span);
         }
         match place.kind {
             // A cell's one field is at its start.

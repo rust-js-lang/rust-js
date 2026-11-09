@@ -5,14 +5,16 @@
 // held a core for 28 hours, reparented to launchd, unseen (2026-11-09).
 //
 //   bun scripts/run-case.ts <case.rs> [--std-iterators] [--tidy-until <pass>] [--prepare-without <rewrite>] [--edition <year>]
-//       compiled as the corpus's cases are, and run natively and as JS, each
-//       printed, and whether they agree
+//       compiled as the corpus's cases are, and run natively (on wasm32 where
+//       it says `//@ native: wasm32`) and as JS, each printed, and whether
+//       they agree
 //   bun scripts/run-case.ts <case.js | dir>   [--timeout <s>]
 //       a case's compiled JS, `case.js` in a directory, run as the tests run
 //       it: what `entry` prints, and how it ended
-import { existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 
+import { directives } from "../test/corpus-cases";
 import { agree, compileJs, jsLimit, runJs, runNative, runtimes, show, type Run } from "../test/programs";
 import { target } from "../test/support";
 
@@ -47,7 +49,9 @@ if (path.endsWith(".rs")) {
   const dir = join(target, "run-case", basename(path, ".rs"));
   mkdirSync(join(dir, "native"), { recursive: true });
   mkdirSync(join(dir, "js"), { recursive: true });
-  const native = runNative(path, join(dir, "native"), edition);
+  // Run natively as the corpus runs it: `//@ native: wasm32`'s on wasm32.
+  const cased = directives(readFileSync(path, "utf8"));
+  const native = runNative(path, join(dir, "native"), edition, typeof cased === "string" ? "host" : cased.native);
   if (typeof native === "string") {
     console.error(native);
     process.exit(1);

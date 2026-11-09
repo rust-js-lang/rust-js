@@ -38,7 +38,12 @@ pointer's type, an allocation of `std::alloc::alloc`'s used as its bytes
 field's address is in the allocation its object is stored in, however the
 pointer reached it, through a reference, a call, an iterator: a crate that
 asks an address records where its objects are stored where a reference to
-them is made ([ADR 0562](../decisions/0562-a-pointer-is-a-place-and-an-address.md), amended). A `#[repr(transparent)]`
+them is made ([ADR 0562](../decisions/0562-a-pointer-is-a-place-and-an-address.md), amended). What a `RefCell`, a
+`Cell`, a `Mutex` or an `RwLock` lends, an `Option`'s payload and a
+variant's field are inside it, at the offset rustc lays them out at, past
+a borrow flag, a lock's state or a tag; a pointer to an `Option` of a
+struct, or a `RefCell` of one, which JS holds as the struct, made of a
+reference to it, is the struct's address less that offset (#1114). A `#[repr(transparent)]`
 struct is its field, so a `transmute` between them, by value or through
 either reference, is the value itself
 ([ADR 0584](../decisions/0584-a-transparent-struct-is-its-field.md)). What
@@ -49,6 +54,8 @@ reads memory by where it is, it refuses:
 - A `transmute` of an enum, whose bytes a niche or a tag lays out: `#[repr(u8)] enum Size { One = 1 } let n: u8 = unsafe { std::mem::transmute::<Option<Size>, u8>(None) }; let _ = (n, Size::One);`
 - A `static` of a reference to another `static`'s array or item; one to a literal or a `const` compiles: `static NAMES: [&str; 2] = ["x", "y"]; static REF: &[&str] = &NAMES; println!("{}", REF.join(""));`
 - `==` or `{:?}` of raw pointers in generic code to a type that holds a type parameter, `NonNull<Node<T>>`, whose size rust-js can't give: `struct Node<T>(T); fn same<T>(a: *const Node<T>, b: *const Node<T>) -> bool { a == b } let n = Node(1); println!("{}", same(&n, &n));`
+- In a crate that asks an address, a pointer made of a reference in generic code, `r as *const T`, where the crate gives `T` both an `Option` of a struct, which JS holds as the struct, past its tag, and a type that isn't held so: one JS can't be both. Make it where the type is known (#1114): `#[repr(C)] struct P(u8, u32); fn at<T>(r: &T) -> usize { r as *const T as usize } let p = P(1, 2); let o = Some(P(3, 4)); println!("{} {}", at(&p), at(&o));`
+- In a crate that asks an address of what it lends, std's function that lends a reference into its receiver's own storage where rust-js doesn't know it, `OnceCell::get`, `Result::as_ref`, `Peekable::peek`: take what it holds by value, keep it in a `RefCell`, an `Option` or a struct's field, or reach it by a pattern, `if let Ok(x) = &r` (#1114): `#[repr(C)] struct P(u8, u32); let c = std::cell::OnceCell::new(); let _ = c.set(P(1, 2)); println!("{}", c.get().unwrap() as *const P as usize);`
 - An `Rc` of a `fn` pointer or item cloned, or upgraded from a `Weak`, before it's made an `Rc<dyn Fn>`, where the crate reads a `dyn Fn`'s address: each would be a function of its own, two of one allocation ([ADR 0959](../decisions/0959-ptr-eq-of-a-closure-made-with-its-rc.md), amended): `fn double(x: u32) -> u32 { x * 2 } let held: std::rc::Rc<fn(u32) -> u32> = std::rc::Rc::new(double); let a: std::rc::Rc<dyn Fn(u32) -> u32> = held.clone(); let b: std::rc::Rc<dyn Fn(u32) -> u32> = held; println!("{}", std::ptr::addr_eq(&*a, &*b));`
 
 And refused when it runs, as a panic that says so, since which it is
@@ -59,7 +66,8 @@ depends on what the program does:
   is shown, a number of rust-js's own ([ADR 0562](../decisions/0562-a-pointer-is-a-place-and-an-address.md)).
 - Reading through a pointer with no place, an integer made a pointer, or
   the address of a value JS holds as itself, a number reached through a
-  `&`.
+  `&`; a pointer made of a reference to an `Option` that holds `None`,
+  which JS holds as `undefined`, no place (#1114).
 - A union's field read while it holds one whose bytes JS has none of, a
   `&str`'s or a `String`'s; plain data's bytes read as another type's
   ([ADR 0562](../decisions/0562-a-pointer-is-a-place-and-an-address.md)).

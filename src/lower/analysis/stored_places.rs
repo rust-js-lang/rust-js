@@ -8,6 +8,7 @@
 
 use crate::collections::IndexSet;
 use crate::lower::Body;
+use crate::lower::instances::{Callers, callers_of, instances_of};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
@@ -16,16 +17,49 @@ use rustc_span::def_id::DefId;
 /// definitions, a struct's, an enum's or a union's, and whether any is, so
 /// a type parameter's value, which may be one, is too.
 #[derive(Default)]
-pub(in crate::lower) struct StoredPlaces {
+pub(in crate::lower) struct StoredPlaces<'tcx> {
     recorded: IndexSet<DefId>,
+    /// Whether the crate asks an address (`asks_addresses`).
+    asks: bool,
+    /// What each raw pointer the crate has points at, whose address it may
+    /// ask: a number's, an object's.
+    pointees: IndexSet<Ty<'tcx>>,
+    /// Each function the crate names and its namings, of a crate that asks
+    /// an address: what generic code's instances are (`instances_of`).
+    callers: Callers<'tcx>,
 }
 
-impl StoredPlaces {
+impl<'tcx> StoredPlaces<'tcx> {
+    /// Whether the crate asks an address, `p as usize`, `{:p}`: where
+    /// std keeps what it lends inline is then recorded where it lends it
+    /// (#1114).
+    pub(in crate::lower) fn asks(&self) -> bool {
+        self.asks
+    }
+
+    /// Whether an address of a `ty` may be asked: one of a recorded type,
+    /// or of what a raw pointer the crate has points at (#1114).
+    pub(in crate::lower) fn addressable(&self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+        self.records(ty) || self.pointees.contains(&tcx.erase_and_anonymize_regions(ty))
+    }
+
+    /// What `ty`, which holds `owner`'s type parameters, is in each of the
+    /// crate's instances of it, `instances_of`'s: `None` where they can't
+    /// all be seen.
+    pub(in crate::lower) fn instances(
+        &self,
+        tcx: TyCtxt<'tcx>,
+        ty: Ty<'tcx>,
+        owner: DefId,
+    ) -> Option<IndexSet<Ty<'tcx>>> {
+        instances_of(tcx, &self.callers, ty, owner)
+    }
+
     /// Whether an object of `ty` says where it's stored: one of the
     /// recorded types', a tuple or an array that holds one; or a type
     /// parameter's, which may be one, where any is recorded. Not a `Vec`,
     /// whose items are an allocation of their own.
-    pub(in crate::lower) fn records(&self, ty: Ty<'_>) -> bool {
+    pub(in crate::lower) fn records(&self, ty: Ty<'tcx>) -> bool {
         // A tuple or an array, an object of no definition a record could
         // name, is recorded in any crate that records any: its fields'
         // addresses are its container's as a struct's are.
@@ -99,13 +133,15 @@ fn asks_addresses<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> bool {
 /// passes through and of what it points at; then each struct, enum or
 /// union of the crate's or its libraries' that holds one of those by value,
 /// in a field of any variant, again till none is added.
-pub(in crate::lower) fn stored_places<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> StoredPlaces {
+pub(in crate::lower) fn stored_places<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> StoredPlaces<'tcx> {
     // A crate that asks no address, whose pointers are only compared, read
     // and written, `ptr::eq`'s, records nothing: where an object is stored
     // says nothing it asks.
     if !bodies.iter().any(|body| asks_addresses(tcx, body)) {
         return StoredPlaces::default();
     }
+    let callers = callers_of(tcx, bodies);
+    let mut pointees: IndexSet<Ty<'tcx>> = IndexSet::default();
     let mut recorded: IndexSet<DefId> = IndexSet::default();
     // Each struct, enum or union type the crate's code has, with its
     // arguments, whose fields say what an object of it holds.
@@ -123,6 +159,9 @@ pub(in crate::lower) fn stored_places<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'
     for body in bodies {
         let thir = &body.thir;
         for expr in thir.exprs.iter() {
+            if let Some((pointee, _)) = crate::lower::pointers::raw_pointee(tcx, expr.ty) {
+                pointees.insert(tcx.erase_and_anonymize_regions(pointee));
+            }
             for part in expr.ty.walk() {
                 if let Some(ty) = part.as_type()
                     && let ty::Adt(..) = ty.kind()
@@ -156,7 +195,12 @@ pub(in crate::lower) fn stored_places<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'
         }
     }
     if recorded.is_empty() {
-        return StoredPlaces::default();
+        return StoredPlaces {
+            recorded,
+            asks: true,
+            pointees,
+            callers,
+        };
     }
     // Each type that holds a recorded one by value, of the types its code
     // has, by their fields' types with their arguments: an `Rc<T>`'s
@@ -202,5 +246,10 @@ pub(in crate::lower) fn stored_places<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'
         }
         recorded.extend(added);
     }
-    StoredPlaces { recorded }
+    StoredPlaces {
+        recorded,
+        asks: true,
+        pointees,
+        callers,
+    }
 }

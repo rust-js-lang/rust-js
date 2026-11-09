@@ -31,6 +31,9 @@ function $setBorrows(cell, borrows) {
 // `{ value }` does, its `value` the property; of a nullable field, its
 // `None` `null` where it's written.
 const $fieldCells = new WeakMap();
+// Each such cell's field, its object and key, where a pointer to what it
+// lends is (#1114).
+const $cellFields = new WeakMap();
 
 function $fieldCell(object, key, nullable) {
   let cells = $fieldCells.get(object);
@@ -46,6 +49,7 @@ function $fieldCell(object, key, nullable) {
       },
     };
     cells.set(key, cell);
+    $cellFields.set(cell, { object, key });
   }
   return cell;
 }

@@ -238,3 +238,13 @@ neighbour shuffle install Miri, so the reducer reduces a case with
 loop made of its string each time, its length multiplied, of eight chars
 at most (#1106). Held by `test/programs.test.ts`'s "a native build that
 isn't kept goes once it's run, and a kept one stays".
+
+## Amendment: a case run natively on wasm32 is rewritten too (#1114)
+
+A corpus case that says `//@ native: wasm32`, whose output is a `usize`'s
+or a hasher's that wasm32 and rust-js agree on and the host doesn't, was
+left out of the net. Its rewrites run natively on wasm32 too, as the case
+does, the `library` rewrite's crate built for it (`runWasm32`'s `rustc`
+flags). The object-model net, whose library crate is the host's, keeps to
+the host's cases. The pointer cases of #1114, whose offsets are past a
+`usize` borrow flag, are run through every rewrite so.

@@ -4,14 +4,24 @@
 // `offset`, a field's byte offset in its object, says where its address is
 // (ADR 0562); an item's is its index times its size.
 const $places = new WeakMap();
-// Each object that's an array's item a handle was made on, to that handle:
-// `$ptrTo` of the object is the item's place (ADR 0562).
+// Where each object a record names is stored by value (#1113): its
+// container, key, offset there, an array's stride, and `within`, where in
+// the slot it is past what holds it (#1114). Written where a reference or a
+// pointer is made to it, `$stored`, `$storedItems`, `$storedValue`.
 const $items = new WeakMap();
 
 // `root` and `at`, of a place reached through more than one field or item:
 // the object its projections start from, and the place's byte offset in it,
 // where its address is (#1089).
 function $ptr(object, key, offset, root, at) {
+  // What a cell field that's the property it holds lends, through a
+  // handle on it, or its one cell, `$fieldCell(x, "f")` (#1114).
+  const field = key === "value" ? $cellFields.get(object) : undefined;
+  if (offset === undefined || field !== undefined) {
+    const at = field ?? { object, key };
+    const content = $fieldContents.get(at.object)?.get(at.key);
+    if (content !== undefined) return $ptrIn(at.object, at.key, content.offset, content.within);
+  }
   let handles = $places.get(object);
   if (handles === undefined) $places.set(object, (handles = new Map()));
   let handle = handles.get(key);
@@ -20,8 +30,6 @@ function $ptr(object, key, offset, root, at) {
     handle.rootAt = at;
   }
   if (handle === undefined) {
-    const item = Array.isArray(object) && typeof key === "number" ? object[key] : undefined;
-    if (item !== null && typeof item === "object") $items.set(item, { of: object, at: key, offset });
     handle = {
       of: object,
       at: key,
@@ -170,14 +178,24 @@ function $allocationOf(pointer) {
 
 function $placed(pointer) {
   // A reference that's an array's item itself, the object, `transmute(&held.0)`
-  // of a tuple struct's field: the item's place (#1019).
+  // of a tuple struct's field: the item's place (#1019); of an object
+  // `within` its slot, the object's.
   const own = $itemOf(pointer);
-  if (own !== undefined) return $ptr(own.of, own.at, own.offset);
+  if (own !== undefined) return own.within ? $ptrTo(pointer) : $ptr(own.of, own.at, own.offset);
+  // An object's handle, or one on what holds it as far out as its slot,
+  // `$ptrOuter`'s: the slot's (#1114).
   if (pointer.at === undefined && pointer.of !== undefined) {
     const item = $itemOf(pointer.of);
-    if (item !== undefined) return $ptr(item.of, item.at, item.offset);
+    if (item !== undefined && (item.within ?? 0) === (pointer.outer ?? 0)) return $ptr(item.of, item.at, item.offset);
   }
   return pointer;
+}
+
+// A handle's byte offset in what it's on: a `{ value }` cell's content's,
+// where std lent it, its own (#1114); and what's `within` its slot further.
+function $handleOffset(pointer) {
+  const offset = pointer.at === "value" && $contents.has(pointer.of) ? $contents.get(pointer.of) : pointer.offset;
+  return typeof offset === "number" ? offset + (pointer.within ?? 0) : offset;
 }
 
 // Where `object` is stored by value, `$items`' record of it, where it's
@@ -195,11 +213,106 @@ function $itemOf(object) {
 // Where the object a field's or an item's handle is on is stored, recorded
 // where a reference or a pointer is made into it, so its address is in its
 // container's allocation, whichever pointer asks first (#1113).
-function $stored(handle, stride) {
+// `within`: where in the slot the object is, of a slot whose value JS holds
+// as the object it holds, an `Option`'s payload past its tag, a `RefCell`'s
+// value past its borrow flag (#1114).
+function $stored(handle, stride, within) {
   const value = $slot(handle.of, handle.at);
   if (value !== null && typeof value === "object") {
-    $items.set(value, { of: handle.of, at: handle.at, offset: handle.offset, stride });
+    $items.set(value, { of: handle.of, at: handle.at, offset: handle.offset, stride, within });
   }
+}
+
+// Where a `{ value }` cell, a `RefCell`'s, a `Cell`'s, a lock's, holds what
+// it lends, `offset` bytes into it, recorded where std lends it (#1114): a
+// handle on its `value` is there, and an object it holds, `within` bytes
+// further into the slot, as `$stored`'s is.
+const $contents = new WeakMap();
+
+// Recorded as std's call is given it, `$borrow($storedValue(cell, 4))`:
+// the cell. `within` `null`: what it holds is an allocation of its own, a
+// `Vec`'s items.
+function $storedValue(cell, offset, within) {
+  $contents.set(cell, offset);
+  const value = cell.value;
+  if (within !== null && value !== null && typeof value === "object") {
+    $items.set(value, { of: cell, at: "value", offset, stride: undefined, within });
+  }
+  return cell;
+}
+
+// Where a cell field that's the property it holds, a `RefCell`'s of a
+// number (ADR 0863, amended), keeps that: `offset`, the field's in its
+// struct, `within`, past its borrow flag (#1114). A handle on the property
+// made of what the cell lends, which says no offset, is one on that.
+const $fieldContents = new WeakMap();
+
+function $storedIn(object, key, offset, within) {
+  let fields = $fieldContents.get(object);
+  if (fields === undefined) $fieldContents.set(object, (fields = new Map()));
+  fields.set(key, { offset, within });
+}
+
+// A pointer to what JS holds as the object it holds, `within` bytes before
+// it: an `Option` of an object whose payload is past its tag, a `RefCell`
+// of an object, which is the object (#1114). One for each object and
+// offset; it reads and writes the object, as `$ptrTo`'s does, and its
+// address is the object's less `within`.
+const $outers = new WeakMap();
+
+function $ptrOuter(object, within) {
+  if (object === null || typeof object !== "object") {
+    throw new Error("rust-js does not support a pointer to an `Option` that holds nothing, reached by a reference or a box, which JS holds as `undefined`, no place (#1132): point at it where it's stored, `&raw const o` of the variable or field");
+  }
+  if (within === 0) return $ptrTo(object);
+  let handles = $outers.get(object);
+  if (handles === undefined) $outers.set(object, (handles = new Map()));
+  let handle = handles.get(within);
+  if (handle === undefined) {
+    handle = {
+      of: object,
+      at: undefined,
+      offset: 0,
+      outer: within,
+      get value() {
+        return object;
+      },
+      set value(value) {
+        $assign(object, value);
+      },
+    };
+    handles.set(within, handle);
+  }
+  return handle;
+}
+
+// A pointer to what a slot holds `within` bytes into it, of a slot whose
+// value JS holds as what it holds, a number: a `RefCell` field's value, an
+// `Option`'s payload (#1114). A place of its own, apart from the slot's,
+// which reads and writes the slot.
+const $inners = new WeakMap();
+
+function $ptrIn(object, key, offset, within) {
+  let handles = $inners.get(object);
+  if (handles === undefined) $inners.set(object, (handles = new Map()));
+  const id = `${typeof key}:${key}@${within}`;
+  let handle = handles.get(id);
+  if (handle === undefined) {
+    handle = {
+      of: object,
+      at: key,
+      offset,
+      within,
+      get value() {
+        return $slot(object, key);
+      },
+      set value(value) {
+        object[key] = value;
+      },
+    };
+    handles.set(id, handle);
+  }
+  return handle;
 }
 
 // Whether a rooted handle's object is in its root still: one of the
@@ -219,17 +332,22 @@ function $rooted(handle) {
 
 // Each object a `Vec`'s or an array's items are, recorded as `$stored`'s
 // are, at its index then, found again where the array moves it (#1113).
-function $storedItems(items, stride) {
+function $storedItems(items, stride, within) {
   for (let i = 0; i < items.length; i++) {
     const value = items[i];
-    if (value !== null && typeof value === "object") $items.set(value, { of: items, at: i, offset: undefined, stride });
+    if (value !== null && typeof value === "object") $items.set(value, { of: items, at: i, offset: undefined, stride, within });
   }
 }
+
+// The bytes past each allocation's own kept free, the room before the next
+// one's base where what holds an object no slot is recorded as holding,
+// `$ptrOuter`'s, is (#1114).
+const $outerRoom = 64;
 
 function $addresses(allocation, bytes) {
   let range = $ranges.get(allocation);
   if (range === undefined) {
-    const length = Math.max(4096, Math.ceil(bytes / 4096) * 4096);
+    const length = Math.max(4096, Math.ceil((bytes + $outerRoom) / 4096) * 4096);
     if ($nextBase + length > 0x1_0000_0000) {
       throw new Error("rust-js does not support more addresses than wasm32 has: the address space is used up");
     }
@@ -260,54 +378,75 @@ function $offsetIn(pointer, range) {
     return pointer.at + (pointer.plain !== undefined ? $offsetIn(pointer.plain, range) : 0);
   }
   if (pointer.of === undefined || pointer.at === undefined) return 0;
-  if (typeof pointer.offset === "number") return pointer.offset;
+  const offset = $handleOffset(pointer);
+  if (typeof offset === "number") return offset;
   // An array's first item is at its start, whatever its stride.
-  if (pointer.offset === undefined && Array.isArray(pointer.of) && typeof pointer.at === "number") {
-    return pointer.at === 0 ? 0 : pointer.at * range.stride;
+  if (offset === undefined && Array.isArray(pointer.of) && typeof pointer.at === "number") {
+    return (pointer.at === 0 ? 0 : pointer.at * range.stride) + (pointer.within ?? 0);
   }
   throw new Error("rust-js does not support the address of a field of a type its caller lays out, which reads memory by where it is");
 }
 
-function $addr(pointer, size) {
+// `inner`: asked on the way to another place's, a container's or a root's,
+// which exposes only the place the program asked of, so an address found
+// again is its (#1114).
+function $addr(pointer, size, inner) {
   if (pointer === null) return 0;
   if (typeof pointer !== "object" && typeof pointer !== "function") {
     throw new Error("rust-js does not support the address of a value JS holds as itself, a copy, which reads memory by where it is");
   }
   if (pointer.addr !== undefined) return pointer.addr;
-  if (pointer.bytes !== undefined && pointer.opaque) return $addr(pointer.typed, size);
+  if (pointer.bytes !== undefined && pointer.opaque) return $addr(pointer.typed, size, inner);
   pointer = $placed(pointer);
+  // A pointer to what holds an object no slot is recorded as holding it at
+  // `within`: the object's address less it, in the room before each
+  // allocation's base that `$addresses` keeps (#1114).
+  if (pointer.outer !== undefined) {
+    if (pointer.outer > $outerRoom) {
+      throw new Error("rust-js does not support the address of what holds an object this far before it, which reads memory by where it is");
+    }
+    const addr = $addr($ptrTo(pointer.of), 0, true) - pointer.outer;
+    if (!inner) $exposedPlaces.set(addr, pointer);
+    return addr;
+  }
   // A place reached through more than one field or item: at its offset in
   // the root its projections start from, whose address is the root's
   // allocation's (#1089).
   // Not where the object it's on was moved out of its root since (#1113).
   if (pointer.root !== undefined && pointer.bytes === undefined && $rooted(pointer)) {
-    const addr = $addr($ptrTo(pointer.root), 0) + pointer.rootAt;
-    $exposedPlaces.set(addr, pointer);
+    const addr = $addr($ptrTo(pointer.root), 0, true) + pointer.rootAt;
+    if (!inner) $exposedPlaces.set(addr, pointer);
     return addr;
   }
-  // A field of an object that's an array's item or a tuple's field,
-  // `&raw const held.0.b` of a tuple struct's field: in the allocation
-  // that holds it, at the object's address and the field's offset, as
-  // `$ptrTo` of the object is the item's (#1019): a tuple's field's, its
-  // own offset (#1081); an array's item's, where the array's stride is
-  // known. Where it isn't, the object's own, at which its array's is put
-  // when it's asked (below).
-  const item = pointer.bytes === undefined && typeof pointer.offset === "number" ? $itemOf(pointer.of) : undefined;
-  if (item !== undefined) {
-    const range = $ranges.get(item.of);
+  // A field of an object stored in another, as its records say, an
+  // array's item, a tuple's or a struct's field, a cell's value: in the
+  // allocation that holds it, at the object's address and the field's
+  // offset (#1019, #1081, #1113), the object `within` its slot past what
+  // holds it (#1114). An array's item recorded with no size, generic
+  // code's, is its own allocation.
+  const item = pointer.bytes === undefined && pointer.of !== undefined ? $itemOf(pointer.of) : undefined;
+  // Where in the object recorded it is: a field's offset, an item's index
+  // times its size.
+  const offset =
+    item === undefined
+      ? undefined
+      : typeof pointer.offset === "number"
+        ? $handleOffset(pointer)
+        : pointer.offset === undefined && Array.isArray(pointer.of) && typeof pointer.at === "number"
+          ? (pointer.at === 0 ? 0 : pointer.at * size) + (pointer.within ?? 0)
+          : undefined;
+  if (offset !== undefined) {
     // An array's item recorded with its size: the array's address and its
     // index times that (#1113).
     const start =
       typeof item.offset === "number"
-        ? $addr($ptr(item.of, item.at, item.offset), 0)
+        ? $addr($ptr(item.of, item.at, item.offset), 0, true)
         : typeof item.stride === "number"
-          ? $addr($ptrTo(item.of), 0) + item.at * item.stride
-        : range?.stride !== undefined
-          ? range.base + (item.at === 0 ? 0 : item.at * range.stride)
+          ? $addr($ptrTo(item.of), 0, true) + item.at * item.stride
           : undefined;
     if (start !== undefined) {
-      const addr = start + pointer.offset;
-      $exposedPlaces.set(addr, pointer);
+      const addr = start + (item.within ?? 0) + offset;
+      if (!inner) $exposedPlaces.set(addr, pointer);
       return addr;
     }
   }
@@ -320,26 +459,10 @@ function $addr(pointer, size) {
     ((pointer.of !== undefined && typeof pointer.at === "number" && pointer.offset === undefined) || view);
   const stride = view ? pointer.stride : size;
   if (items && allocation.length === 0 && !$ranges.has(allocation)) $emptyAt(Math.max(stride, 1), allocation);
-  // An array whose first item, an object, has an address already, its
-  // field's asked first, `&raw const held.0.c` before `&raw const held.0`:
-  // at the item's, which its bytes fit in (#1019); an address in it found
-  // again is the item's, as it was. And so of a tuple whose field at its
-  // start, an object, has one (#1081).
-  const head = !$ranges.has(allocation)
-    ? items
-      ? allocation[0]
-      : pointer.offset === 0 && pointer.of === allocation && Array.isArray(allocation)
-        ? allocation[pointer.at]
-        : undefined
-    : undefined;
-  const first = head !== null && typeof head === "object" ? $ranges.get(head) : undefined;
-  if (first !== undefined && (!items || first.base + allocation.length * stride <= first.end)) {
-    $ranges.set(allocation, { base: first.base, end: first.end, of: allocation, stride: items ? stride : undefined });
-  }
   const range = $addresses(allocation, items ? allocation.length * stride : 0);
   if (items && range.stride === undefined) range.stride = stride;
   const addr = range.base + $offsetIn(pointer, range);
-  if (!items) $exposedPlaces.set(addr, pointer);
+  if (!items && !inner) $exposedPlaces.set(addr, pointer);
   return addr;
 }
 
@@ -407,7 +530,14 @@ function $ptrAt(pointer, addr, size, zero) {
   const provenance = pointer.addr === undefined ? pointer : pointer.provenance;
   if (provenance === null) return addr === 0 ? null : $ptrNone(addr, null, size, zero);
   if (pointer.addr === undefined && addr === $addr(pointer, size)) return pointer;
-  const range = $ranges.get($allocationOf(provenance));
+  const allocation = $allocationOf(provenance);
+  // An item of an array stored in another, a cell's value say, which has no
+  // addresses of its own, where its record puts it (#1114).
+  if (Array.isArray(allocation) && size > 0 && $itemOf(allocation) !== undefined) {
+    const at = addr - $addr($ptrTo(allocation), 0, true);
+    if (at >= 0 && at % size === 0 && at / size <= allocation.length) return $ptr(allocation, at / size);
+  }
+  const range = $ranges.get(allocation);
   if (range !== undefined && range.base <= addr && addr < range.end) {
     const place = $placeAt(addr, range, size);
     if (place !== undefined) return place;
@@ -423,6 +553,12 @@ function $ptrEq(p, q, size) {
   if (p.addr === undefined && q.addr === undefined) {
     const [a, b] = [$placed(p), $placed(q)];
     if (a === b) return true;
+    // An object's pointer and its slot's, where nothing recorded it there, a
+    // crate that asks no address: the slot holds it, one place (#1019,
+    // #1114).
+    const holds = (object, slot) =>
+      object.at === undefined && object.outer === undefined && slot.at !== undefined && slot.within === undefined && slot.bytes === undefined && $slot(slot.of, slot.at) === object.of;
+    if (holds(a, b) || holds(b, a)) return true;
     // Of two allocations, by address where each has one, or is empty: two
     // empty arrays dangling at one address are equal, as Rust's are.
     if ($allocationOf(a) !== $allocationOf(b)) {
@@ -431,7 +567,9 @@ function $ptrEq(p, q, size) {
     }
     // Two of one kind, by where they are; a byte view and a handle, by the
     // offset both are at, where the array's stride is known.
-    if ((a.bytes !== undefined) === (b.bytes !== undefined)) return a.at === b.at && a.offset === b.offset;
+    if ((a.bytes !== undefined) === (b.bytes !== undefined)) {
+      return a.at === b.at && a.offset === b.offset && (a.within ?? 0) === (b.within ?? 0) && (a.outer ?? 0) === (b.outer ?? 0);
+    }
     const [bytes, handle] = a.bytes !== undefined ? [a, b] : [b, a];
     const stride = $strides.get($allocationOf(handle));
     return stride !== undefined && typeof handle.at === "number" && handle.at * stride === bytes.at;
@@ -440,6 +578,9 @@ function $ptrEq(p, q, size) {
   const range = $ranges.get($allocationOf(handle));
   // An empty array not yet addressed is at its items' dangling address, as
   // `$addr` puts it: `Vec::new().as_ptr() == NonNull::dangling().as_ptr()`.
+  // One in an allocation stored in another, which has no addresses of its
+  // own, by where its record puts it (#1114).
+  if (range === undefined && $itemOf($allocationOf(handle)) !== undefined) return $addr(handle, size, true) === addr;
   if (range === undefined) return Array.isArray(handle.of) && handle.of.length === 0 && $addr(handle, size) === addr;
   return range.base + $offsetIn(handle, range) === addr;
 }

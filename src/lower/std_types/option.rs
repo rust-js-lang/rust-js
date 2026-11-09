@@ -873,6 +873,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let assign = StmtKind::Assign(place.clone(), made).at(js_span);
             let absent = Expr::bin(Op::LooseEq, place.clone(), Expr::null());
             out.push(StmtKind::If(absent, vec![assign], Some(dropped)).at(js_span));
+            self.record_inserted(&place, item, span, out)?;
             return Ok(self.option_place_through(place, item));
         }
         let mut given = given.into_iter();
@@ -941,10 +942,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             (OptionPlaceOp::Insert, None) => out.push(assign),
             (_, otherwise) => {
-                let absent = Expr::bin(Op::LooseEq, place, Expr::null());
+                let absent = Expr::bin(Op::LooseEq, place.clone(), Expr::null());
                 out.push(StmtKind::If(absent, vec![assign], otherwise).at(js_span));
             }
         }
+        // Where what it lends is stored, the payload just written (#1114).
+        self.record_inserted(&place, item, span, out)?;
         Ok(through)
     }
 

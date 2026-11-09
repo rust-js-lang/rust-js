@@ -53,6 +53,7 @@ mod items;
 mod iterators;
 mod jsx;
 mod jsx_api;
+mod lent;
 mod library;
 mod literals;
 pub(crate) mod liveness;
@@ -368,7 +369,7 @@ struct CrateFacts<'a, 'tcx> {
     generic_consts: &'a IndexSet<DefId>,
     changed_vecs: &'a IndexSet<Ty<'tcx>>,
     /// The types whose objects say where they're stored (#1113).
-    stored_places: &'a analysis::StoredPlaces,
+    stored_places: &'a analysis::StoredPlaces<'tcx>,
     /// Each generic function's type parameters it's given a drop for (ADR 0098).
     drop_params: &'a IndexMap<DefId, Vec<u32>>,
     /// The type parameters whose `Copy` bound takes a copy function (ADR

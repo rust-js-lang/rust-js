@@ -786,19 +786,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         ));
                     }
                 }
-                // Of an object a reference read from a slot or a field refers
-                // to, `&*refs[0]`: the object's, not a handle on that slot,
-                // which its JS, the object, reads as (ADR 0562).
+                // Of an object a reference or a box read from a slot or a
+                // field refers to, `&*refs[0]`, `&*boxes[0]`: the object's,
+                // not a handle on that slot, which its JS, the object, reads
+                // as (ADR 0562), a box's value an allocation of its own
+                // (#1114). And of what a reference std lent from inside what
+                // holds it as the object refers to, `o.get_or_insert(p)`'s,
+                // read as the `Option`'s place (#1114).
                 if let Some((base, PlaceElem::Deref)) = place.as_ref().last_projection()
-                    && !base.projection.is_empty()
-                    && matches!(
-                        Place::ty_from(base.local, base.projection, decls, tcx).ty.kind(),
-                        ty::Ref(..)
-                    )
+                    && (!base.projection.is_empty() || self.lent_from_a_holder(state.body, base.local))
+                    && let held = Place::ty_from(base.local, base.projection, decls, tcx).ty
+                    && (held.is_ref() || held.is_box())
                     && self.is_object(pointee)
                     && !self.mut_ref_form(pointee).is_cell()
                 {
-                    return Ok(Value::Expr(Expr::call(Expr::helper("$ptrTo"), vec![target])));
+                    return Ok(Value::Expr(self.object_pointer(target, pointee, span)?));
                 }
                 // Its byte offset in its struct, where the struct's layout is
                 // known here (ADR 0562).
@@ -826,17 +828,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
-    /// The byte offset of `place`'s last field in its struct or tuple,
-    /// rustc's layout for wasm32 (ADR 0562): where its address is in the JS
+    /// The byte offset of `place`'s last field in its struct, its tuple or
+    /// its variant, rustc's layout for wasm32 (ADR 0562; #1114): where its address is in the JS
     /// object or array the field is on (#1081). `Unsaid` of a place that
     /// isn't a field's; `LaidOutByCaller` of a type a caller lays out.
     pub(super) fn field_offset(&self, place: Place<'tcx>, decls: &IndexVec<Local, mir::LocalDecl<'tcx>>) -> Offset {
         let Some((base, PlaceElem::Field(field, _))) = place.as_ref().last_projection() else {
             return Offset::Unsaid;
         };
-        let parent = Place::ty_from(base.local, base.projection, decls, self.tcx).ty;
-        match self.layout(parent) {
-            Some(layout) => Offset::At(layout.fields.offset(field.index()).bytes()),
+        let parent = Place::ty_from(base.local, base.projection, decls, self.tcx);
+        match self.place_field_offset(parent, field) {
+            Some(offset) => Offset::At(offset),
             None => Offset::LaidOutByCaller,
         }
     }

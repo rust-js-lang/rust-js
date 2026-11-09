@@ -5,6 +5,7 @@
 //! (ADR 0852).
 
 use crate::collections::{IndexMap, IndexSet};
+use crate::lower::instances::{callers_of, instances_of};
 use crate::lower::pointers::raw_pointee;
 use crate::lower::recognition::{
     StdItem, compares_fn_identity, is_fn_dyn, is_rc_new, is_std_crate, is_std_def, known_by_bounds, rc_pointee,
@@ -13,7 +14,7 @@ use crate::lower::recognition::{
 use crate::lower::{Body, fn_def};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::{ExprId, ExprKind, Thir};
-use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable, TypeVisitableExt};
+use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
 
 /// What an `Rc` points at, of those counted: each type, and every type that
@@ -698,125 +699,6 @@ fn owners_made_others<'tcx>(tcx: TyCtxt<'tcx>, body: &rustc_middle::mir::Body<'t
             _ => None,
         })
         .collect()
-}
-
-/// Each function the crate names, called or as a value, and each naming of
-/// it: by what, its body's owner, and its generic arguments there.
-type Callers<'tcx> = IndexMap<DefId, Vec<(DefId, ty::GenericArgsRef<'tcx>)>>;
-
-fn callers_of<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Callers<'tcx> {
-    let mut callers: Callers<'tcx> = IndexMap::default();
-    for body in all_bodies {
-        let caller = tcx.typeck_root_def_id(body.def_id);
-        for (callee, args, _) in crate::lower::instances::calls_of(body) {
-            callers.entry(callee).or_default().push((caller, args));
-        }
-    }
-    callers
-}
-
-/// Each type the crate's namings of `owner` give its type parameter of
-/// `index`, of a caller's own parameter what its callers give that, in
-/// turn: `None` where one can't be seen, so the parameter may be any type.
-/// A `pub` function is called by JS, or a library's by its consumers; a
-/// trait's or an impl's method's `Self` and its impl's parameters are a
-/// dictionary's, though its own each naming gives, `count_of::<Item>`,
-/// whether of the trait's method or the impl's (#1009); and one given what
-/// holds a type parameter, not one, is given what's resolved no further.
-fn given_types<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    callers: &Callers<'tcx>,
-    (owner, index): (DefId, u32),
-    seen: &mut IndexSet<(DefId, u32)>,
-) -> Option<IndexSet<Ty<'tcx>>> {
-    // Met again, a caller's own: what reaches it is what its other callers
-    // give, which they answer for.
-    if !seen.insert((owner, index)) {
-        return Some(IndexSet::default());
-    }
-    if tcx.visibility(owner).is_public() {
-        return None;
-    }
-    // Of a trait's method, or an impl's of one, each naming of the trait's
-    // too, its own parameter where the trait's has it.
-    let mut namings = vec![(owner, index)];
-    if let Some(declared) = tcx.trait_item_of(owner).or(tcx.trait_of_assoc(owner).map(|_| owner)) {
-        let own = index.checked_sub(tcx.generics_of(owner).parent_count as u32)?;
-        if tcx.visibility(tcx.parent(declared)).is_public() {
-            return None;
-        }
-        if declared != owner {
-            namings.push((declared, tcx.generics_of(declared).parent_count as u32 + own));
-        }
-    }
-    let mut given = IndexSet::default();
-    for (named, at) in namings {
-        for &(caller, args) in callers.get(&named).into_iter().flatten() {
-            let arg = tcx.erase_and_anonymize_regions(args.get(at as usize)?.as_type()?);
-            match *arg.kind() {
-                ty::Param(param) => given.extend(given_types(tcx, callers, (caller, param.index), seen)?),
-                _ if arg.has_non_region_param() => return None,
-                _ => _ = given.insert(arg),
-            }
-        }
-    }
-    Some(given)
-}
-
-/// At most this many instances of one pointee, `Slot<T, U>`'s every pair of
-/// what its callers give: past it, it may be any type (#1009).
-const MOST_INSTANCES: usize = 64;
-
-/// What `pointee`, which holds `owner`'s type parameters, `Slot<T>`, may be:
-/// each type its callers give each parameter put in its place, `Slot<u32>`;
-/// `None` where one's callers can't be seen (`given_types`), or past
-/// `MOST_INSTANCES` (#1009).
-fn instances_of<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    callers: &Callers<'tcx>,
-    pointee: Ty<'tcx>,
-    owner: DefId,
-) -> Option<IndexSet<Ty<'tcx>>> {
-    let mut params: Vec<u32> = (pointee.walk())
-        .filter_map(|part| match *part.as_type()?.kind() {
-            ty::Param(param) => Some(param.index),
-            _ => None,
-        })
-        .collect();
-    params.sort_unstable();
-    params.dedup();
-    // Each choice of a type for each parameter, by its index.
-    let mut choices: Vec<IndexMap<u32, Ty<'tcx>>> = vec![IndexMap::default()];
-    for index in params {
-        let given = given_types(tcx, callers, (owner, index), &mut IndexSet::default())?;
-        choices = (choices.into_iter())
-            .flat_map(|chosen| {
-                given.iter().map(move |&ty| {
-                    let mut chosen = chosen.clone();
-                    chosen.insert(index, ty);
-                    chosen
-                })
-            })
-            .collect();
-        if choices.len() > MOST_INSTANCES {
-            return None;
-        }
-    }
-    Some(
-        (choices.iter())
-            .map(|chosen| {
-                tcx.erase_and_anonymize_regions(pointee.fold_with(&mut ty::BottomUpFolder {
-                    tcx,
-                    ty_op: |t: Ty<'tcx>| match *t.kind() {
-                        ty::Param(param) => chosen.get(&param.index).copied().unwrap_or(t),
-                        _ => t,
-                    },
-                    lt_op: |r| r,
-                    ct_op: |c| c,
-                }))
-            })
-            .collect(),
-    )
 }
 
 /// Is `rc`, an `Rc` unsized, one made there of a JS function made there,

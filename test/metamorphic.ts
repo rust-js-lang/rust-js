@@ -131,16 +131,15 @@ export function apart(source: string): string | undefined {
   const want = directives(source);
   if (typeof want === "string") return want;
   if (want.kind !== "run-pass" && want.kind !== "run-fail") return want.kind;
-  if (want.native !== "host") return "native wasm32";
   return undefined;
 }
 
 /** The cases a rewrite may run, in name order, with their editions. */
-export function rewritable(): { name: string; edition: string }[] {
+export function rewritable(): { name: string; edition: string; native: "host" | "wasm32" }[] {
   return cases.flatMap((name) => {
     const source = readFileSync(join(corpus, name), "utf8");
     const want = directives(source);
-    return apart(source) === undefined && typeof want !== "string" ? [{ name, edition: want.edition }] : [];
+    return apart(source) === undefined && typeof want !== "string" ? [{ name, edition: want.edition, native: want.native }] : [];
   });
 }
 

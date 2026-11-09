@@ -519,8 +519,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a pointer to what a reference read from a slot refers to is a handle on that slot, `$ptr(refs, 0)`, not on the object, so `ptr::eq` of it and the object's own slot is false",
     file: "src/lower/mir/rvalues.rs",
-    find: "                    && !base.projection.is_empty()\n",
-    replace: "                    && false\n",
+    find: "                    && (!base.projection.is_empty() || self.lent_from_a_holder(state.body, base.local))\n",
+    replace: "                    && self.lent_from_a_holder(state.body, base.local)\n",
     tests: ["test/corpus.test.ts", "-t", "^ptr_eq_through_refs.rs$"],
   },
   {

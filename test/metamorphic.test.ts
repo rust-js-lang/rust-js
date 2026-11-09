@@ -64,7 +64,7 @@ const tally = (rewrite: Rewrite, name: string, what: string) => {
 /** What went wrong of `rewrite` of a case in each build, or nothing: its
  * JS run otherwise than native, or rust-js's crash. A refusal is safe, and
  * no wrong answer. */
-function wrong(rewrite: Rewrite, name: string, edition: string): { problems: Map<string, string>; program?: string } | undefined {
+function wrong(rewrite: Rewrite, name: string, edition: string, target: "host" | "wasm32"): { problems: Map<string, string>; program?: string } | undefined {
   const file = join(corpus, name);
   const dir = fixture(`metamorphic-${rewrite}-${name.replace(/\.rs$/, "")}`);
   const variant = join(dir, "variant.rs");
@@ -82,12 +82,17 @@ function wrong(rewrite: Rewrite, name: string, edition: string): { problems: Map
     if (made.library !== undefined) {
       writeFileSync(library, made.library);
       const rlib = join(dir, `lib${libraryCrate}.rlib`);
-      const lib = runSync(["rustc", ...nativeFlags(edition), "--crate-type=rlib", `--crate-name=${libraryCrate}`, library, "-o", rlib], root, 120_000);
+      // Of a case run natively on wasm32, its library built for it too.
+      const triple = target === "wasm32" ? ["--target=wasm32-wasip1"] : [];
+      const lib = runSync(["rustc", ...nativeFlags(edition), ...triple, "--crate-type=rlib", `--crate-name=${libraryCrate}`, library, "-o", rlib], root, 120_000);
       if (lib.code !== 0) continue;
       rustc.push("--extern", `${libraryCrate}=${rlib}`);
     }
-    const ran = runNative(variant, dir, edition, "host", rustc);
-    if (typeof ran !== "string" && !overlapping(rewrite, ran.outcome)) {
+    const ran = runNative(variant, dir, edition, target, rustc);
+    // On wasm32 a panic aborts, with no outcome to judge the JS's by: no
+    // variant, as one rustc rejects is.
+    const unjudged = typeof ran !== "string" && target === "wasm32" && typeof ran.outcome === "string";
+    if (typeof ran !== "string" && !unjudged && !overlapping(rewrite, ran.outcome)) {
       native = ran;
       tally(rewrite, name, "variant");
       break;
@@ -145,11 +150,11 @@ function wrong(rewrite: Rewrite, name: string, edition: string): { problems: Map
   return { problems, program: made.library === undefined ? variant : undefined };
 }
 
-for (const { name, edition } of all.filter(({ name }) => chosen.has(name))) {
+for (const { name, edition, native } of all.filter(({ name }) => chosen.has(name))) {
   test(`${name}, rewritten`, () => {
     const problems: string[] = [];
     for (const rewrite of rewritesRun) {
-      const found = wrong(rewrite, name, edition);
+      const found = wrong(rewrite, name, edition, native);
       for (const [build] of builds) {
         const listedAs = known.find((k) => k.name === name && k.rewrite === rewrite && k.builds.includes(build));
         const problem = found?.problems.get(build);

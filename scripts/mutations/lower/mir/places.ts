@@ -184,11 +184,10 @@ export const mutations: Mutation[] = [
   {
     name: "write-result-field-of-err",
     breaks:
-      "an `io::Result<()>`'s `Err`'s error is read as `e._0`, not the error",
+      "an `io::Result<()>`'s `Err`'s error isn't the result itself, but read as its `Ok`'s, `undefined`",
     file: "src/lower/mir/places.rs",
-    find: "                        0 => Expr::undefined(),\n                        _ => base,\n",
-    replace:
-      '                        0 => Expr::undefined(),\n                        _ => Expr::member(base, "_0"),\n',
+    find: "bindings::is_untagged(self.tcx, adt.did()) || self.is_write_result(ty.ty) && variant.as_u32() != 0",
+    replace: "bindings::is_untagged(self.tcx, adt.did())",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
   {

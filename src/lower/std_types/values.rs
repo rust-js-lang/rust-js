@@ -461,6 +461,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .counted_same(def_id, generic_args, value)
                 .expect("a counted `Rc`'s"));
         }
+        // Where a container std lends from keeps what it lends (#1114).
+        self.record_lent((def_id, generic_args), &mut values, call.span)?;
         if let Some(js) = self.vec_call(known, call, &mut values, boxed, out)? {
             return Ok(js);
         }

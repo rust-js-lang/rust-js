@@ -87,7 +87,7 @@ export function runNative(
   // metamorph_lib=<rlib>` (the metamorphic net's `library`).
   rustc: string[] = [],
 ): Run | string {
-  if (target === "wasm32") return runWasm32(file, dir, edition);
+  if (target === "wasm32") return runWasm32(file, dir, edition, rustc);
   const source = `mod case {
     include!(${rustString(file)});
     pub fn entry() { main() }
@@ -139,7 +139,8 @@ export const nativeFlags = (edition: string) => [`--edition=${edition}`, "-Cover
 // For `wasm32-wasip1`, whose `usize` is rust-js's (ADR 0090): the case's
 // `main` as it is, run by Bun's WASI, which writes its outcome where it
 // returns. It aborts on a panic, so only a case that runs to its end is one.
-function runWasm32(file: string, dir: string, edition: string): Run | string {
+// `rustc`: its flags besides, a library built for wasm32 too.
+function runWasm32(file: string, dir: string, edition: string, rustc: string[] = []): Run | string {
   const source = `mod case {
     include!(${rustString(file)});
     pub fn entry() { main() }
@@ -148,7 +149,7 @@ fn main() {
     case::entry();
 }
 `;
-  const flags = [`--edition=${edition}`, "--target=wasm32-wasip1", "-Coverflow-checks=off", "-Cstrip=debuginfo", "-Awarnings", remapRoot];
+  const flags = [`--edition=${edition}`, "--target=wasm32-wasip1", "-Coverflow-checks=off", "-Cstrip=debuginfo", "-Awarnings", remapRoot, ...rustc];
   const built = nativeBinary(source, contentDirectory(source), flags, compileTimeout);
   if ("error" in built) return built.error;
   const outcomeFile = join(dir, "native.json");

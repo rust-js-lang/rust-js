@@ -842,3 +842,152 @@ tables or the metamorphic net has; their mutations,
 removed. The code stays for what no record names yet, an enum's payload,
 whose records #1114 makes, and goes with them. The lowering's code of where a place's objects are
 stored and rooted is one module, `mir/stored.rs`, beside `rvalues.rs`.
+
+## Amendment: what a container holds inline is inside it (#1114, the user's decision)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, the results changed;
+D, refused, where one JS can't say.
+
+std lends references into its receiver's own storage: a `RefCell`'s value
+past its borrow flag, a `Mutex`'s or an `RwLock`'s past its state, a
+`Cell`'s, an `Option`'s payload past its tag, and a pattern lends a
+variant's field. JS keeps each apart, in a `{ value }` cell's `value`, or
+as the object itself, which was an allocation of its own: of a
+`RefCell<u32>`, `&raw const *n.borrow()` less `&raw const n` was `0`, of a
+`Mutex` `4096`, of a variant's field `4100`, where wasm32 gives `4`, `4` and
+`8`. And JS holds an `Option` of an object, and a `RefCell` of one (ADR
+0863), as the object, so a pointer to the container made of a reference to
+it and one to what it holds were one handle, `0` where wasm32 gives `4`.
+
+**What's inside is at its offset there, rustc's layout of the instance,
+never a number written here.** One owner, `lent.rs`, says where: of each
+`{ value }` container std lends from, the path of its fields by std's
+names to what it holds (`HELD_INLINE`: `RefCell` and `Cell` `value.value`,
+`Mutex` and `RwLock` `data.value`; an atomic's one field), and of each
+value, where in it the object its JS is sits (`object_within`): an
+`Option`'s payload's offset, of one that's its payload; a `RefCell`'s
+value's, of one that's the object it holds; a type's that's the value it
+holds, its value's; an untagged enum's variant's, where each is at one;
+nowhere, of a box's, an `Rc`'s, a reference's or a collection's value,
+which is an allocation of its own.
+
+- **Records say `within`.** A record of where an object is stored (#1113)
+  says where in its slot it is, `$stored($ptr(o, "value", 0), undefined,
+  4)`, and `$addr` adds it: an `Option`'s payload in a field, a tuple, a
+  local held in a cell of its own, matched or lent by `as_ref`, `as_mut`
+  and `iter`; `get_or_insert` and `insert` record the payload they write
+  before they lend it. A variant's field is recorded at its variant's
+  offset (`for_variant`), as a struct's is at its own.
+- **A `{ value }` container records where it keeps what it lends where
+  std's call is given it**, `$borrow($storedValue(cell, 4))`, the cell
+  itself, never throwing, so the record stands where the call is, its
+  object and a handle on its `value` at that offset (the form the
+  coordinator chose, for the user, over a statement before the call,
+  which was emitted twice and broke tidy's reads around it). A struct's
+  `RefCell` field of a number, which holds it (ADR 0863, amended), records
+  it where it's borrowed for such a call, `$storedIn(counter, "count", 0,
+  4)`, the field's offset and the value's in it, and a pointer to what it
+  lends is a handle of its own on the field, `$ptrIn`; a pointer to such a
+  field is the field's place, not its cell's.
+- **A pointer to a container JS holds as the object it holds, made of a
+  reference to it, is a pointer to what holds the object**,
+  `$ptrOuter(object, 4)`: its address is the object's less the offset; it
+  reads and writes the object, as `$ptrTo`'s does; where the object's
+  record says it's that far into its slot, it's the slot's place. And a
+  pointer to what `get_or_insert` or `insert` lends, whose JS reads the
+  `Option`'s place, is the object's, `$ptrTo`, not a handle on that place
+  (`lent_from_a_holder`, the MIR's call that made the reference); so is
+  one to what an `Rc`'s or an `Arc`'s `deref` lends, which JS reads as the
+  field holding it, `s[2]` of a tuple struct, whose handle was inside the
+  struct, `false` where native Rust's is outside it. Each
+  allocation keeps 64 bytes past its own, so what holds an object no slot
+  is recorded as holding is in no other allocation. Of an `Option` holding
+  `None`, which JS holds as `undefined`, no place, it's refused where it
+  runs, saying to point at it where it's stored (#1132, open for the user:
+  the alternative is refusing such a pointer as it's made, of a `Some` too).
+- **What's an allocation of its own isn't recorded where it's held.** A
+  `Box`'s, an `Rc`'s or a `Vec`'s value was recorded as stored in the
+  field holding it, since #1113, so `&raw const s.b` and `&raw const *s.b`
+  were one address, `true` where native Rust gives `false`: a wrong answer
+  of its own, found here, now none (`address_of_what_a_box_holds`).
+
+**Generic code** has one JS for every instance of its type parameter. A
+pointer made of a reference to a `T`, and a record of a `T` stored in a
+slot, take the offset every instance the crate gives it agrees on
+(`StoredPlaces::instances`, #1009's `instances_of`, now `instances.rs`'s);
+where they differ, an `Option` of an object and an object, it's refused,
+naming #1114, in a crate that asks an address: "make it where the type is
+known". Where the crate can't see every instance, a `pub` function's, it's
+0, the offset of every type but those.
+
+**Every other API that lends from inside its receiver**, a std function
+whose first argument is a reference to a std type and whose output holds
+that reference's lifetime, `OnceCell::get`, `Result::as_ref`,
+`Peekable::peek`, where rust-js doesn't know where its receiver keeps it,
+is refused in a crate that asks an address of what it lends (a recorded
+type, or what one of its raw pointers points at), naming #1114
+(`check_lent`). A pattern's place, `if let Ok(x) = &r`, is a variant's
+field, recorded as above.
+
+**The record-less heuristics go.** With every container's records, the
+runtime's guesses for an object no record names, a first item's or
+field's address asked before its container's, a later item's at its index
+times its array's stride where its record had none, change no output
+the corpus, the iterator tables or the metamorphic net has, and are
+removed; an item of an array that's itself recorded, a cell's `value`
+say, is at the array's address and its index times its size. A handle
+made on an array's item, a tuple's field, recorded the object there too,
+which made a tuple struct's `Rc` field's value in the struct's
+allocation (the net's `tuple-struct` rewrite of
+`address_of_what_a_box_holds`): it records nothing now, and `==` of an
+object's pointer and a slot's holding it, where nothing recorded it, is
+`true`, which `thin == &raw const held.0` of a `dyn`'s pointer made thin
+needs in a crate that asks no address (the net's `field` rewrite of
+`dyn_pointers`). Mutations whose code moved are
+retargeted: `stored-record-unwritten`, `tuple-field-at-index-times-stride`,
+`field-of-an-item-its-objects-own-address`,
+`reference-to-an-item-its-objects-own-address`, `ptr-to-written-whole`,
+`address-items-not-strided`, `first-item-offset-by-stride`,
+`stored-slice-item-recorded`, `pointer-pointee-object-by-place`,
+`write-result-field-of-err` (now of `field_is_its_base`, the one answer of
+which field is its place's own JS value), and `rc-param-impl-method-resolved`
+and `rc-public-callers-seen`, moved with their code to `instances.rs`.
+
+**Cost.** Only in a crate that asks an address: a `$storedValue(..)`
+around each receiver of a call that lends from a `{ value }` container, a
+`$storedIn(..)` before a borrow of a `RefCell` field for one, and a
+`within` argument on records of slots of `Option`s of objects. A crate
+that asks none emits none of them (`pointers_into_a_cell_compared`).
+
+Held by corpus cases, run natively on wasm32, whose `usize` is
+rust-js's: `address_of_what_a_cell_lends`, `address_of_an_option_payload`,
+`address_of_a_variant_field`, `address_of_what_a_box_holds`, the refusals
+`address_of_a_generic_option_refused` and
+`address_lent_by_a_once_cell_refused`, and `pointers_into_a_cell_compared`
+beside them; the metamorphic net's pointer cases through every rewrite;
+mutations `lent-cell-unrecorded`, `lent-at-the-cells-start`,
+`outer-pointer-the-objects`, `option-payload-at-its-tag`,
+`value-cell-at-its-flag`, `box-held-in-its-field`,
+`generic-within-unrefused`, `uncatalogued-lender-allowed`,
+`crate-lender-refused`, `variant-field-unlaid`,
+`holder-lent-pointer-the-slots`, `rc-lent-pointer-the-slots`,
+`option-inserted-item-strideless` (`lent.rs`);
+`stored-within-dropped`, `stored-held-local-unrecorded`,
+`stored-property-cell-unrecorded`, `stored-variant-field-unrecorded`
+(`mir/stored.rs`); `option-inserted-unrecorded` (`std_types/option.rs`);
+`stored-value-offset-unread`, `stored-value-object-unrecorded`,
+`outer-at-its-object`, `outer-placed-at-any-depth`, `within-unread`,
+`field-content-handle-the-slots`, `item-of-a-recorded-array-its-own`,
+`container-exposed-on-the-way`, `slot-of-its-object-apart`,
+`ptr-at-of-a-recorded-array-placeless` and
+`ptr-eq-of-a-recorded-handle-unplaced` (`runtime/pointers.js`). The net
+found the last four: an address found again, `n as *const T`, was the
+container's slot, which `$addr` exposed on its way to the item's at the
+same address (an ask on the way to another's, `inner`, exposes nothing
+now); and `with_addr`, `wrapping_byte_add` and `==` of an item's pointer
+into an array a cell holds, which has no addresses of its own, found no
+place where its record puts it. The net runs a case run natively on
+wasm32, `//@ native: wasm32`, as the corpus does, its rewrites' native
+side on wasm32 too, its library rewrite's crate built for it: the cases
+here, whose offsets are a `usize`'s, are in it. The guide's limitations page says the two
+refusals.

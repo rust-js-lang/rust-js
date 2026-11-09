@@ -329,28 +329,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let ty::Closure(..) = ty.ty.kind() {
             return Err(self.unsupported(span, "a closure's field read outside it, from its MIR"));
         }
-        if self.transparent(ty.ty).is_some() {
+        if self.field_is_its_base(ty) {
             return Ok(base);
         }
         match (ty.ty.kind(), ty.variant_index) {
             (ty::Adt(adt, args), Some(variant)) if adt.is_enum() => {
                 if self.tcx.is_lang_item(adt.did(), LangItem::Option) {
-                    let inner = self.option_of(ty.ty).expect("an `Option`");
-                    return Ok(match self.boxed_payload(inner) {
-                        true => self.some_value(base),
-                        false => base,
-                    });
+                    return Ok(self.some_value(base));
                 }
-                if bindings::is_untagged(self.tcx, adt.did()) {
-                    return Ok(base);
-                }
-                // A write's result's `Err`'s, its error itself; its `Ok`'s, `()`
-                // (ADRs 0187, 0462).
+                // A write's result's `Ok`'s, `()` (ADRs 0187, 0462).
                 if self.is_write_result(ty.ty) {
-                    return Ok(match variant.as_u32() {
-                        0 => Expr::undefined(),
-                        _ => base,
-                    });
+                    return Ok(Expr::undefined());
                 }
                 // A `Cell` it holds, as a struct's (ADR 0288): a handle on it.
                 let variant = adt.variant(variant);
@@ -384,6 +373,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => Err(self.unsupported(span, "this field, from its MIR")),
         }
+    }
+
+    /// Whether a field of a place of type `ty` is the place's own JS value,
+    /// which holds it where its type lays it out (#1114): a type's that's the
+    /// value it holds (`transparent`); an `Option`'s payload, but one boxed
+    /// (ADR 0051); an untagged enum's variant's (ADR 0214); and a write's
+    /// result's `Err`'s, its error itself (ADRs 0187, 0462).
+    pub(super) fn field_is_its_base(&self, ty: mir::PlaceTy<'tcx>) -> bool {
+        if self.transparent(ty.ty).is_some() {
+            return true;
+        }
+        let (ty::Adt(adt, _), Some(variant)) = (ty.ty.kind(), ty.variant_index) else {
+            return false;
+        };
+        if !adt.is_enum() {
+            return false;
+        }
+        if self.tcx.is_lang_item(adt.did(), LangItem::Option) {
+            let inner = self.option_of(ty.ty).expect("an `Option`");
+            return !self.boxed_payload(inner);
+        }
+        bindings::is_untagged(self.tcx, adt.did()) || self.is_write_result(ty.ty) && variant.as_u32() != 0
     }
 
     /// Whether field `a` of variant `va` of `ty`, an enum, and field `b` of

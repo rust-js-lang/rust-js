@@ -513,4 +513,12 @@ export const mutations: Mutation[] = [
     replace: "            (OptionPlaceOp::Insert, Some(dropped)) if true => {\n",
     tests: ["test/lowering-std-unwinds.test.ts", "-t", "insert"],
   },
+  {
+    name: "option-inserted-unrecorded",
+    breaks: "a payload `get_or_insert` or `insert` writes before it lends it is recorded nowhere, its own allocation, `4096` where wasm32 gives `4` (#1114)",
+    file: "src/lower/std_types/option.rs",
+    find: "        // Where what it lends is stored, the payload just written (#1114).\n        self.record_inserted(&place, item, span, out)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_an_option_payload.rs$"],
+  },
 ];

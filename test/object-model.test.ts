@@ -50,7 +50,8 @@ export function readKnown(text = existsSync(knownFile) ? readFileSync(knownFile,
 }
 const known = readKnown();
 
-const all = rewritable();
+// Of the cases run natively on the host: its library crate is built for it.
+const all = rewritable().filter(({ native }) => native === "host");
 // A push's run: one case in 64 by a hash of its name, and each listed one;
 // the nightly's, every case.
 const picked = which === "all" ? all : all.filter(({ name }) => sampled(name, 64) || known.some((k) => k.name === name));

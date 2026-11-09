@@ -442,4 +442,20 @@ export const mutations: Mutation[] = [
     replace: "    let drops = drops;\n",
     tests: ["test/crates.test.ts", "-t", "two crates: closure_made_by_an_inlined_function"],
   },
+  {
+    name: "rc-param-impl-method-resolved",
+    breaks: "a trait impl's generic method that counts an `Rc<T>`, called through its trait, isn't asked what the trait's method's namings give its own `T`, so it's taken for one given nothing, the `Rc` it's given isn't counted and its count is wrong (#1001, #1009)",
+    file: "src/lower/instances.rs",
+    find: "        if declared != owner {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(rc_counted_by_a_trait_method|rc_counted_by_callers_instances).rs$"],
+  },
+  {
+    name: "rc-public-callers-seen",
+    breaks: "a `pub` generic function's `Rc<T>` counts only what the crate's own calls give it, though JS or a consumer may give it any type, whose `Rc` is then uncounted there (#1009)",
+    file: "src/lower/instances.rs",
+    find: "    if tcx.visibility(owner).is_public() {\n        return None;\n    }\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "counts each type"],
+  },
 ];

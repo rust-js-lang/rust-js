@@ -27,6 +27,7 @@ mod mut_ref;
 mod nones;
 mod options;
 
+pub(in crate::lower) use cells::property_of_cell;
 use consts::{Units, const_js_by};
 pub(super) use consts::{const_js, zero_sized_js};
 pub(in crate::lower) use mut_ref::{MutRefForm, SignatureForms, held_ts};

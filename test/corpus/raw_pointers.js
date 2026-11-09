@@ -11,6 +11,7 @@ import {
   $ptrTo,
   $some,
   $someValue,
+  $stored,
 } from "@rust-js/std";
 
 export function entry() {
@@ -178,6 +179,7 @@ function main() {
     `${value$5} ${value$7} ${value$8 == null || right$2 == null ? value$8 == right$2 : $ptrEq($someValue(value$8), $someValue(right$2), 4)}`,
   );
   const nothing = {};
+  $stored($ptr(nothing, "value", 0), undefined, 4);
   const atNothing = $ptr(nothing, "value", 0);
   const value$9 = atNothing === null ? undefined : $some(atNothing.value);
   console.log(

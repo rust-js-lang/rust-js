@@ -515,22 +515,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(rc_counted_by_a_generic_beside_a_class|rc_counted_by_callers_instances).rs$"],
   },
   {
-    name: "rc-param-impl-method-resolved",
-    breaks: "a trait impl's generic method that counts an `Rc<T>`, called through its trait, isn't asked what the trait's method's namings give its own `T`, so it's taken for one given nothing, the `Rc` it's given isn't counted and its count is wrong (#1001, #1009)",
-    file: "src/lower/analysis/rc_counts.rs",
-    find: "        if declared != owner {\n",
-    replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(rc_counted_by_a_trait_method|rc_counted_by_callers_instances).rs$"],
-  },
-  {
-    name: "rc-public-callers-seen",
-    breaks: "a `pub` generic function's `Rc<T>` counts only what the crate's own calls give it, though JS or a consumer may give it any type, whose `Rc` is then uncounted there (#1009)",
-    file: "src/lower/analysis/rc_counts.rs",
-    find: "    if tcx.visibility(owner).is_public() {\n        return None;\n    }\n",
-    replace: "",
-    tests: ["test/crates.test.ts", "-t", "counts each type"],
-  },
-  {
     name: "rc-resolved-after-settling",
     breaks: "which generic pointees' instances are seen isn't known while settling, so `runs`, asking `counts` of a type whose drop drops its own `Rc`, takes a resolved `T` for any type, and counts it: an untagged enum's `Rc<Label>` beside a bare `Rc<T>` of `Loud` is refused (#1009, the neighbour shuffle's seed 57)",
     file: "src/lower/analysis/rc_counts.rs",

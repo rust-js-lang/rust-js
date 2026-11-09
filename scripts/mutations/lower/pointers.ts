@@ -60,9 +60,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an object's pointer is its place's, `$ptr(a, \"value\")`, not the object's: two to it differ",
     file: "src/lower/pointers.rs",
-    find: '        if (self.is_object(pointee) || function) && !self.mut_ref_form(pointee).is_cell() {\n            return Ok(Expr::call(Expr::helper("$ptrTo")',
-    replace:
-      '        if false {\n            return Ok(Expr::call(Expr::helper("$ptrTo")',
+    find: "        if (self.is_object(pointee) || function) && !self.mut_ref_form(pointee).is_cell() {\n            return self.object_pointer(",
+    replace: "        if false {\n            return self.object_pointer(",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
@@ -577,8 +576,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a pointer to a type parameter's value is refused, where its caller gives an object",
     file: "src/lower/pointers.rs",
-    find: "        if self.is_unknown(pointee) && !matches!(place.kind, js::ExprKind::Member(..)) {",
-    replace: "        if false {",
+    find: "        if (self.is_unknown(pointee) || outer) && !matches!(place.kind, js::ExprKind::Member(..)) {",
+    replace: "        if outer && !matches!(place.kind, js::ExprKind::Member(..)) {",
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
   },
   {
@@ -588,7 +587,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pointers.rs",
     find: "        if let js::ExprKind::Index(object, index) = place.kind {\n            return Ok(handle(*object, *index, offset));\n        }\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(pointer_addresses|pointers_into_a_cell_compared).rs$"],
   },
   {
     name: "is-aligned-ignores-align",

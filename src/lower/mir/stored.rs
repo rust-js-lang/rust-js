@@ -4,6 +4,7 @@
 //! read more than once with its temporaries made first (#1110).
 
 use super::*;
+use crate::lower::lent::Within;
 use crate::lower::pointers::{Offset, checked_item};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -35,14 +36,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     place.projection[at],
                     PlaceElem::Field(..) | PlaceElem::Index(_) | PlaceElem::ConstantIndex { .. }
                 ) && {
-                    // Not a variant's field, whose offset its enum's layout
-                    // doesn't say: its object's own. Nor a slice's item, a
-                    // shared subslice being a copy of its items (ADR 0063),
-                    // whose objects say where they're stored where the
-                    // borrow of their `Vec` or array was made.
+                    // Not a field that's its place's own JS value, an
+                    // `Option`'s payload, which its place's record says is
+                    // `within` it (#1114). Nor a slice's item, a shared
+                    // subslice being a copy of its items (ADR 0063), whose
+                    // objects say where they're stored where the borrow of
+                    // their `Vec` or array was made.
                     let from = Place::ty_from(place.local, &place.projection[..at], decls, tcx);
                     let to = Place::ty_from(place.local, &place.projection[..=at], decls, tcx);
-                    from.variant_index.is_none() && !from.ty.is_slice() && stored.records(to.ty)
+                    !self.field_is_its_base(from) && !from.ty.is_slice() && stored.records(to.ty)
                 }
             })
             .collect();
@@ -54,39 +56,90 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         .filter(|&item| stored.records(item));
         let items = item.is_some();
+        // A cell field that's the property it holds, a `RefCell`'s of a
+        // number, borrowed whole in a crate that asks an address: where it
+        // keeps it, past its borrow flag (#1114). A `{ value }`'s says so
+        // where std's call is given it (`record_lent`).
+        let inline = stored.asks()
+            && matches!(place.projection.last(), Some(PlaceElem::Field(..)))
+            && self.held_inline(whole).is_some()
+            && self.lends_at_block_end(state, whole);
+        // A local held in a cell of its own, `{ value }`, as one whose place
+        // a pointer is made of is, whose value is the object it holds past
+        // its start, an `Option`'s payload: there in its cell (#1114).
+        let held_local = start == 0
+            && state.facts.pointed().locals.contains(&place.local)
+            && stored.records(decls[place.local].ty)
+            && matches!(self.object_within(decls[place.local].ty), Within::At(1..));
         // An item's size, the stride its array's items are at, where it's
         // known here: the records say where in the array each is.
         let stride =
             |cx: &Self, item: Ty<'tcx>| cx.layout(item).map(|layout| Expr::int(i128::from(layout.size.bytes())));
-        if steps.is_empty() && !items {
+        if steps.is_empty() && !items && !inline && !held_local {
             return Ok(());
         }
         self.read_more_than_once(state, place, out)?;
         let js_span = self.js_span(span);
-        for at in steps {
+        let parts = (held_local.then_some(None))
+            .into_iter()
+            .chain(steps.into_iter().map(Some));
+        for at in parts {
             let part = Place {
                 local: place.local,
-                projection: tcx.mk_place_elems(&place.projection[..=at]),
+                projection: tcx.mk_place_elems(at.map_or(&[][..], |at| &place.projection[..=at])),
             };
             let target = self.mir_place(state, part, span, out)?;
-            let offset = self.field_offset(part, &state.body.local_decls);
+            let offset = match at {
+                Some(_) => self.field_offset(part, &state.body.local_decls),
+                None => Offset::At(0),
+            };
+            let held = part.ty(&state.body.local_decls, tcx).ty;
+            // Not what's an allocation of its own, a box's value, which no
+            // slot holds.
+            let Some(within) = self.stored_within(held, span)? else {
+                continue;
+            };
             if let Some(handle) = self.stored_handle(target, offset) {
-                let mut given = vec![handle];
-                if !matches!(place.projection[at], PlaceElem::Field(..))
-                    && let Some(size) = stride(self, part.ty(&state.body.local_decls, tcx).ty)
-                {
-                    given.push(size);
-                }
+                let size = match at.map(|at| place.projection[at]) {
+                    Some(PlaceElem::Index(_) | PlaceElem::ConstantIndex { .. }) => stride(self, held),
+                    _ => None,
+                };
+                let given = given_record(handle, size, within);
                 out.push(StmtKind::Expr(Expr::call_helper("$stored", given)).at(js_span));
             }
         }
-        if items {
+        if let Some(item) = item
+            && let Some(within) = self.stored_within(item, span)?
+        {
             let array = self.mir_place(state, place, span, out)?;
-            let mut given = vec![array];
-            given.extend(item.and_then(|item| stride(self, item)));
+            let given = given_record(array, stride(self, item), within);
             out.push(StmtKind::Expr(Expr::call_helper("$storedItems", given)).at(js_span));
         }
+        if inline {
+            let cell = self.mir_place(state, place, span, out)?;
+            let field = self.field_offset(place, &state.body.local_decls);
+            // Not again where the one just before says so.
+            if let Some(record) = self.property_record(whole, &cell, field, span, out)
+                && out.last().is_none_or(|last| last.kind != record.kind)
+            {
+                out.push(record);
+            }
+        }
         Ok(())
+    }
+
+    /// Whether the call that ends the block being lowered lends from inside
+    /// a `container` it's given first, `counter.count.borrow()`'s, where a
+    /// borrow of one in it is what it's given (#1114).
+    fn lends_at_block_end(&self, state: &State<'_, 'tcx>, container: Ty<'tcx>) -> bool {
+        let mir::TerminatorKind::Call { func, .. } = &state.body[state.at].terminator().kind else {
+            return false;
+        };
+        crate::lower::fn_def(func.ty(&state.body.local_decls, self.tcx))
+            .and_then(|callee| self.lent_from_receiver(callee))
+            .is_some_and(|(receiver, _)| {
+                self.tcx.erase_and_anonymize_regions(receiver) == self.tcx.erase_and_anonymize_regions(container)
+            })
     }
 
     /// Of `place`, which is read more than once, a rooted pointer's and its
@@ -207,7 +260,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// is, an object's too, which `pointer_to` gives as itself: where it's
     /// stored, its container, key and offset, which `$stored` records of
     /// what's there (#1113). `None` of a place that's no field or item.
-    pub(super) fn stored_handle(&self, place: Expr, offset: Offset) -> Option<Expr> {
+    pub(in crate::lower) fn stored_handle(&self, place: Expr, offset: Offset) -> Option<Expr> {
         let (object, key) = match place.kind {
             _ if let Some(args) = checked_item(&place) => (args[0].clone(), args[1].clone()),
             js::ExprKind::Index(object, index) => (*object, *index),
@@ -220,4 +273,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         Some(Expr::call(Expr::helper("$ptr"), args))
     }
+}
+
+/// What a record of where an object is stored is given: where, a field's or
+/// an item's handle, or an array; an item's `stride`, where it's known; and
+/// `within`, where in the slot the object is, past what holds it (#1114).
+fn given_record(at: Expr, stride: Option<Expr>, within: u64) -> Vec<Expr> {
+    let within = (within > 0).then_some(within);
+    let mut given = vec![at];
+    match (stride, within) {
+        (stride, Some(within)) => given.extend([stride.unwrap_or_else(Expr::undefined), Expr::int(i128::from(within))]),
+        (Some(stride), None) => given.push(stride),
+        (None, None) => {}
+    }
+    given
 }
