@@ -210,7 +210,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/types.rs",
     find: "            ty::Dynamic(predicates, ..) if self.recognition.is_pair_dyn(predicates) => {\n",
     replace:
-      "            ty::Dynamic(predicates, ..)\n                if predicates.principal_def_id().is_some_and(|id| self.recognition.is_rust_trait(id)) =>\n            {\n",
+      "            ty::Dynamic(predicates, ..)\n                if predicates.principal_def_id().is_some_and(|id| self.recognition.foreign.compiled_by_rust_js(id)) =>\n            {\n",
     tests: [
       "test/corpus.test.ts",
       "-t",

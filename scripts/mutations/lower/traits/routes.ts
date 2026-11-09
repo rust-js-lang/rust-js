@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
       "an `Error` dictionary's `Display` and `Debug` aren't looked for, so `{e}` of a `dyn Error` is refused",
     file: "src/lower/traits/routes.rs",
     find: "        if !self.recognition.holds_supertraits(from.def_id) {",
-    replace: "        if !self.recognition.is_rust_trait(from.def_id) {",
+    replace: "        if !self.recognition.foreign.compiled_by_rust_js(from.def_id) {",
     tests: ["test/corpus.test.ts", "-t", "dyn_display"],
   },
   {
