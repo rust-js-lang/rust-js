@@ -622,6 +622,41 @@ pub fn padding_written() -> u32 {
   expect(call("paddingWritten")).toBe("rust-js does not support reading a union's `padded` while it holds `whole`, which reads its bytes as another type's\n");
 });
 
+// A tuple's field's pointer is at the field's byte offset, rustc's layout,
+// though JS holds the tuple as an array (#1081): its address, of a generic
+// tuple whose layout its caller says, is refused where it's asked, as a
+// named field's is; and it's no array's item, so stepping it, or the
+// distance between two, which the layout says, is refused too.
+test("a tuple's field's pointer is at its offset, never an item", () => {
+  const dir = fixture("tuple-field-pointer");
+  writeFileSync(join(dir, "lib.rs"), `fn address_of<A>(t: &(A, u32)) -> usize {
+    &raw const t.1 as usize
+}
+
+pub fn generic() -> usize {
+    address_of(&(1u8, 2))
+}
+
+pub fn stepped() -> u32 {
+    let t = (1u32, 2u32);
+    let p = &raw const t.0;
+    unsafe { *p.add(1) }
+}
+
+pub fn distance() -> isize {
+    let t = (1u32, 2u32);
+    unsafe { (&raw const t.1).offset_from(&raw const t.0) }
+}
+`);
+  const out = join(dir, "lib.js");
+  run([compiler, join(dir, "lib.rs"), "-o", out]);
+  const call = (name: string) =>
+    run([node ?? "node", "--input-type=module", "--eval", `try { console.log((await import(${JSON.stringify(out)})).${name}()); } catch (e) { console.log(e.message); }`]);
+  expect(call("generic")).toBe("rust-js does not support the address of a field of a type its caller lays out, which reads memory by where it is\n");
+  expect(call("stepped")).toBe("rust-js does not support stepping a pointer that isn't into an array, which reads memory by where it is\n");
+  expect(call("distance")).toBe("rust-js does not support the distance between pointers to two places, which reads memory by where it is\n");
+});
+
 // A pointer's address is a number of rust-js's own, shown as Rust shows one,
 // `0x` and hex; the same place shows the same, and a null one's is `0x0`,
 // as every program shows it (ADR 0562).

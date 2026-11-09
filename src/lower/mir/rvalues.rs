@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::lower::aggregates::Given;
+use crate::lower::pointers::Offset;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `terminator` calls a `Cell`'s `get`, `set`, `replace` or
@@ -511,7 +512,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             };
                             let unsized_ = self.unsize_trait(from, *to, place, span, out)?;
                             return Ok(Value::Expr(match self.is_handle_pointer(*to) {
-                                true => self.pointer_to(unsized_, self.pointee(*to), None, span)?,
+                                true => self.pointer_to(unsized_, self.pointee(*to), Offset::Unsaid, span)?,
                                 false => unsized_,
                             }));
                         }
@@ -736,7 +737,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Ok(Value::Expr(self.pointer_to(
                         target,
                         place.ty(decls, tcx).ty,
-                        Some(0),
+                        Offset::At(0),
                         span,
                     )?));
                 }
@@ -794,17 +795,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
-    /// The byte offset of `place`'s last field in its struct, rustc's
-    /// layout for wasm32 (ADR 0562): where its address is in the JS object
-    /// the field is on. `None` of a place that isn't a field's, or of a
-    /// struct a caller lays out.
-    fn field_offset(&self, place: Place<'tcx>, decls: &IndexVec<Local, mir::LocalDecl<'tcx>>) -> Option<u64> {
-        let (base, PlaceElem::Field(field, _)) = place.as_ref().last_projection()? else {
-            return None;
+    /// The byte offset of `place`'s last field in its struct or tuple,
+    /// rustc's layout for wasm32 (ADR 0562): where its address is in the JS
+    /// object or array the field is on (#1081). `Unsaid` of a place that
+    /// isn't a field's; `LaidOutByCaller` of a type a caller lays out.
+    fn field_offset(&self, place: Place<'tcx>, decls: &IndexVec<Local, mir::LocalDecl<'tcx>>) -> Offset {
+        let Some((base, PlaceElem::Field(field, _))) = place.as_ref().last_projection() else {
+            return Offset::Unsaid;
         };
         let parent = Place::ty_from(base.local, base.projection, decls, self.tcx).ty;
-        let layout = self.layout(parent)?;
-        Some(layout.fields.offset(field.index()).bytes())
+        match self.layout(parent) {
+            Some(layout) => Offset::At(layout.fields.offset(field.index()).bytes()),
+            None => Offset::LaidOutByCaller,
+        }
     }
 
     fn mir_aggregate(

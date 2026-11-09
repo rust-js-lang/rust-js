@@ -592,3 +592,48 @@ the mutations `field-of-an-item-its-objects-own-address`,
 `reference-to-an-item-its-objects-own-address`. The net's `field`
 rewrite of `pointer_addresses` runs as native, taken off.
 
+
+## Amendment: a tuple's field is at its offset, not its index (#1081)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, the results changed.
+JS holds a tuple and a tuple struct as an array, so a pointer to its
+field, `&raw const t.1`, was the array's handle on an item, `$ptr(t, 1)`,
+whose address was its index times its size. rustc lays a tuple out as it
+likes, reordering its fields: of a `(u8, u32, u16)`, the field addresses
+less the tuple's were `0 1 2` where native's are `4 0 6`; of a
+`#[repr(C)]` tuple struct a tuple struct's field holds, `&raw const
+held.0.1 - &raw const held.0` was 4100 where native's is 4, the field
+taken as an item of the inner array, apart from the outer.
+
+**A tuple's field's handle is given its byte offset, as a named field's
+is**, `$ptr(t, 1, 0)`, rustc's layout for wasm32 (`field_offset`,
+`pointers::Offset`), and the runtime reads a handle with an offset as a
+field, never an item: its address is its offset in the allocation that
+holds it (`$offsetIn`), and a tuple's field that's an object is at that
+field's address in the tuple's allocation, as an array's item is (#1019
+above, `$items` keeping the offset), the outer tuple's address given
+first. A tuple whose field at offset 0, an object, has an address
+already is put at its base, as an array whose first item has one is.
+Of a generic tuple, whose layout its caller says, the offset is `null`,
+and its address is refused where it's asked, "the address of a field of
+a type its caller lays out", as a named field's given none is. Since it's
+no item, stepping a tuple's field's pointer, `p.add(1)`, and the
+distance between two, `offset_from`, are refused where they run, as of
+any pointer not into an array: the layout says which field is next.
+
+Not done: the address of a field of an object that's an array's item or
+a struct's field where no handle on that item or field was made, `&raw
+const items[1].b` beside `&raw const items` alone, or `&raw const
+o.inner.b` beside `&raw const o`, is still the object's own base (#1089).
+
+Held by the corpus case `address_of_a_tuple_field`, against native Rust,
+`address_of_a_struct_a_field_holds` (whose pair is a tuple now held at
+its offsets), `test/runtime-package.test.ts`'s "a tuple's field's pointer
+is at its offset, never an item", and mutations
+`tuple-field-pointer-no-offset`, `tuple-field-of-a-generic-tuple-an-item`
+(`lower/pointers.ts`), `tuple-field-at-index-times-stride`,
+`tuple-field-an-item`, `tuple-field-of-a-field-its-own-allocation`,
+`tuple-of-an-addressed-field-apart`, `tuple-field-pointer-stepped` and
+`tuple-field-pointers-distance` (`runtime/pointers.ts`). The metamorphic
+net's tuple-struct rewrite of `address_of_a_struct_a_field_holds` is off
+its list.

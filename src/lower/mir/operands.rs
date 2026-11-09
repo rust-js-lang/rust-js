@@ -470,7 +470,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(match pointer {
                     Some((pointee, _)) if self.is_handle_pointer(ty) => {
                         match self.mut_ref_form(pointee).is_the_object() {
-                            true => self.pointer_to(referred, pointee, Some(0), c.span)?,
+                            true => self.pointer_to(referred, pointee, crate::lower::pointers::Offset::At(0), c.span)?,
                             false => Expr::object(vec![Prop::Field(js::HELD.into(), referred)]),
                         }
                     }

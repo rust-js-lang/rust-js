@@ -14,7 +14,7 @@ function $ptr(object, key, offset) {
   let handle = handles.get(key);
   if (handle === undefined) {
     const item = Array.isArray(object) && typeof key === "number" ? object[key] : undefined;
-    if (item !== null && typeof item === "object") $items.set(item, { of: object, at: key });
+    if (item !== null && typeof item === "object") $items.set(item, { of: object, at: key, offset });
     handle = {
       of: object,
       at: key,
@@ -89,12 +89,14 @@ function $ptrTo(object) {
 }
 
 // `p.add(n)`, `p.offset(n)`, `p.sub(n)`: the item `n` along an array a
-// pointer is into; of another, where JS has no place, rust-js's error.
+// pointer is into; of another, where JS has no place, and of a tuple's
+// field, whose neighbour is where its layout puts it (#1081), rust-js's
+// error.
 function $ptrAdd(pointer, count) {
   if (pointer !== null && pointer.bytes !== undefined) {
     return $byteView({ ...pointer, at: pointer.at + count * pointer.width });
   }
-  if (pointer === null || !Array.isArray(pointer.of) || pointer.addr !== undefined) {
+  if (pointer === null || !Array.isArray(pointer.of) || pointer.addr !== undefined || pointer.offset !== undefined) {
     throw new Error("rust-js does not support stepping a pointer that isn't into an array, which reads memory by where it is");
   }
   return $ptr(pointer.of, pointer.at + count);
@@ -107,7 +109,7 @@ function $ptrOffsetFrom(p, q) {
   if (p?.bytes !== undefined && q?.bytes !== undefined && $bytesOf(p) === $bytesOf(q)) {
     return (p.at - q.at) / p.width;
   }
-  if (p.of !== q.of || !Array.isArray(p.of)) {
+  if (p.of !== q.of || !Array.isArray(p.of) || p.offset !== undefined || q.offset !== undefined) {
     throw new Error("rust-js does not support the distance between pointers to two places, which reads memory by where it is");
   }
   return p.at - q.at;
@@ -148,7 +150,8 @@ const $exposedPlaces = new Map();
 let $nextBase = 0x10000;
 
 // The allocation a pointer is into, and the handle its address is of: a
-// `$ptrTo` of an object that's an array's item, the array's item's.
+// `$ptrTo` of an object that's an array's item or a tuple's field, that
+// item's or field's.
 const $strides = new WeakMap();
 
 function $allocationOf(pointer) {
@@ -160,10 +163,10 @@ function $placed(pointer) {
   // A reference that's an array's item itself, the object, `transmute(&held.0)`
   // of a tuple struct's field: the item's place (#1019).
   const own = $items.get(pointer);
-  if (own !== undefined) return $ptr(own.of, own.at);
+  if (own !== undefined) return $ptr(own.of, own.at, own.offset);
   if (pointer.at === undefined && pointer.of !== undefined) {
     const item = $items.get(pointer.of);
-    if (item !== undefined) return $ptr(item.of, item.at);
+    if (item !== undefined) return $ptr(item.of, item.at, item.offset);
   }
   return pointer;
 }
@@ -193,16 +196,20 @@ function $emptyAt(addr, empty = []) {
   return empty;
 }
 
-// A handle's byte offset in its allocation, given the range's stride of an
-// array's items.
+// A handle's byte offset in its allocation: a field's, its own, a tuple's
+// too, which JS holds as an array (#1081); an array's item's, its index
+// times the range's stride. `null`, a field's of a type its caller lays
+// out.
 function $offsetIn(pointer, range) {
   if (pointer.bytes !== undefined) {
     return pointer.at + (pointer.plain !== undefined ? $offsetIn(pointer.plain, range) : 0);
   }
   if (pointer.of === undefined || pointer.at === undefined) return 0;
+  if (typeof pointer.offset === "number") return pointer.offset;
   // An array's first item is at its start, whatever its stride.
-  if (Array.isArray(pointer.of) && typeof pointer.at === "number") return pointer.at === 0 ? 0 : pointer.at * range.stride;
-  if (pointer.offset !== undefined) return pointer.offset;
+  if (pointer.offset === undefined && Array.isArray(pointer.of) && typeof pointer.at === "number") {
+    return pointer.at === 0 ? 0 : pointer.at * range.stride;
+  }
   throw new Error("rust-js does not support the address of a field of a type its caller lays out, which reads memory by where it is");
 }
 
@@ -214,32 +221,52 @@ function $addr(pointer, size) {
   if (pointer.addr !== undefined) return pointer.addr;
   if (pointer.bytes !== undefined && pointer.opaque) return $addr(pointer.typed, size);
   pointer = $placed(pointer);
-  // A field of an object that's an array's item, `&raw const held.0.b` of
-  // a tuple struct's field: in the array's allocation, at the item's
-  // address and the field's offset, as `$ptrTo` of the object is the item's
-  // (#1019), where the array's stride is known. Where it isn't, the
-  // object's own, at which its array's is put when it's asked (below).
-  const item = pointer.bytes === undefined && pointer.offset !== undefined ? $items.get(pointer.of) : undefined;
+  // A field of an object that's an array's item or a tuple's field,
+  // `&raw const held.0.b` of a tuple struct's field: in the allocation
+  // that holds it, at the object's address and the field's offset, as
+  // `$ptrTo` of the object is the item's (#1019): a tuple's field's, its
+  // own offset (#1081); an array's item's, where the array's stride is
+  // known. Where it isn't, the object's own, at which its array's is put
+  // when it's asked (below).
+  const item = pointer.bytes === undefined && typeof pointer.offset === "number" ? $items.get(pointer.of) : undefined;
   if (item !== undefined) {
     const range = $ranges.get(item.of);
-    if (range?.stride !== undefined) {
-      const addr = range.base + (item.at === 0 ? 0 : item.at * range.stride) + pointer.offset;
+    const start =
+      typeof item.offset === "number"
+        ? $addr($ptr(item.of, item.at, item.offset), 0)
+        : range?.stride !== undefined
+          ? range.base + (item.at === 0 ? 0 : item.at * range.stride)
+          : undefined;
+    if (start !== undefined) {
+      const addr = start + pointer.offset;
       $exposedPlaces.set(addr, pointer);
       return addr;
     }
   }
   const allocation = $allocationOf(pointer);
   const view = pointer.bytes !== undefined && pointer.plain === undefined;
-  const items = Array.isArray(allocation) && ((pointer.of !== undefined && typeof pointer.at === "number") || view);
+  // A tuple's field, which JS holds as an array's item, is at its offset
+  // (#1081), no item.
+  const items =
+    Array.isArray(allocation) &&
+    ((pointer.of !== undefined && typeof pointer.at === "number" && pointer.offset === undefined) || view);
   const stride = view ? pointer.stride : size;
   if (items && allocation.length === 0 && !$ranges.has(allocation)) $emptyAt(Math.max(stride, 1), allocation);
   // An array whose first item, an object, has an address already, its
   // field's asked first, `&raw const held.0.c` before `&raw const held.0`:
   // at the item's, which its bytes fit in (#1019); an address in it found
-  // again is the item's, as it was.
-  const first = items && !$ranges.has(allocation) ? $ranges.get(allocation[0]) : undefined;
-  if (first !== undefined && first.base + allocation.length * stride <= first.end) {
-    $ranges.set(allocation, { base: first.base, end: first.end, of: allocation, stride });
+  // again is the item's, as it was. And so of a tuple whose field at its
+  // start, an object, has one (#1081).
+  const head = !$ranges.has(allocation)
+    ? items
+      ? allocation[0]
+      : pointer.offset === 0 && pointer.of === allocation && Array.isArray(allocation)
+        ? allocation[pointer.at]
+        : undefined
+    : undefined;
+  const first = head !== null && typeof head === "object" ? $ranges.get(head) : undefined;
+  if (first !== undefined && (!items || first.base + allocation.length * stride <= first.end)) {
+    $ranges.set(allocation, { base: first.base, end: first.end, of: allocation, stride: items ? stride : undefined });
   }
   const range = $addresses(allocation, items ? allocation.length * stride : 0);
   if (items && range.stride === undefined) range.stride = stride;

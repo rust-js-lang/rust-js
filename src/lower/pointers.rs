@@ -127,6 +127,23 @@ pub(in crate::lower) enum PointerOp {
 /// The type a pointer points to, and whether it's `*mut`: a raw pointer's,
 /// and a `NonNull`'s, which is its pointer, never `null`. The one answer of
 /// whether a type is a raw pointer (ADR 0407).
+/// Where a raw pointer's place is in the allocation that holds it, as its
+/// place says (ADR 0562): what `$ptr`'s third argument is.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(in crate::lower) enum Offset {
+    /// No field's: an array's item, at its index times its size, a cell's
+    /// one field, an object's own start.
+    Unsaid,
+    /// A field's byte offset in its struct or tuple, rustc's layout for
+    /// wasm32: a tuple's too, which JS holds as an array, whose index is no
+    /// address (#1081).
+    At(u64),
+    /// A field's of a type its caller lays out, generic code's: of a
+    /// tuple's, `null`, whose address `$addr` refuses where it's asked, as
+    /// it does of a struct's named field given none.
+    LaidOutByCaller,
+}
+
 pub(in crate::lower) fn raw_pointee<'tcx>(tcx: ty::TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, ty::Mutability)> {
     match ty.kind() {
         ty::RawPtr(pointee, mutability) => Some((*pointee, *mutability)),
@@ -646,7 +663,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let named = matches!(&place.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))
             || matches!(&place.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$index"));
         match named || self.pointee_is_itself(pointee) || self.mut_ref_form(pointee).is_the_object() {
-            true => self.pointer_to(place, pointee, None, span),
+            true => self.pointer_to(place, pointee, Offset::Unsaid, span),
             false => Ok(Expr::object(vec![js::Prop::Field(js::HELD.into(), place)])),
         }
     }
@@ -656,10 +673,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// in its struct where the struct's layout is known here (ADR 0562),
     /// `$ptr(items, i)` of an item, a cell of a constant. Any other place,
     /// one JS has no name for, is refused.
-    pub(super) fn pointer_to(&self, place: Expr, pointee: Ty<'tcx>, offset: Option<u64>, span: Span) -> R<Expr> {
-        let handle = |object: Expr, key: Expr, offset: Option<u64>| {
+    pub(super) fn pointer_to(&self, place: Expr, pointee: Ty<'tcx>, offset: Offset, span: Span) -> R<Expr> {
+        let handle = |object: Expr, key: Expr, offset: Offset| {
             let mut args = vec![object, key];
-            args.extend(offset.map(|offset| Expr::int(i128::from(offset))));
+            match offset {
+                Offset::At(offset) => args.push(Expr::int(i128::from(offset))),
+                Offset::LaidOutByCaller => args.push(Expr::null()),
+                Offset::Unsaid => {}
+            }
             Expr::call(Expr::helper("$ptr"), args)
         };
         // A slice's is the slice, a pair `dyn`'s the pair.
@@ -683,10 +704,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // message `$index` was given: past the end, Rust's panic.
         if let Some(args) = checked_item(&place) {
             let at = Expr::call(Expr::helper("$at"), args.to_vec());
-            return Ok(handle(args[0].clone(), at, None));
+            return Ok(handle(args[0].clone(), at, Offset::Unsaid));
         }
+        // A tuple's field, an array's item in JS, at its own offset (#1081).
         if let js::ExprKind::Index(object, index) = place.kind {
-            return Ok(handle(*object, *index, None));
+            return Ok(handle(*object, *index, offset));
         }
         // An object's, by the object, wherever it's reached from: a copy of
         // what a pointer points to is a copy (`mutation.rs`), so the object
@@ -704,8 +726,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         match place.kind {
             // A cell's one field is at its start.
-            js::ExprKind::Member(object, key) if key == js::HELD => Ok(handle(*object, Expr::str(key), Some(0))),
-            js::ExprKind::Member(object, key) => Ok(handle(*object, Expr::str(key), offset)),
+            js::ExprKind::Member(object, key) if key == js::HELD => Ok(handle(*object, Expr::str(key), Offset::At(0))),
+            // A named field's given no offset is refused where its address
+            // is asked, as `null`'s is.
+            js::ExprKind::Member(object, key) => {
+                let offset = match offset {
+                    Offset::LaidOutByCaller => Offset::Unsaid,
+                    offset => offset,
+                };
+                Ok(handle(*object, Expr::str(key), offset))
+            }
             // A constant's, `&3`'s, which nothing writes, and which Rust may
             // or may not make one place each time: a cell of its own.
             _ if place.is_constant() => Ok(Expr::object(vec![js::Prop::Field(js::HELD.into(), place)])),
@@ -901,14 +931,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .expect("an `Rc`");
                 let rc = arg();
                 match self.krate.counted.counts(self.tcx, pointee) {
-                    true => self.pointer_to(self.counted_pointee(rc, pointee), pointee, None, span)?,
+                    true => self.pointer_to(self.counted_pointee(rc, pointee), pointee, Offset::Unsaid, span)?,
                     // An uncounted one's object, wherever the `Rc` is read from,
                     // not the item of an array that holds it, `held[0]` of a
                     // tuple struct's field (#1019).
                     false if self.is_object(pointee) && !self.mut_ref_form(pointee).is_cell() => {
                         helper("$ptrTo", vec![rc])
                     }
-                    false => self.pointer_to(rc, pointee, None, span)?,
+                    false => self.pointer_to(rc, pointee, Offset::Unsaid, span)?,
                 }
             }
             PointerOp::Replace => helper("$ptrReplace", vec![arg(), arg()]),
@@ -1121,7 +1151,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && let Some((b, _)) = raw_pointee(self.tcx, to)
                     && self.is_handle_pointer(to) =>
             {
-                Ok(Some(self.pointer_to(Expr::member(value, js::HELD), b, None, span)?))
+                Ok(Some(self.pointer_to(Expr::member(value, js::HELD), b, Offset::Unsaid, span)?))
             }
             mir::CastKind::PtrToPtr if self.is_handle_pointer(from) && self.is_handle_pointer(to) => {
                 let (ty::RawPtr(a, _), ty::RawPtr(b, _)) = (from.kind(), to.kind()) else {
@@ -1217,7 +1247,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let object = self.pointee_place(pointer);
                 let key = super::bindings::field_key(self.tcx, field);
-                self.pointer_to(self.field_member(object, &key), b, Some(0), span)
+                self.pointer_to(self.field_member(object, &key), b, Offset::At(0), span)
             }
             // Two layouts of one `#[repr(C)]` struct, anyhow's `ErrorImpl<E>`
             // as its prefix `ErrorImpl<()>` and back: the same handle, its

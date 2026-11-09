@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "tuple-field-pointer-no-offset",
+    breaks: "a tuple's field's pointer, `$ptr(t, 1)`, is given no byte offset, so its address is its index times its size, `0 1 2` of a `(u8, u32, u16)` rustc lays out `4 0 6` (#1081)",
+    file: "src/lower/pointers.rs",
+    find: "            return Ok(handle(*object, *index, offset));\n",
+    replace: "            return Ok(handle(*object, *index, Offset::Unsaid));\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_tuple_field.rs$"],
+  },
+  {
+    name: "tuple-field-of-a-generic-tuple-an-item",
+    breaks: "a generic tuple's field's pointer, whose layout its caller says, is given no `null` offset, so its address is its index times a size where it's refused (#1081)",
+    file: "src/lower/pointers.rs",
+    find: "                Offset::LaidOutByCaller => args.push(Expr::null()),\n                Offset::Unsaid => {}\n",
+    replace: "                Offset::LaidOutByCaller | Offset::Unsaid => {}\n",
+    tests: ["test/runtime-package.test.ts", "-t", "a tuple's field's pointer"],
+  },
+  {
     name: "rc-as-ptr-of-a-held-rc-its-slot",
     breaks: "`Rc::as_ptr(&first.0)` of an `Rc` a tuple struct holds points at the array item holding it, `$ptr(first, 0)`, so two clones' pointers differ (#1019)",
     file: "src/lower/pointers.rs",
@@ -356,7 +372,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pointers.rs",
     find: "            false => Ok(Expr::object(vec![js::Prop::Field(js::HELD.into(), place)])),\n",
     replace:
-      "            false => self.pointer_to(place, pointee, None, span),\n",
+      "            false => self.pointer_to(place, pointee, Offset::Unsaid, span),\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_pointers.rs$"],
   },
   {
@@ -516,9 +532,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a field's handle is made without its byte offset, so its address is refused where it's asked",
     file: "src/lower/pointers.rs",
-    find: "            js::ExprKind::Member(object, key) => Ok(handle(*object, Expr::str(key), offset)),",
-    replace:
-      "            js::ExprKind::Member(object, key) => Ok(handle(*object, Expr::str(key), None)),",
+    find: "                Ok(handle(*object, Expr::str(key), offset))\n",
+    replace: "                Ok(handle(*object, Expr::str(key), Offset::Unsaid))\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
   },
   {
@@ -571,7 +586,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a pointer to an array's item that's an object is `$ptrTo` of it, its own allocation",
     file: "src/lower/pointers.rs",
-    find: "        if let js::ExprKind::Index(object, index) = place.kind {\n            return Ok(handle(*object, *index, None));\n        }\n",
+    find: "        if let js::ExprKind::Index(object, index) = place.kind {\n            return Ok(handle(*object, *index, offset));\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
   },
@@ -622,7 +637,7 @@ export const mutations: Mutation[] = [
     name: "dyn-pointer-thin-refused",
     breaks: "a `*const dyn Trait` made thin, `z as *const A`, is refused",
     file: "src/lower/pointers.rs",
-    find: "                Ok(Some(self.pointer_to(Expr::member(value, js::HELD), b, None, span)?))\n",
+    find: "                Ok(Some(self.pointer_to(Expr::member(value, js::HELD), b, Offset::Unsaid, span)?))\n",
     replace:
       '                Err(refuse(self.tcx, span, Refused::Memory("a pair\'s pointer made thin")))\n',
     tests: ["test/corpus.test.ts", "-t", "^dyn_pointers.rs$"],
@@ -738,8 +753,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a counted `Rc`'s `as_ptr` points at the `Rc` itself, not its value's place, which JS can't point at",
     file: "src/lower/pointers.rs",
-    find: "                    true => self.pointer_to(self.counted_pointee(rc, pointee), pointee, None, span)?,\n",
-    replace: "                    true => self.pointer_to(rc, pointee, None, span)?,\n",
+    find: "                    true => self.pointer_to(self.counted_pointee(rc, pointee), pointee, Offset::Unsaid, span)?,\n",
+    replace: "                    true => self.pointer_to(rc, pointee, Offset::Unsaid, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_as_ptr.rs$"],
   },
   {
