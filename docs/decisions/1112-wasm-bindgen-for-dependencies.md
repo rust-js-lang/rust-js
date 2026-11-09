@@ -182,3 +182,45 @@ Held by `test/compat.test.ts`:
   not web-sys;
 - a graph with a stand-in for chrono, alone or beside getrandom, builds
   of crates.io's, the patch not written.
+
+## Rejected: rust-js's crates over crates.io's, re-exported whole (2026-11-10)
+
+(A), the patch only for a graph whose every crate that uses one is
+covered, is all or nothing per graph: chrono's default `wasmbind` beside
+getrandom keeps both on crates.io's. The alternative was for each of
+rust-js's crates to depend on crates.io's under another name, pinned
+exactly, and re-export it whole. A types-alone build would then see
+upstream's whole API, and a call into what isn't covered would stay
+refused one call at a time:
+
+```toml
+[dependencies]
+upstream = { package = "wasm-bindgen", version = "=0.2.129" }
+```
+
+```rust
+pub use upstream::*;
+```
+
+Tried, with a dependent asking `wasm-bindgen = "0.2"` and `js-sys = "0.3"`,
+the app patched to rust-js's 0.2.130 and 0.3.107, cargo 1.99, a fresh
+lockfile:
+
+```text
+warning: patch `wasm-bindgen v0.2.130 (..)` was not used in the crate graph
+      Adding js-sys v0.3.106 (available: v0.3.107)
+      Adding wasm-bindgen v0.2.129 (available: v0.2.130)
+      Adding wasm-bindgen-macro v0.2.129 (available: v0.2.130)
+```
+
+**Cargo unifies each `^0.2` dependent onto the exact-pinned registry
+release already in the graph, so rust-js's crates drop out.** The pin
+can't be avoided: upstream pinned at rust-js's own release resolves to
+the patch, a cycle, and no semver-incompatible release of upstream exists
+to hold it apart. And were it allowed, each type rust-js's crates define,
+`JsValue`, `Uint8Array`, `Date`, would be another type than upstream's.
+A dependent that gives an uncovered upstream item where a covered one goes,
+`JsValue::from(js_sys::Date::new_0())`, would fail to type-check in its
+types-alone build: #1129 again, crate by crate. (A) stays the one
+mechanism, and coverage grows in the order crates share graphs: chrono's
+`wasmbind` first, then uuid's `js`.
