@@ -141,9 +141,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a type parameter generic code clones stands for every `map` and `filter`, each made cloned apart, which refuses what it can't clone",
     file: "src/lower/iterators/stepping.rs",
-    find: "                .any(|&cloned| adapter(cloned) && self.instance_of(generic_closures(cloned), generic_closures(ty)))\n",
-    replace:
-      "                .any(|&cloned| self.instance_of(generic_closures(cloned), generic_closures(ty)))\n",
+    find: "            adapter(cloned)\n                && crate::lower::copies::instance_of(",
+    replace: "            true && crate::lower::copies::instance_of(",
     tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
   },
   {
@@ -151,8 +150,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `map` generic code makes isn't seen as the one its caller clones, whose closure is the caller's instance",
     file: "src/lower/iterators/stepping.rs",
-    find: "                        ty::Closure(id, _) => tcx.type_of(id).instantiate_identity().skip_normalization(),\n",
-    replace: "                        ty::Closure(..) => t,\n",
+    find: "                    ty::Closure(id, _) => tcx.type_of(id).instantiate_identity().skip_normalization(),\n",
+    replace: "                    ty::Closure(..) => t,\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
   },
   {
@@ -160,8 +159,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `map` a function gives as an `impl Iterator` isn't made cloned apart",
     file: "src/lower/iterators/stepping.rs",
-    find: "        // What an `impl Iterator` hides, a function's result.\n        let ty = self.reveal(ty);\n",
-    replace: "",
+    find: "        cloned_apart(&self.recognition(), self.krate.cloned, self.reveal(ty))\n",
+    replace: "        cloned_apart(&self.recognition(), self.krate.cloned, ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
   },
   {

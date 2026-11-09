@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1978
-lines	237167
+files	1980
+lines	237442
 temporaries	0	0
 labeled blocks	0	0
 while (true)	190	8
-$iter	2170	91.5
+$iter	2182	91.9
 Iterator.from	193	8.1
-return;	290	12.2
-renamed x$1	12209	514.8
+return;	291	12.3
+renamed x$1	12228	515
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0
 test/corpus/adapter_drops.js	1697	0	0	1	18	3	1	98
@@ -225,6 +225,7 @@ test/corpus/class_to_string.js	35	0	0	0	0	0	0	0
 test/corpus/class_trait_field_borrows.js	108	0	0	0	0	0	0	0
 test/corpus/class_trait_field_held.js	34	0	0	0	0	0	0	2
 test/corpus/class_trait_field_lent.js	35	0	0	0	0	0	0	0
+test/corpus/class_trait_method_before_its_field.js	39	0	0	0	0	0	0	0
 test/corpus/class_trait_methods.js	51	0	0	0	0	0	0	0
 test/corpus/clock.js	57	0	0	0	0	0	0	2
 test/corpus/clone_changed_part.js	38	0	0	0	0	0	0	0
@@ -236,6 +237,7 @@ test/corpus/clone_from_slice_own.js	58	0	0	0	0	0	0	0
 test/corpus/clone_from_std_own.js	431	0	0	0	0	0	0	16
 test/corpus/clone_of_a_borrowed_parameter.js	97	0	0	0	0	0	0	2
 test/corpus/clone_unwinds_what_it_made.js	328	0	0	0	0	0	0	0
+test/corpus/cloned_chain_stepped_from_its_back.js	236	0	0	0	12	0	1	19
 test/corpus/cloned_chains_and_cycles.js	371	0	0	0	30	0	0	12
 test/corpus/cloned_counted_adapters.js	98	0	0	0	3	0	0	5
 test/corpus/cloned_items_from_both_ends.js	34	0	0	0	3	0	0	0

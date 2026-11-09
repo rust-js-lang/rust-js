@@ -32,9 +32,10 @@ pub(super) fn of_crate<'tcx>(
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     (library, drops): (bool, impl Fn(Ty<'tcx>) -> bool + Copy),
+    cloned: &IndexSet<Ty<'tcx>>,
 ) -> BackStepped<'tcx> {
     let mut typed = back_stepped(tcx, recognition, all_bodies, (library, drops));
-    let (locals, fields, typed_sources) = stepped_locals(tcx, recognition, all_bodies, drops);
+    let (locals, fields, typed_sources) = stepped_locals(tcx, recognition, all_bodies, drops, cloned);
     typed.extend(typed_sources);
     BackStepped {
         typed,
@@ -461,6 +462,7 @@ pub(super) fn stepped_locals<'tcx>(
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     drops: impl Fn(Ty<'tcx>) -> bool,
+    cloned: &IndexSet<Ty<'tcx>>,
 ) -> SteppedValues<'tcx> {
     use rustc_middle::mir;
     let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(recognition.reveal(ty.peel_refs()));
@@ -470,6 +472,12 @@ pub(super) fn stepped_locals<'tcx>(
         return Default::default();
     };
     let mut stepped: IndexMap<(rustc_span::def_id::DefId, mir::Local), SteppedLocal> = IndexMap::default();
+    // A chain cloned apart, made by a function of its sides (ADR 0525), no
+    // form of which a step reads: made knowing its back by that function
+    // where it's stepped so, lent or asked beneath an adapter (#1002).
+    let cloned_chain = |ty: Ty<'tcx>| {
+        chained_sources(tcx, ty).is_some() && crate::lower::iterators::cloned_apart(&recognition, cloned, ty)
+    };
     // Each temporary given whole to what asks its back, made in place,
     // whose form its step reads: not made knowing it itself, but what it
     // holds beneath is, a variable's value an adapter made in place holds
@@ -769,6 +777,7 @@ pub(super) fn stepped_locals<'tcx>(
                                 // (#718).
                                 || chained_sources(tcx, ty).is_some()
                                     && recognition.iterator_item(ty).is_some_and(&drops)
+                                || cloned_chain(ty)
                         };
                         let held = held || unread();
                         match (ty == asked_ty, lent, user) {
@@ -808,6 +817,10 @@ pub(super) fn stepped_locals<'tcx>(
                 let made_asked = made_stepped || asked.contains(&(owner, destination.local));
                 if !made_asked {
                     continue;
+                }
+                // A chain cloned apart asked beneath an adapter (`cloned_chain`).
+                if !made_stepped && cloned_chain(made) {
+                    mark(&mut stepped, (owner, destination.local), SteppedLocal::Given);
                 }
                 // An adapter of what it's given, stepped from its back where
                 // it is: a chain's sides, which `$lazyChain` steps from their

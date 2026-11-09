@@ -15,7 +15,7 @@ mod stepping;
 mod value;
 
 pub(in crate::lower) use self::hint_asks::{Room, Shunted, refuse_unknown_capacity_extends};
-pub(in crate::lower) use self::stepping::stepped_by_parts;
+pub(in crate::lower) use self::stepping::{cloned_apart, stepped_by_parts};
 pub(in crate::lower) use self::value::{
     EnumeratedForm, Form, IterValue, back_source, bounds_of, bounds_read, closed, closed_parts, enumerated,
     enumerated_knowing, enumerated_of, form_lacks_a_back, held_by_its_owner, held_of, is_knowing, is_lent,

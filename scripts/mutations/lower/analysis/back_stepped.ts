@@ -499,4 +499,20 @@ export const mutations: Mutation[] = [
     replace: "    typed\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_given_to_generic_backs.rs$"],
   },
+  {
+    name: "cloned-chain-lent-unmarked",
+    breaks: "a chain cloned apart lent to its `next_back()` isn't made knowing its back, so it's refused (#1002)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                                || cloned_chain(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_chain_stepped_from_its_back.rs$"],
+  },
+  {
+    name: "cloned-chain-asked-unmarked",
+    breaks: "a chain cloned apart beneath a map stepped from its back isn't made knowing its back, so the map is refused beside a case that clones that chain's type (#1002)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                if !made_stepped && cloned_chain(made) {\n",
+    replace: "                if !made_stepped && cloned_chain(made) && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_chain_stepped_from_its_back.rs$"],
+  },
 ];

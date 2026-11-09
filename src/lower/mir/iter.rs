@@ -255,6 +255,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Parted::Chain => ["a", "b"],
         };
         let own = self.is_called_as_written(other_ty);
+        let back = self.stepped_from_its_back(output);
         let adapter = self.cloned_apart_adapter(
             (name.as_str(), parts, names),
             ([receiver_ty, other_ty], output),
@@ -265,7 +266,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // One stepped from its back, its source made knowing it, a map
                 // `$mapEnds` and a filter `$filterEnds`, as one not cloned
                 // apart is (ADRs 0455, 0526, 0984).
-                if matches!(parted, Parted::Map | Parted::Filter) && cx.stepped_from_its_back(output) {
+                if matches!(parted, Parted::Map | Parted::Filter) && back {
                     let source = cx.as_double_ended(a, receiver_ty, span)?;
                     let callback = cx.unary_callback(b, own);
                     let ends = if parted == Parted::Map {
@@ -275,12 +276,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     return Ok(Expr::call_helper(ends, vec![source, callback]));
                 }
+                let a_value = a.clone();
                 let a = cx.as_js_iterator(a, receiver_ty, span)?;
                 Ok(match parted {
                     // Its source given its function, `it.map(f)`.
                     Parted::Map | Parted::Filter => {
                         let callback = cx.unary_callback(b, own);
                         Expr::call(Expr::member(a, name.as_str()), vec![callback])
+                    }
+                    // Its sides made knowing theirs, as a chain not cloned apart
+                    // is (#718, #739).
+                    Parted::Chain if back => {
+                        let b = cx.as_double_ended(b, other_ty, span)?;
+                        Expr::call_helper("$lazyChain", vec![cx.as_double_ended(a_value, receiver_ty, span)?, b])
                     }
                     Parted::Chain => Expr::call_helper("$lazyChain", vec![a, cx.as_js_iterator(b, other_ty, span)?]),
                 })

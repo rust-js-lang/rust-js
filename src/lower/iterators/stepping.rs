@@ -584,28 +584,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its compiled `Clone` (`clone_value`'s).
     pub(in crate::lower) fn iterator_cloned_apart(&self, ty: ty::Ty<'tcx>) -> bool {
         // What an `impl Iterator` hides, a function's result.
-        let ty = self.reveal(ty);
-        // A closure as generic code makes it, which stands for each its
-        // callers' instances of it.
-        let tcx = self.tcx;
-        let generic_closures = |ty: ty::Ty<'tcx>| {
-            rustc_middle::ty::TypeFoldable::fold_with(
-                ty,
-                &mut ty::BottomUpFolder {
-                    tcx,
-                    ty_op: |t: ty::Ty<'tcx>| match *t.kind() {
-                        ty::Closure(id, _) => tcx.type_of(id).instantiate_identity().skip_normalization(),
-                        _ => t,
-                    },
-                    lt_op: |r| r,
-                    ct_op: |c| c,
-                },
-            )
-        };
-        let adapter = |ty| crate::lower::recognition::cloned_parts(tcx, ty).is_some();
-        adapter(ty)
-            && (self.krate.cloned.iter())
-                .any(|&cloned| adapter(cloned) && self.instance_of(generic_closures(cloned), generic_closures(ty)))
+        cloned_apart(&self.recognition(), self.krate.cloned, self.reveal(ty))
     }
 
     /// `value` of type `ty`, a `step_by(n)` made here, `src.filter((_, i) =>
@@ -662,4 +641,37 @@ pub(in crate::lower) fn stepped_by_parts(value: &Expr) -> Option<(Expr, Expr)> {
         }
         _ => None,
     }
+}
+
+/// `iterator_cloned_apart`'s, of `ty`, revealed, and the types the crate
+/// clones, `cloned`: the one answer, of what the lowering makes and of what
+/// the analysis marks made knowing its back by its maker (#1002).
+pub(in crate::lower) fn cloned_apart<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    cloned: &crate::collections::IndexSet<ty::Ty<'tcx>>,
+    ty: ty::Ty<'tcx>,
+) -> bool {
+    // A closure as generic code makes it, which stands for each its
+    // callers' instances of it.
+    let tcx = recognition.tcx;
+    let generic_closures = |ty: ty::Ty<'tcx>| {
+        rustc_middle::ty::TypeFoldable::fold_with(
+            ty,
+            &mut ty::BottomUpFolder {
+                tcx,
+                ty_op: |t: ty::Ty<'tcx>| match *t.kind() {
+                    ty::Closure(id, _) => tcx.type_of(id).instantiate_identity().skip_normalization(),
+                    _ => t,
+                },
+                lt_op: |r| r,
+                ct_op: |c| c,
+            },
+        )
+    };
+    let adapter = |ty| crate::lower::recognition::cloned_parts(tcx, ty).is_some();
+    adapter(ty)
+        && cloned.iter().any(|&cloned| {
+            adapter(cloned)
+                && crate::lower::copies::instance_of(recognition, generic_closures(cloned), generic_closures(ty))
+        })
 }

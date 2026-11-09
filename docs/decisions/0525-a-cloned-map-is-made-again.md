@@ -150,3 +150,46 @@ case `chain_of_a_slice_cloned_apart`, mutation
 or of a type parameter not bound by `Clone`, beside a neighbour that clones
 one of its type, is still refused: whether the made value can reach a
 clone at all is a flow question, #955's.
+
+## Amendment: a chain cloned apart stepped from its back (#1002)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change; a
+step from the back must take the chain's last item, as Rust's does.
+
+Once the crate clones a chain type, every chain of that type is made by
+its maker, `makeChain(a, b)`, whose form no later step can read, so
+`as_double_ended` couldn't make one knowing its back where it's stepped
+so: `v.iter().chain(v.iter()).map(f).next_back()` beside a case cloning a
+`Chain<slice::Iter<i32>, slice::Iter<i32>>` was refused, "a `Chain<..>` as
+a `DoubleEndedIterator`, which rust-js can't step from its back" (the
+nightly's neighbour shuffle, seed 12459000).
+
+**A chain cloned apart is marked by the back-stepping analysis as made
+knowing its back by its maker where it's stepped so: asked beneath an
+adapter, a map's source, or lent to its own `next_back()` (`cloned_chain`
+in `stepped_locals`). Its maker then makes `$lazyChain` of its sides made
+knowing theirs, as a chain not cloned apart is, which what steps it reads
+as knowing its back by that mark; a clone makes the same of its sides'
+clones.**
+
+```js
+const makeChain = (a, b) =>
+  $cloning(
+    $lazyChain($iterator(a, $rangeNext, false, $rangeNextBack), $iterator(b, $rangeNext, false, $rangeNextBack)),
+    () => makeChain({ start: a.start, end: a.end }, { start: b.start, end: b.end }),
+  );
+const found = $findBack(makeChain({ start: 0, end: 3 }, { start: 7, end: 9 }), (x) => x % 2 === 0);
+```
+
+Whether an adapter is cloned apart is one answer, `iterators::cloned_apart`
+of the types the crate clones, which the lowering's `iterator_cloned_apart`
+and the analysis both ask. No corpus case's JS changed.
+
+Held by `test/corpus/cloned_chain_stepped_from_its_back.rs`, against native
+Rust in both builds: chains of a slice's items, of ranges and of the
+crate's own iterator, cloned, and another of each stepped from its back
+beneath a map, a filter and as it is; and by the neighbour pair taken off
+`test/neighbours-known.txt`. Mutations `cloned-chain-lent-unmarked`,
+`cloned-chain-asked-unmarked` (`lower/analysis/back_stepped.ts`) and
+`cloned-chain-sides-backless` (`lower/mir/iter.ts`). The generic `Chain<I, I>` pair that's lent stays
+under #1002, #955's flow question.

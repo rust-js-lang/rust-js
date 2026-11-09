@@ -45,9 +45,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a held `filter()` cloned apart and stepped from its back is JS's `it.filter(f)`, which has no back: `TypeError: it.back is not a function` (ADR 0984)",
     file: "src/lower/mir/iter.rs",
-    find: "                if matches!(parted, Parted::Map | Parted::Filter) && cx.stepped_from_its_back(output) {\n",
-    replace:
-      "                if false && matches!(parted, Parted::Map | Parted::Filter) && cx.stepped_from_its_back(output) {\n",
+    find: "                if matches!(parted, Parted::Map | Parted::Filter) && back {\n",
+    replace: "                if false && matches!(parted, Parted::Map | Parted::Filter) && back {\n",
     tests: ["test/corpus.test.ts", "-t", "^counted_adapters_given.rs$"],
   },
   {
@@ -756,4 +755,13 @@ export const mutations: Mutation[] = [
     replace: "        Ok(match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_by_index_of_holding_maps.rs$"],
   },
+  {
+    name: "cloned-chain-sides-backless",
+    breaks: "a chain cloned apart stepped from its back makes its sides without their backs, a range's `$lazyRange`, which `$lazyChain` can't step from its back (#1002)",
+    file: "src/lower/mir/iter.rs",
+    find: "                    Parted::Chain if back => {\n",
+    replace: "                    Parted::Chain if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_chain_stepped_from_its_back.rs$"],
+  },
+
 ];
