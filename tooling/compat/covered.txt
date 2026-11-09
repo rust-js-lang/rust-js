@@ -4,3 +4,4 @@
 # one is here; otherwise crates.io's are what they use, as before ADR 1112
 # (#1129). A crate is added with its proof, its test and the Crater's.
 getrandom 0.3
+chrono 0.4

@@ -402,7 +402,7 @@ async function measure(crate: Crate, build: string): Promise<Verdict> {
   const native = await spawned(
     ["cargo", "test", "--lib", "--no-fail-fast", ...locked],
     dir,
-    { CARGO_TARGET_DIR: join(work, "native") },
+    { CARGO_TARGET_DIR: join(work, "native"), TZ: zone },
     900,
   );
   const nativeRan = nativeOutcomes(native.said);
@@ -422,7 +422,7 @@ async function measure(crate: Crate, build: string): Promise<Verdict> {
   // Its library's tests alone, as natively: no integration test is built.
   writeFileSync(
     join(jsDir, "Cargo.toml"),
-    libraryTestsOnly(readFileSync(join(jsDir, "Cargo.toml"), "utf8")),
+    libraryTestsOnly(readFileSync(join(jsDir, "Cargo.toml"), "utf8"), (lib) => sourceNames(join(jsDir, "src"), lib)),
   );
   const cutTests: Record<string, string> = {};
   // Its unit of an earlier run, which a build that stopped may have left
@@ -445,7 +445,7 @@ async function measure(crate: Crate, build: string): Promise<Verdict> {
     const js = await spawned(
       ["bun", join(root, "tooling", "cli.js"), "test"],
       jsDir,
-      { RUST_JS_COMPILER: compiler, CARGO_TARGET_DIR: join(work, "js") },
+      { RUST_JS_COMPILER: compiler, CARGO_TARGET_DIR: join(work, "js"), TZ: zone },
       1200,
     );
     const jsRan = jsOutcomes(js.said);
@@ -505,21 +505,50 @@ async function measure(crate: Crate, build: string): Promise<Verdict> {
   return verdict;
 }
 
+/** The time zone both runs have, so a test of local time, chrono's
+ * `Local`, is asked of one zone natively and as JS, whatever the machine's
+ * (#1121): one with daylight saving time, its offset of the date. */
+const zone = "America/New_York";
+
+/** Whether a Rust file under `dir` names `lib`, a crate, as a word. */
+function sourceNames(dir: string, lib: string): boolean {
+  const word = new RegExp(`\\b${lib}\\b`);
+  const walk = (at: string): boolean =>
+    readdirSync(at, { withFileTypes: true }).some((entry) =>
+      entry.isDirectory() ? walk(join(at, entry.name)) : entry.name.endsWith(".rs") && word.test(readFileSync(join(at, entry.name), "utf8")),
+    );
+  return existsSync(dir) && walk(dir);
+}
+
 /** A crate's manifest, `text`, building no integration test: each
  * `[[test]]` table gone, and `autotests = false`, where crates.io's
  * normalized manifest lists them or Cargo would find them. */
-export function libraryTestsOnly(text: string): string {
+export function libraryTestsOnly(text: string, named: (lib: string) => boolean = () => true): string {
+  // A dev-dependency of a name the library's source never says, one only
+  // its integration tests use, chrono's wasm32 `wasm-bindgen-test`: not
+  // built, as no test that uses it is, so its graph is the library's
+  // tests' alone (ADR 1112).
+  const used = (dependency: string) => named(dependency.replaceAll("-", "_"));
   const tables = text
     .split(/^(?=\[)/m)
-    .filter((table) => !table.startsWith("[[test]]"));
+    .filter((table) => !table.startsWith("[[test]]"))
+    .filter((table) => {
+      const own = /^\[(?:target\.[^\]]*?\.)?dev-dependencies\.([\w-]+)\]/.exec(table);
+      return !own || used(own[1]);
+    });
   return tables
-    .map((table) =>
-      table.startsWith("[package]")
-        ? table
-            .replace(/^autotests\s*=.*\n/m, "")
-            .replace("[package]\n", "[package]\nautotests = false\n")
-        : table,
-    )
+    .map((table) => {
+      if (table.startsWith("[package]")) {
+        return table.replace(/^autotests\s*=.*\n/m, "").replace("[package]\n", "[package]\nautotests = false\n");
+      }
+      if (/^\[(?:target\.[^\]]*?\.)?dev-dependencies\]/.test(table)) {
+        return table
+          .split("\n")
+          .filter((line, i) => i === 0 || !/^[\w-]+\s*=/.test(line) || used(line.split(/\s*=/)[0]))
+          .join("\n");
+      }
+      return table;
+    })
     .join("");
 }
 

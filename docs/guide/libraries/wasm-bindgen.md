@@ -15,8 +15,9 @@ of crates.io's:`, and drops them when none is left, so Cargo never warns
 of an unused patch.
 
 Their API grows from what crates use, crate by crate:
-`tooling/compat/covered.txt` lists the crates they serve, getrandom 0.3
-first. Where any crate of your graph that uses wasm-bindgen isn't one of
+`tooling/compat/covered.txt` lists the crates they serve: getrandom 0.3,
+and chrono 0.4, whose default `wasmbind` reads the local time zone through
+`js_sys::Date`, so `Local::now()` is your user's local time. Where any crate of your graph that uses wasm-bindgen isn't one of
 them, chrono with its default `wasmbind` say, your build keeps crates.io's,
 as it did before, and such a crate is its types alone, a call into it
 refused.

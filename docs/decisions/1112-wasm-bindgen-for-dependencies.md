@@ -224,3 +224,50 @@ A dependent that gives an uncovered upstream item where a covered one goes,
 types-alone build: #1129 again, crate by crate. (A) stays the one
 mechanism, and coverage grows in the order crates share graphs: chrono's
 `wasmbind` first, then uuid's `js`.
+
+## Amendment: chrono's `wasmbind` (2026-11-10, #1121)
+
+**chrono 0.4 is covered.** Its `wasmbind`, on by default, uses
+`js_sys::Date`: made now, `new_0()`; of milliseconds,
+`new(&JsValue::from_f64(ms))`; and of local parts,
+`new_with_year_month_day_hr_min_sec`. It reads `get_time()` and
+`get_timezone_offset()`. rust-js's `js_sys::Date` is a class, `Date`
+(`rust_js::types`), that derefs to `js::Date`, so its methods are
+`js::Date`'s own bindings. Only js-sys's names of `new Date(..)` are
+bindings of its own. `JsValue::from_f64` is the number itself (`link_name
+= "this"`). Through it, chrono's `Utc::now()`, `Local::now()` and `Local`'s
+offset of a date print what upstream's JS would: `new Date(year >>> 0,
+month0, 15, 12, 0, 0).getTimezoneOffset()`.
+
+Three things the real chrono found, each general:
+
+- **The graph is rust-js's target's.** Cargo's metadata, unfiltered, has
+  each platform's dependencies, chrono's `cfg(unix)` iana-time-zone among
+  them, which uses js-sys on wasm32 and isn't covered. It held the patch
+  off a graph that never builds it. `cargoBuild` reads the metadata with
+  `--filter-platform wasm32-unknown-unknown`.
+- **A lock of crates.io's holds against the patch.** A crate's own packed
+  `Cargo.lock`, or an app's from before, locks js-sys at another release
+  than rust-js's, and Cargo keeps it, the patch unused. Where the patch
+  starts naming a crate, `cargoBuild` moves each such lock onto it, `cargo
+  update -p js-sys`, as Cargo's warning says to. A pin is refused only
+  where it's an exact `=` of another release. Seen through the Crater,
+  whose copy of chrono packs its lock: git stand-ins can't hold a
+  registry's lock, so no test of the suite's does.
+- **A dev-dependency only integration tests use isn't built by the
+  Crater**: chrono's wasm32 `wasm-bindgen-test`, which `tests/wasm.rs`
+  alone uses and which isn't covered, kept the patch off its tests' graph.
+  The Crater's JS copy drops a dev-dependency the library's source never
+  names (`libraryTestsOnly`). Both its runs have `TZ` set to
+  `America/New_York`, a zone with daylight saving time, so a test of
+  `Local` is asked of one zone whatever the machine's.
+
+Held by `test/compat.test.ts`: a stand-in of chrono's surface, its
+offsets in New York of a winter's and a summer's date, 300 and 240
+minutes, native Rust's; and a `cfg(unix)` dependency using js-sys that
+doesn't keep the patch off. The real chrono 0.4.45, with its default
+features, through `rust-js build`, matched native Rust in `America/New_York`
+(-18000 and -14400 seconds) and `Asia/Kolkata` (19800). The Crater's run
+of chrono's own tests now gets past wasm-bindgen, to chrono's `tz_data.rs`,
+which its tests build: `CStr::from_bytes_with_nul_unchecked` and
+`io::Read::read_exact`, gaps of their own (#1153).

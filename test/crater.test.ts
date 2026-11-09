@@ -78,6 +78,13 @@ test("what's cut for an error is its test, or a function only tests reach, never
 test("the JS's copy of a crate builds its library's tests alone, as natively", () => {
   const manifest = '[package]\nname = "hex"\nautotests = true\n\n[lib]\nname = "hex"\n\n[[test]]\nname = "version-number"\npath = "tests/version-number.rs"\n\n[dependencies]\n';
   expect(libraryTestsOnly(manifest)).toBe('[package]\nautotests = false\nname = "hex"\n\n[lib]\nname = "hex"\n\n[dependencies]\n');
+  // A dev-dependency the library's source never names, chrono's wasm32
+  // `wasm-bindgen-test`, which its integration tests alone use, isn't
+  // built; one it names is, a table's or a line's (ADR 1112).
+  const devs = '[package]\nname = "chrono"\n\n[dev-dependencies]\nserde_json = "1"\nbincode = "1"\n\n[dev-dependencies.similar-asserts]\nversion = "1"\n\n[target.\'cfg(target_arch = "wasm32")\'.dev-dependencies.wasm-bindgen-test]\nversion = "0.3"\n';
+  expect(libraryTestsOnly(devs, (lib) => lib !== "bincode" && lib !== "wasm_bindgen_test")).toBe(
+    '[package]\nautotests = false\nname = "chrono"\n\n[dev-dependencies]\nserde_json = "1"\n\n[dev-dependencies.similar-asserts]\nversion = "1"\n\n',
+  );
 });
 
 test("a file only tests build, `#[cfg(test)] mod tests;`, has its functions cut, as an inline one's", () => {

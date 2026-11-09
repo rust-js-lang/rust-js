@@ -18,6 +18,14 @@ pub struct JsValue {
     pub __value: Option<&'static js::Unknown>,
 }
 
+impl JsValue {
+    /// The number `n` as a JS value: itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    pub fn from_f64(this: f64) -> JsValue {
+        unreachable!()
+    }
+}
+
 /// What `use wasm_bindgen::prelude::*` brings.
 pub mod prelude {
     pub use crate::{JsValue, wasm_bindgen};

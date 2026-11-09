@@ -68,7 +68,9 @@ export function cargoEnv(compiler, react, { apps, crates, dependencies = [] }, {
  * @returns {Promise<{ apps: string[], crates: string[], dependencies: { dir: string, name: string, version: string }[], members: string[], own?: string }>} */
 export async function cargoBuild({ manifestPath, toolchain, offline = false }) {
   const manifest = resolve(manifestPath);
-  const args = [...(toolchain ? [`+${toolchain}`] : []), "metadata", "--format-version=1", "--manifest-path", manifest, ...(offline ? ["--offline"] : [])];
+  // The graph rust-js's target builds: a dependency of another platform's,
+  // chrono's `cfg(unix)` iana-time-zone, is none of it (#1121).
+  const args = [...(toolchain ? [`+${toolchain}`] : []), "metadata", "--format-version=1", "--filter-platform", target, "--manifest-path", manifest, ...(offline ? ["--offline"] : [])];
   const read = async () => {
     const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
       throw new Error(`cargo metadata failed:\n${error.stderr ?? error.message}`);
@@ -81,7 +83,19 @@ export async function cargoBuild({ manifestPath, toolchain, offline = false }) {
   const compat = compatCrates();
   let metadata = await read();
   const settled = settleCompat(dirname(manifest), metadata.workspace_root, metadata.packages.map((pkg) => pkg.name), compatDependents(metadata, compat));
-  if (settled.changed) metadata = await read();
+  if (settled.changed) {
+    // A lock of crates.io's of another release, a crate's own packed one,
+    // holds against the patch: each moved onto rust-js's, as Cargo's
+    // warning says to (#1121).
+    const locked = settled.patched.filter((name) => metadata.packages.some((pkg) => pkg.name === name && pkg.source !== null));
+    if (locked.length > 0) {
+      const update = [...(toolchain ? [`+${toolchain}`] : []), "update", ...locked.flatMap((name) => ["-p", name]), "--manifest-path", manifest, ...(offline ? ["--offline"] : [])];
+      await execute("cargo", update, { cwd: dirname(manifest) }).catch((error) => {
+        throw new Error(`cargo update of rust-js's own ${locked.join(", ")} failed:\n${error.stderr ?? error.message}`);
+      });
+    }
+    metadata = await read();
+  }
   const { packages, resolve: graph, workspace_members: members } = metadata;
   compatRefused(packages, graph, compat, settled.patched);
   // A crate another of the workspace uses is a library whichever package
@@ -158,8 +172,10 @@ export function compatRefused(packages, graph, compat, patched) {
           `rust-js: ${pkg.name} depends on ${used.name}, which rust-js gives an app's dependencies alone, in place of crates.io's: an app's own Rust binds JS with the js and webapi crates (docs/guide/interop/bindings.md)`,
         );
       }
-      if (used.source !== null && patched.includes(used.name)) {
-        const asked = pkg.dependencies.find((d) => d.name === used.name)?.req ?? used.version;
+      const asked = pkg.dependencies.find((d) => d.name === used.name)?.req ?? used.version;
+      // An exact pin of another release than rust-js's; a `^` that takes it
+      // is moved onto it with the lock (`cargoBuild`).
+      if (used.source !== null && patched.includes(used.name) && asked.startsWith("=") && asked.slice(1).trim() !== compat.get(used.name)?.version) {
         throw new Error(
           `rust-js: ${pkg.name} ${pkg.version} asks for ${used.name} ${asked}, and rust-js's own ${used.name}, which a dependency uses in place of crates.io's, is ${compat.get(used.name)?.version}, so Cargo takes crates.io's, which rust-js can't compile: use a release of ${pkg.name} that takes ${used.name} ${compat.get(used.name)?.version}`,
         );

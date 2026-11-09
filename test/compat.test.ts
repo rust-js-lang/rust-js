@@ -217,15 +217,15 @@ test("an import rust-js's wasm-bindgen doesn't know is a compile error naming wh
 }, 600_000);
 
 // A crate of the graph that uses wasm-bindgen's family and isn't one
-// rust-js's crates serve, here a stand-in for chrono with its default
-// `wasmbind`, would fail to type-check against what they don't have yet:
-// its graph keeps crates.io's, as before ADR 1112, the crate types alone,
-// and so does a graph beside it with getrandom too (#1129).
+// rust-js's crates serve, here a stand-in for instant, whose `Date::now()`
+// they don't have yet, would fail to type-check against them: its graph
+// keeps crates.io's, as before ADR 1112, the crate types alone, and so does
+// a graph beside it with getrandom too (#1129).
 test("a graph with a crate rust-js's wasm-bindgen doesn't serve builds as before, of crates.io's", () => {
   const dir = fixture("compat-uncovered");
   const getrandom = gitCrate(dir, usesWasmBindgen, answer);
-  const chrono = gitCrate(dir, usesWasmBindgen, "use js_sys::Date;\n\npub fn now() -> f64 {\n    Date::now()\n}\n", "chrono", "0.4.45");
-  for (const crates of [[chrono], [getrandom, chrono]]) {
+  const instant = gitCrate(dir, usesWasmBindgen, "use js_sys::Date;\n\npub fn now() -> f64 {\n    Date::now()\n}\n", "instant", "0.1.13");
+  for (const crates of [[instant], [getrandom, instant]]) {
     const at = app(dir, crates, "pub fn answer() -> u32 {\n    42\n}\n");
     rmSync(join(at, ".cargo"), { recursive: true, force: true });
     rmSync(join(at, "Cargo.lock"), { force: true });
@@ -234,4 +234,55 @@ test("a graph with a crate rust-js's wasm-bindgen doesn't serve builds as before
     expect(existsSync(join(at, ".cargo", "config.toml"))).toBe(false);
     expect(readFileSync(join(at, "Cargo.lock"), "utf8")).toMatch(/name = "js-sys"\nversion = "[^"]*"\nsource = "registry\+/);
   }
+}, 600_000);
+
+// chrono's `wasmbind`, as it writes it: `js_sys::Date`, made now, of
+// milliseconds and of local parts, and its `getTime` and
+// `getTimezoneOffset`, `js::Date`'s, which it derefs to. Its offsets in New
+// York's zone, of a winter's and a summer's date, are native Rust's, `TZ`
+// set. A crate of another platform's that uses js-sys, chrono's `cfg(unix)`
+// iana-time-zone, isn't of rust-js's target's graph, nor keeps the patch
+// off it (ADR 1112).
+const dates = `pub struct Utc(pub f64);
+
+impl From<Utc> for js_sys::Date {
+    fn from(utc: Utc) -> js_sys::Date {
+        let js_millis = wasm_bindgen::JsValue::from_f64(utc.0);
+        js_sys::Date::new(&js_millis)
+    }
+}
+
+pub fn now() -> f64 {
+    js_sys::Date::new_0().get_time()
+}
+
+pub fn offset_of_utc(ms: f64) -> f64 {
+    js_sys::Date::from(Utc(ms)).get_timezone_offset()
+}
+
+pub fn offset_of_local(year: i32, month0: i32) -> f64 {
+    let js_date = js_sys::Date::new_with_year_month_day_hr_min_sec(year as u32, month0, 15, 12, 0, 0);
+    js_date.get_timezone_offset()
+}
+`;
+
+test("chrono's wasmbind surface is js::Date's, its offsets native Rust's in a zone with daylight saving time", () => {
+  const dir = fixture("compat-dates");
+  const unix = gitCrate(dir, 'js-sys = "0.3"\n', "use js_sys as _;\n", "iana-time-zone", "0.1.65");
+  const chrono = gitCrate(dir, `wasm-bindgen = "0.2"\njs-sys = "0.3"\n\n[target.'cfg(unix)'.dependencies]\niana-time-zone = { git = ${JSON.stringify(`file://${unix}`)} }\n`, dates, "chrono", "0.4.45");
+  const at = app(dir, chrono, "pub use chrono::{now, offset_of_local, offset_of_utc};\n");
+  writePatch(at, [...compatCrates().keys()]);
+  const built = build(at);
+  expect(built.stderr).toBe("");
+  expect(built.code).toBe(0);
+  expect(config(at)).toContain("js-sys = { path");
+  const js = readFileSync(join(at, "rust-js", "crates", "chrono-0.4.45", "src", "lib.js"), "utf8");
+  expect(js).toContain("export function offsetOfLocal(year, month0) {\n  const jsDate = new Date(year >>> 0, month0, 15, 12, 0, 0);\n  return jsDate.getTimezoneOffset();\n}");
+  const program = `const app = await import(${JSON.stringify(join(at, "src", "lib.js"))});
+console.log(JSON.stringify([Math.abs(app.now() - Date.now()) < 1000, app.offsetOfUtc(Date.UTC(2024, 0, 15, 12)), app.offsetOfUtc(Date.UTC(2024, 6, 15, 12)), app.offsetOfLocal(2024, 0), app.offsetOfLocal(2024, 6)]));`;
+  writeFileSync(join(at, "check.mjs"), program);
+  const ran = runSync([process.execPath, join(at, "check.mjs")], at, 60_000, { TZ: "America/New_York" });
+  expect(ran.stderr).toBe("");
+  // chrono's own, natively in New York: 300 minutes west in winter, 240 in summer.
+  expect(JSON.parse(ran.stdout)).toEqual([true, 300, 240, 300, 240]);
 }, 600_000);
