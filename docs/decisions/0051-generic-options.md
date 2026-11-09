@@ -641,3 +641,16 @@ Held by the corpus case `some_of_what_may_be_nullish` and the mutations
 and `write-all-value-its-length`; the net's `option` rows `backtrace`,
 `io_unit_result`, `pointer_addresses` and `std_odds` run as native, and
 `fmt_write_function`'s, a held `fmt::Result`'s `is_ok()`, is #1011's.
+
+## Amendment: a type parameter JS gives is unboxed, asked once (2026-11-09)
+
+Case: none ([0262](0262-when-rust-and-js-disagree.md)); no JS changes.
+`representation::options` asked whether a type parameter is one JS gives
+(`js_given`) in `boxed_payload`, never boxed, and in `can_be_nullish`,
+taken as maybe `undefined`. Both answers were already given by its
+lowering's `Params`: each parameter JS gives is of `Params::unboxed`,
+which `defined_by_its_bounds` reads, so `boxed_payload` is false of it
+and no lowering asked `can_be_nullish` of one apart (a sort of an
+unknown type is std's own, ADR 0057). The nightly's mutations
+`js-given-not-nullish` and `js-given-boxed` survived for it; the
+function and both are gone, and `Params` is the one answer.

@@ -32,9 +32,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0051).
     pub(in crate::lower) fn boxed_payload(&self, ty: Ty<'tcx>) -> bool {
         let payload = self.payload(ty);
-        if self.js_given(payload) {
-            return false;
-        }
+        // One JS gives is unboxed (ADR 0051, amended): `Params::js` is of
+        // `Params::unboxed`, which `defined_by_its_bounds` reads.
         (self.is_unknown(payload) && !self.defined_by_its_bounds(payload)) || self.can_be_nullish(ty)
     }
 
@@ -113,20 +112,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty.is_unit() || matches!(ty.kind(), ty::Adt(adt, _) if super::super::untagged::holds_nullish(self.tcx, *adt))
     }
 
-    /// Is `ty` a type parameter JS gives, of a function JS calls, or of a
-    /// copy of one its values reach: any JS value, `undefined` too, whose
-    /// `Some` is the value, as TypeScript's `T | undefined` says (ADR 0051,
-    /// amended)? Not one a function trait bounds, a JS function whatever it
-    /// is, nor one a binding of its bound reads.
-    fn js_given(&self, ty: Ty<'tcx>) -> bool {
-        let ty::Param(param) = ty.kind() else {
-            return false;
-        };
-        (self.lowered_params()).is_some_and(|params| params.js.contains(&param.index))
-            && !self.read_by_its_bounds(ty)
-            && !self.is_callable(ty)
-    }
-
     /// What the lowering of the body being lowered takes its type
     /// parameters as, its own JS or a copy of it (`analysis::JsGiven`): of
     /// a nested body of its own, a closure's, too, but not of a trait's
@@ -176,9 +161,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `T` itself: `Some(())` and `None` would be the same value.
     pub(in crate::lower) fn can_be_nullish(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.payload(ty);
-        // One JS gives may be `undefined` or `null` as it's given.
-        self.js_given(ty)
-            || (super::super::recognition::known_by_bounds(ty) && !self.defined_by_its_bounds(ty))
+        // One JS gives is unboxed, so a `Some` of it is the value: no
+        // lowering asks whether it's nullish (ADR 0051, amended).
+        (super::super::recognition::known_by_bounds(ty) && !self.defined_by_its_bounds(ty))
             // An uncounted `Weak::new()`, `null` (ADR 0843).
             || self.uncounted_weak(ty).is_some()
             || nullish_by_its_shape(self.tcx, ty)

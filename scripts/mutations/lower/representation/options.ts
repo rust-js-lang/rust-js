@@ -100,15 +100,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^unboxed_type_params.rs$"],
   },
   {
-    name: "js-given-boxed",
-    breaks:
-      "a `Some` of what JS gives is boxed, so `pick(undefined, true)` gives JS `{ $someNone: 0 }`",
-    file: "src/lower/representation/options.rs",
-    find: "        if self.js_given(payload) {\n            return false;\n        }\n",
-    replace: "",
-    tests: ["test/compiler.test.ts", "-t", "an Option of a generic T"],
-  },
-  {
     name: "class-of-no-fields-nullish",
     breaks: "a class of no fields is nullish by its shape, as a unit struct is, so a `Some` of its instance, a class component's `ref`, is boxed, `$someValue(gauge)` (ADR 1041, amended)",
     file: "src/lower/representation/options.rs",
