@@ -29,6 +29,11 @@ beforeAll(() => {
 }, 900_000);
 
 const which = process.env.METAMORPHIC;
+// `METAMORPHIC_REWRITES=emi-prune,emi-insert`: those rewrites alone, of a
+// round of new ones; every one unless it's given.
+const named = process.env.METAMORPHIC_REWRITES?.split(",").filter((name) => name !== "");
+const rewritesRun = rewrites.filter((rewrite) => named === undefined || named.includes(rewrite));
+if (named !== undefined && rewritesRun.length !== named.length) throw new Error(`METAMORPHIC_REWRITES=${named.join(",")}: of ${rewrites.join(", ")}`);
 if (which !== undefined && which !== "all") throw new Error(`METAMORPHIC=${which}: \`all\`, or unset for a push's sample`);
 const known = readKnown();
 const all = rewritable();
@@ -143,7 +148,7 @@ function wrong(rewrite: Rewrite, name: string, edition: string): { problems: Map
 for (const { name, edition } of all.filter(({ name }) => chosen.has(name))) {
   test(`${name}, rewritten`, () => {
     const problems: string[] = [];
-    for (const rewrite of rewrites) {
+    for (const rewrite of rewritesRun) {
       const found = wrong(rewrite, name, edition);
       for (const [build] of builds) {
         const listedAs = known.find((k) => k.name === name && k.rewrite === rewrite && k.builds.includes(build));
@@ -170,6 +175,46 @@ test("a push's sample is stable: a case added changes only whether it's sampled"
   expect(sample.length).toBeGreaterThan(5);
   expect(sample.length).toBeLessThan(40);
   expect([...names, "added.rs"].filter((name) => sampled(name) && name !== "added.rs")).toEqual(sample);
+});
+
+// Equivalence modulo inputs (#1086): a block no run reaches made
+// `unreachable!()`, what's reached kept; and code never run added.
+const emiCase = `fn pick(n: u32) -> u32 {
+    if n > 10 { n * 2 } else { n + 1 }
+}
+
+fn unused() -> u32 {
+    7
+}
+
+fn main() {
+    let mut total = pick(3);
+    total += 1;
+    println!("{total}");
+}
+`;
+
+test("emi-prune makes each block no run reaches `unreachable!()`, and keeps what one reaches", () => {
+  const dir = fixture("metamorphic-emi-prune-harness");
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, "case.rs");
+  writeFileSync(file, emiCase);
+  const made = rewritten("emi-prune", file, "2024");
+  expect(made?.program.match(/unreachable\s*!/g)?.length).toBe(2);
+  expect(made?.program).toContain("n + 1");
+  expect(made?.program).not.toContain("n * 2");
+  expect(made?.program).not.toMatch(/\b7\b/);
+});
+
+test("emi-insert adds code never run: a borrow after each `let`, and a call of each function that takes nothing", () => {
+  const dir = fixture("metamorphic-emi-insert-harness");
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, "case.rs");
+  writeFileSync(file, emiCase);
+  const program = rewritten("emi-insert", file, "2024")?.program.replaceAll(/\s+/g, " ") ?? "";
+  expect(program).toContain("if std :: hint :: black_box (false) { let _emi = & mut total ; }");
+  expect(program).toContain("if std :: hint :: black_box (false) { let _emi = unused () ; }");
+  expect(program).not.toContain("_emi = main ()");
 });
 
 // A case that compares functions is no `library` variant, as it's no

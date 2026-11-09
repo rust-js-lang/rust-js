@@ -43,6 +43,11 @@
 //! - `tuple-struct`: a struct of named fields made a tuple struct, its
 //!   fields read by their places (`tuples.rs`).
 //!
+//! - `emi-probe`, `emi-prune` and `emi-insert`: code a case's run never
+//!   reaches, found by the probe's native run, deleted, made
+//!   `unreachable!()`, or code never run added, `if black_box(false) {..}`
+//!   (`emi.rs`, #1086).
+//!
 //! `<limit>`: only so many of the places a rewrite finds, in order.
 //!
 //! And `reduce`, a failing program's reductions (`reduce.rs`, #1088):
@@ -51,6 +56,7 @@
 
 mod closures;
 mod defaults;
+mod emi;
 mod generic;
 mod library;
 mod loops;
@@ -68,7 +74,7 @@ use syn::{Block, FnArg, Item, Pat, Stmt, Type};
 
 use wrap::Wrap;
 
-const REWRITES: &str = "outline|boxed|option|rc-refcell|field|dyn-ref|impl-ref|impl-owned|generic|closure-fn|library|array|tuple|for-each|for-loop|if-let|method-fn|fn-method|default-copy|tuple-struct";
+const REWRITES: &str = "outline|boxed|option|rc-refcell|field|dyn-ref|impl-ref|impl-owned|generic|closure-fn|library|array|tuple|for-each|for-loop|if-let|method-fn|fn-method|default-copy|tuple-struct|emi-probe|emi-prune|emi-insert";
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -128,6 +134,15 @@ fn main() {
         "fn-method" => methods::fn_method(&mut ast, &mut budget),
         "default-copy" => defaults::default_copy(&mut ast, &mut budget),
         "tuple-struct" => tuples::tuple_struct(&mut ast, &mut budget),
+        "emi-probe" => emi::probe(&mut ast),
+        "emi-prune" => match emi::hits_given() {
+            Some(hits) => emi::prune(&mut ast, &hits, &mut budget),
+            None => {
+                eprintln!("emi-prune: METAMORPH_EMI_HITS, the probe's blocks reached");
+                std::process::exit(64);
+            }
+        },
+        "emi-insert" => emi::insert(&mut ast, &mut budget),
         _ => {
             eprintln!("no rewrite `{rewrite}`: {REWRITES}");
             std::process::exit(64);

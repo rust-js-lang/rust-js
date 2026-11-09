@@ -9,12 +9,13 @@
 //   case.rs ─► metamorph <rewrite> ─┬─ rustc ──► native ─────┐
 //                                   └─ rust-js ─► node ──────┴─► the same?
 
-import { copyFileSync, existsSync, readFileSync, renameSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { cases, corpus, directives } from "./corpus-cases";
 import { root, target } from "./support";
 import { runSync } from "./child";
+import { compileJs, runJs, runNative, runtimes } from "./programs";
 
 /** Each rewrite, `metamorph`'s: `main`'s body outlined; each `let` of a
  * name bound once moved into a box, an `Option`, an `Rc<RefCell>`, a
@@ -31,6 +32,9 @@ import { runSync } from "./child";
 export const rewrites = [
   "outline", "boxed", "dyn-ref", "impl-ref", "impl-owned", "generic", "option", "rc-refcell", "field", "closure-fn", "library",
   "array", "tuple", "for-each", "for-loop", "if-let", "method-fn", "fn-method", "default-copy", "tuple-struct",
+  // Equivalence modulo inputs (#1086): what the run never reaches made
+  // `unreachable!()`, and code never run added.
+  "emi-prune", "emi-insert",
 ] as const;
 export type Rewrite = (typeof rewrites)[number];
 
@@ -66,13 +70,41 @@ export function buildRewriter(): void {
  * `library`, the library it uses. `closure-fn` asks rustc for a closure's
  * types, at the case's `edition`. */
 export function rewritten(rewrite: Rewrite, file: string, edition: string, limit?: number): { program: string; library?: string } | undefined {
-  const p = runSync([rewriter, rewrite, file, ...(limit === undefined ? [] : [String(limit)])], root, 60_000, { METAMORPH_EDITION: edition });
+  // `emi-prune` is given the blocks the case's run reaches, its probe's.
+  const env: Record<string, string> = { METAMORPH_EDITION: edition };
+  if (rewrite === "emi-prune") {
+    const hits = reached(file, edition);
+    if (hits === undefined) return undefined;
+    env.METAMORPH_EMI_HITS = hits.join(",");
+  }
+  const p = runSync([rewriter, rewrite, file, ...(limit === undefined ? [] : [String(limit)])], root, 60_000, env);
   if (p.code === 2) return undefined;
   if (p.code !== 0) throw new Error(`metamorph ${rewrite} ${file}: ${p.stderr}`);
   if (rewrite !== "library") return { program: p.stdout };
   const [library, program] = p.stdout.split(libraryEnds);
   if (program === undefined) throw new Error(`metamorph library ${file}: no \`${libraryEnds.trim()}\` line`);
   return { program, library };
+}
+
+/** The blocks of `file` its runs reach, by the numbers `emi-probe` gives
+ * them, the probe's runs saying each the first time they run it: native
+ * Rust's and its JS's, so a block only the JS reaches, by a difference
+ * decided and written down, a panic's payload that downcasts as a `&str`
+ * and a `String` both (ADR 0692), is no block pruned; or `undefined` where
+ * the native probe doesn't run to its end (#1086). */
+function reached(file: string, edition: string): number[] | undefined {
+  const probe = runSync([rewriter, "emi-probe", file], root, 60_000, { METAMORPH_EDITION: edition });
+  if (probe.code !== 0) return undefined;
+  const dir = join(target, "metamorph-emi", Bun.hash(probe.stdout).toString(36));
+  mkdirSync(dir, { recursive: true });
+  const program = join(dir, "probe.rs");
+  writeFileSync(program, probe.stdout);
+  const ran = runNative(program, dir, edition);
+  if (typeof ran === "string" || typeof ran.outcome === "string") return undefined;
+  const said = (stderr: string) => [...stderr.matchAll(/^METAMORPH-EMI-HIT (\d+)$/gm)].map((m) => Number(m[1]));
+  const compiled = compileJs(program, dir, edition);
+  const js = "js" in compiled ? runJs(runtimes[0][1], compiled.js, dir, runtimes[0][0]).stderr : "";
+  return [...new Set([...said(ran.stderr), ...said(js)])];
 }
 
 /** The line `library` prints between the library and the program
