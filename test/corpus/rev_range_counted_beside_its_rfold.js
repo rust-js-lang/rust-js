@@ -45,31 +45,15 @@ function foldedInclusive() {
 function main() {
   console.log(`${folded()}`);
   console.log(`${foldedInclusive()}`);
-  console.log(
-    `${$rangeLen($rev($iterator({ start: 1, end: 6 }, $rangeNext, false, $rangeNextBack)).of)}`,
-  );
-  const value = $rangeFirst(
-    $rev($iterator({ start: 1, end: 6 }, $rangeNext, false, $rangeNextBack)).of,
-  );
+  console.log(`${$rangeLen({ start: 1, end: 6 })}`);
+  const value = $rangeFirst({ start: 1, end: 6 });
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = $rangeNthBack(
-    $rev($iterator({ start: 1, end: 6 }, $rangeNext, false, $rangeNextBack)).of,
-    1,
-  );
+  const value$1 = $rangeNthBack({ start: 1, end: 6 }, 1);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  console.log(
-    `${$rangeInclusiveLen(
-      $rev($iterator({ start: 1, end: 5 }, $rangeInclusiveNext, false, $rangeInclusiveNextBack)).of,
-    )}`,
-  );
-  const value$2 = $rangeInclusiveFirst(
-    $rev($iterator({ start: 1, end: 5 }, $rangeInclusiveNext, false, $rangeInclusiveNextBack)).of,
-  );
+  console.log(`${$rangeInclusiveLen({ start: 1, end: 5 })}`);
+  const value$2 = $rangeInclusiveFirst({ start: 1, end: 5 });
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const value$3 = $rangeInclusiveNthBack(
-    $rev($iterator({ start: 1, end: 5 }, $rangeInclusiveNext, false, $rangeInclusiveNextBack)).of,
-    1,
-  );
+  const value$3 = $rangeInclusiveNthBack({ start: 1, end: 5 }, 1);
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   let it = iterator_rev(
     { start: 1, end: 6 },

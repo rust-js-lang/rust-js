@@ -12,9 +12,7 @@ function secondFromItsFront(range) {
 
 function main() {
   const value = $next(
-    $rev(
-      $iterator({ start: 0n, end: 18446744073709551615n }, $rangeNext, false, $rangeNextBack),
-    ).drop(4000000000),
+    $iterator({ start: 0n, end: 18446744073709551615n }, $rangeNextBack).drop(4000000000),
   );
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$1 = $next($iterator({ start: 0, end: 294967295 }, $rangeNextBack));

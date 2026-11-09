@@ -137,9 +137,7 @@ function main() {
   }
 
   const inPlace = Array.from(
-    $iterator([3], countdownDoubleEndedIterator_nextBack, false, countdownIterator_next).map(
-      (n) => (n * 2) >>> 0,
-    ),
+    $iterator([3], countdownDoubleEndedIterator_nextBack).map((n) => (n * 2) >>> 0),
   );
   const arg = v.toReversed().slice(0, 2);
   console.log(`[${inPlace.join(", ")}] [${arg.join(", ")}]`);
@@ -158,7 +156,7 @@ function main() {
   // Its own impl's, of what it's made into where it's made.
   const value$7 = $nextBack($iter(v.toReversed()));
   console.log(
-    `${value$7 == null ? "None" : `Some(${value$7})`} ${$sizeHint($iterator([5], countdownDoubleEndedIterator_nextBack, false, countdownIterator_next))[0]}`,
+    `${value$7 == null ? "None" : `Some(${value$7})`} ${$sizeHint($iterator([5], countdownDoubleEndedIterator_nextBack))[0]}`,
   );
   // Shown or cloned where it's made, by its own compiled impl.
   const rev = iterator_rev($iter(v));

@@ -1475,3 +1475,17 @@ change what's made, their mutations surviving the whole corpus
 (`held-given-unrecorded`, `path-call-uncalled`, `chain-sides-unstepped`,
 `chain-side-a-unstepped`): phase C retires them with the set. Left on
 the set: a `rev()`'s, a `skip(n)`'s, a `take(n)`'s and a `step_by(n)`'s.
+
+## Amendment: a `rev()`'s too (2026-11-09, #851 phase C)
+
+ADR 0262's case: none where its JS changes for what ran as Rust does;
+three snapshots read better: a `rev()` only stepped forward, of a type
+stepped from its back elsewhere, reads its source's back as its own,
+`$iterator(range, $rangeNextBack)`, where it was `$rev($iterator(range,
+$rangeNext, false, $rangeNextBack))`, and a reversed range's own `len`,
+`last` and `nth_back` read its bounds as they are, `$rangeLen({ start: 1,
+end: 6 })`, where they read `$rev(..).of`. So `$rev` no longer passes on
+its source's `of`, which nothing reads, in the corpus or the matrix. One
+more of the set's rules (`stepped-sources-any-adapter`) no longer changes
+what's made. Left on the set: a `skip(n)`'s, a `take(n)`'s and a
+`step_by(n)`'s.
