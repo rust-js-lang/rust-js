@@ -465,8 +465,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a getter's read held by MIR is written where it's read, each time, `typeof child.type` then `const type = child.type`",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                    && value.reads_same()\n",
-    replace: "",
+    find: "(value.reads_same() && super::plain_field(value, plain))",
+    replace: "(super::plain_field(value, plain))",
     tests: [
       "test/jsx-children.test.ts",
       "-t",

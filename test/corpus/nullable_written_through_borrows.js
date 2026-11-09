@@ -93,8 +93,7 @@ function report(what) {
 
 function reportFiber(what, fiber) {
   const value = absent(fiber.owner);
-  const isNone = fiber.owner === null;
-  const value$1 = $index(fiber.lanes, 0) == null;
+  const isNone = $index(fiber.lanes, 0) == null;
   const borrow = {
     get value() {
       return fiber.target;
@@ -104,7 +103,7 @@ function reportFiber(what, fiber) {
     },
   };
   console.log(
-    `${what}: ${value} ${isNone} ${fiber.owner == null ? "None" : `Some(${fiber.owner})`} ${value$1} ${borrow.value == null ? "None" : `Some(${borrow.value})`} ${fiber.target === null}`,
+    `${what}: ${value} ${fiber.owner === null} ${fiber.owner == null ? "None" : `Some(${fiber.owner})`} ${isNone} ${borrow.value == null ? "None" : `Some(${borrow.value})`} ${fiber.target === null}`,
   );
 }
 

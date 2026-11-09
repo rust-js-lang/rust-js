@@ -334,3 +334,27 @@ case `field_rewrite_singles` and the mutations
 `spread-of-an-iterator-does-nothing` and
 `swap-of-a-tuple-structs-field-a-handle`.
 
+
+## Amendment: a plain field of a struct with a cell beside it is read past a call (#1045, 2026-11-09)
+
+ADR 0262's case: none observable; only how the JS reads changes. A
+struct with a `Cell` or a `RefCell` among its fields isn't plain data,
+but each of its other fields is: `instance.id` of an `&Instance`, a
+local assigned once and never borrowed `&mut`, can't change while the
+body runs. Lowering records these fields' paths among the plain names
+(`Found::plain`, `instance.id`), and `plain_reads` already read them in
+place. `read_past_calls` asked only whether the whole variable was plain,
+so a value made by a call after the read stayed in a temporary in front
+of it. React's noop renderer's `cloneInstance` built its object literal
+from three temporaries, `parent: value, children: value$1, text:
+value$2`, where the port's JS has one expression. One answer now:
+`tidy::plain_field` says whether a read is of plain data, of a plain
+variable or of a plain field path, and both `plain_reads` and
+`read_past_calls` ask it. A cell's own field, `instance.parent`, still
+isn't plain: a call made after it may set it, so its read stays first,
+as the literal's order keeps it. Held by the corpus case
+`literal_of_a_struct_beside_a_cell` (with a call that sets the cell
+after it's read: native `1 7 107 107`) and the mutation
+`plain-field-of-a-struct-beside-a-cell-not-read-past-calls`.
+`nullable_written_through_borrows`' `fiber.owner === null`, a plain field
+of a struct with a `RefCell` beside it, is read in place too.

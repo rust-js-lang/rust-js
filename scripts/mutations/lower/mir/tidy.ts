@@ -454,4 +454,14 @@ export const mutations: Mutation[] = [
     replace: "            if !set.contains(v) && (plain.contains(v) || plain.contains(&format!(\"...{v}\")))),\n",
     tests: ["test/corpus.test.ts", "-t", "^inspect_by_a_function_before_a_chain_argument.rs$"],
   },
+  {
+    name: "plain-field-of-a-struct-beside-a-cell-not-read-past-calls",
+    breaks:
+      "a struct literal of a struct with a `Cell` beside its plain fields hoists each value after a call into a temporary, `const value$2 = shouldSet(t) ? ..; return { .., text: value$2 }`, as its plain field `instance.id` isn't taken as unchanged by the call (#1045)",
+    file: "src/lower/mir/tidy.rs",
+    find: "                || (plain_field(e, plain) && matches!(&root.kind, ExprKind::Var(v) if !set.contains(v)))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "literal_of_a_struct_beside_a_cell"],
+    snapshots: true,
+  },
 ];

@@ -461,6 +461,19 @@ fn written_first(stmts: &mut [Stmt], switches: &[Switch]) {
     }
 }
 
+/// Whether `e` is a read of plain Rust data, which nothing changes: a field
+/// however deep of a variable of plain data, or one of a plain variable's
+/// of a struct not all plain, `q.title` beside a `Cell` (`Found::plain`).
+pub(super) fn plain_field(e: &Expr, plain: &IndexSet<String>) -> bool {
+    let mut root = e;
+    while let ExprKind::Member(of, _) = &root.kind {
+        root = of;
+    }
+    matches!(e.kind, ExprKind::Member(..))
+        && (matches!(&root.kind, ExprKind::Var(v) if plain.contains(v))
+            || field_path(e).is_some_and(|path| plain.contains(&path)))
+}
+
 /// Whether reading `e` after a call reads what it did before: a constant, a
 /// variable no closure sets, `set`'s, which a call can't then; an import,
 /// `<Seo>`'s tag, a module's export being never set again, a `static mut`
@@ -482,7 +495,10 @@ fn read_past_calls(e: &Expr, set: &IndexSet<String>, plain: &IndexSet<String>) -
         ExprKind::Symbol(_) => true,
         ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,
         ExprKind::Member(of, _) => {
+            // Of a variable no closure sets, a plain field of it, `a.id` of
+            // an `&A` with a `Cell` beside it, too (#1045).
             plain_root
+                || (plain_field(e, plain) && matches!(&root.kind, ExprKind::Var(v) if !set.contains(v)))
                 || matches!(&of.kind, ExprKind::Var(v)
                     if !set.contains(v) && matches!(v.as_str(), "Object" | "Math" | "JSON" | "Array" | "Number" | "String" | "console"))
         }

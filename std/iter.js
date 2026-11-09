@@ -78,9 +78,8 @@ export const StepBy = {
     return { iter, stepMinusOne: (step - 1) >>> 0, firstTake: true };
   },
   nextBackIndex(stepBy, IExactSizeIterator, dropI, dropIItem) {
-    const len = IExactSizeIterator.len(stepBy.iter);
     const n = (stepBy.stepMinusOne + 1) >>> 0;
-    const rem = $rem(len, n === 0 ? undefined : n) >>> 0;
+    const rem = $rem(IExactSizeIterator.len(stepBy.iter), n === 0 ? undefined : n) >>> 0;
     if (stepBy.firstTake) {
       if (rem === 0) {
         return stepBy.stepMinusOne;

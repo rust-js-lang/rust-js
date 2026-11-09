@@ -317,15 +317,7 @@ pub(super) fn plain_reads(stmts: &mut Vec<Stmt>, plain: &IndexSet<String>, captu
     while i < stmts.len() {
         let read = match &stmts[i].kind {
             StmtKind::Const(name, value) if is_temporary(name) || captured.contains(name) => {
-                let mut root = value;
-                while let ExprKind::Member(of, _) = &root.kind {
-                    root = of;
-                }
-                (matches!(value.kind, ExprKind::Member(..))
-                    && value.reads_same()
-                    && (matches!(&root.kind, ExprKind::Var(v) if plain.contains(v))
-                        || field_path(value).is_some_and(|path| plain.contains(&path))))
-                .then(|| (name.clone(), value.clone()))
+                (value.reads_same() && super::plain_field(value, plain)).then(|| (name.clone(), value.clone()))
             }
             _ => None,
         };
