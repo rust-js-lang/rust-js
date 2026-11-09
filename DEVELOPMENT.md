@@ -852,6 +852,13 @@ gh workflow run "rustc tests" -f fuzz_seeds=600 -f fuzz_start=1000
 gh workflow run "rustc tests" -f bless=true    # rustc's lists, as a bless patch
 ```
 
+Its generated programs run each under Miri first (`FUZZ_MIRI=1`, ADR 0092,
+amended), the nightly toolchain's, which its job installs. To run them so
+on a Mac, once: `rustup component add miri rust-src --toolchain nightly`
+and `cargo +nightly miri setup`; then `FUZZ_MIRI=1 FUZZ_START=.. FUZZ_SEEDS=..
+bun test test/fuzz.test.ts`. Miri adds about 0.6 s a program; 720 seeds in
+12 parts took 65 s (load 12 on the M6, 2026-11-09).
+
 ### `nightly.yml`, each night at 02:00 UTC+7, of `main`
 
 Every test there is: `check.yml`'s jobs, its suite in 2 shards with the

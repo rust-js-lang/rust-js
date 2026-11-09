@@ -251,3 +251,65 @@ a drop order: `chain(a, b).last()` (#232), a `take_while` that stops
 (#233), and a `Vec`'s items skipped from its back (#234). The nightly's
 seeds fail on them until they're fixed. `test/generate.test.ts` holds that
 each adapter, end and chain of `D`s is made, and that `zip` is first.
+
+## Amendment: Rustlantis's ideas, in this generator (#1085)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a program the
+generator makes runs as native Rust does, or the JS is wrong.
+
+Rustlantis (Wang and Jung, OOPSLA 2024) generates programs in MIR,
+UB-free by construction, and compares backends. #1085 asked whether to
+adopt it or extend this generator with its ideas.
+
+**This generator is extended, not replaced by Rustlantis.** A
+`#[custom_mir]` body does go through rust-js (a probe's `mir!` function
+lowered and ran), but only with `RUSTC_BOOTSTRAP` and `#![feature(custom_mir)]`
+on the pinned stable toolchain (ADR 0109). It has no THIR, which rust-js
+also reads for names, patterns and hints, so its parameters were `_1` and
+its failures would be those of a program no one writes. Rustlantis's
+programs are mostly raw pointers, `transmute` and unions, which rust-js
+refuses (ADR 0390). So the generator writes Rust whose MIR reaches the
+same space, and keeps one way to generate programs and one harness.
+
+What it takes from Rustlantis:
+
+- **Places, as MIR's projections reach them.** `Pl`, a `Copy` struct of
+  an `i32`, a tuple `(u8, i64)`, an array `[i16; 3]` and an enum `Va { X,
+  Y(u16), Z { w: i32 } }`: made, and each of its integer places, `p.a`,
+  `p.t.1`, `p.arr[2]`, read and written as a variable is by every
+  statement that reads or writes one. Its item lent `&mut` and written
+  through, in a block or by `poke`; copied, `let mut q = p;`, one copy
+  written and the two compared; its variant set, or matched `ref mut` and
+  written in place, or tested by `if let Va::Y(n) = &mut p.e`;
+  `p.arr.swap(i, j)`; `mem::replace(&mut p.t.1, v)`; `p = Pl { a, ..p }`;
+  a place a function gives back written, `*pick(&mut p, k) ^= v`; a copy
+  given to one that writes its own, `summed(p)`, then `p` shown; an array
+  and a `Vec` of copies, one written and another read; a `move` closure's
+  copy of `p.a`, which a write after doesn't change; and a pattern's `ref
+  mut` of a place, `let Pl { t: (ref mut x, _), .. } = p;`, which writes
+  `p` itself. What each block made of them is shown as it ends,
+  `{:?}`, as Rustlantis dumps every local, so a write no later statement
+  reads still shows.
+- **Swarm testing** (Groce et al., ISSTA 2012). Each seed's program has
+  some of the generator's families of statement, each by a coin of 0.6
+  (`swarm`, `families`): a program without loops or vectors has more of
+  what it has, which a uniform choice dilutes.
+- **Both builds**, as the corpus has (ADR 0908): each program runs as JS
+  in the default build and in `--std-iterators`, and the first that
+  differs from native Rust is the failure.
+- **UB-free, checked by Miri.** The generator writes no `unsafe`, so its
+  programs are UB-free by Rust's guarantee; with `FUZZ_MIRI=1`, which the
+  nightly's batch sets, each is run under Miri first, and one Miri finds
+  undefined behaviour in is no program to compare, a generator's bug to
+  fix. Miri is the nightly toolchain's, its sysroot set up once.
+- **Each failure reduced twice**: by this generator's reducer, which takes
+  statements out, then by the nets' (#1088, `test/reduced.ts`), which
+  takes apart what's left within one.
+
+Seeded and deterministic as before: a seed's swarm is its first draws,
+`swarmOf(seed)`. The suite's first 12 seeds are a per-push slice, now of
+both builds and swarms, and must compile and agree; the nightly runs 600
+more, each under Miri. `test/generate.test.ts`'s "a seed's swarm leaves
+families out, and each place's statement is made" holds that each family
+is in some seeds and out of others, and each of a `Pl`'s statements is
+made.

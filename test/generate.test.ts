@@ -2,7 +2,7 @@
 
 import { expect, test } from "bun:test";
 
-import { generate, print, random, type Program } from "./generate";
+import { families, generate, print, random, swarmOf, type Program } from "./generate";
 import { reduce, size } from "./reduce";
 
 test("a seed is the same program, and another seed another", () => {
@@ -51,6 +51,34 @@ test("each adapter, end and chain of `D`s is made", () => {
     return (kind === "chain" && (steps ?? []).findIndex((step) => step.op === "zip") > 0) || Object.values(node).some(zipsLater);
   };
   expect(Array.from({ length: 600 }, (_, seed) => seed).filter((seed) => zipsLater(generate(seed)))).toEqual([]);
+});
+
+// Swarm testing (#1085): each seed's program has some of the families of
+// statement, so a program has more of each it has; and each family is in
+// some seeds' and out of others'. A `Pl`'s places, each way they're written,
+// are made by some seed, and each block shows what it made of them.
+test("a seed's swarm leaves families out, and each place's statement is made", () => {
+  const seeds = Array.from({ length: 400 }, (_, seed) => seed);
+  for (const family of families) {
+    expect([family, seeds.some((seed) => swarmOf(seed).has(family))]).toEqual([family, true]);
+    expect([family, seeds.some((seed) => !swarmOf(seed).has(family))]).toEqual([family, true]);
+  }
+  const kinds = new Set<string>();
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) return node.forEach(walk);
+    if (typeof node !== "object" || node === null) return;
+    const { kind } = node as { kind?: string };
+    if (kind !== undefined) kinds.add(kind);
+    Object.values(node).forEach(walk);
+  };
+  for (const seed of seeds) {
+    const program = generate(seed);
+    walk(program);
+    // What it has none of, it makes none of.
+    if (!swarmOf(seed).has("places")) expect([seed, print(program).includes("Pl { a:")]).toEqual([seed, false]);
+  }
+  const places = ["plet", "pref", "pcopy", "pvariant", "pmatch", "pswap", "preplace", "pupdate", "pdump", "ppick", "ptotal", "parray", "pvec", "pclosure", "piflet", "ppattern"];
+  expect(places.filter((kind) => !kinds.has(kind))).toEqual([]);
 });
 
 // A NaN's sign isn't kept (the guide's differences, 4; ADR 0154), and a

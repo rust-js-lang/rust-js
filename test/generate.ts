@@ -5,6 +5,10 @@
 //   seed ──► program ──► native and JS differ? ──► reduce ──► a few lines, and the seed
 
 import { prelude } from "./generate-prelude";
+import { isPlace, placeLines, placeStatement, type PlaceStmt } from "./generate-places";
+import { choices, familyOf, swarm, type Counter } from "./generate-swarm";
+
+export { families, swarmOf, type Counter, type Family } from "./generate-swarm";
 
 // A random number generator whose numbers a seed says: mulberry32.
 export function random(seed: number) {
@@ -20,7 +24,7 @@ export function random(seed: number) {
   const pick = <T>(items: readonly T[]): T => items[int(items.length)];
   return { next, int, pick, chance: (p: number) => next() < p };
 }
-type Random = ReturnType<typeof random>;
+export type Random = ReturnType<typeof random>;
 
 // `usize` is 32 bits in rust-js and 64 natively (ADR 0090): not generated.
 export const intTypes = ["i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64"] as const;
@@ -184,6 +188,8 @@ export type End =
 
 export type Stmt =
   | { kind: "let"; name: string; ty: Ty; value: Expr }
+  // A `Pl`'s, each of its places as MIR's projections reach them (#1085).
+  | PlaceStmt
   | { kind: "assign"; name: string; ty: Ty; op: string; value: Expr }
   | { kind: "print"; format: string; value: Expr }
   | { kind: "if"; c: Expr; then: Stmt[]; else: Stmt[] }
@@ -266,7 +272,7 @@ export type DEnd = { op: "sum" | "count" | "last" | "next" | "collect" } | { op:
 export type Program = Stmt[];
 
 // A loop's or a pattern's variable can be read, not written.
-type Scope = { name: string; ty: Ty; mutable: boolean }[];
+export type Scope = { name: string; ty: Ty; mutable: boolean }[];
 
 /** `scope` as a match guard sees it: what the match reads is borrowed
  * through the guard, which borrowck keeps unchanged, so it writes nothing. */
@@ -727,20 +733,27 @@ function valueType(r: Random): Ty {
   return "Map";
 }
 
-function block(r: Random, scope: Scope, depth: number, counter: { n: number }, size: number): Stmt[] {
+function block(r: Random, scope: Scope, depth: number, counter: Counter, size: number): Stmt[] {
   const stmts: Stmt[] = [];
   const inner = [...scope];
   // The `D`s made in this block, which only it may move.
   const owned: string[] = [];
+  // The `Pl`s made in this block, shown as it ends.
+  const places: string[] = [];
   for (let i = 0; i < size; i++) {
     const writable = inner.filter((v) => v.mutable && v.ty !== "D");
     const held = inner.filter((v) => v.ty === "D");
     const vecs = writable.filter((v) => inside(v.ty, "Vec"));
     const texts = writable.filter((v) => v.ty === "String");
     const maps = writable.filter((v) => v.ty === "Map");
-    const choice = r.int(30);
-    if (choice < 3 || writable.length === 0) {
-      const ty = r.chance(0.08) ? "Shapes" : r.chance(0.09) ? "Shared" : valueType(r);
+    // Of the families this seed's swarm has (`swarm`), a statement's.
+    let choice = r.int(choices);
+    for (let tries = 0; tries < 8 && !counter.swarm.has(familyOf(choice)); tries++) choice = r.int(choices);
+    if (!counter.swarm.has(familyOf(choice))) choice = 5;
+    if (choice >= 30 && depth > 0) {
+      stmts.push(placeStatement(r, inner, places, counter, expr));
+    } else if (choice < 3 || choice >= 30 || writable.length === 0) {
+      const ty = r.chance(0.08) && counter.swarm.has("traits") ? "Shapes" : r.chance(0.09) && counter.swarm.has("shared") ? "Shared" : valueType(r);
       const name = `v${counter.n++}`;
       stmts.push({ kind: "let", name, ty, value: expr(r, ty, inner, 3) });
       inner.push({ name, ty, mutable: true });
@@ -987,6 +1000,7 @@ function block(r: Random, scope: Scope, depth: number, counter: { n: number }, s
       }
     }
   }
+  for (const name of places) stmts.push({ kind: "pdump", name });
   return stmts;
 }
 
@@ -1003,7 +1017,7 @@ function substitute(e: Expr, name: string, to = "x"): Expr {
 }
 
 /** A function of two `ty`s, `name`'s, of `?`s and early returns. */
-function fnDef(r: Random, name: string, ty: IntTy, result: "Option" | "Result", counter: { n: number }): Stmt {
+function fnDef(r: Random, name: string, ty: IntTy, result: "Option" | "Result", counter: Counter): Stmt {
   const params: [string, string] = [`p${counter.n++}`, `q${counter.n++}`];
   const scope: Scope = params.map((p) => ({ name: p, ty, mutable: false }));
   const steps: FnStep[] = [];
@@ -1022,7 +1036,7 @@ function fnDef(r: Random, name: string, ty: IntTy, result: "Option" | "Result", 
 /** The program seed `seed` says, the same each time. */
 export function generate(seed: number): Program {
   const r = random(seed);
-  const counter = { n: 0 };
+  const counter: Counter = { n: 0, swarm: swarm(r) };
   // Its functions first, which what follows may call.
   const fns: Stmt[] = [];
   for (let i = 0, n = r.int(3); i < n; i++) {
@@ -1280,6 +1294,7 @@ function show(e: Expr): string {
 function lines(stmts: Stmt[], indent: string): string[] {
   const nested = (body: Stmt[]) => lines(body, indent + "    ");
   return stmts.flatMap((s): string[] => {
+    if (isPlace(s)) return placeLines(s, indent, show);
     switch (s.kind) {
       case "let":
         return [`${indent}let mut ${s.name}: ${s.ty} = ${show(s.value)};`];

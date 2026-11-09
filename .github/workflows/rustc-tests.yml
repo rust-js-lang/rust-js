@@ -221,6 +221,12 @@ jobs:
           name: rust-js
           path: bin
       - run: chmod +x bin/rust-js
+      # Each program run under Miri first, which finds one of undefined
+      # behaviour, no program to compare (ADR 0092, amended, #1085).
+      - name: Install Miri
+        run: |
+          rustup toolchain install nightly --profile minimal --component miri,rust-src
+          cargo +nightly miri setup
       - name: Run part ${{ matrix.part }} of 6
         env:
           START: ${{ inputs.fuzz_start }}
@@ -228,6 +234,7 @@ jobs:
           PART: ${{ matrix.part }}
           RUST_JS_COMPILER: bin/rust-js
           FUZZ_REPORT: '1'
+          FUZZ_MIRI: '1'
         run: |
           # Whole numbers, or the batch fails, not as a run of none.
           case "$SEEDS" in ''|*[!0-9]*|0) echo "fuzz_seeds=$SEEDS: a whole number, at least 1"; exit 1;; esac
