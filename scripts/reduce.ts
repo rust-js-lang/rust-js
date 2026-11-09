@@ -23,7 +23,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { spawnSync } from "node:child_process";
 
-import { agree, compileJs, runJs, runNative, runtimes, show } from "../test/programs";
+import { agree, compileJs, jsLimit, runJs, runNative, runtimes, show } from "../test/programs";
 import { buildRewriter, rewriter } from "../test/metamorphic";
 import { root, target } from "../test/support";
 import { installMiri, mayBeUndefined, miriInstalled, miriSysroot, undefinedBehaviour } from "../test/miri";
@@ -56,7 +56,7 @@ export function failure(file: string, build: "plain" | "std", edition: string, d
     return { kind: compiled.kind, error: error.trim() };
   }
   const [runtime, cmd] = runtimes[0];
-  const js = runJs(cmd, compiled.js, dir, runtime);
+  const js = runJs(cmd, compiled.js, dir, runtime, jsLimit(native));
   if (agree(native, js)) return "passes";
   // Ended otherwise, a throw where native Rust returns: that, whatever it
   // printed before.

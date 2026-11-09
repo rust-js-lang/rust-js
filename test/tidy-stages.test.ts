@@ -23,7 +23,7 @@ import { basename, join } from "node:path";
 
 import { cases, corpus, directives } from "./corpus-cases";
 import { generate, print, type Program } from "./generate";
-import { agree, compileJs, compileJsAsync, runJs, runNative, runtimes, show, type CompileError, type Run } from "./programs";
+import { agree, compileJs, compileJsAsync, jsLimit, runJs, runNative, runtimes, show, type CompileError, type Run } from "./programs";
 import { reduce, size } from "./reduce";
 import { buildCompiler, caseShard, compiler, contentDirectory, fixture, run, target, writeWhole } from "./support";
 import { record, runKey, shared, verified } from "./verified-runs";
@@ -214,7 +214,7 @@ async function differences(file: string, dir: string, edition: string, native: R
     const key = runKey(["readability variant", code(compiled.js), native.bytes.stdout, native.bytes.stderr, show(native.outcome), shared()]);
     if (verified(key)) continue;
     const [runtime, cmd] = runtimes[0];
-    const ran = runJs(cmd, compiled.js, dir, `${runtime}-${flags.join("-").replaceAll(/[^A-Za-z0-9]+/g, "_").slice(0, 80)}`);
+    const ran = runJs(cmd, compiled.js, dir, `${runtime}-${flags.join("-").replaceAll(/[^A-Za-z0-9]+/g, "_").slice(0, 80)}`, jsLimit(native));
     const agrees = agree(ran, native);
     if (name === least && listed !== undefined) {
       if (agrees) problems.push(`${name}: runs as native Rust does now; take ${basename(file)} off \`leastDiffers\` (${listed})`);

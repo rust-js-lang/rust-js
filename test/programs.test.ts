@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { agree, execute, type Run } from "./programs";
+import { agree, execute, jsLimit, type Run } from "./programs";
 import { fixture } from "./support";
 
 const clean: Run = { stdout: "", stderr: "", bytes: { stdout: Buffer.alloc(0), stderr: Buffer.alloc(0) }, outcome: { value: null } };
@@ -40,4 +40,16 @@ test("what a run printed is compared byte for byte", () => {
     execute(script(`process.stdout.write(Buffer.from("${hex}", "hex")); require("fs").writeFileSync(${JSON.stringify(file)}, '{"value":null}')`), file);
   expect(agree(printing("ff"), printing("efbfbd"))).toBe(false);
   expect(agree(printing("efbfbd"), printing("efbfbd"))).toBe(true);
+});
+
+// A program native Rust itself takes long to run is given as long, twenty
+// times over, as JS, before it's taken to never end; one quick natively,
+// the usual 10 s (#1106). A run's time is how long this process waited.
+test("a JS run may take twenty times as long as native Rust's, and at least 10 s", () => {
+  expect(jsLimit({ ...clean, ms: 2_300 })).toBe(46_000);
+  expect(jsLimit({ ...clean, ms: 3 })).toBe(10_000);
+  expect(jsLimit(clean)).toBe(10_000);
+  const file = join(fixture("programs-timed"), "outcome.json");
+  const run = execute(script(`setTimeout(() => require("fs").writeFileSync(${JSON.stringify(file)}, '{"value":null}'), 300)`), file);
+  expect(run.ms).toBeGreaterThanOrEqual(300);
 });

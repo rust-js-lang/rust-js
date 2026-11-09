@@ -20,7 +20,7 @@ import { generate, print, type Program } from "./generate";
 import { reduce, size } from "./reduce";
 import { reducedRepro } from "./reduced";
 import { same } from "./oracle";
-import { agree, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
+import { agree, compileJs, jsLimit, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, compiler, contentDirectory, fixture, root, target, writeWhole } from "./support";
 import { undefinedBehaviour } from "./miri";
 
@@ -95,7 +95,7 @@ function judge(program: Program, seed: number): Verdict {
       if (compiled.kind === "rejected") return { kind: "unsupported", error: compiled.error };
       return { kind: "crash", error: compiled.error, reason: compiled.reason, build };
     }
-    const js = runtimes.map(([name, cmd]): [string, Run] => [name, runJs(cmd, compiled.js, dir, `${name}-${build}`)]);
+    const js = runtimes.map(([name, cmd]): [string, Run] => [name, runJs(cmd, compiled.js, dir, `${name}-${build}`, jsLimit(native))]);
     if (!js.every(([, run]) => agree(run, native))) return { kind: "differs", native, js, build };
   }
   return { kind: "same" };

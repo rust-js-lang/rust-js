@@ -139,3 +139,17 @@ What it expects is in a `//@` directive:
   run by Bun's WASI (`test/wasi-run.ts`), which writes its outcome where
   `main` returns. wasm32-wasip1 aborts on a panic, so only a case that
   runs to its end may say it.
+
+## Amendment: a JS run may take as long as native Rust's, twenty times over (2026-11-09, #1106)
+
+A run stopped at 10 s, natively or as JS, was taken to never end. A
+generated program whose loop makes `replace("", "héllo")` of a string, each
+time its length multiplied, took 2.3 s natively and 3.4 s as JS: beside a
+stage's other variants on a loaded machine, past 10 s, and the nightly's
+program stages said tidy's `jumps/chain values` never finished where every
+variant runs as native Rust does. **A run says how long it took (`Run`'s
+`ms`), and the JS of a generated program, the fuzz's, the stages' and the
+reducer's, may run twenty times as long as native Rust's, or the usual 10 s
+where that's more (`jsLimit`).** A JS run that never ends still fails, after
+it. Case: N, the harness's. Held by `test/programs.test.ts`'s "a JS run
+may take twenty times as long as native Rust's, and at least 10 s".

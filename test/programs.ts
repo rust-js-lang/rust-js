@@ -28,8 +28,8 @@ export function callInNode(modules: Record<string, string>, calls: Call[], dir: 
 }
 
 /** What a run printed, as text for its reports and as bytes to compare
- * (`Exit`), and how it ended. */
-export type Run = { stdout: string; stderr: string; bytes: Exit["bytes"]; outcome: Outcome | string };
+ * (`Exit`), how it ended, and how long it took, of one this process ran. */
+export type Run = { stdout: string; stderr: string; bytes: Exit["bytes"]; outcome: Outcome | string; ms?: number };
 
 // A case runs for at most this long, so one that never ends fails instead
 // of stopping the suite, and is compiled for at most the other, natively or
@@ -51,16 +51,19 @@ const compileTimeout = Number(process.env.RUST_JS_COMPILE_TIMEOUT ?? 120_000);
  * Either is `{ exit: 134 }`. */
 export function execute(cmd: string[], outcomeFile: string, limit = timeout): Run {
   rmSync(outcomeFile, { force: true });
+  const started = performance.now();
   const p = runSync(cmd, root, limit);
   const { stdout, stderr, bytes } = p;
-  if (p.signal === "SIGABRT" && !p.timedOut) return { stdout, stderr, bytes, outcome: aborted };
+  const ms = performance.now() - started;
+  const ran = (outcome: Outcome | string): Run => ({ stdout, stderr, bytes, outcome, ms });
+  if (p.signal === "SIGABRT" && !p.timedOut) return ran(aborted);
   const why = stopped(p, limit);
-  if (why) return { stdout, stderr, bytes, outcome: why };
-  if (!existsSync(outcomeFile)) return { stdout, stderr, bytes, outcome: `exited ${p.code} without an outcome` };
+  if (why) return ran(why);
+  if (!existsSync(outcomeFile)) return ran(`exited ${p.code} without an outcome`);
   const outcome = readFileSync(outcomeFile, "utf8");
-  if (p.code === abortCode && same(JSON.parse(outcome), aborted)) return { stdout, stderr, bytes, outcome: aborted };
-  if (p.code !== 0) return { stdout, stderr, bytes, outcome: `exited ${p.code} after it ended ${outcome}` };
-  return { stdout, stderr, bytes, outcome: JSON.parse(outcome) };
+  if (p.code === abortCode && same(JSON.parse(outcome), aborted)) return ran(aborted);
+  if (p.code !== 0) return ran(`exited ${p.code} after it ended ${outcome}`);
+  return ran(JSON.parse(outcome));
 }
 
 /** How a run that aborted ended, natively or as JS (`execute`). */
@@ -227,11 +230,19 @@ function compiled(p: Exit, js: string): { js: string } | CompileError {
   return { kind, reason, error: kind === "crashed" ? `rust-js crashed: ${reason}\n${p.stderr}` : p.stderr };
 }
 
-export function runJs(runtime: string[], js: string, dir: string, name: string): Run {
+export function runJs(runtime: string[], js: string, dir: string, name: string, limit = timeout): Run {
   const outcomeFile = join(dir, `${name}.json`);
   // Its arguments are as native's: its path, then where its outcome goes.
-  return execute([...runtime, join(root, "test/corpus-run.ts"), js, outcomeFile, js, outcomeFile], outcomeFile);
+  return execute([...runtime, join(root, "test/corpus-run.ts"), js, outcomeFile, js, outcomeFile], outcomeFile, limit);
 }
+
+/** How long the JS of a program `native` ran may run before it's taken to
+ * never end: the usual 10 s, or, of one native Rust itself takes long to
+ * run, twenty times its time. A generated program's string that a loop
+ * makes `replace("", ..)` of, its length multiplied each time, took 2.3 s
+ * natively and 3.4 s as JS, past the 10 s beside a stage's other variants
+ * on a loaded machine, which said it never ended (#1106). */
+export const jsLimit = (native: Run) => Math.max(timeout, Math.ceil((native.ms ?? 0) * 20));
 
 export const show = (outcome: Outcome | string) => (typeof outcome === "string" ? outcome : JSON.stringify(outcome));
 export const agree = (a: Run, b: Run) =>
