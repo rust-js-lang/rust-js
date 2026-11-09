@@ -19,6 +19,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^field_rewrite_singles.rs$"],
   },
   {
+    name: "tuple-part-set-through-an-alias-unseen",
+    breaks: "`match (v.pop(), x.0)`'s `x.0` is read after a guard's call is given a `&mut dyn` pair made on `x$1`, another name of `x`, that sets it (#1035)",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "            parts_set.insert(of.clone());\n",
+    replace: "            break;\n",
+    tests: ["test/corpus.test.ts", "-t", "^tuple_part_set_through_a_dyn.rs$"],
+  },
+  {
+    name: "tuple-part-alias-of-a-part-unseen",
+    breaks: "another name of a part of the object a tuple's part reads, `const item = x[0];` a `&mut dyn`'s pair is made on, isn't followed to the object (#1035)",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "                    let mut root = value;\n                    while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {\n                        root = of;\n                    }\n",
+    replace: "                    let root = value;\n",
+    tests: ["test/corpus.test.ts", "-t", "^tuple_part_set_through_a_dyn.rs$"],
+  },
+  {
     name: "indexed-item-a-part",
     breaks:
       "an item Rust's index reads of a temporary, `_5[0]` of `completedSegments.borrow()[0]`, is taken apart as a tuple's part, `const [contentSegment] = $borrow(completedSegments);` (ADR 0598, amended)",

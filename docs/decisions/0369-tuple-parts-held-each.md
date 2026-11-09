@@ -75,3 +75,15 @@ case's JS changed. Held by the corpus case `field_rewrite_singles` and
 the mutations `tuple-part-read-after-its-object-set` and
 `tuple-part-set-through-a-handle-unseen`.
 
+
+And an object set through another name of it, or of a part of it, is
+the object set: `poke(if first { &mut x.0 } else { &mut y.0 })` of a
+`poke(n: &mut dyn Bump)` makes the `&mut dyn`'s pair on `const x$1 = x;`
+(or `const item = x[0];` of `x.0.0`), so the pair's place reads `x$1`,
+which `x[0]`'s read never named, and the read moved past the guard's call
+(`1117` where native prints `117`). A `const` or `let` of a place rooted
+at a variable is followed to it. Found by the metamorphic net's `dyn-ref`
+rewrite of `field_rewrite_singles`, its last row of #1035, taken off; the
+corpus case `tuple_part_set_through_a_dyn` holds it in both builds, and
+the mutations `tuple-part-set-through-an-alias-unseen` and
+`tuple-part-alias-of-a-part-unseen`.

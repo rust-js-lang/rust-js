@@ -36,7 +36,3 @@ plain std library impl_trait_clone.rs
 plain std library refcell_borrow_while_mut.rs
 plain std library track_caller.rs
 plain std library unboxed_type_params.rs
-
-#1035 P0 (round 2, field rewrite singles): given_last_unwinds, tuple_scrutinee_calls, swap_replace, unread_collected_chain differ from native
-plain std dyn-ref field_rewrite_singles.rs
-

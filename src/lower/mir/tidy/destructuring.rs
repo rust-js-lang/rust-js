@@ -592,6 +592,30 @@ pub(super) fn tuple_reads(
                 }
             }
         });
+        // And of an object a variable that's set through is another name
+        // of, or of a part of, `const x$1 = x;` or `const item = x[0];` a
+        // `&mut dyn`'s pair is made on, `item[0] = value` (#1035): the same
+        // object, its part set too.
+        let mut aliased = Vec::new();
+        js::each_list(stmts, &mut |list| {
+            for stmt in list {
+                if let StmtKind::Const(alias, value) | StmtKind::Let(alias, Some(value)) = &stmt.kind {
+                    let mut root = value;
+                    while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {
+                        root = of;
+                    }
+                    if let ExprKind::Var(of) = &root.kind {
+                        aliased.push((alias.clone(), of.clone()));
+                    }
+                }
+            }
+        });
+        while let Some((_, of)) = aliased
+            .iter()
+            .find(|(alias, of)| parts_set.contains(alias) && !parts_set.contains(of))
+        {
+            parts_set.insert(of.clone());
+        }
         let reads_parts_set = |item: &Expr| {
             let mut set = false;
             // Not a handle, which reads its place where it's used whatever.
