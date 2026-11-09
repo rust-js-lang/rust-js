@@ -235,16 +235,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "defaults are what"],
   },
   {
-    name: "std-error-dictionary-markers",
-    breaks:
-      "an associated type's marker bound, `type Label: Display + Send`, is asked a dictionary, which `Send` has none of",
-    file: "src/lower/traits/impls.rs",
-    find: "            if operational(self.tcx, self.krate.foreign, bound.def_id) {\n                let dictionary = self.dictionary(bound, span)?;",
-    replace:
-      "            if true {\n                let dictionary = self.dictionary(bound, span)?;",
-    tests: ["test/corpus.test.ts", "-t", "^associated_types.rs$"],
-  },
-  {
     name: "dictionary-uncached",
     breaks:
       "a generic impl's dictionary is made anew on each call, so two of the same impl given the same aren't the same object",

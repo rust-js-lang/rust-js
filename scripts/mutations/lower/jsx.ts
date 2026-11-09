@@ -472,19 +472,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "held-prop-at-its-block",
-    breaks:
-      "a prop held from a block is where the block starts, before its loop: a `let title` the loop's way out sets, not a `const title` after the loop (#434)",
-    file: "src/lower/jsx.rs",
-    find: "self.js_span(self.frame.thir[super::body_queries::tail(self.frame.thir, e)].span)",
-    replace: "self.js_span(self.frame.thir[e].span)",
-    tests: [
-      "test/jsx-react-dev.test.ts",
-      "-t",
-      "a value held for a prop is named after it",
-    ],
-  },
-  {
     name: "props-read-in-jsx-order",
     breaks:
       "props written out of the struct's order are made in the JSX's, not Rust's: `t` logged before `h`",

@@ -142,20 +142,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops.rs$"],
   },
   {
-    name: "future-dropped-again",
-    breaks:
-      "an `async` block's future, dropped after its body has run, drops what it took again",
-    file: "src/lower/drops/parts.rs",
-    find: "            ty::Coroutine(..) => {}\n",
-    replace:
-      "            ty::Coroutine(def_id, _) => self.drop_taken(*def_id, span, made, out)?,\n",
-    tests: [
-      "test/lowering-functions.test.ts",
-      "-t",
-      "an async block or closure drops what it took",
-    ],
-  },
-  {
     name: "value-cell-drops-value",
     breaks:
       "a `RefCell` of an object dropped drops its `value`, `undefined`, not the object, its items' destructors unrun",

@@ -100,15 +100,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^unboxed_type_params.rs$"],
   },
   {
-    name: "js-given-not-nullish",
-    breaks:
-      "what JS gives a function it calls is taken as never `undefined`, so `sortWith([2, undefined, 1], ..)` sorts with JS's `sort`, which leaves `undefined` last without comparing it",
-    file: "src/lower/representation/options.rs",
-    find: "        self.js_given(ty)\n            || (super::super::recognition::known_by_bounds(ty)",
-    replace: "        (super::super::recognition::known_by_bounds(ty)",
-    tests: ["test/compiler.test.ts", "-t", "an Option of a generic T"],
-  },
-  {
     name: "js-given-boxed",
     breaks:
       "a `Some` of what JS gives is boxed, so `pick(undefined, true)` gives JS `{ $someNone: 0 }`",

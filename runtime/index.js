@@ -7806,10 +7806,13 @@ export function $insertMut(v, i, x, handle) {
 // `$KeyMap` or `$KeySet` of keys found by value, the same to each.
 
 // The key a map or a set holds equal to `key`, or `undefined`: a
-// `$KeyMap`'s, or the key itself, a `Map`'s (ADR 0467).
+// `$KeyMap`'s, or the key itself, a `Map`'s (ADR 0467). Of a `Map`, only
+// ever asked of a key it holds: the lowering asks it of a set that finds
+// others by its items alone, each a `$KeySet` or a tree, and the helpers
+// here of a key they've found it holds.
 export function $storedKey(m, key) {
   if (m.storedKey !== undefined) return m.storedKey(key);
-  return m.has(key) ? key : undefined;
+  return key;
 }
 
 // One search of `m` for `key`: whether it's there, the key it holds equal

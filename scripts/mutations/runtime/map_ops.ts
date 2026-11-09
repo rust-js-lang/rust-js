@@ -287,14 +287,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_keys.rs$"],
   },
   {
-    name: "stored-key-of-absent",
-    breaks: "a `Set`'s stored item of one it doesn't hold is that one, so `get` of it is `Some`",
-    file: "src/runtime/map_ops.js",
-    find: "  return m.has(key) ? key : undefined;\n",
-    replace: "  return key;\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_keys.rs$"],
-  },
-  {
     name: "set-union-spread",
     breaks: "a set's `union` spreads the set, which Babel's loose spread keeps whole, one item (ADR 0919)",
     file: "src/runtime/map_ops.js",

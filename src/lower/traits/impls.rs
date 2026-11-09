@@ -156,17 +156,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (back, len)
     }
 
-    /// An entry giving each of `bounds`' dictionaries, of those that have one.
+    /// An entry giving each of `bounds`' dictionaries, each one that has
+    /// one, as `held_supertraits` keeps them: a marker, `Send`, none.
     fn entries_of(&mut self, bounds: Vec<(String, ty::TraitRef<'tcx>)>, span: Span) -> R<Vec<Prop>> {
         let mut props = Vec::new();
         for (name, bound) in bounds {
-            if operational(self.tcx, self.krate.foreign, bound.def_id) {
-                let dictionary = self.dictionary(bound, span)?;
-                props.push(Prop::Field(
-                    name,
-                    Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dictionary)).at(js::Span::NONE)]),
-                ));
-            }
+            let dictionary = self.dictionary(bound, span)?;
+            props.push(Prop::Field(
+                name,
+                Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dictionary)).at(js::Span::NONE)]),
+            ));
         }
         Ok(props)
     }

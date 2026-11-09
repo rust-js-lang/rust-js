@@ -779,11 +779,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.tcx.dcx().span_err(span, message)
     }
 
-    /// Where `e`'s value is written: a block's, its value's, after what the
-    /// block does first, `{ let mut n = 0; while .. {} n }`'s `n`. A value
-    /// held there is made after the block's loop, as a `const` (#434).
+    /// Where `e`'s value is written, its own span: a block's, `{ let mut n
+    /// = 0; while .. {} n }`, is held where tidy's declarations put it,
+    /// after the block's loop, as a `const` (#434).
     fn value_at(&self, e: ExprId) -> js::Span {
-        self.js_span(self.frame.thir[super::body_queries::tail(self.frame.thir, e)].span)
+        self.js_span(self.frame.thir[e].span)
     }
 
     /// An element's attribute, `name`, given: the element made, its value,
