@@ -6044,8 +6044,8 @@ export function $binarySearchBy(items, f) {
 // std's `iter_compare` steps it by `try_for_each`, `b` by its `next`. Each
 // closed at its end, `b` first, as std drops what it takes (#242).
 export function $iterCmp(a, b, cmp) {
-  const x = $stepsOf(a);
-  const y = $stepsOf(b);
+  const x = $comparedOf(a);
+  const y = $comparedOf(b);
   return $endsAfter(() => $closeEach(y, x), () => {
     let order = 0;
     const stopped = $lent(x).tryFold(
@@ -6060,6 +6060,17 @@ export function $iterCmp(a, b, cmp) {
     if (stopped) return order;
     return y.next().done ? 0 : -1;
   });
+}
+
+// What a comparison of two iterators, `$iterEq`'s or `$iterCmp`'s, steps
+// `items` by, `$stepsOf`'s, held: closed at the comparison's end, `b`
+// first, as std's `iter_compare` drops its parameters, not as its own step
+// ends, which dropped the crate's iterator before the item taken of the
+// other (#1145).
+export function $comparedOf(items) {
+  const steps = $stepsOf(items);
+  steps.hold?.();
+  return steps;
 }
 
 // `v.rotate_left(n)`: its first `n` items moved to its end. More than it
@@ -17185,21 +17196,25 @@ export function $cmpItems(a, b, cmp) {
 // one differs or either ends; by `eq`, or `===` of what JS compares so. Of
 // items with a destructor, each compared pair dropped, `b`'s first, and one
 // left where the other ended; each closed as it ends, which drops what it
-// holds, `b` first, as std's are dropped (ADR 0465). `a` is stepped by its
+// holds, `b` first, as std's are dropped (ADR 0465): not as either's
+// step ends, `$comparedOf`'s, but after the item taken of the other is
+// dropped, as std's `iter_compare` frame drops what it took (#1145). `a` is stepped by its
 // `tryFold`, as std's `iter_compare` steps it by `try_for_each`, and `b` by
 // its `next`. Of two `TrustedLen` ones, given their `lengths`, std's
 // `SpecIterEq`: of unequal ones, `false`, with none of their items stepped
 // or compared, each closed, `b` first (ADR 0992).
 export function $iterEq(a, b, eq, dropA, dropB, lengths) {
-  const x = $stepsOf(a);
-  const y = $stepsOf(b);
+  const x = $comparedOf(a);
+  const y = $comparedOf(b);
   return $endsAfter(() => $closeEach(y, x), () => {
     if (lengths !== undefined && lengths[0] !== lengths[1]) return false;
     let same = true;
     const stopped = $lent(x).tryFold(
       false,
       (_, p) => {
-        const q = y.next();
+        // Its step, which may panic: `p`, the closure's, dropped as it
+        // unwinds, before what's closed (#1145).
+        const q = $unwinds(() => y.next(), dropA && (() => dropA(p)));
         if (q.done) {
           dropA?.(p);
           same = false;

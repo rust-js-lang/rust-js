@@ -352,10 +352,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "eq-closes-unasked",
-    breaks: "`it.eq(other)` of the crate's iterator with a `Drop`, of items without one, closes it where `consumer_closes` says it's dropped after, so it's dropped twice (#1123)",
+    breaks: "`it.eq(other)` of the crate's iterator with a `Drop`, of items without one, is closed by `dropping_source` where `consumer_closes` says it's dropped after, so it's dropped twice (#1123)",
     file: "src/lower/mir/iter/closing.rs",
-    find: "        let it = self.consumer_closing(it, (method, iter_ty, lent), dropping, span)?;\n",
-    replace: "        let it = match lent {\n            true => it,\n            false => self.closing(it, iter_ty, span)?,\n        };\n",
+    find: "        if dropping.is_none() {\n            return Ok(it);\n        }\n",
+    replace: "        if dropping.is_none() && method != Some(IterMethod::Eq) {\n            return Ok(it);\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
+  },
+  {
+    name: "closing-closes-again",
+    breaks:
+      "a value its consumer closed already is closed again, so the crate's iterator with a `Drop` a `collect()` into an `Option` closes is dropped twice and its items read as `undefined` (#1144)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        if crate::lower::iterators::closed_parts(&it).is_some() {\n            return Ok(it);\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_comparisons_drop_as_std.rs$"],
+  },
+  {
+    name: "cmp-argument-unclosed",
+    breaks:
+      "`a.cmp(b)` and the comparisons never close `b`, so the crate's iterator with a `Drop` given them is never dropped (#1146)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        let other = self.compared_closing(other, other_ty, span)?;\n        let compare = self.cmp_fn(",
+    replace: "        let compare = self.cmp_fn(",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_comparisons_drop_as_std.rs$"],
   },
 ];

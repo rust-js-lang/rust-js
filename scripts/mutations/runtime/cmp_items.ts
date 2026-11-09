@@ -42,4 +42,13 @@ export const mutations: Mutation[] = [
     replace: "    const stopped = new $Steps(() => x.next()).tryFold(",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
   },
+  {
+    name: "iter-eq-taken-leaked-at-a-step-panic",
+    breaks:
+      "`a.eq(b)` whose `b` step panics never drops the item it took of `a`, which std's closure drops as it unwinds (#1145)",
+    file: "src/runtime/cmp_items.js",
+    find: "        const q = $unwinds(() => y.next(), dropA && (() => dropA(p)));\n",
+    replace: "        const q = y.next();\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_comparisons_drop_as_std.rs$"],
+  },
 ];

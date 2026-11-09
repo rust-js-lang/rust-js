@@ -2315,3 +2315,44 @@ builds, as do a chain's enumeration asked `nth`, `skip`, `step_by`,
 where that one alone doesn't: the bound test is the one answer.
 `nth_advanced_source` is removed with its mutation. A chain's `nth`
 still asks its second side's, the `OwnStep` catalog's.
+
+## Amendment: two iterators compared drop as std's `iter_compare` does (#1144, #1145, #1146)
+
+The consumer net's first run (ADR 1090) found three wrong answers of
+`eq`, `ne`, `cmp`, `partial_cmp`, `lt`, `le`, `gt` and `ge`, 660
+case-builds:
+
+- `iterators_eq` closed its receiver, which `dropping_source` had
+  closed already where its items have a destructor: the crate's
+  iterator with a `Drop` was closed twice, `$closing($closing(..))`,
+  and a `collect()` of it into an `Option` or a `Result` was too, as
+  the fallible collect closed what its consumer had (#1144).
+- `$iterEq` stepped each side by a `$closing` that drops itself as its
+  step ends: the crate's iterator given as the argument was dropped
+  before the item taken of the receiver, which std's closure holds
+  till it returns; and where the argument's step panicked, that item
+  was never dropped (#1145).
+- `cmp` and the comparisons never closed their argument: the crate's
+  iterator with a `Drop` given them was never dropped (#1146).
+
+**What a consumer closes is closed once, by `consumer_closing`, the one
+answer (#1120, #1123); `closing` gives a value closed already as it is.**
+`iterators_eq` no longer closes its receiver itself. **Each side of a
+comparison is held, `$comparedOf`, and closed at its end, the argument
+first, as `iter_compare(a, b, f)` drops its parameters; the item taken
+of the receiver is dropped first, and as the argument's step unwinds,
+`$unwinds`'.** `cmp` closes its argument as `eq` does
+(`compared_closing`, the one place either closes it).
+
+`adapter_drops.js` and `eq_of_unequal_lengths.js` lose their
+`$closing($closing(..))` of a `Vec`'s, whose second closing dropped
+nothing more, its items gone.
+
+Held by `test/corpus/iterator_comparisons_drop_as_std.rs` against native
+Rust in both builds, and by the net, whose 660 rows under the three
+issues are off `test/iterator-matrix-known.txt`. Mutations
+`closing-closes-again`, `cmp-argument-unclosed`
+(`lower/mir/iter/closing.ts`), `compared-unheld` (`runtime/iter_cmp.ts`)
+and `iter-eq-taken-leaked-at-a-step-panic` (`runtime/cmp_items.ts`) new;
+`eq-closes-unasked` refitted to `dropping_source`, whose answer the
+removed call repeated.

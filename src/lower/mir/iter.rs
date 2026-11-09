@@ -958,7 +958,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(method @ (IterMethod::Eq | IterMethod::Ne)) => {
                 let Some(item) = item else { return Ok(None) };
                 let ne = method == IterMethod::Ne;
-                self.iterators_eq((it, arg()), (item, iter_ty, arg_tys[1]), (lent, ne), span)?
+                self.iterators_eq((it, arg()), (item, iter_ty, arg_tys[1]), ne, span)?
             }
             Some(IterMethod::Enumerate) => crate::lower::iterators::enumerated(it),
             Some(m) if m.compares() => self.iterators_cmp((it, arg()), (item, arg_tys[1]), m, span)?,

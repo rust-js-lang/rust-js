@@ -5,8 +5,8 @@
 // std's `iter_compare` steps it by `try_for_each`, `b` by its `next`. Each
 // closed at its end, `b` first, as std drops what it takes (#242).
 function $iterCmp(a, b, cmp) {
-  const x = $stepsOf(a);
-  const y = $stepsOf(b);
+  const x = $comparedOf(a);
+  const y = $comparedOf(b);
   return $endsAfter(() => $closeEach(y, x), () => {
     let order = 0;
     const stopped = $lent(x).tryFold(
@@ -21,4 +21,15 @@ function $iterCmp(a, b, cmp) {
     if (stopped) return order;
     return y.next().done ? 0 : -1;
   });
+}
+
+// What a comparison of two iterators, `$iterEq`'s or `$iterCmp`'s, steps
+// `items` by, `$stepsOf`'s, held: closed at the comparison's end, `b`
+// first, as std's `iter_compare` drops its parameters, not as its own step
+// ends, which dropped the crate's iterator before the item taken of the
+// other (#1145).
+function $comparedOf(items) {
+  const steps = $stepsOf(items);
+  steps.hold?.();
+  return steps;
 }

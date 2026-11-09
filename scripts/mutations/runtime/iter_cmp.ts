@@ -34,4 +34,13 @@ export const mutations: Mutation[] = [
     replace: "  return $endsAfter(() => {\n    y.return?.();\n    x.return?.();\n  }, () => {\n    let order",
     tests: ["test/corpus.test.ts", "-t", "^parts_close_past_a_panic.rs$"],
   },
+  {
+    name: "compared-unheld",
+    breaks:
+      "an iterator `eq` or `cmp` compares is dropped as its step ends, the crate's own with a `Drop` before the item taken of the other, not at the comparison's end as std's `iter_compare` drops it (#1145)",
+    file: "src/runtime/iter_cmp.js",
+    find: "  steps.hold?.();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_comparisons_drop_as_std.rs$"],
+  },
 ];

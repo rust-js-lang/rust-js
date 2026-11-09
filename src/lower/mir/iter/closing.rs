@@ -158,8 +158,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `it`, a JS iterator of a `ty` an adapter is given to hold, closed to
     /// drop what it hasn't given, `$closing(it, drop)`, where `closing_drop`
-    /// says (ADRs 0422, 0465); else itself.
+    /// says (ADRs 0422, 0465); else itself. Itself where it's closed
+    /// already, its consumer's `consumer_closing`: a value is closed once,
+    /// or the crate's iterator a `collect()` into an `Option` closes was
+    /// dropped twice (#1144).
     pub(in crate::lower) fn closing(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        if crate::lower::iterators::closed_parts(&it).is_some() {
+            return Ok(it);
+        }
         Ok(match self.closing_drop(ty, span)? {
             Some(drop) => self.closed_by(it, drop, ty),
             None => it,
@@ -247,15 +253,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `a.eq(b)`, or `a.ne(b)`, of `a`, of `item`s, an `iter_ty`, `lent` or
-    /// not, and `b`, an `IntoIterator` of type `other`: `$iterEq`, each pair compared as
-    /// Rust steps them; of items with a destructor, each pair dropped as it's
-    /// compared, and each closed as it ends, as std's are dropped (ADR 0465).
+    /// `a.eq(b)`, or `a.ne(b)`, of `a`, of `item`s, an `iter_ty`, and `b`,
+    /// an `IntoIterator` of type `other`: `$iterEq`, each pair compared as
+    /// Rust steps them; of items with a destructor, each pair dropped as
+    /// it's compared, and each closed at the end, as std's are dropped (ADR
+    /// 0465, #1145).
     pub(super) fn iterators_eq(
         &mut self,
         (it, other): (Expr, Expr),
         (item, iter_ty, other_ty): (Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
-        (lent, ne): (bool, bool),
+        ne: bool,
         span: Span,
     ) -> R<Expr> {
         // A range's, or the crate's, stepped as one, as `chain`'s and `zip`'s are.
@@ -307,21 +314,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 "`eq` of two iterators std asks the lengths of first, whose lengths rust-js can't count before stepping them",
             ));
         }
-        let other = match self.closing_drop(other_ty, span)? {
-            Some(drop) => {
-                let it = self.js_iterator(other);
-                self.closed_by(it, drop, other_ty)
-            }
-            None => other,
-        };
-        // The crate's iterator with a `Drop`, of items without one, was
-        // closed and dropped after too, twice (#1123).
-        let method = Some(match ne {
-            true => IterMethod::Ne,
-            false => IterMethod::Eq,
-        });
-        let dropping = self.drops(item) != crate::lower::drops::Drops::Nothing;
-        let it = self.consumer_closing(it, (method, iter_ty, lent), dropping, span)?;
+        let other = self.compared_closing(other, other_ty, span)?;
+        // `it`, closed already where it closes it (`dropping_source`'s
+        // `consumer_closing`), as the one answer of who drops it: not again,
+        // which closed the crate's iterator twice (#1123, #1144).
         let compare = self.item_eq((item, other_item), false, span)?;
         let drop_a = self.std_drop_function(item, span)?;
         let drop_b = self.std_drop_function(other_item, span)?;
@@ -363,6 +359,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(item) = item.filter(|&item| self.drops(item) == crate::lower::drops::Drops::Nothing) else {
             return Err(self.unsupported(span, "comparing iterators of these items"));
         };
+        let other = self.compared_closing(other, other_ty, span)?;
         let compare = self.cmp_fn(item, method != IterMethod::Cmp, span)?;
         let order = Expr::call_helper("$iterCmp", vec![it, other, compare]);
         let op = match method {
@@ -373,6 +370,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => return Ok(order),
         };
         Ok(Expr::bin(op, order, Expr::int(0)))
+    }
+
+    /// `other`, an `IntoIterator` of type `other_ty` a comparison of two
+    /// iterators, `eq`'s or `cmp`'s, takes by value, as a JS iterator,
+    /// closed where it has something to drop, `closing_drop`'s: its items,
+    /// or the crate's own with a `Drop`, which its helper drops at its end,
+    /// as std's `iter_compare` drops what it took, never left undropped
+    /// (#1146).
+    fn compared_closing(&mut self, other: Expr, other_ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        Ok(match self.closing_drop(other_ty, span)? {
+            Some(drop) => {
+                let it = self.js_iterator(other);
+                self.closed_by(it, drop, other_ty)
+            }
+            None => other,
+        })
     }
 
     /// `skip(n)` of `it`: JS's `drop(n)`; of items with a destructor,
