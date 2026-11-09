@@ -21,9 +21,5 @@
 // generator async 9fe3888b9e1a
 // generator consumers fedf533331c1
 
-#1151 `char::decode_utf16` steps its whole source before it yields its first `char`
-consumers:plain 6874
-consumers:std 6874
-
 #1162 `repeat(x).zip(arg)` in generic code clones `x` once more than native Rust, in the std build
 consumers:std 3319,4308

@@ -752,8 +752,8 @@ export const mutations: Mutation[] = [
     name: "adapted-hint-of-params",
     breaks: "`size_hint()` of a `filter()` of what generic code is given is `(0, None)` where its caller gives an array's iterator, not refused (#733)",
     file: "src/lower/iterators/knowing.rs",
-    find: "!self.is_unknown(held.peel_refs()) && self.adapted_hint_known(held)",
-    replace: "self.adapted_hint_known(held)",
+    find: "                !self.is_unknown(held.peel_refs())\n                    && (self.adapted_hint_known(held)",
+    replace: "                true\n                    && (self.adapted_hint_known(held)",
     tests: ["test/diagnostics.test.ts", "-t", "size_hint of a filter of a type parameter's"],
   },
   {
@@ -964,5 +964,13 @@ export const mutations: Mutation[] = [
     find: "        if self.recognition().is_memchr_iter(ty) || self.recognition().is_vec_splice(ty) {\n",
     replace: "        if self.recognition().is_memchr_iter(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^splice_drops_and_fills_as_std.rs$"],
+  },
+  {
+    name: "decode-utf16-hint-of-held-unknown",
+    breaks: "`decode_utf16`'s `size_hint()` of an array's items is refused, as std adapters of them are JS's own, though `$decodeUtf16` asks its source's hint (#1151)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                    && (self.adapted_hint_known(held) || decodes && self.held_hint_known(held))\n",
+    replace: "                    && self.adapted_hint_known(held)\n",
+    tests: ["test/corpus.test.ts", "-t", "^decode_utf16_steps_as_asked.rs$"],
   },
 ];

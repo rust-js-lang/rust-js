@@ -97,7 +97,7 @@ function main() {
   console.log(`${text.value} ${$byteLen(text.value)}`);
   console.log(`[${buffer.join(", ")}]`);
   const decoded = Array.from(
-    Iterator.from($decodeUtf16([104, 0xd83d, 0xde00, 0xd800, 105])).map((r) =>
+    $decodeUtf16([104, 0xd83d, 0xde00, 0xd800, 105]).map((r) =>
       r.TAG === "Err" ? { TAG: "Err", _0: r._0 } : r,
     ),
   );

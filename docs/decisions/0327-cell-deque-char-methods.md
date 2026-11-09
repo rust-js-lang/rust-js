@@ -92,3 +92,31 @@ prints `a.len()` after a rotation can see std's split differ. Case (ADR
 0262): rare and harmless, JS's; listed among the guide's differences
 (`semantics.md`, 19). Held by
 `test/corpus/deque_slices.rs` and the mutation `deque-slices-swapped`.
+
+## Amendment: `decode_utf16` decodes as it's asked (#1151)
+
+`$decodeUtf16` stepped its whole source, then decoded it, an array of
+results: `for r in char::decode_utf16(units.map(print))` printed every step
+before its first `char`, where std's `DecodeUtf16` steps one unit, or two
+of a pair, as each is asked (the consumer net, ADR 1090). And its
+`size_hint()` was refused.
+
+**`char::decode_utf16(units)` is `$decodeUtf16`'s `$Steps`, std's
+`DecodeUtf16`**: each `next` steps one unit, or two of a surrogate pair,
+a unit read past an unpaired leading surrogate kept for the next step, as
+std's `buf` is; closing it closes its source; an array's units stepped by
+`$iter`. Its hint is std's, half its source's lower bound rounded up and
+its upper, each with the unit it kept, so `size_hint()` is
+`adapted_hint_known`'s of its source's, an array's items' among them
+(`is_decode_utf16`, `adapted_iterators`). It's one of the runtime's
+iterator helpers, so `cell_deque_char_methods.js` loses the
+`Iterator.from` around it. A `decode_utf16` of what holds a value with a
+destructor is refused, as before.
+
+Held by `test/corpus/decode_utf16_steps_as_asked.rs` against native Rust
+in both builds. Mutations `decode-utf16-unit-past-lost`,
+`decode-utf16-hint-unhalved`, `decode-utf16-array-hintless`
+(`runtime/char_escape.ts`), `decode-utf16-hint-of-held-unknown`
+(`lower/iterators/knowing.ts`) and `decode-utf16-unadapted`
+(`lower/recognition/iterators.ts`) new; `decode-utf16-unpaired-pairs` and
+`adapted-hint-of-params` refitted.

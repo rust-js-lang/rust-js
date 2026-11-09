@@ -34,18 +34,43 @@ function $escapeUnicode(s) {
   return out;
 }
 
-// `char::decode_utf16(units)`: each `char`, `Ok`, or `Err` of an unpaired
-// surrogate, its code.
+// `char::decode_utf16(units)`, std's `DecodeUtf16`: an iterator of each
+// `char`, `Ok`, or `Err` of an unpaired surrogate, its code, each stepped
+// of `units` as it's asked, one unit or a pair, a unit it read past an
+// unpaired leading surrogate kept for its next step, as std's `buf` is; its
+// hint std's; closed, `units` closed (#1151).
 function $decodeUtf16(units) {
-  const out = [];
-  const list = $foldToArray(units);
-  for (let i = 0; i < list.length; i++) {
-    const unit = list[i];
-    if (unit < 0xd800 || unit > 0xdfff) out.push({ TAG: "Ok", _0: String.fromCharCode(unit) });
-    else if (unit <= 0xdbff && i + 1 < list.length && list[i + 1] >= 0xdc00 && list[i + 1] <= 0xdfff) {
-      out.push({ TAG: "Ok", _0: String.fromCharCode(unit, list[i + 1]) });
-      i++;
-    } else out.push({ TAG: "Err", _0: unit });
-  }
-  return out;
+  // An array's `$iter`, which knows its hint, as a `Vec`'s or an array's
+  // `IntoIter` does.
+  const it = Array.isArray(units) ? $iter(units) : typeof units.next === "function" ? units : units[Symbol.iterator]();
+  let buf;
+  const decoded = new $Steps(
+    () => {
+      let unit = buf;
+      buf = undefined;
+      if (unit === undefined) {
+        const step = it.next();
+        if (step.done) return step;
+        unit = step.value;
+      }
+      if (unit < 0xd800 || unit > 0xdfff) return { done: false, value: { TAG: "Ok", _0: String.fromCharCode(unit) } };
+      if (unit >= 0xdc00) return { done: false, value: { TAG: "Err", _0: unit } };
+      const next = it.next();
+      if (next.done) return { done: false, value: { TAG: "Err", _0: unit } };
+      if (next.value < 0xdc00 || next.value > 0xdfff) {
+        buf = next.value;
+        return { done: false, value: { TAG: "Err", _0: unit } };
+      }
+      return { done: false, value: { TAG: "Ok", _0: String.fromCharCode(unit, next.value) } };
+    },
+    () => it.return?.(),
+  );
+  decoded.from = [it];
+  // Std's: half its units' lower bound, rounded up, and the one it kept.
+  decoded.sizeHint = () => {
+    const [low, high] = $sizeHint(it);
+    const kept = buf === undefined ? 0 : 1;
+    return [Math.ceil(low / 2) + kept, high === undefined ? undefined : high + kept];
+  };
+  return decoded;
 }

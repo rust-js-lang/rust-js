@@ -844,4 +844,12 @@ export const mutations: Mutation[] = [
     replace: "        .then(|| args.types().nth(1))\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_from_iter_in_place.rs$"],
   },
+  {
+    name: "decode-utf16-unadapted",
+    breaks: "`DecodeUtf16<I>` isn't seen to adapt its `I`, so its `size_hint()` is refused (#1151)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "    if !std_path(tcx, adt.did()).starts_with(\"std::iter::\") && !is_decode_utf16(tcx, ty) {\n",
+    replace: "    if !std_path(tcx, adt.did()).starts_with(\"std::iter::\") {\n",
+    tests: ["test/corpus.test.ts", "-t", "^decode_utf16_steps_as_asked.rs$"],
+  },
 ];

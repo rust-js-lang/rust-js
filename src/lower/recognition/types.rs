@@ -614,6 +614,12 @@ pub(crate) fn is_from_utf16_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
         && tcx.item_name(adt.did()).as_str() == "FromUtf16Error")
 }
 
+/// Whether `ty` is `char::decode_utf16`'s iterator, `DecodeUtf16<I>`:
+/// `$decodeUtf16`'s `$Steps`, whose hint is std's of its source's (#1151).
+pub(crate) fn is_decode_utf16(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::char::DecodeUtf16")
+}
+
 /// `char::decode_utf16`'s error, its unpaired surrogate's code (ADR 0327).
 pub(crate) fn is_decode_utf16_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(tcx, adt.did(), StdCrate::Core)

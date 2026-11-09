@@ -1291,8 +1291,8 @@ pub(crate) fn is_compiled_std_iterator(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// Not a function it holds, a generic one's `F: Fn(&T) -> U`, nor an
 /// item, a `Repeat<T>`'s or a `Successors<T, F>`'s, which a type
 /// parameter's would be if any type it holds that rustc can't say isn't
-/// an iterator were taken for one (#796). `None` of another type, or of
-/// one of std's sources, which holds none (#733).
+/// an iterator were taken for one (#796); `DecodeUtf16<I>`'s `[I]` (#1151).
+/// `None` of another, or of one of std's sources, which holds none (#733).
 pub(crate) fn adapted_iterators<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
@@ -1301,7 +1301,7 @@ pub(crate) fn adapted_iterators<'tcx>(
     let ty::Adt(adt, args) = ty.peel_refs().kind() else {
         return None;
     };
-    if !std_path(tcx, adt.did()).starts_with("std::iter::") {
+    if !std_path(tcx, adt.did()).starts_with("std::iter::") && !is_decode_utf16(tcx, ty) {
         return None;
     }
     let iterator = std_item(tcx, StdItem::Iterator);

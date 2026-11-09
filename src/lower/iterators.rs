@@ -607,9 +607,10 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 /// set's algebra, std's iterators (`$treeSetAlgebra`, #943), a map's or a
 /// set's `extract_if`, closed where it's dropped (`$mapExtractIf`, #945),
 /// a `Vec`'s `Splice`, which puts its replacement in place as it's closed
-/// (`$splice`, #1149), and each of its generators,
+/// (`$splice`, #1149), `char::decode_utf16`'s, stepped as it's asked
+/// (`$decodeUtf16`, #1151), and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 38] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 39] = [
     "$stdIterator",
     "$memchrIter",
     "$mapEnds",
@@ -648,6 +649,7 @@ pub(crate) const ITERATOR_HELPERS: [&str; 38] = [
     "$treeSetAlgebra",
     "$mapExtractIf",
     "$splice",
+    "$decodeUtf16",
 ];
 
 /// Whether `e` is a JS iterator: one its type says is (`Known::Iterator`),
