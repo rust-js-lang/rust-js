@@ -627,7 +627,7 @@ export const mutations: Mutation[] = [
     name: "scope-method-given-fact-kept",
     breaks: "a struct whose method is given a fact of its type parameter, its size is a scope, its function declared given none, which reads its function's or none (#500, #529)",
     file: "src/lower/analysis.rs",
-    find: "                && !type_facts.contains_key(&m)\n",
+    find: "                && !facts.params.contains_key(&m)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "scope_struct"],
     snapshots: true,
@@ -654,7 +654,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a module whose only re-exports are globs writes no file, so its importers fail to load (#592)",
     file: "src/lower/analysis.rs",
-    find: "            || globs_values(tcx, module);\n",
+    find: "            || super::reexports::globs_values(tcx, module);\n",
     replace: ";\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob re-exports each name as the module it names exports it"],
   },

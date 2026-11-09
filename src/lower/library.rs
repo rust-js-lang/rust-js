@@ -73,6 +73,9 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) failing: &'a IndexSet<DefId>,
     pub(super) no_drops: &'a IndexMap<DefId, BTreeSet<u32>>,
     pub(super) type_facts: &'a IndexMap<DefId, Vec<(u32, super::recognition::TypeFact)>>,
+    /// What its consumers' impls of its traits carry of a std supertrait's
+    /// associated types (#990).
+    pub(super) carried_super: &'a super::analysis::type_facts::CarriedSuper,
     /// The types built of each one's slots it asks the layout of, which
     /// its manifest says by a template of them (#737).
     pub(super) built_slots: (&'a Foreign<'a, 'tcx>, &'a super::traits::BuiltSlots<'tcx>),
@@ -291,6 +294,8 @@ pub(super) fn exports<'tcx>(
         drop_params: _,
         no_drops: _,
         type_facts: _,
+        // `associated`'s.
+        carried_super: _,
         built_slots: _,
         given: _,
         failing,
@@ -487,9 +492,23 @@ pub(super) fn exports<'tcx>(
                 .map(|(&id, facts)| crate::library::Associated {
                     key: key(tcx, id),
                     facts: facts.iter().map(|&(_, fact)| fact.word().to_string()).collect(),
+                    carrier: None,
                 })
                 .collect();
-            associated.sort_by(|a, b| a.key.cmp(&b.key));
+            // And what its consumers' impls' carry of a std supertrait's
+            // associated types, which its defaults over `Self` read (#990).
+            for (&carrier, facts) in contracts.carried_super.iter().filter(|&(&id, _)| id.is_local()) {
+                let mut by_assoc: IndexMap<DefId, Vec<String>> = IndexMap::default();
+                for &(assoc, fact) in facts {
+                    by_assoc.entry(assoc).or_default().push(fact.word().to_string());
+                }
+                associated.extend(by_assoc.into_iter().map(|(assoc, facts)| crate::library::Associated {
+                    key: key(tcx, assoc),
+                    facts,
+                    carrier: Some(key(tcx, carrier)),
+                }));
+            }
+            associated.sort_by(|a, b| (&a.carrier, &a.key).cmp(&(&b.carrier, &b.key)));
             associated
         },
         keyed: {
@@ -840,6 +859,27 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             .flatten()
             .filter_map(|word| super::recognition::TypeFact::of_word(word))
             .collect()
+    }
+
+    /// What the dictionaries of the crate's impls of `trait_id`, a library's
+    /// trait, carry of a std supertrait's associated types of their `Self`,
+    /// as its manifest says, `IteratorItemSize` of `<Self as Iterator>::Item`
+    /// (#990): what its defaults compiled over `Self` read.
+    pub(in crate::lower) fn carried_super(&self, trait_id: DefId) -> Vec<(DefId, super::recognition::TypeFact)> {
+        let Some(carried) = (self.library(trait_id.krate).filter(|library| !library.builtin))
+            .and_then(|library| library.carried_super.get(&key(self.tcx, trait_id)))
+        else {
+            return Vec::new();
+        };
+        let supers = rustc_middle::ty::elaborate::supertrait_def_ids(self.tcx, trait_id);
+        let assocs = supers.flat_map(|of| self.tcx.associated_item_def_ids(of).iter().copied());
+        let mut facts = Vec::new();
+        for assoc in assocs {
+            for word in carried.get(&key(self.tcx, assoc)).into_iter().flatten() {
+                facts.extend(super::recognition::TypeFact::of_word(word).map(|fact| (assoc, fact)));
+            }
+        }
+        facts
     }
 
     /// A library's function's built slot `index`, as its manifest's

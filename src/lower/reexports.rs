@@ -1038,3 +1038,17 @@ pub(super) fn place(
         }
     }
 }
+
+/// Whether a `pub use m::*;` of `module`'s gives it a function, a constant
+/// or a thread-local, which its file re-exports (`globbed`),
+/// though it has nothing of its own (#592).
+pub(super) fn globs_values(tcx: TyCtxt<'_>, module: rustc_span::def_id::LocalModId) -> bool {
+    use rustc_middle::metadata::Reexport as Via;
+    (tcx.module_children_local(module.to_local_def_id()).iter()).any(|child| {
+        matches!(child.reexport_chain.first(), Some(Via::Glob(_)))
+            && matches!(
+                child.res,
+                rustc_hir::def::Res::Def(DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }, _)
+            )
+    })
+}

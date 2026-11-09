@@ -53,7 +53,7 @@ pub(super) use naming::{UsesWritten, receiver_name, renamed_in, self_box_name};
 pub(super) use throwing::call_throws;
 mod caller_locations;
 mod foreign_bodies;
-mod type_facts;
+pub(in crate::lower) mod type_facts;
 mod validation;
 
 use super::bindings::{self, Export, is_binding};
@@ -549,6 +549,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub type_facts: IndexMap<DefId, Vec<(u32, TypeFact)>>,
     /// The types built of each one's slots it's given a layout of, past its associated types' (#737).
     pub built_slots: crate::lower::traits::BuiltSlots<'tcx>,
+    /// What its traits' dictionaries carry of std supertraits' items (#990).
+    pub carried_super: type_facts::CarriedSuper,
     /// The functions that may return `Err(fmt::Error)` (ADR 0187).
     pub failing: IndexSet<DefId>,
     /// The throwing functions, whose result is a throwing JS call's (ADR 0644).
@@ -1220,7 +1222,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         let reexports = tcx
             .hir_module_free_items(module)
             .any(|id| is_reexport(tcx, tcx.hir_item(id)))
-            || globs_values(tcx, module);
+            || super::reexports::globs_values(tcx, module);
         // Or a default that's another module's function (ADR 0240).
         let defaulted = || !super::default_exports::default_exports(tcx, module).is_empty();
         if (reexports || defaulted()) && seen_modules.insert(module) {
@@ -1346,7 +1348,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         drops: &items_drop,
         taken: &drop_params,
     };
-    let (type_facts, built_slots) = type_fact_params(tcx, all_bodies, &fns, &foreign, given, &recognition, item_drops);
+    let facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given, &recognition, item_drops);
     let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
     let throwing = throwing::throwing_fns(tcx, &recognition, all_bodies);
     let (never_unwinding, quiet_fns) = unwinding::found(tcx, &recognition, all_bodies, &runs);
@@ -1358,7 +1360,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         s.methods.iter().all(|&m| {
             crate::lower::traits::bounds(tcx, &foreign, given, m).is_empty()
                 && drop_params.get(&m).is_none_or(Vec::is_empty)
-                && !type_facts.contains_key(&m)
+                && !facts.params.contains_key(&m)
                 && !caller_locations.contains(&m)
         })
     });
@@ -1407,8 +1409,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         unboxed,
         js_given,
         stepped,
-        type_facts,
-        built_slots,
+        type_facts: facts.params,
+        carried_super: facts.carried_super,
+        built_slots: facts.built_slots,
         failing,
         throwing,
         never_unwinding,
@@ -1468,20 +1471,6 @@ fn asks_capacity<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> bool {
 /// a function, the crate's, a library's or a binding's, or of a binding's
 /// `static`; and of the crate's module, its namespace, or a class (ADR 0240,
 /// amended).
-/// Whether a `pub use m::*;` of `module`'s gives it a function, a constant
-/// or a thread-local, which its file re-exports (`reexports::globbed`),
-/// though it has nothing of its own (#592).
-fn globs_values(tcx: TyCtxt<'_>, module: rustc_span::def_id::LocalModId) -> bool {
-    use rustc_middle::metadata::Reexport as Via;
-    (tcx.module_children_local(module.to_local_def_id()).iter()).any(|child| {
-        matches!(child.reexport_chain.first(), Some(Via::Glob(_)))
-            && matches!(
-                child.res,
-                rustc_hir::def::Res::Def(DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }, _)
-            )
-    })
-}
-
 pub(super) fn is_reexport(tcx: TyCtxt<'_>, item: &rustc_hir::Item<'_>) -> bool {
     let rustc_hir::ItemKind::Use(path, rustc_hir::UseKind::Single(_)) = item.kind else {
         return false;

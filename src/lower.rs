@@ -376,6 +376,9 @@ struct CrateFacts<'a, 'tcx> {
     given: traits::Given<'a>,
     /// Each generic function's type parameters it's given a fact of (ADR 0145).
     type_facts: &'a IndexMap<DefId, Vec<(u32, TypeFact)>>,
+    /// What each of the crate's traits' dictionaries carry of its std
+    /// supertraits' associated types, which its defaults ask (#990).
+    carried_super: &'a analysis::type_facts::CarriedSuper,
     /// The types built of each one's slots it's given a layout of (#737).
     built_slots: &'a traits::BuiltSlots<'tcx>,
     /// The functions that take their caller's location (ADR 0427).

@@ -40,7 +40,7 @@ pub(super) fn type_fact_params<'tcx>(
     given: Given<'_>,
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     drops: ItemDrops<'_, 'tcx>,
-) -> (IndexMap<DefId, Vec<(u32, TypeFact)>>, BuiltSlots<'tcx>) {
+) -> FactParams<'tcx> {
     let iterator = std_item(tcx, StdItem::Iterator);
     // What `std_iterator_steps` steps a compiled std iterator's struct by.
     let steps = crate::lower::recognition::STRUCT_STEPS.map(|name| trait_method(tcx, iterator, name));
@@ -84,7 +84,14 @@ pub(super) fn type_fact_params<'tcx>(
                         }
                     }
                 }
-                for (id, each) in collect_asks(recognition, typing_env, drops, caller, (callee, args)) {
+                for (id, each) in collect_asks(
+                    recognition,
+                    typing_env,
+                    drops,
+                    caller,
+                    (callee, args),
+                    &mut asking.carried_super,
+                ) {
                     asking.ask(id, each);
                 }
                 asking.of_call(tcx, foreign, given, fns, typing_env, caller, callee, args);
@@ -258,7 +265,14 @@ pub(super) fn type_fact_params<'tcx>(
                     asking.asked.insert((caller, index, fact));
                 }
             }
-            for (id, each) in collect_asks(recognition, typing_env, drops, caller, (callee, args)) {
+            for (id, each) in collect_asks(
+                recognition,
+                typing_env,
+                drops,
+                caller,
+                (callee, args),
+                &mut asking.carried_super,
+            ) {
                 asking.ask(id, each);
             }
             asking.of_call(tcx, foreign, given, fns, typing_env, caller, callee, args);
@@ -271,6 +285,7 @@ pub(super) fn type_fact_params<'tcx>(
         passed_carried,
         passed,
         calls,
+        carried_super,
     } = asking;
     // Of a library's trait, only what its dictionaries carry; and each the
     // crate's impls of one carry, as the library's code reads it of them
@@ -283,6 +298,33 @@ pub(super) fn type_fact_params<'tcx>(
         for item in tcx.associated_items(trait_id).in_definition_order() {
             for fact in foreign.carried(item.def_id) {
                 carried.insert((item.def_id, fact));
+            }
+        }
+    }
+    // And what the dictionaries of each the crate's impls of a library's
+    // trait carry of a std supertrait's associated type of their `Self`, as
+    // its manifest says, `IteratorItemSize`: what each asks of its own,
+    // `<I as Iterator>::Item` of an `impl<I: Iterator> Tools for Wrap<I>`,
+    // its slot, or of an associated type of a trait whose dictionaries carry
+    // it (#990).
+    for (&trait_id, impls) in tcx.all_local_trait_impls(()) {
+        let facts = match trait_id.is_local() {
+            true => Vec::new(),
+            false => foreign.carried_super(trait_id),
+        };
+        for &imp in impls {
+            let imp = imp.to_def_id();
+            let typing_env = ty::TypingEnv::non_body_analysis(tcx, imp);
+            let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
+            for &(assoc, fact) in &facts {
+                let ty = super_item_of(tcx, typing_env, assoc, self_ty);
+                if let Some(index) = slot_of(tcx, foreign, imp, ty) {
+                    asked.insert((imp, index, fact));
+                } else if let Some(assoc) = carried_by(foreign, ty)
+                    && carries(foreign, assoc, fact)
+                {
+                    carried.insert((assoc, fact));
+                }
             }
         }
     }
@@ -421,7 +463,83 @@ pub(super) fn type_fact_params<'tcx>(
         facts.sort();
         facts.dedup();
     }
-    (params, built_slots)
+    // Of the crate's own traits; a library's are its manifest's.
+    let mut by_trait = CarriedSuper::default();
+    for (trait_id, assoc, fact) in carried_super.into_iter().filter(|(id, ..)| id.is_local()) {
+        by_trait.entry(trait_id).or_default().push((assoc, fact));
+    }
+    for facts in by_trait.values_mut() {
+        facts.sort_by_key(|&(assoc, fact)| (tcx.def_path_hash(assoc), fact));
+        facts.dedup();
+    }
+    FactParams {
+        params,
+        built_slots,
+        carried_super: by_trait,
+    }
+}
+
+/// What `type_fact_params` finds: each function's and associated type's
+/// facts, their built slots (#737), and what each of the crate's traits'
+/// dictionaries carry of std supertraits' associated types (#990).
+pub(super) struct FactParams<'tcx> {
+    pub(super) params: IndexMap<DefId, Vec<(u32, TypeFact)>>,
+    pub(super) built_slots: BuiltSlots<'tcx>,
+    pub(super) carried_super: CarriedSuper,
+}
+
+/// The trait and the std associated type of `of` where `caller` is one of
+/// the trait's defaults and `of` is `<Self as Trait>::Item` of a std
+/// supertrait of it, `Iterator::Item` of a `Tools: Iterator`'s (#990).
+fn default_super_item(tcx: TyCtxt<'_>, caller: DefId, of: ty::Ty<'_>) -> Option<(DefId, DefId)> {
+    let trait_id = tcx
+        .trait_of_assoc(caller)
+        .filter(|_| tcx.defaultness(caller).has_value())?;
+    let ty::Alias(
+        _,
+        alias @ ty::AliasTy {
+            kind: ty::Projection { def_id },
+            ..
+        },
+    ) = *of.kind()
+    else {
+        return None;
+    };
+    let own_self = matches!(alias.self_ty().kind(), ty::Param(param) if param.index == 0);
+    (own_self && crate::lower::recognition::is_std_crate(tcx, def_id)).then_some((trait_id, def_id))
+}
+
+/// Of each of the crate's traits, the facts its dictionaries carry of an
+/// associated type of a std supertrait of their `Self`, `IteratorItemSize`
+/// of `<Self as Iterator>::Item` of a `Tools: Iterator` whose default asks
+/// it (#990): by the trait, the associated type and the fact. Its manifest
+/// says them, which a consumer's impls' dictionaries carry; a library's
+/// trait's are its manifest's (`Foreign::carried_super`).
+pub(in crate::lower) type CarriedSuper = IndexMap<DefId, Vec<(DefId, TypeFact)>>;
+
+/// `<self_ty as Trait>::assoc`, where its bounds hold, of an impl's
+/// `Self`: `<I as Iterator>::Item` of a `Wrap<I>` whose `Item` is `I`'s.
+pub(in crate::lower) fn super_item_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    assoc: DefId,
+    self_ty: ty::Ty<'tcx>,
+) -> ty::Ty<'tcx> {
+    let projection = ty::Ty::new_projection(tcx, ty::IsRigid::No, assoc, [self_ty]);
+    tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(projection))
+        .unwrap_or(projection)
+}
+
+/// `default_super_item` of `id`'s slot `index`.
+fn slot_super_item<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    id: DefId,
+    index: u32,
+) -> Option<(DefId, DefId)> {
+    crate::lower::traits::slot_item(tcx, id, index)?;
+    let slot = crate::lower::traits::drop_slot(tcx, (foreign, &Default::default()), id, index);
+    default_super_item(tcx, id, slot)
 }
 
 /// Whether dropping a value of a type runs anything where a function is,
@@ -459,6 +577,7 @@ fn collect_asks<'tcx>(
     drops: ItemDrops<'_, 'tcx>,
     caller: DefId,
     (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+    carried_super: &mut IndexSet<(DefId, DefId, TypeFact)>,
 ) -> Vec<(DefId, Asked<'tcx>)> {
     let (tcx, foreign) = (recognition.tcx, recognition.foreign);
     let asked_by = |typing_env: ty::TypingEnv<'tcx>, owner: DefId, args: ty::GenericArgsRef<'tcx>| {
@@ -504,7 +623,15 @@ fn collect_asks<'tcx>(
     for each in asked_by(typing_env, caller, args) {
         let own = match &each {
             Asked::Built(ty, ..) => names_params(*ty, |index| index >= parents as u32),
-            Asked::Slot(index, _) => *index >= parents as u32 && *index < own.len() as u32,
+            Asked::Slot(index, fact) => {
+                // Of `<Self as Iterator>::Item`, what its trait's
+                // dictionaries carry, for a library's default compiled over
+                // `Self`, which its copies' impls asked above (#990).
+                if let Some((trait_id, assoc)) = slot_super_item(tcx, foreign, caller, *index) {
+                    carried_super.insert((trait_id, assoc, *fact));
+                }
+                *index >= parents as u32 && *index < own.len() as u32
+            }
         };
         if own {
             asked.push((caller, each));
@@ -668,6 +795,9 @@ struct Asking<'tcx> {
     /// as a callee's type parameter.
     carried: IndexSet<(DefId, TypeFact)>,
     passed_carried: Vec<(DefId, (DefId, u32))>,
+    /// What a trait's dictionaries carry of a std supertrait's associated
+    /// type of its `Self`, its defaults' (#990).
+    carried_super: IndexSet<(DefId, DefId, TypeFact)>,
     /// A caller's type parameter passed on as a callee's: `relay<U>` calling `describe::<U>`.
     passed: Vec<((DefId, u32), (DefId, u32))>,
     /// A call of the crate's function, with its arguments: what its callee asks
@@ -704,6 +834,39 @@ fn ask<'tcx>(
 }
 
 impl<'tcx> Asking<'tcx> {
+    /// `default`, a default of `trait_id`, asks `fact` of `<Self as
+    /// Trait>::assoc`, of a std supertrait of its `Self`: its dictionaries
+    /// carry it, so a library's default compiled over `Self` reads it of
+    /// the one it's given, and each of the crate's impls that copies it
+    /// asks it of its own type for it, `<I as Iterator>::Item` of an
+    /// `impl<I: Iterator> Tools for I`, as a collect's are (#990).
+    fn ask_of_impls(
+        &mut self,
+        tcx: TyCtxt<'tcx>,
+        foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+        (trait_id, default): (DefId, DefId),
+        assoc: DefId,
+        fact: TypeFact,
+    ) {
+        self.carried_super.insert((trait_id, assoc, fact));
+        // A library's trait's impls here carry what its manifest says.
+        if !trait_id.is_local() {
+            return;
+        }
+        for &imp in tcx.all_local_trait_impls(()).get(&trait_id).into_iter().flatten() {
+            let imp = imp.to_def_id();
+            if tcx.impl_item_implementor_ids(imp).contains_key(&default) {
+                continue;
+            }
+            let typing_env = ty::TypingEnv::non_body_analysis(tcx, imp);
+            let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
+            let ty = super_item_of(tcx, typing_env, assoc, self_ty);
+            if let Some(index) = slot_of(tcx, foreign, imp, ty) {
+                self.asked.insert((imp, index, fact));
+            }
+        }
+    }
+
     /// `caller` asks `asked`.
     fn ask(&mut self, caller: DefId, each: Asked<'tcx>) {
         ask((&mut self.asked, &mut self.built), caller, each);
@@ -729,11 +892,13 @@ impl<'tcx> Asking<'tcx> {
             // `size_of_val` of an unsized `T` is the value's, not the type's:
             // a size or an alignment is asked of a sized one, and its name
             // of any, a `T: ?Sized`'s too.
+            let measured =
+                |of: ty::Ty<'tcx>| of.is_sized(tcx, typing_env) || !matches!(fact, TypeFact::Size | TypeFact::Align);
             // A downcast's type is its last, after its `Box`'s allocator.
             // A `T: Any`'s `TypeId` is its dictionary's (ADR 0331).
             if let Some(of) = args.types().last()
                 && let ty::Param(param) = of.kind()
-                && (of.is_sized(tcx, typing_env) || !matches!(fact, TypeFact::Size | TypeFact::Align))
+                && measured(of)
                 && !(fact == TypeFact::Id && bound_by_any(tcx, caller, param.index))
             {
                 self.asked.insert((caller, param.index, fact));
@@ -751,6 +916,21 @@ impl<'tcx> Asking<'tcx> {
             }
             if let Some(assoc) = args.types().last().and_then(|of| carried_by(foreign, of)) {
                 self.carried.insert((assoc, fact));
+            }
+            // Of a std associated type of a type parameter, `<I as
+            // Iterator>::Item`, one of its slots: its caller's, as a map's
+            // keys' class is (ADR 0466); of a trait's default's `Self`'s,
+            // what its dictionaries carry (#990).
+            if let Some(of) = args.types().last()
+                && matches!(of.kind(), ty::Alias(..))
+                && carried_by(foreign, of).is_none()
+                && measured(of)
+                && let Some(index) = slot_of(tcx, foreign, caller, of)
+            {
+                match default_super_item(tcx, caller, of) {
+                    Some((trait_id, assoc)) => self.ask_of_impls(tcx, foreign, (trait_id, caller), assoc, fact),
+                    None => _ = self.asked.insert((caller, index, fact)),
+                }
             }
             // A flatten's items' constant size, of `I::Item`, a std
             // associated type of its caller's parameter (ADR 0899).

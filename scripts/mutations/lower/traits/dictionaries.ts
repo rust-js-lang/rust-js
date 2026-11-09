@@ -654,4 +654,12 @@ export const mutations: Mutation[] = [
     replace: "                if self.eq_is_strict(ty) && false {\n",
     tests: ["test/lowering-dictionaries.test.ts", "-t", "hold ne, max, min and clamp"],
   },
+  {
+    name: "super-item-dictionary-uncarried",
+    breaks: "a consumer's dictionary of a library's trait carries none of `IteratorItemSize`, so the library's default reads `undefined` (#990)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            false => self.carried_super(tr.def_id),\n",
+    replace: "            false => Vec::new(),\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts"],
+  },
 ];

@@ -127,8 +127,8 @@ export const mutations: Mutation[] = [
     name: "associated-facts-unread",
     breaks: "a dependency's manifest's facts of its traits' associated types are dropped as it's read, so a consumer compiling its `size_of::<A::Item>()` is refused (#476)",
     file: "src/library.rs",
-    find: "                associated: (library.associated.into_iter())\n                    .map(|associated| (associated.key, associated.facts))\n",
-    replace: "                associated: (library.associated.into_iter())\n                    .filter(|_| false)\n                    .map(|associated| (associated.key, associated.facts))\n",
+    find: "                associated: (library.associated.iter())\n                    .filter(|associated| associated.carrier.is_none())\n",
+    replace: "                associated: (library.associated.iter())\n                    .filter(|_| false)\n",
     tests: ["test/crates.test.ts", "-t", "item_size_of_instance"],
   },
   {
@@ -146,5 +146,13 @@ export const mutations: Mutation[] = [
     find: "                    .iter()\n                    .filter(|name| *name != \"default\")\n                    .cloned()\n",
     replace: "                    .iter()\n                    .cloned()\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of a library's module of every name its file exports is export \\* from"],
+  },
+  {
+    name: "super-item-unread-from-manifest",
+    breaks: "a consumer reads none of a library's manifest's `carrier` entries, so its impls carry none and its compile of the default is refused (#990)",
+    file: "src/library.rs",
+    find: "                carried_super: carried_super(&library.associated),\n                changed: library.changed,\n                with_this_arguments",
+    replace: "                carried_super: IndexMap::default(),\n                changed: library.changed,\n                with_this_arguments",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts"],
   },
 ];

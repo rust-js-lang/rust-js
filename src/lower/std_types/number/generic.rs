@@ -433,9 +433,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (_, false) => "size_of",
             (_, true) => "size_of_val",
         };
-        // A std trait's associated type no caller gives the facts of,
-        // `<T as Iterator>::Item` of a `T` bounded by the crate's trait that
-        // extends `Iterator`, whose dictionary doesn't carry it (#934).
+        // A std trait's associated type no caller gives the facts of and no
+        // dictionary carries: of a function's own slot, its caller gives
+        // them, and of a trait's default's `Self`, its dictionary (#990).
         if let ty::Alias(
             _,
             ty::AliasTy {

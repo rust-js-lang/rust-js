@@ -206,4 +206,12 @@ export const mutations: Mutation[] = [
     replace: "    tcx.mk_args_from_iter(args.iter().chain(own.iter().skip(own.len())))\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_default_closure_of_its_own_generics.rs$"],
   },
+  {
+    name: "super-item-unread",
+    breaks: "a library's default compiled over `Self` doesn't read `<Self as Iterator>::Item`'s facts of its dictionary, so it's refused (#990)",
+    file: "src/lower/traits/given.rs",
+    find: "            || !self.carried_super(carrier).contains(&(def_id, fact))\n",
+    replace: "            || true\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts"],
+  },
 ];

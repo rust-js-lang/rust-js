@@ -128,6 +128,15 @@ pub(in crate::lower) fn item_fact_key(tcx: TyCtxt<'_>, item: DefId, fact: TypeFa
     format!("{}{}", tcx.item_name(item), fact.word())
 }
 
+/// The key of a fact a trait's dictionary carries of an associated type of
+/// a std supertrait of its `Self`, `IteratorItemSize` of `<Self as
+/// Iterator>::Item` (#990): its trait's name first, as the trait's own
+/// associated type may share its name, `Item`.
+pub(in crate::lower) fn super_item_fact_key(tcx: TyCtxt<'_>, item: DefId, fact: TypeFact) -> String {
+    let of = tcx.trait_of_assoc(item).expect("an associated type");
+    format!("{}{}", tcx.item_name(of), item_fact_key(tcx, item, fact))
+}
+
 /// A type as a word of an evidence name: a type parameter's, `T`, or an
 /// associated type's of one, `SItem` of `<S as Source>::Item`.
 pub(super) fn evidence_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {

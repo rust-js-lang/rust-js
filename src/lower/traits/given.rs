@@ -297,6 +297,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (self.given.type_facts.iter())
             .find(|&&(at, given, _)| given == fact && normal(at) == of)
             .map(|(_, _, value)| value.clone())
+            .or_else(|| self.carried_super_fact(of, fact))
+    }
+
+    /// What the dictionary of `Self` of the trait whose default is being
+    /// lowered over `Self`, a library's for its consumers' impls, carries of
+    /// `of`, an associated type of a std supertrait of its `Self`, where it
+    /// carries `fact` of it (#990): `None` of another, and in a copy of a
+    /// default in an impl, which is given it as its slot.
+    fn carried_super_fact(&self, of: Ty<'tcx>, fact: TypeFact) -> Option<Expr> {
+        let ty::Alias(
+            _,
+            alias @ ty::AliasTy {
+                kind: ty::Projection { def_id },
+                ..
+            },
+        ) = *of.kind()
+        else {
+            return None;
+        };
+        if self.in_copied_default() {
+            return None;
+        }
+        let carrier = self.tcx.trait_of_assoc(self.tcx.typeck_root_def_id(self.item))?;
+        let self_ty = alias.self_ty();
+        if !matches!(self_ty.kind(), ty::Param(param) if param.index == 0)
+            || !self.carried_super(carrier).contains(&(def_id, fact))
+        {
+            return None;
+        }
+        let dictionary = self.evidence_for(ty::TraitRef::new(self.tcx, carrier, [self_ty]))?;
+        Some(Expr::member(
+            dictionary,
+            crate::lower::traits::super_item_fact_key(self.tcx, def_id, fact),
+        ))
+    }
+
+    /// What the dictionaries of `trait_id` carry of a std supertrait's
+    /// associated types of their `Self` (#990): of the crate's own trait,
+    /// what its defaults ask; of a library's, what its manifest says.
+    pub(in crate::lower) fn carried_super(&self, trait_id: DefId) -> Vec<(DefId, TypeFact)> {
+        match trait_id.is_local() {
+            true => self.krate.carried_super.get(&trait_id).cloned().unwrap_or_default(),
+            false => self.krate.foreign.carried_super(trait_id),
+        }
     }
 
     /// The caller's location this body was given, of a function that takes

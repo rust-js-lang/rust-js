@@ -1012,6 +1012,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 props.push(Prop::Field(item_fact_key(self.tcx, item, fact), value));
             }
         }
+        // And, of a library's trait, what it carries of a std supertrait's
+        // associated type of its `Self`, `IteratorItemSize` of `<Self as
+        // Iterator>::Item`, its type's for `tr`, which the library's defaults
+        // compiled over `Self` read (#990). The crate's own trait's defaults
+        // are copied into each of its impls, given it as a slot.
+        let carried = match tr.def_id.is_local() {
+            true => Vec::new(),
+            false => self.carried_super(tr.def_id),
+        };
+        for (assoc, fact) in carried {
+            let item_ty =
+                crate::lower::analysis::type_facts::super_item_of(self.tcx, self.typing_env, assoc, tr.self_ty());
+            let value = self.type_fact_value(item_ty, fact, span)?;
+            props.push(Prop::Field(
+                crate::lower::traits::super_item_fact_key(self.tcx, assoc, fact),
+                value,
+            ));
+        }
         Ok(props)
     }
 

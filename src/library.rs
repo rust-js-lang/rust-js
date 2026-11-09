@@ -59,8 +59,12 @@ use std::path::Path;
 /// another may hold, which a consumer that reads a `dyn Fn`'s address
 /// makes apart (#1053). 23: a `dyn Fn`'s head names what it gives beside
 /// what it takes, so an `Rc` a library counts of one isn't another's of
-/// the same arguments (#1056).
-pub const VERSION: u32 = 23;
+/// the same arguments (#1056). 24: what the dictionaries of a consumer's
+/// impls of its trait carry of a std supertrait's associated type of their
+/// `Self`, an `associated` entry's `carrier`, `IteratorItemSize` of
+/// `<Self as Iterator>::Item`, which its defaults compiled over `Self` read
+/// (#990).
+pub const VERSION: u32 = 24;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -483,6 +487,22 @@ pub struct DeclaredType {
 pub struct Associated {
     pub key: String,
     pub facts: Vec<String>,
+    /// Of a std supertrait's associated type, the trait whose dictionaries
+    /// carry it, by key: each of its consumers' impls' (#990).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carrier: Option<String>,
+}
+
+/// Of a manifest's `associated`, those of a std supertrait's associated
+/// types, by their carrier and then their own key (#990).
+fn carried_super(associated: &[Associated]) -> IndexMap<String, IndexMap<String, Vec<String>>> {
+    let mut by_carrier: IndexMap<String, IndexMap<String, Vec<String>>> = IndexMap::default();
+    for associated in associated {
+        if let Some(carrier) = &associated.carrier {
+            (by_carrier.entry(carrier.clone()).or_default()).insert(associated.key.clone(), associated.facts.clone());
+        }
+    }
+    by_carrier
 }
 
 /// One of a library's structs' fields, by rustc's key for it, and what
@@ -643,6 +663,10 @@ pub struct Exports {
     /// The facts its traits' dictionaries carry of each associated type, by
     /// key (ADR 0145, amended).
     pub associated: IndexMap<String, Vec<String>>,
+    /// The facts the dictionaries of its consumers' impls of each of its
+    /// traits carry of a std supertrait's associated types, by the trait's
+    /// key and then the associated type's (#990).
+    pub carried_super: IndexMap<String, IndexMap<String, Vec<String>>>,
     pub items: IndexMap<String, Imported>,
     pub impls: IndexSet<String>,
     /// Each binding a module holds, by the module's key and the binding's
@@ -732,9 +756,11 @@ impl Dependencies {
                     .into_iter()
                     .map(|field| (field.key, field.facts))
                     .collect(),
-                associated: (library.associated.into_iter())
-                    .map(|associated| (associated.key, associated.facts))
+                associated: (library.associated.iter())
+                    .filter(|associated| associated.carrier.is_none())
+                    .map(|associated| (associated.key.clone(), associated.facts.clone()))
                     .collect(),
+                carried_super: carried_super(&library.associated),
                 changed: library.changed,
                 with_this_arguments: library.with_this_arguments,
                 counted_rcs: library.counted_rcs,
@@ -911,9 +937,11 @@ impl Dependencies {
                 .into_iter()
                 .map(|field| (field.key, field.facts))
                 .collect(),
-            associated: (library.associated.into_iter())
-                .map(|associated| (associated.key, associated.facts))
+            associated: (library.associated.iter())
+                .filter(|associated| associated.carrier.is_none())
+                .map(|associated| (associated.key.clone(), associated.facts.clone()))
                 .collect(),
+            carried_super: carried_super(&library.associated),
             changed: library.changed,
             counted_rcs: library.counted_rcs,
             with_this_arguments: library.with_this_arguments,

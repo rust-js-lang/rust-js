@@ -277,3 +277,64 @@ nothing, and its lowering refused it.
   `impl-of-a-slot-type-unasked`, `copied-default-own-clauses-unknown`,
   `built-template-*` and
   `items-drop-asked-*`.
+
+## Amendment (2026-11-09): a trait's dictionary carries its std supertrait's item facts (#990)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change: a
+fact read of a dictionary that doesn't carry it is `undefined`, so what
+isn't carried is still refused.
+
+itertools' `Itertools: Iterator` asks `size_of::<Self::Item>()` in its own
+defaults' bodies, `collect_vec`'s collect among them. A library's default
+is compiled over `Self` for each consumer impl that doesn't write it
+([0185](0185-library-trait-defaults.md), amended), and no caller gives it a
+slot, so where no bound names `Self::Item` nothing could give the fact,
+and the library was refused, "`size_of` of `<Self as
+std::iter::Iterator>::Item`, an associated type whose facts its caller's
+dictionary doesn't carry". A plain generic function's `size_of::<I::Item>()`
+was refused too: only a map's keys asked the slot.
+
+**A carried fact is keyed by the carrying trait, the associated type and
+the fact. A trait whose default asks a fact of an associated type of a std
+supertrait of its `Self`, `<Self as Iterator>::Item`, has its dictionaries
+carry it, `IteratorItemSize`, which its default compiled over `Self` reads
+of the dictionary it's given.** Each of the crate's impls that copies the
+default asks its own type for it of its slots, as a collect's are asked
+(`collect_asks`), so a copy reads it as it reads any of its impl's facts.
+And a function's `size_of`, `align_of` or name of a std associated type of
+a type parameter asks the slot, its caller's to give, as a map's keys'
+class does (ADR 0466).
+
+```js
+// a consumer's impls of a library's `Tools: Iterator`, and the library's
+// `item_layout` it compiles over `Self`
+export const countdownTools = {
+  itemLayout: (arg0) => tools_itemLayout(arg0, countdownTools),
+  IteratorItemSize: 4,
+  IteratorItemAlign: 2,
+};
+function tools_itemLayout(self, SelfTools) {
+  return [SelfTools.IteratorItemSize, SelfTools.IteratorItemAlign];
+}
+```
+
+A library's manifest says what they carry, an `associated` entry with a
+`carrier`, the trait's key; a consumer's dictionaries of its own impls of
+that trait carry those, of the impl's type: a type it knows, or its own
+slot, `IItemSize` of an `impl<I: Iterator> Tools for Wrap<I>`. The crate's
+own trait's defaults are copied into its impls, so a dictionary of the
+crate's own trait carries none. This is **library ABI 24**.
+
+What's left of the six: the three map keys of `<Self as Iterator>::Item`.
+A default's map is its method's slot, which a copy is given by its caller
+(ADR 0466); a library's trait's method isn't in its manifest, so a
+consumer calling the library's copy through its dictionary would give it
+nothing. Refused where the library is compiled, as before.
+
+- Held by `test/crates/pairs/library_default_item_layouts`, against native
+  Rust: a consumer's impls of a known item and of a type parameter's, read
+  through a generic caller, and the library's own impl. And by
+  `test/corpus/size_of_an_iterators_item.rs`, in both builds: a generic
+  function's `size_of` of `I::Item`, and a trait's default copied into a
+  blanket impl and a known one. Mutations `super-item-*`
+  (`lower/analysis/type_facts.ts`, `lower/traits.ts`, `lower/library.ts`).

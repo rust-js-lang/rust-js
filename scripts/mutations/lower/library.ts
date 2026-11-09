@@ -712,4 +712,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/crates.test.ts", "-t", "lending a library's quiet field"],
   },
+  {
+    name: "super-item-unexported",
+    breaks: "a library's manifest doesn't say what its traits' dictionaries carry of `Iterator::Item`, so a consumer's impls carry none and its compile of the default is refused (#990)",
+    file: "src/lower/library.rs",
+    find: "            for (&carrier, facts) in contracts.carried_super.iter().filter(|&(&id, _)| id.is_local()) {\n",
+    replace: "            for (&carrier, facts) in contracts.carried_super.iter().filter(|_| false) {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts"],
+  },
 ];
