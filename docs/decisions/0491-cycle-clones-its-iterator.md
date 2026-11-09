@@ -69,3 +69,28 @@ drops `iter` as `orig`'s drop unwinds. The close now runs both by
 `$inTurn`, the one answer to what a drop of many parts runs as one of them
 throws (ADR 1092 S7). `cycle_drops_both_as_one_panics` holds it against
 native Rust, and `cycle-close-stops-at-a-panic` puts the two calls back.
+
+## Amendment: its `size_hint()` is std's of each form (#1179)
+
+`Cycle::size_hint` is `(0, Some(0))` of a source whose hint is that,
+`(0, None)` of another whose lower bound is none, else `(usize::MAX,
+None)`. `$cycleOf` asked its source's hint without the step it's given,
+so of a range's, whose hint only its `next` knows (ADR 0918), it gave
+`(0, None)` whatever the range; `$cycle`, of an array's items, a
+generator, carried none, `(0, None)` too; and `size_hint()` of a `cycle()`
+of a `Vec`'s or a slice's items was refused (the Crater, itertools'
+`test_zip_longest_size_hint`).
+
+**Each form gives std's hint**: `$cycleOf` asks its source by its step,
+`$sizeHint(orig, { next })`, and `$cycle` carries its own, none of no
+items, else without end; `$cycle` is one of the runtime's iterator
+helpers so, not its generators. And a `cycle()`, always a `$Steps` that
+asks its source's hint, is asked its `size_hint()` where its source's hint
+is known, an array's items' among them, as `decode_utf16`'s is
+(`asks_its_sources_hint`).
+
+Held by `test/corpus/cycle_size_hint.rs` against native Rust on wasm32,
+whose `usize::MAX` is rust-js's, in both builds. Mutations
+`cycle-hint-of-its-source-unasked`, `cycle-of-items-hintless`
+(`runtime/cycle.ts`) and `cycle-hint-unasked`
+(`lower/recognition/types.ts`).

@@ -620,6 +620,15 @@ pub(crate) fn is_decode_utf16(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::char::DecodeUtf16")
 }
 
+/// Whether `ty` is one of std's iterators whose JS is always a `$Steps`
+/// that asks its source's hint, whatever that is, an array's `$iter`
+/// among them: `decode_utf16`'s (#1151) and `cycle()`'s, `$cycleOf`'s
+/// (#1179).
+pub(crate) fn asks_its_sources_hint(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    is_decode_utf16(tcx, ty)
+        || matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::iter::Cycle")
+}
+
 /// `char::decode_utf16`'s error, its unpaired surrogate's code (ADR 0327).
 pub(crate) fn is_decode_utf16_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(tcx, adt.did(), StdCrate::Core)

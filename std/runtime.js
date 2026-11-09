@@ -16414,12 +16414,17 @@ export function* $repeatingWith(f) {
 
 // `it.cycle()` of std's iterator over an array: what it has left, `items`,
 // gone over again and again, a clone of each item it owns that needs one
-// (ADR 0181); none at all of one with none left, as Rust's.
-export function* $cycle(items, clone = (item) => item) {
-  if (items.length === 0) return;
-  while (true) {
-    for (const item of items) yield clone(item);
-  }
+// (ADR 0181); none at all of one with none left, as Rust's. Its hint
+// Rust's, none of no items, else without end (#1179).
+export function $cycle(items, clone = (item) => item) {
+  const cycled = (function* () {
+    if (items.length === 0) return;
+    while (true) {
+      for (const item of items) yield clone(item);
+    }
+  })();
+  cycled.sizeHint = () => (items.length === 0 ? [0, 0] : [4294967295, undefined]);
+  return cycled;
 }
 
 // `it.cycle()` of any other iterator, stepped by `next`, `clone` making a
@@ -16464,9 +16469,10 @@ export function $cycleFrom(orig, iter, clone, next, boxed, drop) {
   );
   cycled.orig = orig;
   cycled.iter = iter;
-  // Rust's: none of an empty one, else without end.
+  // Rust's: none of an empty one, else without end; of its source as its
+  // step asks it, a range's by its `next` (#1179).
   cycled.sizeHint = () => {
-    const [low, high] = $sizeHint(cycled.orig);
+    const [low, high] = $sizeHint(cycled.orig, { next });
     if (low === 0 && high === 0) return [0, 0];
     return low === 0 ? [0, undefined] : [4294967295, undefined];
   };

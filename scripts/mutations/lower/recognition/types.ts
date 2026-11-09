@@ -444,4 +444,12 @@ export const mutations: Mutation[] = [
     replace: "    StdItem::BTreeMap,\n];\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_as_vec_asks_hint.rs$"],
   },
+  {
+    name: "cycle-hint-unasked",
+    breaks: "a `cycle()` of an array's items isn't seen to ask its source's hint, so its `size_hint()` is refused (#1179)",
+    file: "src/lower/recognition/types.rs",
+    find: "        || matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == \"std::iter::Cycle\")\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cycle_size_hint.rs$"],
+  },
 ];

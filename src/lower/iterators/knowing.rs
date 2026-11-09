@@ -131,9 +131,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Not of a type parameter's, which its caller may give as JS's own
         // iterator, an array's, whose JS adapters know no hint.
-        // `char::decode_utf16`'s, always a `$Steps` that asks its source's
-        // hint, an array's `$iter`'s among them (#1151).
-        let decodes = crate::lower::recognition::is_decode_utf16(self.tcx, ty);
+        // `char::decode_utf16`'s and `cycle()`'s, always a `$Steps` that
+        // asks its source's hint, an array's `$iter`'s among them (#1151,
+        // #1179).
+        let decodes = crate::lower::recognition::asks_its_sources_hint(self.tcx, ty);
         crate::lower::recognition::adapted_iterators(self.tcx, self.typing_env, ty).is_some_and(|held| {
             (held.into_iter()).all(|held| {
                 !self.is_unknown(held.peel_refs())

@@ -58,4 +58,20 @@ export const mutations: Mutation[] = [
     replace: "        (drop?.(cycled.orig), drop?.(cycled.iter)),\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_drops_both_as_one_panics.rs$"],
   },
+  {
+    name: "cycle-hint-of-its-source-unasked",
+    breaks: "a `cycle()` asks its source's hint without its step, so of a range's, which only its `next` knows, it's `(0, None)` where std's is `(usize::MAX, None)` or `(0, Some(0))` (#1179)",
+    file: "src/runtime/cycle.js",
+    find: "    const [low, high] = $sizeHint(cycled.orig, { next });\n",
+    replace: "    const [low, high] = $sizeHint(cycled.orig);\n",
+    tests: ["test/corpus.test.ts", "-t", "^cycle_size_hint.rs$"],
+  },
+  {
+    name: "cycle-of-items-hintless",
+    breaks: "a `cycle()` of an array's items carries no hint, so its `size_hint()` is `(0, None)` (#1179)",
+    file: "src/runtime/cycle.js",
+    find: "  cycled.sizeHint = () => (items.length === 0 ? [0, 0] : [4294967295, undefined]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cycle_size_hint.rs$"],
+  },
 ];
