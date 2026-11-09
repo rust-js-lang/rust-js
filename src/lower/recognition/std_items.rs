@@ -497,29 +497,18 @@ const MEANING_ONLY: &[&str] = &[
     "Cloned",
 ];
 
-thread_local! {
-    /// Whether this session's build is one of std's structs as their
-    /// meaning: std's own bodies', or the differential build's.
-    static MEANING: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
-}
-
-/// That this session's build compiles std's structs as their meaning, all
-/// of `MEANING_ONLY`'s too: std's own bodies, `--std-bodies`, or the
-/// differential build, `--std-iterators`. Set once, before anything asks.
-pub(crate) fn build_std_structs_as_meaning(meaning: bool) {
-    MEANING.with(|cell| cell.set(meaning));
-}
-
 /// Whether std's struct named `type_name` is compiled for this build:
-/// each but `MEANING_ONLY`'s, which only a build of the meaning compiles.
-fn compiled_for_build(type_name: &str) -> bool {
-    !MEANING_ONLY.contains(&type_name) || MEANING.with(std::cell::Cell::get)
+/// each but `MEANING_ONLY`'s, which only a build of the meaning compiles,
+/// std's own bodies, `--std-bodies`, or the differential build,
+/// `--std-iterators` (the session's `meaning`).
+fn compiled_for_build(tcx: TyCtxt<'_>, type_name: &str) -> bool {
+    !MEANING_ONLY.contains(&type_name) || crate::lower::session::caches(tcx).meaning.get()
 }
 
 /// Whether std's `Zip` is compiled for this build, which reads its sides by
 /// index, their dictionaries' `getUnchecked` (ADR 0975).
-pub(crate) fn zips_by_index_compiled() -> bool {
-    compiled_for_build("Zip")
+pub(crate) fn zips_by_index_compiled(tcx: TyCtxt<'_>) -> bool {
+    compiled_for_build(tcx, "Zip")
 }
 
 /// Whether `id`, a std body `@rust-js/std` compiles, isn't this build's: an
@@ -527,7 +516,7 @@ pub(crate) fn zips_by_index_compiled() -> bool {
 /// a build of its meaning, which its manifest's entry doesn't make the
 /// crate's to call (ADR 0932).
 pub(crate) fn not_compiled_for_build(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    if MEANING.with(std::cell::Cell::get) || id.is_local() {
+    if crate::lower::session::caches(tcx).meaning.get() || id.is_local() {
         return false;
     }
     // Its impl, or it itself, an impl.
@@ -664,9 +653,11 @@ pub(crate) fn steps_code<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx
 /// build: a compiled iterator's, or a private struct one holds,
 /// `FlattenCompat` of a `Flatten`, a struct as the crate's are.
 pub(crate) fn has_compiled_bodies(tcx: TyCtxt<'_>, adt: DefId) -> bool {
+    // The types of `compiled_std`'s impls, found once a session: each
+    // type's drop asks it (#884).
     !adt.is_local()
-        && COMPILED_TYPES.with(|types| {
-            let types = types.get_or_init(|| {
+        && (crate::lower::session::caches(tcx).compiled_types)
+            .get_or_init(|| {
                 (compiled_std(tcx).iter())
                     .filter_map(|&id| tcx.impl_of_assoc(id))
                     .filter_map(|imp| match tcx.type_of(imp).skip_binder().kind() {
@@ -674,23 +665,15 @@ pub(crate) fn has_compiled_bodies(tcx: TyCtxt<'_>, adt: DefId) -> bool {
                         _ => None,
                     })
                     .collect()
-            });
-            types.contains(&adt)
-        })
-}
-
-thread_local! {
-    /// The types of `compiled_std`'s impls, `has_compiled_bodies`' answer,
-    /// found once for the session's rustc, as `COMPILED`'s is: each type's
-    /// drop asks it (#884).
-    static COMPILED_TYPES: std::cell::OnceCell<crate::collections::IndexSet<DefId>> = const { std::cell::OnceCell::new() };
+            })
+            .contains(&adt)
 }
 
 /// Whether `id` is the `Iterator` method that makes one of `HELD_COMPILED`'s
 /// adapters, `rev`: the one answer, of what's made in place.
 pub(crate) fn makes_held_compiled(tcx: TyCtxt<'_>, id: DefId) -> bool {
     (HELD_COMPILED.iter())
-        .filter(|&&(type_name, ..)| compiled_for_build(type_name))
+        .filter(|&&(type_name, ..)| compiled_for_build(tcx, type_name))
         .any(|&(_, method, _)| compiled_provided_method(tcx, "Iterator", method) == Some(id))
 }
 
@@ -698,7 +681,7 @@ pub(crate) fn makes_held_compiled(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// sized as Rust's is, `rev()`'s, not `flatten()`'s (ADR 0899).
 pub(crate) fn sized_in_place(tcx: TyCtxt<'_>, id: DefId) -> bool {
     (HELD_COMPILED.iter())
-        .filter(|&&(type_name, ..)| compiled_for_build(type_name))
+        .filter(|&&(type_name, ..)| compiled_for_build(tcx, type_name))
         .any(|&(_, method, sized)| sized && compiled_provided_method(tcx, "Iterator", method) == Some(id))
 }
 
@@ -745,11 +728,6 @@ pub(crate) fn is_held_compiled_def(tcx: TyCtxt<'_>, id: DefId) -> bool {
             .is_some_and(|path| HELD_COMPILED.iter().any(|&(name, ..)| name == path))
 }
 
-thread_local! {
-    /// `compiled_std`'s answer, found once for the session's rustc.
-    static COMPILED: std::cell::OnceCell<std::rc::Rc<Vec<DefId>>> = const { std::cell::OnceCell::new() };
-}
-
 /// The provided method `method` of std's trait `trait_name` compiled into
 /// `@rust-js/std`, `Iterator::fuse`'s: the one place that finds it.
 pub(crate) fn compiled_provided_method(
@@ -757,7 +735,10 @@ pub(crate) fn compiled_provided_method(
     trait_name: &'static str,
     method: &'static str,
 ) -> Option<DefId> {
-    if let Some(id) = PROVIDED.with(|provided| provided.get(&(trait_name, method))) {
+    // Found once a session: whether a call is one of `HELD_COMPILED`'s
+    // makers asks it of each (#884).
+    let caches = crate::lower::session::caches(tcx);
+    if let Some(id) = caches.provided.get(&(trait_name, method)) {
         return id;
     }
     let trait_def = std_iter_trait(tcx, trait_name);
@@ -766,22 +747,16 @@ pub(crate) fn compiled_provided_method(
             .find(|item| matches!(item.kind, ty::AssocKind::Fn { .. }) && item.name().as_str() == method)
             .map(|item| item.def_id)
     });
-    PROVIDED.with(|provided| provided.keep((trait_name, method), id))
-}
-
-thread_local! {
-    /// `compiled_provided_method`'s answers, by trait and method, each
-    /// found once for the session's rustc, as `COMPILED`'s is: whether a
-    /// call is one of `HELD_COMPILED`'s makers asks it of each (#884).
-    static PROVIDED: crate::collections::OnceMap<(&'static str, &'static str), Option<DefId>> =
-        crate::collections::OnceMap::default();
+    caches.provided.keep((trait_name, method), id)
 }
 
 /// std's bodies compiled into `@rust-js/std`: the items `COMPILED_STD` and
 /// `COMPILED_STD_PROVIDED` name, each found in std, and the closures each
 /// makes, found as they're collected.
 pub(crate) fn compiled_std(tcx: TyCtxt<'_>) -> std::rc::Rc<Vec<DefId>> {
-    COMPILED.with(|cache| cache.get_or_init(|| std::rc::Rc::new(find_compiled_std(tcx))).clone())
+    (crate::lower::session::caches(tcx).compiled)
+        .get_or_init(|| std::rc::Rc::new(find_compiled_std(tcx)))
+        .clone()
 }
 
 /// The module of a crate given std's bodies that a std body is written
@@ -822,7 +797,7 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
     let mut found = Vec::new();
     for &(type_name, trait_name, method) in COMPILED_STD
         .iter()
-        .filter(|&&(type_name, ..)| compiled_for_build(type_name))
+        .filter(|&&(type_name, ..)| compiled_for_build(tcx, type_name))
     {
         let Some(adt) = registry::by_path(tcx, StdCrate::Core, &["iter", type_name]) else {
             continue;
@@ -856,7 +831,7 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
     let made_for_build = |method: &str| {
         (HELD_COMPILED.iter())
             .find(|&&(_, maker, _)| maker == method)
-            .is_none_or(|&(type_name, ..)| compiled_for_build(type_name))
+            .is_none_or(|&(type_name, ..)| compiled_for_build(tcx, type_name))
     };
     for &(trait_name, method) in COMPILED_STD_PROVIDED
         .iter()
@@ -1146,7 +1121,7 @@ pub(crate) fn linked_twice(tcx: TyCtxt<'_>, id: DefId) -> bool {
 pub(crate) fn is_compiled_std_type(tcx: TyCtxt<'_>, id: DefId) -> bool {
     !id.is_local()
         && std_path(tcx, id).strip_prefix("std::iter::").is_some_and(|name| {
-            (COMPILED_STD.iter()).any(|&(type_name, _, _)| type_name == name && compiled_for_build(type_name))
+            (COMPILED_STD.iter()).any(|&(type_name, _, _)| type_name == name && compiled_for_build(tcx, type_name))
         })
 }
 

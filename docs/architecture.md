@@ -202,6 +202,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | std recognition and coverage | `recognition.rs`, `recognition/`, `shortcuts.rs`, `std_coverage.rs` |
 | Function contexts, assembly and source capture, and which module may load before another | `bodies.rs`, `pipeline.rs`, `pipeline/`, `reexports.rs`, `sources.rs`, `library.rs`, `library/built_types.rs` (a type built of a function's slots as a library's manifest says it, #737), `library/cells.rs` (what a library's contract says of its fields and its `RefCell`s, the quiet ones a consumer may lend, ADRs 0863, 0906, #1032), `library/compiled_here.rs` (what the crate compiles of its libraries itself, and why, ADR 0914), `load_order.rs` |
 | Which of a library's functions and impls the crate compiles itself, from the MIR its metadata keeps, and where (ADR 0914, amended) | `instances.rs` |
+| The lowering session's own state: what it finds once of rustc's ids, and its run's flags, kept for exactly the session, `caches(tcx)` checked against it (ADR 1111) | `session.rs` |
 | MIR lowering, control flow, calls, places, temporaries and drops | `mir.rs`, `mir/`, `mir/iter/` |
 | Body readability passes | `mir/tidy.rs`, `mir/tidy/`, `mir/tidy/decisions/`, `mir/tidy/jumps/`, `mir/tidy/logicals/`, `mir/tidy/switches/` |
 | Value shape, copy policy, support and diagnostics | `representation.rs`, `representation/`, `copies.rs`, `support.rs`, `refusal.rs` |

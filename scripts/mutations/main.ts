@@ -23,8 +23,8 @@ export const mutations: Mutation[] = [
     name: "std-bodies-not-the-meaning",
     breaks: "std's own bodies' build isn't one of std's structs as their meaning: `@rust-js/std` compiles no `Filter` (ADR 0932)",
     file: "src/main.rs",
-    find: "        lower::build_std_structs_as_meaning(self.std_bodies || self.std_iterators);\n",
-    replace: "        lower::build_std_structs_as_meaning(self.std_iterators);\n",
+    find: "                meaning: self.std_bodies || self.std_iterators,\n",
+    replace: "                meaning: self.std_iterators,\n",
     tests: ["test/std-package.test.ts"],
   },
   {

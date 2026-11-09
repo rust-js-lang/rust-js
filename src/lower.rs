@@ -75,6 +75,7 @@ mod reexports;
 mod refusal;
 mod representation;
 mod serde;
+pub(crate) mod session;
 mod shipped;
 mod shortcuts;
 mod signatures;
@@ -88,10 +89,7 @@ mod unions;
 mod untagged;
 
 use crate::names::{fresh_in, js_ident};
-pub use analysis::fn_pointers::take_every_outside_struct_for_js_made;
-pub use analysis::{
-    build_std_structs_as_meaning, collect_bodies, collect_initializers, collect_mir, collect_ranges, collect_std_bodies,
-};
+pub use analysis::{collect_bodies, collect_initializers, collect_mir, collect_ranges, collect_std_bodies};
 /// Whether each `#[rust_js::name]` gives a name its item hasn't anyway, of
 /// a crate `--rustc` compiles for its metadata too (ADR 0573).
 pub use bindings::given_names_differ;

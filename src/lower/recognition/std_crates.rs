@@ -3,7 +3,6 @@
 //! std item, whichever of them it's of.
 
 use super::*;
-use crate::collections::OnceMap;
 
 /// One of the standard library's own crates.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -59,7 +58,8 @@ pub(crate) fn of_std_crate(tcx: TyCtxt<'_>, id: DefId, krate: StdCrate) -> bool 
 /// modules each time, and a crate's lowering asks it of the same items in
 /// each body, of each type's drop, most of React's reconciler's (#884).
 pub(super) fn std_path(tcx: TyCtxt<'_>, id: DefId) -> &'static str {
-    if let Some(path) = STD_PATHS.with(|paths| paths.get(&id)) {
+    let caches = crate::lower::session::caches(tcx);
+    if let Some(path) = caches.std_paths.get(&id) {
         return path;
     }
     if !is_std_crate(tcx, id) {
@@ -79,11 +79,5 @@ pub(super) fn std_path(tcx: TyCtxt<'_>, id: DefId) -> &'static str {
     // of a few thousand of std's items once, and every ask after it a
     // lookup, not a copy of the text, of 25 a call a crate classifies,
     // 270 ms of React's reconciler's 4.8 s (#882).
-    STD_PATHS.with(|paths| paths.keep(id, Box::leak(path.into_boxed_str())))
-}
-
-thread_local! {
-    /// `std_path`'s answers, each found once for the session's rustc, as
-    /// `compiled_std`'s is.
-    static STD_PATHS: OnceMap<DefId, &'static str> = OnceMap::default();
+    caches.std_paths.keep(id, Box::leak(path.into_boxed_str()))
 }

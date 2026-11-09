@@ -1441,3 +1441,26 @@ test("a temporary's name a value carries is set and read in one place each", () 
   expect(with_(/\.held_as\.0/)).toEqual(["src/lower/mir/temporaries.rs"]);
   expect(read("src/lower/mir/temporaries.rs").match(/\.held_as\.0/g)?.length).toBe(1);
 });
+
+// A cache of rustc's ids is a session's (ADR 1111): a `DefId`, a
+// `CrateNum`, a `Symbol` or a `Ty` names an item of one rustc session, so a
+// `thread_local!` or a `static` holding them would answer a second session
+// in the process with the first's items. Each lives in the lowering
+// session's `Caches` (`src/lower/session.rs`), the one scoped slot, filled
+// as a session starts and dropped as it ends.
+test("no thread-local or static holds rustc's ids but the lowering session's caches", () => {
+  const ids = /\b(DefId|LocalDefId|DefIndex|CrateNum|HirId|Symbol|Ty<)/;
+  const found: string[] = [];
+  for (const path of sources.filter((path) => path !== "src/lower/session.rs")) {
+    const text = read(path);
+    // Each `static` of a `thread_local!`, and each item `static`, with its type.
+    for (const [declared] of text.matchAll(/^\s*(?:pub(?:\([^)]*\))?\s+)?static\s+[A-Z_][A-Z0-9_]*\s*:[^=;]*/gm)) {
+      if (ids.test(declared)) found.push(`${path}: ${declared.trim()}: a rustc session's ids, which belong in lower::session's Caches`);
+    }
+  }
+  expect(found).toEqual([]);
+  // And the session's slot is emptied by its guard alone.
+  const session = read("src/lower/session.rs");
+  expect(session.match(/\.take\(\)/g)?.length).toBe(1);
+  expect(session).toContain("impl Drop for Session");
+});

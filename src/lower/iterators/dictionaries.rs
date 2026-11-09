@@ -306,7 +306,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Of one std reads by index, its reader of an item at `i`, which
         // std's zip of it asks where it's compiled (ADR 0975).
-        if crate::lower::recognition::zips_by_index_compiled()
+        if crate::lower::recognition::zips_by_index_compiled(self.tcx)
             && crate::lower::recognition::fact_trait(
                 self.tcx,
                 crate::lower::recognition::TypeFact::RandomAccessNoCoerce,

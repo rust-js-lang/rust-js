@@ -173,7 +173,7 @@ impl<'tcx> FnPointers<'tcx> {
         // Of the object model net's build, `--js-made-all`, only what the
         // crate builds itself: a library's struct as one JS may make
         // (ADR 1105).
-        let libraries = !EVERY_OUTSIDE_STRUCT.with(std::cell::Cell::get);
+        let libraries = !crate::lower::session::caches(tcx).every_outside_struct.get();
         let own = |adt: DefId| {
             (adt.is_local() || (libraries && recognition.foreign.in_library(adt)))
                 && (built.contains(&adt) || (libraries && recognition.foreign.built(adt)))
@@ -462,19 +462,6 @@ impl<'tcx> FnPointers<'tcx> {
             _ => _ = self.js_dyns.insert(signature),
         }
     }
-}
-
-thread_local! {
-    /// Whether this session's build takes every struct the crate doesn't
-    /// build itself for one JS may make, `--js-made-all`'s (ADR 1105).
-    static EVERY_OUTSIDE_STRUCT: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
-}
-
-/// That this session's build takes every struct the crate doesn't build
-/// itself, a library's too, for one JS may make: the object model net's
-/// test hook, `--js-made-all` (ADR 1105). Set once, before anything asks.
-pub fn take_every_outside_struct_for_js_made(every: bool) {
-    EVERY_OUTSIDE_STRUCT.with(|cell| cell.set(every));
 }
 
 /// The structs a value code that isn't the crate's made may be or hold,

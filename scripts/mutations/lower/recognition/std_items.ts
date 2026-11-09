@@ -71,9 +71,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `MEANING_ONLY` adapter, `Filter`, is std's struct in the normal build too, so `v.into_iter().filter(p).collect()` isn't the JS chain the recognizers make (ADR 0932)",
     file: "src/lower/recognition/std_items.rs",
-    find: "    !MEANING_ONLY.contains(&type_name) || MEANING.with(std::cell::Cell::get)\n",
+    find: "    !MEANING_ONLY.contains(&type_name) || crate::lower::session::caches(tcx).meaning.get()\n",
     replace:
-      "    true || !MEANING_ONLY.contains(&type_name) || MEANING.with(std::cell::Cell::get)\n",
+      "    true || !MEANING_ONLY.contains(&type_name) || crate::lower::session::caches(tcx).meaning.get()\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^(collect_drops|filter_ends).rs$"],
   },
@@ -82,9 +82,9 @@ export const mutations: Mutation[] = [
     breaks:
       "the std manifest's `Filter` impls and methods are taken for the normal build's to call though it doesn't compile `Filter`: `filter(..).collect()` is refused, `this implementation` (ADR 0932)",
     file: "src/lower/recognition/std_items.rs",
-    find: "    if MEANING.with(std::cell::Cell::get) || id.is_local() {\n        return false;\n    }\n",
+    find: "    if crate::lower::session::caches(tcx).meaning.get() || id.is_local() {\n        return false;\n    }\n",
     replace:
-      "    if true || MEANING.with(std::cell::Cell::get) || id.is_local() {\n        return false;\n    }\n",
+      "    if true || crate::lower::session::caches(tcx).meaning.get() || id.is_local() {\n        return false;\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^(collect_drops|filter_ends).rs$"],
   },
   {
