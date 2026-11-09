@@ -264,19 +264,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        // By `for_each`, std's, so through the crate's own `fold`.
+        // By `for_each`, std's, so through the crate's own `fold`, which
+        // `$foldToArray` steps it by, below.
         let items = match ty {
-            Some(ty) => {
-                let items = self.iterable_items(items, ty, span, out)?;
-                self.by_its_fold(items, ty, false)
-            }
+            Some(ty) => self.iterable_items(items, ty, span, out)?,
             None => items,
         };
         let ty = ty.map(|ty| ty.peel_refs());
         let array = ty.is_some_and(|ty| ty.is_array() || ty.is_slice() || self.is_vec_like(ty));
-        let items = match array {
-            true => items,
-            false => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
+        // An iterator whose steps may panic or that holds what drops,
+        // stepped as `collect` steps one, `$foldToArray`'s: where stepping it
+        // throws, what's left of it closed as it unwinds, as std drops the
+        // iterator `extend` took, which `Array.from` doesn't, its source
+        // never dropped (#1126). Another, a range's, can't throw.
+        let iterator = ty.is_some_and(|ty| {
+            self.implements_iterator(ty)
+                && (self.steps_may_panic(ty) || self.drops(ty) != crate::lower::drops::Drops::Nothing)
+        });
+        let items = match (array, iterator) {
+            (true, _) => items,
+            (false, true) => Expr::call_helper("$foldToArray", vec![items]),
+            (false, false) => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
         };
         let items = match ty.map(|ty| self.iterable_item(ty)) {
             Some(item) => self.cow_texts(items, item),

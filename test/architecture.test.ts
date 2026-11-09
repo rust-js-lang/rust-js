@@ -540,6 +540,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/rvalues.rs": ["at", "body", "branches", "cuts", "locals", "pending", "statement", "writer"],
   "src/lower/mir/scopes.rs": ["body", "locals"],
   "src/lower/mir/std_calls.rs": ["at", "body", "locals"],
+  "src/lower/mir/std_calls/iterators.rs": ["at"],
   "src/lower/mir/stored.rs": ["body", "pending"],
   "src/lower/mir/structure.rs": ["at", "body", "commented", "copy_backs", "deferred", "in_place", "labels", "left", "locals", "pending", "statement", "unwind", "writer", "writes_captured"],
   "src/lower/mir/temporaries.rs": ["body", "copy_backs", "in_place", "iter_locals", "locals", "named", "own_names", "pending", "places", "refs", "settled", "unwind"],
@@ -806,7 +807,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/recognition/calls.rs", "    pub(in crate::lower) fn classify(", 8],
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 91], // What reads its argument through, `flatten()` and `unwrap()`, in `reads_through` (ADR 0747). Whether a variable holding a function is called as it, `called_as_held` (#581).
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 229], // Whether `?` is written as it is, `tried_as_written` (ADR 0913).
-  ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 132], // An `Option`'s `as_mut()`, `option_as_mut` (#323).
+  ["src/lower/mir/dispatch.rs", "    pub(in crate::lower::mir) fn mir_std_call(", 132], // An `Option`'s `as_mut()`, `option_as_mut` (#323).
   ["src/lower/mir.rs", "    fn mir_function(", 325], // An or-pattern's alternatives JS holds as one, `mir_alike_alternatives`, for its locals' counts and facts (ADR 1045). The names of its hooks' callbacks, `callback_names`; a scope struct's method's `self`, named in `mir_locals` (ADR 1043). Its plain types asked of `plain_type`, and what's settled until it's written (#121). The `break`s and `continue`s with comments before them its structure found, for tidy (rd109). Its dictionaries written twice, declared at its top, `declare_kept` (ADR 0979). Its floats, for tidy (ADR 0966). What a closure took by value, `kept_captures` (ADR 0879). What it knows of the body before it writes any of it in one, `local_facts` (the review's P3); the parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742); the guards that hold (ADR 0790); what its `let`s bind in one (ADR 0598, amended). A class's method's `self` made `this` before tidy (ADR 0761, amended). Its `bool` paths renamed `this`'s too (#355).
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 750],
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 239], // A `to_owned()`'s answer, `to_owned_of` (#316).
@@ -1212,7 +1213,7 @@ test("a whole body's facts are its BodyFacts, read once", () => {
 // chosen, and it's the one (#191, ADR 0791). A speculative handler given
 // `&mut` access, which a decline had to be checked against, can't return.
 test("a std call's kind is chosen of what it reads alone", () => {
-  const source = read("src/lower/mir/std_calls.rs");
+  const source = ["src/lower/mir/std_calls.rs", ...files("src/lower/mir/std_calls")].map(read).join("\n");
   const selecting = [...source.matchAll(/fn (mir_\w+_call)<'c>\(\s*&self,\s*_?state: &State<'_, 'tcx>,\s*call: StdCall<'c, 'tcx>,?\s*\) -> Option<StdLowering<'c, 'a, 'tcx>>/g)];
   expect(selecting.map((m) => m[1]).sort()).toEqual(["mir_fmt_call", "mir_iter_std_call", "mir_map_call", "mir_place_call", "mir_text_call", "mir_value_call", "mir_vec_call"]);
   const mutable = [...source.matchAll(/fn (\w+)(?:<[^>]*>)?\(\s*&mut self,[^)]*\bStdCall\b/g)].map((m) => m[1]);

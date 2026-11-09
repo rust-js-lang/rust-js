@@ -2176,3 +2176,75 @@ against native Rust in both builds, by the metamorphic net's `for-each`
 rewrite of `copied_iterator_defaults.rs`, off its known list, and by the
 mutations `consumed-given-function-panic-unguarded` and
 `consumed-unit-result-held`.
+
+## Amendment: what std's code consumes is dropped by one path (2026-11-10, #1120, #1122, #1123, #1126)
+
+Who drops an iterator std's code takes by value was answered in more than
+one place, and the answers disagreed:
+
+- **#1122:** a map's or a set's `extend(it)` never dropped `it`. It was on
+  the guard's list of std functions that keep what they take, and nothing
+  dropped it after.
+- **#1120:** a `Vec`'s, a `String`'s and a deque's `extend`, and `unzip()`
+  and `partition()`, were refused, "of a value with a destructor", for an
+  iterator with a `Drop` of its own.
+- **#1123:** `it.eq(other)` and `ne` closed `it` whatever `consumer_closes`
+  said, and `dropped_after`, which asks it, dropped it after too: twice.
+- `extended` kept a drop-after rule of its own for std's struct given
+  whole (ADR 0913).
+
+**`consumer_closes` is the one answer of whether a consumer closes what it
+consumes, and `consumed_call` the one place that drops it after
+otherwise.** Each consumer asks them:
+
+- `iterators_eq` and the std combinators' consumers (`partition`, `unzip`,
+  `max_by`, of `leaves_none`, which now counts `unzip`) close it only
+  where `consumer_closes` says.
+- `mir_std_value` hands an iterator a std consumer takes by value
+  (`consumed_at`: `Extend::extend`'s items, or the receiver of an
+  `Iterator` method that consumes it) to `consumed_call` wherever
+  `dropped_after` says. `check_takes_drops` doesn't refuse what's handled
+  so.
+- `extend` never closes what it's given, so `dropped_after` takes nothing
+  of `consumer_closes` for it: dropped after it, with what's left in it,
+  and as it unwinds too.
+- `extended`'s own rule is gone.
+- A `String`'s `extend` of an iterator whose steps may panic or that
+  holds what drops is stepped by `$foldToArray`, as `collect` steps one.
+  `Array.from` never closes an iterator whose `next` throws, so a panic
+  part-way never dropped its source: the conformance table's eight
+  `extend string` rows (#1126). `$foldToArray` steps it by its own
+  `fold`, so `by_its_fold` before it is gone. A range's, which can't
+  throw, stays `Array.from`.
+
+`mir_iter_std_call` moved to `mir/std_calls/iterators.rs`, and a std
+call's value helpers to `mir/std_calls.rs`, as both files were at their
+cap.
+
+Snapshots:
+- Four corpus cases' JS changed, none of them in what they print.
+- Generic `eq` of a type parameter's `IntoIter` drops it once now. It was
+  both closed with its caller's drop and dropped after, which would have
+  run that drop twice wherever a caller gave one.
+- A `$holding` adapter given to `partition` or `extend`, and a generic
+  `repeat(x).take(n)` given to `extend`, are dropped after them, as
+  `dropped_after` already says of an `Iterator` consumer of the same.
+
+Held by `test/corpus/iterator_consumed_by_extend_unzip_partition_eq.rs`,
+against native Rust in both builds:
+- every collection's `extend`;
+- `unzip` and `partition`, of items with a destructor too;
+- `eq` and `ne`;
+- a `partition` whose function panics part-way.
+
+Mutations:
+- new: `std-consumer-undropped`, `std-consumer-held-undropped`,
+  `consumed-argument-refused`, `eq-closes-unasked`, `extend-taken-to-close`,
+  `combinator-consumer-closes-unasked`, `unzip-leaves-some`;
+- refitted: `consumed-closed-dropped-again`, `keyed-extreme-dropped-after`,
+  `leaves-none-source-unclosed`, `find-map-leaves-drops`;
+- `extended-std-struct-undropped` and `string-extend-steps` are gone with
+  their rules; `text-extend-unclosed` is new, and
+  `joined-text-own-items`, `joined-text-of-iterable-unarrayed` and
+  `partition-moves-unseen` are refitted, the last caught by a lent
+  `partition` of items with a destructor.

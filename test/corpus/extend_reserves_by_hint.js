@@ -4,6 +4,7 @@ import {
   $BTreeMap,
   $BTreeSet,
   $extendMap,
+  $foldToArray,
   $index,
   $iterator,
   $print,
@@ -32,7 +33,7 @@ function loud(n) {
 
 function main() {
   let s = "ab";
-  s += Array.from(
+  s += $foldToArray(
     $reserveHint(
       $iterator(loud(3), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
         (x) => String.fromCharCode((99 + (x & 255)) & 255),
@@ -44,11 +45,15 @@ function main() {
   ).join("");
   console.log(`chars ${s}`);
   s = "";
-  s += Array.from($iterator(loud(2), loudIterator_next).map((x) => String(x))).join("");
+  s += $foldToArray(
+    $iterator(loud(2), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
+      (x) => String(x),
+    ),
+  ).join("");
   console.log(`strings ${s}`);
   s = "";
   const cs = ["x", "y"];
-  s += Array.from(
+  s += $foldToArray(
     $reserveHint(
       $iterator(loud(2), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
         (x) => $index(cs, x),

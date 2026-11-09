@@ -386,9 +386,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`find_map` of items with a destructor is refused, though it gives each to its function",
     file: "src/lower/combinators.rs",
-    find: "            IterComb::Partition | IterComb::FindMap | IterComb::MaxByKey(_) | IterComb::Nth\n",
+    find: "            IterComb::Partition | IterComb::Unzip | IterComb::FindMap | IterComb::MaxByKey(_) | IterComb::Nth\n",
     replace:
-      "            IterComb::Partition | IterComb::MaxByKey(_) | IterComb::Nth\n",
+      "            IterComb::Partition | IterComb::Unzip | IterComb::MaxByKey(_) | IterComb::Nth\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps_drop.rs$"],
   },
   {
@@ -739,17 +739,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "as_deref_counted"],
   },
   {
-    name: "extended-std-struct-undropped",
-    breaks:
-      "a held `repeat(x).take(n)` given whole to `extend` isn't closed after, `repeated.return()`, where `extend`'s own close drops its `x` as Rust does now: its JS (ADR 0913)",
-    file: "src/lower/combinators.rs",
-    find: "        if !iterable.is_ref()\n            && self.compiled_struct(iterable, &items)\n",
-    replace:
-      "        if false\n            && self.compiled_struct(iterable, &items)\n",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
-  },
-  {
     name: "filtered-and-then-none-undefined",
     breaks:
       "an `and_then` of a nullable function after a `filter` gives `undefined` for `None`, `owner ? nameOfOwner(owner) : undefined`, where upstream writes `null` (ADR 0841, amended)",
@@ -880,5 +869,13 @@ export const mutations: Mutation[] = [
     find: "                    .is_none_or(|item| !self.is_object(item) && !self.mut_ref_form(item).is_cell()) =>\n",
     replace: "                    .is_none_or(|item| !self.is_object(item) && (!self.mut_ref_form(item).is_cell() || self.is_unknown(item))) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
+  },
+  {
+    name: "unzip-leaves-some",
+    breaks: "`unzip()` of items with a destructor is taken to leave some undropped, and refused, where it moves each into its half (#1120)",
+    file: "src/lower/combinators.rs",
+    find: "            IterComb::Partition | IterComb::Unzip | IterComb::FindMap",
+    replace: "            IterComb::Partition | IterComb::FindMap",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
   },
 ];

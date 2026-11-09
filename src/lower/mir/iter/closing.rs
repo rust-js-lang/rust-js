@@ -82,7 +82,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(it);
         }
         self.check_leaves_none(method, name, span)?;
-        match self.consumer_closes(method, iter_ty, lent, true) {
+        self.consumer_closing(it, (method, iter_ty, lent), true, span)
+    }
+
+    /// `it`, what a consumer, `method`, of an `iter_ty`, `lent` or not, of
+    /// items with a destructor, `dropping`, takes: closed where it closes it
+    /// (`consumer_closes`), the one answer of who drops it, which
+    /// `dropped_after` asks too, else as it is, dropped after it by
+    /// `consumed_call`, never both (#1120, #1123).
+    pub(in crate::lower::mir) fn consumer_closing(
+        &mut self,
+        it: Expr,
+        (method, iter_ty, lent): (Option<IterMethod>, Ty<'tcx>, bool),
+        dropping: bool,
+        span: Span,
+    ) -> R<Expr> {
+        match self.consumer_closes(method, iter_ty, lent, dropping) {
             true => self.closing(it, iter_ty, span),
             false => Ok(it),
         }
@@ -299,10 +314,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             None => other,
         };
-        let it = match lent {
-            true => it,
-            false => self.closing(it, iter_ty, span)?,
-        };
+        // The crate's iterator with a `Drop`, of items without one, was
+        // closed and dropped after too, twice (#1123).
+        let method = Some(match ne {
+            true => IterMethod::Ne,
+            false => IterMethod::Eq,
+        });
+        let dropping = self.drops(item) != crate::lower::drops::Drops::Nothing;
+        let it = self.consumer_closing(it, (method, iter_ty, lent), dropping, span)?;
         let compare = self.item_eq((item, other_item), false, span)?;
         let drop_a = self.std_drop_function(item, span)?;
         let drop_b = self.std_drop_function(other_item, span)?;

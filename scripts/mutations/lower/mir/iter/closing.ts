@@ -350,4 +350,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
   },
+  {
+    name: "eq-closes-unasked",
+    breaks: "`it.eq(other)` of the crate's iterator with a `Drop`, of items without one, closes it where `consumer_closes` says it's dropped after, so it's dropped twice (#1123)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        let it = self.consumer_closing(it, (method, iter_ty, lent), dropping, span)?;\n",
+    replace: "        let it = match lent {\n            true => it,\n            false => self.closing(it, iter_ty, span)?,\n        };\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
+  },
 ];

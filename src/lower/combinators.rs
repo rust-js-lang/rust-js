@@ -222,6 +222,7 @@ impl IterComb {
 
     /// Whether it leaves no item with a destructor undropped (ADR 0098): it
     /// moves each it takes on, `partition`'s into one of its two (ADR 0445),
+    /// `unzip`'s each half into its own (#1120),
     /// `find_map`'s to its function; or it drops each it passes over,
     /// `max_by_key`'s and `min_by_key`'s, and `nth`'s, which gives
     /// back the one it stops at (#180). `filter_map`'s, an adapter that
@@ -229,7 +230,7 @@ impl IterComb {
     pub(in crate::lower) fn leaves_none(self) -> bool {
         matches!(
             self,
-            IterComb::Partition | IterComb::FindMap | IterComb::MaxByKey(_) | IterComb::Nth
+            IterComb::Partition | IterComb::Unzip | IterComb::FindMap | IterComb::MaxByKey(_) | IterComb::Nth
         )
     }
 }
@@ -1027,7 +1028,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `extend` of `items`, of type `iterable`, onto `collection`, a
     /// collection of type `into`: each pushed as it's stepped
     /// (`extended_items`); onto a heap, its order rebuilt after, as std's
-    /// is (ADR 0333).
+    /// is (ADR 0333). What it's given is dropped after it, where it drops
+    /// it, by `consumed_call`, as any std consumer's is, std's struct
+    /// `repeat(x).take(n)` held too (ADR 0913, #1120).
     fn extended(
         &mut self,
         collection: Expr,
@@ -1038,34 +1041,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let whole = self.extends_by_an_array(generic_args);
-        // Std's struct given whole, `repeat(x).take(n)` held: dropped once
-        // it's stepped, as `extend` drops what it's given, which its end
-        // doesn't, as the recognizers' `take` does (ADR 0913).
-        if !iterable.is_ref()
-            && self.compiled_struct(iterable, &items)
-            && let Some(drop) = self.drop_function(iterable, span)?
-        {
-            let held = match items.reads_same() {
-                true => items,
-                false => self.spill("items", items, out),
-            };
-            let extended = self.extended_whole(
-                collection,
-                held.clone(),
-                (iterable, into),
-                (whole, capacity_known),
-                span,
-                out,
-            )?;
-            out.push(StmtKind::Expr(extended).at(js::Span::NONE));
-            return Ok(Expr::call(drop, vec![held]));
-        }
         self.extended_whole(collection, items, (iterable, into), (whole, capacity_known), span, out)
     }
 
-    /// `extended`'s, of what's dropped after; `whole`, where the call's own
-    /// type for what it's given says it's an array given whole
-    /// (`extends_by_an_array`).
+    /// `extended`'s; `whole`, where the call's own type for what it's given
+    /// says it's an array given whole (`extends_by_an_array`).
     fn extended_whole(
         &mut self,
         collection: Expr,

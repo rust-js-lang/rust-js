@@ -139,11 +139,7 @@ function equal(
   let result;
   try {
     result = $iterEq(
-      $closing(
-        $given(iter, IIntoIterator.IntoIterIterator(), true),
-        $givenDrop(dropIIntoIter),
-        false,
-      ),
+      $given(iter, IIntoIterator.IntoIterIterator(), true),
       $closing(
         $given(JIntoIterator.intoIter(b$1), JIntoIterator.IntoIterIterator(), true),
         $givenDrop(dropJ),

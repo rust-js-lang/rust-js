@@ -459,16 +459,24 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    const [odd, even] = $partition(
-      $holding(
-        take.map(f),
-        () => {
-          dDrop_drop(g);
-        },
-        "after",
-      ),
-      (n) => n % 2 === 1,
+    const iter = $holding(
+      take.map(f),
+      () => {
+        dDrop_drop(g);
+      },
+      "after",
     );
+    let result;
+    try {
+      result = $partition(iter, (n) => n % 2 === 1);
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
+    }
+    iter.return();
+    const [odd, even] = result;
     $print(`| [${odd.join(", ")}] [${even.join(", ")}] | `);
   });
   case$("extend", (g) => {
@@ -499,17 +507,22 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    $extend(
-      v,
-      $holding(
-        take.map(f),
-        () => {
-          dDrop_drop(g);
-        },
-        "after",
-      ),
-      true,
+    const iter = $holding(
+      take.map(f),
+      () => {
+        dDrop_drop(g);
+      },
+      "after",
     );
+    try {
+      $extend(v, iter, true);
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      });
+      throw error;
+    }
+    iter.return();
     $print(`| [${v.join(", ")}] | `);
   });
   case$("collect", (g) => {

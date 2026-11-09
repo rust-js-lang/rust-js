@@ -73,7 +73,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let held = self.spill("iter", values.remove(0), made);
             values.insert(0, held.clone());
-            return self.consumed_call(held, (def_id, trait_id, arg_tys), values, output, span, made);
+            let method = |cx: &mut Self, call: &mut Vec<Stmt>| {
+                cx.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, call)
+            };
+            return self.consumed_call(held, (def_id, receiver_ty, arg_tys), output, span, made, method);
         }
         self.cloned_apart_call(def_id, (trait_id, arg_tys), values, output, span, made)
     }
@@ -415,23 +418,84 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// `mir_iter_method`'s call of `values`, `held` first, an iterator a
-    /// std method took by value and rust-js drops after it: dropped though
-    /// the call throws, a panic, as the method that took it drops it as it
-    /// unwinds, of one whose steps may, a type parameter's, or one running
-    /// what may panic (#424).
-    fn consumed_call(
+    /// Which argument of a std call of `def_id`, given `arg_tys`, is an
+    /// iterator it takes by value and drops as it's done: `Extend::extend`'s
+    /// items, `v.extend(it)`'s, or the receiver of an `Iterator` method that
+    /// consumes it, `unzip`'s or `partition`'s, where `mir_iter_method`
+    /// lowers none of it and a std combinator does. `None` of another, or of
+    /// one lent (#1120).
+    pub(in crate::lower) fn consumed_at(&self, def_id: DefId, arg_tys: &[Ty<'tcx>]) -> Option<usize> {
+        let tr = self.tcx.trait_of_assoc(def_id)?;
+        let at = match crate::lower::recognition::is_extend(self.tcx, tr) {
+            true => 1,
+            false if self.recognition().folds_what_it_consumes(def_id) => 0,
+            false => return None,
+        };
+        arg_tys.get(at).filter(|ty| !ty.is_ref()).map(|_| at)
+    }
+
+    /// A std call of `def_id`, `known`, that takes an iterator by value and
+    /// drops it as it's done, `v.extend(it)`'s or `it.unzip()`'s
+    /// (`consumed_at`): its value, the iterator dropped after it where
+    /// `dropped_after` says, by `consumed_call`, the one place what std's
+    /// code consumes is (#1120). `None` of another, `mir_std_call`'s.
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::lower::mir) fn consumed_by_std(
+        &mut self,
+        state: &mut super::State<'_, 'tcx>,
+        (known, def_id, generic_args): (crate::lower::recognition::Std, DefId, ty::GenericArgsRef<'tcx>),
+        (arg_tys, nulled): (&[Ty<'tcx>], &[bool]),
+        values: &mut Vec<super::Value<'tcx>>,
+        output: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<super::Value<'tcx>>> {
+        let Some(at) = self.consumed_at(def_id, arg_tys) else {
+            return Ok(None);
+        };
+        let consumed = arg_tys[at];
+        let given = self.value_expr(values[at].clone(), span)?;
+        if !self.dropped_after(def_id, (consumed, arg_tys), output, Some(&given), span)? {
+            return Ok(None);
+        }
+        self.flush(state, out)?;
+        let held = match given.reads_same() {
+            true => given,
+            false => self.spill("iter", given, out),
+        };
+        values[at] = super::Value::Expr(held.clone());
+        let given = self.call_given(state, nulled);
+        let values = std::mem::take(values);
+        let mut made = Vec::new();
+        let call = |cx: &mut Self, call: &mut Vec<Stmt>| {
+            let std = (known, def_id);
+            let value = cx.mir_std_call(state, std, generic_args, (arg_tys, given), values, output, span, call)?;
+            cx.value_expr(value, span).map(Some)
+        };
+        let value = self.consumed_call(held, (def_id, consumed, arg_tys), output, span, &mut made, call)?;
+        out.extend(made);
+        Ok(Some(super::Value::Expr(value.expect("a std call's value"))))
+    }
+
+    /// A std method's call, `method`'s, of `def_id`, given `held`, an
+    /// iterator of type `receiver_ty` it takes by value, as its receiver or
+    /// an argument, `extend`'s, and rust-js drops after it, as
+    /// `dropped_after` says: dropped though the call throws, a panic, as the
+    /// method that took it drops it as it unwinds, of one whose steps may, a
+    /// type parameter's, or one running what may panic (#424). The one
+    /// place what std's code consumes is dropped after it, whichever lowers
+    /// the call, `mir_iter_method` or a std combinator's (#1116, #1120).
+    pub(in crate::lower::mir) fn consumed_call(
         &mut self,
         held: Expr,
-        (def_id, trait_id, arg_tys): (DefId, DefId, &[Ty<'tcx>]),
-        values: Vec<Expr>,
+        (def_id, receiver_ty, arg_tys): (DefId, Ty<'tcx>, &[Ty<'tcx>]),
         output: Ty<'tcx>,
         span: Span,
         made: &mut Vec<Stmt>,
+        method: impl FnOnce(&mut Self, &mut Vec<Stmt>) -> R<Option<Expr>>,
     ) -> R<Option<Expr>> {
-        let receiver_ty = arg_tys.first().copied().unwrap_or(self.tcx.types.unit);
         let mut call = Vec::new();
-        let Some(result) = self.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, &mut call)? else {
+        let Some(result) = method(self, &mut call)? else {
             made.extend(call);
             return Ok(None);
         };
@@ -454,7 +518,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.dropped_consumed(held, (receiver_ty, def_id, output), span, &mut dropped)?;
         // Or a function it's given that may panic, `for_each(f)`'s, which
         // unwinds through the method that took it (#1079).
-        let given_may_panic = (arg_tys.iter().skip(1)).any(|&ty| {
+        let given_may_panic = (arg_tys.iter().filter(|&&ty| ty != receiver_ty)).any(|&ty| {
             let ty = ty.peel_refs();
             self.is_callable(ty) && self.call_may_unwind(ty)
         });
@@ -591,7 +655,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// result holds it, `map(f)`, is the result's to drop, closed to drop it,
     /// as each std adapter is (ADR 0465); of a generic one given no drop, its
     /// callers give none with a destructor (ADR 0190).
-    fn dropped_after(
+    pub(in crate::lower::mir) fn dropped_after(
         &mut self,
         def_id: DefId,
         (receiver, arg_tys): (Ty<'tcx>, &[Ty<'tcx>]),
@@ -609,7 +673,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let dropping =
             (self.iterator_item(iter_ty)).is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing);
         let method = self.recognition().iterator_method(def_id);
-        if self.consumer_closes(method, iter_ty, false, dropping) || self.keyed_consumer_closes(method, arg_tys) {
+        // Not `extend`'s, which never closes what it's given: dropped after
+        // it, what's left in it then too, as it unwinds as well (#1120).
+        let extends =
+            (self.tcx.trait_of_assoc(def_id)).is_some_and(|tr| crate::lower::recognition::is_extend(self.tcx, tr));
+        if !extends
+            && (self.consumer_closes(method, iter_ty, false, dropping) || self.keyed_consumer_closes(method, arg_tys))
+        {
             return Ok(false);
         }
         // What the crate's own `fold` is called by: it takes the iterator

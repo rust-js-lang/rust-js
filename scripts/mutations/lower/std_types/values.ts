@@ -416,7 +416,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/values.rs",
     find: "            || (matches!(known, Std::IterComb(comb) if comb.leaves_none())\n",
     replace: "            || (false\n",
-    tests: ["test/corpus.test.ts", "-t", "^picked_items_drop.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(picked_items_drop|iterator_consumed_by_extend_unzip_partition_eq).rs$"],
   },
   {
     name: "poison-guard-dropped",
@@ -808,5 +808,13 @@ export const mutations: Mutation[] = [
     find: "            return Ok(self.counted_same(def_id, generic_args, own.clone()).unwrap_or(own));\n",
     replace: "            return Ok(own);\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_by_rc_as_ptr.rs$"],
+  },
+  {
+    name: "consumed-argument-refused",
+    breaks: "an iterator with a destructor that `extend`, `unzip` or `partition` takes by value, which `consumed_call` drops after it, is refused as one a std function might drop (#1120)",
+    file: "src/lower/std_types/values.rs",
+    find: "                None if consumed == Some(at) => self.tcx.types.unit,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
   },
 ];

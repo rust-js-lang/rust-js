@@ -304,15 +304,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "joined-text-of-iterable-unarrayed",
-    breaks:
-      "a string extended by an iterable that isn't an array, generic code's, joins nothing",
-    file: "src/lower/std_types/text.rs",
-    find: '            false => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),\n',
-    replace: "            false => items,\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
-  },
-  {
     name: "splitn-set-pattern-unmade",
     breaks:
       "`splitn(2, ['e', 'E'])`'s set isn't made a predicate, and JS calls the array",
@@ -320,15 +311,6 @@ export const mutations: Mutation[] = [
     find: "        let at = if matches!(op, TextOp::SplitNBy | TextOp::RsplitBy(true)) {\n            2\n        } else {\n            1\n        };\n",
     replace: "        let at = 1;\n",
     tests: ["test/corpus.test.ts", "-t", "^splitn_by.rs$"],
-  },
-  {
-    name: "joined-text-own-items",
-    breaks:
-      "a `String` extended by a range of `char`s or an `Option` takes `Array.from` of the range's object or of the `Option`'s value, not their items as `iterable_items` steps them",
-    file: "src/lower/std_types/text.rs",
-    find: "                let items = self.iterable_items(items, ty, span, out)?;\n                self.by_its_fold(items, ty, false)\n",
-    replace: "                self.by_its_fold(items, ty, false)\n",
-    tests: ["test/corpus.test.ts", "-t", "^text_extended.rs$"],
   },
   {
     name: "found-tested-against-null",
@@ -405,15 +387,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^matches_by_predicate.rs$"],
   },
   {
-    name: "string-extend-steps",
-    breaks:
-      "`extend` of a `String` by the crate's iterator steps it by `next`, not by its own `fold`",
-    file: "src/lower/std_types/text.rs",
-    find: "                self.by_its_fold(items, ty, false)\n",
-    replace: "                items\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
-  },
-  {
     name: "char-set-pattern-unconverted",
     breaks:
       "a set of `char`s as `rsplit_once`'s pattern is called as a function",
@@ -457,5 +430,32 @@ export const mutations: Mutation[] = [
     find: "            Some(item) => self.cow_texts(items, item),\n",
     replace: "            Some(_) => items,\n",
     tests: ["test/corpus.test.ts", "-t", "^cow_texts_joined.rs$"],
+  },
+  {
+    name: "joined-text-of-iterable-unarrayed",
+    breaks:
+      "a string extended by an iterable that isn't an array, generic code's, joins nothing",
+    file: "src/lower/std_types/text.rs",
+    find: "            (false, false) => Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![items]),\n",
+    replace: "            (false, false) => items,\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
+  },
+  {
+    name: "text-extend-unclosed",
+    breaks:
+      "a `String`'s `extend` of an iterator steps it by `Array.from`, which never closes it where its `next` throws, so a panic part-way never drops its source (#1120)",
+    file: "src/lower/std_types/text.rs",
+    find: "            (false, true) => Expr::call_helper(\"$foldToArray\", vec![items]),\n",
+    replace: "            (false, true) => Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![items]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
+  },
+  {
+    name: "joined-text-own-items",
+    breaks:
+      "a `String` extended by a range of `char`s or an `Option` takes `Array.from` of the range's object or of the `Option`'s value, not their items as `iterable_items` steps them",
+    file: "src/lower/std_types/text.rs",
+    find: "            Some(ty) => self.iterable_items(items, ty, span, out)?,\n",
+    replace: "            Some(_) => items,\n",
+    tests: ["test/corpus.test.ts", "-t", "^text_extended.rs$"],
   },
 ];

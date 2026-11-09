@@ -419,7 +419,7 @@ test("no iterator helper is read by its name outside value.rs", () => {
 test("what's stepped from its back is asked where a value is made, or as a type's question", () => {
   const allowed: Record<string, [number, string]> = {
     "src/lower/mir/iter.rs": [1, "`cloned_apart_call`, the maker of a map or a filter cloned apart"],
-    "src/lower/mir/std_calls.rs": [1, "`mir_iter_std_call`, the maker of a std adapter made in place"],
+    "src/lower/mir/std_calls/iterators.rs": [1, "`mir_iter_std_call`, the maker of a std adapter made in place"],
     "src/lower/mir/iter/backs.rs": [
       3,
       "`back_kept`, the maker of an enumeration it steps from its back, and `rev_called`, a `rev()`'s, twice: of a type parameter given as it is, and of what `rev_items` makes",
@@ -513,7 +513,8 @@ test("whether a collect's items drop is asked of the lowering's drops", () => {
 });
 
 // An iterator consumed by std's code is dropped where that code ends by one
-// path, `mir_iter_call`'s `consumed_call`: `C::from_iter(items)` had a
+// path, `consumed_call`, whichever lowers the call, `mir_iter_call` or a std
+// combinator's (`consumed_by_std`, #1120): `C::from_iter(items)` had a
 // lowering of its own beside `collect()`'s, which never dropped what it
 // consumed, so `Vec::from_iter(it)` of an iterator with a destructor never
 // dropped it, where `it.collect()` did (#1116). It's `items.into_iter()`
@@ -534,6 +535,12 @@ test("an iterator std's code consumes is dropped by mir_iter_call's consumed_cal
   expect(body("mir_iter_call")).toContain("return self.collected_from_iter(");
   expect(body("mir_iter_call")).toContain("self.consumed_or_held(");
   expect(body("consumed_or_held")).toContain("self.consumed_call(");
+  // And what a std combinator consumes, `extend`'s, `unzip`'s or
+  // `partition`'s, before it's lowered (#1120).
+  expect(body("consumed_by_std")).toContain("self.consumed_call(");
+  const dispatch = read("src/lower/mir/dispatch.rs");
+  const value = dispatch.slice(dispatch.indexOf("fn mir_std_value("));
+  expect(value.slice(0, value.indexOf("\n    }\n"))).toContain("self.consumed_by_std(");
 });
 
 // A reversed zip is `$rev($zipEnds(a, b))`, `rev_items`' of what's made

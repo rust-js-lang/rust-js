@@ -38,9 +38,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A function or a value it's given is dropped where std drops it,
         // where it's `handled_argument`'s (ADRs 0469, 0470, 0490): nothing
         // taken here.
+        // And an iterator it takes by value and drops as it's done, which
+        // `consumed_call` drops after it, or its closing as it's consumed,
+        // as `dropped_after` says (#1120).
+        let consumed = self.consumed_at(def_id, tys);
         let tys: Vec<Ty<'tcx>> = (tys.iter().enumerate())
             .map(|(at, &ty)| match self.handled_argument(Some(known), at, ty) {
                 Some(_) => self.tcx.types.unit,
+                None if consumed == Some(at) => self.tcx.types.unit,
                 None => ty,
             })
             .collect();

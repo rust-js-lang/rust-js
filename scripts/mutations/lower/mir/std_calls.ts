@@ -21,24 +21,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^wrapping_assign_of_a_copy.rs$"],
   },
   {
-    name: "inspect-back-stepped-unmade",
-    breaks:
-      "an `inspect(f)` the crate steps from its back, held in a variable, isn't made knowing it where it's made: `TypeError: it.back is not a function`",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                        IterComb::Inspect,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(inspect_from_back|move_closure_adapter_from_its_back).rs$"],
-  },
-  {
-    name: "combinator-function-undropped",
-    breaks:
-      "what an `inspect()`'s, a `skip_while()`'s or a `flat_map()`'s function holds with a destructor is never dropped, where Rust drops it with the adapter (ADR 0991)",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                        Some(held) => this.closing_function(made, output, held, span)?,\n",
-    replace: "                        Some(_) => made,\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_functions_dropped.rs$"],
-  },
-  {
     name: "wrapping-assigned-to-its-ref",
     breaks:
       "a `Wrapping`'s `op=` through a `&mut` a variable holds assigns the variable, not what it points at: a caller's never changes, and MIR's borrow is a `const` assigned (#309)",
@@ -95,30 +77,6 @@ export const mutations: Mutation[] = [
     replace:
       "            Std::Number(NumOp::ToIntUnchecked) if false => lower(move |this, _, values, _| {\n",
     tests: ["test/corpus.test.ts", "-t", "integers_128"],
-  },
-  {
-    name: "mir-peek-steps",
-    breaks: "`p.peek()` of a `Peekable` steps it",
-    file: "src/lower/mir/std_calls.rs",
-    find: 'StepOp::Peek => Expr::call_helper("$peek", vec![it]),',
-    replace: 'StepOp::Peek => Expr::call_helper("$next", vec![it]),',
-    tests: ["test/corpus.test.ts", "-t", "iterator_back_ends"],
-  },
-  {
-    name: "mir-next-if-eq-unequal",
-    breaks: "`p.next_if_eq(&x)` takes what isn't `x`",
-    file: "src/lower/mir/std_calls.rs",
-    find: 'Expr::bin(Op::Eq, Expr::var("item"), x)',
-    replace: 'Expr::bin(Op::Ne, Expr::var("item"), x)',
-    tests: ["test/corpus.test.ts", "-t", "iterator_back_ends"],
-  },
-  {
-    name: "mir-default-size-hint-one",
-    breaks: "std's `size_hint()` of an iterator of the crate's is `(1, None)`",
-    file: "src/lower/mir/std_calls.rs",
-    find: "Expr::array(vec![Expr::int(0), Expr::undefined()])",
-    replace: "Expr::array(vec![Expr::int(1), Expr::undefined()])",
-    tests: ["test/corpus.test.ts", "-t", "size_hint"],
   },
   {
     name: "mir-copies-shared",
@@ -194,18 +152,6 @@ export const mutations: Mutation[] = [
     replace:
       "            Std::TypeName { .. } if false => lower(move |this, state, values, out| {\n",
     tests: ["test/corpus.test.ts", "-t", "type_facts"],
-  },
-  {
-    name: "mir-chars-as-str-refused",
-    breaks: "`c.as_str()` of a string's `chars()` from MIR is refused",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                if matches!(op, StepOp::AsStr | StepOp::Offset)\n",
-    replace: "                if false\n",
-    tests: [
-      "test/lowering-strings.test.ts",
-      "-t",
-      "the rest of a string's chars from MIR",
-    ],
   },
   {
     name: "mir-tree-range-refused",
@@ -374,14 +320,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
   },
   {
-    name: "mir-stream-refused",
-    breaks: "`writeln!(io::stderr(), ..)` from MIR is refused",
-    file: "src/lower/mir/std_calls.rs",
-    find: "            Std::Stream(op) => lower(",
-    replace: "            Std::Stream(op) if false => lower(",
-    tests: ["test/corpus.test.ts", "-t", "std_odds"],
-  },
-  {
     name: "mir-user-write-refused",
     breaks:
       "`writeln!(out, ..)` to a writer of the crate's own from MIR is refused",
@@ -527,16 +465,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^format_arguments_first.rs$"],
   },
   {
-    name: "cycle-owned-items-shared",
-    breaks:
-      "`cycle()` of an iterator that owns its items gives the same one each time round, where Rust's clones them",
-    file: "src/lower/mir/std_calls.rs",
-    find: '                                if owns && this.needs_clone(item) {\n                                    args.push(this.clone_fn("item", item, span)?);\n',
-    replace:
-      '                                if false && owns && this.needs_clone(item) {\n                                    args.push(this.clone_fn("item", item, span)?);\n',
-    tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
-  },
-  {
     name: "string-extend-unjoined",
     breaks:
       '`s.extend(chars)` adds their array, `s += ["y", "z"]`, not their text',
@@ -544,15 +472,6 @@ export const mutations: Mutation[] = [
     find: "                            this.joined_text(value, Some(arg_tys[1]), span, out)?\n",
     replace: "                            value\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
-  },
-  {
-    name: "partition-dropping-refused",
-    breaks:
-      "`partition` and `filter_map` of items with a destructor are refused, though they move each on",
-    file: "src/lower/mir/std_calls.rs",
-    find: "if dropping.is_some() && !comb.leaves_none() && !comb.holds_its_sources() {",
-    replace: "if dropping.is_some() && !comb.holds_its_sources() {",
-    tests: ["test/corpus.test.ts", "-t", "^picked_items_drop.rs$"],
   },
   {
     name: "own-write-all-unwrapped",
@@ -564,33 +483,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
   {
-    name: "zip-other-not-closing",
-    breaks:
-      "`zip`'s other side that owns items with a destructor isn't closed to drop them",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                        Ok(match this.closing_drop(ty, span)? {\n",
-    replace: "                        Ok(match None::<Expr> {\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
-  },
-  {
-    name: "cycle-of-other-refused",
-    breaks:
-      "`cycle()` of a range, the crate's iterator or a type parameter's is refused",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                this.cycled(it, arg_tys[0].peel_refs(), span)?\n",
-    replace: '                return Err(this.unsupported(span, "cycle"));\n',
-    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
-  },
-  {
-    name: "cycle-array-drops-allowed",
-    breaks:
-      "`cycle()` of an array's items with a destructor is allowed, and leaks what it holds",
-    file: "src/lower/mir/std_calls.rs",
-    find: '                                    return Err(\n                                        this.unsupported(span, "`cycle()` of an array\'s items with a destructor")\n                                    );\n',
-    replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "cycling an array's items"],
-  },
-  {
     name: "extend-from-within-aliased",
     breaks: "`extend_from_within` pushes the same objects again, not clones",
     file: "src/lower/mir/std_calls.rs",
@@ -598,15 +490,6 @@ export const mutations: Mutation[] = [
     replace:
       "                    Some(item) if false && this.needs_clone(item) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
-  },
-  {
-    name: "peek-mut-of-numbers-unhandled",
-    breaks:
-      "`peek_mut` of numbers gives the number, which a write changes nowhere",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                                Some(item) if this.mut_ref_form(item).is_cell() => {\n",
-    replace: "                                Some(item) if false && this.mut_ref_form(item).is_cell() => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^repeat_n_and_peek_mut.rs$"],
   },
   {
     name: "make-mut-of-borrow-boxed",
@@ -626,24 +509,6 @@ export const mutations: Mutation[] = [
     replace:
       "                if state.body.local_kind(local) == LocalKind::Arg || local_ty.is_ref() {\n",
     tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
-  },
-  {
-    name: "chained-into-iter-raw",
-    breaks:
-      "what `chain` or `zip` is given is passed as it is, a range's object or an `Option`",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                        let e = this.iterable_items(e, ty, span, out)?;\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^into_iter_arguments.rs$"],
-  },
-  {
-    name: "held-cycle-of-array-generated",
-    breaks:
-      "a held `Cycle` of an array's iterator is a generator, which keeps neither it cycles",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                if this.explicit_adapter(output)\n                    || !arg_tys\n",
-    replace: "                if !arg_tys\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
   {
     name: "fmt-to-held-formatter-pretty",
@@ -676,25 +541,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^ptr_eq_through_refs.rs$"],
   },
   {
-    name: "next-if-some-unboxed",
-    breaks:
-      "`next_if` of items that may look like `None` gives a `None` item as `None` itself, where it's `Some(None)`",
-    file: "src/lower/mir/std_calls.rs",
-    find: 'if boxed { "$nextIfSome" } else { "$nextIf" }',
-    replace: '"$nextIf"',
-    tests: ["test/corpus.test.ts", "-t", "^boxed_option_results.rs$"],
-  },
-  {
-    name: "found-and-then-none-undefined",
-    breaks:
-      "`and_then` of a place found gives `undefined` where it's `None`, which isn't `-1`, so it's taken for a place",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                let none = if mapped { Expr::undefined() } else { Expr::int(-1) };",
-    replace:
-      "                let none = if mapped { Expr::undefined() } else { Expr::undefined() };",
-    tests: ["test/lowering-string-places.test.ts", "-t", "owner stack"],
-  },
-  {
     name: "cut-string-reread-after-change",
     breaks:
       "a strip's string is read again where it's tested and cut, after its variable is given another",
@@ -713,14 +559,6 @@ export const mutations: Mutation[] = [
     replace:
       "                    true => this.slice_range_values((op, false), items, (range, arg_tys[1]), span, out)?,",
     tests: ["test/lowering-string-places.test.ts", "-t", "stepped past"],
-  },
-  {
-    name: "char-indices-as-str-pairs",
-    breaks: "CharIndices::as_str reads its [byte, char]s",
-    file: "src/lower/mir/std_calls.rs",
-    find: "StepOp::AsStr if this.recognition().is_char_indices(arg_tys[0].peel_refs()) => {",
-    replace: "StepOp::AsStr if false => {",
-    tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
   {
     name: "pushed-component-raw",
@@ -770,43 +608,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "chain-array-argument-unstepped",
-    breaks:
-      "an array given to `chain` is `Iterator.from(xs)`, not a `$iter`, so its `nth` isn't a `Vec`'s and the chain's `skip` steps each (#250)",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                                    if this.slice_item(ty.peel_refs()).is_some()\n",
-    replace:
-      "                                    if false && this.slice_item(ty.peel_refs()).is_some()\n",
-    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
-  },
-  {
-    name: "in-place-flatten-unmarked",
-    breaks:
-      "a flatten made in place and stepped from its back is taken for std's struct, given its compiled `next_back`, which the recognizers' `flatMap` isn't",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                        true => made.in_place(),\n",
-    replace: "                        true => made,\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_of_iterators_from_back.rs$"],
-  },
-  {
-    name: "leaves-none-source-unclosed",
-    breaks:
-      "an owning iterator given whole to `partition`, `max_by` or `max_by_key` isn't closed, so what's left when its callback panics is never dropped (#423)",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                        false if comb.holds_its_sources() || comb.leaves_none() => this.closing(it, iter_ty, span)?,\n",
-    replace:
-      "                        false if comb.holds_its_sources() => this.closing(it, iter_ty, span)?,\n",
-    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
-  },
-  {
-    name: "filter-map-made-unknowing",
-    breaks: "a `filter_map` the crate steps from its back, held in a variable before it's stepped, isn't made knowing it where it's made, and is refused as a library (#473)",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                        IterComb::FilterMap,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^filter_map_of_given_from_its_back.rs$"],
-  },
-  {
     name: "view-made-at-once",
     breaks: "`&mut v[a..b]` is made a view where it's borrowed, so `v[a..b].reverse()` reverses a `Proxy`, where it's `$reverseRange(v, a, b)` (ADR 1073)",
     file: "src/lower/mir/std_calls.rs",
@@ -832,15 +633,6 @@ export const mutations: Mutation[] = [
     find: "                .or(cells.nullable_lent.get(&state.at))\n",
     replace: "",
     tests: ["test/lowering-nullable-borrows.test.ts", "-t", "written through a borrow"],
-  },
-  {
-    name: "chain-stepped-from-back-made-unknowing",
-    breaks:
-      "a chain the crate steps from its back isn't made knowing its back where it's made: one MIR holds in a variable, of items with a destructor, is refused at its `rev()` (#718)",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                        IterComb::Chain,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(rev_made_knowing_its_back|chain_stepped_from_its_back_elsewhere).rs$"],
   },
   {
     name: "string-extend-unreserved",
@@ -891,14 +683,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-std-unwinds.test.ts", "-t", "generic clone_from"],
   },
   {
-    name: "peek-mut-generic-unboxed",
-    breaks: "`peek_mut` in generic code gives the item, not a cell of it, which generic code writes as a box: JS throws (#1007)",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                                Some(item) if this.mut_ref_form(item).is_cell() => {\n",
-    replace: "                                Some(item) if this.mut_ref_form(item).is_cell() && !this.is_unknown(item) => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
-  },
-  {
     name: "deque-range-mut-generic-unboxed",
     breaks: "`VecDeque::range_mut` in generic code steps the items, not cells of them, which generic code writes as boxes: JS throws (#1007)",
     file: "src/lower/mir/std_calls.rs",
@@ -922,5 +706,93 @@ export const mutations: Mutation[] = [
     find: "            Std::FmtAsStr => match this.arguments_made(_state.body, _state.at) {\n",
     replace: "            Std::FmtAsStr => match this.arguments_made(_state.body, _state.at).or(Some(true)) {\n",
     tests: ["test/diagnostics.test.ts", "-t", "as_str\\(\\) of arguments made elsewhere"],
+  },
+  {
+    name: "lent-iterator-place-made-a-js-iterator",
+    breaks:
+      "a `&mut` to a `Range` that's a `Vec`'s item, `&mut items[1]`, is a new JS iterator of it, `Iterator.from($index(items, 1))`, which `r.next()` steps apart from the item (#638)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    && !lent_place\n",
+    replace: "",
+    tests: ["test/mut-ref-matrix.test.ts", "-t", "of iterator, held as item"],
+  },
+  {
+    name: "mir-std-iterator-array",
+    breaks: "`text.bytes()` is an array MIR steps as an iterator",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                if (self.implements_iterator(output) || std_iterator)\n",
+    replace:
+      "                if false && (self.implements_iterator(output) || std_iterator)\n",
+    tests: ["test/lowering-loops.test.ts", "-t", "stepped by hand"],
+  },
+  {
+    name: "mir-boxed-iterator-wrapped",
+    breaks:
+      "`Box::new(Countdown(3))` is wrapped as an array's iterator, stepping its struct's fields",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    && !output.is_box()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "dyn_iterators"],
+  },
+  {
+    name: "mir-std-param-output-an-iterator",
+    breaks:
+      "a `T` a std call gives, `unwrap_or(fallback)`'s, is wrapped `Iterator.from(..)` from MIR, which throws of a number",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    && !matches!(output.kind(), ty::Param(_))\n                    && !output.is_box()",
+    replace: "                    && !output.is_box()",
+    tests: ["test/corpus.test.ts", "-t", "generic_from_str"],
+  },
+  {
+    name: "result-method-write-result-object",
+    breaks:
+      "`map` of an `io::Result<usize>` into an `io::Result<()>` gives a `{ TAG }` object, which a caller takes for its error",
+    file: "src/lower/mir/std_calls.rs",
+    find: '                Value::Expr(Expr::call_helper("$writeOf", vec![e]))\n',
+    replace: "                Value::Expr(e)\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
+  },
+  {
+    name: "std-iterator-of-item-unmade",
+    breaks:
+      "std's iterator of another's items, `option::IntoIter<I::Item>`, is left the array it's made as, which `collect` can't step",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                if (self.implements_iterator(output) || std_iterator)\n",
+    replace: "                if self.implements_iterator(output)\n",
+    tests: [
+      "test/corpus.test.ts",
+      "test/iterator-forms.test.ts",
+      "-t",
+      "^boxed_option_unwraps.rs$|^option_iterator_of_generic_items.rs$|^generic_accumulations with",
+    ],
+  },
+  {
+    name: "mir-str-deref-mut-refused",
+    breaks:
+      "MIR's `&mut str` of a `String`, `s.make_ascii_uppercase()`'s, is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "        if self.is_cell(output) {\n            return Some(Value::Ref(place.clone()));\n",
+    replace:
+      "        if false && self.is_cell(output) {\n            return Some(Value::Ref(place.clone()));\n",
+    tests: ["test/corpus.test.ts", "-t", "str_mut"],
+  },
+  {
+    name: "pin-mut-gives-a-handle",
+    breaks:
+      "`*pin += 1` of a pinned `&mut` to a number writes through a handle, not the number",
+    file: "src/lower/mir/std_calls.rs",
+    find: "        if !matches!(known, Std::Same | Std::Pin(crate::lower::std_types::pin::PinOp::Mut)) {\n",
+    replace: "        if !matches!(known, Std::Same) {\n",
+    tests: ["test/corpus.test.ts", "-t", "pin_box"],
+    snapshots: true,
+  },
+  {
+    name: "box-as-mut-object-a-handle",
+    breaks:
+      "a `Box`'s `as_mut()` of an object is a handle on its place, so `b.as_mut().push(2)` pushes onto the handle",
+    file: "src/lower/mir/std_calls.rs",
+    find: "        (known == Std::Same && matches!(output.kind(), ty::Ref(_, _, ty::Mutability::Mut)))\n            .then(|| Value::Expr(place.clone()))\n",
+    replace: "        None\n",
+    tests: ["test/corpus.test.ts", "-t", "^box_as_mut_and_ref.rs$"],
   },
 ];

@@ -9,8 +9,62 @@ use crate::lower::format_args::Piece;
 use crate::lower::std_types::once::OnceOp;
 
 mod fmt_parts;
+mod iterators;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A std call's value as its `output` is held. A std iterator
+    /// `mir_std_call` makes an array of, `bytes()`'s: a JS iterator, which
+    /// MIR steps; not one that's the string it shows, an escape's, nor a `T`
+    /// it gives, `unwrap_or`'s, its value. A write's result a `Result`'s
+    /// method makes of a value's, `map` of an `io::Result<usize>`: `undefined`
+    /// or its error, `$writeOf(..)` (ADR 0462).
+    pub(super) fn std_value_as(&mut self, value: Value<'tcx>, output: Ty<'tcx>, arg_tys: &[Ty<'tcx>]) -> Value<'tcx> {
+        // std's own iterator, of whatever items, `option::IntoIter<I::Item>`.
+        let std_iterator = matches!(output.kind(), ty::Adt(adt, _) if crate::lower::recognition::is_std_crate(self.tcx, adt.did()))
+            && self.iterator_item(output).is_some();
+        let lent_place = self.std_lends_a_place(output);
+        match value {
+            Value::Expr(e)
+                if (self.implements_iterator(output) || std_iterator)
+                    && !lent_place
+                    && !matches!(output.kind(), ty::Param(_))
+                    && !output.is_box()
+                    && self.range_kind(output).is_none()
+                    && !self.is_user_iterator(output) =>
+            {
+                Value::Expr(self.std_iterator(e, output))
+            }
+            Value::Expr(e)
+                if self.is_write_result(output)
+                    && arg_tys
+                        .first()
+                        .is_some_and(|&from| self.recognition().is_result(from) && !self.is_write_result(from)) =>
+            {
+                Value::Expr(Expr::call_helper("$writeOf", vec![e]))
+            }
+            value => value,
+        }
+    }
+
+    /// A std call that gives the `&mut` it's given, of what's in the same
+    /// place: `&mut *s` of a `String`, `as_mut_str()`, a `&mut str` to all
+    /// of it, the place the `&mut String` is; a pin's `as_mut()`, its; and a
+    /// `Box`'s `as_mut()` of an object, `&mut Vec<T>` of a `&mut
+    /// Box<Vec<T>>` (#116), the object in that place, as a `&mut` to one is
+    /// (ADRs 0099, 0550). `None` of another.
+    pub(super) fn same_reference(&self, known: Std, output: Ty<'tcx>, values: &[Value<'tcx>]) -> Option<Value<'tcx>> {
+        let [Value::Ref(place)] = values else { return None };
+        if !matches!(known, Std::Same | Std::Pin(crate::lower::std_types::pin::PinOp::Mut)) {
+            return None;
+        }
+        let output = self.recognition().pinned(output).unwrap_or(output);
+        if self.is_cell(output) {
+            return Some(Value::Ref(place.clone()));
+        }
+        (known == Std::Same && matches!(output.kind(), ty::Ref(_, _, ty::Mutability::Mut)))
+            .then(|| Value::Expr(place.clone()))
+    }
+
     /// What MIR says of the call being lowered's arguments, past their
     /// values: which `Option`s are `null` already (`nulled`), whether its
     /// cell is one no borrow of which can meet another (`QuietCells`, ADR
@@ -781,342 +835,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let exprs = values.map(|v| this.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 Expr::call_helper("$removeOpt", exprs)
             }))),
-            _ => return None,
-        })
-    }
-
-    /// An iterator's call `mir_iter_call` leaves: a combinator, a step
-    /// through a `Peekable`, a range's, a stream's (ADRs 0062, 0071).
-    pub(super) fn mir_iter_std_call<'c>(
-        &self,
-        state: &State<'_, 'tcx>,
-        call: StdCall<'c, 'tcx>,
-    ) -> Option<StdLowering<'c, 'a, 'tcx>> {
-        let this = self;
-        let StdCall {
-            known,
-            generic_args,
-            arg_tys,
-            output,
-            span,
-            ..
-        } = call;
-        Some(match known {
-            // An `Option` of a place found given to a closure that takes it as
-            // one, before any other combinator's: `at !== -1 ? f(at) : -1` of `and_then`'s, `: undefined`
-            // of `map`'s (ADR 0642).
-            Std::Comb(crate::lower::combinators::Comb::AndThen) | Std::OptionMap
-                if state.facts.offsets().call_in_units(state.at) =>
-            {
-                lower(move |this, state, values, out| {
-                    Ok(Value::Expr({
-                        let at = this.value_expr(values.next().expect("the place found"), span)?;
-                        let f = this.value_expr(values.next().expect("the closure"), span)?;
-                        let at = match at.reads_same() {
-                            true => at,
-                            false => {
-                                this.flush(state, out)?;
-                                this.spill("at", at, out)
-                            }
-                        };
-                        let then = this.call_with(f, vec![at.clone()], "then", out);
-                        let mapped = known == Std::OptionMap;
-                        let then = match mapped && this.option_of(output).is_some_and(|item| this.boxed_payload(item)) {
-                            true => this.some(then),
-                            false => then,
-                        };
-                        let none = if mapped { Expr::undefined() } else { Expr::int(-1) };
-                        Expr::cond(crate::lower::std_types::text::found(at), then, none)
-                    }))
-                })
-            }
-            // An iterator's combinator, of a JS iterator, lazy as Rust's; one a
-            // `&mut` lends, stepped through what can't close it.
-            Std::IterComb(comb) => lower(move |this, state, values, out| {
-                Ok(Value::Expr({
-                    let iter_ty = arg_tys[0].peel_refs();
-                    // Items with a destructor a combinator may leave undropped; not
-                    // one that leaves none, `partition`'s and `max_by`'s, nor an
-                    // adapter that holds what it steps, closed to drop it, which
-                    // drops each it discards (ADR 0465).
-                    let dropping = this
-                        .iterator_item(iter_ty)
-                        .filter(|&item| this.drops(item) != crate::lower::drops::Drops::Nothing);
-                    if dropping.is_some() && !comb.leaves_none() && !comb.holds_its_sources() {
-                        return Err(this.unsupported(
-                            span,
-                            "an iterator's combinator of items with a destructor, from its MIR",
-                        ));
-                    }
-                    let lent = matches!(arg_tys[0].kind(), ty::Ref(_, _, ty::Mutability::Mut));
-                    let exprs = values
-                        .map(|v| match v {
-                            Value::Ref(place) => Ok(place),
-                            v => this.value_expr(v, span),
-                        })
-                        .collect::<R<Vec<_>>>()?;
-                    let mut exprs = exprs;
-                    let receiver = exprs.remove(0);
-                    let it = this.as_js_iterator(receiver, iter_ty, span)?;
-                    // One that owns items with a destructor, given whole to a
-                    // consumer that leaves none, `partition`'s or `max_by`'s,
-                    // closed too: a panic in its callback stops it part-way,
-                    // and what's left is dropped as it unwinds, by its closing,
-                    // as `dropping_source` closes `max()`'s (#423).
-                    let it = match lent {
-                        true => this.lent_iterator(it),
-                        false if comb.holds_its_sources() || comb.leaves_none() => this.closing(it, iter_ty, span)?,
-                        false => it,
-                    };
-                    // Another iterator it's given, `chain(Counter(0))`'s, the
-                    // crate's: stepped by its own `next`, not its fields, as a
-                    // type parameter's given as it is is by its dictionary (ADR
-                    // 0487); one that owns items with a destructor, `zip(v)`'s,
-                    // `$closing`.
-                    let mut exprs = (exprs.into_iter().zip(&arg_tys[1..]))
-                        .map(|(e, &ty)| {
-                            // What `zip` and `chain` take, an `IntoIterator`'s
-                            // items (ADR 0528); another's argument, a function or
-                            // a value, as it is.
-                            if !matches!(comb, IterComb::Zip | IterComb::Chain) {
-                                return Ok(e);
-                            }
-                            // An iterator a zip by index asks its length of, as
-                            // it is, `zipped` makes it knowing it (ADR 0973).
-                            if comb == IterComb::Zip
-                                && this.implements_iterator(ty)
-                                && crate::lower::recognition::zips_by_index(this.tcx, this.typing_env, iter_ty, ty)
-                            {
-                                return Ok(e);
-                            }
-                            let e = this.iterable_items(e, ty, span, out)?;
-                            // Closed to drop what it holds, a JS iterator of it.
-                            Ok(match this.closing_drop(ty, span)? {
-                                // An array, a `$iter` of it, as std's `IntoIter` steps
-                                // it, its `nth` from either end too (#250).
-                                Some(drop)
-                                    if this.slice_item(ty.peel_refs()).is_some()
-                                        && !crate::lower::iterators::is_js_iterator(&e) =>
-                                {
-                                    let it = this.stepped_items(e);
-                                    this.closed_by(it, drop, ty)
-                                }
-                                Some(drop) if crate::lower::iterators::is_js_iterator(&e) => {
-                                    this.closed_by(e, drop, ty)
-                                }
-                                Some(drop) => {
-                                    let it = this.js_iterator(e);
-                                    this.closed_by(it, drop, ty)
-                                }
-                                None => e,
-                            })
-                        })
-                        .collect::<R<Vec<_>>>()?;
-                    // A function it holds with a destructor, `inspect(f)`'s, in a
-                    // variable, dropped after its source as it's closed (ADR
-                    // 0991).
-                    let held = (this.recognition().held_function(output))
-                        .filter(|&function| this.drops(function) != crate::lower::drops::Drops::Nothing);
-                    let held = match (held, exprs.first().cloned()) {
-                        (Some(function), Some(f)) => {
-                            let f = match f.kind {
-                                js::ExprKind::Var(_) => f,
-                                _ => this.spill("f", f, out),
-                            };
-                            exprs[0] = f.clone();
-                            Some((f, function))
-                        }
-                        _ => None,
-                    };
-                    if let Some(item) = dropping
-                        && matches!(comb, IterComb::SkipWhile | IterComb::TakeWhile)
-                    {
-                        this.flush(state, out)?;
-                        this.dropping_discarded(item, &mut exprs, span)?;
-                    }
-                    let made =
-                        this.iter_comb(comb, it, exprs.into_iter(), generic_args, (iter_ty, output), span, out)?;
-                    // A flatten the crate steps from its back, made knowing it
-                    // (ADR 0545): `$flattenEnds`, of what the recognizers made
-                    // in place, so marked, not std's struct (ADR 0899). A
-                    // chain a function gives behind an `impl` is std's `Chain`,
-                    // held, stepped from its back by its own methods (ADR 0919).
-                    let output = this.reveal(output);
-                    let made = match crate::lower::recognition::is_held_compiled(this.tcx, output) {
-                        true => made.in_place(),
-                        false => made,
-                    };
-                    // And an `inspect(f)`'s, made as a map, and a `filter_map(f)`'s (#473);
-                    // a chain's, `$lazyChain` of sides made knowing theirs (#718, #739).
-                    let back_made = [
-                        IterComb::Flatten,
-                        IterComb::FlatMap,
-                        IterComb::Inspect,
-                        IterComb::FilterMap,
-                        IterComb::Chain,
-                        IterComb::Zip,
-                    ];
-                    let made = match back_made.contains(&comb) && this.stepped_from_its_back(output) {
-                        true => this.as_double_ended(made, output, span)?,
-                        false => made,
-                    };
-                    match held {
-                        Some(held) => this.closing_function(made, output, held, span)?,
-                        None => made,
-                    }
-                }))
-            }),
-            // `cycle()` of another iterator than std's over an array, cloned
-            // (ADR 0491); and one a struct holds, of an array's too, which
-            // keeps both it cycles (ADR 0544).
-            Std::Step(StepOp::Cycle)
-                if this.explicit_adapter(output)
-                    || !arg_tys
-                        .first()
-                        .is_some_and(|t| this.array_source(t.peel_refs()).is_some()) =>
-            {
-                lower(move |this, _, values, _| {
-                    Ok(Value::Expr({
-                        let it = values.map(|v| this.value_expr(v, span)).next().expect("the iterator")?;
-                        this.cycled(it, arg_tys[0].peel_refs(), span)?
-                    }))
-                })
-            }
-            // A `Peekable`'s own methods, rewritten over std's struct, the
-            // JS iterator it is (ADR 0561): what it peeked at, or what it
-            // steps next, kept; `next_if`, its next item where the test
-            // takes it, else kept.
-            Std::Step(op @ (StepOp::Peek | StepOp::PeekMut | StepOp::NextIf | StepOp::NextIfEq))
-                if arg_tys.first().is_some_and(|t| this.is_peekable(t.peel_refs())) =>
-            {
-                lower(move |this, _, values, out| {
-                    Ok(Value::Expr({
-                        let mut exprs = values
-                            .map(|v| this.value_expr(v, span))
-                            .collect::<R<Vec<_>>>()?
-                            .into_iter();
-                        let it = exprs.next().expect("the iterator");
-                        let boxed = this.option_of(output).is_some_and(|item| this.boxed_payload(item));
-                        match op {
-                            StepOp::Peek if boxed => Expr::call_helper("$peekSome", vec![it]),
-                            StepOp::Peek => Expr::call_helper("$peek", vec![it]),
-                            // A handle on a number or text, else the item itself.
-                            StepOp::PeekMut => match this.iterator_item(arg_tys[0].peel_refs()) {
-                                Some(item) if this.mut_ref_form(item).is_cell() => {
-                                    Expr::call_helper("$peekCell", vec![it])
-                                }
-                                _ => Expr::call_helper("$peek", vec![it]),
-                            },
-                            // Of items that may look like `None`, each boxed, the
-                            // test given it unboxed.
-                            StepOp::NextIf => {
-                                let f = exprs.next().expect("a test");
-                                Expr::call_helper(if boxed { "$nextIfSome" } else { "$nextIf" }, vec![it, f])
-                            }
-                            _ if boxed => {
-                                return Err(this.unsupported(span, "`next_if_eq` of items that may be `None`"));
-                            }
-                            _ => {
-                                let item = arg_tys[1];
-                                if !this.eq_is_identity(item) {
-                                    return Err(
-                                        this.unsupported(span, &format!("`next_if_eq` of `{}`s", item.peel_refs()))
-                                    );
-                                }
-                                let x = exprs.next().expect("a value");
-                                let x = if x.reads_same() {
-                                    x
-                                } else {
-                                    this.spill("expected", x, out)
-                                };
-                                let same = Expr::arrow(
-                                    vec!["item".into()],
-                                    vec![
-                                        StmtKind::Return(Some(Expr::bin(Op::Eq, Expr::var("item"), x)))
-                                            .at(js::Span::NONE),
-                                    ],
-                                );
-                                Expr::call_helper("$nextIf", vec![it, same])
-                            }
-                        }
-                    }))
-                })
-            }
-            // A slice's or string's iterator's own: of a `$iter`, which knows
-            // where it is (ADR 0071).
-            Std::Step(op @ (StepOp::AsSlice | StepOp::AsStr | StepOp::Offset | StepOp::Cycle))
-                if matches!(op, StepOp::AsStr | StepOp::Offset)
-                    || arg_tys
-                        .first()
-                        .is_some_and(|t| this.array_source(t.peel_refs()).is_some()) =>
-            {
-                lower(move |this, _, values, out| {
-                    Ok(Value::Expr({
-                        let mut exprs = values
-                            .map(|v| this.value_expr(v, span))
-                            .collect::<R<Vec<_>>>()?
-                            .into_iter();
-                        let it = exprs.next().expect("the iterator");
-                        match op {
-                            // A string's `chars()`' rest, as a string, and its
-                            // `char_indices()`', of its `[byte, char]`s (#118).
-                            StepOp::AsStr if this.recognition().is_char_indices(arg_tys[0].peel_refs()) => {
-                                Expr::call_helper("$charIndicesStr", vec![it])
-                            }
-                            StepOp::AsStr => Expr::call_helper("$restStr", vec![it]),
-                            StepOp::Offset => Expr::call_helper("$charIndicesOffset", vec![it]),
-                            StepOp::Cycle => {
-                                let iter_ty = arg_tys[0].peel_refs();
-                                let owns = this.array_source(iter_ty).expect("matched");
-                                // Its items, owned, which it would drop as it's dropped.
-                                if owns
-                                    && this
-                                        .iterator_item(iter_ty)
-                                        .is_some_and(|item| this.drops(item) != crate::lower::drops::Drops::Nothing)
-                                {
-                                    return Err(
-                                        this.unsupported(span, "`cycle()` of an array's items with a destructor")
-                                    );
-                                }
-                                let it = match it.reads_same() || is_stepped_items(&it) {
-                                    true => it,
-                                    false => this.spill("it", it, out),
-                                };
-                                let mut args = vec![this.stepped_left(it, iter_ty, false, span)?];
-                                let item = this.iterator_item(iter_ty).expect("an iterator's item");
-                                if owns && this.needs_clone(item) {
-                                    args.push(this.clone_fn("item", item, span)?);
-                                }
-                                Expr::call_helper("$cycle", args)
-                            }
-                            _ => {
-                                let it = if it.reads_same() { it } else { this.spill("it", it, out) };
-                                this.stepped_left(it, arg_tys[0].peel_refs(), false, span)?
-                            }
-                        }
-                    }))
-                })
-            }
-            // A standard stream's, `writeln!(io::stderr(), ..)`.
-            Std::Stream(op) => lower(move |this, state, values, out| {
-                Ok(Value::Expr({
-                    let exprs = values.map(|v| this.value_expr(v, span)).collect::<R<Vec<_>>>()?;
-                    this.flush(state, out)?;
-                    this.stream_values(op, exprs, span, out)
-                }))
-            }),
-            // std's `size_hint()`, of an iterator of the crate's that keeps it:
-            // `(0, None)` (ADR 0170).
-            Std::SizeHint(false) => lower(move |this, state, values, out| {
-                Ok(Value::Expr({
-                    let it = this.value_expr(values.next().expect("the iterator"), span)?;
-                    if it.has_effects() {
-                        this.flush(state, out)?;
-                        out.push(StmtKind::Expr(it).at(this.js_span(span)));
-                    }
-                    Expr::array(vec![Expr::int(0), Expr::undefined()])
-                }))
-            }),
             _ => return None,
         })
     }

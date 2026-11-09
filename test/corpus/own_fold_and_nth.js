@@ -7,6 +7,7 @@ import {
   $enumerate,
   $extend,
   $extendMap,
+  $foldToArray,
   $folded,
   $fromDigit,
   $heapExtend,
@@ -396,19 +397,17 @@ function main() {
   );
   console.log(`extend set ${set.size}`);
   text = "";
-  text += Array.from(
-    $folded(
-      $iterator(
-        up(),
-        upIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        upIterator_fold,
-        upIterator_nth,
-      ).map((x) => $unwrap($fromDigit(x, 10))),
-    ),
+  text += $foldToArray(
+    $iterator(
+      up(),
+      upIterator_next,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      upIterator_fold,
+      upIterator_nth,
+    ).map((x) => $unwrap($fromDigit(x, 10))),
   ).join("");
   console.log(`extend string ${text}`);
   const tree = new $BTreeSet();

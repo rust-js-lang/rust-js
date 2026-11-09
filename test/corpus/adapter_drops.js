@@ -150,7 +150,7 @@ function equal(a, b, IItemPartialEqJItem, dropJ, dropIItem, dropIIntoIter, dropJ
   let result;
   try {
     result = $iterEq(
-      $closing(iter, dropIIntoIter, false),
+      iter,
       $closing(Iterator.from(b), dropJ, false),
       (a, b) => IItemPartialEqJItem.eq(a, b),
       dropIItem,

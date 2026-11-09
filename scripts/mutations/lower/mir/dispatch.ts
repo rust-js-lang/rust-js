@@ -11,15 +11,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^closure_giving_back_a_write_error.rs$"],
   },
   {
-    name: "lent-iterator-place-made-a-js-iterator",
-    breaks:
-      "a `&mut` to a `Range` that's a `Vec`'s item, `&mut items[1]`, is a new JS iterator of it, `Iterator.from($index(items, 1))`, which `r.next()` steps apart from the item (#638)",
-    file: "src/lower/mir/dispatch.rs",
-    find: "                    && !lent_place\n",
-    replace: "",
-    tests: ["test/mut-ref-matrix.test.ts", "-t", "of iterator, held as item"],
-  },
-  {
     name: "nested-flatten-unread",
     breaks: "`flatten()` of a nested field is `$someValue(..)` of its box, not `entry.value` (#470)",
     file: "src/lower/mir/dispatch.rs",
@@ -148,15 +139,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "mir-std-iterator-array",
-    breaks: "`text.bytes()` is an array MIR steps as an iterator",
-    file: "src/lower/mir/dispatch.rs",
-    find: "                if (self.implements_iterator(output) || std_iterator)\n",
-    replace:
-      "                if false && (self.implements_iterator(output) || std_iterator)\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "stepped by hand"],
-  },
-  {
     name: "mir-print-failing-unwrapped",
     breaks:
       "`println!` of a `Display` that fails throws, writing nothing of what it wrote",
@@ -174,15 +156,6 @@ export const mutations: Mutation[] = [
     find: "            Std::ToString => first_ty().is_some_and(|ty| self.fmt_may_fail(self.display_trait(), ty)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "fmt_error_to_string"],
-  },
-  {
-    name: "mir-boxed-iterator-wrapped",
-    breaks:
-      "`Box::new(Countdown(3))` is wrapped as an array's iterator, stepping its struct's fields",
-    file: "src/lower/mir/dispatch.rs",
-    find: "                    && !output.is_box()\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "dyn_iterators"],
   },
   {
     name: "mir-omitted-prop-called",
@@ -338,15 +311,6 @@ export const mutations: Mutation[] = [
       "-t",
       "iter_mut chains from MIR",
     ],
-  },
-  {
-    name: "mir-std-param-output-an-iterator",
-    breaks:
-      "a `T` a std call gives, `unwrap_or(fallback)`'s, is wrapped `Iterator.from(..)` from MIR, which throws of a number",
-    file: "src/lower/mir/dispatch.rs",
-    find: "                    && !matches!(output.kind(), ty::Param(_))\n                    && !output.is_box()",
-    replace: "                    && !output.is_box()",
-    tests: ["test/corpus.test.ts", "-t", "generic_from_str"],
   },
   {
     name: "mir-dyn-error-from-refused",
@@ -542,29 +506,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
   },
   {
-    name: "result-method-write-result-object",
-    breaks:
-      "`map` of an `io::Result<usize>` into an `io::Result<()>` gives a `{ TAG }` object, which a caller takes for its error",
-    file: "src/lower/mir/dispatch.rs",
-    find: '                Value::Expr(Expr::call_helper("$writeOf", vec![e]))\n',
-    replace: "                Value::Expr(e)\n",
-    tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
-  },
-  {
-    name: "std-iterator-of-item-unmade",
-    breaks:
-      "std's iterator of another's items, `option::IntoIter<I::Item>`, is left the array it's made as, which `collect` can't step",
-    file: "src/lower/mir/dispatch.rs",
-    find: "                if (self.implements_iterator(output) || std_iterator)\n",
-    replace: "                if self.implements_iterator(output)\n",
-    tests: [
-      "test/corpus.test.ts",
-      "test/iterator-forms.test.ts",
-      "-t",
-      "^boxed_option_unwraps.rs$|^option_iterator_of_generic_items.rs$|^generic_accumulations with",
-    ],
-  },
-  {
     name: "crate-impl-iterator-route",
     breaks:
       "a copied default's `self.next()` of the crate's iterator is stepped as a JS iterator",
@@ -622,16 +563,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "std_methods"],
   },
   {
-    name: "mir-str-deref-mut-refused",
-    breaks:
-      "MIR's `&mut str` of a `String`, `s.make_ascii_uppercase()`'s, is refused",
-    file: "src/lower/mir/dispatch.rs",
-    find: "        if self.is_cell(output) {\n            return Some(Value::Ref(place.clone()));\n",
-    replace:
-      "        if false && self.is_cell(output) {\n            return Some(Value::Ref(place.clone()));\n",
-    tests: ["test/corpus.test.ts", "-t", "str_mut"],
-  },
-  {
     name: "called-value-not-by-name",
     breaks:
       "a crate's function as a value, called through MIR, is an arrow calling it, not it by name",
@@ -639,16 +570,6 @@ export const mutations: Mutation[] = [
     find: "        Ok(crate::lower::passed_on::passed_on(&arrow, taker, &[]).unwrap_or(arrow))\n",
     replace: "        Ok(arrow)\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "pin-mut-gives-a-handle",
-    breaks:
-      "`*pin += 1` of a pinned `&mut` to a number writes through a handle, not the number",
-    file: "src/lower/mir/dispatch.rs",
-    find: "        if !matches!(known, Std::Same | Std::Pin(crate::lower::std_types::pin::PinOp::Mut)) {\n",
-    replace: "        if !matches!(known, Std::Same) {\n",
-    tests: ["test/corpus.test.ts", "-t", "pin_box"],
     snapshots: true,
   },
   {
@@ -806,15 +727,6 @@ export const mutations: Mutation[] = [
       "-t",
       "a getter's read given to a binding's method runs before its lookup",
     ],
-  },
-  {
-    name: "box-as-mut-object-a-handle",
-    breaks:
-      "a `Box`'s `as_mut()` of an object is a handle on its place, so `b.as_mut().push(2)` pushes onto the handle",
-    file: "src/lower/mir/dispatch.rs",
-    find: "        (known == Std::Same && matches!(output.kind(), ty::Ref(_, _, ty::Mutability::Mut)))\n            .then(|| Value::Expr(place.clone()))\n",
-    replace: "        None\n",
-    tests: ["test/corpus.test.ts", "-t", "^box_as_mut_and_ref.rs$"],
   },
   {
     name: "extension-step-of-in-place-compiled",

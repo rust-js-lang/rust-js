@@ -1151,6 +1151,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let ranged = Value::Expr(self.view_call(helper, list).or_at(at));
             return Ok(self.std_value_as(ranged, output, arg_tys));
         }
+        // An iterator it takes by value, dropped after it (`consumed_by_std`).
+        let std = (known, def_id, generic_args);
+        if let Some(value) = self.consumed_by_std(state, std, (arg_tys, nulled), &mut values, output, span, out)? {
+            return Ok(self.std_value_as(value, output, arg_tys));
+        }
         let given = self.call_given(state, nulled);
         let value = self.mir_std_call(
             state,
@@ -1164,59 +1169,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         )?;
         let value = self.write_value(state, (known, output), value, span, out)?;
         Ok(self.std_value_as(value, output, arg_tys))
-    }
-
-    /// A std call's value as its `output` is held. A std iterator
-    /// `mir_std_call` makes an array of, `bytes()`'s: a JS iterator, which
-    /// MIR steps; not one that's the string it shows, an escape's, nor a `T`
-    /// it gives, `unwrap_or`'s, its value. A write's result a `Result`'s
-    /// method makes of a value's, `map` of an `io::Result<usize>`: `undefined`
-    /// or its error, `$writeOf(..)` (ADR 0462).
-    fn std_value_as(&mut self, value: Value<'tcx>, output: Ty<'tcx>, arg_tys: &[Ty<'tcx>]) -> Value<'tcx> {
-        // std's own iterator, of whatever items, `option::IntoIter<I::Item>`.
-        let std_iterator = matches!(output.kind(), ty::Adt(adt, _) if crate::lower::recognition::is_std_crate(self.tcx, adt.did()))
-            && self.iterator_item(output).is_some();
-        let lent_place = self.std_lends_a_place(output);
-        match value {
-            Value::Expr(e)
-                if (self.implements_iterator(output) || std_iterator)
-                    && !lent_place
-                    && !matches!(output.kind(), ty::Param(_))
-                    && !output.is_box()
-                    && self.range_kind(output).is_none()
-                    && !self.is_user_iterator(output) =>
-            {
-                Value::Expr(self.std_iterator(e, output))
-            }
-            Value::Expr(e)
-                if self.is_write_result(output)
-                    && arg_tys
-                        .first()
-                        .is_some_and(|&from| self.recognition().is_result(from) && !self.is_write_result(from)) =>
-            {
-                Value::Expr(Expr::call_helper("$writeOf", vec![e]))
-            }
-            value => value,
-        }
-    }
-
-    /// A std call that gives the `&mut` it's given, of what's in the same
-    /// place: `&mut *s` of a `String`, `as_mut_str()`, a `&mut str` to all
-    /// of it, the place the `&mut String` is; a pin's `as_mut()`, its; and a
-    /// `Box`'s `as_mut()` of an object, `&mut Vec<T>` of a `&mut
-    /// Box<Vec<T>>` (#116), the object in that place, as a `&mut` to one is
-    /// (ADRs 0099, 0550). `None` of another.
-    fn same_reference(&self, known: Std, output: Ty<'tcx>, values: &[Value<'tcx>]) -> Option<Value<'tcx>> {
-        let [Value::Ref(place)] = values else { return None };
-        if !matches!(known, Std::Same | Std::Pin(crate::lower::std_types::pin::PinOp::Mut)) {
-            return None;
-        }
-        let output = self.recognition().pinned(output).unwrap_or(output);
-        if self.is_cell(output) {
-            return Some(Value::Ref(place.clone()));
-        }
-        (known == Std::Same && matches!(output.kind(), ty::Ref(_, _, ty::Mutability::Mut)))
-            .then(|| Value::Expr(place.clone()))
     }
 
     /// A std function of its arguments' values, lowered once they're values
@@ -1317,7 +1269,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A std function rust-js knows, given what MIR made of its arguments.
     #[allow(clippy::too_many_arguments)]
-    fn mir_std_call(
+    pub(in crate::lower::mir) fn mir_std_call(
         &mut self,
         state: &mut State<'_, 'tcx>,
         (known, def_id): (Std, rustc_span::def_id::DefId),
