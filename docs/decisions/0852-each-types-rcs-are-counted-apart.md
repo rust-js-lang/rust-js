@@ -332,3 +332,22 @@ longer counts an `Rc<dyn Fn()>`, which made a closure holding one drop
 mutations `rc-param-resolution-unasked`, `rc-param-impl-method-resolved`
 and `rc-dyn-fn-any-other`. The `pub` and field cases guard callers outside
 the crate, which no one-crate case shows: they have no mutation.
+
+## Amendment: a `dyn Fn` is another only where it gives what it gives too (#1056)
+
+A `dyn Fn` may be another only where it takes what the other takes
+(#1003), but `head` compared its arguments alone, so an `Rc<dyn Fn()>`
+was one an `Rc<dyn Fn() -> u32>` may be. A consumer that compiles a
+library's `reads`, whose `Rc<dyn Fn() -> u32>`s of a cloned closure it
+compares and so counts (#1052), was refused by this ADR's rule when
+another library function, `listener`, handed it an uncounted `Rc<dyn
+Fn()>`: one type to `may_be`, counted here and not there. No coercion
+makes a `dyn Fn` of one result another of another result, so the two are
+never one type. **A `dyn Fn`'s head is what it takes and what it gives,
+its `Output`.** The library's contract names its heads so too (library ABI
+23). Case ([0262](0262-when-rust-and-js-disagree.md)): C, nothing
+counted is left uncounted; it lifts a refusal.
+
+Held by the pair `library_fn_dyns_of_two_results`, against native Rust,
+and the mutation `rc-dyn-fn-output-uncompared` (`analysis/rc_counts.ts`);
+`rc-dyn-fn-any-other` now drops the output too.

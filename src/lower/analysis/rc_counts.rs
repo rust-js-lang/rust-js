@@ -157,11 +157,17 @@ pub(in crate::lower) fn head<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(H
         ty::Slice(t) => named("[]", vec![t]),
         ty::Array(t, _) => named("[;]", vec![t]),
         ty::Tuple(ts) => named("()", ts.to_vec()),
-        // A `dyn Fn`'s, by what it takes, as one may be another only where
-        // each takes what the other does (#1003); its kind isn't compared,
-        // as one upcasts to another.
+        // A `dyn Fn`'s, by what it takes and what it gives, as one may be
+        // another only where each takes what the other does (#1003) and
+        // gives what it gives (#1056); its kind isn't compared, as one
+        // upcasts to another.
         ty::Dynamic(predicates, ..) if is_fn_dyn(tcx, predicates) => {
-            let args = super::closures::fn_dyn_args(tcx, predicates).into_iter().collect();
+            let mut args: Vec<Ty<'tcx>> = super::closures::fn_dyn_args(tcx, predicates).into_iter().collect();
+            args.extend(
+                (predicates.projection_bounds())
+                    .filter_map(|bound| tcx.instantiate_bound_regions_with_erased(bound).term.as_type())
+                    .map(|output| tcx.erase_and_anonymize_regions(output)),
+            );
             named("dyn Fn", args)
         }
         ty::Dynamic(predicates, ..) => match predicates.principal_def_id() {

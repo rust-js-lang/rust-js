@@ -57,8 +57,10 @@ use std::path::Path;
 /// identity compiles its own (#1052). 22: `merges_identities` lists too each
 /// function that makes a `Box`, `Rc` or `Arc` a `dyn Fn` of a function
 /// another may hold, which a consumer that reads a `dyn Fn`'s address
-/// makes apart (#1053).
-pub const VERSION: u32 = 22;
+/// makes apart (#1053). 23: a `dyn Fn`'s head names what it gives beside
+/// what it takes, so an `Rc` a library counts of one isn't another's of
+/// the same arguments (#1056).
+pub const VERSION: u32 = 23;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]

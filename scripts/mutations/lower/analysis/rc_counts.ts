@@ -334,9 +334,18 @@ export const mutations: Mutation[] = [
     name: "rc-dyn-fn-any-other",
     breaks: "an `Rc<dyn Fn()>` may be any other `dyn Fn`'s, so a neighbour's `ptr_eq` of an `Rc<dyn Fn(u32) -> u32>` counts it, and a closure holding it drops (#1003)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "            let args = super::closures::fn_dyn_args(tcx, predicates).into_iter().collect();\n",
-    replace: "            let args: Vec<Ty<'tcx>> = Vec::new();\n",
+    find: "            let mut args: Vec<Ty<'tcx>> = super::closures::fn_dyn_args(tcx, predicates).into_iter().collect();\n            args.extend(\n",
+    replace: "            let mut args: Vec<Ty<'tcx>> = Vec::new();\n            args.truncate(0);\n            Vec::<Ty<'tcx>>::new().extend(\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_dyn_fn_counted_by_its_signature.rs$"],
+  },
+  {
+    name: "rc-dyn-fn-output-uncompared",
+    breaks:
+      "an `Rc<dyn Fn()>` may be an `Rc<dyn Fn() -> u32>`, as their arguments are one, so a consumer that counts the second, of a library's function it compiles, is refused the first a library hands it uncounted (ADR 0852, #1056)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "            args.extend(\n                (predicates.projection_bounds())\n",
+    replace: "            args.extend(\n                (predicates.projection_bounds().filter(|_| false))\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_fn_dyns_of_two_results"],
   },
   {
     name: "crate-reads-no-fn-identity",
