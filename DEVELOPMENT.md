@@ -726,9 +726,13 @@ checked:
   pre-push hook `bun install` sets git to run (`.githooks/pre-push`,
   `scripts/push-guard.ts`): a commit made from an older tree, as `git
   reset --soft origin/main` after a fetch makes one, carries each file the
-  newer commits changed back as it was. Squash onto the merge base and
-  rebase; to revert a commit on purpose, name it in the message ("This
-  reverts commit <sha>").
+  newer commits changed back as it was: a file as it was before one of
+  them, or a recent commit's whole change, in each file it touched, that
+  applies to what's pushed again (f7d5e10ec's undoing of 02df83a40, files
+  it edited too). Squash onto the merge base and rebase; to revert a
+  commit on purpose, or take away all a recent commit added, a slow spot's
+  row once it's fixed say, name it in the message ("This reverts commit
+  <sha>").
 - **A push that fails**, GitHub down say, isn't a reason to stop: keep
   committing on `main` locally, and push when it works again.
 - **The check comes with the push**: its mutations are those of what
