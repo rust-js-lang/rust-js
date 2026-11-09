@@ -543,11 +543,12 @@ let keptClaims: string[] | undefined;
  * and the compiler's `-vV` identity (ADR 1003): each app built again every
  * run, the most of `check:fast --all`'s CPU (#882). Its files are written
  * through it, each only where its text differs, so what's the same keeps
- * its time; `done()`, once they're written, removes each an earlier run
- * wrote that this one didn't, and a `Cargo.lock` this one didn't write,
- * which would change what its build resolves. What a build writes beside
- * them, the JS beside its Rust, is the build's. A test that changes a file
- * after, to build again, writes it as it would anywhere: its time is new.
+ * its time; `done()`, once they're written, removes each file this run
+ * didn't write, an earlier run's, one a test wrote mid-run, a `Cargo.lock`
+ * that would change what its build resolves, but its Cargo target; what a
+ * build writes beside its Rust it writes again, Cargo finding it done or
+ * not. A test that changes a file after, to build again, writes it as it
+ * would anywhere: its time is new.
  */
 export class KeptApp {
   readonly dir: string;
@@ -625,15 +626,30 @@ export class KeptApp {
     keptClaims = keptClaims?.filter((claim) => claim !== owner);
   }
 
-  /** What an earlier run wrote that this one didn't, removed, and a
-   * `Cargo.lock` this one didn't write: its files are this run's. */
-  done(): string {
-    const record = join(this.dir, ".kept-app.json");
-    const before: string[] = existsSync(record) ? JSON.parse(readFileSync(record, "utf8")) : [];
-    for (const path of [...before, "Cargo.lock"]) {
-      if (!this.written.has(path)) rmSync(join(this.dir, path), { recursive: true, force: true });
-    }
-    writeFileSync(record, JSON.stringify([...this.written].sort()));
+  /** Each file this run didn't write removed, whoever wrote it, an earlier
+   * run's or a test's mid-run, a `Cargo.lock` too: its files are this run's.
+   * But where its Cargo target is, `keep`, `target/` or, as `rust-js build`
+   * holds it, `node_modules/.cache/`; what a build writes beside its Rust,
+   * which a build writes again however much Cargo finds done. */
+  done(keep = ["target", join("node_modules", ".cache")]): string {
+    const walk = (rel: string): boolean => {
+      let left = false;
+      for (const entry of readdirSync(join(this.dir, rel), { withFileTypes: true })) {
+        const path = join(rel, entry.name);
+        if (this.written.has(path) || keep.includes(path)) {
+          left = true;
+          continue;
+        }
+        if (entry.isDirectory() && [...this.written, ...keep].some((w) => w.startsWith(`${path}/`))) {
+          if (walk(path)) left = true;
+          else rmSync(join(this.dir, path), { recursive: true, force: true });
+          continue;
+        }
+        rmSync(join(this.dir, path), { recursive: true, force: true });
+      }
+      return left;
+    };
+    walk("");
     return this.dir;
   }
 }

@@ -244,8 +244,8 @@ test("the tooling's library ABI is the compiler's", () => {
 
 // An app kept between runs (`KeptApp`, #882) is built again where anything
 // it's built from changed, and found built where nothing did: as Cargo
-// judges it, by its fingerprints. What a run before wrote that this one
-// doesn't is gone, and so is a `Cargo.lock` it didn't write; two claims of
+// judges it, by its fingerprints. What this run didn't write is gone, an
+// earlier run's file or a `Cargo.lock`, but its Cargo target; two claims of
 // one name at once are two directories; a file changed mid-test, then
 // changed back by the next run's write, is built again each time; and a
 // crate it depends on by path, a binding crate's source say, changed, is
@@ -292,8 +292,9 @@ test("an app kept between runs is built again where what it's built from changed
   writeFileSync(join(next.dir, "src", "stale.rs"), "this run didn't write it");
   writeFileSync(join(next.dir, "Cargo.lock"), "# not this run's\n");
   expect(await answer(write(next))).toBe(42);
-  // The lock it found is gone, and the build's own is there; but `stale.rs`
-  // isn't a file a run wrote, so it's the test's own, kept.
+  // What it found that this run didn't write is gone, a file a test wrote
+  // mid-run and a lock, and the build's own lock is there.
+  expect(existsSync(join(next.dir, "src", "stale.rs"))).toBe(false);
   expect(readFileSync(join(next.dir, "Cargo.lock"), "utf8")).not.toContain("not this run's");
   // A crate it depends on by path changed: built again.
   writeFileSync(join(binding, "lib.rs"), "pub fn base() -> u32 {\n    50\n}\n");
