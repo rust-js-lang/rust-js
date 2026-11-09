@@ -20,8 +20,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// entries' sort, the drops of what `append` replaces. One whose `==`
     /// or `!=` can be seen (`eq_seen`) is too, as std's bulk build asks
     /// `!=` of each two in a row, and a range `==` of its bounds (#962).
-    pub(in crate::lower) fn tree_of_nodes(&self, key: Ty<'tcx>) -> bool {
+    /// And one, of `value`s if it's a map's, whose clone may panic partway
+    /// and drop what it made (`clone_drops_by_nodes`, #1069), whatever its
+    /// keys, as which it drops, and in what order, is its nodes' too.
+    pub(in crate::lower) fn tree_of_nodes(&self, key: Ty<'tcx>, value: Option<Ty<'tcx>>) -> bool {
         self.found_by_cmp(key) && (self.order_seen(key) || self.eq_seen(key) || !self.order_total(key))
+            || self.clone_drops_by_nodes(key, value)
+    }
+
+    /// Whether a clone of a B-tree of `key`s, and of `value`s if it's a
+    /// map's, may panic partway and drop what it made: an entry's clone
+    /// may panic (`clone_may_panic`) and an entry has a destructor, so
+    /// what it drops as the panic unwinds, and in what order, is std's
+    /// `clone_subtree`'s frames', node by node (#1069).
+    fn clone_drops_by_nodes(&self, key: Ty<'tcx>, value: Option<Ty<'tcx>>) -> bool {
+        let may_panic = |ty: Ty<'tcx>| self.needs_clone(ty) && self.clone_may_panic(ty);
+        let entry = value.map_or(key, |value| Ty::new_tup(self.tcx, &[key, value]));
+        (may_panic(key) || value.is_some_and(may_panic)) && self.drops(entry) != crate::lower::drops::Drops::Nothing
     }
 
     /// What std's nodes of `key`s ask besides `cmp`: `[eq, ord]`,
@@ -138,7 +153,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => m,
         };
         let mut list = vec![m.clone(), cmp, Expr::bool(set), Expr::str(&name), start, end];
-        if self.tree_of_nodes(key) {
+        if self.tree_of_nodes(key, (!set).then(|| map.type_at(1))) {
             list.push(Expr::bool(checked));
             list.extend(self.tree_order_fns(key, span)?);
         } else if !checked {

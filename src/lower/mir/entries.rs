@@ -24,7 +24,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Of a B-tree that may be std's nodes, of the entry itself, whose
         // one search is what std asks (#926).
         let nodes = self.is_std_type(entry_ty.peel_refs(), StdItem::BTreeEntry)
-            && generic_args.types().next().is_some_and(|key| self.tree_of_nodes(key));
+            && generic_args
+                .types()
+                .next()
+                .is_some_and(|key| self.tree_of_nodes(key, generic_args.types().nth(1)));
         if nodes {
             let entry = exprs.next().expect("the entry");
             let given = match op {

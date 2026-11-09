@@ -53,6 +53,51 @@ impl Drop for Loud {
 }
 `;
 
+// A B-tree whose clone may panic partway and drop what it made, whatever
+// its keys, is std's nodes, which `clone_subtree` drops by, node by node
+// (#1069); one whose clone can't is the sorted map it always was.
+test("a B-tree map is std's nodes where its clone may panic and drop what it made", () => {
+  const flat = compiled(
+    "std-unwinds-btree-clone",
+    `${types}
+use std::collections::BTreeMap;
+
+/// Its clone may panic.
+pub struct Picky(pub u32);
+
+impl Clone for Picky {
+    fn clone(&self) -> Picky {
+        if self.0 == 0 {
+            panic!("clone");
+        }
+        Picky(self.0)
+    }
+}
+
+impl Drop for Picky {
+    fn drop(&mut self) {
+        self.0 = 0;
+    }
+}
+
+pub fn quiet() -> BTreeMap<u32, Quiet> {
+    BTreeMap::new()
+}
+
+pub fn picky() -> BTreeMap<u32, Picky> {
+    BTreeMap::new()
+}
+
+pub fn numbers() -> BTreeMap<u32, u32> {
+    BTreeMap::new()
+}
+`,
+  );
+  expect(body(flat, "quiet")).toContain("new $BTreeMap()");
+  expect(body(flat, "numbers")).toContain("new $BTreeMap()");
+  expect(body(flat, "picky")).toContain("new ($ordTreeMap($cmp))()");
+});
+
 test("a map's clear() empties it as an entry's drop unwinds, where one may", () => {
   const flat = compiled(
     "std-unwinds-clear",

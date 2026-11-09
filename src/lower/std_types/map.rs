@@ -329,7 +329,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         set: bool,
         sorted: bool,
-        key: Option<Ty<'tcx>>,
+        (key, value): (Option<Ty<'tcx>>, Option<Ty<'tcx>>),
         span: Span,
     ) -> R<Expr> {
         // A `&K`'s is its `K`'s.
@@ -377,9 +377,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(key) if self.is_cow_key(key) => ["$CowMap", "$CowSet"][usize::from(set)],
             // Kept in its `cmp`'s order, each found by it (ADR 0404): in
             // std's nodes where its comparisons can be seen (#926).
-            Some(key) if sorted && self.found_by_cmp(key) => {
+            // And in std's nodes where a clone of it may panic partway and drop
+            // what it made, in their order, whatever its keys (#1069).
+            Some(key) if sorted && (self.found_by_cmp(key) || self.tree_of_nodes(key, value)) => {
                 let cmp = self.cmp_fn(key, false, span)?;
-                let names = match self.tree_of_nodes(key) {
+                let names = match self.tree_of_nodes(key, value) {
                     true => ["$ordTreeMap", "$ordTreeSet"],
                     false => ["$ordMap", "$ordSet"],
                 };
@@ -460,11 +462,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     fn made(&mut self, set: bool, sorted: bool, generic_args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Expr> {
         let map = generic_args.types().find(|&t| self.is_map(t.peel_refs()));
-        let key = match map.map(|t| t.peel_refs().kind()) {
-            Some(ty::Adt(_, args)) => args.types().next(),
-            _ => generic_args.types().next(),
+        let (key, value) = match map.map(|t| t.peel_refs().kind()) {
+            Some(ty::Adt(_, args)) => (args.types().next(), args.types().nth(1)),
+            _ => (generic_args.types().next(), generic_args.types().nth(1)),
         };
-        self.map_class(set, sorted, key, span)
+        self.map_class(set, sorted, (key, value.filter(|_| !set)), span)
     }
 
     /// A map or a set made of `items`, `collect`'s or `from`'s, of what its
@@ -505,7 +507,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // sort, as their type picks, then kept by `!=` (#926): a set's by
         // `<`, `TOrd.PartialOrd().lt`, and `!=` its `PartialEq()`'s, the
         // `Ord` dictionary's supertraits (#944).
-        if let Some(key) = key.filter(|&key| sorted && self.tree_of_nodes(key)) {
+        if let Some(key) = key.filter(|&key| sorted && self.tree_of_nodes(key, value)) {
             let entry = match value {
                 Some(value) => Ty::new_tup(self.tcx, &[key, value]),
                 None => key,
@@ -586,7 +588,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // A B-tree set of items std's own nodes hold, whose order can be
         // seen or isn't total (`tree_of_nodes`, #926): its algebra std's.
-        let seen_items = set && self.is_sorted(receiver) && types.first().is_some_and(|&item| self.tree_of_nodes(item));
+        let seen_items =
+            set && self.is_sorted(receiver) && types.first().is_some_and(|&item| self.tree_of_nodes(item, None));
         let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
         let map_ops = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
@@ -696,7 +699,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // pulled, bulk-pushed (`$treeOfSorted`).
             MapOp::SetOperator(name) => {
                 let item = types[0];
-                let class = self.map_class(true, self.is_sorted(receiver), Some(item), span)?;
+                let class = self.map_class(true, self.is_sorted(receiver), (Some(item), None), span)?;
                 let clone = self.clone_arg(item, span)?;
                 let cloned = |items: Expr| match clone.kind {
                     js::ExprKind::Undefined => items,

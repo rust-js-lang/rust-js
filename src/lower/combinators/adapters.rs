@@ -620,8 +620,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let part = Expr::index(pairs.clone(), Expr::int(i as i128));
                     parts.push(match side.kind() {
                         ty::Adt(_, args) if self.is_map(side) => {
-                            let class =
-                                self.map_class(self.is_set(side), self.is_sorted(side), args.types().next(), span)?;
+                            let set = self.is_set(side);
+                            let entry = (args.types().next(), args.types().nth(1).filter(|_| !set));
+                            let class = self.map_class(set, self.is_sorted(side), entry, span)?;
                             let made = Expr::new_(class, Vec::new());
                             self.map_values(
                                 crate::lower::std_types::map::MapOp::Extend,

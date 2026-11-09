@@ -145,7 +145,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ if self.is_lang_adt(ty, LangItem::String) => Expr::str(""),
             _ if self.is_vec_like(ty) => Expr::array(Vec::new()),
             ty::Adt(_, args) if self.is_map(ty) => {
-                let class = self.map_class(self.is_set(ty), self.is_sorted(ty), args.types().next(), span)?;
+                let set = self.is_set(ty);
+                let entry = (args.types().next(), args.types().nth(1).filter(|_| !set));
+                let class = self.map_class(set, self.is_sorted(ty), entry, span)?;
                 Expr::new_(class, Vec::new())
             }
             ty::Adt(_, args) if self.counted_rc(ty).is_some() => {

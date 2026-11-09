@@ -492,15 +492,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if self.is_map(ty) => {
                 let set = self.is_set(ty);
                 let key = args.types().next();
+                let value = args.types().nth(1).filter(|_| !set);
                 let sorted = self.is_sorted(ty);
-                let class = self.map_class(set, sorted, key, span)?;
+                let class = self.map_class(set, sorted, (key, value), span)?;
                 let key_ty = args.type_at(0);
                 // A B-tree of keys found by their own `cmp`, or its caller's,
                 // made of its entries in their order, asking it nothing, as
                 // std's `clone_subtree` asks nothing (#924): `ofSorted`; of
                 // std's nodes, in its source's shape (#926).
-                let in_order = sorted && self.found_by_cmp(key_ty);
-                let shape = (sorted && self.tree_of_nodes(key_ty)).then(|| place.clone());
+                let nodes = sorted && self.tree_of_nodes(key_ty, value);
+                let in_order = sorted && self.found_by_cmp(key_ty) || nodes;
+                let shape = nodes.then(|| place.clone());
                 let made_in_order = |made: Expr| match in_order {
                     true => Expr::call(
                         Expr::member(class.clone(), "ofSorted"),

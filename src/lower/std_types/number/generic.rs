@@ -283,7 +283,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // The class of a map keyed by it, as one made where its type's known
         // is (ADR 0466).
         if let Some((set, sorted)) = fact.map_kind() {
-            return self.map_class(set, sorted, Some(of), span);
+            return self.map_class(set, sorted, (Some(of), None), span);
         }
         // Whether its `Fuse` keeps it as it ends (ADR 0543).
         if fact == TypeFact::Fused {

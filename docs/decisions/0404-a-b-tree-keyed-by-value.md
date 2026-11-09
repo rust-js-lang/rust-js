@@ -395,3 +395,24 @@ The other std items those facts look up (`Ord`, `FromIterator`, `From`,
 `Into`, `Iterator`) are `core`'s, which every crate has. Held by the pair
 case `no_std_without_alloc` (`test/crates.test.ts`) and the mutation
 `tree-built-entries-tree-expected`.
+
+## Amendment: std's nodes where a clone may panic partway (2026-11-09, #1069)
+
+A `BTreeMap<u32, D>` whose `D`'s clone may panic and whose entries drop,
+cloned where a clone in a later edge's subtree panics, dropped what it made
+in order, `0..18`, where native Rust's `clone_subtree` unwinds node by
+node, each frame's own key and value before what it made before them,
+`12..18, 11, 0..10`: the sorted map (`$BTreeMap`) has no nodes to unwind
+by. ADR 0262's case: results change, so Rust's behavior, however it
+reads. **A B-tree whose clone may panic partway and drop what it made is
+std's nodes, whatever its keys** (`tree_of_nodes(key, value)`, its
+`clone_drops_by_nodes`): an entry's clone may panic (`clone_may_panic`) and
+an entry has a destructor. `map_class` is given the value's type too, as
+each site that asks it, so a map, a set, a clone, a bulk build, a range and
+an entry ask one answer. Only that shape's JS changes: in the corpus,
+`clone_unwinds_what_it_made.rs`'s `BTreeMap<u32, D>`, now
+`$ordTreeMap($cmp)` built by `$treeFromSorted`; React's port's JS is what
+it committed. Held by `btree_clone_panics_in_a_later_edge.rs`, of counted
+keys, plain ones built in bulk or one by one, and a set's, against native
+Rust; a lowering test of both forms (`lowering-std-unwinds.test.ts`); and
+the mutation `tree-of-nodes-unasked-of-a-clone`.

@@ -32,11 +32,12 @@ export const mutations: Mutation[] = [
   {
     name: "btree-clone-searched",
     breaks:
-      "a clone of a B-tree of keys found by their own `cmp` is made by searching for each, asking `cmp`, where std's `clone_subtree` asks none (#924)",
+      "a clone of a B-tree of keys found by their own `cmp`, a sorted map's of a quiet order, is made by searching for each, asking `cmp`, where std's `clone_subtree` asks none (#924)",
     file: "src/lower/std_impls.rs",
-    find: "                let in_order = sorted && self.found_by_cmp(key_ty);\n",
-    replace: "                let in_order = false && self.found_by_cmp(key_ty);\n",
-    tests: ["test/corpus.test.ts", "-t", "^btree_clone_own_keys.rs$"],
+    find: "                let in_order = sorted && self.found_by_cmp(key_ty) || nodes;\n",
+    replace: "                let in_order = false && self.found_by_cmp(key_ty) || nodes;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(btree_clone_own_keys|btree_own_ord).rs$"],
+    snapshots: true,
   },
   {
     name: "map-entries-unguarded",
@@ -1089,7 +1090,7 @@ export const mutations: Mutation[] = [
     name: "clone-of-nodes-unshaped",
     breaks: "a clone of a tree that may be std's nodes isn't given its source, so it's made in another shape (#926)",
     file: "src/lower/std_impls.rs",
-    find: "                let shape = (sorted && self.tree_of_nodes(key_ty)).then(|| place.clone());\n",
+    find: "                let shape = nodes.then(|| place.clone());\n",
     replace: "                let shape = None::<Expr>;\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_clone_nodes_unwinds.rs$|^btree_nodes_seen.rs$"],
   },

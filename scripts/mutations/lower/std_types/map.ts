@@ -235,7 +235,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a B-tree keyed by a struct whose `Ord` and `Eq` are the crate's own is a `Map`, which finds a key by its object",
     file: "src/lower/std_types/map.rs",
-    find: "            Some(key) if sorted && self.found_by_cmp(key) => {\n",
+    find: "            Some(key) if sorted && (self.found_by_cmp(key) || self.tree_of_nodes(key, value)) => {\n",
     replace: "            Some(key) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$"],
   },
@@ -809,7 +809,7 @@ export const mutations: Mutation[] = [
     name: "set-operator-a-plain-set",
     breaks: "a set's operator, `&a | &b`, of items that are objects, is a plain `Set`, which finds an item by identity: `contains` false, `insert` adding one it holds (#961)",
     file: "src/lower/std_types/map.rs",
-    find: "                let class = self.map_class(true, self.is_sorted(receiver), Some(item), span)?;\n",
+    find: "                let class = self.map_class(true, self.is_sorted(receiver), (Some(item), None), span)?;\n",
     replace: "                let class = Expr::var(\"Set\");\n",
     tests: ["test/corpus.test.ts", "-t", "^set_operators_find_by_value.rs$"],
   },

@@ -7,12 +7,20 @@ import {
   $dropItems,
   $eq,
   $insert,
+  $intsOrdered,
+  $iterator,
   $madeEach,
+  $next,
   $ord,
   $ordTreeMap,
+  $ordTreeSet,
   $partialEq,
   $partialOrd,
+  $range,
+  $rangeNextBack,
   $sortedEntries,
+  $sortedKeys,
+  $treeFromSorted,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -21,6 +29,14 @@ export function entry() {
 
 let clones = 0;
 let compared = 0;
+let at = 20;
+
+const loudPartialOrd = $partialOrd({
+  PartialEq: () => $partialEq({ eq: $eq }),
+  partialCmp: (a, b) => $cmp(a[0], b[0]),
+});
+
+const loudOrd = $ord({ PartialOrd: () => loudPartialOrd, cmp: (a, b) => $cmp(a[0], b[0]) });
 
 export const keyPartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: $eq }),
@@ -40,7 +56,7 @@ export const loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
 function loudClone_clone(loud) {
   clones = (clones + 1) >>> 0;
   const n = clones;
-  if (n === 20) {
+  if (n === at) {
     throw new Error(`clone ${loud[0]}`);
   }
   return [loud[0]];
@@ -96,6 +112,419 @@ function main() {
   );
   console.log(`panicked ${r.TAG === "Err"}`);
   clones = 0;
+
+  let built;
+  try {
+    built = $treeFromSorted(
+      new ($ordTreeMap($cmp))(),
+      $range(0, 30).map((k) => [k, [k]]),
+      $intsOrdered,
+      "general8",
+      8,
+      loudDrop_drop,
+    );
+  } catch (error) {
+    $cleanup(() => {
+      if (r.TAG === "Ok") {
+        $dropItems($sortedEntries(r._0, keyOrd_cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+    });
+    throw error;
+  }
+  const r$1 = $catchUnwind(() =>
+    $ordTreeMap($cmp).ofSorted(
+      $madeEach(
+        built,
+        ([key, value]) => [key, loudClone_clone(value)],
+        (value) => {
+          loudDrop_drop(value[1]);
+        },
+        undefined,
+        loudDrop_drop,
+      ),
+      built,
+    ),
+  );
+  console.log(`built panicked ${r$1.TAG === "Err"}`);
+  clones = 0;
+  let inserted;
+  try {
+    inserted = new ($ordTreeMap($cmp))();
+  } catch (error) {
+    $cleanup(() => {
+      if (r$1.TAG === "Ok") {
+        $dropItems($sortedEntries(r$1._0, $cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(built, $cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+      if (r.TAG === "Ok") {
+        $dropItems($sortedEntries(r._0, keyOrd_cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+    });
+    throw error;
+  }
+  let iter;
+  try {
+    iter = $iterator({ start: 0, end: 40 }, $rangeNextBack);
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems($sortedEntries(inserted, $cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+      if (r$1.TAG === "Ok") {
+        $dropItems($sortedEntries(r$1._0, $cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(built, $cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+      if (r.TAG === "Ok") {
+        $dropItems($sortedEntries(r._0, keyOrd_cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+    });
+    throw error;
+  }
+  while (true) {
+    let k;
+    try {
+      k = $next(iter);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems($sortedEntries(inserted, $cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+        if (r$1.TAG === "Ok") {
+          $dropItems($sortedEntries(r$1._0, $cmp), ([, value]) => {
+            loudDrop_drop(value);
+          });
+        }
+        $dropItems($sortedEntries(built, $cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+        if (r.TAG === "Ok") {
+          $dropItems($sortedEntries(r._0, keyOrd_cmp), ([, value]) => {
+            loudDrop_drop(value);
+          });
+        }
+        $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      });
+      throw error;
+    }
+    if (k == null) {
+      break;
+    }
+    let loud;
+    try {
+      loud = $insert(inserted, k, [k]);
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems($sortedEntries(inserted, $cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+        if (r$1.TAG === "Ok") {
+          $dropItems($sortedEntries(r$1._0, $cmp), ([, value]) => {
+            loudDrop_drop(value);
+          });
+        }
+        $dropItems($sortedEntries(built, $cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+        if (r.TAG === "Ok") {
+          $dropItems($sortedEntries(r._0, keyOrd_cmp), ([, value]) => {
+            loudDrop_drop(value);
+          });
+        }
+        $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      });
+      throw error;
+    }
+    try {
+      if (loud != null) {
+        loudDrop_drop(loud);
+      }
+    } catch (error) {
+      $cleanup(() => {
+        $dropItems($sortedEntries(inserted, $cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+        if (r$1.TAG === "Ok") {
+          $dropItems($sortedEntries(r$1._0, $cmp), ([, value]) => {
+            loudDrop_drop(value);
+          });
+        }
+        $dropItems($sortedEntries(built, $cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+        if (r.TAG === "Ok") {
+          $dropItems($sortedEntries(r._0, keyOrd_cmp), ([, value]) => {
+            loudDrop_drop(value);
+          });
+        }
+        $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      });
+      throw error;
+    }
+  }
+  at = 33;
+  const r$2 = $catchUnwind(() =>
+    $ordTreeMap($cmp).ofSorted(
+      $madeEach(
+        inserted,
+        ([key, value]) => [key, loudClone_clone(value)],
+        (value) => {
+          loudDrop_drop(value[1]);
+        },
+        undefined,
+        loudDrop_drop,
+      ),
+      inserted,
+    ),
+  );
+  console.log(`inserted panicked ${r$2.TAG === "Err"}`);
+  clones = 0;
+
+  let set;
+  try {
+    set = $treeFromSorted(
+      new ($ordTreeSet((a, b) => $cmp(a[0], b[0])))(),
+      $range(0, 30).map((value) => [value]),
+      loudOrd,
+      "general8",
+      4,
+      undefined,
+      loudDrop_drop,
+    );
+  } catch (error) {
+    $cleanup(() => {
+      if (r$2.TAG === "Ok") {
+        $dropItems($sortedEntries(r$2._0, $cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(inserted, $cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+      if (r$1.TAG === "Ok") {
+        $dropItems($sortedEntries(r$1._0, $cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(built, $cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+      if (r.TAG === "Ok") {
+        $dropItems($sortedEntries(r._0, keyOrd_cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+    });
+    throw error;
+  }
+  at = 25;
+  const r$3 = $catchUnwind(() =>
+    $ordTreeSet((a, b) => $cmp(a[0], b[0])).ofSorted(
+      $madeEach(set, (item) => loudClone_clone(item), loudDrop_drop),
+      set,
+    ),
+  );
+  console.log(`set panicked ${r$3.TAG === "Err"}`);
+  clones = 0;
+  try {
+    if (r$3.TAG === "Ok") {
+      $dropItems(
+        $sortedKeys(r$3._0, (a, b) => $cmp(a[0], b[0])),
+        loudDrop_drop,
+      );
+    }
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems(
+        $sortedKeys(set, (a, b) => $cmp(a[0], b[0])),
+        loudDrop_drop,
+      );
+      if (r$2.TAG === "Ok") {
+        $dropItems($sortedEntries(r$2._0, $cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(inserted, $cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+      if (r$1.TAG === "Ok") {
+        $dropItems($sortedEntries(r$1._0, $cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(built, $cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+      if (r.TAG === "Ok") {
+        $dropItems($sortedEntries(r._0, keyOrd_cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+    });
+    throw error;
+  }
+  try {
+    $dropItems(
+      $sortedKeys(set, (a, b) => $cmp(a[0], b[0])),
+      loudDrop_drop,
+    );
+  } catch (error) {
+    $cleanup(() => {
+      if (r$2.TAG === "Ok") {
+        $dropItems($sortedEntries(r$2._0, $cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(inserted, $cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+      if (r$1.TAG === "Ok") {
+        $dropItems($sortedEntries(r$1._0, $cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(built, $cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+      if (r.TAG === "Ok") {
+        $dropItems($sortedEntries(r._0, keyOrd_cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+    });
+    throw error;
+  }
+  try {
+    if (r$2.TAG === "Ok") {
+      $dropItems($sortedEntries(r$2._0, $cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+    }
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems($sortedEntries(inserted, $cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+      if (r$1.TAG === "Ok") {
+        $dropItems($sortedEntries(r$1._0, $cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(built, $cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+      if (r.TAG === "Ok") {
+        $dropItems($sortedEntries(r._0, keyOrd_cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+    });
+    throw error;
+  }
+  try {
+    $dropItems($sortedEntries(inserted, $cmp), ([, value]) => {
+      loudDrop_drop(value);
+    });
+  } catch (error) {
+    $cleanup(() => {
+      if (r$1.TAG === "Ok") {
+        $dropItems($sortedEntries(r$1._0, $cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(built, $cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+      if (r.TAG === "Ok") {
+        $dropItems($sortedEntries(r._0, keyOrd_cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+    });
+    throw error;
+  }
+  try {
+    if (r$1.TAG === "Ok") {
+      $dropItems($sortedEntries(r$1._0, $cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+    }
+  } catch (error) {
+    $cleanup(() => {
+      $dropItems($sortedEntries(built, $cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+      if (r.TAG === "Ok") {
+        $dropItems($sortedEntries(r._0, keyOrd_cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+    });
+    throw error;
+  }
+  try {
+    $dropItems($sortedEntries(built, $cmp), ([, value]) => {
+      loudDrop_drop(value);
+    });
+  } catch (error) {
+    $cleanup(() => {
+      if (r.TAG === "Ok") {
+        $dropItems($sortedEntries(r._0, keyOrd_cmp), ([, value]) => {
+          loudDrop_drop(value);
+        });
+      }
+      $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
+        loudDrop_drop(value);
+      });
+    });
+    throw error;
+  }
   try {
     if (r.TAG === "Ok") {
       $dropItems($sortedEntries(r._0, keyOrd_cmp), ([, value]) => {

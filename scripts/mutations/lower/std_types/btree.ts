@@ -60,4 +60,13 @@ export const mutations: Mutation[] = [
     replace: "            false => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^extract_if_drops_what_it_holds.rs$"],
   },
+  {
+    name: "tree-of-nodes-unasked-of-a-clone",
+    breaks:
+      "a `BTreeMap<u32, D>` whose clone may panic and drop what it made is a sorted map, not std's nodes, so a clone panicking in a later edge drops in order, where std's `clone_subtree` drops by its nodes (#1069)",
+    file: "src/lower/std_types/btree.rs",
+    find: "            || self.clone_drops_by_nodes(key, value)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^btree_clone_panics_in_a_later_edge.rs$"],
+  },
 ];
