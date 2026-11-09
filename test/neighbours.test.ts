@@ -189,6 +189,28 @@ for (const pair of known) {
   }, 300_000);
 }
 
+// The groups the shuffle found going wrong that a fix made run as Rust
+// does, each by the cases it narrowed them to, compiled together each push
+// in each build, so a seed a commit names is run again: by the seed and the
+// group that found it, a group shifting as cases are added (#1111, #1009).
+const regressions: { seed: number; group: number; issue: string; cases: string[] }[] = [
+  { seed: 102, group: 1, issue: "1111", cases: ["fmt_error_as_a_value.rs", "std_inspect.rs"] },
+  { seed: 145, group: 1, issue: "1111", cases: ["failing_io_writer.rs", "std_inspect.rs"] },
+  { seed: 57, group: 1, issue: "1009", cases: ["eq_of_identities_inside.rs", "rc_of_param_unnamed.rs"] },
+];
+
+for (const { seed, group, issue, cases } of regressions) {
+  test(`seed ${seed} group ${group}'s ${cases.join(" and ")} run as Rust does together (#${issue})`, () => {
+    const crate = native(`neighbours-regression-${Bun.hash(cases.join(" ")).toString(36)}`, [...cases].sort());
+    if (typeof crate === "string") throw new Error(`${cases.join(" ")} doesn't build natively: ${crate.slice(0, 400)}`);
+    const wrong = builds.flatMap(([build, flags]) => {
+      const ran = js(crate.dir, crate.file, flags, build);
+      return typeof ran === "string" ? [`${build}: ${ran.slice(0, 400)}`] : agree(ran, crate.run) ? [] : [`${build}: runs otherwise than native Rust`];
+    });
+    expect(wrong).toEqual([]);
+  }, 300_000);
+}
+
 // The harness's own parts, which a wrong answer's report rests on.
 test("a seed's groups are the same each time, hold each case once, and a case added changes one", () => {
   const names = Array.from({ length: 1600 }, (_, i) => `c${i}.rs`);
