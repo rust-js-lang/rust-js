@@ -1292,6 +1292,10 @@ type Fn = {
    * `#[rust_js::runs_nothing]` (ADR 0867): an event handler's setter, which
    * keeps the function it's given (ADR 1006, amended). */
   runsNothing?: boolean;
+  /** The parameter it gives back, the argument itself, its result that
+   * parameter's type (`givesBack` of TypeScript's DOM): a union's a type
+   * parameter, `array: A` of `A: IntoArrayBufferView`, its result `A`. */
+  givesBack?: string;
 };
 
 /** The interfaces a rest parameter's arguments are, `...streams:
@@ -1893,8 +1897,16 @@ function functionsOf(declared: Interface): Fn[] {
       // A static method is the class's, `URL.createObjectURL(blob)`, in its
       // module, beside an instance's method of its name, `Response.json`.
       const isStatic = m.special === "static";
-      const result = rustType(m.idlType!, "result");
+      // One that gives back what it's given, TypeScript's `<T extends
+      // ..>(array: T): T`, gives the type that parameter takes, the
+      // argument itself: `crypto.get_random_values(&bytes)` a
+      // `&Uint8Array`, where WebIDL's `ArrayBufferView` result has a member
+      // Rust has none of, `Float16Array` (#1103).
+      const back = typescriptDom.get(i.name)?.givesBack.get(m.name);
+      const declared = back === undefined ? rustType(m.idlType!, "result") : undefined;
       const sig = signatures(m.arguments ?? []);
+      const backAt = back === undefined || "skip" in sig ? -1 : sig.names.indexOf(snake(back));
+      const result = backAt >= 0 ? jsGives((sig as { types: string[] }).types[backAt]) : (declared ?? rustType(m.idlType!, "result"));
       if (typeof result !== "string" || "skip" in sig) {
         skip(typeof result !== "string" ? result.skip : (sig as { skip: string }).skip);
         continue;
@@ -1922,7 +1934,8 @@ function functionsOf(declared: Interface): Fn[] {
       const params = CALLED_ONCE.has(`${i.name}.${m.name}`) ? v.params.map(once) : v.params;
       const given = orNull(result, m.idlType!);
       const quiet = QUIET.has(`${i.name}.${m.name}`) ? { runsNothing: true } : {};
-      fns.push({ name: v.name, jsName, params: isStatic ? params : [...self, ...params], result: given, doc, variadic: v.variadic, none: noneOf(m.idlType!, given), whole: wholeOf(m.idlType!, given), ...nulled(sig.nulls), ...quiet });
+      const givesBack = backAt >= 0 ? { givesBack: sig.names[backAt] } : {};
+      fns.push({ name: v.name, jsName, params: isStatic ? params : [...self, ...params], result: given, doc, variadic: v.variadic, none: noneOf(m.idlType!, given), whole: wholeOf(m.idlType!, given), ...nulled(sig.nulls), ...quiet, ...givesBack });
     }
   }
 
@@ -2187,6 +2200,12 @@ const unionParam = (p: string): Union | undefined => unions.get(p.slice(p.indexO
  */
 function generic(f: Fn): string {
   const names: string[] = [...(f.typeParams ?? [])];
+  // A type parameter named after its parameter, `message: M`, each its own.
+  const typeParam = (param: string) => {
+    let type = param[0].toUpperCase();
+    while (names.some((n) => n.split(":")[0] === type)) type += "1";
+    return type;
+  };
   const params = f.params.map((p) => {
     // An optional one by reference, so a `None` needs no type (ADR 0443):
     // a union's `Option<&dyn IntoNodeOrStr>`, an `any`'s `Option<&dyn IntoUnknown>`.
@@ -2196,6 +2215,11 @@ function generic(f: Fn): string {
     const optionalUnion = optional === undefined ? undefined : unions.get(optional.replace(/<'_>$/, ""));
     if (optionalUnion) return `${named}: Option<&dyn Into${optionalUnion.name}>`;
     const union = unionParam(p);
+    if (union && named === f.givesBack) {
+      const type = typeParam(named);
+      names.push(`${type}: Into${union.name}`);
+      return `${named}: ${type}`;
+    }
     if (union) return `${p.slice(0, p.indexOf(": "))}: impl Into${union.name}`;
     // A number it must be given is any that's an `f64`, `list.item(i)` of
     // a `u32` too; one it may be given, an `Option<f64>`, whose `None`
@@ -2203,12 +2227,13 @@ function generic(f: Fn): string {
     if (p.endsWith(": f64")) return `${named}: impl Into<f64>`;
     if (!p.endsWith(`: ${ANY}`)) return p;
     const param = p.slice(0, -`: ${ANY}`.length);
-    let type = param[0].toUpperCase();
-    while (names.some((n) => n.split(":")[0] === type)) type += "1";
+    const type = typeParam(param);
     names.push(CLONED.has(`${f.jsName}.${param}`) ? `${type}: StructuredClone` : type);
     return `${param}: ${type}`;
   });
-  const result = f.result === "()" ? "" : ` -> ${f.result}`;
+  const back = f.givesBack && params.find((p) => p.startsWith(`${f.givesBack}: `));
+  const given = back && unionParam(f.params.find((p) => p.startsWith(`${f.givesBack}: `))!) ? back.slice(back.indexOf(": ") + 2) : f.result;
+  const result = given === "()" ? "" : ` -> ${given}`;
   return [
     ...f.doc.map((d) => `    /// ${d}`),
     `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(f.jsName)})]`,

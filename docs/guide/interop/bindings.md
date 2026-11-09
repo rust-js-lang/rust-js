@@ -1334,7 +1334,13 @@ impl Shape {
 
 `c.label("unit")` and `c.label(1.5)` are `c.label("unit")` and `c.label(1.5)`;
 `c.label(true)` is rustc's error. A union that's returned, or a field, is an
-[untagged enum](types.md#enums), to `match`.
+[untagged enum](types.md#enums), to `match`. A function that gives back the
+argument it's given, TypeScript's `getRandomValues<T extends
+ArrayBufferView>(array: T): T`, takes a type parameter of the union's
+trait and gives it: webapi's `get_random_values<A: IntoArrayBufferView>(&self,
+array: A) -> A`, so `crypto().get_random_values(bytes)` of a `&Uint8Array`
+is that `&Uint8Array`, filled
+([ADR 0229](../../decisions/0229-union-parameters.md), amended).
 
 A union your own module exports as a type, read by what it is rather than
 matched, is an alias of `js::Unknown` whose `#[rust_js::types]` writes it:

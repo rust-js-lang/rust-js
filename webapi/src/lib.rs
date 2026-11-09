@@ -44820,6 +44820,12 @@ impl Crypto {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Crypto/getRandomValues)
+    #[cfg_attr(rust_js, rust_js::link_name = "getRandomValues")]
+    pub fn get_random_values<A: IntoArrayBufferView>(&self, array: A) -> A {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Crypto/randomUUID)
     #[cfg_attr(rust_js, rust_js::link_name = "randomUUID")]
     pub fn random_uuid(&self) -> String {

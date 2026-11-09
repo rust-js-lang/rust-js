@@ -29,7 +29,22 @@ export type Members = {
    * own or its parent's of the type it's given, `HTMLOptionsCollection`'s
    * `HTMLOptionElement` of `HTMLCollectionOf<HTMLOptionElement>`. */
   indexed?: string;
+  /** Its methods that give back an argument, by the parameter's name:
+   * TypeScript's `getRandomValues<T extends ..>(array: T): T`, `array`, or
+   * `appendChild<T extends Node>(node: T): T`, `node`. Its parents' too. */
+  givesBack: Map<string, string>;
 };
+
+/** The parameter a method gives back, its type and its result the method's
+ * type parameter, `<T extends ..>(array: T): T`'s `array`. Of one with no
+ * `extends`, `structuredClone<T = any>(value: T): T`, TypeScript's `T` says
+ * nothing: a clone of a class's object is a plain object. */
+function givenBack(member: any): string | undefined {
+  const own = (t: any) => t?.kind === "reference" && (t.args ?? []).length === 0 && (member.typeParameters ?? []).some((p: any) => p.name === t.name && p.constraint);
+  if (!own(member.returns)) return undefined;
+  const params = (member.params ?? []).filter((p: any) => own(p.type) && p.type.name === member.returns.name);
+  return params.length === 1 ? params[0].name : undefined;
+}
 
 /** Whether TypeScript's `type` is a function's, or none, `| null`. */
 const isFunction = (type: any): boolean =>
@@ -94,7 +109,7 @@ export async function typescript(): Promise<Map<string, Members>> {
   const interfaces = new Map<string, Members>();
   const of = (name: string) => {
     if (!interfaces.has(name))
-      interfaces.set(name, { members: new Set(), methods: new Set(), statics: new Set(), ctor: false, extends: [], lists: new Map(), functions: new Set(), narrowed: new Set(), nullable: new Set() });
+      interfaces.set(name, { members: new Set(), methods: new Set(), statics: new Set(), ctor: false, extends: [], lists: new Map(), functions: new Set(), narrowed: new Set(), nullable: new Set(), givesBack: new Map() });
     return interfaces.get(name)!;
   };
   const classes = new Set<string>();
@@ -136,6 +151,8 @@ export async function typescript(): Promise<Map<string, Members>> {
       const mayBeNull = (t: any) => isNull(t) || (t?.kind === "union" && t.types.some(isNull));
       for (const member of d.members) if (member.kind === "property") (mayBeNull(member.type) ? m.nullable : m.narrowed).add(member.name);
       for (const member of d.members) {
+        const back = member.kind === "method" ? givenBack(member) : undefined;
+        if (back) m.givesBack.set(member.name, back);
         const item = listed(member);
         if (item && !m.lists.has(member.name)) m.lists.set(member.name, item);
       }
@@ -165,12 +182,14 @@ export async function typescript(): Promise<Map<string, Members>> {
     const methods = new Set<string>();
     const functions = new Set<string>();
     const lists = new Map<string, string>();
+    const givesBack = new Map<string, string>();
     const add = (n: string, seen: Set<string>) => {
       if (seen.has(n)) return;
       seen.add(n);
       for (const x of of(n).methods) methods.add(x);
       for (const x of of(n).functions) functions.add(x);
       for (const [x, item] of of(n).lists) if (!lists.has(x)) lists.set(x, item);
+      for (const [x, param] of of(n).givesBack) if (!givesBack.has(x)) givesBack.set(x, param);
       for (const e of of(n).extends) add(e, seen);
     };
     add(name, new Set());
@@ -179,7 +198,7 @@ export async function typescript(): Promise<Map<string, Members>> {
       of(n).extends.flatMap((e) => (seen.has(e) ? [] : (seen.add(e), [e, ...ancestors(e, seen)])));
     const parentNullable = new Set(ancestors(name, new Set()).filter((e) => classes.has(e)).flatMap((e) => [...of(e).nullable]));
     const narrowed = new Set([...m.narrowed].filter((x) => parentNullable.has(x)));
-    out.set(name, { ...m, members, methods, lists, functions, narrowed, indexed: indexed(name, new Set()) });
+    out.set(name, { ...m, members, methods, lists, functions, narrowed, givesBack, indexed: indexed(name, new Set()) });
   }
   return out;
 }

@@ -192,3 +192,44 @@ the text.
 Held by `test/webapi-objects.test.ts` ("a form's append takes text or a
 Blob, an entry as it is"), of a `&String` and a `String`, run in Node,
 and by React's port: its react-client crate's `cargo check`.
+
+## Amendment: a function that gives back its argument gives its type (2026-11-10, #1103)
+
+`crypto.getRandomValues(array)` fills the array it's given and returns
+it. WebIDL types both as `ArrayBufferView`, a union, and webapi's
+generator skipped it: a union it gives is an enum only where Rust takes
+each member (ADR 0215), and `ArrayBufferView` has `Float16Array`, which
+the js crate doesn't bind. Read as the enum, it would also have lost
+what the caller passed, a `&Uint8Array`, to a `match`.
+
+TypeScript's DOM says what WebIDL doesn't: `getRandomValues<T extends
+Exclude<BufferSource, ArrayBuffer>>(array: T): T`. **A method TypeScript
+declares as giving back a parameter, its result and that parameter's
+type both one type parameter with an `extends`, gives the type the
+parameter takes** (`givesBack`, webapi/coverage.ts, read by
+webapi/generate.ts). A union's parameter is then a type parameter of
+its trait, not an `impl`, so the result can name it:
+`get_random_values<A: IntoArrayBufferView>(&self, array: A) -> A`. Any
+other parameter's type is given as a function gives it, so `appendChild`,
+`insertBefore`, `removeChild`, `replaceChild`, `adoptNode` and
+`importNode`, the six others TypeScript declares so, are unchanged at
+`&'static Node`. A type parameter with no `extends` says nothing:
+`structuredClone<T = any>(value: T): T` gives a clone, and a clone of a
+class's object is a plain object, so it stays `Option<&'static Unknown>`.
+
+This is case N of ADR 0262: what JS gives back is the object it was
+given, and Rust holds it as that object's type. The binding takes any
+view, as WebIDL and TypeScript do. A view not of integers, such as a
+`DataView` or a `Float32Array`, throws `TypeMismatchError` as JS's call
+does. Only `getRandomValues` was skipped for this reason. The two other
+operations skipped for a union result, `SubtleCrypto.generateKey` and
+`exportKey`, give `CryptoKey | CryptoKeyPair` and `ArrayBuffer |
+JsonWebKey`, whose dictionaries JS can't tell apart from an object, a
+different rule.
+
+Held by `test/webapi-crypto.test.ts` ("getRandomValues fills the array
+it's given and gives it back"), run against the real API in Node and in
+Chromium. The array given comes back as the same object, filled, and a
+`DataView` throws. Also held by `test/webapi-coverage.test.ts`, whose
+regeneration catches dropping the rule and dropping the `extends` test,
+each tried by hand, as the mutations harness mutates the compiler alone.

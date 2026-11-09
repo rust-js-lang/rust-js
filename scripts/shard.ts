@@ -107,12 +107,12 @@ export const shardTimings = "target/shard-timings";
 
 /** The files that run a browser, beside a dev server, Vite's, Next.js's,
  * the playground's and the pilot's, or on a page of its own,
- * webapi-events': `bun run test` runs them after the rest, on their own,
+ * webapi-events' and webapi-crypto's: `bun run test` runs them after the rest, on their own,
  * as with the corpus's compiles they starve each other, and a page or a
  * Fast Refresh waits past its test's timeout. `check:fast --all` runs them
  * beside its other jobs, as its pool keeps the load near the cores (ADR
  * 1093, amended). */
-export const browsers = ["browser", "next", "playground", "pilot", "vite", "webapi-events"].map(
+export const browsers = ["browser", "next", "playground", "pilot", "vite", "webapi-crypto", "webapi-events"].map(
   (name) => `test/${name}.test.ts`,
 );
 

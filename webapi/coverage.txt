@@ -1,6 +1,6 @@
 # The webapi crate against TypeScript's DOM (@types/web): bun test test/webapi-coverage.test.ts
 # classes: 699 of 701 (99.7%)
-# members: 8371 of 8419 (99.4%)
+# members: 8372 of 8419 (99.4%)
 AbortController.abort
 AbortController.constructor
 AbortController.signal
@@ -1245,6 +1245,7 @@ CredentialsContainer.create
 CredentialsContainer.get
 CredentialsContainer.preventSilentAccess
 CredentialsContainer.store
+Crypto.getRandomValues
 Crypto.randomUUID
 Crypto.subtle
 CryptoKey.algorithm
