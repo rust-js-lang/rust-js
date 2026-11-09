@@ -30,25 +30,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 })
     }
 
-    /// Whether `ty` is an adapter whose being made knowing its back is its
-    /// value's fact, its maker's MIR identity (#851): each std adapter
-    /// back_stepped follows, whose maker's value a variable that holds it
-    /// is marked by (`structure.rs`, `places.rs`). Not the crate's own
-    /// iterator, nor what's no adapter.
-    pub(in crate::lower) fn back_by_value(&self, ty: ty::Ty<'tcx>) -> bool {
-        crate::lower::recognition::mapped_source(self.tcx, ty).is_some()
-            || crate::lower::recognition::filtered_source(self.tcx, ty).is_some()
-            || crate::lower::recognition::chained_sources(self.tcx, ty).is_some()
-            || crate::lower::recognition::copied_source(self.tcx, ty).is_some()
-            || crate::lower::recognition::cloned_source(self.tcx, ty).is_some()
-            || crate::lower::recognition::zipped_sources(self.tcx, ty).is_some()
-            || crate::lower::recognition::enumerated_source(self.tcx, ty).is_some()
-            || crate::lower::recognition::flattened_source(self.tcx, ty).is_some()
-            || crate::lower::recognition::filter_mapped_source(self.tcx, ty).is_some()
-            || crate::lower::recognition::inspected_source(self.tcx, ty).is_some()
-            || crate::lower::recognition::reversed_source(self.tcx, ty).is_some()
-            || crate::lower::recognition::counted_source(self.tcx, ty).is_some()
-            || crate::lower::recognition::stepped_by_source(self.tcx, ty).is_some()
+    /// Whether `ty` is an adapter whose maker makes it knowing its back
+    /// where it's stepped so (#851): a map's, a filter's, a `filter_map`'s,
+    /// an `inspect`'s, a chain's, a copy's, an enumeration's, a flatten's or a
+    /// `rev()`'s, so a variable or a field that holds one is marked by it
+    /// (`structure.rs`, `places.rs`). Not a zip's, a `skip(n)`'s, a
+    /// `take(n)`'s nor a `step_by(n)`'s, whose maker makes none so: what
+    /// steps it from its back makes it so where it's made, `$zipEnds`,
+    /// `$taking`, `$skipping`, `$stepByEnds` (ADR 0542), or it's std's struct
+    /// where MIR holds it (#718); nor the crate's own iterator.
+    pub(in crate::lower) fn made_knowing_its_back_by_its_maker(&self, ty: ty::Ty<'tcx>) -> bool {
+        use crate::lower::recognition as r;
+        r::mapped_source(self.tcx, ty).is_some()
+            || r::filtered_source(self.tcx, ty).is_some()
+            || r::filter_mapped_source(self.tcx, ty).is_some()
+            || r::inspected_source(self.tcx, ty).is_some()
+            || r::chained_sources(self.tcx, ty).is_some()
+            || r::copied_source(self.tcx, ty).is_some()
+            || r::cloned_source(self.tcx, ty).is_some()
+            || r::enumerated_source(self.tcx, ty).is_some()
+            || r::flattened_source(self.tcx, ty).is_some()
+            || r::reversed_source(self.tcx, ty).is_some()
     }
 
     /// Whether `local`, of the body being lowered, holds what the crate

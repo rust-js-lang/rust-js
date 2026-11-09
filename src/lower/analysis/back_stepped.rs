@@ -1,18 +1,18 @@
-//! The adapter types the crate steps from their back (ADR 0545): a `map` or
-//! a `filter` whose `next_back`, `rfold` and the like are called, of a
-//! source not an array's, whose own forms step it, or of an array's items
-//! with a destructor, an owning source closed to drop them, which they
-//! don't. A map of such a type is
-//! made knowing its back where it's made, as the iterators draft asks of
-//! one owner, before lowering: so one held in a variable before it's
-//! stepped, as a library's drop flags make one, still steps from its back.
-//! So are a chain's sides (#718), a `skip(n)` or a `take(n)` given held
-//! (#718), what's held beneath adapters made where they're given (#790), and
-//! a map whose closure has a destructor that a zip read by index asks the
-//! length of (#775).
+//! What the crate steps from its back (ADR 0545), by the MIR identity of
+//! what holds a value, not its type, which another value of it need not
+//! share (#851): each local, by its body, and each field a back step is
+//! given (`stepped_locals`), its maker then making it knowing its back where
+//! it's made, so one held in a variable before it's stepped, as a library's
+//! drop flags make one, still steps from its back; what an adapter stepped
+//! or asked so holds, a chain's sides, a zip's, a map's whose closure has a
+//! destructor, made so too (#718, #790, #385). And the types whose question
+//! is a type's (`back_stepped`): one a function gives behind an `impl`,
+//! which its callers can't see to make knowing its back, one a library's
+//! function is given or gives (#1024), and a generic function's own of its
+//! type parameters, each of its callers' (#388). No type's set besides: the
+//! lowering asks the value (`stepped_from_its_back`).
 
 use crate::collections::{IndexMap, IndexSet};
-use crate::lower::body_queries::strip;
 use crate::lower::recognition::{
     Recognition, back_stepped_source, chained_sources, cloned_source, copied_source, counted_source, enumerated_source,
     enumerates_a_compiled_struct, filter_mapped_source, filtered_source, flattened_source, inspected_source,
@@ -21,60 +21,8 @@ use crate::lower::recognition::{
 };
 use crate::lower::{Body, fn_def};
 use rustc_hir::def::DefKind;
-use rustc_middle::thir::{ExprId, ExprKind};
+use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
-
-/// Of each `impl` in `ty` a generic function gives, the function, its
-/// hidden type as the caller has it, and what each type in that is in the
-/// function's own
-/// terms, `Filter<Range<u32>, {closure}<B>>` of `evens_or_tens::<B>`'s
-/// `impl DoubleEndedIterator` of a `bool` caller's: what its body makes
-/// (#993). The two are alike but where the function's has a type
-/// parameter, walked side by side.
-fn made_generically<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    recognition: Recognition<'_, 'tcx>,
-    ty: Ty<'tcx>,
-) -> Vec<(
-    rustc_span::def_id::DefId,
-    Ty<'tcx>,
-    impl Fn(Ty<'tcx>) -> Option<Ty<'tcx>> + 'tcx,
-)> {
-    let mut found = Vec::new();
-    for part in ty.walk().filter_map(|part| part.as_type()) {
-        let ty::Alias(
-            _,
-            ty::AliasTy {
-                kind: ty::Opaque { def_id },
-                args,
-                ..
-            },
-        ) = *part.kind()
-        else {
-            continue;
-        };
-        let own = tcx.type_of(def_id).instantiate_identity().skip_normalization();
-        if !rustc_middle::ty::TypeVisitableExt::has_non_region_param(&own) {
-            continue;
-        }
-        let concrete = tcx.erase_and_anonymize_regions(recognition.reveal(part));
-        // Each type in its own terms, by what it is of the caller's arguments.
-        let theirs: Vec<(Ty<'tcx>, Ty<'tcx>)> = (own.walk().filter_map(|part| part.as_type()))
-            .map(|ours| {
-                let theirs = ty::EarlyBinder::bind(tcx, ours)
-                    .instantiate(tcx, args)
-                    .skip_normalization();
-                (
-                    tcx.erase_and_anonymize_regions(recognition.reveal(theirs)),
-                    tcx.erase_and_anonymize_regions(ours),
-                )
-            })
-            .collect();
-        let own_of = move |t: Ty<'tcx>| (theirs.iter()).find(|&&(their, _)| their == t).map(|&(_, our)| our);
-        found.push((tcx.parent(def_id), concrete, own_of));
-    }
-    found
-}
 
 /// What `all_bodies` step from their back: the types (`back_stepped`), of
 /// them those whose question is a type's, each local by its body
@@ -85,8 +33,8 @@ pub(super) fn of_crate<'tcx>(
     all_bodies: &[&Body<'tcx>],
     (library, drops): (bool, impl Fn(Ty<'tcx>) -> bool + Copy),
 ) -> BackStepped<'tcx> {
-    let (types, mut typed) = back_stepped(tcx, recognition, all_bodies, (library, drops));
-    let (locals, fields, typed_sources) = stepped_locals(tcx, recognition, all_bodies, &types, drops);
+    let mut typed = back_stepped(tcx, recognition, all_bodies, (library, drops));
+    let (locals, fields, typed_sources) = stepped_locals(tcx, recognition, all_bodies, drops);
     typed.extend(typed_sources);
     BackStepped {
         typed,
@@ -96,54 +44,26 @@ pub(super) fn of_crate<'tcx>(
     }
 }
 
-/// Each such type `all_bodies` step from its back, regions erased; and of
-/// them, those whose question is a type's, not a value's (#851): one a
-/// function gives behind an `impl`, which its callers can't see to make
-/// knowing its back, so each value of it its maker makes is; and each type
-/// a generic function's of its callers' (#388).
+/// The types whose question is a type's, not a value's (#851), regions
+/// erased: one a function gives behind an `impl`, which its callers can't
+/// see to make knowing its back, so each value of it its maker makes is;
+/// one a library's function is given or gives (#1024); and each type a
+/// generic function's that steps it from its back, of its callers' (#388).
 pub(super) fn back_stepped<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     (library, drops): (bool, impl Fn(Ty<'tcx>) -> bool),
-) -> (IndexSet<Ty<'tcx>>, IndexSet<Ty<'tcx>>) {
-    let mut stepped = IndexSet::default();
+) -> IndexSet<Ty<'tcx>> {
     let mut typed: IndexSet<Ty<'tcx>> = IndexSet::default();
     // Each body's own, by its function: what a caller's call of it makes too.
     let mut of_body: IndexMap<rustc_span::def_id::DefId, IndexSet<Ty<'tcx>>> = IndexMap::default();
-    // What a generic function makes behind an `impl` a caller steps from
-    // its back, in its own terms, its own (#993).
-    let mut generic_made: Vec<(rustc_span::def_id::DefId, Ty<'tcx>)> = Vec::new();
-    let zip = crate::lower::recognition::compiled_provided_method(tcx, "Iterator", "zip");
     for body in all_bodies {
-        let typing_env = ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(body.def_id));
         let stepped = of_body.entry(body.def_id).or_default();
-        let called: IndexMap<ExprId, (rustc_span::Span, &[ExprId])> = (body.thir.exprs.iter())
-            .filter_map(|e| match e.kind {
-                ExprKind::Call {
-                    fun, fn_span, ref args, ..
-                } => Some((strip(&body.thir, fun), (fn_span, &**args))),
-                _ => None,
-            })
-            .collect();
-        for (at, expr) in body.thir.exprs.iter_enumerated() {
+        for expr in body.thir.exprs.iter() {
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
-            // A zip that reads its sides by index (ADR 0973), which asks the
-            // length of `b`, a map whose closure has a destructor, held in a
-            // variable to drop it, whose form no use reads: made knowing its
-            // length where it's made, as one a bound asks it of is (#775).
-            if Some(callee) == zip
-                && let [a, b] = args.types().collect::<Vec<_>>()[..]
-                && !rustc_middle::ty::TypeVisitableExt::has_param(&(a, b))
-                && crate::lower::recognition::zips_by_index(tcx, typing_env, a, b)
-            {
-                let b = recognition.reveal(crate::lower::recognition::iterator_type_of(tcx, typing_env, b));
-                if closure_drops(tcx, b, &drops) {
-                    stepped.extend(back_stepped_adapter(tcx, recognition, b, false, &drops));
-                }
-            }
             // A library's function given a std adapter of a type parameter
             // its clauses make double-ended, `back<I, P>(it: Filter<I, P>)`
             // of an `I: DoubleEndedIterator`: its body, which may step it
@@ -151,63 +71,11 @@ pub(super) fn back_stepped<'tcx>(
             // what it's given is made knowing its back where it's made
             // (#1024).
             if recognition.foreign.is_library(callee.krate) {
-                let made = library_backs(tcx, recognition, callee, args, &drops);
-                typed.extend(made.iter().copied());
-                stepped.extend(made);
+                typed.extend(library_backs(tcx, recognition, callee, args, &drops));
             }
             // `DoubleEndedIterator`'s own method, `next_back()`, which asks
             // it of what it's called on: below, of each adapter.
             let own_method = tcx.trait_of_assoc(callee).is_some_and(|tr| is_double_ended(tcx, tr));
-            // Whether what asks its back, `rev()` or generic code, is given
-            // a value of type `asked` that a variable, a field or a place
-            // holds, not one made where it's given: `kept.rev()` of a `let
-            // kept = v.iter().filter_map(f)`, which no form of the call's
-            // steps from its back (#484). Through its borrows: what a call
-            // gives, `it.by_ref()`'s, is that call's.
-            let through = |mut e: ExprId| loop {
-                e = strip(&body.thir, e);
-                match body.thir[e].kind {
-                    ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => e = arg,
-                    _ => break &body.thir[e],
-                }
-            };
-            let given_held = |asked: Ty<'tcx>| {
-                !own_method
-                    && called.get(&at).is_some_and(|(_, args)| {
-                        (args.iter()).any(|&arg| {
-                            body.thir[arg].ty.peel_refs() == asked
-                                && !matches!(through(arg).kind, ExprKind::Call { .. })
-                        })
-                    })
-            };
-            // What's held beneath adapters made where it's given: `c.map(f)
-            // .rev()` of a `let c = a.chain(b)` (#790). Of a value of type
-            // `asked` it's given, through each call whose result is std's
-            // adapter of its first argument, made in place where it's
-            // stepped, the std adapter a variable, a field or a place holds
-            // there, which no form of the call's steps from its back.
-            let held_beneath = |asked: Ty<'tcx>| {
-                let (_, args) = called.get(&at)?;
-                let mut source = *args.iter().find(|&&arg| body.thir[arg].ty.peel_refs() == asked)?;
-                let mut made = false;
-                loop {
-                    let e = through(source);
-                    match (&e.kind, e.ty.kind()) {
-                        (ExprKind::Call { args, .. }, ty::Adt(adapter, of))
-                            if is_iter_adapter_def(tcx, adapter.did())
-                                && let Some(&first) = args.first()
-                                && of.types().next() == Some(body.thir[first].ty.peel_refs()) =>
-                        {
-                            (source, made) = (first, true);
-                        }
-                        (ExprKind::Call { .. }, _) => return None,
-                        (_, ty::Adt(adapter, _)) if made && is_iter_adapter_def(tcx, adapter.did()) => {
-                            return Some(recognition.reveal(e.ty));
-                        }
-                        _ => return None,
-                    }
-                }
-            };
             // What it asks to be double-ended holds such a type, as an
             // `Either` of filters does, stepped from its back by the impl
             // that asks it of what it holds; the type asked itself is its
@@ -216,117 +84,40 @@ pub(super) fn back_stepped<'tcx>(
                 let Some(asked) = clause.skip_normalization().as_trait_clause() else {
                     continue;
                 };
-                // Or its length, of a map whose closure has a destructor,
-                // held in a variable to drop it, whose form no use reads
-                // (#385): made knowing both where it's made.
-                let length = is_exact_size(tcx, asked.def_id());
-                if !is_double_ended(tcx, asked.def_id()) && !length {
+                if !is_double_ended(tcx, asked.def_id()) {
                     continue;
                 }
                 let hidden = asked.self_ty().skip_binder().peel_refs();
                 let asked = recognition.reveal(hidden);
-                if length && !closure_drops(tcx, asked, &drops) {
-                    continue;
-                }
                 // One a function gives behind an `impl`, which its caller
                 // can't make knowing its back: made so where it's made.
                 let given = hidden != asked;
-                // And in the terms of a generic function that makes it,
-                // `evens_or_tens::<B>`'s filter of a closure of its `B`, which
-                // its body asks, not the caller's `bool`'s (#993).
-                if given && !length {
-                    for (maker, concrete, own) in made_generically(tcx, recognition, hidden) {
-                        let adapters: Vec<Ty<'tcx>> = (concrete.walk().filter_map(|part| part.as_type()))
-                            .filter(|held| matches!(held.kind(), ty::Adt(a, _) if is_iter_adapter_def(tcx, a.did())))
-                            .collect();
-                        for held in adapters {
-                            let made = back_stepped_adapter(tcx, recognition, held, true, &drops);
-                            generic_made.extend(made.into_iter().filter_map(&own).map(|t| (maker, t)));
-                        }
-                    }
-                }
-                // One held where it's given, made knowing its back where
-                // it's made, as one given behind an `impl` is: asked its
-                // back, not its length alone.
-                let held_arg = !length && given_held(hidden);
-                // One held beneath what's made in place, made knowing its back
-                // where it's made too: a chain as the chain arm below records
-                // one, another as one given held is.
-                if !length
-                    && !own_method
-                    && !given
-                    && let Some(beneath) = held_beneath(hidden)
-                {
-                    match chained_sources(tcx, beneath) {
-                        Some(_) => {
-                            stepped.insert(tcx.erase_and_anonymize_regions(beneath));
-                        }
-                        None => stepped.extend(back_stepped_adapter(tcx, recognition, beneath, true, &drops)),
-                    }
-                }
                 // Not through a std adapter, whose own call steps what it
                 // holds: `filter(p).map(f).rev()`'s is `rev()`'s.
-                let mut walk = asked.walk();
-                while let Some(part) = walk.next() {
-                    let Some(held) = part.as_type() else { continue };
-                    if matches!(held.kind(), ty::Adt(adapter, _) if is_iter_adapter_def(tcx, adapter.did())) {
+                for held in asked.walk().filter_map(|part| part.as_type()) {
+                    if matches!(held.kind(), ty::Adt(adapter, _) if is_iter_adapter_def(tcx, adapter.did()))
                         // The type asked itself too where it's of an array's
                         // items with a destructor, which `rev()` can't step
                         // from its back once it's held in a variable.
-                        // And a map whose closure has a destructor, held in a
-                        // variable too. Not a flatten the `rev()` asks itself,
-                        // which stays made in place up to its `rev()`, past
-                        // calls that unwind to the same cleanup (#723), and is
-                        // made `$flattenEnds` there.
-                        if held != asked
-                            || given
-                            || held_arg
-                            || dropping_items(recognition, held, &drops)
-                            || closure_drops(tcx, held, &drops)
-                        {
-                            let made_apart = given || held_arg;
-                            let made = back_stepped_adapter(tcx, recognition, held, made_apart, &drops);
-                            if given {
-                                typed.extend(made);
-                            }
-                            stepped.extend(made);
+                        && (held != asked || given || dropping_items(recognition, held, &drops))
+                    {
+                        let made = back_stepped_adapter(tcx, recognition, held, given, &drops);
+                        if given {
+                            typed.extend(made);
                         }
-                        // A chain of items with a destructor a `rev()` or
-                        // generic code asks to be double-ended, which MIR
-                        // holds in a variable to drop them before it's
-                        // asked: made knowing its back where it's made, as no
-                        // form is left to read where it's stepped (#718).
-                        if held == asked
-                            && !given
-                            && chained_sources(tcx, held).is_some()
-                            && recognition.iterator_item(held).is_some_and(&drops)
-                        {
-                            stepped.insert(tcx.erase_and_anonymize_regions(held));
-                        }
-                        // Given behind an `impl`, each it holds too, made
-                        // where it's made, which no call of the caller's
-                        // steps.
-                        if !given {
-                            walk.skip_current_subtree();
-                        }
+                        stepped.extend(made);
                     }
                 }
             }
-            if !own_method {
-                continue;
-            }
-            let Some(hidden) = args.types().next().map(|ty| ty.peel_refs()) else {
-                continue;
-            };
-            let adapter = recognition.reveal(hidden);
-            match hidden != adapter {
-                // Given behind an `impl`: each adapter in it.
-                true => {
-                    let made = given_behind_an_impl(tcx, recognition, adapter, &drops);
-                    typed.extend(made.iter().copied());
-                    stepped.extend(made);
+            // What its own method is called on: given behind an `impl`, each
+            // adapter in it; else its own, which a generic function's, of
+            // its type parameters, is each of its callers' (#388).
+            if own_method && let Some(hidden) = args.types().next().map(|ty| ty.peel_refs()) {
+                let adapter = recognition.reveal(hidden);
+                match hidden != adapter {
+                    true => typed.extend(given_behind_an_impl(tcx, recognition, adapter, &drops)),
+                    false => stepped.extend(back_stepped_adapter(tcx, recognition, adapter, false, &drops)),
                 }
-                false => stepped.extend(back_stepped_adapter(tcx, recognition, adapter, false, &drops)),
             }
         }
     }
@@ -346,9 +137,7 @@ pub(super) fn back_stepped<'tcx>(
             // source, which it may step from its back: each made knowing it,
             // by their makers as by its body (`library_backs`).
             let identity = ty::GenericArgs::identity_for_item(tcx, body.def_id);
-            let given = library_backs(tcx, recognition, body.def_id, identity, &drops);
-            typed.extend(given.iter().copied());
-            stepped.extend(given);
+            typed.extend(library_backs(tcx, recognition, body.def_id, identity, &drops));
             // Its regions erased, those it binds too.
             let output = tcx
                 .instantiate_bound_regions_with_erased(
@@ -372,18 +161,16 @@ pub(super) fn back_stepped<'tcx>(
                         .is_some_and(|bound| is_double_ended(tcx, bound.def_id()))
                 });
                 if asked {
-                    let made = given_behind_an_impl(tcx, recognition, recognition.reveal(hidden), &drops);
-                    typed.extend(made.iter().copied());
-                    stepped.extend(made);
+                    typed.extend(given_behind_an_impl(
+                        tcx,
+                        recognition,
+                        recognition.reveal(hidden),
+                        &drops,
+                    ));
                 }
             }
         }
     }
-    for (maker, made) in generic_made {
-        typed.insert(made);
-        of_body.entry(maker).or_default().insert(made);
-    }
-    stepped.extend(of_body.values().flatten().copied());
     // And of a generic function's type parameters, `Filter<I, P>` a function
     // steps from its back that it's given: each of its callers' types,
     // `Filter<Copied<Iter<u32>>, {closure}>`, which its caller makes, through
@@ -417,12 +204,23 @@ pub(super) fn back_stepped<'tcx>(
             break;
         }
         for (owner, made) in more {
-            stepped.insert(made);
             typed.insert(made);
             of_body.entry(owner).or_default().insert(made);
         }
     }
-    (with_stepped_sources(tcx, stepped), with_stepped_sources(tcx, typed))
+    with_stepped_sources(tcx, typed)
+}
+
+/// `typed`, and the source of each of them that steps from its back where
+/// its source does, `back_stepped_source`'s, a `Filter`'s of a `Copied`
+/// given to generic code that steps it from its back: a type's question
+/// too, made knowing its back where it's made (#388, #851).
+fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, typed: IndexSet<Ty<'tcx>>) -> IndexSet<Ty<'tcx>> {
+    let mut all = typed.clone();
+    for ty in typed {
+        all.extend((back_stepped_source(tcx, ty)).map(|held| tcx.erase_and_anonymize_regions(held.peel_refs())));
+    }
+    all
 }
 
 /// Of a library's function `callee`, called with `args`, each std adapter
@@ -542,47 +340,6 @@ fn back_stepped_adapter<'tcx>(
     (!native).then(|| tcx.erase_and_anonymize_regions(adapter))
 }
 
-/// `stepped`, the types stepped from their back, and each map or filter
-/// they step from its back in turn, their sources', through what steps
-/// from its back where its source does: made knowing its back where it's
-/// made, held in a variable or not, as what steps it asks (#218). And a
-/// chain one steps, the one runtime `Chain`, which MIR may hold in a
-/// variable before its map is made, its sides made knowing theirs where
-/// it's made: a `map` of a chain of the crate's iterators folded from its
-/// back (#739). And a chain's sides in turn, which `$lazyChain` steps from
-/// their back, each made knowing it where it's made: MIR holds side `a` in
-/// a variable before the chain is made, where `b`'s drop flag must be
-/// cleared, so no form of `a` is left to read (#718), a `skip(n)` or a
-/// `take(n)` side too. And a zip's sides, which `$zipEnds` steps from their
-/// back and counts, a `cloned()`'s too, as MIR holds a side in a variable
-/// before the zip is made (#792).
-fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: IndexSet<Ty<'tcx>>) -> IndexSet<Ty<'tcx>> {
-    let mut all = stepped.clone();
-    for ty in stepped {
-        // A chain's sides, a zip's, or the source of what steps from its back
-        // where its source does.
-        // A chain's side that's a `skip(n)` or a `take(n)` is a local's, its
-        // value's, never its type's (`stepped_locals`, #814).
-        let held: Vec<Ty<'tcx>> = match chained_sources(tcx, ty).or_else(|| zipped_sources(tcx, ty)) {
-            Some((a, b)) => vec![a, b],
-            None => back_stepped_source(tcx, ty).into_iter().collect(),
-        };
-        for held in held.into_iter().map(|held| held.peel_refs()) {
-            if mapped_source(tcx, held).is_some()
-                || filtered_source(tcx, held).is_some()
-                || filter_mapped_source(tcx, held).is_some()
-                || copied_source(tcx, held).is_some()
-                || cloned_source(tcx, held).is_some()
-                || inspected_source(tcx, held).is_some()
-                || chained_sources(tcx, held).is_some()
-            {
-                all.insert(tcx.erase_and_anonymize_regions(held));
-            }
-        }
-    }
-    all
-}
-
 /// Whether `adapter` is a map whose closure has a destructor, `drops`'s:
 /// closed to drop it and held in a variable, so no form of its own steps
 /// it from its back or counts it (#385). An `inspect(f)`'s too, made as a
@@ -691,8 +448,9 @@ pub(in crate::lower) enum SteppedLocal {
 /// `DoubleEndedIterator` clause of the callee's of its type, `nth_back(&mut
 /// _11)`'s; a variable's value given whole to it, `rev()`'s or generic
 /// code's, a temporary moved out of one too; what an adapter that steps what
-/// it's given from its back holds, where it's stepped from its own, a local
-/// here or a type in `types`, a map's, a chain's sides, a zip's; and a
+/// it's given from its back holds, where it's stepped from its own or asked
+/// to be, a map's, a chain's sides, a zip's, a map's whose closure has a
+/// destructor (#851); and a
 /// function's return place, where a caller's destination is one. Not a
 /// temporary given whole, made in place where it's stepped, whose form the
 /// step reads, `v.slice(2).toReversed()`; nor a variable lent, std's struct,
@@ -702,7 +460,6 @@ pub(super) fn stepped_locals<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
-    types: &IndexSet<Ty<'tcx>>,
     drops: impl Fn(Ty<'tcx>) -> bool,
 ) -> SteppedValues<'tcx> {
     use rustc_middle::mir;
@@ -1047,7 +804,7 @@ pub(super) fn stepped_locals<'tcx>(
                 {
                     zips_of_held.insert((owner, destination.local));
                 }
-                let made_stepped = stepped.contains_key(&(owner, destination.local)) || types.contains(&made);
+                let made_stepped = stepped.contains_key(&(owner, destination.local));
                 let made_asked = made_stepped || asked.contains(&(owner, destination.local));
                 if !made_asked {
                     continue;
@@ -1083,9 +840,9 @@ pub(super) fn stepped_locals<'tcx>(
                         // Or of an adapter stepped from its back that holds a
                         // closure with a destructor, which MIR holds what it's
                         // made of before it's made, its form gone (#851).
-                        let spilled = made_stepped && closure_drops(tcx, made, &drops);
+                        let spilled = made_asked && closure_drops(tcx, made, &drops);
                         let copy = copied_source(tcx, made).or_else(|| cloned_source(tcx, made)).is_some();
-                        if ty == source && (chain && made_stepped || user || spilled || copy && made_asked) {
+                        if ty == source && (chain && made_asked || user || spilled || copy && made_asked) {
                             mark(&mut stepped, (owner, local), SteppedLocal::Given);
                             if held_by_struct {
                                 typed_sources.insert(ty);

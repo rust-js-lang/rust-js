@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a filter's question of whether the crate steps it from its back is its type's in back_stepped's set, so one only folded forward of a type stepped from its back elsewhere is `$filterEnds` (#851)",
     file: "src/lower/iterators/back_facts.rs",
-    find: "            || crate::lower::recognition::filtered_source(self.tcx, ty).is_some()\n",
+    find: "            || r::filtered_source(self.tcx, ty).is_some()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_map_folded_and_rfolded.rs$"],
     snapshots: true,
@@ -42,18 +42,10 @@ export const mutations: Mutation[] = [
     name: "chain-stepped-by-its-type",
     breaks: "a chain's question of whether the crate steps it from its back is its type's in back_stepped's set, so one only stepped forward, of a type stepped from its back elsewhere, is made knowing its back where JS's own form reads (#851)",
     file: "src/lower/iterators/back_facts.rs",
-    find: "            || crate::lower::recognition::chained_sources(self.tcx, ty).is_some()\n",
+    find: "            || r::chained_sources(self.tcx, ty).is_some()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(held_beneath_adapters_from_its_back|cloned_of_a_chain_stepped_from_its_back|chain_stepped_from_its_back_elsewhere|chain_under_a_held_map_from_its_back|chain_of_adapters_stepped_from_its_back|chain_sides_own_steps|rev_chain|array_cloned_stepped_from_its_back|cloned_items_from_both_ends|copied_given_to_generic_backs|copied_skip_take_and_filter_stepped_from_back|adapters_given_to_generic_backs|map_ends_size_hint|back_folds_of_sources_made_knowing_their_back|consumer_drops_what_is_left|adapters_own_work_that_panics).rs$"],
     snapshots: true,
   },
-  {
-    name: "zip-stepped-by-its-type",
-    breaks: "a zip's question of whether the crate steps it from its back is its type's in back_stepped's set, so one only stepped forward, of a type stepped from its back elsewhere, is `$trustedZipEnds` where `$trustedZip` reads (#851)",
-    file: "src/lower/iterators/back_facts.rs",
-    find: "            || crate::lower::recognition::zipped_sources(self.tcx, ty).is_some()\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(zip_of_cloned_items_whose_clone_runs|zip_from_its_back|zip_of_droppers_from_its_back).rs$"],
-    snapshots: true,
-  },
+
 ];

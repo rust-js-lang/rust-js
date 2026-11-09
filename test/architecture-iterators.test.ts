@@ -410,13 +410,13 @@ test("no iterator helper is read by its name outside value.rs", () => {
   expect([owned("a read of an iterator helper by its name"), found]).toEqual([owned("a read of an iterator helper by its name"), {}]);
 });
 
-// Whether a value is made knowing its back is back_stepped's per-type set
-// (ADR 0545), asked where the value is made, and as a type's question where
-// no value is in hand (`knows_its_back`, `knows_its_length`), never of a
-// value past its maker (ADR 1092, amended, #730 step 8). Each reader is
-// listed per file with its reason. A new one fails, and so does a gone one
-// until its row goes too.
-test("back_stepped's set is read where a value is made, or as a type's question", () => {
+// Whether a value is made knowing its back is its value's fact, back_stepped's
+// marks of its maker's MIR identity (ADR 0545, #851), asked where the value
+// is made, and as a type's question where no value is in hand
+// (`knows_its_back`, `knows_its_length`), never of a value past its maker
+// (ADR 1092, amended, #730 step 8). Each reader is listed per file with its
+// reason. A new one fails, and so does a gone one until its row goes too.
+test("what's stepped from its back is asked where a value is made, or as a type's question", () => {
   const allowed: Record<string, [number, string]> = {
     "src/lower/mir/iter.rs": [1, "`cloned_apart_call`, the maker of a map or a filter cloned apart"],
     "src/lower/mir/std_calls.rs": [1, "`mir_iter_std_call`, the maker of a std adapter made in place"],
@@ -436,9 +436,30 @@ test("back_stepped's set is read where a value is made, or as a type's question"
     if (count > 0) found[file] = count;
   }
   const expected = Object.fromEntries(Object.entries(allowed).map(([file, [count]]) => [file, count]));
-  expect([owned("a read of back_stepped's set past a value's maker"), found]).toEqual([
-    owned("a read of back_stepped's set past a value's maker"),
+  expect([owned("a read of what's stepped from its back past a value's maker"), found]).toEqual([
+    owned("a read of what's stepped from its back past a value's maker"),
     expected,
+  ]);
+});
+
+// Whether an adapter is made knowing its back is its value's fact, by the MIR
+// identity of what holds it, never its type's (#851): back_stepped gives no
+// set of the types stepped from their back, only `typed`, those whose
+// question is a type's, a type behind an `impl`, a library's, a generic
+// function's of its callers'; and nothing compares a value's answer with a
+// type's, as the migration's cross-check did.
+test("what's stepped from its back is its value's, no type's set", () => {
+  const owner = read("src/lower/analysis/back_stepped.rs");
+  const struct = owner.slice(owner.indexOf("pub(in crate::lower) struct BackStepped<'tcx> {"));
+  const fields = [...struct.slice(0, struct.indexOf("\n}\n")).matchAll(/^    pub\(in crate::lower\) (\w+):/gm)].map((m) => m[1]);
+  const signature = owner.slice(owner.indexOf("pub(super) fn back_stepped<'tcx>("));
+  const returns = signature.match(/\n\) -> ([^\n]+) \{\n/)?.[1];
+  const crossChecks = loweringSources().filter((file) => read(file).includes("BACK_STEPPED_CROSS_CHECK"));
+  expect([owned("a type's set of what's stepped from its back"), fields, returns, crossChecks]).toEqual([
+    owned("a type's set of what's stepped from its back"),
+    ["typed", "borrows", "locals", "fields"],
+    "IndexSet<Ty<'tcx>>",
+    [],
   ]);
 });
 
@@ -447,8 +468,8 @@ test("back_stepped's set is read where a value is made, or as a type's question"
 // identity of what holds it (#814): a temporary lent to a back step, a
 // variable's value given to one, a chain's side, what an adapter holds
 // beneath, a function's return place. Not a type's question, which another
-// value of the type need not share: the per-type set records no counted
-// adapter, `IterLocals` holds no back-step fact of its locals, and no
+// value of the type need not share: `typed` records no counted adapter,
+// `IterLocals` holds no back-step fact of its locals, and no
 // lowering file but back_stepped.rs scans MIR's calls for what steps from
 // its back through a `&mut`.
 test("a counted adapter is stepped from its back by back_stepped's stepped_locals alone", () => {

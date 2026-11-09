@@ -56,35 +56,11 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^filter_given_back_stepped_from_its_back.rs$"],
   },
-  {
-    name: "generic-impl-unstepped",
-    breaks:
-      "a generic function's `impl DoubleEndedIterator` held in a struct isn't made knowing its back in its own terms: `it.back is not a function` (#993)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                if given && !length {\n",
-    replace: "                if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_impl_stepped_from_its_back.rs$"],
-  },
 
 
-  {
-    name: "closing-map-asked-unrecorded",
-    breaks:
-      "a map whose closure has a destructor, held in a variable, given where generic code asks its back and length isn't made knowing them where it's made: refused as an `ExactSizeIterator` (#385)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                            || closure_drops(tcx, held, &drops)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^closing_maps_given_counted.rs$"],
-  },
-  {
-    name: "closing-map-length-unasked",
-    breaks:
-      "a map whose closure has a destructor given where generic code asks its length alone, `lens(v.iter().map(f))`, isn't made knowing it: refused (#385)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                if length && !closure_drops(tcx, asked, &drops) {\n",
-    replace: "                if length {\n",
-    tests: ["test/corpus.test.ts", "-t", "^closing_maps_given_counted.rs$"],
-  },
+
+
+
   {
     name: "generic-copied-back-unstepped",
     breaks:
@@ -124,23 +100,19 @@ export const mutations: Mutation[] = [
   {
     name: "back-stepped-none",
     breaks:
-      "no map the crate steps from its back is seen, and one held before it's stepped is refused",
+      "a generic function's own adapter of its type parameters it steps from its back, `Filter<I, P>`'s `next_back()`, isn't its callers' to make knowing its back, so each is refused (#388)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                false => stepped.extend(back_stepped_adapter(tcx, recognition, adapter, false, &drops)),\n",
-    replace: "                false => {}\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(back_stepped_adapter_sources|flatten_from_its_back).rs$",
-    ],
+    find: "                    false => stepped.extend(back_stepped_adapter(tcx, recognition, adapter, false, &drops)),\n",
+    replace: "                    false => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^(copied_given_to_generic_backs|adapters_given_to_generic_backs).rs$"],
   },
   {
     name: "held-adapter-not-back-stepped",
     breaks:
       "a filter or a map a type holds, asked to be double-ended by the call that asks it of that type, isn't made knowing its back",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                            let made = back_stepped_adapter(tcx, recognition, held, made_apart, &drops);\n",
-    replace: "                            let made = back_stepped_adapter(tcx, recognition, held, made_apart, &drops).filter(|_| false);\n",
+    find: "                        let made = back_stepped_adapter(tcx, recognition, held, given, &drops);\n",
+    replace: "                        let made = back_stepped_adapter(tcx, recognition, held, given, &drops).filter(|_| false);\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -160,16 +132,7 @@ export const mutations: Mutation[] = [
       "^(filters_held_double_ended|returned_impl_ends).rs$",
     ],
   },
-  {
-    name: "held-adapter-through-adapters",
-    breaks:
-      "what a std adapter holds, `filter(p).map(f).rev()`'s filter, is made knowing its back where it's made, not by its `rev()`",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                        walk.skip_current_subtree();\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^rev_lazy_range.rs$"],
-    snapshots: true,
-  },
+
   {
     name: "flatten-back-stepped-unseen",
     breaks:
@@ -188,56 +151,11 @@ export const mutations: Mutation[] = [
     replace: "                let given = false;",
     tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
   },
-  {
-    name: "stepped-sources-unmarked",
-    breaks:
-      "a map held in a variable that a back-stepped map steps isn't made knowing its back, and is refused (#218)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "    (with_stepped_sources(tcx, stepped), with_stepped_sources(tcx, typed))\n",
-    replace: "    (stepped, with_stepped_sources(tcx, typed))\n",
-    tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
-  },
-  {
-    name: "chain-sides-unstepped",
-    breaks:
-      "a chain's sides aren't made knowing their back where they're made: `v.into_iter().filter(p).chain(w).rev()` of droppers, whose `a` MIR holds in a variable for `w`'s drop flag, is refused, a `Filter` as a `DoubleEndedIterator` (#718)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "            Some((a, b)) => vec![a, b],\n            None => back_stepped_source(tcx, ty).into_iter().collect(),\n",
-    replace: "            Some(_) => Vec::new(),\n            None => back_stepped_source(tcx, ty).into_iter().collect(),\n",
-    tests: ["test/corpus.test.ts", "-t", "^chain_of_adapters_stepped_from_its_back.rs$"],
-  },
-  {
-    name: "chain-side-a-unstepped",
-    breaks:
-      "a chain's first side isn't made knowing its back where it's made, only its second: a held `filter()` on side `a` of droppers stepped from the back is refused (#718)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "            Some((a, b)) => vec![a, b],\n            None => back_stepped_source(tcx, ty).into_iter().collect(),\n",
-    replace: "            Some((_, b)) => vec![b],\n            None => back_stepped_source(tcx, ty).into_iter().collect(),\n",
-    tests: ["test/corpus.test.ts", "-t", "^chain_of_adapters_stepped_from_its_back.rs$"],
-  },
-  {
-    name: "zip-by-index-holding-map-unasked",
-    breaks:
-      "a zip read by index doesn't record its `b`, a map whose closure holds what drops: the map, held in a variable, is refused as an `ExactSizeIterator` (#775)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "            if Some(callee) == zip\n                && let [a, b] = args.types().collect::<Vec<_>>()[..]\n",
-    replace: "            if false\n                && let [a, b] = args.types().collect::<Vec<_>>()[..]\n",
-    tests: ["test/corpus.test.ts", "-t", "^zip_by_index_of_holding_maps.rs$"],
-  },
-  {
-    name: "stepped-sources-any-adapter",
-    breaks:
-      "each held adapter a back-stepped one steps is marked, whatever it is: the crate's own iterator a held `filter` steps is made with its exact length, `$exactLen(..)`, which nothing asks (#218)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "            if mapped_source(tcx, held).is_some()\n                || filtered_source(tcx, held).is_some()\n                || filter_mapped_source(tcx, held).is_some()\n                || copied_source(tcx, held).is_some()\n                || cloned_source(tcx, held).is_some()\n                || inspected_source(tcx, held).is_some()\n                || chained_sources(tcx, held).is_some()\n            {\n",
-    replace: "            if true {\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(back_stepped_adapter_sources|rev_in_place_through_adapters).rs$",
-    ],
-    snapshots: true,
-  },
+
+
+
+
+
   {
     name: "filter-map-unstepped-from-back",
     breaks: "a `filter_map` the crate steps from its back isn't one the analysis marks, so one held in a variable before it's stepped, a library's, isn't made knowing its back, and is refused (#473)",
@@ -246,53 +164,11 @@ export const mutations: Mutation[] = [
     replace: "    let filtered = filtered_source(tcx, adapter);\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_map_of_given_from_its_back.rs$"],
   },
-  {
-    name: "held-given-unrecorded",
-    breaks:
-      "an adapter held in a variable and given to what steps it from its back, `kept.rev()` of a `let kept = v.into_iter().filter_map(Some)`, isn't made knowing its back where it's made, and is refused (#484)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                            || held_arg\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^held_filter_map_reversed.rs$"],
-  },
-  {
-    name: "held-given-of-items-native",
-    breaks:
-      "a map of an array's items held in a variable and reversed is taken to step from its back by its own form, which a variable doesn't show, and is refused (#484)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                            let made_apart = given || held_arg;\n",
-    replace: "                            let made_apart = given;\n",
-    tests: ["test/corpus.test.ts", "-t", "^rposition_of_held_map.rs$"],
-  },
-  {
-    name: "made-in-place-taken-held",
-    breaks:
-      "an adapter made where it's reversed, `v.iter().filter(p).rev()`, is taken to be held, and made knowing its back, `$rev($filterEnds(..))`, where its own form reverses the array's items, `v.toReversed().filter(p)` (#484)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                                && !matches!(through(arg).kind, ExprKind::Call { .. })\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^held_filter_map_reversed.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "held-through-borrows-unseen",
-    breaks:
-      "what a call gives, borrowed, `it.by_ref().rev()`, is taken to be held where it's given, and the map `it` holds, std's struct, is made knowing its back besides, `$knowing($knowing(it, ..), ..)` where it was `$knowing($lent(it), ..)` (#484)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                    ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => e = arg,\n                    _ => break &body.thir[e],\n",
-    replace: "                    _ => break &body.thir[e],\n",
-    tests: ["test/corpus.test.ts", "-t", "^rposition_of_lazy.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "path-call-uncalled",
-    breaks:
-      "a function called by its path, `last(doubled)`, isn't found as the call of its callee, so an adapter held in a variable it's given, which it steps from its back, isn't made knowing it, and is refused (#484)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                } => Some((strip(&body.thir, fun), (fn_span, &**args))),\n",
-    replace: "                } => Some((fun, (fn_span, &**args))),\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_filter_map_reversed.rs$"],
-  },
+
+
+
+
+
   {
     name: "filter-of-a-rev-backless",
     breaks: "a `filter()` of a reversed `Vec`'s items with a `Drop`, `rev()`ed again and held, is JS's own `filter`, which has no back (#646)",
@@ -310,24 +186,8 @@ export const mutations: Mutation[] = [
     replace: "    if false && reversed_source(tcx, adapter).is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
   },
-  {
-    name: "chain-of-droppers-asked-unrecorded",
-    breaks:
-      "a chain of items with a destructor a `rev()` asks to be double-ended isn't made knowing its back where it's made: MIR holds it in a variable to drop them, so its `rev().fold()` is refused (#718)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                            && chained_sources(tcx, held).is_some()\n",
-    replace: "                            && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_made_knowing_its_back.rs$"],
-  },
-  {
-    name: "chain-under-back-stepped-map-unrecorded",
-    breaks:
-      "a chain a map stepped from its back holds isn't made knowing its back where it's made: MIR holds it in a variable, so the map's `rfold` of a chain of the crate's iterators is refused (#739)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                || chained_sources(tcx, held).is_some()\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(held_chain_mapped_from_its_back|chain_under_a_held_map_from_its_back).rs$"],
-  },
+
+
   {
     name: "inspect-of-dropping-items-not-back-stepped",
     breaks: "an `inspect()` of a `Vec`'s items with a destructor, held in a variable to drop them, isn't made knowing its back, and its `rfind` is refused (#751)",
@@ -352,22 +212,8 @@ export const mutations: Mutation[] = [
     replace: "    mapped_source(tcx, adapter).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^move_closure_adapter_from_its_back.rs$"],
   },
-  {
-    name: "zip-sides-not-back-stepped",
-    breaks: "a zip stepped from its back doesn't make its sides knowing theirs where they're made, and a `cloned()` side MIR holds in a variable is refused (#792)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "        let held: Vec<Ty<'tcx>> = match chained_sources(tcx, ty).or_else(|| zipped_sources(tcx, ty)) {\n",
-    replace: "        let held: Vec<Ty<'tcx>> = match chained_sources(tcx, ty) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^zip_of_cloned_items_whose_clone_runs.rs$"],
-  },
-  {
-    name: "cloned-source-not-recorded",
-    breaks: "a `cloned()` a back-stepped adapter holds isn't made knowing its back where it's made (#792)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                || cloned_source(tcx, held).is_some()\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^zip_of_cloned_items_whose_clone_runs.rs$"],
-  },
+
+
   {
     name: "enumerate-of-a-dropping-map-unrecorded",
     breaks: "an enumeration of a map of a `Vec`'s items with a destructor, held in a variable to drop them, isn't made knowing its back where it's made, and its `next_back` is refused (#764)",
@@ -390,37 +236,13 @@ export const mutations: Mutation[] = [
     breaks:
       "a chain's `skip(n)` or `take(n)` side, which MIR holds in a variable before the chain is made, isn't made knowing its back: `ds().into_iter().skip(1).chain(w).rev()` is refused (#718)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                        if ty == source && (chain && made_stepped || user || spilled || copy && made_asked) {\n",
+    find: "                        if ty == source && (chain && made_asked || user || spilled || copy && made_asked) {\n",
     replace: "                        if ty == source && (user || spilled || copy && made_asked) {\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
   },
-  {
-    name: "held-beneath-unrecorded",
-    breaks:
-      "an adapter held in a variable, then given to adapters made in place that a `rev()` steps from its back, isn't recorded: `c.map(f).rev()` of a `let c = a.chain(b)` is refused (#790)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                    && let Some(beneath) = held_beneath(hidden)\n",
-    replace: "                    && let Some(beneath) = held_beneath(hidden).filter(|_| false)\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_beneath_adapters_from_its_back.rs$"],
-  },
-  {
-    name: "held-beneath-chain-as-adapter",
-    breaks:
-      "a chain held beneath adapters made in place is recorded as a map or a filter would be, which records no chain: `c.map(f).rev()` of a `let c = a.chain(b)` is refused (#790)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                    match chained_sources(tcx, beneath) {\n                        Some(_) => {\n",
-    replace: "                    match chained_sources(tcx, beneath).filter(|_| false) {\n                        Some(_) => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_beneath_adapters_from_its_back.rs$"],
-  },
-  {
-    name: "held-beneath-through-one",
-    breaks:
-      "what's held beneath adapters made in place is looked for only as what the call is given itself, never through them: `c.map(f).rev()` of a `let c = a.chain(b)` is refused (#790)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                            (source, made) = (first, true);\n",
-    replace: "                            (source, made) = (first, true);\n                            return None;\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_beneath_adapters_from_its_back.rs$"],
-  },
+
+
+
   {
     name: "zip-of-droppers-unrecorded",
     breaks:
@@ -565,7 +387,7 @@ export const mutations: Mutation[] = [
     name: "spilled-source-unmarked",
     breaks: "the source of an adapter stepped from its back whose closure has a destructor, which MIR holds before the adapter is made, isn't marked, so its form is gone and it's made without its back (#851)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                        let spilled = made_stepped && closure_drops(tcx, made, &drops);\n",
+    find: "                        let spilled = made_asked && closure_drops(tcx, made, &drops);\n",
     replace: "                        let spilled = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^(held_beneath_adapters_from_its_back|cloned_of_a_chain_stepped_from_its_back|chain_stepped_from_its_back_elsewhere|chain_under_a_held_map_from_its_back|chain_of_adapters_stepped_from_its_back|chain_sides_own_steps|rev_chain|array_cloned_stepped_from_its_back|cloned_items_from_both_ends|copied_given_to_generic_backs|copied_skip_take_and_filter_stepped_from_back|adapters_given_to_generic_backs|map_ends_size_hint|back_folds_of_sources_made_knowing_their_back|consumer_drops_what_is_left|adapters_own_work_that_panics).rs$"],
   },
@@ -598,8 +420,8 @@ export const mutations: Mutation[] = [
     name: "library-impl-backs-unmade",
     breaks: "a library's public function that gives a filter behind an `impl DoubleEndedIterator` makes JS's own `.filter`, and its consumer's `next_back` throws `it.back is not a function` (#1024)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                if asked {\n                    let made = given_behind_an_impl(tcx, recognition, recognition.reveal(hidden), &drops);\n",
-    replace: "                if false {\n                    let made = given_behind_an_impl(tcx, recognition, recognition.reveal(hidden), &drops);\n",
+    find: "                if asked {\n                    typed.extend(given_behind_an_impl(\n",
+    replace: "                if false {\n                    typed.extend(given_behind_an_impl(\n",
     tests: ["test/crates.test.ts", "-t", "two crates: iterators_stepped_from_their_back_across_crates"],
   },
   {
@@ -614,8 +436,8 @@ export const mutations: Mutation[] = [
     name: "library-own-params-unstepped",
     breaks: "a library's public generic function given a `Filter<I, P>` of an `I: DoubleEndedIterator`, stepped from its back where no caller of the crate's asks it, is refused, though its consumers make it knowing its back (#1024)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "            let given = library_backs(tcx, recognition, body.def_id, identity, &drops);\n",
-    replace: "            let given: Vec<Ty<'tcx>> = Vec::new();\n",
+    find: "            typed.extend(library_backs(tcx, recognition, body.def_id, identity, &drops));\n",
+    replace: "",
     tests: ["test/crates.test.ts", "-t", "two crates: iterators_stepped_from_their_back_across_crates"],
   },
   {
@@ -667,5 +489,14 @@ export const mutations: Mutation[] = [
     find: "                    let map_length = length && closure_drops(tcx, asked_ty, &drops);\n",
     replace: "                    let map_length = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^closing_maps_given_counted.rs$"],
+  },
+  {
+    name: "stepped-sources-unmarked",
+    breaks:
+      "a type's question isn't asked of its source too, so a `copied()` beneath a filter given to generic code that steps it from its back isn't made knowing its back, and is refused (#388, #851)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "    with_stepped_sources(tcx, typed)\n",
+    replace: "    typed\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_given_to_generic_backs.rs$"],
   },
 ];

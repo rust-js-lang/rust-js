@@ -31,7 +31,7 @@ function main() {
   try {
     try {
       const iter = $trustedZip(
-        $mapEnds($iter(a), (item) => dClone_clone(item)),
+        a.values().map((item) => dClone_clone(item)),
         $mapEnds($iter(b), (item) => dClone_clone(item)),
       );
       let value;

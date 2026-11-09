@@ -41,7 +41,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(field) = crate::lower::analysis::field_of(self.tcx, state.body, place)
             && self.krate.back_stepped.fields.contains(&field)
             && let ty = self.reveal(place.ty(state.body, self.tcx).ty)
-            && self.back_by_value(ty)
+            && self.made_knowing_its_back_by_its_maker(ty)
             && !self.compiled_struct(ty, &e)
         {
             e = crate::lower::iterators::made_knowing_its_back(e);

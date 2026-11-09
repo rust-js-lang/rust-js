@@ -1515,3 +1515,33 @@ values' maker makes a variable that holds them marked (`structure.rs`,
 of what's stepped, made stepped too (`made_stepped`): eight cases, a
 chain of adapters, a `take` of a `rev()` of droppers among them, lean on
 it. Phase C's last step gives them rules of their own, and retires the set.
+
+## Amendment: no type's set (2026-11-09, #851 phase C)
+
+ADR 0262's case: none where its JS changes for what ran as Rust does; one
+snapshot reads better, a zip's side only stepped forward JS's own `.map`
+where it was `$mapEnds`. back_stepped computes no set of the types the
+crate steps from their back. What's stepped is each value's, by the MIR
+identity of what holds it (`stepped_locals`), and its seeding by the set is
+gone: what an adapter asked from its back holds, where MIR holds it in a
+variable, is marked by the adapter's being asked, not by its type's being in
+the set, a chain's sides and a zip's (`chain && made_asked`) and the source of
+a map whose closure has a destructor (`spilled`). What `back_stepped` gives
+is `typed` alone, the types whose question is a type's: one behind an
+`impl`, a library's (#1024), and a generic function's own adapter of its type
+parameters it steps from its back, each of its callers' (#388), with the
+source of each that steps from its back where its source does.
+
+The set's rules no value needed are gone: a zip read by index's `b`
+(#775), a generic function's `impl` in its own terms (#993), what a variable
+given holds and what's held beneath what's made in place (#484, #790), a
+chain of droppers asked (#718), a map whose closure drops asked or asked its
+length (#385), and `made_generically`; with them twenty mutations that
+survived the whole corpus, each removal held by the corpus, the iterator
+tables, the metamorphic net and the two-crate pairs. `back_by_value` is
+`made_knowing_its_back_by_its_maker`: the adapters whose maker makes them
+knowing their back, whose variables and fields its mark is kept by, not a
+zip's, a `skip(n)`'s, a `take(n)`'s nor a `step_by(n)`'s, made so where
+they're stepped (ADR 0542). An architecture test holds it: `BackStepped`
+has `typed`, `borrows`, `locals` and `fields` alone, `back_stepped` gives
+one set, and nothing compares a value's answer with a type's.
