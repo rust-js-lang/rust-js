@@ -16,7 +16,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // A map's `drain()`'s and `into_iter()`'s, its entries, `(K, V)`.
         if matches!(
-            std_path(self.tcx, adt.did()).as_str(),
+            std_path(self.tcx, adt.did()),
             "std::collections::hash_map::Drain"
                 | "std::collections::hash_map::IntoIter"
                 | "std::collections::btree_map::IntoIter"
@@ -26,7 +26,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // A map's `into_values()`'s, its values, `V` of `<K, V>` (#432).
         if matches!(
-            std_path(self.tcx, adt.did()).as_str(),
+            std_path(self.tcx, adt.did()),
             "std::collections::hash_map::IntoValues" | "std::collections::btree_map::IntoValues"
         ) {
             return args.types().nth(1);
@@ -60,7 +60,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn owns_one_item(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         matches!(ty.kind(), ty::Adt(adt, _)
-            if matches!(std_path(self.tcx, adt.did()).as_str(), "std::option::IntoIter" | "std::iter::Once"))
+            if matches!(std_path(self.tcx, adt.did()), "std::option::IntoIter" | "std::iter::Once"))
     }
 
     /// Whether `ty` gives what nothing else holds: an owning iterator's
@@ -71,7 +71,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty = self.reveal(ty.peel_refs());
         let ty::Adt(adt, args) = ty.kind() else { return false };
         self.owned_items(ty).is_some()
-            || match std_path(self.tcx, adt.did()).as_str() {
+            || match std_path(self.tcx, adt.did()) {
                 "std::iter::Copied" | "std::iter::Cloned" => true,
                 "std::iter::Enumerate"
                 | "std::iter::Rev"

@@ -54,7 +54,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         let ty::Adt(adt, args) = ty.kind() else { return false };
         let at_most_its_source = matches!(
-            std_path(self.tcx, adt.did()).as_str(),
+            std_path(self.tcx, adt.did()),
             "std::iter::Map"
                 | "std::iter::Filter"
                 | "std::iter::FilterMap"
@@ -84,7 +84,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty = self.reveal(ty.peel_refs());
         let ty::Adt(adt, args) = ty.kind() else { return false };
         let mut sources = args.types();
-        match std_path(self.tcx, adt.did()).as_str() {
+        match std_path(self.tcx, adt.did()) {
             "std::ops::RangeFrom" | "std::iter::Repeat" => true,
             "std::iter::Map"
             | "std::iter::Enumerate"
@@ -126,7 +126,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 .next()
                 .map_or(Some(false), |source| self.endless_once_stepped(source))
         };
-        match std_path(self.tcx, adt.did()).as_str() {
+        match std_path(self.tcx, adt.did()) {
             // Its hint is `usize::MAX` where what it started with has a
             // lower bound above 0, and none where it's 0.
             "std::iter::Cycle" => sources.next().map_or(Some(false), |of| self.lower_bound_kept(of)),
@@ -177,7 +177,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, args) = ty.kind() else { return None };
         let mut sources = args.types();
         let mut source = || sources.next().and_then(|source| self.lower_bound_kept(source));
-        match std_path(self.tcx, adt.did()).as_str() {
+        match std_path(self.tcx, adt.did()) {
             "std::iter::Filter"
             | "std::iter::FilterMap"
             | "std::iter::TakeWhile"

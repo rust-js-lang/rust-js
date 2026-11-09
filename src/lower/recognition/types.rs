@@ -12,7 +12,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `LayoutError`, which says nothing, `Some(false)`.
     pub(in crate::lower) fn layout(&self, ty: Ty<'tcx>) -> Option<bool> {
         let ty::Adt(adt, _) = ty.kind() else { return None };
-        match std_path(self.tcx, adt.did()).as_str() {
+        match std_path(self.tcx, adt.did()) {
             "std::alloc::Layout" => Some(true),
             "std::alloc::LayoutError" => Some(false),
             _ => None,
@@ -49,7 +49,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Which of std's hashers `ty` is, a `$SipHasher` (ADR 0463).
     pub(in crate::lower) fn std_hasher(&self, ty: Ty<'tcx>) -> Option<StdHasher> {
         let ty::Adt(adt, _) = ty.kind() else { return None };
-        match std_path(self.tcx, adt.did()).as_str() {
+        match std_path(self.tcx, adt.did()) {
             "std::hash::DefaultHasher" => Some(StdHasher::Default),
             "std::hash::SipHasher" => Some(StdHasher::Sip),
             _ => None,
@@ -233,7 +233,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, _) = ty.kind() else {
             return None;
         };
-        match std_path(self.tcx, adt.did()).as_str() {
+        match std_path(self.tcx, adt.did()) {
             "std::sync::mpsc::Sender" => Some(ChannelEnd::Sender),
             "std::sync::mpsc::Receiver" => Some(ChannelEnd::Receiver),
             _ => None,
@@ -274,7 +274,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, _) = ty.kind() else {
             return None;
         };
-        match std_path(self.tcx, adt.did()).as_str() {
+        match std_path(self.tcx, adt.did()) {
             "std::str::Utf8Error" => Some(false),
             "std::string::FromUtf8Error" => Some(true),
             _ => None,
@@ -285,7 +285,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// (ADR 0401), where an `OsStr`'s are its text's.
     pub(in crate::lower) fn is_path(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.peel_refs().kind(), ty::Adt(adt, _)
-            if matches!(std_path(self.tcx, adt.did()).as_str(), "std::path::Path" | "std::path::PathBuf"))
+            if matches!(std_path(self.tcx, adt.did()), "std::path::Path" | "std::path::PathBuf"))
     }
 
     /// A `Path`, a `PathBuf`, what `display()` shows of one, or an `OsStr` or
@@ -293,7 +293,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// path's `==` compares its components, `a/b` and `a//b` equal.
     pub(in crate::lower) fn is_path_like(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if matches!(
-            std_path(self.tcx, adt.did()).as_str(),
+            std_path(self.tcx, adt.did()),
             "std::path::Path" | "std::path::PathBuf" | "std::path::Display" | "std::ffi::OsStr" | "std::ffi::OsString"
         ))
     }
@@ -307,14 +307,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// string, equal and ordered by its bytes, as text is by code point.
     pub(in crate::lower) fn is_os_text(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.peel_refs().kind(), ty::Adt(adt, _)
-            if matches!(std_path(self.tcx, adt.did()).as_str(), "std::ffi::OsStr" | "std::ffi::OsString"))
+            if matches!(std_path(self.tcx, adt.did()), "std::ffi::OsStr" | "std::ffi::OsString"))
     }
 
     /// A slice's `chunks_exact(n)` or `rchunks_exact(n)`, whose `remainder()`
     /// is what's left (ADR 0324).
     pub(in crate::lower) fn is_exact_chunks(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if matches!(
-            std_path(self.tcx, adt.did()).as_str(),
+            std_path(self.tcx, adt.did()),
             "std::slice::ChunksExact"
                 | "std::slice::RChunksExact"
                 | "std::slice::ChunksExactMut"
@@ -364,7 +364,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `ancestors()`'s: an array of what they give (ADR 0405).
     pub(in crate::lower) fn is_path_items(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if matches!(
-            std_path(self.tcx, adt.did()).as_str(),
+            std_path(self.tcx, adt.did()),
             "std::path::Iter" | "std::path::Components" | "std::path::Ancestors"
         ))
     }
@@ -493,7 +493,7 @@ pub(crate) fn is_va_list(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 
 /// Which of `panic::Location`'s functions `id` is, if it's one (ADR 0427).
 pub(crate) fn location_of(tcx: TyCtxt<'_>, id: DefId) -> Option<crate::lower::std_types::location::LocationOp> {
-    crate::lower::std_types::location::location_op(&std_path(tcx, id))
+    crate::lower::std_types::location::location_op(std_path(tcx, id))
 }
 
 /// `mem::Discriminant<T>`, its variant's discriminant, a number (ADR 0393).
@@ -574,7 +574,7 @@ pub(crate) fn clock_type(id: DefId) -> Option<ClockType> {
         if !of_std_crate(tcx, id, StdCrate::Std) {
             return None;
         }
-        match std_path(tcx, id).as_str() {
+        match std_path(tcx, id) {
             "std::time::SystemTime" => Some(ClockType::System),
             "std::time::SystemTimeError" => Some(ClockType::Error),
             _ => None,
@@ -626,19 +626,19 @@ pub(crate) fn is_decode_utf16_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 pub(crate) fn is_text_escape(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(tcx, adt.did(), StdCrate::Core)
         && matches!(tcx.item_name(adt.did()).as_str(), "EscapeDefault" | "EscapeDebug" | "EscapeUnicode")
-        && matches!(std_path(tcx, adt.did()).as_str(), p if p.starts_with("std::char::") || p.starts_with("std::str::")))
+        && matches!(std_path(tcx, adt.did()), p if p.starts_with("std::char::") || p.starts_with("std::str::")))
 }
 
 /// A byte's `escape_ascii()`, `ascii::escape_default(b)`, and a byte slice's
 /// `escape_ascii()`: the array of its escape's bytes (ADRs 0558, 0971).
 pub(crate) fn is_byte_escape(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _)
-        if matches!(std_path(tcx, adt.did()).as_str(), "std::ascii::EscapeDefault" | "std::slice::EscapeAscii"))
+        if matches!(std_path(tcx, adt.did()), "std::ascii::EscapeDefault" | "std::slice::EscapeAscii"))
 }
 
 pub(crate) fn is_case_mapping(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(tcx, adt.did(), StdCrate::Core)
-        && matches!(std_path(tcx, adt.did()).as_str(), "std::char::ToUppercase" | "std::char::ToLowercase"))
+        && matches!(std_path(tcx, adt.did()), "std::char::ToUppercase" | "std::char::ToLowercase"))
 }
 
 /// A `NonZero<T>` type (ADR 0177).
@@ -890,7 +890,7 @@ pub(crate) fn type_facts(tcx: TyCtxt<'_>, def_id: DefId) -> &'static [TypeFact] 
             _ => &[TypeFact::Size],
         };
     }
-    match std_path(tcx, def_id).as_str() {
+    match std_path(tcx, def_id) {
         "std::any::type_name" | "std::any::type_name_of_val" => return &[TypeFact::Name],
         "std::any::TypeId::of" => return &[TypeFact::Id],
         "std::mem::needs_drop" => return &[TypeFact::NeedsDrop],
@@ -907,7 +907,7 @@ pub(crate) fn type_facts(tcx: TyCtxt<'_>, def_id: DefId) -> &'static [TypeFact] 
         }
         _ => {}
     }
-    if let Some(facts) = crate::lower::pointers::address_facts(&std_path(tcx, def_id)) {
+    if let Some(facts) = crate::lower::pointers::address_facts(std_path(tcx, def_id)) {
         return facts;
     }
     // `x.type_id()`, and a downcast's type, its last type argument (ADR 0331).

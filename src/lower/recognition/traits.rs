@@ -494,7 +494,7 @@ pub(in crate::lower) fn implementable(
 pub(crate) fn unlowered_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.is_lang_item(id, LangItem::Future)
         || matches!(
-            std_path(tcx, id).as_str(),
+            std_path(tcx, id),
             "std::io::Read" | "std::io::BufRead" | "std::io::Seek"
         )
 }
@@ -895,7 +895,7 @@ pub(crate) fn cmp_extreme(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
     if !of_std_crate(tcx, def_id, StdCrate::Core) {
         return None;
     }
-    match std_path(tcx, def_id).as_str() {
+    match std_path(tcx, def_id) {
         "std::cmp::max" => Some(true),
         "std::cmp::min" => Some(false),
         _ => None,

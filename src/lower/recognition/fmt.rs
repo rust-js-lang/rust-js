@@ -341,7 +341,7 @@ pub(crate) fn is_write_result_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> boo
 /// of standard error (ADR 0132). Its JS value is `undefined`.
 pub(in crate::lower) fn stream_of<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<bool> {
     let ty::Adt(adt, _) = ty.kind() else { return None };
-    match std_path(tcx, adt.did()).as_str() {
+    match std_path(tcx, adt.did()) {
         "std::io::Stdout" | "std::io::StdoutLock" => Some(false),
         "std::io::Stderr" | "std::io::StderrLock" => Some(true),
         _ => None,

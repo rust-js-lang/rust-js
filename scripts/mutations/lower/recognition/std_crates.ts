@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an item of a crate named `std` that rust-js didn't compile has std's path, so its `process::exit` is std's, which ends the program, where a call of it is refused (#455, ADR 1054)",
     file: "src/lower/recognition/std_crates.rs",
-    find: "    if !is_std_crate(tcx, id) {\n        return String::new();\n    }\n    let mut path = tcx.def_path_str(id);\n",
+    find: "    if !is_std_crate(tcx, id) {\n        return \"\";\n    }\n    let mut path = tcx.def_path_str(id);\n",
     replace: "    let mut path = tcx.def_path_str(id);\n",
     tests: ["test/crates.test.ts", "-t", "of no JS named test or std"],
   },

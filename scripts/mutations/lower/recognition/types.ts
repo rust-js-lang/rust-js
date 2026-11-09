@@ -136,9 +136,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a byte slice's `escape_ascii()` isn't the array of its escape's bytes: `{}` of it is refused (ADR 0971)",
     file: "src/lower/recognition/types.rs",
-    find: '        if matches!(std_path(tcx, adt.did()).as_str(), "std::ascii::EscapeDefault" | "std::slice::EscapeAscii"))',
+    find: '        if matches!(std_path(tcx, adt.did()), "std::ascii::EscapeDefault" | "std::slice::EscapeAscii"))',
     replace:
-      '        if matches!(std_path(tcx, adt.did()).as_str(), "std::ascii::EscapeDefault"))',
+      '        if matches!(std_path(tcx, adt.did()), "std::ascii::EscapeDefault"))',
     tests: ["test/corpus.test.ts", "-t", "slice_bytes_text"],
   },
   {

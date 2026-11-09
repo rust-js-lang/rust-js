@@ -16,6 +16,7 @@ impl CapturedSources {
         let mut output = Sources {
             text: String::new(),
             files: Vec::new(),
+            lines: Default::default(),
         };
         let mut offsets = Vec::new();
         let mut line = 0;

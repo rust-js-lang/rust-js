@@ -618,7 +618,7 @@ fn comments_of(
         {
             let written = &sources.text[c.lo as usize..c.hi as usize];
             if !written.contains('\n') {
-                let line = sources.text[..c.lo as usize].matches('\n').count() as u32;
+                let line = sources.line_of(c.lo as usize);
                 let line_start = sources.text[..c.lo as usize].rfind('\n').map_or(0, |i| i + 1);
                 let line_end = sources.text[c.hi as usize..]
                     .find('\n')

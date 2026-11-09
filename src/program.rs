@@ -177,9 +177,19 @@ pub struct Tests {
 pub struct Sources {
     pub text: String,
     pub files: Vec<Source>,
+    /// Where each line of `text` starts, found once (`line_of`).
+    pub lines: std::sync::OnceLock<crate::lines::LineStarts>,
 }
 
 impl Sources {
+    /// The line of `text` `offset` is on, from 0: how many newlines are
+    /// before it.
+    pub fn line_of(&self, offset: usize) -> u32 {
+        self.lines
+            .get_or_init(|| crate::lines::LineStarts::of(&self.text))
+            .line(offset)
+    }
+
     /// Which of `files` the arena's `line` is in: the last that starts at or
     /// before it.
     pub fn file_at(&self, line: u32) -> Option<usize> {

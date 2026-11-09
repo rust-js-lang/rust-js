@@ -75,7 +75,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn steps_past_a_slice(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty.peel_refs());
         let ty::Adt(adt, args) = ty.kind() else { return false };
-        match std_path(self.tcx, adt.did()).as_str() {
+        match std_path(self.tcx, adt.did()) {
             "std::iter::Skip" => self.nths_a_slice(args.type_at(0)),
             "std::iter::Map"
             | "std::iter::Inspect"
@@ -146,7 +146,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty = self.reveal(ty.peel_refs());
         let ty::Adt(adt, _) = ty.kind() else { return false };
         matches!(
-            std_path(self.tcx, adt.did()).as_str(),
+            std_path(self.tcx, adt.did()),
             "std::vec::IntoIter" | "std::array::IntoIter" | "std::collections::vec_deque::IntoIter"
         )
     }
@@ -170,7 +170,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             std_crate(self.tcx, adt.did().krate),
             Some(StdCrate::Alloc | StdCrate::Std)
         ) && matches!(
-            std_path(self.tcx, adt.did()).as_str(),
+            std_path(self.tcx, adt.did()),
             "std::vec::IntoIter"
                     | "std::vec::Drain"
                     | "std::vec::Splice"
@@ -236,7 +236,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.is_std_type(ty, StdItem::ArrayIntoIter) {
             return Some("IntoIter");
         }
-        match std_path(self.tcx, adt.did()).as_str() {
+        match std_path(self.tcx, adt.did()) {
             "std::vec::IntoIter" => Some("IntoIter"),
             "std::vec::Drain" => Some("Drain"),
             _ => None,
@@ -276,7 +276,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     fn held(&self, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, HeldFolded)> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, args) = ty.kind() else { return None };
-        let folded = match std_path(self.tcx, adt.did()).as_str() {
+        let folded = match std_path(self.tcx, adt.did()) {
             "std::iter::Map" => HeldFolded::After,
             "std::iter::Filter" | "std::iter::FilterMap" | "std::iter::Inspect" => HeldFolded::Before,
             "std::iter::TakeWhile" | "std::iter::SkipWhile" | "std::iter::MapWhile" => HeldFolded::Kept,
@@ -312,7 +312,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, args) = ty.kind() else { return None };
         let mut sources = args.types();
-        match std_path(self.tcx, adt.did()).as_str() {
+        match std_path(self.tcx, adt.did()) {
             // And `successors`' next item, which its closing drops.
             "std::iter::Repeat" | "std::iter::RepeatN" | "std::iter::Successors" => sources.next(),
             "std::iter::Cycle" => sources.next().filter(|&source| self.array_source(source).is_none()),
@@ -695,7 +695,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// windows.
     pub(in crate::lower) fn iterates_items(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
-        matches!(ty.kind(), ty::Adt(adt, _) if matches!(std_path(self.tcx, adt.did()).as_str(),
+        matches!(ty.kind(), ty::Adt(adt, _) if matches!(std_path(self.tcx, adt.did()),
             "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::collections::linked_list::Iter" | "std::str::CharIndices"
             // A slice's chunks and windows, the array of them `$chunks` and
             // the like make (ADR 0335).
@@ -766,7 +766,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     "std::slice::ChunkBy",
                     "std::slice::ChunkByMut",
                 ]
-                .contains(&path.as_str())
+                .contains(&path)
                 || self.is_str_split(ty)
                 || self.iterates_items(ty))
             // A map's `iter()`, `keys()` and `values()` are arrays too (ADR 0059).
@@ -1079,7 +1079,7 @@ pub(crate) fn is_repeat_n(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 
 pub(crate) fn counted_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, bool)> {
     match ty.kind() {
-        ty::Adt(adt, args) => match std_path(tcx, adt.did()).as_str() {
+        ty::Adt(adt, args) => match std_path(tcx, adt.did()) {
             "std::iter::Skip" => Some((args.type_at(0), true)),
             "std::iter::Take" => Some((args.type_at(0), false)),
             _ => None,
@@ -1096,7 +1096,7 @@ pub(crate) fn counted_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(T
 /// chain's, which half it's on, which an ended first half says (#181).
 pub(crate) fn cloned_parts<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Parted, Ty<'tcx>, Ty<'tcx>)> {
     let ty::Adt(adt, args) = ty.kind() else { return None };
-    let parted = match std_path(tcx, adt.did()).as_str() {
+    let parted = match std_path(tcx, adt.did()) {
         "std::iter::Map" => Parted::Map,
         "std::iter::Filter" => Parted::Filter,
         "std::iter::Chain" => Parted::Chain,
@@ -1158,7 +1158,7 @@ pub(crate) fn back_stepped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opti
     match ty.kind() {
         ty::Adt(adt, args)
             if matches!(
-                std_path(tcx, adt.did()).as_str(),
+                std_path(tcx, adt.did()),
                 "std::iter::Map"
                     | "std::iter::Filter"
                     | "std::iter::FilterMap"
@@ -1180,7 +1180,7 @@ pub(crate) fn length_kept_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Optio
     match ty.kind() {
         ty::Adt(adt, args)
             if matches!(
-                std_path(tcx, adt.did()).as_str(),
+                std_path(tcx, adt.did()),
                 "std::iter::Map"
                     | "std::iter::Copied"
                     | "std::iter::Cloned"
@@ -1318,7 +1318,7 @@ pub(crate) fn counted_adapter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(
     let ty::Adt(adt, args) = ty.peel_refs().kind() else {
         return None;
     };
-    let kind = match std_path(tcx, adt.did()).as_str() {
+    let kind = match std_path(tcx, adt.did()) {
         "std::iter::Enumerate" => Counted::Enumerate,
         "std::iter::Take" => Counted::Take,
         "std::iter::Skip" => Counted::Skip,

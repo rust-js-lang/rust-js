@@ -480,7 +480,8 @@ fn blank_lines_before(code: &str, told: &[bool]) -> IndexSet<usize> {
     if parsed.diagnostics.errors().next().is_some() {
         return Default::default();
     }
-    let line_of = |offset: u32| code[..offset as usize].matches('\n').count();
+    let lines = crate::lines::LineStarts::of(code);
+    let line_of = |offset: u32| lines.line(offset as usize) as usize;
     let function = |statement: &Statement<'_>| match statement {
         Statement::FunctionDeclaration(_) => true,
         Statement::ExportDeclaration(export) => matches!(export.declaration, Declaration::FunctionDeclaration(_)),

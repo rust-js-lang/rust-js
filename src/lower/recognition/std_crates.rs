@@ -58,12 +58,12 @@ pub(crate) fn of_std_crate(tcx: TyCtxt<'_>, id: DefId, krate: StdCrate) -> bool 
 /// Printed once an item: rustc's printing of a visible path walks std's
 /// modules each time, and a crate's lowering asks it of the same items in
 /// each body, of each type's drop, most of React's reconciler's (#884).
-pub(super) fn std_path(tcx: TyCtxt<'_>, id: DefId) -> String {
+pub(super) fn std_path(tcx: TyCtxt<'_>, id: DefId) -> &'static str {
     if let Some(path) = STD_PATHS.with(|paths| paths.get(&id)) {
         return path;
     }
     if !is_std_crate(tcx, id) {
-        return String::new();
+        return "";
     }
     let mut path = tcx.def_path_str(id);
     // Named through a crate's own name for std's, hashbrown's `extern crate
@@ -75,11 +75,15 @@ pub(super) fn std_path(tcx: TyCtxt<'_>, id: DefId) -> String {
         Some(("core" | "alloc", rest)) => format!("std::{rest}"),
         _ => path,
     };
-    STD_PATHS.with(|paths| paths.keep(id, path))
+    // Kept for the compiler's life, as rustc keeps its interned names: each
+    // of a few thousand of std's items once, and every ask after it a
+    // lookup, not a copy of the text, of 25 a call a crate classifies,
+    // 270 ms of React's reconciler's 4.8 s (#882).
+    STD_PATHS.with(|paths| paths.keep(id, Box::leak(path.into_boxed_str())))
 }
 
 thread_local! {
     /// `std_path`'s answers, each found once for the session's rustc, as
     /// `compiled_std`'s is.
-    static STD_PATHS: OnceMap<DefId, String> = OnceMap::default();
+    static STD_PATHS: OnceMap<DefId, &'static str> = OnceMap::default();
 }

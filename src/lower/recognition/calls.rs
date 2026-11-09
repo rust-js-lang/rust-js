@@ -30,14 +30,14 @@ const ARRAY_COLLECTIONS: [&str; 3] = [
 pub(crate) fn capacity_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<CapacityOp> {
     let path = std_path(tcx, def_id);
     if matches!(
-        path.as_str(),
+        path,
         "std::vec::Vec::<T>::with_capacity"
             | "std::collections::VecDeque::<T>::with_capacity"
             | "std::collections::BinaryHeap::<T>::with_capacity"
     ) {
         return Some(CapacityOp::WithCapacity);
     }
-    Some(match array_collection_method(&path)? {
+    Some(match array_collection_method(path)? {
         "capacity" => CapacityOp::Of,
         "reserve" => CapacityOp::Reserve { exact: false },
         "reserve_exact" => CapacityOp::Reserve { exact: true },
@@ -51,7 +51,7 @@ pub(crate) fn capacity_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<CapacityOp> 
 /// keeps its capacity (ADR 0419): the array it's given first, or its
 /// second, `append`'s.
 pub(crate) fn shortens_vec(tcx: TyCtxt<'_>, def_id: DefId) -> Option<usize> {
-    match array_collection_method(&std_path(tcx, def_id))? {
+    match array_collection_method(std_path(tcx, def_id))? {
         "append" => Some(1),
         "clear" | "truncate" | "set_len" | "pop" | "pop_if" | "pop_front" | "pop_back" | "pop_front_if"
         | "pop_back_if" | "remove" | "swap_remove" | "drain" | "retain" | "retain_mut" | "dedup" | "dedup_by"
@@ -92,7 +92,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// of std's, and `None` to look further, as a method.
     fn classify_fn(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Option<Std>> {
         let tcx = self.tcx;
-        let diagnostic = |name: &str| tcx.is_diagnostic_item(Symbol::intern(name), def_id);
+        // Its std path and its diagnostic name, each asked once: each test
+        // below is of them, some forty a call a crate classifies (#882).
+        let path = std_path(tcx, def_id);
+        let diagnostic_name = tcx.get_diagnostic_name(def_id);
+        let diagnostic = |name: &str| diagnostic_name.is_some_and(|found| found.as_str() == name);
         let self_ty = args.types().next();
         if let Some((fact, of_val)) = layout_query(tcx, def_id) {
             return Some(Some(Std::Layout { fact, of_val }));
@@ -111,10 +115,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // An enum's variant's discriminant (ADR 0393).
         // And as a derived `Hash` hashes it (ADR 0463).
-        if matches!(
-            std_path(tcx, def_id).as_str(),
-            "std::mem::discriminant" | "std::intrinsics::discriminant_value"
-        ) {
+        if matches!(path, "std::mem::discriminant" | "std::intrinsics::discriminant_value") {
             return Some(Some(Std::Discriminant));
         }
         if diagnostic("mem_drop") {
@@ -124,13 +125,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::Forget));
         }
         // The one thread there is yields to none (ADR 0142).
-        if std_path(tcx, def_id) == "std::thread::yield_now" {
+        if path == "std::thread::yield_now" {
             return Some(Some(Std::Nothing));
         }
         // `hint::assert_unchecked(c)`, a promise that `c` holds, which a
         // program that's right keeps: nothing, its `c` made as it's given
         // (ADR 0399).
-        if std_path(tcx, def_id) == "std::hint::assert_unchecked" {
+        if path == "std::hint::assert_unchecked" {
             return Some(Some(Std::Nothing));
         }
         // A hint to the optimizer rustc's MIR inlines into std's bodies,
@@ -159,7 +160,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::Number(op)));
         }
         // Plain data's bytes as another type's, and all zero (ADR 0408).
-        match std_path(tcx, def_id).as_str() {
+        match path {
             "std::intrinsics::transmute" | "std::intrinsics::transmute_unchecked" => {
                 return Some(Some(Std::Transmute));
             }
@@ -178,7 +179,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::Pointer(crate::lower::pointers::PointerOp::FromRef)));
         }
         // A raw pointer's, a handle on its place (ADR 0407).
-        if let Some(op) = crate::lower::pointers::pointer_op(&std_path(tcx, def_id)) {
+        if let Some(op) = crate::lower::pointers::pointer_op(path) {
             return Some(Some(Std::Pointer(op)));
         }
         // A `Vec`'s capacity's, kept where it's asked (ADR 0419).
@@ -186,7 +187,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::Capacity(op)));
         }
         // The allocator's, an array of slots (ADR 0417).
-        if let Some(op) = crate::lower::std_types::alloc::alloc_op(&std_path(tcx, def_id)) {
+        if let Some(op) = crate::lower::std_types::alloc::alloc_op(path) {
             return Some(Some(Std::Alloc(op)));
         }
         // memchr's searches, of the crate rustc builds (ADR 0529).
@@ -199,7 +200,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // A C-variadic function's next argument, the first of what's left of
         // its array (ADR 0428).
-        if std_path(tcx, def_id) == "std::ffi::VaList::<'f>::next_arg" {
+        if path == "std::ffi::VaList::<'f>::next_arg" {
             return Some(Some(Std::Method("shift")));
         }
         // Where a call is, `Location::caller()`, and its parts (ADR 0427).
@@ -207,11 +208,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::Location(op)));
         }
         // A backtrace, disabled unless forced (ADR 0568).
-        if let Some(op) = crate::lower::std_types::backtrace::backtrace_op(&std_path(tcx, def_id)) {
+        if let Some(op) = crate::lower::std_types::backtrace::backtrace_op(path) {
             return Some(Some(Std::Backtrace(op)));
         }
         // A future already done, a promise (ADR 0029).
-        if let Some(op) = crate::lower::std_types::future::future_op(&std_path(tcx, def_id)) {
+        if let Some(op) = crate::lower::std_types::future::future_op(path) {
             return Some(Some(Std::Future(op)));
         }
         // `pin!`'s `Pin::new_unchecked(&mut { value })`, the pointer, as
@@ -226,7 +227,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::Hash(op)));
         }
         // Bytes to text, as Rust validates UTF-8 (ADR 0172).
-        let utf8 = match std_path(tcx, def_id).as_str() {
+        let utf8 = match path {
             "std::str::from_utf8" | "std::str::<impl str>::from_utf8" => Some(TextOp::FromUtf8 { owned: false }),
             "std::string::String::from_utf8" => Some(TextOp::FromUtf8 { owned: true }),
             "std::str::from_utf8_unchecked"
@@ -252,7 +253,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::Text(op)));
         }
         // A path is its text (ADR 0173): what reads it as text is itself.
-        match std_path(tcx, def_id).as_str() {
+        match path {
             "std::path::Path::display"
             | "std::path::Path::to_str"
             | "std::path::Path::as_os_str"
@@ -294,7 +295,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "std::num::NonZero::<T>::new" => return Some(Some(Std::NonZeroNew)),
             _ => {}
         }
-        let utf8 = match std_path(tcx, def_id).as_str() {
+        let utf8 = match path {
             "std::str::Utf8Error::error_len" => Some(TextOp::Utf8Part("errorLen")),
             "std::string::FromUtf8Error::utf8_error" => Some(TextOp::Utf8Part("error")),
             "std::string::FromUtf8Error::into_bytes" | "std::string::FromUtf8Error::as_bytes" => {
@@ -305,7 +306,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(op) = utf8 {
             return Some(Some(Std::Text(op)));
         }
-        if std_path(tcx, def_id) == "std::sync::mpsc::channel" {
+        if path == "std::sync::mpsc::channel" {
             return Some(Some(Std::Channel(ChannelOp::New)));
         }
         if diagnostic("mem_swap") {
@@ -314,12 +315,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // `ptr::fn_addr_eq(f, g)`, what rustc's lint of `f == g` of two
         // function pointers asks for: the same function, `===`, as `==` of
         // them is (ADR 0395, #987).
-        if diagnostic("ptr_eq") || std_path(tcx, def_id) == "std::ptr::fn_addr_eq" {
+        if diagnostic("ptr_eq") || path == "std::ptr::fn_addr_eq" {
             return Some(Some(Std::PtrEq));
         }
         // `ptr::hash(p, state)`, its pointer's address, as `*const T`'s
         // `hash` writes it (ADRs 0562, 0864).
-        if std_path(tcx, def_id) == "std::ptr::hash" {
+        if path == "std::ptr::hash" {
             return Some(Some(Std::Hash(HashOp::Address)));
         }
         if diagnostic("mem_replace") {
@@ -334,7 +335,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Some(Std::CloneFrom));
         }
-        if of_std_crate(tcx, def_id, StdCrate::Core) && std_path(tcx, def_id) == "std::mem::take" {
+        if of_std_crate(tcx, def_id, StdCrate::Core) && path == "std::mem::take" {
             return Some(Some(Std::MemTake));
         }
         // `cmp::max(a, b)` of numbers is `a.max(b)`'s (ADR 0136); of anything
@@ -348,13 +349,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::Range(RangeOp::New)));
         }
         if of_std_crate(tcx, def_id, StdCrate::Std) {
-            match std_path(tcx, def_id).as_str() {
+            match path {
                 "std::io::stdout" | "std::io::stderr" => return Some(Some(Std::Stream(StreamOp::Open))),
                 _ => {}
             }
         }
         if of_std_crate(tcx, def_id, StdCrate::Core) {
-            match std_path(tcx, def_id).as_str() {
+            match path {
                 "std::any::type_name" => return Some(Some(Std::TypeName { of_val: false })),
                 "std::any::type_name_of_val" => return Some(Some(Std::TypeName { of_val: true })),
                 _ => {}
@@ -363,7 +364,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // std's iterator sources (ADR 0128), by path: most have no
         // diagnostic item.
         if of_std_crate(tcx, def_id, StdCrate::Core) && tcx.def_kind(def_id) == DefKind::Fn {
-            let source = match std_path(tcx, def_id).as_str() {
+            let source = match path {
                 "std::iter::once" => Some(IterSource::Once),
                 "std::iter::empty" => Some(IterSource::Empty),
                 "std::iter::repeat" => Some(IterSource::Repeat),
@@ -382,7 +383,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // libtest's `test::black_box` is the same.
         let krate = std_crate(tcx, def_id.krate);
         if tcx.item_name(def_id).as_str() == "black_box"
-            && ((krate == Some(StdCrate::Core) && std_path(tcx, def_id).contains("hint")) || is_libtest(tcx, def_id))
+            && ((krate == Some(StdCrate::Core) && path.contains("hint")) || is_libtest(tcx, def_id))
         {
             return Some(Some(Std::Same));
         }
@@ -395,9 +396,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // `char::from_digit`, `std::char::from_digit` and `from_u32`.
         let char_fn = |name: &str| {
-            of_std_crate(tcx, def_id, StdCrate::Core)
-                && tcx.item_name(def_id).as_str() == name
-                && std_path(tcx, def_id).contains("char")
+            of_std_crate(tcx, def_id, StdCrate::Core) && tcx.item_name(def_id).as_str() == name && path.contains("char")
         };
         if char_fn("from_digit") {
             return Some(Some(Std::FromDigit));
@@ -440,8 +439,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => {}
             }
         }
-        if krate == Some(StdCrate::Alloc) && name.as_str() == "format" && std_path(tcx, def_id).ends_with("fmt::format")
-        {
+        if krate == Some(StdCrate::Alloc) && name.as_str() == "format" && path.ends_with("fmt::format") {
             return Some(Some(Std::Format));
         }
         if krate == Some(StdCrate::Core) && name.as_str() == "must_use" {
@@ -454,16 +452,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if tcx.is_lang_item(def_id, LangItem::PanicDisplay) {
             return Some(Some(Std::PanicDisplay { unreachable: false }));
         }
-        if krate == Some(StdCrate::Core)
-            && name.as_str() == "unreachable_display"
-            && std_path(tcx, def_id).contains("panicking")
-        {
+        if krate == Some(StdCrate::Core) && name.as_str() == "unreachable_display" && path.contains("panicking") {
             return Some(Some(Std::PanicDisplay { unreachable: true }));
         }
         if let Some(error) = print_of(tcx, def_id) {
             return Some(Some(Std::Print { error }));
         }
-        if krate == Some(StdCrate::Std) && std_path(tcx, def_id) == "std::rt::begin_panic" {
+        if krate == Some(StdCrate::Std) && path == "std::rt::begin_panic" {
             return Some(Some(Std::BeginPanic));
         }
         if let Some(op) = unwind_op(tcx, def_id) {
@@ -1069,7 +1064,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `Hash`.
     fn hash_op(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<HashOp> {
         let tcx = self.tcx;
-        match std_path(tcx, def_id).as_str() {
+        match std_path(tcx, def_id) {
             "std::hash::DefaultHasher::new" => return Some(HashOp::New(StdHasher::Default)),
             "std::hash::SipHasher::new" => return Some(HashOp::New(StdHasher::Sip)),
             "std::hash::SipHasher::new_with_keys" => return Some(HashOp::NewWithKeys),
@@ -1277,7 +1272,7 @@ pub(in crate::lower) fn print_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool>
     if !of_std_crate(tcx, def_id, StdCrate::Std) {
         return None;
     }
-    match std_path(tcx, def_id).as_str() {
+    match std_path(tcx, def_id) {
         "std::io::_print" => Some(false),
         "std::io::_eprint" => Some(true),
         _ => None,
@@ -1290,7 +1285,7 @@ pub(in crate::lower) fn unwind_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Unwi
     if !of_std_crate(tcx, def_id, StdCrate::Std) {
         return None;
     }
-    match std_path(tcx, def_id).as_str() {
+    match std_path(tcx, def_id) {
         "std::panic::catch_unwind" => Some(UnwindOp::Catch),
         "std::panic::resume_unwind" => Some(UnwindOp::Resume),
         _ => None,

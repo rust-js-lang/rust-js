@@ -52,6 +52,7 @@ mod hooks;
 mod js;
 mod jsx_syntax;
 mod library;
+mod lines;
 mod link;
 mod lower;
 mod manifest;

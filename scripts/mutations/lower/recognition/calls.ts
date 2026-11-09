@@ -26,8 +26,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`std::ptr::eq` of JS objects is rejected as a call rust-js doesn't support",
     file: "src/lower/recognition/calls.rs",
-    find: '        if diagnostic("ptr_eq") || std_path(tcx, def_id) == "std::ptr::fn_addr_eq" {',
-    replace: '        if std_path(tcx, def_id) == "std::ptr::fn_addr_eq" {',
+    find: '        if diagnostic("ptr_eq") || path == "std::ptr::fn_addr_eq" {',
+    replace: '        if path == "std::ptr::fn_addr_eq" {',
     tests: [
       "test/lowering-bindings.test.ts",
       "-t",
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`ptr::fn_addr_eq(f, g)`, what rustc's lint of `f == g` of two function pointers asks for, is refused as addressable memory (#987)",
     file: "src/lower/recognition/calls.rs",
-    find: '        if diagnostic("ptr_eq") || std_path(tcx, def_id) == "std::ptr::fn_addr_eq" {',
+    find: '        if diagnostic("ptr_eq") || path == "std::ptr::fn_addr_eq" {',
     replace: '        if diagnostic("ptr_eq") {',
     tests: ["test/corpus.test.ts", "-t", "^fn_addr_eq_compares_functions.rs$"],
   },
@@ -271,7 +271,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`thread::yield_now()`, of the one thread there is, is refused, not nothing",
     file: "src/lower/recognition/calls.rs",
-    find: '        if std_path(tcx, def_id) == "std::thread::yield_now" {\n',
+    find: '        if path == "std::thread::yield_now" {\n',
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_yield.rs$"],
   },
@@ -289,8 +289,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`mem::discriminant(&e)` is refused, not `e`'s variant's discriminant",
     file: "src/lower/recognition/calls.rs",
-    find: '            "std::mem::discriminant" | "std::intrinsics::discriminant_value"\n',
-    replace: '            "std::intrinsics::discriminant_value"\n',
+    find: 'if matches!(path, "std::mem::discriminant" | "std::intrinsics::discriminant_value") {',
+    replace: 'if matches!(path, "std::intrinsics::discriminant_value") {',
     tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
   },
   {
@@ -337,7 +337,7 @@ export const mutations: Mutation[] = [
     name: "pointer-std-unknown",
     breaks: "std's functions of a raw pointer are refused as memory",
     file: "src/lower/recognition/calls.rs",
-    find: "        if let Some(op) = crate::lower::pointers::pointer_op(&std_path(tcx, def_id)) {\n",
+    find: "        if let Some(op) = crate::lower::pointers::pointer_op(path) {\n",
     replace: "        if let Some(op) = None::<PointerOp> {\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
@@ -445,7 +445,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`next_arg()` of a `VaList` is an error, where it's the first of what's left",
     file: "src/lower/recognition/calls.rs",
-    find: '        if std_path(tcx, def_id) == "std::ffi::VaList::<\'f>::next_arg" {\n',
+    find: '        if path == "std::ffi::VaList::<\'f>::next_arg" {\n',
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
   },
@@ -534,7 +534,7 @@ export const mutations: Mutation[] = [
     name: "assert-unchecked-unknown",
     breaks: "`hint::assert_unchecked(c)` isn't known, and is refused",
     file: "src/lower/recognition/calls.rs",
-    find: '        if std_path(tcx, def_id) == "std::hint::assert_unchecked" {\n',
+    find: '        if path == "std::hint::assert_unchecked" {\n',
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^assert_unchecked.rs$"],
   },
@@ -543,8 +543,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an edition 2018 `unreachable!(x)`, `unreachable_display(&x)`, is refused",
     file: "src/lower/recognition/calls.rs",
-    find: '        if krate == Some(StdCrate::Core)\n            && name.as_str() == "unreachable_display"\n',
-    replace: '        if false\n            && name.as_str() == "unreachable_display"\n',
+    find: 'if krate == Some(StdCrate::Core) && name.as_str() == "unreachable_display"',
+    replace: 'if false && name.as_str() == "unreachable_display"',
     tests: ["test/corpus.test.ts", "-t", "^unreachable_display.rs$"],
   },
   {
@@ -739,9 +739,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`ptr::hash` is refused as addressing memory, and with it a type whose `Hash` it is (ADR 0864)",
     file: "src/lower/recognition/calls.rs",
-    find: '        if std_path(tcx, def_id) == "std::ptr::hash" {\n',
+    find: '        if path == "std::ptr::hash" {\n',
     replace:
-      '        if false && std_path(tcx, def_id) == "std::ptr::hash" {\n',
+      '        if false && path == "std::ptr::hash" {\n',
     tests: ["test/corpus.test.ts", "-t", "^identity_keys.rs$"],
   },
 ];

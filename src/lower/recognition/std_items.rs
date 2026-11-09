@@ -153,7 +153,7 @@ pub(crate) fn node_only(tcx: TyCtxt<'_>, id: DefId) -> Option<ProcessOp> {
 /// of bytes, `transmute` and `zeroed`.
 pub(crate) fn addresses_memory(tcx: TyCtxt<'_>, id: DefId) -> bool {
     let path = std_path(tcx, id);
-    path.starts_with("std::ptr::") || matches!(path.as_str(), "std::mem::transmute_copy" | "std::mem::uninitialized")
+    path.starts_with("std::ptr::") || matches!(path, "std::mem::transmute_copy" | "std::mem::uninitialized")
 }
 
 /// std's functions that may give a value of a type they weren't given one
@@ -987,7 +987,7 @@ pub(crate) fn std_home(tcx: TyCtxt<'_>, id: DefId) -> String {
 pub(crate) fn memory_intrinsic(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.intrinsic(id).is_some()
         && !matches!(
-            std_path(tcx, id).as_str(),
+            std_path(tcx, id),
             "std::intrinsics::cold_path"
                 | "std::intrinsics::assume"
                 | "std::intrinsics::likely"
@@ -1293,10 +1293,7 @@ pub(crate) fn replaces_whole(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.is_diagnostic_item(Symbol::intern("mem_swap"), id)
         || tcx.is_diagnostic_item(Symbol::intern("mem_replace"), id)
         || of_std_crate(tcx, id, StdCrate::Core)
-            && matches!(
-                std_path(tcx, id).as_str(),
-                "std::mem::take" | "std::cell::Cell::<T>::from_mut"
-            )
+            && matches!(std_path(tcx, id), "std::mem::take" | "std::cell::Cell::<T>::from_mut")
 }
 
 /// Is `id` a slice of arrays' `as_flattened_mut`, a `&mut` to the items of
