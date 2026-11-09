@@ -2,6 +2,7 @@
 // run is the program its sources make now, and the compiler is built once
 // for a run, with no one left waiting on no one.
 
+import { underLoad } from "../scripts/timing";
 import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";
@@ -144,7 +145,7 @@ test("a native program is kept by what it was built from, said from the checkout
   expect(files.some(([file]) => file.endsWith("/native.rs"))).toBe(false);
   // Found again, and built again once what it read changes, to what no
   // run before built, as the store is the machine's.
-  expect(nativeBinary(source, contentDirectory(source), ["--edition=2024"])).toEqual({ binary: built.binary, built: false });
+  expect(nativeBinary(source, contentDirectory(source), ["--edition=2024"])).toEqual({ binary: built.binary, built: false, kept: true });
   const changed = `changed ${process.pid} ${Date.now()}`;
   writeFileSync(join(dir, "read.rs"), `fn main() {\n    println!("${changed}");\n}\n`);
   const again = nativeBinary(source, contentDirectory(source), ["--edition=2024"]);
@@ -265,9 +266,11 @@ test("a store keeps nothing below the disk's floor, and a retired store is remov
   expect(mayKeep(dir, () => floorBytes)).toBe(true);
   expect(mayKeep(dir, () => floorBytes - 1)).toBe(false);
   for (const retired of retiredStores) mkdirSync(join(retired, "left"), { recursive: true });
+  // Of the machine's stores as they are: some 18,000 native builds, 10 GB,
+  // each one's size read, 6 s on the Mac (2026-11-09).
   pruneKeptStores();
   expect(retiredStores.map(existsSync)).toEqual([false, false]);
-});
+}, underLoad(60_000));
 
 // Each fixture a test claims is removed once its file's tests end
 // (test/setup.ts), as Bun's test runner never emits `exit`; and one a

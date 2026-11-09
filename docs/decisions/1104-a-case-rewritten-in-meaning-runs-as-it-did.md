@@ -222,3 +222,19 @@ structs' build; an untagged enum's refusal read as a crash; a numbered
 field's address in a tuple struct another holds; a generic tuple struct's
 `RefCell` field made a cell and read as its value; and an untagged enum's
 array member matching its `otherwise` member, a tuple struct.
+
+## Amendment: a night's net fits its machine's disk (2026-11-09, #1108)
+
+The nightly's net ran its machine out of disk 80 minutes in, `ENOSPC`, and
+its last 250 rewrites failed as they were written. Its machine had the
+disk's floor free, 40 GB, so no native build was kept (`mayKeep`): each was
+built in a fixture, which its test file holds till it ends, some 45,000 of
+them, several MB each on Linux, std's debug info in each. **A build that
+isn't kept goes once it's run** (`ranOnce`), and **a native program is
+built without debug info** (`-Cstrip=debuginfo`), which no run reads, a
+panic saying its location, a few hundred KB each. The nightly's net and
+neighbour shuffle install Miri, so the reducer reduces a case with
+`unsafe` code too (#1104). And the generator's `replace("", ..)`, which a
+loop made of its string each time, its length multiplied, of eight chars
+at most (#1106). Held by `test/programs.test.ts`'s "a native build that
+isn't kept goes once it's run, and a kept one stays".

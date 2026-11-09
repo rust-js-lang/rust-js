@@ -2,10 +2,10 @@
 // failed must not pass for one that didn't.
 
 import { expect, test } from "bun:test";
-import { writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { agree, execute, jsLimit, type Run } from "./programs";
+import { agree, execute, jsLimit, ranOnce, type Run } from "./programs";
 import { fixture } from "./support";
 
 const clean: Run = { stdout: "", stderr: "", bytes: { stdout: Buffer.alloc(0), stderr: Buffer.alloc(0) }, outcome: { value: null } };
@@ -52,4 +52,18 @@ test("a JS run may take twenty times as long as native Rust's, and at least 10 s
   const file = join(fixture("programs-timed"), "outcome.json");
   const run = execute(script(`setTimeout(() => require("fs").writeFileSync(${JSON.stringify(file)}, '{"value":null}'), 300)`), file);
   expect(run.ms).toBeGreaterThanOrEqual(300);
+});
+
+// A native program built below the disk's floor isn't kept, and goes once
+// it's run: a run of thousands, the metamorphic net's, filled its machine's
+// disk with them, each in a fixture its test file held till it ended
+// (#1108). One kept stays, for the next run of it.
+test("a native build that isn't kept goes once it's run, and a kept one stays", () => {
+  const unkept = fixture("programs-unkept");
+  writeFileSync(join(unkept, "native"), "");
+  const kept = fixture("programs-kept");
+  writeFileSync(join(kept, "native"), "");
+  expect(ranOnce({ binary: join(unkept, "native"), kept: false }, clean)).toBe(clean);
+  expect(ranOnce({ binary: join(kept, "native"), kept: true }, clean)).toBe(clean);
+  expect([existsSync(unkept), existsSync(join(kept, "native"))]).toEqual([false, true]);
 });

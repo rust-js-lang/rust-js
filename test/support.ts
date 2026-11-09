@@ -94,8 +94,11 @@ export function contentDirectory(...contents: string[]): string {
  * checks each new one as it first runs, which takes longer than building
  * it, and one check at a time, however many test files run side by side.
  * `built` says it's new, so its first run may wait its turn for that.
+ * Below the disk's floor it isn't kept (`kept` false): the caller removes
+ * it once it's run, or a run of thousands, the metamorphic net's, fills the
+ * disk with what its fixtures hold till it ends (#1108).
  */
-export function nativeBinary(source: string, dir: string, flags: string[], timeout = 120_000): { binary: string; built: boolean } | { error: string } {
+export function nativeBinary(source: string, dir: string, flags: string[], timeout = 120_000): { binary: string; built: boolean; kept: boolean } | { error: string } {
   rustcVersion ??= run(["rustc", "-vV"]);
   const wrapper = resolve(dir, "native.rs");
   const hash = createHash("sha256").update(rustcVersion).update(portable(JSON.stringify(flags))).update(portable(wrapper)).update(portable(source));
@@ -109,7 +112,7 @@ export function nativeBinary(source: string, dir: string, flags: string[], timeo
   for (const kept of readdirSync(program).filter((name) => !name.startsWith("."))) {
     if (unchanged(join(program, kept, "inputs.json"))) {
       markUsed(join(program, kept));
-      return { binary: join(program, kept, "native"), built: false };
+      return { binary: join(program, kept, "native"), built: false, kept: true };
     }
   }
   // Built beside the others, then moved in whole, as the build of what it
@@ -121,7 +124,7 @@ export function nativeBinary(source: string, dir: string, flags: string[], timeo
     const p = runSync(["rustc", ...flags, wrapper, "-o", join(unkept, "native")], root, timeout);
     const why = stopped(p, timeout);
     if (why || p.code !== 0) return { error: `rustc can't compile it${why ? `: it ${why}` : ""}:\n${p.stderr}` };
-    return { binary: join(unkept, "native"), built: true };
+    return { binary: join(unkept, "native"), built: true, kept: false };
   }
   const building = join(program, `.building-${process.pid}-${Date.now()}`);
   mkdirSync(building);
@@ -141,7 +144,7 @@ export function nativeBinary(source: string, dir: string, flags: string[], timeo
     // Another file built it at the same time, from the same sources.
     rmSync(building, { recursive: true, force: true });
   }
-  return { binary: join(kept, "native"), built: true };
+  return { binary: join(kept, "native"), built: true, kept: true };
 }
 
 /** `text` with the checkout's root, where it says it, said as `<root>`: a

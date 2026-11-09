@@ -3,7 +3,7 @@
 // stderr, and how its `main` ends, as the oracle says it (ADR 0088).
 
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 import { compileFailure, run as runAsync, runSync, stopped, type Exit } from "./child";
 import { decode, encode, same, type Outcome } from "./oracle";
@@ -120,11 +120,21 @@ fn main() {
   const built = nativeBinary(source, contentDirectory(source), [...nativeFlags(edition), ...rustc], compileTimeout);
   if ("error" in built) return built.error;
   const outcomeFile = join(dir, "native.json");
-  return execute([built.binary, outcomeFile], outcomeFile, built.built ? firstRunTimeout : timeout);
+  return ranOnce(built, execute([built.binary, outcomeFile], outcomeFile, built.built ? firstRunTimeout : timeout));
 }
 
-/** rustc's flags of a native build of a case, or of a library it uses. */
-export const nativeFlags = (edition: string) => [`--edition=${edition}`, "-Coverflow-checks=off", "-Awarnings", remapRoot];
+/** `run`, a native program's, its binary gone where it isn't kept, below
+ * the disk's floor (`nativeBinary`, #1108). */
+export function ranOnce(built: { binary: string; kept: boolean }, run: Run): Run {
+  if (!built.kept) rmSync(dirname(built.binary), { recursive: true, force: true });
+  return run;
+}
+
+/** rustc's flags of a native build of a case, or of a library it uses: no
+ * debug info, which no run reads, a panic's message being its location's,
+ * and which made each of Linux's builds several MB, std's, where it's a
+ * few hundred KB without (#1108). */
+export const nativeFlags = (edition: string) => [`--edition=${edition}`, "-Coverflow-checks=off", "-Cstrip=debuginfo", "-Awarnings", remapRoot];
 
 // For `wasm32-wasip1`, whose `usize` is rust-js's (ADR 0090): the case's
 // `main` as it is, run by Bun's WASI, which writes its outcome where it
@@ -138,12 +148,12 @@ fn main() {
     case::entry();
 }
 `;
-  const flags = [`--edition=${edition}`, "--target=wasm32-wasip1", "-Coverflow-checks=off", "-Awarnings", remapRoot];
+  const flags = [`--edition=${edition}`, "--target=wasm32-wasip1", "-Coverflow-checks=off", "-Cstrip=debuginfo", "-Awarnings", remapRoot];
   const built = nativeBinary(source, contentDirectory(source), flags, compileTimeout);
   if ("error" in built) return built.error;
   const outcomeFile = join(dir, "native.json");
   const runner = join(root, "test", "wasi-run.ts");
-  return execute([process.execPath, runner, built.binary, outcomeFile], outcomeFile, built.built ? firstRunTimeout : timeout);
+  return ranOnce(built, execute([process.execPath, runner, built.binary, outcomeFile], outcomeFile, built.built ? firstRunTimeout : timeout));
 }
 
 /** A compile that failed: rust-js's clear rejection, or a crash, however

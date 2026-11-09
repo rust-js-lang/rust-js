@@ -1230,6 +1230,10 @@ function show(e: Expr): string {
         case "rev":
           return `${a}.chars().rev().collect::<String>()`;
         case "replace":
+          // An empty pattern puts `c` beside each char: of a string a loop
+          // replaces each time, its length multiplied each time, seconds of
+          // a seed's run (#1106). Its edge kept, of eight chars at most.
+          if (e.b?.kind === "text" && e.b.value === "") return `${a}.chars().take(8).collect::<String>().replace(${b}.as_str(), ${c}.as_str())`;
           return `${a}.replace(${b}.as_str(), ${c}.as_str())`;
         case "concat":
           return `format!("{}{}", ${a}, ${b})`;
