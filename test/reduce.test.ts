@@ -10,7 +10,8 @@ import { join } from "node:path";
 import { buildRewriter, rewriter } from "./metamorphic";
 import { buildCompiler, fixture } from "./support";
 import { underLoad } from "../scripts/timing";
-import { reduce, size } from "../scripts/reduce";
+import { failure, reduce, size } from "../scripts/reduce";
+import { installMiri, miriInstalled } from "./miri";
 
 beforeAll(() => {
   buildCompiler();
@@ -76,3 +77,57 @@ test("each of the rewriter's reductions is smaller, and past the last there's no
   expect(smaller).toBeGreaterThanOrEqual(count - 1);
   expect(spawnSync(rewriter, ["reduce", file, String(count)], { encoding: "utf8" }).status).toBe(2);
 });
+
+// Miri, where it's installed, and where `RUST_JS_REQUIRE_MIRI=1` says it
+// is, the nightly's Miri job's (#1104).
+const miri = process.env.RUST_JS_REQUIRE_MIRI === "1" || miriInstalled();
+
+/** Bytes of an allocation of `alloc`'s, each written before it's read:
+ * semver's identifiers' (#1099), which rust-js's JS of fails as it was
+ * found. */
+const allocated = `use std::alloc::{Layout, alloc, dealloc};
+
+fn main() {
+    let layout = Layout::from_size_align(2, 1).unwrap();
+    unsafe {
+        let p = alloc(layout);
+        p.write(7);
+        p.add(1).write(9);
+        println!("{} {}", *p, *p.add(1));
+        dealloc(p, layout);
+    }
+}
+`;
+
+// A step that leaves memory read that's never written makes the program
+// undefined behaviour, whose native run prints what it happens to: no
+// program to compare its JS with. Reducing #1099 kept one, a read of a byte
+// it no longer wrote, and the repro was no program. Miri says so of each
+// step of a program with `unsafe` code, and the step isn't kept.
+test.skipIf(!miri)("a step that makes the program undefined behaviour isn't kept, as Miri finds it is", () => {
+  if (!miriInstalled()) throw new Error(`RUST_JS_REQUIRE_MIRI=1, and Miri isn't installed: ${installMiri}`);
+  const dir = fixture("reduce-undefined");
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, "allocated.rs");
+  writeFileSync(file, allocated);
+  expect(failure(file, "plain", "2024", join(dir, "whole"))).not.toBe("undefined");
+  // The rewriter's step that drops the second byte's write is one.
+  const count = Number(spawnSync(rewriter, ["reduce", file], { encoding: "utf8" }).stdout.trim());
+  const steps = Array.from({ length: count }, (_, n) => spawnSync(rewriter, ["reduce", file, String(n)], { encoding: "utf8" }).stdout);
+  // As the rewriter prints it, its tokens spaced.
+  const has = (step: string, code: string) => step.replace(/\s+/g, "").includes(code);
+  const unwritten = steps.find((step) => has(step, "p.write(7)") && !has(step, ".write(9)") && has(step, "*p.add(1)"));
+  if (unwritten === undefined) throw new Error(`no step of the rewriter's drops the second write:\n${steps.join("\n---\n")}`);
+  const variant = join(dir, "unwritten.rs");
+  writeFileSync(variant, unwritten);
+  expect(failure(variant, "plain", "2024", join(dir, "step"))).toBe("undefined");
+}, underLoad(300_000));
+
+test.skipIf(!miri)("a program that's undefined behaviour isn't reduced", async () => {
+  if (!miriInstalled()) throw new Error(`RUST_JS_REQUIRE_MIRI=1, and Miri isn't installed: ${installMiri}`);
+  const dir = fixture("reduce-undefined-whole");
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, "unwritten.rs");
+  writeFileSync(file, allocated.replace("        p.add(1).write(9);\n", ""));
+  expect(await reduce(file, { jobs: 2, budget: 60 })).toContain("is undefined behaviour, Miri finds");
+}, underLoad(300_000));

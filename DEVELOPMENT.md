@@ -782,7 +782,11 @@ the workflow's 2 machines; `--shards=4` splits it across four.
   `bun scripts/reduce.ts <case.rs> --build plain|std` shrinks it to a
   program that fails the same way, in parallel, in seconds to a minute; the
   metamorphic net's and the neighbour shuffle's failures come with theirs
-  (`NET_REDUCE=0` to skip it). Start a P0 from the reduced program.
+  (`NET_REDUCE=0` to skip it). Start a P0 from the reduced program. One
+  with `unsafe` code is reduced only with Miri installed (`rustup toolchain
+  install nightly --profile minimal --component miri,rust-src && cargo
+  +nightly miri setup`), which rejects each step that's undefined
+  behaviour (#1104).
 - **The inner loop is never delegated.** The failing test is seen to fail
   here, before the fix, and its mutations caught here, before the push.
 - **Read every bless patch before committing it.**

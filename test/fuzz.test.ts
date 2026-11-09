@@ -16,14 +16,13 @@ import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { spawnSync } from "node:child_process";
-
 import { generate, print, type Program } from "./generate";
 import { reduce, size } from "./reduce";
 import { reducedRepro } from "./reduced";
 import { same } from "./oracle";
 import { agree, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, compiler, contentDirectory, fixture, root, target, writeWhole } from "./support";
+import { undefinedBehaviour } from "./miri";
 
 /** A setting that's a whole number, at least `least`, or none, and then
  * `otherwise`: anything else fails the run before a seed does, not as a
@@ -70,31 +69,8 @@ const builds: [Build, string[]][] = [
   ["std", ["--std-iterators"]],
 ];
 
-/** Miri, where `FUZZ_MIRI=1` asks for it: the nightly toolchain's, of the
- * sysroot `cargo miri setup` makes once. */
+/** Miri, where `FUZZ_MIRI=1` asks for it (test/miri.ts). */
 const miri = process.env.FUZZ_MIRI === "1";
-let miriSysroot: string | undefined;
-function miriRoot(): string {
-  if (miriSysroot !== undefined) return miriSysroot;
-  const p = spawnSync("cargo", ["+nightly", "miri", "setup", "--print-sysroot"], { cwd: root, encoding: "utf8", timeout: 900_000 });
-  const said = (p.stdout ?? "").trim().split("\n").pop() ?? "";
-  if (p.status !== 0 || said === "") throw new Error(`FUZZ_MIRI=1: Miri's sysroot isn't set up: ${p.stderr}`);
-  return (miriSysroot = said);
-}
-
-/** What Miri finds of `file`'s program that's undefined behaviour, or
- * nothing: its run's own ends, a panic or an exit, are native Rust's to
- * compare. One that runs past its time says nothing of it either. */
-function undefinedBehaviour(file: string): string | undefined {
-  const p = spawnSync("rustup", ["run", "nightly", "miri", "--sysroot", miriRoot(), "--edition=2024", "-Awarnings", file], {
-    cwd: root,
-    encoding: "utf8",
-    timeout: 300_000,
-    maxBuffer: 64 * 1024 * 1024,
-  });
-  const said = `${p.stderr ?? ""}`;
-  return said.includes("Undefined Behavior") ? said : undefined;
-}
 
 /** What happens to a program, natively and as JS in each build, the
  * first that goes otherwise than native Rust's. */

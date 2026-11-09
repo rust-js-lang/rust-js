@@ -227,6 +227,14 @@ jobs:
         run: |
           rustup toolchain install nightly --profile minimal --component miri,rust-src
           cargo +nightly miri setup
+      # The reducer keeps no step Miri finds is undefined behaviour (#1104):
+      # its tests that need Miri, which no push's job installs.
+      - name: The reducer under Miri
+        if: matrix.part == 1
+        env:
+          RUST_JS_COMPILER: bin/rust-js
+          RUST_JS_REQUIRE_MIRI: '1'
+        run: bun test test/reduce.test.ts -t "undefined behaviour"
       - name: Run part ${{ matrix.part }} of 6
         env:
           START: ${{ inputs.fuzz_start }}

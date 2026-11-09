@@ -61,3 +61,30 @@ a `library` rewrite's two crates.
 Held by `test/reduce.test.ts`: a program rust-js refuses reduced to what
 it refuses, a program that runs as native Rust does left as it is, and the
 rewriter's reductions each smaller.
+
+## Amendment: no step that's undefined behaviour is kept (2026-11-09, #1104)
+
+Reducing #1099, semver's bytes written through `std::alloc::alloc`'s
+pointer, kept a step that dropped a write and left its byte read: a read of
+memory never written, undefined behaviour, whose native run prints what it
+happens to. The repro still "failed the same way", and was no program.
+
+**A step of a program with `unsafe` code is kept only where Miri finds no
+undefined behaviour in it** (`failure`'s `undefined`, beside `rejected`).
+Safe Rust can't be undefined behaviour, so a program without `unsafe` isn't
+run under Miri; every raw pointer read, `alloc`, `MaybeUninit`'s
+`assume_init` and `transmute` is `unsafe` to write. Miri is the one judge
+of it, `test/miri.ts`, which the generated programs' `FUZZ_MIRI=1` asks too
+(#1085). A program with `unsafe` code isn't reduced where Miri isn't
+installed: the reducer says so, with how to install it, and the nets'
+reports then give the command. One that's undefined behaviour itself isn't
+reduced either. Miri's sysroot is asked for once, `MIRI_SYSROOT`, which the
+checks run apart are given.
+
+Held by `test/reduce.test.ts`: "a step that makes the program undefined
+behaviour isn't kept, as Miri finds it is", #1099's program, whose step of
+the rewriter's that drops its second write Miri finds undefined; and "a
+program that's undefined behaviour isn't reduced". They run where Miri is
+installed, and in the generated programs' nightly job, which installs it
+(`RUST_JS_REQUIRE_MIRI=1`, which fails them where it isn't). Without the
+check, each fails.

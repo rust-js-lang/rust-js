@@ -236,6 +236,7 @@ export const parts: Part[] = [
   { setting: "FUZZ_SEEDS", value: "6", runs: "push", by: ".github/workflows/readability-passes.yml" },
   { setting: "FUZZ_MIRI", value: "1", runs: "nightly", by: ".github/workflows/rustc-tests.yml", why: "each generated program run under Miri first, which needs the nightly toolchain's Miri, which the batch's job installs (#1085)" },
   { setting: "RUST_JS_REQUIRE_WASM", value: "1", runs: "push", by: ".github/workflows/check.yml" },
+  { setting: "RUST_JS_REQUIRE_MIRI", value: "1", runs: "nightly", by: ".github/workflows/rustc-tests.yml", why: "the reducer's tests that need Miri, which the fuzz job installs and no push's job has (#1104)" },
   { setting: "ITERATOR_MATRIX", value: "all", runs: "nightly", by: ".github/workflows/nightly.yml", why: "every case, about 4 CPU-hours: a push runs its slice" },
   { setting: "TIDY_STAGES", value: "corpus", runs: "nightly", by: ".github/workflows/nightly.yml", why: "every corpus case after each of tidy's stages: a push of tidy runs nine" },
   {
@@ -254,7 +255,8 @@ export const parts: Part[] = [
 ];
 
 /** The settings test files read that select no part: the harness's own,
- * what a test sets for a child it runs, and a report's. */
+ * what a test sets for a child it runs, Miri's sysroot, which a run asks
+ * for once (test/miri.ts), and a report's. */
 export const harness = [
   "BLESS",
   "BUN_TEST_WORKER_ID",
@@ -263,6 +265,7 @@ export const harness = [
   "ITERATOR_MATRIX_REPORT",
   "METAMORPHIC_REWRITES",
   "METAMORPHIC_TALLY",
+  "MIRI_SYSROOT",
   "NET_REDUCE",
   "NET_REDUCE_BUDGET",
   "NEIGHBOURS_SEED",

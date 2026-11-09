@@ -2,7 +2,8 @@
 // C-Reduce style: each reduction the rewriter makes (`metamorph reduce`,
 // scripts/metamorph/src/reduce.rs) tried in parallel, and the first, in its
 // order, kept where rustc still accepts the program, native Rust still runs
-// it, and rust-js still fails as it did; again until none is kept.
+// it, Miri finds no undefined behaviour in it where it has `unsafe` code
+// (#1104), and rust-js still fails as it did; again until none is kept.
 //
 //   bun scripts/reduce.ts <case.rs> [--build plain|std] [--edition <year>]
 //                         [--oracle same|differs|error:<text>] [--budget <s>]
@@ -25,11 +26,15 @@ import { spawnSync } from "node:child_process";
 import { agree, compileJs, runJs, runNative, runtimes, show } from "../test/programs";
 import { buildRewriter, rewriter } from "../test/metamorphic";
 import { root, target } from "../test/support";
+import { installMiri, mayBeUndefined, miriInstalled, miriSysroot, undefinedBehaviour } from "../test/miri";
 import { memoryBudget, peakGB } from "./shard";
 
 /** How a program fails: rust-js refuses or crashes on it, with its first
  * error; or its JS ends otherwise than native Rust, a throw where it
  * returns; or prints otherwise from a line on, to stdout or to stderr. */
+/** What isn't a failure to keep: see `failure`. */
+export type NotAFailure = "rejected" | "undefined" | "passes";
+
 export type Failure =
   | { kind: "rejected" | "crashed"; error: string }
   | { kind: "prints"; native: string; js: string }
@@ -37,12 +42,14 @@ export type Failure =
   | { kind: "stderr"; native: string; js: string };
 
 /** A program's failure, or that it isn't one: rustc rejects it, or native
- * Rust's run doesn't end (`rejected`), or rust-js runs it as native Rust
- * does (`passes`). */
-export function failure(file: string, build: "plain" | "std", edition: string, dir: string): Failure | "rejected" | "passes" {
+ * Rust's run doesn't end (`rejected`); Miri finds it's undefined behaviour,
+ * whose native run prints what it happens to (`undefined`); or rust-js runs
+ * it as native Rust does (`passes`). */
+export function failure(file: string, build: "plain" | "std", edition: string, dir: string): Failure | NotAFailure {
   mkdirSync(dir, { recursive: true });
   const native = runNative(file, dir, edition);
   if (typeof native === "string" || typeof native.outcome === "string") return "rejected";
+  if (mayBeUndefined(readFileSync(file, "utf8")) && undefinedBehaviour(file, edition) !== undefined) return "undefined";
   const compiled = compileJs(file, dir, edition, false, {}, build === "std" ? ["--std-iterators"] : []);
   if (!("js" in compiled)) {
     const error = compiled.error.split("\n").find((line) => line.startsWith("error")) ?? compiled.reason;
@@ -66,7 +73,7 @@ export function failure(file: string, build: "plain" | "std", edition: string, d
 }
 
 /** Whether `found`, a variant's, is the failure the oracle keeps. */
-function kept(oracle: string, first: Failure, found: Failure | "rejected" | "passes"): boolean {
+function kept(oracle: string, first: Failure, found: Failure | NotAFailure): boolean {
   if (typeof found === "string") return false;
   if (oracle === "differs") return true;
   if (oracle.startsWith("error:")) return "error" in found && found.error.includes(oracle.slice("error:".length));
@@ -101,9 +108,10 @@ function reduction(file: string, n: number): string | undefined {
 
 /** `variant`'s failure, by this script's `--check`, run apart so many run
  * at once. */
-async function checked(variant: string, build: string, edition: string): Promise<Failure | "rejected" | "passes"> {
+async function checked(variant: string, build: string, edition: string): Promise<Failure | NotAFailure> {
   const p = Bun.spawn(["bun", join(root, "scripts", "reduce.ts"), "--check", variant, "--build", build, "--edition", edition], {
     cwd: root,
+    env: process.env,
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -137,8 +145,19 @@ export async function reduce(
   mkdirSync(work, { recursive: true });
   const current = join(work, "current.rs");
   writeFileSync(current, readFileSync(file, "utf8"));
+  // A program with `unsafe` code is reduced only where Miri can say which
+  // steps make it undefined behaviour: without, one that reads memory it
+  // never wrote would be kept, as #1099's was. Its sysroot asked once, and
+  // given to each check, `MIRI_SYSROOT`.
+  if (mayBeUndefined(readFileSync(current, "utf8"))) {
+    if (!miriInstalled()) return `${file} has \`unsafe\` code, and reducing it needs Miri, which keeps no step that makes it undefined behaviour: ${installMiri}`;
+    miriSysroot();
+  }
   const first = failure(current, build, edition, join(work, "first"));
-  if (typeof first === "string") return `${file} ${first === "passes" ? "runs as native Rust does" : "isn't a program native Rust runs"}`;
+  if (typeof first === "string") {
+    const why = { passes: "runs as native Rust does", undefined: "is undefined behaviour, Miri finds", rejected: "isn't a program native Rust runs" }[first];
+    return `${file} ${why}`;
+  }
   let text = readFileSync(current, "utf8");
   let checks = 0;
   let changed = true;
