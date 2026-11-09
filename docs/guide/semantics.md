@@ -705,6 +705,10 @@ What's refused is in [the limitations](limitations.md).
 - **A clone of std's iterator over an array is what's left of the array,**
   its owned items copied where they need it
   ([0181](../decisions/0181-iterator-clones.md)).
+- **`C::from_iter(items)` is `items.collect::<C>()`,** which is what
+  `collect` calls: the same JS, of a std collection and any `items`, the
+  crate's own iterator in generic code too
+  ([0160](../decisions/0160-user-collections.md), amended).
 - **A collection of the crate's is its own impls':** `for` over it calls
   its `IntoIterator`, `collect()` its `FromIterator`, `extend` its
   `Extend`, `sum()` its `Sum` ([0160](../decisions/0160-user-collections.md)).

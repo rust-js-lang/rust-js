@@ -26,11 +26,17 @@ function dDrop_drop(d) {
   }
 }
 
-function all(iter, IInPlace, IItemSize, IItemAlign, dropIItem) {
+function all(iter, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
   return $collectsInPlace(IInPlace, IItemSize, IItemAlign)
-    ? $foldToArray(Iterator.from(iter), dropIItem)
+    ? $foldToArray($closing(Iterator.from(iter), dropI, false), dropIItem)
     : $collectDropping(
-        $roomForHint(Iterator.from(iter), IItemSize, false, false, dropIItem),
+        $roomForHint(
+          $closing(Iterator.from(iter), dropI, false),
+          IItemSize,
+          false,
+          false,
+          dropIItem,
+        ),
         dropIItem,
         true,
       );
@@ -52,6 +58,9 @@ function main() {
     [4, 4],
     4,
     4,
+    (map) => {
+      map.return();
+    },
     dDrop_drop,
   );
   try {
@@ -76,6 +85,9 @@ function main() {
       [4, 4],
       4,
       4,
+      (map) => {
+        map.return();
+      },
       dDrop_drop,
     );
     $dropItems(v, dDrop_drop);

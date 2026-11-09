@@ -331,4 +331,13 @@ export const mutations: Mutation[] = [
     replace: "                    if iterates || !extensions.is_empty() {\n",
     tests: ["test/corpus.test.ts", "-t", "^kept_default_steps_assoc.rs$"],
   },
+  {
+    name: "from-iter-steps-nothing",
+    breaks:
+      "`Vec::from_iter(w)` of the crate's iterator holding a type parameter `I` steps nothing the analysis sees, so the generic function isn't given `I`'s `Iterator` and is refused, where `w.collect()` compiles (#838)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                Some(given) => (into_iter, tcx.mk_args(&[given.into()])),\n",
+    replace: "                Some(_) => (callee, args),\n",
+    tests: ["test/corpus.test.ts", "-t", "^from_iter_of_the_crates_iterator.rs$"],
+  },
 ];

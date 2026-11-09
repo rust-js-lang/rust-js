@@ -512,6 +512,30 @@ test("whether a collect's items drop is asked of the lowering's drops", () => {
   expect(given.slice(0, given.indexOf("\n}\n"))).toMatch(/state\.give\([\s\S]*\.drops\(ty\) != Drops::Nothing/);
 });
 
+// An iterator consumed by std's code is dropped where that code ends by one
+// path, `mir_iter_call`'s `consumed_call`: `C::from_iter(items)` had a
+// lowering of its own beside `collect()`'s, which never dropped what it
+// consumed, so `Vec::from_iter(it)` of an iterator with a destructor never
+// dropped it, where `it.collect()` did (#1116). It's `items.into_iter()`
+// then `collect()` now, as std's is, made so where `mir_iter_call` begins
+// alone; a second reading of `from_iter`, or of what consumes and drops,
+// fails here (ADR 0160, amended).
+test("an iterator std's code consumes is dropped by mir_iter_call's consumed_call alone", () => {
+  const lowering = files("src/lower").filter((file) => file.endsWith(".rs") && !file.startsWith("src/lower/recognition"));
+  const reading = (pattern: RegExp) => lowering.filter((file) => pattern.test(read(file)));
+  expect(reading(/IterMethod::FromIter\b/)).toEqual(["src/lower/mir/iter.rs"]);
+  expect(read("src/lower/mir/iter.rs").match(/IterMethod::FromIter\b/g)).toHaveLength(1);
+  expect(reading(/\.consumed_call\(/)).toEqual(["src/lower/mir/iter.rs"]);
+  const iter = read("src/lower/mir/iter.rs");
+  const body = (name: string) => {
+    const from = iter.slice(iter.indexOf(`fn ${name}(`));
+    return from.slice(0, from.indexOf("\n    }\n"));
+  };
+  expect(body("mir_iter_call")).toContain("return self.collected_from_iter(");
+  expect(body("mir_iter_call")).toContain("self.consumed_or_held(");
+  expect(body("consumed_or_held")).toContain("self.consumed_call(");
+});
+
 // A reversed zip is `$rev($zipEnds(a, b))`, `rev_items`' of what's made
 // knowing its back, the one form; `$zipBack`, its second, is gone (ADR 0493,
 // #740, the user's decision). A new one fails here.

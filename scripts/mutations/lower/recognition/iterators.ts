@@ -845,4 +845,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^extract_if_drops_what_it_holds.rs$"],
   },
+  {
+    name: "from-iter-iterator-its-items",
+    breaks: "`Vec::from_iter(iter)` of a type parameter's iterator asks its caller nothing, so it's refused, `the buffer std collects an iterator in place in` (#737)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "        .then(|| args.types().nth(2))\n",
+    replace: "        .then(|| args.types().nth(1))\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_from_iter_in_place.rs$"],
+  },
 ];

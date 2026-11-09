@@ -811,8 +811,8 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 750],
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 239], // A `to_owned()`'s answer, `to_owned_of` (#316).
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 554], // `inspect`'s call and what it holds, `inspected` (#903). `concat()` of text, `concatenated`'s (#495); a `Result`'s `as_mut` by its form (ADR 1086).
-  ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 23], // A consumed iterator's call, `consumed_call` (#424).
-  ["src/lower/mir/iter.rs", "    fn mir_iter_method(", 240], // Its `rev()`, `rev_called`, and the crate's own step through a `&mut`, `own_step_through_mut` (#745, #755). `len()` of one made in place, `len_in_place` (ADR 0986), its counted chain's too. Its receiver's type revealed, an `impl Iterator`'s (ADR 0985). `next_back()` of what's made here, `next_back_made_here` (#395). `advance_by` in std's bodies, `advanced_by` (ADR 0913).
+  ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 19], // A consumed iterator's call, `consumed_call` (#424), in `consumed_or_held`, beside `from_iter`'s `collected_from_iter` (#1116).
+  ["src/lower/mir/iter.rs", "    fn mir_iter_method(", 236], // Its `from_iter`, `collected_from_iter` before it (#1116). Its `rev()`, `rev_called`, and the crate's own step through a `&mut`, `own_step_through_mut` (#745, #755). `len()` of one made in place, `len_in_place` (ADR 0986), its counted chain's too. Its receiver's type revealed, an `impl Iterator`'s (ADR 0985). `next_back()` of what's made here, `next_back_made_here` (#395). `advance_by` in std's bodies, `advanced_by` (ADR 0913).
 ];
 test("the dispatchers of what's called don't grow", () => {
   const length = (file: string, signature: string) => {

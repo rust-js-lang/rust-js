@@ -233,15 +233,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "from-iter-of-anything",
-    breaks:
-      "`Vec::from_iter` of an `Option` is collected as if it were an iterator",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "        if !matches!(given.kind(), ty::Param(_)) && !self.implements_iterator(given) {\n            return Ok(None);\n        }\n",
-    replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "from_iter of an Option"],
-  },
-  {
     name: "try-fold-result-as-option",
     breaks:
       "`try_fold` into a `Result` stops at a `None`, which an `Ok` never is, and goes on past an `Err`",
@@ -873,15 +864,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/collect.rs",
     find: "            Some(items) if self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none() => Some(items),\n",
     replace: "            Some(items) => Some(items),\n",
-    tests: ["test/corpus.test.ts", "-t", "^collect_panic_drops_collected.rs$"],
-  },
-  {
-    name: "from-iter-stepped-as-given",
-    breaks:
-      "`Vec::from_iter(iter)` of a type parameter's `IntoIterator` takes its iterator as `I` itself, not `I::IntoIter`, which has no items and no in-place facts of its own: a panic stopping it drops nothing, or it's refused (#800)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "        let stepped = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, given);\n",
-    replace: "        let stepped = given;\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_panic_drops_collected.rs$"],
   },
   {

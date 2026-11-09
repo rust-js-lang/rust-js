@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
     name: "from-iter-unlowered",
     breaks: "`Vec::from_iter(items)`, which `items.collect()` is, is refused",
     file: "src/lower/mir/iter.rs",
-    find: "            return self.collected_from(values, receiver_ty, output, span);\n",
+    find: "            return self.collected_from_iter(given, values, output, span, made);\n",
     replace: "            return Ok(None);\n",
     tests: ["test/corpus.test.ts", "-t", "^from_iter_called.rs$"],
   },
@@ -780,5 +780,33 @@ export const mutations: Mutation[] = [
     replace: "        let result = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^consumed_iterator_dropped_as_its_function_panics.rs$"],
     snapshots: true,
+  },
+  {
+    name: "from-iter-iterator-undropped",
+    breaks:
+      "`Vec::from_iter(it)` of an iterator with a destructor never drops it, where `it.collect()` drops it as it's done (#838)",
+    file: "src/lower/mir/iter.rs",
+    find: "            return self.mir_iter_call(collect, &[given], values, output, span, made);\n",
+    replace:
+      "            return self.mir_iter_method(collect, (std_item(tcx, StdItem::Iterator), &[given]), values, output, span, made);\n",
+    tests: ["test/corpus.test.ts", "-t", "^from_iter_of_the_crates_iterator.rs$"],
+  },
+  {
+    name: "from-iter-of-anything",
+    breaks:
+      "`Vec::from_iter` of an `Option` is collected as if it were an iterator",
+    file: "src/lower/mir/iter.rs",
+    find: "        if self.iterator_item(given).is_some() {\n",
+    replace: "        if true {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "from_iter of an Option"],
+  },
+  {
+    name: "from-iter-stepped-as-given",
+    breaks:
+      "`Vec::from_iter(iter)` of a type parameter's `IntoIterator` takes its iterator as `I` itself, not `I::IntoIter`, which has no items and no in-place facts of its own: a panic stopping it drops nothing, or it's refused (#800)",
+    file: "src/lower/mir/iter.rs",
+    find: "        let stepped = crate::lower::recognition::iterator_type_of(tcx, self.typing_env, given);\n",
+    replace: "        let stepped = given;\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_panic_drops_collected.rs$"],
   },
 ];

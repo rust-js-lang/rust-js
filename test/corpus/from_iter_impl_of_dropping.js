@@ -32,9 +32,15 @@ export const reqFromIteratorD = {
 function reqFromIteratorD_fromIter(iter, IIntoIterInPlace, dropI, dropIIntoIter) {
   return {
     cs: $collectsInPlace(IIntoIterInPlace, 4, 4)
-      ? $foldToArray(Iterator.from(iter), dDrop_drop)
+      ? $foldToArray($closing($intoIter(iter), dropIIntoIter, false), dDrop_drop)
       : $collectDropping(
-          $roomForHint(Iterator.from(iter), 4, false, false, dDrop_drop),
+          $roomForHint(
+            $closing($intoIter(iter), dropIIntoIter, false),
+            4,
+            false,
+            false,
+            dDrop_drop,
+          ),
           dDrop_drop,
           true,
         ),

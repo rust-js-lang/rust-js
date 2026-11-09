@@ -492,15 +492,10 @@ pub(crate) fn collected_items<'tcx>(
     };
     let (iter, output) = if callee == trait_method(tcx, iterator, "collect") {
         (args.type_at(0), args.type_at(1))
-    } else if tcx.trait_of_assoc(callee) == Some(std_item(tcx, StdItem::FromIterator))
-        && tcx.item_name(callee).as_str() == "from_iter"
-    {
-        // `<C as FromIterator<A>>::from_iter::<T>`'s `T`, what it's given,
-        // not `A`, its items (#737).
-        let into_iter = std_item(tcx, StdItem::IntoIterator);
-        (projected(into_iter, "IntoIter", args.type_at(2)), args.type_at(0))
     } else {
-        return None;
+        let given = from_iter_given(tcx, callee, args)?;
+        let into_iter = std_item(tcx, StdItem::IntoIterator);
+        (projected(into_iter, "IntoIter", given), args.type_at(0))
     };
     let item = projected(iterator, "Item", iter);
     let fallible = matches!(output.kind(), ty::Adt(adt, _)

@@ -41,10 +41,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         made: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
-        let mut values = values;
         let Some(trait_id) = self.tcx.trait_of_assoc(def_id) else {
             return Ok(None);
         };
+        // `C::from_iter(items)`, what `items.collect::<C>()` calls, std's
+        // `items.into_iter()` collected: those calls (ADR 0160, #838).
+        if self.recognition().iterator_method(def_id) == Some(IterMethod::FromIter) {
+            let given = arg_tys.first().copied().unwrap_or(self.tcx.types.unit);
+            return self.collected_from_iter(given, values, output, span, made);
+        }
+        self.consumed_or_held(def_id, (trait_id, arg_tys), values, output, span, made)
+    }
+
+    /// `mir_iter_call`'s, of a method of `trait_id`'s: one that takes its
+    /// iterator by value and drops it as it ends, which JS doesn't, called
+    /// on what's held, then dropped, `consumed_call`'s, the one place what
+    /// std's code consumes is dropped (#1116); another as it is.
+    fn consumed_or_held(
+        &mut self,
+        def_id: DefId,
+        (trait_id, arg_tys): (DefId, &[Ty<'tcx>]),
+        mut values: Vec<Expr>,
+        output: Ty<'tcx>,
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
         let receiver_ty = arg_tys.first().copied().unwrap_or(self.tcx.types.unit);
         if !receiver_ty.is_ref()
             && (is_std_def(self.tcx, trait_id, StdItem::Iterator) || self.recognition().rfolds_what_it_consumes(def_id))
@@ -55,6 +76,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.consumed_call(held, (def_id, trait_id, arg_tys), values, output, span, made);
         }
         self.cloned_apart_call(def_id, (trait_id, arg_tys), values, output, span, made)
+    }
+
+    /// `C::from_iter(items)`, `output` of `items` of type `given`: a
+    /// sequence's or a map's items as they are; another's as std's
+    /// `from_iter` steps them, `items.into_iter()`, of an iterator itself,
+    /// then `collect()` of that, each the call it is, so it's dropped where
+    /// `collect` drops it (ADR 0160, #838).
+    fn collected_from_iter(
+        &mut self,
+        given: Ty<'tcx>,
+        values: Vec<Expr>,
+        output: Ty<'tcx>,
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        if let Some(collected) = self.collected_as_they_are(&values[0], given, output, span)? {
+            return Ok(Some(collected));
+        }
+        let tcx = self.tcx;
+        let trait_method = crate::lower::recognition::trait_method;
+        let collect = trait_method(tcx, std_item(tcx, StdItem::Iterator), "collect");
+        let into_iter = trait_method(tcx, std_item(tcx, StdItem::IntoIterator), "into_iter");
+        // An iterator's `into_iter()` is itself.
+        if self.iterator_item(given).is_some() {
+            return self.mir_iter_call(collect, &[given], values, output, span, made);
+        }
+        let stepped = crate::lower::recognition::iterator_type_of(tcx, self.typing_env, given);
+        let Some(it) = self.mir_iter_call(into_iter, &[given], values, stepped, span, made)? else {
+            return Ok(None);
+        };
+        self.mir_iter_call(collect, &[stepped], vec![it], output, span, made)
     }
 
     /// `size_hint()` of `receiver`, an iterator of type `iter_ty` neither the
@@ -661,10 +713,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A range's own `nth`, `last` and `count`, of its bounds (#163).
         if let Some(stepped) = self.range_own_step(std_method, (iter_ty, receiver_ty.is_mutable_ptr()), &values) {
             return Ok(Some(stepped));
-        }
-        // `B::from_iter(items)`, which `items.collect()` is (ADR 0160).
-        if std_method == Some(IterMethod::FromIter) {
-            return self.collected_from(values, receiver_ty, output, span);
         }
         // `nth_back(n)`, `rfold(init, f)` and `rfind(p)`: of what knows its
         // back, stepped from it, a generic one's too (ADRs 0429, 0455).

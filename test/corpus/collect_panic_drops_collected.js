@@ -6,6 +6,7 @@ import {
   $collectsInPlace,
   $dropEach,
   $foldToArray,
+  $intoIter,
   $lazyRange,
   $roomForHint,
 } from "@rust-js/std";
@@ -39,9 +40,9 @@ function held() {
 
 function gathered(iter, IIntoIterInPlace) {
   return $collectsInPlace(IIntoIterInPlace, 4, 4)
-    ? $foldToArray(Iterator.from(iter), dDrop_drop)
+    ? $foldToArray($intoIter(iter), dDrop_drop)
     : $collectDropping(
-        $roomForHint(Iterator.from(iter), 4, false, false, dDrop_drop),
+        $roomForHint($intoIter(iter), 4, false, false, dDrop_drop),
         dDrop_drop,
         true,
       );

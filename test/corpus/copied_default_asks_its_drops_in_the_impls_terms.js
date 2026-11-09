@@ -9,6 +9,8 @@ import {
   $dropItems,
   $foldOf,
   $foldToArray,
+  $given,
+  $givenDrop,
   $intsOrdered,
   $iter,
   $iterator,
@@ -29,17 +31,26 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
-const $tExt = new Map();
+const $tExt = new WeakMap();
 
-function tExt(TInPlace, TItemSize, TItemAlign, dropT, dropTItem) {
-  return $traitImpl($tExt, [TInPlace, TItemSize, TItemAlign, dropT, dropTItem], () => ({
+function tExt(TIterator, TInPlace, TItemSize, TItemAlign, dropT, dropTItem) {
+  return $traitImpl($tExt, [TIterator, TInPlace, TItemSize, TItemAlign, dropT, dropTItem], () => ({
     sortedByKeyUnstable(self, key, KOrd, SelfItemSort, dropK, dropFn) {
       let v;
       try {
         v = $collectsInPlace(TInPlace, TItemSize, TItemAlign)
-          ? $foldToArray(Iterator.from(self), dropTItem)
+          ? $foldToArray(
+              $closing($given(self, TIterator, true), $givenDrop(dropT), false),
+              dropTItem,
+            )
           : $collectDropping(
-              $roomForHint(Iterator.from(self), TItemSize, false, false, dropTItem),
+              $roomForHint(
+                $closing($given(self, TIterator, true), $givenDrop(dropT), false),
+                TItemSize,
+                false,
+                false,
+                dropTItem,
+              ),
               dropTItem,
               true,
             );
@@ -75,9 +86,15 @@ function tExt(TInPlace, TItemSize, TItemAlign, dropT, dropTItem) {
     },
     sortedUnstable(self, SelfItemOrd, SelfItemSort) {
       const v = $collectsInPlace(TInPlace, TItemSize, TItemAlign)
-        ? $foldToArray(Iterator.from(self), dropTItem)
+        ? $foldToArray($closing($given(self, TIterator, true), $givenDrop(dropT), false), dropTItem)
         : $collectDropping(
-            $roomForHint(Iterator.from(self), TItemSize, false, false, dropTItem),
+            $roomForHint(
+              $closing($given(self, TIterator, true), $givenDrop(dropT), false),
+              TItemSize,
+              false,
+              false,
+              dropTItem,
+            ),
             dropTItem,
             true,
           );
@@ -139,7 +156,13 @@ function wrapperReversed(IIterator, dropI, dropIItem) {
 }
 
 function main() {
-  const sorted = tExt(undefined, 4, 4, undefined, noisyDrop_drop).sortedByKeyUnstable(
+  const mapIterator = {
+    next: $next,
+    fold: $foldOf,
+    getUnchecked: (iterator, i) =>
+      mapIterator___iteratorGetUnchecked(iterator, i, { next: $next }, noisyDrop_drop),
+  };
+  const sorted = tExt(mapIterator, undefined, 4, 4, undefined, noisyDrop_drop).sortedByKeyUnstable(
     iterator_map($iter([3, 1, 2]), (value) => [value], { next: $next }, undefined, noisyDrop_drop),
     (n) => n[0],
     $intsOrdered,
@@ -157,7 +180,7 @@ function main() {
     }
   }
   const words = Array.from(
-    tExt(undefined, 12, 4).sortedUnstable(
+    tExt({ next: $next }, undefined, 12, 4).sortedUnstable(
       $iter(["pear", "fig", "apple"].map((s) => s)),
       $ordered,
       "general8",
@@ -167,16 +190,7 @@ function main() {
   const wrapper = [
     iterator_map($iter([4, 5, 6]), (value) => [value], { next: $next }, undefined, noisyDrop_drop),
   ];
-  const reversed = wrapperReversed(
-    {
-      next: $next,
-      fold: $foldOf,
-      getUnchecked: (iterator, i) =>
-        mapIterator___iteratorGetUnchecked(iterator, i, { next: $next }, noisyDrop_drop),
-    },
-    undefined,
-    noisyDrop_drop,
-  ).reversed(wrapper);
+  const reversed = wrapperReversed(mapIterator, undefined, noisyDrop_drop).reversed(wrapper);
   console.log(`reversed ${reversed.length}`);
   for (const item of reversed) {
     noisyDrop_drop(item);

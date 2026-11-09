@@ -828,6 +828,22 @@ impl HeldFolded {
     }
 }
 
+/// What a call of `callee` with `args` collects, where it's
+/// `<C as FromIterator<A>>::from_iter::<T>`: `T`, what it's given, not `A`,
+/// its items. `C::from_iter(items)` is what `items.collect()` calls, so it
+/// collects `items` as `collect` does `items.into_iter()` (ADR 0160, #737,
+/// #838).
+pub(crate) fn from_iter_given<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    callee: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<Ty<'tcx>> {
+    let from_iterator = tcx.get_diagnostic_item(sym::FromIterator)?;
+    (tcx.trait_of_assoc(callee) == Some(from_iterator) && tcx.item_name(callee).as_str() == "from_iter")
+        .then(|| args.types().nth(2))
+        .flatten()
+}
+
 pub(crate) fn is_sum_or_product(tcx: TyCtxt<'_>, id: DefId) -> bool {
     accumulation(tcx, id).is_some()
 }

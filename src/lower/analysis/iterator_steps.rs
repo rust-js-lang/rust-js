@@ -126,6 +126,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
     let iterator = std_item(tcx, StdItem::Iterator);
     let next = trait_method(tcx, iterator, "next");
     let size_hint = trait_method(tcx, iterator, "size_hint");
+    let into_iter = trait_method(tcx, std_item(tcx, StdItem::IntoIterator), "into_iter");
     let mut stepped: IndexSet<(DefId, u32, DefId)> = IndexSet::default();
     // A caller's parameter given on as a callee's, which steps it if that does.
     let mut passed: Vec<(Param, Param)> = Vec::new();
@@ -201,6 +202,13 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             }
         }
         for (callee, args) in body_fn_defs(body) {
+            // `C::from_iter(items)`, which `items.collect()` is (ADR 0160):
+            // `items` stepped as `into_iter()` makes an iterator of them and
+            // `collect` steps it, the crate's own by its `next` (#838).
+            let (callee, args) = match crate::lower::recognition::from_iter_given(tcx, callee, args) {
+                Some(given) => (into_iter, tcx.mk_args(&[given.into()])),
+                None => (callee, args),
+            };
             // A std-private trait's method whose impl the caller's type picks,
             // `FuseImpl::next`'s of a `Fuse<I>` (ADR 0561): stepped as either
             // impl's method steps it.

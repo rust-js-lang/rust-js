@@ -79,17 +79,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Err` or `None` or all; a map or a set, as a `From` of items makes one
     /// (ADR 0121). Of the `Ok` values of a fallible one, an array already,
     /// `iter_ty` is none, and an array is itself.
-    /// `B::from_iter(items)`, `output` of `items` of type `given`: an
-    /// array's, a `Vec`'s or a slice's items as they are, another's iterator
-    /// as `collect` steps it, collected into `B` as `collect` collects.
-    pub(super) fn collected_from(
+    /// `C::from_iter(items)`, `output` of `items` of type `given`, where
+    /// they're a sequence's or a map's: an array's, a `Vec`'s or a slice's
+    /// items as they are, a map's or a set's in its order, collected into
+    /// `C` as `collect` collects, with no iterator of them to drop. `None`
+    /// of another, `into_iter()` then `collect()` (`collected_from_iter`).
+    pub(super) fn collected_as_they_are(
         &mut self,
-        values: Vec<Expr>,
+        items: &Expr,
         given: Ty<'tcx>,
         output: Ty<'tcx>,
         span: Span,
     ) -> R<Option<Expr>> {
-        let items = values.into_iter().next().expect("the items");
+        let items = items.clone();
         let iter_ty = given.peel_refs();
         if iter_ty.is_array() || iter_ty.is_slice() || self.is_vec_like(iter_ty) {
             let item = match *iter_ty.kind() {
@@ -111,16 +113,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let items = self.map_items(items, iter_ty, crate::lower::std_types::map::Part::Entries, span)?;
             return Ok(Some(self.collected_into(items, output, Some(item), None, span)?));
         }
-        if !matches!(given.kind(), ty::Param(_)) && !self.implements_iterator(given) {
-            return Ok(None);
-        }
-        let it = self.as_js_iterator(items, given, span)?;
-        // What std steps of it, a type parameter's `IntoIter`, and its items,
-        // `Vec::from_iter(iter)`'s: what a panic that stops it asks the
-        // in-place facts of, and drops what it collected of (#800).
-        let stepped = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, given);
-        let item = self.iterator_item(stepped);
-        Ok(Some(self.collected_into(it, output, item, Some(stepped), span)?))
+        Ok(None)
     }
 
     /// Whether std's `collect` into an `output` takes its items by `fold`,
