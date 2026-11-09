@@ -708,3 +708,21 @@ metamorphic net's four `address_of_*` cases rewritten through an
 `Rc<RefCell>`; mutations `rooted-place-temporary-unmade` and
 `rooted-item-of-no-offset-unrooted`, and `nested-place-unrooted`
 retargeted at `rooted_from`.
+
+## Amendment: where an object is stored is checked where it's read (#1113, step 1)
+
+`$items` records where an object is stored by value, its container, key
+and offset, which `$addr` follows to the allocation that holds it (#1019).
+A record was believed however the object moved since: a `Vec`'s item a
+pointer was made to, then shifted by a `remove` before it, was at its old
+index, `8` where native Rust's is `0`; one moved out of the `Vec` into a
+local of its own was still in the buffer it left. A record is now checked
+where it's read: the object is still at its key; else, an array's item, at
+the index `indexOf` finds it at now, the record moved there; else it was
+moved out, and is its own allocation, as Rust's is where it was moved to.
+`indexOf` is linear in the array's length, paid only where an address is
+asked of an item that moved since its record was made, once each move,
+as the record is moved with it. Case C. Corpus case
+`address_of_an_item_moved_in_its_vec`, against native Rust; mutations
+`stored-object-record-unchecked` and `stored-item-index-unfound`. The rest
+of #1113, recording where an object is stored as it's stored, follows.

@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "stored-object-record-unchecked",
+    breaks: "an item moved out of its `Vec` is still where its record says, its field's address in the buffer it left, `true` where native Rust's is `false` (#1113)",
+    file: "src/runtime/pointers.js",
+    find: "  if ($slot(item.of, item.at) === object) return item;\n",
+    replace: "  return item;\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_an_item_moved_in_its_vec.rs$"],
+  },
+  {
+    name: "stored-item-index-unfound",
+    breaks: "an item a `remove` before it shifted is taken for one moved out, its field's address its own allocation's, not `0` past the buffer's start (#1113)",
+    file: "src/runtime/pointers.js",
+    find: "  const at = Array.isArray(item.of) && item.offset === undefined ? item.of.indexOf(object) : -1;\n",
+    replace: "  const at = -1;\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_an_item_moved_in_its_vec.rs$"],
+  },
+  {
     name: "allocation-uses-unchecked",
     breaks: "an allocation's bytes written and then its slots read as a `String`'s, or the reverse, one type's memory read as another's (#1099)",
     file: "src/runtime/pointers.js",

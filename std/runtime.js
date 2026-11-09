@@ -6596,13 +6596,30 @@ export function $allocationOf(pointer) {
 export function $placed(pointer) {
   // A reference that's an array's item itself, the object, `transmute(&held.0)`
   // of a tuple struct's field: the item's place (#1019).
-  const own = $items.get(pointer);
+  const own = $itemOf(pointer);
   if (own !== undefined) return $ptr(own.of, own.at, own.offset);
   if (pointer.at === undefined && pointer.of !== undefined) {
-    const item = $items.get(pointer.of);
+    const item = $itemOf(pointer.of);
     if (item !== undefined) return $ptr(item.of, item.at, item.offset);
   }
   return pointer;
+}
+
+// Where `object` is stored by value, `$items`' record of it, where it's
+// there still: an array's item found again where its array moved it, and
+// none of one moved out, which is its own allocation then, as Rust's is
+// where it was moved to (#1113).
+export function $itemOf(object) {
+  const item = $items.get(object);
+  if (item === undefined) return undefined;
+  if ($slot(item.of, item.at) === object) return item;
+  const at = Array.isArray(item.of) && item.offset === undefined ? item.of.indexOf(object) : -1;
+  if (at < 0) {
+    $items.delete(object);
+    return undefined;
+  }
+  item.at = at;
+  return item;
 }
 
 export function $addresses(allocation, bytes) {
@@ -6670,7 +6687,7 @@ export function $addr(pointer, size) {
   // own offset (#1081); an array's item's, where the array's stride is
   // known. Where it isn't, the object's own, at which its array's is put
   // when it's asked (below).
-  const item = pointer.bytes === undefined && typeof pointer.offset === "number" ? $items.get(pointer.of) : undefined;
+  const item = pointer.bytes === undefined && typeof pointer.offset === "number" ? $itemOf(pointer.of) : undefined;
   if (item !== undefined) {
     const range = $ranges.get(item.of);
     const start =
