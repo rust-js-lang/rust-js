@@ -1179,14 +1179,14 @@ pub(super) fn unstable_sort(name: &str) -> Option<SliceOp> {
 }
 
 /// What `format_args!` makes, by its method: an `Arguments`' (`arguments`),
-/// or an `Argument`'s. `as_str()` is `Some` of the text the arguments are
-/// already (ADR 0034): its contract promises only the literal case, and
-/// allows `Some` of any.
+/// or an `Argument`'s. `as_str()` is `Some` of a literal's text and `None`
+/// of one made with arguments, as native Rust's are (ADR 0034, amended;
+/// #1091).
 pub(super) fn format_args_method(name: &str, arguments: bool) -> Option<Std> {
     Some(match (name, arguments) {
         ("from_str" | "from_str_nonconst", true) => Std::FmtStr,
         ("new", true) => Std::FmtNew,
-        ("as_str", true) => Std::Same,
+        ("as_str", true) => Std::FmtAsStr,
         ("new_display", false) => Std::FmtDisplay,
         ("new_debug", false) => Std::FmtDebug,
         ("new_lower_hex", false) => Std::FmtRadix(Radix::LowerHex),

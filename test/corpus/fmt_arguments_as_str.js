@@ -6,12 +6,6 @@ export function entry() {
   main();
 }
 
-const Message = {
-  text(message) {
-    return message._0;
-  },
-};
-
 export const messageDisplay = { fmt: messageDisplay_fmt };
 function messageDisplay_fmt(message) {
   if (message.TAG === "Literal") {
@@ -21,17 +15,22 @@ function messageDisplay_fmt(message) {
   }
 }
 
-// anyhow's `format_err`.
-function message(args) {
-  return args != null ? { TAG: "Literal", _0: args } : { TAG: "Formatted", _0: args };
+// anyhow's `format_err`, given what `as_str()` said where the arguments
+// were made.
+function message(text, args) {
+  return text != null ? { TAG: "Literal", _0: text } : { TAG: "Formatted", _0: args };
 }
 
 function main() {
   const count = 3;
-  console.log(`${messageDisplay_fmt(message("plain"))}`);
-  // Which way a placeholder's takes, the contract leaves open: its text
-  // is the same either way.
-  console.log(`${Message.text(message(`${count} items`))}`);
+  const plain = "plain";
+  const items = `${count} items`;
+  // A constant argument rustc writes into the literal.
+  const constant = "3 items";
+  console.log(`${messageDisplay_fmt(message(plain, plain))}`);
+  console.log(`${messageDisplay_fmt(message(undefined, items))}`);
+  console.log(`${messageDisplay_fmt(message(constant, constant))}`);
+  console.log(`None Some(${$debugStr("plain")})`);
   console.log(`Some(${$debugStr("")}) Some(${$debugStr("one")})`);
 }
 //# sourceMappingURL=case.js.map

@@ -607,6 +607,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 unreachable!("handled above")
             }
             Std::VecMacro | Std::FmtNew | Std::AssertFailed => unreachable!("handled above"),
+            Std::FmtAsStr => unreachable!("lowered by `mir_fmt_call`"),
             Std::Map(_)
             | Std::Range(_)
             | Std::Comb(_)

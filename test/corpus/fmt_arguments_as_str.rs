@@ -1,21 +1,13 @@
-// `fmt::Arguments::as_str()` is `Some` of the text the arguments are (ADR
-// 0034): its contract promises `Some` of a literal alone and allows `Some`
-// of any, so anyhow's `format_err`, which keeps a literal as a `&'static
-// str` and formats the rest, takes its first way for both.
+// `fmt::Arguments::as_str()` is `Some` of a literal's text and `None` of
+// arguments made with a value to format, as native Rust's are (ADR 0034,
+// amended; #1091), so anyhow's `format_err`, which keeps a literal as a
+// `&'static str` and formats the rest, takes the way native Rust's does:
+// each way prints its own.
 use std::fmt;
 
 enum Message {
     Literal(&'static str),
     Formatted(String),
-}
-
-impl Message {
-    fn text(&self) -> &str {
-        match self {
-            Message::Literal(s) => s,
-            Message::Formatted(s) => s,
-        }
-    }
 }
 
 impl fmt::Display for Message {
@@ -27,9 +19,10 @@ impl fmt::Display for Message {
     }
 }
 
-// anyhow's `format_err`.
-fn message(args: fmt::Arguments<'_>) -> Message {
-    match args.as_str() {
+// anyhow's `format_err`, given what `as_str()` said where the arguments
+// were made.
+fn message(text: Option<&'static str>, args: fmt::Arguments<'_>) -> Message {
+    match text {
         Some(s) => Message::Literal(s),
         None => Message::Formatted(fmt::format(args)),
     }
@@ -37,9 +30,17 @@ fn message(args: fmt::Arguments<'_>) -> Message {
 
 fn main() {
     let count = 3;
-    println!("{}", message(format_args!("plain")));
-    // Which way a placeholder's takes, the contract leaves open: its text
-    // is the same either way.
-    println!("{}", message(format_args!("{count} items")).text());
+    let plain = format_args!("plain");
+    let items = format_args!("{count} items");
+    // A constant argument rustc writes into the literal.
+    let constant = format_args!("{} items", 3);
+    println!("{}", message(plain.as_str(), plain));
+    println!("{}", message(items.as_str(), items));
+    println!("{}", message(constant.as_str(), constant));
+    println!(
+        "{:?} {:?}",
+        format_args!("{count} items").as_str(),
+        format_args!("plain").as_str()
+    );
     println!("{:?} {:?}", format_args!("").as_str(), format_args!("one").as_str());
 }

@@ -137,3 +137,28 @@ way for both, the same string either way. The corpus's
 literal cases and a placeholder's text alone, since which way a
 placeholder's takes the contract leaves open: native Rust formats it,
 rust-js keeps it, the same string.
+
+## Amendment: `as_str()` is `None` of arguments made with a value (#1091)
+
+The amendment above held `Some` of any text within `as_str()`'s contract,
+"no program can tell". A program can: `{:?}` of
+`format_args!("{count} items").as_str()` prints `None` natively and
+`Some("0 items")` in JS, and anyhow's `format_err` keeps a formatted
+message as a literal. Rust's results change, so Rust's behavior is kept
+(ADR 0262); that amendment is superseded.
+
+- **Where the body made the arguments, its maker says which**: MIR's
+  `Arguments::from_str("plain")`, `from_str_nonconst`, which rustc makes of
+  a constant argument it writes into the literal, `format_args!("{} items",
+  3)`, or a constant, gives `Some` of the text; `Arguments::new(..)`, made
+  with a value to format, gives `None`, `undefined`, as native Rust's.
+- **Of arguments made in another function**, a parameter's, nothing says
+  which, as the JS value is their text either way: refused, "`as_str()` of
+  a `fmt::Arguments` made in another function". anyhow's `format_err`,
+  which asks it of its parameter, is refused there until the value carries
+  which it is.
+
+The corpus's `fmt_arguments_as_str.rs` prints each way's own text, against
+native Rust; `test/diagnostics.test.ts` holds the refusal. Mutations
+`fmt-as-str-of-formatted` and `fmt-as-str-of-elsewhere-taken` put each
+old answer back.

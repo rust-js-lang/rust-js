@@ -906,4 +906,21 @@ export const mutations: Mutation[] = [
     replace: "                match this.mut_ref_form(generic_args.type_at(0)).is_cell() && !this.is_unknown(generic_args.type_at(0)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
   },
+  {
+    name: "fmt-as-str-of-formatted",
+    breaks:
+      "`as_str()` of arguments made with a value to format is `Some` of their text, so `format_args!(\"{count} items\").as_str()` is `Some(\"3 items\")` where native Rust's is `None`, and anyhow's `format_err` takes the literal's way (#1091)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                Some(false) => lower(|_, _, _, _| Ok(Value::Expr(Expr::undefined()))),\n",
+    replace: "                Some(false) => lower(|_, _, values, _| Ok(values.next().expect(\"the arguments\"))),\n",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_arguments_as_str.rs$"],
+  },
+  {
+    name: "fmt-as-str-of-elsewhere-taken",
+    breaks: "`as_str()` of arguments made in another function, whose maker nothing here says, is `Some` of their text, `None` or not (#1091)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "            Std::FmtAsStr => match this.arguments_made(_state.body, _state.at) {\n",
+    replace: "            Std::FmtAsStr => match this.arguments_made(_state.body, _state.at).or(Some(true)) {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "as_str\\(\\) of arguments made elsewhere"],
+  },
 ];

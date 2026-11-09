@@ -97,4 +97,55 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         Ok(parts)
     }
+
+    /// Whether the `Arguments` the call ending block `at` is given a `&` of, `as_str(&_8)`,
+    /// was made of a literal alone, `Arguments::from_str("plain")` or a
+    /// constant, `Some(true)`, or with arguments, `Arguments::new(..)`,
+    /// `Some(false)`, by the one assignment of each local in `body`; `None` of
+    /// one made elsewhere, a parameter's, or assigned more than once (#1091).
+    pub(super) fn arguments_made(
+        &self,
+        body: &rustc_middle::mir::Body<'tcx>,
+        at: rustc_middle::mir::BasicBlock,
+    ) -> Option<bool> {
+        use rustc_middle::mir::{Operand, Rvalue, StatementKind, TerminatorKind};
+        let local_of = |operand: &Operand<'tcx>| operand.place().filter(|p| p.projection.is_empty()).map(|p| p.local);
+        let TerminatorKind::Call { args, .. } = &body.basic_blocks[at].terminator().kind else {
+            return None;
+        };
+        let lent = local_of(&args.first()?.node)?;
+        // Each assignment of `local`: a statement's, or a call's result.
+        let assigned = |local: rustc_middle::mir::Local| {
+            let statements = (body.basic_blocks.iter())
+                .flat_map(|data| data.statements.iter())
+                .filter_map(|s| match &s.kind {
+                    StatementKind::Assign(assign) if assign.0.local == local => Some(Err(&assign.1)),
+                    _ => None,
+                });
+            let calls = (body.basic_blocks.iter()).filter_map(|data| match &data.terminator().kind {
+                TerminatorKind::Call { func, destination, .. } if destination.local == local => Some(Ok(func)),
+                _ => None,
+            });
+            let all: Vec<_> = statements.chain(calls).collect();
+            (all.len() == 1).then(|| all[0])
+        };
+        let Err(Rvalue::Ref(_, _, made)) = assigned(lent)? else {
+            return None;
+        };
+        if !made.projection.is_empty() || body.local_kind(made.local) == rustc_middle::mir::LocalKind::Arg {
+            return None;
+        }
+        match assigned(made.local)? {
+            Ok(func) => {
+                let (def_id, args) = func.const_fn_def()?;
+                match self.recognition().classify(def_id, args)? {
+                    Std::FmtStr => Some(true),
+                    Std::FmtNew => Some(false),
+                    _ => None,
+                }
+            }
+            Err(Rvalue::Use(Operand::Constant(_), _)) => Some(true),
+            Err(_) => None,
+        }
+    }
 }

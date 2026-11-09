@@ -366,6 +366,9 @@ pub(super) enum Std {
     FmtStr,
     /// `format_args!("{} {:?}", ..)`: a template and its arguments.
     FmtNew,
+    /// `Arguments::as_str()`: `Some` of a literal's text, `None` of one
+    /// made with arguments, as its maker in the body says (#1091).
+    FmtAsStr,
     /// An argument for `{}`.
     FmtDisplay,
     /// An argument for `{:?}`.

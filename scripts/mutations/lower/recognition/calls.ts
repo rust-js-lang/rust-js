@@ -609,9 +609,9 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-as-str-refused",
     breaks:
-      "`fmt::Arguments::as_str()` is refused, where the arguments are their text already",
+      "`fmt::Arguments::as_str()` is refused, where the body made the arguments and its maker says which it is (#1091)",
     file: "src/lower/recognition/calls.rs",
-    find: '        ("as_str", true) => Std::Same,\n',
+    find: '        ("as_str", true) => Std::FmtAsStr,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fmt_arguments_as_str.rs$"],
   },

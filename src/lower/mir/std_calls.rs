@@ -122,6 +122,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Ok(Value::Fmt(known, ty, value))
                 })
             }
+            // `as_str()` of an `Arguments` the body made: its literal's
+            // text, `from_str("plain")`'s, or `None` of one made with
+            // arguments, `new(..)`'s, as native Rust's (#1091). Of one made
+            // elsewhere, a parameter's, nothing says which: refused.
+            Std::FmtAsStr => match this.arguments_made(_state.body, _state.at) {
+                Some(true) => lower(|_, _, values, _| Ok(values.next().expect("the arguments"))),
+                Some(false) => lower(|_, _, _, _| Ok(Value::Expr(Expr::undefined()))),
+                None => lower(move |this, _, _, _| {
+                    Err(this.unsupported(
+                        span,
+                        "`as_str()` of a `fmt::Arguments` made in another function: whether it was made with arguments, which makes it `None`, isn't known here (#1091)",
+                    ))
+                }),
+            },
             Std::FmtNew => lower(move |this, state, values, out| {
                 Ok(Value::Expr({
                     let template = values.next().expect("a template");
