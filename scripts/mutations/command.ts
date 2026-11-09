@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/manifest.test.ts", "-t", "where its tests' runner is"],
   },
+  {
+    name: "js-made-all-unread",
+    breaks: "`--js-made-all` is taken for an input file's name, and the object model's net can't build its programs (ADR 1105)",
+    file: "src/command.rs",
+    find: '    let js_made_all = flag(&mut ours, "--js-made-all");\n',
+    replace: "    let js_made_all = false;\n",
+    tests: ["test/object-model.test.ts", "-t", "js-made-all"],
+  },
 ];

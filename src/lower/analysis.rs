@@ -17,7 +17,7 @@ mod closures;
 mod debug;
 mod drops;
 mod fmt_failures;
-mod fn_pointers;
+pub(super) mod fn_pointers;
 mod generic_consts;
 pub(super) use fn_pointers::{Called, FnPointers, Holder};
 mod held_adapters;

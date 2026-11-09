@@ -603,4 +603,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^thread_local_field_forwarders.rs$"],
     snapshots: true,
   },
+  {
+    name: "js-made-all-ignored",
+    breaks:
+      "`--js-made-all` takes a library's struct for its data still, so the object model's net reads it in place and can't see a pass that reads a getter's field twice (ADR 1105)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "        let libraries = !EVERY_OUTSIDE_STRUCT.with(std::cell::Cell::get);\n",
+    replace: "        let libraries = true;\n",
+    tests: ["test/object-model.test.ts", "-t", "js-made-all"],
+  },
 ];

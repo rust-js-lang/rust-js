@@ -88,6 +88,7 @@ mod unions;
 mod untagged;
 
 use crate::names::{fresh_in, js_ident};
+pub use analysis::fn_pointers::take_every_outside_struct_for_js_made;
 pub use analysis::{
     build_std_structs_as_meaning, collect_bodies, collect_initializers, collect_mir, collect_ranges, collect_std_bodies,
 };

@@ -111,3 +111,29 @@ it loaded one (#1068, P1).
   in `scripts/shard.ts`.
 - [TESTS.md](../../TESTS.md) and
   [finding-wrong-answers.md](../finding-wrong-answers.md) say what it found.
+
+## Amendment: the program is built with `--js-made-all` (2026-11-09)
+
+The first run's two P0s, #1065 and #1066, were no bugs: a struct its
+library builds is the program's own data, read in place (ADR 1022's rd221:
+`own` takes a library's built structs as the crate's), and ADR 1022 covers
+structs only, not a library's enums (the user, #1066). Every struct the
+`library` rewrite gives is built by its library, so the net compared reads
+the decisions let tidy move.
+
+**The program is compiled with `--js-made-all`**, a test hook beside
+`--tidy-until` and `--std-iterators`, which `rust-js build` never passes:
+every struct the crate doesn't build itself, a library's too, is one JS may
+make (`fn_pointers.rs`, `take_every_outside_struct_for_js_made`), its
+fields read where Rust reads them. What the built JS then reads otherwise
+than the least is a pass that ignores `Known::Getter`, wrong for a struct JS
+did make. Under it, `refcell_quiet_borrows` reads `inner.types` once, as the
+least does; the enum rows stay, listed under #1066 as decided; and two new
+cases read otherwise: a function a struct JS may make holds, `(shared.getter)(3)`,
+called as its method, `shared.value.getter(3)`, given the struct as its
+`this`, where the least calls it apart. That's #404's decided form, a field
+the program never writes being an object JS made's own method, which JS
+calls through it (`may_read_this`), so it's listed as decided under #1070,
+closed.
+The net's own test holds the hook: a library's `Pair`'s fields read once
+under it; mutations `js-made-all-ignored` and `js-made-all-unread`.

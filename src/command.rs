@@ -85,6 +85,11 @@ pub(crate) struct Build {
     /// hook, not a way to build: the differential job compares it with the
     /// rewritten build and native Rust (ADR 0908).
     pub std_iterators: bool,
+    /// `--js-made-all`: every struct the crate doesn't build itself, a
+    /// library's too, is one JS may make (ADR 1022), whose fields a getter
+    /// may answer. A test hook, not a way to build: the object model's net
+    /// reads a library's values through counting proxies (ADR 1105).
+    pub js_made_all: bool,
     /// What's after `--`, rustc's as-is, e.g. `-- --sysroot /sysroot`.
     pub rustc: Vec<String>,
 }
@@ -130,6 +135,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     let declarations = flag(&mut ours, "--declarations");
     let std_bodies = flag(&mut ours, "--std-bodies");
     let std_iterators = flag(&mut ours, "--std-iterators");
+    let js_made_all = flag(&mut ours, "--js-made-all");
     let mut dependencies = Vec::new();
     while let Some(path) = valued(&mut ours, "--dependency", "a manifest path")? {
         dependencies.push(PathBuf::from(path));
@@ -185,6 +191,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         prepare_without,
         prepare_fired,
         std_iterators,
+        js_made_all,
         rustc: rustc.to_vec(),
     }))
 }

@@ -115,8 +115,11 @@ function wrong(name: string, edition: string): string | undefined {
   // A refusal is safe; the metamorphic net holds a crash.
   if (!("rmeta" in lib)) return void tally(name, "library refused");
   const libraryJs = join(dir, libraryCrate, "lib.js");
+  // Each struct the library gives one JS may make, `--js-made-all`: the
+  // library builds them all, so as built they're its data, read in place
+  // (ADR 1022's rd221), where a getter may answer one JS made.
   const program = (flags: string[]) =>
-    compileJs(programFile, dir, edition, false, {}, [...flags, "--dependency", lib.manifest], ["--extern", `${libraryCrate}=${lib.rmeta}`, "-L", dir]);
+    compileJs(programFile, dir, edition, false, {}, [...flags, "--js-made-all", "--dependency", lib.manifest], ["--extern", `${libraryCrate}=${lib.rmeta}`, "-L", dir]);
   const firedFile = join(dir, "fired.txt");
   const built = program(["--prepare-fired", firedFile]);
   if (!("js" in built)) return void tally(name, "program refused");
@@ -187,6 +190,27 @@ for (const { name, edition } of all.filter(({ name }) => chosen.has(name))) {
 test("a push's sample is some cases, a nightly's all", () => {
   expect(all.length).toBeGreaterThan(1000);
   expect(all.filter(({ name }) => sampled(name, 64)).length).toBeGreaterThan(10);
+});
+
+// The hook the net builds its programs with: a struct its library builds
+// is the library's data, read in place (rd221), but under `--js-made-all`
+// one JS may make, whose field is read where Rust reads it, once.
+test("under --js-made-all a library's struct is read as one JS may make", () => {
+  const dir = fixture("object-model-js-made-all");
+  const library = join(dir, "library.rs");
+  writeFileSync(library, "pub struct Pair { pub left: Option<u32>, pub right: Option<u32> }\npub fn pair(n: u32) -> Pair { Pair { left: Some(n), right: Some(n + 1) } }\n");
+  const lib = compileJsLibrary(library, dir, "2024", libraryCrate);
+  if (!("rmeta" in lib)) throw new Error(lib.error);
+  const programFile = join(dir, "program.rs");
+  writeFileSync(
+    programFile,
+    `use ${libraryCrate}::*;\nfn main() {\n    let p = pair(1);\n    let sum = match (p.left, p.right) {\n        (Some(a), Some(b)) => a + b,\n        _ => 0,\n    };\n    println!("{sum}");\n}\n`,
+  );
+  const built = compileJs(programFile, dir, "2024", false, {}, ["--js-made-all", "--dependency", lib.manifest], ["--extern", `${libraryCrate}=${lib.rmeta}`, "-L", dir]);
+  if (!("js" in built)) throw new Error(built.error);
+  const js = readFileSync(built.js, "utf8");
+  expect(js.match(/\.left\b/g)?.length).toBe(1);
+  expect(js.match(/\.right\b/g)?.length).toBe(1);
 });
 
 test("the known list reads its lines", () => {

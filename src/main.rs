@@ -134,6 +134,8 @@ struct RustJs {
     tidy_until: Option<String>,
     /// `--std-iterators`, the differential job's hook (ADR 0908).
     std_iterators: bool,
+    /// `--js-made-all`, the object model net's hook (ADR 1105).
+    js_made_all: bool,
     /// Cargo's build (ADR 0101), which is told what `RUST_JS_APPS` was.
     cargo: bool,
     /// `-C panic=abort`, which rust-js unwinds (ADR 0090): unwinding is
@@ -286,6 +288,9 @@ impl Callbacks for RustJs {
         // Std's structs as their meaning, all of them, in std's own bodies'
         // build and the differential one (ADR 0932).
         lower::build_std_structs_as_meaning(self.std_bodies || self.std_iterators);
+        // Every struct the crate doesn't build, one JS may make, in the
+        // object model net's build (ADR 1105).
+        lower::take_every_outside_struct_for_js_made(self.js_made_all);
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
         let mut bodies = lower::collect_bodies(tcx, self.std_iterators, self.export_library);
         // `@rust-js/std`'s: std's own, from the MIR of a `core` built to
@@ -612,6 +617,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         prepare_without,
         prepare_fired,
         std_iterators,
+        js_made_all,
         ..
     } = build;
     let command::Staged { metadata, dep_info, .. } = staged;
@@ -636,6 +642,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         std_bodies,
         tidy_until,
         std_iterators,
+        js_made_all,
         cargo,
         panics_abort: false,
         local_js: output::LocalJs::new(&plan),
