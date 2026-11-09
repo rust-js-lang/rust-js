@@ -3,11 +3,27 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "rooted-place-temporary-unmade",
+    breaks: "a nested place whose root is what a `Deref` gives, `(*cell.borrow())[2].a`, reads the temporary holding it by its name, `_25`, which no JS declares: a `ReferenceError` (#1110)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    self.flush(state, out)?;\n                }\n                let target = self.mir_place(state, *place, span, out)?;\n",
+    replace: "                }\n                let target = self.mir_place(state, *place, span, out)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field_through_a_deref.rs$"],
+  },
+  {
+    name: "rooted-item-of-no-offset-unrooted",
+    breaks: "an array's item a tuple holds, `(wrapped.0)[1]`, whose own place says no offset, is given no root, so it's 4096 from its field's where native Rust's is 0 (#1110)",
+    file: "src/lower/mir/rvalues.rs",
+    find: 'if callee.helper_name() == Some("$ptr") && matches!(given.len(), 2 | 3) =>',
+    replace: 'if callee.helper_name() == Some("$ptr") && given.len() == 3 =>',
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field_through_a_deref.rs$"],
+  },
+  {
     name: "nested-place-unrooted",
     breaks: "a raw pointer to a place reached through more than one field or item is given no root, so its address is the inner object's own, 4096 from the root's where native Rust's is 8 (#1089)",
     file: "src/lower/mir/rvalues.rs",
-    find: "        if steps.len() < 2 {\n",
-    replace: "        if steps.len() < 99 {\n",
+    find: "        (place.projection.len() - start >= 2).then_some(start)\n",
+    replace: "        (place.projection.len() - start >= 99).then_some(start)\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field.rs$"],
   },
   {
