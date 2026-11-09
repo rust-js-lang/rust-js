@@ -190,9 +190,8 @@ function total(it, dropI) {
 
 function each(it, dropI) {
   const iter = it;
-  let result;
   try {
-    result = Iterator.from(iter).forEach((x) => {
+    Iterator.from(iter).forEach((x) => {
       console.log(`each ${x}`);
     });
   } catch (error) {

@@ -462,7 +462,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an iterator a std method took by value is dropped in a `finally` though nothing it steps may panic, `Array.from` of a `filter` that can't (#424)",
     file: "src/lower/mir/iter.rs",
-    find: "        match receiver_ty.has_param() || self.steps_may_panic(receiver_ty) {\n",
+    find: "        match receiver_ty.has_param() || self.steps_may_panic(receiver_ty) || given_may_panic {\n",
     replace: "        match true {\n",
     tests: ["test/corpus.test.ts", "-t", "^drops_of_consumed_iterators.rs$"],
     snapshots: true,
@@ -764,4 +764,21 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cloned_chain_stepped_from_its_back.rs$"],
   },
 
+  {
+    name: "consumed-given-function-panic-unguarded",
+    breaks: "an iterator with a destructor a std method takes by value isn't dropped where the function it's given panics, `for_each(f)`'s, as the method's unwinding drops it (#1079)",
+    file: "src/lower/mir/iter.rs",
+    find: "        match receiver_ty.has_param() || self.steps_may_panic(receiver_ty) || given_may_panic {\n",
+    replace: "        match receiver_ty.has_param() || self.steps_may_panic(receiver_ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumed_iterator_dropped_as_its_function_panics.rs$"],
+  },
+  {
+    name: "consumed-unit-result-held",
+    breaks: "a `()` a std method gives, `for_each`'s, of an iterator dropped after it is held, `let result; try { result = it.forEach(f) }`, a name read by nothing (#1079)",
+    file: "src/lower/mir/iter.rs",
+    find: "        let result = match output.is_unit() {\n",
+    replace: "        let result = match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumed_iterator_dropped_as_its_function_panics.rs$"],
+    snapshots: true,
+  },
 ];

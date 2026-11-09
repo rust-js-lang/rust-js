@@ -389,10 +389,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             made.extend(call);
             return Ok(Some(result));
         }
-        let result = self.spill("result", result, &mut call);
+        // Its result before what's dropped after it, held where it's a value;
+        // a `()`, `for_each`'s, the call's statement (#1079).
+        let result = match output.is_unit() {
+            true => {
+                call.push(StmtKind::Expr(result).at(self.js_span(span)));
+                Expr::undefined()
+            }
+            false => self.spill("result", result, &mut call),
+        };
         let mut dropped = Vec::new();
         self.dropped_consumed(held, (receiver_ty, def_id, output), span, &mut dropped)?;
-        match receiver_ty.has_param() || self.steps_may_panic(receiver_ty) {
+        // Or a function it's given that may panic, `for_each(f)`'s, which
+        // unwinds through the method that took it (#1079).
+        let given_may_panic = (arg_tys.iter().skip(1)).any(|&ty| {
+            let ty = ty.peel_refs();
+            self.is_callable(ty) && self.call_may_unwind(ty)
+        });
+        match receiver_ty.has_param() || self.steps_may_panic(receiver_ty) || given_may_panic {
             true => self.unwinding(call, dropped.clone(), self.js_span(span), made),
             false => made.extend(call),
         }

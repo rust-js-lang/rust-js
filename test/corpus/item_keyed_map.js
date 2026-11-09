@@ -37,10 +37,9 @@ function tCounting(TIterator, dropT, dropTItem) {
         throw error;
       }
       const iter = self;
-      let result;
       try {
         try {
-          result = $given(iter, TIterator, true).forEach((item) => {
+          $given(iter, TIterator, true).forEach((item) => {
             $orInsert(counts, item, 0, undefined, dropTItem);
             const orInsert = $mutGet(counts, item);
             orInsert.value = (orInsert.value + 1) >>> 0;

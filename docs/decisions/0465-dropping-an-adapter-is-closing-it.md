@@ -2140,3 +2140,39 @@ iterator, a `Vec`'s own), by the panic halves of
 `from_iter_impl_of_dropping` and of `test/libraries.test.ts`' library
 pair, each against native Rust, and by the mutations
 `mapped-range-unwinding-unasked` and `from-iter-stepped-as-given`.
+
+## Amendment: an iterator a method takes is dropped as the function it's given panics (2026-11-09, #1079)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change: Rust
+runs the iterator's drop as the panic unwinds through the method that took
+it.
+
+An iterator with a destructor that a std method takes by value, `it.for_each(f)`
+of the crate's `LoudGen: Iterator + Drop`, is dropped after the call, as
+the method's end drops it and JS's doesn't (`dropped_after`). The drop was
+guarded by a `try`'s `finally` only where the iterator's own steps may
+panic or it's a type parameter's, so `f`'s panic skipped it: native Rust
+printed `drop gen 1`, the JS nothing (the metamorphic net's round 3,
+family E). A `for` loop over it was guarded already.
+
+**The drop is guarded too where a function the method is given may panic,
+by `call_may_unwind`, the one answer of what a call holds across (#903):
+`for_each`'s, `fold`'s, `reduce`'s, `max_by_key`'s, `min_by`'s.** And a `()`
+such a method gives is its call's statement, not a `let result` nothing
+reads, which four corpus cases' JS loses.
+
+```js
+try {
+  $iterator(iter, loudGenIterator_next).forEach((x) => {
+    n = added(n, x);
+  });
+} finally {
+  console.log(`drop gen ${iter[0]}`);
+}
+```
+
+Held by `test/corpus/consumed_iterator_dropped_as_its_function_panics.rs`,
+against native Rust in both builds, by the metamorphic net's `for-each`
+rewrite of `copied_iterator_defaults.rs`, off its known list, and by the
+mutations `consumed-given-function-panic-unguarded` and
+`consumed-unit-result-held`.

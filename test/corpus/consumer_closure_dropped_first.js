@@ -75,9 +75,8 @@ function main() {
         throw new Error("assertion failed: x + zero(&g) < 9");
       }
     }
-    let result;
     try {
-      result = $consume(
+      $consume(
         $iterator(iter, itIterator_next),
         "fold",
         undefined,

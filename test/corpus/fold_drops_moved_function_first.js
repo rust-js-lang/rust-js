@@ -274,9 +274,8 @@ function main() {
       },
       "before",
     );
-    let result;
     try {
-      result = iter.forEach((value) => {
+      iter.forEach((value) => {
         dDrop_drop(value);
       });
     } catch (error) {
