@@ -23,7 +23,7 @@ import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, sta
 import { availableParallelism, cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
-import { runs, touchesAsync, touchesDeclarations, touchesFormatting, touchesIterators, touchesNumbers } from "./iteratorSlice";
+import { runs, touchesAsync, touchesConsumers, touchesDeclarations, touchesFormatting, touchesIterators, touchesNumbers } from "./iteratorSlice";
 import { mappedFiles, pickChange, readersOf } from "./testMap";
 import { browsers, caseParts, compilerBuilds, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
 import { said, strays } from "./strays";
@@ -163,6 +163,8 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
   const declarations = touchesDeclarations([...changed, ...branch]);
   // And to how a future awaits and drops, the async table (#942).
   const awaits = touchesAsync([...changed, ...branch]);
+  // And to the iterators' code or the drops', the consumer net.
+  const consumers = touchesConsumers([...changed, ...branch]);
 
   // What a script that runs its own parts at once runs in, the iterator
   // slices' (scripts/shard.ts).
@@ -318,6 +320,15 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
               timeout: 300,
               weight: 2,
               ci: "bun scripts/iteratorSlice.ts run async",
+            }),
+          ]
+        : []),
+      ...(consumers
+        ? [
+            job(runs.consumers[0].name, ["bun", "scripts/iteratorSlice.ts", "run", "consumers", String(parts)], {
+              timeout: 300,
+              weight: parts,
+              ci: "bun scripts/iteratorSlice.ts run consumers",
             }),
           ]
         : []),

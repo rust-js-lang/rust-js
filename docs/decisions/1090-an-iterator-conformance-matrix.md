@@ -488,3 +488,84 @@ it drops as a panic unwinds there had no net.
   native Rust prints them in both builds. An `.await` made to unwind past
   its cleanup, dropping nothing of the body (`awaits.rs`), fails all 84
   cases.
+
+## Amendment: every std method that takes an iterator by value, the consumer net (2026-11-10)
+
+The user's decision: twelve wrong answers of one class were found by hand
+in a day, each a std method given an iterator by value that stepped,
+cloned or dropped it, or its items, otherwise than std does (a map's
+`extend` never dropped it, `eq` dropped it twice, `repeat(x).take(n).count()`
+cloned `x` `n` times, a heap's `extend`, `splice`, `is_sorted_by` and
+serde's `collect_seq` never closed a source whose step panics, a `String`'s
+`extend` lost what it pushed before a panic, `repeat(x).count()` hung).
+The tables have one consumer of each kind; none had every method std
+gives an iterator to.
+
+- **An eighth table, `ITERATOR_TABLE=consumers`** (`test/consumer-net.ts`),
+  run by the same harness and oracle through its `TableOf`, in programs of
+  60, its cases interleaved by a hash of each id.
+- **What it covers is read from std's own source** (`stdMethods`, of the
+  toolchain's `rust-src`): each method of `Iterator` and
+  `DoubleEndedIterator` that takes `self` by value or an argument an
+  `IntoIterator` or `Iterator` bounds; each `impl` of `Extend`,
+  `FromIterator`, `Sum` and `Product` in core, alloc and std, a macro's by
+  its macro's name; and each other public function that takes one (`zip`
+  and `chain`, `Vec::splice`, the `Debug` builders' `entries`,
+  `decode_utf16`, `env::join_paths`, `Command::args`). 171 are found: 127
+  are a template's, the 17 lazy adapters are excluded as the matrix's,
+  and the 27 that are unstable or of no stability attribute (std's own
+  `Wtf8Buf`) are excluded by that rule. `test/consumer-net.test.ts`, of
+  each push's suite, fails on a method neither covered nor excluded, and
+  on a template or exclusion that names one std hasn't: a toolchain bump
+  that adds a consumer fails until it's covered.
+- **Its space is template × source × variant.** 153 templates, each
+  method's call and what it makes printed by `{:?}` (a `HashMap`'s or a
+  `HashSet`'s sorted, through a `Vec`, and none dropped holding more than
+  one item that prints but so), an `Extend` under a `catch_unwind` of its
+  own, so what the collection holds after a panic is printed too; a
+  collection's `append` beside them, though it takes no iterator. Of each
+  kind of item a template takes, 32 kinds, its sources: the crate's own
+  `Loud`, which prints each step, clone (`clone src`, its clone `src#n`)
+  and drop, over a `Vec`; an empty one; and std's own, each specialized
+  apart: a `Vec`'s and an array's `IntoIter`, `repeat_n`,
+  `repeat(..).take(..)`, `once`, `repeat` (only where the method ends of
+  it, `count` and `last` panic, `eq` stops), and a `map` of a `Vec`'s whose
+  closure may panic. Its items, `L`, print as they're cloned (a clone is
+  100 more, so its drop is told apart) and dropped. A template of `L`s
+  that rust-js refuses of items with a destructor (the comparisons, `zip`
+  and `chain`, `is_sorted`) has a twin of `u32`s, so its iterators' steps
+  and drops still run. Each runs as it is, with the case's closure's 2nd
+  call panicking, with `Loud`'s 2nd step panicking, and with its
+  argument's: 2,491 cases.
+- **When it runs:** every case each night, nightly.yml's `consumers`, one
+  machine of 4 parts; and all of it, its slice, per push whose change is
+  the iterators' code or the drops' (`consumerPaths` in
+  `scripts/iteratorSlice.ts`: `iteratorPaths`, the drops' and their
+  unwinding's owners, the net), check.yml's `consumer-net` and a
+  `check:fast` job: 8–19 s on the 12-core Mac in 8 parts.
+- **What it found:** on its first run, 754 of its 4,982 case-builds under
+  8 issues, the same in both builds: `eq` and `ne` of the crate's iterator
+  of items with a destructor, and a `collect` of it into an `Option` or a
+  `Result`, close it twice, a `TypeError` or an abort; `eq` and `ne` of
+  std's iterators drop their argument before the item they took, and leak
+  it where the argument's step panics; `cmp`, `partial_cmp`, `lt`, `le`,
+  `gt` and `ge` never drop their argument; the crate's iterator given to a
+  `Debug` builder's `entries` or to `Vec::splice` isn't stepped as one,
+  a `TypeError`, an item read as `undefined` or none dropped; a `Debug` builder's `entries` of std's iterators steps all
+  before it shows any and never drops them; `Vec::splice` steps its
+  replacement before it drops what it removed, and of a replacement whose
+  step panics leaves the `Vec` as it was, leaking what it stepped; `unzip`
+  leaks what it unzipped on a panic; and `decode_utf16` steps all of its
+  source before its first `char`. Each is listed in
+  `test/iterator-matrix-known.txt`, which only shrinks. 1,974 case-builds
+  are refused, most of items with a destructor (`cmp` and the comparisons,
+  `iter::zip`, `is_sorted`), `std::iter::chain`, a `collect` into
+  `Rc<[T]>`, `Arc<[T]>`, `Cow`, `Box<str>`, a tuple, an `OsString` or a
+  `PathBuf`, and `Sum` of references to `Wrapping` and `Saturating`. The
+  cases of the twelve found by hand pass, and a mutant of each of two of
+  their fixes fails the net: `source-own-count-unasked` (`repeat_n`'s own
+  `count` unasked) its `count` of `repeat` and of `repeat_n`, and
+  `std-consumer-undropped` (a map's `extend` never dropping its iterator)
+  each `extend` of a map, a set, a list and a `String` of `Loud`.
+- **A refusal is printed with why** where `ITERATOR_MATRIX_REPORT` is set,
+  of any table, each case's, so a table's refusals are counted by reason.

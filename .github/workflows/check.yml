@@ -72,6 +72,7 @@ jobs:
       numbers: ${{ steps.plan.outputs.numbers }}
       declarations: ${{ steps.plan.outputs.declarations }}
       async: ${{ steps.plan.outputs.async }}
+      consumers: ${{ steps.plan.outputs.consumers }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -302,6 +303,41 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: async-table
+          path: target/iterator-matrix
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # The consumer net (test/consumer-net.ts), of a check whose change is the
+  # iterators' code or the drops', as `plan` says (scripts/iteratorSlice.ts's
+  # `consumerPaths`): each std method that takes an iterator by value, of
+  # each source, as it is and with a closure's or a step's panic, in both
+  # builds against native Rust; all of it, its slice. The nightly's
+  # `consumers` runs it too.
+  consumer-net:
+    name: consumer net
+    needs: plan
+    if: ${{ !inputs.nightly && needs.plan.outputs.consumers == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run the net
+        env:
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: bun scripts/iteratorSlice.ts run consumers
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: consumer-net
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14

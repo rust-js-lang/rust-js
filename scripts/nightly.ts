@@ -186,6 +186,15 @@ export const jobs: Record<string, Part[]> = {
       timeout: 10 * minutes,
     },
   ],
+  // Each std method that takes an iterator by value, of each source, the
+  // consumer net, in both builds.
+  consumers: parts("consumers", cores, (i) => ({
+    cmd: ["bun", "test", "--timeout=900000", "test/iterator-matrix.test.ts"],
+    env: { ...compiler, ITERATOR_TABLE: "consumers", ITERATOR_MATRIX: "all", RUST_JS_CASES: `${i}/${cores}` },
+    after: ["build"],
+    cores: 1,
+    timeout: 10 * minutes,
+  })),
   // The day's 600 generated programs (ADR 0092).
   fuzz: parts("fuzz", 12, (i) => ({
     cmd: ["bun", "test", "--timeout=600000", "test/fuzz.test.ts"],

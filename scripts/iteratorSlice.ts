@@ -15,6 +15,7 @@
 //   bun scripts/iteratorSlice.ts run numbers [parts]       the numbers grid's slice (#940), of a change to the numbers' code
 //   bun scripts/iteratorSlice.ts run declarations 1        the declarations' TypeScript callers (#822), of a change to what a `None` is at the JS boundary
 //   bun scripts/iteratorSlice.ts run async [parts]         the async table (#942), of a change to how a future awaits and drops
+//   bun scripts/iteratorSlice.ts run consumers [parts]     the consumer net, of a change to the iterators' code or the drops'
 //
 // And a change to the formatting code, `formatPaths`, runs the formatting
 // grid's slice (test/format-grid.ts, #941), each push's check's
@@ -24,7 +25,10 @@
 // `declarationPaths`, every TypeScript caller of the declarations
 // (test/declarations-conformance.test.ts, #822), `declarations`; and to
 // how a future awaits and what it drops as it unwinds, `asyncPaths`, the
-// async table, all of it (test/async-points.ts, #942), `async-points`.
+// async table, all of it (test/async-points.ts, #942), `async-points`; and
+// to the iterators' code or what drops as a panic unwinds,
+// `consumerPaths`, the consumer net, all of it (test/consumer-net.ts),
+// `consumer-net`.
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
 import { noteRate, pick } from "./iteratorRows";
@@ -135,22 +139,33 @@ export function touchesDeclarations(files: string[]): boolean {
   return files.some((file) => declarationGlobs.some((glob) => glob.match(file)));
 }
 
+/** What drops, and what drops as a panic unwinds, as globs of the
+ * repository's paths: the drops and their unwinding's owners. */
+const dropPaths = ["src/lower/drops/**", "src/lower/analysis/unwinding.rs"];
+
 /** How a future awaits and what an async body drops as it unwinds, as
  * globs of the repository's paths: `.await`'s lowering, the drops and
  * their unwinding's owners, and the table and its runner. */
-export const asyncPaths = [
-  "src/lower/mir/awaits.rs",
-  "src/lower/drops/**",
-  "src/lower/analysis/unwinding.rs",
-  "test/async-points.ts",
-  "test/panic-points.ts",
-];
+export const asyncPaths = ["src/lower/mir/awaits.rs", ...dropPaths, "test/async-points.ts", "test/panic-points.ts"];
 
 const asyncGlobs = asyncPaths.map((path) => new Bun.Glob(path));
 
 /** Whether a change of `files` touches how a future awaits and drops. */
 export function touchesAsync(files: string[]): boolean {
   return files.some((file) => asyncGlobs.some((glob) => glob.match(file)));
+}
+
+/** What std's consumers do with the iterators they're given, as globs of
+ * the repository's paths: the iterators' code, the drops', and the net
+ * that tests them, test/consumer-net.ts, and its coverage of std. */
+export const consumerPaths = [...iteratorPaths, ...dropPaths, "test/consumer-net.ts", "test/consumer-net.test.ts"];
+
+const consumerGlobs = consumerPaths.map((path) => new Bun.Glob(path));
+
+/** Whether a change of `files` touches what std's consumers do with the
+ * iterators they're given. */
+export function touchesConsumers(files: string[]): boolean {
+  return files.some((file) => consumerGlobs.some((glob) => glob.match(file)));
 }
 
 /** Whether a change of `files` touches the numbers' code. */
@@ -178,6 +193,8 @@ export const runs = {
   declarations: [{ name: "the declarations' TypeScript callers", file: "test/declarations-conformance.test.ts", env: {} }],
   // All of it, its slice: some 8 s.
   async: [{ name: "the async table", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "async" } }],
+  // All of it, its slice: some 20 s in 8 parts.
+  consumers: [{ name: "the consumer net", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "consumers" } }],
 } as const;
 
 /** `of`, in `parts` processes at once, each its share of the cases
@@ -236,7 +253,7 @@ function changeRows(parts: number): Run[] {
 
 if (import.meta.main) {
   const [command, of, count, list] = process.argv.slice(2);
-  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|declarations|async|rows [parts [cases]]");
+  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|declarations|async|consumers|rows [parts [cases]]");
   const parts = count === undefined ? caseParts(availableParallelism() * 2) : Number(count);
   process.exit((await run(of as keyof typeof runs | "rows", parts, list)) ? 0 : 1);
 }

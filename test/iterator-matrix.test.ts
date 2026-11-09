@@ -18,6 +18,8 @@
 //   ITERATOR_TABLE=format ITERATOR_MATRIX=all bun test test/iterator-matrix.test.ts  # every format spec of each value (#941)
 //   ITERATOR_TABLE=numbers ITERATOR_MATRIX=all bun test test/iterator-matrix.test.ts # every number operation of each type's boundary values (#940)
 //   ITERATOR_TABLE=async bun test test/iterator-matrix.test.ts                   # panic points across `.await` (#942)
+//   ITERATOR_TABLE=consumers bun test test/iterator-matrix.test.ts               # each std method that takes an iterator by value (test/consumer-net.ts)
+//   ITERATOR_MATRIX_REPORT=1 ...                                                 # and each case refused, and why
 //   bun scripts/iteratorSlice.ts run                                             # both tables' slices, in parts at once (#731)
 //
 // A case that doesn't run as Rust does fails its batch, but those
@@ -233,6 +235,8 @@ for (const index of mine) {
         const name = `${listed}: ${c.id}`;
         const issue = known.get(`${listed} ${c.n}`);
         if (verdict.kind === "refused" && !verdict.own) refused++;
+        // Each refusal, and why, of a run that reports them.
+        if (verdict.kind === "refused" && process.env.ITERATOR_MATRIX_REPORT) console.log(`refused ${name}: ${verdict.why.split("\n")[0]}`);
         if (verdict.kind === "same" || verdict.kind === "refused") {
           if (issue === undefined) continue;
           // What `bun test/iterator-matrix.ts take-off` takes off the list.

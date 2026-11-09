@@ -19,7 +19,9 @@
 // each adapter alone through every step of ADR 1092's contract, from either
 // end, with closures that capture what has a destructor (#730). The same
 // harness runs the panic points of the conformance table's cases (#817),
-// and of operations beyond iterators, test/unwind-points.ts's (#854).
+// and of operations beyond iterators, test/unwind-points.ts's (#854); and
+// every std method that takes an iterator by value, given one that prints
+// its steps, clones and drops, test/consumer-net.ts's.
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -27,6 +29,7 @@ import { join } from "node:path";
 import { random } from "./generate";
 import { pointsRunner } from "./panic-points";
 import { asyncCases, asyncProgram, asyncStrata, type AsyncCase } from "./async-points";
+import { consumerCases, consumerProgram, consumerStrata, type ConsumerCase } from "./consumer-net";
 import { formatCases, formatProgram, formatStrata, type FormatCase } from "./format-grid";
 import { numberCases, numberProgram, numberStrata, type NumberCase } from "./number-grid";
 import { unwindCases, unwindProgram, unwindStrata, type UnwindCase } from "./unwind-points";
@@ -44,10 +47,11 @@ export const builds: [name: string, flags: string[]][] = [
  * (#817), the panic points of operations beyond iterators, the unwind
  * table (#854), every format spec of each value, the formatting grid
  * (#941), every number operation of each type's boundary values, the
- * numbers grid (#940), or the panic points across `.await`, the async
- * table (#942), `ITERATOR_TABLE`'s. */
-export type Table = "matrix" | "conformance" | "points" | "unwind" | "format" | "numbers" | "async";
-export const tables: Table[] = ["matrix", "conformance", "points", "unwind", "format", "numbers", "async"];
+ * numbers grid (#940), the panic points across `.await`, the async
+ * table (#942), or every std method that takes an iterator by value, the
+ * consumer net, `ITERATOR_TABLE`'s. */
+export type Table = "matrix" | "conformance" | "points" | "unwind" | "format" | "numbers" | "async" | "consumers";
+export const tables: Table[] = ["matrix", "conformance", "points", "unwind", "format", "numbers", "async", "consumers"];
 export const table: Table = (() => {
   const which = process.env.ITERATOR_TABLE ?? "matrix";
   if (!(tables as string[]).includes(which)) throw new Error(`ITERATOR_TABLE=${which}: ${tables.map((t) => `\`${t}\``).join(", ")}`);
@@ -911,8 +915,20 @@ const asyncTable: TableOf<AsyncCase> = {
   },
 };
 
+/** The consumer net, test/consumer-net.ts's cases: each std method that
+ * takes an iterator by value, of each source, in each variant. Its slice
+ * is all of it, which its strata, each template in each variant, pick
+ * anyway: some 40 programs, 10 s on the Mac in 8 parts. */
+const consumersTable: TableOf<ConsumerCase> = {
+  cases: consumerCases,
+  program: consumerProgram,
+  batches: (all) => batches(all),
+  slice: (all) => slice(all, consumerStrata),
+};
+
 /** The table `of`, as test/iterator-matrix.test.ts runs it. */
 export function tableOf(of: Table): TableOf<Row> {
+  if (of === "consumers") return consumersTable;
   if (of === "unwind") return unwindTable;
   if (of === "format") return formatTable;
   if (of === "numbers") return numbersTable;
@@ -1341,14 +1357,14 @@ export function segments(stdout: string): Map<string, string> {
 
 const header = `// The iterator matrix's cases (ADR 1090), the conformance table's (ADR
 // 1092), the points table's (#817), the unwind table's (#854), the
-// formatting grid's (#941), the numbers grid's (#940) and the async
-// table's (#942) that don't run as native Rust does yet, each under its
-// issue, \`#<issue>
+// formatting grid's (#941), the numbers grid's (#940), the async table's
+// (#942) and the consumer net's that don't run as native Rust does yet,
+// each under its issue, \`#<issue>
 // <title>\`: a line a build, \`plain\` or \`std\` of the matrix's,
 // \`conformance:plain\` or \`unwind:std\` of a table's, the numbers of its
 // cases in \`allCases()\`, \`conformanceCases()\`, \`pointsCases()\`,
-// \`unwindCases()\`, \`formatCases()\`, \`numberCases()\` or
-// \`asyncCases()\` as ranges. Each listed
+// \`unwindCases()\`, \`formatCases()\`, \`numberCases()\`,
+// \`asyncCases()\` or \`consumerCases()\` as ranges. Each listed
 // must still fail, so the list only shrinks: \`bun test/iterator-matrix.ts
 // take-off\` takes off what the last runs found fixed. Its numbers are of
 // each table's generator version below; a change to a table's cases makes
