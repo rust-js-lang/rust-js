@@ -419,7 +419,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !library_default && !self.krate.fns.contains_key(&method) {
                 return Err(self.unsupported(span, &format!("trait method `{}`", self.tcx.def_path_str(method))));
             }
-            if !library_default && self.tcx.trait_of_assoc(method).is_some() {
+            if (!library_default || crate::lower::classes::is_class_trait(self.tcx, tr.def_id))
+                && self.tcx.trait_of_assoc(method).is_some()
+            {
                 let value = self.default_method(id, method, instance.args)?;
                 props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), value));
                 continue;
@@ -1009,6 +1011,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A method's, or a constant's initializer, a trait's default (ADR 0176).
         let body = match self.krate.bodies.get(&id) {
             Some(body) => *body,
+            // A library's trait of classes' default, its consumer's class's
+            // prototype's method, of the MIR its library keeps, which the
+            // crate compiles where it's asked (ADR 0914, #1073).
+            None if self.asked_of_library(id) => {
+                self.krate.asked.borrow_mut().push((id, self.module));
+                return Ok(Expr::undefined());
+            }
             None => (self.krate.closures.get(&id).copied())
                 .ok_or_else(|| self.unsupported(span, "a trait's default of another crate"))?,
         };

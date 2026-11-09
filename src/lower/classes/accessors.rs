@@ -13,11 +13,15 @@ use super::{implementations, is_class_trait, trait_impl_class};
 /// reference to a field of its `&self`, `fn internal_root(&self) ->
 /// &RefCell<..> { &self.internal_root }`: that field, by the path of fields
 /// to it and each one's own, read in place wherever it's called, no method
-/// of its prototype (rd304, ADR 1035 amended). `None` of any other.
+/// of its prototype (rd304, ADR 1035 amended): of the crate's, as its HIR
+/// reads; of a library's, its library's, as its MIR does, which is all its
+/// consumer has of it (#1032, #1073). `None` of any other.
 pub(crate) fn field_accessor(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Vec<(rustc_abi::FieldIdx, DefId)>> {
     use rustc_middle::ty::adjustment::{Adjust, DerefAdjustKind};
     trait_impl_class(tcx, tcx.trait_impl_of_assoc(def_id)?)?;
-    let local = def_id.as_local()?;
+    let Some(local) = def_id.as_local() else {
+        return field_accessor_of_mir(tcx, def_id);
+    };
     let body = tcx.hir_body_owned_by(local);
     let [this, ..] = body.params else { return None };
     let typeck = tcx.typeck(local);
@@ -84,38 +88,51 @@ pub(crate) fn gives_its_field(tcx: TyCtxt<'_>, own: DefId) -> bool {
         && field_accessor(tcx, own).is_some()
 }
 
-/// The field `own`, a library's method, gives of its `self`, `_0 =
-/// &((*_1).slot)`, read of its optimized MIR, which its consumer has where
-/// its library's HIR isn't (#1032): a trait of classes' (rd304), which a
-/// consumer compiles where it's called. `None` of another.
-pub(crate) fn field_given_of_mir(tcx: TyCtxt<'_>, own: DefId) -> Option<DefId> {
+/// The path of fields `own`, a library's method, gives of its `self`, of
+/// its optimized MIR, which its consumer has where its library's HIR isn't:
+/// a body of nothing but `_0 = &((*_1).slot)`, as `field_accessor` reads a
+/// crate's `&self.slot`. Its only deref is `self`'s: optimized MIR derefs
+/// only at a place's start (rustc's `Derefer`), so one through a field,
+/// `&self.limits.most`, is of a local it copied that field to, a statement
+/// of its own.
+fn field_accessor_of_mir(tcx: TyCtxt<'_>, own: DefId) -> Option<Vec<(rustc_abi::FieldIdx, DefId)>> {
     use rustc_middle::mir;
-    if own.is_local() || tcx.def_kind(own) != DefKind::AssocFn || !tcx.is_mir_available(own) {
+    if tcx.def_kind(own) != DefKind::AssocFn || !tcx.is_mir_available(own) {
         return None;
     }
     let body = tcx.optimized_mir(own);
-    let given =
-        (body.basic_blocks.iter().flat_map(|data| &data.statements)).find_map(|statement| match &statement.kind {
-            mir::StatementKind::Assign(assign) if assign.0.local == mir::RETURN_PLACE => match &assign.1 {
-                mir::Rvalue::Ref(_, _, place) if place.local.as_usize() == 1 => Some(*place),
-                _ => None,
-            },
-            _ => None,
-        })?;
-    let mut field = None;
-    for (base, elem) in given.iter_projections() {
-        match elem {
-            mir::ProjectionElem::Deref if field.is_none() => {}
-            mir::ProjectionElem::Field(index, _) => {
-                let ty::Adt(adt, _) = base.ty(&body.local_decls, tcx).ty.kind() else {
+    let block = &body.basic_blocks[mir::START_BLOCK];
+    if !matches!(block.terminator().kind, mir::TerminatorKind::Return) {
+        return None;
+    }
+    let mut given = None;
+    for statement in &block.statements {
+        match &statement.kind {
+            mir::StatementKind::StorageLive(_) | mir::StatementKind::StorageDead(_) | mir::StatementKind::Nop => {}
+            mir::StatementKind::Assign(assign) if assign.0 == mir::RETURN_PLACE.into() => {
+                let mir::Rvalue::Ref(_, mir::BorrowKind::Shared, place) = &assign.1 else {
                     return None;
                 };
-                field = Some(adt.non_enum_variant().fields[index].did);
+                given = Some(*place);
             }
             _ => return None,
         }
     }
-    field
+    let given = given.filter(|place| place.local.as_usize() == 1)?;
+    let mut fields = Vec::new();
+    for (base, elem) in given.iter_projections() {
+        match elem {
+            mir::ProjectionElem::Deref => {}
+            mir::ProjectionElem::Field(field, _) => {
+                let ty::Adt(adt, _) = base.ty(&body.local_decls, tcx).ty.kind() else {
+                    return None;
+                };
+                fields.push((field, adt.non_enum_variant().fields[field].did));
+            }
+            _ => return None,
+        }
+    }
+    Some(fields)
 }
 
 /// The fields a call of `callee`, of `args` in `typing_env`, may give in

@@ -1419,3 +1419,18 @@ A library call among a receiver guard's arguments stays code rust-js
 can't see (rd360 above), a library's function among them: the metamorphic
 net lists `refcell_borrow_while_mut`'s library rewrite as that decided
 difference (`#rd360` in `test/metamorphic-known.txt`).
+
+## Amendment: a library's quiet field given by its method is lent as by its name (#1073)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): compile error, as
+before. Since a library's trait of classes is one in its consumer (ADR
+1035, amended), a consumer's call of a library's method that only gives
+its field is that field, read in place of the library's MIR, not a copy
+it compiles. So `fill(holder.slot(), &holder)` is refused by the one check
+of a library's quiet field its consumer lends, as `fill(&holder.slot,
+&holder)` is: "`dep`, a rust-js library, borrows `dep::Holder::slot`
+unchecked, as it only ever borrows it for a moment (ADR 0863); this lends
+it". `Foreign::lends_quiet_field`, `classes::field_given_of_mir` and the
+mutation `quiet-field-lent-unrefused` are gone; the crates test of #1032
+says the new words, and `field-giving-method-listed` still holds the
+manifest's listing. Supporting it is still #1054's.

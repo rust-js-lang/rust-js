@@ -38,4 +38,49 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_method_before_its_field.rs$"],
   },
+  {
+    name: "library-field-accessor-unread",
+    breaks:
+      "a library's class's trait method that only gives its field, which has no JS of its own (rd304), is called by its consumer, `holder.slot()`, a method its prototype hasn't (#1073)",
+    file: "src/lower/classes/accessors.rs",
+    find: "        return field_accessor_of_mir(tcx, def_id);\n",
+    replace: "        return None;\n",
+    tests: ["test/crates.test.ts", "-t", "library_trait_of_classes_given_fields|quiet field"],
+  },
+  {
+    name: "library-field-accessor-past-its-end",
+    breaks:
+      "a library's method that drops a value after it borrows its field, `let _noisy = Noisy; &self.n`, is read as its field, and the drop never prints (#1073)",
+    file: "src/lower/classes/accessors.rs",
+    find: "    if !matches!(block.terminator().kind, mir::TerminatorKind::Return) {\n        return None;\n    }\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "library_trait_of_classes_given_fields"],
+  },
+  {
+    name: "library-field-accessor-after-statements",
+    breaks:
+      "a library's method that sets a field before it gives one, `self.seen = true; &self.seen`, is read as its field, and the field is never set (#1073, #1074)",
+    file: "src/lower/classes/accessors.rs",
+    find: "            _ => return None,\n        }\n    }\n    let given = given.filter(",
+    replace: "            _ => {}\n        }\n    }\n    let given = given.filter(",
+    tests: ["test/crates.test.ts", "-t", "library_trait_of_classes_given_fields"],
+  },
+  {
+    name: "library-field-accessor-of-a-mut",
+    breaks:
+      "a library's method that gives a `&mut` of its field, `&mut self.n`, is read as the field borrowed shared (#1073)",
+    file: "src/lower/classes/accessors.rs",
+    find: "                let mir::Rvalue::Ref(_, mir::BorrowKind::Shared, place) = &assign.1 else {\n",
+    replace: "                let mir::Rvalue::Ref(_, _, place) = &assign.1 else {\n",
+    tests: ["test/crates.test.ts", "-t", "library_trait_of_classes_given_fields"],
+  },
+  {
+    name: "library-field-accessor-of-another-parameter",
+    breaks:
+      "a library's method that gives a field of another parameter, `&other.n`, is taken for one that gives its own, so holding it as a function is refused (#1073)",
+    file: "src/lower/classes/accessors.rs",
+    find: "    let given = given.filter(|place| place.local.as_usize() == 1)?;\n",
+    replace: "    let given = given?;\n",
+    tests: ["test/crates.test.ts", "-t", "library_trait_of_classes_given_fields"],
+  },
 ];

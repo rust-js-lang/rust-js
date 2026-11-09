@@ -1217,8 +1217,13 @@ export function createRequest(tasks) {
   later first. A Rust call is a call on the value, `root.render(..)`;
   each class declares the trait's methods. A default may take rest
   arguments, `#[rust_js::rest]`, which a class's impl then takes as it
-  gives them
-  ([ADR 1035](../../decisions/1035-a-trait-of-classes-is-each-classs-prototypes.md)):
+  gives them. A library's trait of classes, each impl of which the
+  library has is a class's, is one in its consumers too: their calls of
+  its methods are on the value, and a class of theirs may implement it,
+  each method its prototype's; only a class may, and a `dyn` of it or a
+  type parameter it bounds is refused there as in the library
+  ([ADR 1035](../../decisions/1035-a-trait-of-classes-is-each-classs-prototypes.md),
+  amended):
 
 ```rust
 use std::cell::Cell;

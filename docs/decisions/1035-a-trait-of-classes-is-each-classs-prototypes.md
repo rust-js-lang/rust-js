@@ -105,3 +105,56 @@ before.
   `class-trait-methods-undeclared` (`declarations/functions.ts`). No mutation of the
   impl's module check: no test makes a class in one module and its impl
   in another yet.
+
+## Amendment: a library's trait of classes is one in its consumer (#1073)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's. `is_class_trait` asked `trait_id.is_local()`, so a library's trait
+of classes was a dictionary's in its consumer. Each call of a method of
+the library's class compiled the consumer's own copy of it and of a
+dictionary the library never made (`rootRender_label(root)`); a library's
+class whose trait of classes has a `then` was adopted where a consumer
+awaited one, its `.await` never ending (#1071's hazard across crates); a
+method that only gives its field, with no JS of its own (rd304), was
+compiled again; a consumer's `dyn` of the trait read that dictionary; and
+a consumer's class's impl of it was refused.
+
+A trait is now one of classes where each impl its own crate has is a
+class's: the impls its crate's compile saw, as a trait's impls are in its
+crate or in one that uses it, so a library's consumer asks the library's
+decision of the same impls, read of its metadata, which the library's JS
+is checked to be of (`Foreign::check`). No manifest fact carries it: one
+would be a second answer of what the metadata already decides, needed by
+the classes owner's callers, which ask it of a `TyCtxt` alone. So:
+
+- **A consumer's call of its method is a call on the value**,
+  `root.label()`, as the library's own calls are; a method that only gives
+  its field is that field, read in place, of the library's MIR
+  (`classes::field_accessor`, a body of nothing but `_0 = &((*_1).slot)`).
+- **A consumer's class may implement it**, each method its prototype's;
+  a default its library's MIR, compiled for the class where it's asked
+  (ADR 0914), `Leaf.prototype.render = function (times) { .. }`.
+- **What the library refuses of it, its consumer refuses too**: a `dyn`
+  of it, a type parameter it bounds; and an impl of it for what's no
+  class, whose calls, the library's defaults' `this.label()` among them,
+  are on a prototype it hasn't: "a `#[rust_js::class]` alone implements
+  `dep::Render`, a library's trait of classes".
+- **A library's class's trait-of-classes methods are asked where its
+  value is awaited** (`classes::has_method_named`), its `then` among them.
+
+Held by `test/library-classes.test.ts` (the calls, a consumer's class's
+default, a `then` across crates, each refusal), the pairs
+`library_trait_of_classes` and `library_trait_of_classes_given_fields`
+(a method that sets a field, calls one, drops a value, gives another's
+field, one through a reference, or a `&mut`, before or as it gives a
+field), against native Rust, and React's port, whose JS is unchanged.
+Mutations `class-trait-of-the-crate-alone`,
+`class-trait-of-every-crates-impls`, `class-trait-library-impls-unseen`,
+`library-class-trait-impl-of-no-class-allowed` (`lower/classes.ts`),
+`library-class-default-through-its-library`,
+`library-class-default-unasked` (`lower/traits/impls.ts`),
+`library-field-accessor-unread`, `library-field-accessor-past-its-end`,
+`library-field-accessor-after-statements`,
+`library-field-accessor-of-a-mut` and
+`library-field-accessor-of-another-parameter`
+(`lower/classes/accessors.ts`).

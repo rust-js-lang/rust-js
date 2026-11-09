@@ -665,4 +665,40 @@ export const mutations: Mutation[] = [
     replace: "    inherent.chain(traits.filter(|_| false)).any(named)\n",
     tests: ["test/lowering-thenables.test.ts"],
   },
+  {
+    name: "class-trait-of-the-crate-alone",
+    breaks:
+      "a library's trait of classes is a dictionary's in its consumer: its calls of the library's class's methods compile a copy of each, its own class's impl of it is refused, and a `then` of one is adopted where its value is awaited (#1073)",
+    file: "src/lower/classes.rs",
+    find: "    tcx.def_kind(trait_id) == DefKind::Trait\n        && !tcx.associated_item_def_ids(trait_id).is_empty()\n",
+    replace: "    trait_id.is_local()\n        && tcx.def_kind(trait_id) == DefKind::Trait\n        && !tcx.associated_item_def_ids(trait_id).is_empty()\n",
+    tests: ["test/library-classes.test.ts"],
+  },
+  {
+    name: "class-trait-of-every-crates-impls",
+    breaks:
+      "a library's trait of classes is a trait of classes in its consumer only where each impl the consumer has is a class's too, so one of what's no class makes it a dictionary's there, called where the library calls its prototype (#1073)",
+    file: "src/lower/classes.rs",
+    find: "        .filter(|imp| imp.krate == trait_id.krate)\n",
+    replace: "",
+    tests: ["test/library-classes.test.ts", "-t", "implements it for a class alone"],
+  },
+  {
+    name: "class-trait-library-impls-unseen",
+    breaks:
+      "a library's class's method of its trait of classes isn't asked where its consumer awaits one, so its `then` is adopted and the `.await` never ends (#1073)",
+    file: "src/lower/classes.rs",
+    find: "    (local.chain(libraries)).filter(move |&imp| trait_impl_class(tcx, imp) == Some(adt))\n",
+    replace: "    (local.chain(libraries.filter(|_| false))).filter(move |&imp| trait_impl_class(tcx, imp) == Some(adt))\n",
+    tests: ["test/library-classes.test.ts", "-t", "then"],
+  },
+  {
+    name: "library-class-trait-impl-of-no-class-allowed",
+    breaks:
+      "a consumer's impl of a library's trait of classes for what's no class compiles, its calls of `plain.render(2)` on a prototype it hasn't (#1073)",
+    file: "src/lower/classes.rs",
+    find: "                if !tcx.impl_trait_id(id).is_local() && is_class_trait(tcx, tcx.impl_trait_id(id)) =>\n",
+    replace: "                if false =>\n",
+    tests: ["test/library-classes.test.ts", "-t", "implements it for a class alone"],
+  },
 ];

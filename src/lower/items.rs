@@ -127,7 +127,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `def_id` is a library's the crate compiles itself where it
     /// uses it (`fn_ref`'s, ADR 0914, amended).
-    fn asked_of_library(&self, def_id: DefId) -> bool {
+    pub(super) fn asked_of_library(&self, def_id: DefId) -> bool {
         let foreign = self.krate.foreign;
         let derived_codec = (self.tcx.trait_impl_of_assoc(def_id)).is_some_and(|imp| {
             super::serde::serde_trait(self.tcx, self.tcx.impl_trait_id(imp)).is_some()

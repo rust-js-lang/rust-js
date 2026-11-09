@@ -693,4 +693,22 @@ export const mutations: Mutation[] = [
     replace: "                let of = drop_slot(self.tcx, self.slots(), item.def_id, index);\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_default_map_keys"],
   },
+  {
+    name: "library-class-default-through-its-library",
+    breaks:
+      "a consumer's class's default of a library's trait of classes is a call of the library's default given a dictionary, `render_render(this, arg1, leafRender)`, of a dictionary nothing makes, not its prototype's method (#1073)",
+    file: "src/lower/traits/impls.rs",
+    find: "            if (!library_default || crate::lower::classes::is_class_trait(self.tcx, tr.def_id))\n",
+    replace: "            if !library_default\n",
+    tests: ["test/library-classes.test.ts", "-t", "on the prototype"],
+  },
+  {
+    name: "library-class-default-unasked",
+    breaks:
+      "a library's trait of classes' default, its consumer's class's prototype's method, isn't compiled of its library's MIR, so the consumer is refused `a trait's default of another crate` (#1073)",
+    file: "src/lower/traits/impls.rs",
+    find: "            None if self.asked_of_library(id) => {\n",
+    replace: "            None if false => {\n",
+    tests: ["test/library-classes.test.ts", "-t", "on the prototype"],
+  },
 ];

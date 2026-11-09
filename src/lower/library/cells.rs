@@ -18,17 +18,6 @@ impl Foreign<'_, '_> {
                 .is_some_and(|facts| facts.contains(&fact))
     }
 
-    /// Of `id`, a library's method of a trait of classes that gives its
-    /// field (`classes::field_given_of_mir`), where its library's contract
-    /// says that field is quiet, nothing there lending it: the field, and
-    /// the library. A call of it lends the field, whose borrows the
-    /// library's code doesn't check, which the crate can't yet (#1032).
-    pub(in crate::lower) fn lends_quiet_field(&self, id: DefId) -> Option<(DefId, String)> {
-        let field = crate::lower::classes::field_given_of_mir(self.tcx, id)?;
-        let quiet = self.fields_saying(FieldFact::Quiet);
-        quiet.get(&key(self.tcx, field)).map(|library| (field, library.clone()))
-    }
-
     /// Each field of a library's struct its contract says is `fact`, by its
     /// key, and the library that says so (ADR 0906).
     pub(in crate::lower) fn fields_saying(&self, fact: FieldFact) -> IndexMap<String, String> {

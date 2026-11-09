@@ -27,7 +27,7 @@ mod prototypes;
 mod receivers;
 mod states;
 mod subclasses;
-pub(crate) use accessors::{field_accessor, field_given_of_mir, fields_given, gives_its_field};
+pub(crate) use accessors::{field_accessor, fields_given, gives_its_field};
 use constructors::gives_instance;
 pub(crate) use constructors::{refuse_counted_instances, set_where_constructed};
 pub(in crate::lower) use defaults::{prototype_defaults, take_default};
@@ -298,14 +298,20 @@ pub(crate) fn has_method_named(tcx: TyCtxt<'_>, adt: DefId, name: &str) -> bool 
             && crate::lower::bindings::fn_name(tcx, item) == name
     };
     let inherent = (tcx.inherent_impls(adt).iter()).flat_map(|&imp| tcx.associated_item_def_ids(imp).iter().copied());
-    let traits = (tcx.all_local_trait_impls(()).iter())
-        .filter(|(_, impls)| {
-            impls
-                .iter()
-                .any(|imp| trait_impl_class(tcx, imp.to_def_id()) == Some(adt))
-        })
-        .flat_map(|(&trait_id, _)| tcx.associated_item_def_ids(trait_id).iter().copied());
+    let traits = (class_trait_impls(tcx, adt))
+        .flat_map(|imp| tcx.associated_item_def_ids(tcx.impl_trait_id(imp)).iter().copied());
     inherent.chain(traits).any(named)
+}
+
+/// Each impl of a trait of classes `adt` has (rd283): of the crate's, or of
+/// a library's, whose impls are in its class's crate or its trait's, one
+/// that uses its class's (#1073). None of std's crates has a class.
+fn class_trait_impls(tcx: TyCtxt<'_>, adt: DefId) -> impl Iterator<Item = DefId> + '_ {
+    let local = (tcx.all_local_trait_impls(()).values()).flat_map(|impls| impls.iter().map(|imp| imp.to_def_id()));
+    let libraries = (tcx.crates(()).iter())
+        .filter(move |&&krate| crate::lower::recognition::std_crate(tcx, krate).is_none())
+        .flat_map(move |&krate| tcx.trait_impls_in_crate(krate).iter().copied());
+    (local.chain(libraries)).filter(move |&imp| trait_impl_class(tcx, imp) == Some(adt))
 }
 
 /// Is `adt` a JS class, a struct marked `#[rust_js::class]`?
@@ -340,14 +346,18 @@ pub(crate) fn has_to_string(tcx: TyCtxt<'_>, class: DefId) -> bool {
     })
 }
 
-/// Whether `trait_id` is a trait of classes, the crate's, with items, each
-/// impl of which is a class's (rd283): each of its methods, an impl's or
+/// Whether `trait_id` is a trait of classes, with items, each impl of which
+/// its own crate has is a class's (rd283): each of its methods, an impl's or
 /// the trait's default, is each class's prototype's, `ReactDOMRoot.prototype
-/// .render = function (children) { .. }`, never a dictionary's.
+/// .render = function (children) { .. }`, never a dictionary's. Its own
+/// crate's impls are those its crate's compile saw, as a trait's impls are
+/// in its crate or in one that uses it: of a library's trait, the library's
+/// decision, which its consumer's calls and impls keep (#1073).
 pub(crate) fn is_class_trait(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
-    let mut impls = tcx.all_impls(trait_id).peekable();
-    trait_id.is_local()
-        && tcx.def_kind(trait_id) == DefKind::Trait
+    let mut impls = (tcx.all_impls(trait_id))
+        .filter(|imp| imp.krate == trait_id.krate)
+        .peekable();
+    tcx.def_kind(trait_id) == DefKind::Trait
         && !tcx.associated_item_def_ids(trait_id).is_empty()
         && impls.peek().is_some()
         && impls.all(|imp| class_of_impl(tcx, imp).is_some())
@@ -735,6 +745,21 @@ pub(super) fn reject_misuse<'tcx>(
                 for (at, what) in subclasses::impl_misuse(tcx, id, class) {
                     refuse(at, &what);
                 }
+            }
+            // A library's trait of classes, whose methods its library calls
+            // on each value's prototype: one with none, of what's no class,
+            // would be called so too (#1073).
+            DefKind::Impl { of_trait: true }
+                if !tcx.impl_trait_id(id).is_local() && is_class_trait(tcx, tcx.impl_trait_id(id)) =>
+            {
+                let self_ty = tcx.type_of(id).instantiate_identity().skip_normalization();
+                refuse(
+                    span,
+                    &format!(
+                        "alone implements `{}`, a library's trait of classes, whose methods are each class's prototype's: `{self_ty}` is no class",
+                        tcx.def_path_str(tcx.impl_trait_id(id))
+                    ),
+                );
             }
             DefKind::Trait if is_class_trait(tcx, id) => {
                 let name = tcx.item_name(id);

@@ -632,9 +632,10 @@ test("a library's function its consumer compiles is refused where it reads its l
 }, 300_000);
 
 // A library's class's trait method that gives its field, `&self.slot`, has
-// no JS of its own (rd304), so its manifest lists none; a consumer that
-// calls it lends the field, which the library reads unchecked where
-// nothing there lends it: refused, clearly (#1032).
+// no JS of its own (rd304), so its manifest lists none; a consumer's call of
+// it is that field, read in place, as its library's MIR gives it (#1073),
+// which lends the field, which the library reads unchecked where nothing
+// there lends it: refused, clearly, as lending it by its name is (#1032).
 test("a consumer lending a library's quiet field through a method that gives it is refused", () => {
   const dir = fixture("library-quiet-field-lent");
   const lib = join(dir, "dep");
@@ -648,7 +649,7 @@ test("a consumer lending a library's quiet field through a method that gives it 
   writeFileSync(join(dir, "app.rs"), "use dep::{Holder, Slot, fill};\n\npub fn main() {\n    let holder = Holder::new();\n    fill(holder.slot(), &holder);\n}\n");
   expect(() => run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
     "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`])).toThrow(
-    "a call of it lends `dep::Holder::slot`, which `dep`, a rust-js library, reads unchecked, as nothing there lends it (ADR 0863): a consumer can't lend one yet",
+    "rust-js: `dep`, a rust-js library, borrows `dep::Holder::slot` unchecked, as it only ever borrows it for a moment (ADR 0863); this lends it",
   );
 }, 300_000);
 
