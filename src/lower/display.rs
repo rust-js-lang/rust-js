@@ -120,8 +120,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         }
         let fmt = self.tcx.associated_item_def_ids(fmt_trait)[0];
-        ty.walk()
-            .filter_map(|part| part.as_type())
+        crate::lower::recognition::formatted_parts(ty)
             .any(|part| self.call_may_fail(fmt, self.tcx.mk_args(&[part.into()])))
     }
 

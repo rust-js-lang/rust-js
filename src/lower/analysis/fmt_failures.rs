@@ -11,7 +11,7 @@ use crate::collections::IndexSet;
 use crate::lower::Body;
 use crate::lower::library::Foreign;
 use crate::lower::recognition::{
-    StdItem, fmt_trait_called, is_err_variant, is_generic_fmt_result, is_std_def, is_write_result_type,
+    StdItem, fmt_trait_called, formatted_parts, is_err_variant, is_generic_fmt_result, is_std_def, is_write_result_type,
 };
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt};
@@ -73,16 +73,7 @@ pub(super) fn failing_fns<'tcx>(
             // and that of each type it holds, as std's `Vec<T>` calls `T`'s.
             if let Some(fmt_trait) = fmt_trait_called(tcx, callee) {
                 let fmt = tcx.associated_item_def_ids(fmt_trait)[0];
-                for part in args
-                    .types()
-                    .next()
-                    .into_iter()
-                    .flat_map(|ty| ty.walk())
-                    .filter_map(|part| part.as_type())
-                    // Not one a binder inside holds, `&'a dyn Display` of a
-                    // `dyn for<'a> FnMut(&'a dyn Display)`, a type only there.
-                    .filter(|part| !part.has_escaping_bound_vars())
-                {
+                for part in args.types().next().into_iter().flat_map(formatted_parts) {
                     if let Some(callee) = resolve(tcx, typing_env, fmt, tcx.mk_args(&[part.into()])) {
                         calls.push((caller, callee));
                     }

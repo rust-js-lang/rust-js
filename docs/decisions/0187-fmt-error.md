@@ -189,3 +189,20 @@ corpus's JS is otherwise the same. Held by the corpus case
 `closure-call-of-a-write-error-uncaught` and
 `held-function-write-error-uncaught`.
 
+
+## Amendment: what formatting a value may call is asked of the types it holds, never of a binder's (#1111)
+
+Whether a value's `{:?}` may fail was asked of each type its type holds,
+`ty.walk()`'s, `&'a u32` of an `Inspect<_, fn(&u32)>`'s `for<'a> fn(&'a
+u32)` too: a type only the `fn`'s binder holds, no value's, of which
+rustc's trait selection was asked and crashed ("has escaping bound vars"),
+wherever a write of the crate's may fail. The analysis that finds what may
+fail skipped those already; the lowering's `fmt_may_fail` didn't, two
+answers to one question. `recognition::formatted_parts` is the one now,
+asked by both. An audit of each walk of a type that asks trait selection
+found no other: `owns_interior_mutability` takes a `fn` pointer for shared
+and a `dyn` for not `Freeze` before what their binders hold, and
+`rc_counts`' and `std_items`' ask only of a type parameter or a closure.
+`test/corpus/debug_of_a_fn_pointers_holder.rs` crashed before, and runs as
+native Rust; the neighbour shuffle's seeds 102 and 145, which found it,
+run; the mutation `formatted-parts-under-binders` puts the old walk back.

@@ -404,6 +404,16 @@ fn fmt_result(tcx: TyCtxt<'_>) -> Option<Ty<'_>> {
     Some(tcx.fn_sig(fmt).skip_binder().skip_binder().output())
 }
 
+/// The types whose `fmt` formatting a value of `ty` may call, as std's
+/// `Vec<T>`'s calls `T`'s: `ty` and each it holds, never one only a binder
+/// inside holds, `&'a u32` of a `for<'a> fn(&'a u32)`, which is no value's
+/// type, and of which rustc's trait selection can't be asked (#1111).
+pub(crate) fn formatted_parts<'tcx>(ty: Ty<'tcx>) -> impl Iterator<Item = Ty<'tcx>> {
+    ty.walk()
+        .filter_map(|part| part.as_type())
+        .filter(|part| !rustc_middle::ty::TypeVisitableExt::has_escaping_bound_vars(part))
+}
+
 /// The fmt trait whose `fmt` of its type argument `def_id` calls: a
 /// placeholder's `Argument::new_display` its `Display`, `new_lower_hex` its
 /// `LowerHex`, and `to_string` its `Display` (ADR 0187).

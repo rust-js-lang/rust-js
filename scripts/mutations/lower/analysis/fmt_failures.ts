@@ -103,19 +103,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "fmt-failures-escaping-parts",
-    breaks:
-      "`{}` of what holds a `dyn for<'a> FnMut(&'a dyn Display)` asks of a type only its binder has, and crashes",
-    file: "src/lower/analysis/fmt_failures.rs",
-    find: "                    .filter(|part| !part.has_escaping_bound_vars())\n",
-    replace: "",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^closure_writes_captured_formatter.rs$",
-    ],
-  },
-  {
     name: "library-writer-never-fails",
     breaks:
       "std's `write_fmt` of a library's writer, whose `write_str` may fail, is taken as never failing in its consumer, so `put(..).is_err()` is `false` where Rust's is `true` (the `is_local()` audit)",

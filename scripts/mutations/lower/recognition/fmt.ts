@@ -120,4 +120,13 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
   },
+  {
+    name: "formatted-parts-under-binders",
+    breaks:
+      "a type only a binder inside holds, `&'a u32` of a `for<'a> fn(&'a u32)` or `&'a dyn Display` of a `dyn for<'a> FnMut(&'a dyn Display)`, is taken for one formatted, and rustc's trait selection, asked of it, crashes (#1111)",
+    file: "src/lower/recognition/fmt.rs",
+    find: "        .filter(|part| !rustc_middle::ty::TypeVisitableExt::has_escaping_bound_vars(part))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(closure_writes_captured_formatter|debug_of_a_fn_pointers_holder).rs$"],
+  },
 ];
