@@ -991,3 +991,34 @@ wasm32, `//@ native: wasm32`, as the corpus does, its rewrites' native
 side on wasm32 too, its library rewrite's crate built for it: the cases
 here, whose offsets are a `usize`'s, are in it. The guide's limitations page says the two
 refusals.
+
+## Amendment: `write_bytes`, and an array's bytes through its items' codec (2026-11-10, #1133, #1137)
+
+`ptr::write_bytes(dst, byte, n)` and `dst.write_bytes(byte, n)` were
+refused as addressable memory. getrandom 0.3's `uninit_slice_fill_zero`
+zeroes a `MaybeUninit<u8>` buffer so, and its `fill` was then types alone.
+**They're `$ptrFill(bytes, byte, n * size)`, of `dst` seen as bytes**
+(`recast` to `u8`): a byte's or a `MaybeUninit` byte's place as it is,
+and plain data's, integers, floats and `#[repr(C)]` structs, through
+their codec, as wasm32 lays them out. A type with no codec, a reference
+or a `String` say, is refused, "writing bytes into a `T`". getrandom's
+form prints `$ptrFill($ptr(slice, 0), 0, slice.length)`. Case N of
+ADR 0262: the items hold what native Rust's do.
+
+**A wrong answer found with it (#1137, P0).** A byte written through a
+pointer into an array of signed integers read back unsigned. `[0i16; 2]`,
+its first two bytes `0xFF`, was `[65535, 0]` where native Rust's is
+`[-1, 0]`. `$ptrBytes` kept a plain type's codec for one value's bytes
+but dropped it for an array's, and `$byteSet` decoded the item it changed
+with `$fromBytes(.., signed: false)`, whatever its type. An array of
+`i64`s with a negative item, or of floats, read wrong too. **An array's
+byte view keeps its items' codec**, and `$byteAt` and `$byteSet` read and
+write an item through it. One with no codec, of an allocator's slots, is
+read as before.
+
+Held by the corpus case `ptr_write_bytes.rs`, against native Rust: each
+form, `u8`, `MaybeUninit<u8>`, `u32`, `i16`, `u64`, `i64`, `f32`, a
+struct and an array of them, a byte view over wider items, a count of
+zero; and the signed array written a byte at a time. Also by the
+mutations `write-bytes-of-items-not-bytes`, `ptr-fill-of-none` and
+`array-byte-set-unsigned`, each caught.

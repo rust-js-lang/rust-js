@@ -617,6 +617,15 @@ function $ptrCopy(src, dst, count, copy) {
   for (let i = 0; i < count; i++) dst.of[dst.at + i] = copy === undefined ? items[i] : copy(items[i]);
 }
 
+// `ptr::write_bytes(dst, byte, n)`: each of the `count` bytes from where
+// `bytes`, `dst` seen as bytes, points `byte`, an item's bytes as wasm32
+// lays them out (#1133).
+function $ptrFill(bytes, byte, count) {
+  if (count === 0) return;
+  const view = $asBytes(bytes);
+  for (let i = 0; i < count; i++) $byteSet(view, i, byte);
+}
+
 // `slice::from_raw_parts(p, n)`: the `n` items from where `p` points, a
 // copy, as a shared subslice is, or all of an array, the array itself. Of
 // a pointer to bytes, each item read as it's typed, `width` bytes apart: a
@@ -690,7 +699,9 @@ function $ptrBytes(pointer, stride, encode, decode) {
   if (stride === undefined) return $byteView({ opaque: true, typed: pointer });
   if (Array.isArray(pointer.of) && typeof pointer.at === "number") {
     $strides.set(pointer.of, stride);
-    return $byteView({ of: pointer.of, at: pointer.at * stride, stride, typed: pointer });
+    // Each item read and written through its type's codec, a signed
+    // integer's, a float's or a struct's, as wasm32 lays it out (#1137).
+    return $byteView({ of: pointer.of, at: pointer.at * stride, stride, typed: pointer, encode, decode });
   }
   return $byteView({ plain: pointer, at: 0, stride, encode, decode });
 }
@@ -762,7 +773,7 @@ function $byteAt(view, i) {
   if (view.plain !== undefined) return view.encode(view.plain.value)[at];
   if (view.stride === 1) return $slot(view.of, at);
   const item = Math.floor(at / view.stride);
-  return $toBytes($slot(view.of, item), view.stride, true)[at % view.stride];
+  return view.encode($slot(view.of, item))[at % view.stride];
 }
 
 function $byteSet(view, i, byte) {
@@ -779,9 +790,9 @@ function $byteSet(view, i, byte) {
     return;
   }
   const item = Math.floor(at / view.stride);
-  const bytes = $toBytes($slot(view.of, item), view.stride, true);
+  const bytes = view.encode($slot(view.of, item));
   bytes[at % view.stride] = byte;
-  view.of[item] = $fromBytes(bytes, view.stride, true, false);
+  view.of[item] = view.decode(bytes);
 }
 
 // `read_unaligned` of a `width`-byte integer at a byte pointer: the bytes

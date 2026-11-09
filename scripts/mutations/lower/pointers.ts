@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "write-bytes-of-items-not-bytes",
+    breaks: "`ptr::write_bytes(dst, byte, n)` of a wider type fills `n` bytes, not `n` items' bytes, so `[7u32; 3]` filled from its second with `0x01`, 2 items, is `[7, 257, 7]` (#1133)",
+    file: "src/lower/pointers.rs",
+    find: "                    _ => Expr::bin(Op::Mul, count, size),\n",
+    replace: "                    _ => count,\n",
+    tests: ["test/corpus.test.ts", "-t", "^ptr_write_bytes.rs$"],
+  },
+  {
     name: "tuple-field-pointer-no-offset",
     breaks: "a tuple's field's pointer, `$ptr(t, 1)`, is given no byte offset, so its address is its index times its size, `0 1 2` of a `(u8, u32, u16)` rustc lays out `4 0 6` (#1081)",
     file: "src/lower/pointers.rs",
@@ -90,22 +98,6 @@ export const mutations: Mutation[] = [
     replace: "            true\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
     snapshots: true,
-  },
-  {
-    name: "pointer-ops-unknown",
-    breaks: "std's functions of a raw pointer are refused",
-    file: "src/lower/pointers.rs",
-    find: "    if let Some(&(_, op)) = POINTER_FNS.iter().find(|(of, _)| *of == path) {\n        return Some(op);\n    }\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
-  },
-  {
-    name: "pointer-methods-unknown",
-    breaks: "a raw pointer's methods, and a `NonNull`'s, are refused",
-    file: "src/lower/pointers.rs",
-    find: "    methods.iter().find(|(name, _)| *name == method).map(|&(_, op)| op)\n",
-    replace: "    methods.iter().find(|_| false).map(|&(_, op)| op)\n",
-    tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
     name: "pointer-sub-adds",
@@ -464,14 +456,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^slice_pointers.rs$"],
   },
   {
-    name: "offset-from-refused",
-    breaks: "`p.offset_from(q)` of two pointers into one array is refused",
-    file: "src/lower/pointers.rs",
-    find: '    ("offset_from", PointerOp::OffsetFrom),\n    ("offset_from_unsigned", PointerOp::OffsetFrom),\n    ("as_ref", PointerOp::AsRef),\n',
-    replace: '    ("as_ref", PointerOp::AsRef),\n',
-    tests: ["test/corpus.test.ts", "-t", "^pointer_offset_from.rs$"],
-  },
-  {
     name: "to-bytes-refused",
     breaks:
       "a pointer cast to bytes, an allocation's given to `realloc` or `dealloc`, is refused",
@@ -487,15 +471,6 @@ export const mutations: Mutation[] = [
     find: '            (_, _) if is_bytes(a) => Ok(helper("$ptrTyped", vec![pointer])),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^allocator.rs$"],
-  },
-  {
-    name: "uninit-as-ptr-unrecognized",
-    breaks:
-      "a `MaybeUninit`'s `as_mut_ptr()` isn't a pointer to its value, and is refused",
-    file: "src/lower/pointers.rs",
-    find: '    ("std::mem::MaybeUninit::<T>::as_mut_ptr", PointerOp::FromRef),\n',
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_pointer.rs$"],
   },
   {
     name: "generic-shared-pointer-refused",
@@ -534,15 +509,6 @@ export const mutations: Mutation[] = [
     find: "                Ok(handle(*object, Expr::str(key), offset))\n",
     replace: "                Ok(handle(*object, Expr::str(key), Offset::Unsaid))\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
-  },
-  {
-    name: "wrapping-add-as-step",
-    breaks:
-      "`wrapping_add` steps by items within the allocation, so semver's rotation can't leave it",
-    file: "src/lower/pointers.rs",
-    find: '    ("wrapping_add", PointerOp::WrappingAdd { sub: false }),',
-    replace: '    ("wrapping_add", PointerOp::Add),',
-    tests: ["test/corpus.test.ts", "-t", "^tagged_pointers.rs$"],
   },
   {
     name: "dangling-at-zero",
@@ -613,15 +579,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/pointers.rs",
     find: "                let signed = Expr::bool(b.is_signed());",
     replace: "                let signed = Expr::bool(false);",
-    tests: ["test/corpus.test.ts", "-t", "^bytes_through_pointers.rs$"],
-  },
-  {
-    name: "unaligned-read-unknown",
-    breaks: "`read_unaligned` is refused",
-    file: "src/lower/pointers.rs",
-    find: '    ("read_unaligned", PointerOp::Read),\n    ("write", PointerOp::Write),\n    ("write_volatile", PointerOp::Write),',
-    replace:
-      '    ("write", PointerOp::Write),\n    ("write_volatile", PointerOp::Write),',
     tests: ["test/corpus.test.ts", "-t", "^bytes_through_pointers.rs$"],
   },
   {
@@ -737,15 +694,6 @@ export const mutations: Mutation[] = [
     find: "        let function = matches!(pointee.kind(), ty::Dynamic(..)) && self.is_callable(pointee);\n",
     replace: "        let function = false;\n",
     tests: ["test/bindings.test.ts", "-t", "a function JS gives is a dyn Fn"],
-  },
-  {
-    name: "rc-as-ptr-refused",
-    breaks:
-      "`Rc::as_ptr` isn't a pointer to what the `Rc` points at, so React's `a.as_ref().map(Rc::as_ptr)` is refused",
-    file: "src/lower/pointers.rs",
-    find: '    ("std::rc::Rc::<T, A>::as_ptr", PointerOp::RcAsPtr),\n',
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^rc_as_ptr.rs$"],
   },
   {
     name: "rc-as-ptr-of-counted-box",

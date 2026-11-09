@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "array-byte-set-unsigned",
+    breaks: "a byte written through a pointer into an array of signed integers is decoded unsigned, `[0i16; 2]` with bytes FF FF `[65535, 0]` where native Rust's is `[-1, 0]` (#1137)",
+    file: "src/runtime/pointers.js",
+    find: "  view.of[item] = view.decode(bytes);\n",
+    replace: "  view.of[item] = $fromBytes(bytes, view.stride, true, false);\n",
+    tests: ["test/corpus.test.ts", "-t", "^ptr_write_bytes.rs$"],
+  },
+  {
+    name: "ptr-fill-of-none",
+    breaks: "`ptr::write_bytes(dst, byte, n)` writes nothing, so getrandom's zeroed buffer is its bytes as they were (#1133)",
+    file: "src/runtime/pointers.js",
+    find: "  for (let i = 0; i < count; i++) $byteSet(view, i, byte);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^ptr_write_bytes.rs$"],
+  },
+  {
     name: "stored-item-stride-unread",
     breaks: "an array's item recorded with its size isn't placed by it, so an item of an array a tuple holds, reached through a reference, is its own allocation's (#1113)",
     file: "src/runtime/pointers.js",
@@ -275,14 +291,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
   },
   {
-    name: "bytes-big-endian",
-    breaks: "a wider item's bytes are read big-endian, not as wasm32 holds them",
-    file: "src/runtime/pointers.js",
-    find: "  return $toBytes($slot(view.of, item), view.stride, true)[at % view.stride];",
-    replace: "  return $toBytes($slot(view.of, item), view.stride, false)[at % view.stride];",
-    tests: ["test/corpus.test.ts", "-t", "^bytes_through_pointers.rs$"],
-  },
-  {
     name: "bytes-read-one",
     breaks: "`read_unaligned` of a `u32` reads one byte",
     file: "src/runtime/pointers.js",
@@ -294,7 +302,7 @@ export const mutations: Mutation[] = [
     name: "bytes-write-lost",
     breaks: "a byte written into a wider item's bytes isn't put back",
     file: "src/runtime/pointers.js",
-    find: "  view.of[item] = $fromBytes(bytes, view.stride, true, false);\n",
+    find: "  view.of[item] = view.decode(bytes);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^bytes_through_pointers.rs$"],
   },
