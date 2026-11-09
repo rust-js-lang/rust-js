@@ -1251,3 +1251,21 @@ library function that makes a closure of what holds its type parameter,
 `joined`, is compiled too where it's given a value that drops, so its
 closure carries the drop. The pair `closure_made_by_an_inlined_function`
 now runs as native.
+
+## Amendment: a `dyn Trait`'s method is generic code's (#1055)
+
+A consumer that compares the `Rc<dyn Fn>`s a `dyn Trait`'s method gives
+it, called through a library-made `Box<dyn Trait>`, `made(5).pair()`, was
+refused by ADR 0852: the call resolves to the trait's own method, a
+virtual call, which merges nothing, so `Reached` took its `Rc`s for the
+library's uncounted ones. Which impl's method runs is the dictionary's to
+say, as in generic code. **`merged_here` asks a call that resolves to the
+trait's own method as it asks generic code's**: it merges where each other
+crate's impl of the method does. Then the consumer compiles the function
+that made the `Box`, which names that impl, so the dictionary is its own,
+and counts what the method gives: `Rc::ptr_eq` of the two is `false`, as
+native's. Case ([0262](0262-when-rust-and-js-disagree.md)): C.
+
+Held by the pair `library_dyn_method_identities`, against native Rust, and
+the mutation `dyn-method-resolved-to-the-trait`
+(`lower/library/compiled_here.ts`).

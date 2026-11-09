@@ -109,4 +109,13 @@ export const mutations: Mutation[] = [
     replace: "            .filter(|_| false)\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
+  {
+    name: "dyn-method-resolved-to-the-trait",
+    breaks:
+      "a `dyn Trait`'s method called through a library-made `Box<dyn Trait>` resolves to the trait's own method, which merges nothing, so the `Rc<dyn Fn>`s it gives are a library's uncounted ones and ADR 0852 refuses the crate (#1055)",
+    file: "src/lower/library/compiled_here.rs",
+    find: "            && instance.def_id() != id\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_dyn_method_identities"],
+  },
 ];

@@ -102,7 +102,8 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// one the crate compiles itself as its JS may merge what the crate
     /// compares (`merges_identities`): of a trait's method, the impl's
     /// method it resolves to, or, of generic code's, where it resolves to
-    /// none yet, each other crate's impl's of the trait, as the crate's own
+    /// none yet, and of a `dyn Trait`'s, which resolves to the trait's own
+    /// (#1055), each other crate's impl's of the trait, as the crate's own
     /// are its own (#1052).
     pub(super) fn merged_here(&self, id: DefId, args: rustc_middle::ty::GenericArgsRef<'tcx>) -> bool {
         use rustc_middle::ty::TypeVisitableExt;
@@ -115,8 +116,11 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         };
         let args = tcx.erase_and_anonymize_regions(args);
         let env = rustc_middle::ty::TypingEnv::fully_monomorphized();
+        // Not one that resolves to the trait's own method, a `dyn Trait`'s
+        // call through its dictionary, which may be any impl's (#1055).
         if !args.has_non_region_param()
             && let Ok(Some(instance)) = rustc_middle::ty::Instance::try_resolve(tcx, env, id, args)
+            && instance.def_id() != id
         {
             return self.merges_identities(instance.def_id());
         }
