@@ -24,7 +24,7 @@ import { availableParallelism, cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
 import { runs, touchesAsync, touchesDeclarations, touchesFormatting, touchesIterators, touchesNumbers } from "./iteratorSlice";
-import { mappedFiles, pickChange } from "./testMap";
+import { mappedFiles, pickChange, readersOf } from "./testMap";
 import { browsers, caseParts, compilerBuilds, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
 import { said, strays } from "./strays";
 import { elapsed, loadScale, median, timed, timings } from "./timing";
@@ -329,7 +329,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
             }),
           ]
         : []),
-      ...extra.map((file) => job(file, ["bun", "test", file])),
+      ...extra.filter((file) => !suites.some((suite) => suite.name === file)).map((file) => job(file, ["bun", "test", file])),
     ],
     shared,
   };
@@ -702,6 +702,19 @@ if (import.meta.main) {
         `${pick.why}: ${pick.files.length} of ${files.length + 2} test files, ${pick.cases.length} of ${cases.length} corpus cases, ${pick.forms.length} of them with std's iterator structs where the change is the iterators'`,
       );
     } else console.log(`${pick.why}: the change's paths say what runs`);
+  }
+  // Each test file that reads a changed file as text, its source says,
+  // `ci.test.ts` of `scripts/`: it can fail on a change it runs no code of,
+  // and runs of it, whatever the map or the paths pick (a9aedb875).
+  if (!all) {
+    const testFiles = readdirSync(join(root, "test"))
+      .filter((name) => name.endsWith(".test.ts"))
+      .map((name) => `test/${name}`);
+    for (const [test, read] of readersOf([...new Set([...changed, ...branch])], testFiles)) {
+      if (extra.includes(test)) continue;
+      extra.push(test);
+      console.log(`${test} reads ${read}: it runs`);
+    }
   }
   const check = jobs({ all, changed, branch, added, extra, cores: availableParallelism(), picked, forms });
   const cores = availableParallelism();

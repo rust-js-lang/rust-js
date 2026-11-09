@@ -219,3 +219,24 @@ the paths say, 157 s. A task's start and first check: about 140 s, not
 
 Not done: a map recorded by CI of each push and fetched. CI's runners are
 Linux's, whose `cfg`s compile other functions, so its map isn't the Mac's.
+
+## Amendment: a test that reads a changed file as text runs (2026-11-09)
+
+A test of a file's text fails on a change to the file that runs none of
+its code: `ci.test.ts` counts the crate corpus script's Cargo runs, and
+a9aedb875 moved one onto `test/child.ts`'s `run`, which it didn't count. The
+map couldn't say of a change to `scripts/`, the paths picked the plain
+suites, and `ci.test.ts`, outside them, didn't run: `main` was red until the
+next `--all`. **Of a change, each test file whose own text names a changed
+file runs too, whatever the map or the paths pick** (`readersOf`, and
+check:fast says `<test> reads <file>: it runs`). What a test reads is what
+its code names, `"scripts/crate-corpus.ts"`, `join(root, "src")`,
+`${root}/std`: a literal names a file, a folder only of the checkout's
+root, and a file with a `root` of its own, a fixture's, names none of the
+checkout's; comments aren't read. Its helpers' names aren't its own, as each
+names what every test reads as it runs, `std/`. Bun binds a test's `node:fs`
+as it links it, so its reads can't be seen as they're made, and this is of
+its source. `readsSources`, a test that reads the compiler's sources, runs
+on every change, is the same reading followed into its helpers, the mapped
+files' answers as they were. Held by `test/test-map.test.ts`'s "a change to
+a file a test reads as text picks the test".

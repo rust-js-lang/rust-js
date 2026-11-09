@@ -131,24 +131,75 @@ export function mappedFiles(): string[] {
   return plainSuiteFiles(files).flatMap(({ files }) => files);
 }
 
-/** Whether `file`, or a module of the checkout's it imports, reads the
- * compiler's sources as text, as the architecture's tests do: such a test
- * can fail on a change it runs no compiled code of, so it runs on every
- * change. A path into `src/` written in it, `join(root, "src", ..)` or
- * `"src/<a file or folder of the compiler's>"`. */
-export function readsSources(file: string, seen = new Set<string>()): boolean {
+/** What `file`, a test's module, reads of the checkout as text, as far as
+ * its source and the source of each module of the checkout's it imports
+ * say (what it imports is its code, not text it reads): each path it names, `"scripts/crate-corpus.ts"`, `join(root, "src",
+ * "runtime.rs")`, `${root}/std`, `"../src/js.rs"`, each a file or a
+ * folder that's there, said from the checkout's root. A test of a file's
+ * text, ci.test.ts's of `scripts/`, the architecture's of `src/`, fails
+ * on a change it runs no code of: what it reads picks it. Bun binds a
+ * test's `node:fs` imports as it links them, so its reads can't be seen as
+ * they're made; and a path a test makes some other way isn't here. */
+export function readsOf(file: string, followed = true, seen = new Set<string>()): Set<string> {
+  const reads = new Set<string>();
   const path = resolve(root, file);
-  if (seen.has(path) || !existsSync(path)) return false;
+  if (seen.has(path) || !existsSync(path) || !statSync(path).isFile()) return reads;
   seen.add(path);
-  const text = readFileSync(path, "utf8");
-  if (/\broot\s*,\s*["'`]src["'`/]|\$\{root\}\/src\b|["'`]\.\.\/src\b/.test(text)) return true;
-  for (const [, name] of text.matchAll(/["'`]src\/([\w.-]+)/g)) if (existsSync(join(root, "src", name))) return true;
-  for (const [, spec] of text.matchAll(/\bfrom\s+["'](\.{1,2}\/[^"']+)["']/g)) {
+  // Its code, not its comments, which name what they're about.
+  const text = readFileSync(path, "utf8")
+    .split("\n")
+    .filter((line) => !/^\s*(\/\/|\/?\*)/.test(line))
+    .join("\n");
+  // A folder only where it's the root's for sure, `join(root, "src")`: a
+  // literal `"src/"` is as often an app's of a fixture's.
+  const there = (candidate: string, folder = true) => {
+    const at = resolve(root, candidate);
+    if (at.startsWith(`${root}/`) && !at.includes("/node_modules/") && existsSync(at) && (folder || statSync(at).isFile())) reads.add(relative(root, at));
+  };
+  // `join(root, "a", "b")`, `resolve(root, "a/b")`, and `${root}/a/b`: of
+  // the checkout's root, but where the file declares a `root` of its own,
+  // a fixture's.
+  const ownRoot = /\b(?:const|let)\s+root\s*=/.test(text);
+  if (!ownRoot) for (const [, args] of text.matchAll(/\b(?:join|resolve)\(\s*root\s*,\s*((?:["'`][^"'`$\n]+["'`]\s*,?\s*)+)/g)) {
+    there(join(...[...args.matchAll(/["'`]([^"'`$\n]+)["'`]/g)].map(([, part]) => part)));
+  }
+  if (!ownRoot) for (const [, rest] of text.matchAll(/\$\{root\}\/([\w./-]+)/g)) there(rest);
+  // A path from the root, its first part the root's: `"scripts/x.ts"`.
+  const tops = new Set(readdirSync(root));
+  for (const [, literal] of text.matchAll(/["'`]((?:\.\.\/)?[\w.-]+\/[\w./-]*)["'`]/g)) {
+    if (literal.startsWith("../")) there(join(dirname(relative(root, path)), literal), false);
+    else if (tops.has(literal.split("/")[0])) there(literal, false);
+  }
+  // What each module of the checkout's it imports reads.
+  if (followed) for (const [, spec] of text.matchAll(/\b(?:from|import)\s*\(?\s*["'](\.{1,2}\/[^"']+)["']/g)) {
     const base = resolve(dirname(path), spec);
     const found = [base, `${base}.ts`, `${base}.js`].find((candidate) => existsSync(candidate) && statSync(candidate).isFile());
-    if (found && found.startsWith(root) && !found.includes("node_modules") && readsSources(relative(root, found), seen)) return true;
+    if (found && found.startsWith(root) && !found.includes("node_modules")) {
+      for (const read of readsOf(relative(root, found), true, seen)) reads.add(read);
+    }
   }
-  return false;
+  return reads;
+}
+
+/** Whether `file` reads the compiler's sources as text, as the
+ * architecture's tests do: such a test can fail on a change it runs no
+ * compiled code of, so it runs on every change. */
+export function readsSources(file: string): boolean {
+  return [...readsOf(file)].some((read) => read === "src" || read.startsWith("src/"));
+}
+
+/** Of `testFiles`, each whose own text names a file of `changed`, or a
+ * folder it's in (`readsOf`, not followed into its helpers, which name
+ * what every test reads as it runs, `std/`), with the first: a change to a
+ * file a test reads as text picks it, whatever else picks what runs. */
+export function readersOf(changed: string[], testFiles: string[]): Map<string, string> {
+  const readers = new Map<string, string>();
+  for (const test of testFiles) {
+    const reads = readsOf(test, false);
+    const read = changed.find((file) => file !== test && [...reads].some((r) => file === r || file.startsWith(`${r}/`)));
+    if (read !== undefined) readers.set(test, read);
+  }
+  return readers;
 }
 
 /** What a change of `changes` runs, by `map`: of `files`, the test files the

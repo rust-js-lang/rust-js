@@ -5,11 +5,11 @@
 
 import { expect, test } from "bun:test";
 import { mkdirSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 
-import { hunksOf, joinedSpans, linesAtCommit, mapFile, mapVersion, nearestMap, nestedItem, pick, pruneMaps, readsSources, type Change, type TestMap } from "../scripts/testMap";
+import { hunksOf, joinedSpans, linesAtCommit, mapFile, mapVersion, nearestMap, nestedItem, pick, pruneMaps, readersOf, readsOf, readsSources, type Change, type TestMap } from "../scripts/testMap";
 import { jobs } from "../scripts/checkFast";
-import { caseShard, fixture } from "./support";
+import { caseShard, fixture, root } from "./support";
 
 const bits = (...functions: number[]) => {
   const bytes = new Uint8Array(1);
@@ -349,4 +349,29 @@ test("a worktree reads the map another recorded of its commit or its nearest anc
   // One half written isn't read.
   writeFileSync(own, "{");
   expect(nearestMap(store, other, "abc")?.commit).toBe(first);
+});
+
+// A test that reads a file of the checkout's as text, ci.test.ts the crate
+// corpus's script, fails on a change to it that runs none of its code: a
+// change to the file picks it, whatever else picks what runs (a9aedb875
+// moved a Cargo run ci.test.ts counts, and plain check:fast didn't run it).
+// What a test names is read; what a comment names, a fixture's own `root`,
+// or a folder a literal names, which is as often an app's, isn't.
+test("a change to a file a test reads as text picks the test", () => {
+  const files = readdirSync(join(root, "test"))
+    .filter((name) => name.endsWith(".test.ts"))
+    .map((name) => `test/${name}`);
+  expect(readersOf(["scripts/crate-corpus.ts"], files).get("test/ci.test.ts")).toBe("scripts/crate-corpus.ts");
+  expect(readersOf(["tooling/build.js"], files).get("test/architecture.test.ts")).toBe("tooling/build.js");
+  // A test file isn't its own reader: it runs as itself.
+  expect(readersOf(["test/ci.test.ts"], files).has("test/ci.test.ts")).toBe(false);
+  // packages.test.ts's `join(root, "src")` is of its own fixture's `root`;
+  // compiles.test.ts's is the checkout's, every source of it read.
+  const ofSources = readersOf(["src/lower/mir/tidy/bindings.rs"], files);
+  expect([ofSources.has("test/packages.test.ts"), ofSources.get("test/compiles.test.ts")]).toEqual([false, "src/lower/mir/tidy/bindings.rs"]);
+  const dir = fixture("test-map-reads");
+  const reader = join(dir, "reader.test.ts");
+  writeFileSync(reader, `// Of scripts/shard.ts, said in a comment.\nconst text = readFileSync(join(root, "scripts", "crate-corpus.ts"), "utf8");\nconst app = "src/";\n`);
+  const reads = readsOf(relative(root, reader), false);
+  expect([...reads]).toEqual(["scripts/crate-corpus.ts"]);
 });
