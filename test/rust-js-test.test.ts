@@ -46,6 +46,16 @@ test("a failing #[test] fails rust-js test, saying what Rust's assert_eq! says",
   expect([counts("node", said).fail, code]).toEqual([1, 1]);
 });
 
+// A crate of no `#[test]` that's built says so, as `cargo test` says
+// "running 0 tests", and passes as it does: a run of nothing that said
+// nothing read as a pass (#1093).
+test("a crate whose #[test]s are none that's built says it runs no test", () => {
+  const none = lib.replaceAll("#[test]", "#[cfg(any())]\n    #[test]");
+  expect(none).not.toBe(lib);
+  const { code, said } = rustJsTest(testCrate("rust-js-test-none", { "src/lib.rs": none }));
+  expect([said.includes("rust-js test: running 0 tests: app has no #[test] that's built"), code], said).toEqual([true, 0]);
+});
+
 test("what follows -- is the runner's, its name pattern picking the tests to run", () => {
   const { code, said } = rustJsTest(testCrate("rust-js-test-filtered", { "src/lib.rs": lib }), ["--test-name-pattern=quadruples"]);
   expect([counts("node", said).pass, said.includes("tests::panics"), code], said).toEqual([1, false, 0]);

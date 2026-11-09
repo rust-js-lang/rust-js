@@ -76,3 +76,13 @@ found the checkout's Prettier, so the guard went unreached and
 with no Prettier, the default, still shares the unit's directory: the test
 now builds both crates outside the checkout (`outsideFixture`), and checks
 that they wrote to one unit's directory, where the mutation is caught.
+
+## Amendment: a run of no test says so (#1093)
+
+A crate whose `#[test]`s are none its configuration builds, each
+`#[cfg(any())]` say, has no test file, and `rust-js test` ran no runner,
+said nothing and exited 0, which read as a pass of tests that never ran:
+the small Crater (ADR 1109) had cut each of hex's, and it was taken for a
+unit a failed build left behind. It says so now, `rust-js test: running 0
+tests: hex has no #[test] that's built`, and still exits 0, as `cargo
+test` does of none ("running 0 tests"). Held by `test/rust-js-test.test.ts`.

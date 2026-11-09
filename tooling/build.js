@@ -399,6 +399,10 @@ export async function testApp({ app, packageNames = [], args = [] }) {
     const { tests } = await builder.checkCargo({ manifestPath, packageNames: [packageName], packages, targetDir, tests: true, integrationTests: integrationTests.get(packageName) ?? [] });
     for (const { runner, files } of tests) byRunner.set(runner, [...(byRunner.get(runner) ?? []), ...files]);
   }
+  // A crate of no `#[test]`, or none its configuration builds, has no test
+  // file: said so, as `cargo test` says "running 0 tests", not nothing,
+  // which read as a pass of tests that never ran (#1093).
+  if (byRunner.size === 0) process.stderr.write(`rust-js test: running 0 tests: ${named.join(", ")} ${named.length === 1 ? "has" : "have"} no #[test] that's built\n`);
   let exit = 0;
   for (const [runner, files] of byRunner) {
     const run = runnerCommand(runner, { app, targetDir, files, args });
