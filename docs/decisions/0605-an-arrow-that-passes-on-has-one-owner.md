@@ -932,3 +932,15 @@ what it passes on to a function value it captured is that function"
 `converting-of-a-js-function-given-on` ("a once-callback is the function
 only where .."'s `dyn_mapped`) and
 `converting-unseen` (`passed_on.ts`).
+
+## Amendment: a passed-on arrow a library merges, its consumer compiles (#1052)
+
+A closure is the function it passes on to only where the crate reads no
+function's identity. That covers one that converts what it passes on,
+one that passes on to a scope struct's method (ADR 1043), and one an
+`Rc` is made of (ADR 0959). A library decides this by its own reads, but
+its consumer may compare two boxes or two `Rc`s of such closures. Each
+such decision now records `merges_identities` in its function's
+`Dependencies`. The library's manifest lists those functions, and a
+consumer that reads an identity compiles its own of each (ADR 0914,
+amended). In that compile, MIR's, a closure keeps its arrow.

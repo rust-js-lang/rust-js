@@ -8,11 +8,6 @@
 #1022 P2: a pointer read as another type's, in generic code, throws at run time instead of refusing at compile time
 plain std generic bytes_through_pointers.rs
 
-#1052 P0 (library): a library's Rc<dyn Fn>s and passed-on closures are made by its own identity reads; its consumer's Rc::ptr_eq and ptr::addr_eq give true
-plain std library closure_converting_identity_read.rs
-plain std library rc_fn_ptr_eq_of_cloned.rs
-plain std library rc_of_an_impls_parameter_counted_as_any.rs
-
 #1032 P0 (library): singles across crates: class methods, dyn writes, a lost RefCell borrow check, track_caller and others
 plain std library class_trait_field_lent.rs
 plain std library refcell_borrow_while_mut.rs

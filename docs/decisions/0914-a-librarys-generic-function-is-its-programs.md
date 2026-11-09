@@ -1162,3 +1162,75 @@ item's, a rustc ICE, "generics_of: unexpected node kind". An item's
 declaration is entered once (`Declarations::enter`): its context first,
 then what it erases. Held by the pair `library_signatures_asked_of_their_items`
 and the mutation `item-erased-asked-of-the-module`.
+
+## Amendment: a function whose JS merges what its consumer compares (#1052)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results changed. A
+crate decides how it represents an identity from what it reads itself. One
+that compares no function's identity makes an `Rc<dyn Fn>` of a cloned
+closure uncounted, the closure itself (ADR 0959). It also makes a closure
+the function it passes on to: one that converts what it passes on (ADR
+0605, amended), one that passes on to a scope struct's method (ADR 1043),
+and one an `Rc` is made of (ADR 0959, amended). Two `Rc::new`s and two
+boxes are then one JS function. A library's consumer that compares them,
+with `Rc::ptr_eq` or `ptr::addr_eq`, got `true` where Rust promises
+`false`. The metamorphic net's `library` rewrite found it, in
+`rc_fn_ptr_eq_of_cloned`, `rc_of_an_impls_parameter_counted_as_any` and
+`closure_converting_identity_read`.
+
+The contract holds (the user's decision, 2026-11-09): a library's JS is
+its program's alone, and a consumer compiles what it takes more of. The
+library's manifest lists `merges_identities`: each of its functions whose
+JS may give one function where Rust makes two, and each of its functions
+that names one, followed through the crate's own namings (`library::merging`).
+Two owners say which functions merge. `counted_rcs` gives `Counted::merges`,
+the functions that make an `Rc<dyn Fn>` it doesn't count of what another
+may be made of too. The lowering records `merges_identities` in a
+function's `Dependencies` wherever passed-on (`passed_on.rs`, `mir/rvalues.rs`)
+makes a closure that function only because the crate reads no identity.
+
+A consumer that reads a function's identity compiles its own of each
+listed function it reaches, and of an impl one of whose methods is listed
+(`Foreign::merges_identities`, asked by `compiles`). It reads an identity
+where it compares an `Rc<dyn Fn>` or holds a raw pointer to a `dyn Fn`:
+`rc_counts::reads_fn_identity`, the same test `counted_rcs` makes
+(`identity_read`). In its own compile, MIR's, each closure keeps its arrow,
+as no THIR says it passes on. Its `Rc`s are counted where it compares
+them, as `counted_rcs` now reads what a body of MIR alone makes another
+`Rc`'s (`rcs_made_others`). Such a function doesn't hand the crate its
+library's uncounted `Rc`s, so `Reached` skips its signature
+(`merged_here`). For a trait's method, it checks the impl's method the
+call resolves to. In generic code, where the call resolves to none yet,
+it checks each other crate's impl of that method.
+
+A consumer that compares no identity calls the library's JS as before.
+The library's JS is unchanged: React's port regenerates with no new
+difference. A refusal of what such a function can't reach says why it's
+compiled here: "one whose JS may give one function where Rust makes two,
+which this crate compares". Library ABI 21.
+
+What it doesn't cover, refused or a difference as before:
+
+- A value of a library's type that holds a merged function, made by
+  library code the consumer doesn't reach by name. One example is a
+  `dyn Trait`'s method its JS gives the crate.
+- A consumer that counts an `Rc<dyn Fn(A)>` because its own compile of a
+  listed function makes one counted, while another library function hands
+  it one uncounted. That stays the refusal of ADR 0852.
+
+Pair `library_identities_kept_apart`, and the test "a library's functions
+that may merge what its consumer compares are compiled by that
+consumer", with its refusal `identity_merged_reads_private_state`.
+Mutations: `crate-reads-no-fn-identity`,
+`uncounted-rc-of-a-clone-merges-nothing`, `rcs-an-instance-makes-unseen`
+(`lower/analysis/rc_counts.ts`); `merging-function-hands-its-rcs`
+(`lower/library.ts`); `merging-function-the-librarys`,
+`merging-unlisted-of-its-callers`, `merging-closures-unlisted`,
+`merging-impl-method-unresolved`, `merging-impls-of-generic-code-unasked`
+(`lower/library/compiled_here.ts`); `compiled-for-identities-unsaid`
+(`lower/instances.ts`); `converting-merge-unlisted`,
+`scope-method-merge-unlisted` (`lower/passed_on.ts`);
+`rc-closure-merge-unlisted` (`lower/mir/rvalues.ts`). What a crate
+compiles of its libraries itself, and why, is one module now,
+`library/compiled_here.rs`. #1052's three `library` rows of the
+metamorphic net run as native, taken off.

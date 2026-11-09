@@ -301,8 +301,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate that holds a raw pointer to a `dyn Fn`, `ptr::addr_eq(&*first, &*second)`'s, is taken to read no closure's identity, so two closures of one scope method are one, and the comparison true where native gives false (#500)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "            points_at_functions |= raw_pointee(tcx, expr.ty)",
-    replace: "            points_at_functions |= false && raw_pointee(tcx, expr.ty)",
+    find: "                Some(IdentityRead::Pointed) => points_at_functions = true,\n",
+    replace: "                Some(IdentityRead::Pointed) => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^scope_method_closure_addr_eq.rs$"],
   },
   {
@@ -337,5 +337,32 @@ export const mutations: Mutation[] = [
     find: "            let args = super::closures::fn_dyn_args(tcx, predicates).into_iter().collect();\n",
     replace: "            let args: Vec<Ty<'tcx>> = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_dyn_fn_counted_by_its_signature.rs$"],
+  },
+  {
+    name: "crate-reads-no-fn-identity",
+    breaks:
+      "a consumer that compares a library's `Rc<dyn Fn>`s or its boxes' addresses is taken to compare none, and calls its library's JS, which gives one function where Rust made two: `Rc::ptr_eq` and `ptr::addr_eq` `true` (#1052)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "    (all_bodies.iter()).any(|body| body.thir.exprs.iter().any(|expr| identity_read(tcx, expr.ty).is_some()))\n",
+    replace: "    false && (all_bodies.iter()).any(|body| body.thir.exprs.iter().any(|expr| identity_read(tcx, expr.ty).is_some()))\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+  },
+  {
+    name: "uncounted-rc-of-a-clone-merges-nothing",
+    breaks:
+      "a library's `Rc<dyn Fn>`s of a cloned closure it doesn't count aren't listed, so its consumer calls its `cloned`, `const first = read; const second = read;`, and `Rc::ptr_eq` of the two is `true` (#1052)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "        .filter(|&&(_, from, to)| fn_dyn(to) && !made_with_it(from) && !counted.counts(tcx, to))\n",
+    replace: "        .filter(|&&(_, from, to)| false && fn_dyn(to) && !made_with_it(from) && !counted.counts(tcx, to))\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+  },
+  {
+    name: "rcs-an-instance-makes-unseen",
+    breaks:
+      "a library's function the crate compiles itself makes its `Rc<dyn Fn>` of a cloned closure, which the crate's `Rc::ptr_eq` compares, but the crate counts none of it, so both are `read` (#1052)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "            for (from, to) in rcs_made_others(tcx, &mir.body) {\n",
+    replace: "            for (from, to) in rcs_made_others(tcx, &mir.body).into_iter().filter(|_| false) {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
 ];

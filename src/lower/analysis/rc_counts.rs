@@ -38,6 +38,39 @@ pub struct Counted<'tcx> {
     /// its own, as two such are two to Rust (#500, the user's decision). A
     /// closure whose own address is taken is a box of its own already.
     pub points_at_functions: bool,
+    /// The functions that make an `Rc<dyn Fn>` it doesn't count of what
+    /// another may be made of too, a closure cloned or a function item,
+    /// which nothing here compares: the two are one JS function, which a
+    /// library's consumer that compares them compiles its own of (ADR
+    /// 0959, amended; #1052).
+    pub merges: IndexSet<DefId>,
+}
+
+/// What `ty`, an expression's, reads of a function's identity, as
+/// `counted_rcs` asks: `Rc::ptr_eq` of an `Rc<dyn Fn>`, by what it points
+/// at (ADR 0959), or a raw pointer to a `dyn Fn`, whose address is its JS
+/// function's (#500).
+enum IdentityRead<'tcx> {
+    Compared(Ty<'tcx>),
+    Pointed,
+}
+
+fn identity_read<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<IdentityRead<'tcx>> {
+    if raw_pointee(tcx, ty)
+        .is_some_and(|(pointee, _)| matches!(pointee.kind(), ty::Dynamic(predicates, ..) if is_fn_dyn(tcx, predicates)))
+    {
+        return Some(IdentityRead::Pointed);
+    }
+    let (def_id, args) = fn_def(ty)?;
+    compares_fn_identity(tcx, def_id, args.types().next()).then(|| IdentityRead::Compared(args.type_at(0)))
+}
+
+/// Does the crate read a function's identity, as `counted_rcs` asks it
+/// (`identity_read`)? Then a library function whose JS may give one
+/// function where Rust makes two, which its library compared none of, is
+/// compiled here (ADR 0914, amended; #1052).
+pub(in crate::lower) fn reads_fn_identity<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> bool {
+    (all_bodies.iter()).any(|body| body.thir.exprs.iter().any(|expr| identity_read(tcx, expr.ty).is_some()))
 }
 
 impl<'tcx> Counted<'tcx> {
@@ -190,6 +223,8 @@ pub(super) fn counted_rcs<'tcx>(
     // Each `Rc` made another's, `Rc<RefCell<Logger>>` an
     // `Rc<RefCell<dyn Listener>>`: the two share their counts.
     let mut made_others: IndexSet<(Ty<'tcx>, Ty<'tcx>)> = IndexSet::default();
+    // And the function that makes each.
+    let mut made_by: Vec<(DefId, Ty<'tcx>, Ty<'tcx>)> = Vec::new();
     // What each `ptr_eq` of an `Rc<dyn Fn>` compares, and the closures
     // given `Rc::new` as they're made, and those given it made before, a
     // copy or a variable (ADR 0959).
@@ -215,11 +250,26 @@ pub(super) fn counted_rcs<'tcx>(
                 owned_dropping(tcx, (env, &given), param.ty, &mut owned_seen, &mut counted);
             }
         }
+        // A library's function the crate compiles itself, of MIR alone
+        // (ADR 0914): each `Rc` it makes another's, its made of a closure
+        // of another crate's, which may be one JS function given twice
+        // (#1052).
+        if body.root().is_none()
+            && !is_std_crate(tcx, body.def_id)
+            && let Some(mir) = &body.mir
+        {
+            for (from, to) in rcs_made_others(tcx, &mir.body) {
+                made_others.insert((erased(from), erased(to)));
+                made_by.push((owner, erased(from), erased(to)));
+            }
+        }
         for (id, expr) in body.thir.exprs.iter_enumerated() {
             found(expr.ty, Some(owner), true, &mut seen);
-            points_at_functions |= raw_pointee(tcx, expr.ty).is_some_and(
-                |(pointee, _)| matches!(pointee.kind(), ty::Dynamic(predicates, ..) if is_fn_dyn(tcx, predicates)),
-            );
+            match identity_read(tcx, expr.ty) {
+                Some(IdentityRead::Pointed) => points_at_functions = true,
+                Some(IdentityRead::Compared(pointee)) => _ = asked.insert(erased(pointee)),
+                None => {}
+            }
             if params_may_drop && !behind_pointer(&body.thir, id) {
                 owned_dropping(tcx, (env, &given), expr.ty, &mut owned_seen, &mut counted);
             }
@@ -241,6 +291,7 @@ pub(super) fn counted_rcs<'tcx>(
                     };
                 }
                 made_others.insert((erased(from), erased(to)));
+                made_by.push((owner, erased(from), erased(to)));
             }
             // A count read by a call, or by the function given as a value,
             // `.map(Rc::strong_count)`: either is an expression of its type.
@@ -261,8 +312,6 @@ pub(super) fn counted_rcs<'tcx>(
                         ty::Param(param) => _ = of_params.insert((owner, param.index, erased(args.type_at(0)))),
                         _ => _ = counted.insert(erased(args.type_at(0))),
                     }
-                } else if compares_fn_identity(tcx, def_id, args.types().next()) {
-                    asked.insert(erased(args.type_at(0)));
                 }
             }
             if let ExprKind::Call { fun, ref args, .. } = expr.kind
@@ -346,6 +395,7 @@ pub(super) fn counted_rcs<'tcx>(
         compared_uncounted: false,
         points_at_functions,
         types: counted,
+        merges: IndexSet::default(),
     };
     // Settled to a fixed point; of a type parameter's resolved, `bare`
     // false, never the parameter itself, which `may_be` would take for
@@ -401,7 +451,34 @@ pub(super) fn counted_rcs<'tcx>(
         }
     }
     counted.compared_uncounted = !counted.all && asked.iter().any(|pointee| !counted.types.contains(pointee));
+    // An `Rc<dyn Fn>` left uncounted, as nothing here compares it, made of
+    // what another may be made of too: its function merges two `Rc`s a
+    // consumer may compare (#1052).
+    let fn_dyn = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Dynamic(predicates, ..) if is_fn_dyn(tcx, predicates));
+    counted.merges = (made_by.iter())
+        .filter(|&&(_, from, to)| fn_dyn(to) && !made_with_it(from) && !counted.counts(tcx, to))
+        .map(|&(owner, _, _)| owner)
+        .collect();
     counted
+}
+
+/// Each `Rc` a body of MIR alone makes another's, `Rc<{closure}>` an
+/// `Rc<dyn Fn()>`: what it's made of, and what it's made.
+fn rcs_made_others<'tcx>(tcx: TyCtxt<'tcx>, body: &rustc_middle::mir::Body<'tcx>) -> Vec<(Ty<'tcx>, Ty<'tcx>)> {
+    use rustc_middle::mir::{CastKind, Rvalue, StatementKind};
+    (body.basic_blocks.iter())
+        .flat_map(|block| block.statements.iter())
+        .filter_map(|statement| match &statement.kind {
+            StatementKind::Assign(assign) => match &assign.1 {
+                Rvalue::Cast(CastKind::PointerCoercion(..), operand, to) => {
+                    let from = operand.ty(&body.local_decls, tcx);
+                    Some((rc_pointee(tcx, from)?, rc_pointee(tcx, *to)?))
+                }
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect()
 }
 
 /// Each function the crate names, called or as a value, and each naming of

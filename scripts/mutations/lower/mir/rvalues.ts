@@ -833,4 +833,13 @@ export const mutations: Mutation[] = [
     replace: "                && holder == written.projection.as_slice()\n",
     tests: ["test/corpus.test.ts", "-t", "^reference_a_field_holds_set_again.rs$"],
   },
+  {
+    name: "rc-closure-merge-unlisted",
+    breaks:
+      "a library's closure an `Rc` is made of, the function it calls as the library compares no `Rc<dyn Fn>`, isn't listed: its consumer calls its `pings`, `[ping, ping]`, and `Rc::ptr_eq` is `true` (#1052)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                if made.is_some() && self.given_rc_new(span) {\n",
+    replace: "                if false {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+  },
 ];

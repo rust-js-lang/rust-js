@@ -1002,6 +1002,7 @@ pub(in crate::lower) fn holds_param(ty: Ty<'_>, index: u32) -> bool {
 fn compiled_because(foreign: &super::library::Foreign<'_, '_>, root: DefId) -> String {
     match foreign.writes_more(root) {
         Some(more) => format!("a writer given {more}, which its library's JS doesn't take"),
+        None if foreign.merges_identities(root) => "one whose JS may give one function where Rust makes two, which this crate compares".to_string(),
         None => "one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place".to_string(),
     }
 }

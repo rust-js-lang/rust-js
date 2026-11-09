@@ -51,8 +51,11 @@ use std::path::Path;
 /// `partial_cmp` of one runs as its `cmp` (#964). 20: whether its writers
 /// may write an integer's `{:?}` in hex, `debug_hex`, and its functions
 /// that read a `Formatter`'s options, `reads_formatter_options`, of which a
-/// consumer whose writers take more compiles its own (#1026).
-pub const VERSION: u32 = 20;
+/// consumer whose writers take more compiles its own (#1026). 21: its
+/// functions whose JS may give one function where Rust makes two,
+/// `merges_identities`, of which a consumer that compares a function's
+/// identity compiles its own (#1052).
+pub const VERSION: u32 = 21;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -330,6 +333,14 @@ pub struct Library {
     /// (ADR 0914, amended; #1026).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub reads_formatter_options: Vec<String>,
+    /// The keys of its functions whose JS may give one function where Rust
+    /// makes two, as it compares none: an `Rc<dyn Fn>` it doesn't count made
+    /// of a closure cloned (ADR 0959), an arrow that's the function it
+    /// passes on to (ADR 0605), and each that calls one. A consumer that
+    /// compares a function's identity compiles its own of each (ADR 0914,
+    /// amended; #1052).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub merges_identities: Vec<String>,
     /// Whether it makes a `dyn Any` of a value that drops, or of a type
     /// parameter's (ADR 0691, amended): a consumer's `dyn Any`, what a
     /// `catch_unwind` caught among it, may then hold one. A library a
@@ -583,6 +594,8 @@ pub struct Exports {
     pub debug_hex: bool,
     /// Its functions that read a `Formatter`'s options, by key (#1026).
     pub reads_formatter_options: IndexSet<String>,
+    /// Its functions whose JS may merge what Rust keeps apart, by key (#1052).
+    pub merges_identities: IndexSet<String>,
     /// Whether it makes a `dyn Any` of what drops (ADR 0691, amended).
     pub makes_dropping_anys: bool,
     /// Whether it makes a `dyn Fn` of what drops (ADR 0626, amended).
@@ -701,6 +714,7 @@ impl Dependencies {
                 writers_take_options: library.writers_take_options,
                 debug_hex: library.debug_hex,
                 reads_formatter_options: library.reads_formatter_options.into_iter().collect(),
+                merges_identities: library.merges_identities.into_iter().collect(),
                 identities: library.identities.into_iter().collect(),
                 keyed: library.keyed.into_iter().collect(),
                 eq_by_address: library.eq_by_address.into_iter().collect(),
@@ -879,6 +893,7 @@ impl Dependencies {
             writers_take_options: library.writers_take_options,
             debug_hex: library.debug_hex,
             reads_formatter_options: library.reads_formatter_options.into_iter().collect(),
+            merges_identities: library.merges_identities.into_iter().collect(),
             identities: library.identities.into_iter().collect(),
             keyed: library.keyed.into_iter().collect(),
             eq_by_address: library.eq_by_address.into_iter().collect(),

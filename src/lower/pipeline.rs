@@ -9,11 +9,13 @@ mod forwarders;
 mod holes;
 mod load_cycles;
 mod packages;
+mod pass;
 mod reached;
 
 pub use self::built::Built;
-use self::holes::{Holes, fill_hole, fill_holes};
+use self::holes::{fill_hole, fill_holes};
 use self::load_cycles::{ModuleJs, module_imports};
+use self::pass::Pass;
 use self::reached::written_where_reached;
 use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, nulled_params::NulledParams};
 use super::bindings::Export;
@@ -25,42 +27,6 @@ use crate::program::{LoweredModule, Unlinked, UnlinkedModule};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
-
-/// Retained functions and their dependencies, grouped for output.
-#[derive(Default)]
-struct Pass {
-    functions: IndexMap<LocalModId, Vec<js::Function>>,
-    namespaces: IndexMap<LocalModId, Vec<js::Namespace>>,
-    jsx: IndexSet<LocalModId>,
-    /// What each module runs when it's loaded, each `js::on_load!`'s
-    /// (ADR 0267).
-    statements: IndexMap<LocalModId, Vec<Vec<js::Stmt>>>,
-    /// `thread_local!`s' values, made from their lowered `init`s.
-    local_consts: IndexMap<LocalModId, Vec<js::Const>>,
-    /// Each dictionary that's its module's `const`, or whose cache is, by
-    /// its impl (ADR 0592), that the crate's own code reaches; and the
-    /// names of the `const`s each dictionary makes.
-    dictionary_consts: Vec<(LocalModId, DefId)>,
-    dictionary_names: IndexSet<String>,
-    /// What fills each item's hole, by its index.
-    holes: Holes,
-    /// Which items each module uses from another, and which JS imports.
-    references: IndexSet<(LocalModId, DefId)>,
-    package_uses: IndexSet<(LocalModId, Export)>,
-    /// The bindings each module reads through another that holds them
-    /// (ADR 0633).
-    held: IndexSet<(LocalModId, LocalModId, String, bool, DefId)>,
-    /// Each module read through another that re-exports a function (rd137).
-    reexporters: IndexSet<(LocalModId, LocalModId)>,
-    /// Each copy of a function another module calls, by its index (ADR
-    /// 0051, amended).
-    copy_references: IndexSet<(LocalModId, DefId, usize)>,
-    /// Each method a class takes of a trait of classes' default, its
-    /// prototype's, by the class (rd283).
-    class_defaults: Vec<(DefId, js::Function)>,
-    /// Each class's prototype a `js::on_load!` replaces (#448), each ES class's read (#568).
-    prototypes: super::classes::Prototypes,
-}
 
 /// What lowering the crate gave: its JS, none where it failed; or the
 /// library functions it must compile itself first, which the crate's calls
@@ -148,6 +114,7 @@ pub fn lower_crate<'tcx>(
         asks_capacity,
         generic_consts,
         writer_facts,
+        reads_fn_identity,
         quiet_locals,
         quiet_library_keys,
         lazy_locals,
@@ -189,7 +156,8 @@ pub fn lower_crate<'tcx>(
     if library {
         called_from_elsewhere.extend(codecs.iter().copied().filter(|&id| super::library::reachable(tcx, id)));
     }
-    let foreign = super::library::Foreign::new(tcx, dependencies, instances, writer_facts.writes());
+    let foreign =
+        super::library::Foreign::new(tcx, dependencies, instances, (writer_facts.writes(), reads_fn_identity));
     // Which of its libraries' functions may copy what the crate changes in place, which their
     // JS, copying what their own crates change, may share (ADR 0914, amended).
     let changed = super::copies::Changed {
@@ -718,6 +686,14 @@ pub fn lower_crate<'tcx>(
         return Lowered::Crate(None);
     }
     let no_drops = std::mem::take(&mut drops_observed.no_drops);
+    // A library's functions whose JS may give one function where Rust makes
+    // two, as it compares none, and each that names one: what a consumer
+    // that compares a function's identity compiles its own of (#1052).
+    let merges_identities = super::library::merging(
+        &counted.merges,
+        (lowered_items.iter().map(|(id, item)| (*id, item)))
+            .chain(lowered_copies.iter().map(|((id, _), item)| (*id, item))),
+    );
     // Only the drops each function uses (ADR 0300), of each copy of one its
     // callers need too, and of the module's own functions (#974).
     let lowered = (lowered_items.iter_mut().map(|(id, item)| (*id, item)))
@@ -1470,6 +1446,7 @@ pub fn lower_crate<'tcx>(
                         writers_take_options,
                         debug_hex: writer_facts.debug_hex,
                         reads_formatter_options: &writer_facts.reads_options,
+                        merges_identities: &merges_identities,
                         makes_dropping_anys: closure_facts.any_dyns_drop,
                         makes_dropping_fn_dyns: closure_facts.fn_dyns_drop.any(),
                         program: tested,

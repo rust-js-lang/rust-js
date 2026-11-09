@@ -348,33 +348,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
-    name: "library-impl-not-compiled",
-    breaks:
-      "a library's impl its JS doesn't make, `Key`'s `Hash`, isn't compiled by its consumer, which then has no dictionary to give `hash_of` (ADR 0914, amended)",
-    file: "src/lower/library.rs",
-    find: "                DefKind::Impl { of_trait: true } => own(id),\n",
-    replace: "                DefKind::Impl { of_trait: true } => false,\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
-  },
-  {
-    name: "library-exported-impl-method-compiled",
-    breaks:
-      "the method of an impl whose dictionary a library exports is compiled by its consumer, not called through the dictionary (ADR 0914, amended)",
-    file: "src/lower/library.rs",
-    find: "                        Some(imp) => own(imp),\n",
-    replace: "                        Some(imp) => self.has_impl(imp),\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
-  },
-  {
-    name: "library-dictionary-entry-unseen",
-    breaks:
-      "a library's impl's method its JS reaches only through its exported dictionary is called as one it doesn't export, and refused (ADR 0914, amended)",
-    file: "src/lower/library.rs",
-    find: "        (!id.is_local() && !self.is_instance(id) && self.item(id).is_none() && self.item(imp).is_some()).then_some(imp)\n",
-    replace: "        (false && !id.is_local()).then_some(imp)\n",
-    tests: ["test/crates.test.ts", "-t", "may fail is one its consumer"],
-  },
-  {
     name: "library-fn-dyns-unwritten",
     breaks:
       "a library's contract says it makes no `dyn Fn` of what drops, though it does, so its consumer drops the one it's handed as nothing (ADR 0626, amended)",
@@ -713,14 +686,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "derived_partial_cmp_is_cmp"],
   },
   {
-    name: "compiled-not-an-instance",
-    breaks: "a library's item the program has compiled itself already, an instance, isn't one it can call, so a library iterator's own `size_hint`, once called, is std's `(0, None)` to generic code (#1023)",
-    file: "src/lower/library.rs",
-    find: "        !id.is_local() && (self.item(id).is_some() || self.is_instance(id) || self.compiles(id))\n",
-    replace: "        !id.is_local() && (self.item(id).is_some() || self.compiles(id))\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_iterator_own_size_hint"],
-  },
-  {
     name: "fails-of-an-instance-unlisted",
     breaks:
       "whether a library's impl's method may fail asks `item`, which has none of an instance, so a writer's own `write_str` the program compiles itself throws its `fmt::Error` where it's an `Err` (#1023)",
@@ -730,30 +695,12 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
   },
   {
-    name: "writer-given-options-the-librarys",
+    name: "merging-function-hands-its-rcs",
     breaks:
-      "a library's writer that reads its `Formatter`'s options, its library's JS taking none, is its import where the crate gives it a placeholder's options, `{j:>4}` and `{j:#x}` dropped (#1026)",
+      "a library's function the crate compiles itself as it merges what the crate compares is taken to hand the crate its uncounted `Rc<dyn Fn>`s, refused where the crate counts them (#1052)",
     file: "src/lower/library.rs",
-    find: "            _ if self.writes.options && !library.writers_take_options => \"a placeholder's options, `{:>4}` or `{:#?}`\",\n",
-    replace: "            _ if false && self.writes.options && !library.writers_take_options => \"a placeholder's options, `{:>4}` or `{:#?}`\",\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_writers_given_options"],
-  },
-  {
-    name: "writer-given-debug-hex-the-librarys",
-    breaks:
-      "a library's writer that gives its `Formatter` on, its library asking no `{:x?}`, is its import where the crate asks `{:x?}` of it, which writes decimal (#1026)",
-    file: "src/lower/library.rs",
-    find: "            _ if self.writes.hex && !library.debug_hex => \"an integer's `{:?}` in hex, `{:x?}`\",\n",
-    replace: "            _ if false && self.writes.hex && !library.debug_hex => \"an integer's `{:?}` in hex, `{:x?}`\",\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_writer_given_debug_hex"],
-  },
-  {
-    name: "writer-reading-nothing-compiled",
-    breaks:
-      "every library writer is compiled where the crate's writers take options, one that only writes its text too, `hourDisplay_fmt` no longer the library's (#1026)",
-    file: "src/lower/library.rs",
-    find: "        let reads = |f: DefId| library.reads_formatter_options.contains(&key(tcx, f));\n",
-    replace: "        let reads = |f: DefId| library.reads_formatter_options.contains(&key(tcx, f)) || f.krate == id.krate;\n",
-    tests: ["test/crates.test.ts", "-t", "a library's generic function is its program's, alone"],
+    find: "                if !self.merged_here(id, args) {\n",
+    replace: "                if true {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
 ];

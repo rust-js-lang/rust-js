@@ -152,3 +152,18 @@ A thunk, `Rc::new(move || close(&closing))`, stays an arrow, `() => close(respon
 Case ([0262](0262-when-rust-and-js-disagree.md)): A where the crate compares none (nothing observes an uncounted `Rc`'s identity); otherwise as before.
 
 Held by `test/namespaces.test.ts`'s "a closure that passes all it's given to a namespace's function through a value is that function" (an `Rc<dyn Fn>` field, `onError: renderer.discreteUpdates`, run), and corpus `rc_fn_ptr_eq_of_forwarding` (two `Rc::new(|| ping())` compared, `false` as native's, each its own arrow), with the other `rc_fn_ptr_eq*` cases unchanged. Mutations `compared-uncounted-always`, `compared-uncounted-never` (`analysis/rc_counts.ts`) and `counted-closure-ungated` (`passed_on.ts`).
+
+## Amendment: what a library merges, its consumer compiles (#1052)
+
+A library that compares no `Rc<dyn Fn>` counts none, so its `Rc::new(read.clone())`
+and `Rc::new(read)` are one JS function. It also makes a closure an `Rc` is
+made of the function it passes on to. Its consumer may compare either.
+`counted_rcs` now says which functions make such an `Rc`, `Counted::merges`.
+The lowering records a closure an `Rc` is made of that passes on. A
+library's manifest lists both, `merges_identities`. A consumer that
+compares a function's identity compiles its own of each (ADR 0914,
+amended). Its `counted_rcs` reads what a body of MIR alone makes another
+`Rc`'s, so that compile counts them as the crate's own would.
+`identity_read` is the one test of what reads an identity. `counted_rcs`
+asks it, and so does `reads_fn_identity`, which says whether a consumer
+compiles them.

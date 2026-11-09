@@ -581,9 +581,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the function it passes on to, as a `Box`'s is; a counted one's is
     /// its box's.
     pub(in crate::lower) fn counted_closure(&self, span: rustc_span::Span) -> bool {
-        if !self.krate.counted.compared_uncounted {
-            return false;
-        }
+        self.krate.counted.compared_uncounted && self.given_rc_new(span)
+    }
+
+    /// Whether the closure written at `span` is given `Rc::new` or
+    /// `Arc::new` as it's made (`counted_closure`).
+    pub(in crate::lower) fn given_rc_new(&self, span: rustc_span::Span) -> bool {
         let thir = self.frame.thir;
         thir.exprs.iter().any(|e| {
             let ExprKind::Call { fun, ref args, .. } = e.kind else {
@@ -680,7 +683,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // One whose call of a function value it captured isn't all it is,
         // which converts what it's given or gives back (`converting`).
+        // Only where the crate reads no function's identity: one a
+        // consumer that reads one compiles its own of (#1052).
         if let Some(fact) = self.converting(body, (span, made_at), call) {
+            self.dependencies.borrow_mut().merges_identities = true;
             return Some(fact);
         }
         let ExprKind::Call { fun, ref args, .. } = thir[call].kind else {
@@ -774,20 +780,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && !leaves_out(args)
                 && !self.reads_its_call(def_id)
                 && (!self.takes_rest(def_id) || self.gathers_rest(body.def_id)))
-            .then(|| Forwarding {
-                span,
-                callee: Callee::Own,
-                adapts: self.adapts(body.def_id, (def_id, generic_args)),
-                item: true,
-                binds: false,
-                ignores: args.is_empty(),
+            .then(|| {
                 // Or a scope struct's method, its function's function
                 // closing over that value, where nothing reads a closure's
-                // identity, which the two share (ADR 1043, amended, #500).
-                eta: super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Namespace)
-                    || self.krate.scopes.of_method(def_id).is_some() && !self.krate.counted.points_at_functions,
-                fixed: false,
-                statement,
+                // identity, which the two share (ADR 1043, amended, #500):
+                // one a consumer that reads one compiles its own of (#1052).
+                let namespace = super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Namespace);
+                let scope_method =
+                    self.krate.scopes.of_method(def_id).is_some() && !self.krate.counted.points_at_functions;
+                if scope_method && !namespace {
+                    self.dependencies.borrow_mut().merges_identities = true;
+                }
+                Forwarding {
+                    span,
+                    callee: Callee::Own,
+                    adapts: self.adapts(body.def_id, (def_id, generic_args)),
+                    item: true,
+                    binds: false,
+                    ignores: args.is_empty(),
+                    eta: namespace || scope_method,
+                    fixed: false,
+                    statement,
+                }
             }),
         }
     }

@@ -844,6 +844,15 @@ What's refused is in [the limitations](limitations.md).
   its own, `next(n + 1)`, and one of `()` that discards what its call
   gives ([0605](../decisions/0605-an-arrow-that-passes-on-has-one-owner.md),
   amended, decided on the user's behalf).
+- **A library decides these by what it reads itself.** That covers each
+  closure above that's the function it passes on to, and an uncounted
+  `Rc<dyn Fn>` of a cloned closure. A consumer that compares a function's
+  identity compiles its own copy of each library function that made one
+  so, and of each that calls one. Two `Rc`s or two boxes stay two, as
+  in Rust. The library's JS is unchanged, and so is every other
+  consumer's call of it
+  ([0914](../decisions/0914-a-librarys-generic-function-is-its-programs.md),
+  amended).
 
 Differences:
 

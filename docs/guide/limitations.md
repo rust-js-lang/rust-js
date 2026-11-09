@@ -213,8 +213,9 @@ and collecting into one; `Map::clear` and `map::Entry::or_insert`;
 - Releases are for macOS on Apple silicon ([the changelog](../../CHANGELOG.md)).
 - What a crate compiles of another crate's itself, a generic function it
   gives a value to copy or drop that it takes nothing for, an impl that
-  crate's JS hasn't, a destructor among them, or a function that copies
-  what the crate changes in place, is refused where it reads its
+  crate's JS hasn't, a destructor among them, a function that copies
+  what the crate changes in place, or one whose JS may give one function
+  where Rust makes two, which the crate compares, is refused where it reads its
   library's private `static` or thread-local, or calls or reads a binding
   its library names by a path relative to its own file, or sets its
   library's module variable, `export let`, which JS can't assign; a

@@ -2,12 +2,13 @@
 //! items a library exports, and the ones a consumer imports.
 
 mod built_types;
+mod compiled_here;
+pub(super) use compiled_here::merging;
 
 use super::bindings::HeldBinding;
 use super::{FnInfo, module_path};
 use crate::collections::{IndexMap, IndexSet};
 use crate::library::{Dependencies, Held, HeldImport, Imported, Item, ItemFact, Library, RcShape, Reexported, VERSION};
-use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LOCAL_CRATE, LocalModId};
 use std::collections::BTreeSet;
@@ -88,6 +89,9 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) debug_hex: bool,
     /// Its functions that read a `Formatter`'s options (#1026).
     pub(super) reads_formatter_options: &'a IndexSet<DefId>,
+    /// Its functions whose JS may merge what Rust keeps apart, each that
+    /// calls one among them (`merging`, #1052).
+    pub(super) merges_identities: &'a IndexSet<DefId>,
     /// Whether it makes a `dyn Any` of what drops (ADR 0691, amended).
     pub(super) makes_dropping_anys: bool,
     /// Whether it makes a `dyn Fn` of what drops (ADR 0626, amended).
@@ -295,6 +299,7 @@ pub(super) fn exports<'tcx>(
         writers_take_options,
         debug_hex,
         reads_formatter_options,
+        merges_identities,
         makes_dropping_anys,
         makes_dropping_fn_dyns,
         program,
@@ -435,6 +440,8 @@ pub(super) fn exports<'tcx>(
         writers_take_options: *writers_take_options,
         debug_hex: *debug_hex,
         reads_formatter_options: sorted_keys(tcx, reads_formatter_options.iter()),
+        // Its own: what it compiles of another library's is that one's.
+        merges_identities: sorted_keys(tcx, merges_identities.iter().filter(|id| id.is_local())),
         makes_dropping_anys: *makes_dropping_anys,
         makes_dropping_fn_dyns: *makes_dropping_fn_dyns,
         dictionary_consts: program.as_ref().map(|(consts, _)| sorted_keys(tcx, consts.iter())),
@@ -729,6 +736,8 @@ pub(super) struct Foreign<'a, 'tcx> {
     paths: std::cell::OnceCell<LibraryPaths>,
     /// What the crate's own writers take beyond their arguments.
     writes: super::analysis::Writes,
+    /// Whether the crate reads a function's identity (`merges_identities`).
+    reads_fn_identity: bool,
 }
 
 impl<'a, 'tcx> Foreign<'a, 'tcx> {
@@ -736,7 +745,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         tcx: TyCtxt<'tcx>,
         dependencies: &'a Dependencies,
         instances: &'a super::instances::Instances,
-        writes: super::analysis::Writes,
+        (writes, reads_fn_identity): (super::analysis::Writes, bool),
     ) -> Self {
         Foreign {
             tcx,
@@ -744,38 +753,8 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             instances,
             paths: std::cell::OnceCell::new(),
             writes,
+            reads_fn_identity,
         }
-    }
-
-    /// Of `id`, a library's writer, what the crate's writers take that its
-    /// library's don't, which it's compiled here to take (ADR 0914,
-    /// amended; #1026): a placeholder's options, `{:>4}` or `{:#?}`, or an
-    /// integer's `{:?}` in hex, `{:x?}`. `None` of another, or of one whose
-    /// library's take all the crate's do. A writer: a formatting trait's
-    /// impl one of whose methods reads its `Formatter`'s options, and a
-    /// function that does, as its library's manifest lists them.
-    pub(super) fn writes_more(&self, id: DefId) -> Option<&'static str> {
-        let tcx = self.tcx;
-        if id.is_local() || !self.is_library(id.krate) {
-            return None;
-        }
-        // Not `@rust-js/std`'s, compiled once for every program (ADR 0561).
-        let library = self.library(id.krate).filter(|library| !library.builtin)?;
-        let more = match () {
-            _ if self.writes.options && !library.writers_take_options => "a placeholder's options, `{:>4}` or `{:#?}`",
-            _ if self.writes.hex && !library.debug_hex => "an integer's `{:?}` in hex, `{:x?}`",
-            _ => return None,
-        };
-        // One its library's compile read as reading a `Formatter`'s
-        // options, or an impl one of whose methods does; another, which
-        // only writes its text, takes nothing more.
-        let reads = |f: DefId| library.reads_formatter_options.contains(&key(tcx, f));
-        let root = tcx.typeck_root_def_id(id);
-        let writer = match tcx.def_kind(root) {
-            DefKind::Impl { of_trait: true } => tcx.associated_item_def_ids(root).iter().any(|&f| reads(f)),
-            _ => reads(root),
-        };
-        writer.then_some(more)
     }
 
     /// The library `krate`'s items are of, if it's one: `@rust-js/std` of
@@ -920,62 +899,6 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// Every binding the libraries' modules hold, as the imports they'd be.
     pub(super) fn all_held(&self) -> impl Iterator<Item = &'a HeldImport> {
         (self.dependencies.libraries.values()).flat_map(|library| library.held.values())
-    }
-
-    /// Is `id` a library's that its JS doesn't export, which this crate
-    /// compiles itself where it uses it, from the MIR its library's metadata
-    /// keeps (ADR 0914, amended): a trait impl of its, whose dictionary its
-    /// program makes only where its own code asks for it, and its methods;
-    /// or a trait's default, which a consumer's impl of the trait calls. Not
-    /// the method of an impl whose dictionary it exports, called through it
-    /// (`through_dictionary`); nor a derive's that rust-js writes itself,
-    /// `==` of a struct, nor a binding's, JS's; nor a function or an
-    /// inherent method, which its program exports where it's public, as its
-    /// manifest says (`unlisted`). And a writer the crate gives more than its
-    /// library's JS takes, exported or not (`writes_more`, #1026).
-    pub(super) fn compiles(&self, id: DefId) -> bool {
-        use rustc_hir::def::DefKind;
-        let tcx = self.tcx;
-        let own = |imp: DefId| self.has_impl(imp) && self.item(imp).is_none();
-        let unexported = || {
-            self.item(id).is_none()
-                && match tcx.def_kind(id) {
-                    DefKind::Impl { of_trait: true } => own(id),
-                    DefKind::AssocFn if tcx.is_mir_available(id) && !super::bindings::is_binding(tcx, id) => {
-                        match tcx.trait_impl_of_assoc(id) {
-                            Some(imp) => own(imp),
-                            None => tcx.trait_of_assoc(id).is_some(),
-                        }
-                    }
-                    _ => false,
-                }
-        };
-        // Or a writer given more than its library's JS takes (#1026).
-        let writes_more = || {
-            self.writes_more(id).is_some()
-                && (matches!(tcx.def_kind(id), DefKind::Impl { .. }) || tcx.is_mir_available(id))
-                && !super::bindings::is_binding(tcx, id)
-        };
-        !id.is_local() && self.is_library(id.krate) && !self.is_instance(id) && (unexported() || writes_more())
-    }
-
-    /// The impl of `id`, a library's impl's method its JS doesn't export by
-    /// name, whose dictionary it does: what a call of it is a call through,
-    /// `strToKebabCase.toKebabCase(title)` (ADR 0914, amended).
-    pub(super) fn through_dictionary(&self, id: DefId) -> Option<DefId> {
-        let imp = self.tcx.trait_impl_of_assoc(id)?;
-        (!id.is_local() && !self.is_instance(id) && self.item(id).is_none() && self.item(imp).is_some()).then_some(imp)
-    }
-
-    /// Whether `id`, a library's, has JS the program calls: one its
-    /// manifest exports, or one the crate compiles itself, which it may have
-    /// compiled already, an instance (ADR 0914). The one answer, which each
-    /// question of whether a library's item can be reached asks, the crate's
-    /// own beside it where it asks of those too: one asked of `compiles`
-    /// alone, false once it's an instance, took a library's own `size_hint`
-    /// for std's after its first call (#1023).
-    pub(in crate::lower) fn compiled(&self, id: DefId) -> bool {
-        !id.is_local() && (self.item(id).is_some() || self.is_instance(id) || self.compiles(id))
     }
 
     /// Why `id` can't be used, if it's a library's its manifest doesn't list
@@ -1390,7 +1313,12 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             {
                 let declared = tcx
                     .instantiate_bound_regions_with_erased(tcx.fn_sig(id).instantiate_identity().skip_normalization());
-                self.holds_rcs(id, (declared.inputs_and_output.to_vec(), args), reached);
+                // Not of one the crate compiles itself as its library's JS
+                // may merge what it compares, whose `Rc`s it makes as it
+                // counts them (#1052).
+                if !self.merged_here(id, args) {
+                    self.holds_rcs(id, (declared.inputs_and_output.to_vec(), args), reached);
+                }
                 let sig = tcx.fn_sig(id).instantiate(tcx, args).skip_normalization().skip_binder();
                 parts(id, sig.inputs_and_output.to_vec(), reached);
             }

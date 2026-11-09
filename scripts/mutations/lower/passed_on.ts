@@ -522,8 +522,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure that passes all it's given to a namespace's function through a value, `move |f, a| renderer.batched_updates(f, a)`, keeps its arrow, not `renderer.batchedUpdates` (the user's decision)",
     file: "src/lower/passed_on.rs",
-    find: "                eta: super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Namespace)\n",
-    replace: "                eta: false\n",
+    find: "                    eta: namespace || scope_method,\n",
+    replace: "                    eta: scope_method,\n",
     tests: ["test/namespaces.test.ts", "-t", "passes all it's given"],
   },
   {
@@ -602,8 +602,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure made an `Rc`'s keeps its arrow where the crate compares no uncounted `Rc<dyn Fn>`, `Rc::new(move |a, b| renderer.discrete_updates(a, b))` not `renderer.discreteUpdates` (rd313)",
     file: "src/lower/passed_on.rs",
-    find: "        if !self.krate.counted.compared_uncounted {\n            return false;\n        }\n",
-    replace: "",
+    find: "        self.krate.counted.compared_uncounted && self.given_rc_new(span)\n",
+    replace: "        self.given_rc_new(span)\n",
     tests: ["test/namespaces.test.ts", "-t", "through a value is that function"],
   },
   {
@@ -766,8 +766,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure that passes all it's given to a scope struct's method keeps its arrow, `propagate: (node) => propagate(node)` where upstream returns `{ propagate }` (#500)",
     file: "src/lower/passed_on.rs",
-    find: "\n                    || self.krate.scopes.of_method(def_id).is_some() && !self.krate.counted.points_at_functions,",
-    replace: ",",
+    find: "                    eta: namespace || scope_method,\n",
+    replace: "                    eta: namespace,\n",
     tests: ["test/corpus.test.ts", "-t", "scope_struct"],
     snapshots: true,
   },
@@ -776,8 +776,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure that passes on to a scope struct's method is that method where the crate compares closures' addresses, so two of one method are one, `ptr::addr_eq` true where native gives false (#500, the user's decision)",
     file: "src/lower/passed_on.rs",
-    find: "self.krate.scopes.of_method(def_id).is_some() && !self.krate.counted.points_at_functions,",
-    replace: "self.krate.scopes.of_method(def_id).is_some(),",
+    find: "                    self.krate.scopes.of_method(def_id).is_some() && !self.krate.counted.points_at_functions;\n",
+    replace: "                    self.krate.scopes.of_method(def_id).is_some();\n",
     tests: ["test/corpus.test.ts", "-t", "^scope_method_closure_addr_eq.rs$"],
   },
   {
@@ -785,8 +785,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure made an `Rc`'s that passes on to a scope struct's method is that method where the crate compares uncounted `Rc<dyn Fn>`s, so two `Rc`s of one method are `Rc::ptr_eq`, true where native gives false (#500, the user's decision)",
     file: "src/lower/passed_on.rs",
-    find: "        if !self.krate.counted.compared_uncounted {\n            return false;\n        }\n",
-    replace: "        if true {\n            return false;\n        }\n",
+    find: "        self.krate.counted.compared_uncounted && self.given_rc_new(span)\n",
+    replace: "        false && self.given_rc_new(span)\n",
     tests: ["test/corpus.test.ts", "-t", "^scope_method_closure_ptr_eq.rs$"],
   },
   {
@@ -923,5 +923,23 @@ export const mutations: Mutation[] = [
     find: "        if sig.output().is_unit() && !call.1.ty.is_unit() {\n",
     replace: "        if false {\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "only converts what it passes on"],
+  },
+  {
+    name: "converting-merge-unlisted",
+    breaks:
+      "a library's closure that converts and passes on, the function it captured as the library compares none, isn't listed: its consumer calls its `computed`, `{ compute: getter }`, and two boxes' addresses are one (#1052)",
+    file: "src/lower/passed_on.rs",
+    find: "        if let Some(fact) = self.converting(body, (span, made_at), call) {\n            self.dependencies.borrow_mut().merges_identities = true;\n",
+    replace: "        if let Some(fact) = self.converting(body, (span, made_at), call) {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+  },
+  {
+    name: "scope-method-merge-unlisted",
+    breaks:
+      "a library's closure that passes on to a scope struct's method, the method's function as the library compares none, isn't listed: its consumer calls its `bumps`, `const first = bump; const second = bump;`, and `Rc::ptr_eq` is `true` (#1052)",
+    file: "src/lower/passed_on.rs",
+    find: "                if scope_method && !namespace {\n",
+    replace: "                if false {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
 ];

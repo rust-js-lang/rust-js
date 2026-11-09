@@ -43,6 +43,7 @@ none of these would have, add it here in the same commit as the fix.
 | Mapping a rule's deciders, then probing every case of its model | Before a refactor of a scattered rule (#820): each destination × operation, with the crate's own observable step, `size_hint` that prints | #848 (a `Result`/`Option` collect's hint, through std's `GenericShunt`) and #849 (every `extend`), neither touched by any of the six P0s the rule had | The model's table is the test list: a case no decider handled is one nobody wrote |
 | rustc's own tests and generated programs | `bun run test:rustc`, the nightly's 600 programs (ADR 0089, 0092) | Long-tail language cases | Programs written by others, or by no one |
 | Reading accepted differences against ADR 0262 | Guide "Differences", ADR exceptions | #115, #847: documented "rare and harmless" differences that native showed were results changing | A difference written down as accepted is never tested again |
+| A fixed read swapped for its sibling reads, in one crate too | Writing a fix's tests: each way Rust reads the same fact (`Rc::ptr_eq`, `ptr::addr_eq` of `&*rc`, two boxes' addresses) tried on the fixed shape, and the cross-crate case written as one crate as well | #1053 while fixing #1052: `ptr::addr_eq` of what `Rc::ptr_eq` counts for, and of two boxes of one `fn` pointer, wrong in one crate | A rule keyed to one read's form misses the other forms of the same question |
 
 ## The lessons
 

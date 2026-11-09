@@ -542,6 +542,11 @@ struct Dependencies {
     /// `js::class::<T>().prototype()`, where an accessor may be defined of
     /// a field's name: its fields undeclared (#568).
     prototypes_read: IndexSet<DefId>,
+    /// Whether it made a closure the function it passes on to, or an `Rc`'s
+    /// closure the function, only as the crate reads no function's
+    /// identity: one where Rust has two, which a library's consumer that
+    /// compares them compiles its own of (ADR 0605, amended; #1052).
+    merges_identities: bool,
 }
 
 struct FnCx<'a, 'tcx> {

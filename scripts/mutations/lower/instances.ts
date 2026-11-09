@@ -424,4 +424,13 @@ export const mutations: Mutation[] = [
     replace: "                            (callee_args.get(at as usize).and_then(|arg| arg.as_type())).is_some_and(|ty| ty.is_param(index))\n                                && body_may_drop(calls, (callee, at), seen)\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
   },
+  {
+    name: "compiled-for-identities-unsaid",
+    breaks:
+      "a refusal of what a library function compiled as it merges what the crate compares can't reach says it's given a value to copy or drop, not why it's compiled (#1052)",
+    file: "src/lower/instances.rs",
+    find: "        None if foreign.merges_identities(root) => \"one whose JS may give one function where Rust makes two, which this crate compares\".to_string(),\n",
+    replace: "        None if false => \"one whose JS may give one function where Rust makes two, which this crate compares\".to_string(),\n",
+    tests: ["test/crates.test.ts", "-t", "may merge what its consumer compares"],
+  },
 ];

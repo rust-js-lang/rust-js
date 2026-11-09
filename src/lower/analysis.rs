@@ -565,6 +565,10 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// What its writers take beyond their arguments, and which of its
     /// functions read a `Formatter`'s options (ADRs 0058, 0137, 0559).
     pub writer_facts: WriterFacts,
+    /// Whether it reads a function's identity, of which its libraries'
+    /// JS may merge two where Rust has two (`Foreign::merges_identities`,
+    /// #1052).
+    pub reads_fn_identity: bool,
     /// The thread-locals only read and set in their own module, which
     /// `plain_statics` makes plain: what their borrows' closures are given is
     /// what's in them, as nothing borrows them meanwhile (ADR 0328).
@@ -631,7 +635,11 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // Before its libraries are asked, whose writers it reaches are
     // compiled here where they take less (ADR 0914, amended; #1026).
     let writer_facts = WriterFacts::of(tcx, &all_bodies, std_bodies);
-    let foreign = super::library::Foreign::new(tcx, dependencies, instances, writer_facts.writes());
+    // And whether it compares a function's identity, of which its libraries'
+    // functions that may merge two are compiled here (#1052).
+    let reads_fn_identity = rc_counts::reads_fn_identity(tcx, &all_bodies);
+    let foreign =
+        super::library::Foreign::new(tcx, dependencies, instances, (writer_facts.writes(), reads_fn_identity));
     if !bindings::validate(tcx)
         || !super::declarations::validate_types(tcx)
         || !traits::validate(tcx, &foreign)
@@ -1409,6 +1417,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         asks_capacity,
         generic_consts,
         writer_facts,
+        reads_fn_identity,
         quiet_locals,
         quiet_library_keys,
         lazy_locals,

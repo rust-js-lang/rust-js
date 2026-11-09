@@ -978,6 +978,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let made = (!self.counted_closure(span))
                     .then(|| crate::lower::passed_on::passed_on(&arrow, taker, self.forwarding()))
                     .flatten();
+                // An `Rc`'s, the function, only as the crate compares no
+                // `Rc<dyn Fn>`: one a consumer that does compiles its own of
+                // (#1052).
+                if made.is_some() && self.given_rc_new(span) {
+                    self.dependencies.borrow_mut().merges_identities = true;
+                }
                 Ok(Value::Expr(made.unwrap_or(arrow)))
             }
             // An `async` body, what it holds as a closure's environment.

@@ -337,6 +337,39 @@ test("a closure an instance makes of an inlined function is placed where the ins
   expect(native).toBe("drop g\ndrop f\n246\n");
 }, 300_000);
 
+// #1052, ADR 0914, amended: a library that compares no function's identity
+// may give one function where Rust makes two: an `Rc<dyn Fn>` of a cloned
+// closure it doesn't count (ADR 0959), a closure that's the function it
+// passes on to (ADRs 0605, 1043). Its manifest lists each such function, and
+// each that calls one, its JS as it was; a consumer that compares an
+// identity compiles its own of each it reaches, which keeps them apart, and
+// one that compares none imports them.
+test("a library's functions that may merge what its consumer compares are compiled by that consumer", () => {
+  const out = chain(pairs, "library_identities_kept_apart", ["dep", "app"]);
+  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  expect(dep).toContain("  const read = () => count.value;\n  const first = read;\n  const second = read;\n");
+  expect(dep).toContain("  return { compute: getter };\n");
+  expect(dep).toContain("  const first = bump;\n  const second = bump;\n");
+  expect(dep).toContain("  return [ping, ping];\n");
+  expect(contract(out).merges_identities).toHaveLength(7);
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("  const first = { value: read, strong: 1, weak: 0 };\n  const second = { value: read, strong: 1, weak: 0 };\n");
+  expect(app).toContain("\nfunction computed(getter) {\n  return { compute: (previous) => getter(previous) };\n}\n");
+  expect(app).toContain("\nfunction doubled() {\n");
+  expect(app).toContain("  const first = (by) => Counter.bump(counter, by);\n  const second = (by) => Counter.bump(counter, by);\n");
+  expect(app).toContain('import { double, rcStableDeref, total } from "../dep/lib.js";');
+  counting(out, "pub fn main() {\n    println!(\"{}\", (dep::doubled().compute)(Some(std::rc::Rc::new(2))));\n}\n");
+  const imports = readFileSync(join(out, "counting", "lib.js"), "utf8");
+  expect(imports).toContain("  const node = Dep.doubled();\n");
+  expect(imports).not.toContain("function doubled");
+  // One that reads its library's private state is refused, saying why it's
+  // compiled here.
+  const native = chain(join(root, "test", "crates", "refused"), "identity_merged_reads_private_state", ["dep", "app"], [
+    "this crate compiles `dep::made` itself, as its library's JS has none it can call: one whose JS may give one function where Rust makes two, which this crate compares; but it reads `dep::MADE`",
+  ]);
+  expect(native).toBe("0 false\n");
+}, 300_000);
+
 // #374, ADR 0960: a library checks its hooks' `RefCell<Vec<Rc<dyn Fn()>>>`,
 // borrowed while they run; its consumer's `RefCell<Vec<Rc<Node>>>` isn't one
 // that may be it, a `Vec`'s `dyn` no `Node`, so its borrows aren't checked.
