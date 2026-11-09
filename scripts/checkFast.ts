@@ -23,7 +23,7 @@ import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, sta
 import { availableParallelism, cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
-import { runs, touchesAsync, touchesConsumers, touchesDeclarations, touchesFormatting, touchesIterators, touchesNumbers } from "./iteratorSlice";
+import { changedCases, runs, touchesAsync, touchesConsumers, touchesDeclarations, touchesFormatting, touchesIterators, touchesNumbers } from "./iteratorSlice";
 import { mappedFiles, pickChange, readersOf } from "./testMap";
 import { browsers, caseParts, compilerBuilds, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
 import { said, strays } from "./strays";
@@ -165,6 +165,9 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
   const awaits = touchesAsync([...changed, ...branch]);
   // And to the iterators' code or the drops', the consumer net.
   const consumers = touchesConsumers([...changed, ...branch]);
+  // And each corpus case it adds or edits, each of its metamorphic
+  // rewrites, plain or `--all` (#1165).
+  const cases = changedCases([...changed, ...branch]);
 
   // What a script that runs its own parts at once runs in, the iterator
   // slices' (scripts/shard.ts).
@@ -329,6 +332,15 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
               timeout: 300,
               weight: parts,
               ci: "bun scripts/iteratorSlice.ts run consumers",
+            }),
+          ]
+        : []),
+      ...(cases.length > 0
+        ? [
+            job(runs.metamorphic[0].name, ["bun", "scripts/iteratorSlice.ts", "run", "metamorphic", String(Math.min(parts, cases.length))], {
+              timeout: 600,
+              weight: Math.min(parts, cases.length),
+              ci: "bun scripts/iteratorSlice.ts run metamorphic",
             }),
           ]
         : []),

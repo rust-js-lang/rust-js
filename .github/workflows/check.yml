@@ -73,6 +73,7 @@ jobs:
       declarations: ${{ steps.plan.outputs.declarations }}
       async: ${{ steps.plan.outputs.async }}
       consumers: ${{ steps.plan.outputs.consumers }}
+      cases: ${{ steps.plan.outputs.cases }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -306,6 +307,36 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+
+  # Each metamorphic rewrite (test/metamorphic.test.ts) of each corpus case
+  # the check's change adds or edits since `plan`'s `since`, as `plan` says
+  # (scripts/iteratorSlice.ts's `changedCases`), in both builds against
+  # native Rust: a case that runs as Rust does may not rewritten, as #1115's
+  # didn't moved into a library (#1164, #1165). The nightly's `metamorphic`
+  # runs every case's.
+  metamorphic-cases:
+    name: metamorphic rewrites of the change's cases
+    needs: plan
+    if: ${{ !inputs.nightly && needs.plan.outputs.cases == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run each rewrite of the change's cases
+        env:
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: bun scripts/iteratorSlice.ts run metamorphic 4 ${{ needs.plan.outputs.since }}
 
   # The consumer net (test/consumer-net.ts), of a check whose change is the
   # iterators' code or the drops', as `plan` says (scripts/iteratorSlice.ts's

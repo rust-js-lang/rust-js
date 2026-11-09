@@ -248,3 +248,21 @@ does, the `library` rewrite's crate built for it (`runWasm32`'s `rustc`
 flags). The object-model net, whose library crate is the host's, keeps to
 the host's cases. The pointer cases of #1114, whose offsets are past a
 `usize` borrow flag, are run through every rewrite so.
+
+## Amendment: a change's own cases are rewritten each push (#1165)
+
+A case a change adds or edits had its rewrites run only by the nightly's
+whole net, one case in 128 by a push's: #1115's case ran as Rust does,
+but not moved into a library, and that wrong answer, #1164, reached
+`main` unseen until a net ran it hours later. Now each rewrite of each
+corpus case the change adds or edits runs, in both builds: in
+`check:fast`, plain and `--all`, of the working tree's and the branch's
+since `main`, and in a job of each push's check, `metamorphic-cases`, of
+what changed since `plan`'s `since`. `bun scripts/iteratorSlice.ts run
+metamorphic [parts [since]]` lists them (`changedCases`, by their paths,
+`test/corpus/<case>.rs`) for `RUST_JS_CASES=i/n:<file>`, which the net
+reads as the corpus does: the cases a list names, every rewrite of each.
+Two new cases took 9 s in 2 parts on the 12-core M6, cold (2026-11-10);
+a change of no case runs nothing. `test/ci.test.ts` holds that a change
+adding or editing a case runs its rewrites, and that a change of neither
+doesn't.

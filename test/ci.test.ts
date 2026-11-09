@@ -26,6 +26,7 @@ import {
   unitTestsModule,
 } from "../scripts/mutations";
 import { jobs, leftToCi, readabilityPaths, touchesReadability } from "../scripts/checkFast";
+import { changedCases, runs } from "../scripts/iteratorSlice";
 import { loadScale } from "../scripts/timing";
 import { jobs as localNightly } from "../scripts/nightly";
 import { caseParts, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, pooledParts, shard } from "../scripts/shard";
@@ -115,7 +116,7 @@ test("the files only the nightly runs are test files, which its check runs", () 
 // alone, went red on `main` unseen (801d40c55, 336984bff).
 // Of a change to the iterators' code, the formatting code and the numbers', whose
 // jobs check.yml runs where its change is one (scripts/iteratorSlice.ts).
-const checkJobs = jobs({ all: true, changed: [], branch: ["src/runtime/steps.js", "src/runtime/pad.js", "src/runtime/div.js", "src/typescript.rs", "src/lower/mir/awaits.rs"], added: [], extra: [], cores: 4 });
+const checkJobs = jobs({ all: true, changed: [], branch: ["src/runtime/steps.js", "src/runtime/pad.js", "src/runtime/div.js", "src/typescript.rs", "src/lower/mir/awaits.rs", "test/corpus/array_map.rs"], added: [], extra: [], cores: 4 });
 const ranHere = checkJobs.jobs;
 
 // The readability passes' oracles run of a change to tidy, preparation or
@@ -236,7 +237,7 @@ test("the nightly, here, has each job the nightly has", () => {
     const text = readFileSync(join(root, ".github/workflows", file), "utf8");
     return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
   };
-  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators", "iterator-conformance", "iterator-forms", "format-grid", "number-grid", "declarations", "async-points", "consumer-net"].includes(id));
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators", "iterator-conformance", "iterator-forms", "format-grid", "number-grid", "declarations", "async-points", "consumer-net", "metamorphic-cases"].includes(id));
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 
@@ -710,4 +711,24 @@ test("a crate of the corpus's graph rust-js crashed on is said to have crashed, 
     "error: could not compile `aho-corasick` (lib) due to 1 previous error",
   ].join("\n");
   expect(crashes(stderr)).toEqual([{ name: "regex-syntax", how: "signal: 6, SIGABRT: process abort signal" }]);
+});
+
+// A change that adds or edits a corpus case runs each metamorphic rewrite of
+// it, in check:fast, plain or `--all`, as each push's check does
+// (check.yml's `metamorphic-cases`): #1115's case ran as Rust does, but not
+// moved into a library, which nothing ran till the nightly (#1164, #1165).
+test("a change adding or editing a corpus case runs each of its rewrites", () => {
+  expect(changedCases(["test/corpus/new_case.rs", "src/lower/mir.rs", "test/corpus/new_case.js", "test/corpus/edited.rs", "test/corpus/new_case.rs"])).toEqual([
+    "edited.rs",
+    "new_case.rs",
+  ]);
+  const ofCases = (scope: { all: boolean; changed: string[]; branch: string[] }) =>
+    jobs({ ...scope, added: [], extra: [], cores: 12 }).jobs.filter((job) => job.name === runs.metamorphic[0].name);
+  for (const all of [false, true]) {
+    const [rewrites] = ofCases({ all, changed: ["test/corpus/new_case.rs"], branch: [] });
+    expect(rewrites.cmd).toEqual(["bun", "scripts/iteratorSlice.ts", "run", "metamorphic", "1"]);
+    expect(ofCases({ all, changed: [], branch: ["test/corpus/a.rs", "test/corpus/b.rs"] })[0].cmd.at(-1)).toBe("2");
+    expect(ofCases({ all, changed: ["src/lower/mir.rs", "test/corpus/new_case.js"], branch: [] })).toEqual([]);
+  }
+  expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("bun scripts/iteratorSlice.ts run metamorphic 4 ${{ needs.plan.outputs.since }}");
 });

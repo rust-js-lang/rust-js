@@ -19,7 +19,7 @@ import { runSync } from "./child";
 import { buildRewriter, libraryCrate, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
 import { reducedRepro } from "./reduced";
 import { agree, compileJs, compileJsLibrary, nativeFlags, runJs, runNative, runtimes, show, type Run } from "./programs";
-import { buildCompiler, fixture, root } from "./support";
+import { buildCompiler, caseShard, fixture, root } from "./support";
 import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
 import { shard } from "../scripts/shard";
 
@@ -38,10 +38,13 @@ if (which !== undefined && which !== "all") throw new Error(`METAMORPHIC=${which
 const known = readKnown();
 const all = rewritable();
 // A push's run: the cases a hash of their name samples, one in 128; the
-// nightly's, every case, each listed one's too.
-const picked = which === "all" ? all : all.filter(({ name }) => sampled(name));
-const [part, parts] = (process.env.RUST_JS_CASES ?? "1/1").split("/").map(Number);
-const chosen = new Set(shard(picked.map(({ name }) => name), part, parts));
+// nightly's, every case, each listed one's too. Of a list,
+// `RUST_JS_CASES=i/n:<file>`, the cases it names, as the corpus's does:
+// those a change adds or edits, each of their rewrites (`bun
+// scripts/iteratorSlice.ts run metamorphic`, #1165).
+const listed = (process.env.RUST_JS_CASES ?? "").includes(":");
+const picked = which === "all" || listed ? all : all.filter(({ name }) => sampled(name));
+const chosen = new Set(caseShard(picked.map(({ name }) => name)));
 
 /** The net's own harness, its text, which a kept run's key holds as
  * `shared()` holds the corpus's. */

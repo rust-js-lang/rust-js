@@ -16,6 +16,7 @@
 //   bun scripts/iteratorSlice.ts run declarations 1        the declarations' TypeScript callers (#822), of a change to what a `None` is at the JS boundary
 //   bun scripts/iteratorSlice.ts run async [parts]         the async table (#942), of a change to how a future awaits and drops
 //   bun scripts/iteratorSlice.ts run consumers [parts]     the consumer net, of a change to the iterators' code or the drops'
+//   bun scripts/iteratorSlice.ts run metamorphic [parts [since]]  each metamorphic rewrite of each corpus case the change adds or edits (#1165)
 //
 // And a change to the formatting code, `formatPaths`, runs the formatting
 // grid's slice (test/format-grid.ts, #941), each push's check's
@@ -29,8 +30,9 @@
 // to the iterators' code or what drops as a panic unwinds,
 // `consumerPaths`, the consumer net, all of it (test/consumer-net.ts),
 // `consumer-net`.
+import { mkdirSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { noteRate, pick } from "./iteratorRows";
 import { caseParts } from "./shard";
 
@@ -168,6 +170,14 @@ export function touchesConsumers(files: string[]): boolean {
   return files.some((file) => consumerGlobs.some((glob) => glob.match(file)));
 }
 
+/** The corpus cases among a change's `files`, `test/corpus/<case>.rs`, by
+ * name, those it adds or edits: each of their metamorphic rewrites runs,
+ * as a case that runs as Rust does may not rewritten, #1115's moved into
+ * a library (#1164, #1165). */
+export function changedCases(files: string[]): string[] {
+  return [...new Set(files.flatMap((file) => /^test\/corpus\/([^/]+\.rs)$/.exec(file)?.[1] ?? []))].sort();
+}
+
 /** Whether a change of `files` touches the numbers' code. */
 export function touchesNumbers(files: string[]): boolean {
   return files.some((file) => numberGlobs.some((glob) => glob.match(file)));
@@ -195,6 +205,9 @@ export const runs = {
   async: [{ name: "the async table", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "async" } }],
   // All of it, its slice: some 20 s in 8 parts.
   consumers: [{ name: "the consumer net", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "consumers" } }],
+  // Each rewrite of each case the change adds or edits, the list `run`
+  // writes (#1165).
+  metamorphic: [{ name: "the metamorphic rewrites of the change's cases", file: "test/metamorphic.test.ts", env: {} }],
 } as const;
 
 /** `of`, in `parts` processes at once, each its share of the cases
@@ -202,6 +215,21 @@ export const runs = {
  * `check:fast` picks the corpus's by the test map (#876), their logs
  * printed as each ends: whether every part passed, and how long it took. */
 export async function run(of: keyof typeof runs | "rows", parts: number, list?: string): Promise<boolean> {
+  // The metamorphic net's, of the corpus cases the change adds or edits
+  // since `list`, a revision, CI's `since`, or since it left `main`, the
+  // working tree's too, a line each in a list of its own: none, no run.
+  if (of === "metamorphic") {
+    const cases = changedCases(changedSince(list));
+    if (cases.length === 0) {
+      console.log("the change adds or edits no corpus case: no metamorphic rewrite to run");
+      return true;
+    }
+    list = join(root, "target", "metamorphic-cases.txt");
+    mkdirSync(dirname(list), { recursive: true });
+    writeFileSync(list, `${cases.join("\n")}\n`);
+    console.log(`the metamorphic rewrites of ${cases.join(", ")}`);
+    parts = Math.min(parts, cases.length);
+  }
   let passed = true;
   const each: Run[] = of === "rows" ? changeRows(parts) : [...runs[of]];
   for (const { name, file, env, rate } of each) {
@@ -234,6 +262,16 @@ export async function run(of: keyof typeof runs | "rows", parts: number, list?: 
  * picked, hunk by hunk. */
 type Run = { name: string; file: string; env: Record<string, string>; rate?: { table: "matrix" | "conformance"; rows: number } };
 
+/** The files changed since `since`, a revision, or since the branch left
+ * `main`, the working tree's and what's untracked too: none deleted. */
+export function changedSince(since?: string): string[] {
+  const git = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
+  if (since !== undefined) return git(["diff", "--name-only", "--diff-filter=d", since, "HEAD"]);
+  const base = git(["merge-base", "HEAD", "origin/main"])[0];
+  if (base === undefined) return [];
+  return [...git(["diff", "--name-only", "--diff-filter=d", base]), ...git(["ls-files", "--others", "--exclude-standard"])];
+}
+
 function changeRows(parts: number): Run[] {
   const git = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
   const base = git(["merge-base", "HEAD", "origin/main"])[0];
@@ -253,7 +291,7 @@ function changeRows(parts: number): Run[] {
 
 if (import.meta.main) {
   const [command, of, count, list] = process.argv.slice(2);
-  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|declarations|async|consumers|rows [parts [cases]]");
+  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|declarations|async|consumers|rows [parts [cases]] | metamorphic [parts [since]]");
   const parts = count === undefined ? caseParts(availableParallelism() * 2) : Number(count);
   process.exit((await run(of as keyof typeof runs | "rows", parts, list)) ? 0 : 1);
 }
