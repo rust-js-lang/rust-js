@@ -660,4 +660,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_reversible_source.rs$"],
   },
+  {
+    name: "map-length-asked-unrecorded",
+    breaks: "a map whose closure has a destructor, given where its length is asked, `lens(v.iter().map(move |x| ..))`, isn't recorded made knowing it, so it's refused as an `ExactSizeIterator` (#385, #851)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                    let map_length = length && closure_drops(tcx, asked_ty, &drops);\n",
+    replace: "                    let map_length = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^closing_maps_given_counted.rs$"],
+  },
 ];

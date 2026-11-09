@@ -130,7 +130,7 @@ impl IterValue {
 }
 
 /// Each fact `emit` marks a value's JS with.
-const VALUE_FACTS: [Known; 11] = [
+const VALUE_FACTS: [Known; 12] = [
     Known::IterStepped,
     Known::IterRange,
     Known::IterOwn,
@@ -141,6 +141,7 @@ const VALUE_FACTS: [Known; 11] = [
     Known::IterStepBy,
     Known::IterRepeatingN,
     Known::IterKnowsBack,
+    Known::IterKnowsLength,
     Known::IterEnumerate,
 ];
 
@@ -478,13 +479,18 @@ pub(in crate::lower) fn made_knowing_its_back(mut e: Expr) -> Expr {
 
 /// `$held(e)`, an iterator its owner drops held (#206): the same iterator,
 /// so what's known of its value, not of its JS's form, is kept on it, made
-/// knowing its back (`made_knowing_its_back`) and made in place
-/// (`made_in_place`).
+/// knowing its back (`made_knowing_its_back`) or its length
+/// (`made_knowing_its_length`) and made in place (`made_in_place`).
 pub(in crate::lower) fn held_by_its_owner(e: Expr) -> Expr {
     let (knows_back, in_place) = (was_made_knowing_its_back(&e), super::made_in_place(&e));
+    let knows_length = was_made_knowing_its_length(&e);
     let held = Expr::call_helper("$held", vec![e]);
     let held = match knows_back {
         true => made_knowing_its_back(held),
+        false => held,
+    };
+    let held = match knows_length {
+        true => made_knowing_its_length(held),
         false => held,
     };
     match in_place {
@@ -504,6 +510,19 @@ pub(in crate::lower) fn held_of(e: &Expr) -> Option<&Expr> {
 /// Whether `e` was made knowing its back (`made_knowing_its_back`).
 pub(in crate::lower) fn was_made_knowing_its_back(e: &Expr) -> bool {
     e.facts.has(Known::IterKnowsBack)
+}
+
+/// `e`, a map its maker made knowing its length, of what knows it, marked
+/// so: what's asked of it past its maker, its `len()` of a variable that
+/// holds it, reads the mark, not the type (#851).
+pub(in crate::lower) fn made_knowing_its_length(mut e: Expr) -> Expr {
+    e.facts = e.facts.with(Known::IterKnowsLength);
+    e
+}
+
+/// Whether `e` was made knowing its length (`made_knowing_its_length`).
+pub(in crate::lower) fn was_made_knowing_its_length(e: &Expr) -> bool {
+    e.facts.has(Known::IterKnowsLength)
 }
 
 /// Whether `e`'s JS steps from its back, by its form (#851): what's marked

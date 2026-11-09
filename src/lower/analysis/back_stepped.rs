@@ -953,9 +953,13 @@ pub(super) fn stepped_locals<'tcx>(
                     // Or a zip's length, of one a side of which MIR holds, no
                     // form left to count it by in place: made knowing its back
                     // and length, `$zipEnds`, the one form that knows it
-                    // (#740, #851).
-                    let zip_length = is_exact_size(tcx, clause.def_id()) && zipped_sources(tcx, asked_ty).is_some();
-                    if clause.def_id() != double_ended && !zip_length {
+                    // (#740, #851). Or a map's whose closure has a destructor,
+                    // held to drop it, whose form no use reads: made knowing
+                    // both, as the set's rule of its type says (#385, #851).
+                    let length = is_exact_size(tcx, clause.def_id());
+                    let zip_length = length && zipped_sources(tcx, asked_ty).is_some();
+                    let map_length = length && closure_drops(tcx, asked_ty, &drops);
+                    if clause.def_id() != double_ended && !zip_length && !map_length {
                         continue;
                     }
                     // A field it's given, lent or whole, of the type asked.

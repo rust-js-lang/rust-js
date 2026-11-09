@@ -191,4 +191,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_made_knowing_read_again.rs$"],
   },
+  {
+    name: "held-loses-its-length-mark",
+    breaks: "`$held(..)` of a map made knowing its length doesn't keep its mark, so a variable that holds it, `mapped.rev().map(f)`'s, is refused its `len()` (#851)",
+    file: "src/lower/iterators/value.rs",
+    find: "    let held = match knows_length {\n",
+    replace: "    let held = match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^owned_maps_asked_their_length.rs$"],
+  },
 ];

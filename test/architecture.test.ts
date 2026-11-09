@@ -465,7 +465,6 @@ const owners: Record<string, string[]> = {
   "self.made_into": ["src/lower/iterators/back_facts.rs"],
   "self.made_from": ["src/lower/iterators/back_facts.rs"],
   "self.asking_made": ["src/lower/iterators/back_facts.rs", "src/lower/mir/iter/backs.rs"],
-  "self.by_set": ["src/lower/iterators/back_facts.rs", "src/lower/iterators/knowing.rs"],
 };
 // The rest of a function's context, which each module may read, and why:
 // what it lowers and where (set entering a body, `bodies.rs`), the names it

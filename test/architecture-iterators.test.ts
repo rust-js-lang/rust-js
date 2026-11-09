@@ -124,7 +124,7 @@ test("an adapter that holds a function is $holding alone", () => {
   const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
   const making = lowering.filter((file) => read(file).includes('"$holding"'));
   expect(making).toEqual(["src/lower/iterators.rs", "src/lower/mir/iter.rs"]);
-  expect(read("src/lower/mir/iter.rs")).toContain('Ok(Expr::call_helper("$holding", args))');
+  expect(read("src/lower/mir/iter.rs")).toContain('let holding = Expr::call_helper("$holding", args);');
   expect(lowering.filter((file) => read(file).includes('Expr::arrow(vec!["it".into()]'))).toEqual([]);
   const old = /\(it\) => \{\s*it\.return\(\);/;
   expect(old.test("$closing(take.map(f), (it) => {\n    it.return();\n    drop(g);\n  })")).toBe(true);

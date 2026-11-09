@@ -341,11 +341,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let mut body = Vec::new();
         self.drop_value(f, function, span, &mut body)?;
+        let knows_length = crate::lower::iterators::was_made_knowing_its_length(&adapter);
         let mut args = vec![adapter, Expr::arrow(Vec::new(), body)];
         let moved =
             (self.recognition().held_function_folded(ty)).and_then(crate::lower::recognition::HeldFolded::moved);
         args.extend(moved.map(Expr::str));
-        Ok(Expr::call_helper("$holding", args))
+        let holding = Expr::call_helper("$holding", args);
+        // Made knowing its length, as its adapter is, which a variable that
+        // holds it keeps (#851).
+        Ok(match knows_length {
+            true => crate::lower::iterators::made_knowing_its_length(holding),
+            false => holding,
+        })
     }
 
     /// `mir_iter_method`'s call of `values`, `held` first, an iterator a

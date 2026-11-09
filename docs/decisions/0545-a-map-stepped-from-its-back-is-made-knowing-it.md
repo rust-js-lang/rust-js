@@ -1428,3 +1428,38 @@ rule `compiled-variable-trusted` guards is held by `returned_impl_ends`, as
 `flatten_from_its_back`'s flatten no longer reaches it. Std's compiled
 `FlatMap` held in a variable, stepped from its back, then skipped, counts by
 `next`, not each inner's own `count`, as before this: #1048.
+
+## Amendment: lengths too (2026-11-09, #851 phase B, lengths)
+
+ADR 0262's case: none where its JS changes for what ran as Rust does;
+four snapshots change, each for the better: a map only collected or
+stepped forward, of a `rev()` of a map stepped from its back elsewhere,
+or of std's compiled struct, is JS's own `.map` where it was `$mapEnds`,
+and a held copy's `len()` is `held.len()` where it was `held.end -
+held.at`. `knows_its_length` no longer asks back_stepped's set: its
+questions of a back are its value's, and the `by_set` switch is gone.
+What the set said of a type's length, a use now asks of the value:
+
+- `knows_its_length_of(value, ty)`: its type's answer, or its maker's
+  mark, `made_knowing_its_length` (`Known::IterKnowsLength`, kept by a
+  variable, `$held` and `$holding` as the back's is), or, of a map, a copy,
+  an enumeration or a `rev()` of an array's items, its back by its form or
+  mark, whose every form over a `$iter` knows its length. `as_exact_size`
+  and `len_in_place` (of a variable, not std's compiled struct, which has a
+  `len` only given it) ask it.
+- A map is made knowing its length, `$mapEnds` marked so, where its type
+  says so as before, or where beneath its source is a variable its maker
+  made knowing its back or length, `$rev(mapped)` of a `mapped` stepped
+  from its back elsewhere (`maps_what_knows_its_length`); not one made
+  knowing it in place, nor an array's own, which `len_in_place` counts.
+- `stepped_locals` records a map whose closure has a destructor where a
+  bound asks its length, as the set's rule of its type did (#385).
+
+`as_double_ended`'s remaking of a `$mapEnds` source made for its length
+alone is gone: nothing reaches it, in the corpus or the matrix. Seven of
+the set's rules of lengths (`closing-map-asked-unrecorded`,
+`closing-map-length-unasked`, `zip-by-index-holding-map-unasked`,
+`held-given-of-items-native`, `held-through-borrows-unseen`,
+`zip-sides-not-back-stepped`, `cloned-source-not-recorded`) no longer
+change what's made, their mutations surviving, as the twelve phase B left
+before: phase C retires them with the set.

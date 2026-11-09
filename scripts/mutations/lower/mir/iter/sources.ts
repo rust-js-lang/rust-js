@@ -509,4 +509,21 @@ export const mutations: Mutation[] = [
     replace: "            && let Some([_, n]) = crate::lower::iterators::repeating_n_parts(it)\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
   },
+  {
+    name: "held-length-uncounted",
+    breaks: "a variable its maker made knowing its length isn't counted by its own `len()` in place (#851)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "        if matches!(it.kind, js::ExprKind::Var(_))\n            && !self.steps_an_array(ty)\n",
+    replace: "        if false\n            && !self.steps_an_array(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(owned_maps_asked_their_length|cloned_items_from_both_ends).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "held-compiled-length-counted",
+    breaks: "a variable holding std's compiled `Map` of a generic `ExactSizeIterator` is counted by its own `len()`, which it hasn't unless given it, so its `size_hint()` throws `it.len is not a function` (#851)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            && !self.compiled_struct(ty, it)\n            && self.knows_its_length_of(it, ty)\n",
+    replace: "            && self.knows_its_length_of(it, ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^owned_maps_asked_their_length.rs$"],
+  },
 ];

@@ -282,8 +282,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A map of one that knows its length, too (ADR 0456).
             // Of a type parameter given as it is, of the JS iterator made of
             // it (ADR 0488).
-            Some(IterMethod::Map) if self.knows_its_back(output) || self.knows_its_length(output) => {
-                let (back, len) = (self.knows_its_back(output), self.knows_its_length(output));
+            Some(IterMethod::Map)
+                if self.knows_its_back(output)
+                    || self.knows_its_length(output)
+                    || self.maps_what_knows_its_length(receiver, iter_ty) =>
+            {
+                let back = self.knows_its_back(output);
+                let len = self.knows_its_length(output) || self.maps_what_knows_its_length(receiver, iter_ty);
                 // A source given as it is is given its back where it's asked;
                 // one the crate steps from its back without one, a range or
                 // another adapter, made knowing it, or refused (ADR 0545).
@@ -308,7 +313,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let it = self.closing(it, held, span)?;
                 let own = arg_tys.get(1).is_some_and(|ty| self.is_called_as_written(*ty));
                 let f = self.unary_callback(values.next().expect("the function"), own);
-                Expr::call_helper("$mapEnds", vec![it, f])
+                let mapped = Expr::call_helper("$mapEnds", vec![it, f]);
+                match len {
+                    true => crate::lower::iterators::made_knowing_its_length(mapped),
+                    false => mapped,
+                }
             }
             // An enumeration of one, its index from the back where it is
             // (ADR 0528), made of a source as capable as its type is, a

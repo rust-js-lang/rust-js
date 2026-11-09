@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "map-stepped-by-its-type",
     breaks: "a map's question of whether the crate steps it from its back is its type's in back_stepped's set, not its value's, so a map only folded forward, of a type folded from its back elsewhere, is `$mapEnds` where JS's own `.map` reads (#851)",
     file: "src/lower/iterators/back_facts.rs",
-    find: "        if !self.back_by_value(ty) || self.by_set.get() {\n",
+    find: "        if !self.back_by_value(ty) {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_map_folded_and_rfolded.rs$"],
     snapshots: true,

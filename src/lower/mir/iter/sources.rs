@@ -161,6 +161,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let given = crate::lower::iterators::iterated(it.clone());
             return Ok(Expr::call(Expr::member(given, "len"), Vec::new()));
         }
+        // One a variable holds that its maker made knowing its length, or
+        // its back of an array's items, as its mark says: its own, `it.len()`,
+        // `mapped.len()` of a `mapped.rev().map(f).len()` (#851). Not an
+        // array's, counted as it is, nor std's compiled struct, which has a
+        // `len` only given it, `$knowing`'s.
+        if matches!(it.kind, js::ExprKind::Var(_))
+            && !self.steps_an_array(ty)
+            && !self.compiled_struct(ty, it)
+            && self.knows_its_length_of(it, ty)
+        {
+            return Ok(Expr::call(Expr::member(it.clone(), "len"), Vec::new()));
+        }
         // Its source's, `$rev(source)`, a range's stepped from its back,
         // `$iterator(range, $rangeNextBack)`, or an array's items reversed
         // where they're made, `$iter(xs.toReversed())` (ADR 0530).

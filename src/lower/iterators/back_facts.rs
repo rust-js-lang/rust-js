@@ -22,7 +22,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its local, `has_a_back`'s.
     pub(in crate::lower) fn stepped_from_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.tcx.erase_and_anonymize_regions(self.reveal(ty.peel_refs()));
-        if !self.back_by_value(ty) || self.by_set.get() {
+        if !self.back_by_value(ty) {
             return (self.krate.back_stepped.types).contains(&ty);
         }
         let stepped = self.krate.back_stepped.typed.contains(&ty)

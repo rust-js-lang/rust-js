@@ -21,7 +21,7 @@ function main() {
   const held = $iter(v);
   $next(held);
   const nextBack = $nextBack(held);
-  console.log(`${nextBack == null ? "None" : `Some(${nextBack})`} ${held.end - held.at}`);
+  console.log(`${nextBack == null ? "None" : `Some(${nextBack})`} ${held.len()}`);
   const s = ["a", "b"];
   console.log(
     `[${s

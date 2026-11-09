@@ -616,10 +616,6 @@ struct FnCx<'a, 'tcx> {
     /// form's or its mark's, not whether what's made is to be made knowing
     /// it (`has_a_back`'s, #851).
     asking_made: Cell<bool>,
-    /// While what's asked is a length, which back_stepped's set still says
-    /// of a map's type (#851 phase B moves its back alone): each answer of
-    /// it the set's, as before.
-    by_set: Cell<bool>,
 }
 
 /// What a body being lowered has of its own, which a nested one, a

@@ -250,13 +250,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a `dyn`'s, or a map of one. The one answer, of what generic code asks
     /// the length of and what its callers give it.
     pub(in crate::lower) fn knows_its_length(&self, ty: ty::Ty<'tcx>) -> bool {
-        let outer = self.by_set.replace(true);
-        let knows = self.knows_its_length_by_set(ty);
-        self.by_set.set(outer);
-        knows
-    }
-
-    fn knows_its_length_by_set(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.reveal(ty.peel_refs());
         // Of an array's items made knowing its back, `$mapEnds` of their
         // `$iter`, which knows its length too.
@@ -285,18 +278,60 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A zip the crate steps from its back, made knowing its length too,
         // `$zipEnds` (#740): by its value's fact, as its back is (#851).
-        if crate::lower::recognition::zipped_sources(self.tcx, ty).is_some() && {
-            let outer = self.by_set.replace(false);
-            let knows = self.knows_its_back(ty);
-            self.by_set.set(outer);
-            knows
-        } {
+        if crate::lower::recognition::zipped_sources(self.tcx, ty).is_some() && self.knows_its_back(ty) {
             return true;
         }
         if let Some(id) = crate::lower::recognition::dyn_iter_trait(self.tcx, ty) {
             return crate::lower::recognition::is_exact_size(self.tcx, id);
         }
         self.exact_size_param(self.tcx.typeck_root_def_id(self.item), ty)
+    }
+
+    /// Whether `value`, an iterator of type `ty`, knows its length, its
+    /// `len()`: where its type says so (`knows_its_length`), or where it's
+    /// an adapter that keeps its length, a map, a copy, an enumeration or a
+    /// `rev()`, of an array's items, made knowing its back, as its value's
+    /// form or mark says (`knows_its_back_of`): each form of one that knows
+    /// its back, `$mapEnds`, `$rev`, `$enumerate`, of a `$iter`, knows its
+    /// length too; or one its maker marked made knowing it, a map of what
+    /// knows it (`made_knowing_its_length`, #851).
+    pub(in crate::lower) fn knows_its_length_of(&self, value: &Expr, ty: ty::Ty<'tcx>) -> bool {
+        self.knows_its_length(ty)
+            || crate::lower::iterators::was_made_knowing_its_length(value)
+            || self.kept_over_an_array(ty) && self.knows_its_back_of(value, ty)
+    }
+
+    /// Whether a map of `source`, an iterator of type `ty`, is made knowing
+    /// its length as its source does (`knows_its_length_of`): where what it
+    /// reads down to, through each `rev()` and adapter made knowing its back,
+    /// is a variable its maker made knowing its back or length, as its mark
+    /// says, `$rev(mapped)` of a `mapped` stepped from its back elsewhere,
+    /// whose length a use may ask, as std's `Map` passes its source's on.
+    /// Not one made knowing it in place, which reads its form, nor an
+    /// array's own, which `len_in_place` counts as it is (#851).
+    pub(in crate::lower) fn maps_what_knows_its_length(&self, source: &Expr, ty: ty::Ty<'tcx>) -> bool {
+        fn held_knowing(e: &Expr) -> bool {
+            match &e.kind {
+                js::ExprKind::Var(_) => {
+                    crate::lower::iterators::was_made_knowing_its_back(e)
+                        || crate::lower::iterators::was_made_knowing_its_length(e)
+                }
+                _ => (crate::lower::iterators::reversed_of(e))
+                    .or_else(|| crate::lower::iterators::back_source(e).map(|(source, _)| source))
+                    .is_some_and(held_knowing),
+            }
+        }
+        !self.steps_an_array(ty) && held_knowing(source) && self.knows_its_length_of(source, ty)
+    }
+
+    /// Whether `ty` is an adapter that keeps its source's length
+    /// (`length_kept_source`), down to an array's items.
+    fn kept_over_an_array(&self, ty: ty::Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        match crate::lower::recognition::length_kept_source(self.tcx, ty) {
+            Some(source) => self.steps_an_array(source.peel_refs()) || self.kept_over_an_array(source),
+            None => false,
+        }
     }
 
     /// A zip made here of `ty`, `$lazyZip(a, b, ..)` or one std reads by
@@ -357,7 +392,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Of one whose form, or what it holds down to its type, knows its
         // back, its back too (#851).
-        if self.knows_its_length(ty) && (!back || self.knows_its_back(ty) || self.knows_its_back_of(&value, ty)) {
+        if self.knows_its_length_of(&value, ty)
+            && (!back || self.knows_its_back(ty) || self.knows_its_back_of(&value, ty))
+        {
             return Ok(value);
         }
         if let Some(it) = self.given_js_iterator(value.clone(), ty, back, true) {
@@ -506,18 +543,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // type says, an array's iterator a variable holds: itself (#851).
         if self.knows_its_back_of(&value, ty) {
             return Ok(value);
-        }
-        // A map or a filter made knowing its back of a source that isn't
-        // yet, a map's own form beneath: its source made knowing it, again.
-        if let Some((source, false)) = crate::lower::iterators::back_source(&value)
-            && let Some(source_ty) = self.back_source_ty(ty, false)
-            && let js::ExprKind::Call(callee, args) = &value.kind
-            && matches!(callee.helper_name(), Some("$mapEnds" | "$filterEnds"))
-        {
-            let source = self.as_double_ended(source.clone(), source_ty, span)?;
-            let mut args = args.clone();
-            args[0] = source;
-            return Ok(Expr::call((**callee).clone(), args));
         }
         // A `rev()` of the crate's iterator made in place, of its form, as
         // `reversed_user_knowing` makes it again.

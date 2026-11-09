@@ -17,7 +17,6 @@ import {
   $iter,
   $iterator,
   $knowing,
-  $mapEnds,
   $next,
   $nextBack,
   $rangeNext,
@@ -76,67 +75,64 @@ function main() {
   ];
   console.log(
     `[${$collectDropping(
-      $mapEnds(
-        $rev(
-          $knowing(
-            mapped[0],
-            (iterator) =>
-              mapDoubleEndedIterator_nextBack(
-                iterator,
-                { next_back: $nextBack },
-                loudDrop_drop,
-                $dropEach(loudDrop_drop),
-                undefined,
-                loudDrop_drop,
-              ),
-            (iterator) =>
-              mapExactSizeIterator_len(
-                iterator,
-                { len: (iterator) => iterator.len() },
-                loudDrop_drop,
-                $dropEach(loudDrop_drop),
-                undefined,
-                loudDrop_drop,
-              ),
-            (iterator, init, f, unwind, ends) =>
-              mapDoubleEndedIterator_rfold(
-                iterator,
-                init,
-                f,
-                { next: $next, advanceBy: $advanceSlice },
-                { next_back: $nextBack },
-                loudDrop_drop,
-                $dropEach(loudDrop_drop),
-                undefined,
-                unwind,
-                ends,
-                loudDrop_drop,
-              ),
-            undefined,
-            (iterator, init, f, broke, unwind, ends) =>
-              mapDoubleEndedIterator_tryRfold(
-                iterator,
-                init,
-                f,
-                { next: $next, advanceBy: $advanceSlice },
-                { next_back: $nextBack },
-                $tryOf(broke),
-                loudDrop_drop,
-                $dropEach(loudDrop_drop),
-                undefined,
-                unwind,
-                ends,
-                undefined,
-                loudDrop_drop,
-              ),
-          ),
+      $rev(
+        $knowing(
+          mapped[0],
+          (iterator) =>
+            mapDoubleEndedIterator_nextBack(
+              iterator,
+              { next_back: $nextBack },
+              loudDrop_drop,
+              $dropEach(loudDrop_drop),
+              undefined,
+              loudDrop_drop,
+            ),
+          (iterator) =>
+            mapExactSizeIterator_len(
+              iterator,
+              { len: (iterator) => iterator.len() },
+              loudDrop_drop,
+              $dropEach(loudDrop_drop),
+              undefined,
+              loudDrop_drop,
+            ),
+          (iterator, init, f, unwind, ends) =>
+            mapDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: $next, advanceBy: $advanceSlice },
+              { next_back: $nextBack },
+              loudDrop_drop,
+              $dropEach(loudDrop_drop),
+              undefined,
+              unwind,
+              ends,
+              loudDrop_drop,
+            ),
+          undefined,
+          (iterator, init, f, broke, unwind, ends) =>
+            mapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $next, advanceBy: $advanceSlice },
+              { next_back: $nextBack },
+              $tryOf(broke),
+              loudDrop_drop,
+              $dropEach(loudDrop_drop),
+              undefined,
+              unwind,
+              ends,
+              undefined,
+              loudDrop_drop,
+            ),
         ),
-        (l) => {
-          const result = l[0];
-          loudDrop_drop(l);
-          return result;
-        },
-      ),
+      ).map((l) => {
+        const result = l[0];
+        loudDrop_drop(l);
+        return result;
+      }),
     ).join(", ")}]`,
   );
   const filtered = [

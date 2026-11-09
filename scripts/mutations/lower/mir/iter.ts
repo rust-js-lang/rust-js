@@ -235,8 +235,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `map(f)` of a function with a destructor isn't made closing, so its function is never dropped",
     file: "src/lower/mir/iter.rs",
-    find: '        Ok(Expr::call_helper("$holding", args))\n',
-    replace: "        Ok(args.swap_remove(0))\n",
+    find: '        let holding = Expr::call_helper("$holding", args);\n',
+    replace: "        let holding = args.swap_remove(0);\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -747,5 +747,13 @@ export const mutations: Mutation[] = [
     find: "            Some(source) if back => self.as_double_ended(it, source.peel_refs(), span)?,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^copies_of_forward_forms_stepped_from_their_back.rs$"],
+  },
+  {
+    name: "holding-loses-its-length-mark",
+    breaks: "`$holding(adapter, drop)` of a map made knowing its length doesn't keep its mark, so a range's map whose closure drops, held, read by index by a zip, is refused as an `ExactSizeIterator` (#851)",
+    file: "src/lower/mir/iter.rs",
+    find: "        Ok(match knows_length {\n",
+    replace: "        Ok(match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_by_index_of_holding_maps.rs$"],
   },
 ];

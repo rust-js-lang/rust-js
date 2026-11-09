@@ -257,8 +257,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `enumerate` of what knows its back or its length is a JS helper, which knows neither (a type parameter's is `$enumerate` as its `nth` may be its own, #496)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                if self.knows_its_back(output)\n                    || self.knows_its_length(output)\n",
-    replace: "                if false\n                    || false\n",
+    find: "            Some(IterMethod::Enumerate)\n                if self.knows_its_back(output)\n                    || self.knows_its_length(output)\n",
+    replace: "            Some(IterMethod::Enumerate)\n                if false\n                    || false\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_of_known_length.rs$"],
   },
   {
@@ -822,5 +822,13 @@ export const mutations: Mutation[] = [
     find: "                    js::ExprKind::Var(_) | js::ExprKind::Member(..) | js::ExprKind::Index(..)\n",
     replace: "                    js::ExprKind::Var(_) | js::ExprKind::Member(..)\n",
     tests: ["test/corpus.test.ts", "-t", "^iterators_held_in_a_generic_structs_field.rs$"],
+  },
+  {
+    name: "map-made-knowing-its-length-unmarked",
+    breaks: "a map made knowing its length isn't marked so, so what's asked of a variable that holds it, `len()`, reads its type alone and is refused (#851)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                match len {\n                    true => crate::lower::iterators::made_knowing_its_length(mapped),\n",
+    replace: "                match false {\n                    true => crate::lower::iterators::made_knowing_its_length(mapped),\n",
+    tests: ["test/corpus.test.ts", "-t", "^(owned_maps_asked_their_length|zip_by_index_of_holding_maps).rs$"],
   },
 ];
