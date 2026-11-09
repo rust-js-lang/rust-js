@@ -447,7 +447,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `flat_map` of items with a destructor a where clause says are `IntoIterator`, a copied default's `Self::Item`, steps each item as if it were an iterator, not its dictionary's `into_iter`, and throws `it.next is not a function` (#829)",
     file: "src/lower/combinators/adapters.rs",
-    find: "        let it = match self.items_by_dictionary(value.clone(), self.reveal(inner), span)? {\n",
+    find: "        let it = match self.items_by_dictionary(value.clone(), inner, span)? {\n",
     replace: "        let it = match None::<Expr> {\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_of_a_where_clause_into_iterator.rs$"],
   },

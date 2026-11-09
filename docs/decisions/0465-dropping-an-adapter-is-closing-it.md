@@ -2424,3 +2424,19 @@ list. Mutations `extend-of-folded-by-next` (`runtime/extend.ts`),
 (`lower/combinators/adapters.ts`), `partition-of-param-dropped-after` and
 `unzip-method-leaves-some` (`lower/mir/iter/closing.ts`) new; `extend-by-next`
 and `unzip-steps` refitted.
+
+## Amendment: an enumeration counts by a compiled `count` wherever it's one (#1142, #1109)
+
+`counts_by_compiled_count`'s guard, that an exact-sized, double-ended
+source's enumeration is of std's compiled struct
+(`enumerates_a_compiled_struct`, #712), asked the type unrevealed: an
+`impl DoubleEndedIterator + ExactSizeIterator` hiding a peeked
+`peekable()` of a `Vec` was no compiled struct to it, so its
+`enumerate().count()` dropped what it peeked at first, where
+`Peekable::count` drops it last. Since ADR 1113 a body's types are
+revealed, and a compiled `count` (`compiled_step`) says the source is
+std's compiled struct: the guard decided nothing else, as #1109 found of
+its mutations, `enumerate-reversible-compiled-count-taken` and
+`enumerate-reversible-compiled-count-unseen`, which go with it.
+`enumerate-compiled-count-unseen` runs `enumerate_of_a_reversible_source.rs`
+too.

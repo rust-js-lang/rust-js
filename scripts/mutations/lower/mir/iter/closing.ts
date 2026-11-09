@@ -315,7 +315,7 @@ export const mutations: Mutation[] = [
     breaks: "a `Drain`'s or a B-tree's `IntoIter` is given a `Vec`'s steps, so generic code's `nth_back(k)` of it drops what it passes as one slice, 5, 6, 7, where std's drops each, 7, 6 (#704)",
     file: "src/lower/mir/iter/closing.rs",
     find: "        if !self.recognition().drops_passed_as_slice(ty) {\n            return None;\n",
-    replace: "        if self.array_source(self.reveal(ty.peel_refs())) != Some(true) {\n            return None;\n",
+    replace: "        if self.array_source(ty.peel_refs()) != Some(true) {\n            return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
   },
   {

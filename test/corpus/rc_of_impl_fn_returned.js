@@ -88,14 +88,7 @@ function main() {
     });
     throw error;
   }
-  try {
-    console.log(`plain ${q.value(1)}`);
-  } catch (error) {
-    $cleanup(() => {
-      $rcDrop(q, $dispose);
-    });
-    throw error;
-  }
+  console.log(`plain ${q.value(1)}`);
   $rcDrop(q, $dispose);
 
   const h = hold([3], manifestDrop_drop);
@@ -116,14 +109,7 @@ function main() {
     });
     throw error;
   }
-  try {
-    console.log(`hold ${k.value(1)}`);
-  } catch (error) {
-    $cleanup(() => {
-      $rcDrop(k, $dispose);
-    });
-    throw error;
-  }
+  console.log(`hold ${k.value(1)}`);
   $rcDrop(k, $dispose);
 
   const b = inABox([6]);

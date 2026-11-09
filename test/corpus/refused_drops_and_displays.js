@@ -207,11 +207,11 @@ function many() {
 function displayed() {
   const a = shown();
   const value = text();
-  const value$1 = custom();
-  const value$2 = float();
+  const p = custom();
+  const value$1 = float();
   const arg = custom();
   console.log(
-    `${a} [${$pad(value, 5, ">")}] ${pDisplay_fmt(value$1)} ${$displayF64(value$2)} ${pDebug_fmt(arg)}`,
+    `${a} [${$pad(value, 5, ">")}] ${pDisplay_fmt(p)} ${$displayF64(value$1)} ${pDebug_fmt(arg)}`,
   );
   console.log(
     `${many()

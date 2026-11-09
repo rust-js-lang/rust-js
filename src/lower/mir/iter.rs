@@ -264,7 +264,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         made: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
-        let parted = crate::lower::recognition::cloned_parts(self.tcx, self.reveal(output));
+        let parted = crate::lower::recognition::cloned_parts(self.tcx, output);
         let (Some((parted, _, _)), [receiver_ty, other_ty, ..]) = (parted, arg_tys) else {
             return self.holding_function(def_id, (trait_id, arg_tys), values, output, span, made);
         };
@@ -290,7 +290,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (other, other_ty) = match iterates {
             true => (other, other_ty),
             false
-                if let ty::Adt(_, chained) = self.reveal(output).kind()
+                if let ty::Adt(_, chained) = output.kind()
                     && let Some(into) = chained.types().nth(1)
                     && self.implements_iterator(into) =>
             {
@@ -667,18 +667,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(false);
         }
         // What its consumer closes, which drops it there, at its end or as a
-        // panic unwinds: nothing after (#637). Asked of its revealed type, as
-        // `mir_iter_method` closes it.
-        let iter_ty = self.reveal(receiver);
+        // panic unwinds: nothing after (#637), as `mir_iter_method` closes it.
         let dropping =
-            (self.iterator_item(iter_ty)).is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing);
+            (self.iterator_item(receiver)).is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing);
         let method = self.recognition().iterator_method(def_id);
         // Not `extend`'s, which never closes what it's given: dropped after
         // it, what's left in it then too, as it unwinds as well (#1120).
         let extends =
             (self.tcx.trait_of_assoc(def_id)).is_some_and(|tr| crate::lower::recognition::is_extend(self.tcx, tr));
         if !extends
-            && (self.consumer_closes(method, iter_ty, false, dropping) || self.keyed_consumer_closes(method, arg_tys))
+            && (self.consumer_closes(method, receiver, false, dropping) || self.keyed_consumer_closes(method, arg_tys))
         {
             return Ok(false);
         }
@@ -772,7 +770,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let receiver_ty = arg_tys.first().copied().unwrap_or(tcx.types.unit);
         // What it is, of an `impl Iterator` a function gives too, as each of
         // its methods asks it (ADR 0985).
-        let iter_ty = self.reveal(receiver_ty.peel_refs());
+        let iter_ty = receiver_ty.peel_refs();
         if let Some(stepped) = self.given_iterator_call(std_method, iter_ty, &values) {
             return Ok(Some(stepped));
         }
@@ -1073,28 +1071,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // in place has one where its inner iterators' own count is reached,
         // `$flatMap`'s (#736); JS's `flatMap` has none.
         let iterator = std_item(self.tcx, StdItem::Iterator);
-        let revealed = self.reveal(iter_ty);
-        let in_place_flatten = crate::lower::recognition::flattened_source(self.tcx, revealed).is_some()
-            && !self.compiled_struct(revealed, &it);
-        let inners_own = self
-            .recognition()
-            .reaches_its_own(revealed, OwnStep::Count, Reach::Sure);
+        let in_place_flatten = crate::lower::recognition::flattened_source(self.tcx, iter_ty).is_some()
+            && !self.compiled_struct(iter_ty, &it);
+        let inners_own = self.recognition().reaches_its_own(iter_ty, OwnStep::Count, Reach::Sure);
         // And a filter's, std's `Filter::count`, which asks its source's
         // hint first, where that may reach what the program sees (#733).
-        let filter_asks = crate::lower::recognition::filtered_source(self.tcx, revealed)
-            .is_some_and(|source| !self.compiled_struct(revealed, &it) && self.hint_reaches_own(source));
+        let filter_asks = crate::lower::recognition::filtered_source(self.tcx, iter_ty)
+            .is_some_and(|source| !self.compiled_struct(iter_ty, &it) && self.hint_reaches_own(source));
         // And a `Vec`'s, an array's or a `VecDeque`'s `IntoIter`'s, `len()`,
         // then what it has left dropped as one slice, where its items have
         // a drop, which the default would drop each as it's folded (#862).
-        let slice_count = !body.is_empty() && self.recognition().drops_passed_as_slice(revealed);
+        let slice_count = !body.is_empty() && self.recognition().drops_passed_as_slice(iter_ty);
         // And a std source's own, `repeat_n`'s, its length, which clones
         // none (#1124).
-        let source_own = self.recognition().source_writes(revealed, OwnStep::Count);
-        let own_count = matches!(revealed.kind(), ty::Param(_))
+        let source_own = self.recognition().source_writes(iter_ty, OwnStep::Count);
+        let own_count = matches!(iter_ty.kind(), ty::Param(_))
             || filter_asks
             || slice_count
             || source_own
-            || self.compiled_step(revealed, iterator, "count") && (!in_place_flatten || inners_own);
+            || self.compiled_step(iter_ty, iterator, "count") && (!in_place_flatten || inners_own);
         if own_count {
             let mut given = vec![it];
             if let Some(item) = item

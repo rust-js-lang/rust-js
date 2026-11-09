@@ -1,6 +1,7 @@
 # 0061. `impl Iterator` is the type it hides; a generic iterator is any JS iterable
 
-Status: Accepted, amended by [0552](0552-an-into-iterator-held-as-it-is-is-given-as-it-is.md):
+Status: Accepted, amended by [1113](1113-a-bodys-impl-trait-is-revealed-where-its-mir-is-taken.md):
+what an `impl Trait` hides is read once, where a body's MIR is taken. Amended by [0552](0552-an-into-iterator-held-as-it-is-is-given-as-it-is.md):
 an `IntoIterator` whose iterator is held as it is is given as it is.
 Extends [0036](0036-iterators-and-sorting.md) and [0055](0055-iterator.md).
 Amended by [0421](0421-std-associated-type-drops-are-given.md): the JS

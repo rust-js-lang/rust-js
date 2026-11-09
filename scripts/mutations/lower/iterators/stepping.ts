@@ -155,15 +155,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_clones_of_unseen_callers.rs$"],
   },
   {
-    name: "cloned-apart-unrevealed",
-    breaks:
-      "a `map` a function gives as an `impl Iterator` isn't made cloned apart",
-    file: "src/lower/iterators/stepping.rs",
-    find: "            self.reveal(ty),\n            self.frame.owner,\n",
-    replace: "            ty,\n            self.frame.owner,\n",
-    tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
-  },
-  {
     name: "into-iter-option-unstepped",
     breaks:
       "an `Option` given to `extend` or `chain` is taken as an iterable, not its none or one",
@@ -358,8 +349,8 @@ export const mutations: Mutation[] = [
     name: "given-param-drop-unwrapped",
     breaks: "a type parameter's value generic code gives on as `$given` made it is dropped by the drop of the value, given the JS iterator, a `TypeError` (#766)",
     file: "src/lower/iterators/stepping.rs",
-    find: "        (self.is_user_iterator(self.reveal(given)) || matches!(given.kind(), ty::Param(_)))\n",
-    replace: "        self.is_user_iterator(self.reveal(given))\n",
+    find: "        (self.is_user_iterator(given) || matches!(given.kind(), ty::Param(_)))\n",
+    replace: "        self.is_user_iterator(given)\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
   {

@@ -10,11 +10,9 @@ import {
   $rangeNext,
   $roomForHint,
   chainClone_clone,
-  chainIterator_next,
   iterator_chain,
   iterator_map,
   mapClone_clone,
-  mapIterator_next,
 } from "@rust-js/std";
 
 export function entry() {
@@ -111,7 +109,7 @@ function main() {
 
   const tripled = scaled({ start: 1, end: 4 }, 3, { next: $rangeNext }, rangeClone);
   const rest = mapClone_clone(tripled, rangeClone, clone$1);
-  mapIterator_next(rest, { next: $rangeNext });
+  $next(rest);
   console.log(
     `[${$foldToArray($roomForHint(rest, 4, true)).join(", ")}] [${$foldToArray($roomForHint(tripled, 4, true)).join(", ")}]`,
   );
@@ -128,7 +126,7 @@ function main() {
     rangeClone,
   );
   const after = chainClone_clone(bothRanges, rangeClone, rangeClone);
-  chainIterator_next(after, { next: $rangeNext }, { next: $rangeNext });
+  $next(after);
   console.log(
     `[${$foldToArray($roomForHint(after, 4, true)).join(", ")}] [${$foldToArray($roomForHint(bothRanges, 4, true)).join(", ")}]`,
   );

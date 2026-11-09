@@ -724,7 +724,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut called = Vec::new();
                 // Where it makes its value, its maker's MIR identity, which
                 // what's stepped from its back asks (#814).
-                let erased = |cx: &Self, ty: Ty<'tcx>| cx.tcx.erase_and_anonymize_regions(cx.reveal(ty.peel_refs()));
+                let erased = |cx: &Self, ty: Ty<'tcx>| cx.tcx.erase_and_anonymize_regions(ty.peel_refs());
                 let into = destination.projection.is_empty().then(|| {
                     let ty = destination.ty(&state.body.local_decls, self.tcx).ty;
                     (destination.local, erased(self, ty))

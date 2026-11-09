@@ -615,3 +615,19 @@ test("when a collect asks its hint is hint_asks's alone", () => {
   expect(asking).toEqual(["src/lower/mir/iter.rs"]);
 });
 
+
+// What a body's `impl Trait` hides is read once, where its MIR is taken
+// (`mir::revealed`, #1142): each rule of the body's lowering asks the type
+// its value is, so none of `src/lower/mir/`, `iterators/` or
+// `combinators/` reveals a type itself, and nothing else expands an opaque
+// type. A guard that forgot to reveal answered of the opaque type, and its
+// value was stepped and dropped as another's.
+test("a body's impl Trait is revealed where its MIR is taken, alone", () => {
+  expect(read("src/lower/mir.rs")).toContain("(body, promoted) = revealed::revealed(tcx, (body, promoted));");
+  const expanding = files("src").filter((file) => file.endsWith(".rs") && read(file).includes("try_expand_impl_trait_type"));
+  expect(expanding).toEqual(["src/lower/mir/revealed.rs"]);
+  const revealing = ["src/lower/mir", "src/lower/iterators", "src/lower/combinators"]
+    .flatMap(files)
+    .filter((file) => file.endsWith(".rs") && /\b(self|this|cx)\.reveal\(/.test(read(file)));
+  expect(revealing).toEqual([]);
+});

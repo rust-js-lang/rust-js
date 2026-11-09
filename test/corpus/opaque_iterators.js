@@ -9,7 +9,6 @@ import {
   $next,
   $position,
   iterator_map,
-  mapIterator_next,
 } from "@rust-js/std";
 
 export function entry() {
@@ -30,7 +29,7 @@ function first(it) {
 
 function main() {
   const v = [1, 2, 3];
-  const next = mapIterator_next(tens(v));
+  const next = $next(tens(v));
   const nth = Array.from($lent(tens(v)).drop(1).take(1))[0];
   const value = Array.from($lent(tens(v)).drop(5).take(1))[0];
   console.log(
@@ -47,8 +46,8 @@ function main() {
     `${max == null ? "None" : `Some(${max})`} ${tens(v).reduce((n) => n + 1, 0)} ${((value) => (value == null ? "None" : `Some(${value})`))($last(tens(v)))}`,
   );
   const kept = tens(v);
-  const value$2 = mapIterator_next(kept);
-  const value$3 = mapIterator_next(kept);
+  const value$2 = $next(kept);
+  const value$3 = $next(kept);
   console.log(
     `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );

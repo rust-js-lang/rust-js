@@ -26,7 +26,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !self.reversed_in_order(iter_ty) {
                 return Ok(None);
             }
-            let it = match self.compiled_struct(self.reveal(iter_ty), &receiver) {
+            let it = match self.compiled_struct(iter_ty, &receiver) {
                 true => self.as_double_ended(receiver, iter_ty, span)?,
                 false => receiver,
             };
@@ -333,7 +333,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // std's compiled one (#655).
                     || self.recognition().nths_a_slice(output)
                     || self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure)
-                    || self.counts_by_compiled_count(iter_ty, output) =>
+                    || self.counts_by_compiled_count(iter_ty) =>
             {
                 // Of the crate's, what it can be made to know.
                 // Of a type parameter's, what its bounds give
@@ -446,7 +446,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     fn made_knowing_where_held(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
-        let ty = self.reveal(ty);
         // Held by its owner, which drops it, `$held(it)` (#206): what it
         // holds made so, held again.
         if let Some(held) = crate::lower::iterators::held_of(&value) {
@@ -496,19 +495,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
         let mut values = values.into_iter();
         let it = values.next().expect("the receiver");
-        // Of what has a back, the iterator it steps, as `next_back`'s, std's
-        // struct given its compiled back where it's asked, as `rev()`'s is
-        // (ADR 0920); another made one, a range's of its bounds, stepped in
-        // place.
-        let revealed = self.reveal(iter_ty.peel_refs());
-        let knowing = match self.compiled_struct(revealed, &it) {
-            true => self.knowing_held(it.clone(), revealed, span)?,
-            false => None,
-        };
-        let it = match knowing {
-            Some(knowing) => knowing,
-            None if self.range_kind(iter_ty).is_none() && self.has_a_back(iter_ty, &it) => it,
-            None => self.as_double_ended(it, iter_ty, span)?,
+        // Of what has a back, the iterator it steps, as `next_back`'s; std's
+        // struct, which has none but given it (`has_a_back`), given its
+        // compiled back where it's asked, as `rev()`'s is (ADR 0920,
+        // `as_double_ended`'s `knowing_held`); another made one, a range's
+        // of its bounds, stepped in place.
+        let it = match self.range_kind(iter_ty).is_none() && self.has_a_back(iter_ty, &it) {
+            true => it,
+            false => self.as_double_ended(it, iter_ty, span)?,
         };
         // `try_rfold`: `try_fold` of it reversed, which gives its items as
         // its own function does (ADR 0531).
@@ -584,7 +578,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// closure called on the same items in the same order (#205).
     fn reversed_in_order(&self, iter_ty: Ty<'tcx>) -> bool {
         use crate::lower::recognition::{Parted, cloned_parts, filtered_source, reversed_source};
-        let mut ty = self.reveal(iter_ty);
+        let mut ty = iter_ty;
         while self.array_source(ty).is_none() {
             let mapped = || match cloned_parts(self.tcx, ty) {
                 Some((Parted::Map, source, _)) => Some(source),
@@ -596,7 +590,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             else {
                 return false;
             };
-            ty = self.reveal(source);
+            ty = source;
         }
         true
     }
@@ -622,27 +616,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
     }
 
-    /// Whether an `enumerate()` of an iterator of type `iter_ty`, of type
-    /// `enumeration`, counts by its source's `count`, std's compiled one, as
-    /// `Enumerate::count` does: a held `Peekable`'s keeps what it peeked at
-    /// till its source's `count` ends, or unwinds, then drops it (#655). Of
-    /// one exact-sized and double-ended, whose enumeration a `rev()` made in
-    /// place may step from its back, only where it's std's struct compiled
-    /// wherever it's made (`enumerates_a_compiled_struct`), whose enumeration
-    /// `back_stepped` records where it's stepped from its back, made knowing
-    /// its back and length where it's made (#712); not another, which
-    /// `as_double_ended` makes of its map form.
-    fn counts_by_compiled_count(&self, iter_ty: Ty<'tcx>, enumeration: Ty<'tcx>) -> bool {
-        let source = self.reveal(iter_ty);
-        let traits = [
-            self.recognition().double_ended_iterator(),
-            self.recognition().exact_size_iterator(),
-        ];
-        let reversible = traits
-            .into_iter()
-            .all(|tr| tr.is_some_and(|tr| self.recognition().implements_trait(source.peel_refs(), tr)));
-        (!reversible || crate::lower::recognition::enumerates_a_compiled_struct(self.tcx, enumeration))
-            && self.compiled_step(source, std_item(self.tcx, StdItem::Iterator), "count")
+    /// Whether an `enumerate()` of an iterator of type `iter_ty` counts by
+    /// its source's `count`, std's compiled one, as `Enumerate::count` does:
+    /// a held `Peekable`'s keeps what it peeked at till its source's `count`
+    /// ends, or unwinds, then drops it (#655). Of one exact-sized and
+    /// double-ended too, which a compiled `count` says is std's struct
+    /// compiled wherever it's made, whose enumeration `back_stepped` records
+    /// where it's stepped from its back (#712); behind an `impl Trait` too,
+    /// the type its maker made (#1142).
+    fn counts_by_compiled_count(&self, iter_ty: Ty<'tcx>) -> bool {
+        self.compiled_step(iter_ty, std_item(self.tcx, StdItem::Iterator), "count")
     }
 
     /// Whether `value`, of type `iter_ty`, has a back by its form: an
@@ -662,7 +645,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.asking_made.set(outer);
             knows
         };
-        self.steps_an_array(iter_ty) || structural() && !crate::lower::iterators::form_lacks_a_back(value)
+        // Not std's compiled struct, which has a back only given it,
+        // `$knowing`'s (#856), as `knows_its_back_beneath` says.
+        (self.steps_an_array(iter_ty) || structural() && !crate::lower::iterators::form_lacks_a_back(value))
+            && !self.compiled_struct(iter_ty.peel_refs(), value)
     }
 
     /// `rev()` of `it`, an iterator of type `iter_ty` that steps from its

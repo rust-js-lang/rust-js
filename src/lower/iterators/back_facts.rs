@@ -18,7 +18,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// what's asked of a value made before, never: its mark says, carried by
     /// its local, `has_a_back`'s.
     pub(in crate::lower) fn stepped_from_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
-        let ty = self.tcx.erase_and_anonymize_regions(self.reveal(ty.peel_refs()));
+        let ty = self.tcx.erase_and_anonymize_regions(ty.peel_refs());
         self.krate.back_stepped.typed.contains(&ty)
             || !self.asking_made.get()
                 && (self.made_into.iter().chain(&self.made_from)).any(|&(local, made)| {
@@ -120,7 +120,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 matches!(value.kind, js::ExprKind::Var(_))
                     && self.has_its_back_by_type(ty)
                     && (wrapped || !self.steps_an_array(ty))
-                    && !self.compiled_struct(self.reveal(ty), value)
+                    && !self.compiled_struct(ty, value)
             }
         }
     }
@@ -128,14 +128,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The type of what a form of type `ty` holds (`back_source`'s): its
     /// own, or its source's.
     pub(in crate::lower) fn back_source_ty(&self, ty: ty::Ty<'tcx>, same: bool) -> Option<ty::Ty<'tcx>> {
-        let ty = self.reveal(ty.peel_refs());
+        let ty = ty.peel_refs();
         match same {
             true => Some(ty),
             false => crate::lower::recognition::back_stepped_source(self.tcx, ty)
                 .or_else(|| crate::lower::recognition::enumerated_source(self.tcx, ty))
                 .or_else(|| crate::lower::recognition::counted_source(self.tcx, ty).map(|(source, _)| source))
                 .or_else(|| crate::lower::recognition::stepped_by_source(self.tcx, ty))
-                .map(|source| self.reveal(source.peel_refs())),
+                .map(|source| source.peel_refs()),
         }
     }
 

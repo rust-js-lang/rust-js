@@ -25,9 +25,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// to `nth_back`, steps from its back as it is, no form of it left to
     /// read (#702). The one answer, of what's made and what's stepped.
     pub(in crate::lower) fn reversed_made_knowing(&self, ty: ty::Ty<'tcx>) -> bool {
-        let ty = self.reveal(ty.peel_refs());
+        let ty = ty.peel_refs();
         crate::lower::recognition::reversed_source(self.tcx, ty).is_some_and(|source| {
-            let source = self.reveal(source.peel_refs());
+            let source = source.peel_refs();
             !self.is_unknown(source) || matches!(source.kind(), ty::Param(_))
         }) && self.stepped_from_its_back(ty)
     }
@@ -37,7 +37,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// own `next` (`reversed_user_knowing`); of another, by its form
     /// (`reversal_knowing`), or refused. Else itself.
     pub(in crate::lower) fn reversed_knowing(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
-        let ty = self.reveal(ty.peel_refs());
+        let ty = ty.peel_refs();
         if !self.reversed_made_knowing(ty) {
             return Ok(value);
         }
@@ -156,7 +156,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its callers give it.
     pub(in crate::lower) fn knows_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         // What an `impl` hides, as it's made.
-        let ty = self.reveal(ty.peel_refs());
+        let ty = ty.peel_refs();
         // A map of one, made one that knows its back too, `$mapEnds` (ADR
         // 0455), a filter or a `filter_map`, `$filterEnds` (ADR 0526); a
         // copy of one, which it is (ADR 0480); of a type parameter given as
@@ -254,7 +254,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a `dyn`'s, or a map of one. The one answer, of what generic code asks
     /// the length of and what its callers give it.
     pub(in crate::lower) fn knows_its_length(&self, ty: ty::Ty<'tcx>) -> bool {
-        let ty = self.reveal(ty.peel_refs());
+        let ty = ty.peel_refs();
         // Of an array's items made knowing its back, `$mapEnds` of their
         // `$iter`, which knows its length too.
         if let Some(source) = crate::lower::recognition::length_kept_source(self.tcx, ty) {
@@ -336,7 +336,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `ty` is an adapter that keeps its source's length
     /// (`length_kept_source`), down to an array's items.
     fn kept_over_an_array(&self, ty: ty::Ty<'tcx>) -> bool {
-        let ty = self.reveal(ty.peel_refs());
+        let ty = ty.peel_refs();
         match crate::lower::recognition::length_kept_source(self.tcx, ty) {
             Some(source) => self.steps_an_array(source.peel_refs()) || self.kept_over_an_array(source),
             None => false,
@@ -382,7 +382,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// numbers, `$iterator(range, $rangeNext, false, $rangeNextBack,
     /// $rangeLen)`; one already, itself.
     pub(in crate::lower) fn as_exact_size(&mut self, value: Expr, ty: ty::Ty<'tcx>, back: bool, span: Span) -> R<Expr> {
-        let ty = self.reveal(ty);
         // One a struct holds, as `as_double_ended` says (ADR 0549).
         if let Some(knowing) = self.knowing_held(value.clone(), ty, span)? {
             return Ok(knowing);
@@ -538,7 +537,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(in crate::lower) fn as_double_ended(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
-        let ty = self.reveal(ty);
         // A `rev()` made in place, knowing its back where it's made, as its
         // maker marked it (`made_knowing_its_back`): itself, wherever MIR
         // holds it, the mark carried by its local. Its maker makes none a

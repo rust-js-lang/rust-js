@@ -218,6 +218,13 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | JS classes, `#[rust_js::class]`, objects of methods, `#[rust_js::object]` (ADR 0943), and module namespaces, `#[rust_js::namespace]` (ADR 1037), whose calls' `self` naming one, and what holds it then, is `classes/namespaces.rs`'; a class that extends a binding's class, an ES class (ADR 1041), `classes/subclasses.rs`'; which method is a getter, its own or one of the class it extends, and what's refused of one (ADR 0761, amended; ADR 1041, amended, rd679), `classes/getters.rs`'; a class's form, an ES class or a constructor function, and what's refused of it (ADR 0761, amended, rd682), `classes/forms.rs`'; an ES class's field declarations, `class(es, fields)`, and what's refused of them (ADR 0761, amended, #568), `classes/fields.rs`'; a trait of classes' defaults, each prototype's (ADR 1035), `classes/defaults.rs`'; a trait of classes' method that only gives its field, read in place where it's called, of the crate's HIR or a library's MIR (rd304, #1032), `classes/accessors.rs`'; a class's flattened state, its constructor's keys and each `new`'s (ADR 1044), `classes/states.rs`'; a class's prototype its load replaces, set right after its constructor (ADR 0761, amended, #448), `classes/prototypes.rs`'; what a class's constructor gives, `Self` or an `Rc` of it, and its refusal of one the crate counts (ADR 0761, amended, rd554), and the nullable fields each constructor the crate writes of a struct sets first, present (ADR 0810, amended, rd628), `classes/constructors.rs`' | `classes.rs` |
 | Exported TypeScript declaration model, and the reader of `#[rust_js::types]` | `declarations.rs`, `declarations/` |
 
+A body's MIR is taken in `Mir::new`, where `mir/revealed.rs` (`revealed`)
+makes each `impl Trait` in it the type it hides, as rustc's codegen reads
+it (#1142): every rule of a body's lowering asks of the type its value is,
+and none of `mir/`, `iterators/` or `combinators/` reveals a type itself
+(`test/architecture-iterators.test.ts`). `Recognition::reveal` is for
+types read elsewhere, a THIR's or a signature's.
+
 MIR determines execution order. `mir/cfg.rs` structures blocks;
 `mir/temporaries.rs` folds temporary reads only when intervening effects allow
 it. `mir/hints.rs` and `mir/hints/` supply source facts and `mir/offsets.rs` analyzes string

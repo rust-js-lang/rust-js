@@ -277,7 +277,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         made: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let iter_ty = self.reveal(receiver.peel_refs());
+        let iter_ty = receiver.peel_refs();
         let runs_code = |ty: Ty<'tcx>| {
             ty.walk()
                 .any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn()))
@@ -523,7 +523,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `cycle()`, whose clone may (`clone_may_panic`) (#707–#711).
     fn std_work_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
         use crate::lower::recognition::SteppingWork;
-        (self.reveal(iter_ty).walk().filter_map(|part| part.as_type()))
+        (iter_ty.walk().filter_map(|part| part.as_type()))
             .flat_map(|part| self.recognition().stepping_work(part))
             .any(|work| match work {
                 SteppingWork::DropsItemsOf(source) => {
@@ -552,7 +552,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .filter_map(|&tr| recognition.user_impl(ty::TraitRef::new(self.tcx, tr, [ty])))
                 .any(|imp| self.impl_may_unwind(imp))
         };
-        (self.reveal(iter_ty).walk().filter_map(|part| part.as_type())).any(|part| match part.kind() {
+        (iter_ty.walk().filter_map(|part| part.as_type())).any(|part| match part.kind() {
             // A type parameter's, whose steps are anyone's, as a `dyn`'s are.
             ty::Dynamic(..) | ty::Param(_) => true,
             ty::Adt(..) => recognition.is_user_iterator(part) && may_unwind(part),
@@ -575,7 +575,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// is, a closure a function made, is one too (rd767).
     fn panicking_steps(&self, iter_ty: Ty<'tcx>) -> usize {
         let mut seen = IndexSet::default();
-        (self.reveal(iter_ty).walk().filter_map(|part| part.as_type()))
+        (iter_ty.walk().filter_map(|part| part.as_type()))
             .filter(|part| match *part.kind() {
                 ty::Closure(def_id, _) | ty::FnDef(def_id, _) => seen.insert(def_id) && self.call_may_unwind(*part),
                 _ => false,
@@ -588,7 +588,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// constructor; of another, a `dyn Fn`'s or a type parameter's,
     /// anyone's. The one answer what a call holds across asks (#903).
     pub(in crate::lower) fn call_may_unwind(&self, f: Ty<'tcx>) -> bool {
-        match *self.reveal(f).kind() {
+        match *f.kind() {
             ty::Closure(def_id, _) | ty::FnDef(def_id, _) => {
                 !self.krate.never_unwinding.contains(&def_id)
                     && !matches!(self.tcx.def_kind(def_id), rustc_hir::def::DefKind::Ctor(..))

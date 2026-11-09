@@ -217,8 +217,8 @@ export const mutations: Mutation[] = [
     breaks:
       "the `ExactSizeIterator` dictionary of a `&mut` to the crate's iterator is std's default hint's",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "        let ty = self.reveal(ty.peel_refs());\n",
-    replace: "        let ty = self.reveal(ty);\n",
+    find: "        let ty = ty.peel_refs();\n        let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);\n",
+    replace: "        let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);\n",
     tests: [
       "test/corpus.test.ts",
       "-t",

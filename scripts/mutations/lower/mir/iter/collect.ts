@@ -580,14 +580,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_steps_behind_adapters_unwind.rs$"],
   },
   {
-    name: "opaque-stage-unseen",
-    breaks: "a stage an `impl FnMut` is, a closure a function made, isn't counted among the steps that may panic, so a `try_fold` of a held chain of one never drops the accumulator it strands (rd767)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "        (self.reveal(iter_ty).walk().filter_map(|part| part.as_type()))\n            .filter(|part| match *part.kind() {\n",
-    replace: "        (iter_ty.walk().filter_map(|part| part.as_type()))\n            .filter(|part| match *part.kind() {\n",
-    tests: ["test/corpus.test.ts", "-t", "^try_folds_of_stages_unwind.rs$"],
-  },
-  {
     name: "collect-holding-unclosed",
     breaks: "a collect of std's compiled `fuse()` of a `Vec`'s items, mapped by a closure that panics, is `Array.from(..)`, which never closes what the source has left (#653)",
     file: "src/lower/mir/iter/collect.rs",

@@ -3,6 +3,20 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "impl-trait-unrevealed",
+    breaks:
+      "a body's `impl Trait` stays the opaque type, so what it hides is asked as no iterator: the crate's own iterator given back as `impl DoubleEndedIterator` is closed by a drop given its JS iterator, `TypeError` where Rust counts it, and a peeked `peekable()`'s `enumerate().count()` drops what it peeked at first (#1142)",
+    file: "src/lower/mir.rs",
+    find: "        (body, promoted) = revealed::revealed(tcx, (body, promoted));\n",
+    replace: "",
+    tests: [
+      "test/corpus.test.ts",
+      "test/crates.test.ts",
+      "-t",
+      "^((impl_trait_hides_std_adapters|impl_trait_hides_own_iterator|rc_of_impl_fn_returned|closures_made_and_folded|returned_impl_ends|lazy_iterator_clone|consumed_own_iterator_dropped_once|try_folds_of_stages_unwind).rs|two crates: impl_iterator_of_a_library)$",
+    ],
+  },
+  {
     name: "optimized-boxes-read-through-pointer",
     breaks:
       "a library's generic body, from its optimized MIR, reads a box through the pointer rustc makes of it, which its consumer refuses (#378)",

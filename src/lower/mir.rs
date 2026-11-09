@@ -42,6 +42,7 @@ mod patterns;
 mod places;
 mod positions;
 mod queries;
+mod revealed;
 pub(in crate::lower) use queries::{referred_constant, referred_key};
 mod rvalues;
 mod scopes;
@@ -126,8 +127,9 @@ impl<'tcx> Mir<'tcx> {
     pub(super) fn new(
         tcx: ty::TyCtxt<'tcx>,
         mut body: mir::Body<'tcx>,
-        promoted: IndexVec<Promoted, mir::Body<'tcx>>,
+        mut promoted: IndexVec<Promoted, mir::Body<'tcx>>,
     ) -> Mir<'tcx> {
+        (body, promoted) = revealed::revealed(tcx, (body, promoted));
         // A call that can't throw, a binding marked so or `unwrap_unchecked`,
         // has nothing to clean up (ADR 0301): rustc's dataflow of what's there,
         // which says what's dropped, follows no unwinding of it.

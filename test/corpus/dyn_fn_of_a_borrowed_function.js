@@ -128,15 +128,7 @@ function main() {
     });
     throw error;
   }
-  try {
-    console.log(`borrowed closure dropped, ${count()}`);
-  } catch (error) {
-    $cleanup(() => {
-      $dispose(count);
-      $dispose(greet);
-    });
-    throw error;
-  }
+  console.log(`borrowed closure dropped, ${count()}`);
   let twice;
   try {
     twice = greeter("twice");

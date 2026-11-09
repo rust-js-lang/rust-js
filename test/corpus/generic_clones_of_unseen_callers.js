@@ -14,7 +14,6 @@ import {
   $roomForHint,
   iterator_map,
   mapClone_clone,
-  mapIterator_next,
 } from "@rust-js/std";
 
 export function entry() {
@@ -68,7 +67,7 @@ function main() {
 
   const tripled = scaled({ start: 1, end: 4 }, 3, { next: $rangeNext }, rangeClone);
   const rest = mapClone_clone(tripled, rangeClone, { clone: (value) => value });
-  mapIterator_next(rest, { next: $rangeNext });
+  $next(rest);
   console.log(
     `[${$foldToArray($roomForHint(rest, 4, true)).join(", ")}] [${$foldToArray($roomForHint(tripled, 4, true)).join(", ")}]`,
   );

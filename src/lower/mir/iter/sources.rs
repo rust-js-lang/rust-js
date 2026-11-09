@@ -127,7 +127,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => Err(RunsCode),
             false => Ok(count.clone()),
         };
-        let ty = self.reveal(ty.peel_refs());
+        let ty = ty.peel_refs();
         if crate::lower::iterators::is_stepped_items(it) {
             return Ok(self.items_left(it.clone(), made));
         }
@@ -150,7 +150,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // counted by its parts, below.
         let mut base = ty;
         while let Some(source) = r::reversed_source(self.tcx, base) {
-            base = self.reveal(source.peel_refs());
+            base = source.peel_refs();
         }
         if r::counted_source(self.tcx, base).is_some() && crate::lower::iterators::was_made_knowing_its_back(it) {
             return Ok(Expr::call(Expr::member(it.clone(), "len"), Vec::new()));
@@ -495,7 +495,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `measureClonedInstance` (rd648, ADR 0605, amended, the user's
     /// decision).
     pub(super) fn is_called_as_written(&self, ty: Ty<'tcx>) -> bool {
-        match *self.reveal(ty).kind() {
+        match *ty.kind() {
             ty::FnDef(def_id, _) if bindings::is_binding(self.tcx, def_id) => {
                 bindings::reads_only_its_parameters(self.tcx, def_id)
             }

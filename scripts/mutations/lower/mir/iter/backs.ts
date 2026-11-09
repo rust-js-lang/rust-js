@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "double-ended-next-back-refused",
     breaks: "`next_back()` of a generic `T: DoubleEndedIterator` is refused",
     file: "src/lower/mir/iter/backs.rs",
-    find: "        self.steps_an_array(iter_ty) || structural() && !crate::lower::iterators::form_lacks_a_back(value)\n",
-    replace: "        self.steps_an_array(iter_ty) || false && !crate::lower::iterators::form_lacks_a_back(value)\n",
+    find: "        (self.steps_an_array(iter_ty) || structural() && !crate::lower::iterators::form_lacks_a_back(value))\n",
+    replace: "        (self.steps_an_array(iter_ty) || false && !crate::lower::iterators::form_lacks_a_back(value))\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },
   {
@@ -130,8 +130,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`nth_back` and `rfold` of an iterator that knows its back wrap it again, `$nthBack($iter(it), ..)`, which `$iter` gives back as it is (ADR 0456)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            None if self.range_kind(iter_ty).is_none() && self.has_a_back(iter_ty, &it) => it,\n",
-    replace: "            None if false => it,\n",
+    find: "        let it = match self.range_kind(iter_ty).is_none() && self.has_a_back(iter_ty, &it) {\n",
+    replace: "        let it = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
     snapshots: true,
   },
@@ -504,16 +504,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "std-struct-back-unknown",
-    breaks:
-      "`rfind` of std's `Chain` a function gives behind an `impl` isn't given its compiled back, so it throws `it.back is not a function` (ADR 0920)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "        let knowing = match self.compiled_struct(revealed, &it) {\n",
-    replace:
-      "        let knowing = match false && self.compiled_struct(revealed, &it) {\n",
-    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^returned_impl_ends.rs$|^back_steps with|^array_cloned_stepped_from_its_back with"],
-  },
-  {
     name: "rfold-acc-unwind-unseen",
     breaks:
       "an `rfold` of an accumulator with a destructor, a stage panicking part-way, leaves the accumulator undropped (#423)",
@@ -544,8 +534,8 @@ export const mutations: Mutation[] = [
     name: "enumerate-of-own-count-mapped",
     breaks: "an `enumerate()` of the crate's iterator with its own `count` is a map of it, whose `count` steps it (#505)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    || self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure)\n                    || self.counts_by_compiled_count(iter_ty, output) =>",
-    replace: "                    || self.counts_by_compiled_count(iter_ty, output) =>",
+    find: "                    || self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure)\n                    || self.counts_by_compiled_count(iter_ty) =>",
+    replace: "                    || self.counts_by_compiled_count(iter_ty) =>",
     tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
   },
   {
@@ -553,27 +543,18 @@ export const mutations: Mutation[] = [
     breaks:
       "an `enumerate()` of a held, peeked `peekable()` is a map of it, whose `count` gives what it peeked at first, where std's `Enumerate::count` is `Peekable::count`, which drops it after its source's `count` ends or unwinds (#655)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            && self.compiled_step(source, std_item(self.tcx, StdItem::Iterator), \"count\")\n",
-    replace: "            && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^enumerate_count_is_its_sources.rs$"],
+    find: "        self.compiled_step(iter_ty, std_item(self.tcx, StdItem::Iterator), \"count\")\n",
+    replace: "        false\n",
+    tests: ["test/corpus.test.ts", "-t", "^(enumerate_count_is_its_sources|enumerate_of_a_reversible_source).rs$"],
   },
   {
-    name: "enumerate-reversible-compiled-count-taken",
+    name: "compiled-struct-has-its-back",
     breaks:
-      "an `enumerate()` of a `skip()` or a `take()` made in place, exact-sized and double-ended, is `$enumerate` of its JS chain, made knowing neither, which a `rev()` made in place can't step from its back: refused (#655, #712)",
+      "std's compiled `Map`, given back by a function behind an `impl DoubleEndedIterator`, is taken to have a back as its type says, so its `enumerate().rev()` steps a back it hasn't: `TypeError` where Rust gives each item from the back (#1142)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "        (!reversible || crate::lower::recognition::enumerates_a_compiled_struct(self.tcx, enumeration))\n",
-    replace: "        true\n",
-    tests: ["test/corpus.test.ts", "-t", "^enumerate_made_in_place_from_back.rs$"],
-  },
-  {
-    name: "enumerate-reversible-compiled-count-unseen",
-    breaks:
-      "an `enumerate()` of a held, peeked `peekable()` of a `Vec`'s items, exact-sized and double-ended, is a map of it, whose `count` drops what it peeked at first, where std's `Peekable::count` drops it after its source's `count` ends (#712)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "        (!reversible || crate::lower::recognition::enumerates_a_compiled_struct(self.tcx, enumeration))\n",
-    replace: "        !reversible\n",
-    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_reversible_source.rs$"],
+    find: "            && !self.compiled_struct(iter_ty.peel_refs(), value)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(impl_trait_hides_std_adapters|returned_impl_ends).rs$"],
   },
   {
     name: "rfold-receiver-unclosed",

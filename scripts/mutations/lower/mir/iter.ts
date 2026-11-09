@@ -30,17 +30,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^copied_given_len.rs$"],
   },
   {
-    name: "iter-method-type-unrevealed",
-    breaks:
-      "a method of an `impl Iterator` a function gives is asked of the `impl`, not of what it is: `len()` of an `impl ExactSizeIterator` of a slice's `copied()` is refused (ADR 0985)",
-    file: "src/lower/mir/iter.rs",
-    find: "        let iter_ty = self.reveal(receiver_ty.peel_refs());\n        if let Some(stepped) = self.given_iterator_call(",
-    replace:
-      "        let iter_ty = receiver_ty.peel_refs();\n        if let Some(stepped) = self.given_iterator_call(",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^backs_given_behind_impls.rs$"],
-  },
-  {
     name: "cloned-apart-filter-unknowing",
     breaks:
       "a held `filter()` cloned apart and stepped from its back is JS's `it.filter(f)`, which has no back: `TypeError: it.back is not a function` (ADR 0984)",
@@ -435,9 +424,9 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Skip::count` counts its `Take` by folding it, not its own `count`, so a reversed `Vec`'s items are dropped back to front, not as one slice (ADR 0913)",
     file: "src/lower/mir/iter.rs",
-    find: "        let own_count = matches!(revealed.kind(), ty::Param(_))\n",
+    find: "        let own_count = matches!(iter_ty.kind(), ty::Param(_))\n",
     replace:
-      "        let own_count = false && matches!(revealed.kind(), ty::Param(_))\n",
+      "        let own_count = false && matches!(iter_ty.kind(), ty::Param(_))\n",
     tests: [
       "test/std-package.test.ts",
       "-t",
@@ -540,16 +529,8 @@ export const mutations: Mutation[] = [
     name: "consumed-closed-dropped-again",
     breaks: "an iterator its consumer closes, the crate's with a `Drop` over items with one, is dropped after its `fold`, `for_each`, `count` or `last` too, so twice (#637)",
     file: "src/lower/mir/iter.rs",
-    find: "            && (self.consumer_closes(method, iter_ty, false, dropping) || self.keyed_consumer_closes(method, arg_tys))\n",
+    find: "            && (self.consumer_closes(method, receiver, false, dropping) || self.keyed_consumer_closes(method, arg_tys))\n",
     replace: "            && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumed_own_iterator_dropped_once.rs$"],
-  },
-  {
-    name: "consumer-closes-unrevealed",
-    breaks: "who drops a consumed iterator is asked of its type unrevealed, so an `impl Iterator` the crate's iterator is, closed by its `fold`, is dropped after it too (#637)",
-    file: "src/lower/mir/iter.rs",
-    find: "        let iter_ty = self.reveal(receiver);\n        let dropping",
-    replace: "        let iter_ty = receiver;\n        let dropping",
     tests: ["test/corpus.test.ts", "-t", "^consumed_own_iterator_dropped_once.rs$"],
   },
   {
@@ -592,16 +573,16 @@ export const mutations: Mutation[] = [
     name: "flatten-count-by-reduce",
     breaks: "a flatten made in place is counted by `reduce`, never by `$count`, so the inner iterators' own `count` that `$flatMap` asks is never reached (#736)",
     file: "src/lower/mir/iter.rs",
-    find: '            || self.compiled_step(revealed, iterator, "count") && (!in_place_flatten || inners_own);\n',
-    replace: '            || self.compiled_step(revealed, iterator, "count") && !in_place_flatten;\n',
+    find: '            || self.compiled_step(iter_ty, iterator, "count") && (!in_place_flatten || inners_own);\n',
+    replace: '            || self.compiled_step(iter_ty, iterator, "count") && !in_place_flatten;\n',
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
   },
   {
     name: "flatten-count-always-own",
     breaks: "every flatten made in place is counted by `$count`, where JS's `flatMap` of inner iterators with no own `count` reads as `reduce` (#736)",
     file: "src/lower/mir/iter.rs",
-    find: '            || self.compiled_step(revealed, iterator, "count") && (!in_place_flatten || inners_own);\n',
-    replace: '            || self.compiled_step(revealed, iterator, "count");\n',
+    find: '            || self.compiled_step(iter_ty, iterator, "count") && (!in_place_flatten || inners_own);\n',
+    replace: '            || self.compiled_step(iter_ty, iterator, "count");\n',
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
     snapshots: true,
   },
@@ -685,8 +666,8 @@ export const mutations: Mutation[] = [
     name: "keyed-extreme-dropped-after",
     breaks: "`max_by_key` of a key that drops over the crate's iterator, given it closed, drops it after the call too, twice (#789)",
     file: "src/lower/mir/iter.rs",
-    find: "            && (self.consumer_closes(method, iter_ty, false, dropping) || self.keyed_consumer_closes(method, arg_tys))\n",
-    replace: "            && self.consumer_closes(method, iter_ty, false, dropping)\n",
+    find: "            && (self.consumer_closes(method, receiver, false, dropping) || self.keyed_consumer_closes(method, arg_tys))\n",
+    replace: "            && self.consumer_closes(method, receiver, false, dropping)\n",
     tests: ["test/corpus.test.ts", "-t", "^max_by_key_of_a_dropping_key_over_its_iterator.rs$"],
   },
   {
@@ -830,7 +811,7 @@ export const mutations: Mutation[] = [
     name: "source-own-count-unasked",
     breaks: "`repeat_n(x, n).count()` is counted by `reduce`, cloning each, not by its own `count`, its length (#1124)",
     file: "src/lower/mir/iter.rs",
-    find: "        let source_own = self.recognition().source_writes(revealed, OwnStep::Count);\n",
+    find: "        let source_own = self.recognition().source_writes(iter_ty, OwnStep::Count);\n",
     replace: "        let source_own = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_own_steps_clone_none.rs$"],
   },

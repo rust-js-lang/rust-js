@@ -179,7 +179,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return false;
         }
-        let ty = self.reveal(ty);
         // The crate's own, a range, or a parameter of this function's given
         // as it is, made a JS iterator by its dictionary (ADR 0551), where
         // the callee bounds it so; given for one bound by neither, `T:
@@ -336,8 +335,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let given = args.type_at(param.index as usize);
         // The crate's own, `$iterator`'s, or a type parameter's, `$given`'s
         // (#766).
-        (self.is_user_iterator(self.reveal(given)) || matches!(given.kind(), ty::Param(_)))
-            && self.reveal(ty) == self.reveal(given)
+        (self.is_user_iterator(given) || matches!(given.kind(), ty::Param(_)))
+            && ty == given
             && self.given_as_iterator(callee, ty::Ty::new_param(self.tcx, param.index, param.name), given)
     }
 
@@ -355,7 +354,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let ty = self.reveal(ty);
         // An associated type's, `I::Item`'s, its dictionary's `into_iter`
         // (#278).
         if let Some(items) = self.items_by_dictionary(value.clone(), ty, span)? {
@@ -583,13 +581,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// in place: a `Map` held is std's struct (ADR 0871), whose clone is
     /// its compiled `Clone` (`clone_value`'s).
     pub(in crate::lower) fn iterator_cloned_apart(&self, ty: ty::Ty<'tcx>) -> bool {
-        // What an `impl Iterator` hides, a function's result.
-        cloned_apart(
-            &self.recognition(),
-            self.krate.cloned,
-            self.reveal(ty),
-            self.frame.owner,
-        )
+        cloned_apart(&self.recognition(), self.krate.cloned, ty, self.frame.owner)
     }
 
     /// `value` of type `ty`, a `step_by(n)` made here, `src.filter((_, i) =>

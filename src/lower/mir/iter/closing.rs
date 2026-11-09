@@ -198,7 +198,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// for a `Vec`'s by what it is, but asks its value, which its caller
     /// gave its slice's steps where it is one (`$slicing`, #704).
     fn passes_each_owned(&self, ty: Ty<'tcx>) -> bool {
-        let ty = self.reveal(ty.peel_refs());
+        let ty = ty.peel_refs();
         (self.array_source(ty) == Some(true) || self.is_unknown(ty)) && !self.recognition().drops_passed_as_slice(ty)
     }
 
@@ -556,7 +556,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !self.recognition().drops_passed_as_slice(ty) {
             return None;
         }
-        let item = self.iterator_item(self.reveal(ty.peel_refs()))?;
+        let item = self.iterator_item(ty.peel_refs())?;
         (self.drop_may_panic(item) || back && self.drops(item) != crate::lower::drops::Drops::Nothing).then_some(item)
     }
 }

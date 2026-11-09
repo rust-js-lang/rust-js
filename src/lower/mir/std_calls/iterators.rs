@@ -167,7 +167,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // in place, so marked, not std's struct (ADR 0899). A
                     // chain a function gives behind an `impl` is std's `Chain`,
                     // held, stepped from its back by its own methods (ADR 0919).
-                    let output = this.reveal(output);
                     let made = match crate::lower::recognition::is_held_compiled(this.tcx, output) {
                         true => made.in_place(),
                         false => made,

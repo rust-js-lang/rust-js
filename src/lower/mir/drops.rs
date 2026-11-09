@@ -216,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn held_parameters(&self, state: &State<'_, 'tcx>) -> Vec<Stmt> {
         let mut out = Vec::new();
         for local in state.body.args_iter() {
-            let ty = self.reveal(state.body.local_decls[local].ty);
+            let ty = state.body.local_decls[local].ty;
             if !crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
                 && self.holds_dropped_iterator(state, local.into())
                 && !state.locals.names[local].is_empty()

@@ -141,7 +141,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the value, an array's or a JS iterator's own. `None` where it's the
     /// value.
     fn inner_iterable(&mut self, value: Expr, inner: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
-        let inner = self.reveal(inner);
         // An associated type's, `I::Item`'s, its dictionary's (#278).
         if let Some(items) = self.items_by_dictionary(value.clone(), inner, span)? {
             return Ok(Some(items));
@@ -186,7 +185,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => ("item".to_string(), Expr::var("item")),
         };
         // A `Result`'s is read twice, its tag and its value: a variable.
-        let twice = self.is_std_type(self.reveal(inner), crate::lower::recognition::StdItem::Result);
+        let twice = self.is_std_type(inner, crate::lower::recognition::StdItem::Result);
         let held = (twice && !matches!(value.kind, js::ExprKind::Var(_))).then(|| value.clone());
         let read = if held.is_some() { Expr::var("inner") } else { value };
         let Some(iterable) = self.inner_iterable(read, inner, span)? else {
@@ -230,7 +229,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `inner_iterable`'s is (#278): a where clause's `Self::Item:
         // IntoIterator` of a copied default, whose items are a `Vec`'s, not
         // a JS iterator (#829).
-        let it = match self.items_by_dictionary(value.clone(), self.reveal(inner), span)? {
+        let it = match self.items_by_dictionary(value.clone(), inner, span)? {
             Some(items) => items,
             None => match self.slice_item(inner) {
                 Some(_) => self.stepped_items(value),

@@ -12,15 +12,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^fn_once_through_another_bound_refused.rs$"],
   },
   {
-    name: "kept-of-an-impl-unseen",
-    breaks:
-      "a closure `Rc::new` or `Box::new` is given, of a function that gives back `Rc<impl Fn>`, is dropped as the call returns as well as by the `Rc`'s last clone (#464)",
-    file: "src/lower/combinators/callbacks.rs",
-    find: "        let output = self.reveal(output);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^rc_of_impl_fn_returned.rs$"],
-  },
-  {
     name: "unrun-function-undropped",
     breaks:
       "a function an `Option`'s or a `Result`'s method leaves unrun, `map`'s of a `None`, holds what it's never dropped",
@@ -177,16 +168,6 @@ export const mutations: Mutation[] = [
     replace:
       "                ty::Closure(id, _) => facts.carries_its_drop(self.tcx, *id),\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
-  },
-  {
-    name: "made-closure-undropped",
-    breaks:
-      "a closure a function gives, `impl FnMut`, folded, is never dropped, nor what it took (#259)",
-    file: "src/lower/combinators/callbacks.rs",
-    find: "            let ty = self.reveal(ty);\n            let Some(when) = self.handled_argument(known, at, ty) else {\n",
-    replace:
-      "            let Some(when) = self.handled_argument(known, at, ty) else {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(closures_made_and_folded).rs$"],
   },
   {
     name: "called-once-closure-refused-in-mir",

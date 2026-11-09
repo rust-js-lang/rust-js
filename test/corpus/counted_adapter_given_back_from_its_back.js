@@ -24,7 +24,6 @@ import {
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_rfold,
   skipDoubleEndedIterator_tryRfold,
-  skipIterator_next,
   stepByDoubleEndedIterator_nextBack,
   stepByDoubleEndedIterator_nthBack,
   stepByDoubleEndedIterator_rfold,
@@ -234,12 +233,7 @@ function main() {
       return result;
     }
     const value = nextBack != null ? map(nextBack) : undefined;
-    const next = skipIterator_next(
-      it,
-      { next: $next, advanceBy: $advanceSlice },
-      $dropEach(dDrop_drop),
-      dDrop_drop,
-    );
+    const next = $next(it);
     function map$1(d) {
       const result = d[0];
       dDrop_drop(d);

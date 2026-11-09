@@ -14,7 +14,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let ty = self.reveal(ty);
         if let Some(source) = crate::lower::recognition::copied_source(self.tcx, ty)
             && self.copy_is_its_source(source)
         {
@@ -39,7 +38,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let source = self.reveal(source);
         // A copy of items something changes in place, `source.map((item) =>
         // ({ ...item }))`, a JS iterator of JS's, which nothing makes again.
         if !self.is_its_source(ty) {
@@ -74,7 +72,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// std's iterators', not the crate's own, which is a `$iterator` of it,
     /// nor what generic code was given, which may be a `$given` of it.
     fn copy_is_its_source(&self, source: Ty<'tcx>) -> bool {
-        let source = self.reveal(source);
         !self.is_user_iterator(source) && !self.is_unknown(source)
     }
 }

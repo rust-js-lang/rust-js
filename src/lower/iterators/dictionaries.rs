@@ -71,7 +71,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // folds by `I`'s `try_rfold` (ADR 0928).
         let lent = matches!(ty.kind(), ty::Ref(_, _, ty::Mutability::Mut));
         let passed_rfold = |rfold: Option<Expr>| rfold.filter(|_| !lent);
-        let ty = self.reveal(ty.peel_refs());
+        let ty = ty.peel_refs();
         let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);
         let double_ended = crate::lower::recognition::is_double_ended(self.tcx, trait_id);
         let returned = |value: Expr| {
@@ -183,7 +183,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// drop, of one with a destructor, which drops each it replaces, and
     /// both it holds as it's closed.
     pub(in crate::lower) fn cycled(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
-        let ty = self.reveal(ty);
         let (next, boxed) = match self.range_kind(ty) {
             Some(_) => match self.range_stepper(ty, false) {
                 Some(step) => (step, false),
@@ -234,7 +233,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// impl's, a JS iterator's `$next`, each giving the `Option` generic code
     /// reads, a `Some` that looks like `None` boxed (ADR 0051).
     pub(in crate::lower) fn iterator_dictionary(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
-        let ty = self.reveal(ty);
         let next = match self.range_kind(ty) {
             Some(_) => match self.range_stepper(ty, false) {
                 Some(step) => step,
@@ -334,7 +332,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// reads as it is; `None` of another, which std's zip of can't be read
     /// as std reads it.
     pub(in crate::lower) fn index_reader(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Option<Option<Expr>>> {
-        let ty = self.reveal(ty);
         // Std's struct first, a `copied()` of a slice's too, which is no
         // array's `$iter` where it's compiled.
         let iterator = std_item(self.tcx, StdItem::Iterator);
