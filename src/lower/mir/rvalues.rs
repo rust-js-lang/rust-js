@@ -782,7 +782,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         return Err(refuse(
                             tcx,
                             span,
-                            Refused::Memory("a raw pointer to what a `&mut` refers to"),
+                            Refused::Memory(
+                                "a raw pointer to what a `&mut` refers to, which JS holds in a box of a copy: `ptr::from_mut`'s polyfill, `fn(r: &mut T) -> *mut T { r }`, is #1140",
+                            ),
                         ));
                     }
                 }
