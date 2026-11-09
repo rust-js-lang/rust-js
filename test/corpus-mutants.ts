@@ -106,9 +106,12 @@ export function corpusMutantCases(): { name: string; want: Directives }[] {
   return [...firsts.values()];
 }
 
-/** Whether `mutant` is a wrong answer of a case that `want`s so. */
+/** Whether `mutant` is a wrong answer of a case that `want`s so: not one
+ * of the library's run of a case whose library run is refused or differs,
+ * as its directives say, where no library's output is compared (#1058). */
 export const mutantOf = (mutant: CorpusMutant, want: Directives) =>
-  mutant.of === "compile-fail" ? want.kind === "compile-fail" : want.kind === "run-pass" || want.kind === "run-fail" || want.kind === "run-abort";
+  !("library" in mutant.edit && mutant.edit.library && (want.libraryRefused !== undefined || want.libraryDiffers)) &&
+  (mutant.of === "compile-fail" ? want.kind === "compile-fail" : want.kind === "run-pass" || want.kind === "run-fail" || want.kind === "run-abort");
 
 /** The corpus harness's files: `test/corpus.test.ts` and what it imports,
  * each file of the repository's it imports in turn, and each of `test/`

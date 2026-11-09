@@ -305,6 +305,11 @@ test("the corpus harness is what its test imports and runs, and each of its muta
   expect(new Set(cases.map(({ want }) => want.kind))).toEqual(new Set(["run-pass", "run-fail", "run-abort", "compile-fail"]));
   expect(new Set(corpusMutants.map((m) => m.name)).size).toBe(corpusMutants.length);
   expect(corpusMutants.filter((m) => !cases.some(({ want }) => mutantOf(m, want))).map((m) => m.name)).toEqual([]);
+  // Not a mutant of the library's run on a case whose library run is
+  // refused, where nothing of the library's is compared (#1058).
+  const refused = cases.find(({ want }) => want.libraryRefused !== undefined);
+  expect(refused).toBeDefined();
+  expect(corpusMutants.filter((m) => "library" in m.edit && m.edit.library && mutantOf(m, refused!.want))).toEqual([]);
 });
 
 // A corpus mutant is the compiler as it is, its JS edited or its exit
