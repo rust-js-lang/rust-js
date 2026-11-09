@@ -39,6 +39,10 @@ const few = [
   "assignment_order.rs",
   "calculator.rs",
   "catch_unwind_drops.rs",
+  // A closure's parameter of a temporary's name, `(_2) => _2[0]`, beside
+  // main's `_2` that a match binds: named temporaries leave the closure's
+  // reads its own (#1105).
+  "closure_param_shadows_a_named_temporary.rs",
   // A trait's default, a class's prototype's method, holding a handle on
   // `this.count` until `drops`: its getter reads `this$`, not the handle's
   // own `this` (#459).

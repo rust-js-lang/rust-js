@@ -420,13 +420,19 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
                 StmtKind::Destructure { pattern, .. } => pattern.each_name_mut(&mut |name| *name = b.clone()),
                 _ => unreachable!("matched"),
             }
-            js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
-                if let ExprKind::Var(v) = &mut e.kind
-                    && (*v == a || taken.contains(v))
-                {
-                    *v = b.clone();
-                }
-            });
+            // Not a closure's own of a name, its parameter `(_2) => _2[0]`
+            // where `_2` is a temporary here too (#1105).
+            for name in std::iter::once(&a).chain(&taken) {
+                js::outside_shadows(stmts, name, |stmts| {
+                    js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
+                        if let ExprKind::Var(v) = &mut e.kind
+                            && v == name
+                        {
+                            *v = b.clone();
+                        }
+                    });
+                });
+            }
         }
     });
 }

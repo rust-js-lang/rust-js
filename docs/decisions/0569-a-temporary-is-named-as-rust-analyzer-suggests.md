@@ -1,6 +1,6 @@
 # 0569. A temporary is named as rust-analyzer suggests
 
-Status: Accepted; amended (#444): a temporary a drop guard's `try` sets; amended (rd439): one a `const` takes apart. Amends [0364](0364-mir-lowering.md), whose tidy named a
+Status: Accepted; amended (#444): a temporary a drop guard's `try` sets; amended (rd439): one a `const` takes apart; amended (#1105): not a closure's own of its name. Amends [0364](0364-mir-lowering.md), whose tidy named a
 temporary after the field it reads or else `value`; extends
 [0352](0352-reclaimed-names.md) and [0565](0565-readability-is-a-gate.md),
 whose first number to bring down this is.
@@ -273,3 +273,24 @@ getter's Option a closure binds is named by its parameter" and "a
 getter's Option a combinator reads more than once is read once".
 Mutations `option-method-names-its-subject` and
 `binding-read-names-its-subject` (`mir/hints/calls.ts`).
+
+## Amendment: not a closure's own of its name (2026-11-09, #1105)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change (in an
+intermediate stage only). `named temporaries`, which names a temporary for
+the `const` that takes it, `const high = _2;`, renamed each read of `_2`
+after it, a closure's too: where the closure takes a parameter of that
+name, `(_2) => { const a = _2[0]; .. }`, its tuple's, its reads became
+main's `high`, `high[0]` of a number, and the JS after tidy's `in place`
+stage threw `Cannot convert NaN to a BigInt` where Rust prints (the
+nightly's program stages, seed 12459702). A later pass took the
+parameter apart in place, so the finished JS was right. **The renaming is
+made where the name is the one the list means: a closure that takes or
+declares its own is set apart while it's made** (`js::outside_shadows`,
+as `readable_temporaries`' renaming already is), for the temporary and for
+each name it takes.
+
+Held by the corpus case `closure_param_shadows_a_named_temporary.rs`, which
+the push's `tidy-stages` runs at each stage end, throwing the same
+`TypeError` without it, and mutation
+`named-temporary-renamed-in-a-closure-of-its-own` (`tidy/bindings.ts`).
