@@ -568,3 +568,27 @@ its box's `value`, as it was. Held by the corpus case
 holds, `&raw const held.0`, an item's handle where its fields' are the
 object's, stays #1019's.
 
+## Amendment: a field of an object that's an array's item is in the array (#1019)
+
+`&raw const held.0` of a struct a tuple struct's field holds is the
+array's handle on its item, `$ptr(held, 0)`, whose address is the
+array's base; but `&raw const held.0.b` is the object's, `$ptr(held[0],
+"b", 4)`, whose address was the object's own base, so their difference
+was 4100, where native's is 4. And `transmute(&held.0)`, the object itself
+as an address, was its own base too, not `&raw const held.0`'s. An object
+an array's item handle was made on is that item (`$items`), so now its
+fields are in the array's allocation, at the item's address and the
+field's offset, where the array's stride is known; and the object as an
+address is the item's. A field's address asked first, before the
+array's, `&raw const held.0.c` before `&raw const held.0`, is the
+object's own, and the array whose first item it is is put at that base
+when its address is asked, where its bytes fit the object's reserved
+range. Results changed
+([0262](0262-when-rust-and-js-disagree.md)), so Rust's are kept. Held by
+the corpus case `address_of_a_struct_a_field_holds`, in both builds, and
+the mutations `field-of-an-item-its-objects-own-address`,
+`field-of-a-later-item-at-the-first`,
+`array-of-an-addressed-first-item-apart` and
+`reference-to-an-item-its-objects-own-address`. The net's `field`
+rewrite of `pointer_addresses` runs as native, taken off.
+

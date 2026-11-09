@@ -5,9 +5,6 @@
 // Rust does is taken off. A rewrite that goes wrong for another reason is a
 // line under another issue.
 
-#1019 P1 (pointers): an address of a value held in a struct field, and Rc::as_ptr equality, differ from native
-plain std field pointer_addresses.rs
-
 #1022 P2: a pointer read as another type's, in generic code, throws at run time instead of refusing at compile time
 plain std generic bytes_through_pointers.rs
 

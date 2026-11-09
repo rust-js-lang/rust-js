@@ -3,6 +3,38 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "field-of-an-item-its-objects-own-address",
+    breaks: "`&raw const held.0.b` of a struct a tuple struct's field holds is at the struct's own base, not the item's, apart from `&raw const held.0` (#1019)",
+    file: "src/runtime/pointers.js",
+    find: "  if (item !== undefined) {\n    const range = $ranges.get(item.of);\n",
+    replace: "  if (false) {\n    const range = $ranges.get(item.of);\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_struct_a_field_holds.rs$"],
+  },
+  {
+    name: "field-of-a-later-item-at-the-first",
+    breaks: "`&raw const pair.1.b` is at the first item's address and the field's offset, not the second's (#1019)",
+    file: "src/runtime/pointers.js",
+    find: "(item.at === 0 ? 0 : item.at * range.stride)",
+    replace: "0",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_struct_a_field_holds.rs$"],
+  },
+  {
+    name: "array-of-an-addressed-first-item-apart",
+    breaks: "`&raw const held.0.b` asked before any pointer to `held.0` is made, then `&raw const held.0`, are in two allocations (#1019)",
+    file: "src/runtime/pointers.js",
+    find: "  if (first !== undefined && first.base + allocation.length * stride <= first.end) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_struct_a_field_holds.rs$"],
+  },
+  {
+    name: "reference-to-an-item-its-objects-own-address",
+    breaks: "`transmute(&held.0)` of a struct a tuple struct's field holds is its own base, not the item's address (#1019)",
+    file: "src/runtime/pointers.js",
+    find: "  if (own !== undefined) return $ptr(own.of, own.at);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_struct_a_field_holds.rs$"],
+  },
+  {
     name: "ptr-to-written-whole",
     breaks: "`*p = v` of an object's pointer gives the handle another, leaving the object",
     file: "src/runtime/pointers.js",

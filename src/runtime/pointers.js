@@ -157,6 +157,10 @@ function $allocationOf(pointer) {
 }
 
 function $placed(pointer) {
+  // A reference that's an array's item itself, the object, `transmute(&held.0)`
+  // of a tuple struct's field: the item's place (#1019).
+  const own = $items.get(pointer);
+  if (own !== undefined) return $ptr(own.of, own.at);
   if (pointer.at === undefined && pointer.of !== undefined) {
     const item = $items.get(pointer.of);
     if (item !== undefined) return $ptr(item.of, item.at);
@@ -210,11 +214,33 @@ function $addr(pointer, size) {
   if (pointer.addr !== undefined) return pointer.addr;
   if (pointer.bytes !== undefined && pointer.opaque) return $addr(pointer.typed, size);
   pointer = $placed(pointer);
+  // A field of an object that's an array's item, `&raw const held.0.b` of
+  // a tuple struct's field: in the array's allocation, at the item's
+  // address and the field's offset, as `$ptrTo` of the object is the item's
+  // (#1019), where the array's stride is known. Where it isn't, the
+  // object's own, at which its array's is put when it's asked (below).
+  const item = pointer.bytes === undefined && pointer.offset !== undefined ? $items.get(pointer.of) : undefined;
+  if (item !== undefined) {
+    const range = $ranges.get(item.of);
+    if (range?.stride !== undefined) {
+      const addr = range.base + (item.at === 0 ? 0 : item.at * range.stride) + pointer.offset;
+      $exposedPlaces.set(addr, pointer);
+      return addr;
+    }
+  }
   const allocation = $allocationOf(pointer);
   const view = pointer.bytes !== undefined && pointer.plain === undefined;
   const items = Array.isArray(allocation) && ((pointer.of !== undefined && typeof pointer.at === "number") || view);
   const stride = view ? pointer.stride : size;
   if (items && allocation.length === 0 && !$ranges.has(allocation)) $emptyAt(Math.max(stride, 1), allocation);
+  // An array whose first item, an object, has an address already, its
+  // field's asked first, `&raw const held.0.c` before `&raw const held.0`:
+  // at the item's, which its bytes fit in (#1019); an address in it found
+  // again is the item's, as it was.
+  const first = items && !$ranges.has(allocation) ? $ranges.get(allocation[0]) : undefined;
+  if (first !== undefined && first.base + allocation.length * stride <= first.end) {
+    $ranges.set(allocation, { base: first.base, end: first.end, of: allocation, stride });
+  }
   const range = $addresses(allocation, items ? allocation.length * stride : 0);
   if (items && range.stride === undefined) range.stride = stride;
   const addr = range.base + $offsetIn(pointer, range);
