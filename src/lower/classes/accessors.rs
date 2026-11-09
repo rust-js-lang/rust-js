@@ -21,7 +21,15 @@ pub(crate) fn field_accessor(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Vec<(rust
     let body = tcx.hir_body_owned_by(local);
     let [this, ..] = body.params else { return None };
     let typeck = tcx.typeck(local);
-    let given = body.value.peel_blocks();
+    // Its blocks' expression, of blocks of no statements: one that runs
+    // anything before it gives more than its field (#1074).
+    let mut given = body.value;
+    while let rustc_hir::ExprKind::Block(block, _) = given.kind {
+        if !block.stmts.is_empty() {
+            return None;
+        }
+        given = block.expr?;
+    }
     let rustc_hir::ExprKind::AddrOf(rustc_hir::BorrowKind::Ref, rustc_hir::Mutability::Not, mut place) = given.kind
     else {
         return None;

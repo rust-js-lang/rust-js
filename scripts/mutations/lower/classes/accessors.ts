@@ -29,4 +29,13 @@ export const mutations: Mutation[] = [
     replace: "        Ok(None) => (implementations(tcx, callee).into_iter().flatten().filter(|_| false))\n",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_field_borrows.rs$"],
   },
+  {
+    name: "field-accessor-after-statements",
+    breaks:
+      "a trait of classes' method that runs statements before it gives a field, `self.seen = true; &self.seen`, is read as that field, `gate.seen`, and its statements never run (#1074)",
+    file: "src/lower/classes/accessors.rs",
+    find: "        if !block.stmts.is_empty() {\n            return None;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^class_trait_method_before_its_field.rs$"],
+  },
 ];

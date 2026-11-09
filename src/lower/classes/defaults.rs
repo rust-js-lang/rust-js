@@ -3,11 +3,22 @@
 
 use crate::js::{self, Expr, ExprKind, Pattern, Prop, Stmt, StmtKind};
 
-/// Each default a class takes of a trait of classes, of its impl's
+/// Each default a class takes of a trait of classes, of its impl `imp`'s
 /// dictionary lowered, `body`, which returns its object: a function of
 /// each default's arrow, its prototype's method, `this` its `self`; the
-/// impl's own methods are its prototype's already (rd283, ADR 1035).
-pub(in crate::lower) fn prototype_defaults(mut body: Vec<Stmt>) -> Vec<js::Function> {
+/// impl's own methods are its prototype's already, whatever their entries
+/// are, an arrow that boxes a `&mut self` among them (rd283, ADR 1035,
+/// #1074).
+pub(in crate::lower) fn prototype_defaults(
+    tcx: rustc_middle::ty::TyCtxt<'_>,
+    imp: rustc_span::def_id::DefId,
+    mut body: Vec<Stmt>,
+) -> Vec<js::Function> {
+    let written = tcx.impl_item_implementor_ids(imp);
+    let own: Vec<String> = (tcx.associated_item_def_ids(tcx.impl_trait_id(imp)).iter())
+        .filter(|item| written.contains_key(*item))
+        .map(|&item| crate::lower::bindings::fn_name(tcx, item))
+        .collect();
     let Some(Stmt {
         kind: StmtKind::Return(Some(Expr {
             kind: ExprKind::Object(props, _),
@@ -21,6 +32,9 @@ pub(in crate::lower) fn prototype_defaults(mut body: Vec<Stmt>) -> Vec<js::Funct
     let mut defaults = Vec::new();
     for prop in props {
         let Prop::Field(name, value) = prop else { continue };
+        if own.contains(&name) {
+            continue;
+        }
         let (is_async, span) = (matches!(value.kind, ExprKind::AsyncArrow(..)), value.span);
         let (ExprKind::Arrow(mut params, mut body) | ExprKind::AsyncArrow(mut params, mut body)) = value.kind else {
             continue;

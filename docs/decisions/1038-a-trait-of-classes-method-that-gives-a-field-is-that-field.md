@@ -108,3 +108,27 @@ for: call it.
   `class-trait-field-calls-unread` (`analysis.ts`),
   `class-trait-field-method-printed` (`pipeline/reached.ts`) and
   `class-trait-field-method-declared` (`declarations/functions.ts`).
+
+## Amendment: a method that runs anything before it gives its field is none (#1074)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's. `field_accessor` read a method's body through `peel_blocks`,
+which passes over a block's statements, so `fn mark(&mut self) -> &bool {
+self.seen = true; &self.seen }` was taken for one that only gives its
+field: `gate.mark()` was read as `gate.seen`, `false` where native Rust
+prints `true`, and its statement never ran. A method is that field only
+where each block of its body is of no statements, its expression the
+borrow, at each level; any other is its prototype's method, called.
+
+Such a method of `&mut self` was then refused as a class's method named
+as one its trait gives it: its impl's dictionary's entry, an arrow that
+boxes its `self` (#803), was taken for one of the trait's defaults
+(`classes::prototype_defaults`). The defaults a class takes are now the
+trait's methods its impl doesn't write, and each one the impl writes is
+the prototype's own, `Gate.prototype.mark = function () { this.seen =
+true; return this.seen; }`, a `&mut` it gives the field's handle.
+
+Held by the corpus's `class_trait_method_before_its_field`, against native
+Rust; mutations `field-accessor-after-statements`
+(`lower/classes/accessors.ts`) and `class-defaults-of-own-entries`
+(`lower/classes/defaults.ts`).

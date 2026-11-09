@@ -30,4 +30,13 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/classes-traits.test.ts"],
   },
+  {
+    name: "class-defaults-of-own-entries",
+    breaks:
+      "an impl's own method of a trait of classes whose dictionary entry is an arrow, a `&mut self` method's that boxes its `self`, is taken for a default too, so the class is refused for holding it twice (#1074)",
+    file: "src/lower/classes/defaults.rs",
+    find: "        if own.contains(&name) {\n            continue;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^class_trait_method_before_its_field.rs$"],
+  },
 ];

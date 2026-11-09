@@ -770,7 +770,7 @@ pub fn lower_crate<'tcx>(
         if dictionaries.contains(&def_id)
             && let Some(class) = super::classes::trait_impl_class(tcx, def_id)
         {
-            let defaults = super::classes::prototype_defaults(std::mem::take(&mut lowered.function.body));
+            let defaults = super::classes::prototype_defaults(tcx, def_id, std::mem::take(&mut lowered.function.body));
             pass.class_defaults
                 .extend(defaults.into_iter().map(|function| (class, function)));
             pass.jsx.extend(lowered.jsx.then_some(module));
