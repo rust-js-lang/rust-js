@@ -215,6 +215,42 @@ jobs:
           cat metamorphic-*.log
           exit $failed
 
+  # The object model's net (#891, ADR 1105): every corpus case's items moved
+  # into a library, the program run with each value the library gives it
+  # read through a counting proxy, its reads as built against its least
+  # JS's and its output against native Rust, but the cases
+  # test/object-model-known.txt lists; each push that changes the object
+  # model's owners or the readability passes runs one case in 64.
+  object-model:
+    name: object model net
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run its 4 parts
+        env:
+          OBJECT_MODEL: all
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: |
+          pids=()
+          for part in 1 2 3 4; do
+            RUST_JS_CASES=$part/4 bun test --timeout=900000 test/object-model.test.ts > "object-model-$part.log" 2>&1 &
+            pids+=($!)
+          done
+          failed=0
+          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
+          cat object-model-*.log
+          exit $failed
+
   # The `None` matrix (#855, ADR 1096): an `Option` of each payload held in
   # each kind of place, each with its `NoneForm`, written each way and read
   # each way, in both builds, runs as native Rust does but the programs

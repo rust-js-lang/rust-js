@@ -1,0 +1,23 @@
+// The object model's net (test/object-model.test.ts, ADR 1105): each case
+// whose program reads what its library gave otherwise than its least JS,
+// under its issue, `#<issue> <case>`. A listed case that reads as the least
+// fails until it's taken off, so the list only shrinks.
+
+// tidy's `names/never taken` reads a field of a struct a library gave
+// twice where Rust reads it once (ADR 1022); and an enum's payload.
+#1065 refcell_quiet_borrows.rs
+#1065 stock_orders.rs
+#1065 user_from_str.rs
+
+// tidy's `values/shared tails` repeats a payload's read of a library's
+// enum.
+#1066 temporaries_taken_apart.rs
+
+// To decide, each a fix or no bug: a flattened enum's `undefined` writes
+// left out, an unread `$someNone` test left out, and two representation
+// choices of the least.
+#1067 flattened_state_got_mut.rs
+#1067 flattened_state_into_inner.rs
+#1067 returns_joined_past_blocks.rs
+#1067 once_cell_known_empty.rs
+#1067 field_named_proto_renamed.rs

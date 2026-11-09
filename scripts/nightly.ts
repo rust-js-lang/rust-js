@@ -85,6 +85,16 @@ export const jobs: Record<string, Part[]> = {
     cores: 1,
     timeout: 30 * minutes,
   })),
+  // Each corpus case's items moved into a library, the program run with
+  // each value the library gives it read through a counting proxy (#891,
+  // ADR 1105).
+  "object-model": parts("object-model", cores, (i) => ({
+    cmd: ["bun", "test", "--timeout=900000", "test/object-model.test.ts"],
+    env: { ...compiler, OBJECT_MODEL: "all", RUST_JS_CASES: `${i}/${cores}` },
+    after: ["build"],
+    cores: 1,
+    timeout: 30 * minutes,
+  })),
   // Each `Option` place's form, written each way and read each way, all 580
   // programs (#855, ADR 1096).
   nones: parts("nones", 4, (i) => ({

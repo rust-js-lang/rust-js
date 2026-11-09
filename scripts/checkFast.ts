@@ -126,6 +126,16 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
   // A change to how a place holds a `None`, or to what reads or writes
   // one, runs the `None` matrix's sample against native Rust (#855).
   const nones = all || changed.some((file) => /^src\/lower\/(representation\/(nones|options)|bindings\/nullable|std_types\/option|analysis\/nulled_params)/.test(file));
+  // A change to the JS object model's owners, what a struct JS may make
+  // is, or the readability passes, or to the net itself, runs the object
+  // model's sample: a library's values read through counting proxies
+  // (#891).
+  const objectModel =
+    all ||
+    tidy ||
+    [...changed, ...branch].some((file) =>
+      /^(src\/lower\/(classes|untagged|field_keys|bindings|representation|analysis\/fn_pointers)|src\/js\/(stmt_walk|expr_walk)|test\/object-model)/.test(file),
+    );
   // A change to the iterators' code, the working tree's or the branch's
   // since `main`, runs the iterator matrix's and the conformance table's
   // slices and the corpus with std's iterator structs, as a push's check
@@ -229,6 +239,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
       ...(tidy ? [job("readability passes", ["bun", "test", "test/tidy-stages.test.ts", "test/getter-reads.test.ts"], { weight: 2 })] : []),
       ...(mutRefs ? [job("the `&mut` matrix's sample", ["bun", "test", "test/mut-ref-matrix.test.ts"])] : []),
       ...(nones ? [job("the `None` matrix's sample", ["bun", "test", "test/none-matrix.test.ts"])] : []),
+      ...(objectModel ? [job("the object model's sample", ["bun", "test", "test/object-model.test.ts"])] : []),
       // The slices: 64 and 43 batches in 4 parts, 119-145 s and 63-119 s
       // alone at a load of 14-20; the corpus's every case (2026-11-05).
       ...(iterators
