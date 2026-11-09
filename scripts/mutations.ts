@@ -23,7 +23,7 @@ import { basename, dirname, join } from "node:path";
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
 import { installPackages } from "../test/packages-of";
-import { caseParts, compilerBuilds, shard, shardArg } from "./shard";
+import { caseParts, compilerBuilds, memoryBudget, shard, shardArg } from "./shard";
 import { casesReaching } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
@@ -720,6 +720,11 @@ function runtimeOf(compiler: string): Promise<string | Exit> {
  * their hooks ran out of time, it was stopped, or failed before any test
  * did, which says nothing of it. */
 export function judge(p: Exit, output: string): "caught" | "survived" | "inconclusive" {
+  // A mutant compiler that runs away, growing past what a run of tests is
+  // given, is one broken as surely as one that fails a test: what took
+  // check.yml's shards' runners down, the library mutant's recursive clone
+  // at 14 GB (#1097).
+  if (p.overgrown) return "caught";
   if (stopped(p, testTimeout)) return "inconclusive";
   if (p.code === 0) return passed(p.code, true, output) ? "survived" : "inconclusive";
   // Not only at a line's start: a long diff bun test cuts short doesn't end
@@ -733,6 +738,12 @@ export function judge(p: Exit, output: string): "caught" | "survived" | "inconcl
 // Each test run's own target is numbered: the controls run at once with
 // one compiler (`main`).
 let testRuns = 0;
+
+/** The bytes one run of a mutant's tests may hold, it and every process it
+ * starts: half the machine's budget, 4 GB at least. A run's peak is a
+ * test file's compiles, under 2 GB; one past this is a compiler that runs
+ * away, which took CI's runners of 16 GB down before (#1097). */
+const testsMemory = () => Math.max(4, memoryBudget() / 2) * 2 ** 30;
 
 /** How `tests` do with `compiler`, what they printed, and how many ran:
  * to its first failure, or, `bail` false, each of them, with `env` besides. */
@@ -764,7 +775,13 @@ async function test(
   // one after another have Bun's five seconds each, which a JSX test of
   // three seconds alone ran past on a nightly's machine of two workers,
   // and its mutation was inconclusive.
-  const p = await run([process.execPath, "test", "--timeout=60000", ...(bail ? ["--bail"] : []), ...tests], root, testTimeout, testsEnv(compiler, own, snapshots, env));
+  const p = await run(
+    [process.execPath, "test", "--timeout=60000", ...(bail ? ["--bail"] : []), ...tests],
+    root,
+    testTimeout,
+    testsEnv(compiler, own, snapshots, env),
+    testsMemory(),
+  );
   rmSync(own, { recursive: true, force: true });
   const output = p.stdout + p.stderr;
   const { pass, fail } = summary(output);

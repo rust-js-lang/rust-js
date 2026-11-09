@@ -336,3 +336,11 @@ test("a corpus mutant's compiler gets one thing wrong", async () => {
   expect((await compile("refuses-a-library")).code).toBe(0);
   expect(await compile("refuses-a-library", true)).toMatchObject({ code: 1, stderr: "error: a mutant's refusal\n" });
 });
+
+// A mutant whose tests ran past their memory cap, a compiler that ran away,
+// is caught, not inconclusive (#1097).
+test("a mutant whose tests outgrew their memory is caught", () => {
+  const exit = { code: null, signal: "SIGKILL", timedOut: false, overflowed: false, overgrown: true, stdout: "", stderr: "", bytes: { stdout: Buffer.from(""), stderr: Buffer.from("") } };
+  expect(judge(exit, "")).toBe("caught");
+  expect(judge({ ...exit, overgrown: false }, "")).toBe("inconclusive");
+});
