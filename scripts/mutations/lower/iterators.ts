@@ -276,15 +276,6 @@ export const mutations: Mutation[] = [
     tests: ["test/std-package.test.ts"],
   },
   {
-    name: "adapter-field-not-held",
-    breaks:
-      "what a compiled std struct's field holds as it is, `FlatMap`'s `U::IntoIter`, isn't, so std's `FlatMap` is refused its `U: IntoIterator`'s dictionary",
-    file: "src/lower/iterators.rs",
-    find: "                    || (super::recognition::is_compiled_std_type(tcx, adt.did())\n",
-    replace: "                    || (false\n",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
     name: "impl-trait-hides-held-into-iter",
     breaks:
       "an `impl Iterator` a function gives, hiding std's `Chain` of what it's given, isn't read as holding a `J::IntoIter`, so `J` is given as a JS iterator, `chain($iterator(countdown, next), tmp, drop)`, with dictionaries made in the function, not given as it is with its dictionary (ADR 0920)",

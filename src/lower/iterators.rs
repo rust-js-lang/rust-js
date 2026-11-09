@@ -203,13 +203,6 @@ pub(in crate::lower) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id:
             {
                 args.types()
                     .any(|arg| arg.walk().any(|part| part.as_type().is_some_and(is_its_iter)))
-                    // Or a compiled std struct's field, `FlatMap<I, U, F>`'s
-                    // `FlattenCompat<Map<I, F>, U::IntoIter>` (ADR 0903).
-                    || (super::recognition::is_compiled_std_type(tcx, adt.did())
-                        && adt.all_fields().any(|field| {
-                            let field = field.ty(tcx, args).skip_normalization();
-                            field.walk().any(|part| part.as_type().is_some_and(is_its_iter))
-                        }))
             }
             _ => false,
         })

@@ -50,3 +50,20 @@ were missing:
   case's sources; `Iterator.from` 15.3 to 15.4.
 - Mutations: `flat-map-not-held`, `adapter-field-not-held`,
   `held-adapter-bounds-unasked`.
+
+## Amendment: `held_by`'s field rule is gone, #966's subsumes it (#1109)
+
+`into_iter_held_as_it_is` read a compiled std struct's fields as well as
+its arguments for an `IntoIter` held as it is, so that `FlatMap<I, U, F>`'s
+`FlattenCompat<Map<I, F>, U::IntoIter>` gave std's `flat_map` its `U:
+IntoIterator` dictionary (ac3e7a56c, `std_flat_map.rs`). Since #966, a
+type parameter another bound names is given as it is, by the same
+function's first test, `named_by_another_bound`: `flat_map`'s `U` is named
+by `F: FnMut(Self::Item) -> U`. So the field rule never decided anything:
+std's JS is byte-identical without it, its mutation `adapter-field-not-held`
+survived every net, and `std_flat_map.rs` and the flatten cases pass
+without it. With #966's rule taken out too (`into-iter-named-not-held`),
+`std_flat_map.rs`, `flatten_from_its_back.rs`,
+`flatten_count_takes_each_inner_count.rs`, `flatten_fold_closure_panics.rs`
+and `held_flat_map_of_maps_from_its_back.rs` fail. That rule is the one
+answer, and the field rule is removed with its mutation.
