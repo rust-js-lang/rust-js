@@ -30,6 +30,9 @@ pub struct OutputPlan {
     /// `@rust-js/std`'s build, whose manifest is committed beside its JS:
     /// its paths relative to it (ADR 0561).
     pub std_bodies: bool,
+    /// The toolchain's release, of which `@rust-js/std`'s crate hash is
+    /// made with its inputs (`Manifest::of_its_inputs`, #1094).
+    pub toolchain: String,
     /// Preparation's rewrites each module is prepared with,
     /// `--prepare-without`'s, and where `--prepare-fired` writes which of
     /// them changed something, a test hook (ADR 1087).
@@ -709,6 +712,7 @@ impl OutputPlan {
             dep_info: None,
             settings: crate::settings::Settings::default(),
             std_bodies: false,
+            toolchain: String::new(),
             prepare: Default::default(),
             written: Vec::new(),
             read: Vec::new(),
@@ -1021,10 +1025,13 @@ impl OutputPlan {
                 tests,
             };
             // `@rust-js/std`'s is committed beside its JS, its paths relative
-            // to it, and of no one build of the compiler, which builds it in
-            // (ADR 1003).
+            // to it, of no one build of the compiler, which builds it in
+            // (ADR 1003), and its crate hash of its inputs alone (#1094).
             let manifest = match self.std_bodies {
-                true => manifest.relative_to(parent_dir(&path)).of_no_build(),
+                true => manifest
+                    .relative_to(parent_dir(&path))
+                    .of_no_build()
+                    .of_its_inputs(&self.toolchain),
                 false => manifest,
             };
             // What Cargo is told of the build, then the manifest, last: a

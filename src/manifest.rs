@@ -171,6 +171,23 @@ impl Manifest {
         self
     }
 
+    /// Its library's crate hash of what it's made of alone, `@rust-js/std`'s:
+    /// its inputs, by their relative paths and their contents' hashes, and
+    /// the toolchain's `release`. rustc's, of a `core` built from where the
+    /// toolchain is on the machine and of where its own crate was, differed
+    /// from one checkout and machine to the next, and std's is a builtin's,
+    /// which nothing checks against metadata (`Foreign::check`, #1094).
+    pub fn of_its_inputs(mut self, release: &str) -> Self {
+        if let Some(library) = &mut self.library {
+            let mut made_of = format!("{release}\n");
+            for input in &library.inputs {
+                made_of.push_str(&format!("{} {}\n", input.file.display(), input.hash));
+            }
+            library.crate_hash = fingerprint(made_of.as_bytes());
+        }
+        self
+    }
+
     /// The manifest at `path`, each relative path in it, `@rust-js/std`'s,
     /// resolved against its directory: the one way a manifest file is read.
     pub fn read_from(path: &Path) -> Result<Self, String> {

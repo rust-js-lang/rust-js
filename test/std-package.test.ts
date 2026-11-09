@@ -10,6 +10,8 @@ import { cpSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildCompiler, compiler, fixture, root, run, stdDir } from "./support";
 import { underLoad } from "../scripts/timing";
+import { stdBuild } from "../scripts/std";
+import { runSync } from "./child";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -19,25 +21,15 @@ test("the committed @rust-js/std is std's bodies as the compiler compiles them",
   const dir = fixture("std-package");
   mkdirSync(join(dir, "std"), { recursive: true });
   cpSync(join(stdDir, "lib.rs"), join(dir, "std", "lib.rs"));
-  run([
-    compiler,
-    join(dir, "std", "lib.rs"),
-    "-o",
-    join(dir, "std", "index.js"),
-    "--library",
-    "--manifest",
-    join(dir, "std", "manifest.json"),
-    "--std-bodies",
-    "--",
-    "--crate-name",
-    "rust_js_std",
-  ]);
+  const build = stdBuild(compiler, dir);
+  const made = runSync(build.cmd, build.cwd, underLoad(600_000));
+  if (made.code !== 0) throw new Error(`std's build failed:\n${made.stderr}`);
   const manifest = JSON.parse(readFileSync(join(dir, "std", "manifest.json"), "utf8"));
   const committed = JSON.parse(readFileSync(join(stdDir, "manifest.json"), "utf8"));
   // The library contract, what the compiler builds in, and each module's
-  // file, relative: the same wherever the checkout is, but for the crate's
-  // hash, which rustc makes of where its source is.
-  const contract = ({ crate_hash, inputs, ...rest }: Record<string, unknown>) => rest;
+  // file, relative: the same wherever the checkout is, the crate's hash
+  // too, of its inputs alone (#1094).
+  const contract = ({ inputs, ...rest }: Record<string, unknown>) => rest;
   expect(contract(manifest.library)).toEqual(contract(committed.library));
   // Of no one build of the compiler, each of which builds it in (ADR 1003).
   expect([manifest.compiler.build, committed.compiler.build]).toEqual([undefined, undefined]);
@@ -58,6 +50,38 @@ test("the committed @rust-js/std is std's bodies as the compiler compiles them",
   expect([pkg.name, pkg.version]).toEqual(["@rust-js/std", version]);
   // A compile of std's bodies, 6.2 s alone since std's iterator adapters
   // compile (ADRs 0908, 0917): past 30 s beside check:fast's other jobs.
+}, underLoad(120_000));
+
+// std's crate hash is of its inputs alone (#1094): built in two places, one
+// with `RUSTC_BOOTSTRAP` given as a test run or Cargo gives it, each is the
+// committed one. It was rustc's, of where the checkout was, of whether that
+// was given, and of a `core` built from where the toolchain is, so each
+// checkout and machine committed another.
+test("std's crate hash is the same built anywhere, with or without RUSTC_BOOTSTRAP", () => {
+  const committed = JSON.parse(readFileSync(join(stdDir, "manifest.json"), "utf8")).library.crate_hash;
+  const given = process.env.RUSTC_BOOTSTRAP;
+  const hashes = [
+    ["std-hash-here", undefined],
+    ["std-hash-elsewhere", "1"],
+  ].map(([name, bootstrap]) => {
+    // The second deeper in a place of its own: another path.
+    const dir = bootstrap === undefined ? fixture(name as string) : join(fixture(name as string), "deeper");
+    mkdirSync(join(dir, "std"), { recursive: true });
+    cpSync(join(stdDir, "lib.rs"), join(dir, "std", "lib.rs"));
+    const build = stdBuild(compiler, dir);
+    // As the caller's environment has it, which the build takes out.
+    if (bootstrap === undefined) delete process.env.RUSTC_BOOTSTRAP;
+    else process.env.RUSTC_BOOTSTRAP = bootstrap;
+    try {
+      const made = runSync(build.cmd, build.cwd, underLoad(600_000));
+      if (made.code !== 0) throw new Error(`std's build failed:\n${made.stderr}`);
+    } finally {
+      if (given === undefined) delete process.env.RUSTC_BOOTSTRAP;
+      else process.env.RUSTC_BOOTSTRAP = given;
+    }
+    return JSON.parse(readFileSync(join(dir, "std", "manifest.json"), "utf8")).library.crate_hash;
+  });
+  expect(hashes).toEqual([committed, committed]);
 }, underLoad(120_000));
 
 // What the compiler writes imports the package by its name, each module by

@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "std-manifest-of-a-build",
     breaks: "`@rust-js/std`'s committed manifest says which build of the compiler wrote it, so each build's is another (ADR 1003)",
     file: "src/output.rs",
-    find: "                true => manifest.relative_to(parent_dir(&path)).of_no_build(),\n",
-    replace: "                true => manifest.relative_to(parent_dir(&path)),\n",
+    find: "                    .of_no_build()\n",
+    replace: "",
     tests: ["test/std-package.test.ts"],
   },
   {
@@ -470,5 +470,13 @@ export const mutations: Mutation[] = [
     find: "    let env: Vec<&str> = text.lines().filter(|line| line.starts_with(\"# env-dep:\")).collect();\n",
     replace: "    let env: Vec<&str> = Vec::new();\n",
     tests: ["test/compiles.test.ts", "-t", "a file's record of its build"],
+  },
+  {
+    name: "std-crate-hash-rustcs",
+    breaks: "`@rust-js/std`'s manifest keeps rustc's crate hash, of where the checkout and the toolchain are and of `RUSTC_BOOTSTRAP`, so each checkout and machine commits another (#1094)",
+    file: "src/output.rs",
+    find: "                    .of_no_build()\n                    .of_its_inputs(&self.toolchain),\n",
+    replace: "                    .of_no_build(),\n",
+    tests: ["test/std-package.test.ts", "-t", "crate hash"],
   },
 ];

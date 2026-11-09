@@ -494,3 +494,28 @@ already. ADR 0262's case: none, the same count by the body std runs. The
 corpus's JS is the same. Held by `flatten_count_takes_each_inner_count.rs`,
 of a held `flat_map`'s, `flatten()`'s and `fuse()`'s, and the mutation
 `std-struct-count-not-passed-on`.
+
+## Amendment: std's crate hash is its inputs' alone (2026-11-09, #1094)
+
+`std/manifest.json`'s `crate_hash` changed with every checkout that ran
+`bun run std`, a commit's alone, `a6e126…` from one worktree and `ebc393…`
+from another, though nothing it's made of had. It was rustc's hash of the
+crate, which is of where the crate was compiled, of its options, of
+`RUSTC_BOOTSTRAP`, which `.cargo/config.toml` gives what Cargo runs and a
+test run has, and of each crate it's built on: the `core` built to unwind,
+compiled where the compiler is, from where the toolchain is on the machine.
+Remapping those paths away made the hash steady but lost what rust-js reads
+of `core`'s source, its locals' names, so std's JS read `tmp$1` where it
+read `count`.
+
+Nothing checks std's hash: it's a builtin's, which `Foreign::check` skips,
+as no consumer loads std's metadata. **So `@rust-js/std`'s manifest's crate
+hash is of what it's made of alone (`Manifest::of_its_inputs`): its inputs,
+by their relative paths and their contents' hashes, and the toolchain's
+release.** And std is built one way, `scripts/std.ts`, which `bun run std`
+and `test/std-package.test.ts` both run, in the checkout's root.
+
+The test compares the hash too now, and "std's crate hash is the same built
+anywhere, with or without RUSTC_BOOTSTRAP" builds std in two places, one
+deeper and with `RUSTC_BOOTSTRAP` given, each the committed one; it fails
+with rustc's hash, mutation `std-crate-hash-rustcs`.

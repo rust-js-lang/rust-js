@@ -630,6 +630,9 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     plan.metadata = metadata.clone();
     plan.settings = settings;
     plan.std_bodies = std_bodies;
+    plan.toolchain = rustc_interface::util::rustc_version_str()
+        .unwrap_or("unknown")
+        .to_string();
     let recording = prepare_fired.is_some();
     plan.prepare = (prepare::Passes::without(&prepare_without, recording), prepare_fired);
     let mut callbacks = RustJs {
