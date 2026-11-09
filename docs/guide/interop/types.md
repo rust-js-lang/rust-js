@@ -820,7 +820,9 @@ export function size(input) {
   The last may be `#[rust_js::otherwise]`: whatever the
   others aren't ([ADR 0214](../../decisions/0214-untagged-enums.md)); where
   that's one kind `typeof` tells, as `js::Kind::Object`'s `"object"`, it's
-  tested as that kind. A `match` of three cases or more of kinds `typeof`
+  tested as that kind. Its own value mustn't be of another's kind, a
+  tuple struct's array beside a `Vec`'s, which that one's test would take
+  first: refused, as two variants of one kind are. A `match` of three cases or more of kinds `typeof`
   tells is a `switch (typeof value)`, as a `match` of constants is a
   `switch`, a guarded arm's case testing its guard, `case "boolean": if
   (expected === false) { return expected; }`, wherever it's written ([ADR
