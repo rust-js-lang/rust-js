@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/items.rs",
     find: "            true => reference.never_throws(),\n",
     replace: "            true => reference,\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^never_unwinding_calls.rs$"],
     snapshots: true,
   },
   {

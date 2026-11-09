@@ -1,6 +1,9 @@
 // A set beside a value of the type it's inside: what the set's items drop
 // is found as any type's is, so the value's destructor still runs where
-// its holder's drop drops it.
+// its holder's drop drops it. A set of a type no other part holds on each
+// side of the field that reaches back, so whichever order the drop glue's
+// parts are walked in, a set's walk comes after it and keeps what it
+// reached (#917).
 use std::collections::{BTreeSet, HashSet};
 
 struct Task {
@@ -15,9 +18,9 @@ impl Drop for Task {
 }
 
 struct Step {
-    next: Option<Box<Task>>,
     tags: HashSet<String>,
-    seen: BTreeSet<String>,
+    next: Option<Box<Task>>,
+    seen: BTreeSet<Vec<u32>>,
 }
 
 fn step(next: Option<Box<Task>>) -> Step {

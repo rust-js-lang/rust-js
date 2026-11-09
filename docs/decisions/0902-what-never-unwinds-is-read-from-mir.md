@@ -271,3 +271,13 @@ collected. A library's type is read as the crate's is; its destructor is
 one this crate never knows never unwinds, so it may. The pinned React
 port regenerates as before. Mutation `library-drop-never-panics`
 (`lower/drops.ts`), by the pair test `library_drops_its_consumer_gives`.
+
+## Amendment: `never-unwinding-unmarked` names `never_unwinding_calls` (2026-11-09, #917)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): no difference; a test
+only. The mutation named `adapter_drops`, whose JS no longer changes without
+a reference marked `Known::NeverThrows` (likely since #847 changed what
+may unwind; the issue says so, unbisected), so it survived. Without the mark, 73 of
+the corpus's snapshots change, a call that can't panic moved into a
+`try`; it names `never_unwinding_calls`, the case this decision's
+Consequences hold it with, `greet("ann", 1)` inside a `try` without it.

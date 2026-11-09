@@ -830,3 +830,17 @@ made, made on one branch only, and unwound through), the traits test's
 `closure holding part of a value`, which compiles now, and the mutation
 `closure-part-taken`; the net's three `field` lines of #1012 run as
 native.
+
+## Amendment: `set_field_drops_in_a_cycle` walks a set after the field that reaches back (2026-11-09, #917)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): no difference; a test
+only. Since drop glue's parts are read from rustc's shim (#887), a
+struct's parts are walked in its shim's block order, the last field
+first, so `set_field_drops_in_a_cycle`'s `Step`, its `next` first and its
+sets after, walked the sets before the field that reaches back to `Task`,
+and `walk-reach-lost` survived: nothing walked after what reached further
+out could lose it. Its `Step` now has a set of a type no other part holds
+on each side of `next`, `HashSet<String>` before and `BTreeSet<Vec<u32>>`
+after, so a fresh set's walk follows it in either order; without the
+rule, `drop(held)` drops nothing and `drop inner` is missing, as #304's
+was. The rule stays: it's not dead, only no longer reached by its case.
