@@ -92,6 +92,7 @@ branch's one running, and no branch's run touches another's.
 | React's port, react-in-rust at `ports/react-in-rust.pin`: `cargo check` of it, `bun scripts/react-in-rust.ts check` | when a change touches a binding | **React port** workflow, of a push that changes `builtins/`, `webapi/`, `node/` or `react/` | |
 | React's port compiled again, its JS against what the pin committed, `bun scripts/react-in-rust.ts regen` | when a change would move React's JS | | yes (`port`) |
 | The crates of crates.io's corpus against `docs/crate-corpus.md`, `bun scripts/crate-corpus.ts --check [name ..]` | when a change touches what a crate uses | | yes (`crates`) |
+| The small Crater, each corpus crate's own `#[test]`s natively and as JS, `bun scripts/crater.ts --check [name ..]` (ADR 1109) | when a change touches what a crate's tests use | | yes (`crater`) |
 | How the generated JS reads, `test/readability.test.ts` against `docs/readability.txt` (ADR 0565) | with `bun run bless` | in the suite | in the suite |
 
 Every local run has a timeout that fits it, about twice its usual time
@@ -889,7 +890,11 @@ overflowed rust-js's stack, inlining a recursive type's `==` without end:
 6.9 GB at 8 s in the debug compiler, and enough in the release one to shut
 down a 16 GB runner even with Cargo building one crate at a time. Since
 the fix, the largest process of the whole corpus is regex-syntax's, at
-436 MB (debug) or 427 MB (release). Then `port`,
+436 MB (debug) or 427 MB (release). Then `crater`, `bun scripts/crater.ts
+--check`, each crate's own `#[test]`s run natively and as JS, a refused one
+cut from the JS's copy and the rest run, failing on a wrong answer
+`scripts/crater-decided.txt` doesn't list (ADR 1109); its largest process
+is chrono's dev-dependency `windows_bindgen`, 9 GB, until #1096. Then `port`,
 react-in-rust at `ports/react-in-rust.pin`, each crate compiled to JS again
 and compared with what that commit committed, its summary listing each
 file that differs and its first lines, the whole diff a `react-in-rust-diff`

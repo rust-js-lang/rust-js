@@ -660,6 +660,29 @@ jobs:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun scripts/crate-corpus.ts --check
 
+  # The small Crater (ADR 1109): each crate of the corpus's own `#[test]`s,
+  # natively and as JS, each test compared; a refused one cut and the rest
+  # run. A wrong answer scripts/crater-decided.txt doesn't list fails it.
+  crater:
+    name: small Crater
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run each crate's tests natively and as JS
+        env:
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: bun scripts/crater.ts --check
+
   # React's port (scripts/react-in-rust.ts): react-in-rust at the commit
   # `ports/react-in-rust.pin` names, each of its crates compiled to JS by
   # this compiler, against the JS that commit committed. A compile error or

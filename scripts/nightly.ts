@@ -218,6 +218,8 @@ export const jobs: Record<string, Part[]> = {
   // The crates from crates.io, each no worse than docs/crate-corpus.md
   // says (#467, #468).
   crates: [{ id: "crates", cmd: ["bun", "scripts/crate-corpus.ts", "--check"], env: compiler, after: ["build"], cores: 4, timeout: 60 * minutes }],
+  // Each crate of the corpus's own tests, natively and as JS (ADR 1109).
+  crater: [{ id: "crater", cmd: ["bun", "scripts/crater.ts", "--check"], env: compiler, after: ["build"], cores: 4, timeout: 90 * minutes }],
   // React's port at its pin, its JS compiled again against what it committed.
   port: [{ id: "port", cmd: ["bun", "scripts/react-in-rust.ts", "regen"], env: compiler, after: ["build"], cores: 4, timeout: 40 * minutes }],
   examples: [{ id: "examples", cmd: ["bun", "run", "--cwd", "examples/vite-react", "build"], after: ["build"], cores: 2, timeout: 10 * minutes }],
