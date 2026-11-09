@@ -107,3 +107,14 @@ error: missing prop `href` of `ButtonLinkProps`
   rustc nothing to infer of. A JSX test renders a component of
   `Default` props and one of required props, each with its children
   left out, and given.
+- **A companion `macro` is allowed `missing_docs`** (2026-11-09, #1098):
+  as public as its struct or component, it was an undocumented item of
+  the crate's, so any crate that denies the lint, `#![deny(missing_docs)]`,
+  and has a `Default` struct or a component failed to build under rust-js
+  alone: "missing documentation for a macro", smallvec's, base64's and
+  regex's own tests among them, found by the small Crater (#1087). It's
+  JSX's, not the crate's API, so rust-js allows the lint of it, as ADR
+  0439 allows a component's name. Case N: nothing a program does changes.
+  `test/jsx.test.ts`'s "a companion macro needs no docs in a crate that
+  denies missing_docs" holds it, and that an item of the crate's own is
+  still flagged.

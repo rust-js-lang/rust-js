@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "companion-macro-undocumented",
+    breaks: "a crate that denies `missing_docs` fails to build: the props companion beside its `Default` struct is an undocumented public macro (#1098)",
+    file: "src/jsx_syntax.rs",
+    find: "                    .push(self.allow(Symbol::intern(\"missing_docs\"), companion.span));\n",
+    replace: "                    .truncate(usize::MAX);\n",
+    tests: ["test/jsx.test.ts", "-t", "companion macro needs no docs"],
+  },
+  {
     name: "jsx-spans-unmarked",
     breaks: "JSX's `#[rust_js::jsx] f(..)` is an expression's attribute a stable release refuses",
     file: "src/jsx_syntax.rs",

@@ -969,6 +969,52 @@ fn tagged(Comp: &'static str) -> JSX::Element {
   expect([built.exitCode, warned, constants, private_, variables]).toEqual([0, ["NotComponent"], ["notConstant"], ["exposed"], ["Other", "Unread"]]);
 });
 
+// ADR 0213, amended: the companion `macro` rust-js makes beside a `Default`
+// struct and a component, as public as its item, is allowed `missing_docs`,
+// so a crate that denies it compiles, as smallvec, base64 and regex do; an
+// item of its own left undocumented, `Bare`, is still flagged.
+test("a companion macro needs no docs in a crate that denies missing_docs", () => {
+  const { dir, args } = compile(`//! A crate that documents what it exports.
+#![deny(missing_docs)]
+use react::{JSX, jsx};
+/// Derived.
+#[derive(Default)]
+pub struct Config {
+    /// Its width.
+    pub width: u32,
+}
+/// Written.
+pub struct Limits {
+    /// Its most.
+    pub most: u8,
+}
+impl Default for Limits {
+    fn default() -> Limits {
+        Limits { most: 9 }
+    }
+}
+/// A component's props.
+pub struct BadgeProps {
+    /// Its label.
+    pub label: &'static str,
+}
+/// A component.
+#[allow(non_snake_case)]
+pub fn Badge(BadgeProps { label }: BadgeProps) -> JSX::Element {
+    jsx! { <b>{label}</b> }
+}
+/// Uses it.
+pub fn app(c: Config) -> JSX::Element {
+    let _ = (c.width, Limits::default().most);
+    jsx! { <Badge label="!" /> }
+}
+pub struct Bare;
+`);
+  const built = Bun.spawnSync(args, { cwd: dir });
+  const missing = [...built.stderr.toString().matchAll(/^error: missing documentation for (.+)\n\s*--> [^:]+:(\d+)/gm)].map((m) => `${m[1]} ${m[2]}`);
+  expect(missing).toEqual(["a struct 35"]);
+});
+
 // ADR 0440: a binding's body never runs, so its parameters are unread,
 // which rust-js allows; two modules' bindings of one JS name, each of its
 // own Rust type, are no clash rustc flags; and a struct given a binding,

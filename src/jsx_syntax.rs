@@ -374,6 +374,16 @@ impl Expand<'_> {
             // A field named by a symbol, its name's use beside it (ADR 1051).
             companions.extend(parser::field_symbol_uses(self.sess, item));
         }
+        // A companion `macro`, as public as its struct or component, is
+        // JSX's, not the crate's API: rust-js allows `missing_docs` of it,
+        // so a crate that denies the lint compiles (ADR 0213, amended).
+        for companion in &mut companions {
+            if let ItemKind::MacroDef(..) = companion.kind {
+                companion
+                    .attrs
+                    .push(self.allow(Symbol::intern("missing_docs"), companion.span));
+            }
+        }
         items.extend(companions);
     }
 
