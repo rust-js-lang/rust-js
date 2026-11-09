@@ -276,4 +276,13 @@ export const mutations: Mutation[] = [
     replace: "        let evaluated = None;\n        let shown = self.display_shown(value, ty, span, pretty)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^text_of_a_value_made_by_a_call.rs$"],
   },
+  {
+    name: "never-shown-displayed",
+    breaks:
+      "`Display` of an `Infallible`, which never runs, is refused, so rand_core's `TryRngCore` blanket impl, its `Error: Display` an `Infallible`, can't be compiled (#1100)",
+    file: "src/lower/display/written.rs",
+    find: "        // One of which no value exists, `Infallible` (`never_shown`).\n        if self.never_shown(ty) {\n",
+    replace: "        // One of which no value exists, `Infallible` (`never_shown`).\n        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^infallible_shown_through_a_bound.rs$"],
+  },
 ];

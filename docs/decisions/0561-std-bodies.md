@@ -529,3 +529,18 @@ both are one import of one package's one entry, `from "@rust-js/std"`**
 module, `runtime.js`, and `iter.js`, which imports the helpers beside it.
 std's manifest names `std.js`, its link to `runtime.js` a file of the
 package's own, and is built into the compiler as before.
+
+## Amendment: a slice's chunks held know their length (#1100)
+
+`len()` of a compiled iterator asks its struct's hint, which it knows where
+`held_hint_known` finds the size of each iterator it holds. A slice's
+chunks and windows, `$iter` of the array of them made where they're made
+(ADR 0335), weren't among those, though their JS knows its length as an
+array's items' does. So rand_core 0.9's `fill_via_chunks`, `let zipped =
+dest.by_ref().zip(src.by_ref()); let num_chunks = zipped.len();` of a
+`Zip<&mut ChunksExactMut<u8>, &mut slice::Iter<T>>`, was refused, "of a
+lazy adapter", and with it rand_core. What `iterates_items` says is made an
+array of items, `$iter` of it, is now one whose hint is known. Held by
+`test/corpus/zip_len_of_chunks.rs`, the function and zips of `chunks`,
+`windows`, `chunks_exact` and a stepped `rchunks`, against native Rust in
+both builds. Mutation `chunks-hint-unknown` (`lower/iterators/knowing.ts`).

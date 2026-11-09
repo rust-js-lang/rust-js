@@ -168,12 +168,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_dyn_debug(ty) {
             return Ok(value);
         }
-        // An enum with no variants, `Infallible`: no value of it exists, so
-        // this never runs, as Rust's `match *self {}` doesn't (ADR 0161).
-        if let ty::Adt(adt, _) = ty.kind()
-            && adt.is_enum()
-            && adt.variants().is_empty()
-        {
+        // One of which no value exists, `Infallible` (`never_shown`).
+        if self.never_shown(ty) {
             return Ok(Expr::str(""));
         }
         // A path's `StripPrefixError`, which holds nothing.

@@ -107,8 +107,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`{:?}` of `Infallible`, which never runs, is an error, and `String`'s `FromStr` in generic code with it",
     file: "src/lower/display/debug.rs",
-    find: "            && adt.variants().is_empty()",
-    replace: "            && adt.variants().is_empty()\n            && false",
+    find: "        if self.never_shown(ty) {\n",
+    replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "generic_from_str"],
   },
   {

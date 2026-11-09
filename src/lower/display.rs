@@ -96,6 +96,16 @@ pub(super) enum BuilderPart {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether a value of `ty` is never shown, by `Debug` or `Display`: an
+    /// enum with no variants, `Infallible`, of which no value exists, so
+    /// what shows one never runs, as Rust's `match *self {}` doesn't (ADR
+    /// 0161). What shows it is `""`, the one answer of both, which a
+    /// dictionary that asks it, rand_core's `TryRngCore::Error`'s, is given
+    /// (#1100).
+    pub(super) fn never_shown(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if adt.is_enum() && adt.variants().is_empty())
+    }
+
     /// May calling `def_id` of `args` return `Err(fmt::Error)` (ADR 0187):
     /// the crate's or a library's function that may, or a dictionary's,
     /// which may be any, where any of the crate's or its libraries' may.

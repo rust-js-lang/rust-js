@@ -949,4 +949,13 @@ export const mutations: Mutation[] = [
     replace: "        if self.knows_its_length(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_cloned_items_whose_clone_runs.rs$"],
   },
+  {
+    name: "chunks-hint-unknown",
+    breaks:
+      "a slice's chunks, `$iter` of the array of them, aren't taken to know their length where a zip holds them, so `len()` of rand_core's `dest.by_ref().zip(src.by_ref())` is refused (#1100)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            || self.recognition().iterates_items(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^zip_len_of_chunks.rs$"],
+  },
 ];

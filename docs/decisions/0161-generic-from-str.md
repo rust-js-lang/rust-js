@@ -50,3 +50,20 @@ read("kg", unitFromStr());
   64-bit one, a `bool`, a `char`, a `String` and the crate's enum, with
   native Rust.
 - **It's the JS a person writes:** a parse function given to a generic one.
+
+## Amendment: `Infallible` shown by `Display` too (#1100)
+
+rand_core 0.9's blanket `impl<R: RngCore + ?Sized> TryRngCore for R` gives
+`type Error = Infallible`, which its trait bounds `Debug + Display`. Its
+dictionary asks `Infallible`'s `Display`, which was refused, "`{}` of a
+`core::convert::Infallible`", so rand_core, and rand and every crate that
+uses it, couldn't be compiled. `Debug` had the rule already: no value of an
+enum with no variants exists, so what shows one never runs, as Rust's
+`match *self {}` doesn't, and its JS is `""`. `Display` asks the same rule
+now, one predicate both ask, `never_shown`, not a second copy of it.
+Held by `test/corpus/infallible_shown_through_a_bound.rs`, through such a
+bound and through a generic `E: Display`, against native Rust in both
+builds; and by rand_core's own `fill_via_u32_chunks` and
+`fill_via_u64_chunks`, run as JS by a library's `#[test]`s, as native.
+Mutations `never-shown-displayed` (`lower/display/written.ts`) and
+`uninhabited-debug-refused`, refitted.

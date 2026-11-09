@@ -488,6 +488,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_string_like(ty) || self.is_parse_error(ty) {
             return Ok(value);
         }
+        // One of which no value exists, `Infallible` (`never_shown`).
+        if self.never_shown(ty) {
+            return Ok(Expr::str(""));
+        }
         // A path's `StripPrefixError`, as std shows it.
         if self.recognition().is_strip_prefix_error(ty) {
             return Ok(Expr::str("prefix not found"));
