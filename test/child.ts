@@ -11,6 +11,9 @@ export type Exit = {
   signal: string | null;
   timedOut: boolean;
   overflowed: boolean;
+  /** Stopped where it and what it started held more memory than `run`'s
+   * `memoryCap` (#1097). */
+  overgrown?: boolean;
   stdout: string;
   stderr: string;
   /** What it printed as it printed it: `stdout` and `stderr` read it as
@@ -100,16 +103,37 @@ function spawnedSync(cmd: string[], cwd: string, timeout: number, env: Record<st
   };
 }
 
-/** `cmd`, as `runSync` runs it, without blocking the others running. */
-export function run(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined> = {}): Promise<Exit> {
-  return keptCompileAsync(cmd, cwd, env, (cmd) => spawned(cmd, cwd, timeout, env));
+/** `cmd`, as `runSync` runs it, without blocking the others running; and
+ * stopped, `overgrown`, where it and every process it started, its own
+ * group's or one of its own, hold more than `memoryCap` bytes together
+ * (#1097). */
+export function run(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined> = {}, memoryCap?: number): Promise<Exit> {
+  return keptCompileAsync(cmd, cwd, env, (cmd) => spawned(cmd, cwd, timeout, env, memoryCap));
+}
+
+/** `pid` and each process it started, in turn, and the memory each holds,
+ * in bytes, as `ps` says. */
+export function processTree(pid: number): { pid: number; bytes: number }[] {
+  const rows = Bun.spawnSync(["ps", "-axo", "pid=,ppid=,rss="]).stdout.toString().trim().split("\n");
+  const children = new Map<number, { pid: number; bytes: number }[]>();
+  let own: { pid: number; bytes: number } | undefined;
+  for (const row of rows) {
+    const [id, parent, kb] = row.trim().split(/\s+/).map(Number);
+    const at = { pid: id, bytes: kb * 1024 };
+    if (id === pid) own = at;
+    children.set(parent, [...(children.get(parent) ?? []), at]);
+  }
+  const tree = own ? [own] : [];
+  for (let i = 0; i < tree.length; i++) tree.push(...(children.get(tree[i].pid) ?? []));
+  return tree;
 }
 
 /** `run`'s run of `cmd`, a compile kept or not (`test/compiles.ts`). */
-async function spawned(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined>): Promise<Exit> {
+async function spawned(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined>, memoryCap?: number): Promise<Exit> {
   const p = Bun.spawn(cmd, { cwd, stdout: "pipe", stderr: "pipe", detached: true, env: { ...process.env, ...env } });
   let timedOut = false;
   let overflowed = false;
+  let overgrown = false;
   const readers = [p.stdout.getReader(), p.stderr.getReader()];
   let cut: Timer | undefined;
   const stop = () => {
@@ -120,6 +144,22 @@ async function spawned(cmd: string[], cwd: string, timeout: number, env: Record<
     timedOut = true;
     stop();
   }, timeout);
+  // Each second, what it and what it started hold: past the cap, each is
+  // stopped, a process another started in a group of its own too.
+  const watching =
+    memoryCap === undefined
+      ? undefined
+      : setInterval(() => {
+          const tree = processTree(p.pid);
+          if (tree.reduce((sum, at) => sum + at.bytes, 0) <= memoryCap) return;
+          overgrown = true;
+          for (const { pid } of tree.reverse()) {
+            try {
+              process.kill(pid, "SIGKILL");
+            } catch {}
+          }
+          stop();
+        }, 1000);
   const read = async (reader: ReadableStreamDefaultReader<Uint8Array>) => {
     const chunks: Uint8Array[] = [];
     let size = 0;
@@ -138,6 +178,7 @@ async function spawned(cmd: string[], cwd: string, timeout: number, env: Record<
   // it started may hold open: that goes with it then.
   void p.exited.then(() => {
     clearTimeout(timer);
+    clearInterval(watching);
     stop();
   });
   const [stdout, stderr] = await Promise.all(readers.map(read));
@@ -148,6 +189,7 @@ async function spawned(cmd: string[], cwd: string, timeout: number, env: Record<
     signal: signalName(p.signalCode),
     timedOut,
     overflowed,
+    ...(overgrown ? { overgrown } : {}),
     stdout: stdout.toString(),
     stderr: stderr.toString(),
     bytes: { stdout, stderr },
@@ -159,6 +201,7 @@ async function spawned(cmd: string[], cwd: string, timeout: number, env: Record<
 export function stopped(exit: Exit, timeout: number): string | undefined {
   if (exit.timedOut) return `didn't finish in ${timeout / 1000}s`;
   if (exit.overflowed) return `printed more than ${maxBuffer / 1024 / 1024} MB`;
+  if (exit.overgrown) return "held more memory than it's given";
   if (exit.signal) return `killed by ${exit.signal}`;
   return undefined;
 }
