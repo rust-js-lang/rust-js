@@ -131,12 +131,13 @@ impl OwnStep {
 /// The steps a std source, of std's `path`, writes itself, not std's
 /// defaults of its `next`, which a JS form of it gives too, so what asks
 /// them reaches them: `Repeat`'s `nth`, of its `advance_by`, which makes no
-/// item, so clones none (repeat.rs:92); `RepeatN`'s `nth`, `last`, the
+/// item, so clones none (repeat.rs:92), and its `last` and `count`, which
+/// panic, as it never ends (repeat.rs:110, #1138); `RepeatN`'s `nth`, `last`, the
 /// value itself, and `count`, its length, none of which clones what it
 /// passes (repeat_n.rs:140, #1124).
 fn own_source_steps(path: &str) -> Option<&'static [OwnStep]> {
     match path {
-        "std::iter::Repeat" => Some(&[OwnStep::Nth]),
+        "std::iter::Repeat" => Some(&[OwnStep::Nth, OwnStep::Last, OwnStep::Count]),
         "std::iter::RepeatN" => Some(&[OwnStep::Nth, OwnStep::Last, OwnStep::Count]),
         _ => None,
     }

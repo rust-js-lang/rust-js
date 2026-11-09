@@ -352,4 +352,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^repeat_own_steps_clone_none.rs$"],
   },
+  {
+    name: "repeat-own-count-unknown",
+    breaks: "`repeat(x).count()` is counted by `reduce`, stepping it forever, not by its own `count`, which panics (#1138)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "        \"std::iter::Repeat\" => Some(&[OwnStep::Nth, OwnStep::Last, OwnStep::Count]),\n",
+    replace: "        \"std::iter::Repeat\" => Some(&[OwnStep::Nth]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_count_panics.rs$"],
+  },
 ];

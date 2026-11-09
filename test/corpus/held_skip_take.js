@@ -5,6 +5,7 @@ import {
   $extend,
   $foldOf,
   $iterator,
+  $last,
   $lent,
   $next,
   $nth,
@@ -120,7 +121,7 @@ function main() {
     const repeated = iterator_take(
       $repeating(["a"], undefined, loudDrop_drop),
       2,
-      { next: $next, nth: $nth },
+      { next: $next, nth: $nth, last: $last, count: $count },
       (repeat) => {
         repeat.return();
       },

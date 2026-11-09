@@ -13,9 +13,19 @@ function $repeating(value, clone = (value) => value, drop) {
   it.sizeHint = () => [2 ** 32 - 1, undefined];
   // Std's `Repeat::advance_by`, which makes no item, so clones none: what
   // a `take(n)`'s `count` asks, and an `nth`, a clone of the next alone,
-  // `$Steps`' of it (repeat.rs:92, #1124).
-  $forward(it, undefined, { advanceBy: () => 0 });
-  return $owns(it, "nth");
+  // `$Steps`' of it (repeat.rs:92, #1124). And its `count` and `last`,
+  // which panic, as it never ends, where std's default would step it
+  // forever, `value` dropped as the panic unwinds, as `count(self)` drops
+  // it (repeat.rs:110, #1138).
+  const infinite = () =>
+    $unwinds(
+      () => {
+        throw new Error("iterator is infinite");
+      },
+      () => it.return(),
+    );
+  $forward(it, undefined, { advanceBy: () => 0, count: infinite, last: infinite });
+  return $owns(it, "nth", "last", "count");
 }
 
 // `iter::repeat_n(value, count)`: a clone of `value` each step but the

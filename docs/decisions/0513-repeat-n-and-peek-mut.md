@@ -67,9 +67,6 @@ own steps (`own_steps.rs`) names them too, as std sources
 `$count`, its own, never a `reduce`.
 
 Left as refusals, no wrong answers:
-- `Repeat`'s `count` and `last`, which panic "iterator is infinite" at
-  their caller's place, which the runtime can't give, so they run as
-  long as std's would;
 - the back steps of `take(n)` of a `repeat`, and of a `repeat_n`, in the
   default build;
 - `repeat_n(..).len()`.
@@ -83,3 +80,26 @@ printed, against native Rust in both builds: through `take`, `skip`,
 `repeat-n-own-steps-unknown` (`lower/recognition/own_steps.ts`) and
 `source-own-count-unasked` (`lower/mir/iter.ts`); `repeat-n-last-cloned`
 held by it too.
+
+## Amendment: `Repeat`'s `count` and `last` panic (2026-11-10, #1138)
+
+`repeat(x).count()` and `last()` ran forever, std's defaults of `next`,
+where `Repeat`'s own panic, "iterator is infinite" (repeat.rs:110, :120):
+a hang where Rust panics, which `catch_unwind` and `#[should_panic]` see.
+The amendment above left them as they were; that was wrong.
+
+**`$repeating` gives `count` and `last` that panic with std's message, `x`
+dropped as the panic unwinds, as `count(self)` drops what it takes,** and
+the catalog names them its own, so an adapter that passes either on to its
+source asks them: a `skip`'s, an `enumerate`'s, a `fuse`'s, a
+`peekable`'s and a chain's second side's. What a panic says is its
+message, as every panic rust-js throws is; its place, which std's
+`#[track_caller]` gives as the caller's, isn't part of it. In 1.99 no
+other std iterator writes such a panic: `Cycle`'s and `RepeatWith`'s
+`count` and `last` are std's defaults, which run forever natively too.
+
+Held by `test/corpus/repeat_count_panics.rs`, each caught, against native
+Rust in both builds. Mutations `repeat-count-steps-forever`,
+`repeat-infinite-undropped` (`runtime/repeating.ts`) and
+`repeat-own-count-unknown` (`lower/recognition/own_steps.ts`);
+`repeat-advance-clones` and `repeat-own-nth-unflagged` refitted.

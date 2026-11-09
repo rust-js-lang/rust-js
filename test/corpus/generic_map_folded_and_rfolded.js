@@ -6,6 +6,7 @@ import {
   $foldBack,
   $foldOf,
   $given,
+  $last,
   $mapEnds,
   $next,
   $nextBackSome,
@@ -88,7 +89,14 @@ function main() {
   );
   // One that steps forward only, which has no back to give.
   const words = wrapIterator_fold(
-    { inner: iterator_take($repeating("a"), 3, { next: $next, nth: $nth }) },
+    {
+      inner: iterator_take($repeating("a"), 3, {
+        next: $next,
+        nth: $nth,
+        last: $last,
+        count: $count,
+      }),
+    },
     "",
     (all, [w]) => all + w,
     { next: $next, fold: $foldOf, nth: $nth },
@@ -105,7 +113,14 @@ function main() {
     `${nextBack == null ? "None" : `Some(${taggedDebug_fmt(nextBack, i32Debug)})`} ${next == null ? "None" : `Some(${taggedDebug_fmt(next, i32Debug)})`} ${value == null ? "None" : `Some(${taggedDebug_fmt(value, i32Debug)})`}`,
   );
   const counted = Wrap.countKept(
-    { inner: iterator_take($repeating("b"), 2, { next: $next, nth: $nth }) },
+    {
+      inner: iterator_take($repeating("b"), 2, {
+        next: $next,
+        nth: $nth,
+        last: $last,
+        count: $count,
+      }),
+    },
     { next: $next, fold: $foldOf, nth: $nth },
   );
   const arg = Wrap.lastKept(
