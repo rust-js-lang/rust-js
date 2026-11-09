@@ -340,4 +340,13 @@ export const mutations: Mutation[] = [
     replace: "                Some(_) => (callee, args),\n",
     tests: ["test/corpus.test.ts", "-t", "^from_iter_of_the_crates_iterator.rs$"],
   },
+  {
+    name: "std-iterable-param-unstepped",
+    breaks:
+      "a caller's iterator type parameter given as it is, given to a std function rust-js lowers itself, a `Debug` builder's `entries`, isn't stepped, so its impl takes no `Iterator` dictionary and the crate's own iterator `F: Fn() -> I` makes is read as a JS one, `[[object Iterator]]` (#1147)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                stepped.extend(iterables.map(|(param, _)| (caller, param.index, iterator)));\n",
+    replace: "                let _ = iterables;\n",
+    tests: ["test/corpus.test.ts", "-t", "^debug_entries_drop_as_std.rs$"],
+  },
 ];

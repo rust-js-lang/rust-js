@@ -22,3 +22,18 @@ function $debug(v) {
   }
   return String(v);
 }
+
+// A `Debug` builder's `entries(items)` of what holds what drops, or of an
+// iterator whose steps may panic: each shown by `show` as it's stepped,
+// then dropped by `drop`, where its items have a destructor, and as a panic
+// showing it unwinds, as std's `for entry in entries { self.entry(&entry) }`
+// drops it; what's left of `items` closed where a step or a show throws,
+// `$eachOf`'s (#1141, #1147, #1148).
+function $entriesShown(items, show, drop) {
+  const shown = [];
+  $eachOf(items, (entry) => {
+    shown.push(drop === undefined ? show(entry) : $unwinds(() => show(entry), () => drop(entry)));
+    drop?.(entry);
+  });
+  return shown;
+}

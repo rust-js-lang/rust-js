@@ -508,9 +508,12 @@ export const templates: Template[] = [
   ),
   t("char::decode_utf16", ["char::decode_utf16"], "u16", (it) => `for r in char::decode_utf16(${it}) {\n    println!("{r:?}");\n}`),
   t("std::char::decode_utf16", ["core::char::decode_utf16"], "u16", (it) => `for r in std::char::decode_utf16(${it}) {\n    println!("{r:?}");\n}`),
-  t("DebugList::entries", ["DebugList<'a, 'b>::entries"], "L", (it) => `println!("{:?}", Listed(|| ${it}));`),
-  t("DebugSet::entries", ["DebugSet<'a, 'b>::entries"], "L", (it) => `println!("{:?}", Setted(|| ${it}));`),
-  t("DebugMap::entries", ["DebugMap<'a, 'b>::entries"], "(u32, L)", (it) => `println!("{:?}", Mapped(|| ${it}));`),
+  // Each shown into a `String` first: a `Debug` that prints while it
+  // formats prints before the line it's in, ADR 0377's accepted
+  // difference, which the line formatted first doesn't show.
+  t("DebugList::entries", ["DebugList<'a, 'b>::entries"], "L", (it) => `let shown = format!("{:?}", Listed(|| ${it}));\nprintln!("{shown}");`),
+  t("DebugSet::entries", ["DebugSet<'a, 'b>::entries"], "L", (it) => `let shown = format!("{:?}", Setted(|| ${it}));\nprintln!("{shown}");`),
+  t("DebugMap::entries", ["DebugMap<'a, 'b>::entries"], "(u32, L)", (it) => `let shown = format!("{:?}", Mapped(|| ${it}));\nprintln!("{shown}");`),
   t("env::join_paths", ["std::env::join_paths"], "&str", (it) => `println!("{:?}", std::env::join_paths(${it}));`),
   t(
     "Command::args",

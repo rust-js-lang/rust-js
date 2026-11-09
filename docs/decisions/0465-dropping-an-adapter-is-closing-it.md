@@ -2356,3 +2356,34 @@ issues are off `test/iterator-matrix-known.txt`. Mutations
 and `iter-eq-taken-leaked-at-a-step-panic` (`runtime/cmp_items.ts`) new;
 `eq-closes-unasked` refitted to `dropping_source`, whose answer the
 removed call repeated.
+
+## Amendment: a `Debug` builder's `entries` drops what it shows (#1147, #1148)
+
+#1141 made `entries(items)` step an iterator whose steps may panic or that
+drops item by item, `$foldToArray(it.map(show))`, but it dropped none of
+what it showed, nor the crate's iterator with a `Drop` it was given, nor a
+`Vec` of items with a destructor, listed by `Array.from`. Std's `entries`
+is `for entry in entries { self.entry(&entry) }`: each entry dropped after
+it's shown, and as a panic showing it unwinds; the iterator at the loop's
+end, or as a panic unwinds.
+
+**Of what holds what drops, the iterator or its items, or an iterator
+whose steps may panic, `entries` is `$entriesShown(closing(it), show,
+drop)`**: each shown as it's stepped, then dropped, `$unwinds`' as its show
+throws; what's left closed where a step or a show throws (`$eachOf`), and
+the crate's iterator closed at its end (`closing`). Else `Array.from`, as
+before. A `Debug` that prints while it formats still prints before the
+line it's in, ADR 0377's accepted difference: the consumer net's `Debug`
+templates now format into a `String` first, as that difference isn't
+theirs to find, and their rows were made again.
+
+`consumer_closes_what_it_steps_on_a_panic.js`'s `entries` is
+`$entriesShown` where it was `$foldToArray(it.map(show))`, one form.
+
+Held by `test/corpus/debug_entries_drop_as_std.rs` against native Rust in
+both builds: a list, a set and a map of what drops, a `map` that makes
+what drops, the crate's iterator with a `Drop`, generic code's, and shows
+that panic. Mutations `debug-entries-items-undropped`,
+`debug-entries-iterator-undropped`, `debug-entries-dropping-items-unasked`
+(`lower/display/written.ts`) and `entries-shown-unwound-undropped`
+(`runtime/debug.ts`).

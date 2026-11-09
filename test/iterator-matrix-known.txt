@@ -22,12 +22,8 @@
 // generator consumers 486e504e7a42
 
 #1147 the crate's own iterator given to a `Debug` builder's `entries` or to `Vec::splice` isn't stepped as one: a TypeError, an item read as `undefined`, or none dropped
-consumers:plain 78,142,330,425,664,787,906,1100,1116,1197,1337,1393,1477,1880,1908,1920,1939,1995,2110,2251,2302,2356,2441
-consumers:std 78,142,330,425,664,787,906,1100,1116,1197,1337,1393,1477,1880,1908,1920,1939,1995,2110,2251,2302,2356,2441
-
-#1148 a `Debug` builder's `entries` of std's iterators steps them all before it shows any, and never drops what it shows
-consumers:plain 35,182,576,805,883,917,1012,1043,1350,1412,1735,1767,1932,1962,1981,2288,2363
-consumers:std 35,182,576,805,883,917,1012,1043,1350,1412,1735,1767,1932,1962,1981,2288,2363
+consumers:plain 142,787,1100,1116,1197,1393,1920,1939,2110,2441
+consumers:std 142,787,1100,1116,1197,1393,1920,1939,2110,2441
 
 #1149 `Vec::splice` steps its replacement before it drops what it removed, and of a replacement whose step panics leaves the `Vec` as it was and leaks what it stepped
 consumers:plain 408,1140,1381,1933

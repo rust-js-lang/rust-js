@@ -18,4 +18,13 @@ export const mutations: Mutation[] = [
     replace: "[...v].map($debug)",
     tests: ["test/runtime-transpiled.test.ts"],
   },
+  {
+    name: "entries-shown-unwound-undropped",
+    breaks:
+      "a `Debug` builder's entry whose show panics isn't dropped as it unwinds, which std's loop's `entry` is (#1148)",
+    file: "src/runtime/debug.js",
+    find: "    shown.push(drop === undefined ? show(entry) : $unwinds(() => show(entry), () => drop(entry)));\n",
+    replace: "    shown.push(show(entry));\n",
+    tests: ["test/corpus.test.ts", "-t", "^debug_entries_drop_as_std.rs$"],
+  },
 ];

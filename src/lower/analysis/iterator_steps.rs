@@ -241,6 +241,16 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                 }
                 continue;
             }
+            // A std function rust-js lowers itself, no manifest's, given as
+            // an iterable a caller's parameter given as it is, a `Debug`
+            // builder's `entries(items)`: stepped by `Iterator`, as std's
+            // body steps it, which only its dictionary does (#1147).
+            if is_std_crate(tcx, callee) && foreign.item(callee).is_none() && tcx.trait_of_assoc(callee).is_none() {
+                let iterables = (std_iterables_given(tcx, callee, args).into_iter()).filter(|&(param, theirs)| {
+                    given_as_it_is(tcx, caller, param) && iterable_bound(tcx, callee, theirs)
+                });
+                stepped.extend(iterables.map(|(param, _)| (caller, param.index, iterator)));
+            }
             // What it steps by: `Iterator`, of its own methods and
             // `IntoIterator`'s, with the extensions one asks of its `Self`,
             // `rev()`'s `DoubleEndedIterator`; or an extension, of
@@ -650,4 +660,35 @@ fn asks_self_iterator(tcx: TyCtxt<'_>, method: DefId, iterator: DefId) -> bool {
     (tcx.clauses_of(method).instantiate_identity(tcx).into_iter())
         .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
         .any(|bound| bound.self_ty().skip_binder() == self_param && bound.def_id() == iterator)
+}
+
+/// Each of `callee`'s own type parameters, not its impl's, that `args`
+/// gives a caller's own, by value, and the callee's: what it may step as
+/// an iterable it's given, `entries`' `I` (#1147); not what a type it's a
+/// method of holds, `Peekable<I>`'s, which its own lowering steps.
+fn std_iterables_given<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    callee: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Vec<(ty::ParamTy, ty::Ty<'tcx>)> {
+    let generics = tcx.generics_of(callee);
+    (args.iter().enumerate())
+        .filter(|&(index, _)| generics.parent_count <= index && index < generics.count())
+        .filter_map(|(index, arg)| match *arg.as_type()?.kind() {
+            ty::Param(param) => {
+                let theirs = generics.param_at(index, tcx);
+                Some((param, ty::Ty::new_param(tcx, theirs.index, theirs.name)))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// Whether `callee` bounds its type parameter `theirs` by `IntoIterator` or
+/// `Iterator`, which its body steps.
+fn iterable_bound<'tcx>(tcx: TyCtxt<'tcx>, callee: DefId, theirs: ty::Ty<'tcx>) -> bool {
+    let (iterator, into_iterator) = (std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator));
+    (tcx.clauses_of(callee).instantiate_identity(tcx).into_iter())
+        .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+        .any(|b| b.self_ty().skip_binder() == theirs && (b.def_id() == iterator || b.def_id() == into_iterator))
 }

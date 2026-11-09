@@ -356,6 +356,21 @@ export function $debug(v) {
   return String(v);
 }
 
+// A `Debug` builder's `entries(items)` of what holds what drops, or of an
+// iterator whose steps may panic: each shown by `show` as it's stepped,
+// then dropped by `drop`, where its items have a destructor, and as a panic
+// showing it unwinds, as std's `for entry in entries { self.entry(&entry) }`
+// drops it; what's left of `items` closed where a step or a show throws,
+// `$eachOf`'s (#1141, #1147, #1148).
+export function $entriesShown(items, show, drop) {
+  const shown = [];
+  $eachOf(items, (entry) => {
+    shown.push(drop === undefined ? show(entry) : $unwinds(() => show(entry), () => drop(entry)));
+    drop?.(entry);
+  });
+  return shown;
+}
+
 // Two values `==` compares part by part, each part that's a `RefCell`
 // borrowed to compare it, as are `a` and `b` where they're `cells`. One
 // that's the object it holds is also the value its guard reads, which isn't

@@ -243,17 +243,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec!["entry".into()],
                     vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                 );
-                // Of an iterator whose steps may panic or that holds what
-                // drops, each shown as it's stepped, as std's `entries` does,
-                // what's left of it closed where a step throws, which
-                // `Array.from` doesn't (#1141); of another, a collection's,
-                // `Array.from` of it, which nothing tells apart.
-                let throws = self.implements_iterator(iterable)
-                    && (self.steps_may_panic(iterable) || self.drops(iterable) != crate::lower::drops::Drops::Nothing);
+                // Of what holds what drops, its items or the crate's iterator
+                // with a `Drop`, or an iterator whose steps may panic: each
+                // shown as it's stepped, then dropped, as std's `for entry in
+                // entries { self.entry(&entry) }` drops it, and as a panic
+                // showing it unwinds; closed, what's left of it dropped where
+                // a step or a show throws, and the crate's iterator at its
+                // end, `$entriesShown` (#1141, #1147, #1148). Of another, a
+                // collection's, `Array.from` of it, which nothing tells apart.
+                let item = self.iterable_item(iterable);
+                let drops = |ty| self.drops(ty) != crate::lower::drops::Drops::Nothing;
+                let throws = drops(iterable)
+                    || drops(item)
+                    || (self.implements_iterator(iterable) && self.steps_may_panic(iterable));
                 BuilderPart::Many(match throws {
                     true => {
-                        let shown = Expr::call(Expr::member(self.js_iterator(items), "map"), vec![each]);
-                        Expr::call_helper("$foldToArray", vec![shown])
+                        let it = self.js_iterator(items);
+                        let it = self.closing(it, iterable, span)?;
+                        let mut args = vec![it, each];
+                        args.extend(self.std_drop_function(item, span)?);
+                        Expr::call_helper("$entriesShown", args)
                     }
                     false => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items, each]),
                 })

@@ -6,6 +6,7 @@ import {
   $catchUnwind,
   $closing,
   $dropEach,
+  $entriesShown,
   $foldToArray,
   $heapExtend,
   $heapFrom,
@@ -52,11 +53,7 @@ function collected(v, CFromIteratorU32) {
 
 export const listedDebug = { fmt: listedDebug_fmt };
 function listedDebug_fmt(listed) {
-  return `[${$foldToArray(
-    $closing($iter(ds()), $dropEach(dDrop_drop))
-      .map(key)
-      .map((entry) => String(entry)),
-  ).join(", ")}]`;
+  return `[${$entriesShown($closing($iter(ds()), $dropEach(dDrop_drop)).map(key), (entry) => String(entry)).join(", ")}]`;
 }
 
 function main() {

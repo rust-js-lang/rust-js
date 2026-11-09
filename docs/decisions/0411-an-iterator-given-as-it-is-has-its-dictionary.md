@@ -139,3 +139,24 @@ cases pass without it. With #969's test taken out too
 (`into-iter-named-not-held`), both fail, the iterator's case as well as
 the `IntoIterator`'s, so #969's is the one answer, and `named` is removed
 with its mutation. `iterator-read-as-js` is retargeted at what's left.
+
+## Amendment: one given to a std function rust-js lowers itself is stepped (#1147)
+
+An impl takes a type parameter's `Iterator` dictionary where one of its
+bodies steps it (`iterator_steps::stepped_params`): a method of
+`Iterator`'s, or a function whose manifest says it steps it. A `Debug`
+builder's `entries(items)` is neither: std's, lowered by the display
+writer, with no manifest. So `impl<F, I> Debug for Listed<F> where F:
+Fn() -> I, I: Iterator`, whose `I` is given as it is (another bound
+names it, #969), took no `IIterator`, and its `entries((self.0)())`
+stepped the crate's own iterator the caller's closure made as a JS one,
+`[[object Iterator]]` of `It(vec![1, 2].into_iter())` where native Rust
+shows `[1, 2]`, or a TypeError.
+
+**A caller's type parameter given as it is, given to a std function with
+no manifest as one of its own type parameters that it bounds by
+`IntoIterator` or `Iterator`, is stepped by `Iterator`**; not one its
+impl's type holds, `Peekable<I>`'s for `next_if`, which its own lowering
+steps, as std's body steps it: its dictionary is given, and
+`entries` steps it by `$given`. Mutation `std-iterable-param-unstepped`;
+`test/corpus/debug_entries_drop_as_std.rs`.
