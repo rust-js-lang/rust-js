@@ -4,8 +4,10 @@
 // `Vec`'s, a `String`'s and a deque's were refused, #1120), `unzip` and
 // `partition` (refused, #1120), `eq` and `ne` (dropped twice, #1123); of
 // items with a destructor too, and as a panic in `partition`'s function
-// unwinds, what's left and the iterator dropped then, and in what a
-// `String`'s `extend` steps, its source dropped as it unwinds.
+// unwinds, what's left and the iterator dropped then; and in what a
+// `String`'s `extend` steps, its source dropped as it unwinds (#1126), and
+// each piece pushed as it's stepped, so a caught panic leaves what came
+// before it pushed (#1127), generic code's too.
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 
 struct Loud<I>(I, &'static str);
@@ -89,5 +91,24 @@ fn main() {
     let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         text.extend(loud(vec!['a', 'b', 'c'], "text").map(|c| if c == 'c' { panic!("at c") } else { c }));
     }));
-    println!("{}", caught.is_err());
+    println!("{} {text:?}", caught.is_err());
+    let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        text.extend(["x", "y", "z"].into_iter().map(|p| if p == "z" { panic!("at z") } else { p }));
+    }));
+    println!("{} {text:?}", caught.is_err());
+    let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        extended(&mut text, ['1', '2', '3'].into_iter().map(|c| if c == '3' { panic!("at 3") } else { c }));
+    }));
+    println!("{} {text:?}", caught.is_err());
+    text.extend('p'..='r');
+    extended_by(&mut text, vec!['s', 't']);
+    println!("{text}");
+}
+
+fn extended_by<E: Extend<char>>(into: &mut E, items: Vec<char>) {
+    into.extend(items);
+}
+
+fn extended<E: Extend<char>>(into: &mut E, items: impl Iterator<Item = char>) {
+    into.extend(items);
 }

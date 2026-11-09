@@ -161,4 +161,21 @@ export const mutations: Mutation[] = [
     replace: "  return restFirst ? $unwinds(run, () => $inTurn(rest, collected)) : $unwinds(run, () => $inTurn(collected, rest));\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_map_collect_second_panic_aborts.rs$"],
   },
+  {
+    name: "extend-text-pieces-lost",
+    breaks:
+      "a `String`'s `extend` stepped by `$extendText` appends its pieces only once all are stepped, so a panic part-way loses what came before it (#1127)",
+    file: "src/runtime/fold_of.js",
+    find: "    for (let step = it.next(); !step.done; step = it.next()) push(step.value);\n  }, it, pushed, undefined, false);\n",
+    replace: "    const all = [];\n    for (let step = it.next(); !step.done; step = it.next()) all.push(step.value);\n    all.forEach(push);\n  }, it, pushed, undefined, false);\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
+  },
+  {
+    name: "extend-text-iterable-unstepped",
+    breaks: "a generic `Extend`'s dictionary of a `String` given an array steps nothing of it, as it's no iterator (#1127)",
+    file: "src/runtime/fold_of.js",
+    find: '  if (typeof it.next !== "function" && typeof it.fold !== "function") it = it[Symbol.iterator]();\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
+  },
 ];

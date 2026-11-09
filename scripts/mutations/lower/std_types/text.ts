@@ -427,8 +427,8 @@ export const mutations: Mutation[] = [
     name: "extended-cows-as-objects",
     breaks: "a `String`'s `extend` of `Cow<str>`s pushes the `Cow`s themselves, `[object Object]` (#495)",
     file: "src/lower/std_types/text.rs",
-    find: "            Some(item) => self.cow_texts(items, item),\n",
-    replace: "            Some(_) => items,\n",
+    find: "        let items = self.cow_texts(items, self.iterable_item(ty));\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cow_texts_joined.rs$"],
   },
   {
@@ -436,17 +436,17 @@ export const mutations: Mutation[] = [
     breaks:
       "a string extended by an iterable that isn't an array, generic code's, joins nothing",
     file: "src/lower/std_types/text.rs",
-    find: "            (false, false) => Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![items]),\n",
-    replace: "            (false, false) => items,\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
+    find: "            false => Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![items]),\n",
+    replace: "            false => items,\n",
+    tests: ["test/corpus.test.ts", "-t", "^text_extended.rs$"],
   },
   {
     name: "text-extend-unclosed",
     breaks:
-      "a `String`'s `extend` of an iterator steps it by `Array.from`, which never closes it where its `next` throws, so a panic part-way never drops its source (#1120)",
+      "a `String`'s `extend` of an iterator whose steps may panic joins its text and appends it once, by `Array.from`, which never closes it where its `next` throws: a panic part-way never drops its source (#1126), and loses what came before it (#1127)",
     file: "src/lower/std_types/text.rs",
-    find: "            (false, true) => Expr::call_helper(\"$foldToArray\", vec![items]),\n",
-    replace: "            (false, true) => Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![items]),\n",
+    find: "        if !stepped {\n",
+    replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
   },
   {
@@ -454,8 +454,17 @@ export const mutations: Mutation[] = [
     breaks:
       "a `String` extended by a range of `char`s or an `Option` takes `Array.from` of the range's object or of the `Option`'s value, not their items as `iterable_items` steps them",
     file: "src/lower/std_types/text.rs",
-    find: "            Some(ty) => self.iterable_items(items, ty, span, out)?,\n",
-    replace: "            Some(_) => items,\n",
+    find: "        let items = self.iterable_items(items, ty, span, out)?;\n        let ty = ty.peel_refs();\n",
+    replace: "        let ty = ty.peel_refs();\n",
     tests: ["test/corpus.test.ts", "-t", "^text_extended.rs$"],
+  },
+  {
+    name: "string-extend-unjoined",
+    breaks:
+      '`s.extend(chars)` adds their array, `s += ["y", "z"]`, not their text',
+    file: "src/lower/std_types/text.rs",
+    find: "            let text = self.joined_text(items, ty, span, out)?;\n",
+    replace: "            let text = items;\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
   },
 ];

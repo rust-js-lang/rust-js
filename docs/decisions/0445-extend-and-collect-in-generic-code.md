@@ -80,3 +80,33 @@ gather(3, { from_iter: (items) => Array.from(items) });
   a double-ended iterator's, which rust-js doesn't lower yet.
 - Giving a generic function an iterator of items with a destructor where
   it takes no drop for it is still refused (ADR 0190).
+
+## Amendment: a `String`'s `extend` pushes each piece as it's stepped (2026-11-10, #1127)
+
+A `String`'s `extend` joined its items' text, then appended it once: `s +=
+Array.from(items).join("")`, or `$foldToArray` since #1126. Std's pushes
+each `char` or string as `for_each` gives it, so a panic part-way, caught,
+leaves what came before it pushed. `text.extend(['a', 'b', 'c']...map(|c|
+if c == 'c' { panic!() } else { c }))` under `catch_unwind` left `">ab"`
+natively and `">"` as JS, of a plain iterator as of the crate's; and so did
+generic code's, through `Extend`'s dictionary.
+
+**Of an iterator whose steps may panic or that holds what drops, each piece
+is given a function that appends it as it's stepped, `$extendText(it,
+(piece) => { s += piece; })`,** which steps it as `$foldToArray` does: by
+its own fold where it has one, what's left of it closed as a panic unwinds,
+then at its end (#1126). Generic code's dictionary is given any iterable,
+so it does so always. Of another, a range's or an array's, which can't
+throw, its text joined and appended once, as before (`joined_text`), as
+nothing tells the two apart.
+
+Held by `test/corpus/iterator_consumed_by_extend_unzip_partition_eq.rs`,
+against native Rust in both builds: the crate's iterator with a `Drop`, a
+plain one and generic code's, each caught part-way, and a range of `char`s.
+Four corpus cases' JS changed to `$extendText`, none in what it prints.
+Mutations: new `extend-text-pieces-lost`, `extend-text-iterable-unstepped`
+(`runtime/fold_of.ts`) and `generic-text-extend-joined-nothing`
+(`lower/traits/dictionaries.ts`); `text-extend-unclosed`,
+`string-extend-unjoined`, `string-extend-unreserved`, `mir-push-str-lost`,
+`extended-cows-as-objects`, `joined-text-of-iterable-unarrayed` and
+`joined-text-own-items` refitted.

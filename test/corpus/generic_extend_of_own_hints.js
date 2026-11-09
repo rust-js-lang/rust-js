@@ -4,6 +4,7 @@ import {
   $assign,
   $extend,
   $extendMap,
+  $extendText,
   $iterator,
   $lazyRange,
   $print,
@@ -107,7 +108,9 @@ function main() {
   const c$4 = { value: text };
   letters(c$4, 3, {
     extend(collection, items) {
-      collection.value += Array.from($reserveHint(items, 1, undefined, collection.value)).join("");
+      $extendText($reserveHint(items, 1, undefined, collection.value), (piece) => {
+        collection.value += piece;
+      });
     },
   });
   text = c$4.value;

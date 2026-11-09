@@ -7,7 +7,7 @@ import {
   $enumerate,
   $extend,
   $extendMap,
-  $foldToArray,
+  $extendText,
   $folded,
   $fromDigit,
   $heapExtend,
@@ -397,7 +397,7 @@ function main() {
   );
   console.log(`extend set ${set.size}`);
   text = "";
-  text += $foldToArray(
+  $extendText(
     $iterator(
       up(),
       upIterator_next,
@@ -408,7 +408,10 @@ function main() {
       upIterator_fold,
       upIterator_nth,
     ).map((x) => $unwrap($fromDigit(x, 10))),
-  ).join("");
+    (piece) => {
+      text += piece;
+    },
+  );
   console.log(`extend string ${text}`);
   const tree = new $BTreeSet();
   $extendMap(

@@ -375,8 +375,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let value = match extended {
                         true => {
                             let into = arg_tys[0].peel_refs();
-                            let value = this.extended_reserved(value, into, arg_tys[1], place.clone());
-                            this.joined_text(value, Some(arg_tys[1]), span, out)?
+                            this.extended_reserved(value, into, arg_tys[1], place.clone())
                         }
                         false => value,
                     };
@@ -395,7 +394,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             held_as: Default::default(),
                         },
                     };
-                    crate::lower::display::append_written(&place, value, false, this.js_span(span), out);
+                    match extended {
+                        true => this.extended_text(&place, value, arg_tys[1], span, out)?,
+                        false => crate::lower::display::append_written(&place, value, false, this.js_span(span), out),
+                    }
                     Expr::undefined()
                 }))
             }),

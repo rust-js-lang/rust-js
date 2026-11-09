@@ -671,4 +671,13 @@ export const mutations: Mutation[] = [
     replace: "            if impl_id.is_local() && let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {\n",
     tests: ["test/crates.test.ts", "-t", "dictionary of a library's generic impl giving"],
   },
+  {
+    name: "generic-text-extend-joined-nothing",
+    breaks:
+      "a `String` extended in generic code, through `Extend`'s dictionary, is given nothing, where each piece is appended as it's stepped (#1127)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                let stepped = Expr::call_helper(\"$extendText\", vec![items.clone(), push]);\n",
+    replace: "                let stepped = Expr::call_helper(\"$extendText\", vec![Expr::array(Vec::new()), push]);\n",
+    tests: ["test/corpus.test.ts", "-t", "^(iterator_consumed_by_extend_unzip_partition_eq|generic_extend).rs$"],
+  },
 ];

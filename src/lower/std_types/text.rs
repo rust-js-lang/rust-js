@@ -248,51 +248,60 @@ pub(in crate::lower) fn utf16_length(units: &Expr) -> Option<Expr> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// `s.trim()`, `trim_start()` or `trim_end()`, by Unicode's White_Space, as
-    /// Rust's `char::is_whitespace` has it: `$trim(s)`, which trims U+0085
-    /// and keeps U+FEFF, where JS's `trim()` does the other (ADR 0183).
-    /// The text a string is extended by, `s.extend(items)`'s: its items',
-    /// each a `char` or a string, joined, `items.join("")` of an array,
-    /// `Array.from(items).join("")` of another iterable, as `iterable_items`
-    /// steps it, a range's or a B-tree's in order. `ty` is the items', or
-    /// none where they're any iterable already, a generic `Extend`'s
-    /// dictionary's (ADR 0445).
-    pub(in crate::lower) fn joined_text(
-        &mut self,
-        items: Expr,
-        ty: Option<Ty<'tcx>>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        // By `for_each`, std's, so through the crate's own `fold`, which
-        // `$foldToArray` steps it by, below.
-        let items = match ty {
-            Some(ty) => self.iterable_items(items, ty, span, out)?,
-            None => items,
+    /// The text a string is extended by, `s.extend(items)`'s, of `items` of
+    /// type `ty` whose steps can't panic and that hold nothing to drop
+    /// (`extended_text`): its items', each a `char` or a string, joined,
+    /// `items.join("")` of an array, `Array.from(items).join("")` of another
+    /// iterable, as `iterable_items` steps it, a range's or a B-tree's in
+    /// order (ADR 0445).
+    fn joined_text(&mut self, items: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        let items = self.iterable_items(items, ty, span, out)?;
+        let ty = ty.peel_refs();
+        let items = match ty.is_array() || ty.is_slice() || self.is_vec_like(ty) {
+            true => items,
+            false => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
         };
-        let ty = ty.map(|ty| ty.peel_refs());
-        let array = ty.is_some_and(|ty| ty.is_array() || ty.is_slice() || self.is_vec_like(ty));
-        // An iterator whose steps may panic or that holds what drops,
-        // stepped as `collect` steps one, `$foldToArray`'s: where stepping it
-        // throws, what's left of it closed as it unwinds, as std drops the
-        // iterator `extend` took, which `Array.from` doesn't, its source
-        // never dropped (#1126). Another, a range's, can't throw.
-        let iterator = ty.is_some_and(|ty| {
-            self.implements_iterator(ty)
-                && (self.steps_may_panic(ty) || self.drops(ty) != crate::lower::drops::Drops::Nothing)
-        });
-        let items = match (array, iterator) {
-            (true, _) => items,
-            (false, true) => Expr::call_helper("$foldToArray", vec![items]),
-            (false, false) => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
-        };
-        let items = match ty.map(|ty| self.iterable_item(ty)) {
-            Some(item) => self.cow_texts(items, item),
-            None => items,
-        };
+        let items = self.cow_texts(items, self.iterable_item(ty));
         Ok(Expr::call(Expr::member(items, "join"), vec![Expr::str("")]))
     }
 
+    /// `s.extend(items)`, `items` of type `ty`, written to `place`: of an
+    /// iterator whose steps may panic or that holds what drops, each piece
+    /// appended as it's stepped, `$extendText(it, (piece) => { s += piece;
+    /// })`, as std's `for_each` pushes each, so a panic part-way leaves what
+    /// came before pushed (#1127), and what's left of it closed as it
+    /// unwinds, which `Array.from` doesn't, its source never dropped (#1126);
+    /// else its text joined and appended once (`joined_text`), as nothing
+    /// tells the two apart.
+    pub(in crate::lower) fn extended_text(
+        &mut self,
+        place: &Expr,
+        items: Expr,
+        ty: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        let js_span = self.js_span(span);
+        let stepped = self.implements_iterator(ty)
+            && (self.steps_may_panic(ty) || self.drops(ty) != crate::lower::drops::Drops::Nothing);
+        if !stepped {
+            let text = self.joined_text(items, ty, span, out)?;
+            crate::lower::display::append_written(place, text, false, js_span, out);
+            return Ok(());
+        }
+        let items = self.iterable_items(items, ty, span, out)?;
+        let pieces = self.cow_texts(items, self.iterable_item(ty));
+        let piece = self.fresh("piece");
+        let mut push = Vec::new();
+        crate::lower::display::append_written(place, Expr::var(&piece), false, js_span, &mut push);
+        let push = Expr::arrow(vec![piece.as_str().into()], push);
+        out.push(StmtKind::Expr(Expr::call_helper("$extendText", vec![pieces, push])).at(js_span));
+        Ok(())
+    }
+
+    /// `s.trim()`, `trim_start()` or `trim_end()`, by Unicode's White_Space, as
+    /// Rust's `char::is_whitespace` has it: `$trim(s)`, which trims U+0085
+    /// and keeps U+FEFF, where JS's `trim()` does the other (ADR 0183).
     pub(in crate::lower) fn trimmed(&mut self, s: Expr, start: bool, end: bool) -> Expr {
         let name = match (start, end) {
             (true, true) => "$trim",

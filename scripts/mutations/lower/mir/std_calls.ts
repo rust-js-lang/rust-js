@@ -431,8 +431,8 @@ export const mutations: Mutation[] = [
     name: "mir-push-str-lost",
     breaks: "`write!` or `push_str` to a `String` from MIR writes nothing",
     file: "src/lower/mir/std_calls.rs",
-    find: "                crate::lower::display::append_written(&place, value, false, this.js_span(span), out);\n",
-    replace: "                let _ = (place, value);\n",
+    find: "                        false => crate::lower::display::append_written(&place, value, false, this.js_span(span), out),\n",
+    replace: "                        false => {}\n",
     tests: ["test/corpus.test.ts", "-t", "string_pushes"],
   },
   {
@@ -463,15 +463,6 @@ export const mutations: Mutation[] = [
     replace:
       "                if false && this.formats_out_of_order(&items, &template, span)? {\n",
     tests: ["test/corpus.test.ts", "-t", "^format_arguments_first.rs$"],
-  },
-  {
-    name: "string-extend-unjoined",
-    breaks:
-      '`s.extend(chars)` adds their array, `s += ["y", "z"]`, not their text',
-    file: "src/lower/mir/std_calls.rs",
-    find: "                            this.joined_text(value, Some(arg_tys[1]), span, out)?\n",
-    replace: "                            value\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
   },
   {
     name: "own-write-all-unwrapped",
@@ -638,8 +629,8 @@ export const mutations: Mutation[] = [
     name: "string-extend-unreserved",
     breaks: "a `String`'s `extend` by `char`s doesn't ask their iterator's hint first, as std's `Extend<char>` reserves by it (a wrong answer, #849)",
     file: "src/lower/mir/std_calls.rs",
-    find: "                            let value = this.extended_reserved(value, into, arg_tys[1], place.clone());\n",
-    replace: "",
+    find: "                            this.extended_reserved(value, into, arg_tys[1], place.clone())\n",
+    replace: "                            value\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_reserves_by_hint.rs$"],
   },
   {

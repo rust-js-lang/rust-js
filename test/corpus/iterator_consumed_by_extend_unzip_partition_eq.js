@@ -12,13 +12,15 @@ import {
   $dropEach,
   $extend,
   $extendMap,
-  $foldToArray,
+  $extendText,
   $iter,
   $iterEq,
   $iterator,
   $lent,
   $next,
   $partition,
+  $rangeInclusiveNext,
+  $reserveHint,
   $sortedEntries,
   $sortedKeys,
   $unzip,
@@ -63,9 +65,12 @@ function main() {
   let s = "a";
   const iter$1 = loud(["b", "c"], "string");
   try {
-    s += $foldToArray(
+    $extendText(
       $iterator(iter$1, (iterator) => loudIterator_next(iterator, { next: $next }), true),
-    ).join("");
+      (piece) => {
+        s += piece;
+      },
+    );
   } finally {
     loudDrop_drop(iter$1);
   }
@@ -347,8 +352,8 @@ function main() {
                 console.log(`${caught.TAG === "Err"}`);
                 let text = ">";
                 try {
-                  const caught = $catchUnwind(() => {
-                    text += $foldToArray(
+                  let caught = $catchUnwind(() => {
+                    $extendText(
                       $closing(
                         $iterator(
                           loud(["a", "b", "c"], "text"),
@@ -365,9 +370,75 @@ function main() {
                           return c;
                         }
                       }),
-                    ).join("");
+                      (piece) => {
+                        text += piece;
+                      },
+                    );
                   });
-                  console.log(`${caught.TAG === "Err"}`);
+                  console.log(`${caught.TAG === "Err"} ${$debugStr(text)}`);
+                  caught = $catchUnwind(() => {
+                    $extendText(
+                      ["x", "y", "z"].values().map((p) => {
+                        if (p === "z") {
+                          throw new Error("at z");
+                        } else {
+                          return p;
+                        }
+                      }),
+                      (piece) => {
+                        text += piece;
+                      },
+                    );
+                  });
+                  console.log(`${caught.TAG === "Err"} ${$debugStr(text)}`);
+                  caught = $catchUnwind(() => {
+                    const into = { value: text };
+                    try {
+                      extended(
+                        into,
+                        ["1", "2", "3"].values().map((c) => {
+                          if (c === "3") {
+                            throw new Error("at 3");
+                          } else {
+                            return c;
+                          }
+                        }),
+                        {
+                          extend(collection, items) {
+                            $extendText(
+                              $reserveHint(items, 1, undefined, collection.value),
+                              (piece) => {
+                                collection.value += piece;
+                              },
+                            );
+                          },
+                        },
+                      );
+                    } finally {
+                      text = into.value;
+                    }
+                  });
+                  console.log(`${caught.TAG === "Err"} ${$debugStr(text)}`);
+                  text += Array.from($iterator({ start: "p", end: "r" }, $rangeInclusiveNext)).join(
+                    "",
+                  );
+                  const value = ["s", "t"];
+                  const into = { value: text };
+                  try {
+                    extendedBy(into, value, {
+                      extend(collection, items) {
+                        $extendText(
+                          $reserveHint(items, 1, undefined, collection.value),
+                          (piece) => {
+                            collection.value += piece;
+                          },
+                        );
+                      },
+                    });
+                  } finally {
+                    text = into.value;
+                  }
+                  console.log(`${text}`);
                 } finally {
                   if (caught.TAG === "Ok") {
                     for (const item of caught._0[0]) {
@@ -413,5 +484,13 @@ function main() {
       dDrop_drop(item);
     }
   }
+}
+
+function extendedBy(into, items, EExtendChar) {
+  EExtendChar.extend(into, items, [4, 4]);
+}
+
+function extended(into, items, EExtendChar, IteratorInPlace) {
+  EExtendChar.extend(into, items, IteratorInPlace);
 }
 //# sourceMappingURL=case.js.map

@@ -6,6 +6,7 @@ import {
   $cmp,
   $extend,
   $extendMap,
+  $extendText,
   $iter,
   $lazyRange,
   $reserveHint,
@@ -70,7 +71,9 @@ function main() {
   const c$2 = { value: s };
   shout(c$2, {
     extend(collection, items) {
-      collection.value += Array.from($reserveHint(items, 1, undefined, collection.value)).join("");
+      $extendText($reserveHint(items, 1, undefined, collection.value), (piece) => {
+        collection.value += piece;
+      });
     },
   });
   s = c$2.value;

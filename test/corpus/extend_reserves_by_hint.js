@@ -4,7 +4,7 @@ import {
   $BTreeMap,
   $BTreeSet,
   $extendMap,
-  $foldToArray,
+  $extendText,
   $index,
   $iterator,
   $print,
@@ -33,7 +33,7 @@ function loud(n) {
 
 function main() {
   let s = "ab";
-  s += $foldToArray(
+  $extendText(
     $reserveHint(
       $iterator(loud(3), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
         (x) => String.fromCharCode((99 + (x & 255)) & 255),
@@ -42,28 +42,37 @@ function main() {
       undefined,
       s,
     ),
-  ).join("");
+    (piece) => {
+      s += piece;
+    },
+  );
   console.log(`chars ${s}`);
-  s = "";
-  s += $foldToArray(
+  let s$1 = "";
+  $extendText(
     $iterator(loud(2), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
       (x) => String(x),
     ),
-  ).join("");
-  console.log(`strings ${s}`);
-  s = "";
+    (piece) => {
+      s$1 += piece;
+    },
+  );
+  console.log(`strings ${s$1}`);
+  let s$2 = "";
   const cs = ["x", "y"];
-  s += $foldToArray(
+  $extendText(
     $reserveHint(
       $iterator(loud(2), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
         (x) => $index(cs, x),
       ),
       1,
       undefined,
-      s,
+      s$2,
     ),
-  ).join("");
-  console.log(`char refs ${s}`);
+    (piece) => {
+      s$2 += piece;
+    },
+  );
+  console.log(`char refs ${s$2}`);
   const m = new Map();
   $extendMap(
     m,

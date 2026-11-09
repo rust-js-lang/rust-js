@@ -97,6 +97,25 @@ function $foldToArray(it, drop, restFirst = false, inPlace = drop !== undefined 
   return folded;
 }
 
+// `s.extend(it)` of a `String`, of an iterator whose steps may panic or that
+// drops: each piece given `push`, which appends it, as it's stepped, as std's
+// `for_each` pushes each, so what's pushed before a panic stays (#1127); by
+// its fold where it has one, as `$foldToArray` steps it, and what's left of
+// it closed as a panic unwinds, then at its end (#1126). Of what's given a
+// generic `Extend`'s dictionary, any iterable, its iterator.
+function $extendText(it, push) {
+  if (typeof it.next !== "function" && typeof it.fold !== "function") it = it[Symbol.iterator]();
+  const pushed = [];
+  if (typeof it.fold === "function") {
+    $collectUnwinding(() => it.fold(undefined, (_, piece) => push(piece)), it, pushed, undefined, false);
+    return;
+  }
+  $collectUnwinding(() => {
+    for (let step = it.next(); !step.done; step = it.next()) push(step.value);
+  }, it, pushed, undefined, false);
+  $collectEnded(() => it.return?.(), pushed, undefined);
+}
+
 // What's left of what a collect in place of `it` reuses the buffer of, a
 // `Vec`'s `IntoIter`, dropped, std's `forget_allocation_drop_remaining`: of
 // the source at its root, as std's `SourceIter::as_inner` reaches it,

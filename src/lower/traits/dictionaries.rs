@@ -20,10 +20,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let given = [ty, ty];
         let none = ty::List::empty();
         let value = match self.recognition().std_extend(ty) {
+            // Each piece appended as it's stepped, as std's `for_each`
+            // pushes each, so a panic part-way leaves what came before (#1127).
             Some(Std::PushStr) => {
-                let text = self.joined_text(items.clone(), None, span, &mut body)?;
-                let added = Expr::bin(Op::Add, collection.clone(), text);
-                body.push(StmtKind::Assign(collection.clone(), added).at(js::Span::NONE));
+                let piece = self.fresh("piece");
+                let added = Expr::bin(Op::Add, collection.clone(), Expr::var(&piece));
+                let push = vec![StmtKind::Assign(collection.clone(), added).at(js::Span::NONE)];
+                let push = Expr::arrow(vec![piece.as_str().into()], push);
+                let stepped = Expr::call_helper("$extendText", vec![items.clone(), push]);
+                body.push(StmtKind::Expr(stepped).at(js::Span::NONE));
                 None
             }
             Some(Std::Comb(comb)) => Some(self.comb_values(
