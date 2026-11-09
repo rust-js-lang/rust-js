@@ -32,15 +32,23 @@ fn key(tcx: TyCtxt<'_>, id: DefId) -> String {
     }
 }
 
-/// The name of the library `krate`'s items are of, by which `Dependencies`
-/// knows it: `@rust-js/std`'s, which no crate is named, of std's crates,
+/// The key of the library `krate`'s items are of, by which `Dependencies`
+/// knows it: `@rust-js/std`'s name, which no crate has, of std's crates,
 /// not their names, which a program's crate may have, a workspace's `core`
-/// (ADR 1054); any other's, its crate's name.
-fn library_name(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> rustc_span::Symbol {
+/// (ADR 1054); any other's its crate's name and identity
+/// (`Library::key`), never its name alone, which std's own `cfg_if` and
+/// crates.io's share (#1130).
+fn library_key(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> String {
     match super::recognition::std_crate(tcx, krate) {
-        Some(_) => rustc_span::Symbol::intern(crate::runtime::PACKAGE),
-        None => tcx.crate_name(krate),
+        Some(_) => crate::runtime::PACKAGE.to_string(),
+        None => crate::library::key(tcx.crate_name(krate).as_str(), &crate_id(tcx, krate)),
     }
+}
+
+/// rustc's identity of `krate`, its `StableCrateId`, as a library's
+/// manifest writes it (`Library::crate_id`).
+fn crate_id(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> String {
+    format!("{:016x}", tcx.stable_crate_id(krate).as_u64())
 }
 
 /// Can another crate reach `id`, a local item? rustc's own answer, which
@@ -435,6 +443,7 @@ pub(super) fn exports<'tcx>(
     Library {
         version: VERSION,
         name: crate_name.to_string(),
+        crate_id: crate_id(tcx, LOCAL_CRATE),
         crate_hash: tcx.crate_hash(LOCAL_CRATE).to_string(),
         items,
         impls,
@@ -744,7 +753,8 @@ pub(super) struct Reached<'tcx> {
     /// crate makes it a `dyn Fn`.
     pub(super) functions: bool,
     /// The libraries with a `dyn Fn` in what they export, which may hold
-    /// one where theirs drop, and is given the crate's (ADR 0626, amended).
+    /// one where theirs drop, and is given the crate's (ADR 0626, amended),
+    /// by key (`library_key`).
     pub(super) fn_dyns_of: std::collections::BTreeSet<String>,
     /// What each `Rc` or `Weak` a library's items hold points at, of
     /// their signatures and fields, not of a type parameter a consumer
@@ -791,10 +801,10 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     }
 
     /// The library `krate`'s items are of, if it's one: `@rust-js/std` of
-    /// std's crates, whatever their names, any other by its crate's name
-    /// (`library_name`).
+    /// std's crates, whatever their names, any other by its crate's name and
+    /// identity (`library_key`).
     fn library(&self, krate: rustc_span::def_id::CrateNum) -> Option<&'a crate::library::Exports> {
-        self.dependencies.libraries.get(library_name(self.tcx, krate).as_str())
+        self.dependencies.libraries.get(&library_key(self.tcx, krate))
     }
 
     /// What the library JS file `from` exports but `default`, by the
@@ -826,17 +836,24 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// Is each library's JS from the crate rustc loaded the metadata of? A
     /// library rebuilt since its JS was, or metadata from another build of it,
     /// isn't: its JS would be for another crate than the one this was checked
-    /// against.
+    /// against. Asked of each library, of the crates rustc loaded of its
+    /// name: one is the library, its identity and hash; another of its name,
+    /// std's own `cfg_if` of rustc's sysroot, is another crate (#1130).
     pub(super) fn check(&self) -> bool {
         let mut matched = true;
-        for &krate in self.tcx.crates(()) {
-            let name = self.tcx.crate_name(krate);
-            if let Some(library) = self.library(krate)
-                && !library.builtin
-                && self.tcx.crate_hash(krate).to_string() != library.crate_hash
-            {
+        for library in self.dependencies.libraries.values() {
+            if library.builtin {
+                continue;
+            }
+            // Its hash is of its identity too, `StableCrateId`.
+            let named: Vec<_> = (self.tcx.crates(()).iter())
+                .filter(|&&krate| self.tcx.crate_name(krate).as_str() == library.name)
+                .collect();
+            let loaded = (named.iter()).any(|&&krate| self.tcx.crate_hash(krate).to_string() == library.crate_hash);
+            if !named.is_empty() && !loaded {
                 self.tcx.dcx().err(format!(
-                    "rust-js: the metadata rustc loaded for `{name}` isn't of the build its JS was made from: rebuild `{name}`, and use the metadata rust-js writes beside its JS"
+                    "rust-js: the metadata rustc loaded for `{}` isn't of the build its JS was made from: rebuild `{}`, and use the metadata rust-js writes beside its JS",
+                    library.name, library.name
                 ));
                 matched = false;
             }
@@ -1074,12 +1091,20 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         (self.dependencies.libraries.values()).any(|library| !library.builtin && library.makes_dropping_anys)
     }
 
-    /// Do the `dyn Fn`s of `name`, a library, drop: does it make one of
+    /// Do the `dyn Fn`s of the library `key` drop: does it make one of
     /// what drops, or is handed one so, which a `dyn Fn` it hands the crate
     /// may then be, and which drops one it's given (ADR 0626, amended)?
-    pub(super) fn drops_fn_dyns(&self, name: &str) -> bool {
-        (self.dependencies.libraries.get(name))
+    pub(super) fn drops_fn_dyns(&self, key: &str) -> bool {
+        (self.dependencies.libraries.get(key))
             .is_some_and(|library| !library.builtin && library.makes_dropping_fn_dyns)
+    }
+
+    /// The crate's name of the library `key`, which what's said of it names.
+    pub(super) fn library_named<'k>(&self, key: &'k str) -> &'k str
+    where
+        'a: 'k,
+    {
+        (self.dependencies.libraries.get(key)).map_or(key, |library| library.name.as_str())
     }
 
     /// Does any of the libraries keep a `Vec`'s capacity (ADR 0419)?
@@ -1166,11 +1191,9 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             let library = self.library(imp.krate)?;
             let lacks = library.impls.contains(&key(self.tcx, imp))
                 && (library.dictionary_consts.as_ref()).is_some_and(|consts| !consts.contains(&konst_key));
-            let name = library_name(self.tcx, imp.krate);
-            let (name, _) = self.dependencies.libraries.get_key_value(name.as_str())?;
             lacks.then(|| {
                 (
-                    name.as_str(),
+                    library.name.as_str(),
                     self.tcx.type_of(imp).instantiate_identity().skip_normalization(),
                 )
             })
@@ -1183,9 +1206,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     pub(super) fn drops_no_dyn_of(&self, tr: DefId) -> Option<&'a str> {
         let library = self.library(tr.krate)?;
         library.dyns_drop_nothing.contains(&key(self.tcx, tr)).then_some(())?;
-        let name = library_name(self.tcx, tr.krate);
-        let (name, _) = self.dependencies.libraries.get_key_value(name.as_str())?;
-        Some(name.as_str())
+        Some(library.name.as_str())
     }
 
     /// Is `id` a library's trait impl, one its consumers call?
@@ -1341,7 +1362,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
                 if let Some(krate) = exported
                     && super::recognition::is_fn_dyn(tcx, predicates) =>
             {
-                reached.fn_dyns_of.insert(library_name(tcx, krate).to_string());
+                reached.fn_dyns_of.insert(library_key(tcx, krate));
             }
             ty::FnDef(..)
                 if let Some((id, args)) = super::fn_def(ty)

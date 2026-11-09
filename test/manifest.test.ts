@@ -75,7 +75,7 @@ test("compiler identities reject incompatible ABI and missing version fields", (
 // types whose `Rc`s it counts (ADR 0852).
 test("library manifests validate their items and remap fingerprinted inputs", () => {
   const library = {
-    version: LIBRARY_ABI, name: "shared", crate_hash: "0123456789abcdef", inputs: [{ file: "/virtual/shared.rs", hash: "1234567890abcdef" }],
+    version: LIBRARY_ABI, name: "shared", crate_id: "00112233aabbccdd", crate_hash: "0123456789abcdef", inputs: [{ file: "/virtual/shared.rs", hash: "1234567890abcdef" }],
     items: [{ key: "ab12", rust_path: "shared::User::validate", module: [], export: "User", member: "validate" },
       { key: "cd34", rust_path: "shared::count", module: ["util"], export: "count", member: null, params: [{ index: 0, marks: ["drop"] }, { index: 1, marks: ["copy", "clone"], stepped: ["9f0e"] }, { index: 3, facts: ["Size", "Align"], built: { of: { adt: { key: "0f1e", args: [{ slot: 2 }, { tuple: [{ primitive: "u8" }, { ref: { mutable: false, to: { array: { len: 4, of: { slot: 0 } } } } }] }] } }, gates: [0] } }], facts: ["takes_location"], nulled_params: [0] }],
     impls: ["ef56"], libraries: ["base"], counted_rcs: [{ of: "ab12", args: [{}] }],
@@ -89,7 +89,7 @@ test("library manifests validate their items and remap fingerprinted inputs", ()
   expect(mapped.library.inputs[0].file).toBe("/local/shared.rs");
   expect(mapped.library.items).toEqual(library.items);
   const item = library.items[0];
-  for (const invalid of [null, { ...library, version: 2 }, { ...library, crate_hash: "" }, { ...library, inputs: [{ file: "relative.rs", hash: "bad" }] },
+  for (const invalid of [null, { ...library, version: 2 }, { ...library, crate_hash: "" }, { ...library, crate_id: "" }, { ...library, inputs: [{ file: "relative.rs", hash: "bad" }] },
     { ...library, impls: [1] }, { ...library, libraries: "base" }, { ...library, items: [{ ...item, member: 5 }] }, { ...library, items: [{ ...item, params: [{ index: "T" }] }] },
     { ...library, items: [{ ...item, module: "root" }] }, { ...library, items: [{ ...item, params: [{ index: 1, stepped: [0] }] }] }, { ...library, items: [{ ...item, params: [{ index: 0, marks: ["dropped"] }] }] }, { ...library, items: [{ ...item, params: [{ index: 3, built: { of: { slot: 0, tuple: [] } } }] }] }, { ...library, items: [{ ...item, params: [{ index: 3, built: { of: { slot: 0 }, gates: ["0"] } }] }] }, { ...library, items: [{ ...item, facts: ["throws"] }] },
     { ...library, counted_rcs: true }, { ...library, counted_rcs: [{ of: 1 }] }, { ...library, counted_rcs: [{ args: [null] }] },

@@ -3,6 +3,15 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "library-keyed-by-name",
+    breaks:
+      "a library is known by its crate's name alone, so two releases of one crate in one graph, cfg-if 0.1 and 1.0, are one library, refused as a duplicate (#1130)",
+    file: "src/library.rs",
+    find: '    format!("{name}-{crate_id}")\n',
+    replace: "    let _ = crate_id;\n    name.to_string()\n",
+    tests: ["test/sysroot-names.test.ts", "-t", "two releases of one crate"],
+  },
+  {
     name: "types-only-module-needs-js",
     breaks: "a library's module of types alone, which has no JS, is refused as one whose JS isn't fingerprinted, so its consumer can't import its types (ADR 1005)",
     file: "src/library.rs",

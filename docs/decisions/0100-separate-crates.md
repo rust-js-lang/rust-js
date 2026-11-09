@@ -340,3 +340,37 @@ impl's method its JS doesn't export through its exported dictionary
 it hands over, and copies a library's type, a tuple, an array and a `Vec`
 where it reads one. A library's derived serde codecs, which rust-js writes
 of attributes only the library sees, are still written and exported.
+
+## Amendment: a library is known by its crate's name and identity (2026-11-10, #1130)
+
+A consumer knew each library by its crate's name alone (`library_name`,
+`Dependencies::libraries`). std's sysroot holds crates std is made of,
+beside std's three: `cfg_if`, `hashbrown`, `libc` and others. rustc loads
+them whenever std is. So std's own `cfg_if` was looked up as the
+program's library `cfg_if`. The metadata check, its crate hash not the
+program's manifest's, then refused every crate that used crates.io's
+cfg-if: "the metadata rustc loaded for `cfg_if` isn't of the build its JS
+was made from". getrandom was among them. And two releases of one crate in
+one graph, cfg-if 0.1 and 1.0, were refused as a duplicate. A bisect found
+it on every commit back to 2026-10-26, as far back as the bisect's script
+could build: long-standing, not a regression.
+
+**A library is known by its key, its crate's name and rustc's identity of
+it, `StableCrateId`, `cfg_if-1f0e..`** (`library::key`, the one form). A
+manifest records its `crate_id`, the library ABI is 25, and a consumer's
+lookup keys a loaded crate the same way (`library_key`). Two crates of
+one name are two libraries. **The metadata check is asked of each
+library:** of the crates rustc loaded of its name, one must have its hash,
+which covers its identity. Another of its name, std's own `cfg_if`, is
+another crate, and isn't checked against it. What's said of a library
+names its crate, never its key. The tooling's writer of JS into the app's
+source takes every crate Cargo built, two of one name too, each vendored
+at its own release's directory. Case N of ADR 0262: what a program's
+`cfg_if` compiles to is unchanged.
+
+Held by `test/sysroot-names.test.ts`: a git crate named `cfg-if` stands in
+for crates.io's, compiled, called and run; and cfg-if 0.1 and 1.0 in one
+graph, under renamed dependencies, each called. Also by the mutations
+`library-keyed-by-name` and `library-check-every-crate-of-its-name`, both
+caught. `test/crates.test.ts` still refuses another build's metadata beside
+a manifest, and names a missing library by its crate.

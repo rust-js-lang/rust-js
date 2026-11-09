@@ -64,7 +64,7 @@ use std::path::Path;
 /// `Self`, an `associated` entry's `carrier`, `IteratorItemSize` of
 /// `<Self as Iterator>::Item`, which its defaults compiled over `Self` read
 /// (#990).
-pub const VERSION: u32 = 24;
+pub const VERSION: u32 = 25;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -310,6 +310,13 @@ pub struct Reexported {
 pub struct Library {
     pub version: u32,
     pub name: String,
+    /// rustc's identity of its crate, its `StableCrateId`, of its name and
+    /// Cargo's `-C metadata`: with its name, the key a consumer knows it by,
+    /// so two crates of one name, std's own `cfg_if` and crates.io's, or two
+    /// releases of one, are two libraries (#1130). An older compiler's
+    /// manifest has none, and is refused by its `version`.
+    #[serde(default)]
+    pub crate_id: String,
     /// rustc's hash of the crate its JS was made from, which a consumer
     /// checks against the metadata its rustc loads (ADR 0100).
     pub crate_hash: String,
@@ -317,9 +324,10 @@ pub struct Library {
     /// The keys of the trait impls whose methods are items: a consumer calls
     /// these, not what a derive would be.
     pub impls: Vec<String>,
-    /// The libraries it was compiled against, whose manifests its consumers
-    /// must have too: which traits get dictionaries, and which types drop,
-    /// is decided by which crates are rust-js's.
+    /// The libraries it was compiled against, by their keys (`Library::key`),
+    /// whose manifests its consumers must have too: which traits get
+    /// dictionaries, and which types drop, is decided by which crates are
+    /// rust-js's.
     pub libraries: Vec<String>,
     pub inputs: Vec<crate::manifest::Artifact>,
     /// Whether it keeps a `Vec`'s capacity, as it or a library it uses asks
@@ -473,6 +481,21 @@ pub struct Library {
     pub package: Option<crate::packages::Package>,
 }
 
+impl Library {
+    /// What a consumer knows it by (`key`).
+    pub fn key(&self) -> String {
+        key(&self.name, &self.crate_id)
+    }
+}
+
+/// What a library is known by: its crate's name and identity, its
+/// `StableCrateId`, `cfg_if-1f0e..`, which no other crate of a build has,
+/// where its name alone std's own `cfg_if` shares (#1130). The one form,
+/// a manifest's and a consumer's lookup's.
+pub fn key(name: &str, crate_id: &str) -> String {
+    format!("{name}-{crate_id}")
+}
+
 /// A type a library's module declares and exports, by rustc's key for it,
 /// and its name there (ADR 0210, amended).
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -616,6 +639,8 @@ pub struct HeldImport {
 /// What one library gives its consumers.
 #[derive(Default, Clone)]
 pub struct Exports {
+    /// Its crate's name, which what's said of it names.
+    pub name: String,
     pub crate_hash: String,
     /// Built into the compiler, `@rust-js/std`'s (ADR 0561):
     /// its bodies are the toolchain's std's, which the compiler links, so
@@ -697,8 +722,9 @@ pub struct Exports {
 
 #[derive(Default)]
 pub struct Dependencies {
-    /// Each library, by its crate's name; `@rust-js/std`'s, of std's
-    /// crates, by its package's name, `runtime::PACKAGE`, which no crate is.
+    /// Each library, by its key, its crate's name and identity
+    /// (`Library::key`); `@rust-js/std`'s, of std's crates, by its package's
+    /// name, `runtime::PACKAGE`, which no crate is.
     pub libraries: IndexMap<String, Exports>,
     pub inputs: Vec<std::path::PathBuf>,
 }
@@ -725,8 +751,9 @@ impl Dependencies {
                     library.version
                 ));
             }
-            if result.libraries.contains_key(&library.name) {
-                return Err(format!("duplicate dependency crate name: {}", library.name));
+            let key = library.key();
+            if result.libraries.contains_key(&key) {
+                return Err(format!("duplicate dependency crate: {key}"));
             }
             needed.extend(
                 library
@@ -742,6 +769,7 @@ impl Dependencies {
                 }
             }
             let mut exports = Exports {
+                name: library.name.clone(),
                 crate_hash: library.crate_hash,
                 keeps_capacity: library.keeps_capacity,
                 makes_dropping_anys: library.makes_dropping_anys,
@@ -887,9 +915,11 @@ impl Dependencies {
                     return Err("duplicate dependency export".into());
                 }
             }
-            result.libraries.insert(library.name, exports);
+            result.libraries.insert(key, exports);
         }
         if let Some((library, used)) = needed.iter().find(|(_, used)| !result.libraries.contains_key(used)) {
+            // A key's crate name, before its identity: no crate's name has a `-`.
+            let used = used.rsplit_once('-').map_or(used.as_str(), |(name, _)| name);
             return Err(format!(
                 "`{library}` was compiled against `{used}`, a rust-js library: give its manifest too, with --dependency"
             ));
@@ -918,6 +948,7 @@ impl Dependencies {
             ));
         }
         let mut exports = Exports {
+            name: crate::runtime::PACKAGE.to_string(),
             crate_hash: library.crate_hash,
             builtin: true,
             keeps_capacity: library.keeps_capacity,

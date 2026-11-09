@@ -22,10 +22,10 @@ impl Foreign<'_, '_> {
     /// key, and the library that says so (ADR 0906).
     pub(in crate::lower) fn fields_saying(&self, fact: FieldFact) -> IndexMap<String, String> {
         (self.dependencies.libraries.iter())
-            .flat_map(|(name, library)| {
+            .flat_map(|(_, library)| {
                 (library.fields.iter())
                     .filter(move |(_, facts)| facts.contains(&fact))
-                    .map(move |(key, _)| (key.clone(), name.clone()))
+                    .map(move |(key, _)| (key.clone(), library.name.clone()))
             })
             .collect()
     }
@@ -34,7 +34,7 @@ impl Foreign<'_, '_> {
     pub(in crate::lower) fn ref_cell_facts(&self) -> Vec<(String, RefCellFacts)> {
         let mut facts: Vec<_> = (self.dependencies.libraries.iter())
             .filter(|(_, library)| !library.ref_cells.is_empty())
-            .map(|(name, library)| (name.clone(), library.ref_cells.clone()))
+            .map(|(_, library)| (library.name.clone(), library.ref_cells.clone()))
             .collect();
         facts.sort_by(|a, b| a.0.cmp(&b.0));
         facts

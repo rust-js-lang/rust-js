@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "library-check-every-crate-of-its-name",
+    breaks:
+      "each crate rustc loaded of a library's name is checked against its manifest, std's own `cfg_if` of rustc's sysroot too, so a program's `cfg_if` is refused, its metadata \"isn't of the build its JS was made from\" (#1130)",
+    file: "src/lower/library.rs",
+    find: "            let loaded = (named.iter()).any(|&&krate| self.tcx.crate_hash(krate).to_string() == library.crate_hash);\n",
+    replace: "            let loaded = (named.iter()).all(|&&krate| self.tcx.crate_hash(krate).to_string() == library.crate_hash);\n",
+    tests: ["test/sysroot-names.test.ts", "-t", "cfg_if, is the program's"],
+  },
+  {
     name: "library-changed-unwritten",
     breaks:
       "a library's contract says it changes nothing in place, so a consumer that changes what it does compiles its own of each exported function that copies one, `firstNotch` (rd606)",

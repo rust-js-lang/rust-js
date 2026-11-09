@@ -295,6 +295,9 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
     throw new Error(`cargo check failed:\n${rendered}${error.stderr ?? ""}`);
   });
   const crates = new Map();
+  // Every crate it built, two of one name too, two releases of cfg-if,
+  // each a library of its own (#1130): `crates` has the last of a name.
+  const everyBuilt = [];
   let js;
   // The packages asked for that rust-js compiled, by their names.
   const compiled = new Set();
@@ -325,6 +328,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
     ledger ??= join(dirname(dirname(marker)), "rust-js-in-source.json");
     const entry = { js: built.modules.find(module => module.module.length === 0)?.file, manifest: library };
     crates.set(message.target.name, entry);
+    everyBuilt.push({ crate: message.target.name, manifest: library });
     const name = packageNameOf(message.package_id);
     const ours = packageNames.length ? packageNames.includes(name) : message.manifest_path === manifest;
     // Of a test build, each of the package's test targets, its library's
@@ -351,7 +355,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   // Each with its crate's name, as Cargo has it: the app's manifest, a
   // program's, has no library to say it (ADR 0360).
   const validated = new Map([...crates].map(([crate, { manifest }]) => [crate, parseManifest(readFileSync(manifest, "utf8"))]));
-  const manifests = [...validated].map(([crate, manifest]) => ({ crate, ...manifest }));
+  const manifests = everyBuilt.map(({ crate, manifest }) => ({ crate, ...parseManifest(readFileSync(manifest, "utf8")) }));
   // Each crate's modules' JS, where it's served from: none of one of
   // types alone (ADR 1005).
   const served = (where) => new Map(manifests.map(({ crate, modules }) => [crate, modules.filter((module) => !module.types_only).map((module) => where(module.file))]));
