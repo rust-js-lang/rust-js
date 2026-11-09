@@ -679,14 +679,17 @@ function unitTest(binary: string, filter: string, mutant = ""): Promise<Exit> {
  * So the mutant's tests run beside any others, and the checkout's
  * `std/runtime.js` is never
  * rewritten: a `check:fast` beside them read the mutant's (#720). One that
- * writes none, as the control that compiles nothing, runs with the
- * checkout's. One whose runtime couldn't be asked is that ask's exit, which
+ * writes none, as the control that compiles nothing, runs with none, an
+ * empty module: with the checkout's, a test that reads the package alone,
+ * a bundle of it, passed with a compiler that compiles nothing, and its
+ * runtime mutations were judged unrun (#1097's run, shard 5). One whose runtime couldn't be asked is that ask's exit, which
  * says nothing of the mutant: run with the checkout's runtime, a runtime
  * mutant's tests pass, and it would be said to survive. */
 async function ownRuntime(compiler: string, own: string): Promise<Exit | undefined> {
   const written = await runtimeOf(compiler);
   if (typeof written !== "string") return written;
-  if (written !== "" && written !== readFileSync(join(root, "std", "runtime.js"), "utf8")) installPackages(own, written);
+  if (written === "") installPackages(own, "// rust-js wrote no runtime.\nexport {};\n");
+  else if (written !== readFileSync(join(root, "std", "runtime.js"), "utf8")) installPackages(own, written);
   return undefined;
 }
 
