@@ -359,12 +359,18 @@ function alive(pid: number): boolean {
  * and React's crate by path where it uses it, as a host builds an app's
  * Rust (ADR 0101). `toml` is more of its `Cargo.toml`. What `checkCargo`
  * and a Cargo session are given of it. */
-export function cargoApp(dir: string, rust: string, { lib = "src/lib.rs", react = false, toml = "" } = {}) {
-  mkdirSync(dirname(join(dir, lib)), { recursive: true });
-  writeFileSync(join(dir, lib), rust);
+export function cargoApp(at: string | KeptApp, rust: string, { lib = "src/lib.rs", react = false, toml = "" } = {}) {
+  // Into a fixture, or written through a kept app, each where it differs.
+  const dir = typeof at === "string" ? at : at.dir;
+  const write = (path: string, text: string) => {
+    if (typeof at !== "string") return void at.write(path, text);
+    mkdirSync(dirname(join(dir, path)), { recursive: true });
+    writeFileSync(join(dir, path), text);
+  };
+  write(lib, rust);
   const path = lib === "src/lib.rs" ? "" : `\n[lib]\npath = "${lib}"\n`;
   const dependencies = react ? `react = { package = "rust-js-react", path = ${JSON.stringify(join(root, "react"))} }\n` : "";
-  writeFileSync(join(dir, "Cargo.toml"), `[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n${path}\n[dependencies]\n${dependencies}${toml ? `\n${toml}` : ""}\n[workspace]\n`);
+  write("Cargo.toml", `[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n${path}\n[dependencies]\n${dependencies}${toml ? `\n${toml}` : ""}\n[workspace]\n`);
   return { manifestPath: join(dir, "Cargo.toml"), packageNames: ["app"], offline: true };
 }
 

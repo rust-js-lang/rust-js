@@ -23,17 +23,23 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { availableParallelism } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { run } from "../test/child";
-import { buildCompiler, buildNode, buildReact, buildReactNative, buildSerde, cargoApp, compiler, root, target } from "../test/support";
+import { buildCompiler, buildNode, buildReact, buildReactNative, buildSerde, cargoApp, compiler, KeptApp, root, target } from "../test/support";
 
 const check = process.argv.includes("--check");
 const guide = join(root, "docs/guide");
 const work = join(target, "docs");
-/** The apps' one Cargo target in a run, removed as it ends: each app's own
- * built `webapi`, `react` and `js` again, about 4 CPU-seconds of each of
- * the 14, where since #892 they're one unit in every app, its key the
- * compiler's alone (ADR 1003, amended). Cargo holds it for one build at a
- * time, each after the first finding them built. */
-const appsTarget = join(work, ".apps-target");
+/** The apps' one Cargo target, kept between runs as each app is (`KeptApp`,
+ * #882): each app's own built `webapi`, `react` and `js` again, about 4
+ * CPU-seconds of each of the 14, where since #892 they're one unit in every
+ * app, its key the compiler's alone (ADR 1003, amended); and each app's
+ * crate, found built where nothing it's made of changed. Cargo holds it for
+ * one build at a time, each after the first finding them built. Made where
+ * it's first asked for, as a run that compiles no app needs none. */
+let appsKept: KeptApp | undefined;
+const appsTarget = () => {
+  appsKept ??= new KeptApp("docs-apps");
+  return join(appsKept.done(), "target");
+};
 
 type Fence = { info: string; body: string; start: number; end: number };
 /** An example: its files, its output fences, and, of an app `rust-js build`
@@ -149,33 +155,39 @@ const exampleDir = (example: Example, n: number) => join(work, relative(guide, e
 
 /** What the example's output fences say, compiled: each fence's new body. */
 async function compile(example: Example, n: number): Promise<{ bodies: string[]; problem?: string }> {
-  const dir = exampleDir(example, n);
-  rmSync(dir, { recursive: true, force: true });
+  // Code of an app `rust-js build` builds, kept between runs (`KeptApp`);
+  // else a directory made anew, which the compile cache keeps for.
+  const code = example.sources.map((s) => s.code).join("\n");
+  const crate = (name: string, dir: string) =>
+    new RegExp(`\\b${name}::`).test(code) ? `${name} = { package = "rust-js-${dir}", path = ${JSON.stringify(join(root, dir))} }\n` : "";
+  const next = crate("next", "next");
+  const app = example.dependencies !== undefined || next !== "";
+  const kept = app ? new KeptApp(`docs-${relative(guide, example.page).replace(/\//g, "_")}-${n}`) : undefined;
+  const dir = kept?.dir ?? exampleDir(example, n);
+  if (!kept) rmSync(dir, { recursive: true, force: true });
   for (const { path, code } of example.sources) {
-    mkdirSync(dirname(join(dir, path)), { recursive: true });
     // Its header names the file, and isn't a comment of its code: a blank line, so lines keep their numbers.
-    writeFileSync(join(dir, path), compiled(code.replace(/^\/\/ \S+\.rs\n/, "\n")));
+    const text = compiled(code.replace(/^\/\/ \S+\.rs\n/, "\n"));
+    if (kept) kept.write(path, text);
+    else {
+      mkdirSync(dirname(join(dir, path)), { recursive: true });
+      writeFileSync(join(dir, path), text);
+    }
   }
   // Its root: `src/lib.rs` where it's one of them, else its first.
   const rootFile = (example.sources.find((s) => /^(src\/)?(lib|main)\.rs$/.test(s.path)) ?? example.sources[0]).path;
   const declarations = example.outputs.some((o) => o.info === "ts");
   const out = join(dir, rootFile.replace(/\.rs$/, ".js"));
-  // Named as Cargo names a package's crate, not by its root's file, which
-  // may be no crate's name: a Next.js route's, `pages/posts/[slug].rs`.
-  const code = example.sources.map((s) => s.code).join("\n");
   // An app `rust-js build` builds, of what Cargo resolves: crates.io's, and
   // Next.js's crate, which the react and node crates' are built with.
-  const crate = (name: string, dir: string) =>
-    new RegExp(`\\b${name}::`).test(code) ? `${name} = { package = "rust-js-${dir}", path = ${JSON.stringify(join(root, dir))} }\n` : "";
-  const next = crate("next", "next");
-  const app = example.dependencies !== undefined || next !== "";
-  if (app) {
+  if (kept) {
     const root = example.sources.find((s) => s.path === rootFile)!;
-    cargoApp(dir, compiled(root.code.replace(/^\/\/ \S+\.rs\n/, "\n")), {
+    cargoApp(kept, compiled(root.code.replace(/^\/\/ \S+\.rs\n/, "\n")), {
       lib: rootFile,
       react: /\breact::/.test(code) || next !== "",
       toml: next + crate("js", "builtins") + crate("webapi", "webapi") + crate("node", "node") + (example.dependencies ?? ""),
     });
+    kept.done();
   }
   // An app's build: each `cargo check`s webapi's crate into the cache they
   // share, and two building it at once raced on its incremental files,
@@ -194,7 +206,7 @@ async function compile(example: Example, n: number): Promise<{ bodies: string[];
           "--crate-name=example", ...crates(code)],
     dir,
     280_000,
-    { RUST_JS_COMPILER: compiler, ...(app ? { CARGO_TARGET_DIR: appsTarget } : {}) },
+    { RUST_JS_COMPILER: compiler, ...(app ? { CARGO_TARGET_DIR: appsTarget() } : {}) },
   );
   const [stderr, exit] = [ran.stderr, ran.timedOut ? 1 : (ran.code ?? 1)];
   built?.done();
@@ -260,13 +272,13 @@ async function main() {
       while (next < jobs.length) {
         const job = jobs[next++];
         const { bodies, problem } = await compile(job.example, job.n);
+        // A kept app's stays; the others' are made anew each run.
         if (!process.env.RUST_JS_KEEP_FIXTURES) rmSync(exampleDir(job.example, job.n), { recursive: true, force: true });
         if (problem) problems.push(problem);
         else results.push({ page: job.page, example: job.example, bodies });
       }
     }),
   );
-  if (!process.env.RUST_JS_KEEP_FIXTURES) rmSync(appsTarget, { recursive: true, force: true });
   const stale: string[] = [];
   for (const page of pages) {
     let text = texts.get(page)!;
