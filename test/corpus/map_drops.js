@@ -10,7 +10,7 @@ import {
   $rcDrop,
   $remove,
   $sortedEntries,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

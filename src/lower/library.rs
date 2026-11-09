@@ -38,7 +38,7 @@ fn key(tcx: TyCtxt<'_>, id: DefId) -> String {
 /// (ADR 1054); any other's, its crate's name.
 fn library_name(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> rustc_span::Symbol {
     match super::recognition::std_crate(tcx, krate) {
-        Some(_) => rustc_span::Symbol::intern(crate::library::STD_PACKAGE),
+        Some(_) => rustc_span::Symbol::intern(crate::runtime::PACKAGE),
         None => tcx.crate_name(krate),
     }
 }

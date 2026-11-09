@@ -19,7 +19,7 @@ import {
   $settle,
   $toJson,
   $unwrapOk,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export const Failure = {
   message(failure) {

@@ -1056,7 +1056,7 @@ pub fn ready() -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('\nglobalThis.loaded("module");\n');
-  expect(js).toContain('import { $index } from "@rust-js/runtime";');
+  expect(js).toContain('import { $index } from "@rust-js/std";');
   expect(js).not.toContain("on_load");
   expect(js).not.toContain("const _");
   const seen: string[] = [];
@@ -1172,7 +1172,7 @@ pub fn values(x: u32) -> [u32; 3] {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(
-    '// TODO: This is pretty well supported by browsers. Maybe we can drop it.\n\nimport { $f64ToInt } from "@rust-js/runtime";\n\nexport const clz32 = typeof Math.clz32 !== "undefined" ? Math.clz32 : clz32Fallback;\n\n// Count leading zeros.\nconst log = Math.log;\nconst LN2 = Math.LN2;\nfunction clz32Fallback(x) {\n',
+    '// TODO: This is pretty well supported by browsers. Maybe we can drop it.\n\nimport { $f64ToInt } from "@rust-js/std";\n\nexport const clz32 = typeof Math.clz32 !== "undefined" ? Math.clz32 : clz32Fallback;\n\n// Count leading zeros.\nconst log = Math.log;\nconst LN2 = Math.LN2;\nfunction clz32Fallback(x) {\n',
   );
   const at = (text: string) => {
     expect(js).toContain(text);
@@ -1231,7 +1231,7 @@ import { local } from "./local";
 import { alpha } from "@scope/alpha";
 import * as Helper from "./helper.js";
 import "./app.css";
-import { $index } from "@rust-js/runtime";
+import { $index } from "@rust-js/std";
 `);
 });
 

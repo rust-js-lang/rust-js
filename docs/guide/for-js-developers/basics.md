@@ -182,7 +182,7 @@ pub fn counted(start: u32) -> (u32, u32) {
 ```
 
 ```js
-import { $trim } from "@rust-js/runtime";
+import { $trim } from "@rust-js/std";
 
 export function label(input) {
   let label = $trim(input);
@@ -296,7 +296,7 @@ pub fn ways(stairs: i32) -> usize {
 ```
 
 ```js
-import { $checked, $f64ToInt, $parseInt, $trim } from "@rust-js/runtime";
+import { $checked, $f64ToInt, $parseInt, $trim } from "@rust-js/std";
 
 export function checked(a, b) {
   return $checked(a + b, 0, 4294967295);
@@ -3597,7 +3597,7 @@ pub fn is_first(points: &[Point], p: &Point) -> bool {
 ```
 
 ```js
-import { $eq, $index } from "@rust-js/runtime";
+import { $eq, $index } from "@rust-js/std";
 
 export function sameName(a, b) {
   return a === b;
@@ -3654,7 +3654,7 @@ pub fn describe(v: &Value) -> String {
 ```
 
 ```js
-import { $debugStr, $displayF64 } from "@rust-js/runtime";
+import { $debugStr, $displayF64 } from "@rust-js/std";
 
 export function describe(v) {
   if (v.TAG === "Number") {
@@ -3704,7 +3704,7 @@ pub fn describe(value: Option<&Unknown>) -> String {
 ```
 
 ```js
-import { $displayF64 } from "@rust-js/runtime";
+import { $displayF64 } from "@rust-js/std";
 
 export function describe(value) {
   if (Array.isArray(value)) {
@@ -3772,7 +3772,7 @@ export function formatPrice(cents) {
   yours uses is exported from its JS file anyway, as JS has no other way to
   share it.
 - `mod util { ... }` written inline gets a file too, `util.js`.
-- The runtime helpers, the `$` names, come from `@rust-js/runtime`.
+- The runtime helpers, the `$` names, come from `@rust-js/std`.
 
 How files are laid out is in [Emitting modules](../project/modules.md).
 Importing a JavaScript or npm module is

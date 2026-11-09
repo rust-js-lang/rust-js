@@ -9,7 +9,7 @@ import {
   $mulAddF32,
   $powi,
   $powiF32,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

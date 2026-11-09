@@ -19,7 +19,7 @@ import {
   $partialEq,
   $partialOrd,
   $someValue,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 const loudPartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: $eq }),

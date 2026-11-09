@@ -9,7 +9,7 @@ import {
   $next,
   $rev,
   $step,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

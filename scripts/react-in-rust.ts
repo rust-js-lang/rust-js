@@ -153,7 +153,7 @@ function fetch() {
       .filter((at) => existsSync(join(at, "package.json")))
       .map((at) => [JSON.parse(readFileSync(join(at, "package.json"), "utf8")).name as string, at]);
   });
-  for (const [name, target] of [...workspaces, ["@rust-js/runtime", join(root, "runtime")], ["@rust-js/std", join(root, "std")]]) {
+  for (const [name, target] of [...workspaces, ["@rust-js/std", join(root, "std")]]) {
     const at = join(port, "node_modules", name);
     mkdirSync(dirname(at), { recursive: true });
     rmSync(at, { force: true, recursive: false });
@@ -247,7 +247,7 @@ if (!import.meta.main) {
     // theirs, an intended one named by its ADR or React port gap, `rd313`.
     const subject = run(["git", "log", "-1", "--format=%s", pin], port).stdout;
     const made = subject.match(/^Regenerate on rust-js ([0-9a-f]{7,40})\b/)?.[1];
-    const since = made && run(["git", "log", "--format=- %h %s", `${made}..HEAD`, "--", "src", "builtins", "webapi", "node", "react", "runtime", "std", "tooling"], root);
+    const since = made && run(["git", "log", "--format=- %h %s", `${made}..HEAD`, "--", "src", "builtins", "webapi", "node", "react", "std", "tooling"], root);
     const commits = !made
       ? `The pin's commit says no \`Regenerate on rust-js <sha>\`, so which of rust-js's commits made these isn't known.`
       : since && since.ok

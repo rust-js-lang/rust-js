@@ -5,7 +5,7 @@
  * them a route shows, and where they're kept.
  */
 
-import { $max } from "@rust-js/runtime";
+import { $max } from "@rust-js/std";
 
 export function reduce(todos, action) {
   if (action.TAG === "Add") {

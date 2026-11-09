@@ -12,7 +12,7 @@ import {
   $orInsertWith,
   $writeTry,
   $zeroPad,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

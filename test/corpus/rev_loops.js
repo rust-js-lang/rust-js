@@ -7,7 +7,7 @@ import {
   $rangeInclusiveNextBack,
   $rangeNextBack,
   $slice,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

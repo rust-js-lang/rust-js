@@ -15,7 +15,7 @@ import {
   $sizeHint,
   $skipping,
   $taking,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

@@ -12,7 +12,7 @@ import {
   $some,
   $someValue,
   $unwrap,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 const optionPartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: (a, b) => a == b }),

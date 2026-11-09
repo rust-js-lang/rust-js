@@ -1,7 +1,8 @@
 # 0103. The runtime is a package, `@rust-js/runtime`, as ReScript's is
 
 Status: Accepted. (Amended: a helper is written as the runtime's, which
-asks for it.) Replaces [0012](0012-panics-and-runtime-helpers.md)'s helpers,
+asks for it. Amended (#1095): the helpers are `@rust-js/std`'s, the one
+package the JS imports; `@rust-js/runtime` is no more.) Replaces [0012](0012-panics-and-runtime-helpers.md)'s helpers,
 each module's own, and amends [0019](0019-one-js-file-per-module.md).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
@@ -169,3 +170,39 @@ set in it. Its syntax is what it was (ADR 0919). Held by
 bundled alone", which bundles an import of `$unwrap` with Vite and finds
 it alone, and the mutation `steps-base-global` (`runtime/steps.ts`).
 
+
+## Amendment: one package, `@rust-js/std` (2026-11-09, #1095)
+
+An app installed two packages of rust-js's at the compiler's version,
+`@rust-js/runtime`, the helpers, and `@rust-js/std`, std's bodies (ADR
+0561), and a module imported each its own way: `from "@rust-js/runtime"`
+and `from "@rust-js/std/iter.js"`. Two packages for one job, which a user
+must keep in step, each checked by the build adapter: one way, one
+authority asks for one.
+
+**`@rust-js/std` is the one package, with one entry, and every import of
+the JS rust-js writes is `import { $unwrap, peekableIterator_next } from
+"@rust-js/std"`.** Its parts are its own: the helpers' module,
+`runtime.js`, `--runtime-module`'s; std's bodies, `iter.js`, which imports
+the helpers beside it, `./runtime.js`; and `index.js`, which re-exports
+both. Its `exports` name `index.js` alone, and `sideEffects` is `false`, so
+a bundler keeps only what's imported and what that calls, a helper or a std
+body alike. `@rust-js/runtime` isn't released any more; its 0.0.4 is the
+next release's to deprecate on npm. Designed as if from the beginning: no
+second name, no re-export of the old package.
+
+- The compiler names the package once, `runtime::PACKAGE`, and the
+  helpers' module, `runtime::MODULE`; a module's helpers and its std items
+  are one import of one specifier. std's own `iter.js`, compiled with
+  `--std-bodies`, imports its helpers from `./runtime.js`.
+- `bun run std` writes the package, `scripts/std.ts`; the build adapter
+  checks `@rust-js/std`'s version alone; the playground serves its modules
+  by their paths in it, the entry by Node's `index.js` rule; a
+  distribution packs `std.tgz` and no `runtime.tgz`.
+- Held by `runtime-package.test.ts`: the committed helpers are the
+  compiler's; "@rust-js/std is tree-shakable", one test bundling `$unwrap`
+  alone, another `peekableIterator_next` with `$next` and none of std's
+  other bodies; and "an app with only @rust-js/std installed builds and
+  runs", which compiles a program that uses a helper and a std body, finds
+  its one import, bundles it with Vite in an app with nothing else of
+  rust-js's installed, and runs it as native Rust does.

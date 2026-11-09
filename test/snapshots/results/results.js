@@ -3,7 +3,7 @@
 // `Result` (ADR 0035): an enum like any other (ADR 0033), `{ TAG: "Ok", _0: v }`,
 // with `?` returning an `Err` or a `None` as it is, and the usual methods.
 
-import { $unwrapOk } from "@rust-js/runtime";
+import { $unwrapOk } from "@rust-js/std";
 
 export function parseDigit(c) {
   switch (c) {

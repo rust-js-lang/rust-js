@@ -2,7 +2,7 @@
 
 import { guardDrop_drop, shownDisplay_fmt } from "./cycle.js";
 import * as Cycle from "./cycle.js";
-import { $local } from "@rust-js/runtime";
+import { $local } from "@rust-js/std";
 
 export function entry() {
   main();

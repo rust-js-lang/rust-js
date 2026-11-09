@@ -4,7 +4,7 @@
 // fields is its name, `"Empty"`, and one with fields is an object tagged
 // with its name, `{ TAG: "Circle", _0: 2 }` or `{ TAG: "Rect", w: 2, h: 3 }`.
 
-import { $div, $eq } from "@rust-js/runtime";
+import { $div, $eq } from "@rust-js/std";
 
 export function circle(r) {
   return { TAG: "Circle", _0: r };

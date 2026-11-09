@@ -12756,7 +12756,7 @@
     "makes_dropping_fn_dyns": false
   },
   "input": "lib.rs",
-  "output": "index.js",
+  "output": "std.js",
   "sources": [
     "lib.rs"
   ],
@@ -13136,14 +13136,20 @@
         "chainABDebug",
         "zipClone"
       ],
-      "links": [],
+      "links": [
+        {
+          "start": 681,
+          "end": 693,
+          "file": "runtime.js"
+        }
+      ],
       "type_links": []
     }
   ],
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "08c26eb317548d4d"
+      "hash": "bbd1c02965a6928a"
     },
     {
       "file": "iter.js.map",

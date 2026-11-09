@@ -3,9 +3,9 @@
 // A folder's entries, as rows of a file explorer. A folder's own entries are
 // a `FileTree` inside it, one level deeper: the component is recursive.
 
+import { FileItem } from "./file_item.jsx";
 import { ROW } from "../styles.js";
 import { inOrder } from "../tree.js";
-import { FileItem } from "./file_item.jsx";
 
 export function FileTree({ tree, depth, first, selected, onOpen, onDelete }) {
   const rows = inOrder(tree, first).map(([name, entry]) => {

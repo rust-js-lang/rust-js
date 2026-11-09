@@ -1129,7 +1129,7 @@ fn bound_map_item(tcx: TyCtxt<'_>, id: DefId) -> Option<&'static str> {
 /// the two apart (ADR 0331)? Or of a crate named as one of std's is, a
 /// workspace's `core` beside std's, the crate compiled too, which every
 /// crate that sees it sees beside std's: never std's own, whose paths are
-/// then theirs alone, the same in every crate, as `@rust-js/runtime` reads
+/// then theirs alone, the same in every crate, as `@rust-js/std` reads
 /// a `String`'s (ADR 1054).
 pub(crate) fn linked_twice(tcx: TyCtxt<'_>, id: DefId) -> bool {
     let name = tcx.crate_name(id.krate);

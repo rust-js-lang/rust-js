@@ -13,7 +13,7 @@ import {
   $shrinkTo,
   $someAt,
   $withCapacity,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 const unitPartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: (a, b) => a === b }),

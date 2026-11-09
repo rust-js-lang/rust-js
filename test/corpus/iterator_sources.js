@@ -18,7 +18,7 @@ import {
   $some,
   $successors,
   $unzip,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

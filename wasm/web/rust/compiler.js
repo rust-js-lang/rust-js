@@ -15,6 +15,11 @@
 // Each compile gets a fresh instance of the (compiled once) module: rustc
 // keeps global state, and a failed compile ends in a trap.
 
+import { reactLibs } from "../../../tooling/crates.js";
+// Some JS functions are declared more than once, typed for each use (`json`
+// for each file it reads, `new Directory` for what it holds): rustc warns
+// that native code would see one symbol. A directory's contents are a JS
+// `Map`, which a `HashMap` is.
 import {
   ConsoleStdout,
   Directory,
@@ -23,9 +28,9 @@ import {
   PreopenDirectory,
   WASI,
 } from "@bjorn3/browser_wasi_shim";
-import { reactLibs } from "../../../tooling/crates.js";
-import { $extend, $rsplitOnce, $stripPrefix, $try, $unwrap } from "@rust-js/runtime";
+import { $rsplitOnce, $stripPrefix, $try, $unwrap } from "@rust-js/std";
 
+// The rest of the WASI shim (@bjorn3/browser_wasi_shim), for `compile`.
 export function ms(t) {
   return `${t.toFixed(0)} ms`;
 }
@@ -40,8 +45,9 @@ export function mb(n) {
  */
 export async function load(stat) {
   const start = performance.now();
-  // All downloads start here, together: a JS promise runs as soon as it's made
-  // (ADR 0029). Awaiting them one by one below only collects the results.
+  // All downloads start here, together, each a JS promise, which runs as
+  // it's made (ADR 0029, amended). Awaiting them one by one below only
+  // collects the results.
   const module = loadCompiler(start, stat);
   const sysroot = loadSysroot(start, stat);
   const crates = reactLibs.map((name) => [name, loadBindingCrate(name, start, stat)]);
@@ -49,7 +55,8 @@ export async function load(stat) {
   const examples = loadExamples();
   const [modules, styles] = await packages;
   const crateFiles = [];
-  for (const [name, file] of crates) {
+  for (let i = 0; i < crates.length; i++) {
+    const [name, file] = crates[i];
     crateFiles.push([name, await file]);
   }
   const loaded = {
@@ -59,7 +66,7 @@ export async function load(stat) {
     crates: crateFiles,
     /**
      * What the programs it compiles import of the page's, by specifier:
-     * `@rust-js/runtime` (ADR 0103), and React's modules.
+     * `@rust-js/std`'s modules (ADRs 0103, 0561), and React's.
      */
     modules,
     /** The stylesheets a program may import, TodoMVC's, by specifier. */
@@ -80,12 +87,14 @@ async function loadSysroot(start, stat) {
   const names = await (await window.fetch("./sysroot.json")).json();
   // Every file's download starts before the first is awaited.
   const downloads = [];
-  for (const name of names) {
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
     downloads.push(loadSysrootFile(name));
   }
   const entries = [];
   let size = 0;
-  for (const download of downloads) {
+  for (let i = 0; i < downloads.length; i++) {
+    const download = downloads[i];
     const entry = await download;
     size += entry[1].data.length;
     entries.push(entry);
@@ -104,17 +113,13 @@ async function loadSysrootFile(name) {
 }
 
 /**
- * `@rust-js/runtime` and React's modules, and the stylesheets, for a
+ * `@rust-js/std`'s modules and React's, and the stylesheets, for a
  * program to import (ADR 0044).
  */
 async function loadPackages(start, stat) {
-  const runtime = (await window.fetch("./runtime.js")).text();
-  let packages = (await window.fetch("./packages.json")).json();
-  const modules = [["@rust-js/runtime", await runtime]];
-  packages = await packages;
-  $extend(modules, Object.entries(packages.modules));
-  stat("download runtime and packages", ms(performance.now() - start));
-  return [modules, Object.entries(packages.styles)];
+  const packages = await (await window.fetch("./packages.json")).json();
+  stat("download packages", ms(performance.now() - start));
+  return [Object.entries(packages.modules), Object.entries(packages.styles)];
 }
 
 async function loadBindingCrate(name, start, stat) {
@@ -134,17 +139,22 @@ async function fetchExampleFile(name, path) {
 
 /** An example's files, `path → text`, in the order it lists them. */
 export async function loadExample(name, paths) {
-  // All at once: each download starts as it's made (ADR 0029).
+  // All at once: each download a JS promise, which starts as it's made
+  // (ADR 0029, amended).
   const downloads = [];
-  for (const path of paths) {
+  for (let i = 0; i < paths.length; i++) {
+    const path = paths[i];
     downloads.push(fetchExampleFile(name, path));
   }
   const texts = [];
-  for (const download of downloads) {
+  for (let i = 0; i < downloads.length; i++) {
+    const download = downloads[i];
     texts.push(await download);
   }
   return texts;
 }
+
+// ── Running rust-js ─────────────────────────────────────────────────────
 
 /** A directory holding one entry. */
 function dir(name, entry) {
@@ -195,17 +205,15 @@ function textsIn(folder, prefix, found) {
  */
 export async function compile(loaded, sources, rootFile, test) {
   const stderr = [];
-  const stdoutLines = stderr;
-  const stderrLines = stderr;
   const outDir = new PreopenDirectory("/out", new Map());
   const sysrootDir = new Directory(loaded.sysroot);
   const fds = [
     new OpenFile(new File([])), // stdin
     ConsoleStdout.lineBuffered((line) => {
-      stdoutLines.push(line);
+      stderr.push(line);
     }), // stdout
     ConsoleStdout.lineBuffered((line) => {
-      stderrLines.push(line);
+      stderr.push(line);
     }), // stderr
     new PreopenDirectory("/in", directoryOf(sources)),
     outDir,
@@ -221,8 +229,8 @@ export async function compile(loaded, sources, rootFile, test) {
   const outFile = rootFile.endsWith(".rs")
     ? `/out/${rootFile.slice(0, -3)}.js`
     : `/out/${rootFile}`;
-  // `--test`: the `#[test]` functions too, and `<root>.test.js` to run them
-  // (ADR 0026). This is a real browser, so tests marked `#[cfg(browser)]` run
+  // `--test`: the `#[test]` functions too, each module's in its `.test.js`
+  // (ADRs 0026, 1076). This is a real browser, so tests marked `#[cfg(browser)]` run
   // too (ADR 0027). Every program may use the webapi and js crates; rustc
   // only reads them if one does.
   const args = ["rust-js"];
@@ -267,7 +275,7 @@ export async function compile(loaded, sources, rootFile, test) {
     exit = `trap (${e instanceof Error ? e.message : String(e)})`;
   }
 
-  // What it wrote, as its manifest says: each module's JS, and the runner.
+  // What it wrote, as its manifest says: each module's JS, and its tests'.
   const written = new Map();
   if (ok) {
     textsIn(outDir.dir, "", written);
@@ -292,12 +300,19 @@ export async function compile(loaded, sources, rootFile, test) {
       }
     }
     if (manifest.tests != null) {
-      const file = path(manifest.tests);
-      const text = written.get(file);
-      if (text != null) {
-        files.set(file, text);
+      const testFiles = [];
+      for (let file of manifest.tests.files) {
+        file = path(file);
+        const text = written.get(file);
+        if (text != null) {
+          files.set(file, text);
+        }
+        testFiles.push(file);
       }
-      tests = file;
+      tests = {
+        module: manifest.tests.module,
+        files: testFiles,
+      };
     }
   }
   const memory = instance.exports.memory.buffer;
@@ -310,7 +325,10 @@ export async function compile(loaded, sources, rootFile, test) {
     root,
     /** Whether it exports `main`, what running the program calls. */
     main,
-    /** The `#[test]` functions' runner, of a compile with `test`. */
+    /**
+     * Of a compile with `test`, its test files, and the module they import
+     * `test` from.
+     */
     tests,
     stderr: stderr.join("\n"),
     instantiate: t1 - t0,

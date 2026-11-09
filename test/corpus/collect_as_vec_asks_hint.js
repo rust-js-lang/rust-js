@@ -22,7 +22,7 @@ import {
   $sortedEntries,
   $sortedKeys,
   $treeFrom,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 const dPartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: $eq }),

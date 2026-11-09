@@ -19,7 +19,7 @@ import {
   $sortedEntries,
   $sortedKeys,
   $treeSplitOff,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

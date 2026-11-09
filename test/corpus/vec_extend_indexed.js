@@ -8,7 +8,7 @@ import {
   $partiallyOrdered,
   $range,
   $slice,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

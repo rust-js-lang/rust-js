@@ -9,19 +9,21 @@
 //       ◄── on_compile, on_open, on_delete, on_outcome ──┘
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { compileInWorker } from "../../compiler-client.js";
-import { outputState, sourceState } from "../codemirror.js";
-import { load, loadExample, mb, ms } from "../compiler.js";
-import { prepare } from "../programs.js";
-import { Project, jsName } from "../projects.js";
-import { buildTree } from "../tree.js";
+
 import { Editor } from "./editor.jsx";
 import { FileTree } from "./file_tree.jsx";
 import { Pane } from "./pane.jsx";
 import { ResultFrame } from "./result_frame.jsx";
 import { StatsTable } from "./stats_table.jsx";
 import { Toolbar } from "./toolbar.jsx";
-import { $rsplitOnce, $stripSuffix, $trim } from "@rust-js/runtime";
+import { outputState, sourceState } from "../codemirror.js";
+import { load, loadExample, mb, ms } from "../compiler.js";
+import { prepare } from "../programs.js";
+import { Project, jsName } from "../projects.js";
+import { buildTree } from "../tree.js";
+
+import { compileInWorker } from "../../compiler-client.js";
+import { $rsplitOnce, $stripSuffix, $trim } from "@rust-js/std";
 
 function say(text, tone) {
   return { text, tone };
@@ -97,7 +99,8 @@ export function App() {
   function run(compiled, loaded, test) {
     const n = (runs.current + 1) >>> 0;
     runs.current = n;
-    const tests = compiled.tests;
+    const tests =
+      compiled.tests != null ? [compiled.tests.module, compiled.tests.files] : undefined;
     const prepared = prepare(
       compiled.files,
       loaded.modules,
@@ -181,7 +184,7 @@ export function App() {
   const onExample = (name) => {
     const chosen = loaded != null ? loaded.examples.find((e) => e.name === name) : undefined;
     if (chosen != null) {
-      const { root } = chosen;
+      const root = chosen.root;
       const files = chosen.files.slice();
       setExample(name);
       (async () => {
@@ -206,7 +209,7 @@ export function App() {
       return;
     }
     const path = $trim(answer);
-    if (!path) {
+    if (path === "") {
       return;
     }
     const modulePath = /^([a-z_][a-z0-9_]*\/)*[a-z_][a-z0-9_]*\.rs$/;
@@ -266,7 +269,6 @@ export function App() {
   }
   const outputTree = useMemo(() => buildTree(outputPaths), [output]);
   const examples = loaded != null ? loaded.examples : [];
-  const submit = onCompile;
   const children =
     outputTree.length === 0 ? (
       <li className="flex items-center px-2 py-0.5 text-muted">(none)</li>
@@ -325,7 +327,7 @@ export function App() {
               state={current}
               view={source}
               onSubmit={() => {
-                submit(false);
+                onCompile(false);
               }}
             />
           }

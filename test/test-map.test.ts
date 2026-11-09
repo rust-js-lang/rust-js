@@ -109,7 +109,7 @@ test("a change the map can't say runs what the check runs without it", () => {
   // A file the map has no function of, a new one, or one outside `src/`.
   expect(pick(map, [{ file: "src/b.rs", hunks: [[1, 1]] }], files, cases).kind).toBe("all");
   expect(pick(map, [{ file: "src/a.rs", hunks: "new" }], files, cases).kind).toBe("all");
-  for (const file of ["test/support.ts", "std/lib.rs", "runtime/package.json", "Cargo.lock", "docs/guide/limitations.md", "test/corpus.test.ts"]) {
+  for (const file of ["test/support.ts", "std/lib.rs", "std/package.json", "Cargo.lock", "docs/guide/limitations.md", "test/corpus.test.ts"]) {
     expect(pick(map, [{ file, hunks: [[1, 1]] }], files, cases).kind).toBe("all");
   }
 });

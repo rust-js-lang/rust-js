@@ -2,7 +2,7 @@
 
 // File paths as a tree, for the file explorers.
 
-import { $cmp, $rsplitOnce, $sortStable } from "@rust-js/runtime";
+import { $cmp, $rsplitOnce, $sortStable } from "@rust-js/std";
 
 export function buildTree(paths) {
   const tree = [];

@@ -26,7 +26,7 @@ import {
   $trim,
   $unwrapErr,
   $windows,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 function rowErrorFromParseIntError_from(e) {
   return { TAG: "Number", _0: e };

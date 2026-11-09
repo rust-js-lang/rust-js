@@ -23,7 +23,7 @@ import { Project, jsName } from "../projects.js";
 import { buildTree } from "../tree.js";
 
 import { compileInWorker } from "../../compiler-client.js";
-import { $rsplitOnce, $stripSuffix, $trim } from "@rust-js/runtime";
+import { $rsplitOnce, $stripSuffix, $trim } from "@rust-js/std";
 
 function say(text, tone) {
   return { text, tone };

@@ -10,7 +10,7 @@ import {
   $weakDrop,
   $weakNone,
   $withBorrow,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

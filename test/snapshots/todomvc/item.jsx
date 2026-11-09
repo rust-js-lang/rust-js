@@ -6,7 +6,7 @@
  */
 
 import { useRef, useState } from "react";
-import { $trim } from "@rust-js/runtime";
+import { $trim } from "@rust-js/std";
 
 export function TodoItem({ todo, dispatch }) {
   const [editing, setEditing] = useState(false);

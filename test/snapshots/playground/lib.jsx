@@ -9,7 +9,7 @@ import { createRoot } from "react-dom/client";
 
 import { App } from "./components/app.jsx";
 import { StrictMode } from "react";
-import { $unwrap } from "@rust-js/runtime";
+import { $unwrap } from "@rust-js/std";
 
 /** Render the page into `#app`. */
 export function start() {

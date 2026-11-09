@@ -5,7 +5,7 @@
  * check in the generated JS.
  */
 
-import { $byteLen, $next, $unwrap } from "@rust-js/runtime";
+import { $byteLen, $next, $unwrap } from "@rust-js/std";
 
 export function forms() {
   const input = document.createElement("input");

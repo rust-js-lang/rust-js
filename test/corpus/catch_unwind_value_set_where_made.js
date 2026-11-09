@@ -7,7 +7,7 @@ import {
   $debugStr,
   $panicMessage,
   $unborrow,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

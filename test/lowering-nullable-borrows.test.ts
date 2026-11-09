@@ -8,7 +8,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { compiler, fixture, installRuntime, run } from "./support";
+import { compiler, fixture, installStd, run } from "./support";
 
 test("a nullable place written through a borrow stores null, which a nullable function returns", async () => {
   const dir = fixture("nullable-borrows");
@@ -112,7 +112,7 @@ pub fn swap_owner(fiber: &mut Fiber, n: u32) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib"]);
-  installRuntime(dir);
+  installStd(dir);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // A module's variable, written through what's lent, stores so; a cell
   // whose borrows are counted stores so itself.

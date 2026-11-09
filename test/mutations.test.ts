@@ -215,29 +215,30 @@ test("the crate a mutation is built in is written only where it differs", () => 
     .toEqual([kept, "b2", false, false]);
 });
 
-// A runtime helper's mutant has its own runtime, as it has its own
-// compiler, in its tests' target. What a test writes there imports it, and
-// so does the std copied beside it, never the checkout's, which is never
-// rewritten: a `check:fast` beside the mutant's tests runs the checkout's
-// (#720). And no test reads the checkout's runtime or std by path, which
-// would be the checkout's under a mutant: each reads the run's, `runtimeDir`
-// and `stdDir`.
-test("a runtime mutant's tests import its runtime, installed in their own target", () => {
+// A runtime helper's mutant has its own helpers, as it has its own
+// compiler, in its tests' target: a copy of `@rust-js/std`, its `runtime.js`
+// the mutant's. What a test writes there imports it, and so does std's own
+// `iter.js` beside it, never the checkout's, which is never rewritten: a
+// `check:fast` beside the mutant's tests runs the checkout's (#720). And no
+// test reads the checkout's package by path, which would be the checkout's
+// under a mutant: each reads the run's, `stdDir` and `helpersModule`.
+test("a runtime mutant's tests import its helpers, installed in their own target", () => {
   const own = fixture("own-runtime");
-  const checkout = readFileSync(join(root, "runtime", "index.js"), "utf8");
-  installPackages(own, "export const which = 'own';\n");
+  const checkout = readFileSync(join(root, "std", "runtime.js"), "utf8");
+  installPackages(own, `${checkout}export const which = "own";\n`);
   mkdirSync(join(own, "fixtures", "probe"), { recursive: true });
+  const probe = (from: string) => `import { which } from "${from}";\nconsole.log(which, import.meta.resolve("${from}"));\n`;
   const probes = [join(own, "fixtures", "probe", "main.mjs"), join(own, "node_modules", "@rust-js", "std", "probe.mjs")];
-  const probe = 'import { which } from "@rust-js/runtime";\nconsole.log(which, import.meta.resolve("@rust-js/runtime"));\n';
-  for (const file of probes) writeFileSync(file, probe);
-  const runtime = pathToFileURL(join(own, "node_modules", "@rust-js", "runtime", "index.js")).href;
-  for (const file of probes) expect(run([node ?? "node", file]).trim()).toBe(`own ${runtime}`);
-  const packages = 'import { runtimeDir, stdDir } from "./test/packages-of.ts";\nconsole.log(runtimeDir, stdDir);\n';
+  writeFileSync(probes[0], probe("@rust-js/std"));
+  writeFileSync(probes[1], probe("./index.js"));
+  const entry = pathToFileURL(join(own, "node_modules", "@rust-js", "std", "index.js")).href;
+  for (const file of probes) expect(run([node ?? "node", file]).trim()).toBe(`own ${entry}`);
+  const packages = 'import { helpersModule, stdDir } from "./test/packages-of.ts";\nconsole.log(stdDir, helpersModule);\n';
   expect(run([node ?? "node", "--input-type=module", "-e", packages], 60_000, { RUST_JS_TARGET: own }).trim()).toBe(
-    `${join(own, "node_modules", "@rust-js", "runtime")} ${join(own, "node_modules", "@rust-js", "std")}`,
+    `${join(own, "node_modules", "@rust-js", "std")} ${join(own, "node_modules", "@rust-js", "std", "runtime.js")}`,
   );
-  expect(readFileSync(join(root, "runtime", "index.js"), "utf8")).toBe(checkout);
-  const byPath = /join\(root, "(runtime|std)"|"(runtime|std)\/[\w.]+\.js"/;
+  expect(readFileSync(join(root, "std", "runtime.js"), "utf8")).toBe(checkout);
+  const byPath = /join\(root, "std"|"std\/[\w.]+\.js"/;
   const others = [...new Bun.Glob("test/*.ts").scanSync(root)].filter((file) => !["test/packages-of.ts", "test/mutations.test.ts"].includes(file));
   expect(others.filter((file) => byPath.test(readFileSync(join(root, file), "utf8")))).toEqual([]);
 });

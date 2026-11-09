@@ -20,7 +20,7 @@ import {
   $toJson,
   $traitImpl,
   $unwrapOk,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 function pageSerialize_serialize(page, json, writeT) {
   json.beginObject();

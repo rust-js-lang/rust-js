@@ -28,7 +28,7 @@ import {
   PreopenDirectory,
   WASI,
 } from "@bjorn3/browser_wasi_shim";
-import { $rsplitOnce, $stripPrefix, $try, $unwrap } from "@rust-js/runtime";
+import { $rsplitOnce, $stripPrefix, $try, $unwrap } from "@rust-js/std";
 
 // The rest of the WASI shim (@bjorn3/browser_wasi_shim), for `compile`.
 export function ms(t) {
@@ -66,7 +66,7 @@ export async function load(stat) {
     crates: crateFiles,
     /**
      * What the programs it compiles import of the page's, by specifier:
-     * `@rust-js/runtime` (ADR 0103), and React's modules.
+     * `@rust-js/std`'s modules (ADRs 0103, 0561), and React's.
      */
     modules,
     /** The stylesheets a program may import, TodoMVC's, by specifier. */
@@ -113,20 +113,13 @@ async function loadSysrootFile(name) {
 }
 
 /**
- * `@rust-js/runtime` and React's modules, and the stylesheets, for a
+ * `@rust-js/std`'s modules and React's, and the stylesheets, for a
  * program to import (ADR 0044).
  */
 async function loadPackages(start, stat) {
-  const runtime = (await window.fetch("./runtime.js")).text();
-  let packages = (await window.fetch("./packages.json")).json();
-  const modules = [["@rust-js/runtime", await runtime]];
-  packages = await packages;
-  const items = Object.entries(packages.modules);
-  for (let i = 0; i < items.length; i++) {
-    modules.push(items[i]);
-  }
-  stat("download runtime and packages", ms(performance.now() - start));
-  return [modules, Object.entries(packages.styles)];
+  const packages = await (await window.fetch("./packages.json")).json();
+  stat("download packages", ms(performance.now() - start));
+  return [Object.entries(packages.modules), Object.entries(packages.styles)];
 }
 
 async function loadBindingCrate(name, start, stat) {

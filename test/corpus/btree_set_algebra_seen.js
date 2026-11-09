@@ -14,7 +14,7 @@ import {
   $treeIsDisjoint,
   $treeIsSubset,
   $treeSetAlgebra,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

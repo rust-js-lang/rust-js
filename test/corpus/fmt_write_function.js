@@ -7,7 +7,7 @@ import {
   $stringWriter,
   $writeExpect,
   $writeTry,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

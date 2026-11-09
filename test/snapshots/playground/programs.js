@@ -16,13 +16,13 @@
  * as the JS the frame can run, which has no bundler.
  */
 import { transform } from "sucrase";
-import { $extend, $iter, $next } from "@rust-js/runtime";
+import { $extend, $iter, $next } from "@rust-js/std";
 
 /**
  * `from`'s directory joined with a relative specifier like `../lib.js`. A
- * package's, `@rust-js/runtime`, is itself.
+ * package's, `react`, is itself.
  */
-export function resolve(from, specifier) {
+function resolve(from, specifier) {
   if (!specifier.startsWith(".")) {
     return specifier;
   }
@@ -39,19 +39,33 @@ export function resolve(from, specifier) {
 }
 
 /**
+ * The module of `paths` that `from`'s import of `specifier` names: what
+ * `resolve` gives, or a package's entry, its `index.js`, as Node finds it:
+ * `@rust-js/std` is `@rust-js/std/index.js`.
+ */
+export function target(paths, from, specifier) {
+  const resolved = resolve(from, specifier);
+  const entry = `${resolved}/index.js`;
+  return !specifier.startsWith(".") && !paths.includes(resolved) && paths.includes(entry)
+    ? entry
+    : resolved;
+}
+
+/**
  * Link generated ES modules through an import map. Virtual specifiers avoid
  * embedding URLs recursively, so cycles work. The browser owns module
  * evaluation, named imports and live bindings; no identifier rewriting.
  */
 export function link(files) {
-  const imports = /^import ([^;]+?) from "([^"]+)";/gm;
+  const imports = /^((?:import|export) [^;]+?) from "([^"]+)";/gm;
+  const paths = files.map(([path]) => path);
   const sourceMap = /^\/\/# sourceMappingURL=.*$/m;
   let entries = [];
-  for (const [path, code] of files.values().map((item) => [item[0], item[1]])) {
-    const from = path;
-    let body = code.replace(imports, (_, names, specifier) => {
-      const target = JSON.stringify(`rust-js:${resolve(from, specifier)}`);
-      return `import ${names} from ${target};`;
+  for (let i = 0; i < files.length; i++) {
+    const [path, code] = files[i];
+    let body = code.replace(imports, (_, head, specifier) => {
+      const linked = JSON.stringify(`rust-js:${target(paths, path, specifier)}`);
+      return `${head} from ${linked};`;
     });
     body = body.replace(sourceMap, "");
     const specifier = JSON.stringify(`rust-js:${path}`);
@@ -168,21 +182,20 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
         css.push(find[1]);
       }
     }
-    const known = styles.map(([name]) => name);
     value[1] = value[1].replace(cssImports, (whole, specifier) =>
-      known.includes(specifier) ? "" : whole,
+      styles.some(([name]) => name === specifier) ? "" : whole,
     );
   }
   const look = css.length === 0 ? FRAME_STYLE : `<style>\n${css.join("")}</style>`;
   // Imports from JS modules (ADR 0028) name packages or files the page
   // doesn't have. A bundler would bring them in; the playground has none.
-  const imports = /^import (?:[^;]+? from )?"([^"]+)";/gm;
+  const imports = /^(?:import|export) (?:[^;]+? from )?"([^"]+)";/gm;
+  const paths = sources.map(([path]) => path);
   const external = [];
   for (let i = 0; i < sources.length; i++) {
     const [path, code] = sources[i];
     for (const [, specifier] of Array.from(code.matchAll(imports))) {
-      const target = resolve(path, specifier);
-      if (!sources.some(([p]) => p === target) && !external.includes(specifier)) {
+      if (!paths.includes(target(paths, path, specifier)) && !external.includes(specifier)) {
         external.push(specifier);
       }
     }

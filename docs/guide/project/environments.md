@@ -14,13 +14,13 @@ globals of its own. Whatever runs or bundles ES modules runs them.
 ## Bare imports need a resolver
 
 The JS imports packages by name: `react`, `nanoid`, and rust-js's own
-`@rust-js/runtime`. A bundler or Node resolves them from `node_modules`. A
+`@rust-js/std`. A bundler or Node resolves them from `node_modules`. A
 browser loading the files directly needs an import map for each.
 
-## The runtime package
+## The std package
 
-A module imports what Rust needs and JS hasn't from `@rust-js/runtime`,
-one named import per helper it uses:
+A module imports what Rust needs and JS hasn't from `@rust-js/std`, one
+named import per helper or std body it uses:
 
 ```rust
 pub fn label(count: u32) -> String {
@@ -33,7 +33,7 @@ pub fn pick(items: &[String], index: usize) -> String {
 ```
 
 ```js
-import { $index } from "@rust-js/runtime";
+import { $index } from "@rust-js/std";
 
 export function label(count) {
   return `${count} items`;
@@ -47,13 +47,14 @@ export function pick(items, index) {
 - **A helper appears where behavior needs one.** `items[index]` panics out
   of bounds, as Rust's does, so it's `$index`; `format!` of a number is a
   template literal, so it's none. Each helper starts with `$`.
-- **`@rust-js/std`** holds some of std's own bodies, compiled to JS, which
-  the JS imports as `@rust-js/std/iter.js` where it uses them.
-- **Install both, at the compiler's version**, as `dependencies`: they're
-  what the app runs. `rust-js build` refuses another version ([ADR 0103](../../decisions/0103-runtime-package.md)).
-- **Each helper is a named export**, and the packages have no side
-  effects, so a bundler keeps only what's used.
-- **Your tooling may transpile them.** The runtime spreads only arrays,
+- **Some of std's own bodies are there too**, compiled to JS, a
+  `Peekable`'s `next` say, imported the same way, from the same package
+  ([ADR 0561](../../decisions/0561-std-bodies.md)).
+- **Install it, at the compiler's version**, as a dependency: it's what
+  the app runs. `rust-js build` refuses another version ([ADR 0103](../../decisions/0103-runtime-package.md)).
+- **Each helper is a named export**, and the package has no side effects,
+  so a bundler keeps only what's used.
+- **Your tooling may transpile it.** Its helpers spread only arrays,
   and steps a string's chars or a set's items by `Array.from`, so Babel's
   loose spread and destructuring, which React's Jest config runs over
   everything, leave its answers as they are ([ADR 0919](../../decisions/0919-the-runtime-survives-loose-transforms.md)).

@@ -15,7 +15,7 @@ use js::{JsObject, RegExp, encode_uri_component, json, reg_exp};
 // given the match, then each group, so its type is its pattern's (js::RegExp).
 /// `text.replace(pattern, (match, a, b) => ..)`: a closure for each match.
 #[cfg_attr(rust_js, rust_js::link_name = "replace")]
-fn replace_matches(this: &str, pattern: &RegExp, with: Box<dyn Fn(String, String, String) -> String>) -> String {
+fn replace_matches(this: &str, pattern: &RegExp, with: &dyn Fn(String, String, String) -> String) -> String {
     unreachable!()
 }
 
@@ -90,8 +90,8 @@ pub enum Prepared {
 }
 
 /// `from`'s directory joined with a relative specifier like `../lib.js`. A
-/// package's, `@rust-js/runtime`, is itself.
-pub fn resolve(from: &str, specifier: &str) -> String {
+/// package's, `react`, is itself.
+fn resolve(from: &str, specifier: &str) -> String {
     if !specifier.starts_with('.') {
         return specifier.to_string();
     }
@@ -107,30 +107,38 @@ pub fn resolve(from: &str, specifier: &str) -> String {
     parts.join("/")
 }
 
+/// The module of `paths` that `from`'s import of `specifier` names: what
+/// `resolve` gives, or a package's entry, its `index.js`, as Node finds it:
+/// `@rust-js/std` is `@rust-js/std/index.js`.
+pub fn target(paths: &[String], from: &str, specifier: &str) -> String {
+    let resolved = resolve(from, specifier);
+    let entry = format!("{resolved}/index.js");
+    match !specifier.starts_with('.') && !paths.contains(&resolved) && paths.contains(&entry) {
+        true => entry,
+        false => resolved,
+    }
+}
+
 /// Link generated ES modules through an import map. Virtual specifiers avoid
 /// embedding URLs recursively, so cycles work. The browser owns module
 /// evaluation, named imports and live bindings; no identifier rewriting.
 pub fn link(files: &[(String, String)]) -> String {
-    let imports = reg_exp::new(r#"^import ([^;]+?) from "([^"]+)";"#, "gm");
+    let imports = reg_exp::new(r#"^((?:import|export) [^;]+?) from "([^"]+)";"#, "gm");
+    let paths: Vec<String> = files.iter().map(|(path, _)| path.clone()).collect();
     let source_map = reg_exp::new(r"^//# sourceMappingURL=.*$", "m");
     let mut entries = Vec::new();
-    for (path, code) in files.iter().cloned() {
-        let from = path.clone();
-        let body = replace_matches(
-            &code,
-            imports,
-            Box::new(move |_, names, specifier| {
-                let target = json::stringify(&format!("rust-js:{}", resolve(&from, &specifier)));
-                format!("import {names} from {target};")
-            }),
-        );
+    for (path, code) in files {
+        let body = replace_matches(code, imports, &|_, head, specifier| {
+            let linked = json::stringify(&format!("rust-js:{}", target(&paths, path, &specifier)));
+            format!("{head} from {linked};")
+        });
         let body = reg_exp::replace(&body, source_map, "");
         let specifier = json::stringify(&format!("rust-js:{path}"));
         // Identical module bodies must still have separate state.
         let url = json::stringify(&format!(
             "data:text/javascript,{}#{}",
             encode_uri_component(&body),
-            encode_uri_component(&path)
+            encode_uri_component(path)
         ));
         entries.push(format!("{specifier}: {url}"));
     }
@@ -242,18 +250,13 @@ pub fn prepare(
                 css.push(text.clone());
             }
         }
-        let known: Vec<String> = styles.iter().map(|(name, _)| name.clone()).collect();
-        *code = replace_matches(
-            code,
-            css_imports,
-            Box::new(move |whole, specifier, _| {
-                if known.contains(&specifier) {
-                    String::new()
-                } else {
-                    whole
-                }
-            }),
-        );
+        *code = replace_matches(code, css_imports, &|whole, specifier, _| {
+            if styles.iter().any(|(name, _)| *name == specifier) {
+                String::new()
+            } else {
+                whole
+            }
+        });
     }
     let look = match css.is_empty() {
         true => FRAME_STYLE.to_string(),
@@ -261,12 +264,12 @@ pub fn prepare(
     };
     // Imports from JS modules (ADR 0028) name packages or files the page
     // doesn't have. A bundler would bring them in; the playground has none.
-    let imports = reg_exp::new(r#"^import (?:[^;]+? from )?"([^"]+)";"#, "gm");
+    let imports = reg_exp::new(r#"^(?:import|export) (?:[^;]+? from )?"([^"]+)";"#, "gm");
+    let paths: Vec<String> = sources.iter().map(|(path, _)| path.clone()).collect();
     let mut external: Vec<String> = Vec::new();
     for (path, code) in &sources {
         for (_, specifier) in matches_of(match_all(code, imports)) {
-            let target = resolve(path, &specifier);
-            if !sources.iter().any(|(p, _)| *p == target) && !external.contains(&specifier) {
+            if !paths.contains(&target(&paths, path, &specifier)) && !external.contains(&specifier) {
                 external.push(specifier);
             }
         }

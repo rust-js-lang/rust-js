@@ -270,6 +270,9 @@ impl OutputPlan {
                 imports,
                 reexports,
                 helpers: Vec::new(),
+                // Of std's own build, its package's `runtime.js` (#1095).
+                helpers_from: (self.std_bodies)
+                    .then(|| self.file_specifier(&module.path, &parent_dir(&self.output).join(crate::runtime::MODULE))),
                 items: module.items,
                 default_export: module.default_export,
                 default_declared: module.default_declared,
@@ -314,6 +317,7 @@ impl OutputPlan {
                 imports: Vec::new(),
                 reexports: Vec::new(),
                 helpers: Vec::new(),
+                helpers_from: None,
                 items: Vec::new(),
                 default_export: None,
                 default_declared: false,

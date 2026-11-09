@@ -4,6 +4,7 @@
 // In JS it's `useDarkMode`, the name React finds a hook by (ADR 0046).
 
 import { useSyncExternalStore } from "react";
+
 import { listen } from "./listen.js";
 
 const dark = window.matchMedia("(prefers-color-scheme: dark)");

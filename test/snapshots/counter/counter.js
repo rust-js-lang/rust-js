@@ -4,7 +4,7 @@
 // generated from W3C's WebIDL (ADR 0024). Also closures (ADR 0022), and
 // strings, references and shared state (ADR 0023).
 
-import { $unwrap } from "@rust-js/runtime";
+import { $unwrap } from "@rust-js/std";
 
 // Each DOM interface is a type whose members are its methods, and each tag
 // and event's name a type whose value is its string (ADR 0223):

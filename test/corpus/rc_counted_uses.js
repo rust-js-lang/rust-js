@@ -19,7 +19,7 @@ import {
   $upgrade,
   $weakClone,
   $weakDrop,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

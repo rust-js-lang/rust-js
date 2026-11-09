@@ -2,7 +2,7 @@
 
 import { wrapped, wrappedUnboxed } from "./helpers.js";
 import * as Helpers from "./helpers.js";
-import { $debugStr, $pop, $someValue } from "@rust-js/runtime";
+import { $debugStr, $pop, $someValue } from "@rust-js/std";
 
 export function entry() {
   main();

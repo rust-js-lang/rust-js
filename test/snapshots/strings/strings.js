@@ -14,7 +14,7 @@ import {
   $trimEnd,
   $trimStart,
   $zeroPad,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 /** `format!`, as the pieces and values joined. */
 export function labeled(name, n) {

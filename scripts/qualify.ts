@@ -70,13 +70,12 @@ export function checksums(dir: string): string[] {
 const text = (cmd: string[], cwd = root) => runSync(cmd, cwd, 60_000).stdout.trim();
 
 // The packages a Vite app installs of a distribution: the tooling, the
-// compiler, the runtime, and React's crate and those it uses, which an
+// compiler, `@rust-js/std`, and React's crate and those it uses, which an
 // app's Cargo builds with (ADR 0118).
 const vitePackages = [
   "@rust-js/build",
   "@rust-js/typescript",
   "@rust-js/native",
-  "@rust-js/runtime",
   "@rust-js/std",
   ...crates.filter(({ lib }) => reactLibs.includes(lib)).map(({ npm }) => npm),
 ];
@@ -238,7 +237,6 @@ async function main() {
         dependencies: {
           "@rust-js/build": dependency("@rust-js/build"),
           "@rust-js/native": dependency("@rust-js/native"),
-          "@rust-js/runtime": dependency("@rust-js/runtime"),
           "@rust-js/std": dependency("@rust-js/std"),
         },
         overrides: { "@rust-js/build": dependency("@rust-js/build"), "@rust-js/typescript": dependency("@rust-js/typescript") },

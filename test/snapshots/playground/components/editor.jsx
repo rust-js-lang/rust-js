@@ -7,7 +7,7 @@ import { useEffect, useRef } from "react";
 
 import { openView, setTheme, show } from "../codemirror.js";
 import { useDarkMode } from "../dark_mode.js";
-import { $unwrap } from "@rust-js/runtime";
+import { $unwrap } from "@rust-js/std";
 
 export function Editor({ state, view, onSubmit }) {
   const parent = useRef(undefined);

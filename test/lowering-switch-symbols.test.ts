@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { node } from "./programs";
-import { buildReact, compiler, fixture, installRuntime, root, run, target } from "./support";
+import { buildReact, compiler, fixture, installStd, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -269,7 +269,7 @@ pub fn guarded(values: &[&'static Unknown], limit: u32) -> Vec<u32> {
         break;
       }
     }`);
-  installRuntime(dir);
+  installStd(dir);
   writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
 const [a, b, c, x] = ["a", "b", "c", "x"].map((name) => Symbol.for(name));
 const values = [a, c, x, a, {}, x, b, c];
@@ -348,7 +348,7 @@ pub fn pushed(values: &[&'static Unknown]) -> Vec<u32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  installRuntime(dir);
+  installStd(dir);
   writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
 const [a, b, c, x] = ["a", "b", "c", "x"].map((name) => Symbol.for(name));
 console.log(JSON.stringify([

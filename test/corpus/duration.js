@@ -8,7 +8,7 @@ import {
   $durationChecked,
   $durationNew,
   $durationSub,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

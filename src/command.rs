@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 /// What a call of rust-js asks for.
 pub(crate) enum Command {
-    /// `--runtime-module`: `@rust-js/runtime`'s module (ADR 0103).
+    /// `--runtime-module`: `@rust-js/std`'s helpers' module, `runtime.js` (ADR 0103).
     RuntimeModule,
     /// `--version-json`: the compiler's identity, as a manifest records it.
     VersionJson,

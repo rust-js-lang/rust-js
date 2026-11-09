@@ -22,7 +22,7 @@ import { excerpt } from "./child";
 import { cases, corpus, directives, type Directives } from "./corpus-cases";
 import { expected, same, type Outcome } from "./oracle";
 import { aborted, agree, compileJs, node, runJs, runNative, runtimes, show, type Run } from "./programs";
-import { buildCompiler, caseShard, compiler, firstPart, fixture, root, runtimeDir } from "./support";
+import { buildCompiler, caseShard, compiler, firstPart, fixture, root, helpersModule } from "./support";
 import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
 import { underLoad } from "../scripts/timing";
 
@@ -324,9 +324,9 @@ firstPart("print! without a process writes whole lines, and loses none", () => {
   };
   // A script, with the runtime it imports before it (ADR 0103), in a context
   // with no `process`.
-  const runtime = readFileSync(join(runtimeDir, "index.js"), "utf8").replace(/^export /gm, "");
+  const runtime = readFileSync(helpersModule, "utf8").replace(/^export /gm, "");
   const code = readFileSync(compiled.js, "utf8")
-    .replace(/^import \{[^}]*\} from "@rust-js\/runtime";$/m, "")
+    .replace(/^import \{[^}]*\} from "@rust-js\/std";$/m, "")
     .replace(/^export /gm, "")
     .replace(/^\/\/# sourceMappingURL=.*$/m, "");
   runInNewContext(`${runtime}\n${code}\nentry();`, context);

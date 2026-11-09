@@ -8,7 +8,7 @@ import {
   $fromBytes,
   $rotateBits,
   $toBytes,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { LIBRARY_ABI, parseManifest, mapManifestPaths, parseCompilerIdentity } from "../tooling/manifest.js";
 import { createNativeBuilder } from "../tooling/build.js";
-import { buildCompiler, cargoApp, compiler, fixture, installRuntime, run } from "./support";
+import { buildCompiler, cargoApp, compiler, fixture, installStd, run } from "./support";
 
 const manifest = {
   version: 1, input: "/virtual/lib.rs", output: "/virtual/lib.js",
@@ -117,7 +117,7 @@ test("virtual path mapping preserves JSON escaping and unrelated values", () => 
 test("the builder builds an app's Cargo package, and a failed build leaves its JS", async () => {
   buildCompiler();
   const root = realpathSync(mkdtempSync(join(tmpdir(), "rust-js-independent-")));
-  installRuntime(root);
+  installStd(root);
   try {
     const options = cargoApp(root, "pub fn answer() -> u32 {\n    42\n}\n");
     const builder = createNativeBuilder({ root, rustJs: compiler });
@@ -136,21 +136,21 @@ test("the builder builds an app's Cargo package, and a failed build leaves its J
 }, 600_000);
 
 // The JS a compiler writes imports helpers of its own release (ADR 0103):
-// an app without @rust-js/runtime, or with another version's, is refused
+// an app without @rust-js/std, or with another version's, is refused
 // before anything's compiled.
-test("the builder refuses an app without the compiler's @rust-js/runtime", async () => {
+test("the builder refuses an app without the compiler's @rust-js/std", async () => {
   buildCompiler();
   const root = realpathSync(mkdtempSync(join(tmpdir(), "rust-js-runtime-version-")));
   try {
     const options = cargoApp(root, "pub fn answer() -> u32 {\n    42\n}\n");
     const builder = () => createNativeBuilder({ root, rustJs: compiler });
     const version = parseCompilerIdentity(Bun.spawnSync([compiler, "--version-json"], { stdout: "pipe" }).stdout.toString()).version;
-    await expect(builder().checkCargo(options)).rejects.toThrow(`imports @rust-js/runtime ${version}: install it`);
-    mkdirSync(join(root, "node_modules", "@rust-js", "runtime"), { recursive: true });
-    writeFileSync(join(root, "node_modules", "@rust-js", "runtime", "package.json"), '{ "name": "@rust-js/runtime", "version": "999.0.0", "exports": { "./package.json": "./package.json" } }\n');
-    await expect(builder().checkCargo(options)).rejects.toThrow(`needs @rust-js/runtime ${version}, not the installed 999.0.0`);
+    await expect(builder().checkCargo(options)).rejects.toThrow(`imports @rust-js/std ${version}: install it`);
+    mkdirSync(join(root, "node_modules", "@rust-js", "std"), { recursive: true });
+    writeFileSync(join(root, "node_modules", "@rust-js", "std", "package.json"), '{ "name": "@rust-js/std", "version": "999.0.0", "exports": { "./package.json": "./package.json" } }\n');
+    await expect(builder().checkCargo(options)).rejects.toThrow(`needs @rust-js/std ${version}, not the installed 999.0.0`);
     rmSync(join(root, "node_modules"), { recursive: true });
-    installRuntime(root);
+    installStd(root);
     const built = await builder().checkCargo(options);
     expect((await import(built.js!)).answer()).toBe(42);
   } finally { rmSync(root, { recursive: true, force: true }); }
@@ -163,7 +163,7 @@ test("the builder's Cargo builds run the compiler's Rust", async () => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "rust-js-cargo-app-")));
   try {
     const options = cargoApp(root, "pub fn answer() -> i32 {\n    42\n}\n");
-    installRuntime(root);
+    installStd(root);
     const builder = createNativeBuilder({ root, rustJs: compiler });
     const { packages } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: true });
     expect([...packages.keys()]).toEqual(["app"]);
@@ -176,7 +176,7 @@ test("the builder's Cargo builds run the compiler's Rust", async () => {
 // another module's file, by the compiler's parse of what it printed: each
 // relative specifier's bytes, after a directive and in an `export .. from`
 // too, one of what the module doesn't import, `other` (rd705), and none of
-// a package's, `@rust-js/runtime`.
+// a package's, `@rust-js/std`.
 test("a manifest's links are each relative specifier a module's files print", async () => {
   buildCompiler();
   const dir = fixture("manifest-links");
@@ -216,7 +216,7 @@ pub mod deep {
   const root = manifest.modules.find((m: { module: string[] }) => m.module.length === 0);
   const child = manifest.modules.find((m: { module: string[] }) => m.module[0] === "child");
   expect(named(root.file, root.links)).toEqual([]);
-  expect(readFileSync(root.file, "utf8")).toContain('from "@rust-js/runtime"');
+  expect(readFileSync(root.file, "utf8")).toContain('from "@rust-js/std"');
   expect(named(child.file, child.links)).toEqual([["./lib.js", lib], ["./lib.js", lib]]);
   expect(named(child.types, child.type_links)).toEqual([["./lib.js", lib], ["./lib.js", lib]]);
   const inner = manifest.modules.find((m: { module: string[] }) => m.module.join("::") === "deep::inner");

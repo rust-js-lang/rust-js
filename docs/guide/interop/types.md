@@ -137,7 +137,7 @@ pub fn rounding() -> fn(f64) -> f64 {
 ```
 
 ```js
-import { $round } from "@rust-js/runtime";
+import { $round } from "@rust-js/std";
 
 export const LOG = Math.log;
 
@@ -184,7 +184,7 @@ pub fn initial(name: &str) -> Option<char> {
 ```
 
 ```js
-import { $byteLen } from "@rust-js/runtime";
+import { $byteLen } from "@rust-js/std";
 
 export function byteLen(text) {
   return $byteLen(text);
@@ -244,7 +244,7 @@ pub fn middle(items: &[i32]) -> &[i32] {
 ```
 
 ```js
-import { $BTreeMap, $cmp, $slice, $sortedEntries } from "@rust-js/runtime";
+import { $BTreeMap, $cmp, $slice, $sortedEntries } from "@rust-js/std";
 
 export function scores() {
   return [["Ada", 3]];
@@ -374,7 +374,7 @@ pub fn named(map: &Map<str, String>) -> Vec<String> {
 ```
 
 ```js
-import { $extend } from "@rust-js/runtime";
+import { $extend } from "@rust-js/std";
 
 export function takesFrozenKeys() {
   const frozen = Object.freeze({});
@@ -744,7 +744,7 @@ pub fn size(input: Input) -> f64 {
 ```
 
 ```js
-import { $byteLen } from "@rust-js/runtime";
+import { $byteLen } from "@rust-js/std";
 
 export function loads() {
   return [{ status: "pending" }, { status: "done", value: 3 }];
@@ -1059,7 +1059,7 @@ pub fn ratio(a: u32, b: u32) -> Result<u32, String> {
 ```
 
 ```js
-import { $div, $some } from "@rust-js/runtime";
+import { $div, $some } from "@rust-js/std";
 
 export function profile(name) {
   return {
@@ -1956,7 +1956,7 @@ pub fn share(doc: &Rc<Doc>) -> Rc<Doc> {
 ```
 
 ```js
-import { $rcClone } from "@rust-js/runtime";
+import { $rcClone } from "@rust-js/std";
 
 export function open(title) {
   return { value: { title }, strong: 1, weak: 0 };
@@ -2487,7 +2487,7 @@ pub fn describe(value: Option<&Unknown>) -> String {
 ```
 
 ```js
-import { $byteLen, $displayF64 } from "@rust-js/runtime";
+import { $byteLen, $displayF64 } from "@rust-js/std";
 
 export function describe(value) {
   if (value == null) {
@@ -2868,7 +2868,7 @@ pub fn pop<T>() -> T {
 ```
 
 ```js
-import { $pop, $someValue, $unwrap } from "@rust-js/runtime";
+import { $pop, $someValue, $unwrap } from "@rust-js/std";
 
 const valueStack = [];
 
@@ -3629,7 +3629,7 @@ pub fn key(value: Option<&Unknown>) -> Option<&'static str> {
 ```
 
 ```js
-import { $symbolFor } from "@rust-js/runtime";
+import { $symbolFor } from "@rust-js/std";
 
 export const REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");
 export const REACT_PROFILER_TYPE = Symbol.for("react.profiler");
@@ -3688,7 +3688,7 @@ pub fn delete(tasks: &mut Vec<Task>, at: usize) {
 ```
 
 ```js
-import { $removeAt } from "@rust-js/runtime";
+import { $removeAt } from "@rust-js/std";
 
 export function firstWord(text) {
   return text.split(" ")[0] ?? "";

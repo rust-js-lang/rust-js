@@ -68,7 +68,7 @@ pub fn tally(words: &[&str]) -> usize {
 ```
 
 ```js
-import { $byteLen } from "@rust-js/runtime";
+import { $byteLen } from "@rust-js/std";
 
 export function makeAdder(n) {
   return (x) => (x + n) | 0;
@@ -488,7 +488,7 @@ pub fn demo() -> String {
 ```
 
 ```js
-import { $displayF64, $index, $toFixed } from "@rust-js/runtime";
+import { $displayF64, $index, $toFixed } from "@rust-js/std";
 
 export const circleShape = {
   area: circleShape_area,
@@ -733,7 +733,7 @@ import {
   $parseInt,
   $stripPrefix,
   $unwrapOk,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export const configErrorDebug = { fmt: configErrorDebug_fmt };
 
@@ -867,7 +867,7 @@ pub fn on_click(url: &'static str) {
 ```
 
 ```js
-import { $settle } from "@rust-js/runtime";
+import { $settle } from "@rust-js/std";
 
 export async function fetchText(url) {
   const response = await window.fetch(url);
@@ -972,7 +972,7 @@ pub fn grow(s: &mut Settings) {
 ```
 
 ```js
-import { $byteLen } from "@rust-js/runtime";
+import { $byteLen } from "@rust-js/std";
 
 export function copies() {
   const a = {
@@ -1137,7 +1137,7 @@ pub fn entangle(root: &Root, index: usize, lane: u32) {
 ```
 
 ```js
-import { $at } from "@rust-js/runtime";
+import { $at } from "@rust-js/std";
 
 export function entangle(root, index, lane) {
   root.lanes[$at(root.lanes, index)] = (root.lanes[index] | lane) >>> 0;
@@ -1165,7 +1165,7 @@ pub fn emptied(v: &mut Vec<u32>) -> Vec<u32> {
 ```
 
 ```js
-import { $apart, $cellOf } from "@rust-js/runtime";
+import { $apart, $cellOf } from "@rust-js/std";
 
 export function emptied(v) {
   const item = $cellOf(v);
@@ -1242,7 +1242,7 @@ pub fn evens(limit: u32) -> impl Iterator<Item = u32> {
 ```
 
 ```js
-import { $fromFn, $iterator, $lazyRange } from "@rust-js/runtime";
+import { $fromFn, $iterator, $lazyRange } from "@rust-js/std";
 
 function fibonacciIterator_next(fibonacci) {
   const value = fibonacci.current;

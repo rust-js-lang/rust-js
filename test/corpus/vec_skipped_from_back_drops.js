@@ -18,7 +18,7 @@ import {
   $skipping,
   $slicing,
   $stepBy,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

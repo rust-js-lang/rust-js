@@ -276,7 +276,7 @@ pub fn direct() -> String {
 ```
 
 ```js
-import { $displayF64 } from "@rust-js/runtime";
+import { $displayF64 } from "@rust-js/std";
 
 export const circleShape = {
   area: circleShape_area,
@@ -537,7 +537,7 @@ pub fn mixed() -> String {
 
 ```js
 import { circleShape, rectShape } from "./shape.js";
-import { $index } from "@rust-js/runtime";
+import { $index } from "@rust-js/std";
 
 export function largest(shapes) {
   let best = $index(shapes, 0);
@@ -663,7 +663,7 @@ pub fn equal(a: &User, b: &User) -> bool {
 ```
 
 ```js
-import { $eq } from "@rust-js/runtime";
+import { $eq } from "@rust-js/std";
 
 export function renamed(user) {
   const copy = { ...user, tags: user.tags.slice() };
@@ -741,7 +741,7 @@ pub fn show(p: Point) -> String {
 ```
 
 ```js
-import { $debugF64, $displayF64 } from "@rust-js/runtime";
+import { $debugF64, $displayF64 } from "@rust-js/std";
 
 function pointDebug_fmt(point) {
   return `Point { x: ${$debugF64(point.x)}, y: ${$debugF64(point.y)} }`;
@@ -953,7 +953,7 @@ pub fn evens(limit: u32) -> impl Iterator<Item = u32> {
 ```
 
 ```js
-import { $iterator, $lazyRange } from "@rust-js/runtime";
+import { $iterator, $lazyRange } from "@rust-js/std";
 
 function countdownIterator_next(countdown) {
   if (countdown.from === 0) {

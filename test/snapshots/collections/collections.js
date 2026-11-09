@@ -23,7 +23,7 @@ import {
   $sortedKeys,
   $trim,
   $unwrap,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 /** A range, counted with `for (let i = ..; i < ..; i++)`. */
 export function sumTo(n) {

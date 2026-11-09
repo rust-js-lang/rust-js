@@ -15,7 +15,7 @@ import {
   $slice,
   $splitBy,
   $unwrap,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function tokenize(src) {
   const chars = Array.from(src);

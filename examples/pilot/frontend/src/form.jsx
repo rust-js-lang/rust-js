@@ -13,7 +13,7 @@ import { validate } from "../../models/src/lib.js";
 import { Failure } from "./api.js";
 import * as Api from "./api.js";
 import { go } from "./route.js";
-import { $debugStr, $parseInt, $retain, $trim } from "@rust-js/runtime";
+import { $debugStr, $parseInt, $retain, $trim } from "@rust-js/std";
 
 /** The message for `field`, if one of `errors` is about it. */
 function message(errors, field) {

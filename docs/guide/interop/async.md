@@ -131,7 +131,7 @@ pub async fn rename(id: u32) -> String {
 
 ```js
 import { loadUser, saveUser } from "./api.js";
-import { $settle } from "@rust-js/runtime";
+import { $settle } from "@rust-js/std";
 
 export async function rename(id) {
   const name = await loadUser(id);
@@ -256,7 +256,7 @@ pub async fn load_text(url: &str) -> Result<String, &'static JsError> {
 ```
 
 ```js
-import { $settle } from "@rust-js/runtime";
+import { $settle } from "@rust-js/std";
 
 export async function loadText(url) {
   const result = await $settle(window.fetch(url));

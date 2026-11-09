@@ -8,7 +8,7 @@ import {
   $iter,
   $parseInt,
   $some,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

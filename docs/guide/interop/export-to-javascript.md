@@ -53,7 +53,7 @@ fn shout(name: &str) -> String {
 ```
 
 ```js
-import { $find } from "@rust-js/runtime";
+import { $find } from "@rust-js/std";
 
 export const MAX_RESULTS = 10;
 
@@ -242,7 +242,7 @@ pub async fn fetch_count() -> u32 {
 ```
 
 ```js
-import { $parseInt } from "@rust-js/runtime";
+import { $parseInt } from "@rust-js/std";
 
 export function total(prices) {
   return prices.reduce((a, b) => a + b, -0);
@@ -391,7 +391,7 @@ pub fn order(prices: &[f64]) -> f64 {
 ```
 
 ```js
-import { $displayF64 } from "@rust-js/runtime";
+import { $displayF64 } from "@rust-js/std";
 
 export default function formatProdErrorMessage(code, ...args) {
   let url = `https://react.dev/errors/${$displayF64(code)}`;

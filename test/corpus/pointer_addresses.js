@@ -13,7 +13,7 @@ import {
   $ptrShown,
   $ptrTo,
   $sort,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

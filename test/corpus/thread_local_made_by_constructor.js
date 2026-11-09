@@ -2,7 +2,7 @@
 
 import * as Marks from "./marks.js";
 import * as Stack from "./stack.js";
-import { $local } from "@rust-js/runtime";
+import { $local } from "@rust-js/std";
 
 export function entry() {
   main();

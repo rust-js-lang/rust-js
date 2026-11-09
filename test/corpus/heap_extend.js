@@ -13,7 +13,7 @@ import {
   $partialOrd,
   $partiallyOrdered,
   $sortedKeys,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 const reversePartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: $eq }),

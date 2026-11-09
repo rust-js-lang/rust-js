@@ -22,7 +22,7 @@ import {
   $swap,
   $truncate,
   $windows,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 function half(n) {
   if (n % 2 === 0) {

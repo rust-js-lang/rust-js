@@ -15,7 +15,7 @@ import {
   $toFixed,
   $try,
   $unwrapErr,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 /**
  * JSON's value, each property a reviver gives none of left out, as

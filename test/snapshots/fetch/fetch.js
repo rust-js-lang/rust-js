@@ -4,7 +4,7 @@
 // web crate, `.await`ed in turn. The URL is a `data:` URL, so the example
 // needs no server; any URL the page may fetch works the same way.
 
-import { $unwrap } from "@rust-js/runtime";
+import { $unwrap } from "@rust-js/std";
 
 const URL = "data:text/plain,Hello from a fetch!";
 

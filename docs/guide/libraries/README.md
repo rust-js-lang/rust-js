@@ -61,7 +61,7 @@ pub fn later(name: String) {
 ```
 
 ```js
-import { $displayF64 } from "@rust-js/runtime";
+import { $displayF64 } from "@rust-js/std";
 
 export function describe(text) {
   let value;
@@ -285,7 +285,7 @@ pub async fn load(url: &str) -> String {
 ```
 
 ```js
-import { $unwrap } from "@rust-js/runtime";
+import { $unwrap } from "@rust-js/std";
 
 export function mount() {
   const app = $unwrap(document.getElementById("app"), "the page has an #app");
@@ -478,7 +478,7 @@ pub fn read_page(name: &str) -> Result<String, &'static js::JsError> {
 
 ```js
 import { readFileSync } from "fs";
-import { $try } from "@rust-js/runtime";
+import { $try } from "@rust-js/std";
 
 export function readPage(name) {
   const root = process.cwd() + "/content";
@@ -680,7 +680,7 @@ pub fn from_json(text: &str) -> Result<Order, serde_json::Error> {
 ```
 
 ```js
-import { $debugJsonError, $fromJson, $json, $toJson, $unwrapOk } from "@rust-js/runtime";
+import { $debugJsonError, $fromJson, $json, $toJson, $unwrapOk } from "@rust-js/std";
 
 function orderSerialize_serialize(order, json) {
   json.beginObject();

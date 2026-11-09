@@ -14,7 +14,7 @@ import {
   $partialOrd,
   $sortStable,
   $sortUnstable,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 const pairPartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: $eq }),

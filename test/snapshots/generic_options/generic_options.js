@@ -4,7 +4,7 @@
 // could itself look like `None`: with `T = ()` or `T = Option<i32>`, a
 // `Some(x)` is a box, so it's still `Some`.
 
-import { $pop, $some, $someAt, $someValue, $sortStable, $unwrap } from "@rust-js/runtime";
+import { $pop, $some, $someAt, $someValue, $sortStable, $unwrap } from "@rust-js/std";
 
 /** `Some` of each element, counted: with `T = ()`, `Some(())` must be `Some`. */
 export function countSome(xs) {

@@ -9,7 +9,7 @@ import {
   $next,
   $roomForHint,
   $someAt,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

@@ -6,7 +6,7 @@ import {
   $debugStr,
   $u8TryFromChar,
   $unwrapErr,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

@@ -99,11 +99,11 @@ test("in source, a build that fails leaves the previous one's files as they were
   expect(readFileSync(join(dir, "app", "src", "lib.js"), "utf8")).toBe(before);
 });
 
-test("the builder asks the compiler what it is, and which runtime it needs", async () => {
+test("the builder asks the compiler what it is, and which @rust-js/std it needs", async () => {
   const root = fixture("compiler-identity");
-  const runtime = join(root, "node_modules", "@rust-js", "runtime");
-  mkdirSync(runtime, { recursive: true });
-  writeFileSync(join(runtime, "package.json"), JSON.stringify({ name: "@rust-js/runtime", version: "1.0.0" }));
+  const std = join(root, "node_modules", "@rust-js", "std");
+  mkdirSync(std, { recursive: true });
+  writeFileSync(join(std, "package.json"), JSON.stringify({ name: "@rust-js/std", version: "1.0.0" }));
   const rustJs = join(root, "rust-js");
   const compiler = (version: string) => {
     writeFileSync(rustJs, `#!/bin/sh\necho '{"version":"${version}","toolchain":"1.99.0","abi":1}'\n`);
@@ -111,12 +111,12 @@ test("the builder asks the compiler what it is, and which runtime it needs", asy
   };
   compiler("1.0.0");
   const builder = createNativeBuilder({ root, rustJs });
-  // Its runtime is installed: what fails is Cargo's, of no manifest.
+  // Its std is installed: what fails is Cargo's, of no manifest.
   const check = (builder: ReturnType<typeof createNativeBuilder>) => builder.checkCargo({ manifestPath: join(root, "Cargo.toml") }).then(() => "built", (error: Error) => error.message);
-  expect(await check(builder)).not.toContain("@rust-js/runtime");
-  // Another release, whose runtime isn't installed.
+  expect(await check(builder)).not.toContain("@rust-js/std");
+  // Another release, whose std isn't installed.
   compiler("2.0.0");
-  expect(await check(createNativeBuilder({ root, rustJs }))).toContain("rust-js 2.0.0 needs @rust-js/runtime 2.0.0, not the installed 1.0.0");
+  expect(await check(createNativeBuilder({ root, rustJs }))).toContain("rust-js 2.0.0 needs @rust-js/std 2.0.0, not the installed 1.0.0");
 });
 
 // A manifest of an older compiler's says nothing of where its JS names

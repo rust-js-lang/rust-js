@@ -13,7 +13,7 @@ import {
   $tryBorrow,
   $unborrow,
   $withBorrow,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

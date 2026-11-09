@@ -921,7 +921,7 @@ pub fn counted(key: &str) -> f64 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), ...withWeb]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   // A lookup is the runtime's `$dictGet`, imported with its other helpers.
-  expect(js).toContain('import { $dictGet, $displayF64, $someValue, $try } from "@rust-js/runtime";');
+  expect(js).toContain('import { $dictGet, $displayF64, $someValue, $try } from "@rust-js/std";');
   expect(js).toContain("Object.entries(value)");
   expect(js).toMatch(/ = \$dictGet\(\w+(\._0)?, key\);/);
   expect(js).toMatch(/return JSON\.stringify\(\w+(\._0)?\);/);

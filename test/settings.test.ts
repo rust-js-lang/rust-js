@@ -10,7 +10,7 @@ import { runSync } from "./child";
 import { decodeMappings, lookup } from "./sourcemap";
 import { check } from "./crates";
 import { createNativeBuilder } from "../tooling/build.js";
-import { buildCompiler, compiler, fixture, installRuntime, root, seeded } from "./support";
+import { buildCompiler, compiler, fixture, installStd, root, seeded } from "./support";
 
 beforeAll(buildCompiler);
 
@@ -294,7 +294,7 @@ test("Prettier as a transform is refused: rust-js runs the app's Prettier itself
 // what Cargo printed (ADR 0381, amended).
 test("rust-js build says why the app's Prettier's layout wasn't taken", async () => {
   const dir = fixture("settings-prettier-refused");
-  installRuntime(dir);
+  installStd(dir);
   mkdirSync(join(dir, "src"));
   writeFileSync(join(dir, "src", "lib.rs"), rust);
   writeFileSync(join(dir, ".prettierrc"), "{}");

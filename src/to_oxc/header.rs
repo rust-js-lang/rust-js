@@ -298,9 +298,30 @@ pub(super) fn entries<'a>(module: &'a Module) -> Vec<Entry<'a>> {
     named.sort_by(|(a_relative, a), (b_relative, b)| {
         (written(a.placed), a_relative, a.from).cmp(&(written(b.placed), b_relative, b.from))
     });
-    let runtime = (!module.helpers.is_empty()).then(|| Entry {
-        says: Says::Named(None, module.helpers.iter().map(|&helper| (helper, helper)).collect()),
-        from: crate::runtime::PACKAGE,
+    // The helpers, of `@rust-js/std` itself, `./runtime.js`, else of the
+    // package: with what else it imports of it, std's compiled items, one
+    // statement, `import { $unwrap, peekableIterator_next } from
+    // "@rust-js/std"` (#1095).
+    let helpers_from = module.helpers_from.as_deref().unwrap_or(crate::runtime::PACKAGE);
+    let helpers: Vec<(&str, &str)> = module.helpers.iter().map(|&helper| (helper, helper)).collect();
+    let mut helpers = Some(helpers).filter(|helpers| !helpers.is_empty());
+    if let Some(given) = helpers.as_ref()
+        && let Some((
+            _,
+            Entry {
+                says: Says::Named(_, names),
+                ..
+            },
+        )) =
+            (named.iter_mut()).find(|(_, entry)| entry.from == helpers_from && matches!(entry.says, Says::Named(..)))
+    {
+        names.extend(given.iter().copied());
+        names.sort();
+        helpers = None;
+    }
+    let runtime = helpers.map(|helpers| Entry {
+        says: Says::Named(None, helpers),
+        from: helpers_from,
         placed: js::Span::NONE,
         commented: js::Span::NONE,
         declared: false,

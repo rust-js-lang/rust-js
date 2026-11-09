@@ -12,12 +12,12 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { runtimeDir } from "./packages-of.ts";
+import { helpersModule } from "./packages-of.ts";
 
 // The runtime the generated JS imports, a runtime mutant's own in its
 // target (#720): one module, so a panic it throws is one its `$isPanic`
 // knows, an `$Unwinding` of its own class.
-const { $isPanic } = (await import(pathToFileURL(join(runtimeDir, "index.js")).href)) as { $isPanic: (e: unknown) => boolean };
+const { $isPanic } = (await import(pathToFileURL(helpersModule).href)) as { $isPanic: (e: unknown) => boolean };
 
 // `{ exit }` is a run that ended the process: one that aborted, as Rust does
 // where a drop panics while a panic unwinds, `{ exit: 134 }` (#847).

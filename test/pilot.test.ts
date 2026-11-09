@@ -13,7 +13,7 @@ import { build, createServer, type ViteDevServer } from "vite";
 import { checkCargo } from "../tooling/cargo.js";
 import { writePatch } from "../tooling/patch.js";
 import { runSync } from "./child";
-import { buildCompiler, buildSerde, compiler, fixture, root, run, runtimeDir } from "./support";
+import { buildCompiler, buildSerde, compiler, fixture, root, run, stdDir } from "./support";
 import { channel } from "../scripts/toolchain.ts";
 import { underLoad } from "../scripts/timing";
 
@@ -40,7 +40,7 @@ function install() {
   }
   // rust-js's JS packages, and the libraries, as this checkout has them.
   const linked: [string, string][] = [
-    ["@rust-js/runtime", runtimeDir],
+    ["@rust-js/std", stdDir],
     ["@rust-js/build", join(root, "tooling")],
     ...["react", "react-dom", "sonner", "vite", "@vitejs/plugin-react"].map((name): [string, string] => [name, join(root, "node_modules", name)]),
   ];
@@ -150,7 +150,9 @@ test("the pilot names rust-js's crates and packages by version, not by a path in
     expect(Bun.semver.order(version(dir), named)).toBeGreaterThanOrEqual(0);
     expect(minor(version(dir))).toBe(minor(named));
   }
-  // One release of the compiler's packages, the react crate's too.
+  // One release of the compiler's packages, the react crate's too: 0.0.3's,
+  // whose helpers were `@rust-js/runtime`, which 0.0.4's upgrade replaces
+  // with `@rust-js/std` (#1095).
   const release = manifest.devDependencies["@rust-js/native"];
   expect([manifest.dependencies["@rust-js/runtime"], manifest.dependencies["@rust-js/react"], manifest.devDependencies["@rust-js/build"]]).toEqual([release, release, release]);
   expect(manifest.scripts.build).toBe("rust-js build --package frontend --check && vite build web");

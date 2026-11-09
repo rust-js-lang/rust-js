@@ -185,25 +185,22 @@ export function installedReact(root) {
 }
 
 /**
- * `@rust-js/runtime` and `@rust-js/std` as the project installed them, of
- * `version`, the compiler's: the helpers and std's bodies the JS it writes
- * imports are its release's (ADR 0103, the std-bodies decision). Throws
- * with what to install otherwise.
+ * `@rust-js/std` as the project installed it, of `version`, the
+ * compiler's: the helpers and std's bodies the JS it writes imports are
+ * its release's (ADRs 0103, 0561). Throws with what to install otherwise.
  */
-function checkRuntime(root, version) {
-  for (const name of ["runtime", "std"]) {
-    // Where Node finds a package, from the app up: looked for each time, as
-    // it may be installed while a dev server runs.
-    let found;
-    for (let dir = resolve(root); !found; dir = dirname(dir)) {
-      const candidate = join(dir, "node_modules", "@rust-js", name, "package.json");
-      if (existsSync(candidate)) found = candidate;
-      else if (dirname(dir) === dir) break;
-    }
-    if (!found) throw new Error(`the JS rust-js ${version} writes imports @rust-js/${name} ${version}: install it`);
-    const installed = JSON.parse(readFileSync(found, "utf8")).version;
-    if (installed !== version) throw new Error(`rust-js ${version} needs @rust-js/${name} ${version}, not the installed ${installed}`);
+function checkStd(root, version) {
+  // Where Node finds a package, from the app up: looked for each time, as
+  // it may be installed while a dev server runs.
+  let found;
+  for (let dir = resolve(root); !found; dir = dirname(dir)) {
+    const candidate = join(dir, "node_modules", "@rust-js", "std", "package.json");
+    if (existsSync(candidate)) found = candidate;
+    else if (dirname(dir) === dir) break;
   }
+  if (!found) throw new Error(`the JS rust-js ${version} writes imports @rust-js/std ${version}: install it`);
+  const installed = JSON.parse(readFileSync(found, "utf8")).version;
+  if (installed !== version) throw new Error(`rust-js ${version} needs @rust-js/std ${version}, not the installed ${installed}`);
 }
 
 /** `command`'s stdout; what it says on stderr as it succeeds, its warnings,
@@ -269,7 +266,7 @@ export function createNativeBuilder({ root, rustJs }) {
      * this compiler, and the React the project has installed. */
     async checkCargo(options) {
       const identity = await compilerIdentity();
-      checkRuntime(root, identity.version);
+      checkStd(root, identity.version);
       const react = installedReact(root) ?? undefined;
       try {
         return await checkCargo({ ...options, toolchain: identity.toolchain, compiler: rustJs, react });

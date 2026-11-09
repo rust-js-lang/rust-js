@@ -453,7 +453,9 @@ that built-in manifest and import the package. Hand-modeled std operations
 remain in their domain modules until migrated.
 
 `src/runtime.rs` owns helper names, dependencies and implementations in
-`src/runtime/`; `bun run runtime` generates `runtime/index.js`. Lowering requests
+`src/runtime/`; `bun run std` generates `@rust-js/std`'s `std/runtime.js` of
+them, beside std's bodies and the package's one entry, `std/index.js`,
+which the JS imports both through (#1095). Lowering requests
 helpers through `Expr::helper`. Linking collects helper dependencies, and
 artifact planning selects imports from the prepared tree's actual reads.
 The printer receives those imports; it does not infer them from text.

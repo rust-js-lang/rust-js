@@ -10,7 +10,7 @@ import {
   $iterator,
   $sortedKeys,
   $treeFrom,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

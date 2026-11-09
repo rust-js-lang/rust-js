@@ -204,7 +204,7 @@ pub fn cache(key: &str, n: u32) -> Option<u32> {
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("  liked.add(id);\n");
   expect(js).toContain("  CACHE.set(key, n);\n");
-  expect(js).not.toContain("@rust-js/runtime");
+  expect(js).not.toContain("@rust-js/std");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.like("a"), lib.cache("k", 2)]).toEqual([true, 2]);
 });

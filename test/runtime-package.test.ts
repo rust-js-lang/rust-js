@@ -1,26 +1,29 @@
-// The runtime as a package (ADR 0103): `@rust-js/runtime`, released with
-// the compiler, as ReScript's `@rescript/runtime` is. A module imports the
-// helpers its code names from it, instead of carrying its own copy of each.
+// The helpers in `@rust-js/std` (ADR 0103, #1095), the one package the JS
+// rust-js writes imports, released with the compiler, as ReScript's
+// `@rescript/runtime` is. A module imports the helpers its code names from
+// it, instead of carrying its own copy of each.
 
 import { beforeAll, expect, test } from "bun:test";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { node } from "./programs";
-import { buildCompiler, compiler, fixture, root, run, runtimeDir } from "./support";
+import { buildCompiler, compiler, fixture, helpersModule, outsideFixture, root, run, stdDir } from "./support";
 
 beforeAll(buildCompiler, 600_000);
 
-// The package's module is the compiler's helpers, each exported: made by
-// the compiler, so it can't drift from what the compiler's imports name.
-test("the committed @rust-js/runtime is the compiler's helpers, each exported once", () => {
+// The package's helpers' module is the compiler's helpers, each exported:
+// made by the compiler, so it can't drift from what the compiler's imports
+// name. Its one entry, `index.js`, exports them and std's bodies.
+test("the committed @rust-js/std's helpers are the compiler's, each exported once", () => {
   const printed = run([compiler, "--runtime-module"]);
-  expect(readFileSync(join(runtimeDir, "index.js"), "utf8")).toBe(printed);
+  expect(readFileSync(helpersModule, "utf8")).toBe(printed);
   const names = [...printed.matchAll(/^export (?:async )?(?:function\*?|class|const|let) (\$[\w$]+)/gm)].map((m) => m[1]);
   expect(names.length).toBeGreaterThan(100);
   expect(new Set(names).size).toBe(names.length);
-  const pkg = JSON.parse(readFileSync(join(runtimeDir, "package.json"), "utf8"));
+  const pkg = JSON.parse(readFileSync(join(stdDir, "package.json"), "utf8"));
   const version = readFileSync(join(root, "Cargo.toml"), "utf8").match(/^version = "([^"]+)"/m)![1];
-  expect([pkg.name, pkg.version]).toEqual(["@rust-js/runtime", version]);
+  expect([pkg.name, pkg.version, pkg.exports["."], pkg.sideEffects]).toEqual(["@rust-js/std", version, "./index.js", false]);
+  expect(readFileSync(join(stdDir, "index.js"), "utf8")).toContain('export * from "./runtime.js";\n');
 });
 
 // The helpers the compiler takes for a JS iterator as they're made, and
@@ -102,28 +105,75 @@ test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf
 // none of the package's own values is made where nothing reads it, as
 // React DOM's inline Fizz runtime, of `$unwrap` alone, takes a few hundred
 // bytes, not the 16 KB its classes, tables and dictionaries were (rd274).
-test("@rust-js/runtime is tree-shakable, a helper bundled alone", async () => {
+/** What Vite bundles of `entry`, a module of `dir`, an app's, with
+ * `@rust-js/std` installed in it alone: its code, and the names it declares
+ * at its top. */
+async function bundled(dir: string, entry: string): Promise<{ code: string; declared: string[] }> {
   const { build } = await import("vite");
-  const dir = fixture("runtime-tree-shaking");
-  writeFileSync(join(dir, "runtime.js"), run([compiler, "--runtime-module"]));
-  const entry = join(dir, "entry.js");
-  writeFileSync(entry, `import { $unwrap } from "./runtime.js";\nglobalThis.unwrap = $unwrap;\n`);
   const out = await build({
+    root: dir,
     logLevel: "silent",
     configFile: false,
-    build: { write: false, minify: false, lib: { entry, formats: ["es"], fileName: "bundle" } },
+    build: { write: false, minify: false, lib: { entry: join(dir, entry), formats: ["es"], fileName: "bundle" } },
   });
   const code = ((Array.isArray(out) ? out[0] : out) as { output: { code: string }[] }).output[0].code;
-  const declared = [...code.matchAll(/^(?:export )?(?:async )?(?:function\*? |class |const |let |var )(\$\w+)/gm)].map((m) => m[1]);
+  const declared = [...code.matchAll(/^(?:export )?(?:async )?(?:function\*? |class |const |let |var )([$\w]+)/gm)].map((m) => m[1]);
+  return { code, declared };
+}
+
+test("@rust-js/std is tree-shakable, a helper bundled alone", async () => {
+  const dir = outsideFixture("std-tree-shaking-helper");
+  writeFileSync(join(dir, "entry.js"), `import { $unwrap } from "@rust-js/std";\nglobalThis.unwrap = $unwrap;\n`);
+  const { code, declared } = await bundled(dir, "entry.js");
   expect(declared).toEqual(["$unwrap"]);
   expect(code.length).toBeLessThan(1000);
 });
 
-test("@rust-js/runtime loads in a host with none of the web's APIs", () => {
+// A std body is bundled with the helpers it calls, and none of std's
+// others: a `Peekable`'s `next` takes `$next`, its iterator's default
+// `next`, and nothing of `Fuse`'s, `Zip`'s or the rest.
+test("@rust-js/std is tree-shakable, a std function bundled with only what it calls", async () => {
+  const dir = outsideFixture("std-tree-shaking-body");
+  writeFileSync(join(dir, "entry.js"), `import { peekableIterator_next } from "@rust-js/std";\nglobalThis.next = peekableIterator_next;\n`);
+  const { code, declared } = await bundled(dir, "entry.js");
+  expect(declared).toContain("peekableIterator_next");
+  expect(declared).toContain("$next");
+  expect(declared.filter((name) => !name.startsWith("$"))).toEqual(["peekableIterator_next"]);
+  expect(code).not.toContain("fuseIterator");
+  expect(code.length).toBeLessThan(4000);
+});
+
+// An app that installs `@rust-js/std` and nothing else of rust-js's builds
+// and runs: what the compiler writes imports it alone, the helpers and
+// std's bodies, through its one entry, and Vite bundles what it uses.
+test("an app with only @rust-js/std installed builds and runs", async () => {
+  const dir = outsideFixture("std-only-app");
+  writeFileSync(join(dir, "lib.rs"), `pub fn main() {
+    let names = vec!["ada", "grace", "hopper"];
+    let mut it = names.iter().map(|n| n.len()).peekable();
+    let first = *it.peek().unwrap();
+    let rest: Vec<usize> = it.collect();
+    let parsed: Result<u32, _> = "x".parse();
+    println!("{first} {rest:?} {}", parsed.is_err());
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const imports = [...js.matchAll(/^import \{[^}]*\} from "([^"]+)";$/gm)].map((m) => m[1]);
+  expect(imports).toEqual(["@rust-js/std"]);
+  writeFileSync(join(dir, "entry.js"), `import { main } from "./lib.js";\nmain();\n`);
+  const { code } = await bundled(dir, "entry.js");
+  writeFileSync(join(dir, "bundle.mjs"), code);
+  const native = join(dir, "native");
+  run(["rustc", "--edition=2024", "-Awarnings", join(dir, "lib.rs"), "--crate-name", "app", "-o", native, "-C", "panic=abort"], 120_000);
+  expect(run([node ?? "node", join(dir, "bundle.mjs")])).toBe(run([native]));
+});
+
+test("@rust-js/std loads in a host with none of the web's APIs", () => {
   const web = ["TextDecoder", "TextEncoder", "URL", "URLSearchParams", "fetch", "crypto", "performance", "navigator",
     "structuredClone", "queueMicrotask", "setTimeout", "setInterval", "atob", "btoa", "Intl", "WebAssembly", "process"];
   const removed = web.map((name) => `delete globalThis.${name};`).join(" ");
-  const script = `${removed} const runtime = await import(${JSON.stringify(join(runtimeDir, "index.js"))}); console.log(Object.keys(runtime).length);`;
+  const script = `${removed} const runtime = await import(${JSON.stringify(join(stdDir, "index.js"))}); console.log(Object.keys(runtime).length);`;
   const count = Number(run([node ?? "node", "--input-type=module", "--eval", script]).trim());
   expect(count).toBeGreaterThan(300);
 });
@@ -142,7 +192,7 @@ test("each helper's file parses as JavaScript, and the compiler reads each", () 
 
 // A module names a few helpers, and imports just those; one a helper uses,
 // the package has for it.
-test("a module imports the helpers it names from @rust-js/runtime, and runs", () => {
+test("a module imports the helpers it names from @rust-js/std, and runs", () => {
   const dir = fixture("runtime-package");
   writeFileSync(join(dir, "lib.rs"), `pub fn main() {
     let names = vec!["ada", "grace"];
@@ -155,9 +205,9 @@ test("a module imports the helpers it names from @rust-js/runtime, and runs", ()
   const out = join(dir, "lib.js");
   run([compiler, join(dir, "lib.rs"), "-o", out]);
   const js = readFileSync(out, "utf8");
-  expect(js).toMatch(/^import \{ [^}]+ \} from "@rust-js\/runtime";$/m);
+  expect(js).toMatch(/^import \{ [^}]+ \} from "@rust-js\/std";$/m);
   expect(js).not.toMatch(/^function \$/m);
-  const imported = js.match(/^import \{ ([^}]+) \} from "@rust-js\/runtime";$/m)![1].split(", ");
+  const imported = js.match(/^import \{ ([^}]+) \} from "@rust-js\/std";$/m)![1].split(", ");
   expect(imported).toEqual([...imported].sort());
   for (const name of imported) expect(js.split("\n").slice(3).join("\n")).toContain(name);
   const printed = run([node ?? "node", "--input-type=module", "--eval", `(await import(${JSON.stringify(out)})).main();`]);

@@ -1,5 +1,5 @@
-// std's bodies as a package (ADR 0561): `@rust-js/std`,
-// released with the compiler as `@rust-js/runtime` is. Its JS and its
+// std's bodies in `@rust-js/std` (ADR 0561, #1095), the one package the JS
+// rust-js writes imports, released with the compiler. Its JS and its
 // manifest are made by the compiler from std's bodies, of a `core` built
 // to unwind (#424),
 // `bun run std`, and committed in `std/`: the compiler builds the manifest
@@ -84,8 +84,8 @@ test("std's crate hash is the same built anywhere, with or without RUSTC_BOOTSTR
   expect(hashes).toEqual([committed, committed]);
 }, underLoad(120_000));
 
-// What the compiler writes imports the package by its name, each module by
-// its path: `@rust-js/std/iter.js`, as `@rust-js/runtime` is imported. A
+// What the compiler writes imports the package by its name alone, its one
+// entry, `@rust-js/std`, std's bodies as its helpers are (#1095). A
 // `Peekable` is made by std's own `peekable`, and stepped as the JS iterator
 // its struct is, `$next`, its `next` the compiled one (ADR 0561).
 test("a Peekable is made by std's own peekable, imported from @rust-js/std, and stepped as a JS iterator", () => {
@@ -94,7 +94,7 @@ test("a Peekable is made by std's own peekable, imported from @rust-js/std, and 
   Bun.write(file, "pub fn first(v: &[u32]) -> Option<u32> { let mut p = v.iter().copied().peekable(); p.next() }\n");
   run([compiler, file, "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('import { iterator_peekable } from "@rust-js/std/iter.js"');
+  expect(js).toContain('import { $iter, $next, iterator_peekable } from "@rust-js/std";');
   expect(js).toContain("$next(p)");
   expect(js).not.toContain("peekableIterator_next");
   const std = readFileSync(join(stdDir, "iter.js"), "utf8");

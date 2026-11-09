@@ -2,7 +2,7 @@
 
 // The fib.js milestone: integers, `if`, loops, `match`, and simple enums.
 
-import { $div } from "@rust-js/runtime";
+import { $div } from "@rust-js/std";
 
 /** Recursive, with `if` as an expression. */
 export function fib(n) {

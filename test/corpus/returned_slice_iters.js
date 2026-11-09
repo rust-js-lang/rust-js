@@ -17,7 +17,7 @@ import {
   $rest,
   $rev,
   $rposition,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

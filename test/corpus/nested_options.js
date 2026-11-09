@@ -10,7 +10,7 @@ import {
   $some,
   $someAt,
   $someValue,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

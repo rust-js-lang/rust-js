@@ -17,7 +17,7 @@ import {
   $sortedKeys,
   $treeFrom,
   $unwrap,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

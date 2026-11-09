@@ -13,7 +13,7 @@ import {
   $roomFor,
   $selectNthUnstable,
   $sortUnstable,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

@@ -6,7 +6,7 @@
  * way. For the test in compiler.test.ts; it can't run as native Rust.
  */
 
-import { $settle, $try } from "@rust-js/runtime";
+import { $settle, $try } from "@rust-js/std";
 
 /** The numbers' sum, or what `JSON.parse` threw. */
 export function sumJson(json) {

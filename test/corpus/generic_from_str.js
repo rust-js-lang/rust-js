@@ -11,7 +11,7 @@ import {
   $parseF64,
   $parseInt,
   $trim,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

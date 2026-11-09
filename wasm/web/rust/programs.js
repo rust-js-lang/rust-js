@@ -9,14 +9,20 @@
 // The frame has an opaque origin and allows scripts only. Programs can report
 // results through postMessage, but cannot access the editor's DOM or storage.
 
+// A replacer and `matchAll`, typed for the patterns here: a JS replacer is
+// given the match, then each group, so its type is its pattern's (js::RegExp).
+/**
+ * [Sucrase](https://github.com/alangpierce/sucrase): the JSX rust-js writes,
+ * as the JS the frame can run, which has no bundler.
+ */
 import { transform } from "sucrase";
-import { $extend, $iter, $next } from "@rust-js/runtime";
+import { $extend, $iter, $next } from "@rust-js/std";
 
 /**
  * `from`'s directory joined with a relative specifier like `../lib.js`. A
- * package's, `@rust-js/runtime`, is itself.
+ * package's, `react`, is itself.
  */
-export function resolve(from, specifier) {
+function resolve(from, specifier) {
   if (!specifier.startsWith(".")) {
     return specifier;
   }
@@ -33,19 +39,33 @@ export function resolve(from, specifier) {
 }
 
 /**
+ * The module of `paths` that `from`'s import of `specifier` names: what
+ * `resolve` gives, or a package's entry, its `index.js`, as Node finds it:
+ * `@rust-js/std` is `@rust-js/std/index.js`.
+ */
+export function target(paths, from, specifier) {
+  const resolved = resolve(from, specifier);
+  const entry = `${resolved}/index.js`;
+  return !specifier.startsWith(".") && !paths.includes(resolved) && paths.includes(entry)
+    ? entry
+    : resolved;
+}
+
+/**
  * Link generated ES modules through an import map. Virtual specifiers avoid
  * embedding URLs recursively, so cycles work. The browser owns module
  * evaluation, named imports and live bindings; no identifier rewriting.
  */
 export function link(files) {
-  const imports = /^import ([^;]+?) from "([^"]+)";/gm;
+  const imports = /^((?:import|export) [^;]+?) from "([^"]+)";/gm;
+  const paths = files.map(([path]) => path);
   const sourceMap = /^\/\/# sourceMappingURL=.*$/m;
   let entries = [];
-  for (const [path, code] of files.values().map((item) => [item[0], item[1]])) {
-    const from = path;
-    let body = code.replace(imports, (_, names, specifier) => {
-      const target = JSON.stringify(`rust-js:${resolve(from, specifier)}`);
-      return `import ${names} from ${target};`;
+  for (let i = 0; i < files.length; i++) {
+    const [path, code] = files[i];
+    let body = code.replace(imports, (_, head, specifier) => {
+      const linked = JSON.stringify(`rust-js:${target(paths, path, specifier)}`);
+      return `${head} from ${linked};`;
     });
     body = body.replace(sourceMap, "");
     const specifier = JSON.stringify(`rust-js:${path}`);
@@ -60,7 +80,7 @@ export function link(files) {
 }
 
 /**
- * A small `bun test` look-alike for the Result frame: `test` and `test.skip`
+ * A small test runner's look-alike for the Result frame: `test` and `test.skip`
  * collect the tests, which then run one after another. What they leave in
  * the page is replaced by the report.
  */
@@ -108,8 +128,9 @@ const FRAME_STYLE = `<style>
 
 /**
  * The page that runs the root module's `main()`, if it exports one
- * (`main`), or with `test`, the crate's tests by their runner (`tests`),
- * as the compiler's manifest says, and reports as run number `run`.
+ * (`main`), or with `test`, the crate's tests, each test file of `tests`,
+ * which import `test` from its module, as the compiler's manifest says
+ * (ADR 1076), and reports as run number `run`.
  */
 export function prepare(files, modules, styles, rootFile, main, tests, test, run) {
   // The program's modules, its JSX as JS (Sucrase's), and what they import
@@ -133,15 +154,18 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
     sources,
     modules.values().map((item) => [item[0], item[1]]),
   );
-  let runnable;
+  let entries = [];
   if (test) {
-    runnable = tests;
+    if (tests != null) {
+      const [module, files] = tests;
+      // The runner's `test`, as the test files import it: the frame's.
+      sources.push([module, "export const test = globalThis.test;\n"]);
+      entries = files.slice();
+    }
   } else if (main) {
-    runnable = rootFile;
-  } else {
-    runnable = undefined;
+    entries = [rootFile];
   }
-  if (runnable == null) {
+  if (entries.length === 0) {
     return "Nothing";
   }
   // A stylesheet a module imports, `import "todomvc-app-css/index.css";`
@@ -158,20 +182,20 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
         css.push(find[1]);
       }
     }
-    const known = styles.map(([name]) => name);
     value[1] = value[1].replace(cssImports, (whole, specifier) =>
-      known.includes(specifier) ? "" : whole,
+      styles.some(([name]) => name === specifier) ? "" : whole,
     );
   }
   const look = css.length === 0 ? FRAME_STYLE : `<style>\n${css.join("")}</style>`;
   // Imports from JS modules (ADR 0028) name packages or files the page
   // doesn't have. A bundler would bring them in; the playground has none.
-  const imports = /^import (?:[^;]+? from )?"([^"]+)";/gm;
+  const imports = /^(?:import|export) (?:[^;]+? from )?"([^"]+)";/gm;
+  const paths = sources.map(([path]) => path);
   const external = [];
-  for (const [path, code] of sources) {
+  for (let i = 0; i < sources.length; i++) {
+    const [path, code] = sources[i];
     for (const [, specifier] of Array.from(code.matchAll(imports))) {
-      const target = resolve(path, specifier);
-      if (!sources.some(([p]) => p === target) && !external.includes(specifier)) {
+      if (!paths.includes(target(paths, path, specifier)) && !external.includes(specifier)) {
         external.push(specifier);
       }
     }
@@ -181,10 +205,14 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
   }
   const report = (message) => `parent.postMessage({ run: ${run}, ${message} }, "*")`;
   const linked = link(sources);
-  const entry = JSON.stringify(`rust-js:${runnable}`);
-  const start = test
-    ? `await import(${entry});\n${TEST_RUNNER}`
-    : `const root = await import(${entry});\nawait root.main();`;
+  const entry = (file) => JSON.stringify(`rust-js:${file}`);
+  let start;
+  if (test) {
+    const imports = entries.map((file) => `await import(${entry(file)});\n`);
+    start = imports.join("") + TEST_RUNNER;
+  } else {
+    start = `const root = await import(${entry(entries[0])});\nawait root.main();`;
+  }
   const finished = test
     ? report('tested: { passed: count("pass"), failed: count("fail"), ignored: count("skip") }')
     : report("ran: true");
@@ -199,7 +227,7 @@ ${linked}
   addEventListener("error", (e) => ${report("error: String(e.message)")});
   // And in async code, which rejects its promise instead (ADR 0029).
   addEventListener("unhandledrejection", (e) => ${report("error: String(e.reason)")});
-  // What a test file calls, as bun test provides it (ADR 0026).
+  // What a test file imports, as its runner gives it (ADRs 0026, 1076).
   const registered = [];
   globalThis.test = (name, f) => registered.push({ name, f });
   test.skip = (name) => registered.push({ name });
@@ -222,7 +250,7 @@ export function outcome(report) {
   const error = report.error;
   if (error != null) {
     return { TAG: "Failed", _0: error };
-  } else if (report.ran) {
+  } else if (report.ran === true) {
     return "Ran";
   } else {
     const tested = report.tested;

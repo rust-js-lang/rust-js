@@ -47,7 +47,7 @@ import {
   $traitImpl,
   $tryFoldInto,
   $tryOf,
-} from "@rust-js/runtime";
+} from "./runtime.js";
 
 export const Inspect = {
   doInspect(inspect, elt, dropI, dropF, dropIItem) {

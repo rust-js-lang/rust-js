@@ -47,7 +47,7 @@ pub fn zeros(n: usize) -> Vec<f64> {
 ```
 
 ```js
-import { $roomFor } from "@rust-js/runtime";
+import { $roomFor } from "@rust-js/std";
 
 export function primes() {
   return [2, 3, 5, 7];
@@ -97,7 +97,7 @@ pub fn first(keys: &[String]) -> String {
 ```
 
 ```js
-import { $index } from "@rust-js/runtime";
+import { $index } from "@rust-js/std";
 
 export function onlyChildren(keys) {
   const length = keys.length;
@@ -180,7 +180,7 @@ pub fn has_float(xs: &[f64], x: f64) -> bool {
 ```
 
 ```js
-import { $position } from "@rust-js/runtime";
+import { $position } from "@rust-js/std";
 
 export function names(items) {
   return items.map((item) => item.name);
@@ -320,7 +320,7 @@ pub fn at(v: &[i32], i: usize) -> i32 {
 ```
 
 ```js
-import { $drain, $index, $removeAt, $slice, $splice, $truncate } from "@rust-js/runtime";
+import { $drain, $index, $removeAt, $slice, $splice, $truncate } from "@rust-js/std";
 
 export function stack() {
   const v = [1, 2, 3];
@@ -473,7 +473,7 @@ pub fn sort_tail(v: &mut [i32]) {
 ```
 
 ```js
-import { $reverseRange, $view } from "@rust-js/runtime";
+import { $reverseRange, $view } from "@rust-js/std";
 
 export function flip(queued, first, end) {
   $reverseRange(queued, first, end);
@@ -529,7 +529,7 @@ pub fn dedup(v: &mut Vec<i32>) {
 ```
 
 ```js
-import { $cmp, $dedup, $maxByKey, $totalCmp } from "@rust-js/runtime";
+import { $cmp, $dedup, $maxByKey, $totalCmp } from "@rust-js/std";
 
 export function sortNumbers(v) {
   v.sort((a, b) => a - b);
@@ -591,7 +591,7 @@ pub fn by_hits(entries: &mut [Entry], asked: &mut u32) {
 ```
 
 ```js
-import { $cmp, $sortStable } from "@rust-js/runtime";
+import { $cmp, $sortStable } from "@rust-js/std";
 
 export function byHits(entries, asked) {
   function compare(a, b) {
@@ -685,7 +685,7 @@ pub fn first(a: Ticket, b: Ticket) -> u32 {
 ```
 
 ```js
-import { $cmp, $eq, $minOf, $ord, $partialEq, $partialOrd } from "@rust-js/runtime";
+import { $cmp, $eq, $minOf, $ord, $partialEq, $partialOrd } from "@rust-js/std";
 
 export const rankPartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: $eq }),
@@ -807,7 +807,7 @@ pub fn logged_first(xs: &[i32]) -> Option<i32> {
 ```
 
 ```js
-import { $lent } from "@rust-js/runtime";
+import { $lent } from "@rust-js/std";
 
 export function loggedFirst(xs) {
   return $lent(
@@ -866,7 +866,7 @@ pub fn pairs(a: &[i32], b: &[&str]) -> Vec<String> {
 ```
 
 ```js
-import { $iter, $lazyRange, $lazyZip } from "@rust-js/runtime";
+import { $iter, $lazyRange, $lazyZip } from "@rust-js/std";
 
 export function rangeSum(n) {
   return $lazyRange(1, n + 1).reduce((a, b) => (a + b) >>> 0, 0);
@@ -906,8 +906,14 @@ pub fn left_after_refill() -> usize {
 ```
 
 ```js
-import { iterator_map, mapExactSizeIterator_len } from "@rust-js/std/iter.js";
-import { $assign, $next, $rangeLen, $rangeNext } from "@rust-js/runtime";
+import {
+  $assign,
+  $next,
+  $rangeLen,
+  $rangeNext,
+  iterator_map,
+  mapExactSizeIterator_len,
+} from "@rust-js/std";
 
 function tens(x) {
   return (x * 10) >>> 0;
@@ -988,7 +994,7 @@ pub fn common(a: &HashSet<i32>, b: &HashSet<i32>) -> Vec<i32> {
 ```
 
 ```js
-import { $add, $orInsert, $setAlgebra } from "@rust-js/runtime";
+import { $add, $orInsert, $setAlgebra } from "@rust-js/std";
 
 export function wordCounts(text) {
   const counts = new Map();
@@ -1075,7 +1081,7 @@ pub fn removed(counts: &mut HashMap<String, u32>, key: &str) -> u32 {
 ```
 
 ```js
-import { $unwrap } from "@rust-js/runtime";
+import { $unwrap } from "@rust-js/std";
 
 export function stashed(errors, id) {
   let error;
@@ -1119,7 +1125,7 @@ pub fn at(b: &HashMap<Cell, char>, row: i32, col: i32) -> Option<char> {
 ```
 
 ```js
-import { $KeyMap } from "@rust-js/runtime";
+import { $KeyMap } from "@rust-js/std";
 
 export function board() {
   const b = new $KeyMap();
@@ -1267,7 +1273,7 @@ pub fn pending(keys: Vec<Key>) -> usize {
 ```
 
 ```js
-import { $id, $keyMap, $orInsert } from "@rust-js/runtime";
+import { $id, $keyMap, $orInsert } from "@rust-js/std";
 
 export function pending(keys) {
   const pending = new ($keyMap((key) => ({ ...key, fiber: $id(key.fiber) })))();
@@ -1298,7 +1304,7 @@ pub fn scores() {
 ```
 
 ```js
-import { $BTreeMap, $cmp, $sortedEntries } from "@rust-js/runtime";
+import { $BTreeMap, $cmp, $sortedEntries } from "@rust-js/std";
 
 export function scores() {
   const scores = new $BTreeMap();
@@ -1355,7 +1361,7 @@ pub fn releases() -> BTreeSet<Release> {
 ```
 
 ```js
-import { $cmp, $ord, $ordSet, $partialEq, $partialOrd, $storedKey } from "@rust-js/runtime";
+import { $cmp, $ord, $ordSet, $partialEq, $partialOrd, $storedKey } from "@rust-js/std";
 
 export const releasePartialEq = $partialEq({ eq: releasePartialEq_eq });
 function releasePartialEq_eq(release, other) {
@@ -1439,7 +1445,7 @@ import {
   $partialOrd,
   $rangeFromStep,
   $treeFromSorted,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export const loggedPartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: $eq }),
@@ -1601,15 +1607,7 @@ pub fn to_number(s: &str) -> Option<f64> {
 ```
 
 ```js
-import {
-  $byteLen,
-  $find,
-  $parseF64,
-  $splitOnce,
-  $strGet,
-  $strSlice,
-  $trim,
-} from "@rust-js/runtime";
+import { $byteLen, $find, $parseF64, $splitOnce, $strGet, $strSlice, $trim } from "@rust-js/std";
 
 export function lengths(s) {
   return [$byteLen(s), Array.from(s).length, s.length];
@@ -1766,7 +1764,7 @@ import {
   $jsonValueAs,
   $toJson,
   $unwrapOk,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 function todoSerialize_serialize(todo, json) {
   json.beginObject();

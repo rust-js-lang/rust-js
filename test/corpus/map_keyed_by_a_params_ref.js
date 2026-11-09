@@ -19,7 +19,7 @@ import {
   $sortedKeys,
   $strictlyEqual,
   $treeFromSorted,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 const tuplePartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: $eq }),

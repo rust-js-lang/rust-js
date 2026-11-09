@@ -129,9 +129,13 @@ pub struct Module {
     /// What it exports of another module, `export { a } from "./b.js"`, its
     /// `pub use`s, in the order they're written (ADR 0240, amended).
     pub reexports: Vec<Reexport>,
-    /// What it imports of `@rust-js/runtime`, sorted: the helpers its
+    /// What it imports of `@rust-js/std`'s helpers, sorted: those its
     /// prepared tree reads (ADR 0103), chosen before it's printed.
     pub helpers: Vec<&'static str>,
+    /// Where they're imported from, of a module of `@rust-js/std` itself,
+    /// std's bodies compiled: its `runtime.js`, `./runtime.js`; else the
+    /// package, `@rust-js/std` (#1095).
+    pub helpers_from: Option<String>,
     /// Its items, where its Rust has them, what's made when it's loaded
     /// after what that reads (ADR 0306).
     pub items: Vec<Item>,

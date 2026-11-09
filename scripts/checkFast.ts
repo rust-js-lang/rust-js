@@ -121,8 +121,8 @@ export function touchesReadability(files: string[], paths = readabilityPaths()):
  * change can touch, as it touches them, `shared` saying whether that's what
  * the snapshots and the diagnostics read. */
 export function jobs({ all, changed, branch, added, extra, cores, picked, forms }: Scope): { jobs: Job[]; shared: boolean } {
-  // What the snapshots and the diagnostics read: the compiler and the runtime.
-  const shared = all || changed.some((file) => file.startsWith("src/") || file.startsWith("runtime/"));
+  // What the snapshots and the diagnostics read: the compiler and `@rust-js/std`.
+  const shared = all || changed.some((file) => file.startsWith("src/") || file.startsWith("std/"));
   const jsx = all || changed.some((file) => /^src\/(lower\/jsx|jsx_syntax)|^react\//.test(file));
   // A change to tidy or preparation, or to the oracles, is checked after
   // each of tidy's stages and without each of preparation's rewrites, and by

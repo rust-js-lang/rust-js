@@ -153,6 +153,9 @@ impl Manifest {
             module.source.iter_mut().for_each(rel);
             module.in_source.iter_mut().for_each(rel);
             module.imports.iter_mut().for_each(rel);
+            // Its links' files too, `@rust-js/std`'s `runtime.js` (#1095).
+            module.links.iter_mut().for_each(|link| rel(&mut link.file));
+            module.type_links.iter_mut().for_each(|link| rel(&mut link.file));
         }
         self.artifacts.iter_mut().for_each(|a| rel(&mut a.file));
         self.stale.iter_mut().for_each(|a| rel(&mut a.file));
@@ -213,6 +216,8 @@ impl Manifest {
             module.source.iter_mut().for_each(abs);
             module.in_source.iter_mut().for_each(abs);
             module.imports.iter_mut().for_each(abs);
+            module.links.iter_mut().for_each(|link| abs(&mut link.file));
+            module.type_links.iter_mut().for_each(|link| abs(&mut link.file));
         }
         self.artifacts.iter_mut().for_each(|a| abs(&mut a.file));
         self.stale.iter_mut().for_each(|a| abs(&mut a.file));

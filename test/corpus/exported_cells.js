@@ -3,7 +3,7 @@
 import { isRendering } from "./fiber.js";
 import * as Fiber from "./fiber.js";
 import * as Probe from "./probe.js";
-import { $debugStr, $withBorrow, $withBorrowMut } from "@rust-js/runtime";
+import { $debugStr, $withBorrow, $withBorrowMut } from "@rust-js/std";
 
 export function entry() {
   main();

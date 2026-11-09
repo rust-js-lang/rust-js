@@ -11,7 +11,7 @@ import {
   $roomFor,
   $roomForHint,
   $step,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

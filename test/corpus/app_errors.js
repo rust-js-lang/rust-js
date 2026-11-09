@@ -7,7 +7,7 @@ import {
   $parseBig,
   $trim,
   $unwrapErr,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

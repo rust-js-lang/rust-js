@@ -8,13 +8,13 @@ import { runSync, stopped } from "./child";
 import { markUsed, mayKeep, nativeCache } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
 import { shard } from "../scripts/shard";
-import { checkoutTarget, runtimeDir, stdDir, target } from "./packages-of";
+import { checkoutTarget, helpersModule, stdDir, target } from "./packages-of";
 
 export const root = join(import.meta.dir, "..");
 // The tests' target, a mutant's tests' own with `RUST_JS_TARGET`, and the
-// `@rust-js/runtime` and `@rust-js/std` the JS written in it imports: the
-// checkout's, or a runtime mutant's own in its target (#720).
-export { runtimeDir, stdDir, target };
+// `@rust-js/std` the JS written in it imports: the checkout's, or a
+// runtime mutant's own in its target (#720).
+export { helpersModule, stdDir, target };
 // This checkout's debug build, or with `RUST_JS_COMPILER`, another, as the
 // rustc tests workflow's build job makes one for its machines to share.
 const given = process.env.RUST_JS_COMPILER;
@@ -230,28 +230,26 @@ export function once(claim: string, work: () => unknown, limit = 600_000): void 
 let built = false;
 
 /**
- * The runtime and std the tests' JS imports are this checkout's: a
- * worktree with no `node_modules` of its own finds a checkout's above it,
- * `.claude/worktrees/<name>`'s, whose `runtime/index.js` is that checkout's,
- * so every program would run another commit's runtime. Checked once a run.
+ * The `@rust-js/std` the tests' JS imports is this checkout's: a worktree
+ * with no `node_modules` of its own finds a checkout's above it,
+ * `.claude/worktrees/<name>`'s, whose `std/` is that checkout's, so every
+ * program would run another commit's helpers. Checked once a run.
  */
 let packagesOwn = false;
 function ownPackages() {
   if (packagesOwn) return;
   const inside = realpathSync(root) + "/";
-  for (const name of ["@rust-js/runtime", "@rust-js/std"]) {
-    let found: string;
-    try {
-      found = realpathSync(Bun.resolveSync(`${name}/package.json`, root));
-    } catch {
-      throw new Error(`${name} isn't installed here: run \`bun install --frozen-lockfile\` in ${root}`);
-    }
-    if (!found.startsWith(inside)) {
-      throw new Error(
-        `${name} resolves to ${found}, outside this checkout, ${root}: its JS would run another checkout's. ` +
-          `Run \`bun install --frozen-lockfile\` in ${root}`,
-      );
-    }
+  let found: string;
+  try {
+    found = realpathSync(Bun.resolveSync("@rust-js/std/package.json", root));
+  } catch {
+    throw new Error(`@rust-js/std isn't installed here: run \`bun install --frozen-lockfile\` in ${root}`);
+  }
+  if (!found.startsWith(inside)) {
+    throw new Error(
+      `@rust-js/std resolves to ${found}, outside this checkout, ${root}: its JS would run another checkout's. ` +
+        `Run \`bun install --frozen-lockfile\` in ${root}`,
+    );
   }
   packagesOwn = true;
 }
@@ -320,12 +318,10 @@ export function cargoApp(dir: string, rust: string, { lib = "src/lib.rs", react 
   return { manifestPath: join(dir, "Cargo.toml"), packageNames: ["app"], offline: true };
 }
 
-/** `@rust-js/runtime` and `@rust-js/std`, installed in an app outside the
- * checkout, as a package manager installs them: what its JS imports (ADRs
- * 0103, 0561). */
-export function installRuntime(app: string) {
+/** `@rust-js/std`, installed in an app outside the checkout, as a package
+ * manager installs it: what its JS imports (ADRs 0103, 0561, #1095). */
+export function installStd(app: string) {
   mkdirSync(join(app, "node_modules", "@rust-js"), { recursive: true });
-  symlinkSync(runtimeDir, join(app, "node_modules", "@rust-js", "runtime"));
   symlinkSync(stdDir, join(app, "node_modules", "@rust-js", "std"));
 }
 
@@ -444,15 +440,15 @@ function claim(base: string, name: string): string {
   }
 }
 
-/** A test's own directory outside the checkout, `@rust-js/runtime` and
- * `@rust-js/std` installed in it, as an app's are: where no Prettier is
+/** A test's own directory outside the checkout, `@rust-js/std` installed
+ * in it, as an app's is: where no Prettier is
  * found, which a fixture in the checkout finds, the checkout's own, and
  * whose crates' directories it then puts in Cargo's key (ADR 1003, #684).
  * Claimed and removed as a fixture is, in the system's temporary
  * directory, `rust-js-fixtures/<test file>/`. */
 export function outsideFixture(name: string): string {
   const dir = realpathSync(claim(join(outsideFixtures, scope), name));
-  installRuntime(dir);
+  installStd(dir);
   return dir;
 }
 

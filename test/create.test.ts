@@ -60,7 +60,8 @@ test("a packed @rust-js/create makes the vite-react example's app, named for its
   // Its editor checks it through rust-js, which reads inside JSX (ADR 0222).
   expect(readFileSync(join(app, ".vscode/settings.json"), "utf8")).toContain('"rust-analyzer.check.overrideCommand": ["./node_modules/.bin/rust-js-check"]');
   expect(manifest.devDependencies["@rust-js/build"]).toBe(version);
-  expect(manifest.dependencies["@rust-js/runtime"]).toBe(version);
+  expect(manifest.dependencies["@rust-js/std"]).toBe(version);
+  expect(manifest.dependencies["@rust-js/runtime"]).toBeUndefined();
   expect(manifest.scripts.build).toBe("rust-js build --check && vite build");
   // The compiler, which a release of @rust-js/build doesn't bring: the app's own.
   expect(manifest.devDependencies["@rust-js/native"]).toBe(version);
@@ -176,7 +177,7 @@ test("@rust-js/create's README says to install the Rust it prints", () => {
 test("--local makes the app install a distribution's packages", () => {
   const index = packed();
   const dist = fixture("create-dist");
-  const artifacts = [["@rust-js/runtime", "runtime.tgz"], ["@rust-js/std", "std.tgz"], ["@rust-js/build", "build.tgz"], ["@rust-js/typescript", "typescript.tgz"], ["@rust-js/native", "native.tgz"]]
+  const artifacts = [["@rust-js/std", "std.tgz"], ["@rust-js/build", "build.tgz"], ["@rust-js/typescript", "typescript.tgz"], ["@rust-js/native", "native.tgz"]]
     .map(([name, file]) => ({ file, package: name }));
   writeFileSync(join(dist, "distribution.json"), JSON.stringify({ version: 1, platform: process.platform, arch: process.arch, compiler: { version }, artifacts }));
   const cwd = fixture("create-local");
@@ -184,7 +185,6 @@ test("--local makes the app install a distribution's packages", () => {
   expect(made.code).toBe(0);
   const manifest = JSON.parse(readFileSync(join(cwd, "app", "package.json"), "utf8"));
   const file = (name: string) => `file:${join(dist, name)}`;
-  expect(manifest.dependencies["@rust-js/runtime"]).toBe(file("runtime.tgz"));
   expect(manifest.dependencies["@rust-js/std"]).toBe(file("std.tgz"));
   expect(manifest.devDependencies).toMatchObject({
     "@rust-js/build": file("build.tgz"),

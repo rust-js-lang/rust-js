@@ -6,7 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildNode, buildReact, compiler, fixture, installRuntime, run, target } from "./support";
+import { buildNode, buildReact, compiler, fixture, installStd, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -1218,7 +1218,7 @@ pub fn pairs(s: &str) -> u32 {
 const texts = ["", "hi", "hello", "h\\u00e9llo", "\\u{1F600}\\u{1F600}\\u{1F600}", "ab\\u{1F600}", "x".repeat(501)];
 console.log(JSON.stringify(texts.map((t) => [units(t), points(t), bytes(t), useful(t), owned(t), pairs(t)])));
 `);
-  installRuntime(dir);
+  installStd(dir);
   const p = Bun.spawnSync(["node", "run.mjs"], { cwd: dir, stderr: "pipe" });
   expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
   expect(JSON.parse(p.stdout.toString())).toEqual([
@@ -1258,7 +1258,7 @@ pub fn room(n: usize) -> usize {
   expect(js).toContain("  return $byteLen(`${text}!`.repeat(start));\n");
   expect(js).toContain("  $roomFor(n, 4);\n");
   expect(js.match(/\$roomFor\(/g)).toHaveLength(1);
-  installRuntime(dir);
+  installStd(dir);
   const lib = await import(join(dir, "lib.js"));
   expect([lib.indented("-", 2, "k"), lib.padded("ab", 2)]).toEqual(["-\xa0\xa0\xa0\xa0k", 6]);
   // Past the engine's string length: its RangeError, where std panics.
@@ -1325,7 +1325,7 @@ fn last_unit(a: EncodeUtf16, b: EncodeUtf16) -> Ordering {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  words.sort();\n");
   expect(js.match(/words\.sort\(\);/g)).toHaveLength(1);
-  installRuntime(dir);
+  installStd(dir);
   const lib = await import(join(dir, "lib.js"));
   const words = ["b\u{1F600}", "b\u{FF61}", "a", "b\u{E000}", "", "b\u{10000}", "ab", "B", "ca"];
   const ascending = ["", "B", "a", "ab", "b\u{10000}", "b\u{1F600}", "b\u{E000}", "b\u{FF61}", "ca"];

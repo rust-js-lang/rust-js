@@ -410,8 +410,8 @@ What keeps them there:
   by the tests as by a shell. `.env.test` gives the tests' programs `1`,
   and a build with it rebuilt every dependency, 22 s, and the next one
   without it again.
-- **`@rust-js/std` is generated**, as `runtime/index.js` is: `bun run std`
-  after a change to what std's bodies lower to, then a rebuild, which
+- **`@rust-js/std` is generated**: `bun run std` after a change to a
+  helper or to what std's bodies lower to, then a rebuild, which
   builds its manifest in; `test/std-package.test.ts` holds it (ADR 0561).
   Its `core` is built to unwind, of the toolchain's `rust-src`, once for
   each toolchain and how it's built, 2.4 s, kept in `target/debug/std-sysroot`
@@ -429,7 +429,7 @@ What keeps them there:
   mutation has its own runtime too, installed in its tests' target
   (`node_modules/@rust-js/` there, `test/packages-of.ts`), which the JS its
   tests write imports. So its tests run beside the others', and the
-  checkout's `runtime/index.js` is never rewritten (#720).
+  checkout's `std/runtime.js` is never rewritten (#720).
 - **Mutations are built up to 32 to a compiler** (ADR 1031), each chosen
   by the name of its copy of it: on CI, where one built alone took 28 s, a
   build of many takes about as long as one. `--batch=1` builds each alone.
@@ -584,7 +584,7 @@ symptom with this table. When you hit a new kind of stall, add a row.
 | Everything slows for minutes | A whole-disk search (`find /`) | Search only where Cargo keeps sources (see above). |
 | A test file times out at its deadline only under load (`test/tidy-stages`, 109 s alone) | Its cases compiled one after another inside one test | Compile each case's variants at once, and share one folder per case (#808: 109 s became 31–38 s). |
 | A mutation run takes hours | An empty name list, often from zsh not splitting `$VAR` into words, runs every mutation (8,000+) | Read names from a file, and stop with an error when the list is empty. |
-| A sweep's results can't be trusted | A shared input, such as `runtime/index.js` or the compiler, was swapped while the sweep ran against it | Never change what a running sweep reads. Probe in a copy of the worktree, or wait for the sweep to finish, and rerun it if it overlapped. |
+| A sweep's results can't be trusted | A shared input, such as `std/runtime.js` or the compiler, was swapped while the sweep ran against it | Never change what a running sweep reads. Probe in a copy of the worktree, or wait for the sweep to finish, and rerun it if it overlapped. |
 | `test/in-source.test.ts`'s "the builder asks the compiler what it is" times out at 120 s in `check:fast --all`, the cores half idle; alone it passes in 0.2 s (unwindC, 2026-11-08, once in five runs) | Not found. It runs the builder in a fixture, which runs Cargo, so a lock Cargo waits on (its package cache's, or `target/`'s) is suspected | Rerun the file alone; if it hangs again, `ps` for a `cargo` it started and what it waits on, and add what you find here. |
 | A session restart, and all its agents stop | The host app was restarted or updated; agents' background jobs die with it | Commit WIP often. After a restart, check each worktree, clear stale gate entries and locks, and resume each agent with its hand-off. |
 
@@ -640,15 +640,14 @@ checked:
     `src/lower/analysis/back_stepped.rs`, `src/runtime`, `std/`,
     `test/corpus` or `test/iterator-matrix-known.txt`.
   - Otherwise, and when the rebase applied with no conflict: rebuild and
-    regenerate (`cargo build`, `bun run runtime && bun run std`), then run
+    regenerate (`cargo build`, `bun run std`), then run
     both iterator slices (`bun scripts/iteratorSlice.ts run matrix` and
     `run conformance`) and the corpus cases your change touches, and push.
   - Never build or regenerate while a rebase is stopped on a conflict: a
     binary or bundle built from a half-applied tree fails, or passes, for
     no reason of its own. That once sent several agents after a red `main`
     that wasn't.
-- **Commit what the change regenerates**: `runtime/index.js` and `std/`
-  are committed, so a change to `src/runtime` or `std`'s sources commits
+- **Commit what the change regenerates**: `std/` is committed, so a change to `src/runtime` or `std`'s sources commits
   them regenerated. Reset neither to `main`'s copy to tidy a diff: the
   runtime-package test fails on `main` once the committed bundle lags the
   compiler, and every other agent's check fails with it.
@@ -713,7 +712,7 @@ checked:
 | `test/architecture.test.ts`'s "each runtime helper is asked for, or needed by another" | 0.8 s alone; past bun's 5 s beside `check:fast`'s other jobs, failing runs that passed with it alone, until its timeout was raised to 30 s; it reads every source and each helper's JS on each run | The sources read once for the file, shared by its tests, not again per test |
 | `test/runtime-package.test.ts`'s "room asked of a length, a resize's, a collect's or a hash table's, ends where wasm32's std ends it" | 2.5 s alone on the M3 Max (2026-11-02); killed at bun's 5 s in a loaded `check:fast --all`, its Node run reserving 117 MB | A timeout that fits it, as the snapshot tests declare |
 | `test/support.test.ts`'s "a store keeps nothing below the disk's floor" | About 6 s on the Mac (2026-11-09): it prunes the machine's real stores, some 18,000 native builds in 10 GB, reading each one's size; past Bun's 5 s it timed out beside another file, so its timeout is `underLoad(60_000)` (#1108) | Prune a fixture store of its own, or keep each store's size beside it so a prune reads only what it removes |
-| `test/runtime-package.test.ts` and `test/runtime-transpiled.test.ts` in one `bun test`, without `--parallel`, by hand | One test fails, "@rust-js/runtime is tree-shakable, a helper bundled alone" or an unhandled error between tests, where each file alone passes (15 of 15, 3 of 3, 2026-11-05); `check:fast` and CI run them under `--parallel`, one worker each, so only a hand-run combination meets it | Find what they share, their bundles' output directory or Vite's cache, and give each its own |
+| `test/runtime-package.test.ts` and `test/runtime-transpiled.test.ts` in one `bun test`, without `--parallel`, by hand | One test fails, "@rust-js/std is tree-shakable, a helper bundled alone" or an unhandled error between tests, where each file alone passes (15 of 15, 3 of 3, 2026-11-05); `check:fast` and CI run them under `--parallel`, one worker each, so only a hand-run combination meets it | Find what they share, their bundles' output directory or Vite's cache, and give each its own |
 | The iterator matrix in full on the Mac, `ITERATOR_MATRIX=all` (ADR 1090) | 2,970 s in 4 parts at a load of 15–60 (2026-11-04), about 3.3 CPU-hours: 1,700 programs of 60 cases, each built natively and twice by the debug compiler, its compile the most of it | The release compiler for its builds, or a compile of a batch's two builds in one rust-js process; the nightly runs it on six machines |
 | Whether a matrix row fails only in its batch, not alone (#826, #835) | A case's program alone (`program <n>`) can run as native where its batch, 60 cases in one program, doesn't, as one case's back step makes another's type knowing its back (`back_kept`'s per-type set, #814). Telling which takes the batch's program made by hand from `batches()` and `program()`, then finding the case that triggers it by compiling it beside each other case (60 compiles, run in parallel) | A `program <n> --batch` in `test/iterator-matrix.ts` that writes case n's whole batch, and a `--trigger` that finds the case that changes its form |
 | Which Prettier and plugins lay out an app's JS, of each build's `rustc -vV` line (ADR 1003, #692) | 0.4 s of each build of React's port (17 packages) on the M3 Max, 2026-11-04, and of each editor check: `resolveConfig` of every module's `.js` and `.jsx` | Each config file's plugins read once, its `overrides` with them, not asked again per module |
@@ -777,7 +776,7 @@ the workflow's 2 machines; `--shards=4` splits it across four.
 - **A new worktree runs `bun install --frozen-lockfile` first.** Without a
   `node_modules` of its own, a worktree under `.claude/worktrees/` finds the
   checkout's above it, so its tests' JS imports that checkout's
-  `@rust-js/runtime` and `@rust-js/std`, of another commit; `buildCompiler`
+  `@rust-js/std`, of another commit; `buildCompiler`
   (`test/support.ts`) fails a run that would.
 - **A failing program is reduced, not by hand** (ADR 1107):
   `bun scripts/reduce.ts <case.rs> --build plain|std` shrinks it to a
@@ -804,18 +803,18 @@ the workflow's 2 machines; `--shards=4` splits it across four.
   mutation of a runtime helper (`src/runtime/*.js`, its entries in
   `scripts/mutations/runtime/`) runs its tests with its mutant's runtime
   installed in their own target (`ownRuntime` in `scripts/mutations.ts`,
-  `test/packages-of.ts`), and the checkout's `runtime/index.js` is never
+  `test/packages-of.ts`), and the checkout's `std/runtime.js` is never
   rewritten. It was rewritten until #720, and a `check:fast` beside one
   ran its corpus parts and other test files against the mutant's runtime.
-  A test that reads the runtime or std by path reads `runtimeDir` and
-  `stdDir` (`test/support.ts`), so it reads the run's own, never
-  `join(root, "runtime")`.
-- **`runtime/index.js` and `std/iter.js` are generated, and committed.**
-  `bun run runtime` writes `runtime/index.js`; `bun run std` writes
-  `std/iter.js`, its `std/iter.js.map` and `std/manifest.json`; each
-  builds the compiler first. A change to a runtime helper, or to the
-  lowering std's compiled bodies depend on, runs both, rebuilds (`bun run
-  build`, which builds std's manifest in), and commits what they wrote
+  A test that reads the package by path reads `stdDir` and
+  `helpersModule` (`test/support.ts`), so it reads the run's own, never
+  `join(root, "std")`.
+- **`std/` is generated, and committed.** `bun run std` builds the
+  compiler, then writes the helpers' `std/runtime.js`, `std/iter.js`, its
+  `std/iter.js.map`, `std/manifest.json` and the entry, `std/index.js`. A
+  change to a runtime helper, or to the lowering std's compiled bodies
+  depend on, runs it, rebuilds (`bun run build`, which builds std's
+  manifest in), and commits what it wrote
   with it: `test/runtime-package.test.ts` and `test/std-package.test.ts`
   hold them to what the compiler writes. Left stale, every iterator
   matrix run fails with "does not provide an export".

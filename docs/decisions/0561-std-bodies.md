@@ -519,3 +519,13 @@ The test compares the hash too now, and "std's crate hash is the same built
 anywhere, with or without RUSTC_BOOTSTRAP" builds std in two places, one
 deeper and with `RUSTC_BOOTSTRAP` given, each the committed one; it fails
 with rustc's hash, mutation `std-crate-hash-rustcs`.
+
+## Amendment: std's bodies are `@rust-js/std`'s entry's, with the helpers (2026-11-09, #1095)
+
+A module imported std's bodies by their file, `from
+"@rust-js/std/iter.js"`, and the helpers from `@rust-js/runtime`. **Now
+both are one import of one package's one entry, `from "@rust-js/std"`**
+(ADR 0103's amendment): the package's `index.js` re-exports its helpers'
+module, `runtime.js`, and `iter.js`, which imports the helpers beside it.
+std's manifest names `std.js`, its link to `runtime.js` a file of the
+package's own, and is built into the compiler as before.

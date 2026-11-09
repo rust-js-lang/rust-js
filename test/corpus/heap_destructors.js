@@ -12,7 +12,7 @@ import {
   $iter,
   $partialEq,
   $partialOrd,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 const oPartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: $eq }),

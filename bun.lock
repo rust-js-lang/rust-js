@@ -14,7 +14,6 @@
         "@jest/globals": "30.5.2",
         "@playwright/test": "1.63.0",
         "@rolldown/plugin-babel": "0.2.4",
-        "@rust-js/runtime": "workspace:*",
         "@rust-js/std": "workspace:*",
         "@rust-js/typescript": "workspace:*",
         "@tailwindcss/vite": "4.3.3",
@@ -43,7 +42,6 @@
       "name": "@rust-js/example-next",
       "version": "0.1.0",
       "dependencies": {
-        "@rust-js/runtime": "workspace:*",
         "@rust-js/std": "workspace:*",
         "next": "16.4.3",
         "react": "19.2.8",
@@ -61,7 +59,6 @@
       "name": "@rust-js/example-vite-react",
       "version": "0.0.0",
       "dependencies": {
-        "@rust-js/runtime": "workspace:*",
         "@rust-js/std": "workspace:*",
         "@tailwindcss/vite": "^4.3.3",
         "react": "^19.2.8",
@@ -87,10 +84,6 @@
         "@webref/css": "8.7.5",
         "@webref/elements": "2.9.0",
       },
-    },
-    "runtime": {
-      "name": "@rust-js/runtime",
-      "version": "0.0.4",
     },
     "std": {
       "name": "@rust-js/std",
@@ -123,7 +116,7 @@
         "@codemirror/state": "6.7.6",
         "@codemirror/theme-one-dark": "6.1.3",
         "@codemirror/view": "6.43.13",
-        "@rust-js/runtime": "workspace:*",
+        "@rust-js/std": "workspace:*",
         "codemirror": "6.0.2",
         "react": "19.3.0",
         "react-dom": "19.3.0",
@@ -564,8 +557,6 @@
     "@rust-js/example-vite-react": ["@rust-js/example-vite-react@workspace:examples/vite-react"],
 
     "@rust-js/react-generator": ["@rust-js/react-generator@workspace:react"],
-
-    "@rust-js/runtime": ["@rust-js/runtime@workspace:runtime"],
 
     "@rust-js/std": ["@rust-js/std@workspace:std"],
 

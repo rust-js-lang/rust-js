@@ -13,7 +13,7 @@ import { createRoot } from "react-dom/client";
 import { useEffect, useReducer, useState } from "react";
 import "todomvc-common/base.css";
 import "todomvc-app-css/index.css";
-import { $trim, $unwrap } from "@rust-js/runtime";
+import { $trim, $unwrap } from "@rust-js/std";
 
 /** The route's filter, and a render each time the hash changes. */
 function useFilter() {

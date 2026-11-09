@@ -940,7 +940,7 @@ pub fn year_width(year: f64) -> usize {
 ```
 
 ```js
-import { $byteLen } from "@rust-js/runtime";
+import { $byteLen } from "@rust-js/std";
 
 export function key(msg, index) {
   return `${msg}-${index}`;
@@ -1051,7 +1051,7 @@ pub async fn open(other: &Unknown) -> Result<(), &'static JsError> {
 
 ```js
 import { Editor, find, load, onChange, parse, select } from "my-editor";
-import { $try } from "@rust-js/runtime";
+import { $try } from "@rust-js/std";
 
 export async function open(other) {
   const editor = new Editor({

@@ -8,7 +8,7 @@ import {
   $lock,
   $lockRead,
   $unborrow,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

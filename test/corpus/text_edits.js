@@ -17,7 +17,7 @@ import {
   $strExtendWithin,
   $strSplitOff,
   $unwrapErr,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

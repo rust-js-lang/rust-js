@@ -2,11 +2,12 @@
 
 // File paths as a tree, for the file explorers.
 
-import { $cmp, $rsplitOnce } from "@rust-js/runtime";
+import { $cmp, $rsplitOnce, $sortStable } from "@rust-js/std";
 
 export function buildTree(paths) {
   const tree = [];
-  for (const path of paths) {
+  for (let i = 0; i < paths.length; i++) {
+    const path = paths[i];
     let folder = tree;
     const rsplitOnce = $rsplitOnce(path, "/");
     let name;
@@ -43,7 +44,7 @@ export function inOrder(tree, first) {
   const key = ([name, entry]) => (entry.TAG === "Folder" ? `${name}/` : name);
   const isFirst = (entry) => entry.TAG === "File" && entry._0 === first;
   const entries = tree.slice();
-  entries.sort((a, b) => {
+  function compare(a, b) {
     if (isFirst(a[1])) {
       return -1;
     } else if (isFirst(b[1])) {
@@ -51,7 +52,8 @@ export function inOrder(tree, first) {
     } else {
       return $cmp(key(a), key(b));
     }
-  });
+  }
+  $sortStable(entries, (a, b) => compare(a, b) < 0, "general8", 4);
   return entries;
 }
 //# sourceMappingURL=tree.js.map

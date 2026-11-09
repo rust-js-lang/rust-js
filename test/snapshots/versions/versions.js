@@ -28,7 +28,7 @@ import {
   $totalCmp,
   $traitImpl,
   $zeroPad,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 const f64PartialOrd = $partialOrd({ PartialEq: () => $strictlyEqual, partialCmp: $partialCmp });
 

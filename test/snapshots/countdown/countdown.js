@@ -3,7 +3,7 @@
 // A countdown, with async code (ADR 0029): an `async fn` that `.await`s a
 // timer between steps, started from a click with `spawn`.
 
-import { $unwrap } from "@rust-js/runtime";
+import { $unwrap } from "@rust-js/std";
 
 /** A promise that resolves after `ms` milliseconds. */
 function sleep(ms) {

@@ -405,7 +405,7 @@ pub fn kept(value: Option<u32>) -> Rc<Cell<u32>> {
     Rc::new(Cell::new(value.unwrap() + FIRST))
 }
 `);
-  expect(helpers.js).toContain('import { $unwrap } from "@rust-js/runtime";\n\n// The value, kept.\n\nexport const FIRST = 1;');
+  expect(helpers.js).toContain('import { $unwrap } from "@rust-js/std";\n\n// The value, kept.\n\nexport const FIRST = 1;');
   expect((helpers.lib.kept as (v: number) => { value: number })(7).value).toBe(8);
   // None between them and an import across lines before them: one block.
   const long = await compiled("header-helpers-after-long", `use crate::versions::{
@@ -422,7 +422,7 @@ pub fn versions(more: Option<u32>) -> u32 {
     REACT_VERSION_WITH_A_LONG_NAME + SECOND_VERSION_WITH_A_LONG_NAME + THIRD_VERSION_WITH_A_LONG_NAME + more.unwrap()
 }
 `);
-  expect(long.js).toContain('} from "./versions.js";\nimport { $unwrap } from "@rust-js/runtime";\n\nexport function versions(more) {');
+  expect(long.js).toContain('} from "./versions.js";\nimport { $unwrap } from "@rust-js/std";\n\nexport function versions(more) {');
   expect((long.lib.versions as (more: number) => number)(1)).toBe(61);
 });
 
@@ -510,7 +510,7 @@ use crate::lanes::LANE;
 
 ${work.replace("&std::cell::Cell", "&Cell").replace("cell.get().unwrap()", "cell.get().unwrap() + LANE")}`);
   expect(js).toContain(`import { LANE } from "./lanes.js";
-import { $unwrap } from "@rust-js/runtime";
+import { $unwrap } from "@rust-js/std";
 `);
   expect(js.trimEnd().split("\n").filter((line) => !line.startsWith("//#")).at(-1)).toBe(
     'export { batchedUpdates as unstableBatchedUpdates } from "./work.js";',
@@ -518,7 +518,7 @@ import { $unwrap } from "@rust-js/runtime";
   expect([(lib.read as (cell: { value: number }) => number)({ value: 2 }), (lib.unstableBatchedUpdates as (n: number) => number)(1)]).toEqual([3, 2]);
   // No `use`: first.
   const first = await compiled("runtime-first-before-a-last-reexport", work);
-  expect(first.js).toMatch(/^\/\/ Generated[^\n]*\n\nimport \{ \$unwrap \} from "@rust-js\/runtime";\n\nexport function read/);
+  expect(first.js).toMatch(/^\/\/ Generated[^\n]*\n\nimport \{ \$unwrap \} from "@rust-js\/std";\n\nexport function read/);
 });
 
 // React's ReactFiberCommitWork imports `./ReactFiberLane` twice, its first

@@ -7,7 +7,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { node } from "./programs";
-import { buildReact, compiler, fixture, installRuntime, root, run, target } from "./support";
+import { buildReact, compiler, fixture, installStd, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -676,7 +676,7 @@ pub fn described(value: &Unknown) -> String {
   }
 }`);
   expect(js).not.toContain(`typeof value !== "string"`);
-  installRuntime(dir);
+  installStd(dir);
   writeFileSync(join(dir, "run.mjs"), `import { described } from "./lib.js";
 function fetchUser() {}
 const values = [Symbol("s"), ["a"], ["https://react.dev/learn"], { url: "/learn" }, {}, "hello", "hi", fetchUser, 42, 7n, true];
@@ -728,7 +728,7 @@ pub fn kept(expected: Option<&'static Unknown>) -> Option<&'static Unknown> {
   }
   return null;
 }`);
-  installRuntime(dir);
+  installStd(dir);
   writeFileSync(join(dir, "run.mjs"), `import { kept } from "./lib.js";
 const s = Symbol("s");
 function f() {}

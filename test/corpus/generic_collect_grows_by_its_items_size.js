@@ -14,7 +14,7 @@ import {
   $some,
   $traitImpl,
   $treeFromSorted,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 const endlessU32 = () => endless({ default: () => 0 });
 

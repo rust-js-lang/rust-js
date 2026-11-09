@@ -25,7 +25,7 @@ import {
   $round,
   $toFixed,
   $trailingZeros,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 function vec2Debug_fmt(vec2) {
   return `Vec2 { x: ${$debugF64(vec2.x)}, y: ${$debugF64(vec2.y)} }`;

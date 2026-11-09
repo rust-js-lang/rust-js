@@ -2,7 +2,7 @@
 
 import * as Flags from "./flags.js";
 import * as Marks from "./marks.js";
-import { $debugStr, $local } from "@rust-js/runtime";
+import { $debugStr, $local } from "@rust-js/std";
 
 export function entry() {
   main();

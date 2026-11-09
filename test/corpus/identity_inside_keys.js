@@ -16,7 +16,7 @@ import {
   $partialEq,
   $ptrTo,
   $remove,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

@@ -9,7 +9,7 @@ import {
   $fromU32,
   $pad,
   $toDigit,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

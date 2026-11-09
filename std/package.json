@@ -1,7 +1,7 @@
 {
   "name": "@rust-js/std",
   "version": "0.0.4",
-  "description": "std's bodies compiled to JS by rust-js, which the JS it writes imports, released with the compiler as @rust-js/runtime is. See docs/decisions/0561-std-bodies.md.",
+  "description": "Rust's std for JS: the helpers and std's bodies the JS rust-js writes imports, one package, one entry, released with the compiler. See docs/decisions/0103-runtime-package.md and 0561-std-bodies.md.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -10,12 +10,14 @@
   },
   "type": "module",
   "exports": {
-    "./*.js": "./*.js",
+    ".": "./index.js",
     "./package.json": "./package.json"
   },
   "files": [
-    "*.js",
-    "*.js.map",
+    "index.js",
+    "runtime.js",
+    "iter.js",
+    "iter.js.map",
     "manifest.json"
   ],
   "sideEffects": false

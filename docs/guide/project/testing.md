@@ -169,7 +169,7 @@ mod tests {
 // src/shapes.test.js
 import { test } from "node:test";
 import { area } from "./shapes.js";
-import { $assertFailed, $debugF64, $shouldPanic } from "@rust-js/runtime";
+import { $assertFailed, $debugF64, $shouldPanic } from "@rust-js/std";
 
 function unit() {
   return area(1);

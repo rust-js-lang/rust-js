@@ -55,7 +55,7 @@ export const iteratorPaths = [
   "src/lower/body_queries.rs",
   "src/runtime.rs",
   "src/runtime/**",
-  "runtime/index.js",
+  "std/runtime.js",
   "std/iter.js",
   "test/iterator-matrix.ts",
   "test/iterator-matrix.test.ts",

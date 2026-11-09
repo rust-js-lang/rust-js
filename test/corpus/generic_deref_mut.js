@@ -9,7 +9,7 @@ import {
   $cleanup,
   $traitImpl,
   $unborrow,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

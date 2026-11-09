@@ -66,7 +66,7 @@ test("derived Debug dependencies are retained transitively without unused implem
   expect(readFileSync(join(dir, "lib.js"), "utf8")).not.toContain("Unused");
 });
 
-// Each module imports its own operations from @rust-js/runtime (ADR 0103);
+// Each module imports its own operations from @rust-js/std (ADR 0103);
 // what those use, `$siftUp` and `$siftDown`, the package has for them.
 test("heap modules import only their operations, and the package has what those use", async () => {
   const dir = fixture("heap-runtime-dependencies");
@@ -94,7 +94,7 @@ test("heap modules import only their operations, and the package has what those 
     const file = join(dir, `${name}.js`);
     expect((await import(file)).run()).toEqual(expected[i]);
     const code = readFileSync(file, "utf8");
-    expect(code).toContain(`import { ${imports} } from "@rust-js/runtime";`);
+    expect(code).toContain(`import { ${imports} } from "@rust-js/std";`);
     expect(code).not.toContain("$sift");
   }
 });
@@ -114,7 +114,7 @@ test("a string that spells a helper's name doesn't import it", () => {
   `);
   run([compiler, join(dir, "main.rs"), "-o", join(dir, "main.js")]);
   const code = readFileSync(join(dir, "main.js"), "utf8");
-  expect(code).toContain(`import { $bigLeadingZeros } from "@rust-js/runtime";`);
+  expect(code).toContain(`import { $bigLeadingZeros } from "@rust-js/std";`);
   expect(code).toContain(`"$bigTrailingZeros and $bigCountOnes"`);
   expect(code).toContain(`console.log("$bigCountOnes")`);
 });

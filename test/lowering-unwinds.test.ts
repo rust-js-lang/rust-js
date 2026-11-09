@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { node } from "./programs";
-import { buildReact, compiler, fixture, root, run, runtimeDir, target } from "./support";
+import { buildReact, compiler, fixture, root, run, helpersModule, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -1406,7 +1406,7 @@ test("a cleanup that throws aborts, past catch_unwind", () => {
   }`;
   writeFileSync(
     script,
-    `import { $catchUnwind, $cleanup } from ${JSON.stringify(join(runtimeDir, "index.js"))};
+    `import { $catchUnwind, $cleanup } from ${JSON.stringify(helpersModule)};
 const exits = [];
 if (process.argv[2] === "kept") process.exit = (code) => void exits.push(code);
 let caught;

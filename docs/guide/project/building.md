@@ -64,7 +64,6 @@ JS imports, all at one version:
   "dependencies": {
     "@rust-js/builtins": "0.0.2",
     "@rust-js/react": "0.0.4",
-    "@rust-js/runtime": "0.0.4",
     "@rust-js/std": "0.0.4",
     "@rust-js/webapi": "0.0.3"
   },
@@ -76,9 +75,8 @@ JS imports, all at one version:
 ```
 
 `@rust-js/build` has the `rust-js` command. `@rust-js/native` is the
-compiler it runs. `@rust-js/runtime` and `@rust-js/std` are what the
-written JS imports at run time (see
-[JavaScript environments](environments.md#the-runtime-package)).
+compiler it runs. `@rust-js/std` is what the written JS imports at run
+time (see [JavaScript environments](environments.md#the-std-package)).
 
 And once per machine, the Rust release rust-js is built with:
 
@@ -401,11 +399,10 @@ Without one, it stops, and your bundler still builds what's committed:
 rust-js: no rust-js at /path/to/rust-js: install rust-js or build it with cargo build to compile the Rust
 ```
 
-The compiler and `@rust-js/runtime` and `@rust-js/std` must be one
-version:
+The compiler and `@rust-js/std` must be one version:
 
 ```
-the JS rust-js 0.0.4 writes imports @rust-js/runtime 0.0.4: install it
+the JS rust-js 0.0.4 writes imports @rust-js/std 0.0.4: install it
 ```
 
 ## Your editor

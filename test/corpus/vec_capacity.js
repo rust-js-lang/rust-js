@@ -8,7 +8,7 @@ import {
   $shrinkTo,
   $truncate,
   $withCapacity,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

@@ -3,7 +3,7 @@
 import { add, exprDebug_fmt } from "./exprs.js";
 import * as Exprs from "./exprs.js";
 import { setPartialEq, setPartialEq_eq } from "./sets.js";
-import { $cmp, $cmpItems, $dedupBy, $eq, $maxBy } from "@rust-js/runtime";
+import { $cmp, $cmpItems, $dedupBy, $eq, $maxBy } from "@rust-js/std";
 
 export function entry() {
   main();

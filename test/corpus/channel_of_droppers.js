@@ -9,7 +9,7 @@ import {
   $send,
   $tryRecv,
   $unwrapOk,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

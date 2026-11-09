@@ -19,7 +19,7 @@ import {
   $sortedEntries,
   $toJson,
   $unwrapOk,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 function orderDebug_fmt(order) {
   return $debugFields(

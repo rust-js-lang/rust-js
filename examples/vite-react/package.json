@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@rust-js/runtime": "workspace:*",
     "@rust-js/std": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "react": "^19.2.8",

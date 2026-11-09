@@ -371,7 +371,7 @@ pub fn generic<M: ?Sized>(body: u32, manifest: &M) -> u32 {
   // The library's module's import where its `use` is, first, then the
   // runtime's, with the imports, before the re-export placed there too
   // (rd725).
-  expect(app).toContain('import * as Action from "../dep/action.js";\nimport { $cellOf } from "@rust-js/runtime";\nexport { decode as decodeAction');
+  expect(app).toContain('import * as Action from "../dep/action.js";\nimport { $cellOf } from "@rust-js/std";\nexport { decode as decodeAction');
   expect(app).toContain(`export { decode as decodeAction, decode as decodeFormState, ping } from "../dep/action.js";\n`);
   // One no \`use\` places where its function is, after the \`Drop\` impl's
   // function written above it (ADR 1069).

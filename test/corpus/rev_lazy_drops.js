@@ -9,7 +9,7 @@ import {
   $mapEnds,
   $next,
   $rev,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

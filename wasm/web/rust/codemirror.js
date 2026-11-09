@@ -4,11 +4,13 @@
 // the `Editor` component does to its view. Both editors follow the system's
 // light or dark setting.
 
-import { javascript } from "@codemirror/lang-javascript";
-import { rust } from "@codemirror/lang-rust";
-import { Compartment, EditorState } from "@codemirror/state";
-import { oneDark } from "@codemirror/theme-one-dark";
 import { EditorView, basicSetup } from "codemirror";
+import { oneDark } from "@codemirror/theme-one-dark";
+import { rust } from "@codemirror/lang-rust";
+import { javascript } from "@codemirror/lang-javascript";
+import { Compartment, EditorState } from "@codemirror/state";
+
+// CodeMirror's configurations: JS objects that only CodeMirror reads.
 
 // Made once: as the module loads, or what runs the crate's code where it's
 // first used (ADR 0037, amended). One theme compartment serves
@@ -23,7 +25,7 @@ const source = [
 // Read-only, but still selectable and copyable. Highlighted as JS for a
 // generated file, plain text when it shows rustc's diagnostics.
 const jsOutput = output(javascript());
-const plainOutput = output(undefined);
+const plainOutput = output();
 
 function output(language) {
   const extensions = [basicSetup];
@@ -85,8 +87,6 @@ export function show(view, state) {
  */
 export function setTheme(view, dark) {
   const theme$1 = theme;
-  view.dispatch({
-    effects: theme$1.reconfigure(themeFor(dark)),
-  });
+  view.dispatch({ effects: theme$1.reconfigure(themeFor(dark)) });
 }
 //# sourceMappingURL=codemirror.js.map

@@ -61,7 +61,7 @@ test("React's owner stack reads as upstream's", async () => {
   }
   return stack;
 }`);
-  expect(js).not.toContain("@rust-js/runtime");
+  expect(js).not.toContain("@rust-js/std");
   const stack = "Error: react-stack-top-frame\n    at jsx\n    at é (a.js:1)\n    at 🦀 (b.js:2)\n    at react_stack_bottom_frame (r.js:3)";
   expect(lib.formatOwnerStack(stack)).toBe("    at é (a.js:1)\n    at 🦀 (b.js:2)");
   expect(lib.formatOwnerStack("no frames")).toBe("");
@@ -102,7 +102,7 @@ pub fn quoted(s: &str) -> &str {
   expect(js).toContain('return at !== -1 ? s.slice(at + pattern.length) : "";');
   expect(js).toContain("return at !== -1 ? s.slice(at + c.length) : s;");
   expect(js).toContain('return open !== -1 ? s.slice(open + "«".length, s.length) : s;');
-  expect(js).not.toContain("@rust-js/runtime");
+  expect(js).not.toContain("@rust-js/std");
   expect(lib.afterE("🦀é🦀")).toBe("🦀");
   expect(lib.after("a🦀b🦀c", "🦀")).toBe("b🦀c");
   expect(lib.afterChar("é.🦀.x", ".")).toBe("x");
@@ -141,7 +141,7 @@ pub fn stripped<'a>(s: &'a str, prefix: &str, suffix: char) -> &'a str {
   if (s.endsWith(suffix)) {
     s = s.slice(0, s.length - suffix.length);
   }`);
-  expect(js).not.toContain("@rust-js/runtime");
+  expect(js).not.toContain("@rust-js/std");
   expect([lib.trimmed("é🦀"), lib.trimmed("é")]).toEqual(["é", "é"]);
   expect([lib.stripped("é-🦀x", "é-", "x"), lib.stripped("abc", "", "é")]).toEqual(["🦀", "abc"]);
 });

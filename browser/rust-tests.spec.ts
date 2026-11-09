@@ -21,9 +21,12 @@ if (manifests.length === 0 || manifests.some((path) => !path.endsWith(".json")))
   throw new Error("set RUST_JS_TESTS to the manifests `rust-js --test --manifest` wrote, which name each module's test files (ADR 1076)");
 }
 
-/** `@rust-js/runtime`, as the project installed it: what the modules import (ADR 0103). */
-const runtime = createRequire(join(process.cwd(), "package.json")).resolve("@rust-js/runtime");
-const RUNTIME = "/@rust-js/runtime.js";
+/** `@rust-js/std`, as the project installed it: what the modules import
+ * (ADRs 0103, 0561), its directory and the modules it ships, served at
+ * `/@rust-js/std/`, its entry `index.js`. */
+const stdManifest = createRequire(join(process.cwd(), "package.json")).resolve("@rust-js/std/package.json");
+const STD = "/@rust-js/std/";
+const stdFiles = new Set((JSON.parse(readFileSync(stdManifest, "utf8")).files as string[]).filter((file) => file.endsWith(".js")));
 /** The runner's module, as the page has it: a `test` that records. */
 const RUNNER = "/@rust-js/test.js";
 
@@ -32,7 +35,7 @@ const RUNNER = "/@rust-js/test.js";
 const page = (module: string, path: string) => `<!doctype html>
 <meta charset="utf-8">
 <body></body>
-<script type="importmap">${JSON.stringify({ imports: { "@rust-js/runtime": RUNTIME, [module]: RUNNER } })}</script>
+<script type="importmap">${JSON.stringify({ imports: { "@rust-js/std": `${STD}index.js`, [module]: RUNNER } })}</script>
 <script>
   globalThis.tests = new Map();
   globalThis.test = (name, f) => tests.set(name, f);
@@ -82,7 +85,12 @@ for (const manifestPath of manifests) {
             if (url.pathname === "/") {
               return route.fulfill({ contentType: "text/html", body: page(module, relative(dir, path)) });
             }
-            if (url.pathname === RUNTIME) return route.fulfill({ path: runtime, contentType: "text/javascript" });
+            const shipped = url.pathname.startsWith(STD) ? url.pathname.slice(STD.length) : undefined;
+            if (shipped !== undefined) {
+              return stdFiles.has(shipped)
+                ? route.fulfill({ path: join(dirname(stdManifest), shipped), contentType: "text/javascript" })
+                : route.fulfill({ status: 404 });
+            }
             if (url.pathname === RUNNER) {
               return route.fulfill({ contentType: "text/javascript", body: "export const test = globalThis.test;\n" });
             }

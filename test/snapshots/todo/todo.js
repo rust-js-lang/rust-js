@@ -4,7 +4,7 @@
 // The todos live in one `Rc<RefCell<State>>`; after every change, the list
 // is drawn again from it (ADR 0025).
 
-import { $borrow, $borrowMut, $retain, $trim, $unborrow, $unwrap } from "@rust-js/runtime";
+import { $borrow, $borrowMut, $retain, $trim, $unborrow, $unwrap } from "@rust-js/std";
 
 /**
  * An element by its tag's name: `create_element(document, Button)` is one by

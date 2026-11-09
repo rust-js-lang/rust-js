@@ -10,7 +10,7 @@ import {
   $orInsert,
   $orInsertWith,
   $sortedEntries,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

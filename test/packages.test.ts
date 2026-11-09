@@ -59,7 +59,6 @@ test(`installed packages compile using ${runtime} without the other runtime`, ()
       private: true, type: "module", dependencies: {
         "@rust-js/build": "./artifacts/build.tgz",
         "@rust-js/native": "./artifacts/native.tgz",
-        "@rust-js/runtime": "./artifacts/runtime.tgz",
         "@rust-js/std": "./artifacts/std.tgz",
       },
       overrides: { "@rust-js/build": "./artifacts/build.tgz", "@rust-js/typescript": "./artifacts/typescript.tgz" },

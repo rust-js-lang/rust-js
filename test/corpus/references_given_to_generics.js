@@ -21,7 +21,7 @@ import {
   $sipHasher,
   $stringWriter,
   $unwrap,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 const kPartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: $eq }),

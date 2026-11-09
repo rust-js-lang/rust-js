@@ -235,7 +235,7 @@ pub struct Loaded {
     /// Each crate a program may use, by its library's name, its metadata.
     pub crates: Vec<(String, &'static WasiFile)>,
     /// What the programs it compiles import of the page's, by specifier:
-    /// `@rust-js/runtime` (ADR 0103), and React's modules.
+    /// `@rust-js/std`'s modules (ADRs 0103, 0561), and React's.
     pub modules: Vec<(String, String)>,
     /// The stylesheets a program may import, TodoMVC's, by specifier.
     pub styles: Vec<(String, String)>,
@@ -330,19 +330,12 @@ async fn load_sysroot_file(name: String) -> (String, &'static WasiFile) {
     (name, new_file(bytes, &FileOptions { readonly: true }))
 }
 
-/// `@rust-js/runtime` and React's modules, and the stylesheets, for a
+/// `@rust-js/std`'s modules and React's, and the stylesheets, for a
 /// program to import (ADR 0044).
 async fn load_packages(start: f64, stat: Stat) -> (Vec<(String, String)>, Vec<(String, String)>) {
-    let runtime = window.fetch("./runtime.js", None).await.text();
-    let packages = packages_json(window.fetch("./packages.json", None).await);
-    let mut modules = vec![("@rust-js/runtime".to_string(), runtime.await)];
-    let packages = packages.await;
-    modules.extend(text_fields(packages.modules));
-    stat(
-        "download runtime and packages".to_string(),
-        ms(performance.now() - start),
-    );
-    (modules, text_fields(packages.styles))
+    let packages = packages_json(window.fetch("./packages.json", None).await).await;
+    stat("download packages".to_string(), ms(performance.now() - start));
+    (text_fields(packages.modules), text_fields(packages.styles))
 }
 
 async fn load_binding_crate(name: &str, start: f64, stat: Stat) -> &'static WasiFile {

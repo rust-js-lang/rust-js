@@ -4,7 +4,6 @@
 // `next_if` and `next_if_eq`; and iterators that `next()` steps through,
 // then hands the rest of (ADR 0071).
 
-import { iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $debugStr,
   $iter,
@@ -14,7 +13,8 @@ import {
   $restStr,
   $toDigit,
   $unwrap,
-} from "@rust-js/runtime";
+  iterator_peekable,
+} from "@rust-js/std";
 
 function tokDebug_fmt(tok) {
   if (tok.TAG === "Num") {

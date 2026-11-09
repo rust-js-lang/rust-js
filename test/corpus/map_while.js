@@ -8,7 +8,7 @@ import {
   $lazyRange,
   $lent,
   $parseInt,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

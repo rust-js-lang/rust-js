@@ -8,7 +8,7 @@ import {
   $round,
   $signum,
   $toFixed,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

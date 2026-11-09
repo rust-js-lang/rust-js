@@ -698,7 +698,7 @@ pub struct Exports {
 #[derive(Default)]
 pub struct Dependencies {
     /// Each library, by its crate's name; `@rust-js/std`'s, of std's
-    /// crates, by `STD_PACKAGE`, which no crate is named.
+    /// crates, by its package's name, `runtime::PACKAGE`, which no crate is.
     pub libraries: IndexMap<String, Exports>,
     pub inputs: Vec<std::path::PathBuf>,
 }
@@ -900,19 +900,14 @@ impl Dependencies {
     }
 }
 
-/// `@rust-js/std`: std's bodies compiled by this compiler (the std-bodies
-/// decision), the package every crate's JS imports them from, as the
-/// runtime's helpers are imported from `@rust-js/runtime` (ADR 0103).
-pub const STD_PACKAGE: &str = "@rust-js/std";
-
 /// `@rust-js/std`'s manifest, written by `bun run std` and committed beside
 /// its JS, built into the compiler that reads it: the one std its JS calls.
 const STD_MANIFEST: &str = include_str!("../std/manifest.json");
 
 impl Dependencies {
     /// `@rust-js/std` added to what a crate is compiled against: each of
-    /// its items, keyed as std's are, imported from its package by the
-    /// module's path, `@rust-js/std/iter.js`.
+    /// its items, keyed as std's are, imported from its package's one entry,
+    /// `@rust-js/std`, as its helpers are (#1095).
     pub fn add_std(&mut self) -> Result<(), String> {
         let manifest = Manifest::read(STD_MANIFEST.as_bytes())?;
         let library = manifest.library.ok_or("the std manifest has no library contract")?;
@@ -961,7 +956,7 @@ impl Dependencies {
         };
         for item in library.items {
             let imported = Imported {
-                from: format!("{STD_PACKAGE}/{}.js", item.module.join("/")),
+                from: crate::runtime::PACKAGE.to_string(),
                 export: item.exported_as(),
                 name: item.export,
                 member: item.member,
@@ -975,7 +970,7 @@ impl Dependencies {
         // Its items are std's, of `core`, `alloc` or `std`: by its package's
         // name, which no crate has, not theirs, which a program's may
         // (ADR 1054).
-        self.libraries.insert(STD_PACKAGE.to_string(), exports);
+        self.libraries.insert(crate::runtime::PACKAGE.to_string(), exports);
         Ok(())
     }
 }

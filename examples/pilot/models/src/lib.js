@@ -5,7 +5,7 @@
  * rules a contact must keep, checked on both sides.
  */
 
-import { $debugStr, $json, $splitOnce, $trim } from "@rust-js/runtime";
+import { $debugStr, $json, $splitOnce, $trim } from "@rust-js/std";
 
 /** A contact the server has stored. */
 export function contactSerialize_serialize(contact, json) {

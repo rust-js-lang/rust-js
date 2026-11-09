@@ -2,7 +2,7 @@
 
 import * as Limits from "./limits.js";
 import * as Start from "./start.js";
-import { $catchUnwind, $local } from "@rust-js/runtime";
+import { $catchUnwind, $local } from "@rust-js/std";
 
 export function entry() {
   main();

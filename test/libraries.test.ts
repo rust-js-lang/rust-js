@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { runSync } from "./child";
 import { node } from "./programs";
-import { buildCompiler, compiler, fixture, root, run, runtimeDir, stdDir } from "./support";
+import { buildCompiler, compiler, fixture, root, run, stdDir } from "./support";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -50,7 +50,7 @@ ${more}`);
   return dir;
 }
 
-/** An app that depends on the library, in npm and in Cargo, with `@rust-js/runtime` installed. */
+/** An app that depends on the library, in npm and in Cargo, with `@rust-js/std` installed. */
 function app(name: string) {
   const dir = fixture(name);
   mkdirSync(join(dir, "src"));
@@ -58,7 +58,7 @@ function app(name: string) {
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[dependencies]\ngreet = { package = "acme-greet", version = "1" }\n\n[workspace]\n');
   writeFileSync(join(dir, "src", "lib.rs"), 'pub fn welcome() -> String {\n    greet::greet("Ada").text()\n}\n');
   mkdirSync(join(dir, "node_modules", "@rust-js"), { recursive: true });
-  symlinkSync(runtimeDir, join(dir, "node_modules", "@rust-js", "runtime"));
+  symlinkSync(stdDir, join(dir, "node_modules", "@rust-js", "std"));
   return dir;
 }
 
@@ -128,7 +128,7 @@ test("a JS app imports a rust-js library's JS as its author built it", () => {
   writeFileSync(join(dir, "package.json"), JSON.stringify({ private: true, type: "module", dependencies: { "@acme/greet": "1.0.0" } }));
   packed(lib, join(dir, "node_modules", "@acme", "greet"), cpSync);
   mkdirSync(join(dir, "node_modules", "@rust-js"), { recursive: true });
-  symlinkSync(runtimeDir, join(dir, "node_modules", "@rust-js", "runtime"));
+  symlinkSync(stdDir, join(dir, "node_modules", "@rust-js", "std"));
   // A method is its type's function, given the value (ADR 0047).
   writeFileSync(join(dir, "main.js"), 'import { Greeting, greet } from "@acme/greet";\nconsole.log(Greeting.text(greet("Ada")));\n');
   expect(run([node ?? "node", join(dir, "main.js")]).trim()).toBe("Hello, Ada!");
@@ -198,7 +198,6 @@ test("a library packed by npm is built into an app by each package manager's ins
     const installed = runSync(install, dir, 300_000, env);
     expect({ manager, code: installed.code, stderr: installed.code ? installed.stderr : "" }).toEqual({ manager, code: 0, stderr: "" });
     mkdirSync(join(dir, "node_modules", "@rust-js"), { recursive: true });
-    symlinkSync(runtimeDir, join(dir, "node_modules", "@rust-js", "runtime"), "dir");
     symlinkSync(stdDir, join(dir, "node_modules", "@rust-js", "std"), "dir");
     // A witness of the installed file: one written through is seen in it.
     const installedJs = realpathSync(join(dir, "node_modules", "@acme", "greet", "src", "lib.js"));
@@ -257,7 +256,7 @@ pub fn count() -> u32 {
   mkdirSync(join(dir, "node_modules", "@acme"), { recursive: true });
   symlinkSync(kids, join(dir, "node_modules", "@acme", "kids"), "dir");
   mkdirSync(join(dir, "node_modules", "@rust-js"));
-  symlinkSync(runtimeDir, join(dir, "node_modules", "@rust-js", "runtime"), "dir");
+  symlinkSync(stdDir, join(dir, "node_modules", "@rust-js", "std"), "dir");
   const js = () => readFileSync(join(dir, "dom", "src", "lib.js"), "utf8");
   const ran = () => run([node ?? "node", "--input-type=module", "--eval", `console.log((await import(${JSON.stringify(join(dir, "dom", "src", "lib.js"))})).run());`]).trim();
   const built = () => build(join(dir, "dom"));
@@ -356,7 +355,7 @@ test("an item a package's entry re-exports through its module's re-export is imp
   mkdirSync(join(dir, "node_modules", "@acme"), { recursive: true });
   symlinkSync(kids, join(dir, "node_modules", "@acme", "kids"), "dir");
   mkdirSync(join(dir, "node_modules", "@rust-js"));
-  symlinkSync(runtimeDir, join(dir, "node_modules", "@rust-js", "runtime"), "dir");
+  symlinkSync(stdDir, join(dir, "node_modules", "@rust-js", "std"), "dir");
   const native = join(dir, "native");
   mkdirSync(native);
   run(["rustc", "--edition=2024", "--crate-type=rlib", "--crate-name", "kids", join(kids, "src", "lib.rs"), "-o", join(native, "libkids.rlib")]);
@@ -409,7 +408,6 @@ pub fn run() -> String {
 `);
   mkdirSync(join(dir, "node_modules", "@rust-js"), { recursive: true });
   symlinkSync(shared, join(dir, "node_modules", "shared"), "dir");
-  symlinkSync(runtimeDir, join(dir, "node_modules", "@rust-js", "runtime"), "dir");
   symlinkSync(stdDir, join(dir, "node_modules", "@rust-js", "std"), "dir");
   const js = () => readFileSync(join(dir, "dom", "src", "lib.js"), "utf8");
   const ran = () => run([node ?? "node", "--input-type=module", "--eval", `console.log((await import(${JSON.stringify(join(dir, "dom", "src", "lib.js"))})).run());`]).trim();
@@ -543,7 +541,6 @@ fn a() -> u32 {
 `);
   writeFileSync(join(dir, "a.js"), "export function a() {\n  return 1;\n}\n");
   mkdirSync(join(dir, "node_modules", "@rust-js"), { recursive: true });
-  symlinkSync(runtimeDir, join(dir, "node_modules", "@rust-js", "runtime"), "dir");
   symlinkSync(stdDir, join(dir, "node_modules", "@rust-js", "std"), "dir");
   const js = () => readFileSync(join(dir, "dom", "src", "lib.js"), "utf8");
   const imported = () => [...js().matchAll(/^import .* from "(.*)";$/gm)].map((line) => line[1]);
@@ -631,7 +628,6 @@ test("imports are in the order of the uses that make them, a binding's and a lib
   writeFileSync(join(dir, "config", "src", "setup.rs"), '#[cfg_attr(rust_js, rust_js::link_name = "./mark.js#mark")]\nfn mark() -> u32 {\n    unreachable!()\n}\n\npub fn make() -> u32 {\n    mark() * 2\n}\n');
   mkdirSync(join(dir, "node_modules", "@rust-js"), { recursive: true });
   for (const name of ["server", "config"]) symlinkSync(join(dir, name), join(dir, "node_modules", name), "dir");
-  symlinkSync(runtimeDir, join(dir, "node_modules", "@rust-js", "runtime"), "dir");
   symlinkSync(stdDir, join(dir, "node_modules", "@rust-js", "std"), "dir");
   const lib = join(dir, "dom", "src", "lib.js");
   const imported = () => [...readFileSync(lib, "utf8").matchAll(/^import .* from "(.*)";$/gm)].map((line) => line[1]);
@@ -719,7 +715,6 @@ pub fn run() {
     writeFileSync(join(dir, name, "src", "lib.rs"), source);
   }
   mkdirSync(join(dir, "node_modules", "@rust-js"), { recursive: true });
-  symlinkSync(runtimeDir, join(dir, "node_modules", "@rust-js", "runtime"), "dir");
   symlinkSync(stdDir, join(dir, "node_modules", "@rust-js", "std"), "dir");
   // What native Rust prints of the three crates.
   const native = join(dir, "native");

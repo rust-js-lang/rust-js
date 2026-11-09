@@ -3,7 +3,7 @@
 /** Where the app is: its URL's hash, `#/contacts/2`, followed as it changes. */
 
 import { useEffect, useState } from "react";
-import { $parseInt, $stripPrefix } from "@rust-js/runtime";
+import { $parseInt, $stripPrefix } from "@rust-js/std";
 
 export function parse(hash) {
   const path = $stripPrefix(hash, "#") ?? hash;

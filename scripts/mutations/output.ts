@@ -28,7 +28,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "package-specifier-linked",
-    breaks: "a package's specifier, `@rust-js/runtime`, is a link to a file beside the module that isn't there",
+    breaks: "a package's specifier, `@rust-js/std`, is a link to a file beside the module that isn't there",
     file: "src/output.rs",
     find: "        .filter(|(_, _, specifier)| crate::program::is_relative_specifier(specifier))\n",
     replace: "",
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "runtime-import-missing",
-    breaks: "a module compiled against @rust-js/runtime calls its helpers, and neither defines nor imports them",
+    breaks: "a module compiled against @rust-js/std calls its helpers, and neither defines nor imports them",
     file: "src/output.rs",
     find: "        js_module.helpers = crate::runtime::imported_helpers(helper_sources, &js_module.read_vars());\n",
     replace: "",

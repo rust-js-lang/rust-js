@@ -19,7 +19,7 @@ import {
   $json,
   $sortedEntries,
   $sortedKeys,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 function orderDeserialize_deserialize(json) {
   return json.struct(

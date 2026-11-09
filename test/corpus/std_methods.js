@@ -11,7 +11,7 @@ import {
   $displayF64,
   $print,
   $sortedEntries,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

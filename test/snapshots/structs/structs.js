@@ -2,7 +2,7 @@
 
 // Structs and tuples: plain JS objects and arrays (ADR 0020).
 
-import { $div, $rem, $unwrap } from "@rust-js/runtime";
+import { $div, $rem, $unwrap } from "@rust-js/std";
 
 export function point(x, y) {
   return { x, y };

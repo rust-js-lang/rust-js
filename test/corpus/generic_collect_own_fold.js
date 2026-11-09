@@ -9,7 +9,7 @@ import {
   $iterator,
   $reserveHint,
   $roomForHint,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

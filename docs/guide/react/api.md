@@ -382,7 +382,7 @@ pub fn App() -> JSX::Element {
 
 ```jsx
 import { Profiler } from "react";
-import { $displayF64 } from "@rust-js/runtime";
+import { $displayF64 } from "@rust-js/std";
 
 export function App() {
   return (

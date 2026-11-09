@@ -6,7 +6,7 @@
 
 import { createRoot } from "react-dom/client";
 import { useState } from "react";
-import { $unwrap } from "@rust-js/runtime";
+import { $unwrap } from "@rust-js/std";
 
 export function Counter() {
   const [count, setCount] = useState(0);

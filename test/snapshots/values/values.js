@@ -15,7 +15,7 @@ import {
   $max,
   $next,
   $sortedEntries,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export const Value = {
   get(value, key) {

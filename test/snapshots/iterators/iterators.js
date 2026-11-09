@@ -4,16 +4,7 @@
 // are the array's methods, and `Ordering` is -1, 0 or 1, as a comparator
 // returns it.
 
-import {
-  $byteLen,
-  $cmp,
-  $lazyRange,
-  $max,
-  $min,
-  $position,
-  $range,
-  $roomFor,
-} from "@rust-js/runtime";
+import { $byteLen, $cmp, $lazyRange, $max, $min, $position, $range, $roomFor } from "@rust-js/std";
 
 export function squares(n) {
   $roomFor(n, 4);

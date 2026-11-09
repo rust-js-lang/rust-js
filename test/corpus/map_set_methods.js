@@ -31,7 +31,7 @@ import {
   $treeEnd,
   $treeRange,
   $treeSplitOff,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 const tuplePartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: $eq }),

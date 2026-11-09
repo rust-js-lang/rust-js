@@ -9,7 +9,7 @@ import {
   $entryRemove,
   $sortedEntries,
   $vacantInsert,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

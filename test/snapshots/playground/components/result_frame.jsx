@@ -12,7 +12,7 @@ import { HEADING } from "../styles.js";
 
 // The frame's report, which frame-report.js reads.
 import { readReport } from "../../frame-report.js";
-import { $displayF64, $f64Max, $f64Min } from "@rust-js/runtime";
+import { $displayF64, $f64Max, $f64Min } from "@rust-js/std";
 
 export function ResultFrame({ program, onOutcome }) {
   const frame = useRef(undefined);

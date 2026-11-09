@@ -6,7 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, installRuntime, run, target } from "./support";
+import { buildReact, compiler, fixture, installStd, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -1193,7 +1193,7 @@ pub fn make(dev: bool) -> SharedStateClient {
   expect(js).toContain("const internals = { H: null };");
   expect(js).not.toContain("{}.value");
   expect(js).not.toContain("$dispose");
-  installRuntime(dir);
+  installStd(dir);
   const lib = await import(join(dir, "lib.js"));
   const prod = lib.make(false);
   const dev = lib.make(true);

@@ -10,7 +10,7 @@ import {
   $displayF64,
   $index,
   $mutItems,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

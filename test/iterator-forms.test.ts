@@ -271,7 +271,7 @@ test("a build of std's iterator structs makes no adapter in place", () => {
   const compiled = compileJs(file, dir, "2024", false, {}, ["--std-iterators"]);
   if (!("js" in compiled)) throw new Error(compiled.error);
   const js = readFileSync(compiled.js, "utf8");
-  expect(js).toContain('from "@rust-js/std/iter.js"');
+  expect(js).toMatch(/^\} from "@rust-js\/std";$/m);
   expect(js).not.toContain(".map(");
 });
 

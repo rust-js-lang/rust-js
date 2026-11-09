@@ -3,7 +3,7 @@
 // `Option`: `Some(x)` is `x` itself and `None` is `undefined`, as in
 // ReScript (ADR 0030). A JS `null` counts as `None` too.
 
-import { $eq, $unwrap } from "@rust-js/runtime";
+import { $eq, $unwrap } from "@rust-js/std";
 
 export function half(n) {
   if (n % 2 === 0) {

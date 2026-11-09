@@ -8,7 +8,7 @@ import {
   $foldToArray,
   $iter,
   $next,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 const firstLoud = (arg0) => first(arg0, loudDrop_drop);
 

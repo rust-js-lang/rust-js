@@ -98,11 +98,26 @@ export function examplesManifest() {
 /** The stylesheets a program may import (ADR 0028): TodoMVC's look. */
 const STYLES = ["todomvc-common/base.css", "todomvc-app-css/index.css"];
 
-/** What a program may import of the page's: React's modules, and stylesheets. */
+/** What a program may import of the page's: `@rust-js/std`'s modules,
+ * React's, and stylesheets. */
 export async function framePackages(): Promise<{ modules: Record<string, string>; styles: Record<string, string> }> {
   const require = createRequire(import.meta.path);
   const styles = Object.fromEntries(STYLES.map((specifier) => [specifier, readFileSync(require.resolve(specifier), "utf8")]));
-  return { modules: await reactModules(), styles };
+  return { modules: { ...stdModules(), ...(await reactModules()) }, styles };
+}
+
+/**
+ * `@rust-js/std`, what the JS rust-js writes imports (ADRs 0103, 0561):
+ * each of the package's modules by its path in it, as the page installed
+ * it. A program's `"@rust-js/std"` names its entry, `@rust-js/std/index.js`,
+ * whose `./runtime.js` is the package's own, as Node resolves them.
+ */
+function stdModules(): Record<string, string> {
+  const manifest = createRequire(import.meta.path).resolve("@rust-js/std/package.json");
+  const { files } = JSON.parse(readFileSync(manifest, "utf8")) as { files: string[] };
+  return Object.fromEntries(
+    files.filter((file) => file.endsWith(".js")).map((file) => [`@rust-js/std/${file}`, readFileSync(join(dirname(manifest), file), "utf8")]),
+  );
 }
 
 /** The specifiers of React's a program imports, each a module of the bundle's. */
@@ -151,8 +166,6 @@ export function playgroundFiles(): Plugin {
     const name = path.match(/^\/sysroot\/([^/]+)$/)?.[1];
     if (name && sysroot.includes(name)) return { file: join(sysrootDir, name) };
     if (crateFiles.includes(path)) return { file: join(cratesDir, path.slice("/crates/".length)) };
-    // What the programs it compiles import (ADR 0103).
-    if (path === "/runtime.js") return { file: join(import.meta.dir, "../../runtime/index.js") };
     if (path === "/packages.json") return { json: packages };
     if (path === "/examples.json") return { json: examplesManifest() };
     // Only files an example lists: never an arbitrary path.
@@ -163,7 +176,7 @@ export function playgroundFiles(): Plugin {
   }
   // Every path the build needs, for `generateBundle`.
   function all(): string[] {
-    const paths = ["/rust-js.wasm", "/sysroot.json", ...crateFiles, "/runtime.js", "/packages.json", "/examples.json"];
+    const paths = ["/rust-js.wasm", "/sysroot.json", ...crateFiles, "/packages.json", "/examples.json"];
     paths.push(...sysrootFiles().map((name) => `/sysroot/${name}`));
     for (const example of examples()) paths.push(...example.files.map((file) => `/examples/${example.name}/${file}`));
     return paths;

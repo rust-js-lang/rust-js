@@ -671,12 +671,13 @@ function unitTest(binary: string, filter: string, mutant = ""): Promise<Exit> {
   return run([binary, filter], root, testTimeout, { RUST_JS_MUTANT: mutant });
 }
 
-/** `own`, a mutant's tests' target, given the `@rust-js/runtime` `compiler`
- * writes, where it isn't the checkout's: the JS imports its helpers from
- * the package (ADR 0103), so a helper's mutation is the package's too. It
- * is the target's own, as the compiler is the mutant's own, and every
- * program its tests write there imports it. So the mutant's tests run
- * beside any others, and the checkout's `runtime/index.js` is never
+/** `own`, a mutant's tests' target, given the helpers' module `compiler`
+ * writes, `@rust-js/std`'s `runtime.js`, where it isn't the checkout's: the
+ * JS imports its helpers from the package (ADR 0103), so a helper's
+ * mutation is the package's too. It is the target's own, as the compiler
+ * is the mutant's own, and every program its tests write there imports it.
+ * So the mutant's tests run beside any others, and the checkout's
+ * `std/runtime.js` is never
  * rewritten: a `check:fast` beside them read the mutant's (#720). One that
  * writes none, as the control that compiles nothing, runs with the
  * checkout's. One whose runtime couldn't be asked is that ask's exit, which
@@ -685,11 +686,11 @@ function unitTest(binary: string, filter: string, mutant = ""): Promise<Exit> {
 async function ownRuntime(compiler: string, own: string): Promise<Exit | undefined> {
   const written = await runtimeOf(compiler);
   if (typeof written !== "string") return written;
-  if (written !== "" && written !== readFileSync(join(root, "runtime", "index.js"), "utf8")) installPackages(own, written);
+  if (written !== "" && written !== readFileSync(join(root, "std", "runtime.js"), "utf8")) installPackages(own, written);
   return undefined;
 }
 
-/** The `@rust-js/runtime` `compiler` writes, or none (`""`), or, where it
+/** The helpers' module `compiler` writes, or none (`""`), or, where it
  * couldn't be asked, the exit of the last ask: asked once of each, and never
  * in a way that stops the run, as a `runSync` of each of 8,000 mutants' did,
  * its tests waiting while it was asked. An ask killed by a signal is asked

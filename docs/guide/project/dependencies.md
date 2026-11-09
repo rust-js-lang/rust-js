@@ -69,7 +69,7 @@ pub fn read_index() -> Result<String, &'static JsError> {
 
 ```js
 import { readFileSync } from "fs";
-import { $try } from "@rust-js/runtime";
+import { $try } from "@rust-js/std";
 
 export function readIndex() {
   const root = process.cwd() + "/content";
@@ -196,7 +196,7 @@ pub fn to_json(contact: &Contact) -> String {
 ```
 
 ```js
-import { $toJson } from "@rust-js/runtime";
+import { $toJson } from "@rust-js/std";
 
 function contactSerialize_serialize(contact, json) {
   json.beginObject();
@@ -392,8 +392,8 @@ import { level } from "shared/src/flags";
 ## Versions
 
 - **rust-js's own packages are one version**: `@rust-js/build`,
-  `@rust-js/native`, `@rust-js/runtime` and `@rust-js/std`. `rust-js build`
-  refuses a runtime of another version than its compiler.
+  `@rust-js/native` and `@rust-js/std`. `rust-js build` refuses a
+  `@rust-js/std` of another version than its compiler.
 - **Each binding crate has its own version**, the same in Cargo and on
   npm: `rust-js-react` 0.0.4 is `@rust-js/react` 0.0.4. Name it `~0.0.4` in
   `Cargo.toml` and `0.0.4` in `package.json`.

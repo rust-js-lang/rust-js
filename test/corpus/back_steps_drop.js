@@ -9,7 +9,7 @@ import {
   $lent,
   $nthBack,
   $slicing,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

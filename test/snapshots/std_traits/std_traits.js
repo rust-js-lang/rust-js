@@ -33,7 +33,7 @@ import {
   $some,
   $thenCmp,
   $traitImpl,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 const semverPartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: $eq }),

@@ -88,9 +88,9 @@ export function budgetOf(table: Picking, parts: number): number {
   return Math.max(1_000, Math.floor(rowsPerPart(table) * parts * seconds[table]));
 }
 
-/** What names nothing of its own: the runtime's module, generated of
+/** What names nothing of its own: the helpers' module, generated of
  * src/runtime, and the tests and scripts, which run as they are. */
-const unnamed = (file: string) => file === "runtime/index.js" || file.startsWith("test/") || file.startsWith("scripts/");
+const unnamed = (file: string) => file === "std/runtime.js" || file.startsWith("test/") || file.startsWith("scripts/");
 
 const keywords = new Set(
   "as async await break case catch const continue crate default do dyn else enum export extern false fn for function if impl import in let loop match mod move mut new of pub ref return self static struct super this throw trait true try type typeof undefined unsafe use var where while yield".split(

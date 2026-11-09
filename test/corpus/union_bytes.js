@@ -8,7 +8,7 @@ import {
   $toBytes,
   $unionField,
   $unionSet,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

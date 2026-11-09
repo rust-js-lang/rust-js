@@ -16,7 +16,7 @@ runs:
         node-version: '24'
     # rust-js loads the toolchain's rustc at run time, and each test's native
     # side is built with it, so every job needs it, built or not.
-    # What each case's JS imports: @rust-js/runtime, the workspace's (ADR 0103).
+    # What each case's JS imports: @rust-js/std, the workspace's (ADR 0103).
     - name: Install the packages
       shell: bash
       run: bun install --frozen-lockfile

@@ -16,7 +16,7 @@ import {
   $slice,
   $splitBy,
   $toDigit,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function chars(c) {
   return [

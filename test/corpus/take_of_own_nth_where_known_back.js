@@ -15,7 +15,7 @@ import {
   $nthDropping,
   $rev,
   $taking,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

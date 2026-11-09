@@ -989,7 +989,7 @@ pub fn copies(items: &[Loud]) -> Vec<Loud> {
 ```
 
 ```js
-import { $madeEach, $madeInTurn } from "@rust-js/runtime";
+import { $madeEach, $madeInTurn } from "@rust-js/std";
 
 export const loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
 function loudClone_clone(loud) {
@@ -1098,7 +1098,7 @@ import {
   $dropEach,
   $dropItems,
   $sortedEntries,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export const loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
 function loudClone_clone(loud) {
@@ -1340,8 +1340,8 @@ that failure shows without its type's name.
 being `shapes.js`, or `.jsx` with JSX in it
 ([0019](../decisions/0019-one-js-file-per-module.md),
 [0073](../decisions/0073-named-module-imports.md)). Each imports the runtime
-helpers it uses from `@rust-js/runtime`, which must be the compiler's
-version ([0103](../decisions/0103-runtime-package.md)).
+helpers it uses, and std's bodies, from `@rust-js/std`, which must be the
+compiler's version ([0103](../decisions/0103-runtime-package.md)).
 
 What JS sees of a crate:
 

@@ -42,7 +42,7 @@ pub fn fail(message: &str) -> ! {
 ```
 
 ```js
-import { $debugParseError, $div, $index, $parseInt, $unwrapOk } from "@rust-js/runtime";
+import { $debugParseError, $div, $index, $parseInt, $unwrapOk } from "@rust-js/std";
 
 export function third(items) {
   return $index(items, 2);
@@ -104,7 +104,7 @@ pub fn must(text: &str) -> u32 {
 ```
 
 ```js
-import { $debugStr, $parseInt, $unwrapOk } from "@rust-js/runtime";
+import { $debugStr, $parseInt, $unwrapOk } from "@rust-js/std";
 
 function parseErrorDebug_fmt(parseError) {
   if (parseError === "Empty") {
@@ -201,7 +201,7 @@ pub fn has_config(path: &str) -> bool {
 
 ```js
 import { loadConfig } from "./config.js";
-import { $byteLen, $trim, $try, $unwrapOk } from "@rust-js/runtime";
+import { $byteLen, $trim, $try, $unwrapOk } from "@rust-js/std";
 
 export function configOrDefault(path) {
   try {
@@ -414,7 +414,7 @@ pub fn record(log: &RefCell<Vec<String>>) {
 ```
 
 ```js
-import { $borrow, $borrowMut, $unborrow } from "@rust-js/runtime";
+import { $borrow, $borrowMut, $unborrow } from "@rust-js/std";
 
 export function record(log) {
   const entries = $borrow(log, true);
@@ -446,7 +446,7 @@ pub fn checked_add(a: u8, b: u8) -> Option<u8> {
 ```
 
 ```js
-import { $checked } from "@rust-js/runtime";
+import { $checked } from "@rust-js/std";
 
 export function add(a, b) {
   return (a + b) & 255;
@@ -484,7 +484,7 @@ pub fn check(items: &[u32], expected: u32) {
 ```
 
 ```js
-import { $assertFailed } from "@rust-js/runtime";
+import { $assertFailed } from "@rust-js/std";
 
 export function pick(n) {
   switch (n % 3) {
@@ -640,7 +640,7 @@ pub fn text(value: &Unknown) -> String {
 ```
 
 ```js
-import { $index, $panicMessage, $unwound } from "@rust-js/runtime";
+import { $index, $panicMessage, $unwound } from "@rust-js/std";
 
 export function url(value) {
   try {
@@ -1026,7 +1026,7 @@ pub fn stop() {
 ```
 
 ```js
-import { $exit } from "@rust-js/runtime";
+import { $exit } from "@rust-js/std";
 
 export function stop() {
   $exit(2);

@@ -13,7 +13,7 @@ import { join, relative } from "node:path";
 
 import { markUsed, mayKeep, verifiedRuns } from "./kept";
 import { node } from "./programs";
-import { root, run, runtimeDir, stdDir } from "./support";
+import { root, run, stdDir } from "./support";
 
 /** A key of `parts`, in their order, each whole: `["ab", "c"]` is not
  * `["a", "bc"]`. */
@@ -63,15 +63,14 @@ export function generatedTexts(dir: string, except: string[] = []): string[] {
   );
 }
 
-/** What every case's runs share: the runtime modules, `@rust-js/runtime`'s
- * and `@rust-js/std`'s; the harness, from compiling to comparing; and
+/** What every case's runs share: `@rust-js/std`'s modules; the harness, from compiling to comparing; and
  * Node's version, Bun's, and Vite's, which bundles the JS as shipped.
  * Read once. */
 let sharedKey: string | undefined;
 export function shared(): string {
   if (sharedKey === undefined) {
     const harness = ["corpus.test.ts", "corpus-cases.ts", "corpus-run.ts", "oracle.ts", "programs.ts", "child.ts", "verified-runs.ts"].map((file) => join(root, "test", file));
-    const files = [...jsFiles(runtimeDir), ...jsFiles(stdDir), ...harness];
+    const files = [...jsFiles(stdDir), ...harness];
     const vite = JSON.parse(readFileSync(join(root, "node_modules", "vite", "package.json"), "utf8")).version;
     sharedKey = runKey([
       `node ${run([node ?? "node", "--version"]).trim()}`,

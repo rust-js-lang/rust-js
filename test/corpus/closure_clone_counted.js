@@ -10,7 +10,7 @@ import {
   $index,
   $rcClone,
   $rcDrop,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

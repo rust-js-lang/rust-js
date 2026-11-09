@@ -20,7 +20,7 @@ import {
   $sortedEntries,
   $sortedKeys,
   $treeFromSorted,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 const noisyPartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: $eq }),

@@ -9,7 +9,7 @@ import {
   $partialEq,
   $partialOrd,
   $partiallyOrdered,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 const sizePartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: (a, b) => a === b }),

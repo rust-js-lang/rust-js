@@ -305,7 +305,7 @@ pub fn TodoList() -> JSX::Element {
 ```jsx
 // src/todos.jsx
 import { useEffect, useReducer, useState } from "react";
-import { $retain, $trim } from "@rust-js/runtime";
+import { $retain, $trim } from "@rust-js/std";
 
 function reduce(todos, action) {
   const next = { ...todos, items: todos.items.map((item) => ({ ...item })) };
@@ -415,7 +415,7 @@ What each part became:
   `e.value()` is the input's `e.target.value`.
 - **`webapi` is the DOM.** `document.set_title(..)` is
   `document.title = ..`. See [The crates rust-js ships](../libraries/README.md).
-- **`@rust-js/runtime` holds what Rust does that JS doesn't**, imported
+- **`@rust-js/std` holds what Rust does that JS doesn't**, imported
   where it's used: `$retain` is `Vec::retain`, and `$trim` is `str::trim`,
   which trims what Rust calls whitespace. See
   [Semantics](../semantics.md).

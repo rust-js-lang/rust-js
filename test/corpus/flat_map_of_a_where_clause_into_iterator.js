@@ -16,7 +16,7 @@ import {
   $nthDropping,
   $roomForHint,
   $traitImpl,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

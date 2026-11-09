@@ -14,7 +14,7 @@ import {
   $sortStable,
   $toFixed,
   $unwrap,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export const minStockRule = { name: minStockRule_name, check: minStockRule_check };
 function minStockRule_name(minStock) {

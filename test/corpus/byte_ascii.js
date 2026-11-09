@@ -8,7 +8,7 @@ import {
   $lent,
   $rangeInclusiveNextBack,
   $unwrapOk,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 export function entry() {
   main();

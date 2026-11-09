@@ -2,7 +2,7 @@
 
 Each release of rust-js's compiler and the packages released with it, at its
 version: `@rust-js/native`, `@rust-js/build`, `@rust-js/typescript`,
-`@rust-js/runtime`, `@rust-js/create`, `@rust-js/react` and `@rust-js/next`
+`@rust-js/std`, `@rust-js/create`, `@rust-js/react` and `@rust-js/next`
 ([ADR 0120](docs/decisions/0120-first-npm-release.md)). `@rust-js/builtins`,
 `@rust-js/webapi` and `@rust-js/node` are released on their own, each at its
 version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
@@ -11,13 +11,15 @@ version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 
 For macOS on Apple silicon, with Rust 1.99.0, from 1.98.1. `@rust-js/builtins`
 is 0.0.2 and `@rust-js/webapi` 0.0.3, each its own release (ADR 0116). New
-with it: `@rust-js/std`, std's own bodies compiled to JS, which the JS
-rust-js writes imports as it imports `@rust-js/runtime`, so an app installs
-both (ADR 0561); `@rust-js/typescript`, which prints each module's `.d.ts` with
-TypeScript 7.1.0-beta, a beta, pinned (ADR 0206);
-`@rust-js/next`, Next.js's crate, at 0.0.4; and `@rust-js/node`, Node.js's,
-at its own 0.0.1. `@rust-js/vite-plugin` and `@rust-js/resources` aren't
-released any more: `rust-js build` is the one way to build an app.
+with it: `@rust-js/std`, the one package the JS rust-js writes imports,
+`import { $unwrap, peekableIterator_next } from "@rust-js/std"`: the helpers
+`@rust-js/runtime` had, and std's own bodies compiled to JS (ADRs 0103,
+0561); `@rust-js/typescript`, which prints each module's `.d.ts` with
+TypeScript 7.1.0-beta, a beta, pinned (ADR 0206); `@rust-js/next`, Next.js's
+crate, at 0.0.4; and `@rust-js/node`, Node.js's, at its own 0.0.1.
+`@rust-js/runtime`, `@rust-js/vite-plugin` and `@rust-js/resources` aren't
+released any more: `@rust-js/std` is the one package of what the JS
+imports, and `rust-js build` the one way to build an app.
 
 ### New
 
@@ -1259,8 +1261,8 @@ names it:
 
 1. Install Rust 1.99.0, which rust-js 0.0.4 runs with:
    `rustup toolchain install 1.99.0 --profile minimal --target wasm32-unknown-unknown`.
-2. In `package.json`, set `@rust-js/runtime` and `@rust-js/react` to `0.0.4`
-   in `dependencies`, `@rust-js/builtins` to `0.0.2` and `@rust-js/webapi`
+2. In `package.json`, replace `@rust-js/runtime` with `@rust-js/std`, and
+   set it and `@rust-js/react` to `0.0.4` in `dependencies`, `@rust-js/builtins` to `0.0.2` and `@rust-js/webapi`
    to `0.0.3`, and `@rust-js/native` and `@rust-js/build` to `0.0.4` in
    `devDependencies`. Remove `@rust-js/vite-plugin`, and the `postinstall`,
    `rust-js-patch`. Make the `build` script `rust-js build --check && vite

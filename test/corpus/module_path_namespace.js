@@ -4,7 +4,7 @@ import { name } from "./plugin.js";
 import * as Plugin from "./plugin.js";
 import * as Other from "./other.js";
 import * as Nested from "./plugin/nested.js";
-import { $debugStr } from "@rust-js/runtime";
+import { $debugStr } from "@rust-js/std";
 
 export function entry() {
   main();

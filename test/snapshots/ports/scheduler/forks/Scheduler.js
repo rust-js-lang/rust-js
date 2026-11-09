@@ -21,7 +21,7 @@ import {
   NormalPriority,
   UserBlockingPriority,
 } from "../SchedulerPriorities.js";
-import { $cleanup } from "@rust-js/runtime";
+import { $cleanup } from "@rust-js/std";
 
 let getCurrentTime;
 if (typeof performance !== "undefined" && typeof performance.now !== "undefined") {

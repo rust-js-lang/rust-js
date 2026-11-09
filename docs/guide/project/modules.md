@@ -175,7 +175,7 @@ of what it names for the module's own code where no other `use` does,
 source names neither way, of what's read by its path, comes after,
 packages then relative modules, each by its specifier; then imports for
 their effect, as written; then
-`@rust-js/runtime`: each of these right after the last import a `use`
+`@rust-js/std`: each of these right after the last import a `use`
 places, or first, not after a `pub use` written below the code
 ([ADR 1063](../../decisions/1063-imports-are-in-the-order-of-their-uses.md),
 which replaces [ADR 0295](../../decisions/0295-import-order.md)'s order).
@@ -660,7 +660,7 @@ pub fn install(dispatcher: u32) {
 ```js
 // src/internals.js
 import * as React from "react";
-import { $unwrap } from "@rust-js/runtime";
+import { $unwrap } from "@rust-js/std";
 
 const ReactSharedInternalsServer = $unwrap(
   React.__SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE,
@@ -1498,7 +1498,7 @@ pub fn unknown_owner() -> &'static js::Error {
 ```
 
 ```js
-import { $displayF64 } from "@rust-js/runtime";
+import { $displayF64 } from "@rust-js/std";
 
 /** @noinline */
 function testStringCoercion(value) {
@@ -1542,7 +1542,7 @@ To share one on npm ([ADR 0414](../../decisions/0414-a-library-on-npm-as-rescrip
   `@acme/greet`, and another module's by its file, `@acme/greet/src/util.js`,
   and `rust-js build` refuses one whose `exports` hide that, saying what to
   export ([ADR 1008](../../decisions/1008-what-a-packages-entry-re-exports-is-imported-by-its-name.md)).
-- **Depend on `@rust-js/runtime`** where its JS imports it, as any package
+- **Depend on `@rust-js/std`** where its JS imports it, as any package
   depends on what it imports.
 
 Its consumers:

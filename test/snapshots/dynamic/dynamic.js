@@ -34,7 +34,7 @@ import {
   $toJsonValue,
   $unwrap,
   $unwrapOk,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 function recordSerialize_serialize(record, json) {
   json.beginObject();

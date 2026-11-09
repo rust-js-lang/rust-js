@@ -27,7 +27,7 @@ pub fn describe(text: &str) -> String {
 
 ```js
 import { Either } from "../rust-js/crates/either-1.15.0/src/lib.js";
-import { $parseInt } from "@rust-js/runtime";
+import { $parseInt } from "@rust-js/std";
 
 export function parse(text) {
   const parse = $parseInt(text, 0, 4294967295);
@@ -137,7 +137,7 @@ pub fn counts(words: &[&str]) -> indexmap::IndexMap<String, u32> {
 ```
 
 ```js
-import { $memchr, $orInsert } from "@rust-js/runtime";
+import { $memchr, $orInsert } from "@rust-js/std";
 
 export function firstComma(text) {
   return $memchr(text, [44]);

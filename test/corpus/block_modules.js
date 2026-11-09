@@ -3,7 +3,7 @@
 import * as Names$1 from "./names$1.js";
 import * as Names$2 from "./names$2.js";
 import * as Names from "./names.js";
-import { $debugStr } from "@rust-js/runtime";
+import { $debugStr } from "@rust-js/std";
 
 export function entry() {
   main();

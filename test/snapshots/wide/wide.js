@@ -36,7 +36,7 @@ import {
   $tryFromInt,
   $unwrapErr,
   $unwrapOk,
-} from "@rust-js/runtime";
+} from "@rust-js/std";
 
 /** An ID of a millisecond, a worker and a sequence, packed in 64 bits. */
 function idDebug_fmt(id) {
