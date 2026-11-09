@@ -56,6 +56,13 @@ pub struct Counted<'tcx> {
     /// where the crate reads a `dyn Fn`'s address, of an `Rc` made a `dyn
     /// Fn`: each a function of its own where it's given it (#1053).
     pub rc_new_apart: IndexSet<Ty<'tcx>>,
+    /// The closures a reference to which, or to a type parameter's value
+    /// (`lent_any`), the crate makes a `&dyn Fn` or a pointer to one, where
+    /// it reads a `dyn Fn`'s address (`points_at_functions`): its JS
+    /// function is its place, which a pointer tells from a copy's, so each
+    /// copy of one is a function of its own (`copied_apart`, #1090).
+    pub lent_apart: IndexSet<Ty<'tcx>>,
+    pub lent_any: bool,
     /// Of `apart`, each `Rc` or `Arc` of what's no closure, a `fn` pointer
     /// or item, whose `Rc` the crate may clone, or upgrade a `Weak` to,
     /// before it's unsized: two of one allocation would be two functions,
@@ -121,6 +128,13 @@ impl<'tcx> Counted<'tcx> {
     /// there (`rc_new_apart`, #1053)?
     pub fn own_function_given(&self, tcx: TyCtxt<'tcx>, closure: Ty<'tcx>) -> bool {
         self.rc_new_apart.contains(&tcx.erase_and_anonymize_regions(closure))
+    }
+
+    /// Is `closure`, a closure's type, one whose copy is a place a pointer
+    /// tells apart from the original (`lent_apart`, #1090)?
+    pub fn copied_apart(&self, tcx: TyCtxt<'tcx>, closure: Ty<'tcx>) -> bool {
+        self.points_at_functions
+            && (self.lent_any || self.lent_apart.contains(&tcx.erase_and_anonymize_regions(closure)))
     }
 
     /// Is `owner`, an `Rc` or an `Arc` unsized to a `dyn Fn` a function of
@@ -280,6 +294,9 @@ pub(super) fn counted_rcs<'tcx>(
     // clones: what else may be one JS function given it twice.
     let (mut copied, mut cloned): (IndexSet<Ty<'tcx>>, IndexSet<Ty<'tcx>>) = (IndexSet::default(), IndexSet::default());
     let mut points_at_functions = false;
+    // The closures a reference to which is made a `&dyn Fn`, and whether a
+    // type parameter's value's is (#1090).
+    let (mut lent, mut lent_any): (IndexSet<Ty<'tcx>>, bool) = (IndexSet::default(), false);
     let fn_dyn = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Dynamic(predicates, ..) if is_fn_dyn(tcx, predicates));
     // Each `Box`, `Rc` and `Arc` made a `dyn Fn`, and what it's made of.
     let mut unsized_fns: IndexSet<(Ty<'tcx>, Ty<'tcx>, Ty<'tcx>)> = IndexSet::default();
@@ -368,6 +385,21 @@ pub(super) fn counted_rcs<'tcx>(
                     };
                 }
                 made_others.insert((erased(from), erased(to)));
+            }
+            // A reference to a closure, or to a type parameter's value, made
+            // a `&dyn Fn` or a pointer to one: a pointer to it is to its own
+            // place, apart from a copy's (#1090). Not a `Box`'s, below.
+            if let ExprKind::PointerCoercion { source, .. } = expr.kind
+                && let from_ty = body.thir[source].ty
+                && (from_ty.is_ref() || from_ty.is_raw_ptr())
+                && let (Some(from), Some(to)) = (from_ty.builtin_deref(true), expr.ty.builtin_deref(true))
+                && fn_dyn(to)
+            {
+                match from.kind() {
+                    ty::Closure(..) => _ = lent.insert(erased(from)),
+                    ty::Param(..) | ty::Alias(..) => lent_any = true,
+                    _ => {}
+                }
             }
             // A `Box`, an `Rc` or an `Arc` made a `dyn Fn` of a function, by
             // what owns it and what it owns: one of what another may hold
@@ -525,6 +557,8 @@ pub(super) fn counted_rcs<'tcx>(
         points_at_functions,
         apart,
         rc_new_apart,
+        lent_apart: lent,
+        lent_any,
         shared_apart,
         types: counted,
         merges: IndexSet::default(),

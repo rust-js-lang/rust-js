@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "copied-closure-shared",
+    breaks: "a copy of a `Copy` closure that captures something, a reference to which is made a `&dyn Fn` where the crate reads its address, is the same JS function, so `ptr::eq(&c1, &c2)` is `true` where native Rust's is `false` (#1090)",
+    file: "src/lower/copies.rs",
+    find: "            && self.krate.counted.copied_apart(self.tcx, ty)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_closures_compared.rs$"],
+  },
+  {
     name: "array-items-unmutated",
     breaks:
       "an array of `Copy` structs changed in place isn't copied: a copy's item, and a closure's by-value one, change the array they came from",

@@ -117,3 +117,29 @@ pub fn called() -> u32 {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.items(), lib.madeTwice(), lib.generic(), lib.called()]).toEqual([false, false, false, 6]);
 });
+
+// A copy of a `Copy` closure that captures something is a function of its
+// own, `c1.bind()`, only where the crate reads a `dyn Fn`'s address, which
+// tells the copy's place from the original's (#1090, the user's decision);
+// elsewhere the copy is the function, as nothing can tell them apart.
+test("a copy of a capturing closure is a function of its own only where a dyn Fn's address is read", async () => {
+  const dir = fixture("fn-identity-copied-closure");
+  const program = (compared: boolean) => `pub fn copies() -> String {
+    let n = 3;
+    let c1 = move || n + 1;
+    let c2 = c1;
+    ${compared ? "let same = std::ptr::eq(&c1 as &dyn Fn() -> i32, &c2 as &dyn Fn() -> i32);" : "let same = false;"}
+    format!("{} {}", same, c1() + c2())
+}
+`;
+  writeFileSync(join(dir, "lib.rs"), program(true));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const compared = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(compared).toContain("const c2 = c1.bind();");
+  expect((await import(join(dir, "lib.js"))).copies()).toBe("false 8");
+  writeFileSync(join(dir, "lib.rs"), program(false));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "plain.js")]);
+  const plain = readFileSync(join(dir, "plain.js"), "utf8");
+  expect(plain).not.toContain(".bind()");
+  expect(plain).toContain("const c2 = c1;");
+});

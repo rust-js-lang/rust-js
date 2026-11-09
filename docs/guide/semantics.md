@@ -325,7 +325,14 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   ([0959](../decisions/0959-ptr-eq-of-a-closure-made-with-its-rc.md),
   amended, the user's decision). Two boxes of a value of no size are
   apart too, where Rust's, which allocate nothing, compare equal: Rust
-  promises no address of one (difference 48).
+  promises no address of one (difference 48). And a copy of a `Copy`
+  closure that captures something, a reference to which the crate makes a
+  `&dyn Fn` there, or generic code makes one of a type parameter's value,
+  is a function of its own, `const c2 = c1.bind();`, as the copy is a
+  place of its own to Rust, so `ptr::eq(&c1 as &dyn Fn(), &c2)` is `false`
+  as Rust's is; elsewhere a copy is the function
+  ([0959](../decisions/0959-ptr-eq-of-a-closure-made-with-its-rc.md),
+  amended, #1090, the user's decision).
   `==` of two `Rc`s of an `Eq` value whose `==` is the crate's asks that
   `===` first, `a === b || eq(a, b)`, as std's specialization does, so
   `a == a.clone()` calls no `eq`; of an `Rc` of a fieldless enum with an

@@ -256,3 +256,35 @@ pin. Mutations `allocations-an-instance-makes-unseen`,
 `rc-new-function-drop-lost`, `own-function-of-no-arguments`
 (`traits/dyns.ts`), `rc-new-closure-shared` and
 `rc-new-closure-own-uncounted` (`std_types/values.ts`).
+
+## Amendment: a copy of a closure lent as a `&dyn Fn` is a function of its own (#1090, the user's decision)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, the results changed.
+A closure's JS function is its place: `&c1 as &dyn Fn()` is `c1`, and two
+pointers to it compare by the function's identity. A copy of a `Copy`
+closure that captures something, `let c2 = c1;`, was the same function, so
+`ptr::eq(&c1 as &dyn Fn() -> i32, &c2 as &dyn Fn() -> i32)` was `true`
+where native Rust's is `false`: two places. A closure of no size is the
+function, its address no allocation's, as before.
+
+**Where the crate reads a `dyn Fn`'s address (`points_at_functions`), a
+copy of a capturing `Copy` closure a reference to which it makes a `&dyn
+Fn` or a pointer to one is a function of its own, `const c2 = c1.bind();`**,
+a distinct function that runs as the original, an arrow's `this` being
+none. Which closures: `Counted::copied_apart`, this decision's owner, of
+each a body lends so (`lent_apart`), or any, where generic code lends a
+type parameter's value so (`lent_any`). `copies.rs` copies one as what's
+changed in place is, so a struct's field, a tuple's and each of `[c1;
+3]`'s items is its own too. A `Box`'s or an `Rc`'s closure is no reference
+lent: each is a function of its own where it's unsized already (#1053), so
+`dyn_fn_addresses_of_boxes` and `dyn_fn_addresses_of_rcs` are as they
+were. Every other program's copy is the function, unchanged (the user's
+choice of the options: refusing the comparison, or `.bind()` of every
+copy, were the others).
+
+Held by the corpus cases `copied_closures_compared` and
+`copied_closures_lent_to_generic_code`, against native Rust;
+`test/lowering-fn-identity.test.ts`'s "a copy of a capturing closure is a
+function of its own only where a dyn Fn's address is read", both forms;
+mutations `copied-closure-shared` (`lower/copies.ts`), `lent-closure-unseen`,
+`lent-param-unseen` and `lent-of-a-box` (`lower/analysis/rc_counts.ts`).

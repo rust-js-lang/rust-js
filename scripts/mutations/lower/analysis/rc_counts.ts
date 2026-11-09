@@ -3,6 +3,31 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "lent-closure-unseen",
+    breaks: "a closure a reference to which is made a `&dyn Fn` isn't one whose copies are apart, so `ptr::eq(&c1, &c2)` of a copy is `true` where native Rust's is `false` (#1090)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                    ty::Closure(..) => _ = lent.insert(erased(from)),\n",
+    replace: "                    ty::Closure(..) => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_closures_compared.rs$"],
+  },
+  {
+    name: "lent-param-unseen",
+    breaks: "a type parameter's value lent as a `&dyn Fn` by generic code isn't taken for any closure's, so a copy of one given it compares equal to the original (#1090)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                    ty::Param(..) | ty::Alias(..) => lent_any = true,\n",
+    replace: "                    ty::Param(..) | ty::Alias(..) => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_closures_lent_to_generic_code.rs$"],
+  },
+  {
+    name: "lent-of-a-box",
+    breaks: "a `Box` of a closure made a `dyn Fn` is taken for a reference lent, so its copies are `.bind()` before each is made a function of its own anyway (#1090)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                && (from_ty.is_ref() || from_ty.is_raw_ptr())\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_boxes.rs$"],
+    snapshots: true,
+  },
+  {
     name: "self-handle-upgrade-counts",
     breaks:
       "a closure's upgrade of its handle on itself counts its `Rc`, `{ value, strong, weak }`, where it always gives that `Rc` (ADR 0843, amended)",

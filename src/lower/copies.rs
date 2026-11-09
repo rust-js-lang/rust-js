@@ -99,6 +99,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         )
                     }
                 };
+                // A closure that captures something, where the crate reads a
+                // `dyn Fn`'s address: a function of its own, `f.bind()`, as
+                // the copy is a place of its own to Rust, which a pointer to
+                // it tells apart (`copied_apart`, #1090, the user's decision).
+                if self.copied_apart(ty) {
+                    return Expr::call(Expr::member(place, "bind"), Vec::new());
+                }
                 if let Some(inner) = self.option_of(ty) {
                     if !self.contains_mutated(inner) {
                         return place;
@@ -257,6 +264,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Is `ty` a `Copy` closure that captures something, one of size, a
+    /// reference to which the crate makes a `&dyn Fn` where it reads a `dyn
+    /// Fn`'s address (`Counted::copied_apart`, #1053's owner)? Its JS
+    /// function is its place, so each copy of it is a
+    /// function of its own (`copy`, #1090), and what holds one is copied
+    /// as what holds what's changed in place is. One of no size is the
+    /// function, its address no allocation's, as Rust's is.
+    fn copied_apart(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Closure(..))
+            && self.krate.counted.copied_apart(self.tcx, ty)
+            && !self.has_one_value(ty)
+            && self.is_copy(ty)
+    }
+
     /// Is `ty` a `Copy` closure that changes what it captured? Rust gives
     /// each copy its own captures, where a copy of a JS function is the
     /// function, sharing them (ADR 0246).
@@ -318,6 +339,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         self.is_unknown(ty)
             || self.mutated_itself(ty)
+            || self.copied_apart(ty)
             || match self.shape(ty) {
                 Shape::Object(fields) => fields.iter().any(|&(_, t)| self.contains_mutated(t)),
                 Shape::Array(tys) => tys.iter().any(|&t| self.contains_mutated(t)),
