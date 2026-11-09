@@ -3,6 +3,41 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "range-contains-own-type-refused",
+    breaks: "`contains` of a range of a crate's own `PartialOrd` type, `(Day(1)..=Day(5)).contains(&d)`, is refused",
+    file: "src/lower/std_types/range.rs",
+    find: "                return self.contains_ordered(range, item, range_ty, (index, item_ty), span, out);",
+    replace:
+      "                return Err(self.unsupported(span, &format!(\"`contains` of a `{range_ty}`\")));",
+    tests: ["test/corpus.test.ts", "-t", "^range_contains_of_own_type\\.rs$"],
+  },
+  {
+    name: "range-contains-end-test-unguarded",
+    breaks:
+      "`contains`'s end test, whose bound is made by statements, runs them where the start's test fails too, or drops them",
+    file: "src/lower/std_types/range.rs",
+    find: "            (Some(below), Some(above)) if later.is_empty() => Expr::bin(Op::And, below, above),",
+    replace: "            (Some(below), Some(above)) if true => Expr::bin(Op::And, below, above),",
+    tests: ["test/corpus.test.ts", "-t", "^range_contains_of_own_type\\.rs$"],
+  },
+  {
+    name: "range-contains-inclusive-end-excluded",
+    breaks: "`(Day(1)..=Day(5)).contains(&Day(5))` is `false`, its end excluded",
+    file: "src/lower/std_types/range.rs",
+    find: "                let method = if matches!(kind, RangeKind::Inclusive | RangeKind::ToInclusive) {",
+    replace: "                let method = if matches!(kind, RangeKind::ToInclusive) {",
+    tests: ["test/corpus.test.ts", "-t", "^range_contains_of_own_type\\.rs$"],
+  },
+  {
+    name: "range-contains-stepped-unrefused",
+    breaks:
+      "`contains` of another type's item in a stepped `a..=b` of integers gives its `PartialOrd` the start JS's steps leave past its end",
+    file: "src/lower/std_types/range.rs",
+    find: "        if exhausted.is_some() {",
+    replace: "        if exhausted.is_some() && false {",
+    tests: ["test/corpus.test.ts", "-t", "^range_contains_stepped_of_another_type_refused\\.rs$"],
+  },
+  {
     name: "range-count-unfolded",
     breaks:
       "a range's count of numbers known, `(1..4).len()`, is `Math.max(4 - 1, 0)`, not `3`",
@@ -369,7 +404,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's `is_empty()` is JS's `!(start < end)` of any bounds, which of two arrays compares their text, `!([10] < [9])` false where `Ticket(10)..Ticket(9)` is empty, of two objects is never true, and of strings by UTF-16 unit, `\"\\uffff\" >= \"\\u{10000}\"`",
     file: "src/lower/std_types/range.rs",
-    find: "                let ordered = self.bounds_ordered(method, start.clone(), end.clone(), index, span, out)?;\n",
+    find: "                let ordered = self.bounds_ordered(method, (start.clone(), index), (end.clone(), index), span, out)?;\n",
     replace:
       "                let _ = (method, index);\n                let op = if kind == RangeKind::Inclusive { Op::Le } else { Op::Lt };\n                let ordered = Expr::bin(op, start.clone(), end.clone());\n",
     tests: ["test/corpus.test.ts", "-t", "^range_is_empty_ordered.rs$"],

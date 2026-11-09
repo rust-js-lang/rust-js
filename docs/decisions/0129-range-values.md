@@ -291,3 +291,28 @@ numbers, as before, `!(r.start < r.end)`, `$cmp(a, b) < 0` of text (ADR
 `range_defaults.rs` (#639), held by `range_is_empty_ordered.rs` against
 native Rust and the mutations `range-is-empty-by-js-order` and
 `range-is-empty-inclusive-by-lt` (`lower/std_types/range.ts`).
+
+## Amendment: `contains` asks its bounds' `PartialOrd` too (2026-11-10)
+
+`contains` of a range of a crate's own `PartialOrd` type,
+`(Day(1)..=Day(5)).contains(&d)`, chrono's
+`RangeInclusive<NaiveDate>::contains`, was refused (#1158). **It's std's
+`RangeBounds::contains`: `start <= item`, by `Idx: PartialOrd<U>`, and
+only where that holds, `item < end`, `item <= end` of `a..=b`, by `U:
+PartialOrd<Idx>`, each the ordering owner's `trait_call`
+(`bounds_ordered`, which `is_empty()` asks too):** a derived order field
+by field, `$cmp(start[0], item[0]) <= 0 && $cmp(item[0], end[0]) < 0`,
+a hand-written `partial_cmp` called once a test, as Rust's, and of an
+item of another type than the bounds' its two impls. An end test that
+takes statements runs them only where the start's holds, `let contained
+= ..; if (contained) { ..; contained = .. }`. A range of a type no `Step`
+steps is never exhausted, so `a..=b`'s end is always included; an
+`a..=b` of integers or `char`s that may have been stepped, given another
+type's item, is refused: its `PartialOrd` would be given the start JS's
+steps leave past its end, where Rust's keeps the start and an `exhausted`
+flag. Numbers' and text's own ranges are as before. Held by
+`range_contains_of_own_type.rs` against native Rust,
+`range_contains_stepped_of_another_type_refused.rs`, and the mutations
+`range-contains-own-type-refused`, `range-contains-end-test-unguarded`,
+`range-contains-inclusive-end-excluded` and
+`range-contains-stepped-unrefused` (`lower/std_types/range.ts`).

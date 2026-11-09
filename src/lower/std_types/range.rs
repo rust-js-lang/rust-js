@@ -477,12 +477,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let index = self.range_index(range_ty);
         if op == RangeOp::Contains {
             let item_ty = tys[1].peel_refs();
-            if index.is_none_or(|index| {
-                index.peel_refs() != item_ty || !(self.is_primitive_ord(index) || self.is_text_ord(index))
-            }) {
+            let Some(index) = index else {
                 return Err(self.unsupported(span, &format!("`contains` of a `{range_ty}`")));
-            }
+            };
             let [range, item]: [Expr; 2] = values.try_into().ok().unwrap();
+            if index.peel_refs() != item_ty || !(self.is_primitive_ord(index) || self.is_text_ord(index)) {
+                return self.contains_ordered(range, item, range_ty, (index, item_ty), span, out);
+            }
+            let index = Some(index);
             let parts = self.range_parts(range, kind, out);
             let item = if item.reads_same() {
                 item
@@ -542,7 +544,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (RangeOp::IsEmpty, [start, end]) => {
                 let method = if kind == RangeKind::Inclusive { "le" } else { "lt" };
                 let index = index.expect("a bound's type");
-                let ordered = self.bounds_ordered(method, start.clone(), end.clone(), index, span, out)?;
+                let ordered = self.bounds_ordered(method, (start.clone(), index), (end.clone(), index), span, out)?;
                 Expr::unary(UnaryOp::Not, ordered)
             }
             // What's left of the numbers, both bounds; of BigInts, an error.
@@ -554,8 +556,79 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// Whether a range's bound `a` is before `b`, `method` `lt`, or not after
-    /// it, `le`, as its bounds' `PartialOrd`, of type `index`, says: the
+    /// `contains` of a range whose bounds are ordered by their `PartialOrd`,
+    /// a crate's own type's or another's than the item's, as std's
+    /// `RangeBounds::contains`: `start <= item`, by `Idx: PartialOrd<U>`, and
+    /// only where it holds, `item < end`, `item <= end` of `a..=b`, by `U:
+    /// PartialOrd<Idx>` (#1158). A range of a type no `Step` steps is never
+    /// exhausted, so `a..=b`'s end is always included; an `a..=b` of
+    /// integers or `char`s that may have been stepped is refused, as its
+    /// `PartialOrd` would be given the start JS's steps leave past its end,
+    /// not Rust's, and its end's test, which an exhausted one's is `<`.
+    fn contains_ordered(
+        &mut self,
+        range: Expr,
+        item: Expr,
+        range_ty: Ty<'tcx>,
+        (index, item_ty): (Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let kind = self.range_kind(range_ty).expect("a range");
+        let (parts, exhausted) = self.range_state(range, range_ty, out);
+        if exhausted.is_some() {
+            return Err(self.unsupported(
+                span,
+                &format!("`contains` of a `{item_ty}` in a `{range_ty}` that may have been stepped"),
+            ));
+        }
+        let item = if item.reads_same() {
+            item
+        } else {
+            self.spill("item", item, out)
+        };
+        let (start, end) = match (kind, parts.as_slice()) {
+            (RangeKind::Exclusive | RangeKind::Inclusive, [start, end]) => (Some(start.clone()), Some(end.clone())),
+            (RangeKind::From, [start]) => (Some(start.clone()), None),
+            (RangeKind::To | RangeKind::ToInclusive, [end]) => (None, Some(end.clone())),
+            _ => return Err(self.unsupported(span, &format!("`contains` of a range of `{index}`"))),
+        };
+        let below = start
+            .map(|start| self.bounds_ordered("le", (start, index), (item.clone(), item_ty), span, out))
+            .transpose()?;
+        let mut later = Vec::new();
+        let above = end
+            .map(|end| {
+                let method = if matches!(kind, RangeKind::Inclusive | RangeKind::ToInclusive) {
+                    "le"
+                } else {
+                    "lt"
+                };
+                self.bounds_ordered(method, (item, item_ty), (end, index), span, &mut later)
+            })
+            .transpose()?;
+        Ok(match (below, above) {
+            (Some(below), Some(above)) if later.is_empty() => Expr::bin(Op::And, below, above),
+            // The end's test, which takes statements, runs only where the
+            // start's holds.
+            (Some(below), Some(above)) => {
+                let name = self.fresh("contained");
+                out.push(StmtKind::Let(name.clone(), Some(below)).at(js::Span::NONE));
+                later.push(StmtKind::Assign(Expr::var(&name), above).at(js::Span::NONE));
+                out.push(StmtKind::If(Expr::var(&name), later, None).at(js::Span::NONE));
+                Expr::var(&name)
+            }
+            (Some(test), None) => test,
+            (None, Some(test)) => {
+                out.extend(later);
+                test
+            }
+            (None, None) => Expr::bool(true),
+        })
+    }
+
+    /// Whether a range's bound or item `a` is before `b`, `method` `lt`, or
+    /// not after it, `le`, as `a_ty`'s `PartialOrd<b_ty>` says: the
     /// ordering owner's `a < b`, JS's own `<` of numbers, by code point of
     /// `char`s and strings (ADR 0183), a derived order's field by field, a
     /// hand-written `lt` or `partial_cmp`, a type parameter's by its
@@ -564,16 +637,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn bounds_ordered(
         &mut self,
         method: &str,
-        a: Expr,
-        b: Expr,
-        index: Ty<'tcx>,
+        (a, a_ty): (Expr, Ty<'tcx>),
+        (b, b_ty): (Expr, Ty<'tcx>),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let method = trait_method(self.tcx, self.partial_ord_trait(), method);
-        let args = self.tcx.mk_args(&[index.into(), index.into()]);
+        let args = self.tcx.mk_args(&[a_ty.into(), b_ty.into()]);
         let ordered = self.trait_call(method, args, vec![a, b], span, out)?;
-        ordered.ok_or_else(|| self.unsupported(span, &format!("the order of a range's `{index}` bounds")))
+        ordered.ok_or_else(|| self.unsupported(span, &format!("the order of a `{a_ty}` and a `{b_ty}` in a range")))
     }
 }
 
