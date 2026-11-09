@@ -68,6 +68,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || crate::lower::recognition::filter_mapped_source(self.tcx, ty).is_some()
             || crate::lower::recognition::inspected_source(self.tcx, ty).is_some()
             || crate::lower::recognition::reversed_source(self.tcx, ty).is_some()
+            || crate::lower::recognition::counted_source(self.tcx, ty).is_some()
+            || crate::lower::recognition::stepped_by_source(self.tcx, ty).is_some()
     }
 
     /// Whether `local`, of the body being lowered, holds what the crate

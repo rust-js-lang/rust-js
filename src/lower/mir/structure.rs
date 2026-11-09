@@ -772,6 +772,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (Value::Expr(e), Some((local, made)))
                         if self.local_stepped_from_its_back(local).is_some()
                             && self.back_by_value(made)
+                            // Not a counted adapter, a `skip(n)`'s, a
+                            // `take(n)`'s or a `step_by(n)`'s, whose maker
+                            // makes none knowing its back: what steps it so
+                            // makes it so where it's made, `$taking`,
+                            // `$skipping`, `$stepByEnds` (ADR 0542), or it's
+                            // std's struct where MIR holds it (#718).
+                            && crate::lower::recognition::counted_source(self.tcx, made).is_none()
+                            && crate::lower::recognition::stepped_by_source(self.tcx, made).is_none()
                             && (given_back
                                 || callee.is_some_and(|callee| {
                                     let iterator = crate::lower::recognition::std_item(

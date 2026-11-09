@@ -1489,3 +1489,14 @@ its source's `of`, which nothing reads, in the corpus or the matrix. One
 more of the set's rules (`stepped-sources-any-adapter`) no longer changes
 what's made. Left on the set: a `skip(n)`'s, a `take(n)`'s and a
 `step_by(n)`'s.
+
+## Amendment: a `skip(n)`'s, a `take(n)`'s and a `step_by(n)`'s too (2026-11-09, #851 phase C)
+
+ADR 0262's case: none; the corpus's JS is the same. Whether a counted
+adapter is made knowing its back is its value's fact (`back_by_value`),
+as each other adapter's is: every kind back_stepped's set covered is its
+value's now. Its maker makes none knowing its back: what steps it so makes
+it so where it's made, `$taking`, `$skipping`, `$stepByEnds` (ADR 0542),
+or it's std's struct where MIR holds it (#718). So a variable that holds
+one isn't marked made knowing its back (`structure.rs`), which would have
+taken `$stepBy` or std's struct for a form that has one.
