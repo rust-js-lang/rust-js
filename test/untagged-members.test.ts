@@ -234,3 +234,75 @@ pub enum Deep {
   expect(ran.stderr).toContain("`Root` and `Node` hold values of one kind, which JS can't tell apart in an untagged enum (ADR 0214)");
   expect(ran.stderr).toContain("`Count` and `One` hold values of one kind, which JS can't tell apart in an untagged enum (ADR 0214)");
 });
+
+// An `otherwise` variant is what the others aren't, but one whose payload
+// is of a kind JS tells, a tuple struct's array, is taken by another's test
+// of that kind first: refused, where a `match` tests it and where an impl
+// or a drop does (#1083, ADR 0214, amended). Of a payload of no kind JS
+// tells, nothing is.
+test("an otherwise variant of another variant's kind is refused", () => {
+  const dir = fixture("untagged-otherwise-overlap");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `pub struct Pair(pub f64, pub f64);
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Points<'a> {
+    Many(&'a [f64]),
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    Two(&'a Pair),
+}
+
+pub fn count(points: &Points<'_>) -> usize {
+    match points {
+        Points::Many(many) => many.len(),
+        Points::Two(_) => 2,
+    }
+}
+`,
+  );
+  const tested = runSync([compiler, ...flags(dir)], root, 60_000);
+  expect(tested.code).not.toBe(0);
+  expect(tested.stderr).toContain("`Many` and `Two` hold values of one kind, which JS can't tell apart in an untagged enum (ADR 0214)");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::RefCell;
+
+pub struct Dev(pub RefCell<Vec<f64>>, pub bool);
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum State {
+    Prod(RefCell<Vec<f64>>),
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    Dev(Dev),
+}
+`,
+  );
+  const dropped = runSync([compiler, ...flags(dir)], root, 60_000);
+  expect(dropped.code).not.toBe(0);
+  expect(dropped.stderr).toContain("`Dev` and `Prod` both hold an array of 2 items, which JS can't tell apart in an untagged enum (ADR 0214)");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `pub struct Named {
+    pub x: f64,
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Either<'a> {
+    Many(&'a [f64]),
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    One(&'a Named),
+}
+
+pub fn count(either: &Either<'_>) -> usize {
+    match either {
+        Either::Many(many) => many.len(),
+        Either::One(_) => 1,
+    }
+}
+`,
+  );
+  const told = runSync([compiler, ...flags(dir)], root, 60_000);
+  expect(told.stderr).toBe("");
+  expect(told.code).toBe(0);
+});

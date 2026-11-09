@@ -15,6 +15,3 @@ plain std library refcell_borrow_while_mut.rs
 
 #1077 P0: a closure variable used only as let r: &dyn Fn = &f is merged into function r, so f's other use inside a closure reads undefined
 plain std for-each fn_compared_by_its_pointer.rs
-
-#1083 P0: an untagged enum's array-tested member also matches a tuple-struct otherwise member, and the overlap isn't refused
-plain std tuple-struct untagged_ref_cells.rs

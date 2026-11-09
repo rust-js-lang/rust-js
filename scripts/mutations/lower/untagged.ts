@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "otherwise-overlap-unrefused",
+    breaks: "an untagged enum's `otherwise` variant whose payload, a tuple struct's array, is of another variant's kind isn't refused where its drop tests it, so `Array.isArray` takes it for the other (#1083)",
+    file: "src/lower/untagged.rs",
+    find: "                    if let Some(kind) = recognition.untagged_variant_kind(variant, args)\n                        && let Some((_, other)) = seen.iter().find(|(k, _)| k.overlaps(&kind))\n",
+    replace: "                    if let Some(kind) = recognition.untagged_variant_kind(variant, args).filter(|_| false)\n                        && let Some((_, other)) = seen.iter().find(|(k, _)| k.overlaps(&kind))\n",
+    tests: ["test/untagged-members.test.ts", "-t", "an otherwise variant of another variant's kind is refused"],
+  },
+  {
+    name: "otherwise-overlap-untested",
+    breaks: "a `match` of an untagged enum whose `otherwise` variant's payload is of another's kind tests it as what the others aren't, so the other's test takes it (#1083)",
+    file: "src/lower/untagged.rs",
+    find: "        let kind_of = |v: &VariantDef| recognition.untagged_variant_kind(v, args);\n",
+    replace: "        let kind_of = |v: &VariantDef| {\n            (!bindings::is_otherwise(self.tcx, v.def_id))\n                .then(|| recognition.untagged_variant_kind(v, args))\n                .flatten()\n        };\n",
+    tests: ["test/untagged-members.test.ts", "-t", "an otherwise variant of another variant's kind is refused"],
+  },
+  {
     name: "untagged-refusal-unsaid",
     breaks:
       "an untagged enum's refusal doesn't say it's rust-js's, so what reads a compile's errors takes it for a crash (#939)",

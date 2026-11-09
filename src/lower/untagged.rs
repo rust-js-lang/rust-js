@@ -1172,18 +1172,16 @@ fn tested_by_impls<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, recognition: &Recogni
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Another variant of the untagged enum `ty` whose value is of
-    /// `variant`'s kind, which a test can't tell from it (ADR 0214); and of
+    /// `variant`'s kind, which a test can't tell from it (ADR 0214), an
+    /// `otherwise` one's by its payload's kind, which another's test would
+    /// take too (#1083); and of
     /// a class told by its member, what both are, `an object whose
     /// `nodeType` is the number 1`, an `HTMLElement`'s and an
     /// `SVGElement`'s (#555).
     pub(super) fn untagged_alike(&self, ty: Ty<'tcx>, variant: &VariantDef) -> Option<(String, Option<String>)> {
         let (adt, args) = self.untagged(ty)?;
         let recognition = self.recognition();
-        let kind_of = |v: &VariantDef| {
-            (!bindings::is_otherwise(self.tcx, v.def_id))
-                .then(|| recognition.untagged_variant_kind(v, args))
-                .flatten()
-        };
+        let kind_of = |v: &VariantDef| recognition.untagged_variant_kind(v, args);
         let own = kind_of(variant)?;
         let classes = matches!(&own, Kind::Member(_, told) if matches!(**told, Kind::Constants(_)));
         (adt.variants().iter())
@@ -1302,7 +1300,9 @@ pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreig
                     );
                     continue;
                 };
-                // What the others aren't holds anything, and comes last.
+                // What the others aren't holds anything, and comes last; but
+                // a payload of a kind JS tells, a tuple struct's array, is
+                // taken by another's test of that kind first (#1083).
                 if bindings::is_otherwise(tcx, variant.def_id) {
                     if i != last {
                         error(
@@ -1310,6 +1310,19 @@ pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreig
                             format!(
                                 "an untagged enum's `#[rust_js::otherwise]` variant, `{}`, is its last (ADR 0214)",
                                 variant.name
+                            ),
+                        );
+                    }
+                    if let Some(kind) = recognition.untagged_variant_kind(variant, args)
+                        && let Some((_, other)) = seen.iter().find(|(k, _)| k.overlaps(&kind))
+                        && tested_by_impls(tcx, def_id.to_def_id(), &recognition)
+                    {
+                        error(
+                            span,
+                            format!(
+                                "`{}` and `{other}` both hold {}, which JS can't tell apart in an untagged enum (ADR 0214)",
+                                variant.name,
+                                kind.describe()
                             ),
                         );
                     }

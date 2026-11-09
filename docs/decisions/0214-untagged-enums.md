@@ -632,3 +632,31 @@ diagnostic test holds each of rust-js's errors to it. Mutations
 `untagged-refusal-unsaid` (`lower/untagged.ts`), `untold-alike-unsaid`,
 `untold-class-unsaid` (`lower/untagged/classes.ts`) and
 `untagged-arms-refusal-unsaid` (`lower/mir/structure.ts`).
+
+## Amendment: an `otherwise` variant of another's kind is refused (#1083)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): compile error, as two
+variants of one kind already are. An `otherwise` variant is what the others
+aren't, so neither `validate` nor a `match`'s test (`untagged_alike`) asked
+its own payload's kind. But a payload of a kind JS tells is taken by
+another variant's test of that kind first: `Prod(RefCell<Vec<f64>>)` beside
+`#[rust_js::otherwise] Dev(StateDev)`, a tuple struct and so an array, made
+every `Dev` a `Prod` to `Array.isArray`, `4 0 false` where native Rust
+prints `2 2 true`. Now its payload's kind is checked against the others'
+as each variant's is, `Kind::overlaps`, with the same words: "`Dev` and
+`Prod` both hold an array of 2 items, which JS can't tell apart in an
+untagged enum", where an impl or a drop tests it, and "`Many` and `Two`
+hold values of one kind" where a `match` does. Giving the `otherwise` a
+test of its own first, or narrowing the others' by its kind, can't be
+right: a `Vec` of two items is an array of two items too. A payload of
+no kind JS tells, `js::Unknown` or a generic `S`, is as before, as is one
+another's test doesn't take: React's port's twelve `otherwise` variants
+are each one of those, and compile as before (the user's decision, A, of
+the options, 2026-11-09).
+
+Held by `test/untagged-members.test.ts`'s "an otherwise variant of another
+variant's kind is refused", of a `match`, of a drop, and of a struct that
+isn't refused; mutations `otherwise-overlap-unrefused` and
+`otherwise-overlap-untested` (`lower/untagged.ts`). The metamorphic net's
+tuple-struct rewrite of `untagged_ref_cells`, now refused, is off its
+list.
