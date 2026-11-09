@@ -16138,7 +16138,11 @@ export function $repeating(value, clone = (value) => value, drop) {
     () => $close(it, () => drop?.(value)),
   );
   it.sizeHint = () => [2 ** 32 - 1, undefined];
-  return it;
+  // Std's `Repeat::advance_by`, which makes no item, so clones none: what
+  // a `take(n)`'s `count` asks, and an `nth`, a clone of the next alone,
+  // `$Steps`' of it (repeat.rs:92, #1124).
+  $forward(it, undefined, { advanceBy: () => 0 });
+  return $owns(it, "nth");
 }
 
 // `iter::repeat_n(value, count)`: a clone of `value` each step but the
@@ -16163,7 +16167,38 @@ export function $repeatingN(value, count, clone = (value) => value, drop) {
     },
   );
   it.sizeHint = () => [left, left];
-  return it;
+  // Std's `RepeatN`'s own steps, which clone none of what they pass
+  // (repeat_n.rs:140, #1124): `advance_by` counts down, and past its end
+  // drops `value`; `nth` a clone of the next alone, or `value` itself at
+  // its last, `$Steps`' of it; `last`, `value` itself; `count`, what it has
+  // left, `value` dropped with it.
+  const advanceBy = (m) => {
+    if (m < left) {
+      left -= m;
+      return 0;
+    }
+    const short = m - left;
+    if (left > 0) {
+      left = 0;
+      drop?.(value);
+    }
+    return short;
+  };
+  const last = () => {
+    if (left === 0) return { done: true, value: undefined };
+    left = 0;
+    return { done: false, value };
+  };
+  const countLeft = () => {
+    const counted = left;
+    if (left > 0) {
+      left = 0;
+      drop?.(value);
+    }
+    return counted;
+  };
+  $forward(it, undefined, { advanceBy, last, count: countLeft });
+  return $owns(it, "nth", "last", "count");
 }
 
 export function* $repeatingWith(f) {

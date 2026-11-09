@@ -9,6 +9,7 @@ import {
   $mapEnds,
   $next,
   $nextBackSome,
+  $nth,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
@@ -87,10 +88,10 @@ function main() {
   );
   // One that steps forward only, which has no back to give.
   const words = wrapIterator_fold(
-    { inner: iterator_take($repeating("a"), 3) },
+    { inner: iterator_take($repeating("a"), 3, { next: $next, nth: $nth }) },
     "",
     (all, [w]) => all + w,
-    { next: $next, fold: $foldOf },
+    { next: $next, fold: $foldOf, nth: $nth },
   );
   console.log(`[${forward.join(", ")}] [${backward.join(", ")}] ${words}`);
   const each = { inner: { start: 4, end: 6 } };
@@ -104,8 +105,8 @@ function main() {
     `${nextBack == null ? "None" : `Some(${taggedDebug_fmt(nextBack, i32Debug)})`} ${next == null ? "None" : `Some(${taggedDebug_fmt(next, i32Debug)})`} ${value == null ? "None" : `Some(${taggedDebug_fmt(value, i32Debug)})`}`,
   );
   const counted = Wrap.countKept(
-    { inner: iterator_take($repeating("b"), 2) },
-    { next: $next, fold: $foldOf },
+    { inner: iterator_take($repeating("b"), 2, { next: $next, nth: $nth }) },
+    { next: $next, fold: $foldOf, nth: $nth },
   );
   const arg = Wrap.lastKept(
     { inner: { start: 6, end: 8 } },

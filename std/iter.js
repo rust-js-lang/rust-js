@@ -7595,7 +7595,7 @@ export function takeRepeatTDoubleEndedIterator_rfold(
     take,
     init,
     fold,
-    { next: $nextSome },
+    { next: $nextSome, nth: $nthSome },
     (repeat) => {
       repeat.return();
     },

@@ -40,3 +40,46 @@ runtime's test holds, so neither is written inside `Iterator.from`.
 - Mutations drop no value of a count of none, clone the last, drop none
   when closed, write a lazy step's copy, give a number for a `&mut`, and
   take `repeat_n` for `repeat`.
+
+## Amendment: `Repeat`'s and `RepeatN`'s own steps, which clone none of what they pass (2026-11-10, #1124)
+
+`repeat(x).take(n).count()` cloned `x` `n` times and dropped each clone,
+where native Rust makes none. Std's `Take::count` asks its source's
+`advance_by(n)`, and `Repeat::advance_by` is a no-op (repeat.rs:92). It
+isn't a specialization: `Repeat` and `RepeatN` write steps of their own,
+which `$repeating` and `$repeatingN` didn't, so `$Steps`' defaults, by
+`next`, cloned each item they passed. Both builds did this, and so did
+`skip(n)` and `step_by(n)` over them, `repeat(x).nth(k)`, and
+`repeat_n`'s `nth`, `last`, `count` and `skip`.
+
+**Each writes std's steps of its own:**
+
+- `$repeating`: `advanceBy`, a no-op, so `nth` is one clone (repeat.rs:92,
+  :99).
+- `$repeatingN`: `advanceBy`, which counts down and past its end drops the
+  value, so `nth` clones only the item it gives; `last`, the value itself;
+  `count`, its length, the value dropped with it (repeat_n.rs:140–165).
+
+Each says so with `$owns`, the runtime's own facts, so `$skipping`,
+`$stepBy`, `$lastDropping` and `$count` ask it. The lowering's catalog of
+own steps (`own_steps.rs`) names them too, as std sources
+(`own_source_steps`, `source_writes`), so a `count` of a `repeat_n` is
+`$count`, its own, never a `reduce`.
+
+Left as refusals, no wrong answers:
+- `Repeat`'s `count` and `last`, which panic "iterator is infinite" at
+  their caller's place, which the runtime can't give, so they run as
+  long as std's would;
+- the back steps of `take(n)` of a `repeat`, and of a `repeat_n`, in the
+  default build;
+- `repeat_n(..).len()`.
+
+Held by `test/corpus/repeat_own_steps_clone_none.rs`, each clone and drop
+printed, against native Rust in both builds: through `take`, `skip`,
+`step_by` and `fold`, held, in generic code, and stepped to its end by
+`next`. Mutations `repeat-advance-clones`, `repeat-n-advance-clones`,
+`repeat-n-own-last-cloned`, `repeat-n-count-steps` and
+`repeat-own-nth-unflagged` (`runtime/repeating.ts`),
+`repeat-n-own-steps-unknown` (`lower/recognition/own_steps.ts`) and
+`source-own-count-unasked` (`lower/mir/iter.ts`); `repeat-n-last-cloned`
+held by it too.

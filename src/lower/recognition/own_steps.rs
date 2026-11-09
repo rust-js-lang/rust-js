@@ -128,6 +128,20 @@ impl OwnStep {
     }
 }
 
+/// The steps a std source, of std's `path`, writes itself, not std's
+/// defaults of its `next`, which a JS form of it gives too, so what asks
+/// them reaches them: `Repeat`'s `nth`, of its `advance_by`, which makes no
+/// item, so clones none (repeat.rs:92); `RepeatN`'s `nth`, `last`, the
+/// value itself, and `count`, its length, none of which clones what it
+/// passes (repeat_n.rs:140, #1124).
+fn own_source_steps(path: &str) -> Option<&'static [OwnStep]> {
+    match path {
+        "std::iter::Repeat" => Some(&[OwnStep::Nth]),
+        "std::iter::RepeatN" => Some(&[OwnStep::Nth, OwnStep::Last, OwnStep::Count]),
+        _ => None,
+    }
+}
+
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Whether std's `step` of a `ty`, an iterator, reaches the one the impl
     /// of a crate's iterator writes: of that iterator, and through a `&mut`
@@ -150,6 +164,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, args) = ty.kind() else {
             return matches!(ty.kind(), ty::Param(_)) && (reach == Reach::May || step.asked_at_run_time());
         };
+        if self.source_writes(ty, step) {
+            return true;
+        }
         let path = std_path(self.tcx, adt.did());
         let Some(adapter) = path.strip_prefix("std::iter::") else {
             return false;
@@ -158,6 +175,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             self.asked_source(ty, args, at)
                 .is_some_and(|source| self.reaches_its_own(source, asked, reach))
         })
+    }
+
+    /// Whether `ty` is a std source that writes `step` itself, not std's
+    /// default of its `next` (`own_source_steps`): `repeat_n`'s `count`.
+    pub(in crate::lower) fn source_writes(&self, ty: Ty<'tcx>, step: OwnStep) -> bool {
+        let ty::Adt(adt, _) = self.reveal(ty).kind() else {
+            return false;
+        };
+        own_source_steps(std_path(self.tcx, adt.did())).is_some_and(|own| own.contains(&step))
     }
 
     /// The source `at` of an adapter of type `ty`, of type arguments

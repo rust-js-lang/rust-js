@@ -1087,9 +1087,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // then what it has left dropped as one slice, where its items have
         // a drop, which the default would drop each as it's folded (#862).
         let slice_count = !body.is_empty() && self.recognition().drops_passed_as_slice(revealed);
+        // And a std source's own, `repeat_n`'s, its length, which clones
+        // none (#1124).
+        let source_own = self.recognition().source_writes(revealed, OwnStep::Count);
         let own_count = matches!(revealed.kind(), ty::Param(_))
             || filter_asks
             || slice_count
+            || source_own
             || self.compiled_step(revealed, iterator, "count") && (!in_place_flatten || inners_own);
         if own_count {
             let mut given = vec![it];

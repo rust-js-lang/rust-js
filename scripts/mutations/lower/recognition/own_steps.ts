@@ -344,4 +344,12 @@ export const mutations: Mutation[] = [
     replace: "            (NthBack, \"Skip\" | \"Take\" | \"Enumerate\" | \"Fuse\") => own,\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^step_by_folded_from_its_back_as_std with"],
   },
+  {
+    name: "repeat-n-own-steps-unknown",
+    breaks: "`RepeatN`'s own `last` and `count` aren't known to the lowering, which steps it by its `next`, cloning each (#1124)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "        \"std::iter::RepeatN\" => Some(&[OwnStep::Nth, OwnStep::Last, OwnStep::Count]),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_own_steps_clone_none.rs$"],
+  },
 ];

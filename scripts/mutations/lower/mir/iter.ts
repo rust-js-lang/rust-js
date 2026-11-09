@@ -826,4 +826,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(iterator_consumed_by_extend_unzip_partition_eq|held_skip_take).rs$"],
     snapshots: true,
   },
+  {
+    name: "source-own-count-unasked",
+    breaks: "`repeat_n(x, n).count()` is counted by `reduce`, cloning each, not by its own `count`, its length (#1124)",
+    file: "src/lower/mir/iter.rs",
+    find: "        let source_own = self.recognition().source_writes(revealed, OwnStep::Count);\n",
+    replace: "        let source_own = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_own_steps_clone_none.rs$"],
+  },
 ];

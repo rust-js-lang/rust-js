@@ -120,7 +120,7 @@ function main() {
     const repeated = iterator_take(
       $repeating(["a"], undefined, loudDrop_drop),
       2,
-      { next: $next },
+      { next: $next, nth: $nth },
       (repeat) => {
         repeat.return();
       },
