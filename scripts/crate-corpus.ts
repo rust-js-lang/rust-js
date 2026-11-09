@@ -27,6 +27,7 @@ import { availableParallelism } from "node:os";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { cargoEnv } from "../tooling/cargo.js";
+import { run as runChild, stopped, type Exit } from "../test/child";
 
 type Verdict = "runs" | "compiles" | "refused" | "blocked";
 
@@ -261,13 +262,15 @@ async function main() {
       if (probeRefused !== undefined) result.runs = `the probe is refused: ${probeRefused}`;
       else if (!probeJs) result.runs = "the probe wasn't compiled";
       else {
-        // Native Rust's report, built for the host, apart from rust-js's.
+        // Native Rust's report, built for the host, apart from rust-js's;
+        // each stopped, with what it started, past its time (#1108's orphan).
         const [native, js] = await Promise.all([
-          spawned("cargo", [`+${toolchain}`, "run", "--quiet", "--locked", "--bin", "native", "--target-dir", join(dir, "native")], { cwd: dir }),
-          spawned(process.execPath, ["-e", `import { report } from ${JSON.stringify(probeJs)};\nprocess.stdout.write(report());`], { cwd: dir }),
+          runChild(["cargo", `+${toolchain}`, "run", "--quiet", "--locked", "--bin", "native", "--target-dir", join(dir, "native")], dir, 600_000),
+          runChild([process.execPath, "-e", `import { report } from ${JSON.stringify(probeJs)};\nprocess.stdout.write(report());`], dir, 120_000),
         ]);
-        if (native.status !== 0) result.runs = `native Rust failed: ${native.stderr.trim().split("\n").slice(-3).join(" ")}`;
-        else if (js.status !== 0) result.runs = `the JS failed: ${js.stderr.trim().split("\n").slice(-6).join(" ")}`;
+        const failed = (p: Exit, limit: number) => stopped(p, limit) ?? (p.code !== 0 ? `exited ${p.code}` : undefined);
+        if (failed(native, 600_000)) result.runs = `native Rust failed (${failed(native, 600_000)}): ${native.stderr.trim().split("\n").slice(-3).join(" ")}`;
+        else if (failed(js, 120_000)) result.runs = `the JS failed (${failed(js, 120_000)}): ${js.stderr.trim().split("\n").slice(-6).join(" ")}`;
         else result.runs = native.stdout === js.stdout ? "same" : `differs at ${difference(native.stdout, js.stdout)}`;
       }
     }

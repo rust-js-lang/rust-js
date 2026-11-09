@@ -14,6 +14,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { machineStore } from "../test/bounded";
+import { said, strays } from "./strays";
 
 type Entry = { kind: "start"; name: string; at: number } | { kind: "run"; label: string; at: number; seconds: number; code: number };
 
@@ -54,6 +55,10 @@ if (command === "start") {
   // and `current()` reads from the last start.
   appendFileSync(file, JSON.stringify({ kind: "start", name, at: Date.now() } satisfies Entry) + "\n");
   console.log(`task "${name}" started, logged in ${file}`);
+  // What the loop left running takes the cores the task's checks time
+  // (scripts/strays.ts).
+  const leftRunning = said(strays());
+  if (leftRunning) console.warn(`warning: ${leftRunning}`);
 } else if (command === "run") {
   const split = rest.indexOf("--");
   if (split < 1) {

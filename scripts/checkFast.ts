@@ -26,6 +26,7 @@ import { currentBuild, prune } from "../test/compiles";
 import { runs, touchesAsync, touchesDeclarations, touchesFormatting, touchesIterators, touchesNumbers } from "./iteratorSlice";
 import { mappedFiles, pickChange } from "./testMap";
 import { browsers, caseParts, compilerBuilds, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
+import { said, strays } from "./strays";
 import { elapsed, loadScale, median, timed, timings } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -585,6 +586,10 @@ if (import.meta.main) {
   const args = process.argv.slice(2);
   const all = args.includes("--all");
   const extra = args.filter((arg) => !arg.startsWith("--"));
+  // What the loop left running, which takes the cores this run times
+  // (scripts/strays.ts): said first, and again with its profile.
+  const leftRunning = said(strays(root));
+  if (leftRunning) console.warn(`warning: ${leftRunning}`);
 
   const git = (gitArgs: string[]) => Bun.spawnSync(["git", ...gitArgs], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
   const changed = [...git(["diff", "--name-only", "HEAD"]), ...git(["ls-files", "--others", "--exclude-standard"])];
@@ -704,6 +709,9 @@ if (import.meta.main) {
   const results = await run(check.jobs, compiler, cores, clock);
   const failed = results.filter((r) => r.code !== 0);
   profiled(results, clock.samples, args.includes("--profile"));
+  // Still left running as it ends: its numbers aren't a measurement.
+  const leftAtEnd = said(strays(root));
+  if (leftAtEnd) console.warn(`warning: ${leftAtEnd}`);
   for (const { job: { name }, log } of failed) console.log(`\n── ${name} ──\n${log.slice(-3000)}`);
   // From its start, its build too.
   const total = elapsed();

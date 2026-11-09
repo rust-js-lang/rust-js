@@ -778,6 +778,16 @@ the workflow's 2 machines; `--shards=4` splits it across four.
   checkout's above it, so its tests' JS imports that checkout's
   `@rust-js/std`, of another commit; `buildCompiler`
   (`test/support.ts`) fails a run that would.
+- **Generated JS is run by hand one way**: `bun scripts/run-case.ts
+  <case.rs>` compiles it as the corpus's cases are and runs it natively
+  and as JS, saying whether they agree (`--std-iterators`, `--tidy-until
+  <pass>`, `--prepare-without <rewrite>` as the tests give them);
+  `bun scripts/run-case.ts <case.js | dir>` runs JS already compiled. Each
+  run is stopped, with what it started, past its time. Never a bare `node`
+  or `bun` of generated JS: one that never ends outlives the shell, and one
+  held a core for 28 hours, parented by launchd (2026-11-09).
+  `check:fast` and `bun run task start` name what the loop left running so
+  (`bun scripts/strays.ts`), and a machine with any isn't quiet.
 - **A failing program is reduced, not by hand** (ADR 1107):
   `bun scripts/reduce.ts <case.rs> --build plain|std` shrinks it to a
   program that fails the same way, in parallel, in seconds to a minute; the
