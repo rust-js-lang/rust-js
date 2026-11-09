@@ -5,9 +5,6 @@
 // Rust does is taken off. A rewrite that goes wrong for another reason is a
 // line under another issue.
 
-#1017 P1: two crashes in the rc-refcell rewrite: an ICE about a const param in the param-env, and a binder.rs panic
-plain std rc-refcell held_adapters_stepped_to_their_end.rs
-
 #1019 P1 (pointers): an address of a value held in a struct field, and Rc::as_ptr equality, differ from native
 plain std field pointer_addresses.rs
 

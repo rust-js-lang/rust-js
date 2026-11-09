@@ -179,3 +179,20 @@ mutable one's second borrow throwing); mutations `unseen-runs-what-loads`,
 `unseen-never-reaches-public`, `unseen-asks-everything`
 (`analysis/cell_borrows.ts`) and `with-borrow-held-mutably`
 (`analysis/plain_locals.ts`).
+
+## Amendment: a cell an impl's method std runs borrows is of some type there (#1017)
+
+The crate's `impl FromIterator for Sum` borrowing a `RefCell<I::IntoIter>`
+of its own `I`, run by std's `collect`, whose args no type says (#240):
+its borrow reached the body that called `collect` as it was, `I` and
+all, and that body's run by `entry`, of its own args, put those in `I`'s
+place, none, a rustc panic (`binder.rs`, "has parameters, but no args
+were provided"). Only the crate's code reached from what it exports is
+asked, so the case alone, with no `pub fn`, never panicked: the nets'
+wrapper, `pub fn entry() { main() }`, is what reaches it. A borrow of a
+run of no args is of a cell of some type there: each of the body's type
+and const parameters a type nothing names, which `may_be_cell` takes for
+any, as it takes a parameter. Held by the corpus case
+`cell_of_an_iterator_std_runs`, in both builds, and the mutations
+`cell-of-a-run-of-no-args-kept-its-parameters` and
+`cell-of-a-run-of-no-args-kept-its-const-parameters`.

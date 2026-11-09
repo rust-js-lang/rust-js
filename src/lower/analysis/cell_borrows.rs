@@ -17,7 +17,7 @@ use crate::lower::recognition::{Recognition, Std, StdItem};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::{ExprId, ExprKind, Thir};
-use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
+use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable, TypeVisitableExt};
 use rustc_span::def_id::DefId;
 
 mod runs_nothing;
@@ -641,9 +641,28 @@ fn seen_borrows<'tcx>(
 }
 
 /// `borrow`, of a body's, as a run of it of `args` makes it: of a type
-/// parameter's cell, the run's type.
+/// parameter's cell, the run's type. Of a run whose args no type says, an
+/// impl's method std's code runs (#240), a cell of some type there: each
+/// of the body's parameters a type nothing names, as a parameter is to
+/// `may_be_cell`, and no parameter of the body that ran it, whose args
+/// would be given it in its place (#1017).
 fn of_args<'tcx>(tcx: TyCtxt<'tcx>, borrow: Borrow<'tcx>, args: Option<ty::GenericArgsRef<'tcx>>) -> Borrow<'tcx> {
     match (borrow.cell, args) {
+        (Cell::Type(ty), None) if ty.has_param() => Borrow {
+            cell: Cell::Type(ty.fold_with(&mut ty::BottomUpFolder {
+                tcx,
+                ty_op: |t: Ty<'tcx>| match *t.kind() {
+                    ty::Param(p) => Ty::new_fresh(tcx, p.index),
+                    _ => t,
+                },
+                lt_op: |r| r,
+                ct_op: |c: ty::Const<'tcx>| match c.kind() {
+                    ty::ConstKind::Param(p) => ty::Const::new_fresh(tcx, p.index),
+                    _ => c,
+                },
+            })),
+            ..borrow
+        },
         (Cell::Type(ty), Some(args)) if ty.has_param() => Borrow {
             cell: Cell::Type(
                 tcx.erase_and_anonymize_regions(

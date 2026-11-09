@@ -11,6 +11,23 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^const_param_in_a_ref_cell.rs$"],
   },
   {
+    name: "cell-of-a-run-of-no-args-kept-its-parameters",
+    breaks:
+      "a `RefCell<I::IntoIter>` the crate's `from_iter` borrows, run by std's `collect` of no args a type says, keeps `from_iter`'s `I`, which its caller's args are given in its place, a rustc panic (#1017)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                    ty::Param(p) => Ty::new_fresh(tcx, p.index),\n",
+    replace: "                    ty::Param(_) => t,\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_of_an_iterator_std_runs.rs$"],
+  },
+  {
+    name: "cell-of-a-run-of-no-args-kept-its-const-parameters",
+    breaks: "a `RefCell<[u32; N]>` a `Fixed<N>`'s `from_iter` borrows, run by std's `collect`, keeps its impl's `N`, a rustc panic (#1017)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                    ty::ConstKind::Param(p) => ty::Const::new_fresh(tcx, p.index),\n",
+    replace: "                    ty::ConstKind::Param(_) => c,\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_of_an_iterator_std_runs.rs$"],
+  },
+  {
     name: "cell-key-never-same",
     breaks:
       "a thread-local's borrow is never its own, so `LOG`'s second borrow in its own closure isn't counted and doesn't throw",
