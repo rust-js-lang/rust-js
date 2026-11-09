@@ -313,4 +313,22 @@ export const mutations: Mutation[] = [
     replace: "                                defaulted = false && tcx.trait_of_assoc(callee) == Some(by)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_and_counted_steps_from_their_back.rs$"],
   },
+  {
+    name: "impl-bounds-unwalked",
+    breaks:
+      "an `I: Iterator` generic code only passes through a chain of the crate's impls whose associated type bound by `Iterator` it is, `Chain<Nothing<I>, _>: Parser`'s, isn't given its `Iterator`'s dictionary, which the innermost impl's asks: refused, 'stepping `I`, which rust-js found nothing here steps' (#1062)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                        pass_on(&mut passed, held, held_args);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_passed_through_a_chain_of_impls.rs$"],
+  },
+  {
+    name: "impl-bounds-walked-with-bound-lifetimes",
+    breaks:
+      "an impl's bound of any lifetime, `F: for<'a> Fn(&'a T::Item) -> bool`, is selected with its bound lifetimes left in it, and rustc panics, 'has escaping bound vars' (#1062)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                        let bound = tcx.instantiate_bound_regions_with_erased(bound).trait_ref;\n",
+    replace: "                        let bound = bound.skip_binder().trait_ref;\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_passed_through_a_chain_of_impls.rs$"],
+  },
 ];

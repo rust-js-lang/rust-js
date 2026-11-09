@@ -399,6 +399,40 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             pass_on(&mut passed, resolved.def_id(), resolved.args);
             if let Some(imp) = tcx.trait_impl_of_assoc(resolved.def_id()) {
                 pass_on(&mut passed, imp, resolved.args);
+                // Each impl whose dictionary the impl's own bounds make of
+                // what the caller gives it, a `Chain<Token<I>, _>: Parser`'s
+                // `L: Parser` of a `Token<I>`, down to one given a parameter
+                // of the caller's as it is: what that impl steps of it, the
+                // caller steps, as it makes that dictionary (#1062).
+                let mut asked: Vec<(DefId, ty::GenericArgsRef<'tcx>)> = vec![(imp, resolved.args)];
+                let mut seen: IndexSet<(DefId, ty::GenericArgsRef<'tcx>)> = IndexSet::default();
+                while let Some((imp, args)) = asked.pop() {
+                    if !seen.insert((imp, args)) || seen.len() > 64 {
+                        continue;
+                    }
+                    for (clause, _) in tcx.clauses_of(imp).instantiate(tcx, args) {
+                        let Some(bound) = clause.skip_normalization().as_trait_clause() else {
+                            continue;
+                        };
+                        let bound = tcx.instantiate_bound_regions_with_erased(bound).trait_ref;
+                        let Ok(bound) = tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(bound))
+                        else {
+                            continue;
+                        };
+                        if !rustc_middle::ty::TypeVisitableExt::has_param(&bound) {
+                            continue;
+                        }
+                        let Some((held, held_args)) = crate::lower::traits::evidence_impl(tcx, typing_env, bound)
+                        else {
+                            continue;
+                        };
+                        if !held.is_local() {
+                            continue;
+                        }
+                        pass_on(&mut passed, held, held_args);
+                        asked.push((held, held_args));
+                    }
+                }
             }
             // The crate's iterator holding it, given where a generic iterator
             // goes: a JS iterator, stepped by its impl's `next` (ADR 0061).

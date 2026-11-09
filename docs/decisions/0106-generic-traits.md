@@ -193,3 +193,25 @@ of what it steps reads the type's bounds (`iterator_steps`). Of a type
 generic code has as std's own, a `Vec`'s `IntoIter`, the entry is its own.
 Corpus case `associated_iterator_given_as_it_is`; the metamorphic net's
 rewrites of `generic_associated_types` run as native.
+
+## Amendment: what a caller's impls ask of what it passes through (2026-11-09, #1062)
+
+Since #972 an impl whose associated type bound by `Iterator` is its own
+parameter, `impl<T: Iterator> Parser for Token<T> { type Input = T }`, has
+that bound's entries, `T`'s dictionaries: it steps `T`. A caller given its
+own `I` and making that impl's dictionary only through another impl's
+bounds, `Chain(Token(0), Token(1)).parse(i)`'s `Chain<Token<I>, _>: Parser`,
+whose `L: Parser` is `Token<I>`'s, never gave `I`'s, as the analysis passed
+on only what a call gives as it is: `I` stayed given as it is and its
+dictionary was refused, "stepping `I`, which rust-js found nothing here
+steps" (rustc's `bench/issue-32062.rs`). **The analysis follows each impl's
+own bounds, as the lowering makes each impl's dictionary of what it's
+given (`evidence_impl`), down to an impl given a parameter of the caller's
+as it is: what that impl steps of it, the caller steps, and is given its
+dictionaries.** Each bound of any lifetime, `F: for<'a> Fn(&'a T::Item)`,
+is selected with its bound lifetimes erased, as rustc selects nothing that
+names them. ADR 0262's case: none, the same values. Corpus case
+`iterator_passed_through_a_chain_of_impls.rs`, an iterator only passed
+through, one each impl steps, and an impl of such a bound; rustc's
+`bench/issue-32062.rs` off the known failures; mutations
+`impl-bounds-unwalked` and `impl-bounds-walked-with-bound-lifetimes`.
