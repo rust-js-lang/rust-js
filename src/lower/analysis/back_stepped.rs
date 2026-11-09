@@ -89,7 +89,6 @@ pub(super) fn of_crate<'tcx>(
     let (locals, fields, typed_sources) = stepped_locals(tcx, recognition, all_bodies, &types, drops);
     typed.extend(typed_sources);
     BackStepped {
-        types,
         typed,
         borrows: borrows(all_bodies),
         locals,
@@ -625,14 +624,15 @@ fn dropping_items<'tcx>(
         .is_some_and(array_of_drops)
 }
 
-/// What the crate steps from its back: the map, filter and other adapter
-/// types `back_stepped` gives, made knowing their back where they're made
-/// (ADR 0545), and each local of a counted adapter, by its body,
-/// `stepped_locals`' (#814).
+/// What the crate steps from its back: each local, by its body, and each
+/// field, `stepped_locals`' (#814, #851), by the value its maker makes,
+/// made knowing its back where it's made (ADR 0545); and the types whose
+/// question is a type's.
 pub(in crate::lower) struct BackStepped<'tcx> {
-    pub(in crate::lower) types: IndexSet<Ty<'tcx>>,
-    /// Of `types`, those whose question is a type's (`back_stepped`'s
-    /// second): asked of every value of one, never of a value alone.
+    /// The types whose question is a type's (`back_stepped`'s second):
+    /// asked of every value of one, never of a value alone. The other types
+    /// `back_stepped` gives seed `stepped_locals` alone, what a value made
+    /// of what's stepped is made of (#851).
     pub(in crate::lower) typed: IndexSet<Ty<'tcx>>,
     /// Each `&mut` of a whole local, the local it lends (`borrows`).
     pub(in crate::lower) borrows:

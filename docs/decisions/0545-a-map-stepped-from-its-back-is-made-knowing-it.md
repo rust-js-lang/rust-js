@@ -1500,3 +1500,18 @@ it so where it's made, `$taking`, `$skipping`, `$stepByEnds` (ADR 0542),
 or it's std's struct where MIR holds it (#718). So a variable that holds
 one isn't marked made knowing its back (`structure.rs`), which would have
 taken `$stepBy` or std's struct for a form that has one.
+
+## Amendment: the lowering reads no type's set (2026-11-09, #851 phase C)
+
+ADR 0262's case: none; the corpus's JS is the same. Every kind
+back_stepped's set covered is its value's now, so `stepped_from_its_back`
+asks the value alone, `made_into`'s and `made_from`'s marks, and
+`typed`'s types, whose question is a type's; the set's fallback and the
+`RUST_JS_BACK_STEPPED_CROSS_CHECK` comparison are gone, and so is
+`BackStepped::types`. `back_by_value` stays as what it is now: which
+values' maker makes a variable that holds them marked (`structure.rs`,
+`places.rs`), std's adapters, not the crate's own iterator. The set
+`back_stepped` computes still seeds `stepped_locals` alone, a value made
+of what's stepped, made stepped too (`made_stepped`): eight cases, a
+chain of adapters, a `take` of a `rev()` of droppers among them, lean on
+it. Phase C's last step gives them rules of their own, and retires the set.

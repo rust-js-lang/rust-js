@@ -11,9 +11,6 @@ use super::*;
 pub(in crate::lower) type MadeLocal<'tcx> = (rustc_middle::mir::Local, ty::Ty<'tcx>);
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Whether `ty`, a map's or a filter's, is one the crate steps from its
-    /// back (ADR 0545), made knowing it where it's made: the one answer, of
-    /// what's made and what's stepped.
     /// Whether `ty` is the type of what the call being lowered makes, into a
     /// local back_stepped's `stepped_locals` says the crate steps from its
     /// back, lent or given (ADR 0545, #851): by the value, its maker's MIR
@@ -22,10 +19,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its local, `has_a_back`'s.
     pub(in crate::lower) fn stepped_from_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.tcx.erase_and_anonymize_regions(self.reveal(ty.peel_refs()));
-        if !self.back_by_value(ty) {
-            return (self.krate.back_stepped.types).contains(&ty);
-        }
-        let stepped = self.krate.back_stepped.typed.contains(&ty)
+        self.krate.back_stepped.typed.contains(&ty)
             || !self.asking_made.get()
                 && (self.made_into.iter().chain(&self.made_from)).any(|&(local, made)| {
                     let local = (self.krate.back_stepped.borrows)
@@ -33,29 +27,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .copied()
                         .unwrap_or(local);
                     made == ty && self.local_stepped_from_its_back(local).is_some()
-                });
-        // The per-type set, while it's compared (#851's migration): each
-        // answer it gives otherwise said on stderr where
-        // `RUST_JS_BACK_STEPPED_CROSS_CHECK` is set.
-        if std::env::var_os("RUST_JS_BACK_STEPPED_CROSS_CHECK").is_some()
-            && stepped != (self.krate.back_stepped.types).contains(&ty)
-        {
-            let fact = self
-                .made_into
-                .map(|(local, made)| (made == ty, self.local_stepped_from_its_back(local)));
-            eprintln!(
-                "back-stepped cross-check\t{}\t{ty}\tvalue={stepped}\t{fact:?}",
-                self.tcx.def_path_str(self.item)
-            );
-        }
-        stepped
+                })
     }
 
-    /// Whether whether a `ty` is made knowing its back is its value's fact,
-    /// its maker's MIR identity, not back_stepped's per-type set: a map's, a
-    /// filter's, a chain's, a copy's, a zip's, an enumeration's or a
-    /// flatten's (#851 phase B); another kind's by the set still. The one answer of what's
-    /// asked and what's marked.
+    /// Whether `ty` is an adapter whose being made knowing its back is its
+    /// value's fact, its maker's MIR identity (#851): each std adapter
+    /// back_stepped follows, whose maker's value a variable that holds it
+    /// is marked by (`structure.rs`, `places.rs`). Not the crate's own
+    /// iterator, nor what's no adapter.
     pub(in crate::lower) fn back_by_value(&self, ty: ty::Ty<'tcx>) -> bool {
         crate::lower::recognition::mapped_source(self.tcx, ty).is_some()
             || crate::lower::recognition::filtered_source(self.tcx, ty).is_some()
