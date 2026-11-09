@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "write-expect-err-of-ok-silent",
+    breaks: "`unwrap_err()` and `expect_err(..)` of a write that didn't fail give `undefined`, not std's panic",
+    file: "src/runtime/fmt_error.js",
+    find: '  if (result === undefined) throw new Error(message + ": ()");\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_result_unwrap_err"],
+  },
+  {
+    name: "write-expect-err-message-unsuffixed",
+    breaks: "`expect_err(msg)` of a write that didn't fail panics `msg`, not std's `msg: ()`",
+    file: "src/runtime/fmt_error.js",
+    find: '  if (result === undefined) throw new Error(message + ": ()");\n',
+    replace: '  if (result === undefined) throw new Error(message);\n',
+    tests: ["test/corpus.test.ts", "-t", "^fmt_result_unwrap_err"],
+  },
+  {
     name: "fmt-result-err-ok",
     breaks: "a `fmt::Result` given where generic code has a `Result` is `Ok` though it failed",
     file: "src/runtime/fmt_error.js",

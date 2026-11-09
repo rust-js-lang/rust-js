@@ -20,6 +20,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "write_to_string"],
   },
   {
+    name: "fmt-result-unwrap-err-refused",
+    breaks: "`write!(..).expect_err(..)` of a `fmt::Result`, chrono's, is refused",
+    file: "src/lower/recognition/fmt.rs",
+    find: '        "unwrap_err" | "expect_err" => FmtResultAnswer::UnwrapErr,\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_result_unwrap_err"],
+  },
+  {
     name: "fmt-result-is-ok-false",
     breaks: "`is_ok()` of a `fmt::Result`, always `Ok`, is `false`",
     file: "src/lower/recognition/fmt.rs",

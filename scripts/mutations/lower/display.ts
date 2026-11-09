@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unwrap-err-of-a-failed-write-unread",
+    breaks: "`unwrap_err()` of a write that may fail is read as one that never does, and panics though it failed",
+    file: "src/lower/display.rs",
+    find: "            let result = match may_fail && may_be_write_error(&result) {",
+    replace: "            let result = match false && may_be_write_error(&result) {",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_result_unwrap_err\\.rs$"],
+  },
+  {
+    name: "unwrap-err-message-of-unwrap",
+    breaks: "`unwrap_err()` of a write that didn't fail panics `unwrap()`'s message, not `unwrap_err()`'s",
+    file: "src/lower/display.rs",
+    find: '            let message = message.unwrap_or_else(|| Expr::str("called `Result::unwrap_err()` on an `Ok` value"));',
+    replace: '            let message = message.unwrap_or_else(|| Expr::str("called `Result::unwrap()` on an `Ok` value"));',
+    tests: ["test/corpus.test.ts", "-t", "^fmt_result_unwrap_err"],
+  },
+  {
     name: "held-write-error-taken-for-ok",
     breaks: "`is_ok()` of a `fmt::Result` held in a field or a `RefCell`, `held.0.is_ok()`, is `true`, only a variable's asked (#1011)",
     file: "src/lower/display.rs",

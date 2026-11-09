@@ -193,6 +193,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> Expr {
+        // The error, or std's panic: where none may fail, its panic, after
+        // what made it ran.
+        if let FmtResultAnswer::UnwrapErr = answer {
+            let result = match may_fail && may_be_write_error(&result) {
+                true => result,
+                false => {
+                    if result.has_effects() {
+                        out.push(StmtKind::Expr(result).at(self.js_span(span)));
+                    }
+                    Expr::undefined()
+                }
+            };
+            let message = message.unwrap_or_else(|| Expr::str("called `Result::unwrap_err()` on an `Ok` value"));
+            return Expr::call(Expr::helper("$writeExpectErr"), vec![result, message]);
+        }
         let constant = match answer {
             FmtResultAnswer::Unwrap | FmtResultAnswer::Expect | FmtResultAnswer::UnwrapOr => Expr::undefined(),
             FmtResultAnswer::Is(ok) => Expr::bool(ok),
@@ -204,6 +219,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let f = message.clone().expect("`map`'s function");
                 crate::js::result::ok(crate::lower::calls::apply(f, vec![Expr::undefined()]))
             }
+            FmtResultAnswer::UnwrapErr => unreachable!("answered above"),
         };
         // Only where one may fail, and not a call `fmt_result_value` didn't
         // catch (`may_be_write_error`).
@@ -237,6 +253,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let message = message.unwrap_or_else(|| Expr::str("called `Result::unwrap()` on an `Err` value"));
                 Expr::call(Expr::helper("$writeExpect"), vec![result, message])
             }
+            FmtResultAnswer::UnwrapErr => unreachable!("answered above"),
         }
     }
 

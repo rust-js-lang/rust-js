@@ -480,6 +480,9 @@ pub(in crate::lower) enum FmtResultAnswer {
     /// `map(f)`: `Ok(f(()))`, or the `Err`, writeable's
     /// `write_to(sink).map(Ok)`.
     Map,
+    /// `unwrap_err()`, `expect_err(..)`: the error, or a panic, `: ()` after
+    /// its message, chrono's `write!(..).expect_err(..)`.
+    UnwrapErr,
 }
 
 /// The answer of the `fmt::Result` method `def_id`, if it's one of these.
@@ -493,6 +496,7 @@ pub(in crate::lower) fn fmt_result_answer(tcx: TyCtxt<'_>, def_id: DefId) -> Opt
         "map_err" => FmtResultAnswer::MapErr,
         "map" => FmtResultAnswer::Map,
         "unwrap_or" | "unwrap_or_default" => FmtResultAnswer::UnwrapOr,
+        "unwrap_err" | "expect_err" => FmtResultAnswer::UnwrapErr,
         _ => return None,
     })
 }

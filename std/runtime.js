@@ -14778,6 +14778,12 @@ export function $writeExpect(result, message) {
   if (result === undefined) return;
   throw new Error(message + ": " + (result instanceof $IoError ? $ioErrorDebug(result) : "Error"));
 }
+// `unwrap_err()` and `expect_err(..)` of one: its error, or std's panic, of
+// `Ok`'s `()`.
+export function $writeExpectErr(result, message) {
+  if (result === undefined) throw new Error(message + ": ()");
+  return result;
+}
 // What a write to a `String` had written before it failed, taken from the
 // error, as the string has it now.
 export function $fmtPartial(error) {

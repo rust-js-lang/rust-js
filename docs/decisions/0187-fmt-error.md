@@ -206,3 +206,18 @@ and a `dyn` for not `Freeze` before what their binders hold, and
 `test/corpus/debug_of_a_fn_pointers_holder.rs` crashed before, and runs as
 native Rust; the neighbour shuffle's seeds 102 and 145, which found it,
 run; the mutation `formatted-parts-under-binders` puts the old walk back.
+
+## Amendment: `unwrap_err()` and `expect_err(..)` of a write's result (2026-11-10)
+
+chrono's `write!(buf, "{}", dt.format("%#z")).expect_err(..)` was
+refused, `methods of a fmt::Result, from its MIR` (#1160). **`unwrap_err()`
+and `expect_err(msg)` of a write's `fmt::Result` or `io::Result<()>` are
+`$writeExpectErr(result, msg)`: the error where the write failed, as
+`$writeTry` caught it, std's panic where it didn't, `msg: ()`, of
+`unwrap_err()` ``called `Result::unwrap_err()` on an `Ok` value: ()``.**
+In a crate where no write may fail its result is `Ok`, so it's the panic,
+`$writeExpectErr(undefined, msg)`, after what made it ran. Held by
+`fmt_result_unwrap_err.rs` and `fmt_result_unwrap_err_never_failing.rs`
+against native Rust and five mutations, `fmt-result-unwrap-err-refused`,
+`write-expect-err-of-ok-silent`, `write-expect-err-message-unsuffixed`,
+`unwrap-err-of-a-failed-write-unread` and `unwrap-err-message-of-unwrap`.
