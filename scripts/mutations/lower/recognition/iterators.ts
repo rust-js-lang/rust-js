@@ -157,15 +157,7 @@ export const mutations: Mutation[] = [
       "^(own_trait_by_ref|code_point_order).rs$",
     ],
   },
-  {
-    name: "tree-extract-if-an-array",
-    breaks:
-      "a B-tree's `extract_if()`, which takes its entries as it's stepped, is read as an array, `.slice()` of a generator",
-    file: "src/lower/recognition/iterators.rs",
-    find: '                && !path.ends_with("::ExtractIf")\n',
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^extract_if.rs$"],
-  },
+
   {
     name: "mir-bytes-len-refused",
     breaks:

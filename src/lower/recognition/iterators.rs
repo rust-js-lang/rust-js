@@ -573,14 +573,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// A B-tree's `iter()`, `keys()`, `range()` and the like: its items in
-    /// order, an array's (ADR 0059), `$treeRange`'s of a range (ADR 0325). Not its `extract_if()`, which takes them as it's
-    /// stepped, `$mapExtractIf`'s.
+    /// order, an array's (ADR 0059), `$treeRange`'s of a range (ADR 0325).
+    /// Its `extract_if()`, which takes them as it's stepped, is asked
+    /// nothing an array's iterator answers by its type, a back, a length or
+    /// a clone, none of which it has, and its value, `$mapExtractIf`'s, is a
+    /// JS iterator already, read as one where it's stepped (#1059).
     pub(in crate::lower) fn is_tree_iter(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         matches!(ty.kind(), ty::Adt(adt, _) if {
             let path = std_path(self.tcx, adt.did());
-            (path.starts_with("std::collections::btree_map::") || path.starts_with("std::collections::btree_set::"))
-                && !path.ends_with("::ExtractIf")
+            path.starts_with("std::collections::btree_map::") || path.starts_with("std::collections::btree_set::")
         })
     }
 
