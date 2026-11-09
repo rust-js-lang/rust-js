@@ -3,7 +3,9 @@
 // iterator by its dictionary's `into_iter`, in a loop, a sum and a
 // collection's `extend` alike; a `&mut` collection's as generic code holds
 // it, in the box a `&mut` to an object is, its items' handles written in
-// place (#966).
+// place (#966). A `Vec`'s iterator of items whose drop may panic, given as
+// the `IntoIterator`, goes as it is, never wrapped in its slice's steps
+// (#1109).
 struct Quiet(u32);
 
 impl Iterator for Quiet {
@@ -21,6 +23,17 @@ struct Loud(u32);
 impl Drop for Loud {
     fn drop(&mut self) {
         println!("drop {}", self.0);
+    }
+}
+
+struct Fragile(u32);
+
+impl Drop for Fragile {
+    fn drop(&mut self) {
+        if self.0 == 0 {
+            panic!("dropped 0");
+        }
+        println!("drop fragile {}", self.0);
     }
 }
 
@@ -55,6 +68,11 @@ fn count<I: IntoIterator>(items: impl Is<I>) -> usize {
     n
 }
 
+fn second<I: IntoIterator<Item = Fragile>>(items: impl Is<I>) -> Option<u32> {
+    let items: I = items.is();
+    items.into_iter().nth(1).map(|f| f.0)
+}
+
 fn fill<C: Extend<u32>, I: IntoIterator<Item = u32>>(c: &mut C, items: impl Is<I>) {
     let items: I = items.is();
     c.extend(items);
@@ -81,4 +99,6 @@ fn main() {
     fill(&mut out, [9, 8]);
     println!("{out:?}");
     println!("{}", equal(vec![Loud(1), Loud(2)], vec![Loud(1), Loud(3)]));
+    let fragile = vec![Fragile(1), Fragile(2), Fragile(3)];
+    println!("{:?}", second(fragile.into_iter()));
 }

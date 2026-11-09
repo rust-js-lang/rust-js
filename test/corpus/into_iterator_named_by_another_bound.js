@@ -12,10 +12,13 @@ import {
   $foldOf,
   $given,
   $givenDrop,
+  $held,
   $iter,
   $iterEq,
+  $lent,
   $mutItems,
   $next,
+  $nthDropping,
   $partialEq,
   $traitImpl,
   iterator_skip,
@@ -37,6 +40,13 @@ function quietIterator_next(quiet) {
 
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
+}
+
+function fragileDrop_drop(fragile) {
+  if (fragile[0] === 0) {
+    throw new Error("dropped 0");
+  }
+  console.log(`drop fragile ${fragile[0]}`);
 }
 
 const $tIsT = new WeakMap();
@@ -79,6 +89,41 @@ function count(items, IIntoIterator, IsI) {
     n = (n + 1) >>> 0;
   }
   return n;
+}
+
+function second(items, IIntoIterator, IsI, dropIIntoIter) {
+  items = IsI.is(items);
+  const value = $held(IIntoIterator.intoIter(items));
+  let nth;
+  function map(f) {
+    const result = f[0];
+    fragileDrop_drop(f);
+    return result;
+  }
+  try {
+    nth = $nthDropping(
+      $lent($given(value, IIntoIterator.IntoIterIterator())),
+      1,
+      fragileDrop_drop,
+      false,
+    );
+  } catch (error) {
+    $cleanup(() => {
+      dropIIntoIter?.(value);
+    });
+    throw error;
+  }
+  let result;
+  try {
+    result = nth != null ? map(nth) : undefined;
+  } catch (error) {
+    $cleanup(() => {
+      dropIIntoIter?.(value);
+    });
+    throw error;
+  }
+  dropIIntoIter?.(value);
+  return result;
 }
 
 function fill(c, items, CExtendU32, IIntoIterator, IsI, IIntoIterInPlace) {
@@ -225,5 +270,16 @@ function main() {
   console.log(
     `${equal([[1], [2]], [[1], [3]], vecIntoIterator, vecIntoIterator, $partialEq({ eq: $eq }), VecIsVec, VecIsVec, $dropEach(loudDrop_drop), $dropEach(loudDrop_drop), $dropEach(loudDrop_drop), loudDrop_drop, $dropEach(loudDrop_drop), loudDrop_drop)}`,
   );
+  const fragile = [[1], [2], [3]];
+  const value = second(
+    $iter(fragile),
+    {
+      intoIter: (items) => items,
+      IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+    },
+    tIsT($dropEach(fragileDrop_drop)),
+    $dropEach(fragileDrop_drop),
+  );
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
 }
 //# sourceMappingURL=case.js.map

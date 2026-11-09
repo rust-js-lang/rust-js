@@ -14,11 +14,12 @@ export const mutations: Mutation[] = [
   {
     name: "naming-parameter-of-into-iter-boxed",
     breaks:
-      "`impl Is<I>` of an `IntoIterator` held as it is goes as a JS iterator its caller makes, where `I`, the same value, is held as it is (#966)",
+      "`impl Is<I>` of an `IntoIterator` held as it is isn't given as it is, so a `Vec`'s iterator of items whose drop may panic given for it is wrapped in its slice's steps, `$slicing(it, drop)`, which `I`'s dictionary steps already (#966, #1109)",
     file: "src/lower/iterators.rs",
     find: "                        && into_iter_held_as_it_is(tcx, id, Ty::new_param(tcx, p.index, p.name)) =>\n",
     replace: "                        && false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^into_iterator_named_by_another_bound.rs$"],
+    snapshots: true,
   },
   {
     name: "reversal-of-range-chain-as-items",
