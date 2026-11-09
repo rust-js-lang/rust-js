@@ -3,7 +3,7 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync,
 import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
 import { chromium } from "@playwright/test";
-import { buildCompiler, compiler, fixture, root, seeded } from "./support";
+import { buildCompiler, compiler, fixture, KeptApp, root, seeded } from "./support";
 import { cacheDirOf } from "../tooling/build.js";
 
 const example = join(root, "examples/next");
@@ -85,23 +85,24 @@ js::export_default!(About);
 `;
 
 // The example as it is: its files, its packages, and the crates by path
-// from this checkout, as the example has them.
-function copy(name: string): string {
-  const dir = fixture(name);
-  cpSync(example, dir, {
-    recursive: true,
-    filter: (path) => !/^(node_modules|\.next|target|Cargo\.lock|\.cargo)(\/|$)/.test(relative(example, path)) && !path.endsWith(".map"),
-  });
+// from this checkout, as the example has them. Kept between runs, its
+// Cargo target in its `node_modules/.cache` (`KeptApp`, #882); `more`, what
+// a test adds to it, written through it too, before it's done.
+function copy(name: string, more: (kept: KeptApp) => void = () => {}): string {
+  const kept = new KeptApp(name);
+  const dir = kept.dir;
+  kept.copy(example, "", (path) => !/^(node_modules|\.next|target|Cargo\.lock|\.cargo)(\/|$)/.test(path) && !path.endsWith(".map"));
   // Its packages are the example's, but its node_modules its own: what
   // Cargo writes is there, its .cache's (ADR 0192).
-  mkdirSync(join(dir, "node_modules"));
   for (const entry of readdirSync(join(example, "node_modules"))) {
-    if (entry !== ".cache") symlinkSync(realpathSync(join(example, "node_modules", entry)), join(dir, "node_modules", entry));
+    if (entry !== ".cache") kept.link(join("node_modules", entry), realpathSync(join(example, "node_modules", entry)));
   }
-  // Its Cargo target made from the run's seed, the binding crates checked.
-  seeded(join(cacheDirOf(dir), "target"));
-  const cargo = join(dir, "Cargo.toml");
-  writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`));
+  kept.write("Cargo.toml", readFileSync(join(example, "Cargo.toml"), "utf8").replaceAll('path = "../../', `path = "${root}/`));
+  more(kept);
+  kept.done();
+  // Its Cargo target made from the run's seed where there's none yet, the
+  // binding crates checked.
+  if (!existsSync(join(cacheDirOf(dir), "target"))) seeded(join(cacheDirOf(dir), "target"));
   return dir;
 }
 
@@ -122,19 +123,19 @@ function generated(dir: string): Map<string, string> {
 // back (ADR 0192), by a link of its own that gives next/link a class it
 // computes, an aria-label, and the anchor's other props (ADR 0200, 0208).
 function app(name: string): string {
-  const dir = copy(name);
-  const page = join(dir, "app/page.rs");
-  writeFileSync(page, readFileSync(page, "utf8")
+  return copy(name, (kept) => {
+  const dir = kept.dir;
+  kept.write("app/page.rs", readFileSync(join(example, "app/page.rs"), "utf8")
     .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod post;\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\n#[path = \"../instrumentation.rs\"]\nmod instrumentation;\n#[path = \"../instrumentation-client.rs\"]\nmod instrumentation_client;\n#[path = \"../server.rs\"]\nmod server;\nmod counter;\nmod fonts;\nmod robots;\nmod sitemap;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/agent.rs\"]\nmod agent;\n#[path = \"../pages/api/greet.rs\"]\nmod api_greet;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />\n                    <fonts::Fonted />'));
   // Fonts, Google's, which the example's layout loads too, and a file's.
-  writeFileSync(join(dir, "app/fonts.rs"), fonts);
-  writeFileSync(join(dir, "app/mono.woff2"), "a font's bytes, as Next.js copies them");
-  writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
-  writeFileSync(join(dir, "app/robots.rs"), robots);
-  writeFileSync(join(dir, "app/sitemap.rs"), sitemap);
-  cpSync(join(dir, "public/next.svg"), join(dir, "app/logo.svg"));
-  writeFileSync(join(dir, "app/later.rs"), `#![allow(non_snake_case)]
+  kept.write("app/fonts.rs", fonts);
+  kept.write("app/mono.woff2", "a font's bytes, as Next.js copies them");
+  kept.write("app/counter.rs", counter("Count "));
+  kept.write("app/robots.rs", robots);
+  kept.write("app/sitemap.rs", sitemap);
+  kept.write("app/logo.svg", readFileSync(join(example, "public/next.svg")));
+  kept.write("app/later.rs", `#![allow(non_snake_case)]
 js::directive!("use client");
 
 use react::{JSX, jsx};
@@ -148,43 +149,37 @@ js::export_default!(Later);
   // The Pages Router's route, as react.dev's pages read it: compiled, not
   // rendered, as this app's routes are the App Router's.
   // A link of a ref and passHref, as react.dev's SidebarLink has it.
-  writeFileSync(join(dir, "app/linked.rs"), linked);
-  writeFileSync(join(dir, "app/route_path.rs"), "pub fn route_path() -> String {\n    next::router::use_router().as_path().to_string()\n}\n\n" + routeEvents);
+  kept.write("app/linked.rs", linked);
+  kept.write("app/route_path.rs", "pub fn route_path() -> String {\n    next::router::use_router().as_path().to_string()\n}\n\n" + routeEvents);
   // A route of the request, its headers and cookies, which make it
   // dynamic, and a Server Action that sets them.
-  mkdirSync(join(dir, "app/request"));
-  writeFileSync(join(dir, "app/request/page.rs"), request);
+  kept.write("app/request/page.rs", request);
   // A dynamic segment's page of its parameter's matching, compiled, not
   // routed: matching, prefetch() and navigation() need `cacheComponents`,
   // which this app's routes aren't.
-  writeFileSync(join(dir, "app/post.rs"), post);
-  writeFileSync(join(dir, "app/actions.rs"), actions);
-  writeFileSync(join(dir, "app/cached.rs"), cached);
+  kept.write("app/post.rs", post);
+  kept.write("app/actions.rs", actions);
+  kept.write("app/cached.rs", cached);
   // A Route Handler, and a proxy that rewrites a path to another route.
-  mkdirSync(join(dir, "app/api/hello"), { recursive: true });
-  writeFileSync(join(dir, "app/api/hello/route.rs"), route);
-  writeFileSync(join(dir, "proxy.rs"), proxy);
+  kept.write("app/api/hello/route.rs", route);
+  kept.write("proxy.rs", proxy);
   // Instrumentation, the server's and the client's.
-  writeFileSync(join(dir, "instrumentation.rs"), instrumentation);
-  writeFileSync(join(dir, "instrumentation-client.rs"), instrumentationClient);
+  kept.write("instrumentation.rs", instrumentation);
+  kept.write("instrumentation-client.rs", instrumentationClient);
   // A custom server, Next.js's handed each request but its own.
-  writeFileSync(join(dir, "server.rs"), customServer(3700 + Math.floor(Math.random() * 300)));
+  kept.write("server.rs", customServer);
   // An image drawn from JSX, next/og's.
-  mkdirSync(join(dir, "app/og"));
-  writeFileSync(join(dir, "app/og/route.rs"), og);
-  mkdirSync(join(dir, "app/about"));
-  writeFileSync(join(dir, "app/about/page.rs"), about);
+  kept.write("app/og/route.rs", og);
+  kept.write("app/about/page.rs", about);
   // A Pages Router page built for the paths it gives, each with its props,
   // and not found for one, as react.dev's errors page is.
-  mkdirSync(join(dir, "pages/codes"), { recursive: true });
-  writeFileSync(join(dir, "pages/codes/[code].rs"), code);
+  kept.write("pages/codes/[code].rs", code);
   // A page rendered for each request, and an API route.
-  writeFileSync(join(dir, "pages/agent.rs"), agent);
-  mkdirSync(join(dir, "pages/api"));
-  writeFileSync(join(dir, "pages/api/greet.rs"), apiHello);
+  kept.write("pages/agent.rs", agent);
+  kept.write("pages/api/greet.rs", apiHello);
   // The Pages Router's app, which renders each page in it, as react.dev's
   // _app does.
-  writeFileSync(join(dir, "pages/_app.rs"), `#![allow(non_snake_case)]
+  kept.write("pages/_app.rs", `#![allow(non_snake_case)]
 
 use next::app::{AppContext, AppInitialProps, AppProps, app};
 use react::{JSX, jsx};
@@ -202,7 +197,7 @@ js::export_default!(MyApp);
 `);
   // The Pages Router's document, its `<html>` and `<body>`, as react.dev's
   // _document has them.
-  writeFileSync(join(dir, "pages/_document.rs"), `#![allow(non_snake_case)]
+  kept.write("pages/_document.rs", `#![allow(non_snake_case)]
 
 use next::document::{DocumentContext, DocumentInitialProps, Head, Html, Main, NextScript, document};
 use react::attributes::{HTMLAttributes, HtmlHTMLAttributes};
@@ -241,7 +236,7 @@ js::on_load! {
     next::set_get_initial_props(MyDocument, initial);
 }
 `);
-  return dir;
+  });
 }
 
 // A post's page, its slug rendered on the request where it wasn't
@@ -451,13 +446,15 @@ pub fn onRouterTransitionStart(url: &str, navigation_type: RouterTransitionType,
 `;
 
 // A custom server, as Next.js's docs write one: Next.js prepared, then
-// each request but `/custom` handed to it.
-function customServer(port: number): string {
-  return `use next::{NextServerOptions, next};
+// each request but `/custom` handed to it, on the port `PORT` says, as a
+// host gives one: the same file every run, so a kept app's is found built
+// (#882), and each run's port its own.
+const customServer = `use next::{NextServerOptions, next};
 use node::http;
 
 js::on_load! {
     js::spawn(Box::new(async {
+        let port: f64 = std::env::var("PORT").ok().and_then(|port| port.parse().ok()).unwrap_or(3000.0);
         let app = next(NextServerOptions { dev: Some(false), dir: Some("."), ..Default::default() });
         let handle = app.get_request_handler();
         app.prepare().await;
@@ -468,11 +465,10 @@ js::on_load! {
                 let _ = handle(req, res);
             }
         })
-        .listen(Some(${port}.0), Some(Box::new(|| println!("custom server ready on ${port}"))));
+        .listen(Some(port), Some(Box::new(move || println!("custom server ready on {port}"))));
     }));
 }
 `;
-}
 
 const proxy = `use next::server::{Matcher, MiddlewareConfig, NextMiddlewareResult, NextRequest, next_response};
 use react::webapi::{Response, url};
@@ -992,7 +988,10 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   expect(documented).toContain('nonce="n0nce"');
   // The custom server, run as Next.js's docs run one: `node server.js`.
   expect(readFileSync(join(dir, "server.js"), "utf8")).toContain('import next from "next";');
-  const custom = spawn("node", ["server.js"], { cwd: dir, env: { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" } });
+  const custom = spawn("node", ["server.js"], {
+    cwd: dir,
+    env: { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1", PORT: String(3700 + Math.floor(Math.random() * 300)) },
+  });
   try {
     let served = "";
     custom.stdout.on("data", (data) => (served += data));
