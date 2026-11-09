@@ -54,8 +54,11 @@ use std::path::Path;
 /// consumer whose writers take more compiles its own (#1026). 21: its
 /// functions whose JS may give one function where Rust makes two,
 /// `merges_identities`, of which a consumer that compares a function's
-/// identity compiles its own (#1052).
-pub const VERSION: u32 = 21;
+/// identity compiles its own (#1052). 22: `merges_identities` lists too each
+/// function that makes a `Box`, `Rc` or `Arc` a `dyn Fn` of a function
+/// another may hold, which a consumer that reads a `dyn Fn`'s address
+/// makes apart (#1053).
+pub const VERSION: u32 = 22;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]

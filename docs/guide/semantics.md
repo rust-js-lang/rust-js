@@ -312,6 +312,20 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   `Rc::as_ptr` is a pointer to what it points at, so `Rc::as_ptr(a) ==
   Rc::as_ptr(b)` is `a === b` too, and of an `Rc` of a number it counts,
   as `ptr_eq` does ([0562](../decisions/0562-a-pointer-is-a-place-and-an-address.md), amended).
+  Where the crate reads a `dyn Fn`'s address, `ptr::addr_eq(&*a, &*b)` or
+  `Rc::as_ptr`, each `Box`, `Rc` and `Arc` made a `dyn Fn` of its
+  arguments of a function
+  another may hold too, a `fn` pointer or item, a closure copied or
+  cloned, a type parameter's, is a function of its own,
+  `(arg0) => double(arg0)`, as two allocations are apart to Rust: where
+  it's unsized, or, of an `Rc`'s closure, where it's given `Rc::new`, so
+  clones of one `Rc` made before are one. An `Rc` of a `fn` pointer or
+  item that may be cloned, or upgraded from a `Weak`, before it's unsized
+  is refused there; a crate that reads no address is unchanged
+  ([0959](../decisions/0959-ptr-eq-of-a-closure-made-with-its-rc.md),
+  amended, the user's decision). Two boxes of a value of no size are
+  apart too, where Rust's, which allocate nothing, compare equal: Rust
+  promises no address of one (difference 48).
   `==` of two `Rc`s of an `Eq` value whose `==` is the crate's asks that
   `===` first, `a === b || eq(a, b)`, as std's specialization does, so
   `a == a.clone()` calls no `eq`; of an `Rc` of a fieldless enum with an
@@ -1737,5 +1751,14 @@ React and JSX are [their own pages](README.md#react).
     and `fn_addr_eq`'s docs say. Within one module, an instance of known
     types, `shown::<u8>`, is one function (ADR 0262, the user's decision,
     2026-11-08, #987; [ADR 0395](../decisions/0395-function-pointers-compare-by-identity.md),
+    amended).
+48. Two boxes of a value of no size made a `dyn Fn`, a function item's
+    or a closure's that captures nothing, are apart: `ptr::addr_eq(&*a,
+    &*b)` of `Box::new(double)` twice, of `make()` twice where `make`
+    returns `Box::new(|x| x + 1)`, or of a generic `Box::new(f)` given
+    one, is `false`, where native Rust's, which allocates nothing for
+    them, is `true`. Rust promises no address of a value of no size;
+    calling them does the same (ADR 0262, the user's decision,
+    2026-11-09, #1053; [ADR 0959](../decisions/0959-ptr-eq-of-a-closure-made-with-its-rc.md),
     amended).
 

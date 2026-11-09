@@ -353,6 +353,111 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// A function of its own that calls `f` with what a `dyn Fn` of
+    /// `predicates` is given, `(arg0) => f(arg0)`: an allocation's, apart
+    /// from every other's, as Rust's two are (#1053).
+    fn own_function(
+        &mut self,
+        predicates: &'tcx ty::List<ty::PolyExistentialPredicate<'tcx>>,
+        f: Expr,
+        out: &mut Vec<js::Stmt>,
+    ) -> Expr {
+        let given = (predicates.principal()).and_then(|principal| {
+            self.tcx
+                .instantiate_bound_regions_with_erased(principal)
+                .args
+                .types()
+                .next()
+        });
+        let count = match given.map(|given| *given.kind()) {
+            Some(ty::Tuple(args)) => args.len(),
+            _ => 0,
+        };
+        self.own_function_of(count, f, out)
+    }
+
+    /// `Rc::new(f)` or `Arc::new(f)` of a closure another `Rc` may be made
+    /// of too, where the crate reads a `dyn Fn`'s address
+    /// (`Counted::own_function_given`): a function of its own that calls it,
+    /// carrying its drop, as each `Rc` is apart to Rust (#1053).
+    pub(in crate::lower) fn given_own_function(
+        &mut self,
+        closure: Ty<'tcx>,
+        value: Expr,
+        span: Span,
+        out: &mut Vec<js::Stmt>,
+    ) -> R<Expr> {
+        let ty::Closure(id, args) = *closure.kind() else {
+            return Ok(value);
+        };
+        let inputs = args.as_closure().sig().inputs().skip_binder();
+        let count = match inputs {
+            [given] if let ty::Tuple(given) = given.kind() => given.len(),
+            _ => inputs.len(),
+        };
+        let carried = self.krate.closure_facts.carries_its_drop(self.tcx, id);
+        if self.drops(closure) == crate::lower::drops::Drops::Nothing {
+            return Ok(self.own_function_of(count, value, out));
+        }
+        let f = match value.reads_same() {
+            true => value,
+            false => self.spill("f", value, out),
+        };
+        let mut dropped = Vec::new();
+        match carried {
+            true => dropped.push(StmtKind::Expr(Expr::call_helper("$dispose", vec![f.clone()])).at(js::Span::NONE)),
+            false => self.drop_value(f.clone(), closure, span, &mut dropped)?,
+        }
+        let own = self.own_function_of(count, f, out);
+        Ok(Expr::call_helper(
+            "$dropping",
+            vec![own, Expr::arrow(Vec::new(), dropped)],
+        ))
+    }
+
+    /// A function of its own that calls `f` with its `count` parameters,
+    /// `(arg0) => f(arg0)`.
+    fn own_function_of(&mut self, count: usize, f: Expr, out: &mut Vec<js::Stmt>) -> Expr {
+        let f = match f.reads_same() {
+            true => f,
+            false => self.spill("f", f, out),
+        };
+        let params: Vec<String> = (0..count).map(|i| self.fresh(&format!("arg{i}"))).collect();
+        let call = Expr::call(f, params.iter().map(|param| Expr::var(param)).collect());
+        Expr::arrow(
+            params.into_iter().map(Into::into).collect(),
+            vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
+        )
+    }
+
+    /// `rc`, a counted `Rc` made a `dyn Fn`'s, its function made one of its
+    /// own (`own_function`) in its cell: `{ value: (arg0) => f(arg0),
+    /// strong: 1, weak: 0 }` of one made here.
+    fn held_own_function(
+        &mut self,
+        predicates: &'tcx ty::List<ty::PolyExistentialPredicate<'tcx>>,
+        mut rc: Expr,
+        out: &mut Vec<js::Stmt>,
+    ) -> Expr {
+        if let js::ExprKind::Object(props, _) = &mut rc.kind
+            && let Some(js::Prop::Field(_, held)) =
+                (props.iter_mut()).find(|prop| matches!(prop, js::Prop::Field(name, _) if name == js::HELD))
+        {
+            let function = std::mem::replace(held, Expr::undefined());
+            *held = self.own_function(predicates, function, out);
+            return rc;
+        }
+        let rc = match rc.reads_same() {
+            true => rc,
+            false => self.spill("rc", rc, out),
+        };
+        // What it held, read before its cell holds the function that calls it.
+        let f = self.spill("f", Expr::held(rc.clone()), out);
+        let own = self.own_function(predicates, f, out);
+        out.push(StmtKind::Assign(Expr::held(rc.clone()), own).at(js::Span::NONE));
+        rc
+    }
+
     /// An unsizing JS can't make: of a pointer of the crate's own, or to a
     /// struct whose last field is a `dyn`.
     pub(in crate::lower) fn check_unsize(&self, target: Ty<'tcx>, span: Span) -> R<()> {
@@ -497,6 +602,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && crate::lower::recognition::is_fn_dyn(self.tcx, predicates)
         {
             let function = self.pointee(source);
+            // A `Box`, an `Rc` or an `Arc` made one of a function another
+            // may hold too, where the crate reads a `dyn Fn`'s address: a
+            // function of its own that calls it, as two are two allocations
+            // to Rust, `(arg0) => f(arg0)` (#1053).
+            let own = self.krate.counted.own_function(self.tcx, source);
+            // One of an `Rc` it may share before, whose two would be two
+            // functions of one allocation: refused (the user's decision).
+            if self.krate.counted.shared_before_apart(self.tcx, source) {
+                let what = format!(
+                    "a `dyn Fn` made of a `{source}` that may be shared before, a clone of it or a `Weak`'s, where the crate reads a `dyn Fn`'s address"
+                );
+                return Err(self.unsupported(span, &what));
+            }
+            // A counted `Rc`'s, in its cell, which its clones share.
+            let (own, value) = match own && self.counted_rc(source).is_some() {
+                true => (false, self.held_own_function(predicates, value, out)),
+                false => (own, value),
+            };
             let facts = &self.krate.closure_facts;
             let handed = matches!(function.kind(), ty::Closure(id, _) if facts.handed_to_js(*id));
             // One whose JS function carries its drop, a `Box<dyn Fn>` boxed
@@ -559,15 +682,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec![f, Expr::arrow(Vec::new(), dropped)],
                 ));
             }
-            if carried || handed || self.drops(function) == crate::lower::drops::Drops::Nothing {
+            if handed || self.drops(function) == crate::lower::drops::Drops::Nothing {
+                return Ok(match own {
+                    true => self.own_function(predicates, value, out),
+                    false => value,
+                });
+            }
+            if carried && !own {
                 return Ok(value);
             }
-            let f = self.spill("f", value, out);
+            let f = match own && value.reads_same() {
+                true => value,
+                false => self.spill("f", value, out),
+            };
             let mut dropped = Vec::new();
-            self.drop_value(f.clone(), function, span, &mut dropped)?;
+            match carried {
+                true => dropped.push(StmtKind::Expr(Expr::call_helper("$dispose", vec![f.clone()])).at(js::Span::NONE)),
+                false => self.drop_value(f.clone(), function, span, &mut dropped)?,
+            }
+            // Of its own, the function that calls it carries its drop.
+            let held = match own {
+                true => self.own_function(predicates, f, out),
+                false => f,
+            };
             return Ok(Expr::call_helper(
                 "$dropping",
-                vec![f, Expr::arrow(Vec::new(), dropped)],
+                vec![held, Expr::arrow(Vec::new(), dropped)],
             ));
         }
         if !self.is_pair_dyn(target) {

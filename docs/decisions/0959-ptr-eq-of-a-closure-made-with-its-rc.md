@@ -3,7 +3,7 @@
 Status: Accepted. Extends [0582](0582-ptr-eq-of-an-object-is-its-identity.md),
 `Rc::ptr_eq` of an object is its identity, to a `dyn Fn`'s function, and
 [0852](0852-each-types-rcs-are-counted-apart.md), which types' `Rc`s are
-counted. Amended: a closure neither `Copy` nor cloned is its own function wherever it's made (below).
+counted. Amended: a closure neither `Copy` nor cloned is its own function wherever it's made (below); and each `Box`, `Rc` and `Arc` made a `dyn Fn` is apart where the crate reads a `dyn Fn`'s address (#1053, below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N where every `Rc` that
 may be the one compared is made of a closure written in its `Rc::new`: each
@@ -167,3 +167,92 @@ amended). Its `counted_rcs` reads what a body of MIR alone makes another
 `identity_read` is the one test of what reads an identity. `counted_rcs`
 asks it, and so does `reads_fn_identity`, which says whether a consumer
 compiles them.
+
+## Amendment: each allocation made a `dyn Fn` is apart where its address is read (#1053, the user's decision)
+
+A `Box<dyn Fn>` of a `fn` pointer is the pointer itself, and an uncounted
+`Rc<dyn Fn>` of a cloned closure is the closure (ADRs 0125, 0023), so two
+made of one function were one JS function: `ptr::addr_eq(&*a, &*b)` of
+`boxed(double)` twice, and of `Rc::new(read.clone())` and
+`Rc::new(read)`, was `true`, where Rust's two allocations are apart,
+`false`. Counting doesn't help: `&*rc` is still the function. Probes
+found it of every kind of function another may hold too: a `fn` pointer
+(`Box`, `Rc`), a function item (`Rc`, `Arc`), a `Copy` closure, a cloned
+closure, a type parameter's, and `Rc::as_ptr` read the same.
+
+**Where the crate reads a `dyn Fn`'s address (`points_at_functions`),
+each `Box`, `Rc` and `Arc` made a `dyn Fn` of a function another may hold
+too, what `made_with_it` doesn't say is its own, is a function of its own
+that calls it, an arrow of the `dyn Fn`'s parameters, `(arg0) => f(arg0)`**,
+as `Box::new(move |x| f(x))` prints (`rc_counts::counted_rcs`'
+`Counted::apart`, `own_function`; `traits/dyns.rs`). `made_with_it` now
+sees a closure written in its `Box::new` too. Only a `dyn Fn` whose
+address may be read is: one of the arguments a raw pointer's `dyn Fn`
+takes, which no coercion of a `dyn Fn` changes (`address_read`), so
+React's crates, which read the address of one signature, keep
+`unsuspend: noop` of another. Where it's made:
+
+- **A `Box`'s, and an `Rc`'s of what's no closure, where it's unsized**:
+  `function boxed(f) { return (arg0) => f(arg0); }`. A `fn` pointer read
+  back out of an `Rc<fn>` is still the function, so `*rc == double` is
+  still `true`. A counted `Rc`'s is its cell's, `{ value: (arg0) =>
+  double(arg0), strong: 1, weak: 0 }`. One that drops what it holds
+  carries the drop, `$dropping((..) => f(..), () => $dispose(f))`.
+- **An `Rc`'s or an `Arc`'s closure, where it's given `Rc::new`**
+  (`rc_new_apart`, `own_function_given`, `std_types/values.rs`): a
+  closure has no identity but its address, and an `Rc` of one cloned
+  before it's unsized is one allocation, which one function keeps.
+- **An `Rc` of a `fn` pointer or item that may be shared before it's
+  unsized, a clone of it or a `Weak`'s upgrade, is refused**
+  (`shared_apart`): wrapped where it's unsized, one allocation would be
+  two functions, and wrapped where it's made, a `fn` pointer read out of
+  it would compare apart from its function. One unsized where it's made,
+  `Rc::new(f)`'s, has no clone before (`made_where_unsized`).
+
+**Across crates, as #1052 did for `Rc::ptr_eq`**: a library that reads no
+address makes none apart, `boxed(f)` is `f`, so each of its functions
+that makes a `Box`, `Rc` or `Arc` a `dyn Fn` of what another may hold too
+is listed `merges_identities` (`Counted::merges`), and a consumer that
+reads an identity compiles its own, whose MIR's coercions `counted_rcs`
+reads, boxes too (`owners_made_others`): there each is apart. One a body
+of MIR alone unsizes is taken as unsized elsewhere than where it's made.
+A closure of the library's is its own there unless that body copies or
+clones it (`its_own`, `clones_of`), as one of the crate's is, so
+`computed`'s `Box::new(move |previous| ..)` stays its arrow. The one list
+of what merges is now this, the `Rc<dyn Fn>`s #1052 listed among them,
+counted or not: a counted `Rc`'s function is shared by its clones too.
+Library ABI 22.
+
+A crate that reads no `dyn Fn`'s address is unchanged: the corpus's JS is,
+but the new cases', and React's port regenerates with no new difference.
+
+The user chose each option (2026-11-09): the arrow over `f.bind(null)` or
+a refusal; every allocation apart, a generic `Box<F>` too, where a
+`Box` of a value of no size allocates nothing and native Rust's two
+compare equal, which Rust promises nothing of, ADR 0262's second case,
+listed in its Consequences and the guide's differences (48), with two
+`make()`s of `Box::new(|x| x + 1)`, apart before; and the refusal above.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, Rust's answer kept;
+B for a value of no size.
+
+Held by the corpus's `dyn_fn_addresses_of_boxes`, `dyn_fn_addresses_of_rcs`
+and `dyn_fn_address_by_rc_as_ptr`, against native Rust, the refusals
+`dyn_fn_address_of_a_shared_rc_refused` and
+`dyn_fn_address_of_an_upgraded_rc_refused`, the pair
+`library_allocations_of_one_function`, against native Rust, and
+`test/lowering-fn-identity.test.ts`'s "two boxes of a value of no size"
+pin. Mutations `allocations-an-instance-makes-unseen`,
+`library-allocations-merge-unlisted`, `allocations-of-one-function-merged`,
+`allocation-address-of-any-signature-read`, `library-closure-moved-once-apart`,
+`library-closure-clones-unseen`, `library-closure-copies-unseen`,
+`allocation-of-a-function-made-with-it-apart`,
+`allocation-functions-apart-unread`, `box-new-closure-made-apart`,
+`rc-closures-apart-where-unsized`, `shared-rc-of-a-fn-pointer-unrefused`,
+`upgraded-rc-of-a-fn-pointer-unrefused`, `rc-made-where-unsized-shared`
+(`analysis/rc_counts.ts`), `allocation-function-unwrapped`,
+`shared-allocation-unrefused`, `counted-allocation-function-whole`,
+`counted-held-function-read-late`, `allocation-function-drop-lost`,
+`rc-new-function-drop-lost`, `own-function-of-no-arguments`
+(`traits/dyns.ts`), `rc-new-closure-shared` and
+`rc-new-closure-own-uncounted` (`std_types/values.ts`).

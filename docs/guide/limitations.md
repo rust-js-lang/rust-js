@@ -43,6 +43,7 @@ reads memory by where it is, it refuses:
 - A `transmute` of an enum, whose bytes a niche or a tag lays out: `#[repr(u8)] enum Size { One = 1 } let n: u8 = unsafe { std::mem::transmute::<Option<Size>, u8>(None) }; let _ = (n, Size::One);`
 - A `static` of a reference to another `static`'s array or item; one to a literal or a `const` compiles: `static NAMES: [&str; 2] = ["x", "y"]; static REF: &[&str] = &NAMES; println!("{}", REF.join(""));`
 - `==` or `{:?}` of raw pointers in generic code to a type that holds a type parameter, `NonNull<Node<T>>`, whose size rust-js can't give: `struct Node<T>(T); fn same<T>(a: *const Node<T>, b: *const Node<T>) -> bool { a == b } let n = Node(1); println!("{}", same(&n, &n));`
+- An `Rc` of a `fn` pointer or item cloned, or upgraded from a `Weak`, before it's made an `Rc<dyn Fn>`, where the crate reads a `dyn Fn`'s address: each would be a function of its own, two of one allocation ([ADR 0959](../decisions/0959-ptr-eq-of-a-closure-made-with-its-rc.md), amended): `fn double(x: u32) -> u32 { x * 2 } let held: std::rc::Rc<fn(u32) -> u32> = std::rc::Rc::new(double); let a: std::rc::Rc<dyn Fn(u32) -> u32> = held.clone(); let b: std::rc::Rc<dyn Fn(u32) -> u32> = held; println!("{}", std::ptr::addr_eq(&*a, &*b));`
 
 And refused when it runs, as a panic that says so, since which it is
 depends on what the program does:
@@ -132,7 +133,6 @@ depends on what the program does:
 - `next_back()` of a lazy `lines()`, `split_whitespace()`, `split_terminator()` or `rsplit()`, whose `.rev()` compiles: `let mut l = "a\nb".lines(); println!("{:?}", l.next_back());`
 - `.rev()` of a `chain()` of a `map()` of a slice's items and another slice's: `let v = [1, 2]; let w = [3]; let r: Vec<i32> = v.iter().map(|x| x * 10).chain(w.iter().copied()).rev().collect(); println!("{r:?}");`
 - `VecDeque::remove` in generic code given an `Option` for its item, whose `None` the result's could look like: `fn take<T>(q: &mut std::collections::VecDeque<T>, i: usize) -> Option<T> { q.remove(i) } let mut q = std::collections::VecDeque::from(vec![None, Some(2)]); println!("{:?}", take(&mut q, 0));`
-- `dedup_by` in generic code, whose closure takes a `&mut` of a type parameter's items: `fn dd<T, F: FnMut(&mut T, &mut T) -> bool>(v: &mut Vec<T>, f: F) { v.dedup_by(f) } let mut v = vec![1, 1, 2]; dd(&mut v, |a, b| a == b); println!("{v:?}");`
 - `size_hint()` of an adapter (`filter`, `take_while`, `flat_map` and the like) of a slice's, a collection's or a type parameter's iterator, and of a `str`'s `chars` and what's made of it; of an adapter of the crate's iterator or a range it's std's ([1092](../decisions/1092-the-iterator-protocol-is-one-contract.md)): `let v = [1, 2, 3]; println!("{:?}", v.iter().filter(|x| **x > 1).size_hint());`
 - A `&mut` from `flatten()` of an `iter_mut()`: `let mut g = vec![vec![1u64], vec![2]]; for x in g.iter_mut().flatten() { *x += 1; } println!("{g:?}");`
 - `sum()` or `product()` of `Wrapping`s: `let s: std::num::Wrapping<u8> = [std::num::Wrapping(200u8), std::num::Wrapping(100)].into_iter().sum(); println!("{s}");`

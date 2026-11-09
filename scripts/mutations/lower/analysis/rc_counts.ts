@@ -228,8 +228,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc<dyn Fn>` made of a `Copy` closure given `Rc::new` by its variable twice is the function, so `ptr_eq` of the two is `true` (a wrong answer, ADR 0959, amended)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "                    copied.insert(erased(from));\n",
-    replace: "",
+    find: "\n                    copied.insert(erased(from));\n",
+    replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq_of_copy.rs$"],
   },
   {
@@ -301,8 +301,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate that holds a raw pointer to a `dyn Fn`, `ptr::addr_eq(&*first, &*second)`'s, is taken to read no closure's identity, so two closures of one scope method are one, and the comparison true where native gives false (#500)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "                Some(IdentityRead::Pointed) => points_at_functions = true,\n",
-    replace: "                Some(IdentityRead::Pointed) => {}\n",
+    find: "                    points_at_functions = true;\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^scope_method_closure_addr_eq.rs$"],
   },
   {
@@ -352,8 +352,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's `Rc<dyn Fn>`s of a cloned closure it doesn't count aren't listed, so its consumer calls its `cloned`, `const first = read; const second = read;`, and `Rc::ptr_eq` of the two is `true` (#1052)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "        .filter(|&&(_, from, to)| fn_dyn(to) && !made_with_it(from) && !counted.counts(tcx, to))\n",
-    replace: "        .filter(|&&(_, from, to)| false && fn_dyn(to) && !made_with_it(from) && !counted.counts(tcx, to))\n",
+    find: "        .filter(|&&(_, from)| !its_own(from))\n        .map(|&(owner, _)| owner)\n",
+    replace: "        .filter(|&&(_, from)| false && !its_own(from))\n        .map(|&(owner, _)| owner)\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
   {
@@ -361,8 +361,139 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's function the crate compiles itself makes its `Rc<dyn Fn>` of a cloned closure, which the crate's `Rc::ptr_eq` compares, but the crate counts none of it, so both are `read` (#1052)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "            for (from, to) in rcs_made_others(tcx, &mir.body) {\n",
-    replace: "            for (from, to) in rcs_made_others(tcx, &mir.body).into_iter().filter(|_| false) {\n",
+    find: "                if let (Some(from), Some(to)) = (rc_pointee(tcx, from_owner), rc_pointee(tcx, to_owner)) {\n",
+    replace:
+      "                if let (Some(from), Some(to)) = (rc_pointee(tcx, from_owner), rc_pointee(tcx, to_owner))\n                    && false\n                {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+  },
+  {
+    name: "allocations-an-instance-makes-unseen",
+    breaks:
+      "a library's function the crate compiles itself, as it reads a `dyn Fn`'s address, boxes a `fn` pointer it's given, the pointer itself, so two boxes of one are `===` (#1053)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                    unsized_fns.insert((erased(from_owner), erased(from), erased(to)));\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_allocations_of_one_function"],
+  },
+  {
+    name: "library-allocations-merge-unlisted",
+    breaks:
+      "a library function that boxes a `fn` pointer it's given isn't listed as merging identities, so a consumer that reads a `dyn Fn`'s address calls its JS, the pointer itself, and two boxes of one are `===` (#1053)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "\n                allocated_by.push((owner, erased(from)));\n",
+    replace: "\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_allocations_of_one_function"],
+  },
+  {
+    name: "allocations-of-one-function-merged",
+    breaks:
+      "two `Box<dyn Fn>`s or `Rc<dyn Fn>`s made of one `fn` pointer, item or cloned closure are one JS function, so `ptr::addr_eq` of them is `true` where Rust's two allocations are apart (#1053)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "        .filter(|&&(_, from, to)| address_read(to) && !its_own(from))\n",
+    replace: "        .filter(|&&(_, from, to)| false && address_read(to) && !its_own(from))\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_boxes.rs$"],
+  },
+  {
+    name: "allocation-address-of-any-signature-read",
+    breaks:
+      "an `Rc<dyn Fn(&str) -> usize>` of a function item is made a function of its own, `(arg0) => words(arg0)`, where the crate reads the address of no `dyn Fn` of its arguments, React's `unsuspend: () => noop()` (#1053)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "    let address_read = |to: Ty<'tcx>| pointed.iter().any(|&read| may_be(tcx, read, to));\n",
+    replace: "    let address_read = |_to: Ty<'tcx>| !pointed.is_empty();\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_rcs.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "library-closure-moved-once-apart",
+    breaks:
+      "a closure a library's function boxes as it's made, compiled by a consumer that reads a `dyn Fn`'s address, is made a function of its own again, `const f = (previous) => ..; return { compute: (arg0) => f(arg0) }` (#1053)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "        |from: Ty<'tcx>| made_with_it(from) || from.is_closure() && !copied.contains(&from) && !cloned.contains(&from);\n",
+    replace: "        |from: Ty<'tcx>| made_with_it(from);\n",
+    tests: ["test/crates.test.ts", "-t", "merge what its consumer compares"],
+  },
+  {
+    name: "library-closure-clones-unseen",
+    breaks:
+      "a library's closure boxed cloned and as it is, compiled by a consumer that reads a `dyn Fn`'s address, is taken to be made with each box, so the two are one function, `addr_eq` `true` (#1053)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "            cloned.extend(clones_of(tcx, &mir.body).into_iter().map(erased));\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_allocations_of_one_function"],
+  },
+  {
+    name: "library-closure-copies-unseen",
+    breaks:
+      "a library's `Copy` closure given `Rc::new` twice, compiled by a consumer that reads a `dyn Fn`'s address, is taken to be made with each, so the two `Rc`s are one function, `addr_eq` `true` (#1053)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                    if tcx.type_is_copy_modulo_regions(env, from) {\n                        copied.insert(erased(from));\n                    }\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_allocations_of_one_function"],
+  },
+  {
+    name: "allocation-of-a-function-made-with-it-apart",
+    breaks:
+      "a closure written in its `Box::new` is made a function of its own again where it's unsized, `(arg0) => ..` around an arrow no other box holds (#1053)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "        .filter(|&&(_, from, to)| address_read(to) && !its_own(from))\n",
+    replace: "        .filter(|&&(_, _from, to)| address_read(to))\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_boxes.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "allocation-functions-apart-unread",
+    breaks:
+      "every `Rc<dyn Fn>` made of a function item is a function of its own, `(arg0) => hello(arg0)`, in a crate that reads no `dyn Fn`'s address (#1053)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "        .filter(|&&(_, from, to)| address_read(to) && !its_own(from))\n",
+    replace: "        .filter(|&&(_, from, _to)| !its_own(from))\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq_of_item.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "box-new-closure-made-apart",
+    breaks:
+      "a `Copy` closure written in its `Box::new` isn't seen made there, so it's made a function of its own again where it's unsized (#1053)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                    .is_some_and(|(def_id, _)| is_rc_new(tcx, def_id) || is_std_def(tcx, def_id, StdItem::BoxNew))\n",
+    replace: "                    .is_some_and(|(def_id, _)| is_rc_new(tcx, def_id))\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_boxes.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "rc-closures-apart-where-unsized",
+    breaks:
+      "an `Rc`'s closure is made a function of its own where it's unsized, not where it's given `Rc::new`, so two clones of one `Rc` made before are two functions, `ptr::addr_eq` `false` where Rust's is `true` (#1053)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "        .partition(|&&(owner, from)| !owner.is_box() && from.is_closure());\n",
+    replace: "        .partition(|&&(owner, from)| false && !owner.is_box() && from.is_closure());\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_rcs.rs$"],
+  },
+  {
+    name: "shared-rc-of-a-fn-pointer-unrefused",
+    breaks:
+      "an `Rc` of a `fn` pointer cloned before it's unsized is made two functions of its own, `ptr::addr_eq` `false` where Rust's is `true`, not refused (#1053)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                && (cloned.iter().any(|&clone| may_be(tcx, clone, owner))\n",
+    replace: "                && (cloned.iter().any(|&clone| false && may_be(tcx, clone, owner))\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_of_a_shared_rc_refused.rs$"],
+  },
+  {
+    name: "upgraded-rc-of-a-fn-pointer-unrefused",
+    breaks:
+      "an `Rc` of a `fn` pointer and the one its `Weak` upgrades to, each unsized, are two functions of their own, their addresses apart where Rust's are one, not refused (#1053)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                    || weaks.iter().any(|&weak| may_be(tcx, weak, from)))\n",
+    replace: "                    || weaks.iter().any(|&weak| false && may_be(tcx, weak, from)))\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_of_an_upgraded_rc_refused.rs$"],
+  },
+  {
+    name: "rc-made-where-unsized-shared",
+    breaks:
+      "a generic `Rc::new(f)` unsized where it's made is taken to be shared before, as the crate clones another `Rc`, and refused (#1053)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                && unsized_later.contains(&owner)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_rcs.rs$"],
   },
 ];

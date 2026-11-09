@@ -791,4 +791,22 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^local_borrow_nested_option.rs$"],
   },
+  {
+    name: "rc-new-closure-shared",
+    breaks:
+      "`Rc::new` of a `Copy` closure, where the crate reads a `dyn Fn`'s address, is the closure itself, so two `Rc::new(add)`s are `===` where Rust's two allocations are apart (#1053)",
+    file: "src/lower/std_types/values.rs",
+    find: "            && self.krate.counted.own_function_given(self.tcx, pointee)\n",
+    replace: "            && false\n            && self.krate.counted.own_function_given(self.tcx, pointee)\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_rcs.rs$"],
+  },
+  {
+    name: "rc-new-closure-own-uncounted",
+    breaks:
+      "a counted `Rc::new` of a closure made a function of its own is that function, not `{ value, strong, weak }`, so `$rcClone` and `$ptrTo(rc.value)` read nothing (#1053)",
+    file: "src/lower/std_types/values.rs",
+    find: "            return Ok(self.counted_same(def_id, generic_args, own.clone()).unwrap_or(own));\n",
+    replace: "            return Ok(own);\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_by_rc_as_ptr.rs$"],
+  },
 ];

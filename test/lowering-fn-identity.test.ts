@@ -66,3 +66,54 @@ pub fn shows() -> String {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.inOneBody(), lib.acrossCalls(), lib.acrossModules(), lib.inOneModule(), lib.shows()]).toEqual([false, false, false, true, "<7>"]);
 });
+
+test("two boxes of a value of no size made a dyn Fn are apart, where Rust promises no address", async () => {
+  const dir = fixture("fn-identity-zst");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::ptr::addr_eq;
+
+fn double(x: u32) -> u32 {
+    x * 2
+}
+
+fn make() -> Box<dyn Fn(u32) -> u32> {
+    Box::new(|x| x + 1)
+}
+
+fn boxed<F: Fn(u32) -> u32 + 'static>(f: F) -> Box<dyn Fn(u32) -> u32> {
+    Box::new(f)
+}
+
+pub fn items() -> bool {
+    let first: Box<dyn Fn(u32) -> u32> = Box::new(double);
+    let second: Box<dyn Fn(u32) -> u32> = Box::new(double);
+    addr_eq(&*first, &*second)
+}
+
+pub fn made_twice() -> bool {
+    let (first, second) = (make(), make());
+    addr_eq(&*first, &*second)
+}
+
+pub fn generic() -> bool {
+    let (first, second) = (boxed(double), boxed(double));
+    addr_eq(&*first, &*second)
+}
+
+pub fn called() -> u32 {
+    make()(1) + boxed(double)(2)
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  // A function of its own where each is unsized (#1053).
+  expect(js).toContain("function boxed(f) {\n  return (arg0) => f(arg0);\n}");
+  // Native Rust's answers are all `true`: a `Box` of a value of no size
+  // allocates nothing, and its address is no allocation's, which Rust
+  // promises nothing of. JS's are `false`, each box apart, as two that
+  // allocate are (ADR 0262's second case, the user's decision, #1053).
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.items(), lib.madeTwice(), lib.generic(), lib.called()]).toEqual([false, false, false, 6]);
+});

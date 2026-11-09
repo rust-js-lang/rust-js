@@ -438,6 +438,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .into_iter(),
             _ => values.into_iter(),
         };
+        // `Rc::new` of a closure another `Rc` may be made of too, where the
+        // crate reads a `dyn Fn`'s address: a function of its own (#1053).
+        if known == Std::Same
+            && let Some((true, pointee)) = self.recognition().rc_same(def_id, generic_args)
+            && self.krate.counted.own_function_given(self.tcx, pointee)
+        {
+            let value = values.next().expect("rustc checked the arguments");
+            let own = self.given_own_function(pointee, value, call.span, out)?;
+            return Ok(self.counted_same(def_id, generic_args, own.clone()).unwrap_or(own));
+        }
         // A counted `Rc` (ADR 0320): `Rc::new` makes its `{ value, .. }`, and
         // what it points at is its `value`.
         if known == Std::Same && self.counted_same_by(def_id, generic_args).is_some() {

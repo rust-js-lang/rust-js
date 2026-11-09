@@ -370,9 +370,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a type parameter's function made a `dyn Fn` doesn't carry its drop",
     file: "src/lower/traits/dyns.rs",
-    find: "            if carried || handed || self.drops(function) == crate::lower::drops::Drops::Nothing {\n",
-    replace:
-      "            if true || carried || handed || self.drops(function) == crate::lower::drops::Drops::Nothing {\n",
+    find: "            if handed || self.drops(function) == crate::lower::drops::Drops::Nothing {\n",
+    replace: "            if true || handed || self.drops(function) == crate::lower::drops::Drops::Nothing {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$"],
   },
   {
@@ -417,8 +416,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure made a `dyn Fn` to hand to JS is given its drop where it's made one, `$dropping(f, drop)`, which nothing runs (ADR 0873)",
     file: "src/lower/traits/dyns.rs",
-    find: "            if carried || handed || self.drops(function)",
-    replace: "            if carried || self.drops(function)",
+    find: "            if handed || self.drops(function)",
+    replace: "            if self.drops(function)",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
     snapshots: true,
   },
@@ -535,5 +534,68 @@ export const mutations: Mutation[] = [
     find: "                    Expr::pair(self.place_where_made(Expr::held(cell), out), dictionary)\n",
     replace: "                    Expr::pair(Expr::held(cell), dictionary)\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
+  },
+  {
+    name: "allocation-function-unwrapped",
+    breaks:
+      "a `Box<dyn Fn>` of a `fn` pointer is the pointer itself where the crate reads a `dyn Fn`'s address, so two boxes of one are `===` (#1053)",
+    file: "src/lower/traits/dyns.rs",
+    find: "            let own = self.krate.counted.own_function(self.tcx, source);\n",
+    replace: "            let own = false && self.krate.counted.own_function(self.tcx, source);\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_boxes.rs$"],
+  },
+  {
+    name: "shared-allocation-unrefused",
+    breaks:
+      "a `dyn Fn` made of an `Rc` of a `fn` pointer shared before is made a function of its own, apart from its clone's, not refused (#1053)",
+    file: "src/lower/traits/dyns.rs",
+    find: "            if self.krate.counted.shared_before_apart(self.tcx, source) {\n",
+    replace: "            if false && self.krate.counted.shared_before_apart(self.tcx, source) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_of_a_shared_rc_refused.rs$"],
+  },
+  {
+    name: "counted-allocation-function-whole",
+    breaks:
+      "a counted `Rc`'s function of its own is made of the `Rc`, `(arg0) => rc(arg0)`, not of what its cell holds, so `rc.value` is `undefined` (#1053)",
+    file: "src/lower/traits/dyns.rs",
+    find: "                true => (false, self.held_own_function(predicates, value, out)),\n",
+    replace: "                true => (true, value),\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_by_rc_as_ptr.rs$"],
+  },
+  {
+    name: "counted-held-function-read-late",
+    breaks:
+      "a counted `Rc` held before it's unsized, its function made one of its own that reads its cell when it's called, `rc.value = (arg0) => rc.value(arg0)`, calls itself (#1053)",
+    file: "src/lower/traits/dyns.rs",
+    find: "        let f = self.spill(\"f\", Expr::held(rc.clone()), out);\n",
+    replace: "        let f = Expr::held(rc.clone());\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_by_rc_as_ptr.rs$"],
+  },
+  {
+    name: "allocation-function-drop-lost",
+    breaks:
+      "a `Box<dyn Fn>` of a cloned closure that drops what it holds, made a function of its own, carries no drop, so dropping the box drops nothing (#1053)",
+    file: "src/lower/traits/dyns.rs",
+    find: "                true => self.own_function(predicates, f, out),\n                false => f,\n            };\n",
+    replace: "                true => return Ok(self.own_function(predicates, f, out)),\n                false => f,\n            };\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_boxes.rs$"],
+  },
+  {
+    name: "rc-new-function-drop-lost",
+    breaks:
+      "`Rc::new` of a cloned closure that drops what it holds, made a function of its own, carries no drop, so the last `Rc`'s drop drops nothing (#1053)",
+    file: "src/lower/traits/dyns.rs",
+    find: "        let own = self.own_function_of(count, f, out);\n        Ok(Expr::call_helper(\n            \"$dropping\",\n            vec![own, Expr::arrow(Vec::new(), dropped)],\n        ))\n",
+    replace: "        let own = self.own_function_of(count, f, out);\n        Ok(own)\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_by_rc_as_ptr.rs$"],
+  },
+  {
+    name: "own-function-of-no-arguments",
+    breaks:
+      "a function of its own of a `dyn Fn(u32)` takes nothing and passes nothing on, so its call gives `NaN` (#1053)",
+    file: "src/lower/traits/dyns.rs",
+    find: "            Some(ty::Tuple(args)) => args.len(),\n            _ => 0,\n        };\n        self.own_function_of(count, f, out)\n",
+    replace: "            Some(ty::Tuple(_args)) => 0,\n            _ => 0,\n        };\n        self.own_function_of(count, f, out)\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_boxes.rs$"],
   },
 ];

@@ -7,7 +7,8 @@
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::pointers::raw_pointee;
 use crate::lower::recognition::{
-    compares_fn_identity, is_fn_dyn, is_rc_new, is_std_crate, known_by_bounds, rc_pointee, reads_rc_count, weak_pointee,
+    StdItem, compares_fn_identity, is_fn_dyn, is_rc_new, is_std_crate, is_std_def, known_by_bounds, rc_pointee,
+    reads_rc_count, weak_pointee,
 };
 use crate::lower::{Body, fn_def};
 use rustc_hir::def::DefKind;
@@ -38,6 +39,28 @@ pub struct Counted<'tcx> {
     /// its own, as two such are two to Rust (#500, the user's decision). A
     /// closure whose own address is taken is a box of its own already.
     pub points_at_functions: bool,
+    /// Each `Box`, `Rc` and `Arc` made a `dyn Fn` of a function another may
+    /// hold too, a `fn` pointer or item, a closure copied or cloned, a type
+    /// parameter's or a `&dyn Fn`, where the crate reads a `dyn Fn`'s
+    /// address, a raw pointer to a `dyn Fn` of its arguments
+    /// (`points_at_functions`): two are two allocations to Rust,
+    /// apart, so each is a function of its own where it's unsized
+    /// (`own_function`, #1053), by what owns it. A `Box` of a value of no
+    /// size too, which allocates nothing, whose address Rust promises
+    /// nothing of (the user's decision, ADR 0262's second case). Not an
+    /// `Rc`'s or an `Arc`'s closure, which is made one where it's given
+    /// `Rc::new`, as the `Rc` may be cloned before it's unsized
+    /// (`rc_new_apart`).
+    pub apart: IndexSet<Ty<'tcx>>,
+    /// The closures given `Rc::new` or `Arc::new` that another may be too,
+    /// where the crate reads a `dyn Fn`'s address, of an `Rc` made a `dyn
+    /// Fn`: each a function of its own where it's given it (#1053).
+    pub rc_new_apart: IndexSet<Ty<'tcx>>,
+    /// Of `apart`, each `Rc` or `Arc` of what's no closure, a `fn` pointer
+    /// or item, whose `Rc` the crate may clone, or upgrade a `Weak` to,
+    /// before it's unsized: two of one allocation would be two functions,
+    /// so it's refused (the user's decision, #1053).
+    pub shared_apart: IndexSet<Ty<'tcx>>,
     /// The functions that make an `Rc<dyn Fn>` it doesn't count of what
     /// another may be made of too, a closure cloned or a function item,
     /// which nothing here compares: the two are one JS function, which a
@@ -52,14 +75,15 @@ pub struct Counted<'tcx> {
 /// function's (#500).
 enum IdentityRead<'tcx> {
     Compared(Ty<'tcx>),
-    Pointed,
+    /// Of the `dyn Fn` pointed at.
+    Pointed(Ty<'tcx>),
 }
 
 fn identity_read<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<IdentityRead<'tcx>> {
-    if raw_pointee(tcx, ty)
-        .is_some_and(|(pointee, _)| matches!(pointee.kind(), ty::Dynamic(predicates, ..) if is_fn_dyn(tcx, predicates)))
+    if let Some((pointee, _)) = raw_pointee(tcx, ty)
+        && matches!(pointee.kind(), ty::Dynamic(predicates, ..) if is_fn_dyn(tcx, predicates))
     {
-        return Some(IdentityRead::Pointed);
+        return Some(IdentityRead::Pointed(pointee));
     }
     let (def_id, args) = fn_def(ty)?;
     compares_fn_identity(tcx, def_id, args.types().next()).then(|| IdentityRead::Compared(args.type_at(0)))
@@ -85,6 +109,24 @@ impl<'tcx> Counted<'tcx> {
     pub fn counts(&self, tcx: TyCtxt<'tcx>, pointee: Ty<'tcx>) -> bool {
         let pointee = tcx.erase_and_anonymize_regions(pointee);
         self.all || self.types.contains(&pointee) || self.types.iter().any(|&t| may_be(tcx, t, pointee))
+    }
+
+    /// Is `owner`, a `Box`, an `Rc` or an `Arc` unsized to a `dyn Fn`, a
+    /// function of its own, apart from every other's (`apart`, #1053)?
+    pub fn own_function(&self, tcx: TyCtxt<'tcx>, owner: Ty<'tcx>) -> bool {
+        self.apart.contains(&tcx.erase_and_anonymize_regions(owner))
+    }
+
+    /// Is `closure`, given `Rc::new` or `Arc::new`, a function of its own
+    /// there (`rc_new_apart`, #1053)?
+    pub fn own_function_given(&self, tcx: TyCtxt<'tcx>, closure: Ty<'tcx>) -> bool {
+        self.rc_new_apart.contains(&tcx.erase_and_anonymize_regions(closure))
+    }
+
+    /// Is `owner`, an `Rc` or an `Arc` unsized to a `dyn Fn` a function of
+    /// its own, one the crate may share before (`shared_apart`, #1053)?
+    pub fn shared_before_apart(&self, tcx: TyCtxt<'tcx>, owner: Ty<'tcx>) -> bool {
+        self.shared_apart.contains(&tcx.erase_and_anonymize_regions(owner))
     }
 }
 
@@ -223,8 +265,6 @@ pub(super) fn counted_rcs<'tcx>(
     // Each `Rc` made another's, `Rc<RefCell<Logger>>` an
     // `Rc<RefCell<dyn Listener>>`: the two share their counts.
     let mut made_others: IndexSet<(Ty<'tcx>, Ty<'tcx>)> = IndexSet::default();
-    // And the function that makes each.
-    let mut made_by: Vec<(DefId, Ty<'tcx>, Ty<'tcx>)> = Vec::new();
     // What each `ptr_eq` of an `Rc<dyn Fn>` compares, and the closures
     // given `Rc::new` as they're made, and those given it made before, a
     // copy or a variable (ADR 0959).
@@ -234,6 +274,18 @@ pub(super) fn counted_rcs<'tcx>(
     // clones: what else may be one JS function given it twice.
     let (mut copied, mut cloned): (IndexSet<Ty<'tcx>>, IndexSet<Ty<'tcx>>) = (IndexSet::default(), IndexSet::default());
     let mut points_at_functions = false;
+    let fn_dyn = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Dynamic(predicates, ..) if is_fn_dyn(tcx, predicates));
+    // Each `Box`, `Rc` and `Arc` made a `dyn Fn`, and what it's made of.
+    let mut unsized_fns: IndexSet<(Ty<'tcx>, Ty<'tcx>, Ty<'tcx>)> = IndexSet::default();
+    // Each `dyn Fn` whose address the crate reads, a raw pointer's pointee.
+    let mut pointed: IndexSet<Ty<'tcx>> = IndexSet::default();
+    // And those unsized elsewhere than where they're made.
+    let mut unsized_later: IndexSet<Ty<'tcx>> = IndexSet::default();
+    // And the function that makes each, and what it's made of.
+    let mut allocated_by: Vec<(DefId, Ty<'tcx>)> = Vec::new();
+    // What each `Weak` a body has points at: an `Rc` of it may be upgraded
+    // to another of one allocation.
+    let mut weaks: IndexSet<Ty<'tcx>> = IndexSet::default();
     // Each count read of a type parameter's `Rc`, by the function and the
     // parameter's index, and the parameter.
     let mut of_params: IndexSet<(DefId, u32, Ty<'tcx>)> = IndexSet::default();
@@ -258,15 +310,37 @@ pub(super) fn counted_rcs<'tcx>(
             && !is_std_crate(tcx, body.def_id)
             && let Some(mir) = &body.mir
         {
-            for (from, to) in rcs_made_others(tcx, &mir.body) {
-                made_others.insert((erased(from), erased(to)));
-                made_by.push((owner, erased(from), erased(to)));
+            for (from_owner, to_owner) in owners_made_others(tcx, &mir.body) {
+                if let (Some(from), Some(to)) = (rc_pointee(tcx, from_owner), rc_pointee(tcx, to_owner)) {
+                    made_others.insert((erased(from), erased(to)));
+                }
+                // And each `Box` and `Rc` it makes a `dyn Fn`, which may be
+                // shared before (#1053).
+                if let Some(from) = from_owner.boxed_ty().or_else(|| rc_pointee(tcx, from_owner))
+                    && let Some(to) = to_owner.boxed_ty().or_else(|| rc_pointee(tcx, to_owner))
+                    && fn_dyn(to)
+                {
+                    if tcx.type_is_copy_modulo_regions(env, from) {
+                        copied.insert(erased(from));
+                    }
+                    unsized_fns.insert((erased(from_owner), erased(from), erased(to)));
+                    unsized_later.insert(erased(from_owner));
+                    allocated_by.push((owner, erased(from)));
+                }
             }
+            // And each value it clones, a closure given twice.
+            cloned.extend(clones_of(tcx, &mir.body).into_iter().map(erased));
         }
         for (id, expr) in body.thir.exprs.iter_enumerated() {
             found(expr.ty, Some(owner), true, &mut seen);
+            if let Some(pointee) = weak_pointee(tcx, expr.ty) {
+                weaks.insert(erased(pointee));
+            }
             match identity_read(tcx, expr.ty) {
-                Some(IdentityRead::Pointed) => points_at_functions = true,
+                Some(IdentityRead::Pointed(pointee)) => {
+                    points_at_functions = true;
+                    pointed.insert(erased(pointee));
+                }
                 Some(IdentityRead::Compared(pointee)) => _ = asked.insert(erased(pointee)),
                 None => {}
             }
@@ -276,9 +350,6 @@ pub(super) fn counted_rcs<'tcx>(
             if let ExprKind::PointerCoercion { source, .. } = expr.kind
                 && let (Some(from), Some(to)) = (rc_pointee(tcx, body.thir[source].ty), rc_pointee(tcx, expr.ty))
             {
-                if tcx.type_is_copy_modulo_regions(env, from) {
-                    copied.insert(erased(from));
-                }
                 // An `Rc` of a `&dyn Fn` made right there of a function made
                 // right there, `Rc::from(function::bind(..))` (rd231).
                 if let ty::Ref(_, function, _) = from.kind()
@@ -291,7 +362,26 @@ pub(super) fn counted_rcs<'tcx>(
                     };
                 }
                 made_others.insert((erased(from), erased(to)));
-                made_by.push((owner, erased(from), erased(to)));
+            }
+            // A `Box`, an `Rc` or an `Arc` made a `dyn Fn` of a function, by
+            // what owns it and what it owns: one of what another may hold
+            // too is a function of its own (#1053).
+            if let ExprKind::PointerCoercion { source, .. } = expr.kind
+                && let owner_ty = body.thir[source].ty
+                && let Some(from) = owner_ty.boxed_ty().or_else(|| rc_pointee(tcx, owner_ty))
+                && let Some(to) = expr.ty.boxed_ty().or_else(|| rc_pointee(tcx, expr.ty))
+                && fn_dyn(to)
+            {
+                if tcx.type_is_copy_modulo_regions(env, from) {
+                    copied.insert(erased(from));
+                }
+                unsized_fns.insert((erased(owner_ty), erased(from), erased(to)));
+                // One unsized where it's made, `Rc::new(f)`'s, no clone
+                // of it before; any other may be shared.
+                if !made_where_unsized(tcx, &body.thir, source) {
+                    unsized_later.insert(erased(owner_ty));
+                }
+                allocated_by.push((owner, erased(from)));
             }
             // A count read by a call, or by the function given as a value,
             // `.map(Rc::strong_count)`: either is an expression of its type.
@@ -315,7 +405,8 @@ pub(super) fn counted_rcs<'tcx>(
                 }
             }
             if let ExprKind::Call { fun, ref args, .. } = expr.kind
-                && fn_def(body.thir[fun].ty).is_some_and(|(def_id, _)| is_rc_new(tcx, def_id))
+                && fn_def(body.thir[fun].ty)
+                    .is_some_and(|(def_id, _)| is_rc_new(tcx, def_id) || is_std_def(tcx, def_id, StdItem::BoxNew))
                 && let [given] = args[..]
                 && let closure = body.thir[given].ty
                 && let ty::Closure(..) = closure.kind()
@@ -378,6 +469,10 @@ pub(super) fn counted_rcs<'tcx>(
         ty::Dynamic(predicates, ..) => is_fn_dyn(tcx, predicates),
         _ => false,
     };
+    // Of an allocation's address, a closure of another crate's too, which a
+    // body of MIR alone makes, its copies and clones read there (#1053).
+    let its_own =
+        |from: Ty<'tcx>| made_with_it(from) || from.is_closure() && !copied.contains(&from) && !cloned.contains(&from);
     for &pointee in &asked {
         if (made_others.iter()).any(|&(from, to)| !made_with_it(from) && may_be(tcx, to, pointee)) {
             counted.insert(pointee);
@@ -390,10 +485,41 @@ pub(super) fn counted_rcs<'tcx>(
         holders.insert(Some((owner, index)));
     }
     pointees.extend(counted.iter().copied());
+    // Where a `dyn Fn`'s address is read, each allocation made one of what
+    // another may hold too is a function of its own (#1053).
+    // An `Rc`'s closure, which has no identity but its address, is one where
+    // it's given `Rc::new`, as its clones before it's unsized share it; what
+    // else an `Rc` holds, a `fn` pointer whose value may be compared too,
+    // where it's unsized, refused where it may be shared before.
+    // Only one whose address may be read: a `dyn Fn` that may be one a raw
+    // pointer points at, which takes what it takes, as no coercion of a
+    // `dyn Fn` changes that (`may_be`).
+    let address_read = |to: Ty<'tcx>| pointed.iter().any(|&read| may_be(tcx, read, to));
+    let of_its_own = (unsized_fns.iter())
+        .filter(|&&(_, from, to)| address_read(to) && !its_own(from))
+        .map(|&(owner, from, _)| (owner, from))
+        .collect::<Vec<_>>();
+    let (rc_closures, unsized_apart): (Vec<_>, Vec<_>) = of_its_own
+        .iter()
+        .partition(|&&(owner, from)| !owner.is_box() && from.is_closure());
+    let rc_new_apart = rc_closures.into_iter().map(|&(_, from)| from).collect();
+    let apart: IndexSet<Ty<'tcx>> = unsized_apart.iter().map(|&&(owner, _)| owner).collect();
+    let shared_apart = (unsized_apart.iter())
+        .filter(|&&&(owner, from)| {
+            !owner.is_box()
+                && unsized_later.contains(&owner)
+                && (cloned.iter().any(|&clone| may_be(tcx, clone, owner))
+                    || weaks.iter().any(|&weak| may_be(tcx, weak, from)))
+        })
+        .map(|&&(owner, _)| owner)
+        .collect();
     let mut counted = Counted {
         all: false,
         compared_uncounted: false,
         points_at_functions,
+        apart,
+        rc_new_apart,
+        shared_apart,
         types: counted,
         merges: IndexSet::default(),
     };
@@ -451,28 +577,42 @@ pub(super) fn counted_rcs<'tcx>(
         }
     }
     counted.compared_uncounted = !counted.all && asked.iter().any(|pointee| !counted.types.contains(pointee));
-    // An `Rc<dyn Fn>` left uncounted, as nothing here compares it, made of
-    // what another may be made of too: its function merges two `Rc`s a
-    // consumer may compare (#1052).
-    let fn_dyn = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Dynamic(predicates, ..) if is_fn_dyn(tcx, predicates));
-    counted.merges = (made_by.iter())
-        .filter(|&&(_, from, to)| fn_dyn(to) && !made_with_it(from) && !counted.counts(tcx, to))
-        .map(|&(owner, _, _)| owner)
+    // A `Box`, an `Rc` or an `Arc` made a `dyn Fn` of what another may hold
+    // too, one JS function here, which a consumer that compares the two,
+    // `Rc::ptr_eq` (#1052) or their addresses (#1053), makes apart in its
+    // own compile; a counted `Rc`'s box too, whose function is shared.
+    counted.merges = (allocated_by.iter())
+        .filter(|&&(_, from)| !its_own(from))
+        .map(|&(owner, _)| owner)
         .collect();
     counted
 }
 
-/// Each `Rc` a body of MIR alone makes another's, `Rc<{closure}>` an
-/// `Rc<dyn Fn()>`: what it's made of, and what it's made.
-fn rcs_made_others<'tcx>(tcx: TyCtxt<'tcx>, body: &rustc_middle::mir::Body<'tcx>) -> Vec<(Ty<'tcx>, Ty<'tcx>)> {
+/// What a body of MIR alone clones, `Clone::clone`'s `Self`.
+fn clones_of<'tcx>(tcx: TyCtxt<'tcx>, body: &rustc_middle::mir::Body<'tcx>) -> Vec<Ty<'tcx>> {
+    use rustc_middle::mir::TerminatorKind;
+    (body.basic_blocks.iter())
+        .filter_map(|block| match &block.terminator().kind {
+            TerminatorKind::Call { func, .. } => fn_def(func.ty(&body.local_decls, tcx)),
+            _ => None,
+        })
+        .filter(|&(id, _)| tcx.is_lang_item(id, rustc_hir::attrs::lang_items::LangItem::CloneFn))
+        .filter_map(|(_, args)| args.types().next())
+        .collect()
+}
+
+/// Each `Box` or `Rc` a body of MIR alone makes another's, `Rc<{closure}>`
+/// an `Rc<dyn Fn()>`: what it's made of, and what it's made, each whole.
+fn owners_made_others<'tcx>(tcx: TyCtxt<'tcx>, body: &rustc_middle::mir::Body<'tcx>) -> Vec<(Ty<'tcx>, Ty<'tcx>)> {
     use rustc_middle::mir::{CastKind, Rvalue, StatementKind};
+    let owns = |ty: Ty<'tcx>| ty.is_box() || rc_pointee(tcx, ty).is_some();
     (body.basic_blocks.iter())
         .flat_map(|block| block.statements.iter())
         .filter_map(|statement| match &statement.kind {
             StatementKind::Assign(assign) => match &assign.1 {
                 Rvalue::Cast(CastKind::PointerCoercion(..), operand, to) => {
                     let from = operand.ty(&body.local_decls, tcx);
-                    Some((rc_pointee(tcx, from)?, rc_pointee(tcx, *to)?))
+                    (owns(from) && owns(*to)).then_some((from, *to))
                 }
                 _ => None,
             },
@@ -562,6 +702,18 @@ fn made_of_a_new_function(tcx: TyCtxt<'_>, thir: &Thir<'_>, rc: ExprId) -> bool 
                     crate::lower::bindings::JsForm::WithThis
                 ) && crate::lower::bindings::is_binding(tcx, id)
         })
+}
+
+/// Is `owner`, an `Rc` or an `Arc` unsized, made right there,
+/// `Rc::new(f)`'s, so no clone of it is made before (#1053)?
+fn made_where_unsized(tcx: TyCtxt<'_>, thir: &Thir<'_>, mut owner: ExprId) -> bool {
+    while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[owner].kind {
+        owner = inner;
+    }
+    let ExprKind::Call { fun, .. } = thir[owner].kind else {
+        return false;
+    };
+    fn_def(thir[fun].ty).is_some_and(|(id, _)| is_rc_new(tcx, id))
 }
 
 /// Is `given`, what `Rc::new` is given, a closure made there, `Rc::new(move

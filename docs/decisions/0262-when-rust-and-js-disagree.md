@@ -357,6 +357,19 @@ react.dev's TopNav passes the same closure instead.
   same. Only a comparison of the pointers tells them apart; calling one
   does the same. Pinned by `test/lowering-fn-identity.test.ts`. Listed in
   the guide's differences (`semantics.md`, 47).
+- **Two boxes of a value of no size made a `dyn Fn` are apart**, the
+  second case's, which the user decided (2026-11-09, #1053, ADR 0959,
+  amended): where the crate reads a `dyn Fn`'s address, every `Box`,
+  `Rc` and `Arc` made one of a function another may hold too is a
+  function of its own, as two allocations are apart to Rust. A `Box` of
+  a function item, or of a closure that captures nothing, allocates
+  nothing, and native Rust's two compare equal, `true`; JS's are `false`,
+  as are two `make()`s of `Box::new(|x| x + 1)`, two arrows, which they
+  were before. Generic code can't tell a value of no size from one that
+  has a size, and Rust promises no address of one. Only a comparison of
+  the addresses tells them apart; calling them does the same. Pinned by
+  `test/lowering-fn-identity.test.ts`. Listed in the guide's differences
+  (`semantics.md`, 48).
 
 ## Amendment: the stack's depth
 

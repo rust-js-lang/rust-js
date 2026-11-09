@@ -1202,7 +1202,7 @@ where it compares an `Rc<dyn Fn>` or holds a raw pointer to a `dyn Fn`:
 (`identity_read`). In its own compile, MIR's, each closure keeps its arrow,
 as no THIR says it passes on. Its `Rc`s are counted where it compares
 them, as `counted_rcs` now reads what a body of MIR alone makes another
-`Rc`'s (`rcs_made_others`). Such a function doesn't hand the crate its
+`Rc`'s (`owners_made_others`, which reads its boxes too since #1053). Such a function doesn't hand the crate its
 library's uncounted `Rc`s, so `Reached` skips its signature
 (`merged_here`). For a trait's method, it checks the impl's method the
 call resolves to. In generic code, where the call resolves to none yet,
