@@ -743,6 +743,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 self.check_slice_item_pointer((state.body, &state.facts.pointed().copies), *place, span)?;
                 let pointee = place.ty(decls, tcx).ty;
+                // A place `place_in_root` roots that reads a temporary not
+                // yet made, the reference a `Ref`'s `*cell.borrow()` gives:
+                // made first, so the place and its root each read it, and
+                // not its name alone, which no JS declares (#1110).
+                if Self::rooted_from(*place).is_some()
+                    && (std::iter::once(place.local).chain(place.projection.iter().filter_map(|elem| match elem {
+                        PlaceElem::Index(local) => Some(local),
+                        _ => None,
+                    })))
+                    .any(|local| state.pending.iter().any(|(l, _)| *l == local))
+                {
+                    self.flush(state, out)?;
+                }
                 let target = self.mir_place(state, *place, span, out)?;
                 // Only read through, of what a reference or box refers to:
                 // where it is matters to nothing (`Pointed::read_only`).
@@ -796,8 +809,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let pointer = self.pointer_to(target, pointee, offset, span)?;
                 match (pointer.kind, rooted) {
                     (js::ExprKind::Call(callee, mut given), Some((root, at)))
-                        if callee.helper_name() == Some("$ptr") && given.len() == 3 =>
+                        if callee.helper_name() == Some("$ptr") && matches!(given.len(), 2 | 3) =>
                     {
+                        // An array's item says no offset of its own, its
+                        // root's says where it is: `$ptr(items[0], 1,
+                        // undefined, items, 8)` (#1110).
+                        given.resize_with(3, Expr::undefined);
                         given.extend([root, at]);
                         Expr::call(*callee, given)
                     }
@@ -806,6 +823,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Err(self.unsupported(span, "this value, from its MIR")),
         }))
+    }
+
+    /// Where `place`'s root ends, the projection its steps start at, past
+    /// its last `Deref`, of a place reached through more than one field or
+    /// item from there, which `place_in_root` roots; `None` of one step.
+    fn rooted_from(place: Place<'tcx>) -> Option<usize> {
+        let start = (place.projection.iter())
+            .rposition(|elem| elem == PlaceElem::Deref)
+            .map_or(0, |at| at + 1);
+        (place.projection.len() - start >= 2).then_some(start)
     }
 
     /// Of `place`, a raw pointer's, reached through more than one field or
@@ -822,13 +849,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Option<(Expr, Expr)>> {
-        let start = (place.projection.iter())
-            .rposition(|elem| elem == PlaceElem::Deref)
-            .map_or(0, |at| at + 1);
-        let steps = &place.projection[start..];
-        if steps.len() < 2 {
+        let Some(start) = Self::rooted_from(place) else {
             return Ok(None);
-        }
+        };
+        let steps = &place.projection[start..];
         let root = Place {
             local: place.local,
             projection: self.tcx.mk_place_elems(&place.projection[..start]),

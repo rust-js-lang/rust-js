@@ -683,3 +683,28 @@ they're its items, unsigned bytes, not an `*mut i8`'s, which is rust-js's
 error. Case C. `test/corpus/slice_of_words_through_a_byte_pointer.rs`,
 against native Rust; mutations `byte-slice-its-bytes`,
 `signed-bytes-mut-unsigned` (found fixing #1099).
+
+## Amendment: a rooted place's root that a temporary holds is made first (#1110)
+
+A nested place whose root is what a `Deref` gives through a call, a
+`Ref`'s `(*cell.borrow())[2].a`, a `RefMut`'s, an `Rc`'s, a reference a
+function returns, read the temporary holding that reference twice: once
+for the place, which took its value where it's used, and once for its
+root, `place_in_root`'s, which found it gone and wrote its MIR name,
+`$ptr(items[2], "a", 4, _25, 20)`, which no JS declares: a
+`ReferenceError` where native Rust prints `20`, since 6226b1d96 (#1089;
+before it, the address was the inner object's own, `4100`). Such a
+place's temporaries, its root's local or an index's, are made first, a
+`const`, as `flush` makes what's pending before what mustn't run first,
+so the place and its root each read the one value (`rooted_from`, the one
+answer of where a root ends). And an array's item a tuple holds,
+`(wrapped.0)[1]`, a handle that says no offset of its own, `$ptr(items[0],
+1)`, was never rooted, `4108 4096` where native Rust prints `12 0`: it is
+now, its root's offset saying where it is, `$ptr(items[0], 1, undefined,
+items, 8)`. Case C. Corpus case
+`address_of_a_nested_field_through_a_deref`, a `Ref`, a `RefMut`, an
+`Rc`, a `Box` and a returned reference, against native Rust; the
+metamorphic net's four `address_of_*` cases rewritten through an
+`Rc<RefCell>`; mutations `rooted-place-temporary-unmade` and
+`rooted-item-of-no-offset-unrooted`, and `nested-place-unrooted`
+retargeted at `rooted_from`.
