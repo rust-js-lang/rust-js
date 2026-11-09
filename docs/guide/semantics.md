@@ -1363,7 +1363,12 @@ What JS sees of a crate:
   ([1043](../decisions/1043-a-functions-scope-struct-is-its-scope.md)).
 - **`LowerHex`, `Pointer` and the other formatting traits are
   dictionaries too:** `{:x}` of a generic `T` is its `fmt`, given the
-  placeholder's options ([0174](../decisions/0174-generic-fmt-traits.md)).
+  placeholder's options ([0174](../decisions/0174-generic-fmt-traits.md)),
+  and so is one a bound covers, `where Hexf<T>: fmt::LowerHex`. A
+  formatting trait's `fmt` called by its path, `fmt::LowerHex::fmt(self,
+  f)`, goes where `{:x}` of the value goes, given the `Formatter`'s
+  options, `{:#06x}`'s, and `f.alternate()` read through it
+  ([0174, amended](../decisions/0174-generic-fmt-traits.md#amendment-a-bound-a-caller-gives-and-a-path-call-of-fmt-1115)).
 - **`FromStr`, `AsRef` and `Borrow` are dictionaries too:** a generic
   `S: AsRef<str>` is given `{ asRef }`, a `K: Borrow<Q>` `{ borrow }`,
   the value itself for a `String` or a `&str`

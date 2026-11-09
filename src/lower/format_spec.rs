@@ -213,7 +213,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // given the placeholder's options where there are any, `{:#x}`'s
         // too, as its `Display`'s is (ADR 0165).
         if let Some(trait_id) = self.recognition().other_fmt_trait(kind)
-            && self.is_unknown(ty)
+            && self.formatted_by_dictionary(trait_id, ty)
         {
             let given = Pretty::Given(options_object(spec, &width, &precision), spec.alternate);
             let pretty = if !options && !spec.alternate {

@@ -389,6 +389,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `{:x}` or `{:p}` of a generic `T`, `LowerHex::fmt(t, f)` too: its
     /// dictionary's `fmt`, given the placeholder's options as a `T: Display`'s
     /// is (ADR 0174).
+    /// Whether formatting a value of `ty` by `trait_id`, `{:x}` of it or
+    /// `fmt::LowerHex::fmt(x, f)`, is its caller's dictionary's: of a type
+    /// only a caller knows, a `T` (ADR 0174); or of one whose impl no
+    /// resolution here picks but a bound this function is given covers,
+    /// libm's `where Hexf<T>: fmt::LowerHex` (#1115). The one place both
+    /// ask.
+    pub(super) fn formatted_by_dictionary(&self, trait_id: DefId, ty: Ty<'tcx>) -> bool {
+        self.is_unknown(ty)
+            || !self.has_user_impl(trait_id, ty) && self.has_evidence(ty::TraitRef::new(self.tcx, trait_id, [ty]))
+    }
+
     pub(super) fn other_fmt_dictionary(
         &mut self,
         trait_id: DefId,

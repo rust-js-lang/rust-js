@@ -48,3 +48,26 @@ function hex(t, TLowerHex) {
   function, with native Rust.
 - **It's the JS a person writes:** the formatter given to the generic
   function, as its `Display`'s is.
+
+## Amendment: a bound a caller gives, and a path call of `fmt` (#1115)
+
+`{:x}` of a value was its caller's dictionary's only where its type was a
+type parameter, `is_unknown`'s. Of one whose impl no resolution here picks
+but a bound the function is given covers, libm's `impl<T> fmt::Debug for
+Hexf<T> where Hexf<T>: fmt::LowerHex`, whose impls are `Hexf<u8>`'s and its
+tuples', it was refused, and so was the same `fmt` called by its path,
+`fmt::LowerHex::fmt(self, f)`. libm was types alone, so num-traits with
+`libm` and each crate implementing a num-traits trait, chrono's library in
+its test build among them.
+
+`formatted_by_dictionary` is the one question both ask now: a type only a
+caller knows, or one with no impl here a given bound covers, is formatted
+by that bound's dictionary, the `Formatter`'s options passed on. A path call
+of any formatting trait's `fmt`, `Display`'s, `Debug`'s, the radix traits',
+`LowerExp`'s and `Pointer`'s, already went where `{}`, `{:?}` and `{:x}` of
+its value go, std's impls of numbers as their digits, a user impl by its
+own `fmt`; a bound's now too. `test/corpus/fmt_trait_fmt_called_by_path.rs`
+holds each against native Rust: std's impls by path under `{:#06}`, a user
+impl reading `f.alternate()`, libm's generic shape, and an error a writer
+gives through the callee; the mutation `fmt-by-a-given-bound-unasked` puts
+the old question back.

@@ -342,4 +342,13 @@ export const mutations: Mutation[] = [
     replace: "            Std::FmtDebug if ty.is_unit() => Expr::str(\"()\"),\n",
     tests: ["test/corpus.test.ts", "-t", "^text_of_a_value_made_by_a_call.rs$"],
   },
+  {
+    name: "fmt-by-a-given-bound-unasked",
+    breaks:
+      "formatting a value whose impl a bound the function is given covers, libm's `where Hexf<T>: fmt::LowerHex`, isn't its caller's dictionary's, so `fmt::LowerHex::fmt(self, f)` and `{:x}` of it are refused (#1115)",
+    file: "src/lower/display.rs",
+    find: "            || !self.has_user_impl(trait_id, ty) && self.has_evidence(ty::TraitRef::new(self.tcx, trait_id, [ty]))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_trait_fmt_called_by_path.rs$"],
+  },
 ];

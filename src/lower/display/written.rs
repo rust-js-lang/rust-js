@@ -65,8 +65,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let std_exp = (!self.has_user_impl(trait_id, ty))
                     .then(|| Num::of(ty).zip(self.exp_trait(trait_id)))
                     .flatten();
-                // A generic `T`'s: its dictionary's (ADR 0174).
-                if self.is_unknown(ty) {
+                // A generic `T`'s, or a bound's a caller gives: its
+                // dictionary's (ADR 0174, #1115).
+                if self.formatted_by_dictionary(trait_id, ty) {
                     let value = values.remove(0);
                     self.other_fmt_dictionary(trait_id, ty, value, &pretty, span)?
                 } else if let Some((num, radix)) = std_radix {
