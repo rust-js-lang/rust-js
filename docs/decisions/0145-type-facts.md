@@ -325,16 +325,29 @@ slot, `IItemSize` of an `impl<I: Iterator> Tools for Wrap<I>`. The crate's
 own trait's defaults are copied into its impls, so a dictionary of the
 crate's own trait carries none. This is **library ABI 24**.
 
-What's left of the six: the three map keys of `<Self as Iterator>::Item`.
-A default's map is its method's slot, which a copy is given by its caller
-(ADR 0466); a library's trait's method isn't in its manifest, so a
-consumer calling the library's copy through its dictionary would give it
-nothing. Refused where the library is compiled, as before.
+The other three, the map keys of `<Self as Iterator>::Item`: a default's
+map's class is its method's slot, which its caller gives (ADR 0466), as a
+library's copy of it takes it, `counts(self, SelfItemHash,
+SelfItemPartialEq, SelfItemMap)`. A consumer compiles the library's default
+from its MIR, whose analysis asked no map's class (only a body read from its
+THIR did), so it was refused, and a consumer's call of the library's copy
+through its dictionary gave none. **What a map of a type parameter's keys a
+std function makes asks is one answer, `map_made`, of a body read from its
+THIR or its MIR alike**, so the consumer's calls give the class the
+library's copies take. And a consumer's impl's entry for the library's
+default gives it of the slot's type for that impl, `<I as Iterator>::Item`
+of a `Wrap<I>`'s, as the default asks it, named as its bounds' dictionaries
+are, `WrapItemMap`.
 
 - Held by `test/crates/pairs/library_default_item_layouts`, against native
   Rust: a consumer's impls of a known item and of a type parameter's, read
   through a generic caller, and the library's own impl. And by
   `test/corpus/size_of_an_iterators_item.rs`, in both builds: a generic
   function's `size_of` of `I::Item`, and a trait's default copied into a
-  blanket impl and a known one. Mutations `super-item-*`
-  (`lower/analysis/type_facts.ts`, `lower/traits.ts`, `lower/library.ts`).
+  blanket impl and a known one. And by
+  `test/crates/pairs/library_default_map_keys`: maps of `Self::Item` keys
+  and of a method's own type parameter's, through a consumer's impls of a
+  known item and a type parameter's, a generic caller and the library's own
+  impl. Mutations `super-item-*` (`lower/analysis/type_facts.ts`,
+  `lower/traits.ts`, `lower/library.ts`), `map-made-unasked-of-mir` and
+  `own-fact-given-in-trait-terms`.

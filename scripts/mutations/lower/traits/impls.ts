@@ -685,4 +685,12 @@ export const mutations: Mutation[] = [
     replace: "            .filter(|(imp, _)| imp.is_local())?;\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
   },
+  {
+    name: "own-fact-given-in-trait-terms",
+    breaks: "a consumer's generic impl's entry for a library's default gives a map's class of `<Self as Iterator>::Item`, which the default, asking `<I as Iterator>::Item`, doesn't find, so it's refused (#990)",
+    file: "src/lower/traits/impls.rs",
+    find: "                let of = self.drop_slot_of(item.def_id, index, args);\n",
+    replace: "                let of = drop_slot(self.tcx, self.slots(), item.def_id, index);\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_default_map_keys"],
+  },
 ];

@@ -17,9 +17,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a map of a type parameter's keys an entry's `or_default()` makes has no class, its caller never asked, and is refused (#314)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                    ty::Ref(_, pointee, ty::Mutability::Mut) => pointee,\n",
-    replace:
-      "                    ty::Ref(_, _, ty::Mutability::Mut) => output,\n",
+    find: "        ty::Ref(_, pointee, ty::Mutability::Mut) => pointee,\n",
+    replace: "        ty::Ref(_, _, ty::Mutability::Mut) => output,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_map_made_by_entry.rs$"],
   },
   {
@@ -27,9 +26,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a map of a type parameter's keys a std function makes, `BTreeMap::new()`, `map(BTreeMap::from)`, has no class, its caller never asked, and is refused (ADR 0466)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                if let Some((key, fact)) = map_of_param(tcx, made)\n",
-    replace:
-      "                if let Some((key, fact)) = map_of_param(tcx, made).filter(|_| false)\n",
+    find: "    let (key, fact) = map_of_param(tcx, made)?;\n",
+    replace: "    let (key, fact) = map_of_param(tcx, made).filter(|_| false)?;\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -182,9 +180,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a function that makes a map of its type parameter's keys isn't given their class",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                && let Some(index) = slot_of(tcx, foreign, caller, key)\n",
-    replace:
-      "                && let Some(index) = slot_of(tcx, foreign, caller, key).filter(|_| false)\n",
+    find: "    Some((slot_of(tcx, foreign, caller, key)?, fact))\n",
+    replace: "    Some((slot_of(tcx, foreign, caller, key).filter(|_| false)?, fact))\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
   },
   {
@@ -541,5 +538,13 @@ export const mutations: Mutation[] = [
     find: "            false => foreign.carried_super(trait_id),\n",
     replace: "            false => Vec::new(),\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts"],
+  },
+  {
+    name: "map-made-unasked-of-mir",
+    breaks: "a library's default compiled from its MIR doesn't ask the class of a map of `Self::Item` keys it makes, so a consumer's impl of the trait is refused, and a consumer's call of the library's copy gives none where it takes one (#990)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                if let Some((index, fact)) = map_made(tcx, foreign, caller, (callee, args)) {\n",
+    replace: "                if let Some((index, fact)) = map_made(tcx, foreign, caller, (callee, args)).filter(|_| false) {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_default_map_keys"],
   },
 ];

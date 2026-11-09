@@ -73,6 +73,13 @@ pub(super) fn type_fact_params<'tcx>(
                 }
             }
             for (callee, args) in named {
+                // A map or a set of a type parameter's keys a std function
+                // makes, as a body read from its THIR asks it, so a library's
+                // default compiled here from its MIR takes the class its
+                // library's copies do (`map_made`, #990).
+                if let Some((index, fact)) = map_made(tcx, foreign, caller, (callee, args)) {
+                    asking.asked.insert((caller, index, fact));
+                }
                 // A std trait's method whose impl the caller's type picks,
                 // `FuseImpl::next`'s of a `Fuse<I>`: whether `I` is a
                 // `FusedIterator`, its caller's, `IFused` (ADRs 0543, 0561),
@@ -111,28 +118,12 @@ pub(super) fn type_fact_params<'tcx>(
                 continue;
             }
             // A map or a set of a type parameter's keys a std function makes,
-            // called or given, `HashMap::new()`'s, `collect()`'s,
-            // `or_insert_with(BTreeMap::new)`'s: what it gives, or what a
-            // `&mut` it gives points at, which it may have made, an entry's
-            // `or_default()`'s. Its class, its caller's (ADR 0466).
+            // called or given (`map_made`).
             if let ExprKind::ZstLiteral { .. } = expr.kind
                 && let Some((callee, args)) = fn_def(expr.ty)
-                && !callee.is_local()
-                && !foreign.in_library(callee)
+                && let Some((index, fact)) = map_made(tcx, foreign, caller, (callee, args))
             {
-                let output = (tcx.fn_sig(callee).instantiate(tcx, args))
-                    .skip_normalization()
-                    .skip_binder()
-                    .output();
-                let made = match *output.kind() {
-                    ty::Ref(_, pointee, ty::Mutability::Mut) => pointee,
-                    _ => output,
-                };
-                if let Some((key, fact)) = map_of_param(tcx, made)
-                    && let Some(index) = slot_of(tcx, foreign, caller, key)
-                {
-                    asking.asked.insert((caller, index, fact));
-                }
+                asking.asked.insert((caller, index, fact));
             }
             // A type parameter's value made a `dyn Any`, whose dictionary is
             // its `TypeId` (ADR 0331).
@@ -528,6 +519,33 @@ pub(in crate::lower) fn super_item_of<'tcx>(
     let projection = ty::Ty::new_projection(tcx, ty::IsRigid::No, assoc, [self_ty]);
     tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(projection))
         .unwrap_or(projection)
+}
+
+/// What `caller` asks of its slots where it names `callee`, a std
+/// function, with `args`, as a body read from its THIR or its MIR alike: a
+/// map or a set of a type parameter's keys it makes, called or given,
+/// `HashMap::new()`'s, `collect()`'s, `or_insert_with(BTreeMap::new)`'s,
+/// what it gives, or what a `&mut` it gives points at, which it may have
+/// made, an entry's `or_default()`'s. Its class, its caller's (ADR 0466).
+fn map_made<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    caller: DefId,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Option<(u32, TypeFact)> {
+    if callee.is_local() || foreign.in_library(callee) {
+        return None;
+    }
+    let output = (tcx.fn_sig(callee).instantiate(tcx, args))
+        .skip_normalization()
+        .skip_binder()
+        .output();
+    let made = match *output.kind() {
+        ty::Ref(_, pointee, ty::Mutability::Mut) => pointee,
+        _ => output,
+    };
+    let (key, fact) = map_of_param(tcx, made)?;
+    Some((slot_of(tcx, foreign, caller, key)?, fact))
 }
 
 /// `default_super_item` of `id`'s slot `index`.

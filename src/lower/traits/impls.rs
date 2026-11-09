@@ -526,11 +526,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let fact_mark = self.given.type_facts.len();
             let mut fact_names = Vec::new();
             for (index, fact) in own_facts {
-                let of = drop_slot(self.tcx, self.slots(), item.def_id, index);
+                // Of its type for this impl, `<I as Iterator>::Item` of a
+                // `Wrap<I>`'s, as the method's body asks it, named as its
+                // bounds' dictionaries are, `WrapItemMap` (#990).
+                let declared = drop_slot(self.tcx, self.slots(), item.def_id, index);
+                let declared = ty::EarlyBinder::bind(self.tcx, declared)
+                    .instantiate(self.tcx, args)
+                    .skip_normalization();
+                let of = self.drop_slot_of(item.def_id, index, args);
                 if self.given.type_facts.iter().any(|&(at, _, _)| at == of) {
                     return Err(self.unsupported(span, "a trait method's type parameter's fact here"));
                 }
-                let name = self.fresh(&format!("{}{}", drop_word(self.tcx, of), fact.word()));
+                let name = self.fresh(&format!("{}{}", drop_word(self.tcx, declared), fact.word()));
                 self.given.type_facts.push((of, fact, Expr::var(&name)));
                 fact_names.push(name);
             }
