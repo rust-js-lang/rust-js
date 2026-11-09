@@ -243,9 +243,10 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             }
             // A std function rust-js lowers itself, no manifest's, given as
             // an iterable a caller's parameter given as it is, a `Debug`
-            // builder's `entries(items)`: stepped by `Iterator`, as std's
-            // body steps it, which only its dictionary does (#1147).
-            if is_std_crate(tcx, callee) && foreign.item(callee).is_none() && tcx.trait_of_assoc(callee).is_none() {
+            // builder's `entries(items)` or `Extend::extend(items)`: stepped
+            // by `Iterator`, as std's body steps it, which only its
+            // dictionary does (#1147).
+            if is_std_crate(tcx, callee) && foreign.item(callee).is_none() {
                 let iterables = (std_iterables_given(tcx, callee, args).into_iter()).filter(|&(param, theirs)| {
                     given_as_it_is(tcx, caller, param) && iterable_bound(tcx, callee, theirs)
                 });

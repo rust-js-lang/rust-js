@@ -19,20 +19,27 @@
 // generator format 36b87036c855
 // generator numbers 18046109df71
 // generator async 9fe3888b9e1a
-// generator consumers 486e504e7a42
+// generator consumers fedf533331c1
 
 #1147 the crate's own iterator given to a `Debug` builder's `entries` or to `Vec::splice` isn't stepped as one: a TypeError, an item read as `undefined`, or none dropped
-consumers:plain 142,787,1100,1116,1197,1393,1920,1939,2110,2441
-consumers:std 142,787,1100,1116,1197,1393,1920,1939,2110,2441
+consumers:plain 295,375,592,760,1185,1769,1986,2128,2182,2323,2621,2708,2713,2774,3012,3041,3056,3166,3180,3311,3803,3845,4247,4362,5050,5377,5428,5828,5858,6759
+consumers:std 295,375,592,760,1185,1769,1986,2128,2182,2323,2621,2708,2713,2774,3012,3041,3056,3166,3180,3311,3803,3845,4247,4362,5050,5377,5428,5828,5858,6759
 
 #1149 `Vec::splice` steps its replacement before it drops what it removed, and of a replacement whose step panics leaves the `Vec` as it was and leaks what it stepped
-consumers:plain 408,1140,1381,1933
-consumers:std 408,1140,1381,1933
+consumers:plain 1138,1261,3141,3813,5100,5406,5757,6305
+consumers:std 1138,1261,3141,3813,5100,5406,5757,6305
 
 #1150 `unzip` leaks what it unzipped where its source's step panics
-consumers:plain 583,755
-consumers:std 583,755
+consumers:plain 604,1631,2088,5796
+consumers:std 604,1631,2088,5796
 
 #1151 `char::decode_utf16` steps its whole source before it yields its first `char`
-consumers:plain 2485
-consumers:std 2485
+consumers:plain 6874
+consumers:std 6874
+
+#1161 generic code loses or leaks what a `LinkedList`'s `extend` and `collect` and a `partition` built before its source's step panics
+consumers:plain 1075,1508,1937,1993,2120,2358,2646,2790,4740,5254,5753,6071,6652,6845
+consumers:std 1075,1508,1937,1993,2120,2358,2646,2790,4740,5254,5753,6071,6652,6845
+
+#1162 `repeat(x).zip(arg)` in generic code clones `x` once more than native Rust, in the std build
+consumers:std 3319,4308

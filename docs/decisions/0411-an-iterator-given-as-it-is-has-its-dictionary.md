@@ -153,10 +153,15 @@ stepped the crate's own iterator the caller's closure made as a JS one,
 `[[object Iterator]]` of `It(vec![1, 2].into_iter())` where native Rust
 shows `[1, 2]`, or a TypeError.
 
-**A caller's type parameter given as it is, given to a std function with
-no manifest as one of its own type parameters that it bounds by
-`IntoIterator` or `Iterator`, is stepped by `Iterator`**; not one its
-impl's type holds, `Peekable<I>`'s for `next_if`, which its own lowering
-steps, as std's body steps it: its dictionary is given, and
-`entries` steps it by `$given`. Mutation `std-iterable-param-unstepped`;
-`test/corpus/debug_entries_drop_as_std.rs`.
+**A caller's type parameter given as it is, given to a std function or a
+std trait's method with no manifest, as one of its own type parameters
+that it bounds by `IntoIterator` or `Iterator`, is stepped by
+`Iterator`**, as std's body steps it: its dictionary is given, and
+`entries` and `extend` step it by `$given`. Not one its impl's type
+holds, `Peekable<I>`'s for `next_if`, which its own lowering steps. The
+consumer net's generic callers (ADR 1090) found `Extend::extend`'s too,
+of each collection and `String`, where the first rule took std's
+functions alone. Mutations `std-iterable-param-unstepped` and
+`std-iterable-of-trait-method-unstepped`;
+`test/corpus/debug_entries_drop_as_std.rs` and
+`test/corpus/generic_iterables_given_to_std.rs`.

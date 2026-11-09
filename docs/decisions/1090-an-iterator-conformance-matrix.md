@@ -569,3 +569,33 @@ gives an iterator to.
   each `extend` of a map, a set, a list and a `String` of `Loud`.
 - **A refusal is printed with why** where `ITERATOR_MATRIX_REPORT` is set,
   of any table, each case's, so a table's refusals are counted by reason.
+
+## Amended: the consumer net's generic callers
+
+The net called each std method from the case's own code, of concrete
+types. Generic code reaches std's functions otherwise: given an iterator
+as a type parameter's value, which its caller makes a JS iterator of
+(ADR 0061), or as one it's given as it is, by a dictionary (ADR 0411).
+The second found #1147, a `Debug` builder's `entries` of the crate's own
+iterator `F: Fn() -> I` made, read as a JS one, by hand.
+
+**Each template runs from three callers**: the case's own code, as
+before; `generic`, `fn generic_<i><'a, I: Iterator<Item = T>>(it: I)`; and
+`generic made`, `fn generic_<i><'a, I: Iterator<Item = T>, F: Fn() -> I>(make:
+F)`, whose `I` is given as it is. Its argument, where it takes one, is a
+`J: IntoIterator<Item = T>`; `rfold`'s `I` is a `DoubleEndedIterator`
+too, and `cycle()`'s `Clone` (`Template::bound`). A `Debug` builder's
+`entries`, which makes its source in a closure of its own, runs from the
+case's code and `generic made` alone (`Template::made`). Generic callers
+run each case as it is and with its source's or argument's step panicking,
+not its closure's, which the case's own code covers. Each item kind has
+its type as generic code names it, its references of `'a` (`itemTypes`).
+6,886 cases in 115 programs, 25 s on the Mac in 8 parts.
+
+Its first run found `Extend::extend` of each collection and `String`
+in `generic made` reading the crate's iterator as a JS one, #1147's
+cause in a trait's method, fixed with it (ADR 0411, amended); what a
+`LinkedList`'s `extend` and `collect` and a `partition` built before
+their source's step panicked lost, leaked or dropped out of order, in
+both generic callers; and in the std build, a `zip` of a `repeat` given a
+`Vec` cloned once more than native Rust. Each is listed under its issue.

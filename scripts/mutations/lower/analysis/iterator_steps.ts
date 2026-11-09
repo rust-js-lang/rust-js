@@ -349,4 +349,13 @@ export const mutations: Mutation[] = [
     replace: "                let _ = iterables;\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_entries_drop_as_std.rs$"],
   },
+  {
+    name: "std-iterable-of-trait-method-unstepped",
+    breaks:
+      "a caller's iterator type parameter given as it is, given to std's `Extend::extend`, a trait's method rust-js lowers itself, isn't stepped, so its function takes no `Iterator` dictionary and `extend` reads the crate's own iterator as a JS one (#1147)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "            if is_std_crate(tcx, callee) && foreign.item(callee).is_none() {\n",
+    replace: "            if is_std_crate(tcx, callee) && foreign.item(callee).is_none() && tcx.trait_of_assoc(callee).is_none() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_iterables_given_to_std.rs$"],
+  },
 ];

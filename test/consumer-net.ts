@@ -319,6 +319,12 @@ type Template = {
   back?: boolean;
   arg?: boolean;
   infinite?: boolean;
+  /** What generic code given its source needs of it besides being an
+   * iterator, `Clone` of `cycle()`'s. */
+  bound?: string;
+  /** Whether it makes its source in a closure of its own, a `Debug`
+   * builder's, which generic code can't of a value it's given. */
+  made?: boolean;
   text: (it: string, arg: string) => string;
 };
 
@@ -376,7 +382,7 @@ const lTemplates: Template[] = [
   t("is_sorted", ["Iterator::is_sorted"], "L", (it) => `println!("{}", ${it}.is_sorted());`),
   t("is_sorted_by", ["Iterator::is_sorted_by"], "L", (it) => `println!("{}", ${it}.is_sorted_by(|a, b| {\n    tick();\n    a <= b\n}));`, { closure: true }),
   t("is_sorted_by_key", ["Iterator::is_sorted_by_key"], "L", (it) => `println!("{}", ${it}.is_sorted_by_key(|x| {\n    tick();\n    x.0\n}));`, { closure: true }),
-  t("cycle", ["Iterator::cycle"], "L", vecOf("L", (it) => `${it}.cycle().take(5)`), { infinite: true }),
+  t("cycle", ["Iterator::cycle"], "L", vecOf("L", (it) => `${it}.cycle().take(5)`), { infinite: true, bound: "Clone" }),
   t("flat_map", ["Iterator::flat_map"], "L", vecOf("L", (it) => `${it}.flat_map(|x| {\n    tick();\n    loud(vec![L(x.0 + 10), x], "inner", 0)\n})`), { closure: true }),
   t("flatten", ["Iterator::flatten"], "Option<L>", vecOf("L", (it) => `${it}.flatten()`)),
   t("unzip", ["Iterator::unzip"], "(L, L)", (it) => `let (a, b): (Vec<L>, Vec<L>) = ${it}.unzip();\nprintln!("{a:?} {b:?}");`),
@@ -511,9 +517,9 @@ export const templates: Template[] = [
   // Each shown into a `String` first: a `Debug` that prints while it
   // formats prints before the line it's in, ADR 0377's accepted
   // difference, which the line formatted first doesn't show.
-  t("DebugList::entries", ["DebugList<'a, 'b>::entries"], "L", (it) => `let shown = format!("{:?}", Listed(|| ${it}));\nprintln!("{shown}");`),
-  t("DebugSet::entries", ["DebugSet<'a, 'b>::entries"], "L", (it) => `let shown = format!("{:?}", Setted(|| ${it}));\nprintln!("{shown}");`),
-  t("DebugMap::entries", ["DebugMap<'a, 'b>::entries"], "(u32, L)", (it) => `let shown = format!("{:?}", Mapped(|| ${it}));\nprintln!("{shown}");`),
+  t("DebugList::entries", ["DebugList<'a, 'b>::entries"], "L", (it) => `let shown = format!("{:?}", Listed(|| ${it}));\nprintln!("{shown}");`, { made: true }),
+  t("DebugSet::entries", ["DebugSet<'a, 'b>::entries"], "L", (it) => `let shown = format!("{:?}", Setted(|| ${it}));\nprintln!("{shown}");`, { made: true }),
+  t("DebugMap::entries", ["DebugMap<'a, 'b>::entries"], "(u32, L)", (it) => `let shown = format!("{:?}", Mapped(|| ${it}));\nprintln!("{shown}");`, { made: true }),
   t("env::join_paths", ["std::env::join_paths"], "&str", (it) => `println!("{:?}", std::env::join_paths(${it}));`),
   t(
     "Command::args",
@@ -572,7 +578,15 @@ export function whyNot(m: StdMethod): string | undefined {
  * source's 2nd step panicking; or its argument's. */
 export type Variant = "ok" | "closure" | "step" | "arg step";
 
-export type ConsumerCase = Row & { template: Template; source: Source; arg?: Source; variant: Variant };
+/** Who calls it: the case's own code, of its concrete types; generic code
+ * given its source as a type parameter's value, `fn of<I: Iterator>(it:
+ * I)`, which its caller makes a JS iterator of; or generic code that makes
+ * it by a function it's given, `F: Fn() -> I`, whose `I` is given as it
+ * is, with its dictionary (ADR 0411): a std function rust-js lowers itself
+ * that's given it must step it by that dictionary (#1147). */
+export type Caller = "concrete" | "generic" | "generic made";
+
+export type ConsumerCase = Row & { template: Template; source: Source; arg?: Source; variant: Variant; caller: Caller };
 
 /** Each template of each source of the kind it takes, each argument where
  * it takes one, in each variant that applies: a closure's panic where it
@@ -587,9 +601,14 @@ export function consumerCases(): ConsumerCase[] {
         if ((template.closure || source.closure) && !source.empty && !source.one && !source.infinite) variants.push("closure");
         if (source.loud && !source.empty) variants.push("step");
         if (arg?.loud && !arg.empty) variants.push("arg step");
-        for (const variant of variants) {
-          const id = [template.name, source.name, ...(arg ? [arg.name] : []), variant].join(" | ");
-          out.push({ id, template, source, arg, variant });
+        // Generic code's callers, of each source as it is and as its step
+        // panics: what it drops as it unwinds there too.
+        const callers: Caller[] = template.kind === "none" ? ["concrete"] : template.made ? ["concrete", "generic made"] : ["concrete", "generic", "generic made"];
+        for (const caller of callers) {
+          for (const variant of caller === "concrete" ? variants : variants.filter((v) => v !== "closure")) {
+            const id = [template.name, source.name, ...(arg ? [arg.name] : []), variant, ...(caller === "concrete" ? [] : [caller])].join(" | ");
+            out.push({ id, template, source, arg, variant, caller });
+          }
         }
       }
     }
@@ -796,15 +815,62 @@ const indent = (text: string) =>
     .map((line) => (line === "" ? "" : `    ${line}`))
     .join("\n");
 
-/** A case's function, `case_<i>`. */
+/** The item type of each kind a template takes, as generic code names it,
+ * its references of a lifetime `'a`. */
+const itemTypes: Record<string, string> = {
+  L: "L",
+  u32: "u32",
+  "&u32": "&'a u32",
+  f64: "f64",
+  "&f64": "&'a f64",
+  Wrapping: "std::num::Wrapping<u32>",
+  "&Wrapping": "&'a std::num::Wrapping<u32>",
+  Saturating: "std::num::Saturating<u32>",
+  "&Saturating": "&'a std::num::Saturating<u32>",
+  Duration: "std::time::Duration",
+  "&Duration": "&'a std::time::Duration",
+  "Option<u32>": "Option<u32>",
+  "Result<u32>": "Result<u32, L>",
+  "Option<L>": "Option<L>",
+  "Result<L>": "Result<L, L>",
+  char: "char",
+  "&char": "&'a char",
+  "&str": "&'a str",
+  String: "String",
+  "Box<str>": "Box<str>",
+  "Cow<str>": "std::borrow::Cow<'a, str>",
+  "(u32, L)": "(u32, L)",
+  "(&u32, &u32)": "(&'a u32, &'a u32)",
+  "(&str, &str)": "(&'a str, &'a str)",
+  "(L, L)": "(L, L)",
+  "(L,)": "(L,)",
+  "()": "()",
+  u16: "u16",
+  OsString: "std::ffi::OsString",
+  "&OsStr": "&'a std::ffi::OsStr",
+  "Cow<OsStr>": "std::borrow::Cow<'a, std::ffi::OsStr>",
+};
+
+/** A case's function, `case_<i>`, and of generic code's callers, the
+ * generic function it calls, `generic_<i>`, whose body is the template's. */
 function caseFn(c: ConsumerCase, i: number): string {
   const lines: string[] = [];
   if (c.variant === "closure") lines.push("arm(2);");
   if (c.source.before) lines.push(c.source.before);
   const it = c.source.expr(c.variant === "step" ? 2 : 0);
   const arg = c.arg?.expr(c.variant === "arg step" ? 2 : 0) ?? "";
-  lines.push(c.template.text(it, arg));
-  return `fn case_${i}() {\n${indent(lines.join("\n"))}\n}`;
+  if (c.caller === "concrete") {
+    lines.push(c.template.text(it, arg));
+    return `fn case_${i}() {\n${indent(lines.join("\n"))}\n}`;
+  }
+  const item = itemTypes[c.template.kind];
+  if (item === undefined) throw new Error(`no item type of ${c.template.kind}`);
+  const bounds = ["Iterator<Item = " + item + ">", ...(c.template.back ? ["DoubleEndedIterator"] : []), ...(c.template.bound ? [c.template.bound] : [])].join(" + ");
+  const params = ["'a", `I: ${bounds}`, ...(c.caller === "generic made" ? ["F: Fn() -> I"] : []), ...(c.arg ? [`J: IntoIterator<Item = ${item}>`] : [])];
+  const given = [c.caller === "generic made" ? "make: F" : "it: I", ...(c.arg ? ["arg: J"] : [])];
+  const body = c.template.text(c.caller === "generic made" ? "make()" : "it", "arg");
+  lines.push(`generic_${i}(${[c.caller === "generic made" ? `|| ${it}` : it, ...(c.arg ? [arg] : [])].join(", ")});`);
+  return `fn case_${i}() {\n${indent(lines.join("\n"))}\n}\n\nfn generic_${i}<${params.join(", ")}>(${given.join(", ")}) {\n${indent(body)}\n}`;
 }
 
 /** A program of `cases`, which runs each in turn. */
