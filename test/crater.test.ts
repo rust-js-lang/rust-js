@@ -2,7 +2,7 @@
 // and its cut of a refused test from the JS's copy of a crate (#1087,
 // scripts/crater.ts). The net itself runs each night.
 import { expect, test } from "bun:test";
-import { attributesFrom, cut, cutFor, decidedOf, declaredIn, differences, errorsAt, items, jsOutcomes, libraryTestsOnly, modulePath, nativeOutcomes, testOnlyFile, undecided } from "../scripts/crater";
+import { attributesFrom, cut, cutFor, offTarget, onlyForTests, decidedOf, declaredIn, differences, errorsAt, items, jsOutcomes, libraryTestsOnly, modulePath, nativeOutcomes, testOnlyFile, undecided } from "../scripts/crater";
 
 test("each test's outcome is read of cargo test's lines and of Node's runner's", () => {
   expect(nativeOutcomes("running 3 tests\ntest a::t1 ... ok\ntest a::t2 ... FAILED\ntest t3 ... ignored, slow\n")).toEqual({
@@ -122,4 +122,33 @@ test("a test's attributes of several lines are its own, its #[test] above them",
   expect(cutFor("src/lib.rs", source, 9)).toEqual({ from: 2, test: "tests::test_compare" });
   // A line of code ending `]` above is no attribute of its.
   expect(attributesFrom(["let a = [", "    1]", "fn f() {}"], 3)).toBe(3);
+});
+
+// A module built only because of `test` on wasm32, chrono's tz_data,
+// `#[cfg(all(any(target_os = "android", target_env = "ohos", test),
+// feature = "clock"))]`, is test-only, as `#[cfg(test)]`'s is: its
+// cfg false without `test` whatever the features are (#1153).
+test("a cfg true on wasm32 only because of test is test-only, features unknown", () => {
+  expect(onlyForTests('cfg(all(any(target_os = "android", target_env = "ohos", test), feature = "clock"))')).toBe(true);
+  expect(onlyForTests("cfg(test)")).toBe(true);
+  expect(onlyForTests('cfg(any(test, feature = "std"))')).toBe(false);
+  expect(onlyForTests('cfg(target_arch = "wasm32")')).toBe(false);
+  expect(onlyForTests("cfg(unix)")).toBe(false);
+  expect(onlyForTests('cfg(all(test, not(feature = "x")))')).toBe(true);
+  expect(onlyForTests("cfg(not(test))")).toBe(false);
+});
+
+// A native test of a module a cfg leaves off wasm32, chrono's `#[cfg(unix)]
+// mod tz_info;`, is none of rust-js's target, counted apart, never as one
+// that differs (#1153).
+test("a test of a module a cfg leaves off wasm32 is of no test of its", () => {
+  const files: Record<string, string> = {
+    "src/lib.rs": "pub mod offset;\n",
+    "src/offset.rs": "#[cfg(unix)]\nmod tz_info;\nmod fixed;\n",
+    "src/offset/tz_info.rs": "#[cfg(test)]\nmod tests {\n    #[test]\n    fn t() {}\n}\n",
+    "src/offset/fixed.rs": "#[cfg(test)]\nmod tests {\n    #[test]\n    fn t() {}\n}\n",
+  };
+  const read = (path: string) => files[path];
+  expect(offTarget("offset::tz_info::tests::t", read)).toBe(true);
+  expect(offTarget("offset::fixed::tests::t", read)).toBe(false);
 });

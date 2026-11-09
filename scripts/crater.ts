@@ -23,7 +23,7 @@
 // and asked again only where one changed.
 // Writes `target/crater.json` and prints a line per crate.
 
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { availableParallelism, homedir } from "node:os";
 import {
@@ -58,6 +58,9 @@ export type Verdict =
       js: Outcomes;
       cut: Record<string, string>;
       differ: { name: string; js: string }[];
+      /** Native tests of a module a cfg leaves off wasm32, chrono's
+       * `#[cfg(unix)] mod tz_info`'s: no test of rust-js's target. */
+      offTarget?: string[];
     }
   | { native: Outcomes; refused: string[] }
   | { problem: string };
@@ -126,6 +129,92 @@ export function errorsAt(
   ].map((m) => ({ why: m[1], file: m[2], line: Number(m[3]) }));
 }
 
+/** rustc's cfgs of rust-js's target, `rustc --print cfg --target
+ * wasm32-unknown-unknown`'s: a name alone, `target_has_atomic`, or a name
+ * and each of its values, `target_os="unknown"`. The one source of them,
+ * read once (#1153). */
+let wasmCfgs: Map<string, Set<string>> | undefined;
+function targetCfgs(): Map<string, Set<string>> {
+  if (wasmCfgs) return wasmCfgs;
+  const printed = spawnSync("rustc", ["--print", "cfg", "--target", "wasm32-unknown-unknown"], { cwd: root, encoding: "utf8" });
+  if (printed.status !== 0) throw new Error(`rustc --print cfg failed: ${printed.stderr}`);
+  wasmCfgs = new Map();
+  for (const line of printed.stdout.split("\n").filter(Boolean)) {
+    const [name, value] = line.split("=");
+    const values = wasmCfgs.get(name) ?? new Set<string>();
+    if (value !== undefined) values.add(JSON.parse(value));
+    wasmCfgs.set(name, values);
+  }
+  return wasmCfgs;
+}
+
+/** Each `#[cfg(..)]` of attributes' text, as `cfg(..)`. */
+export function cfgsOf(attributes: string): string[] {
+  const found: string[] = [];
+  for (let at = attributes.indexOf("#[cfg("); at >= 0; at = attributes.indexOf("#[cfg(", at + 1)) {
+    let depth = 0;
+    for (let i = at + 5; i < attributes.length; i++) {
+      if (attributes[i] === "(") depth++;
+      else if (attributes[i] === ")" && --depth === 0) {
+        found.push(attributes.slice(at + 2, i + 1));
+        break;
+      }
+    }
+  }
+  return found;
+}
+
+/** Whether `cfg`, `cfg(..)`'s text, holds on wasm32 only because of
+ * `test`: false of a build without it, whatever features are on, which the
+ * Crater can't know, so a `feature = ".."` is neither (#1153). */
+export function onlyForTests(cfg: string): boolean {
+  return cfgHolds(cfg, false) === false && cfgHolds(cfg, true) !== false;
+}
+
+/** Whether `cfg` holds on wasm32, of a build with `test` or without: true,
+ * false, or `undefined` where it's of a feature, which the Crater can't
+ * know. Of rustc's own cfgs of the target (`targetCfgs`). */
+export function cfgHolds(cfg: string, test: boolean): boolean | undefined {
+  const facts = targetCfgs();
+  type Truth = boolean | undefined;
+  const tokens = cfg.match(/"(?:[^"\\]|\\.)*"|[A-Za-z_][A-Za-z0-9_]*|[(),=]/g) ?? [];
+  const evaluate = (): Truth => {
+    let i = 0;
+    const list = (): Truth[] => {
+      const items: Truth[] = [];
+      if (tokens[i] !== "(") throw new Error(`unreadable cfg: ${cfg}`);
+      i++;
+      while (tokens[i] !== ")") {
+        items.push(predicate());
+        if (tokens[i] === ",") i++;
+      }
+      i++;
+      return items;
+    };
+    const predicate = (): Truth => {
+      const name = tokens[i++];
+      if (name === "all") return list().reduce<Truth>((a, b) => (a === false || b === false ? false : a === undefined || b === undefined ? undefined : true), true);
+      if (name === "any") return list().reduce<Truth>((a, b) => (a === true || b === true ? true : a === undefined || b === undefined ? undefined : false), false);
+      if (name === "not") {
+        const [inner] = list();
+        return inner === undefined ? undefined : !inner;
+      }
+      if (tokens[i] === "=") {
+        i++;
+        const value = JSON.parse(tokens[i++]);
+        if (name === "feature") return undefined;
+        return facts.get(name)?.has(value) ?? false;
+      }
+      if (name === "test") return test;
+      return facts.has(name) && facts.get(name)!.size === 0;
+    };
+    if (tokens[i++] !== "cfg") throw new Error(`unreadable cfg: ${cfg}`);
+    const [whole] = list();
+    return whole;
+  };
+  return evaluate();
+}
+
 /** Where the attributes just above line `at`, from 1, start: each line that
  * starts with `#[`, and each attribute of several lines, uuid's
  * `#[cfg_attr(\n    all(..),\n    wasm_bindgen_test\n)]` between its
@@ -161,6 +250,8 @@ export type Item = {
   to: number;
   test: boolean;
   cfgTest: boolean;
+  /** Its `#[cfg(..)]`s, `cfg(unix)`. */
+  cfgs: string[];
   /** A module of a file of its own, `mod tests;`. */
   file?: boolean;
 };
@@ -220,7 +311,8 @@ export function items(text: string): Item[] {
           from,
           to: lineAt[i],
           test: false,
-          cfgTest: /#\[cfg\(test\)\]/.test(attributes),
+          cfgTest: cfgsOf(attributes).some(onlyForTests),
+          cfgs: cfgsOf(attributes),
           file: true,
         });
       }
@@ -238,7 +330,8 @@ export function items(text: string): Item[] {
           from,
           to: 0,
           test: /#\[(?:\w+::)*test\b/.test(attributes),
-          cfgTest: /#\[cfg\(test\)\]/.test(attributes),
+          cfgTest: cfgsOf(attributes).some(onlyForTests),
+          cfgs: cfgsOf(attributes),
         };
         pending = undefined;
       }
@@ -495,18 +588,13 @@ async function measure(crate: Crate, build: string): Promise<Verdict> {
     );
     const jsRan = jsOutcomes(js.said);
     if (Object.keys(jsRan).length > 0) {
-      verdict = {
-        native: nativeRan,
-        js: jsRan,
-        cut: cutTests,
-        differ: differences(nativeRan, jsRan, cutTests),
-      };
+      verdict = judged(nativeRan, jsRan, cutTests, jsDir);
       break;
     }
     const errors = errorsAt(js.said).filter((e) => e.file.startsWith("src/"));
     // Each of its tests cut: none left to run.
     if (errors.length === 0 && js.code === 0 && Object.keys(cutTests).length > 0) {
-      verdict = { native: nativeRan, js: jsRan, cut: cutTests, differ: differences(nativeRan, jsRan, cutTests) };
+      verdict = judged(nativeRan, jsRan, cutTests, jsDir);
       break;
     }
     if (errors.length === 0) {
@@ -615,6 +703,39 @@ export function undecided(crate: string, differ: { name: string; js: string }[],
 }
 
 /** A crate's verdict in a line. */
+/** Whether the test `name`, `a::b::tests::t`, is of a module a cfg leaves
+ * off wasm32 in a test build, `#[cfg(unix)] mod tz_info;`, read of the
+ * crate's source through `read` (#1153). */
+export function offTarget(name: string, read: (path: string) => string | undefined): boolean {
+  const modules = name.split("::").slice(0, -1);
+  let file = read("src/lib.rs") !== undefined ? "src/lib.rs" : "src/main.rs";
+  let scope: { from: number; to: number } | undefined;
+  const path: string[] = [];
+  for (const module of modules) {
+    const text = read(file);
+    if (text === undefined) return false;
+    const declared = items(text).find((item) => item.kind === "mod" && item.name === module && (!scope || (scope.from < item.from && item.to <= scope.to)));
+    if (!declared) return false;
+    if (declared.cfgs.some((cfg) => cfgHolds(cfg, true) === false)) return true;
+    path.push(module);
+    if (declared.file) {
+      const flat = `src/${path.join("/")}.rs`;
+      file = read(flat) !== undefined ? flat : `src/${path.join("/")}/mod.rs`;
+      scope = undefined;
+    } else scope = declared;
+  }
+  return false;
+}
+
+/** A crate's verdict of its tests' outcomes: each native one not run as
+ * JS of a module a cfg leaves off wasm32 apart from those that differ. */
+function judged(native: Outcomes, js: Outcomes, cut: Record<string, string>, dir: string): Verdict {
+  const read = (path: string) => (existsSync(join(dir, path)) ? readFileSync(join(dir, path), "utf8") : undefined);
+  const differ = differences(native, js, cut);
+  const off = differ.filter((d) => d.js === "not run" && offTarget(d.name, read)).map((d) => d.name);
+  return { native, js, cut, differ: differ.filter((d) => !off.includes(d.name)), offTarget: off };
+}
+
 export function said(crate: Crate, verdict: Verdict, decided: Map<string, string> = new Map()): string {
   const name = `${crate.name} ${crate.version}`;
   if ("problem" in verdict) return `${name}: not asked, ${verdict.problem}`;
@@ -624,11 +745,12 @@ export function said(crate: Crate, verdict: Verdict, decided: Map<string, string
   if ("refused" in verdict)
     return `${name}: its library refused, ${passed} native tests unrun: ${verdict.refused.slice(0, 3).join("; ")}`;
   const cut = Object.keys(verdict.cut).length;
-  const same = passed - cut - verdict.differ.length;
+  const off = verdict.offTarget?.length ?? 0;
+  const same = passed - cut - off - verdict.differ.length;
   const wrong = undecided(crate.name, verdict.differ, decided);
   const known = verdict.differ.length - wrong.length;
   const shown = wrong.slice(0, 5).map((d) => `${d.name} (${d.js})`);
-  return `${name}: ${same} of ${passed} as native, ${cut} refused${known > 0 ? `, ${known} decided` : ""}${wrong.length > 0 ? `, ${wrong.length} WRONG: ${shown.join(", ")}${wrong.length > 5 ? ", .." : ""}` : ""}`;
+  return `${name}: ${same} of ${passed} as native, ${cut} refused${off > 0 ? `, ${off} not of wasm32` : ""}${known > 0 ? `, ${known} decided` : ""}${wrong.length > 0 ? `, ${wrong.length} WRONG: ${shown.join(", ")}${wrong.length > 5 ? ", .." : ""}` : ""}`;
 }
 
 if (import.meta.main) {

@@ -636,8 +636,8 @@ test("the crate corpus is its table's rows, each at an exact release", () => {
   const rows = corpusRows(readFileSync(join(root, "docs/crate-corpus.md"), "utf8"));
   if (!Array.isArray(rows)) throw new Error(rows.problem);
   expect(rows.length).toBeGreaterThan(20);
-  const chrono = rows.find((c) => c.name === "chrono")!;
-  expect(dependency(chrono)).toMatch(/^chrono = \{ version = "=\d+\.\d+\.\d+", default-features = false, features = \["alloc"\] \}$/);
+  const uuid = rows.find((c) => c.name === "uuid")!;
+  expect(dependency(uuid)).toMatch(/^uuid = \{ version = "=\d+\.\d+\.\d+", default-features = false, features = \["std", "v4", "js"\] \}$/);
   expect(dependency(rows.find((c) => c.name === "either")!)).toMatch(/^either = \{ version = "=\d+\.\d+\.\d+" \}$/);
   const table = (crate: string, verdict = "runs") => `| Crate | Verdict | Refusals |\n|---|---|---|\n| ${crate} | ${verdict} | |\n`;
   // A row an open issue marks, its bar and what the crate does now.

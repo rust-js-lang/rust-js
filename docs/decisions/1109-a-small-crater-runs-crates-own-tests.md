@@ -66,3 +66,29 @@ evidence among them. Decided with the user, through m6-react.
   (#1096); every other crate's compile is under 0.71 GB.
 - `test/crater.test.ts` holds its reading of Cargo's, Node's and rust-js's
   output and its cuts; the net itself runs each night.
+
+## Amendment: what a cfg builds only for tests, or never on wasm32 (2026-11-10, #1153)
+
+chrono's own tests, with its default features, had its library refused:
+its `tz_data.rs`, `#[cfg(all(any(target_os = "android", target_env =
+"ohos", test), feature = "clock"))]`, is built on wasm32 only because of
+`test`, and reads files through `io::Read`, which rust-js refuses (#1156).
+
+- **A module whose cfg holds on wasm32 only because of `test` is
+  test-only**, as `#[cfg(test)]`'s is: a refusal in it cuts its functions
+  and the tests that reach them, never the library (`onlyForTests`). Its
+  cfg is evaluated of rustc's own cfgs of the target, `rustc --print cfg
+  --target wasm32-unknown-unknown` (`targetCfgs`), the one source, and of
+  `test`. A `feature = ".."` is neither true nor false, which the Crater
+  can't know: test-only means false without `test` whatever features are
+  on.
+- **A native test of a module a cfg leaves off wasm32 in a test build**,
+  chrono's `#[cfg(unix)] mod tz_info;`, is no test of rust-js's target: it
+  is counted in a column of its own, "not of wasm32" (`offTarget`), never as
+  one that differs, nor as passed.
+- Cut tests stay a column of their own, "refused".
+
+chrono 0.4.45 with its default features, its row's now: 240 of its 272
+tests as native, 12 refused, 20 not of wasm32, none differing. Held by
+`test/crater.test.ts`: chrono's tz_data cfg test-only and others not, and
+`tz_info`'s test of no target's.
