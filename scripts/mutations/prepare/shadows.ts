@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "shadow-read-where-redeclared",
+    breaks:
+      "a closure's `const d$1 = d` is read as `d` in a closure in it that declares a `d` of its own, so `$assign(d$1, d)` is `$assign(d, d)` and `d` is never set (#1078)",
+    file: "src/prepare/shadows.rs",
+    find: "            && !redeclared\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^closure_in_closure_sets_a_capture.rs$"],
+  },
+  {
     name: "shadow-ended-way-leaves-a-try",
     breaks: "a way that ends inside a `try`, a labeled block or a `switch` is taken to leave the copy's list, so a copy read after its `catch` is the variable a call in the `try` set, `caught(true)` giving 11 where Rust gives 1 (rd646's P0)",
     file: "src/prepare/shadows.rs",

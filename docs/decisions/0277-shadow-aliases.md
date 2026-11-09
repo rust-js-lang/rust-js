@@ -399,3 +399,19 @@ closure changes apart from the binding. Held by the corpus case
 `shadow_of_a_destructured_binding`, preloadModule's shape, a loop's tuple's
 parts, a map's `for…of` entries and a struct's clone, run against native
 Rust; the mutation `shadow-destructured-not-own` (`prepare/shadows.ts`).
+
+## Amendment: not where what's after declares the name again (#1078)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's. A closure in a closure that sets a variable both capture, `d =
+D(k)`: the outer one holds it apart, `const d$1 = d`, and the inner one
+names its new value after its type, `const d = [..]`, a name its own body
+had free. `shadows` read `d$1` as `d` everywhere after, the inner closure
+too, whose own `const d` that read then was: `$assign(d, d)` set the new
+value to itself, the old one's drop printed the new one's, and the
+variable was never set, `end 24` where native Rust prints `end 11`. The
+metamorphic net's `for-each` rewrite of `drop_reassigned_in_inner_loop`
+found it. A `const n$1 = n` is `n` now only where nothing after it, in a
+closure or a block of its own, declares an `n`; there, it stays apart.
+Held by the corpus case `closure_in_closure_sets_a_capture` against native
+Rust; mutation `shadow-read-where-redeclared` (`prepare/shadows.ts`).

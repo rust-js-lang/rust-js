@@ -100,7 +100,14 @@ fn shadow(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, String)> {
         let unread_after = || {
             rest.is_some_and(|rest| !read_later(rest, &alias) && read_before_set(rest, &alias, &of, &mut false, true))
         };
+        // Nor where what's after declares `n` again, a closure's `const n`
+        // the read of `n$1` there would be of instead (#1078).
+        let mut redeclared = false;
+        if let Some(rest) = rest {
+            js::each_declared(rest, &mut |name| redeclared |= name == of);
+        }
         let kept = !in_closures.contains(&of)
+            && !redeclared
             && (sets.is_empty() || !looped && sets.iter().all(|&set| set < at) || unread_after());
         let seen = own.contains(&of) || rest.is_some_and(|rest| read_before_code(rest, &alias, &mut false, true));
         (kept && seen).then_some((alias, of))

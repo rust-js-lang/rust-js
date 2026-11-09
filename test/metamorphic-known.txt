@@ -28,9 +28,6 @@ plain std for-each table_rows_kept_by_views.rs
 #1077 P0: a closure variable used only as let r: &dyn Fn = &f is merged into function r, so f's other use inside a closure reads undefined
 plain std for-each fn_compared_by_its_pointer.rs
 
-#1078 P0: in a closure nested two deep, temporaries_names names a new value after the captured variable it shadows: $assign(d, d)
-plain std for-each drop_reassigned_in_inner_loop.rs
-
 #1079 P0: an iterator with a destructor consumed by for_each isn't dropped when its closure panics
 plain std for-each copied_iterator_defaults.rs
 
