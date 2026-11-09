@@ -9,7 +9,8 @@
 import { readdirSync, rmSync, statSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 
-import { bytesOf, evict, floorBytes, freeBytes, machineStore, type Kept } from "./bounded";
+import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
+import { floorBytes, machineStore } from "./bounded";
 import { checkoutTarget, target } from "./packages-of";
 
 const day = 24 * 60 * 60;
@@ -86,7 +87,7 @@ export function pruneKept(
       }
     }
   }
-  const evicted = evict(kept, { cap, free });
+  const evicted = evict(kept, { cap, free, floor: floorBytes });
   for (const program of programs) {
     try {
       if (readdirSync(join(cache, program)).length === 0) rmSync(join(cache, program), { recursive: true, force: true });

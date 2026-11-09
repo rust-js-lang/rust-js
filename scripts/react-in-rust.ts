@@ -22,14 +22,16 @@
 // goes, the least recently used past `portsCap` go, and none is kept below
 // the disk's floor (`bound`); its build, under the port's
 // `node_modules/.cache/rust-js`, is of one build of the compiler, as
-// another's is never found again, and keeps no incremental cache, as each
-// crate is compiled whole again whenever the compiler changes.
+// `rust-js build` keeps every app's (`holdTarget`, #1057), and keeps no
+// incremental cache, as each crate is compiled whole again whenever the
+// compiler changes.
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { appendFileSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { bytesOf, evict, floorBytes, freeBytes, type Kept } from "../test/bounded";
+import { floorBytes } from "../test/bounded";
+import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { cacheDirOf } from "../tooling/build.js";
 import { channel } from "./toolchain";
 
@@ -97,21 +99,9 @@ export function bound({ dir = ports, own = home, cap = portsCap, free = () => fr
   }
   const ownBytes = bytesOf(own);
   const before = new Set(kept.map((thing) => thing.path));
-  evict(kept, { cap: Math.max(0, cap - ownBytes), free });
+  evict(kept, { cap: Math.max(0, cap - ownBytes), free, floor: floorBytes });
   for (const path of before) if (!existsSync(path)) removed.push(path);
   return removed;
-}
-
-/** This checkout's build of the port, `node_modules/.cache/rust-js`, of
- * this build of the compiler alone: Cargo keys each crate by the
- * compiler's build, so another's is never found again, and a regen after
- * a change to `src/` added another 530 MB of it (#914). */
-function ownBuildOnly() {
-  const identity = must([compiler, "--version-json"], root);
-  const stamp = join(home, "compiler");
-  if (existsSync(stamp) && readFileSync(stamp, "utf8") === identity) return;
-  rmSync(cacheDirOf(port), { recursive: true, force: true });
-  writeFileSync(stamp, identity);
 }
 
 function run(cmd: string[], cwd: string, env: Record<string, string> = {}) {
@@ -233,7 +223,6 @@ if (!import.meta.main) {
   const crates = members();
   const unknown = named.filter((name) => !crates.includes(name));
   if (unknown.length) throw new Error(`react-in-rust has no crate with JS named ${unknown.join(", ")}: ${crates.join(", ")}`);
-  ownBuildOnly();
   // Without rustc's incremental cache, 420 of a build's 540 MB, which no
   // regen reads: after a change to the compiler each crate is compiled
   // whole again, and with none Cargo finds each one done.

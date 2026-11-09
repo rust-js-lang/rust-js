@@ -17,7 +17,8 @@ to be committed (ADR 0041): the dev server sees them as any edit, and Fast
 Refresh keeps state. Then each of the workspace's crates' checks of its JS
 run, a build's (ADR 0117). A compile error is rustc's, and nothing is
 written. Cargo builds in `node_modules/.cache/rust-js/target`, out of what a
-bundler watches, unless `CARGO_TARGET_DIR` says otherwise. An app's `build`
+bundler watches, unless `CARGO_TARGET_DIR` says otherwise; the cache is
+held to 2 GB, the least recently used target first (#1057). An app's `build`
 script checks before it builds: `rust-js build --check && next build`.
 
 Distributed tooling supports Node.js and Bun using standard Node.js APIs. Bun

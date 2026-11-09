@@ -1,9 +1,10 @@
 // Native build preparation. Hosts provide scheduling and consume manifests.
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { bytesOf, evict, freeBytes } from "./bounded.js";
 import { cargoWorkspace, checkCargo, lintCheck, packageOf } from "./cargo.js";
 import { parseCompilerIdentity } from "./manifest.js";
 
@@ -15,6 +16,90 @@ const thisCheckout = resolve(dirname(fileURLToPath(import.meta.url)), "..");
  * its Cargo builds, and each host's own. */
 export function cacheDirOf(root) {
   return join(root, "node_modules/.cache/rust-js");
+}
+
+/** What an app's cache keeps at most, its Cargo targets together, and the
+ * disk's floor below which it keeps only the one in use (#1057, the
+ * user's decision of 2026-11-09): no setting; `CARGO_TARGET_DIR` builds
+ * elsewhere, in a target that's the user's to keep. */
+export const appCacheCap = 2 * 2 ** 30;
+export const appCacheFloor = 5 * 2 ** 30;
+
+/** Which compiler built a target, its `--version-json`'s `build`: a
+ * target's crates are of one build of the compiler, as Cargo keys each by
+ * it and never finds another's again (ADR 1003). */
+const compilerStamp = "rust-js-compiler";
+
+/** The file a target keeps of what a build wrote in source (`checkCargo`'s
+ * ledger), the app's, whichever compiler wrote it. */
+const ledgerName = "rust-js-in-source.json";
+
+/** Where Cargo builds an app's Rust for `purpose`, `target`, `editor`,
+ * `clippy` or `test`: `CARGO_TARGET_DIR` where it's set, the user's own;
+ * else the app's cache's target for it.
+ * @param {string} root
+ * @param {string} purpose
+ * @returns {string} */
+export function targetDirOf(root, purpose) {
+  return resolve(root, process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(root), purpose));
+}
+
+/** `targetDir` made the compiler `build`'s before Cargo builds in it: of
+ * the app's cache, one another build of the compiler made, or that says of
+ * none, is emptied first, but what each build wrote in source (#914,
+ * #1057). Its stamp says it's in use now.
+ * @param {string} root
+ * @param {string} targetDir
+ * @param {string} build */
+export function holdTarget(root, targetDir, build) {
+  const stamp = join(targetDir, compilerStamp);
+  const was = existsSync(stamp) ? readFileSync(stamp, "utf8") : undefined;
+  if (inAppCache(root, targetDir) && was !== build && existsSync(targetDir)) {
+    const ledgers = ledgersIn(targetDir).map((path) => [path, readFileSync(path)]);
+    rmSync(targetDir, { recursive: true, force: true });
+    for (const [path, text] of ledgers) {
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, text);
+    }
+  }
+  mkdirSync(targetDir, { recursive: true });
+  writeFileSync(stamp, build);
+}
+
+/** The app's cache held to `appCacheCap` once Cargo's done in `own`: its
+ * other targets, the least recently used first, by the one rule every
+ * store is held by (tooling/bounded.js), and none kept below the disk's
+ * `appCacheFloor`; `own` is kept. A target of `CARGO_TARGET_DIR`, the
+ * user's, isn't held. What it removed.
+ * @param {string} root
+ * @param {string} own
+ * @param {{ cap?: number, free?: () => number }} [bounds]
+ * @returns {number} */
+export function boundAppCache(root, own, { cap = appCacheCap, free = () => freeBytes(root) } = {}) {
+  if (!inAppCache(root, own)) return 0;
+  const cache = cacheDirOf(root);
+  const kept = readdirSync(cache)
+    .map((name) => join(cache, name))
+    .filter((path) => path !== own && statSync(path).isDirectory())
+    .map((path) => {
+      const stamp = join(path, compilerStamp);
+      return { path, bytes: bytesOf(path), used: existsSync(stamp) ? statSync(stamp).mtimeMs : 0 };
+    });
+  return evict(kept, { cap: Math.max(0, cap - bytesOf(own)), free, floor: appCacheFloor }).removed;
+}
+
+/** Whether `targetDir` is the app's cache's, not the user's. */
+function inAppCache(root, targetDir) {
+  return resolve(targetDir).startsWith(resolve(cacheDirOf(root)) + sep);
+}
+
+/** The ledgers in `targetDir`, each of a target triple's profile's. */
+function ledgersIn(targetDir) {
+  const below = (dir) => (existsSync(dir) && statSync(dir).isDirectory() ? readdirSync(dir).map((name) => join(dir, name)) : []);
+  return below(targetDir)
+    .flatMap(below)
+    .map((profile) => join(profile, ledgerName))
+    .filter((path) => existsSync(path));
 }
 
 /** What `rust-js build` says without a compiler at `rustJs`: the JS
@@ -164,6 +249,22 @@ export function createNativeBuilder({ root, rustJs }) {
   };
 
   const builder = {
+    /** `use` run with the app's target for `purpose` (`targetDirOf`),
+     * made this compiler's first (`holdTarget`), and the app's cache held
+     * to its cap after (`boundAppCache`).
+     * @template T
+     * @param {string} purpose
+     * @param {(targetDir: string) => Promise<T>} use
+     * @returns {Promise<T>} */
+    async inTarget(purpose, use) {
+      const targetDir = targetDirOf(root, purpose);
+      if (existsSync(rustJs)) holdTarget(root, targetDir, (await compilerIdentity()).build);
+      try {
+        return await use(targetDir);
+      } finally {
+        boundAppCache(root, targetDir);
+      }
+    },
     /** A Cargo workspace's check (ADR 0101), with the compiler's toolchain,
      * this compiler, and the React the project has installed. */
     async checkCargo(options) {
@@ -201,7 +302,8 @@ export function createNativeBuilder({ root, rustJs }) {
      * @param {Omit<Parameters<typeof checkCargo>[0], "toolchain" | "compiler" | "react" | "inSource" | "targetDir"> & { warn?: (message: string) => void }} options
      */
     async build({ warn, ...given }) {
-      const options = { ...given, inSource: true, targetDir: process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(root), "target") };
+      return builder.inTarget("target", async (targetDir) => {
+      const options = { ...given, inSource: true, targetDir };
       const { root: workspace } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: options.offline, targetDir: options.targetDir });
       const built = await builder.checkCargo(options);
       for (const warning of built.warnings) warn?.(warning);
@@ -212,6 +314,7 @@ export function createNativeBuilder({ root, rustJs }) {
         }
       }
       return { ...built, workspace };
+      });
     },
   };
   return builder;
@@ -261,8 +364,7 @@ export async function clippyApp({ app, packageNames, lints }) {
   const manifestPath = join(app, "Cargo.toml");
   if (!existsSync(manifestPath)) throw new Error(`rust-js: no Cargo.toml in ${app}: run \`rust-js clippy\` where the app's is`);
   const builder = createNativeBuilder({ root: app, rustJs: await findCompiler(app) });
-  const targetDir = process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(app), "clippy");
-  return builder.lintCheck({ manifestPath, packageNames, lints, targetDir });
+  return builder.inTarget("clippy", (targetDir) => builder.lintCheck({ manifestPath, packageNames, lints, targetDir }));
 }
 
 /**
@@ -286,7 +388,7 @@ export async function testApp({ app, packageNames = [], args = [] }) {
   const manifestPath = join(app, "Cargo.toml");
   if (!existsSync(manifestPath)) throw new Error(`rust-js: no Cargo.toml in ${app}: run \`rust-js test\` where the crate's is`);
   const builder = createNativeBuilder({ root: app, rustJs: compiler });
-  const targetDir = resolve(app, process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(app), "test"));
+  return builder.inTarget("test", async (targetDir) => {
   const { own, integrationTests } = await builder.cargoWorkspace({ manifestPath, targetDir });
   const named = packageNames.length ? packageNames : own ? [own] : [];
   if (!named.length) throw new Error(`rust-js: ${manifestPath} is a workspace's: name the package, \`rust-js test --package <name>\``);
@@ -308,6 +410,7 @@ export async function testApp({ app, packageNames = [], args = [] }) {
     exit ||= code;
   }
   return exit;
+  });
 }
 
 /** A Next.js app's Pages Router directories, where a file is a route, of

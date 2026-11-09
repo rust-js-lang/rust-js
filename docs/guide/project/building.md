@@ -352,6 +352,14 @@ haven't changed is fresh, and its JS is the JS that build wrote.
 
 - **Cargo builds in `node_modules/.cache/rust-js/target`**, out of what your
   bundler watches. Set `CARGO_TARGET_DIR` to build elsewhere.
+- **The cache holds 2 GB at most.** `rust-js build`, `rust-js test`,
+  `rust-js clippy` and your editor's check each build in a target of their
+  own there; past 2 GB together, the least recently used is removed, never
+  the one building, and with less than 5 GB free on the disk only that one
+  is kept. A target another compiler built is emptied as a build starts, as
+  Cargo would never use its crates again; what that build wrote beside your
+  Rust is still known, and removed when it's no longer written. There's no
+  setting: a target of `CARGO_TARGET_DIR` is yours, and isn't held to a cap.
 - **A file rust-js wrote that a build no longer writes is removed**: a
   module you deleted, a crate you stopped using. Only if it's still as
   rust-js wrote it: a file you edited is yours, and stays.

@@ -29,7 +29,8 @@ import { createHash } from "node:crypto";
 import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 
-import { evict, floorBytes, freeBytes } from "./bounded";
+import { evict, freeBytes } from "../tooling/bounded.js";
+import { floorBytes } from "./bounded";
 import type { Exit } from "./child";
 import { target } from "./packages-of";
 import { compiler as testsCompiler } from "./support";
@@ -417,7 +418,7 @@ export function prune({ cap = capBytes(), current, free, root = compileCache }: 
       builds++;
     }
   }
-  const { removed, size } = evict(entries(store), { cap, free: free ?? (() => freeBytes(existsSync(root) ? root : target)) });
+  const { removed, size } = evict(entries(store), { cap, free: free ?? (() => freeBytes(existsSync(root) ? root : target)), floor: floorBytes });
   if (existsSync(store)) writeFileSync(join(root, "size"), String(size));
   return { removed, size, builds };
 }

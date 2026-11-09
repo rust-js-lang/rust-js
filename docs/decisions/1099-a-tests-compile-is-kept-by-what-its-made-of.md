@@ -193,3 +193,31 @@ slow spot, DEVELOPMENT.md).
 
 Held by `test/support.test.ts` (the stores' caps and floor, a killed
 process's fixtures, the port's directories) and `test/compiles.test.ts`.
+
+## Amended: an app's cache is bounded by the same rule (#1057)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; what's kept on
+disk isn't what a program does. #914 left an app's cache,
+`node_modules/.cache/rust-js`, unbounded, as a product decision: each build
+of the compiler is another `rustc -vV` line, so Cargo builds every crate
+again beside the last build's, and keeps both. The Vite example's had grown
+to 17 GB of wasm builds, 13 of them rustc's incremental state, and took the
+machine under its floor mid-run of the metamorphic net.
+
+The user's decision (2026-11-09): cap it, least recently used first, with no
+setting. `rust-js build`, `test`, `clippy` and the editor's check each run
+Cargo through `inTarget` (tooling/build.js). A target of the app's cache
+another build of the compiler made, or one from before its stamp, is
+emptied first, but each `rust-js-in-source.json`, so what an earlier build
+wrote beside the Rust is still known (`holdTarget`); then the cache's
+targets are held to 2 GB, never the one in use, and to it alone below
+5 GB free (`boundAppCache`). `CARGO_TARGET_DIR`'s target is the user's,
+stamped but never emptied or evicted.
+
+The eviction is one rule: `evict` moved from test/bounded.ts to
+tooling/bounded.js, where the shipped tooling can use it, and takes its
+store's floor, 40 GB of the loop's stores (test/bounded.ts's `floorBytes`)
+and 5 GB of an app's. React's port's `ownBuildOnly`, which emptied its
+build of another compiler's, is gone: `rust-js build` does that now for
+every app. Held by `test/in-source.test.ts`' two tests of it; the tooling
+has no mutations, as #914's stores have none.

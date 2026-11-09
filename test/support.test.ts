@@ -6,7 +6,8 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";
 
-import { bytesOf, floorBytes } from "./bounded";
+import { bytesOf } from "../tooling/bounded.js";
+import { floorBytes } from "./bounded";
 import { keptStores, mayKeep, nativeCache, pruneKept, pruneKeptStores, retiredStores } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";

@@ -12,7 +12,7 @@
 //
 //   rust-js-check [<app-dir>] [--package <name>]...
 import { join, resolve } from "node:path";
-import { cacheDirOf, createNativeBuilder, findCompiler } from "./build.js";
+import { createNativeBuilder, findCompiler } from "./build.js";
 import { nativeCheck } from "./cargo.js";
 import { writePatch } from "./patch.js";
 
@@ -37,12 +37,8 @@ try {
   writePatch(app);
   const manifestPath = join(app, "Cargo.toml");
   const builder = createNativeBuilder({ root: app, rustJs: await findCompiler(app) });
-  const rustJs = await builder.lintCheck({
-    manifestPath,
-    packageNames,
-    // Not the dev server's, whose Turbopack or Vite doesn't watch it either.
-    targetDir: process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(app), "editor"),
-  });
+  // Not the dev server's target, whose Turbopack or Vite doesn't watch it either.
+  const rustJs = await builder.inTarget("editor", (targetDir) => builder.lintCheck({ manifestPath, packageNames, targetDir }));
   // One after the other: each prints whole lines of JSON to one stdout.
   const native = packageNames.length > 0 ? await nativeCheck({ manifestPath, except: packageNames }) : 0;
   process.exitCode = rustJs || native;

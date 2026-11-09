@@ -41,7 +41,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, s
 import { availableParallelism } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 
-import { bytesOf, evict, freeBytes, machineStore } from "../test/bounded";
+import { bytesOf, evict, freeBytes } from "../tooling/bounded.js";
+import { floorBytes, machineStore } from "../test/bounded";
 import { machineVerifiedRuns } from "../test/kept";
 import { plainSuiteFiles, shard } from "./shard";
 
@@ -288,7 +289,7 @@ export function pruneMaps(dir = mapStore, cap = keptMaps, free = () => freeBytes
     });
   const newest = [...kept].sort((a, b) => b.used - a.used);
   const past = [...names.filter(stale).map((name) => join(dir, name)), ...newest.slice(cap).map(({ path }) => path)];
-  const within = evict(newest.slice(0, cap), { cap: Number.POSITIVE_INFINITY, free });
+  const within = evict(newest.slice(0, cap), { cap: Number.POSITIVE_INFINITY, free, floor: floorBytes });
   for (const path of past) rmSync(path, { force: true });
   return { removed: past.length + within.removed, size: within.size };
 }

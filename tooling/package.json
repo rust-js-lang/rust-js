@@ -15,6 +15,7 @@
   },
   "files": [
     "build.js",
+    "bounded.js",
     "crates.js",
     "manifest.js",
     "publish.js",

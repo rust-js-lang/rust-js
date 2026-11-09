@@ -1102,7 +1102,7 @@ test("an app's Rust is compiled one way, rust-js build", () => {
   expect(cli).toContain('if (command !== "build" && command !== "clippy" && command !== "test")');
   expect(cli).toContain("clippyApp(");
   expect(cli).toContain("testApp(");
-  expect(read("tooling/build.js")).toContain('join(cacheDirOf(app), "test")');
+  expect(read("tooling/build.js")).toContain('builder.inTarget("test"');
   expect(cli).not.toContain("spawn");
   // The build's one entry, which the CLI is a parse of.
   expect(cli).toContain("buildApp(");

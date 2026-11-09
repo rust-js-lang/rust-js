@@ -9,7 +9,8 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, ut
 import { join } from "node:path";
 
 import type { Exit } from "./child";
-import { floorBytes, freeBytes } from "./bounded";
+import { freeBytes } from "../tooling/bounded.js";
+import { floorBytes } from "./bounded";
 import { capBytes, compileCache, keptCompile, parseRecord, prune, unread } from "./compiles";
 import { target } from "./packages-of";
 import { buildCompiler, compiler, fixture, root } from "./support";
