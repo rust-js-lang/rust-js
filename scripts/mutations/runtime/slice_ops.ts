@@ -270,8 +270,8 @@ export const mutations: Mutation[] = [
     name: "is-sorted-by-steps-all",
     breaks: "`is_sorted()` of an iterator steps every item, where std's stops at the first out of order",
     file: "src/runtime/slice_ops.js",
-    find: "    if (!first && !f(last, item)) return false;\n",
-    replace: "    if (!first && !f(last, item)) first = first;\n",
+    find: "          if (!first && !f(last, step.value)) {\n            it.return?.();\n            return false;\n          }\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^is_sorted_items.rs$"],
   },
   {
@@ -385,5 +385,13 @@ export const mutations: Mutation[] = [
     find: "  if (at !== kept) $truncate(v, kept, drop);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_deque_retain_swaps.rs$"],
+  },
+  {
+    name: "is-sorted-by-unclosed",
+    breaks: "`it.is_sorted_by(f)` of an iterator whose step panics leaves it unclosed, its source's items never dropped (#1141)",
+    file: "src/runtime/slice_ops.js",
+    find: "      () => it.return?.(),\n    );\n  } finally {\n    ends?.();\n",
+    replace: "      () => {},\n    );\n  } finally {\n    ends?.();\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic.rs$"],
   },
 ];

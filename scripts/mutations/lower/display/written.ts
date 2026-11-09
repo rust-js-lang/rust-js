@@ -285,4 +285,12 @@ export const mutations: Mutation[] = [
     replace: "        // One of which no value exists, `Infallible` (`never_shown`).\n        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^infallible_shown_through_a_bound.rs$"],
   },
+  {
+    name: "debug-entries-unclosed",
+    breaks: "a `Debug` builder's `entries(it)` lists `it` by `Array.from`, which closes nothing where its step panics (#1141)",
+    file: "src/lower/display/written.rs",
+    find: "                BuilderPart::Many(match throws {\n",
+    replace: "                BuilderPart::Many(match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic.rs$"],
+  },
 ];

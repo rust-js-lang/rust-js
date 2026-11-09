@@ -312,7 +312,8 @@ function $isDisjoint(a, b) {
 //
 // Where stepping `items` throws, a panic in a closure, what's left of them
 // closed, as Rust drops the iterator `extend` took as it unwinds (#423): by
-// its own `fold`, which closes it, or by `for..of`, which does. Of an
+// its own `fold`, which closes it, or by `$eachOf`, as `for..of` doesn't
+// where its own step throws (#1141). Of an
 // iterator with a `fold` of its own, an adapter's, the crate's or
 // `$folded`'s, by it, as std's `extend` is its `for_each`: so what it
 // replaces is dropped as each comes, before what its source drops at its
@@ -369,7 +370,7 @@ function $extendMap(m, items, set, drop, dropKey, sorted) {
     );
     return m;
   }
-  for (const item of items) put(item);
+  $eachOf(items, put);
   return m;
 }
 

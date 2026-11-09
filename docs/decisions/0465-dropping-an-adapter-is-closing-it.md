@@ -2248,3 +2248,51 @@ Mutations:
   `joined-text-own-items`, `joined-text-of-iterable-unarrayed` and
   `partition-moves-unseen` are refitted, the last caught by a lent
   `partition` of items with a destructor.
+
+## Amendment: the runtime steps what may be a Rust iterator by its stepping helpers alone (2026-11-10, #1141)
+
+JS's own consumers, `for..of`, `Array.from` and a spread, close an
+iterator where their body throws or breaks, never where the iterator's
+own `next` throws. A Rust panic in a closure an adapter holds is such a
+throw, so what such a consumer stepped was never closed, and what it held
+never dropped. #1126 was one of them; an audit of every site found six
+more wrong answers, each of `vec![D(1), D(2), D(3)].into_iter().map(key)`
+whose `key` panics at 2, `D(3)` never dropped:
+
+- `BinaryHeap::extend` (`$heapExtend`'s `for..of`);
+- `splice`'s replacement (`$splice`'s `Array.from`);
+- generic code's `collect` into a std collection (its `FromIterator`
+  dictionary's `Array.from`);
+- a `Debug` builder's `entries` (`Array.from(items, each)`);
+- `is_sorted_by` (`$isSortedBy`'s `for..of`);
+- serde's `collect_seq` and `collect_map` (`$jsonCollectSeq`'s and
+  `$jsonCollectMap`'s `for..of`).
+
+**The runtime steps what may be a Rust iterator by its stepping helpers
+alone, each of which closes it where its step throws:** `$eachOf` (new),
+`f` of each item as it's stepped; `$foldToArray`, which now takes any
+iterable, an array copied; `$extend`; `$extendText`. A heap's `extend`
+pushes each as it's stepped, by `$extend`, and is rebuilt in a `finally`,
+as std's `RebuildOnDrop` is though it unwinds, so what came before the
+panic stays, in order. A `Debug` builder's `entries` shows each as it's
+stepped, `$foldToArray(Iterator.from(items).map(each))`, std's order.
+`$isSortedBy` steps by hand under `$unwinds`, and closes where it stops
+early, as `for..of` did. `$extendMap`'s fallback and `$decodeUtf16` step
+so too.
+
+An architecture test (`the runtime steps what may be a Rust iterator by
+its stepping helpers alone`) lists each `for..of`, `Array.from` and spread
+over a parameter named as an iterable that remains, by file, how many and
+why it's never a Rust iterator: a map's entries, a collect's array, a set
+or tree made of one. Another fails there.
+
+Held by `test/corpus/consumer_closes_what_it_steps_on_a_panic.rs`, each
+caught, against native Rust in both builds, a `splice` of a set's items
+too, and serde's test `collect_seq and collect_map drop what's left of
+what they step as a panic unwinds`. Mutations: `heap-extend-unclosed`,
+`heap-extend-unrebuilt-on-a-panic`, `splice-replacement-unclosed`,
+`is-sorted-by-unclosed`, `each-of-unclosed`,
+`fold-to-array-of-an-iterable-unstepped`, `debug-entries-unclosed` and
+`from-iter-dictionary-unclosed` new; `heap-extend-unrebuilt`,
+`is-sorted-by-steps-all`, `splice-replacement-spread` and
+`extend-text-iterable-unstepped` refitted.

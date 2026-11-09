@@ -4,6 +4,7 @@ import {
   $collectResults,
   $debugF64,
   $debugStr,
+  $foldToArray,
   $iter,
   $lazyChain,
   $nextSome,
@@ -35,6 +36,7 @@ function tryCollect(it, ResultFromIteratorResult, IInPlace) {
 }
 
 function main() {
+  const resultFromIterator = { fromIter: (items) => $collectResults($foldToArray(items)) };
   const value = sum1($iter([1, 2, 3]), {
     sum: (items) => Iterator.from(items).reduce((a, b) => (a + b) | 0, 0),
   });
@@ -64,7 +66,7 @@ function main() {
       { TAG: "Ok", _0: 1 },
       { TAG: "Ok", _0: 2 },
     ]),
-    { fromIter: (items) => $collectResults(Array.from(items)) },
+    resultFromIterator,
     [12, 4],
   );
   const err = tryCollect(
@@ -73,7 +75,7 @@ function main() {
       { TAG: "Err", _0: "bad" },
       { TAG: "Ok", _0: 3 },
     ]),
-    { fromIter: (items) => $collectResults(Array.from(items)) },
+    resultFromIterator,
     [12, 4],
   );
   console.log(

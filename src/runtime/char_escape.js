@@ -38,7 +38,7 @@ function $escapeUnicode(s) {
 // surrogate, its code.
 function $decodeUtf16(units) {
   const out = [];
-  const list = Array.from(units);
+  const list = $foldToArray(units);
   for (let i = 0; i < list.length; i++) {
     const unit = list[i];
     if (unit < 0xd800 || unit > 0xdfff) out.push({ TAG: "Ok", _0: String.fromCharCode(unit) });

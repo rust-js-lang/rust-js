@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "heap-extend-unrebuilt",
     breaks: "`extend` of a `BinaryHeap` pushes its items and never rebuilds its order",
     file: "src/runtime/heap_ops.js",
-    find: "  for (const item of items) heap.push(item);\n  $heapRebuildTail(heap, start, ord);\n",
-    replace: "  for (const item of items) heap.push(item);\n",
+    find: "  } finally {\n    $heapRebuildTail(heap, start, ord);\n  }\n",
+    replace: "  } finally {\n  }\n",
     tests: ["test/corpus.test.ts", "-t", "^heap_extend.rs$"],
   },
   {
@@ -81,5 +81,21 @@ export const mutations: Mutation[] = [
     find: "  $extend(heap, first);\n  $extend(heap, rest);\n",
     replace: "  heap.push(...first, ...rest);\n",
     tests: ["test/corpus.test.ts", "-t", "^runtime_long_writes.rs$"],
+  },
+  {
+    name: "heap-extend-unclosed",
+    breaks: "`heap.extend(it)` steps it by `for..of`, which closes nothing where its step panics, its source's items never dropped (#1141)",
+    file: "src/runtime/heap_ops.js",
+    find: "    $extend(heap, items);\n",
+    replace: "    for (const item of items) heap.push(item);\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic.rs$"],
+  },
+  {
+    name: "heap-extend-unrebuilt-on-a-panic",
+    breaks: "a heap whose `extend` panics part-way isn't rebuilt, where std's `RebuildOnDrop` rebuilds it as it unwinds, so it sorts wrong after (#1141)",
+    file: "src/runtime/heap_ops.js",
+    find: "  } finally {\n    $heapRebuildTail(heap, start, ord);\n  }\n",
+    replace: "  } finally {\n  }\n  $heapRebuildTail(heap, start, ord);\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic.rs$"],
   },
 ];

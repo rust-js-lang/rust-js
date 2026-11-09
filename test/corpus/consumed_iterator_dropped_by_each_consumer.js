@@ -149,9 +149,9 @@ function main() {
   }
   const c = result$7;
   console.log(`{${Array.from($sortedKeys(c, $cmp)).join(", ")}}`);
-  let g = built(loud([7], "generic vec"), { fromIter: (items) => Array.from(items) });
+  let g = built(loud([7], "generic vec"), { fromIter: (items) => $foldToArray(items) });
   console.log(`[${g.join(", ")}]`);
-  g = built(loud([8], "generic set"), { fromIter: (items) => new $BTreeSet(Array.from(items)) });
+  g = built(loud([8], "generic set"), { fromIter: (items) => new $BTreeSet($foldToArray(items)) });
   console.log(`{${Array.from($sortedKeys(g, $cmp)).join(", ")}}`);
   const iter$8 = loud([1, 2], "sum");
   let result$8;

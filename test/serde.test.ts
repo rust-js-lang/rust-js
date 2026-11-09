@@ -1085,6 +1085,60 @@ pub fn report() -> String {
   expect((await compiled(dir)).report()).toBe(expected);
 });
 
+// `collect_seq` and `collect_map` of an iterator whose step panics, of
+// items with a destructor: what's left of it dropped as the panic unwinds,
+// as serde's loop over it drops it, where `for..of` would leave it (#1141).
+test("serde: collect_seq and collect_map drop what's left of what they step as a panic unwinds", async () => {
+  const dir = fixture("serde-collect-unwinds");
+  writeFileSync(join(dir, "cases.rs"), String.raw`use serde::{Serialize, Serializer};
+use std::cell::RefCell;
+
+thread_local! {
+    static LOG: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+}
+
+pub struct D(pub u32);
+
+impl Drop for D {
+    fn drop(&mut self) {
+        LOG.with(|log| log.borrow_mut().push(format!("drop {}", self.0)));
+    }
+}
+
+fn key(d: D) -> u32 {
+    if d.0 == 2 {
+        panic!("at 2");
+    }
+    d.0
+}
+
+pub struct Seq;
+
+impl Serialize for Seq {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.collect_seq(vec![D(1), D(2), D(3)].into_iter().map(key))
+    }
+}
+
+pub struct Map;
+
+impl Serialize for Map {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.collect_map(vec![D(4), D(2), D(5)].into_iter().map(|d| (key(d), 0u8)))
+    }
+}
+
+pub fn report() -> String {
+    let seq = std::panic::catch_unwind(|| serde_json::to_string(&Seq)).is_err();
+    let map = std::panic::catch_unwind(|| serde_json::to_string(&Map)).is_err();
+    let log = LOG.with(|log| log.borrow().join(", "));
+    format!("{seq} {map} {log}")
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});
+
 // A hand-written `Serialize`'s `collect_seq` and `collect_map`, a tuple
 // struct's fields, and a variant's tuple or struct (ADR 0459).
 test("serde: a hand-written Serialize collects and writes variants as serde_json does", async () => {

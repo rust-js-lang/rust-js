@@ -87,10 +87,15 @@ function $peekMutPop(guard) {
   return $heapPop(guard.heap, guard.ord);
 }
 
-// `heap.extend(items)`: each pushed at the end, then the heap rebuilt from
-// the first of them, as std's `RebuildOnDrop` does.
+// `heap.extend(items)`: each pushed at the end, as it's stepped, what's
+// left of them closed where stepping them throws, a panic, as `$extend`
+// does, then the heap rebuilt from the first of them, as std's
+// `RebuildOnDrop` does, though it unwinds (#1126).
 function $heapExtend(heap, items, ord) {
   const start = heap.length;
-  for (const item of items) heap.push(item);
-  $heapRebuildTail(heap, start, ord);
+  try {
+    $extend(heap, items);
+  } finally {
+    $heapRebuildTail(heap, start, ord);
+  }
 }

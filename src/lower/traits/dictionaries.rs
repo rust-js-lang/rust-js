@@ -257,7 +257,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Not the crate's own impl, `impl FromIterator<C> for Req`, of the
         // `A` it's given: its `from_iter` is its entry (#794).
         if is_std_def(self.tcx, tr.def_id, StdItem::FromIterator) && !self.is_user_impl(tr) {
-            let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![Expr::var("items")]);
+            // What's left of them closed where stepping them throws (#1126).
+            let items = Expr::call_helper("$foldToArray", vec![Expr::var("items")]);
             let made = self.collected_into(items, ty, Some(tr.args.type_at(1)), None, span)?;
             let from_iter = Expr::arrow(
                 vec!["items".into()],

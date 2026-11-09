@@ -680,4 +680,12 @@ export const mutations: Mutation[] = [
     replace: "                let stepped = Expr::call_helper(\"$extendText\", vec![Expr::array(Vec::new()), push]);\n",
     tests: ["test/corpus.test.ts", "-t", "^(iterator_consumed_by_extend_unzip_partition_eq|generic_extend).rs$"],
   },
+  {
+    name: "from-iter-dictionary-unclosed",
+    breaks: "generic code's `collect` into a std collection lists what it's given by `Array.from`, which closes nothing where its step panics (#1141)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            let items = Expr::call_helper(\"$foldToArray\", vec![Expr::var(\"items\")]);\n",
+    replace: "            let items = Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![Expr::var(\"items\")]);\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic.rs$"],
+  },
 ];

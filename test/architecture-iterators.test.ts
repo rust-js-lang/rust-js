@@ -543,6 +543,45 @@ test("an iterator std's code consumes is dropped by mir_iter_call's consumed_cal
   expect(value.slice(0, value.indexOf("\n    }\n"))).toContain("self.consumed_by_std(");
 });
 
+// The runtime steps what may be a Rust iterator only by its stepping
+// helpers, `$eachOf`, `$foldToArray`, `$extend` and `$extendText`, each of
+// which closes it where its own step throws, a panic, as Rust drops it as it
+// unwinds. JS's own, `for..of`, `Array.from` and a spread, close it only
+// where their body throws, never its step: six helpers so stepped a
+// `Map<vec::IntoIter<D>, F>` whose `F` panics, its `Vec`'s items never
+// dropped (#1126, #1141). Each of these over a parameter named as an
+// iterable is one of what's never a Rust iterator, said below by its file,
+// how many and why; another fails here.
+test("the runtime steps what may be a Rust iterator by its stepping helpers alone", () => {
+  const steps = /(for \(const [^)]* of (items|it|iter|entries|iterable|replacement|units|source)\)|Array\.from\((items|it|iter|entries|iterable|replacement|units|source)[,)]|\.\.\.(items|it|iter|entries|iterable|replacement|units|source)\b)/;
+  const never: Record<string, [number, string]> = {
+    "src/runtime/btree.js": [4, "a B-tree made of a collect's array or another tree's entries"],
+    "src/runtime/cycle.js": [1, "the array a cycle keeps"],
+    "src/runtime/extract_if.js": [1, "a map's entries"],
+    "src/runtime/fold_of.js": [1, "`$foldToArray`'s copy of an array"],
+    "src/runtime/hasher.js": [1, "a collection's items, hashed"],
+    "src/runtime/index_map.js": [1, "a map's entries"],
+    "src/runtime/key_map.js": [1, "a map made of a collect's array or another map's entries"],
+    "src/runtime/key_set.js": [1, "a set made of a collect's array or another set's items"],
+    "src/runtime/made.js": [1, "a slice, a deque, a map or a set being cloned"],
+    "src/runtime/map_ops.js": [4, "a map's entries, or a collect's array, `$treeFrom`'s gated by `unwinding_collect`"],
+    "src/runtime/mut_entries.js": [1, "a map's entries"],
+    "src/runtime/mut_values.js": [1, "a map's entries"],
+    "src/runtime/nth.js": [1, "`$lastStep`'s JS iterator with no `last`, which every `$Steps` has"],
+    "src/runtime/ord_map.js": [5, "a map made of a collect's array or another map's entries"],
+    "src/runtime/ord_tree.js": [2, "a tree made of a collect's array or another tree's entries"],
+    "src/runtime/rest.js": [1, "an iterator over an array, `steps_an_array`'s"],
+    "src/runtime/steps.js": [1, "`$inTurnOf`'s drops, or a map's keys"],
+  };
+  const counts: Record<string, number> = {};
+  for (const file of files("src/runtime").filter((file) => file.endsWith(".js"))) {
+    const found = read(file).split("\n").filter((line) => !line.trimStart().startsWith("//") && steps.test(line)).length;
+    if (found > 0) counts[file] = found;
+  }
+  const expected = Object.fromEntries(Object.entries(never).map(([file, [count]]) => [file, count]));
+  expect(counts).toEqual(expected);
+});
+
 // A reversed zip is `$rev($zipEnds(a, b))`, `rev_items`' of what's made
 // knowing its back, the one form; `$zipBack`, its second, is gone (ADR 0493,
 // #740, the user's decision). A new one fails here.

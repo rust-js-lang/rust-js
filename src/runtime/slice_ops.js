@@ -193,15 +193,27 @@ function $isSortedBy(items, f, ends, drop) {
     end();
     return sorted;
   }
+  // Stepped by hand, closed where its step throws, a panic, as `for..of`
+  // doesn't, and where it stops early, as `is_sorted_by(self)` drops what
+  // it took (#1126).
+  const it = typeof items.next === "function" ? items : items[Symbol.iterator]();
   let first = true;
   let last;
   try {
-    for (const item of items) {
-      if (!first && !f(last, item)) return false;
-      first = false;
-      last = item;
-    }
-    return true;
+    return $unwinds(
+      () => {
+        for (let step = it.next(); !step.done; step = it.next()) {
+          if (!first && !f(last, step.value)) {
+            it.return?.();
+            return false;
+          }
+          first = false;
+          last = step.value;
+        }
+        return true;
+      },
+      () => it.return?.(),
+    );
   } finally {
     ends?.();
   }

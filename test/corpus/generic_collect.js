@@ -5,6 +5,7 @@ import {
   $cmp,
   $collectResults,
   $debugStr,
+  $foldToArray,
   $intoIter,
   $iter,
   $lazyRange,
@@ -47,17 +48,19 @@ function parsed(words, BFromIteratorResult) {
 }
 
 function main() {
-  const v = gather(3, { fromIter: (items) => Array.from(items) });
-  const s = gather(2, { fromIter: (items) => new Set(Array.from(items)) });
+  const vecFromIterator = { fromIter: (items) => $foldToArray(items) };
+  const resultFromIterator = { fromIter: (items) => $collectResults($foldToArray(items)) };
+  const v = gather(3, vecFromIterator);
+  const s = gather(2, { fromIter: (items) => new Set($foldToArray(items)) });
   const b = gather(4, bagFromIteratorU32);
-  const t = made("abc", { fromIter: (items) => Array.from(items).join("") });
+  const t = made("abc", { fromIter: (items) => $foldToArray(items).join("") });
   const pairs = new $BTreeMap(
-    gather(2, { fromIter: (items) => Array.from(items) })
+    gather(2, vecFromIterator)
       .values()
       .map((x) => [x, (x + 1) >>> 0]),
   );
-  const ok = parsed(["1", "2"], { fromIter: (items) => $collectResults(Array.from(items)) });
-  const bad = parsed(["1", "x"], { fromIter: (items) => $collectResults(Array.from(items)) });
+  const ok = parsed(["1", "2"], resultFromIterator);
+  const bad = parsed(["1", "x"], resultFromIterator);
   console.log(
     `[${v.join(", ")}] ${s.size} ${bagDebug_fmt(b)} ${t} {${Array.from($sortedEntries(pairs, $cmp))
       .map(([key, value]) => `${key}: ${value}`)

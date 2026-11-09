@@ -1,11 +1,12 @@
 // `s.collect_seq(items)` of a hand-written `Serialize` (ADR 0459): each
-// item, written by `write`, in an array.
+// item, written by `write`, in an array, as it's stepped, what's left of
+// them closed where a step throws, a panic (#1141).
 function $jsonCollectSeq(json, items, write) {
   json.beginArray();
-  for (const item of items) {
+  $eachOf(items, (item) => {
     json.element();
     write(item, json);
-  }
+  });
   json.endArray();
 }
 
@@ -13,9 +14,9 @@ function $jsonCollectSeq(json, items, write) {
 // written, in an object.
 function $jsonCollectMap(json, entries, key, write) {
   json.beginObject();
-  for (const [k, v] of entries) {
+  $eachOf(entries, ([k, v]) => {
     json.key(key(k));
     write(v, json);
-  }
+  });
   json.endObject();
 }

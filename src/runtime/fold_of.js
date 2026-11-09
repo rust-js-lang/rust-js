@@ -65,6 +65,10 @@ function $consume(it, step, init, f, unwind, ends) {
 // drops what's left: the fold's `unwind`. In place of items with nothing to
 // drop, `inPlace`, as its caller knows it (#710).
 function $foldToArray(it, drop, restFirst = false, inPlace = drop !== undefined && !restFirst) {
+  // Of an array, a copy, as `Array.from` makes; of another iterable, its
+  // iterator, which a throw closes, where `Array.from` doesn't (#1126).
+  if (Array.isArray(it)) return Array.from(it);
+  if (typeof it.next !== "function" && typeof it.fold !== "function") it = it[Symbol.iterator]();
   // A JS iterator's own helper, which has no fold, stepped by `next`.
   if (typeof it.fold !== "function") return $collectDropping(it, drop, restFirst);
   const items = [];
@@ -95,6 +99,21 @@ function $foldToArray(it, drop, restFirst = false, inPlace = drop !== undefined 
   $collectEnded($inPlaceSource(it), items, drop);
   it.return?.();
   return folded;
+}
+
+// `f` of each of `items`, an iterable, as it's stepped: what's left of it
+// closed where a step or `f` throws, a panic, as a Rust loop over it drops
+// it as it unwinds, which `for..of` doesn't where its own step throws. The
+// way the runtime steps item by item what may be a Rust iterator, beside
+// `$foldToArray`, `$extend` and `$extendText` (#1141).
+function $eachOf(items, f) {
+  const it = typeof items.next === "function" ? items : items[Symbol.iterator]();
+  $unwinds(
+    () => {
+      for (let step = it.next(); !step.done; step = it.next()) f(step.value);
+    },
+    () => it.return?.(),
+  );
 }
 
 // `s.extend(it)` of a `String`, of an iterator whose steps may panic or that

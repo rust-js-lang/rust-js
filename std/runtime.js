@@ -3541,6 +3541,10 @@ export function $consume(it, step, init, f, unwind, ends) {
 // drops what's left: the fold's `unwind`. In place of items with nothing to
 // drop, `inPlace`, as its caller knows it (#710).
 export function $foldToArray(it, drop, restFirst = false, inPlace = drop !== undefined && !restFirst) {
+  // Of an array, a copy, as `Array.from` makes; of another iterable, its
+  // iterator, which a throw closes, where `Array.from` doesn't (#1126).
+  if (Array.isArray(it)) return Array.from(it);
+  if (typeof it.next !== "function" && typeof it.fold !== "function") it = it[Symbol.iterator]();
   // A JS iterator's own helper, which has no fold, stepped by `next`.
   if (typeof it.fold !== "function") return $collectDropping(it, drop, restFirst);
   const items = [];
@@ -3571,6 +3575,21 @@ export function $foldToArray(it, drop, restFirst = false, inPlace = drop !== und
   $collectEnded($inPlaceSource(it), items, drop);
   it.return?.();
   return folded;
+}
+
+// `f` of each of `items`, an iterable, as it's stepped: what's left of it
+// closed where a step or `f` throws, a panic, as a Rust loop over it drops
+// it as it unwinds, which `for..of` doesn't where its own step throws. The
+// way the runtime steps item by item what may be a Rust iterator, beside
+// `$foldToArray`, `$extend` and `$extendText` (#1141).
+export function $eachOf(items, f) {
+  const it = typeof items.next === "function" ? items : items[Symbol.iterator]();
+  $unwinds(
+    () => {
+      for (let step = it.next(); !step.done; step = it.next()) f(step.value);
+    },
+    () => it.return?.(),
+  );
 }
 
 // `s.extend(it)` of a `String`, of an iterator whose steps may panic or that
@@ -7760,15 +7779,27 @@ export function $isSortedBy(items, f, ends, drop) {
     end();
     return sorted;
   }
+  // Stepped by hand, closed where its step throws, a panic, as `for..of`
+  // doesn't, and where it stops early, as `is_sorted_by(self)` drops what
+  // it took (#1126).
+  const it = typeof items.next === "function" ? items : items[Symbol.iterator]();
   let first = true;
   let last;
   try {
-    for (const item of items) {
-      if (!first && !f(last, item)) return false;
-      first = false;
-      last = item;
-    }
-    return true;
+    return $unwinds(
+      () => {
+        for (let step = it.next(); !step.done; step = it.next()) {
+          if (!first && !f(last, step.value)) {
+            it.return?.();
+            return false;
+          }
+          first = false;
+          last = step.value;
+        }
+        return true;
+      },
+      () => it.return?.(),
+    );
   } finally {
     ends?.();
   }
@@ -8415,7 +8446,8 @@ export function $isDisjoint(a, b) {
 //
 // Where stepping `items` throws, a panic in a closure, what's left of them
 // closed, as Rust drops the iterator `extend` took as it unwinds (#423): by
-// its own `fold`, which closes it, or by `for..of`, which does. Of an
+// its own `fold`, which closes it, or by `$eachOf`, as `for..of` doesn't
+// where its own step throws (#1141). Of an
 // iterator with a `fold` of its own, an adapter's, the crate's or
 // `$folded`'s, by it, as std's `extend` is its `for_each`: so what it
 // replaces is dropped as each comes, before what its source drops at its
@@ -8472,7 +8504,7 @@ export function $extendMap(m, items, set, drop, dropKey, sorted) {
     );
     return m;
   }
-  for (const item of items) put(item);
+  $eachOf(items, put);
   return m;
 }
 
@@ -8723,7 +8755,7 @@ export function $escapeUnicode(s) {
 // surrogate, its code.
 export function $decodeUtf16(units) {
   const out = [];
-  const list = Array.from(units);
+  const list = $foldToArray(units);
   for (let i = 0; i < list.length; i++) {
     const unit = list[i];
     if (unit < 0xd800 || unit > 0xdfff) out.push({ TAG: "Ok", _0: String.fromCharCode(unit) });
@@ -9462,13 +9494,14 @@ export function $jsonNextEntry(map, readKey, read) {
 }
 
 // `s.collect_seq(items)` of a hand-written `Serialize` (ADR 0459): each
-// item, written by `write`, in an array.
+// item, written by `write`, in an array, as it's stepped, what's left of
+// them closed where a step throws, a panic (#1141).
 export function $jsonCollectSeq(json, items, write) {
   json.beginArray();
-  for (const item of items) {
+  $eachOf(items, (item) => {
     json.element();
     write(item, json);
-  }
+  });
   json.endArray();
 }
 
@@ -9476,10 +9509,10 @@ export function $jsonCollectSeq(json, items, write) {
 // written, in an object.
 export function $jsonCollectMap(json, entries, key, write) {
   json.beginObject();
-  for (const [k, v] of entries) {
+  $eachOf(entries, ([k, v]) => {
     json.key(key(k));
     write(v, json);
-  }
+  });
   json.endObject();
 }
 
@@ -14183,12 +14216,17 @@ export function $peekMutPop(guard) {
   return $heapPop(guard.heap, guard.ord);
 }
 
-// `heap.extend(items)`: each pushed at the end, then the heap rebuilt from
-// the first of them, as std's `RebuildOnDrop` does.
+// `heap.extend(items)`: each pushed at the end, as it's stepped, what's
+// left of them closed where stepping them throws, a panic, as `$extend`
+// does, then the heap rebuilt from the first of them, as std's
+// `RebuildOnDrop` does, though it unwinds (#1126).
 export function $heapExtend(heap, items, ord) {
   const start = heap.length;
-  for (const item of items) heap.push(item);
-  $heapRebuildTail(heap, start, ord);
+  try {
+    $extend(heap, items);
+  } finally {
+    $heapRebuildTail(heap, start, ord);
+  }
 }
 
 // `s.parse()` of an integer, or `from_str_radix(s, radix)`, as std reads it:
@@ -15336,7 +15374,8 @@ export function $dedupByCells(v, same, drop) {
 export function $splice(items, start, end, replacement) {
   $checkRange(start, end, items.length);
   // Pushed, not spread into `splice`'s arguments: as many as there are.
-  const added = Array.from(replacement);
+  // What's left of it closed where stepping it throws, a panic (#1126).
+  const added = $foldToArray(replacement);
   const tail = items.splice(end);
   const removed = items.splice(start);
   $extend(items, added);
