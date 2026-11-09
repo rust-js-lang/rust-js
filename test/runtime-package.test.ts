@@ -36,9 +36,9 @@ test("the committed @rust-js/std's helpers are the compiler's, each exported onc
 // compiled std struct's (ADR 0561), and `$successors`, which drops what it
 // holds where it's closed (ADR 0465), `$flatMap`, closed by what takes it
 // (#426), `$lazyRangeBack`, a `$Steps` that hints as std's (#1046), and
-// each of the runtime's generators (ADR 0472): the compiler's list, held
-// to the runtime.
-test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf, $repeating, $repeatingN, $rev, $closing, $holding, $mapEnds, $filterEnds, $filterDropping, $enumerate, $taking, $skipping, $memchrIter, $stdIterator, $successors, $lazyScan, $lazyMapWhile, $lazyTakeWhile, $lazySkipWhile, $lazyChain, $lazyZip, $trustedZip, $zipEnds, $trustedZipEnds, $stepBy, $flattenEnds, $flatMap, $lazyRange, $lazyRangeBack, $treeSetAlgebra, $mapExtractIf and the runtime's generators", () => {
+// `$splice`, a `Vec`'s `Splice` (#1149), and each of the runtime's
+// generators (ADR 0472): the compiler's list, held to the runtime.
+test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf, $repeating, $repeatingN, $rev, $closing, $holding, $mapEnds, $filterEnds, $filterDropping, $enumerate, $taking, $skipping, $memchrIter, $stdIterator, $successors, $lazyScan, $lazyMapWhile, $lazyTakeWhile, $lazySkipWhile, $lazyChain, $lazyZip, $trustedZip, $zipEnds, $trustedZipEnds, $stepBy, $flattenEnds, $flatMap, $lazyRange, $lazyRangeBack, $treeSetAlgebra, $mapExtractIf, $splice and the runtime's generators", () => {
   const printed = run([compiler, "--runtime-module"]);
   const generators = [...printed.matchAll(/^export function\* (\$[\w$]+)/gm)].map((m) => m[1]);
   const source = readFileSync(join(root, "src", "lower", "iterators.rs"), "utf8");
@@ -90,6 +90,7 @@ test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf
       "$lazyRangeBack",
       "$treeSetAlgebra",
       "$mapExtractIf",
+      "$splice",
       ...generators,
     ].toSorted(),
   );

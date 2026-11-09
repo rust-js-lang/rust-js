@@ -187,8 +187,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(id) = crate::lower::recognition::dyn_iter_trait(self.tcx, ty) {
             return crate::lower::recognition::is_double_ended(self.tcx, id);
         }
-        // memchr's, `$memchrIter`'s (ADR 0529).
-        if self.recognition().is_memchr_iter(ty) {
+        // memchr's, `$memchrIter`'s (ADR 0529), and a `Vec`'s `Splice`,
+        // `$splice`'s over what it took out (#1149).
+        if self.recognition().is_memchr_iter(ty) || self.recognition().is_vec_splice(ty) {
             return true;
         }
         self.double_ended_param(self.tcx.typeck_root_def_id(self.item), ty)
@@ -286,6 +287,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if let Some(id) = crate::lower::recognition::dyn_iter_trait(self.tcx, ty) {
             return crate::lower::recognition::is_exact_size(self.tcx, id);
+        }
+        // A `Vec`'s `Splice`, `$splice`'s iterator over what it took out
+        // (#1149).
+        if self.recognition().is_vec_splice(ty) {
+            return true;
         }
         self.exact_size_param(self.tcx.typeck_root_def_id(self.item), ty)
     }

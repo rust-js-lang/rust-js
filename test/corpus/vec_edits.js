@@ -57,9 +57,9 @@ function main() {
   const s = [1, 2, 3];
   $extend(s, $copyRange(s, 1));
   console.log(`[${s.join(", ")}]`);
-  const removed = $splice(s, 1, 3, [7, 8, 9]).slice();
+  const removed = Array.from($splice(s, 1, 3, [7, 8, 9]));
   console.log(`[${removed.join(", ")}] [${s.join(", ")}]`);
-  $splice(s, 0, 1, []);
+  $splice(s, 0, 1, []).return();
   console.log(`[${s.join(", ")}]`);
   const top = $popIfCell(s, (x) => x.value > 5);
   const kept = $popIfCell(s, (x) => x.value > 100);

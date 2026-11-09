@@ -32,7 +32,7 @@ function main() {
     v.push(value[i]);
   }
   v.push(3, undefined);
-  $splice(v, 1, 2, [4, undefined]);
+  $splice(v, 1, 2, [4, undefined]).return();
   $resize(v, 12);
   $append(v, [5, undefined]);
   console.log(`${shown(v)}`);

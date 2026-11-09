@@ -594,6 +594,18 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 Drops::Nothing
             }
             ty::Adt(..) if self.recognition.is_guard(ty) => Drops::Runs,
+            // A `Vec`'s `Splice`: its drop puts its replacement in place,
+            // whatever its items are (#1149).
+            ty::Adt(_, args) if self.recognition.is_vec_splice(ty) => {
+                let item = args
+                    .types()
+                    .next()
+                    .and_then(|replacement| self.recognition.iterator_item(replacement));
+                match item.map(|item| self.drops_in(item, walk)) {
+                    Some(Drops::Unsupported(t, what)) => Drops::Unsupported(t, what),
+                    _ => Drops::Runs,
+                }
+            }
             // An iterator that owns an array's items, `vec::IntoIter`: what it
             // hasn't given yet, each dropped in order, as a loop that leaves
             // early drops them (ADR 0098). MIR drops it as one value.

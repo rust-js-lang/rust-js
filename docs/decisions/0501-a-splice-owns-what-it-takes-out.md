@@ -40,3 +40,55 @@ made only to be dropped, a statement `$iter(items)`, is what making
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. Held by the corpus's
 `vec_edits` and `trailing_none_items`, run against native Rust, and the
 mutation `unread-iter-kept` (`tidy/bindings.ts`).
+
+## Amendment: a `Splice` puts its replacement in place as it's dropped (#1147, #1149)
+
+`$splice` stepped the replacement whole as it was called, and gave the
+array of what it took out, a `Drain`'s form. Std's `Splice` takes the
+range out where it's made, and its drop puts the replacement in place:
+what it hasn't given dropped, then the replacement stepped into the gap,
+each item written as it's stepped; then as many as its hint's lower bound;
+then what's left collected apart and moved in; then the tail moved back
+(`Drain::drop`) and the replacement dropped, the `Splice`'s fields in their
+order, as it ends or unwinds. So `v.splice(1..2, repeat_n(D(7), 2))`
+dropped at once printed `clone 7` before `drop 11`, which native Rust
+prints after; a replacement whose step panicked left the `Vec` as it was
+and leaked what it had stepped, where native Rust keeps what it put in the
+gap (#1149); and the crate's own iterator given as the replacement was
+read as its struct, an item `undefined` (#1147).
+
+**A `Splice` is a JS iterator over what it took out, `$splice`'s
+`$closing`, whose close runs std's drop**, faithful to its steps: the gap
+filled as each is stepped, the hint's lower bound filled, the rest
+collected apart and dropped where a step panics, the tail put back and
+the replacement closed, though one throws. It's done with as an owning
+iterator is: stepped to its end, a `collect()`'s `Array.from`, or dropped,
+`s.return()`, which a `Splice`'s drop glue is, whatever its items, as
+its drop always puts its replacement in place (`drops`'s and
+`drop_parts`' `is_vec_splice`). It knows its length and its back. The
+replacement is the crate's own iterator stepped by its `next`
+(`iterable_items`), and of one that holds what drops, closed to drop it.
+`$splice` is one of the runtime's iterator helpers, and it's no longer
+an array source.
+
+The 2026-11-01 amendment's statement `$splice(..)` is
+`$splice(..).return()`, which drops it there.
+
+Held by `test/corpus/splice_drops_and_fills_as_std.rs`, against native
+Rust in both builds (collected, held and dropped, asked its `len()` and
+stepped from its back, dropped at once, of the crate's iterator, of
+clones, of steps that panic past the gap and of a filter whose hint is no
+help, at the `Vec`'s end, and generic code's), and
+`runtime_long_writes.rs`'s replacement collected apart past its hint.
+`vec_edits`, `trailing_none_items`, `runtime_long_writes`,
+`consumer_closes_what_it_steps_on_a_panic` and `splice_and_inspect_drops`
+take its new form. Mutations `splice-removed-undropped`,
+`splice-gap-collected-apart`, `splice-tail-lost-on-a-panic`
+(`runtime/splice.ts`), `splice-dropped-unclosed` (`lower/drops/parts.ts`),
+`splice-drop-of-its-items` (`lower/drops/types.ts`),
+`splice-length-unknown` and `splice-backless`
+(`lower/iterators/knowing.ts`) new; `splice-replaces-nothing`,
+`splice-replacement-spread`, `splice-replacement-unclosed`,
+`owned-iterator-item-first-arg`, `drain-not-owning` and
+`memchr-iter-backless` refitted; `splice-items-its-iterator` and
+`splice-unowned`, whose sites are gone, removed.

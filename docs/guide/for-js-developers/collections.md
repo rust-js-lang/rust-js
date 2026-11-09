@@ -335,7 +335,7 @@ export function stack() {
 }
 
 export function splice(v) {
-  return $splice(v, 1, 3, [10, 20, 30]).slice();
+  return Array.from($splice(v, 1, 3, [10, 20, 30]));
 }
 
 export function drainFront(v) {
@@ -384,6 +384,13 @@ export function at(v, i) {
   `undefined`; that's the `$index`. `v.get(i)` is the `Option`, and is
   `v[i]` in JS. `remove`, `insert`, `truncate`, `splice` and slicing check
   their bounds the same way, so they're helpers.
+- **`v.splice(range, items)` is std's `Splice`,** `$splice`: an iterator
+  over what it took out, which puts `items` in its place as it's done
+  with, dropped or stepped to its end, so `Array.from($splice(..))`
+  collects it and `$splice(v, 1, 2, items).return()` drops it at once.
+  What it hasn't given is dropped first, then `items` are stepped into the
+  gap, what's put there staying where a step panics, as std's drop does
+  ([ADR 0501](../../decisions/0501-a-splice-owns-what-it-takes-out.md)).
 - Spread, `[...a, x]`, is `to_vec()` then `push`; `[...a, ...b]` is
   `[a, b].concat()`.
 - `&v[a..b]` is a copy of that part, as `slice(a, b)` is: nothing can

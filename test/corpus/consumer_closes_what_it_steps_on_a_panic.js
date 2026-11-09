@@ -5,6 +5,7 @@ import {
   $byteLen,
   $catchUnwind,
   $closing,
+  $cmp,
   $dropEach,
   $entriesShown,
   $foldToArray,
@@ -14,6 +15,7 @@ import {
   $isSortedBy,
   $iter,
   $partiallyOrdered,
+  $sortedKeys,
   $splice,
 } from "@rust-js/std";
 
@@ -67,12 +69,12 @@ function main() {
   });
   console.log(`heap ${r.TAG === "Err"} [${$heapSorted(heap, $partiallyOrdered).join(", ")}]`);
   const v = [0, 9];
-  r = $catchUnwind(
-    () => $splice(v, 0, 1, $closing($iter(ds()), $dropEach(dDrop_drop)).map(key)).length,
+  r = $catchUnwind(() =>
+    $splice(v, 0, 1, $closing($iter(ds()), $dropEach(dDrop_drop)).map(key)).reduce((n) => n + 1, 0),
   );
   console.log(`splice ${r.TAG === "Err"}`);
   const w = [0, 9];
-  $splice(w, 1, 1, new $BTreeSet([4, 3]));
+  $splice(w, 1, 1, $sortedKeys(new $BTreeSet([4, 3]), $cmp)).return();
   console.log(`[${w.join(", ")}]`);
   r = $catchUnwind(
     () => collected(ds(), { fromIter: (items) => new $BTreeSet($foldToArray(items)) }).size,

@@ -606,9 +606,10 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 /// 0561), `$lazyScan` (ADR 0517) and `$lazyMapWhile`, not fused, a B-tree
 /// set's algebra, std's iterators (`$treeSetAlgebra`, #943), a map's or a
 /// set's `extract_if`, closed where it's dropped (`$mapExtractIf`, #945),
-/// and each of its generators,
+/// a `Vec`'s `Splice`, which puts its replacement in place as it's closed
+/// (`$splice`, #1149), and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 37] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 38] = [
     "$stdIterator",
     "$memchrIter",
     "$mapEnds",
@@ -646,6 +647,7 @@ pub(crate) const ITERATOR_HELPERS: [&str; 37] = [
     "$keysIn",
     "$treeSetAlgebra",
     "$mapExtractIf",
+    "$splice",
 ];
 
 /// Whether `e` is a JS iterator: one its type says is (`Known::Iterator`),

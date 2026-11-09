@@ -16,6 +16,9 @@ fn main() {
     let mut v = vec![1u8, 2, 3];
     let removed: Vec<u8> = v.splice(1..2, std::iter::repeat_n(7, 1_100_000)).collect();
     println!("{} {removed:?} {:?} {:?}", v.len(), v.get(1), v.last());
+    // A replacement whose hint asks no room, collected apart past the gap.
+    v.splice(1..2, (0..1_100_000u32).filter(|n| n % 7 != 0).map(|n| n as u8));
+    println!("{} {:?} {:?}", v.len(), v.get(1), v.last());
 
     let repeated = [1u8, 2, 3].repeat(400_000).repeat(3);
     println!("{} {:?}", repeated.len(), repeated.last());

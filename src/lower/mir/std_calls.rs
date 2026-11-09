@@ -520,8 +520,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Text(op @ (TextOp::Splice | TextOp::ExtendFromWithin)) => lower(move |this, _, values, out| {
                 Ok(Value::Expr({
                     let mut exprs = values.map(|v| this.value_expr(v, span)).collect::<R<Vec<_>>>()?;
-                    let rest = exprs.split_off(2);
+                    let mut rest = exprs.split_off(2);
                     let [items, range]: [Expr; 2] = exprs.try_into().ok().expect("the items and a range");
+                    // `splice`'s replacement, an iterable, the crate's own
+                    // iterator stepped by its `next`; of one that holds what
+                    // drops, a JS iterator of it closed to drop it; and what
+                    // drops each item, which the `Splice` owns of what it
+                    // took out (#1147, #1149).
+                    if op == TextOp::Splice {
+                        let replacement = rest.pop().expect("the replacement");
+                        let items = this.iterable_items(replacement, arg_tys[2], span, out)?;
+                        rest.push(match this.closing_drop(arg_tys[2], span)? {
+                            Some(drop) => {
+                                let it = this.js_iterator(items);
+                                this.closed_by(it, drop, arg_tys[2])
+                            }
+                            None => items,
+                        });
+                        let item = this.slice_item(arg_tys[0]).expect("a `Vec`'s items");
+                        rest.extend(this.std_drop_function(item, span)?);
+                    }
                     let range =
                         this.slice_range_values((range_read(op), false), items, (range, arg_tys[1]), span, out)?;
                     let clone = match this.slice_item(arg_tys[0]) {

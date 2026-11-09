@@ -3,10 +3,12 @@
 import {
   $heapAppend,
   $heapFrom,
+  $lazyRange,
   $partiallyOrdered,
   $range,
   $repeatItems,
   $repeatingN,
+  $roomForHint,
   $splice,
   $vecWriter,
   $writeText,
@@ -30,10 +32,24 @@ function main() {
   console.log(`${bytes.length} ${value == null ? "None" : `Some(${value})`}`);
 
   const v = [1, 2, 3];
-  const removed = $splice(v, 1, 2, $repeatingN(7, 1100000)).slice();
+  const removed = Array.from($roomForHint($splice(v, 1, 2, $repeatingN(7, 1100000)), 1, false));
   const get = v[1];
   console.log(
     `${v.length} [${removed.join(", ")}] ${get == null ? "None" : `Some(${get})`} ${v.at(-1) == null ? "None" : `Some(${v.at(-1)})`}`,
+  );
+  // A replacement whose hint asks no room, collected apart past the gap.
+  $splice(
+    v,
+    1,
+    2,
+    $lazyRange(0, 1100000)
+      .filter((n) => n % 7 !== 0)
+      .map((n) => n & 255),
+  ).return();
+  const value$1 = v[1];
+  const value$2 = v.at(-1);
+  console.log(
+    `${v.length} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
 
   const repeated = $repeatItems($repeatItems([1, 2, 3], 400000, 1), 3, 1);

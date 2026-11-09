@@ -198,8 +198,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a vector's `drain` isn't an iterator that owns what it took out, so one of values with destructors is refused",
     file: "src/lower/recognition/iterators.rs",
-    find: '                    | "std::vec::Drain"\n                    | "std::vec::Splice"\n',
-    replace: '                    | "std::vec::Splice"\n',
+    find: '            "std::vec::IntoIter"\n                    | "std::vec::Drain"\n',
+    replace: '            "std::vec::IntoIter"\n',
     tests: ["test/corpus.test.ts", "-t", "^drain_destructors.rs$"],
   },
   {
@@ -333,15 +333,6 @@ export const mutations: Mutation[] = [
     find: '            "std::iter::Cycle" => sources.next().filter(|&source| self.array_source(source).is_none()),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
-  },
-  {
-    name: "splice-unowned",
-    breaks:
-      "a `splice`'s items, what it took out, aren't its own, and are refused",
-    file: "src/lower/recognition/iterators.rs",
-    find: '                    | "std::vec::Splice"\n',
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^splice_and_inspect_drops.rs$"],
   },
   {
     name: "flat-map-type-unclosed",

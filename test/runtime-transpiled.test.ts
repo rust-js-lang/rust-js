@@ -70,9 +70,10 @@ test("the runtime's helpers answer the same through Babel's loose transforms", a
   expect(rt.$pad("dalala", 6, ">", "0")).toBe("dalala");
   expect(rt.$pad("a😀", 4, "^", "*")).toBe("*a😀*");
   expect(rt.$split("a😀b", "")).toEqual(["", "a", "😀", "b", ""]);
-  // A splice's replacement, any iterable, as a `Vec`'s `splice` takes one.
+  // A splice's replacement, any iterable, as a `Vec`'s `splice` takes one,
+  // put in place as its `Splice` is done with, stepped to its end (#1149).
   const items = [1, 2, 3];
-  expect(rt.$splice(items, 1, 2, new Set([7, 8]))).toEqual([2]);
+  expect(Array.from(rt.$splice(items, 1, 2, new Set([7, 8])))).toEqual([2]);
   expect(items).toEqual([1, 7, 8, 3]);
 });
 

@@ -421,4 +421,12 @@ export const mutations: Mutation[] = [
     replace: "                    || false && self.foreign_takes_whole(closure)\n",
     tests: ["test/crates.test.ts", "-t", "two crates: closure_of_another_crate"],
   },
+  {
+    name: "splice-drop-of-its-items",
+    breaks: "a `Splice` drops something only where its items do, so one of items with no destructor, or an `impl Iterator`'s, is never dropped and its replacement never put in place (#1149)",
+    file: "src/lower/drops/types.rs",
+    find: "            ty::Adt(_, args) if self.recognition.is_vec_splice(ty) => {\n",
+    replace: "            ty::Adt(_, args) if false && self.recognition.is_vec_splice(ty) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^splice_drops_and_fills_as_std.rs$"],
+  },
 ];

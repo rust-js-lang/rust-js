@@ -80,6 +80,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.drop_in(value, args.type_at(0), span, made, out)?
             }
             ty::Adt(_, args) if self.is_vec_like(ty) => self.drop_items(value, args.type_at(0), span, made, out)?,
+            // A `Vec`'s `Splice`: closed, `$splice`'s, which drops what it
+            // took out that it hasn't given, then puts its replacement in
+            // place (#1149).
+            ty::Adt(..) if self.recognition().is_vec_splice(ty) => {
+                out.push(StmtKind::Expr(Expr::call(Expr::member(value, "return"), Vec::new())).at(js_span));
+            }
             // An iterator owning an array's items: each it hasn't given yet.
             ty::Adt(..) if let Some(item) = self.recognition().owned_items(ty) => {
                 self.drop_items(value, item, span, made, out)?

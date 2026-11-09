@@ -206,8 +206,8 @@ export const mutations: Mutation[] = [
     breaks:
       "memchr's iterator isn't seen to know its back, and `next_back` of it is refused",
     file: "src/lower/iterators/knowing.rs",
-    find: "        if self.recognition().is_memchr_iter(ty) {\n",
-    replace: "        if false && self.recognition().is_memchr_iter(ty) {\n",
+    find: "        if self.recognition().is_memchr_iter(ty) || self.recognition().is_vec_splice(ty) {\n",
+    replace: "        if self.recognition().is_vec_splice(ty) {\n",
     tests: ["test/shipped-crates.test.ts", "-t", "memchr's searches run"],
   },
   {
@@ -957,5 +957,21 @@ export const mutations: Mutation[] = [
     find: "            || self.recognition().iterates_items(ty)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_len_of_chunks.rs$"],
+  },
+  {
+    name: "splice-length-unknown",
+    breaks: "a `Splice`'s `len()` is refused, as no rule says `$splice`'s iterator knows its length (#1149)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if self.recognition().is_vec_splice(ty) {\n            return true;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^splice_drops_and_fills_as_std.rs$"],
+  },
+  {
+    name: "splice-backless",
+    breaks: "a `Splice`'s `next_back()` is refused, as no rule says `$splice`'s iterator knows its back (#1149)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if self.recognition().is_memchr_iter(ty) || self.recognition().is_vec_splice(ty) {\n",
+    replace: "        if self.recognition().is_memchr_iter(ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^splice_drops_and_fills_as_std.rs$"],
   },
 ];

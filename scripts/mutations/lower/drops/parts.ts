@@ -303,4 +303,12 @@ export const mutations: Mutation[] = [
     replace: "    after(body, (unwinding, dropped), js_span)\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_captures_dropped_after_a_sum_abort.rs$"],
   },
+  {
+    name: "splice-dropped-unclosed",
+    breaks: "a `Splice` held in a variable is dropped as an owning iterator, each it hasn't given, not closed, so its replacement is never put in place unless it was stepped to its end (#1149)",
+    file: "src/lower/drops/parts.rs",
+    find: "            ty::Adt(..) if self.recognition().is_vec_splice(ty) => {\n",
+    replace: "            ty::Adt(..) if false && self.recognition().is_vec_splice(ty) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^splice_drops_and_fills_as_std.rs$"],
+  },
 ];

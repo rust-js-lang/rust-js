@@ -31,11 +31,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         ) {
             return args.types().nth(1);
         }
-        // A `splice`'s, what it took out, its replacing iterator's items
-        // (ADR 0501).
-        if std_path(self.tcx, adt.did()) == "std::vec::Splice" {
-            return self.iterator_item(args.types().next()?);
-        }
         args.types().next()
     }
 

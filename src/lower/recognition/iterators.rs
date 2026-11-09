@@ -173,7 +173,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             std_path(self.tcx, adt.did()),
             "std::vec::IntoIter"
                     | "std::vec::Drain"
-                    | "std::vec::Splice"
                     | "std::collections::vec_deque::Drain"
                     | "std::collections::binary_heap::Drain"
                     // A deque's and a heap's `into_iter()`, the array it was
@@ -223,6 +222,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// whose fields JS doesn't have.
     pub(in crate::lower) fn is_iter_adapter(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if is_iter_adapter_def(self.tcx, adt.did()))
+    }
+
+    /// Whether `ty` is a `Vec`'s `Splice`: an iterator over what it took out,
+    /// whose drop puts its replacement in place, `$splice`'s, which knows
+    /// its back and its length (ADR 0501, #1149).
+    pub(crate) fn is_vec_splice(&self, ty: Ty<'tcx>) -> bool {
+        matches!(self.reveal(ty).kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::vec::Splice")
     }
 
     /// The name std's `Debug` gives an iterator over an array, which shows
