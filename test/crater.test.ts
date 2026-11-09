@@ -2,7 +2,7 @@
 // and its cut of a refused test from the JS's copy of a crate (#1087,
 // scripts/crater.ts). The net itself runs each night.
 import { expect, test } from "bun:test";
-import { cut, cutFor, decidedOf, declaredIn, differences, errorsAt, items, jsOutcomes, libraryTestsOnly, modulePath, nativeOutcomes, testOnlyFile, undecided } from "../scripts/crater";
+import { attributesFrom, cut, cutFor, decidedOf, declaredIn, differences, errorsAt, items, jsOutcomes, libraryTestsOnly, modulePath, nativeOutcomes, testOnlyFile, undecided } from "../scripts/crater";
 
 test("each test's outcome is read of cargo test's lines and of Node's runner's", () => {
   expect(nativeOutcomes("running 3 tests\ntest a::t1 ... ok\ntest a::t2 ... FAILED\ntest t3 ... ignored, slow\n")).toEqual({
@@ -111,4 +111,15 @@ test("a difference scripts/crater-decided.txt lists is decided, and any other is
   ];
   expect(undecided("num-traits", differ, decided)).toEqual([{ name: "float::tests::other", js: "failed" }]);
   expect(undecided("other", differ, decided)).toEqual(differ);
+});
+
+// uuid's `#[test]` above an attribute of several lines, `#[cfg_attr(..)]`:
+// one test, its attributes from its `#[test]`, so a cut of it is the test's
+// and says which (#1121).
+test("a test's attributes of several lines are its own, its #[test] above them", () => {
+  const source = "mod tests {\n    #[test]\n    #[cfg_attr(\n        all(target_arch = \"wasm32\"),\n        wasm_bindgen_test\n    )]\n    #[cfg(feature = \"std\")]\n    fn test_compare() {\n        let n = [1, 2];\n    }\n}\n";
+  expect(attributesFrom(source.split("\n"), 8)).toBe(2);
+  expect(cutFor("src/lib.rs", source, 9)).toEqual({ from: 2, test: "tests::test_compare" });
+  // A line of code ending `]` above is no attribute of its.
+  expect(attributesFrom(["let a = [", "    1]", "fn f() {}"], 3)).toBe(3);
 });

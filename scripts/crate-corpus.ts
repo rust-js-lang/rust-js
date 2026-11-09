@@ -26,7 +26,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { availableParallelism } from "node:os";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { cargoEnv } from "../tooling/cargo.js";
+import { cargoBuild, cargoEnv } from "../tooling/cargo.js";
 import { run as runChild, stopped, type Exit } from "../test/child";
 
 type Verdict = "runs" | "compiles" | "refused" | "blocked";
@@ -199,8 +199,23 @@ async function main() {
         console.error(`${crate.name}: its graph doesn't resolve:\n${made.stderr.trim()}`);
         process.exit(1);
       }
-      copyFileSync(join(dir, "Cargo.lock"), lockOf(crate.name));
     } else written(join(dir, "Cargo.lock"), readFileSync(lockOf(crate.name), "utf8"));
+    // The patch an app's build writes, rust-js's own wasm-bindgen family
+    // where the graph has one it serves, and its lock moved onto it, as
+    // `rust-js build`'s `cargoBuild` writes them (ADR 1112): the graph the
+    // row's crate has in an app.
+    const unpatched = readFileSync(join(dir, "Cargo.lock"), "utf8");
+    try {
+      await cargoBuild({ manifestPath: join(dir, "Cargo.toml"), toolchain });
+    } catch (error) {
+      console.error(`${crate.name}: ${error instanceof Error ? error.message : String(error)}`);
+      process.exit(1);
+    }
+    if (lock) copyFileSync(join(dir, "Cargo.lock"), lockOf(crate.name));
+    else if (readFileSync(join(dir, "Cargo.lock"), "utf8") !== unpatched) {
+      console.error(`${crate.name}: its lock, scripts/crate-corpus/${crate.name}.lock, isn't its graph with rust-js's own wasm-bindgen family patched: \`bun scripts/crate-corpus.ts --lock ${crate.name}\` resolves it again`);
+      process.exit(1);
+    }
     // Every crate the probe builds is rust-js's to compile, a registry's too.
     // Each a library, as a crate of crates.io is to the apps that use it.
     const metadata = spawnSync("cargo", [`+${toolchain}`, "metadata", "--format-version=1", "--locked"], { cwd: dir, maxBuffer: 256 * 1024 * 1024, encoding: "utf8" });
@@ -211,8 +226,10 @@ async function main() {
       console.error(`${crate.name}: its lock, scripts/crate-corpus/${crate.name}.lock, isn't its row's graph:\n${said}\n\`bun scripts/crate-corpus.ts --lock ${crate.name}\` resolves it again`);
       process.exit(1);
     }
-    const packages = JSON.parse(metadata.stdout).packages as { name: string; version: string; manifest_path: string }[];
-    const crates = packages.map((pkg) => realpathSync(dirname(pkg.manifest_path)));
+    const packages = JSON.parse(metadata.stdout).packages as { name: string; version: string; manifest_path: string; metadata: { "rust-js"?: { bindings?: boolean } } | null }[];
+    // A binding crate, the js crate rust-js's own js-sys maps onto, is
+    // rustc's, its metadata rust-js's to read (ADR 0414).
+    const crates = packages.filter((pkg) => pkg.metadata?.["rust-js"]?.bindings !== true).map((pkg) => realpathSync(dirname(pkg.manifest_path)));
     const run = await spawned(
       "cargo",
       [`+${toolchain}`, "check", "--lib", "--keep-going", "--locked", "--message-format=json", "--target", "wasm32-unknown-unknown"],

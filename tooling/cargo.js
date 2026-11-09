@@ -107,12 +107,15 @@ export async function cargoBuild({ manifestPath, toolchain, offline = false }) {
     .map((pkg) => realpathSync(dirname(pkg.manifest_path)))
     .sort();
   const compiled = packages.filter((pkg) => pkg.metadata?.["rust-js"]?.bindings !== true);
+  // rust-js's own wasm-bindgen family is a dependency's, compiled as one
+  // and its JS vendored as one's, though Cargo has it of a path (ADR 1112).
+  const own = (pkg) => pkg.source === null && !(compat.get(pkg.name)?.dir && realpathSync(dirname(pkg.manifest_path)) === realpathSync(compat.get(pkg.name).dir));
   const crates = compiled
-    .filter((pkg) => pkg.source === null)
+    .filter(own)
     .map((pkg) => realpathSync(dirname(pkg.manifest_path)))
     .sort();
   const dependencies = compiled
-    .filter((pkg) => pkg.source !== null)
+    .filter((pkg) => !own(pkg))
     .map((pkg) => ({ dir: realpathSync(dirname(pkg.manifest_path)), name: pkg.name, version: pkg.version }))
     .sort((a, b) => a.dir.localeCompare(b.dir));
   const names = packages.filter((pkg) => members.includes(pkg.id)).map((pkg) => pkg.name).sort();

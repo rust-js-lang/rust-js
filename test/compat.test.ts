@@ -314,3 +314,65 @@ test("a crate's #[wasm_bindgen_test]s are #[test]s rust-js test runs, of the fea
   expect(refused.code).not.toBe(0);
   expect(refused.stdout + refused.stderr).toContain("rust-js's wasm-bindgen-test doesn't run an `async` test yet");
 }, 600_000);
+
+// wasm-bindgen's `unwrap_throw` and `expect_throw` are upstream's native
+// branch, `expect`, a Rust panic of native Rust's message, which
+// `catch_unwind` catches; a `JsValue`'s `{:?}` is what upstream's JS,
+// `debugString`, shows: an `Error`'s `name: message\nstack`, an array's
+// items (ADR 1112).
+const throws = `use std::panic::{AssertUnwindSafe, catch_unwind};
+use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = globalThis, js_name = refuse, catch)]
+    fn refuse(n: u32) -> Result<u32, JsValue>;
+    #[wasm_bindgen(js_namespace = globalThis, js_name = listed, catch)]
+    fn listed(n: u32) -> Result<u32, JsValue>;
+}
+
+fn caught(f: impl FnOnce() -> u32) -> String {
+    match catch_unwind(AssertUnwindSafe(f)) {
+        Ok(n) => n.to_string(),
+        Err(payload) => payload.downcast_ref::<String>().cloned().or_else(|| payload.downcast_ref::<&str>().map(|s| s.to_string())).unwrap_or_default(),
+    }
+}
+
+pub fn none() -> String {
+    caught(|| None::<u32>.unwrap_throw())
+}
+
+pub fn thrown() -> String {
+    caught(|| refuse(2).expect_throw("refused"))
+}
+
+pub fn array() -> String {
+    caught(|| listed(0).unwrap_throw())
+}
+
+pub fn fine() -> String {
+    caught(|| refuse(1).unwrap_throw())
+}
+`;
+
+test("unwrap_throw is native Rust's expect, caught by catch_unwind, a JsValue shown as upstream's JS shows it", () => {
+  const dir = fixture("compat-throws");
+  const crate = gitCrate(dir, 'wasm-bindgen = "0.2.98"\n', throws);
+  const at = app(dir, crate, "pub use getrandom::{array, fine, none, thrown};\n");
+  writePatch(at, [...compatCrates().keys()]);
+  const built = build(at);
+  expect(built.stderr).toBe("");
+  expect(built.code).toBe(0);
+  const program = `const app = await import(${JSON.stringify(join(at, "src", "lib.js"))});
+globalThis.refuse = (n) => { if (n > 1) { const e = new RangeError("too many"); e.stack = "at refuse"; throw e; } return n; };
+globalThis.listed = () => { throw [1, "a", null]; };
+console.log(JSON.stringify([app.fine(), app.none(), app.thrown(), app.array()]));`;
+  writeFileSync(join(at, "check.mjs"), program);
+  const ran = runSync([process.execPath, join(at, "check.mjs")], at, 60_000);
+  expect(JSON.parse(ran.stdout)).toEqual([
+    "1",
+    "called `Option::unwrap_throw()` on a `None` value",
+    "refused: JsValue(RangeError: too many\nat refuse)",
+    'called `Result::unwrap_throw()` on an `Err` value: JsValue([1, "a", null])',
+  ]);
+}, 600_000);

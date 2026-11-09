@@ -18,11 +18,13 @@
 // Each crate's source, as crates.io packs it, is copied to
 // `target/crater/<name>-<version>` and its tests built there, natively in
 // `target/crater/native` and as JS in `target/crater/js`, the targets each
-// crate shares. A crate's verdict is kept by its release and the compiler's
-// build, `target/crater/kept/`, and asked again only where either changed.
+// crate shares. A crate's verdict is kept by its release, the compiler's
+// build, its row's features and the tooling's files, `target/crater/kept/`,
+// and asked again only where one changed.
 // Writes `target/crater.json` and prints a line per crate.
 
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { availableParallelism, homedir } from "node:os";
 import {
   cpSync,
@@ -124,6 +126,30 @@ export function errorsAt(
   ].map((m) => ({ why: m[1], file: m[2], line: Number(m[3]) }));
 }
 
+/** Where the attributes just above line `at`, from 1, start: each line that
+ * starts with `#[`, and each attribute of several lines, uuid's
+ * `#[cfg_attr(\n    all(..),\n    wasm_bindgen_test\n)]` between its
+ * `#[test]` and its `fn`, its lines from `#[` to `]` one balanced
+ * attribute (#1121). */
+export function attributesFrom(lines: string[], at: number): number {
+  let from = at;
+  while (from > 1) {
+    const above = lines[from - 2];
+    if (/^\s*#\[/.test(above)) {
+      from--;
+      continue;
+    }
+    if (!/\]\s*$/.test(above)) break;
+    let start = from - 2;
+    while (start > 0 && !/^\s*#\[/.test(lines[start])) start--;
+    const attribute = lines.slice(start, from - 1).join("\n");
+    const opened = (attribute.match(/\[/g) ?? []).length;
+    if (!/^\s*#\[/.test(lines[start]) || opened !== (attribute.match(/\]/g) ?? []).length) break;
+    from = start + 1;
+  }
+  return from;
+}
+
 /** An item of a Rust source, by a scan of its text: a `fn`'s or a `mod`'s
  * name, the lines its attributes start and its body ends, from 1, and
  * whether it's a `#[test]` or `#[cfg(test)]`. Strings, characters and
@@ -186,8 +212,7 @@ export function items(text: string): Item[] {
     if (c === ";" && pending) {
       // A module of a file of its own, `mod tests;`.
       if (pending.kind === "mod") {
-        let from = lineAt[pending.at];
-        while (from > 1 && /^\s*#\[/.test(lines[from - 2])) from--;
+        const from = attributesFrom(lines, lineAt[pending.at]);
         const attributes = lines.slice(from - 1, lineAt[pending.at]).join("\n");
         found.push({
           kind: "mod",
@@ -204,9 +229,8 @@ export function items(text: string): Item[] {
     if (c === "{") {
       let item: Item | undefined;
       if (pending) {
-        // Its attributes: the lines just above it that start with `#[`.
-        let from = lineAt[pending.at];
-        while (from > 1 && /^\s*#\[/.test(lines[from - 2])) from--;
+        // Its attributes: those just above it (`attributesFrom`).
+        const from = attributesFrom(lines, lineAt[pending.at]);
         const attributes = lines.slice(from - 1, lineAt[pending.at]).join("\n");
         item = {
           kind: pending.kind,
@@ -385,11 +409,29 @@ async function source(crate: Crate): Promise<string | { problem: string }> {
   );
 }
 
+/** What a crate's kept verdict is of, beside its release and the
+ * compiler's build: the features its row names, and the tooling that builds
+ * it, rust-js's own wasm-bindgen family among it, which a change to asks it
+ * again (#1121). */
+function keptKey(crate: Crate, build: string): string {
+  const hash = createHash("sha256").update(`${build}\n${(crate.features ?? []).join(",")}\n`);
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      if (entry.name === "node_modules" || entry.name === "target") continue;
+      const at = join(dir, entry.name);
+      if (entry.isDirectory()) walk(at);
+      else if (/\.(js|rs|toml|txt)$/.test(entry.name)) hash.update(`${at.slice(root.length)}\n`).update(readFileSync(at));
+    }
+  };
+  walk(join(root, "tooling"));
+  return hash.digest("hex").slice(0, 24);
+}
+
 async function measure(crate: Crate, build: string): Promise<Verdict> {
   const kept = join(
     work,
     "kept",
-    `${crate.name}-${crate.version}-${build}.json`,
+    `${crate.name}-${crate.version}-${keptKey(crate, build)}.json`,
   );
   if (existsSync(kept)) return JSON.parse(readFileSync(kept, "utf8"));
   const from = await source(crate);

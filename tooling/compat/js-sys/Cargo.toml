@@ -33,7 +33,3 @@ unsafe-eval = []
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(rust_js)"] }
 
-# A binding crate: rustc checks it and rust-js reads its metadata (ADRs
-# 0024, 0414).
-[package.metadata.rust-js]
-bindings = true

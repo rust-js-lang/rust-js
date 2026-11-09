@@ -16,8 +16,12 @@ of an unused patch.
 
 Their API grows from what crates use, crate by crate:
 `tooling/compat/covered.txt` lists the crates they serve: getrandom 0.3,
-and chrono 0.4, whose default `wasmbind` reads the local time zone through
-`js_sys::Date`, so `Local::now()` is your user's local time. Where any crate of your graph that uses wasm-bindgen isn't one of
+chrono 0.4, whose default `wasmbind` reads the local time zone through
+`js_sys::Date`, so `Local::now()` is your user's local time, and uuid 1 with
+its `js` feature. They're compiled to JS as your crates.io dependencies are,
+vendored under `rust-js/crates/`. Where wasm-bindgen behaves differently on
+wasm32 and natively, they behave as it does natively: `unwrap_throw()` of a
+`None` is a Rust panic, as `expect` is, which `catch_unwind` catches. Where any crate of your graph that uses wasm-bindgen isn't one of
 them, chrono with its default `wasmbind` say, your build keeps crates.io's,
 as it did before, and such a crate is its types alone, a call into it
 refused.

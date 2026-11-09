@@ -296,3 +296,63 @@ under `src/`, so the Crater can't leave its dev-dependency out.
 Held by `test/compat.test.ts`: a crate's `#[wasm_bindgen_test]`s run by
 `rust-js test --features extra`, the one of that feature's too, and an
 `async` one refused, saying why.
+
+## Amendment: compiled as a dependency is, upstream's native branch the reference, and uuid (2026-11-10, #1121)
+
+uuid's `js` reads `Date.now()` through an import of its own,
+`now().unwrap_throw()`. wasm-bindgen's `UnwrapThrowExt` is logic, not one
+JS member, which a binding crate, its bodies never compiled, can't have.
+
+- **rust-js's wasm-bindgen, js-sys, web-sys and wasm-bindgen-test are
+  dependencies rust-js compiles, as crates.io's are**: their `bindings =
+  true` is gone, `cargoBuild` lists them among an app's dependencies, of a
+  path though they are, and their JS is generated and vendored at
+  `rust-js/crates/<name>-<version>/` as any dependency's is, written
+  again as the compiler changes, none of it by hand. What JS has is a
+  `link_name` binding, as an app's own may be; what's logic is a Rust body
+  over the js crate's bindings. The proc-macro crates are rustc's, built
+  for the host. A crate of bindings and types alone writes no JS (ADR 1005).
+- **Upstream's native branch is the reference, wherever it has one**, as
+  native Rust is rust-js's (ADR 0262). wasm-bindgen 0.2.130's `impl
+  UnwrapThrowExt for Option<T>` and `for Result<T, E: Debug>` are `if
+  cfg!(all(target_family = "wasm", not(target_os = "wasi"))) {
+  throw_str(..) } else { self.expect(MSG) }`. So `unwrap_throw` and
+  `expect_throw` are `expect`: a Rust panic of native Rust's message,
+  "called `Option::unwrap_throw()` on a `None` value", "called
+  `Result::unwrap_throw()` on an `Err` value: ..", at its caller
+  (`#[track_caller]`). `catch_unwind` catches it, and unwinding runs drops,
+  as of any panic. This is case 1 of ADR 0262, not an exception: upstream's
+  wasm branch, a JS throw `catch_unwind` doesn't catch, is wasm32's. The
+  trait's own provided `unwrap_throw` is kept, calling the impl's
+  `expect_throw`. `throw_str` and `throw_val` have no native branch:
+  upstream's calls an import whose native stub panics, "cannot call
+  wasm-bindgen imported functions on non-wasm targets". So rust-js's crates
+  don't have them yet, and a crate that calls them isn't covered.
+- **Where upstream's native branch is no answer, a value JS's alone**,
+  `JsValue`'s `{:?}`, whose native `as_debug_string` is that stub,
+  **upstream's JS is the reference**: `JsValue(..)` of cli-support
+  0.2.130's `debugString(val)`, case by case in Rust over the js crate's
+  bindings (`debug_string`). A number's, a `bool`'s and `undefined`'s are
+  `String(val)`, text's `JSON.stringify`, a `bigint`'s with `n`, a symbol's
+  and a function's of their names, `null`, an array's of its items, an
+  `Error`'s `name: message\nstack`, and another object's class or
+  `Object(..)` of its JSON.
+- **`#[wasm_bindgen_test]` of a function `#[test]` made a test already**,
+  uuid's `#[test] #[cfg_attr(wasm32, wasm_bindgen_test)]`, its
+  `rustc_test_marker` on it: as it is, one test.
+- **The Crater** reads an attribute of several lines between a test's
+  `#[test]` and its `fn` as the test's own (`attributesFrom`), so a test cut
+  for a refusal is counted as cut and named. It used to be reported as one
+  not run. And a kept verdict is of the row's features and the tooling's
+  files too, which a change to asks again.
+
+**uuid 1 is covered**: uuid 1.29.0 with `std`, `v4` and `js`, its row's
+features, through the Crater, 59 of its 60 library tests as native Rust's.
+The 60th, `test_compare`, is refused at `BuildHasherDefault::<DefaultHasher>::
+default()`, #1155, not wasm-bindgen's.
+
+Held by `test/compat.test.ts`: `None.unwrap_throw()`'s message, an `Err`'s
+`expect_throw` of a thrown `RangeError` shown `JsValue(RangeError: too
+many\nat refuse)`, an array's `JsValue([1, "a", null])`, each caught by
+`catch_unwind`; and by `test/crater.test.ts`, a test's attributes of several
+lines.

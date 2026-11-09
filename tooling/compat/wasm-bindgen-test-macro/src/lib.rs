@@ -24,6 +24,12 @@ pub fn wasm_bindgen_test(attr: TokenStream, item: TokenStream) -> TokenStream {
             "rust-js's wasm-bindgen-test doesn't run an `async` test yet, as `rust-js test` runs none (ADR 1112)";
         return syn::Error::new_spanned(asyncness, message).to_compile_error().into();
     }
+    // A function `#[test]` made a test already, uuid's `#[test]
+    // #[cfg_attr(wasm32, wasm_bindgen_test)]`, its marker on it: as it is,
+    // one test, not two.
+    if function.attrs.iter().any(|attr| attr.path().is_ident("rustc_test_marker")) {
+        return quote!(#function).into();
+    }
     quote! {
         #[test]
         #function

@@ -23,7 +23,3 @@ wasm-bindgen-test-macro = "=0.3.80"
 default = ["std"]
 std = []
 
-# A binding crate: rustc checks it and rust-js reads its metadata (ADRs
-# 0024, 0414).
-[package.metadata.rust-js]
-bindings = true
