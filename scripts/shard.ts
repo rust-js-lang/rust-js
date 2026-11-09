@@ -1,6 +1,9 @@
 // A set of work split across machines that run at once, as CI runs the
 // mutations (DEVELOPMENT.md): shard `index` of `count`. (`bun test` splits
-// the suite itself, `--shard`, by how long each file took.)
+// the suite itself, `--shard`, by how long each file took.) And how much
+// of a machine's cores and memory the work run at once on it may hold.
+
+import { totalmem } from "node:os";
 
 /** Shard `index`, from 1, of `count`: the items, sorted, dealt out in turn,
  * so each is in exactly one shard, whatever order they're given in. */
@@ -29,6 +32,38 @@ export function caseParts(cores: number): number {
  * 32 s beside the other jobs 92% (2026-11-07). */
 export function pooledParts(cores: number): number {
   return Math.max(2, cores);
+}
+
+/** The most memory, in GB, one job of each kind held at once, its process
+ * and every one it started, sampled every 200 ms on a quiet Mac mini of 8
+ * cores and 16 GB (2026-11-09, #1084), rounded up. A build of the
+ * compiler's crate is the one that counts, rustc alone: 3.4 GB building it
+ * whole, as a mutation's first build in its target is, or a batch's of many
+ * files, 1.6 GB again after one file's change; `cargo test`'s 2.0 and
+ * clippy's 1.8. A test file, or a part of the corpus or of a net, each a
+ * compile at a time, holds 0.1 to 0.3, the largest 1.8, a crate of the
+ * crate corpus 0.5 (2.1 GB, four at once); `check:fast --all` whole, its
+ * pool held to the budget below, 5.0 GB. */
+export const peakGB = { compilerBuild: 3.5, compilerCheck: 2, crate: 0.6, test: 0.3 };
+
+/** The GB the work a run starts at once may hold together: the machine's
+ * memory, `total` bytes, less 6 GB, what the system, the agent and the apps
+ * beside it keep. On 16 GB, four builds of the compiler at once with a test
+ * on each core, 16.4 GB, set off Claude Code's low-memory guard (#1084). */
+export function memoryBudget(total = totalmem()): number {
+  return Math.max(peakGB.compilerBuild, total / 2 ** 30 - 6);
+}
+
+/** How many builds of the compiler's crate a run makes at once on `cores`,
+ * each in a target of its own, as mutations' `--jobs` workers do: one for
+ * each two cores, as a build keeps about two busy, up to four (DEVELOPMENT.md's
+ * timings of sixteen mutations), and no more
+ * than the memory holds beside a test on each core. Four on 12 cores and
+ * 32 GB, two on CI's four cores and 16 GB, and two on 8 cores and 16 GB,
+ * where the cores alone said four. */
+export function compilerBuilds(cores: number, total = totalmem()): number {
+  const room = memoryBudget(total) - cores * peakGB.test;
+  return Math.max(1, Math.min(4, Math.floor(cores / 2), Math.floor(room / peakGB.compilerBuild)));
 }
 
 /** The parts, `i/n`, of a file of cases that shard `index` of `count`

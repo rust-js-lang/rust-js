@@ -28,7 +28,7 @@ import {
 import { jobs, leftToCi, readabilityPaths, touchesReadability } from "../scripts/checkFast";
 import { loadScale } from "../scripts/timing";
 import { jobs as localNightly } from "../scripts/nightly";
-import { caseParts, caseShardParts, harness, nightly, parts, pooledParts, shard } from "../scripts/shard";
+import { caseParts, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, pooledParts, shard } from "../scripts/shard";
 import { fixture, root } from "./support";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
@@ -39,6 +39,33 @@ test("shards split the files between them, each once, whatever the order given",
   expect(shards.map((s) => s.length).sort()).toEqual([2, 2, 3]);
   expect(shard([...files].reverse(), 2, 3)).toEqual(shards[1]);
   expect(() => shard(files, 4, 3)).toThrow("a shard is 1 to 3");
+});
+
+// The builds of the compiler a run makes at once, mutations' `--jobs`, are
+// as many as the cores and the memory hold: on 8 cores and 16 GB, four at
+// once with a test on each core set off Claude Code's low-memory guard
+// (#1084), where 12 cores and 32 GB, and CI's 4 cores and 16 GB, keep what
+// the cores gave them. check:fast's mutations ask the same, and its pool
+// starts no job past the memory's budget.
+test("the compiler's builds at once are as many as the cores and the memory hold", () => {
+  const gb = 2 ** 30;
+  expect(compilerBuilds(8, 16 * gb)).toBe(2);
+  expect(compilerBuilds(12, 32 * gb)).toBe(4);
+  expect(compilerBuilds(12, 64 * gb)).toBe(4);
+  expect(compilerBuilds(4, 16 * gb)).toBe(2);
+  expect(compilerBuilds(2, 8 * gb)).toBe(1);
+  expect(memoryBudget(16 * gb)).toBe(10);
+  expect(memoryBudget(4 * gb)).toBe(peakGB.compilerBuild);
+  // Within the budget, the builds beside a test on each core.
+  for (const [cores, total] of [[8, 16], [4, 16], [12, 32]]) {
+    expect(compilerBuilds(cores, total * gb) * peakGB.compilerBuild + cores * peakGB.test).toBeLessThanOrEqual(memoryBudget(total * gb));
+  }
+  const check = jobs({ all: true, changed: [], branch: [], added: ["dictionary-uncached"], extra: [], cores: 8 }).jobs;
+  const mutations = check.find((job) => job.name === "mutations the change adds")!;
+  expect(mutations.cmd).toContain(`--jobs=${compilerBuilds(8)}`);
+  expect(mutations.memory).toBe(compilerBuilds(8) * peakGB.compilerBuild);
+  expect(check.find((job) => job.name === "clippy")!.memory).toBe(peakGB.compilerCheck);
+  expect(readFileSync(join(root, "scripts/mutations.ts"), "utf8")).toContain(": compilerBuilds(availableParallelism());");
 });
 
 // The corpus runs in parts, one for each two cores where they all run at

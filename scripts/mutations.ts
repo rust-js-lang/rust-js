@@ -23,7 +23,7 @@ import { basename, dirname, join } from "node:path";
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
 import { installPackages } from "../test/packages-of";
-import { caseParts, shard, shardArg } from "./shard";
+import { caseParts, compilerBuilds, shard, shardArg } from "./shard";
 import { casesReaching } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
@@ -987,11 +987,11 @@ async function main() {
   }
   if (problems.length > 0) throw new Error(problems.join("\n\n"));
   // Each build by one of `--jobs` workers, each building in a crate of its
-  // own: one for each two cores, up to four, as a build uses about two, two
-  // on a CI machine's four, the second's first build cold, a minute or two
-  // of the hours its shard takes.
+  // own, as many as the cores and the memory hold (`compilerBuilds`): two
+  // on a CI machine's four cores, the second's first build cold, a minute or
+  // two of the hours its shard takes.
   const said = Number(args.find((arg) => arg.startsWith("--jobs="))?.slice("--jobs=".length));
-  const jobs = said >= 1 ? said : Math.min(4, Math.max(1, Math.floor(availableParallelism() / 2)));
+  const jobs = said >= 1 ? said : compilerBuilds(availableParallelism());
   // And of up to `--batch` mutations each, every one chosen by name as the
   // compiler runs (ADR 1031): a build of each alone was 85% of a run's time.
   // `--batch=1` builds each alone.
