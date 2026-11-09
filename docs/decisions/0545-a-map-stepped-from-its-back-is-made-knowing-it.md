@@ -1572,3 +1572,22 @@ the iterator matrix's and conformance table's rows the change names pass.
 Its two mutations, `enumerate-of-a-dropping-map-unrecorded` and
 `enumerate-of-droppers-unrecorded`, survived on `main`, so they're gone
 with it. What's left of it is `unread`'s, which its own mutations hold.
+## Amendment: a chain made where it's stepped from its back (2026-11-10, #1118)
+
+A chain made where its own back step asks it, `a.chain(b).nth_back(1)`,
+`next_back()` or `rfind(p)`, was refused, "a `Chain<I, I>` as a
+`DoubleEndedIterator`, which rust-js can't step from its back", in generic
+code and of ranges and a `Vec`'s items alike, where a held chain, its
+`rfold`, its `rev()` and a map over it ran. MIR lends the temporary to the
+step, which reads no form of a chain's: the walk marks such a temporary
+where `back_stepped_adapter` says no form of its own steps from its back,
+a `rev()`'s, a zip's, a flatten's, a map's, and a chain wasn't one. It is
+now, where it's made here: `$lazyChain` of its sides made knowing theirs,
+as one an adapter asks beneath it is. One a function gives behind an
+`impl` stays std's `Chain`, which steps from its back by its own methods
+(ADR 0919). No corpus case's JS changed. Held by
+`test/corpus/chain_made_here_stepped_from_its_back.rs`, against native Rust
+in both builds: generic code's, ranges', a `Vec`'s items, what makes an
+iterator, the crate's own double-ended iterator, and items with a
+destructor, each passed over dropped as std's `nth_back` drops it.
+Mutation `chain-made-here-backless` (`lower/analysis/back_stepped.ts`).

@@ -308,6 +308,14 @@ fn back_stepped_adapter<'tcx>(
     if zipped_sources(tcx, adapter).is_some() {
         return Some(tcx.erase_and_anonymize_regions(adapter));
     }
+    // A chain made here, whose own form steps only forward: made knowing
+    // its back where it's made, `$lazyChain` of its sides made knowing
+    // theirs, as one an adapter asks beneath it is (#739), where MIR lends
+    // it to its own `nth_back`, `next_back` or `rfind` (#1118). Not one a
+    // function gives behind an `impl`, std's `Chain`, above.
+    if !given && chained_sources(tcx, adapter).is_some() {
+        return Some(tcx.erase_and_anonymize_regions(adapter));
+    }
     // An `inspect(f)` is made as a map, stepped from its back as one is.
     let mapped = mapped_source(tcx, adapter).or_else(|| inspected_source(tcx, adapter));
     // A `cloned()` too, made as a copy or as a map of each item's clone.

@@ -499,4 +499,13 @@ export const mutations: Mutation[] = [
     replace: "                if !made_stepped && cloned_chain(owner, made) && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^cloned_chain_stepped_from_its_back.rs$"],
   },
+  {
+    name: "chain-made-here-backless",
+    breaks:
+      "a chain made where it's lent to its own `nth_back`, `next_back` or `rfind`, `a.chain(b).nth_back(1)`, isn't made knowing its back, so it's refused, in generic code and of ranges alike (#1118)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "    if !given && chained_sources(tcx, adapter).is_some() {\n",
+    replace: "    if false && !given && chained_sources(tcx, adapter).is_some() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_made_here_stepped_from_its_back.rs$"],
+  },
 ];
