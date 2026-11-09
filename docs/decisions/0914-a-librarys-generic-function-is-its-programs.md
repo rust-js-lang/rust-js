@@ -1133,3 +1133,32 @@ Pair test `library_singles_across_crates`; mutations
 `unwritten-closure-local-unmade` (`lower/mir.ts`). The two of #1032 left,
 `class_trait_field_lent` and `refcell_borrow_while_mut`, are a library's
 `RefCell` borrows a consumer may hold, which its own compile counts none of.
+
+## Amendment: a closure an instance makes of an inlined function is placed where the instance is (#1029)
+
+A library's MIR is optimized: `fold_with` calls `joined`, which rustc
+inlined, so `fold_with`'s body makes `joined`'s closure itself. Its
+consumer, compiling `fold_with` given closures that drop, found that
+closure's body, as it finds each closure a body makes, but placed it by
+its typeck root, `joined`, which no module of the consumer's holds: a
+panic, "a crate given std's bodies has no module for
+metamorph_lib::joined::{closure#0}". Each closure a body found makes is
+placed where what made it is (`foreign_bodies`' makers,
+`instance_bodies`), and `Instances::module` finds it as itself where its
+root isn't an instance. What it then asks is asked as of any closure;
+here what it holds is refused for now, a closure holding a value with a
+destructor given away before it's called, as a refusal and no panic.
+Held by the pair `closure_made_by_an_inlined_function` of
+`test/crates/refused/` and the mutations
+`closure-of-an-inlined-function-made-by-none`,
+`closure-of-an-inlined-function-unplaced` and
+`closure-placed-by-its-root-alone`.
+
+And a library's declarations ask a `&mut`'s and a `dyn`'s form of its
+item's context (ADR 1086, #619): a function's erased type parameters,
+`impl FnMut(&mut U)` of `front`, were asked before its context was the
+function's, of the module's, the crate root's, whose environment is no
+item's, a rustc ICE, "generics_of: unexpected node kind". An item's
+declaration is entered once (`Declarations::enter`): its context first,
+then what it erases. Held by the pair `library_signatures_asked_of_their_items`
+and the mutation `item-erased-asked-of-the-module`.

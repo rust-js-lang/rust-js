@@ -15,11 +15,6 @@ plain std library generic_fn_value_is_one_function.rs
 plain std library rc_fn_ptr_eq_of_cloned.rs
 plain std library rc_of_an_impls_parameter_counted_as_any.rs
 
-#1029 P1 (library): three crashes: generics_of unexpected node kind, and a panic at src/lower.rs:172
-plain std library closures_made_and_folded.rs
-plain std library equated_iterator_parameter.rs
-plain std library rc_fn_made_of_a_counted_rc.rs
-
 #1032 P0 (library): singles across crates: class methods, dyn writes, a lost RefCell borrow check, track_caller and others
 plain std library class_trait_field_lent.rs
 plain std library refcell_borrow_while_mut.rs

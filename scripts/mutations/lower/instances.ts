@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "closure-placed-by-its-root-alone",
+    breaks: "a closure an instance makes of a function rustc inlined into it is looked up by its typeck root alone, `joined`, which no module holds: a panic (#1029)",
+    file: "src/lower/instances.rs",
+    find: "            .or_else(|| self.placed.get(&id)))\n",
+    replace: "            .or(None))\n",
+    tests: ["test/crates.test.ts", "-t", "inlined function is placed"],
+  },
+  {
+    name: "closure-of-an-inlined-function-unplaced",
+    breaks: "`joined`'s closure, made in the instance `fold_with`, isn't placed where `fold_with` is: a panic of no module for it (#1029)",
+    file: "src/lower/instances.rs",
+    find: "            made.push((closure, module));\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "inlined function is placed"],
+  },
+  {
     name: "library-changed-unshared",
     breaks:
       "a library's exported function that copies what its consumer changes in place, which the library changes too, so its JS copies it, is compiled by the consumer, where it is imported, `Dep.firstNotch(notches)`; React's Flight client's `close`, refused as it reads its library's private state (rd606)",

@@ -162,7 +162,7 @@ pub fn collect_ranges<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>], initia
 /// `std_sysroot`), with no THIR beside it,
 /// as a dictionary has none (`pipeline.rs`'s `no_body`).
 pub fn collect_std_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
-    foreign_bodies(tcx, super::recognition::compiled_std(tcx).to_vec())
+    foreign_bodies(tcx, super::recognition::compiled_std(tcx).to_vec()).0
 }
 
 /// A derived impl whose methods are lowered, written only where they're

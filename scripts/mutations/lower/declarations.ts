@@ -5,6 +5,14 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "item-erased-asked-of-the-module",
+    breaks: "a library's `front`, whose `impl FnMut(&mut U)` asks a `&mut`'s form, is declared in the crate root's context, a rustc ICE, `generics_of: unexpected node kind` (#1029)",
+    file: "src/lower/declarations.rs",
+    find: "        self.owner = def_id;\n        self.erased = self.erased(def_id);\n",
+    replace: "        self.erased = self.erased(def_id);\n        self.owner = def_id;\n",
+    tests: ["test/crates.test.ts", "-t", "library_signatures_asked_of_their_items"],
+  },
+  {
     name: "kept-word-parameter-declared",
     breaks:
       "a function type's parameter named after a type whose last word JS keeps is `function`, a `.d.ts` TypeScript can't parse (rd673)",

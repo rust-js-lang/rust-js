@@ -3,6 +3,7 @@
 //! consumer compiles itself (ADR 0914), its impls' constants too (ADR
 //! 0176, amended).
 
+use crate::collections::IndexMap;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
@@ -11,8 +12,14 @@ use super::super::Body;
 
 /// The bodies of `ids`, another crate's, from the MIR its metadata keeps,
 /// with no THIR beside them: std's (ADR 0561), and a library's a consumer
-/// compiles itself (ADR 0914), its impls' constants too (ADR 0176).
-pub(in crate::lower) fn foreign_bodies(tcx: TyCtxt<'_>, mut ids: Vec<DefId>) -> Vec<Body<'_>> {
+/// compiles itself (ADR 0914), its impls' constants too (ADR 0176); and of
+/// each closure one makes, the body that made it, as a function rustc
+/// inlined into it may be no instance of the crate's (#1029).
+pub(in crate::lower) fn foreign_bodies(
+    tcx: TyCtxt<'_>,
+    mut ids: Vec<DefId>,
+) -> (Vec<Body<'_>>, IndexMap<DefId, DefId>) {
+    let mut makers = IndexMap::default();
     // Each body named, and each closure a body makes, which its MIR names
     // as it's made: a body of its own, as the crate's closures are.
     let mut at = 0;
@@ -58,10 +65,11 @@ pub(in crate::lower) fn foreign_bodies(tcx: TyCtxt<'_>, mut ids: Vec<DefId>) -> 
         for closure in closures.0 {
             if !ids.contains(&closure) {
                 ids.push(closure);
+                makers.insert(closure, def_id);
             }
         }
     }
-    (ids.into_iter())
+    let bodies = (ids.into_iter())
         .filter_map(|def_id| Some((def_id, foreign_mir(tcx, def_id)?)))
         .map(|(def_id, body)| {
             // What rustc clears of MIR across crates, each local's kind, is
@@ -81,7 +89,8 @@ pub(in crate::lower) fn foreign_bodies(tcx: TyCtxt<'_>, mut ids: Vec<DefId>) -> 
                 mir: Some(mir),
             }
         })
-        .collect()
+        .collect();
+    (bodies, makers)
 }
 
 /// The MIR another crate's metadata keeps of `def_id`: a function's, as

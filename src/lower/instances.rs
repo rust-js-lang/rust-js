@@ -28,13 +28,18 @@ impl Instances {
     /// Whether `id`, a library's function or a closure of one, is compiled
     /// in this crate.
     pub(super) fn contains(&self, tcx: TyCtxt<'_>, id: DefId) -> bool {
-        !id.is_local() && self.placed.contains_key(&tcx.typeck_root_def_id(id))
+        !id.is_local() && self.module(tcx, id).is_some()
     }
 
     /// The module of the crate's an instance is placed in, its closures'
-    /// too.
+    /// too, and a closure one makes of a function rustc inlined into it,
+    /// placed as itself (`instance_bodies`, #1029).
     pub(super) fn module(&self, tcx: TyCtxt<'_>, id: DefId) -> Option<LocalModId> {
-        self.placed.get(&tcx.typeck_root_def_id(id)).copied()
+        (self
+            .placed
+            .get(&tcx.typeck_root_def_id(id))
+            .or_else(|| self.placed.get(&id)))
+        .copied()
     }
 
     /// Each instance `needed` found, with the others.
@@ -335,9 +340,25 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
 }
 
 /// The bodies of each of `more`, a library's functions, from the MIR its
-/// metadata keeps, and of each closure they make (ADR 0914).
-pub fn instance_bodies<'tcx>(tcx: TyCtxt<'tcx>, more: &[(DefId, LocalModId)]) -> Vec<Body<'tcx>> {
-    super::analysis::foreign_bodies(tcx, more.iter().map(|&(id, _)| id).collect())
+/// metadata keeps, and of each closure they make (ADR 0914), each closure
+/// placed where what made it is: one of a function rustc inlined into the
+/// instance, `joined`'s in `fold_with`, is no closure of an instance's own
+/// by its typeck root (#1029).
+pub fn instance_bodies<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    more: &[(DefId, LocalModId)],
+) -> (Vec<Body<'tcx>>, Vec<(DefId, LocalModId)>) {
+    let (bodies, makers) = super::analysis::foreign_bodies(tcx, more.iter().map(|&(id, _)| id).collect());
+    // In the order they were found, each maker before what it made.
+    let mut placed: IndexMap<DefId, LocalModId> = more.iter().copied().collect();
+    let mut made = Vec::new();
+    for (&closure, maker) in &makers {
+        if let Some(&module) = placed.get(maker) {
+            placed.insert(closure, module);
+            made.push((closure, module));
+        }
+    }
+    (bodies, made)
 }
 
 /// What the crate's analysis found that asks what its calls give a

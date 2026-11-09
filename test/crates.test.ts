@@ -326,6 +326,17 @@ test("a consumer's fact of a library's associated type its dictionaries don't ca
   expect(native).toBe("8\n");
 }, 300_000);
 
+// #1029: a closure a library's instance makes of a function rustc inlined
+// into it, `joined`'s in `fold_with`, is placed where the instance is: a
+// refusal of what its closures hold, not a panic of no module for it.
+test("a closure an instance makes of an inlined function is placed where the instance is", () => {
+  const native = chain(join(root, "test", "crates", "refused"), "closure_made_by_an_inlined_function", ["dep", "app"], [
+    "rust-js does not support a closure that holds a value with a destructor, given away without being called once yet",
+    "app.rs:15:",
+  ]);
+  expect(native).toBe("drop g\ndrop f\n246\n");
+}, 300_000);
+
 // #374, ADR 0960: a library checks its hooks' `RefCell<Vec<Rc<dyn Fn()>>>`,
 // borrowed while they run; its consumer's `RefCell<Vec<Rc<Node>>>` isn't one
 // that may be it, a `Vec`'s `dyn` no `Node`, so its borrows aren't checked.

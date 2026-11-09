@@ -338,8 +338,10 @@ impl Callbacks for RustJs {
             ) {
                 lower::Lowered::Crate(unlinked) => break unlinked.map(|unlinked| *unlinked),
                 lower::Lowered::Instances(more) => {
-                    bodies.extend(lower::instance_bodies(tcx, &more));
+                    let (more_bodies, made) = lower::instance_bodies(tcx, &more);
+                    bodies.extend(more_bodies);
                     instances.extend(more);
+                    instances.extend(made);
                 }
                 lower::Lowered::MadeWhereUsed(keys) => made_where_used.extend(keys),
             }

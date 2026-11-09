@@ -116,8 +116,7 @@ pub(super) fn module<'tcx>(
         if let Some(class) = super::classes::declared_by(tcx, def_id, module)
             .filter(|&class| class != def_id && tcx.visibility(class).is_public())
         {
-            out.erased = out.erased(class);
-            out.owner = class;
+            out.enter(class);
             items.extend(exported_class(tcx, documented(out.class(class), tcx, class), class));
             continue;
         }
@@ -139,8 +138,7 @@ pub(super) fn module<'tcx>(
         if !(held || tcx.visibility(def_id).is_public()) || is_mark(tcx, def_id) || named_default == Some(def_id) {
             continue;
         }
-        out.erased = out.erased(def_id);
-        out.owner = def_id;
+        out.enter(def_id);
         // A module's namespace, no type: its module's functions (ADR 1037).
         if super::classes::is_namespace(tcx, def_id) {
             items.extend(out.namespace_functions(def_id, forwarded));
@@ -233,8 +231,7 @@ pub(super) fn module<'tcx>(
         // `function Recap() {..}` is in JS (ADR 0611, amended); a binding's
         // is its `const`'s, declared above.
         if named_default == Some(def_id) {
-            out.erased = out.erased(def_id);
-            out.owner = def_id;
+            out.enter(def_id);
             let mut declared = match tcx.def_kind(def_id) {
                 DefKind::Fn => out.function(def_id),
                 // A class, its constructor (ADR 0761).
@@ -502,6 +499,15 @@ impl<'tcx> Declarations<'_, 'tcx> {
             DefKind::Fn | DefKind::AssocFn => (self.representation.signature)(def_id).callables,
             _ => Vec::new(),
         }
+    }
+
+    /// `def_id`'s declaration begun: what's asked of a `&mut` or a `dyn` in
+    /// its signature asked of its own context, then its erased parameters,
+    /// whose callables' types ask it too. Asked of the module's, the crate
+    /// root's, its environment is no item's, a rustc ICE (#1029).
+    fn enter(&mut self, def_id: DefId) {
+        self.owner = def_id;
+        self.erased = self.erased(def_id);
     }
 
     /// An item's type parameters that are a type of TypeScript's, by index,

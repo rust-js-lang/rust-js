@@ -5,6 +5,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "closure-of-an-inlined-function-made-by-none",
+    breaks: "`joined`'s closure, made in `fold_with` rustc inlined `joined` into, has no maker, so no module of the consumer's: a panic, `has no module for metamorph_lib::joined::{closure#0}` (#1029)",
+    file: "src/lower/analysis/foreign_bodies.rs",
+    find: "                makers.insert(closure, def_id);\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "inlined function is placed"],
+  },
+  {
     name: "foreign-const-without-mir",
     breaks:
       "a library's impl's constant has no MIR, as its metadata keeps one only for evaluation, so a library that compiles arrayvec's `ArrayVecImpl` impl is refused at its `CAPACITY = CAP` (#468, ADR 0176, amended)",
