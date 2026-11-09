@@ -1,0 +1,4 @@
+#!/bin/sh
+# A push that undoes another's commit is refused (scripts/push-guard.ts).
+# `bun install` sets git to run this (package.json's `prepare`).
+exec bun "$(git rev-parse --show-toplevel)/scripts/push-guard.ts"

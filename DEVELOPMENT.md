@@ -722,6 +722,13 @@ checked:
 
 - **Each change is a commit on `main`, pushed directly**: no branches, no
   pull requests. Its message is titled `feat(rust-js): …`.
+- **A push that undoes a commit already on `main` is refused** by the
+  pre-push hook `bun install` sets git to run (`.githooks/pre-push`,
+  `scripts/push-guard.ts`): a commit made from an older tree, as `git
+  reset --soft origin/main` after a fetch makes one, carries each file the
+  newer commits changed back as it was. Squash onto the merge base and
+  rebase; to revert a commit on purpose, name it in the message ("This
+  reverts commit <sha>").
 - **A push that fails**, GitHub down say, isn't a reason to stop: keep
   committing on `main` locally, and push when it works again.
 - **The check comes with the push**: its mutations are those of what

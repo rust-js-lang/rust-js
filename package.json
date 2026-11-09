@@ -15,6 +15,7 @@
     "examples/next"
   ],
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "setup": "bun install && bunx --bun playwright install chromium",
     "build": "bun run build:compiler && react/build.sh -o \"$PWD/target/libreact.rmeta\"",
     "build:compiler": "cargo build",
