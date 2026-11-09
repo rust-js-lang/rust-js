@@ -76,6 +76,20 @@ callable may be any crate's writer, and is given the writer's own.
 A consumer's writer may now call a library's writer function given its
 `Formatter`, as it calls its own crate's: `is_rust_fn` answers both.
 
+A library's writers that take options apply each a consumer gives them
+(#1164): its consumers, which it can't see, may give a width, a fill or a
+`+`, so where a library takes options, its `{:#?}`'s alone, it applies
+them too (`format_options` of `WriterFacts::of`). `impl Display for Shown
+{ fn fmt(&self, f) { fmt::Display::fmt(&self.0, f) } }` in a library that
+asks `f.alternate()` elsewhere was `String(shown[0])`, and a consumer's
+`{:>5}` of `Shown(7)` showed `7` where native Rust shows `    7`; it's
+the width applied now. Case 3 of ADR 0262: results change, so Rust's
+behavior is kept. std's own build, whose writers all take options, applies them
+too: `{:5?}` of `v.iter().skip(1)` was `Skip { iter: Iter([    1, ..]),
+n: 1 }`, its count unpadded, native Rust's `n:     1`. The crate pair
+`library_fmt_forwarded_by_path`, corpus case `std_adapters_debug_width.rs`
+and mutation `library-options-unapplied` hold it.
+
 ## Why
 
 - **It's how a person writes it in JS**: a function that returns text,

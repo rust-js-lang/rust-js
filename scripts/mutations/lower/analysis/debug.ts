@@ -22,6 +22,15 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "pretty_debug_derived"],
   },
   {
+    name: "library-options-unapplied",
+    breaks:
+      "a library's writers that take a `Formatter`'s options, its `{:#?}`'s, apply none a consumer gives: a width, a fill and a `+` are lost where its `fmt` forwards by path",
+    file: "src/lower/analysis/debug.rs",
+    find: "            format_options: uses_format_options(tcx, all_bodies) || (library && pretty_debug),",
+    replace: "            format_options: uses_format_options(tcx, all_bodies),",
+    tests: ["test/crates.test.ts", "-t", "library_fmt_forwarded_by_path"],
+  },
+  {
     name: "format-options-flag-primitive",
     breaks:
       "a crate that gives a width to its own types is taken to give none, and the numbers its writers show are unpadded",
@@ -73,8 +82,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate that shows a value with `{:#?}` gives its `Debug`s no `alternate`, and they're plain",
     file: "src/lower/analysis/debug.rs",
-    find: "            pretty_debug: std_bodies || uses_pretty_debug(tcx, all_bodies),",
-    replace: "            pretty_debug: std_bodies || (false && uses_pretty_debug(tcx, all_bodies)),",
+    find: "        let pretty_debug = std_bodies || uses_pretty_debug(tcx, all_bodies);",
+    replace: "        let pretty_debug = std_bodies || (false && uses_pretty_debug(tcx, all_bodies));",
     tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
   },
 ];

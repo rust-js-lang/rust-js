@@ -637,7 +637,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let all_bodies: Vec<&Body<'tcx>> = all_bodies.iter().filter(|body| !is_harness(body.def_id)).collect();
     // Before its libraries are asked, whose writers it reaches are
     // compiled here where they take less (ADR 0914, amended; #1026).
-    let writer_facts = WriterFacts::of(tcx, &all_bodies, std_bodies);
+    let writer_facts = WriterFacts::of(tcx, &all_bodies, (library, std_bodies));
     // And whether it compares a function's identity, of which its libraries'
     // functions that may merge two are compiled here (#1052).
     let reads_fn_identity = rc_counts::reads_fn_identity(tcx, &all_bodies);

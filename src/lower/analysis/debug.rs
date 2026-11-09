@@ -245,10 +245,15 @@ pub(in crate::lower) struct WriterFacts {
 }
 
 impl WriterFacts {
-    pub(super) fn of<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], std_bodies: bool) -> Self {
+    pub(super) fn of<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], (library, std_bodies): (bool, bool)) -> Self {
+        let pretty_debug = std_bodies || uses_pretty_debug(tcx, all_bodies);
         WriterFacts {
-            pretty_debug: std_bodies || uses_pretty_debug(tcx, all_bodies),
-            format_options: uses_format_options(tcx, all_bodies),
+            pretty_debug,
+            // A library's writers that take a `Formatter`'s options, its
+            // `{:#?}`'s, apply each a consumer gives, a width, a fill or a
+            // `+`, as its manifest says they take them: its consumers, which
+            // it can't see, give any (#1164).
+            format_options: uses_format_options(tcx, all_bodies) || (library && pretty_debug),
             debug_hex: uses_debug_hex(tcx, all_bodies),
             reads_options: (all_bodies.iter())
                 .filter(|body| reads_formatter_options(tcx, body))

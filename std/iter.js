@@ -16,6 +16,7 @@ import {
   $foldBack,
   $foldDropping,
   $foldOf,
+  $formatted,
   $fromFn,
   $getUnchecked,
   $given,
@@ -2747,7 +2748,7 @@ export function enumerateClone_clone(enumerate, IClone) {
 
 export function enumerateDebug_fmt(enumerate, options, IDebug) {
   const shown = IDebug.fmt(enumerate.iter, options);
-  const shown$1 = String(enumerate.count$);
+  const shown$1 = $formatted(String(enumerate.count$), options, true);
   return options?.alternate
     ? $pretty("Enumerate {", [`iter: ${shown}`, `count: ${shown$1}`], "}")
     : `Enumerate { iter: ${shown}, count: ${shown$1} }`;
@@ -4494,10 +4495,13 @@ export function takeWhileDebug_fmt(takeWhile, options, IDebug, dropI, dropP) {
   return options?.alternate
     ? $pretty(
         "TakeWhile {",
-        [`iter: ${IDebug.fmt(takeWhile.iter, options)}`, `flag: ${takeWhile.flag}`],
+        [
+          `iter: ${IDebug.fmt(takeWhile.iter, options)}`,
+          `flag: ${$formatted(String(takeWhile.flag), options)}`,
+        ],
         "}",
       )
-    : `TakeWhile { iter: ${IDebug.fmt(takeWhile.iter, options)}, flag: ${takeWhile.flag} }`;
+    : `TakeWhile { iter: ${IDebug.fmt(takeWhile.iter, options)}, flag: ${$formatted(String(takeWhile.flag), options)} }`;
 }
 
 export function skipWhileIterator_next(
@@ -4756,10 +4760,13 @@ export function skipWhileDebug_fmt(skipWhile, options, IDebug, dropI, dropP) {
   return options?.alternate
     ? $pretty(
         "SkipWhile {",
-        [`iter: ${IDebug.fmt(skipWhile.iter, options)}`, `flag: ${skipWhile.flag}`],
+        [
+          `iter: ${IDebug.fmt(skipWhile.iter, options)}`,
+          `flag: ${$formatted(String(skipWhile.flag), options)}`,
+        ],
         "}",
       )
-    : `SkipWhile { iter: ${IDebug.fmt(skipWhile.iter, options)}, flag: ${skipWhile.flag} }`;
+    : `SkipWhile { iter: ${IDebug.fmt(skipWhile.iter, options)}, flag: ${$formatted(String(skipWhile.flag), options)} }`;
 }
 
 export function mapWhileIterator_next(
@@ -7099,7 +7106,7 @@ export function skipClone_clone(skip, IClone) {
 
 export function skipDebug_fmt(skip, options, IDebug) {
   const shown = IDebug.fmt(skip.iter, options);
-  const shown$1 = String(skip.n);
+  const shown$1 = $formatted(String(skip.n), options, true);
   return options?.alternate
     ? $pretty("Skip {", [`iter: ${shown}`, `n: ${shown$1}`], "}")
     : `Skip { iter: ${shown}, n: ${shown$1} }`;
@@ -7619,7 +7626,7 @@ export function takeClone_clone(take, IClone) {
 
 export function takeIDebug_fmt(take, options, IDebug) {
   const shown = IDebug.fmt(take.iter, options);
-  const shown$1 = String(take.n);
+  const shown$1 = $formatted(String(take.n), options, true);
   return options?.alternate
     ? $pretty("Take {", [`iter: ${shown}`, `n: ${shown$1}`], "}")
     : `Take { iter: ${shown}, n: ${shown$1} }`;
