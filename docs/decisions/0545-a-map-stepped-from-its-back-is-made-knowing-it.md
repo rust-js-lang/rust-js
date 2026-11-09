@@ -1558,3 +1558,17 @@ bounds give no back stays: an enumeration of a type parameter's iterator
 generic code makes, mapped and collected, reaches it, now a corpus case of
 its own (`enumerate_of_a_made_type_parameter_collected.rs`). Three
 knowing-its-back mutations name the cases that catch them.
+
+## Amendment: an enumeration's rule of its own is gone (2026-11-10)
+
+`back_stepped_adapter` kept a rule of its own for an enumeration, of items
+with a destructor or of a map or a filter of an array's items that drops
+them (#383, #764, #823): made knowing its back where it's made. Since #851
+gave each value its own facts, the walk's `unread`, an enumeration of
+std's struct or of what drops, marks each such value itself, and the rule
+answered nothing: with it gone, every corpus case's JS is the same, in
+both builds, #823's and #764's cases among them, against native Rust, and
+the iterator matrix's and conformance table's rows the change names pass.
+Its two mutations, `enumerate-of-a-dropping-map-unrecorded` and
+`enumerate-of-droppers-unrecorded`, survived on `main`, so they're gone
+with it. What's left of it is `unread`'s, which its own mutations hold.

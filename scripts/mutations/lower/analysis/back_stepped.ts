@@ -215,14 +215,6 @@ export const mutations: Mutation[] = [
 
 
   {
-    name: "enumerate-of-a-dropping-map-unrecorded",
-    breaks: "an enumeration of a map of a `Vec`'s items with a destructor, held in a variable to drop them, isn't made knowing its back where it's made, and its `next_back` is refused (#764)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "        return (item.is_some_and(&drops) || dropping_items(recognition, source.peel_refs(), &drops))\n",
-    replace: "        return (item.is_some_and(&drops) || false)\n",
-    tests: ["test/corpus.test.ts", "-t", "^enumerate_made_knowing_read_again.rs$"],
-  },
-  {
     name: "counted-given-held-unrecorded",
     breaks:
       "a `skip(n)` or a `take(n)` given held to what steps it from its back isn't recorded, so it's made with no back: `held.rev()` of a `let held = v.into_iter().skip(1)` is refused (#718)",
@@ -251,14 +243,6 @@ export const mutations: Mutation[] = [
     find: "        return array_of_drops(a.peel_refs()) || array_of_drops(b.peel_refs());\n",
     replace: "        return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
-  },
-  {
-    name: "enumerate-of-droppers-unrecorded",
-    breaks: "an enumeration of items with a destructor whose back the crate steps isn't recorded, so the crate's own iterator under a `rev()`, `skip(n)`, `take(n)` or `step_by(n)` beneath it is made with no back, `$iterator(it, nextBack)`, and its `rfold` throws `it.back is not a function` (#383, #823)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "        return (item.is_some_and(&drops) || dropping_items(",
-    replace: "        return (item.is_some_and(|_| false) || dropping_items(",
-    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_own_iterator_folded_from_its_back.rs$"],
   },
   {
     name: "stepped-local-held-beneath-unasked",

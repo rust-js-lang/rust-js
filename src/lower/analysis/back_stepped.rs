@@ -308,19 +308,6 @@ fn back_stepped_adapter<'tcx>(
     if zipped_sources(tcx, adapter).is_some() {
         return Some(tcx.erase_and_anonymize_regions(adapter));
     }
-    // An enumeration of items with a destructor, held in a variable to drop
-    // them, whose own back the crate steps (#383): made knowing its back
-    // where it's made, its source too, the crate's own iterator under a
-    // `rev()`, a `skip(n)`, a `take(n)` or a `step_by(n)`, whose form there
-    // steps only forward, `$iterator(it, nextBack)` with no back (#823). And
-    // of a map or a filter of an array's items with a destructor, held to
-    // drop them whatever it gives (#764). One of std's struct, `$enumerate`
-    // of it, is its value's, `unread` (#712, #851).
-    if let Some(source) = enumerated_source(tcx, adapter) {
-        let item = recognition.iterator_item(adapter);
-        return (item.is_some_and(&drops) || dropping_items(recognition, source.peel_refs(), &drops))
-            .then(|| tcx.erase_and_anonymize_regions(adapter));
-    }
     // An `inspect(f)` is made as a map, stepped from its back as one is.
     let mapped = mapped_source(tcx, adapter).or_else(|| inspected_source(tcx, adapter));
     // A `cloned()` too, made as a copy or as a map of each item's clone.
