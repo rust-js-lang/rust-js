@@ -745,7 +745,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `discriminant`'s number, a `Value::Discriminant`'s: each variant's
     /// discriminant where `switch_test` says it's that one, the last's
-    /// else, `o != null ? 1 : 0` of an `Option`.
+    /// else, `o != null ? 1 : 0` of an `Option`; each a BigInt of a 64-bit
+    /// `repr`'s (#1131).
     fn discriminant_number(&mut self, discriminant: &Value<'tcx>, span: Span) -> R<Expr> {
         let Value::Discriminant(_, enum_ty, _) = discriminant else {
             unreachable!("a discriminant");
@@ -754,27 +755,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty::Adt(adt, _) = enum_ty.kind() else {
             return Err(self.unsupported(span, "a discriminant of what isn't an enum, read as a value"));
         };
-        // Each variant's discriminant, as its bits and as its number, a
+        // Each variant's discriminant, as its bits and as its value, a
         // signed one's sign-extended, `-1` of an `enum E { A = -1 }`.
-        let mut values = Vec::new();
-        for (_, d) in adt.discriminants(self.tcx) {
-            let number = match d.ty.is_signed() {
-                true => {
-                    let layout = (self.tcx.layout_of(self.typing_env.as_query_input(d.ty)))
-                        .map_err(|_| self.unsupported(span, "a discriminant of an unsized type"))?;
-                    layout.size.sign_extend(d.val)
-                }
-                false => d.val as i128,
-            };
-            values.push((d.val, number));
-        }
+        let values: Vec<(u128, crate::lower::Discr)> = (adt.discriminants(self.tcx))
+            .map(|(_, d)| (d.val, crate::lower::Discr::of(self.tcx, d)))
+            .collect();
         let Some((&(_, last), rest)) = values.split_last() else {
             return Err(self.unsupported(span, "a discriminant of an enum of no variant, read as a value"));
         };
-        let mut made = Expr::int(last);
+        // Of a 64-bit `repr`, a BigInt, as its type's every value is (#1131).
+        let big = crate::lower::Num::of(enum_ty.discriminant_ty(self.tcx)).is_some_and(crate::lower::Num::big);
+        let literal = |n: crate::lower::Discr| n.expr(big);
+        let mut made = literal(last);
         for &(bits, number) in rest.iter().rev() {
             let test = self.switch_test(discriminant, enum_ty, bits, span, None)?;
-            made = Expr::cond(test, Expr::int(number), made);
+            made = Expr::cond(test, literal(number), made);
         }
         Ok(made)
     }

@@ -309,10 +309,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let discriminants = discriminants(self.tcx, *adt);
             // Each one fits the target type, so there's nothing to wrap.
             let (lo, hi) = target.range();
-            let fits = target.float()
-                || discriminants
-                    .iter()
-                    .all(|&(_, d)| lo <= d && (d < 0 || d as u128 <= hi));
+            let fits = target.float() || discriminants.iter().all(|&(_, d)| d.fits(lo, hi));
             let repr = rustc_middle::ty::util::IntTypeExt::to_ty(&adt.repr().discr_type(), self.tcx);
             let repr = Num::of(repr).unwrap_or(Num::I32);
             // The discriminants as what they're read as: the target, if each

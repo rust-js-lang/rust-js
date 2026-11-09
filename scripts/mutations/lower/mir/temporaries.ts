@@ -627,4 +627,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^kept_handle_of_a_place_set_again.rs$"],
   },
+  {
+    name: "discriminant-number-not-big",
+    breaks: "a discriminant MIR reads as a value, a library's derived `Hash`'s, is a number where its `repr` is 64 bits wide, which `write_i64` can't take: `TypeError: Cannot convert -5 to a BigInt` (#1131)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "        let literal = |n: crate::lower::Discr| n.expr(big);\n",
+    replace: "        let literal = |n: crate::lower::Discr| n.expr(big && false);\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: wide_discriminants"],
+  },
 ];

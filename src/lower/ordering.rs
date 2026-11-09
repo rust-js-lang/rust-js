@@ -561,10 +561,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             && !self.krate.foreign.in_library(adt.did())
                             && self.recognition().derives(if partial { partial_ord } else { ord }, ty)) =>
             {
-                // Of those a value can be.
-                let mut variants: Vec<(VariantIdx, u128)> = (adt.discriminants(self.tcx))
+                // Of those a value can be, in their discriminants' order, a
+                // signed one's `-5` before `3` (#1131).
+                let mut variants: Vec<(VariantIdx, crate::lower::Discr)> = (adt.discriminants(self.tcx))
                     .filter(|&(v, _)| !crate::lower::recognition::never_made(self.tcx, adt.variant(v)))
-                    .map(|(v, d)| (v, d.val))
+                    .map(|(v, d)| (v, crate::lower::Discr::of(self.tcx, d)))
                     .collect();
                 variants.sort_by_key(|&(_, value)| value);
                 // Where each is among them, `a.TAG === "Rect" ? 1 : ..`.

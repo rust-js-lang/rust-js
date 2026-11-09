@@ -588,7 +588,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.is_unknown(of) {
                     return Err(self.unsupported(call.span, "`mem::discriminant` of a type only a caller knows"));
                 }
-                let big = crate::lower::Num::of(output).is_some_and(crate::lower::Num::big);
+                // A BigInt of a 64-bit or wider `repr`, `discriminant_value`'s
+                // and a `Discriminant`'s alike (#1131).
+                let big = (crate::lower::Num::of(output).or(crate::lower::Num::of(of.discriminant_ty(self.tcx))))
+                    .is_some_and(crate::lower::Num::big);
                 self.discriminant_value(arg(), of, big, out)
             }
             Std::Leak => self.leaked(arg(), output),

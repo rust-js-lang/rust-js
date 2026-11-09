@@ -302,7 +302,7 @@ export const mutations: Mutation[] = [
       "an enum with fields' last variant's discriminant is 0, its first's, not its own",
     file: "src/lower/representation.rs",
     find: "fold(literal(last),",
-    replace: "fold(literal(0),",
+    replace: "fold(literal(zero),",
     tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
   },
   {
@@ -396,8 +396,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a 64-bit `repr`'s discriminant, as a derived `Hash` reads it, is a number, not a BigInt",
     file: "src/lower/representation.rs",
-    find: "            true => Expr::bigint(n),\n",
-    replace: "            true => Expr::int(n),\n",
+    find: "        let literal = |n: super::Discr| n.expr(big);\n",
+    replace: "        let literal = |n: super::Discr| n.expr(false);\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
   },
   {

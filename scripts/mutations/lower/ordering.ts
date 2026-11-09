@@ -585,4 +585,12 @@ export const mutations: Mutation[] = [
     replace: "            false => false,\n",
     tests: ["test/crates.test.ts", "-t", "derived_partial_cmp_is_cmp"],
   },
+  {
+    name: "variants-ordered-by-bits",
+    breaks: "an enum's variants are ordered by their discriminants' bits, a negative one's after the rest, `High(1) < Low` where `Low = -5` is first (#1131)",
+    file: "src/lower/ordering.rs",
+    find: "                    .map(|(v, d)| (v, crate::lower::Discr::of(self.tcx, d)))\n",
+    replace: "                    .map(|(v, d)| (v, crate::lower::Discr::Unsigned(d.val)))\n",
+    tests: ["test/corpus.test.ts", "-t", "^discriminants_past_32_bits.rs$"],
+  },
 ];

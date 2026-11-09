@@ -69,3 +69,38 @@ by the diagnostics test `a discriminant in generic code`, the guide's
 limitations and the mutation `discriminant-of-a-callers-type-zero`; the
 net's `generic enum_discriminant` row, now refused, which the net counts as no
 wrong answer, is taken off.
+
+## Amendment: a discriminant is its type's value, a wide one a BigInt (#1131)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, the results changed.
+A discriminant of a `repr` 64 bits wide or wider is a BigInt in JS, as
+its type's every value is, but three places made it otherwise:
+
+- Read by MIR as a value, the discriminant a library's derived `Hash`
+  reads where its consumer compiles it, it was a number, `-5` of a
+  `#[repr(i64)]` enum's `Low = -5`, which `write_i64` threw on: `TypeError:
+  Cannot convert -5 to a BigInt` where native Rust hashes it (found by the
+  metamorphic net's `library` rewrite of `hash_values`, once the net ran
+  the corpus's `native: wasm32` cases).
+- A `u128`'s past `i128::MAX` was kept as an `i128`, wrapped negative: of
+  `enum Endless { First = 1, Last = u128::MAX }`, `First < Last` was
+  `false`, `Last as u128` of a variable `-1`, and its `Discriminant`
+  `Discriminant(-1)`; and a `mem::discriminant` of one was a number.
+- A derived `PartialOrd` of an enum with fields ordered its variants by
+  their discriminants' bits, a negative one's last: `High(1) < Low` where
+  `Low = -5` comes first.
+
+A discriminant's value has one answer now, `Discr` (`lower.rs`'s
+`discriminants`, and `Discr::of` of each of rustc's): a signed `repr`'s
+sign-extended, an unsigned one's as it is, ordered by its value, each made
+JS by `Discr::expr`, a BigInt where its type's is. A library's enum isn't
+in its manifest; its consumer reads its discriminants from rustc's
+metadata, as its own. Held by corpus case `discriminants_past_32_bits`
+(`i64`, `u64`, `u128`), the crate pair `wide_discriminants` (`i64`, `u64`,
+`i128`, `u128`, hashed, compared, shown, cast and told apart through a
+library), the net's `library` rewrite of `hash_values`, off its known
+list, and mutations `discriminant-number-not-big`, `discr-unsigned-wrapped`,
+`discriminant-of-a-wide-repr-a-number` and `variants-ordered-by-bits`;
+`discriminant-big-as-number` retargeted at `Discr::expr`'s caller.
+Comparing a library's enum, and a stable sort in generic code of one, stay
+refused, as before.

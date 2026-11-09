@@ -404,4 +404,12 @@ export const mutations: Mutation[] = [
     replace: "        let located = false && self.krate.foreign.item(def_id).is_some() && self.takes_caller_location(def_id);\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
   },
+  {
+    name: "discr-unsigned-wrapped",
+    breaks: "a `u128` discriminant past `i128::MAX` wraps negative, so `Last = u128::MAX` orders before `First = 1` and casts to `-1` (#1131)",
+    file: "src/lower.rs",
+    find: "            false => Discr::Unsigned(d.val),\n",
+    replace: "            false => Discr::Signed(d.val as i128),\n",
+    tests: ["test/corpus.test.ts", "-t", "^discriminants_past_32_bits.rs$"],
+  },
 ];

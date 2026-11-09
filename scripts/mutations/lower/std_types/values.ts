@@ -817,4 +817,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
   },
+  {
+    name: "discriminant-of-a-wide-repr-a-number",
+    breaks: "a `Discriminant` of an enum of a `u128` `repr` is a number, its `{:?}` `Discriminant(-1)` where Rust's is `u128::MAX` (#1131)",
+    file: "src/lower/std_types/values.rs",
+    find: ".or(crate::lower::Num::of(of.discriminant_ty(self.tcx)))",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^discriminants_past_32_bits.rs$"],
+  },
 ];

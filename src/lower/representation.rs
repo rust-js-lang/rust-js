@@ -210,30 +210,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         big: bool,
         out: &mut Vec<Stmt>,
     ) -> Expr {
-        let literal = |n: i128| match big {
-            true => Expr::bigint(n),
-            false => Expr::int(n),
-        };
+        let literal = |n: super::Discr| n.expr(big);
+        let zero = super::Discr::Signed(0);
         let ty::Adt(adt, _) = ty.kind() else {
             if subject.has_effects() {
                 out.push(StmtKind::Expr(subject).at(js::Span::NONE));
             }
-            return literal(0);
+            return literal(zero);
         };
         let adt = *adt;
         if !adt.is_enum() {
-            return literal(0);
+            return literal(zero);
         }
         let subject = match self.named_discriminant(subject, adt, big) {
             Ok(named) => return named,
             Err(subject) => *subject,
         };
-        let mut variants: Vec<(VariantIdx, i128)> = (adt.variants().indices())
+        let mut variants: Vec<(VariantIdx, super::Discr)> = (adt.variants().indices())
             .zip(super::discriminants(self.tcx, adt))
             .map(|(variant, (_, n))| (variant, n))
             .collect();
         let Some((_, last)) = variants.pop() else {
-            return literal(0);
+            return literal(zero);
         };
         let subject = match subject.reads_same() || variants.is_empty() {
             true => subject,
@@ -282,7 +280,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(Box::new(subject));
         };
         let discriminants = super::discriminants(tcx, adt);
-        let counting = discriminants.iter().enumerate().all(|(i, &(_, d))| d == i as i128);
+        let counting = (discriminants.iter().enumerate()).all(|(i, &(_, d))| d.as_i128() == Some(i as i128));
         if counting {
             let names = Expr::array(discriminants.into_iter().map(|(n, _)| Expr::str(n)).collect());
             let index = Expr::call(Expr::member(names, "indexOf"), vec![name]);
@@ -295,7 +293,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let table = Expr::object(
             discriminants
                 .into_iter()
-                .map(|(n, d)| Prop::Field(n, if big { Expr::bigint(d) } else { Expr::int(d) }))
+                .map(|(n, d)| Prop::Field(n, d.expr(big)))
                 .collect(),
         );
         Ok(Expr::index(table, name))
