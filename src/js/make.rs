@@ -686,6 +686,28 @@ impl Expr {
         Expr::new(ExprKind::Array(items))
     }
 
+    /// `[1, 2, 3]` of a constant's items, known to be literals alone,
+    /// `Known::Literal`, where each item is: a number, a string, a boolean,
+    /// `null`, `undefined` or such an array (#1096).
+    pub fn literal_array(items: Vec<Expr>) -> Expr {
+        let literal = items.iter().all(|item| {
+            matches!(
+                item.kind,
+                ExprKind::Num(_)
+                    | ExprKind::BigInt(_)
+                    | ExprKind::Bool(_)
+                    | ExprKind::Str(_)
+                    | ExprKind::Null
+                    | ExprKind::Undefined
+            ) || item.facts.has(Known::Literal)
+        });
+        let mut array = Expr::array(items);
+        if literal {
+            array.facts = array.facts.with(Known::Literal);
+        }
+        array
+    }
+
     /// `...items`, as an array's item or a call's argument.
     pub fn spread(items: Expr) -> Expr {
         Expr::new(ExprKind::Spread(Box::new(items)))

@@ -128,7 +128,9 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   where Rust's do ([0149](../decisions/0149-string-editing.md)).
 - **`chars()` is by code point; `bytes()` and `as_bytes()` are the UTF-8
   bytes;** a byte string `b"GET"` is `[71, 69, 84]`
-  ([0126](../decisions/0126-byte-strings.md)).
+  ([0126](../decisions/0126-byte-strings.md)), and one of more than 16 KiB,
+  an `include_bytes!` say, `$bytes("R0VU…")` of its base64 text, which
+  makes the same array ([1110](../decisions/1110-a-large-byte-constant-is-base64-text.md)).
 - **`to_uppercase` and `to_lowercase` are Unicode's,** `ß` to `SS`;
   `to_ascii_uppercase` changes ASCII letters only. `char`'s questions,
   `is_alphabetic` and the rest, are Unicode properties

@@ -184,7 +184,7 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
             unit,
         ),
         ty::Tuple(items) if items.is_empty() => Some(Expr::undefined()),
-        ty::Tuple(_) | ty::Array(..) | ty::Slice(_) => Some(Expr::array(all(&children()?)?)),
+        ty::Tuple(_) | ty::Array(..) | ty::Slice(_) => Some(Expr::literal_array(all(&children()?)?)),
         ty::Adt(adt, _) if adt.is_enum() => {
             let items = children()?;
             let (index, fields) = items.split_first()?;

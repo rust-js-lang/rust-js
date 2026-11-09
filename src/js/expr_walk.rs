@@ -11,6 +11,9 @@ impl Expr {
     /// Each variable this reads, closures' bodies too, but not a string's
     /// or a regular expression's text, nor a property's name.
     pub fn visit_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str)) {
+        if self.facts.has(Known::Literal) {
+            return;
+        }
         let props = |props: &'a [Prop], read: &mut dyn FnMut(&'a str)| {
             for prop in props {
                 match prop {
@@ -477,6 +480,10 @@ impl Expr {
         if self.facts.has(Known::Getter) {
             return false;
         }
+        // A constant's literals, which needn't be walked (#1096).
+        if self.facts.has(Known::Literal) {
+            return true;
+        }
         let props = |props: &[Prop]| {
             props.iter().all(|p| match p {
                 Prop::Field(_, value)
@@ -648,6 +655,9 @@ impl Expr {
         // A read a getter may answer, which may do anything (ADRs 0672, 0750).
         if self.facts.has(Known::Getter) {
             return true;
+        }
+        if self.facts.has(Known::Literal) {
+            return false;
         }
         // A thread-local's made where it's first used, which runs nothing a
         // call's arguments are ordered against: its initializer runs where

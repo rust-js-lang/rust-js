@@ -271,4 +271,9 @@ pub enum Known {
     /// `null`, as the field does (`NoneForm::Null`): what a handle on the
     /// field made of it stores so, never read from its arguments (#819).
     NullStored,
+    /// An array of literals alone, a constant's (`Expr::literal_array`):
+    /// it reads no variable and does nothing, so a walk asking either
+    /// needn't enter it. One of an `include_bytes!` holds millions, which
+    /// each step of a body's lowering walked again (#1096).
+    Literal,
 }

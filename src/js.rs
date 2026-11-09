@@ -1124,6 +1124,27 @@ pub enum Op {
 mod tests {
     use super::*;
 
+    /// A constant's array of literals is known so, `Known::Literal`, and
+    /// the walks don't enter it; an array holding a variable isn't (#1096).
+    #[test]
+    fn a_constants_array_of_literals_is_known_literal() {
+        let literals = Expr::literal_array(vec![
+            Expr::int(1),
+            Expr::literal_array(vec![Expr::str("a")]),
+            Expr::undefined(),
+        ]);
+        assert!(literals.facts.has(Known::Literal));
+        assert!(!literals.has_effects() && literals.reads_only_vars());
+        let mut read = Vec::new();
+        literals.visit_vars(&mut |name| read.push(name));
+        assert!(read.is_empty());
+        let held = Expr::literal_array(vec![Expr::int(1), Expr::var("x")]);
+        assert!(!held.facts.has(Known::Literal));
+        let mut read = Vec::new();
+        held.visit_vars(&mut |name| read.push(name));
+        assert_eq!(read, ["x"]);
+    }
+
     fn module_of(value: Expr) -> Module {
         Module {
             items: vec![Item::Statements(vec![StmtKind::Expr(value).at(Span::NONE)])],

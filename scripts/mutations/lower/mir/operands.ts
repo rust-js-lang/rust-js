@@ -338,4 +338,13 @@ export const mutations: Mutation[] = [
     replace: "                        object\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "a copy of its variant's keys"],
   },
+  {
+    name: "large-bytes-in-place-as-literal",
+    breaks: "a large byte constant a body writes in place, `include_bytes!`'s or a `const { .. }` block's, is a literal of each byte, where it's base64 text: windows-bindgen's 32 MB took 7 GB (#1096)",
+    file: "src/lower/mir/operands.rs",
+    find: "        if crate::lower::representation::is_byte_ref(tcx, ty)\n",
+    replace: "        if false\n",
+    tests: ["test/corpus.test.ts", "-t", "^byte_constants_large.rs$"],
+    snapshots: true,
+  },
 ];

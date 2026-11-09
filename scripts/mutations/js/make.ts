@@ -621,4 +621,20 @@ export const mutations: Mutation[] = [
     replace: "        let none = Facts::of(Known::NoneUndefined);\n",
     tests: ["test/declarations-conformance.test.ts"],
   },
+  {
+    name: "literal-array-unknown",
+    breaks: "a constant's array of literals isn't known so, and each walk of a body's lowering enters its every item again (#1096)",
+    file: "src/js/make.rs",
+    find: "        if literal {\n",
+    replace: "        if false {\n",
+    unitTests: "js::tests::a_constants_array_of_literals_is_known_literal",
+  },
+  {
+    name: "literal-array-of-any",
+    breaks: "an array holding a variable is known as a constant's literals, so a walk misses the variable it reads (#1096)",
+    file: "src/js/make.rs",
+    find: "        if literal {\n",
+    replace: "        if true {\n",
+    unitTests: "js::tests::a_constants_array_of_literals_is_known_literal",
+  },
 ];

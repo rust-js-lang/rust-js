@@ -408,6 +408,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return self.const_as_code(Mir::new(tcx, state.facts.promoted()[promoted].clone(), IndexVec::new()));
         }
+        // A large byte constant, `include_bytes!`'s: its bytes read from its
+        // memory, as base64 text a runtime helper decodes into the array of
+        // numbers a smaller one's literal is, each time it's read as that
+        // literal is made (#1096).
+        // A named one is read by its name, its item the same form.
+        if crate::lower::representation::is_byte_ref(tcx, ty)
+            && !matches!(c.const_, Const::Unevaluated(uv, _) if uv.promoted.is_none()
+                && matches!(tcx.def_kind(uv.def), DefKind::Const { .. } | DefKind::AssocConst { .. }))
+            && let Some(value) = match c.const_ {
+                Const::Val(value, _) => Some(value),
+                // A `const { .. }` block's or a promoted one's, evaluated to
+                // its memory, not its value tree.
+                Const::Unevaluated(..) => c.const_.eval(tcx, self.typing_env, c.span).ok(),
+                Const::Ty(..) => None,
+            }
+            && let Some(bytes) = crate::lower::representation::byte_constant_js(tcx, value, ty)
+        {
+            return Ok(bytes);
+        }
         // A named constant (ADR 0031); a `const { .. }` block, its value, or as
         // one (ADR 0127).
         if let Const::Unevaluated(uv, _) = c.const_

@@ -819,6 +819,17 @@ pub(super) fn const_value_js<'tcx>(
     args: ty::GenericArgsRef<'tcx>,
     span: Span,
 ) -> Option<Expr> {
+    // A large byte constant's, of its memory, never a value tree of each
+    // byte (#1096).
+    let ty = tcx.type_of(def_id).instantiate(tcx, args).skip_normalization();
+    let ty = tcx.normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty));
+    if is_byte_ref(tcx, ty)
+        && let Ok(value) =
+            tcx.const_eval_resolve(typing_env, rustc_middle::mir::UnevaluatedConst::new(def_id, args), span)
+        && let Some(bytes) = byte_constant_js(tcx, value, ty)
+    {
+        return Some(bytes);
+    }
     eval_const(tcx, typing_env, def_id, args, span)
         .and_then(|value| const_js(tcx, keyed, value))
         .or_else(|| const_uninit(tcx, typing_env, def_id, args, span).then(Expr::undefined))
@@ -891,6 +902,99 @@ fn pointee(tcx: TyCtxt<'_>, pointer: Scalar, primitive: bool) -> Option<Pointer>
         _ => return None,
     };
     Some(Pointer::new(unchanging(tcx, memory).into(), offset))
+}
+
+/// Of more bytes than this, a byte constant, `include_bytes!`'s, is base64
+/// text a runtime helper decodes, `$bytes("..")`, not a literal of each
+/// byte (#1096). To 16 KiB a literal costs the compiler nothing past its
+/// own, 112–120 MB; past it about 1.5 KB of memory a byte (256 KiB 485 MB
+/// and 0.8 s, 1 MiB 1.65 GB and 3.1 s), and 4.8 bytes of JS a byte, where
+/// base64's are 1.33: windows-bindgen's 32 MB took 7 GB and a minute.
+pub(in crate::lower) const LARGE_BYTES: usize = 16 * 1024;
+
+/// The bytes of a constant `value` of `ty`, a `&[u8; N]` or a `&[u8]`,
+/// where they're more than `LARGE_BYTES`: read from its memory, never made
+/// a value tree of each byte. None of fewer, or of memory that isn't bytes
+/// alone, uninitialized or a pointer's.
+pub(in crate::lower) fn large_bytes<'tcx>(tcx: TyCtxt<'tcx>, value: ConstValue, ty: Ty<'tcx>) -> Option<Vec<u8>> {
+    let ty::Ref(_, inner, _) = ty.kind() else {
+        return None;
+    };
+    let (data, len) = match (inner.kind(), value) {
+        (ty::Array(item, len), ConstValue::Scalar(pointer)) if *item == tcx.types.u8 => {
+            (pointer, len.try_to_target_usize(tcx)?)
+        }
+        (ty::Slice(item), ConstValue::Slice { alloc_id, meta }) if *item == tcx.types.u8 => {
+            (Scalar::from_pointer(alloc_id.into(), &tcx), meta)
+        }
+        // One held in memory, two words: where its bytes are, and how many.
+        (ty::Slice(item), ConstValue::Indirect { alloc_id, offset }) if *item == tcx.types.u8 => {
+            let word = tcx.data_layout.pointer_size();
+            let memory = tcx.global_alloc(alloc_id).unwrap_memory();
+            let read = |at, provenance| {
+                memory
+                    .inner()
+                    .read_scalar(&tcx, alloc_range(offset + at, word), provenance)
+                    .ok()
+            };
+            let data = read(rustc_abi::Size::ZERO, true)?;
+            let len = read(word, false)?.to_target_usize(&tcx).discard_err()?;
+            (data, len)
+        }
+        _ => return None,
+    };
+    let len = usize::try_from(len).ok()?;
+    if len <= LARGE_BYTES {
+        return None;
+    }
+    let (prov, offset) = pointee(tcx, data, false)?.prov_and_relative_offset();
+    let memory = tcx.global_alloc(prov.alloc_id()).unwrap_memory();
+    let range = alloc_range(offset, rustc_abi::Size::from_bytes(len));
+    if memory.inner().init_mask().is_range_initialized(range).is_err()
+        || !memory.inner().provenance().range_empty(range, &tcx)
+    {
+        return None;
+    }
+    let start = usize::try_from(offset.bytes()).ok()?;
+    Some(
+        memory
+            .inner()
+            .inspect_with_uninit_and_ptr_outside_interpreter(start..start + len)
+            .to_vec(),
+    )
+}
+
+/// A byte constant `value` of `ty` past `LARGE_BYTES`, as JS: `$bytes("..")`
+/// of its base64 text, which decodes it into the array of numbers a smaller
+/// one's literal is, each time it's read, as that literal is made (#1096).
+/// The one place that form is written: a constant a body names in place,
+/// `include_bytes!`'s, and a `const` item's.
+pub(in crate::lower) fn byte_constant_js<'tcx>(tcx: TyCtxt<'tcx>, value: ConstValue, ty: Ty<'tcx>) -> Option<Expr> {
+    let bytes = large_bytes(tcx, value, ty)?;
+    Some(Expr::call(Expr::helper("$bytes"), vec![Expr::str(base64(&bytes))]).never_throws())
+}
+
+/// Whether `ty` is a `&[u8; N]` or a `&[u8]`, a byte constant's type.
+pub(in crate::lower) fn is_byte_ref<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    matches!(ty.kind(), ty::Ref(_, inner, _) if matches!(inner.kind(), ty::Array(item, _) | ty::Slice(item) if *item == tcx.types.u8))
+}
+
+/// `bytes` as base64 text, RFC 4648's, which `atob` reads.
+pub(in crate::lower) fn base64(bytes: &[u8]) -> String {
+    const DIGITS: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut text = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for chunk in bytes.chunks(3) {
+        let n = (u32::from(chunk[0]) << 16)
+            | (u32::from(*chunk.get(1).unwrap_or(&0)) << 8)
+            | u32::from(*chunk.get(2).unwrap_or(&0));
+        for i in 0..4 {
+            text.push(match i <= chunk.len() {
+                true => DIGITS[(n >> (18 - 6 * i) & 63) as usize] as char,
+                false => '=',
+            });
+        }
+    }
+    text
 }
 
 /// The value tree of the `ty` at `at`, as rustc makes one for a constant.

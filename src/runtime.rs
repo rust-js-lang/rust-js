@@ -19,6 +19,7 @@ macro_rules! helpers {
 
 helpers! {
     TraitImpl,
+    Bytes,
     Index,
     At,
     DisplayF64,
@@ -545,6 +546,7 @@ impl Helper {
             Helper::Index => include_str!("runtime/checked_index.js"),
             // `v[i] = x`: `v[$at(v, i)] = x`, since JS would make the array longer.
             Helper::At => include_str!("runtime/at.js"),
+            Helper::Bytes => include_str!("runtime/bytes.js"),
             Helper::DisplayF64 => include_str!("runtime/display_f64.js"),
             Helper::F32Digits => include_str!("runtime/f32_digits.js"),
             // An `f32` as Rust's `{}` shows it: its shortest digits, never with
