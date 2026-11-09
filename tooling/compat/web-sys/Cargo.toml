@@ -1,0 +1,25 @@
+# rust-js's own web-sys, which an app's dependencies use in place of
+# crates.io's: the patch rust-js writes names it where Cargo's graph has
+# web-sys (ADR 1112). Each item is a mapping onto the js and webapi crates'
+# bindings, grown from what crates use. Its version is the newest of
+# crates.io's of its minor, so each `^` requirement takes it.
+[package]
+name = "web-sys"
+version = "0.3.107"
+edition = "2024"
+description = "rust-js's web-sys's API, as crates use it: the page's `window`, `crypto`, `performance`"
+license = "MIT"
+repository = "https://github.com/rust-js-lang/rust-js"
+publish = false
+
+[lib]
+name = "web_sys"
+path = "src/lib.rs"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(rust_js)"] }
+
+# A binding crate: rustc checks it and rust-js reads its metadata (ADRs
+# 0024, 0414).
+[package.metadata.rust-js]
+bindings = true

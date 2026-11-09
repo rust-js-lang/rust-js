@@ -24,7 +24,8 @@
     "patch.js",
     "runners.js",
     "check.js",
-    "cli.js"
+    "cli.js",
+    "compat"
   ],
   "dependencies": {
     "@rust-js/typescript": "workspace:*"

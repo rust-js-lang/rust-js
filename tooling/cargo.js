@@ -9,6 +9,7 @@ import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 
 import { parseManifest } from "./manifest.js";
+import { compatCrates, settleCompat } from "./patch.js";
 import { commit, fingerprint, removable } from "./publish.js";
 
 /** rust-js's target (ADR 0090), which Cargo checks its crates for: the compiler's `TARGET`. */
@@ -68,10 +69,20 @@ export function cargoEnv(compiler, react, { apps, crates, dependencies = [] }, {
 export async function cargoBuild({ manifestPath, toolchain, offline = false }) {
   const manifest = resolve(manifestPath);
   const args = [...(toolchain ? [`+${toolchain}`] : []), "metadata", "--format-version=1", "--manifest-path", manifest, ...(offline ? ["--offline"] : [])];
-  const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
-    throw new Error(`cargo metadata failed:\n${error.stderr ?? error.message}`);
-  });
-  const { packages, resolve: graph, workspace_members: members } = JSON.parse(stdout);
+  const read = async () => {
+    const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
+      throw new Error(`cargo metadata failed:\n${error.stderr ?? error.message}`);
+    });
+    return JSON.parse(stdout);
+  };
+  // rust-js's own wasm-bindgen, js-sys and web-sys where the graph has one,
+  // crates.io's or rust-js's, and no patch of them where it has none: read
+  // again where the patch changed (ADR 1112).
+  const compat = compatCrates();
+  let metadata = await read();
+  if (settleCompat(dirname(manifest), metadata.workspace_root, metadata.packages.some((pkg) => compat.has(pkg.name)))) metadata = await read();
+  const { packages, resolve: graph, workspace_members: members } = metadata;
+  compatRefused(packages, graph, compat);
   // A crate another of the workspace uses is a library whichever package
   // is built: its JS, written once beside its Rust, is the same built alone
   // as through the crate that uses it (ADR 0360, amended).
@@ -91,6 +102,52 @@ export async function cargoBuild({ manifestPath, toolchain, offline = false }) {
     .sort((a, b) => a.dir.localeCompare(b.dir));
   const names = packages.filter((pkg) => members.includes(pkg.id)).map((pkg) => pkg.name).sort();
   return { apps, crates, dependencies, members: names, own: ownPackage(packages, manifest) };
+}
+
+/**
+ * Whether the crate of `manifest`, its Cargo.toml, is as Cargo packaged it,
+ * a dependency's source, not one an app writes: `cargo package` writes the
+ * manifest it was given beside its own as `Cargo.toml.orig`, so each crate
+ * of crates.io's has one, unpacked, vendored, a `[patch]`'s copy, or the
+ * Crater's; no source an app writes does (ADR 1112). The one answer.
+ * @param {string | undefined} manifest
+ */
+export function packaged(manifest) {
+  return manifest !== undefined && existsSync(join(dirname(manifest), "Cargo.toml.orig"));
+}
+
+/**
+ * Throws where rust-js's own wasm-bindgen, js-sys or web-sys can't be what
+ * Cargo's graph has (ADR 1112): a crate the app writes, of a path and not
+ * as Cargo packaged it (`packaged`), that depends on one, as an app binds
+ * JS by the js and webapi crates, the one way; or crates.io's, which a
+ * dependency asks for at a version rust-js's isn't, `=0.2.100`, and
+ * rust-js can't compile.
+ * @param {any[]} packages Cargo's metadata's
+ * @param {any} graph its `resolve`
+ * @param {Map<string, { dir: string, version: string }>} compat
+ */
+export function compatRefused(packages, graph, compat) {
+  const byId = new Map(packages.map((pkg) => [pkg.id, pkg]));
+  for (const node of graph?.nodes ?? []) {
+    const pkg = byId.get(node.id);
+    if (!pkg || compat.has(pkg.name)) continue;
+    for (const dep of node.deps) {
+      const used = byId.get(dep.pkg);
+      if (!used || !compat.has(used.name)) continue;
+      if (pkg.source === null && pkg.metadata?.["rust-js"]?.bindings !== true && !packaged(pkg.manifest_path)) {
+        throw new Error(
+          `rust-js: ${pkg.name} depends on ${used.name}, which rust-js gives an app's dependencies alone, in place of crates.io's: an app's own Rust binds JS with the js and webapi crates (docs/guide/interop/bindings.md)`,
+        );
+      }
+      if (used.source !== null) {
+        const asked = pkg.dependencies.find((d) => d.name === used.name)?.req ?? used.version;
+        throw new Error(
+          `rust-js: ${pkg.name} ${pkg.version} asks for ${used.name} ${asked}, and rust-js's own ${used.name}, which a dependency uses in place of crates.io's, is ${compat.get(used.name)?.version}, so Cargo takes crates.io's, which rust-js can't compile: use a release of ${pkg.name} that takes ${used.name} ${compat.get(used.name)?.version}`,
+        );
+      }
+    }
+  }
 }
 
 /**

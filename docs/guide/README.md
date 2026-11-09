@@ -58,6 +58,7 @@ JavaScript rust-js makes of it.
 - [The crates rust-js ships](libraries/README.md): `js`, `webapi`, `node`,
   `react`, `next`, and Rust's `std`
 - [Crates from crates.io](libraries/crates-io.md)
+- [Crates that use wasm-bindgen](libraries/wasm-bindgen.md)
 
 ## Reference
 

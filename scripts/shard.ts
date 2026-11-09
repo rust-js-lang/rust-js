@@ -146,6 +146,7 @@ export const nightly = [
   "stable",
   "crates-io",
   "registry-crates",
+  "compat-versions",
   "react-versions",
   "next-coverage",
   "react-coverage",

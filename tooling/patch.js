@@ -6,11 +6,38 @@
 // where each is by `[patch.crates-io]`, in the app's `.cargo/config.toml`,
 // between rust-js's lines, which `rust-js build` and the editor's check
 // write each time they run Cargo (ADR 0412).
-import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+//
+// And rust-js's own wasm-bindgen, js-sys and web-sys, which an app's
+// dependencies use in place of crates.io's, each a folder of `compat/`
+// beside this file, the one catalog: named where Cargo's graph has one of
+// them, and only then, as Cargo warns of a patch it doesn't use and writes
+// it in the app's `Cargo.lock` (`settleCompat`, ADR 1112).
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const BEGIN = "# rust-js: begin";
 const END = "# rust-js: end";
+const COMPAT = "# rust-js's own, which the app's dependencies use in place of crates.io's:";
+const compatDir = fileURLToPath(new URL("./compat/", import.meta.url));
+
+/**
+ * rust-js's own crates an app's dependencies use in place of crates.io's,
+ * by name: each its folder of `compat/`, its version its Cargo.toml's
+ * (ADR 1112).
+ * @returns {Map<string, { dir: string, version: string }>}
+ */
+export function compatCrates() {
+  const crates = new Map();
+  for (const name of readdirSync(compatDir).sort()) {
+    const manifest = join(compatDir, name, "Cargo.toml");
+    if (!existsSync(manifest)) continue;
+    const version = /^version\s*=\s*"([^"]*)"/m.exec(readFileSync(manifest, "utf8"))?.[1];
+    if (!version) throw new Error(`${manifest} names no version`);
+    crates.set(name, { dir: join(compatDir, name), version });
+  }
+  return crates;
+}
 
 /**
  * Write the patch of the app at `app`, and return the crates it names, each
@@ -18,16 +45,25 @@ const END = "# rust-js: end";
  * imports it by, and its directory, its real path (ADR 0414). Throws,
  * writing nothing, if a crate is installed twice, which would be two of each
  * of its types, a package's crate is another version than it is, or a
- * package is installed under another name than its own.
+ * package is installed under another name than its own. With `compat`, it
+ * names rust-js's own crates, or not; without, as it did (ADR 1112).
  * @param {string} app
+ * @param {boolean} [compat]
  * @returns {{ crate: string, path: string, name: string, dir: string }[]}
  */
-export function writePatch(app) {
+export function writePatch(app, compat) {
   const root = realpathSync(app);
-  const crates = installedCrates(root);
-  const lines = [...crates].sort(([x], [y]) => x.localeCompare(y)).map(([crate, { dir }]) => `${crate} = { path = ${JSON.stringify(shown(root, dir))} }`);
+  const crates = existsSync(join(root, "package.json")) ? installedCrates(root) : new Map();
   const config = join(root, ".cargo", "config.toml");
-  const rest = existsSync(config) ? withoutBlock(readFileSync(config, "utf8")) : "";
+  const before = existsSync(config) ? readFileSync(config, "utf8") : "";
+  // rust-js's own crates, as the patch had them, until Cargo's graph says
+  // otherwise (`settleCompat`).
+  const withCompat = compat ?? before.includes(COMPAT);
+  const lines = [...crates].sort(([x], [y]) => x.localeCompare(y)).map(([crate, { dir }]) => `${crate} = { path = ${JSON.stringify(shown(root, dir))} }`);
+  if (withCompat) {
+    lines.push(COMPAT, ...[...compatCrates()].map(([crate, { dir }]) => `${crate} = { path = ${JSON.stringify(shown(root, dir))} }`));
+  }
+  const rest = withoutBlock(before);
   if (/^\s*\[\s*patch\s*\.\s*("crates-io"|crates-io)\s*\]/m.test(rest)) {
     throw new Error(`.cargo/config.toml has a [patch.crates-io] of its own, and TOML has one of a table, which rust-js writes: move its entries to Cargo.toml's [patch.crates-io], which Cargo takes with it`);
   }
@@ -48,6 +84,34 @@ export function writePatch(app) {
   mkdirSync(dirname(config), { recursive: true });
   writeFileSync(config, rest.trim() ? `${rest.trimEnd()}\n\n${block}` : block);
   return [...crates].map(([crate, { dir, name }]) => ({ crate, path: shown(root, dir), name, dir }));
+}
+
+/**
+ * The patch of the app whose Cargo.toml is in `from` or a directory above
+ * it, made to name rust-js's own crates where Cargo's graph has one,
+ * `needed`, and not where it has none: whether it changed, so the graph is
+ * read again. Of no patch yet, the workspace's, `root`'s (ADR 1112).
+ * @param {string} from
+ * @param {string} root
+ * @param {boolean} needed
+ * @returns {boolean}
+ */
+export function settleCompat(from, root, needed) {
+  let dir = realpathSync(from);
+  for (;;) {
+    const config = join(dir, ".cargo", "config.toml");
+    if (existsSync(config) && readFileSync(config, "utf8").includes(BEGIN)) break;
+    if (dirname(dir) === dir) {
+      dir = realpathSync(root);
+      break;
+    }
+    dir = dirname(dir);
+  }
+  const config = join(dir, ".cargo", "config.toml");
+  const text = existsSync(config) ? readFileSync(config, "utf8") : "";
+  if (text.includes(COMPAT) === needed) return false;
+  writePatch(dir, needed);
+  return true;
 }
 
 /** `text` without rust-js's block, and the blank line rust-js put before it. */

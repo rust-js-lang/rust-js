@@ -97,6 +97,9 @@ error: rust-js does not support calling `crossbeam_utils::thread::Scope::<'env>:
 error: could not compile `app` (lib) due to 1 previous error
 ```
 
+A crate whose wasm32 path calls wasm-bindgen, js-sys or web-sys gets
+rust-js's own: [Crates that use wasm-bindgen](wasm-bindgen.md).
+
 What stops a crate is what [the limitations](../limitations.md) list,
 most often its raw memory: pointers read as another type, or into what
 JS holds as a copy.
