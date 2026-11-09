@@ -39,4 +39,31 @@ export const mutations: Mutation[] = [
     replace: "        let _ = given_out_clone(tcx, all_bodies);\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
   },
+  {
+    name: "generic-clone-uninstanced",
+    breaks:
+      "a clone in generic code of its own parameters' `Chain<J, J>` stays as rustc names it, though its callers are all seen, so another generic function's `Chain<I, I>` of `vec::IntoIter`s, whose bounds agree, is taken for it and its `next_back()` refused (#1119)",
+    file: "src/lower/analysis/clones.rs",
+    find: "            Some(instances) => instances.into_iter().collect(),\n",
+    replace: "            Some(_) => vec![ty],\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_chains_cloned_by_their_instances.rs$"],
+  },
+  {
+    name: "generic-cloned-apart-uninstanced",
+    breaks:
+      "a generic function's chain of its own parameters, all of whose callers are seen, is asked as it is, so another generic function's cloned `Chain<J, J>` of `Item = i32`, whose bounds agree, is taken for its `Chain<I, I>` of `vec::IntoIter`s, and its `next_back()` refused (#1119)",
+    file: "src/lower/analysis/clones.rs",
+    find: "            Some(made) => made.into_iter().any(is),\n",
+    replace: "            Some(_) => is(ty),\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_chains_cloned_by_their_instances.rs$"],
+  },
+  {
+    name: "generic-cloned-apart-unseen-callers-unasked",
+    breaks:
+      "a `pub` generic function's chain, which its callers unseen may give any type, is never cloned apart, though another's clone may be of its instance, so it's made not knowing its back where the refusal stood (#1119)",
+    file: "src/lower/analysis/clones.rs",
+    find: "            None => is(ty),\n",
+    replace: "            None => false,\n",
+    tests: ["test/diagnostics.test.ts", "-t", "pub generic chain stepped from its back"],
+  },
 ];

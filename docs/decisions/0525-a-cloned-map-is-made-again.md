@@ -220,7 +220,8 @@ WASI build).
 What's left is generic code beside generic code: a `Chain<I, I>` of one
 generic function stepped from its back is still taken for another's cloned
 `Chain<J, J>`, as the cloned set doesn't say whose parameters its types
-have, nor which values reach which clone (the guide's limitations).
+have, nor which values reach which clone (the guide's limitations; since
+told apart by their instances where their callers are seen, below).
 
 Held by `test/corpus/generic_map_beside_a_cloned_map.rs`, a generic `map`
 and `chain` stepped from their back beside cloned ones of a slice's items,
@@ -230,3 +231,48 @@ cycles its own `map`, still made cloned apart; against native Rust in both
 builds; and by #955's and #1002's pairs, taken off
 `test/neighbours-known.txt`. Mutations `generic-instance-bounds-unasked`
 and `generic-instance-unknown-bound-unmet` (`lower/copies.ts`).
+
+## Amended: generic code's adapter is each instance its callers give it (#1119)
+
+What #955 left: `fn last<I: DoubleEndedIterator<Item = u32>>(a: I, b: I)`'s
+`a.chain(b).map(f).next_back()` beside `fn cycled<J: Iterator<Item = i32> +
+Clone>(a: J, b: J)`'s `a.chain(b).cycle()` was refused, and with `Item =
+i32` in both, whose bounds agree, it still was: rustc names both chains
+`Chain<I, I>`, and the cloned set kept `cycled`'s as it's named, any type
+its parameters may be.
+
+**A type of generic code's own parameters is each instance its callers
+give it, where every caller is seen, by #1009's instance machinery
+(`instances::instances_of`), on both sides: a clone in generic code adds
+each instance of what it clones to the cloned set (`cloned_types`), and an
+adapter generic code makes is asked as each of its instances
+(`Cloned::as_any_instance`, which the facts carry with the callers they're
+answered from).** Both askers of the one question ask so: the lowering's
+`cloned_apart`, by the made type's bounds, and the body facts' choice of
+the adapters made in place (`body_queries::cloned_apart`), by the set; so
+`cycled`'s own `a.chain(b)` it cycles is made cloned apart, a `$cloning`
+maker, as generic code's own `map()` it cycles is. Where a caller isn't
+seen, a `pub` function's, which JS calls, or a library's, which its
+consumers do, or past `MOST_INSTANCES`, the type stays as it's named and
+is asked as before, any type its parameters may be: the refusal stands.
+So does a caller that gives both functions the same instance, `last(0..2,
+5..7)` beside `cycled(1..3, 4..5)`, whose `Chain<Range<i32>, Range<i32>>`
+is cloned apart, one form of one type, which `last` can't make without a
+`Clone` bound.
+
+Rust's behavior is preserved, ADR 0262's third case: no result changes,
+a refusal less. No corpus case's JS changed: the cases are new.
+
+Held by `test/corpus/generic_chains_cloned_by_their_instances.rs`, the two
+pairs, with `chain_cycled`'s chain made cloned apart; and
+`test/corpus/generic_clones_of_unseen_callers.rs`, `pub` generic code's
+clones, still of any type: its `cycle()` of an `I` stands for no `map` it
+isn't given, and the `filter` it gives behind an `impl Iterator + Clone`
+is the one its caller clones, cloned apart; each against native Rust in
+both builds; and `test/diagnostics.test.ts`'s `pub` pair, still refused.
+Mutations `generic-clone-uninstanced`, `generic-cloned-apart-uninstanced`
+and `generic-cloned-apart-unseen-callers-unasked`
+(`lower/analysis/clones.ts`), `in-place-cloned-apart-uninstanced`
+(`lower/body_queries.ts`); `cloned-param-matches-every-adapter` and
+`cloned-closures-not-generic`, whose sites only a caller unseen now
+reaches, are held by the second case.

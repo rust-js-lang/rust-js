@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/stepping.rs",
     find: "            adapter(cloned)\n                && crate::lower::copies::instance_within_bounds(",
     replace: "            true && crate::lower::copies::instance_within_bounds(",
-    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^generic_clones_of_unseen_callers.rs$"],
   },
   {
     name: "cloned-closures-not-generic",
@@ -152,15 +152,15 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/stepping.rs",
     find: "                    ty::Closure(id, _) => tcx.type_of(id).instantiate_identity().skip_normalization(),\n",
     replace: "                    ty::Closure(..) => t,\n",
-    tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^generic_clones_of_unseen_callers.rs$"],
   },
   {
     name: "cloned-apart-unrevealed",
     breaks:
       "a `map` a function gives as an `impl Iterator` isn't made cloned apart",
     file: "src/lower/iterators/stepping.rs",
-    find: "        cloned_apart(&self.recognition(), self.krate.cloned, self.reveal(ty))\n",
-    replace: "        cloned_apart(&self.recognition(), self.krate.cloned, ty)\n",
+    find: "            self.reveal(ty),\n            self.frame.owner,\n",
+    replace: "            ty,\n            self.frame.owner,\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
   },
   {

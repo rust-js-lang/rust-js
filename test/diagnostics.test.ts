@@ -228,6 +228,9 @@ for (const [name, source, message, crate] of [
   ["comparing another crate's struct", 'pub fn f(a: std::net::Ipv4Addr, b: std::net::Ipv4Addr) -> bool { a < b }', "does not support"],
   // Generic code given no `Clone` of its source can't clone the filter it makes (ADR 0525); a
   // map it gives back is std's struct, whose compiled `Clone` its caller's dictionaries give (ADR 0871).
+  // Of generic code whose callers aren't all seen, its own chain may be any instance, one
+  // another generic function's clone makes apart among them (#1119).
+  ["a pub generic chain stepped from its back beside another's cloned", "pub fn chained<I: DoubleEndedIterator<Item = i32>>(a: I, b: I) -> Option<i32> { a.chain(b).map(|x| x + 1).next_back() }\npub fn cycled<J: Iterator<Item = i32> + Clone>(a: J, b: J) -> Vec<i32> { a.chain(b).cycle().take(5).collect() }", "made where `I` isn't bound by `Clone`"],
   ["a filter cloned where its source isn't bound by Clone", "pub fn evens<I: Iterator<Item = i32>>(it: I) -> std::iter::Filter<I, fn(&i32) -> bool> { it.filter(|x| x % 2 == 0) }\npub fn f() -> usize { let d = evens(1..9); d.clone().count() }", "made where `I` isn't bound by `Clone`"],
   ["a new closure assigned through a &mut to one", 'pub fn replace<F: FnMut()>(f: &mut F, g: F) { *f = g; }', "assigning a whole value through a `&mut`"],
   ["a collection of the crate's extending a Vec", "struct Bag { items: Vec<i32> }\nimpl IntoIterator for Bag { type Item = i32; type IntoIter = std::vec::IntoIter<i32>; fn into_iter(self) -> Self::IntoIter { self.items.into_iter() } }\npub fn f(v: &mut Vec<i32>, b: Bag) { v.extend(b) }", "a `Bag`, whose `IntoIterator` is the crate's"],

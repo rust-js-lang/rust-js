@@ -187,7 +187,7 @@ impl<'tcx> BodyFacts<'tcx> {
     /// looks its answer up, and a closure's are its own body's.
     pub(super) fn collect(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
         let (jsx_given, jsx_bases) = jsx_given_props(tcx, thir);
-        let in_place_adapters = in_place_adapters(tcx, thir, None, &IndexSet::default());
+        let in_place_adapters = in_place_adapters(tcx, thir, None, |_| false);
         let (method_calls, called_methods) = method_calls::method_calls(tcx, thir);
         Self {
             kept_casts: whole_casts(tcx, thir)
@@ -386,7 +386,7 @@ pub(super) fn tail(thir: &Thir<'_>, e: ExprId) -> ExprId {
 pub(super) fn across_bodies<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &mut [super::Body<'tcx>],
-    cloned: &IndexSet<ty::Ty<'tcx>>,
+    cloned: &super::analysis::Cloned<'tcx>,
 ) {
     results_in_place(tcx, bodies, cloned);
     resumes_as_given(tcx, bodies);
@@ -397,7 +397,7 @@ pub(super) fn across_bodies<'tcx>(
 /// (`in_place_adapters`), its facts made again so. Not one held, std's
 /// compiled `FlatMap`, which steps what it gives as std's struct, its
 /// `next_back` too (#726). Before lowering, of the crate's bodies.
-fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>], cloned: &IndexSet<ty::Ty<'tcx>>) {
+fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>], cloned: &super::analysis::Cloned<'tcx>) {
     let mut given = IndexSet::default();
     for body in bodies.iter() {
         for e in body.thir.exprs.iter() {
@@ -419,7 +419,7 @@ fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>], c
         body.thir
             .exprs
             .iter()
-            .any(|e| matches!(e.kind, ExprKind::Call { .. }) && cloned_apart(tcx, cloned, e.ty))
+            .any(|e| matches!(e.kind, ExprKind::Call { .. }) && cloned_apart(tcx, cloned, e.ty, body.def_id))
     };
     for body in bodies.iter_mut() {
         let flat_mapped = given.contains(&body.def_id);
@@ -427,15 +427,26 @@ fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>], c
             continue;
         }
         let stepped_result = flat_mapped.then_some(body.expr);
-        body.facts.in_place_adapters = in_place_adapters(tcx, &body.thir, stepped_result, cloned);
+        let owner = body.def_id;
+        let cloned_apart = |ty| cloned_apart(tcx, cloned, ty, owner);
+        body.facts.in_place_adapters = in_place_adapters(tcx, &body.thir, stepped_result, cloned_apart);
     }
 }
 
-/// Whether `ty` is an adapter of two parts the crate clones apart, its
-/// `chain()`'s or `map()`'s cloned: made by a function of its parts, which
-/// holds them (ADR 0525).
-fn cloned_apart<'tcx>(tcx: TyCtxt<'tcx>, cloned: &IndexSet<ty::Ty<'tcx>>, ty: ty::Ty<'tcx>) -> bool {
-    super::recognition::cloned_parts(tcx, ty).is_some() && cloned.contains(&tcx.erase_and_anonymize_regions(ty))
+/// Whether `ty`, made in `owner`, is an adapter of two parts the crate
+/// clones apart, its `chain()`'s or `map()`'s cloned: made by a function of
+/// its parts, which holds them (ADR 0525); of generic code, as each
+/// instance its callers give it (#1119).
+fn cloned_apart<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    cloned: &super::analysis::Cloned<'tcx>,
+    ty: ty::Ty<'tcx>,
+    owner: DefId,
+) -> bool {
+    super::recognition::cloned_parts(tcx, ty).is_some()
+        && cloned.as_any_instance(tcx, ty, owner, |ty| {
+            cloned.contains(&tcx.erase_and_anonymize_regions(ty))
+        })
 }
 
 pub(super) fn strip(thir: &Thir<'_>, mut e: ExprId) -> ExprId {
@@ -862,7 +873,7 @@ fn in_place_adapters<'tcx>(
     tcx: TyCtxt<'tcx>,
     thir: &Thir<'tcx>,
     stepped_result: Option<ExprId>,
-    cloned: &IndexSet<ty::Ty<'tcx>>,
+    cloned_apart: impl Fn(ty::Ty<'tcx>) -> bool,
 ) -> IndexSet<Span> {
     use super::recognition::{StdItem, std_item};
     let iterator_traits = [std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator)];
@@ -907,8 +918,7 @@ fn in_place_adapters<'tcx>(
             // adapter cloned apart, which its maker holds: std's struct,
             // which its compiled `Clone` clones, but one cloned apart
             // itself, a `map()`'s, made by its own maker (ADRs 0525, 0915).
-            let held_to_clone =
-                (callee == cycle || cloned_apart(tcx, cloned, thir[e].ty)) && !cloned_apart(tcx, cloned, thir[arg].ty);
+            let held_to_clone = (callee == cycle || cloned_apart(thir[e].ty)) && !cloned_apart(thir[arg].ty);
             // Not a zip std folds otherwise than it steps (ADR 0997), but
             // where what it's given to steps it from its back (#812).
             if let ty::FnDef(maker, _) = *thir[fun].ty.kind()

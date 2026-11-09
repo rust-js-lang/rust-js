@@ -584,7 +584,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its compiled `Clone` (`clone_value`'s).
     pub(in crate::lower) fn iterator_cloned_apart(&self, ty: ty::Ty<'tcx>) -> bool {
         // What an `impl Iterator` hides, a function's result.
-        cloned_apart(&self.recognition(), self.krate.cloned, self.reveal(ty))
+        cloned_apart(
+            &self.recognition(),
+            self.krate.cloned,
+            self.reveal(ty),
+            self.frame.owner,
+        )
     }
 
     /// `value` of type `ty`, a `step_by(n)` made here, `src.filter((_, i) =>
@@ -649,11 +654,14 @@ pub(in crate::lower) fn stepped_by_parts(value: &Expr) -> Option<(Expr, Expr)> {
 /// analysis marks made knowing its back by its maker (#1002). A cloned type
 /// that generic code's `ty` can't be, its bounds say, isn't one of it: a
 /// `Map<I, F>` of an `I: DoubleEndedIterator<Item = u32>` is none of
-/// another function's cloned `Map`s of `slice::Iter<'_, i32>` (#955).
+/// another function's cloned `Map`s of `slice::Iter<'_, i32>` (#955). Of
+/// `owner`'s own type parameters, each instance its callers give it, where
+/// all are seen (`Cloned::instances_of`, #1119).
 pub(in crate::lower) fn cloned_apart<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
-    cloned: &crate::collections::IndexSet<ty::Ty<'tcx>>,
+    cloned: &crate::lower::analysis::Cloned<'tcx>,
     ty: ty::Ty<'tcx>,
+    owner: rustc_span::def_id::DefId,
 ) -> bool {
     // A closure as generic code makes it, which stands for each its
     // callers' instances of it.
@@ -673,8 +681,8 @@ pub(in crate::lower) fn cloned_apart<'tcx>(
         )
     };
     let adapter = |ty| crate::lower::recognition::cloned_parts(tcx, ty).is_some();
-    adapter(ty)
-        && cloned.iter().any(|&cloned| {
+    let cloned_as = |ty: ty::Ty<'tcx>| {
+        cloned.iter().any(|&cloned| {
             adapter(cloned)
                 && crate::lower::copies::instance_within_bounds(
                     recognition,
@@ -682,4 +690,9 @@ pub(in crate::lower) fn cloned_apart<'tcx>(
                     generic_closures(ty),
                 )
         })
+    };
+    // Of generic code's own type parameters, as each instance its callers
+    // give it, so another generic function's adapter of its own
+    // parameters, which rustc names alike, isn't taken for it (#1119).
+    adapter(ty) && cloned.as_any_instance(tcx, ty, owner, cloned_as)
 }

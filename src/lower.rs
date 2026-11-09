@@ -359,7 +359,7 @@ struct CrateFacts<'a, 'tcx> {
     /// Fn` (ADR 0521).
     closure_facts: &'a analysis::ClosureFacts<'tcx>,
     /// The types the crate clones (ADR 0525).
-    cloned: &'a IndexSet<Ty<'tcx>>,
+    cloned: &'a analysis::Cloned<'tcx>,
     /// The kinds of std's adapters explicit wherever the crate makes one
     /// (ADR 0542): those its types hold, and those with a count it clones.
     explicit_adapters: &'a IndexSet<DefId>,

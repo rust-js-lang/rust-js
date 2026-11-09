@@ -351,9 +351,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `rev()` a `cycle()` holds is made in place, a JS iterator, which `cycle()` clones as std's struct, so `(1..4u8).rev().cycle()` throws (#308, ADR 0915)",
     file: "src/lower/body_queries.rs",
-    find: "                (callee == cycle || cloned_apart(tcx, cloned, thir[e].ty)) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
+    find: "            let held_to_clone = (callee == cycle || cloned_apart(thir[e].ty)) && !cloned_apart(thir[arg].ty);\n",
     replace:
-      "                (false || cloned_apart(tcx, cloned, thir[e].ty)) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
+      "            let held_to_clone = (false || cloned_apart(thir[e].ty)) && !cloned_apart(thir[arg].ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^cycled_reversed_ranges.rs$"],
   },
   {
@@ -361,9 +361,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `rev()` a chain cloned apart holds is made in place, a JS iterator, which the chain's clone clones as std's struct, so a cycled zigzag throws (#308, ADR 0915)",
     file: "src/lower/body_queries.rs",
-    find: "                (callee == cycle || cloned_apart(tcx, cloned, thir[e].ty)) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
+    find: "            let held_to_clone = (callee == cycle || cloned_apart(thir[e].ty)) && !cloned_apart(thir[arg].ty);\n",
     replace:
-      "                (callee == cycle || false) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
+      "            let held_to_clone = (callee == cycle || false) && !cloned_apart(thir[arg].ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^cycled_reversed_ranges.rs$"],
   },
   {
@@ -371,9 +371,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `map()` itself cloned apart, part of a `filter()` cloned apart, is held as std's struct, which the filter's maker clones as cloned apart, `$clone`, and throws (ADR 0915)",
     file: "src/lower/body_queries.rs",
-    find: "                (callee == cycle || cloned_apart(tcx, cloned, thir[e].ty)) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
+    find: "            let held_to_clone = (callee == cycle || cloned_apart(thir[e].ty)) && !cloned_apart(thir[arg].ty);\n",
     replace:
-      "                (callee == cycle || cloned_apart(tcx, cloned, thir[e].ty));\n",
+      "            let held_to_clone = (callee == cycle || cloned_apart(thir[e].ty));\n",
     tests: ["test/corpus.test.ts", "-t", "^std_map.rs$"],
   },
   {
@@ -565,5 +565,15 @@ export const mutations: Mutation[] = [
     find: "            ExprKind::Field { lhs, .. } | ExprKind::Index { lhs, .. } | ExprKind::Deref { arg: lhs } => e = lhs,\n",
     replace: "            ExprKind::Field { lhs, .. } | ExprKind::Index { lhs, .. } => e = lhs,\n            ExprKind::Deref { arg: lhs } if !thir[lhs].ty.is_box() => e = lhs,\n",
     tests: ["test/corpus.test.ts", "-t", "^contains_guarded_set_through_a_box.rs$"],
+  },
+  {
+    name: "in-place-cloned-apart-uninstanced",
+    breaks:
+      "generic code's own `map()` it cycles, whose clone the cloned set holds as each instance its callers give it, isn't seen to be cloned apart where adapters are made in place, so it's std's struct cloned by its compiled `Clone` where the lowering makes it cloned apart (#1119)",
+    file: "src/lower/body_queries.rs",
+    find: "        && cloned.as_any_instance(tcx, ty, owner, |ty| {\n            cloned.contains(&tcx.erase_and_anonymize_regions(ty))\n        })\n",
+    replace: "        && cloned.contains(&tcx.erase_and_anonymize_regions(ty))\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_map_cloned_where_its_made.rs$"],
+    snapshots: true,
   },
 ];

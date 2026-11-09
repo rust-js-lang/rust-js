@@ -13,6 +13,7 @@ pub(super) use cell_borrows::{
 };
 pub(super) use cell_flow::CellClass;
 mod clones;
+pub(in crate::lower) use clones::Cloned;
 mod closures;
 mod debug;
 mod drops;
@@ -511,7 +512,7 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Fn`, which then drops it: a library's may be (ADR 0521).
     pub closure_facts: ClosureFacts<'tcx>,
     /// The types the crate clones, and those their clones clone (ADR 0525).
-    pub cloned: IndexSet<Ty<'tcx>>,
+    pub cloned: clones::Cloned<'tcx>,
     /// The kinds of std's iterator adapters explicit wherever the crate
     /// makes one (ADR 0542): those its types hold, and those that keep a
     /// count it clones, an `Enumerate`, a `Take` or a `Skip`, whose clone

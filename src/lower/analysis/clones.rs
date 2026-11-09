@@ -10,21 +10,87 @@ use rustc_middle::thir::{ExprKind, Thir};
 use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 
+/// The types the crate clones (`cloned_types`), and who calls each function
+/// with what, by which generic code's types are told apart, each its
+/// callers' instances (`instances_of`, #1119).
+pub(in crate::lower) struct Cloned<'tcx> {
+    types: IndexSet<Ty<'tcx>>,
+    callers: crate::lower::instances::Callers<'tcx>,
+}
+
+impl<'tcx> std::ops::Deref for Cloned<'tcx> {
+    type Target = IndexSet<Ty<'tcx>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.types
+    }
+}
+
+impl<'tcx> Cloned<'tcx> {
+    /// What `ty`, made in `owner`, of its type parameters, may be: each type
+    /// its callers give them, where every one is seen; `None` of another,
+    /// any type they may be.
+    pub(in crate::lower) fn instances_of(
+        &self,
+        tcx: TyCtxt<'tcx>,
+        ty: Ty<'tcx>,
+        owner: DefId,
+    ) -> Option<IndexSet<Ty<'tcx>>> {
+        if !ty.has_non_region_param() {
+            return None;
+        }
+        crate::lower::instances::instances_of(tcx, &self.callers, ty, tcx.typeck_root_def_id(owner))
+    }
+
+    /// Whether `is` holds of `ty`, made in `owner`, as one of its
+    /// instances, where all are seen (`instances_of`); else of `ty` itself,
+    /// any type its parameters may be: so generic code's adapter is asked
+    /// whether it's cloned as each type its callers give it (#1119).
+    pub(in crate::lower) fn as_any_instance(
+        &self,
+        tcx: TyCtxt<'tcx>,
+        ty: Ty<'tcx>,
+        owner: DefId,
+        mut is: impl FnMut(Ty<'tcx>) -> bool,
+    ) -> bool {
+        match self.instances_of(tcx, ty, owner) {
+            Some(made) => made.into_iter().any(is),
+            None => is(ty),
+        }
+    }
+}
+
 /// The types `all_bodies` clone, regions erased, and those their clones
 /// clone, to a fixed point; of a `library`, what each of its public
 /// functions gives behind an `impl .. + Clone` too, which any consumer may
 /// clone (#1032).
-pub(super) fn cloned_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], library: bool) -> IndexSet<Ty<'tcx>> {
-    let mut cloned: IndexSet<Ty<'tcx>> = IndexSet::default();
+pub(super) fn cloned_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], library: bool) -> Cloned<'tcx> {
+    let mut cloned = Cloned {
+        types: IndexSet::default(),
+        callers: crate::lower::instances::callers_of(tcx, all_bodies),
+    };
+    // A clone in generic code of a type of its own parameters, `Chain<J,
+    // J>`, is of each type its callers give them, where every one is seen
+    // (#1009): so it's told apart from another generic function's adapter
+    // of its own, which rustc names alike, its `Chain<I, I>` (#1119); else
+    // as it is, any type they may be.
+    let instances = |owner: DefId, ty: Ty<'tcx>| -> Vec<Ty<'tcx>> {
+        match cloned.instances_of(tcx, ty, owner) {
+            Some(instances) => instances.into_iter().collect(),
+            None => vec![ty],
+        }
+    };
     // What an `impl Clone` hides, revealed: a caller's clone of what a
     // function gives is of what that function makes.
     let mut todo: Vec<Ty<'tcx>> = (all_bodies.iter())
         .flat_map(|body| {
             let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
+            let owner = body.def_id;
             called_clones(tcx, &body.thir)
                 .map(move |ty| {
                     (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))).unwrap_or(ty)
                 })
+                .flat_map(|ty| instances(owner, ty))
                 .collect::<Vec<_>>()
         })
         .collect();
@@ -33,7 +99,7 @@ pub(super) fn cloned_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], 
     }
     while let Some(ty) = todo.pop() {
         let ty = tcx.erase_and_anonymize_regions(ty);
-        if cloned.insert(ty) {
+        if cloned.types.insert(ty) {
             todo.extend(clones_in_turn(tcx, ty));
         }
     }

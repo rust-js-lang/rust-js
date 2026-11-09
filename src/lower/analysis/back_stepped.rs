@@ -32,7 +32,7 @@ pub(super) fn of_crate<'tcx>(
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     (library, drops): (bool, impl Fn(Ty<'tcx>) -> bool + Copy),
-    cloned: &IndexSet<Ty<'tcx>>,
+    cloned: &crate::lower::analysis::Cloned<'tcx>,
 ) -> BackStepped<'tcx> {
     let mut typed = back_stepped(tcx, recognition, all_bodies, (library, drops));
     let (locals, fields, typed_sources) = stepped_locals(tcx, recognition, all_bodies, drops, cloned);
@@ -457,7 +457,7 @@ pub(super) fn stepped_locals<'tcx>(
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     drops: impl Fn(Ty<'tcx>) -> bool,
-    cloned: &IndexSet<Ty<'tcx>>,
+    cloned: &crate::lower::analysis::Cloned<'tcx>,
 ) -> SteppedValues<'tcx> {
     use rustc_middle::mir;
     let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(recognition.reveal(ty.peel_refs()));
@@ -476,7 +476,7 @@ pub(super) fn stepped_locals<'tcx>(
             typing_env: ty::TypingEnv::post_analysis(tcx, owner),
             ..recognition
         };
-        chained_sources(tcx, ty).is_some() && crate::lower::iterators::cloned_apart(&made_in, cloned, ty)
+        chained_sources(tcx, ty).is_some() && crate::lower::iterators::cloned_apart(&made_in, cloned, ty, owner)
     };
     // Each temporary given whole to what asks its back, made in place,
     // whose form its step reads: not made knowing it itself, but what it
