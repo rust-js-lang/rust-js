@@ -9,12 +9,6 @@
 // goes wrong beside another neighbour, for the same reason, is a line more
 // under the same issue.
 
-#955 P2: cloning a `Map<I, F>` refused where `I` isn't bound by `Clone`
-plain range_mapped_by_a_function.rs beside cloned_chains_and_cycles.rs
-
-#1002 P2 (neighbours): cloning a Chain of slice iterators or of type parameters is refused beside another case that clones chains
-plain generic_chain_nth_past_a_skipped_rev.rs beside lazy_iterator_clone.rs
-
 #1006 P2: a `RefCell` of a struct whose last field is a `dyn` refused beside another case
 plain std dyn_tail_in_a_ref_cell.rs beside dyn_ref_cell_drop.rs
 

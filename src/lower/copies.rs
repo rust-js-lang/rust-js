@@ -4,7 +4,7 @@
 
 use super::recognition::StdItem;
 use super::{FnCx, Shape};
-use crate::collections::IndexSet;
+use crate::collections::{IndexMap, IndexSet};
 use crate::js;
 use crate::js::{Expr, Op, Prop};
 use rustc_ast::Mutability;
@@ -479,6 +479,74 @@ pub(super) fn instance_of<'tcx>(
                     .all(|(p, g)| instance_of(recognition, p, g))
         }
         _ => tcx.erase_and_anonymize_regions(ty) == tcx.erase_and_anonymize_regions(general),
+    }
+}
+
+/// Is `ty` one of the types `general` stands for, `general` of the body
+/// `recognition`'s typing environment is, and its type parameters what
+/// make it `ty` only where they meet that body's bounds? `instance_of`
+/// takes a type parameter to stand for any type; but the body's where
+/// clauses say which it can be: `Map<I, F>` of a function bound by
+/// `I: Iterator<Item = u32>` is never a `Map` of a `slice::Iter<'_, i32>`,
+/// whatever another function makes and clones (#955). A parameter given two
+/// types, or a bound of one not given, is one it may meet.
+pub(super) fn instance_within_bounds<'tcx>(
+    recognition: &super::recognition::Recognition<'_, 'tcx>,
+    ty: Ty<'tcx>,
+    general: Ty<'tcx>,
+) -> bool {
+    use rustc_middle::ty::{TypeFoldable, TypeVisitableExt};
+    use rustc_trait_selection::infer::TyCtxtInferExt;
+    use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt;
+    if !instance_of(recognition, ty, general) {
+        return false;
+    }
+    let mut given = IndexMap::default();
+    if !parameters_given(ty, general, &mut given) || given.is_empty() {
+        return true;
+    }
+    let tcx = recognition.tcx;
+    let infcx = tcx.infer_ctxt().build(ty::TypingMode::PostAnalysis);
+    let mut giving = ty::BottomUpFolder {
+        tcx,
+        ty_op: |t: Ty<'tcx>| match *t.kind() {
+            ty::Param(p) => given.get(&p.index).copied().unwrap_or(t),
+            _ => t,
+        },
+        lt_op: |r| r,
+        ct_op: |c| c,
+    };
+    recognition.typing_env.param_env.caller_bounds().iter().all(|bound| {
+        let bound = bound.fold_with(&mut giving);
+        bound.has_param() || {
+            let obligation = rustc_trait_selection::traits::Obligation::new(
+                tcx,
+                rustc_trait_selection::traits::ObligationCause::dummy(),
+                ty::ParamEnv::empty(),
+                bound,
+            );
+            infcx.predicate_may_hold(&obligation)
+        }
+    })
+}
+
+/// Each type parameter of `general` and what it is in `ty`, of the parts
+/// `instance_of` matches, into `given`; `false` where one is given two.
+fn parameters_given<'tcx>(ty: Ty<'tcx>, general: Ty<'tcx>, given: &mut IndexMap<u32, Ty<'tcx>>) -> bool {
+    match (ty.kind(), general.kind()) {
+        (_, ty::Param(p)) => *given.entry(p.index).or_insert(ty) == ty,
+        (ty::Adt(adt, args), ty::Adt(general_adt, general_args)) if adt.did() == general_adt.did() => args
+            .types()
+            .zip(general_args.types())
+            .all(|(arg, general)| parameters_given(arg, general, given)),
+        (ty::Ref(_, inner, _), ty::Ref(_, general, _))
+        | (ty::Slice(inner), ty::Slice(general))
+        | (ty::Array(inner, _), ty::Array(general, _)) => parameters_given(*inner, *general, given),
+        (ty::Tuple(parts), ty::Tuple(general)) => parts
+            .iter()
+            .zip(general.iter())
+            .all(|(p, g)| parameters_given(p, g, given)),
+        _ => true,
     }
 }
 

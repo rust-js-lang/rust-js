@@ -475,8 +475,13 @@ pub(super) fn stepped_locals<'tcx>(
     // A chain cloned apart, made by a function of its sides (ADR 0525), no
     // form of which a step reads: made knowing its back by that function
     // where it's stepped so, lent or asked beneath an adapter (#1002).
-    let cloned_chain = |ty: Ty<'tcx>| {
-        chained_sources(tcx, ty).is_some() && crate::lower::iterators::cloned_apart(&recognition, cloned, ty)
+    // Of the body `owner` makes it in, whose bounds say what it can be (#955).
+    let cloned_chain = |owner: rustc_span::def_id::DefId, ty: Ty<'tcx>| {
+        let made_in = Recognition {
+            typing_env: ty::TypingEnv::post_analysis(tcx, owner),
+            ..recognition
+        };
+        chained_sources(tcx, ty).is_some() && crate::lower::iterators::cloned_apart(&made_in, cloned, ty)
     };
     // Each temporary given whole to what asks its back, made in place,
     // whose form its step reads: not made knowing it itself, but what it
@@ -777,7 +782,7 @@ pub(super) fn stepped_locals<'tcx>(
                                 // (#718).
                                 || chained_sources(tcx, ty).is_some()
                                     && recognition.iterator_item(ty).is_some_and(&drops)
-                                || cloned_chain(ty)
+                                || cloned_chain(owner, ty)
                         };
                         let held = held || unread();
                         match (ty == asked_ty, lent, user) {
@@ -819,7 +824,7 @@ pub(super) fn stepped_locals<'tcx>(
                     continue;
                 }
                 // A chain cloned apart asked beneath an adapter (`cloned_chain`).
-                if !made_stepped && cloned_chain(made) {
+                if !made_stepped && cloned_chain(owner, made) {
                     mark(&mut stepped, (owner, destination.local), SteppedLocal::Given);
                 }
                 // An adapter of what it's given, stepped from its back where

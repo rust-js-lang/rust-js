@@ -643,9 +643,13 @@ pub(in crate::lower) fn stepped_by_parts(value: &Expr) -> Option<(Expr, Expr)> {
     }
 }
 
-/// `iterator_cloned_apart`'s, of `ty`, revealed, and the types the crate
-/// clones, `cloned`: the one answer, of what the lowering makes and of what
-/// the analysis marks made knowing its back by its maker (#1002).
+/// `iterator_cloned_apart`'s, of `ty`, revealed, made in the body whose
+/// typing environment `recognition`'s is, and the types the crate clones,
+/// `cloned`: the one answer, of what the lowering makes and of what the
+/// analysis marks made knowing its back by its maker (#1002). A cloned type
+/// that generic code's `ty` can't be, its bounds say, isn't one of it: a
+/// `Map<I, F>` of an `I: DoubleEndedIterator<Item = u32>` is none of
+/// another function's cloned `Map`s of `slice::Iter<'_, i32>` (#955).
 pub(in crate::lower) fn cloned_apart<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     cloned: &crate::collections::IndexSet<ty::Ty<'tcx>>,
@@ -672,6 +676,10 @@ pub(in crate::lower) fn cloned_apart<'tcx>(
     adapter(ty)
         && cloned.iter().any(|&cloned| {
             adapter(cloned)
-                && crate::lower::copies::instance_of(recognition, generic_closures(cloned), generic_closures(ty))
+                && crate::lower::copies::instance_within_bounds(
+                    recognition,
+                    generic_closures(cloned),
+                    generic_closures(ty),
+                )
         })
 }

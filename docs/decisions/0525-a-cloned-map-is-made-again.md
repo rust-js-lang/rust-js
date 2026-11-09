@@ -191,5 +191,42 @@ crate's own iterator, cloned, and another of each stepped from its back
 beneath a map, a filter and as it is; and by the neighbour pair taken off
 `test/neighbours-known.txt`. Mutations `cloned-chain-lent-unmarked`,
 `cloned-chain-asked-unmarked` (`lower/analysis/back_stepped.ts`) and
-`cloned-chain-sides-backless` (`lower/mir/iter.ts`). The generic `Chain<I, I>` pair that's lent stays
-under #1002, #955's flow question.
+`cloned-chain-sides-backless` (`lower/mir/iter.ts`).
+
+## Amended: a generic adapter is a cloned one only where its bounds let it be (#955, #1002)
+
+Generic code's adapter of its type parameters, `Map<I, F>` or `Chain<I, I>`,
+was taken for any type the crate clones of that adapter: `instance_of` takes
+a type parameter to stand for any type. So a generic function's
+`items.map(f).rfold(..)` was refused, as cloning a `Map<I, F>` where `I`
+isn't bound by `Clone`, beside another function that clones a
+`slice::Iter`'s `Map`, though its `I: DoubleEndedIterator<Item = u32>` is
+never a `slice::Iter<'_, i32>`: the neighbour shuffle's #955 and #1002
+pairs, each case compiling alone.
+
+**A cloned type is an instance of generic code's adapter only where its
+type parameters, given what the cloned type has in their place, meet that
+body's bounds, its where clauses (`copies::instance_within_bounds`): each
+bound with the parameters so given that mentions no other parameter is
+asked of rustc's trait solver, and one that can't hold says it isn't one.**
+A parameter given two types, or given another parameter, is one it may be,
+as before. The bounds are those of the body that makes the adapter, the
+lowering's typing environment, and the analysis's `cloned_chain`, which
+asks for each body with its own, so that the one answer is the same of
+each. That's a refusal less, not a form changed: no corpus case's JS
+changed. The compiler links `rustc_trait_selection` for it (and so the
+WASI build).
+
+What's left is generic code beside generic code: a `Chain<I, I>` of one
+generic function stepped from its back is still taken for another's cloned
+`Chain<J, J>`, as the cloned set doesn't say whose parameters its types
+have, nor which values reach which clone (the guide's limitations).
+
+Held by `test/corpus/generic_map_beside_a_cloned_map.rs`, a generic `map`
+and `chain` stepped from their back beside cloned ones of a slice's items,
+and a generic `map` its caller clones; and
+`test/corpus/generic_map_cloned_where_its_made.rs`, generic code that
+cycles its own `map`, still made cloned apart; against native Rust in both
+builds; and by #955's and #1002's pairs, taken off
+`test/neighbours-known.txt`. Mutations `generic-instance-bounds-unasked`
+and `generic-instance-unknown-bound-unmet` (`lower/copies.ts`).

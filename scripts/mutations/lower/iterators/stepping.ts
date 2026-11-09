@@ -141,8 +141,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a type parameter generic code clones stands for every `map` and `filter`, each made cloned apart, which refuses what it can't clone",
     file: "src/lower/iterators/stepping.rs",
-    find: "            adapter(cloned)\n                && crate::lower::copies::instance_of(",
-    replace: "            true && crate::lower::copies::instance_of(",
+    find: "            adapter(cloned)\n                && crate::lower::copies::instance_within_bounds(",
+    replace: "            true && crate::lower::copies::instance_within_bounds(",
     tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
   },
   {
