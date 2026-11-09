@@ -1145,6 +1145,18 @@ test("native and WASI compiler dependency versions agree", () => {
   expect(dependencies("wasm/Cargo.toml")).toEqual(dependencies("Cargo.toml"));
 });
 
+// Each of rustc's crates the compiler links, `extern crate rustc_*` in
+// src/main.rs, is a dependency of its WASI build too, which builds them
+// from rustc's source: `rustc_mir_transform`, added for drop glue's shim
+// (#887), broke the playground's build for two days unseen.
+test("the WASI build depends on each of rustc's crates the compiler links", () => {
+  const linked = [...read("src/main.rs").matchAll(/^extern crate (rustc_\w+);/gm)].map((m) => m[1]);
+  const section = read("wasm/Cargo.toml").split("[dependencies]\n")[1].split(/\n\[/)[0];
+  const depended = new Set([...section.matchAll(/^(rustc_\w+)\s*=/gm)].map((m) => m[1]));
+  expect(linked.length).toBeGreaterThan(10);
+  expect(linked.filter((name) => !depended.has(name))).toEqual([]);
+});
+
 test("crate analysis cannot emit functions or invoke linking", () => {
   for (const path of ["src/lower/analysis.rs", ...files("src/lower/analysis")]) {
     expect([path, read(path)]).not.toEqual([path, expect.stringMatching(/\b(?:FnCx|CrateFacts|LoweredModule|LoweredFn)\b|\blink::|\.lower_(?:fn|codec|dictionary)\(/)]);

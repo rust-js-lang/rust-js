@@ -1742,6 +1742,7 @@ dependencies = [
  "rustc_lexer",
  "rustc_middle",
  "rustc_mir_dataflow",
+ "rustc_mir_transform",
  "rustc_parse",
  "rustc_session",
  "rustc_span",
