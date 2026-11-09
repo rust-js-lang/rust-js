@@ -201,6 +201,7 @@ export const mutations: Mutation[] = [
     find: "            (Nth, \"Chain\") => &[(1, Nth)],\n",
     replace: "            (Nth, \"Chain\") => &[],\n",
     tests: ["test/corpus.test.ts", "-t", "^(adapters_own_nth_fold|step_by_of_own_nth_that_never_unwinds).rs$"],
+    snapshots: true,
   },
   {
     name: "scan-folds-unseen",

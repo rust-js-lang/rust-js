@@ -690,7 +690,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/corpus.test.ts",
       "-t",
-      "^(rev_of_closed_items|rev_lazy_drops|std_rev).rs$",
+      "^(rev_of_closed_items|rev_lazy_drops|std_rev|try_folds_of_stages_unwind).rs$",
     ],
   },
   {

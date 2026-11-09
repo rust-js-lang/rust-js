@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
     find: "                false => self.as_exact_size(source_value.clone(), source.peel_refs(), true, span)?,\n",
     replace:
       '                false => return Err(self.unsupported(span, "a mutated enumerate")),\n',
-    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_fuse_from_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(enumerate_of_a_fuse_from_back|back_steps_beside_a_live_drop|lengths_and_backs_given_on).rs$"],
   },
   {
     name: "double-ended-rev-unread",

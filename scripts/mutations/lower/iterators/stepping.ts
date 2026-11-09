@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/stepping.rs",
     find: "(given_as_it_is(self.tcx, callee, *param) || given_by_its_trait(self.tcx, callee, param.index))",
     replace: "given_as_it_is(self.tcx, callee, *param)",
-    tests: ["test/corpus.test.ts", "-t", "^blanket_iterator_trait.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(blanket_iterator_trait|fused_iterators|std_fuse).rs$"],
   },
   {
     name: "btree-given-unordered",
