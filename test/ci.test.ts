@@ -666,8 +666,12 @@ test("each crate of the corpus has a lock of its graph, its row's release in it,
   expect(locks.sort()).toEqual(rows.map((c) => `${c.name}.lock`).sort());
   // Each of Cargo's runs but the one that writes a lock, `--locked`.
   const script = readFileSync(join(root, "scripts/crate-corpus.ts"), "utf8");
-  // A run that blocks, or one of those several crates make at once, `spawned`.
-  const runs = [...script.matchAll(/(?:spawnSync|spawned)\(\s*"cargo",\s*\[([^\]]*)\]/g)].map(([, args]) => args!);
+  // A run that blocks, one of those several crates make at once, `spawned`,
+  // or one stopped past its time with what it started, `runChild`.
+  const runs = [
+    ...script.matchAll(/(?:spawnSync|spawned)\(\s*"cargo",\s*\[([^\]]*)\]/g),
+    ...script.matchAll(/runChild\(\[\s*"cargo",\s*([^\]]*)\]/g),
+  ].map(([, args]) => args!);
   expect(runs.length).toBe(4);
   expect(runs.filter((args) => !args.includes('"--locked"'))).toEqual(['`+${toolchain}`, "generate-lockfile"']);
 });
