@@ -13,7 +13,7 @@ import { keptStores, mayKeep, nativeCache, pruneKept, pruneKeptStores, retiredSt
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
 import { runSync } from "./child";
-import { cargoApp, contentDirectory, fixture, nativeBinary, once, portable, root, run, seeded } from "./support";
+import { cargoApp, contentDirectory, fixture, nativeBinary, nativeCrates, once, portable, root, run, seeded } from "./support";
 
 // Found in review: a file the case includes was changed, and the kept
 // binary, of the file before, answered for it.
@@ -29,6 +29,36 @@ test("a kept native program is built again when a file it includes changes", () 
   expect(answer()).toBe("1");
   writeFileSync(join(dir, "value.rs"), "2\n");
   expect(answer()).toBe("2");
+});
+
+// A program of several crates is kept as one built from one is (#882): found
+// again, as it was, and built again, or another kept build of those inputs
+// found, where a crate's text, or a file one includes, changes.
+test("a kept native program of several crates is built again when a crate changes", () => {
+  const dir = fixture("native-crates");
+  writeFileSync(join(dir, "dep.rs"), 'pub fn value() -> u32 {\n    include!("value.rs")\n}\n');
+  writeFileSync(join(dir, "app.rs"), "pub fn main() {\n    println!(\"{}\", dep::value() + 1);\n}\n");
+  const answer = () => {
+    const built = nativeCrates(
+      [
+        { name: "dep", file: join(dir, "dep.rs"), uses: [] },
+        { name: "app", file: join(dir, "app.rs"), uses: ["dep"] },
+      ],
+      "fn main() {\n    app::main();\n}\n",
+      ["--edition=2024"],
+    );
+    if ("error" in built) throw new Error(built.error);
+    return { said: run([built.binary]).trim(), built: built.built };
+  };
+  writeFileSync(join(dir, "value.rs"), "1\n");
+  const first = answer();
+  expect(first.said).toBe("2");
+  expect(answer()).toEqual({ said: "2", built: false });
+  // Of another's inputs, a build of them, kept by an earlier run or made now.
+  writeFileSync(join(dir, "value.rs"), "2\n");
+  expect(answer().said).toBe("3");
+  writeFileSync(join(dir, "app.rs"), "pub fn main() {\n    println!(\"{}\", dep::value() * 10);\n}\n");
+  expect(answer().said).toBe("20");
 });
 
 // Found in review: the case was copied away from the files beside it.

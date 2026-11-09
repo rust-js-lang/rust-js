@@ -10,7 +10,7 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { chmodSync, cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildCompiler, buildReact, buildSerde, compiler, fixture, root, run, target } from "./support";
+import { buildCompiler, buildReact, buildSerde, compiler, fixture, nativeCrates, root, run, target } from "./support";
 import { printed } from "./crates";
 import { node } from "./programs";
 
@@ -147,20 +147,21 @@ const triples = join(root, "test", "crates", "triples");
  * native program prints. */
 function chain(cases: string, name: string, files: string[], refused?: string[]): string {
   const dir = fixture(`${files.length === 2 ? "pair" : "triple"}-${name}`);
-  const native = join(dir, "native"), out = join(dir, "js");
-  mkdirSync(native, { recursive: true });
-  const rustc = ["rustc", "--edition=2024", "-Coverflow-checks=off"];
+  const out = join(dir, "js");
   const source = (file: string) => join(cases, name, `${file}.rs`);
   const crates = files.map((file) => readFileSync(source(file), "utf8").match(/^\/\/@ crate-name: (\w+)\n/)?.[1] ?? file);
   const given = (i: number) => crates.slice(0, i)
     .filter((used) => used !== "std" || readFileSync(source(files[i]), "utf8").includes("#![no_std]"));
-  crates.forEach((crate, i) => {
-    const externs = given(i).flatMap((used) => ["--extern", `${used}=${join(native, `lib${used}.rlib`)}`]);
-    run([...rustc, "--crate-type=rlib", "--crate-name", crate, source(files[i]), "-o", join(native, `lib${crate}.rlib`), ...externs, "-L", `dependency=${native}`]);
-  });
+  // Natively, each crate a library and a program of the last, kept by what
+  // they're made of (`nativeCrates`).
   const app = crates[crates.length - 1];
-  writeFileSync(join(native, "main.rs"), `fn main() {\n    ${app}::main();\n}\n`);
-  run([...rustc, join(native, "main.rs"), "-o", join(native, "program"), "--extern", `${app}=${join(native, `lib${app}.rlib`)}`, "-L", `dependency=${native}`]);
+  const built = nativeCrates(
+    crates.map((crate, i) => ({ name: crate, file: source(files[i]), uses: given(i) })),
+    `fn main() {\n    ${app}::main();\n}\n`,
+    ["--edition=2024", "-Coverflow-checks=off"],
+  );
+  if ("error" in built) throw new Error(built.error);
+  const program = built.binary;
   const compile = (crate: string, i: number) => {
     const used = crates.slice(0, i);
     const library = i < crates.length - 1
@@ -182,10 +183,10 @@ function chain(cases: string, name: string, files: string[], refused?: string[])
       said = String(error);
     }
     for (const words of refused) expect(said).toContain(words);
-    return run([join(native, "program")]);
+    return run([program]);
   }
   crates.forEach(compile);
-  expect(printed(join(out, app, "lib.js"))).toBe(run([join(native, "program")]));
+  expect(printed(join(out, app, "lib.js"))).toBe(run([program]));
   return out;
 }
 

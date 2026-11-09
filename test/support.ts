@@ -98,7 +98,7 @@ export function contentDirectory(...contents: string[]): string {
  * it once it's run, or a run of thousands, the metamorphic net's, fills the
  * disk with what its fixtures hold till it ends (#1108).
  */
-export function nativeBinary(source: string, dir: string, flags: string[], timeout = 120_000): { binary: string; built: boolean; kept: boolean } | { error: string } {
+export function nativeBinary(source: string, dir: string, flags: string[], timeout = 120_000): NativeBuild {
   rustcVersion ??= run(["rustc", "-vV"]);
   const wrapper = resolve(dir, "native.rs");
   const hash = createHash("sha256").update(rustcVersion).update(portable(JSON.stringify(flags))).update(portable(wrapper)).update(portable(source));
@@ -107,7 +107,51 @@ export function nativeBinary(source: string, dir: string, flags: string[], timeo
     if (path.startsWith("/") && existsSync(path) && statSync(path).isFile()) hash.update(`${portable(path)} ${sha256(path)}`);
   }
   writeWhole(wrapper, source);
-  const program = join(nativeCache, hash.digest("hex").slice(0, 32));
+  return keptNative(hash.digest("hex"), wrapper, timeout, (into, depInfo) => [
+    ["rustc", ...flags, wrapper, "-o", join(into, "native"), ...(depInfo ? [`--emit=link,dep-info=${depInfo("native")}`] : [])],
+  ]);
+}
+
+/** A native build, kept or not, or why rustc refused it. */
+export type NativeBuild = { binary: string; built: boolean; kept: boolean } | { error: string };
+
+/**
+ * A native program of several crates (`crates`, each a library of those it
+ * `uses`, in order) and a `main` of the last's, built by rustc with `flags`
+ * and kept in the machine's `native-cache` as `nativeBinary`'s are: by
+ * rustc's version, the flags, each crate's name, file and text, and `main`,
+ * and used again while what each build read is unchanged. crates.test.ts's
+ * chains of crates built each crate and its program again every run, some
+ * 290 compiles, 15–20 CPU-seconds of it (#882).
+ */
+export function nativeCrates(crates: { name: string; file: string; uses: string[] }[], main: string, flags: string[], timeout = 120_000): NativeBuild {
+  rustcVersion ??= run(["rustc", "-vV"]);
+  const wrapper = join(contentDirectory("crates", main, ...crates.map((c) => c.file)), "main.rs");
+  writeWhole(wrapper, main);
+  const hash = createHash("sha256").update(rustcVersion).update(portable(JSON.stringify(flags))).update(portable(main));
+  for (const { name, file, uses } of crates) hash.update(`${name}\0${uses.join(",")}\0${portable(file)}\0${readFileSync(file, "utf8")}\0`);
+  const app = crates[crates.length - 1].name;
+  return keptNative(hash.digest("hex"), wrapper, timeout, (into, depInfo) => [
+    ...crates.map(({ name, file, uses }) => [
+      "rustc", ...flags, "--crate-type=rlib", "--crate-name", name, file, "-o", join(into, `lib${name}.rlib`),
+      ...uses.flatMap((used) => ["--extern", `${used}=${join(into, `lib${used}.rlib`)}`]), "-L", `dependency=${into}`,
+      ...(depInfo ? [`--emit=link,dep-info=${depInfo(name)}`] : []),
+    ]),
+    ["rustc", ...flags, wrapper, "-o", join(into, "native"), "--extern", `${app}=${join(into, `lib${app}.rlib`)}`, "-L", `dependency=${into}`,
+      ...(depInfo ? [`--emit=link,dep-info=${depInfo("native")}`] : [])],
+  ]);
+}
+
+/** The build `steps` make, rustc's commands into a directory, kept in the
+ * machine's `native-cache` under `key` beside the builds of other inputs
+ * (each recorded in its `inputs.json`, what rustc said each step read, but
+ * `wrapper`, which the key holds), or, where one's unchanged, found again.
+ * Built beside the others, then moved in whole, as the build of what it
+ * read: a test file running beside this one never runs half of one. Below
+ * the disk's floor, built in a fixture of the test's, used and not kept
+ * (test/bounded.ts). */
+function keptNative(key: string, wrapper: string, timeout: number, steps: (into: string, depInfo?: (step: string) => string) => string[][]): NativeBuild {
+  const program = join(nativeCache, key.slice(0, 32));
   mkdirSync(program, { recursive: true });
   for (const kept of readdirSync(program).filter((name) => !name.startsWith("."))) {
     if (unchanged(join(program, kept, "inputs.json"))) {
@@ -115,27 +159,33 @@ export function nativeBinary(source: string, dir: string, flags: string[], timeo
       return { binary: join(program, kept, "native"), built: false, kept: true };
     }
   }
-  // Built beside the others, then moved in whole, as the build of what it
-  // read: a test file running beside this one never runs half of one. Below
-  // the disk's floor, built in a fixture of the test's, used and not kept
-  // (test/bounded.ts).
+  const compile = (into: string, depInfo?: (step: string) => string) => {
+    for (const cmd of steps(into, depInfo)) {
+      const p = runSync(cmd, root, timeout);
+      const why = stopped(p, timeout);
+      if (why || p.code !== 0) return `rustc can't compile it${why ? `: it ${why}` : ""}:\n${p.stderr}`;
+    }
+    return undefined;
+  };
   if (!mayKeep(nativeCache)) {
     const unkept = fixture("native-unkept");
-    const p = runSync(["rustc", ...flags, wrapper, "-o", join(unkept, "native")], root, timeout);
-    const why = stopped(p, timeout);
-    if (why || p.code !== 0) return { error: `rustc can't compile it${why ? `: it ${why}` : ""}:\n${p.stderr}` };
-    return { binary: join(unkept, "native"), built: true, kept: false };
+    const error = compile(unkept);
+    return error === undefined ? { binary: join(unkept, "native"), built: true, kept: false } : { error };
   }
   const building = join(program, `.building-${process.pid}-${Date.now()}`);
   mkdirSync(building);
-  const depInfo = join(building, "native.d");
-  const p = runSync(["rustc", ...flags, wrapper, "-o", join(building, "native"), `--emit=link,dep-info=${depInfo}`], root, timeout);
-  const why = stopped(p, timeout);
-  if (why || p.code !== 0) {
+  const depInfos: string[] = [];
+  const error = compile(building, (step) => {
+    const file = join(building, `${step}.d`);
+    depInfos.push(file);
+    return file;
+  });
+  if (error !== undefined) {
     rmSync(building, { recursive: true, force: true });
-    return { error: `rustc can't compile it${why ? `: it ${why}` : ""}:\n${p.stderr}` };
+    return { error };
   }
-  const read = JSON.stringify(inputs(readFileSync(depInfo, "utf8"), wrapper));
+  const each = depInfos.map((file) => inputs(readFileSync(file, "utf8"), wrapper));
+  const read = JSON.stringify({ files: each.flatMap((i) => i.files), env: each.flatMap((i) => i.env) });
   writeFileSync(join(building, "inputs.json"), read);
   const kept = join(program, createHash("sha256").update(read).digest("hex").slice(0, 32));
   try {

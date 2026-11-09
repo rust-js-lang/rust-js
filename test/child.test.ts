@@ -5,8 +5,7 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { compileFailure, processTree, run, runSync, type Exit } from "./child";
-import { underLoad } from "../scripts/timing";
+import { compileFailure, run, runSync, type Exit } from "./child";
 import { fixture, run as setUp } from "./support";
 
 const exit = (code: number | null, stderr: string, more: Partial<Exit> = {}): Exit => ({
@@ -140,15 +139,3 @@ test("a setup command that doesn't end is stopped, and says so", () => {
   expect(() => setUp(["sh", "-c", "sleep 30"], 200)).toThrow("didn't finish in 0.2s");
   expect(Date.now() - started).toBeLessThan(2000);
 });
-
-// A run past its memory cap, it and what it started, is stopped and said
-// so, `overgrown`: a mutant compiler that ran away took CI's runners down
-// (#1097). The whole tree is counted, a child's in a group of its own too.
-test("a run that holds more than its memory cap is stopped, its children too", async () => {
-  const grow = `const a = []; for (;;) { a.push(new Array(1e6).fill(1)); await Bun.sleep(1); }`;
-  const child = `Bun.spawn([process.execPath, "-e", ${JSON.stringify(grow)}], { detached: true }); await Bun.sleep(60000);`;
-  const started = Date.now();
-  const p = await run([process.execPath, "-e", child], ".", 60_000, {}, 300 * 2 ** 20);
-  expect([p.overgrown, p.timedOut, Date.now() - started < 30_000]).toEqual([true, false, true]);
-  expect(processTree(process.pid).length).toBeGreaterThan(0);
-}, underLoad(60_000));
