@@ -777,6 +777,13 @@ the workflow's 2 machines; `--shards=4` splits it across four.
   checkout's above it, so its tests' JS imports that checkout's
   `@rust-js/std`, of another commit; `buildCompiler`
   (`test/support.ts`) fails a run that would.
+- **An app a test builds with Cargo is kept between runs through
+  `KeptApp`** (`test/support.ts`, #882): its files written through it, each
+  only where it differs, and `done()` once they're written, so a run that
+  changes none of what it's built from finds it built, as Cargo judges it.
+  Never a fixture of its own kept some other way. A test that counts what
+  its first build compiles, or that its target starts empty, keeps a
+  fixture.
 - **Generated JS is run by hand one way**: `bun scripts/run-case.ts
   <case.rs>` compiles it as the corpus's cases are and runs it natively
   and as JS, saying whether they agree (`--std-iterators`, `--tidy-until

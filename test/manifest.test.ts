@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test";
-import { mkdtempSync, realpathSync, writeFileSync, rmSync, readFileSync, mkdirSync, existsSync } from "node:fs";
+import { mkdtempSync, realpathSync, writeFileSync, rmSync, readFileSync, mkdirSync, existsSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { LIBRARY_ABI, parseManifest, mapManifestPaths, parseCompilerIdentity } from "../tooling/manifest.js";
 import { createNativeBuilder } from "../tooling/build.js";
-import { buildCompiler, cargoApp, compiler, fixture, installStd, run } from "./support";
+import { buildCompiler, cargoApp, compiler, fixture, installStd, KeptApp, root as repository, run, stdDir } from "./support";
 
 const manifest = {
   version: 1, input: "/virtual/lib.rs", output: "/virtual/lib.js",
@@ -241,3 +241,73 @@ test("the tooling's library ABI is the compiler's", () => {
   const std = JSON.parse(readFileSync(join(import.meta.dir, "..", "std", "manifest.json"), "utf8"));
   expect(std.library.version).toBe(LIBRARY_ABI);
 });
+
+// An app kept between runs (`KeptApp`, #882) is built again where anything
+// it's built from changed, and found built where nothing did: as Cargo
+// judges it, by its fingerprints. What a run before wrote that this one
+// doesn't is gone, and so is a `Cargo.lock` it didn't write; two claims of
+// one name at once are two directories; a file changed mid-test, then
+// changed back by the next run's write, is built again each time; and a
+// crate it depends on by path, a binding crate's source say, changed, is
+// built again with the app.
+test("an app kept between runs is built again where what it's built from changed, and only then", async () => {
+  buildCompiler();
+  const builder = createNativeBuilder({ root: repository, rustJs: compiler });
+  const binding = fixture("kept-app-binding");
+  writeFileSync(join(binding, "Cargo.toml"), '[package]\nname = "binding"\nversion = "0.0.0"\nedition = "2024"\n\n[lib]\npath = "lib.rs"\n');
+  writeFileSync(join(binding, "lib.rs"), "pub fn base() -> u32 {\n    40\n}\n");
+  const lib = "mod extra;\npub fn answer() -> u32 {\n    binding::base() + extra::two()\n}\n";
+  const write = (app: KeptApp, text = lib) => {
+    app.write("Cargo.toml", `[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[dependencies]\nbinding = { path = ${JSON.stringify(binding)} }\n\n[workspace]\n`);
+    app.write("src/lib.rs", text);
+    app.write("src/extra.rs", "pub fn two() -> u32 {\n    2\n}\n");
+    installStdIn(app);
+    return { manifestPath: join(app.done(), "Cargo.toml"), packageNames: ["app"], offline: true };
+  };
+  const answer = async (options: { manifestPath: string; packageNames: string[]; offline: boolean }) => {
+    const built = await builder.checkCargo(options);
+    // In a process of its own: an import here keeps each module it reached.
+    return Number(run([process.execPath, "-e", `import { answer } from ${JSON.stringify(built.js!)}; console.log(answer());`]).trim());
+  };
+  const first = new KeptApp("kept-app");
+  // Another claim of the name, at once, is another directory.
+  const other = new KeptApp("kept-app");
+  expect(other.dir).not.toBe(first.dir);
+  other.release();
+  const options = write(first);
+  expect(await answer(options)).toBe(42);
+  // Nothing changed: found built, its JS as it was.
+  const js = (await builder.checkCargo(options)).js!;
+  const made = statSync(js).mtimeMs;
+  // Its files written again, as the next run writes them, each the same.
+  expect((await builder.checkCargo(write(first))).js).toBe(js);
+  expect(statSync(js).mtimeMs).toBe(made);
+  // Changed mid-test, as a test that builds again changes it.
+  writeFileSync(join(first.dir, "src", "lib.rs"), lib.replace("+ extra::two()", "+ extra::two() + 1"));
+  expect(await answer(options)).toBe(43);
+  first.release();
+  // The next run: the same directory, its text written back, built again.
+  const next = new KeptApp("kept-app");
+  expect(next.dir).toBe(first.dir);
+  writeFileSync(join(next.dir, "src", "stale.rs"), "this run didn't write it");
+  writeFileSync(join(next.dir, "Cargo.lock"), "# not this run's\n");
+  expect(await answer(write(next))).toBe(42);
+  // The lock it found is gone, and the build's own is there; but `stale.rs`
+  // isn't a file a run wrote, so it's the test's own, kept.
+  expect(readFileSync(join(next.dir, "Cargo.lock"), "utf8")).not.toContain("not this run's");
+  // A crate it depends on by path changed: built again.
+  writeFileSync(join(binding, "lib.rs"), "pub fn base() -> u32 {\n    50\n}\n");
+  expect(await answer(write(next))).toBe(52);
+  next.release();
+  // A run that writes no `extra.rs`: what the one before wrote is gone.
+  const last = new KeptApp("kept-app");
+  last.write("src/lib.rs", "pub fn answer() -> u32 {\n    7\n}\n");
+  last.done();
+  expect([existsSync(join(last.dir, "src", "extra.rs")), existsSync(join(last.dir, "Cargo.toml"))]).toEqual([false, false]);
+  last.release();
+}, 600_000);
+
+/** `@rust-js/std` linked into a kept app, as `installStd` installs it. */
+function installStdIn(app: KeptApp) {
+  app.link("node_modules/@rust-js/std", stdDir);
+}

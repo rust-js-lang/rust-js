@@ -1,11 +1,11 @@
 import { expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { cpSync, existsSync, linkSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, linkSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 
 import { runSync, stopped } from "./child";
-import { markUsed, mayKeep, nativeCache } from "./kept";
+import { keptApps, markUsed, mayKeep, nativeCache } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
 import { shard } from "../scripts/shard";
 import { checkoutTarget, helpersModule, stdDir, target } from "./packages-of";
@@ -459,8 +459,14 @@ function sweepFixtures(bases: string[]) {
   }
 }
 
+/** The kept apps this process claimed given up, kept, as its tests end. */
+function releaseKeptApps() {
+  for (const owner of keptClaims?.splice(0) ?? []) rmSync(owner, { force: true });
+}
+
 /** Remove the fixtures this process claimed, as its tests end. */
 export function releaseFixtures() {
+  releaseKeptApps();
   if (process.env.RUST_JS_KEEP_FIXTURES) return;
   for (const dir of owned?.splice(0) ?? []) {
     rmSync(dir, { recursive: true, force: true });
@@ -519,6 +525,111 @@ export function crateIncluded(crate: string): string[] {
         .map((entry) => join(entry.parentPath, entry.name).slice(dir.length + 1));
     })
     .sort();
+}
+
+let keptClaims: string[] | undefined;
+
+/**
+ * An app's directory kept between runs, `target/kept-apps/<test file>/<name>_<n>`,
+ * claimed by this process as a fixture is, so two runs at once never share
+ * one; its Cargo target kept in it, so a run of a change that's none of the
+ * app's finds its crates built, as Cargo judges them, by its fingerprints
+ * and the compiler's `-vV` identity (ADR 1003): each app built again every
+ * run, the most of `check:fast --all`'s CPU (#882). Its files are written
+ * through it, each only where its text differs, so what's the same keeps
+ * its time; `done()`, once they're written, removes each an earlier run
+ * wrote that this one didn't, and a `Cargo.lock` this one didn't write,
+ * which would change what its build resolves. What a build writes beside
+ * them, the JS beside its Rust, is the build's. A test that changes a file
+ * after, to build again, writes it as it would anywhere: its time is new.
+ */
+export class KeptApp {
+  readonly dir: string;
+  private readonly written = new Set<string>();
+  constructor(name: string) {
+    // Below the disk's floor, a fixture, emptied, as nothing's kept there.
+    if (!mayKeep(keptApps)) {
+      this.dir = fixture(name);
+      return;
+    }
+    if (keptClaims === undefined) {
+      keptClaims = [];
+      process.on("exit", releaseKeptApps);
+    }
+    const base = join(keptApps, scope);
+    mkdirSync(base, { recursive: true });
+    for (let n = 0; ; n++) {
+      const dir = join(base, `${name}_${n}`);
+      if (!takeClaim(`${dir}.owner`)) continue;
+      keptClaims.push(`${dir}.owner`);
+      mkdirSync(dir, { recursive: true });
+      markUsed(dir);
+      this.dir = dir;
+      return;
+    }
+  }
+
+  /** `text` at `path`, of the app's, where it isn't that already. */
+  write(path: string, text: string | Buffer): string {
+    const at = join(this.dir, path);
+    this.written.add(path);
+    const now = existsSync(at) && statSync(at).isFile() ? readFileSync(at) : undefined;
+    if (now !== undefined && now.equals(Buffer.from(text))) return at;
+    rmSync(at, { recursive: true, force: true });
+    mkdirSync(dirname(at), { recursive: true });
+    const writing = `${at}.${process.pid}`;
+    writeFileSync(writing, text);
+    renameSync(writing, at);
+    return at;
+  }
+
+  /** Each file under `from` that `keep` keeps, written at its path under `to`. */
+  copy(from: string, to = "", keep: (path: string) => boolean = () => true) {
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const path = join(dir, entry.name);
+        const rel = path.slice(from.length + 1);
+        if (!keep(rel)) continue;
+        if (entry.isDirectory()) walk(path);
+        else if (entry.isFile()) this.write(join(to, rel), readFileSync(path));
+      }
+    };
+    walk(from);
+  }
+
+  /** A link at `path` to `target`, where it isn't one to it already. */
+  link(path: string, linked: string) {
+    const at = join(this.dir, path);
+    this.written.add(path);
+    try {
+      if (readlinkSync(at) === linked) return;
+    } catch {
+      // None there, or not a link.
+    }
+    rmSync(at, { recursive: true, force: true });
+    mkdirSync(dirname(at), { recursive: true });
+    symlinkSync(linked, at);
+  }
+
+  /** The claim given up, as a process's ends: the next to ask for the
+   * name is given the directory, as the next run is. */
+  release() {
+    const owner = `${this.dir}.owner`;
+    rmSync(owner, { force: true });
+    keptClaims = keptClaims?.filter((claim) => claim !== owner);
+  }
+
+  /** What an earlier run wrote that this one didn't, removed, and a
+   * `Cargo.lock` this one didn't write: its files are this run's. */
+  done(): string {
+    const record = join(this.dir, ".kept-app.json");
+    const before: string[] = existsSync(record) ? JSON.parse(readFileSync(record, "utf8")) : [];
+    for (const path of [...before, "Cargo.lock"]) {
+      if (!this.written.has(path)) rmSync(join(this.dir, path), { recursive: true, force: true });
+    }
+    writeFileSync(record, JSON.stringify([...this.written].sort()));
+    return this.dir;
+  }
 }
 
 export function fixture(name: string): string {

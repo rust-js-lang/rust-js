@@ -13,7 +13,7 @@ import { build, createServer, type ViteDevServer } from "vite";
 import { checkCargo } from "../tooling/cargo.js";
 import { writePatch } from "../tooling/patch.js";
 import { runSync } from "./child";
-import { buildCompiler, buildSerde, compiler, fixture, root, run, stdDir } from "./support";
+import { buildCompiler, buildSerde, compiler, fixture, KeptApp, root, run, stdDir } from "./support";
 import { channel } from "../scripts/toolchain.ts";
 import { underLoad } from "../scripts/timing";
 
@@ -21,22 +21,26 @@ const checkout = join(root, "examples", "pilot");
 
 // The pilot, copied under `target/`, where its build writes its JS beside
 // its Rust (ADR 0041): never into the checkout, whatever compiler a test is
-// given.
-const pilot = fixture("pilot");
-cpSync(checkout, pilot, { recursive: true, filter: (from) => !/(^|[/\\])(target|node_modules|dist|\.cargo)([/\\]|$)/.test(relative(checkout, from)) });
+// given. Kept between runs, its Cargo target in it, so a run that changes
+// none of what it's built from finds it built (`KeptApp`, #882).
+const kept = new KeptApp("pilot");
+kept.copy(checkout, "", (path) => !/(^|[/\\])(target|node_modules|dist|\.cargo)([/\\]|$)/.test(path));
+const pilot = kept.dir;
 
 /** The pilot is an app of its own, which names its packages by version
  * (ROADMAP M3.3): installed as a package manager installs them, this
  * checkout's, and Cargo told where its crates are by the patch `rust-js
  * build` writes. */
 function install() {
-  const modules = join(pilot, "node_modules");
   const packs = fixture("pilot-crates");
   run([process.execPath, "scripts/package-npm-crates.ts", packs]);
+  // Each unpacked beside, then written where it differs: a crate's files
+  // unpacked anew are new to Cargo, which builds it again.
   for (const name of ["builtins", "webapi", "react"]) {
-    const at = join(modules, "@rust-js", name);
-    mkdirSync(at, { recursive: true });
-    run(["tar", "-xzf", join(packs, `${name}.tgz`), "-C", at, "--strip-components", "1"]);
+    const unpacked = join(packs, name);
+    mkdirSync(unpacked, { recursive: true });
+    run(["tar", "-xzf", join(packs, `${name}.tgz`), "-C", unpacked, "--strip-components", "1"]);
+    kept.copy(unpacked, join("node_modules", "@rust-js", name));
   }
   // rust-js's JS packages, and the libraries, as this checkout has them.
   const linked: [string, string][] = [
@@ -47,9 +51,9 @@ function install() {
   for (const [name, target] of linked) {
     // A link to nothing would be a page that never loads, each test's.
     if (!existsSync(target)) throw new Error(`${name} isn't installed in this checkout: run \`bun install\``);
-    mkdirSync(dirname(join(modules, name)), { recursive: true });
-    symlinkSync(target, join(modules, name));
+    kept.link(join("node_modules", name), target);
   }
+  kept.done();
   writePatch(pilot);
 }
 

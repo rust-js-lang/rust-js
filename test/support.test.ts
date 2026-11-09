@@ -9,7 +9,7 @@ import { basename, dirname, join, relative } from "node:path";
 
 import { bytesOf } from "../tooling/bounded.js";
 import { floorBytes } from "./bounded";
-import { keptStores, mayKeep, nativeCache, pruneKept, pruneKeptStores, retiredStores } from "./kept";
+import { keptAppsCap, keptStores, mayKeep, nativeCache, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
 import { runSync } from "./child";
@@ -286,6 +286,28 @@ test("a kept cache is held to its cap, the least recently used first, and to the
     ["native-sources", 64],
     ["verified-runs", 512],
   ]);
+});
+
+// The kept apps (#882) are held to their cap, the least recently used first,
+// and to the disk's floor; one a live process claims stays, whatever its age.
+test("kept apps are held to their cap, but one a live process holds", () => {
+  const base = fixture("kept-apps-pruned");
+  const now = Date.now() / 1000;
+  const app = (name: string, used: number, owner?: number) => {
+    const dir = join(base, "xscope", name);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "built"), Buffer.alloc(64 * 1024));
+    utimesSync(dir, now - used, now - used);
+    if (owner !== undefined) writeFileSync(`${dir}.owner`, String(owner));
+    return dir;
+  };
+  const held = app("held_0", 500, process.pid);
+  const oldest = app("old_0", 400, 99999999);
+  const newer = app("new_0", 100);
+  const each = bytesOf(newer);
+  expect(pruneKeptApps({ base, cap: each, free: () => Number.POSITIVE_INFINITY })).toEqual({ removed: 1, size: each });
+  expect([held, oldest, newer].map(existsSync)).toEqual([true, false, true]);
+  expect(keptAppsCap).toBe(4 * 2 ** 30);
 });
 
 // Nothing's kept below the disk's floor, a native program's build or a

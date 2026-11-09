@@ -6,7 +6,7 @@
 // what's unused for a week, then the least recently used past each one's
 // cap, and below the disk's floor until it's back (test/bounded.ts).
 
-import { readdirSync, rmSync, statSync, utimesSync } from "node:fs";
+import { readdirSync, readFileSync, rmSync, statSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
@@ -105,6 +105,46 @@ export const retiredStores = [join(checkoutTarget, "native-cache"), join(checkou
 export function pruneKeptStores() {
   for (const dir of retiredStores) if (dir !== verifiedRuns) rmSync(dir, { recursive: true, force: true });
   for (const { dir, cap } of keptStores) pruneKept(dir, { cap });
+  pruneKeptApps();
+}
+
+/** Where apps kept between runs are (`KeptApp`, test/support.ts): the
+ * worktree's, whose path dependencies name its own crates, so never
+ * another's; `<test file>/<name>_<n>`, each claimed by `<name>_<n>.owner`. */
+export const keptApps = join(target, "kept-apps");
+
+/** The most the kept apps keep: the pilot's is 709 MB, its Cargo target
+ * the most of it (2026-11-09). */
+export const keptAppsCap = 4 * 2 ** 30;
+
+/** The kept apps no process holds, the least recently used first, dropped
+ * until what's left is under `cap` and the disk's `free` space above its
+ * floor (`evict`, tooling/bounded.js); one a live process claims stays. */
+export function pruneKeptApps({ base = keptApps, cap = keptAppsCap, free = () => freeBytes(base) }: { base?: string; cap?: number; free?: () => number } = {}): { removed: number; size: number } {
+  const kept: Kept[] = [];
+  const list = (dir: string) => {
+    try {
+      return readdirSync(dir);
+    } catch {
+      return [];
+    }
+  };
+  const held = (dir: string) => {
+    try {
+      const pid = Number(readFileSync(`${dir}.owner`, "utf8"));
+      process.kill(pid, 0);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  for (const scope of list(base)) {
+    for (const name of list(join(base, scope)).filter((entry) => !entry.endsWith(".owner"))) {
+      const path = join(base, scope, name);
+      if (!held(path)) kept.push({ path, bytes: bytesOf(path), used: statSync(path).mtimeMs });
+    }
+  }
+  return evict(kept, { cap, free, floor: floorBytes });
 }
 
 /** Whether a store may keep what it's about to write: not below the disk's
