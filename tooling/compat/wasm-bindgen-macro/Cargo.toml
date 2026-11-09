@@ -1,0 +1,31 @@
+# rust-js's own wasm-bindgen-macro, `#[wasm_bindgen]`, which an app's
+# dependencies use in place of crates.io's (ADR 1112): each function of an
+# `extern "C"` block a Rust function that calls a rust-js binding of the JS
+# it names, converting what wasm-bindgen's ABI passes (`abi.rs`). Its version
+# is the newest of crates.io's of its minor, as wasm-bindgen asks for it.
+[package]
+name = "wasm-bindgen-macro"
+version = "0.2.130"
+edition = "2024"
+description = "rust-js's `#[wasm_bindgen]`: a crate's JS imports as rust-js bindings"
+license = "MIT"
+repository = "https://github.com/rust-js-lang/rust-js"
+publish = false
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full"] }
+
+# crates.io's features, by name, so a dependent's ask resolves: what
+# one adds is grown as the rest of the API is, a call of what's not
+# there rustc's error.
+[features]
+strict-macro = []
+
+# A binding crate: rustc builds it, for the host, as any proc macro.
+[package.metadata.rust-js]
+bindings = true

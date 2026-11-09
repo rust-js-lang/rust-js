@@ -16,6 +16,25 @@ publish = false
 name = "wasm_bindgen"
 path = "src/lib.rs"
 
+[dependencies]
+wasm-bindgen-macro = "=0.2.130"
+js = { package = "rust-js-builtins", version = "~0.0.2" }
+
+# crates.io's features, by name, so a dependent's ask resolves: what
+# one adds is grown as the rest of the API is, a call of what's not
+# there rustc's error.
+[features]
+default = ["std"]
+enable-interning = ["std"]
+gg-alloc = []
+msrv = []
+rustversion = []
+serde-serialize = ["std"]
+spans = []
+std = []
+strict-macro = ["wasm-bindgen-macro/strict-macro"]
+xxx_debug_only_print_generated_code = []
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(rust_js)"] }
 

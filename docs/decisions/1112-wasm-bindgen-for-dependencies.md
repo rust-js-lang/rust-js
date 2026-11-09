@@ -83,3 +83,102 @@ never a second implementation; what those lack is added there first.
   `test/compat-versions.test.ts`, nightly. These are tooling's JS, which
   the mutations harness doesn't mutate.
 - The guide: [Crates that use wasm-bindgen](../guide/libraries/wasm-bindgen.md).
+
+## Amendment: only for crates it serves, and `#[wasm_bindgen]` of imports (2026-11-10, #1129, #1121 step 2)
+
+**A regression of step 1 (#1129).** Once the patch named rust-js's
+crates, a crate of the graph that used API they don't have yet failed to
+type-check: rustc's E0432 in its types-alone build, which stopped the
+whole build. Before, rustc built it against crates.io's js-sys and only a
+call into it was refused. Seen with getrandom's dev-dependency
+wasm-bindgen-futures (`js_sys::futures`). chrono with its default
+`wasmbind` (`js_sys::Date`) was affected the same way.
+
+- **The patch names rust-js's crates only where they serve every crate
+  of the graph that uses one**, as `tooling/compat/covered.txt` lists it,
+  by name and release, `getrandom 0.3`, owned beside the crates it's
+  about. Any other graph keeps crates.io's, as before step 1, chrono's
+  included, even beside getrandom: all or nothing per graph. A crate is
+  added with its proof.
+- **What the patch names is exactly what the graph uses**, of rust-js's
+  crates, and what those use: web-sys only where a crate uses it, so
+  Cargo never warns of a patch it doesn't use. rust-js's crates use one
+  another by version, through the patch, as crates.io's do.
+- **The binding crates they map onto**, `rust-js-builtins` and, for
+  web-sys, `rust-js-webapi`, are named too, where no npm package of the
+  app's has them: the package Node finds from `@rust-js/build`, or the
+  checkout's.
+- **Each declares crates.io's features by name**, `js-sys/std` and the
+  rest, so a dependent's ask resolves. A call of what a feature would add,
+  and rust-js's crate lacks, is rustc's error.
+- **A pin is refused only where the patch names the crate pinned**:
+  elsewhere crates.io's is what's meant.
+
+**`#[wasm_bindgen]` of an `extern "C"` block (step 2).** rust-js's own
+`wasm-bindgen-macro`, a proc macro rustc builds for the host, makes each
+function a Rust function of its signature. That function calls a rust-js
+binding of the JS its `js_namespace` and `js_name` name, `link_name =
+"globalThis.crypto.getRandomValues"`, converting what wasm-bindgen's ABI
+passes. Its `abi.rs` is the one table:
+
+- a number, a `bool` or a `&str` is passed as it is;
+- `&[u8]` is `Uint8Array.from(bytes)`;
+- `&mut [u8]` is that, and what JS wrote is copied back after the call;
+- `&mut [MaybeUninit<u8>]`, bytes not yet written, is `new
+  Uint8Array(len)`, copied back after;
+- `catch`'s `Result<T, JsValue>` is the call in a `try`, what JS threw
+  its `Err`. `JsValue` is `#[repr(transparent)]`, the value itself
+  (ADR 0584).
+
+An option, a type or an item it doesn't know is a compile error naming
+it, `method` or an imported JS type, never a guess. Each error keeps the
+item's `#[cfg]`s, so getrandom's `atomics` import, left out by its `cfg`,
+is left out with it. Such a crate isn't one `covered.txt` lists, so the
+patch never applies to its graph.
+
+wasm-bindgen gives an import a live view of wasm's memory, not a copy:
+its `outgoing.rs` passes a slice as `Instruction::View`, `&mut` too, and
+copies back only for exports. rust-js's one copy each way gives JS the
+same bytes during the call, and the slice ends with what JS wrote. Only a
+JS callee that keeps the view after the call could tell. It would then
+alias Rust's memory after the `&mut` borrow ended, which Rust leaves
+undefined. Case N of ADR 0262.
+
+getrandom 0.3's backend, through it, prints:
+
+```js
+function getRandomValues(buf) {
+  const uint8Array = new Uint8Array(buf.length);
+  const value$1 = $try(() => globalThis.crypto.getRandomValues(uint8Array));
+  const iter = $mutItems(buf).entries();
+  while (true) {
+    const value = $next(iter);
+    if (value == null) {
+      return value$1.TAG === "Err" ? { TAG: "Err", _0: value$1._0 } : value$1;
+    }
+    value[1].value = $f64ToInt(uint8Array[value[0]] ?? 0, 0, 255);
+  }
+}
+```
+
+One `Uint8Array` is made and given, and read back once. Two forms read
+worse than the same code written in source, #1128 to fix:
+- the loop is a `while` of `$next`, where written in source it's a `for`
+  of its index, a loop an attribute proc macro writes;
+- the `map_err` of what was thrown to a `JsValue`, the value itself,
+  remakes the `Err`.
+
+The real getrandom 0.3.4 with `wasm_js`, through the patch, is now
+refused by its `fill`'s `core::ptr::write_bytes`, addressable memory, an
+open gap of its own: types alone, as before step 1.
+
+Held by `test/compat.test.ts`:
+- a stand-in for getrandom's backend fills a slice in Node;
+- `&mut [u8]` copies back what JS wrote, and `&[u8]` reaches JS as a
+  `Uint8Array`;
+- `catch` gives `None` for a throw;
+- `method`, `String` and an imported type are compile errors naming them;
+- the patch names js-sys, wasm-bindgen, its macro and `rust-js-builtins`,
+  not web-sys;
+- a graph with a stand-in for chrono, alone or beside getrandom, builds
+  of crates.io's, the patch not written.

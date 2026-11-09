@@ -16,6 +16,20 @@ publish = false
 name = "js_sys"
 path = "src/lib.rs"
 
+[dependencies]
+wasm-bindgen = "=0.2.130"
+js = { package = "rust-js-builtins", version = "~0.0.2" }
+
+# crates.io's features, by name, so a dependent's ask resolves: what
+# one adds is grown as the rest of the API is, a call of what's not
+# there rustc's error.
+[features]
+default = ["std", "unsafe-eval"]
+futures-core-03-stream = []
+std = ["wasm-bindgen/std"]
+temporal = []
+unsafe-eval = []
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(rust_js)"] }
 

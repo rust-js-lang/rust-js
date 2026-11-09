@@ -80,9 +80,10 @@ export async function cargoBuild({ manifestPath, toolchain, offline = false }) {
   // again where the patch changed (ADR 1112).
   const compat = compatCrates();
   let metadata = await read();
-  if (settleCompat(dirname(manifest), metadata.workspace_root, metadata.packages.some((pkg) => compat.has(pkg.name)))) metadata = await read();
+  const settled = settleCompat(dirname(manifest), metadata.workspace_root, metadata.packages.map((pkg) => pkg.name), compatDependents(metadata, compat));
+  if (settled.changed) metadata = await read();
   const { packages, resolve: graph, workspace_members: members } = metadata;
-  compatRefused(packages, graph, compat);
+  compatRefused(packages, graph, compat, settled.patched);
   // A crate another of the workspace uses is a library whichever package
   // is built: its JS, written once beside its Rust, is the same built alone
   // as through the crate that uses it (ADR 0360, amended).
@@ -105,6 +106,22 @@ export async function cargoBuild({ manifestPath, toolchain, offline = false }) {
 }
 
 /**
+ * The crates of Cargo's graph that use one of rust-js's own wasm-bindgen,
+ * js-sys or web-sys, or crates.io's of their names, but aren't one of
+ * those: each's name and version (ADR 1112, #1129).
+ * @param {any} metadata Cargo's
+ * @param {Map<string, unknown>} compat
+ * @returns {{ name: string, version: string }[]}
+ */
+function compatDependents(metadata, compat) {
+  const byId = new Map(metadata.packages.map((pkg) => [pkg.id, pkg]));
+  return (metadata.resolve?.nodes ?? [])
+    .map((node) => ({ pkg: byId.get(node.id), deps: node.deps.map((dep) => byId.get(dep.pkg)) }))
+    .filter(({ pkg, deps }) => pkg && !compat.has(pkg.name) && deps.some((dep) => dep && compat.has(dep.name)))
+    .map(({ pkg }) => ({ name: pkg.name, version: pkg.version }));
+}
+
+/**
  * Whether the crate of `manifest`, its Cargo.toml, is as Cargo packaged it,
  * a dependency's source, not one an app writes: `cargo package` writes the
  * manifest it was given beside its own as `Cargo.toml.orig`, so each crate
@@ -120,14 +137,15 @@ export function packaged(manifest) {
  * Throws where rust-js's own wasm-bindgen, js-sys or web-sys can't be what
  * Cargo's graph has (ADR 1112): a crate the app writes, of a path and not
  * as Cargo packaged it (`packaged`), that depends on one, as an app binds
- * JS by the js and webapi crates, the one way; or crates.io's, which a
- * dependency asks for at a version rust-js's isn't, `=0.2.100`, and
- * rust-js can't compile.
+ * JS by the js and webapi crates, the one way; or, where the patch names
+ * rust-js's, `patched`, crates.io's, which a dependency asks for at a
+ * version rust-js's isn't, `=0.2.100`, and rust-js can't compile.
  * @param {any[]} packages Cargo's metadata's
  * @param {any} graph its `resolve`
- * @param {Map<string, { dir: string, version: string }>} compat
+ * @param {Map<string, { dir: string, version: string, uses: string[] }>} compat
+ * @param {string[]} patched
  */
-export function compatRefused(packages, graph, compat) {
+export function compatRefused(packages, graph, compat, patched) {
   const byId = new Map(packages.map((pkg) => [pkg.id, pkg]));
   for (const node of graph?.nodes ?? []) {
     const pkg = byId.get(node.id);
@@ -140,7 +158,7 @@ export function compatRefused(packages, graph, compat) {
           `rust-js: ${pkg.name} depends on ${used.name}, which rust-js gives an app's dependencies alone, in place of crates.io's: an app's own Rust binds JS with the js and webapi crates (docs/guide/interop/bindings.md)`,
         );
       }
-      if (used.source !== null) {
+      if (used.source !== null && patched.includes(used.name)) {
         const asked = pkg.dependencies.find((d) => d.name === used.name)?.req ?? used.version;
         throw new Error(
           `rust-js: ${pkg.name} ${pkg.version} asks for ${used.name} ${asked}, and rust-js's own ${used.name}, which a dependency uses in place of crates.io's, is ${compat.get(used.name)?.version}, so Cargo takes crates.io's, which rust-js can't compile: use a release of ${pkg.name} that takes ${used.name} ${compat.get(used.name)?.version}`,

@@ -14,8 +14,20 @@ under the line `# rust-js's own, which the app's dependencies use in place
 of crates.io's:`, and drops them when none is left, so Cargo never warns
 of an unused patch.
 
-Their API grows from what crates use. Until a crate's part of it is there,
-a dependency that calls it is refused as before.
+Their API grows from what crates use, crate by crate:
+`tooling/compat/covered.txt` lists the crates they serve, getrandom 0.3
+first. Where any crate of your graph that uses wasm-bindgen isn't one of
+them, chrono with its default `wasmbind` say, your build keeps crates.io's,
+as it did before, and such a crate is its types alone, a call into it
+refused.
+
+Of wasm-bindgen's API, an `extern "C"` block's `#[wasm_bindgen]` binds a
+function by its `js_namespace`, `js_name` and `catch`. A number, a `bool`
+or `&str` is passed as it is; a slice of bytes as a `Uint8Array`, made
+once, and of a `&mut` one, what JS wrote copied back once. What it doesn't
+bind yet is a compile error naming it
+([ADR 1112](../../decisions/1112-wasm-bindgen-for-dependencies.md),
+amended).
 
 ## Your own code binds JS with `js` and `webapi`
 

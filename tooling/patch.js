@@ -16,6 +16,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync,
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { crates as shippedCrates } from "./crates.js";
+
 const BEGIN = "# rust-js: begin";
 const END = "# rust-js: end";
 const COMPAT = "# rust-js's own, which the app's dependencies use in place of crates.io's:";
@@ -23,20 +25,78 @@ const compatDir = fileURLToPath(new URL("./compat/", import.meta.url));
 
 /**
  * rust-js's own crates an app's dependencies use in place of crates.io's,
- * by name: each its folder of `compat/`, its version its Cargo.toml's
+ * by name: each its folder of `compat/`, its version its Cargo.toml's, and
+ * the others of them it depends on, by version, through the patch, as
+ * crates.io's does, and the binding crates it maps onto, `rust-js-builtins`
  * (ADR 1112).
- * @returns {Map<string, { dir: string, version: string }>}
+ * @returns {Map<string, { dir: string, version: string, uses: string[], bindings: string[] }>}
  */
 export function compatCrates() {
+  const names = readdirSync(compatDir).filter((name) => existsSync(join(compatDir, name, "Cargo.toml"))).sort();
   const crates = new Map();
-  for (const name of readdirSync(compatDir).sort()) {
-    const manifest = join(compatDir, name, "Cargo.toml");
-    if (!existsSync(manifest)) continue;
-    const version = /^version\s*=\s*"([^"]*)"/m.exec(readFileSync(manifest, "utf8"))?.[1];
-    if (!version) throw new Error(`${manifest} names no version`);
-    crates.set(name, { dir: join(compatDir, name), version });
+  for (const name of names) {
+    const manifest = readFileSync(join(compatDir, name, "Cargo.toml"), "utf8");
+    const version = /^version\s*=\s*"([^"]*)"/m.exec(manifest)?.[1];
+    if (!version) throw new Error(`compat/${name}/Cargo.toml names no version`);
+    const uses = names.filter((other) => other !== name && new RegExp(`^${other}\\s*=`, "m").test(manifest));
+    const bindings = [...manifest.matchAll(/package = "(rust-js-[\w-]+)"/g)].map((m) => m[1]);
+    crates.set(name, { dir: join(compatDir, name), version, uses, bindings });
   }
   return crates;
+}
+
+/**
+ * Whether rust-js's own crates serve `dependent`, a crate that uses one,
+ * its name and version: `compat/covered.txt` names it, and its release
+ * (#1129).
+ * @param {{ name: string, version: string }} dependent
+ */
+export function covered({ name, version }) {
+  const lines = readFileSync(join(compatDir, "covered.txt"), "utf8").split("\n");
+  return lines.some((line) => {
+    const [crate, releases] = line.trim().split(/\s+/);
+    return !line.startsWith("#") && crate === name && (version === releases || version.startsWith(`${releases}.`));
+  });
+}
+
+/** Of rust-js's own crates, those `present` names and each they use. */
+function withUsed(present) {
+  const crates = compatCrates();
+  const all = new Set();
+  const add = (name) => {
+    if (all.has(name) || !crates.has(name)) return;
+    all.add(name);
+    for (const used of crates.get(name).uses) add(used);
+  };
+  for (const name of present) add(name);
+  return [...all].sort();
+}
+
+/** The names of rust-js's own crates a patch's text names. */
+function patched(text) {
+  const at = text.indexOf(COMPAT);
+  if (at < 0) return [];
+  const end = text.indexOf(END, at);
+  const catalog = compatCrates();
+  return [...text.slice(at, end < 0 ? text.length : end).matchAll(/^([\w-]+) = \{ path = /gm)].map((m) => m[1]).filter((name) => catalog.has(name)).sort();
+}
+
+/**
+ * Where a binding crate rust-js's own crates use is, of Cargo's name,
+ * `rust-js-builtins`, where the app has no npm package of it: its package
+ * as Node finds it from here, `@rust-js/build`'s, or the checkout's own.
+ * @param {string} cargo
+ * @returns {string}
+ */
+function shippedCrate(cargo) {
+  const shipped = shippedCrates.find((c) => c.cargo === cargo);
+  if (!shipped) throw new Error(`rust-js ships no crate ${cargo}`);
+  const here = dirname(fileURLToPath(import.meta.url));
+  const found = lookup(here, shipped.npm);
+  if (found) return found;
+  const checkout = join(here, "..", shipped.dir);
+  if (existsSync(join(checkout, "Cargo.toml"))) return realpathSync(checkout);
+  throw new Error(`rust-js's ${[...compatCrates().keys()].join(", ")} map onto ${shipped.npm}'s crate: install ${shipped.npm}`);
 }
 
 /**
@@ -46,9 +106,9 @@ export function compatCrates() {
  * writing nothing, if a crate is installed twice, which would be two of each
  * of its types, a package's crate is another version than it is, or a
  * package is installed under another name than its own. With `compat`, it
- * names rust-js's own crates, or not; without, as it did (ADR 1112).
+ * names those of rust-js's own crates; without, those it did (ADR 1112).
  * @param {string} app
- * @param {boolean} [compat]
+ * @param {string[]} [compat]
  * @returns {{ crate: string, path: string, name: string, dir: string }[]}
  */
 export function writePatch(app, compat) {
@@ -58,10 +118,17 @@ export function writePatch(app, compat) {
   const before = existsSync(config) ? readFileSync(config, "utf8") : "";
   // rust-js's own crates, as the patch had them, until Cargo's graph says
   // otherwise (`settleCompat`).
-  const withCompat = compat ?? before.includes(COMPAT);
+  const own = compat ?? patched(before);
   const lines = [...crates].sort(([x], [y]) => x.localeCompare(y)).map(([crate, { dir }]) => `${crate} = { path = ${JSON.stringify(shown(root, dir))} }`);
-  if (withCompat) {
-    lines.push(COMPAT, ...[...compatCrates()].map(([crate, { dir }]) => `${crate} = { path = ${JSON.stringify(shown(root, dir))} }`));
+  if (own.length > 0) {
+    const catalog = compatCrates();
+    // And the binding crates they map onto, where no npm package has them.
+    const bindings = [...new Set(own.flatMap((crate) => catalog.get(crate).bindings))].filter((cargo) => !crates.has(cargo)).sort();
+    lines.push(
+      COMPAT,
+      ...own.map((crate) => `${crate} = { path = ${JSON.stringify(shown(root, catalog.get(crate).dir))} }`),
+      ...bindings.map((cargo) => `${cargo} = { path = ${JSON.stringify(shown(root, shippedCrate(cargo)))} }`),
+    );
   }
   const rest = withoutBlock(before);
   if (/^\s*\[\s*patch\s*\.\s*("crates-io"|crates-io)\s*\]/m.test(rest)) {
@@ -88,15 +155,21 @@ export function writePatch(app, compat) {
 
 /**
  * The patch of the app whose Cargo.toml is in `from` or a directory above
- * it, made to name rust-js's own crates where Cargo's graph has one,
- * `needed`, and not where it has none: whether it changed, so the graph is
- * read again. Of no patch yet, the workspace's, `root`'s (ADR 1112).
+ * it, made to name those of rust-js's own crates Cargo's graph has, of
+ * `present`, the names of its packages, crates.io's or rust-js's, and each
+ * of rust-js's those use, and no other, as Cargo warns of a patch it doesn't
+ * use; and none unless they serve each of `dependents`, the graph's crates
+ * that use one (`covered`): a crate that uses what they don't have yet
+ * would fail to type-check, where crates.io's has it (#1129). Whether it
+ * changed, so the graph is read again, and those it names. Of no patch
+ * yet, the workspace's, `root`'s (ADR 1112).
  * @param {string} from
  * @param {string} root
- * @param {boolean} needed
- * @returns {boolean}
+ * @param {string[]} present
+ * @param {{ name: string, version: string }[]} dependents
+ * @returns {{ changed: boolean, patched: string[] }}
  */
-export function settleCompat(from, root, needed) {
+export function settleCompat(from, root, present, dependents) {
   let dir = realpathSync(from);
   for (;;) {
     const config = join(dir, ".cargo", "config.toml");
@@ -109,9 +182,10 @@ export function settleCompat(from, root, needed) {
   }
   const config = join(dir, ".cargo", "config.toml");
   const text = existsSync(config) ? readFileSync(config, "utf8") : "";
-  if (text.includes(COMPAT) === needed) return false;
+  const needed = dependents.every(covered) ? withUsed(present) : [];
+  if (patched(text).join() === needed.join()) return { changed: false, patched: needed };
   writePatch(dir, needed);
-  return true;
+  return { changed: true, patched: needed };
 }
 
 /** `text` without rust-js's block, and the blank line rust-js put before it. */
