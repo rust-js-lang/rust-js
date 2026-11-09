@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "double-ended-next-back-refused",
     breaks: "`next_back()` of a generic `T: DoubleEndedIterator` is refused",
     file: "src/lower/mir/iter/backs.rs",
-    find: "        self.steps_an_array(iter_ty)\n            || structural()\n",
-    replace: "        self.steps_an_array(iter_ty)\n            || false\n",
+    find: "        self.steps_an_array(iter_ty) || structural() && !crate::lower::iterators::form_lacks_a_back(value)\n",
+    replace: "        self.steps_an_array(iter_ty) || false && !crate::lower::iterators::form_lacks_a_back(value)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },
   {
@@ -381,15 +381,7 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
   },
-  {
-    name: "type-parameter-source-unstepped",
-    breaks:
-      "a map or filter of a type parameter whose bounds give no back, its type stepped from its back elsewhere, the `either` crate's `IterEither::fold`, is refused, or given as it is, not a JS iterator: `it.next is not a function`",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "        let parameter = matches!(iter_ty.peel_refs().kind(), ty::Param(_));\n",
-    replace: "        let parameter = false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_map_folded_and_rfolded.rs$"],
-  },
+
   {
     name: "enumerate-back-own-unclosed",
     breaks:
@@ -605,7 +597,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "            Some(IterMethod::Copied | IterMethod::Cloned)\n                if self.is_its_source(output)\n",
     replace: "            Some(IterMethod::Copied | IterMethod::Cloned)\n                if false && self.is_its_source(output)\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_skip_take_and_filter_stepped_from_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(back_folds_of_sources_made_knowing_their_back|copies_of_forward_forms_stepped_from_their_back).rs$"],
   },
   {
     name: "rev-of-rev-of-own-steps-dropped",
@@ -799,14 +791,7 @@ export const mutations: Mutation[] = [
     replace: "                || false\n",
     tests: ["test/corpus.test.ts", "-t", "^counted_adapter_given_back_from_its_back.rs$"],
   },
-  {
-    name: "compiled-struct-taken-as-knowing-its-back",
-    breaks: "std's compiled struct of a type the crate steps from its back elsewhere is taken to have a back as it's made, so a map of a compiled `Zip` is `$mapEnds` of a struct with none, and its `rfold` throws (#856)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                && (!self.compiled_struct(self.reveal(iter_ty), value)\n",
-    replace: "                && (true\n",
-    tests: ["test/corpus.test.ts", "-t", "^zip_of_its_type_stepped_from_its_back_elsewhere.rs$"],
-  },
+
   {
     name: "back-stepped-temporary-made-unknowing",
     breaks: "a temporary a back step takes, lent or whole, written to a variable is made as it is, `$iter(v).take(2)`, not knowing its back, and its `nth_back` is refused (#718, #811)",
@@ -830,5 +815,14 @@ export const mutations: Mutation[] = [
     find: "                match len {\n                    true => crate::lower::iterators::made_knowing_its_length(mapped),\n",
     replace: "                match false {\n                    true => crate::lower::iterators::made_knowing_its_length(mapped),\n",
     tests: ["test/corpus.test.ts", "-t", "^(owned_maps_asked_their_length|zip_by_index_of_holding_maps).rs$"],
+  },
+  {
+    name: "type-parameter-source-unstepped",
+    breaks:
+      "a map of an enumeration of a type parameter's iterator generic code makes, whose bounds give it no back, is refused or given as it is, not a JS iterator: `enumerated.iter.next is not a function`",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "        let parameter = matches!(iter_ty.peel_refs().kind(), ty::Param(_));\n",
+    replace: "        let parameter = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_made_type_parameter_collected.rs$"],
   },
 ];

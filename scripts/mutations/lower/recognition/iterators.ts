@@ -778,16 +778,7 @@ export const mutations: Mutation[] = [
     replace: "            \"std::iter::TakeWhile\" | \"std::iter::SkipWhile\" | \"std::iter::MapWhile\" => HeldFolded::After,\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
-  {
-    name: "enumerate-of-held-compiled-taken-for-compiled-struct",
-    breaks:
-      "an `enumerate()` of an adapter the recognizers make in place, a `skip()` of a `Vec`'s items, is taken for one of std's struct compiled wherever it's made, `$enumerate` of its JS chain, which a `rev()` steps by a back it doesn't have (#712)",
-    file: "src/lower/recognition/iterators.rs",
-    find: "        is_compiled_std_iterator(tcx, source) && !super::is_held_compiled(tcx, source)\n",
-    replace: "        is_compiled_std_iterator(tcx, source)\n",
-    tests: ["test/corpus.test.ts", "-t", "^(enumerate_made_in_place_from_back|enumerate_made_knowing_read_again).rs$"],
-    snapshots: true,
-  },
+
   {
     name: "scan-not-closed-on-drop",
     breaks: "a `scan()` isn't closed to drop what it holds, so a compiled one a consumer's fold took is dropped again by its fields, its source twice (#741, #748)",

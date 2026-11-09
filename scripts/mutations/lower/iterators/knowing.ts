@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "        if !self.iterator_given_as_it_is(ty) {\n",
     replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(associated_iterator_dropped|associated_iterator_given_as_it_is|into_iter_of_ref_param|generic_associated_types|mut_kept_by_what_a_call_gives_back).rs$"],
   },
   {
     name: "double-ended-held-knows-its-back",
@@ -875,7 +875,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "        if self.knows_its_back_of(&value, ty) {\n",
     replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_map_folded_and_rfolded.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(backs_given_behind_impls|held_adapters_by_ref|zip_from_its_back).rs$"],
   },
 
 

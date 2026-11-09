@@ -1545,3 +1545,16 @@ zip's, a `skip(n)`'s, a `take(n)`'s nor a `step_by(n)`'s, made so where
 they're stepped (ADR 0542). An architecture test holds it: `BackStepped`
 has `typed`, `borrows`, `locals` and `fields` alone, `back_stepped` gives
 one set, and nothing compares a value's answer with a type's.
+
+## Amendment: what no type's set leaves to guard (2026-11-09, #1059)
+
+With no type's set, no value is made as it is because its type is
+stepped from its back elsewhere, so two guards against that are gone:
+`has_a_back`'s of std's compiled struct, which had a back only given it
+(#856), and `enumerates_a_compiled_struct`'s exclusion of a held compiled
+struct (#712); neither changes what the corpus, the iterator matrix or the
+metamorphic net make. `given_stepped`'s fallback for a type parameter whose
+bounds give no back stays: an enumeration of a type parameter's iterator
+generic code makes, mapped and collected, reaches it, now a corpus case of
+its own (`enumerate_of_a_made_type_parameter_collected.rs`). Three
+knowing-its-back mutations name the cases that catch them.
