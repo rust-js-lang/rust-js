@@ -1148,6 +1148,15 @@ async function main() {
     // megabytes, which kept for each build would fill a disk.
     buildsTesting.push(Promise.all(tested).finally(() => rmSync(kept, { force: true })));
   };
+  // Each other worker's target, where it has none, a copy of the first's,
+  // its dependencies built: CI's cache keeps the first's alone, so the
+  // second built every dependency again, four at once beside the first's
+  // builds, and the runner was stopped for its memory five minutes in
+  // (#1097). Copied before any worker builds, while the first's is still.
+  for (let slot = 1; slot < Math.min(jobs, queue.length); slot++) {
+    const target = join(work, `target-${slot}`);
+    if (!existsSync(target) && existsSync(join(work, "target"))) cpSync(join(work, "target"), target, { recursive: true });
+  }
   // A worker with nothing to take waits while another's build may yet split.
   let busy = 0;
   await Promise.all(

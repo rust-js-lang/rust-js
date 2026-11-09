@@ -336,8 +336,12 @@ jobs:
         env:
           ARGS: ${{ inputs.mutation_args }}
         # Split on spaces, with no globbing: each word is a name or a flag.
+        # And every 20 s the memory in use and the largest processes, so a
+        # shard the runner stops, as it did for its memory (#1097), says
+        # what held it in its log.
         run: |
           set -f
+          ( while sleep 20; do echo "memory: $(free -m | awk '/^Mem:/ { print $3 " MB used, " $7 " MB available" }'); largest: $(ps -eo rss=,comm= --sort=-rss | head -4 | awk '{ printf "%s %.1f GB, ", $2, $1 / 1048576 }')"; done ) &
           bun scripts/mutations.ts $ARGS --shard=${{ matrix.shard }}/${{ inputs.mutation_shards }}
       # What each mutation took, its build and its tests, passed or not: for
       # the shards to be balanced by, and to see where a run's time goes.
