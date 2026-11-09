@@ -82,4 +82,8 @@ none of these would have, add it here in the same commit as the fix.
 
 | Net | Issue | What it would find |
 |---|---|---|
+| A generator of UB-free Rust/MIR programs, as Rustlantis does for rustc, differential against native, with swarm testing | #1085 | Lowering paths no corpus case or rewrite reaches |
+| Equivalence Modulo Inputs: delete or insert code a case's run never reaches (Le et al., PLDI 2014) | #1086 | Cleanup passes and analyses misled by code that never runs |
+| A small Crater: real crates' own test suites through rust-js | #1087 | Real code's behaviour, as its authors tested it |
+| Automatic reduction of every net's failures (C-Reduce style) | #1088 | No new bugs, but a minimal repro for each, faster |
 | Crate-corpus probes run, not only compiled | #840 | Real crates' behaviour against native |
