@@ -725,3 +725,17 @@ iterables_given_to_generics, nth_passes_a_slice_or_each and
 references_given_to_generics taken off its list, and the mutations
 `parameter-read-as-a-function-boxed` and
 `collection-for-an-into-iterator-unboxed` (`lower/mut_refs.ts`).
+
+## Amendment: a kept `&mut` of a type of one value is a box of it (2026-11-09, #1061)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): no difference. A `&mut
+()` given where the call may keep it, rustc's
+`async-await/issues/issue-55809`'s `bad(&mut v).await` with `v: ()`, whose
+future names `T`, was refused since this decision's amendment for #973 as
+"a `&mut` of a number given back": its place isn't fixed, as a `()`'s value
+is `undefined`, so there was no handle to give. No write changes a value of
+a type of one value, `()`'s or a unit struct's, so nothing need be copied
+back: it's given as a box of it, `{}`, kept or not, as a `&mut` of one is
+where the call can't keep it. Held by the corpus case
+`mut_of_one_value_kept` and the mutation `one-value-kept-mut-refused`; the
+rustc test runs as native.

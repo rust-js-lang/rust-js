@@ -1237,6 +1237,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     exprs.push(crate::lower::mut_refs::in_place_cell(place));
                     continue;
                 }
+                // Of a type of one value, `()`'s: a box of it, which no write
+                // changes, whatever keeps it (#1061).
+                if one_value && !fixed_place(&place) {
+                    exprs.push(crate::lower::mut_refs::boxed(place));
+                    continue;
+                }
                 if !fixed_place(&place) {
                     return Err(self.unsupported(span, "a `&mut` of a number given back, from its MIR"));
                 }

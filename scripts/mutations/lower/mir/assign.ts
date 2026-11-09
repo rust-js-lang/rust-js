@@ -1099,4 +1099,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer.rs$"],
     snapshots: true,
   },
+  {
+    name: "one-value-kept-mut-refused",
+    breaks:
+      "a `&mut ()` given where the call may keep it, `bad(&mut v).await`'s, is refused as a `&mut` of a number given back, where a box of its one value is all it needs (#1061)",
+    file: "src/lower/mir/assign.rs",
+    find: "                if one_value && !fixed_place(&place) {\n",
+    replace: "                if false && one_value && !fixed_place(&place) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_of_one_value_kept.rs$"],
+  },
 ];
