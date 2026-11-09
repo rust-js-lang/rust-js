@@ -49,16 +49,22 @@ test("shards split the files between them, each once, whatever the order given",
 // starts no job past the memory's budget.
 test("the compiler's builds at once are as many as the cores and the memory hold", () => {
   const gb = 2 ** 30;
-  expect(compilerBuilds(8, 16 * gb)).toBe(2);
-  expect(compilerBuilds(12, 32 * gb)).toBe(4);
-  expect(compilerBuilds(12, 64 * gb)).toBe(4);
-  expect(compilerBuilds(4, 16 * gb)).toBe(2);
-  expect(compilerBuilds(2, 8 * gb)).toBe(1);
-  expect(memoryBudget(16 * gb)).toBe(10);
-  expect(memoryBudget(4 * gb)).toBe(peakGB.compilerBuild);
+  // On a quiet machine, 85% of it free, the memory whole says.
+  const quiet = (total: number) => compilerBuilds(total === 16 ? 8 : 12, total * gb, 0.85 * total * gb);
+  expect(quiet(16)).toBe(2);
+  expect(quiet(32)).toBe(4);
+  expect(quiet(64)).toBe(4);
+  expect(compilerBuilds(4, 16 * gb, 14 * gb)).toBe(2);
+  expect(compilerBuilds(2, 8 * gb, 7 * gb)).toBe(1);
+  expect(memoryBudget(16 * gb, 14 * gb)).toBe(10);
+  expect(memoryBudget(4 * gb, 4 * gb)).toBe(peakGB.compilerBuild);
+  // Where other apps hold more of it, what's free says: one build on 16 GB
+  // with 9 GB free.
+  expect(memoryBudget(16 * gb, 9 * gb)).toBe(7);
+  expect(compilerBuilds(8, 16 * gb, 9 * gb)).toBe(1);
   // Within the budget, the builds beside a test on each core.
-  for (const [cores, total] of [[8, 16], [4, 16], [12, 32]]) {
-    expect(compilerBuilds(cores, total * gb) * peakGB.compilerBuild + cores * peakGB.test).toBeLessThanOrEqual(memoryBudget(total * gb));
+  for (const [cores, total, free] of [[8, 16, 14], [8, 16, 9], [4, 16, 14], [12, 32, 27]]) {
+    expect(compilerBuilds(cores, total * gb, free * gb) * peakGB.compilerBuild + cores * peakGB.test).toBeLessThanOrEqual(memoryBudget(total * gb, free * gb));
   }
   const check = jobs({ all: true, changed: [], branch: [], added: ["dictionary-uncached"], extra: [], cores: 8 }).jobs;
   const mutations = check.find((job) => job.name === "mutations the change adds")!;

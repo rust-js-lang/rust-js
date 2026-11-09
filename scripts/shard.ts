@@ -3,7 +3,8 @@
 // the suite itself, `--shard`, by how long each file took.) And how much
 // of a machine's cores and memory the work run at once on it may hold.
 
-import { totalmem } from "node:os";
+import { spawnSync } from "node:child_process";
+import { freemem, platform, totalmem } from "node:os";
 
 /** Shard `index`, from 1, of `count`: the items, sorted, dealt out in turn,
  * so each is in exactly one shard, whatever order they're given in. */
@@ -46,12 +47,27 @@ export function pooledParts(cores: number): number {
  * pool held to the budget below, 5.0 GB. */
 export const peakGB = { compilerBuild: 3.5, compilerCheck: 2, crate: 0.6, test: 0.3 };
 
+/** The bytes free for a run as it starts, read once a process: on macOS
+ * the kernel's own share, `memory_pressure`'s free percentage of the
+ * memory, which counts what it can take back of the files' cache, 85% of
+ * 16 GB on a quiet machine where `freemem()`'s pages never used were 27%;
+ * elsewhere `freemem()`, Linux's `MemAvailable`. */
+let available: number | undefined;
+export function availableMemory(): number {
+  if (available !== undefined) return available;
+  const said = platform() === "darwin" ? spawnSync("memory_pressure", ["-Q"], { encoding: "utf8" }).stdout?.match(/free percentage: (\d+)%/) : null;
+  available = said ? (Number(said[1]) / 100) * totalmem() : freemem();
+  return available;
+}
+
 /** The GB the work a run starts at once may hold together: the machine's
  * memory, `total` bytes, less 6 GB, what the system, the agent and the apps
- * beside it keep. On 16 GB, four builds of the compiler at once with a test
- * on each core, 16.4 GB, set off Claude Code's low-memory guard (#1084). */
-export function memoryBudget(total = totalmem()): number {
-  return Math.max(peakGB.compilerBuild, total / 2 ** 30 - 6);
+ * beside it keep, and no more than what's free as it starts, `free` bytes,
+ * less 2 GB, where other apps hold more of it, a browser's or another
+ * session's. On 16 GB, four builds of the compiler at once with a test on
+ * each core, 16.4 GB, set off Claude Code's low-memory guard (#1084). */
+export function memoryBudget(total = totalmem(), free = availableMemory()): number {
+  return Math.max(peakGB.compilerBuild, Math.min(total / 2 ** 30 - 6, free / 2 ** 30 - 2));
 }
 
 /** How many builds of the compiler's crate a run makes at once on `cores`,
@@ -60,9 +76,9 @@ export function memoryBudget(total = totalmem()): number {
  * timings of sixteen mutations), and no more
  * than the memory holds beside a test on each core. Four on 12 cores and
  * 32 GB, two on CI's four cores and 16 GB, and two on 8 cores and 16 GB,
- * where the cores alone said four. */
-export function compilerBuilds(cores: number, total = totalmem()): number {
-  const room = memoryBudget(total) - cores * peakGB.test;
+ * where the cores alone said four; one there with 9 GB of it free. */
+export function compilerBuilds(cores: number, total = totalmem(), free = availableMemory()): number {
+  const room = memoryBudget(total, free) - cores * peakGB.test;
   return Math.max(1, Math.min(4, Math.floor(cores / 2), Math.floor(room / peakGB.compilerBuild)));
 }
 
