@@ -766,7 +766,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `None` where the crate has no entry of it.
     fn entry_unboxes(&self, item: DefId, args: ty::GenericArgsRef<'tcx>, i: usize) -> Option<bool> {
         let tr = ty::TraitRef::from_assoc(self.tcx, self.tcx.parent(item), args);
-        let (imp, _) = super::evidence_impl(self.tcx, self.typing_env, tr).filter(|(imp, _)| imp.is_local())?;
+        // The crate's, or a library's, whose entry its library made of the
+        // same signatures (#1032).
+        let (imp, _) = super::evidence_impl(self.tcx, self.typing_env, tr)
+            .filter(|(imp, _)| imp.is_local() || self.krate.foreign.in_library(*imp))?;
         // As the impl's dictionary makes its entry (`lower_dictionary`): in
         // the impl's own terms, the impl's method or the default it keeps.
         let impl_tr = self.tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization();
@@ -1176,7 +1179,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         let tr = ty::TraitRef::from_assoc(self.tcx, self.tcx.parent(method), args);
+        // Nor one whose trait's signature names an associated type of
+        // `Self` bound by `Iterator`, `fn numbers(&self) -> Self::Iter`,
+        // whose entry gives generic code its form of it, a JS iterator of a
+        // `Range` (#1032).
+        let tcx = self.tcx;
+        let iterator = |item: DefId| {
+            (tcx.item_bounds(item).instantiate_identity().skip_normalization().iter())
+                .filter_map(|clause| clause.as_trait_clause())
+                .any(|p| {
+                    crate::lower::recognition::is_std_def(tcx, p.def_id(), crate::lower::recognition::StdItem::Iterator)
+                        || crate::lower::recognition::is_iterator_extension(tcx, p.def_id())
+                })
+        };
+        let names_own_type = tcx.def_kind(method) == DefKind::AssocFn
+            && (tcx.fn_sig(method).instantiate_identity().skip_normalization().skip_binder().inputs_and_output)
+                .iter()
+                .any(|ty| {
+                    ty.walk().any(|part| {
+                        matches!(part.as_type().map(|t| *t.kind()), Some(ty::Alias(_, alias))
+                            if matches!(alias.kind, ty::Projection { def_id } if iterator(def_id)) && alias.self_ty().is_param(0))
+                    })
+                });
         let as_entry = self.tcx.generics_of(method).own_params.is_empty()
+            && !names_own_type
             && !self.held_in_box(tr.self_ty())
             && (0..count).all(|i| self.param_is_box(method, i) == self.param_is_box(instance.def_id(), i));
         if !as_entry {

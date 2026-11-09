@@ -287,7 +287,7 @@ impl Callbacks for RustJs {
         // build and the differential one (ADR 0932).
         lower::build_std_structs_as_meaning(self.std_bodies || self.std_iterators);
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
-        let mut bodies = lower::collect_bodies(tcx, self.std_iterators);
+        let mut bodies = lower::collect_bodies(tcx, self.std_iterators, self.export_library);
         // `@rust-js/std`'s: std's own, from the MIR of a `core` built to
         // unwind (#424).
         if self.std_bodies {

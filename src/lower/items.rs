@@ -86,6 +86,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.read_import_of(def_id, local);
             let reference = Expr::var(local);
             return match &item.member {
+                // A class's constant, its prototype's, as the crate's own is
+                // (ADR 0761; #1032).
+                Some(constant) if super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Const) => {
+                    Expr::member(Expr::member(reference, "prototype"), constant.clone())
+                }
                 Some(method) => Expr::member(reference, method.clone()),
                 None => reference.item(),
             };

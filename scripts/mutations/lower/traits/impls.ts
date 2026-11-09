@@ -677,4 +677,22 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/crates.test.ts", "-t", "a library's trait's defaults are what a consumer's impl doesn't write"],
   },
+  {
+    name: "entry-of-own-type-as-method",
+    breaks:
+      "a library's impl's method whose trait's signature names `Self`'s associated type is called through its dictionary's entry, which gives generic code's form of it, a JS iterator of `Upto(2).numbers()`'s `Range` (#1032)",
+    file: "src/lower/traits/impls.rs",
+    find: "            && !names_own_type\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
+  },
+  {
+    name: "library-entry-unboxes-unknown",
+    breaks:
+      "a library's blanket impl has no entry to its consumer, so `&mut c as &mut dyn Reset` is a box whose `*self = T::default()` leaves `c` as it was (#1032)",
+    file: "src/lower/traits/impls.rs",
+    find: "            .filter(|(imp, _)| imp.is_local() || self.krate.foreign.in_library(*imp))?;\n",
+    replace: "            .filter(|(imp, _)| imp.is_local())?;\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
+  },
 ];

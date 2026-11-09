@@ -1088,3 +1088,48 @@ Pair test `library_drops_its_consumer_gives`; mutations
 `items-given-drops-unasked`, `owned-param-given-no-drop`,
 `drop-in-place-drops-nothing`, `item-slot-callee-drops-nothing`
 (`lower/instances.ts`).
+
+## Amendment: single forms read across crates as their library reads them (#1032)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results changed.
+Seven answers a consumer gave of a library's items otherwise than the
+library's own compile did:
+
+- **A class's constant is its prototype's** (ADR 0761), a library's as
+  the crate's own: `Counter.prototype.limit`, where `Counter.limit` was
+  undefined.
+- **A dictionary's entry isn't the method it calls where its trait's
+  signature names an associated type of `Self` bound by `Iterator`**, `fn
+  numbers(&self) -> Self::Iter`: the entry gives generic code its form, a
+  JS iterator of a `Range`, so a concrete call compiles the impl here
+  (`dictionary_entry`); heck's `Self::Owned`, of no other form, is called
+  through its entry as before.
+- **A library's `#[track_caller]` function as a `fn` pointer** is given
+  where it's defined, as the crate's own is (ADR 0427), not where it's
+  made a value.
+- **What a library's public function gives behind `impl .. + Clone`** is
+  cloned by its consumers, so the library's compile makes it so
+  (`cloned_types`' `given_out_clone`): a closure with its clone.
+- **`body_may_drop` takes a `&mut` to what holds `T`**, `slot.renew()`, and
+  a call given what holds `T` by value, `discard(slot)`, as one that may
+  drop it: `renewed<T: Default>` and `wipe<T>` are compiled here, given a
+  `Loud`, and drop the old value. The generic method given a destructor
+  through `&mut self` that was refused, `Bag::<T>::clear`, now compiles
+  and runs as native.
+- **A closure that captures nothing, held in a local optimized MIR never
+  writes**, its value of no size, is made where it's read (`&_2`), as its
+  constant is, where it was `_2(x)` of nothing.
+- **A library's blanket impl's entry** gives its `&mut self` box as it
+  is, read of its signatures as the crate's own (`entry_unboxes`), so
+  `&mut c as &mut dyn Reset` writes `c` in place.
+
+Pair test `library_singles_across_crates`; mutations
+`library-class-const-static` (`lower/items.ts`),
+`entry-of-own-type-as-method`, `library-entry-unboxes-unknown`
+(`lower/traits/impls.ts`), `library-located-fn-value-a-call-arrow`
+(`lower.ts`), `library-given-out-clone-unseen`
+(`lower/analysis/clones.ts`), `lent-mut-drops-nothing`,
+`callee-given-holder-drops-nothing` (`lower/instances.ts`) and
+`unwritten-closure-local-unmade` (`lower/mir.ts`). The two of #1032 left,
+`class_trait_field_lent` and `refcell_borrow_while_mut`, are a library's
+`RefCell` borrows a consumer may hold, which its own compile counts none of.

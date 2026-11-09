@@ -951,8 +951,8 @@ pub fn main() {
 // #378: a consumer compiling a library's generic code from its optimized
 // MIR, where a box is read through the pointer rustc makes of it, compiled
 // `vec![t]`'s (`generic_boxed_drop`), its drop flags settled (#381), and
-// refuses what it can't yet, a generic method given a destructor or a
-// value moved out of its box, as an error: it never panics.
+// refuses what it can't yet, a value moved out of its box, as an error: it
+// never panics.
 test("a consumer refuses a library's generic code it can't compile yet, and never crashes", () => {
   const out = chain(pairs, "generic_boxed_drop", ["dep", "app"]);
   // Its optimized MIR's drop flags settled as rust-js's own: none of `t`
@@ -982,8 +982,12 @@ test("a consumer refuses a library's generic code it can't compile yet, and neve
     expect(error).toContain(why);
     expect(error).not.toContain("panicked");
   };
-  refused("    let mut bag = dep::Bag { items: vec![Loud(1)] };\n    bag.clear();\n", join(out, "dep"),
-    "giving `dep::Bag::<T>::clear`'s `T` a type with a destructor, where it takes none");
+  // A generic method given a destructor through its `&mut self`, which the
+  // consumer compiles itself, as what it lends may write one again (#1032).
+  writeFileSync(join(dir, "app.rs"), `${loud}pub fn main() {\n    let mut bag = dep::Bag { items: vec![Loud(1), Loud(2)] };\n    bag.clear();\n    println!("cleared {}", bag.items.len());\n}\n`);
+  run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(out, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(out, "dep", "libdep.rmeta")}`]);
+  expect(printed(join(dir, "app.js"))).toBe("dropped 1\ndropped 2\ncleared 0\n");
   refused("    println!(\"{}\", dep::unboxed(Loud(1)).0);\n", lib, "rust-js does not support");
 }, 300_000);
 

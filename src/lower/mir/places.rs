@@ -102,6 +102,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
         }
         let mut placed = false;
+        if place.projection.is_empty() {
+            self.unwritten_closure(state, place.local)?;
+        }
         let mut value = if place.projection.is_empty() {
             match (
                 state.in_place.get(&place.local),

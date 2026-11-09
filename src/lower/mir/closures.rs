@@ -4,6 +4,30 @@
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Of `local`, a closure that captures nothing held in a local optimized
+    /// MIR never writes, its value being of no size, `&_2` of `make(x)`:
+    /// the closure, made where it's first read, as its constant is, and kept
+    /// (`State::in_place`) for its later reads (#1032). `None` of another.
+    pub(super) fn unwritten_closure(&mut self, state: &mut State<'_, 'tcx>, local: Local) -> R<Option<Expr>> {
+        let ty = state.body.local_decls[local].ty;
+        if local.index() <= state.body.arg_count
+            || state.locals.writes[local] != 0
+            || state.in_place.contains_key(&local)
+            || !matches!(ty.kind(), ty::Closure(..))
+            || !crate::lower::recognition::held_types(ty).is_some_and(|(_, upvars)| upvars.is_empty())
+        {
+            return Ok(None);
+        }
+        let span = state.body.local_decls[local].source_info.span;
+        let mut made = Vec::new();
+        let closure = self.mir_closure(state, ty, Vec::new(), span, &mut made)?;
+        if !made.is_empty() {
+            return Ok(None);
+        }
+        state.in_place.insert(local, closure.clone());
+        Ok(Some(closure))
+    }
+
     /// A closure made here, an arrow of its own MIR: what it captured, as
     /// it's read where it's made, the places it borrows themselves, as JS's
     /// closures read theirs, and a value it took a copy of where the

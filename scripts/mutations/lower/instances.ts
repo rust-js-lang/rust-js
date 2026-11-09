@@ -75,9 +75,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a value optimized MIR copies where it's last used, `pick::<(), T>(const (), copy _1)`, isn't taken for given, so `discard` drops nothing of a consumer's `Loud` (ADR 0914)",
     file: "src/lower/instances.rs",
-    find: "                mir::Operand::Move(place) | mir::Operand::Copy(place) => holds(place.ty(&body.local_decls, tcx).ty),\n",
-    replace:
-      "                mir::Operand::Move(place) => holds(place.ty(&body.local_decls, tcx).ty),\n",
+    find: "                    mir::Operand::Move(place) | mir::Operand::Copy(place) => lent(place.ty(&body.local_decls, tcx).ty),\n",
+    replace: "                    mir::Operand::Move(place) => lent(place.ty(&body.local_decls, tcx).ty),\n",
     tests: ["test/crates.test.ts", "-t", "two crates: drops_by_need"],
   },
   {
@@ -390,5 +389,23 @@ export const mutations: Mutation[] = [
     find: "                    && compiled_here(calls.foreign, tcx, callee)\n                    && super::traits::drop_items(tcx, calls.foreign, callee)\n",
     replace: "                    && compiled_here(calls.foreign, tcx, callee)\n                    && false\n                    && super::traits::drop_items(tcx, calls.foreign, callee)\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_drops_its_consumer_gives"],
+  },
+  {
+    name: "lent-mut-drops-nothing",
+    breaks:
+      "a library's body that lends a `&mut Slot<T>` to what may write its `T` again, `slot.renew()`, drops no `T` to `body_may_drop`, so `renewed` is its export, which drops the old one nowhere (#1032)",
+    file: "src/lower/instances.rs",
+    find: "                    holds(ty) || matches!(*ty.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if holds(inner))\n",
+    replace: "                    holds(ty)\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
+  },
+  {
+    name: "callee-given-holder-drops-nothing",
+    breaks:
+      "a library's body that gives what holds its `T`, not `T` itself, to a function of its library's drops no `T` to `body_may_drop` (#1032)",
+    file: "src/lower/instances.rs",
+    find: "                            (callee_args.get(at as usize).and_then(|arg| arg.as_type())).is_some_and(holds)\n                                && body_may_drop(calls, (callee, at), seen)\n",
+    replace: "                            (callee_args.get(at as usize).and_then(|arg| arg.as_type())).is_some_and(|ty| ty.is_param(index))\n                                && body_may_drop(calls, (callee, at), seen)\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
   },
 ];

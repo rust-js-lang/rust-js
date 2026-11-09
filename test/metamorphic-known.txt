@@ -24,12 +24,6 @@ plain std library equated_iterator_parameter.rs
 plain std library rc_fn_made_of_a_counted_rc.rs
 
 #1032 P0 (library): singles across crates: class methods, dyn writes, a lost RefCell borrow check, track_caller and others
-plain std library class_methods.rs
 plain std library class_trait_field_lent.rs
-plain std library dyn_of_a_generic_impl_written_whole.rs
-plain std library generic_associated_types.rs
-plain std library generic_dictionary_declared_once.rs
-plain std library impl_trait_clone.rs
 plain std library refcell_borrow_while_mut.rs
-plain std library track_caller.rs
-plain std library unboxed_type_params.rs
+

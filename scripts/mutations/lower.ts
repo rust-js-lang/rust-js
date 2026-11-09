@@ -121,8 +121,8 @@ export const mutations: Mutation[] = [
     snapshots: true,
     breaks: "`.map(Area::area)`, a trait's function as a value, is an arrow calling it, `(x) => shapeArea_area(x)`, where it's the function itself",
     file: "src/lower.rs",
-    find: "        if self.krate.fns.contains_key(&def_id) || self.is_rust_trait_fn(def_id, args) {\n",
-    replace: "        if self.krate.fns.contains_key(&def_id) {\n",
+    find: "        if self.krate.fns.contains_key(&def_id) || self.is_rust_trait_fn(def_id, args) || located {\n",
+    replace: "        if self.krate.fns.contains_key(&def_id) || located {\n",
     tests: ["test/corpus.test.ts","-t","^std_function_values.rs$"],
   },
   {
@@ -394,5 +394,14 @@ export const mutations: Mutation[] = [
     find: "        if self.krate.foreign.item(def_id).is_some() && !args.has_non_region_param() {\n",
     replace: "        if false && self.krate.foreign.item(def_id).is_some() && !args.has_non_region_param() {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_writers_given_options"],
+  },
+  {
+    name: "library-located-fn-value-a-call-arrow",
+    breaks:
+      "a library's `#[track_caller]` function as a `fn` pointer is the arrow of its call, given where it's made a value, not where it's defined, as rustc's shim gives it (#1032)",
+    file: "src/lower.rs",
+    find: "        let located = self.krate.foreign.item(def_id).is_some() && self.takes_caller_location(def_id);\n",
+    replace: "        let located = false && self.krate.foreign.item(def_id).is_some() && self.takes_caller_location(def_id);\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
   },
 ];

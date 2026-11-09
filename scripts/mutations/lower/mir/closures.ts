@@ -330,4 +330,13 @@ export const mutations: Mutation[] = [
     replace: "                inlined = mir.instantiated(self.tcx, ty::GenericArgs::identity_for_item(self.tcx, def_id));\n                let _ = args;\n",
     tests: ["test/corpus.test.ts", "-t", "^(item_keyed_map).rs$"],
   },
+  {
+    name: "unwritten-closure-local-unmade",
+    breaks:
+      "a closure that captures nothing, held in a local optimized MIR never writes, is read by the local's name, never made, `_2(x)` of a library's `through_closure` its consumer compiles (#1032)",
+    file: "src/lower/mir/closures.rs",
+    find: "        state.in_place.insert(local, closure.clone());\n        Ok(Some(closure))\n",
+    replace: "        let _ = closure;\n        Ok(None)\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
+  },
 ];

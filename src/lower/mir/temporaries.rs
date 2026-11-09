@@ -504,6 +504,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 value => value,
             });
         }
+        if let Some(value) = self.unwritten_closure(state, local)? {
+            return Ok(Value::Expr(value));
+        }
         if let Some(value) = state.in_place.get(&local) {
             return Ok(Value::Expr(value.clone()));
         }

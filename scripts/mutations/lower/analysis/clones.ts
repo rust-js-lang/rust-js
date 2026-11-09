@@ -30,4 +30,13 @@ export const mutations: Mutation[] = [
       "            .filter(|p| false && is_clone(tcx, p.def_id()))\n            .map(|p| p.self_ty().skip_binder())\n            .collect()\n    })\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
   },
+  {
+    name: "library-given-out-clone-unseen",
+    breaks:
+      "a library's closure given out behind `impl FnMut() + Clone` is one it never clones, made with no clone, which its consumer's `tick.clone()` throws of (#1032)",
+    file: "src/lower/analysis/clones.rs",
+    find: "        todo.extend(given_out_clone(tcx, all_bodies));\n",
+    replace: "        let _ = given_out_clone(tcx, all_bodies);\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
+  },
 ];

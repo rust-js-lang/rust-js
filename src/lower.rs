@@ -907,7 +907,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Err(self.tcx.dcx().span_err(span, why));
         }
-        if self.krate.fns.contains_key(&def_id) || self.is_rust_trait_fn(def_id, args) {
+        // And a library's that takes its caller's location, given the one
+        // where it's defined, as rustc's shim of it calls it (ADR 0427;
+        // #1032), its call's arrow giving the place it's made a value.
+        let located = self.krate.foreign.item(def_id).is_some() && self.takes_caller_location(def_id);
+        if self.krate.fns.contains_key(&def_id) || self.is_rust_trait_fn(def_id, args) || located {
             if self.tcx.trait_of_assoc(def_id).is_some() {
                 if self.takes_caller_location(def_id) {
                     return Err(self.unsupported(

@@ -437,4 +437,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/crates.test.ts", "-t", "two crates: library_static_changing_in_place"],
   },
+  {
+    name: "library-class-const-static",
+    breaks: "a library's class's constant is read as its class's own property, `Counter.limit`, where its library puts it on the prototype, undefined (#1032)",
+    file: "src/lower/items.rs",
+    find: "                Some(constant) if super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Const) => {\n",
+    replace: "                Some(constant) if false && super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Const) => {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
+  },
 ];

@@ -830,9 +830,14 @@ fn body_may_drop<'tcx>(
                     return true;
                 }
                 // Given by its place, moved or, of what optimized MIR copies
-                // where it's last used, copied.
+                // where it's last used, copied; or a `&mut` to what holds one,
+                // through which it may write one again, dropping the one
+                // there, `slot.renew()` (#1032).
+                let lent = |ty: Ty<'tcx>| {
+                    holds(ty) || matches!(*ty.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if holds(inner))
+                };
                 let gives_one = args.iter().any(|arg| match &arg.node {
-                    mir::Operand::Move(place) | mir::Operand::Copy(place) => holds(place.ty(&body.local_decls, tcx).ty),
+                    mir::Operand::Move(place) | mir::Operand::Copy(place) => lent(place.ty(&body.local_decls, tcx).ty),
                     _ => false,
                 });
                 if !gives_one {
@@ -840,11 +845,11 @@ fn body_may_drop<'tcx>(
                 }
                 match func.const_fn_def() {
                     // A function of its library's given it as its own type
-                    // parameter, which may drop it there.
+                    // parameter, or what holds one, a `Slot<T>` whose `renew`
+                    // writes its `T` again (#1032), which may drop it there.
                     Some((callee, callee_args)) if compiled_here(calls.foreign, tcx, callee) => {
                         (0..callee_args.len() as u32).any(|at| {
-                            (callee_args.get(at as usize).and_then(|arg| arg.as_type()))
-                                .is_some_and(|ty| matches!(ty.kind(), ty::Param(p) if p.index == index))
+                            (callee_args.get(at as usize).and_then(|arg| arg.as_type())).is_some_and(holds)
                                 && body_may_drop(calls, (callee, at), seen)
                         })
                     }

@@ -11,8 +11,10 @@ use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 
 /// The types `all_bodies` clone, regions erased, and those their clones
-/// clone, to a fixed point.
-pub(super) fn cloned_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> IndexSet<Ty<'tcx>> {
+/// clone, to a fixed point; of a `library`, what each of its public
+/// functions gives behind an `impl .. + Clone` too, which any consumer may
+/// clone (#1032).
+pub(super) fn cloned_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], library: bool) -> IndexSet<Ty<'tcx>> {
     let mut cloned: IndexSet<Ty<'tcx>> = IndexSet::default();
     // What an `impl Clone` hides, revealed: a caller's clone of what a
     // function gives is of what that function makes.
@@ -26,6 +28,9 @@ pub(super) fn cloned_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) 
                 .collect::<Vec<_>>()
         })
         .collect();
+    if library {
+        todo.extend(given_out_clone(tcx, all_bodies));
+    }
     while let Some(ty) = todo.pop() {
         let ty = tcx.erase_and_anonymize_regions(ty);
         if cloned.insert(ty) {
@@ -33,6 +38,46 @@ pub(super) fn cloned_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) 
         }
     }
     cloned
+}
+
+/// What each of a library's public functions in `all_bodies` gives behind
+/// an `impl .. + Clone`, revealed: `counter()`'s closure, which a consumer
+/// may clone, its library never cloning it.
+fn given_out_clone<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Vec<Ty<'tcx>> {
+    let mut given = Vec::new();
+    for body in all_bodies {
+        let id = body.def_id;
+        if tcx.typeck_root_def_id(id) != id
+            || !matches!(
+                tcx.def_kind(id),
+                rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn
+            )
+            || !crate::lower::library::reachable(tcx, id)
+        {
+            continue;
+        }
+        let output = tcx
+            .fn_sig(id)
+            .instantiate_identity()
+            .skip_normalization()
+            .skip_binder()
+            .output();
+        for part in output.walk().filter_map(|part| part.as_type()) {
+            if let ty::Alias(_, alias) = *part.kind()
+                && let ty::Opaque { def_id: opaque } = alias.kind
+                && (tcx
+                    .item_bounds(opaque)
+                    .instantiate_identity()
+                    .skip_normalization()
+                    .iter())
+                .filter_map(|clause| clause.as_trait_clause())
+                .any(|p| is_clone(tcx, p.def_id()))
+            {
+                given.push(tcx.type_of(opaque).instantiate(tcx, alias.args).skip_normalization());
+            }
+        }
+    }
+    given
 }
 
 /// Whether `id` is `Clone`, or a trait that extends it.

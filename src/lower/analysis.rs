@@ -121,11 +121,11 @@ pub fn build_std_structs_as_meaning(meaning: bool) {
 /// the THIR, so this is our only chance to read it. Of `std_iterators`,
 /// the differential job's build, no adapter is made in place: each is
 /// std's struct (ADR 0908).
-pub fn collect_bodies(tcx: TyCtxt<'_>, std_iterators: bool) -> Vec<Body<'_>> {
+pub fn collect_bodies(tcx: TyCtxt<'_>, std_iterators: bool, library: bool) -> Vec<Body<'_>> {
     let mut bodies = lowered_bodies(tcx);
     // The types the crate clones, whose adapters cloned apart hold their
     // parts (ADRs 0525, 0915).
-    let cloned = clones::cloned_types(tcx, &bodies.iter().collect::<Vec<_>>());
+    let cloned = clones::cloned_types(tcx, &bodies.iter().collect::<Vec<_>>(), library);
     super::body_queries::across_bodies(tcx, &mut bodies, &cloned);
     if std_iterators {
         for body in &mut bodies {
@@ -965,7 +965,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // `Rc` counted may make one, and a `dyn Fn` that drops may count an
     // `Rc`; both only grow, so a second pass settles them.
     // The types the crate clones (ADRs 0522, 0525).
-    let cloned = clones::cloned_types(tcx, all_bodies);
+    let cloned = clones::cloned_types(tcx, all_bodies, library);
     // The kinds of adapters explicit wherever the crate makes one: those its
     // types hold (ADR 0542). Not one std's struct is where it's held,
     // `Enumerate`, `Take` or `Skip`, compiled (ADRs 0871, 0913): its own
