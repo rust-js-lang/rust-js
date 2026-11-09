@@ -615,3 +615,20 @@ corpus case `untagged_displayed_in_place.rs`. Mutations
 `displaying-impl-of-another-trait`, `displaying-impl-of-any-body`,
 `displayed-value-of-a-library-unread` (`untagged/displayed.ts`) and
 `displayed-impl-written-anyway` (`pipeline/reached.ts`).
+
+## Amendment: each refusal of an untagged enum says it's rust-js's (#939)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, of what runs; a
+refusal's words. An untagged enum's refusals, "`Named` and `Points` both
+hold an array of 1 items, which JS can't tell apart in an untagged enum",
+said nothing of whose they were, where every other refusal starts
+`rust-js:`, so what reads a compile's errors (`test/child.ts`'s
+`compileFailure`) took each for rust-js's crash: the metamorphic net's
+`tuple-struct` rewrite of three cases, whose structs became arrays, was
+listed as crashing. Each of `untagged::validate`'s, a `match`'s of
+variants of one kind (`mir/structure.rs`) and of two classes `instanceof`
+would tell (`untagged/classes.rs`) now starts `rust-js: `, and each
+diagnostic test holds each of rust-js's errors to it. Mutations
+`untagged-refusal-unsaid` (`lower/untagged.ts`), `untold-alike-unsaid`,
+`untold-class-unsaid` (`lower/untagged/classes.ts`) and
+`untagged-arms-refusal-unsaid` (`lower/mir/structure.ts`).

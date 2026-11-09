@@ -971,7 +971,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // known to differ (`untold_class`, #555).
                     if classes.is_none() {
                         let message = format!(
-                            "`{}` and `{other}` hold values of one kind, which JS can't tell apart in an untagged enum (ADR 0214)",
+                            "rust-js: `{}` and `{other}` hold values of one kind, which JS can't tell apart in an untagged enum (ADR 0214)",
                             adt.variant(variant).name
                         );
                         return Err(self.tcx.dcx().span_err(span, message));

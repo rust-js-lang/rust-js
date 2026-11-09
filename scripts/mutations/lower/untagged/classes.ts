@@ -5,6 +5,24 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untold-alike-unsaid",
+    breaks:
+      "an untagged enum's refusal of two classes of one member doesn't say it's rust-js's, so what reads a compile's errors takes it for a crash (#939)",
+    file: "src/lower/untagged/classes.rs",
+    find: "                \"rust-js: `{variant}` and `{other}` are each {both}",
+    replace: "                \"`{variant}` and `{other}` are each {both}",
+    tests: ["test/webapi-objects.test.ts", "-t", "untagged"],
+  },
+  {
+    name: "untold-class-unsaid",
+    breaks:
+      "an untagged enum's refusal of a class `instanceof` would tell doesn't say it's rust-js's, so it's taken for a crash (#939)",
+    file: "src/lower/untagged/classes.rs",
+    find: "            \"rust-js: JS can't tell `{name}::{variant}`",
+    replace: "            \"JS can't tell `{name}::{variant}`",
+    tests: ["test/diagnostics.test.ts", "-t", "two classes told apart"],
+  },
+  {
     name: "node-type-untold",
     breaks:
       "an untagged enum's DOM nodes are told by `instanceof Document`, `false` of another realm's document and a ReferenceError where the host has no `Document` (#555)",

@@ -116,7 +116,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .find_map(|v| Some((v.name, self.untagged_alike(ty, v)?)))
         {
             return Some(format!(
-                "`{variant}` and `{other}` are each {both}, which JS can't tell apart in an untagged enum in every \
+                "rust-js: `{variant}` and `{other}` are each {both}, which JS can't tell apart in an untagged enum in every \
                  realm, as `instanceof` is `false` of another realm's object and throws where the host lacks the \
                  class (ADR 1062, amended). Tell them apart in Rust: a tagged enum, whose tag says which it is"
             ));
@@ -124,7 +124,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (variant, class) = recognition.untold_class(adt, args, variants)?;
         let name = self.tcx.item_name(adt.did());
         Some(format!(
-            "JS can't tell `{name}::{variant}`, a `{class}`, from `{name}`'s other variants in every realm: \
+            "rust-js: JS can't tell `{name}::{variant}`, a `{class}`, from `{name}`'s other variants in every realm: \
              `instanceof {class}` is `false` of a `{class}` of another realm, a frame's or a JSDOM window's, \
              and throws a `ReferenceError` where the host has no `{class}` global; a DOM node is told by its \
              `nodeType`, but only where each node class in the enum has its own (ADR 1062, amended). \

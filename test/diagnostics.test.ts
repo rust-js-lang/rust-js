@@ -326,6 +326,12 @@ for (const [name, source, message, crate] of [
     expect(rejected.exitCode).not.toBe(0);
     expect(rejected.stderr.toString()).toContain(message);
     expect(rejected.stderr.toString()).toContain("lib.rs:");
+    // Each of rust-js's says it's rust-js's, as what reads a compile's
+    // errors tells a refusal from a crash by it (`compileFailure`): an
+    // untagged enum's too, which the metamorphic net took for crashes
+    // (#939). rustc's own, `error[E0308]`, are rustc's.
+    const said = rejected.stderr.toString().split("\n").filter((line) => line.startsWith("error: ") && !line.startsWith("error: aborting"));
+    expect(said.filter((line) => !line.startsWith("error: rust-js"))).toEqual([]);
     expect(existsSync(output)).toBe(false);
     expect(existsSync(manifest)).toBe(false);
     writeFileSync(output, "last successful build");

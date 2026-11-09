@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-arms-refusal-unsaid",
+    breaks:
+      "a `match`'s refusal of an untagged enum's variants of one kind doesn't say it's rust-js's, so it's taken for a crash (#939)",
+    file: "src/lower/mir/structure.rs",
+    find: "                            \"rust-js: `{}` and `{other}` hold values of one kind,",
+    replace: "                            \"`{}` and `{other}` hold values of one kind,",
+    tests: ["test/diagnostics.test.ts", "-t", "variants of one kind, matched"],
+  },
+  {
     name: "guard-box-not-copied-back-on-unwind",
     breaks: "`set_then_panic(&mut slot.borrow_mut())` in a `catch_unwind` loses what it wrote before it panicked, the guard taken for a place of the body's own (#1021)",
     file: "src/lower/mir/structure.rs",

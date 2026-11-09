@@ -1241,10 +1241,12 @@ pub(super) fn boxed_payload(held: Ty<'_>, why: &str) -> String {
 /// each `From` into one that isn't its variant of its argument. False if
 /// there was one.
 pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreign<'_, 'tcx>) -> bool {
-    let mut valid = true;
-    let mut error = |span, message: String| {
-        tcx.dcx().span_err(span, message);
-        valid = false;
+    // Each refusal says it's rust-js's, `rust-js: ..`, as every other
+    // does: what reads a compile's errors tells a refusal so.
+    let valid = std::cell::Cell::new(true);
+    let error = |span, message: String| {
+        tcx.dcx().span_err(span, format!("rust-js: {message}"));
+        valid.set(false);
     };
     for def_id in tcx.hir_crate_items(()).definitions() {
         if tcx.def_kind(def_id) == DefKind::Enum && bindings::is_untagged(tcx, def_id.to_def_id()) {
@@ -1377,10 +1379,12 @@ pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreig
         {
             let what = format!("serde of the untagged enum `{}`", tcx.item_name(adt.did()));
             let refused = super::refusal::Refused::Because(&what, "see ADR 0214");
-            error(tcx.def_span(def_id), super::refusal::words(tcx, refused));
+            tcx.dcx()
+                .span_err(tcx.def_span(def_id), super::refusal::words(tcx, refused));
+            valid.set(false);
         }
     }
-    valid
+    valid.get()
 }
 
 /// Whether `def_id` is the `from` of a `From` into an untagged enum, which

@@ -963,7 +963,7 @@ pub fn is_svg(drawn: Drawn<'_>) -> bool {
     matches!(drawn, Drawn::Svg(_))
 }
 `,
-    "`Svg` and `Html` are each an object whose `nodeType` is the number 1, which JS can't tell apart in an untagged enum in every realm",
+    "rust-js: `Svg` and `Html` are each an object whose `nodeType` is the number 1, which JS can't tell apart in an untagged enum in every realm",
   );
   refused(
     "webapi-node-types-untold",

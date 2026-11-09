@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-refusal-unsaid",
+    breaks:
+      "an untagged enum's refusal doesn't say it's rust-js's, so what reads a compile's errors takes it for a crash (#939)",
+    file: "src/lower/untagged.rs",
+    find: "        tcx.dcx().span_err(span, format!(\"rust-js: {message}\"));\n",
+    replace: "        tcx.dcx().span_err(span, message);\n",
+    tests: ["test/diagnostics.test.ts", "-t", "untagged"],
+  },
+  {
     name: "lone-class-tested",
     breaks:
       "a form entry's `File | string` tests its class first, `entry instanceof File`, which throws a ReferenceError where the host has no `File` global (rd506's audit)",
