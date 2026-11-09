@@ -57,6 +57,10 @@ fn main() {
     let mut ast = syn::parse_file(&source).expect("the case parses");
     let mut budget = limit;
     if rewrite == "library" {
+        // A function's identity across crates is no promise of Rust's.
+        if closures::compares_identity(&source) {
+            std::process::exit(2);
+        }
         match library::library(&ast, &mut budget) {
             Some(both) => print!("{both}"),
             None => std::process::exit(2),

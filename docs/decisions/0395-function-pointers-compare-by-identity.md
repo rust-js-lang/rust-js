@@ -80,3 +80,17 @@ modules `false`, and in one module `true`.
 And `ptr::fn_addr_eq(f, g)`, which that lint suggests in place of `f ==
 g`, is `f === g`, as `==` of them is. It was refused as addressable
 memory. Corpus case `fn_addr_eq_compares_functions`.
+
+## Amendment: across crates as across modules (#1027)
+
+The metamorphic net's `library` rewrite moved `widened` into a library
+crate: its consumer's `widened::<u8>` taken as a value is made where it's
+taken, `(n) => widened(n, { into: .. })`, so `fn_addr_eq(wide, widened::<u8>
+as fn(u8) -> i64)` is `false`, where native's is `true`. That's this
+decision's case, a generic instance taken in two places is two functions,
+of two crates as of two modules, and the guide's difference 47 says so.
+The net's `library` rewrite, as its `closure-fn` one, rewrites no case
+that compares functions (`compares_identity` in `scripts/metamorph`), so
+`fn_addr_eq_compares_functions` and `generic_fn_value_is_one_function`
+are no variants of it. What Rust does promise across crates, two
+`Rc::new`s apart and two boxes' addresses, is #1052's.

@@ -73,7 +73,10 @@ natively and as JS in both builds** (`scripts/metamorph`,
     items, a `macro_rules!` exported), and the program `main`, which
     uses it, `use metamorph_lib::*;`. Native builds the library an rlib
     and the program with `--extern`; rust-js compiles it `--library`,
-    and the program `--dependency` its manifest, in each build.
+    and the program `--dependency` its manifest, in each build. A case
+    that compares functions, as `closure-fn`'s list says, isn't
+    rewritten either (#1027): a generic instance is one function across
+    crates in no promise of Rust's (ADR 0395, amended).
 - **Native Rust's run of the rewrite is its oracle.** No snapshot is
   needed. A rewrite rustc rejects, a call that relied on a coercion a
   generic parameter doesn't make, is tried of its first place alone, and

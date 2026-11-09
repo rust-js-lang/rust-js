@@ -167,6 +167,16 @@ test("a push's sample is stable: a case added changes only whether it's sampled"
   expect([...names, "added.rs"].filter((name) => sampled(name) && name !== "added.rs")).toEqual(sample);
 });
 
+// A case that compares functions is no `library` variant, as it's no
+// `closure-fn` one: a generic function's instance is one function in no
+// promise of Rust's across crates (ADR 0395, amended, #987, #1027). One that
+// compares what Rust does promise, two `Rc`s, is.
+test("a case that compares functions is moved into no library", () => {
+  expect(rewritten("library", join(corpus, "fn_addr_eq_compares_functions.rs"), "2024")).toBeUndefined();
+  expect(rewritten("library", join(corpus, "generic_fn_value_is_one_function.rs"), "2024")).toBeUndefined();
+  expect(rewritten("library", join(corpus, "rc_fn_ptr_eq_of_cloned.rs"), "2024")).toBeDefined();
+});
+
 test("a listed rewrite is read under its issue, and a malformed line is refused", () => {
   expect(readKnown("#7 P0: a title\nplain std boxed a.rs\n")).toEqual([{ issue: "7", builds: ["plain", "std"], rewrite: "boxed", name: "a.rs" }]);
   expect(() => readKnown("plain boxed a.rs\n")).toThrow();

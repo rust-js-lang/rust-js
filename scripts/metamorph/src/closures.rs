@@ -19,8 +19,16 @@ use crate::Bindings;
 /// part of what it prints: a function and a closure aren't alike there.
 const IDENTITY: &[&str] = &["fn_addr_eq", "ptr::eq", "type_name", "as fn"];
 
+/// Whether `source` makes a function's identity part of what it prints:
+/// a closure isn't the function there, nor is a library's generic
+/// function's instance one function across crates, which Rust doesn't
+/// promise either (ADR 0395, amended, #987, #1027).
+pub fn compares_identity(source: &str) -> bool {
+    IDENTITY.iter().any(|said| source.contains(said))
+}
+
 pub fn closure_fn(ast: &mut syn::File, file: &str, source: &str, budget: &mut usize) -> bool {
-    if IDENTITY.iter().any(|said| source.contains(said)) {
+    if compares_identity(source) {
         return false;
     }
     let made = closures_made_fns(ast, file, budget);
