@@ -235,4 +235,12 @@ export const mutations: Mutation[] = [
     replace: "    if let Some(value) = clippy.filter(|_| false) {\n",
     tests: ["test/clippy.test.ts", "-t", "rust-js clippy says what clippy finds"],
   },
+  {
+    name: "refusal-reason-of-json-alone",
+    breaks: "a crate refused by an error rust-js writes as text, \"can't read the module it wrote\", or by a crash, is said to be refused for no reason, so the small Crater and `rust-js test` can't say why (#1117)",
+    file: "src/cargo.rs",
+    find: "    json.or_else(written)\n        .or_else(crashed)\n",
+    replace: "    json\n",
+    unitTests: "cargo::tests::a_refusal_keeps_why_however_it_was_said",
+  },
 ];

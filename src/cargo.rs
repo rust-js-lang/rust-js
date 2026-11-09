@@ -293,13 +293,34 @@ fn refused(rustc: &str, given: &[String], flags: &[String], why: String) -> Invo
     }
 }
 
-/// Why rust-js refused a crate: its first error, of rustc's JSON messages.
+/// Why rust-js refused a crate: its first error, of rustc's JSON messages;
+/// else one it wrote as text, past compiling, "can't read the module it
+/// wrote"; else a crash's panic and its message: never nothing where it
+/// said something (#1117).
 fn refused_for(stderr: &[u8]) -> String {
-    (String::from_utf8_lossy(stderr).lines())
+    let text = String::from_utf8_lossy(stderr);
+    let json = (text.lines())
         .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
         .find(|message| message["level"] == "error")
-        .and_then(|message| message["message"].as_str().map(str::to_string))
-        .unwrap_or_else(|| "rust-js refused it".to_string())
+        .and_then(|message| message["message"].as_str().map(str::to_string));
+    let written = || {
+        (text.lines())
+            .find(|line| line.starts_with("error") && !line.starts_with("error: aborting"))
+            .map(|line| line.split_once(": ").map_or(line, |(_, why)| why).to_string())
+    };
+    let crashed = || {
+        let lines: Vec<&str> = text.lines().collect();
+        let at = lines.iter().position(|line| line.contains("panicked at"))?;
+        let message = lines.get(at + 1).map_or("", |line| line.trim());
+        Some(
+            format!("rust-js crashed: {} {message}", lines[at].trim())
+                .trim_end()
+                .to_string(),
+        )
+    };
+    json.or_else(written)
+        .or_else(crashed)
+        .unwrap_or_else(|| "rust-js refused it, and said nothing of why".to_string())
 }
 
 /// Where Cargo expects the metadata of the crate its `flags` build.
@@ -576,5 +597,31 @@ fn rustc_itself(rustc: &str, given: &[String]) -> Invocation {
             eprintln!("rust-js: cannot run {rustc}: {error}");
             Invocation::Rustc(ExitCode::FAILURE)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::refused_for;
+
+    /// Why rust-js refused a crate, however it said it: rustc's JSON, an
+    /// error it wrote as text past compiling, or a panic, never nothing
+    /// where it said something (#1117).
+    #[test]
+    fn a_refusal_keeps_why_however_it_was_said() {
+        let json = br#"{"message":"a refusal of x","level":"error"}"#;
+        assert_eq!(refused_for(json), "a refusal of x");
+        let written = b"warning: unused\nerror: rust-js: rust-js can't read the module it wrote: Invalid Character\nerror: aborting due to 1 previous error\n";
+        assert_eq!(
+            refused_for(written),
+            "rust-js: rust-js can't read the module it wrote: Invalid Character"
+        );
+        let panic =
+            b"\nthread 'rustc' panicked at src/lower.rs:1:1:\nindex out of bounds\nnote: run with `RUST_BACKTRACE=1`\n";
+        assert_eq!(
+            refused_for(panic),
+            "rust-js crashed: thread 'rustc' panicked at src/lower.rs:1:1: index out of bounds"
+        );
+        assert_eq!(refused_for(b""), "rust-js refused it, and said nothing of why");
     }
 }

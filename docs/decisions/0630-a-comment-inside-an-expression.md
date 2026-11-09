@@ -275,3 +275,28 @@ argument, is gone: a tuple's or an array's array is placed where its
 statement is, so a comment above it is before it, and every constant the
 program wrote, none a macro's, is placed where it's written
 ([0444](0444-a-comment-is-where-its-code-is.md), amended the same day).
+
+## Amendment: a literal is one token, whatever its kind (#1117)
+
+A comment after code goes where the token before it ends (`word_end`),
+which read a number to its first character that isn't a letter, a digit,
+`_` or `.`: of `3.33333333333334091986e-01, /* 3FD55555, 55555563 */`,
+libm's `k_tan.rs`'s, it ended at the `e`, and the JS was `3.33…e /* .. */-01`,
+which no parser reads: rust-js refused libm, "can't read the module it
+wrote", and so num-traits with `libm` and chrono's library. A string ended
+at its first quote, an escaped one too. A literal is one token now, whole:
+a number's exponent with its sign, a radix's prefix, its `_`s and a
+BigInt's `n`; a string's escaped quotes; a template's `${..}`, however its
+braces nest, and its escapes.
+
+And a crate refused that way said nothing of why: what's written beside its
+metadata, which `rust-js test` and the small Crater report, was its first
+error of rustc's JSON alone, "rust-js refused it" of one rust-js writes as
+text past compiling or of a crash. It's that error now, or the crash's panic
+and its message.
+
+`comments_after_literals.rs` holds each literal kind before a comment,
+against native Rust; the unit tests `a_literal_is_one_token_a_comment_goes_after`
+and `a_refusal_keeps_why_however_it_was_said`; the mutations
+`comment-splits-an-exponent`, `comment-splits-an-escaped-string` and
+`refusal-reason-of-json-alone`.

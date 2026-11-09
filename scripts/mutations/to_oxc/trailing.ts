@@ -272,4 +272,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^match_arm_comments_kept.rs$"],
     snapshots: true,
   },
+  {
+    name: "comment-splits-an-exponent",
+    breaks: "a comment after a float written with a signed exponent goes after its `e`, `3.3e /* c */-01`, which no JS parser reads: libm's `k_tan.rs` was refused (#1117)",
+    file: "src/to_oxc/trailing.rs",
+    find: "        let signed = !radix && matches!(c, '+' | '-') && matches!(previous, Some('e' | 'E'));\n",
+    replace: "        let signed = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^comments_after_literals.rs$"],
+  },
+  {
+    name: "comment-splits-an-escaped-string",
+    breaks: "a comment after a string with an escaped quote goes before its end, at the escaped quote, `\"a\\\\\" /* c */b\"` (#1117)",
+    file: "src/to_oxc/trailing.rs",
+    find: "            '\\\\' => _ = chars.next(),\n",
+    replace: "            '\\\\' => {}\n",
+    unitTests: "to_oxc::trailing::tests::a_literal_is_one_token_a_comment_goes_after",
+  },
 ];

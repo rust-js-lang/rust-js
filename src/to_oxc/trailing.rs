@@ -580,15 +580,61 @@ fn in_bytes(line: &str, column: u32) -> usize {
 }
 
 /// Where the name, number or string at `column` of `line` ends: none of
-/// another token, `(` or `{`.
+/// another token, `(` or `{`. A literal is one token, whole: a number's
+/// exponent's sign, `3.3e-1`, and its `0x` or `n`; a string's escaped quote,
+/// `"a\"b"`; a template's `${..}` and escapes. A comment after it goes after
+/// all of it, never inside, where `3.3e /* c */-01` is no JS (#1117).
 fn word_end(line: &str, column: u32) -> Option<usize> {
     let start = column as usize;
     let rest = line.get(start..)?;
-    let end = match rest.chars().next()? {
-        quote @ ('"' | '\'' | '`') => rest[1..].find(quote).map(|i| i + 2)?,
+    let first = rest.chars().next()?;
+    let end = match first {
+        '"' | '\'' | '`' => literal_end(rest, first)?,
+        c if c.is_ascii_digit() || c == '.' && rest[1..].starts_with(|d: char| d.is_ascii_digit()) => number_end(rest),
         _ => (rest.find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '$' || c == '.'))).unwrap_or(rest.len()),
     };
     (end > 0).then_some(start + end)
+}
+
+/// Where the number `text` starts with ends: its digits, `_`s and point,
+/// a decimal's exponent with its sign, a radix's prefix and a BigInt's `n`.
+fn number_end(text: &str) -> usize {
+    let radix = ["0x", "0X", "0b", "0B", "0o", "0O"]
+        .iter()
+        .any(|prefix| text.starts_with(prefix));
+    let mut end = 0;
+    let mut previous = None;
+    for (at, c) in text.char_indices() {
+        let signed = !radix && matches!(c, '+' | '-') && matches!(previous, Some('e' | 'E'));
+        if !(c.is_ascii_alphanumeric() || c == '_' || c == '.' || signed) {
+            break;
+        }
+        end = at + c.len_utf8();
+        previous = Some(c);
+    }
+    end
+}
+
+/// Where the string or template `text` starts with, quoted by `quote`,
+/// ends, past its closing quote: an escaped quote is in it, and a
+/// template's `${..}`, however its braces nest.
+fn literal_end(text: &str, quote: char) -> Option<usize> {
+    let mut chars = text.char_indices().skip(1).peekable();
+    let mut braces = 0usize;
+    while let Some((at, c)) = chars.next() {
+        match c {
+            '\\' => _ = chars.next(),
+            '$' if quote == '`' && braces == 0 && chars.peek().is_some_and(|&(_, next)| next == '{') => {
+                chars.next();
+                braces = 1;
+            }
+            '{' if braces > 0 => braces += 1,
+            '}' if braces > 0 => braces -= 1,
+            _ if c == quote && braces == 0 => return Some(at + c.len_utf8()),
+            _ => {}
+        }
+    }
+    None
 }
 
 /// `line` of the JS with each comment after the code that starts at its
@@ -785,7 +831,34 @@ pub(super) fn own_line_after_value(
 
 #[cfg(test)]
 mod tests {
-    use super::opened_on;
+    use super::{opened_on, word_end};
+
+    /// A literal is one token, whole, whatever its kind, so a comment after it
+    /// goes after all of it (#1117): a float's exponent's sign, a radix's
+    /// prefix, separators and a BigInt's `n`, a string's escaped quote, and a
+    /// template's `${..}`.
+    #[test]
+    fn a_literal_is_one_token_a_comment_goes_after() {
+        let cases: [(&str, usize); 12] = [
+            ("3.33333333333334091986e-01, /* c */", 26),
+            ("1.0E+10]", 7),
+            ("2.5e3;", 5),
+            ("0xff_ff,", 7),
+            ("0b1010)", 6),
+            ("1_000_000n,", 10),
+            (".5e-2,", 5),
+            (r#""a\"b", x"#, 6),
+            (r"'it\'s',", 7),
+            ("`x${ {a: 1}.a }y`,", 17),
+            ("`a\\`b`;", 6),
+            ("name.x(", 6),
+        ];
+        for (line, end) in cases {
+            assert_eq!(word_end(line, 0), Some(end), "{line}");
+        }
+        assert_eq!(word_end("3.3e-1", 0), Some(6));
+        assert_eq!(word_end("0x1e-1", 0), Some(4));
+    }
 
     // A comment after an argument's closing brackets alone is told the
     // line its `if` opened on, past its `else`; one after code isn't
