@@ -1591,3 +1591,19 @@ in both builds: generic code's, ranges', a `Vec`'s items, what makes an
 iterator, the crate's own double-ended iterator, and items with a
 destructor, each passed over dropped as std's `nth_back` drops it.
 Mutation `chain-made-here-backless` (`lower/analysis/back_stepped.ts`).
+
+## Amendment: a cloned chain lent to its back is a chain made here (#1109)
+
+fab382391 (#1002) marked a chain of a type the crate clones apart, lent to
+its own `next_back()`, as made knowing its back (`cloned_chain` in
+`back_stepped`'s `unread`), for `cloned_chain_stepped_from_its_back.rs`.
+e9415f2d1 (#1118, above) since marks every chain made here that its own
+back step asks so (`back_stepped_adapter`), cloned apart or not. So the
+first decided nothing that changed any output: its mutation
+`cloned-chain-lent-unmarked` survived, and its case passes in both builds
+without it. With #1118's rule taken out too (`chain-made-here-backless`),
+`cloned_chain_stepped_from_its_back.rs` fails beside
+`chain_made_here_stepped_from_its_back.rs`, where #1118's alone fails only
+the latter: #1118's is the one answer, and the `unread` test is removed
+with its mutation. `cloned_chain` stays, as a chain cloned apart that's
+asked beneath an adapter is still its own.

@@ -777,7 +777,6 @@ pub(super) fn stepped_locals<'tcx>(
                                 // (#718).
                                 || chained_sources(tcx, ty).is_some()
                                     && recognition.iterator_item(ty).is_some_and(&drops)
-                                || cloned_chain(owner, ty)
                         };
                         let held = held || unread();
                         match (ty == asked_ty, lent, user) {
