@@ -358,9 +358,10 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
             let inside = inputs.iter().any(|&input| !itself(input.peel_refs()) && has(input));
             has(sig.output()) || meet || inside
         };
-    // Another bound that names it, `impl Is<I>`'s (#966, #969).
-    let named = named_by_another_bound(tcx, id, param);
-    held || signature || read || named
+    // Another bound that names it, `impl Is<I>`'s (#966, #969), is given as
+    // it is by the first test, `into_iter_held_as_it_is`'s, of a parameter
+    // bound as an iterator, as one here is.
+    held || signature || read
 }
 
 /// Whether another bound of `id` names its type parameter `param`, of

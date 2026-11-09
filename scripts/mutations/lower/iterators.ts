@@ -86,15 +86,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
   {
-    name: "given-as-it-is-not-named",
-    breaks:
-      "`backwards(Countdown(3, \"a\"))`'s `I`, given as `impl Is<I>`'s value, is stepped as a JS iterator its caller never made: `next_back` isn't one (#966)",
-    file: "src/lower/iterators.rs",
-    find: "    held || signature || read || named\n",
-    replace: "    held || signature || read\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_named_by_another_bound.rs$"],
-  },
-  {
     name: "naming-parameter-not-as-it-is",
     breaks:
       "`impl Is<I>`'s value, a `Countdown`, goes as a JS iterator its caller makes, where `I`, the same value, is given as it is: its drop reads what isn't there (#966)",
@@ -168,8 +159,8 @@ export const mutations: Mutation[] = [
     breaks:
       "the crate's iterator given to `I: Iterator + Clone` is its JS iterator, which its `Clone` and `Debug` read as its value",
     file: "src/lower/iterators.rs",
-    find: "    held || signature || read || named\n",
-    replace: "    held || signature || named\n",
+    find: "    held || signature || read\n",
+    replace: "    held || signature\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_read_as_itself.rs$"],
   },
   {

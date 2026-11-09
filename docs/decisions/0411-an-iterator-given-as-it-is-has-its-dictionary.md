@@ -123,3 +123,19 @@ The `iterator_named_by_another_bound` corpus case runs each with native
 Rust, from the back, by its length, and dropped; the metamorphic net's
 `impl-ref` and `impl-owned` rewrites of the corpus, which make every
 generic parameter so, run as native.
+
+## Amendment: one answer of a type parameter another bound names (#1109)
+
+`given_as_it_is` gave a type parameter bound as an iterator that another
+bound names, `fn backwards<I: DoubleEndedIterator>(it: impl Is<I>)`'s `I`,
+as it is by its last test, `named` (d6ea7894a, #966,
+`iterator_named_by_another_bound.rs`). c2ab4dc29 (#969) answered the same
+in `into_iter_held_as_it_is`, of a parameter bound by `Iterator` or
+`IntoIterator` that another bound names, which `given_as_it_is` asks
+first, of every parameter, and an iterator's is one. The last test never
+decided anything: a probe at it logged none in the whole net, its mutation
+`given-as-it-is-not-named` survived, and both `named_by_another_bound`
+cases pass without it. With #969's test taken out too
+(`into-iter-named-not-held`), both fail, the iterator's case as well as
+the `IntoIterator`'s, so #969's is the one answer, and `named` is removed
+with its mutation. `iterator-read-as-js` is retargeted at what's left.
