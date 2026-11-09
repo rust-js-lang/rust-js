@@ -18,15 +18,7 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = extensions;\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_given_as_it_is.rs$"],
   },
-  {
-    name: "kept-default-assoc-unstepped",
-    breaks:
-      "a trait's default that steps `Self::Iter`, kept by `impl<I: Iterator> Trait for I` with `type Iter = I`, isn't seen to step `I`: a range given to it is `.reduce`d as if a JS iterator, `TypeError` (ADR 0977)",
-    file: "src/lower/analysis/iterator_steps.rs",
-    find: "                        stepped.insert((imp, param.index, by));\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^kept_default_steps_assoc.rs$"],
-  },
+
   {
     name: "std-body-callee-steps-unpassed",
     breaks:
@@ -330,5 +322,13 @@ export const mutations: Mutation[] = [
     find: "                        let bound = tcx.instantiate_bound_regions_with_erased(bound).trait_ref;\n",
     replace: "                        let bound = bound.skip_binder().trait_ref;\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_passed_through_a_chain_of_impls.rs$"],
+  },
+  {
+    name: "item-param-iterator-unstepped",
+    breaks: "an impl whose `type Iter = I` is bound by `Iterator` isn't seen to step `I`, so a trait's default it keeps that steps `Self::Iter` `.reduce`s a range given it as if a JS iterator, `TypeError` (#972, ADR 0977)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                    if iterates || !extensions.is_empty() {\n                        stepped.insert((imp, param.index, iterator));\n",
+    replace: "                    if iterates || !extensions.is_empty() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^kept_default_steps_assoc.rs$"],
   },
 ];

@@ -52,3 +52,19 @@ parameter given as it is.
 `test/corpus/kept_default_steps_assoc.rs` checks a range, the crate's
 iterator and a `Vec`'s against native Rust. `kept-default-assoc-unstepped`
 is its mutation.
+
+## Amendment (2026-11-09): what an impl's associated type is steps it (#972)
+
+Since #972 (8b417f914), an impl whose associated type bound by `Iterator`
+is its own type parameter, `type Iter = I`, steps `I` by that bound and its
+extensions, as its dictionary's entries of them are `I`'s (`iterator_steps`,
+ADR 0106). That's each impl this decision's rule stepped `I` of, and more:
+the record of what a default steps of `<Self as Trait>::Assoc`, and its
+step of each keeping impl's type for it, gave nothing more. Its mutation,
+`kept-default-assoc-unstepped`, survived on main's check; without it the
+corpus, the iterator matrix, the metamorphic net, the neighbours, the
+two-crate pairs and rustc's `traits/` and `associated-types/` run as
+before, of an impl's `I` bound through a trait that extends `Iterator`, and
+of a `Rev<I>` of a `DoubleEndedIterator`, too. It's gone, with its
+mutation; `kept_default_steps_assoc.rs` is #972's rule's case now,
+`item-param-iterator-unstepped`.
