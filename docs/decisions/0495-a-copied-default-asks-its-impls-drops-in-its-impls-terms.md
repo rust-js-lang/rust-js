@@ -216,3 +216,30 @@ with native Rust, and mutations `thir-types-in-trait-terms`,
 itertools 0.14 compiles again (docs/crate-corpus.md); its probe is still
 refused, first at "an iterator's own `last` given a dictionary of its own
 type parameter", as before #828.
+
+## Amendment: an array's parts a copied default moves are followed (#1109)
+
+`let [_, b] = pair;` of a `[Self::Item; 2]` in a blanket impl's copied
+default was refused as moving part of a value with a destructor, "as a
+generic function's is"; but a generic function's, a concrete one's and a
+non-blanket impl's copied default's all compiled and ran as native Rust
+does, as MIR's lowering moves each part of an array out. Only the THIR
+walk of a blanket impl's copy asked `pattern_paths`, whose `_` arm
+refused an array's pattern. `paths_in` follows an array's pattern now,
+each element by its place and a subslice, `rest @ ..`, after its prefix,
+in a tuple's or a struct's field too, so the copy compiles as the generic
+function does. What's left of the `_` arm binds nothing by value rustc
+lets move, and a binding's subpattern, `elt @ Some(_)`'s, moves nothing
+either, as rustc forbids it to: so `moves`, which asked what a pattern
+moves in its trait's terms beside the copy's (`pattern-types-in-trait-terms`,
+#1109's survivor), decided only that refusal, and goes with it.
+`test/diagnostics.test.ts`'s library copied default moving part of its
+items compiles now. Held by `array_parts_moved_in_a_copied_default.rs`, a
+blanket impl's `[_, b]`, `[_, rest @ ..]`, a tuple's `(first, [_, label])`
+and a struct's `Labels { tag, rest: [_, last] }` of items with a
+destructor, and a `match` whose arms move part of a value and all of
+it, which the THIR walk refuses and MIR's lowering, a body's own, does
+right, against native Rust in both builds; mutations
+`array-pattern-parts-unfollowed`, and `binding-at-whole-unfollowed`
+refitted. `closure-problems-unfiltered` (`drops/parts.ts`), whose catch
+was an array's pattern, catches that `match` now.

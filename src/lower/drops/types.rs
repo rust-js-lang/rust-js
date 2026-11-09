@@ -343,51 +343,26 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
     }
 
     /// The parts a pattern moves out of what it's matched against, by value:
-    /// those it binds that have a destructor. None if it moves one a way this
-    /// doesn't follow yet, as through a `Box` or into an `x @ ..` whose
-    /// subpattern moves a part too.
+    /// those it binds that have a destructor, a struct's, a tuple's, an
+    /// enum's variant's and an array's, `[_, b]`, its subslice, `rest @ ..`,
+    /// too, as MIR's lowering moves each (#1109). None of an alternative's
+    /// that moves one.
     pub(in crate::lower) fn pattern_paths(&self, pat: &Pat<'tcx>) -> Option<Vec<Path>> {
         let mut found = Vec::new();
         self.paths_in(pat, &mut Path::new(), &mut found).then_some(found)
     }
 
     fn paths_in(&self, pat: &Pat<'tcx>, at: &mut Path, found: &mut Vec<Path>) -> bool {
-        let moves = |p: &Pat<'tcx>| {
-            let mut any = false;
-            p.walk_always(|p| {
-                if let PatKind::Binding {
-                    mode: BindingMode(ByRef::No, _),
-                    ty,
-                    ..
-                } = p.kind
-                {
-                    any |= self.has_drops(self.thir_ty(ty));
-                }
-            });
-            any
-        };
         match &pat.kind {
             PatKind::Wild => true,
+            // A binding by value moves what it binds; its subpattern, `elt @
+            // Some(_)`'s, only tests it, as rustc lets none of it move too
+            // (itertools' `collect_tuple`, #828).
             PatKind::Binding {
                 mode: BindingMode(ByRef::No, _),
-                subpattern: None,
                 ty,
                 ..
             } => {
-                if self.has_drops(self.thir_ty(*ty)) {
-                    found.push(at.clone());
-                }
-                true
-            }
-            // `elt @ Some(_)`, whose subpattern moves nothing out: the whole,
-            // moved into `elt` as a binding without one is, the subpattern
-            // only a test (itertools' `collect_tuple`, #828).
-            PatKind::Binding {
-                mode: BindingMode(ByRef::No, _),
-                subpattern: Some(sub),
-                ty,
-                ..
-            } if !moves(sub) => {
                 if self.has_drops(self.thir_ty(*ty)) {
                     found.push(at.clone());
                 }
@@ -414,9 +389,26 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 at.pop();
                 ok
             }),
+            // An array's, `[_, b]` and `[_, rest @ ..]`: each element by its
+            // place, the subslice after the prefix's, as MIR's lowering moves
+            // each out (#1109).
+            PatKind::Array { prefix, slice, suffix } => prefix
+                .iter()
+                .chain(slice.as_deref())
+                .chain(suffix.iter())
+                .enumerate()
+                .all(|(i, p)| {
+                    at.push((None, i));
+                    let ok = self.paths_in(p, at, found);
+                    at.pop();
+                    ok
+                }),
             // `Single(t) | Ambiguous(t, _)` (ADR 0191): each alternative followed.
             PatKind::Or { pats } => pats.iter().all(|p| self.paths_in(p, at, &mut Vec::new())),
-            _ => !moves(pat),
+            // What binds nothing by value that rustc lets move: a constant's,
+            // a range's, a slice's or a reference's, which binds by reference
+            // or what's `Copy`.
+            _ => true,
         }
     }
 

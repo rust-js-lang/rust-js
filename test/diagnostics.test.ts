@@ -424,7 +424,7 @@ test("another crate's function in an extern block is refused where it's called",
 // move is asked what it drops in its impl's (#828): a library's `[_, b]` of
 // its `Self::Item`s, whose consumers' items may drop, moves a part a way
 // MIR's lowering doesn't follow, and is refused, as a generic function's is.
-test("a library's copied default moving part of its items is refused", () => {
+test("a library's copied default moving part of its items compiles, as a generic function's does", () => {
   const dir = fixture("copied-default-pattern");
   const input = join(dir, "lib.rs");
   writeFileSync(
@@ -433,5 +433,5 @@ test("a library's copied default moving part of its items is refused", () => {
   );
   const out = runSync([compiler, input, "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "lib.manifest.json")], dir, 60_000);
   const errors = out.stderr.split("\n").filter((line) => line.startsWith("error: rust-js"));
-  expect([out.code === 0, errors], out.stderr).toEqual([false, ["error: rust-js does not support moving part of a value with a destructor yet"]]);
+  expect([out.code === 0, errors], out.stderr).toEqual([true, []]);
 });

@@ -12,13 +12,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^copied_default_asks_its_drops_in_the_impls_terms.rs$"],
   },
   {
-    name: "pattern-types-in-trait-terms",
+    name: "array-pattern-parts-unfollowed",
     breaks:
-      "what a library's copied default's pattern moves is asked what it drops in its trait's terms, so its `[_, b]` of its `Self::Item`s is taken to move nothing that drops, and isn't refused as a generic function's is (#828)",
+      "a copied default's `let [_, b] = pair;` of `[Self::Item; 2]` with a destructor, which MIR's lowering moves part by part, is refused as moving part of a value with a destructor (#1109)",
     file: "src/lower/drops/types.rs",
-    find: "                    any |= self.has_drops(self.thir_ty(ty));\n",
-    replace: "                    any |= self.has_drops(ty);\n",
-    tests: ["test/diagnostics.test.ts", "-t", "copied default moving part of its items"],
+    find: "            PatKind::Array { prefix, slice, suffix } => prefix\n",
+    replace: "            PatKind::Array { .. } => false,\n            PatKind::Array { prefix, slice, suffix } => prefix\n",
+    tests: ["test/corpus.test.ts", "-t", "^array_parts_moved_in_a_copied_default.rs$"],
   },
   {
     name: "uncounted-weak-drops",
@@ -392,8 +392,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`elt @ Some(_)` of a temporary with a destructor, whose subpattern moves nothing, is refused as moving part of it, as itertools' `collect_tuple` was (#828)",
     file: "src/lower/drops/types.rs",
-    find: "            } if !moves(sub) => {\n",
-    replace: "            } if false && !moves(sub) => {\n",
+    find: "            // (itertools' `collect_tuple`, #828).\n            PatKind::Binding {\n",
+    replace: "            // (itertools' `collect_tuple`, #828).\n            PatKind::Binding { subpattern: Some(_), .. } => false,\n            PatKind::Binding {\n",
     tests: ["test/corpus.test.ts", "-t", "^default_matches_its_tuple_whole.rs$"],
   },
   {
