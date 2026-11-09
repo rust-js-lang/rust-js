@@ -15,7 +15,7 @@ function $ptr(object, key, offset, root, at) {
   let handles = $places.get(object);
   if (handles === undefined) $places.set(object, (handles = new Map()));
   let handle = handles.get(key);
-  if (handle !== undefined && root !== undefined && handle.root === undefined) {
+  if (handle !== undefined && root !== undefined && (handle.root === undefined || !$rooted(handle))) {
     handle.root = root;
     handle.rootAt = at;
   }
@@ -181,20 +181,49 @@ function $placed(pointer) {
 }
 
 // Where `object` is stored by value, `$items`' record of it, where it's
-// there still: an array's item found again where its array moved it, and
-// none of one moved out, which is its own allocation then, as Rust's is
-// where it was moved to (#1113).
+// there still; none of one moved since, which is its own allocation till a
+// borrow of where it is now records it again, as Rust's is where it was
+// moved to (#1113).
 function $itemOf(object) {
   const item = $items.get(object);
   if (item === undefined) return undefined;
   if ($slot(item.of, item.at) === object) return item;
-  const at = Array.isArray(item.of) && item.offset === undefined ? item.of.indexOf(object) : -1;
-  if (at < 0) {
-    $items.delete(object);
-    return undefined;
+  $items.delete(object);
+  return undefined;
+}
+
+// Where the object a field's or an item's handle is on is stored, recorded
+// where a reference or a pointer is made into it, so its address is in its
+// container's allocation, whichever pointer asks first (#1113).
+function $stored(handle, stride) {
+  const value = $slot(handle.of, handle.at);
+  if (value !== null && typeof value === "object") {
+    $items.set(value, { of: handle.of, at: handle.at, offset: handle.offset, stride });
   }
-  item.at = at;
-  return item;
+}
+
+// Whether a rooted handle's object is in its root still: one of the
+// containers its records say it's stored in, outward, is the root, as it
+// was where the handle was rooted, each step of its place recorded there,
+// the root perhaps stored in another; or none is, moved since to another
+// container, whose records say so (#1113).
+function $rooted(handle) {
+  let object = handle.of;
+  while (object !== handle.root) {
+    const item = $itemOf(object);
+    if (item === undefined) return false;
+    object = item.of;
+  }
+  return true;
+}
+
+// Each object a `Vec`'s or an array's items are, recorded as `$stored`'s
+// are, at its index then, found again where the array moves it (#1113).
+function $storedItems(items, stride) {
+  for (let i = 0; i < items.length; i++) {
+    const value = items[i];
+    if (value !== null && typeof value === "object") $items.set(value, { of: items, at: i, offset: undefined, stride });
+  }
 }
 
 function $addresses(allocation, bytes) {
@@ -250,7 +279,8 @@ function $addr(pointer, size) {
   // A place reached through more than one field or item: at its offset in
   // the root its projections start from, whose address is the root's
   // allocation's (#1089).
-  if (pointer.root !== undefined && pointer.bytes === undefined) {
+  // Not where the object it's on was moved out of its root since (#1113).
+  if (pointer.root !== undefined && pointer.bytes === undefined && $rooted(pointer)) {
     const addr = $addr($ptrTo(pointer.root), 0) + pointer.rootAt;
     $exposedPlaces.set(addr, pointer);
     return addr;
@@ -265,9 +295,13 @@ function $addr(pointer, size) {
   const item = pointer.bytes === undefined && typeof pointer.offset === "number" ? $itemOf(pointer.of) : undefined;
   if (item !== undefined) {
     const range = $ranges.get(item.of);
+    // An array's item recorded with its size: the array's address and its
+    // index times that (#1113).
     const start =
       typeof item.offset === "number"
         ? $addr($ptr(item.of, item.at, item.offset), 0)
+        : typeof item.stride === "number"
+          ? $addr($ptrTo(item.of), 0) + item.at * item.stride
         : range?.stride !== undefined
           ? range.base + (item.at === 0 ? 0 : item.at * range.stride)
           : undefined;

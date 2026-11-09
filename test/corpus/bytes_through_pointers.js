@@ -13,6 +13,7 @@ import {
   $ptrSlice,
   $ptrTo,
   $range,
+  $storedItems,
   $toBytes,
   $utf8Decode,
 } from "@rust-js/std";
@@ -146,6 +147,7 @@ function main() {
   }
   console.log(`0x${slot.value.toString(16)}`);
   const raw = Array.from({ length: 4 });
+  $storedItems(raw, 1);
   const r = $ptr(raw, 0);
   for (let i = 0; i < 4; i++) {
     $ptrAdd(r, i).value = i + 1;

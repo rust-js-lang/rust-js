@@ -13,6 +13,7 @@ import {
   $ptrShown,
   $ptrTo,
   $sort,
+  $stored,
 } from "@rust-js/std";
 
 export function entry() {
@@ -44,13 +45,21 @@ function main() {
     { a: 1, b: 2 },
     { a: 3, b: 4 },
   ];
+  $stored($ptr(two, 1), 5);
+  $stored($ptr(two, 0), 5);
   const stride = ($addr($ptr(two, 1), 5) - $addr($ptr(two, 0), 5)) >>> 0;
+  $stored($ptr(two, 1), 5);
   const through = $ptr(two, 1);
+  $stored($ptr(two, 1), 5);
+  $stored($ptr(two, 1), 5);
+  $stored($ptr(two, 1), 5);
   console.log(
     `${stride} 5 ${two[1].a} ${$ptrEq(through, $ptr(two, 1), 5)} ${$addr(through, 5) === $addr($ptr(two, 1), 5)}`,
   );
   // A pointer made of the item alone, where generic code has it, is at the
   // item's place in its array.
+  $stored($ptr(two, 1), 5);
+  $stored($ptr(two, 1), 5);
   console.log(`${addressOf(two[1], 5) === $addr($ptr(two, 1), 5)}`);
 
   // Round trips: an address made a pointer again is the pointer.

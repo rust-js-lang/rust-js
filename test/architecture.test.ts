@@ -540,6 +540,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/rvalues.rs": ["at", "body", "branches", "cuts", "locals", "pending", "statement", "writer"],
   "src/lower/mir/scopes.rs": ["body", "locals"],
   "src/lower/mir/std_calls.rs": ["at", "body", "locals"],
+  "src/lower/mir/stored.rs": ["body", "pending"],
   "src/lower/mir/structure.rs": ["at", "body", "commented", "copy_backs", "deferred", "in_place", "labels", "left", "locals", "pending", "statement", "unwind", "writer", "writes_captured"],
   "src/lower/mir/temporaries.rs": ["body", "copy_backs", "in_place", "iter_locals", "locals", "named", "own_names", "pending", "places", "refs", "settled", "unwind"],
   "src/lower/mir/writer.rs": ["body", "builders", "built", "thrown_writes", "writer", "writes_captured"],

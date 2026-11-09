@@ -726,3 +726,119 @@ as the record is moved with it. Case C. Corpus case
 `address_of_an_item_moved_in_its_vec`, against native Rust; mutations
 `stored-object-record-unchecked` and `stored-item-index-unfound`. The rest
 of #1113, recording where an object is stored as it's stored, follows.
+
+## Amendment: an object says where it's stored, recorded where it's borrowed (#1113, the user's decision)
+
+A field's pointer through a reference to an object stored in another,
+`let r = &(other.0).0; &raw const r.c`, was placed in that object's own
+allocation, while `&raw const (other.0).0`, rooted statically (#1089), was
+in `other`'s: `4294963208` where native Rust prints `8`. Which allocation
+an object's address was in depended on which pointer asked first, and
+whether its whole path from a local was in one statement.
+
+The user chose (2026-11-09) to record where an object is stored, for the
+types whose addresses are asked alone. The record is `$items`', the
+container, key and offset that `$addr` follows to the outermost
+allocation, checked where it's read (step 1, above). It's written where a
+reference or a raw pointer to a place is made, `$stored($ptr(other, 0,
+0))`, of each field or item the place passes through from its last
+`Deref`, and `$storedItems(v)` of a `Vec`'s or an array's borrowed whole.
+
+**Why where the borrow is made covers every address.** Every address is a
+pointer's; every pointer is made of a place, by `&raw`, or of a reference,
+by a cast; and every reference is made of a place too, by `&`, whose path
+MIR sees there, from a local, an allocation of its own, or from a `Deref`
+of another reference, whose referent was recorded where that reference was
+made. So each object a pointer is in was recorded on the way to it. The
+ways a reference reaches a program without a borrow of its whole path in
+the crate, and why each is still recorded:
+
+- std's references into a `Vec` or an array, `iter`, `iter_mut`, `get`,
+  `get_mut`, `first`, `last`, `split_at`, `chunks`, `as_ptr`: std is given
+  a borrow of the `Vec`, `&v` or `&mut v`, which records its items,
+  `$storedItems(v)`, so each item it lends is one recorded. A shared
+  subslice is a copy of its items (ADR 0063), and an item of one isn't
+  recorded as stored there: its `Vec`'s record stands. Corpus case
+  `address_of_an_item_std_lends`.
+- A `HashMap`'s or a `BTreeMap`'s `get`: its values are stored in its own
+  allocation natively, in an order its hasher or its tree decides, which
+  no program reads an address of; a JS `Map`'s value is an allocation of
+  its own. No container is recorded, and none is asked of.
+- `Box::into_raw`, `Box::leak`, `Rc::as_ptr`: a box's or an `Rc`'s value
+  is an allocation of its own natively, as its object is in JS; an object
+  stored in it, as anywhere, is recorded where it's borrowed.
+- A closure's capture: by reference, a borrow made where the closure is,
+  whose place is recorded there; by value, the object moved into the
+  closure, which is where it's stored, as Rust's is.
+
+**Which types.** A crate that asks no address, `p as usize`, `p.addr()`,
+`offset_from`, `p < q`, `{:p}` or `{:?}` of a pointer, records nothing:
+`ptr::eq` and reads through a pointer ask none (`asks_addresses`). One that
+does records the types of each object a raw pointer's place passes through
+or points at, and each struct, enum or union that holds one of those by
+value, again till none is added; a type parameter's value, where any is,
+as it may be one; and every tuple and array, objects of no definition a
+record could name (`StoredPlaces`, `analysis/stored_places.rs`, the one
+owner). An array's item, a tuple's part, are held by value; a `Box`'s, an
+`Rc`'s and a `Vec`'s items aren't, each an allocation of its own.
+
+**Moves.** An object moved since a record was made is where it's stored
+now: a record is checked where it's read, and one whose object isn't at
+its key any more is dropped, the object its own allocation till a borrow
+of where it is now records it again. A borrow of a `Vec` records its
+items again, so step 1's `indexOf` of an item a `remove` shifted is
+gone: a borrow records it where it is. A rooted handle (#1089) stands only
+where its object's records lead to its root still, else where they
+lead: an object swapped into another container, `mem::swap(&mut a.inner,
+&mut b.inner)`, is in `b`'s. With records, the rooting says what they
+do; it stays, as the form of a place whose root is in the statement, its
+mutations now of that form, `snapshots`.
+
+**Strides.** An array's item is recorded with its size, where it's known,
+so its address is the array's and its index times that, the array's
+own address found as any object's is: an array a tuple holds, its items
+reached through references.
+
+**A `Vec` is no container.** Its items are an allocation of their own
+natively, wherever the `Vec` is: a `Vec` a struct holds isn't recorded
+as stored there, though its items are recorded as its.
+
+**Not covered.** A variant's field, an enum's payload, whose offset its
+enum's layout doesn't say, is its object's own allocation. A reference a
+library makes into its own type's object isn't recorded unless the
+library asks addresses itself: whether a consumer's address of such a
+field is refused, or libraries record their public types' stores, is the
+user's to decide (#1113's step 4).
+
+**Cost.** Only in a crate that asks an address: a `$stored(..)` beside a
+borrow of a recorded type's place, and an O(n) `$storedItems` beside a
+borrow of a whole `Vec` of them, once a borrow, not once an item; and an
+`indexOf` where an item moved since its record (step 1). Case C. Corpus
+cases `address_of_a_field_where_its_object_is_stored` (the #1113 repro
+with its address asked before its container's, through a call, returned,
+a `Vec`'s items through its iterator, a move between containers, two deep,
+and an object's own address asked first) and
+`address_of_an_item_std_lends`, against native Rust; the metamorphic net's
+`address_of_*` cases through every rewrite, #1113 off its known list;
+mutations `stored-at-reference-unrecorded`, `stored-items-unrecorded`,
+`stored-slice-item-recorded`,
+`stored-places-unasked`, `stored-places-cast-unseen`,
+`stored-places-unclosed`, `stored-root-kept-after-move`,
+`stored-item-stride-unread` and `stored-record-unwritten`;
+`rooted-place-temporary-unmade` retargeted at the one helper that makes
+a place's temporaries first, `read_more_than_once`, which corpus case
+`pointer_into_a_borrow_read` holds in a crate that asks no address.
+With records, the runtime's rooted branch in `$addr` gives what the
+records give wherever its root's chain holds: `rooted-place-its-objects-own`
+no longer changes any output and is removed, the branch kept as the
+shortcut it is. So do the heuristics for an object no record names, a
+first item's or field's address asked before its container's, a later
+item's at its index times its array's stride, `$ptrTo` of an item at its
+place (#1019, #1081): every tuple, array and recorded type is recorded
+where it's borrowed, so none changes an output the corpus, the iterator
+tables or the metamorphic net has; their mutations,
+`tuple-of-an-addressed-field-apart`, `field-of-a-later-item-at-the-first`,
+`array-of-an-addressed-first-item-apart` and `item-pointer-not-placed`, are
+removed. The code stays for what no record names yet, an enum's payload,
+whose records #1114 makes, and goes with them. The lowering's code of where a place's objects are
+stored and rooted is one module, `mir/stored.rs`, beside `rvalues.rs`.

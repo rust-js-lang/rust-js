@@ -61,6 +61,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         let tcx = self.tcx;
+        // Where each object a reference or a pointer is made into is
+        // stored, recorded first, so its address is its container's
+        // (#1113).
+        if let Rvalue::Ref(_, _, place) | Rvalue::RawPtr(mir::RawPtrKind::Mut | mir::RawPtrKind::Const, place) = rvalue
+        {
+            self.record_stored(state, *place, span, out)?;
+        }
         let decls = &state.body.local_decls;
         Ok(Value::Expr(match rvalue {
             Rvalue::Use(operand, _) => return self.mir_operand(state, operand, out),
@@ -747,14 +754,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // yet made, the reference a `Ref`'s `*cell.borrow()` gives:
                 // made first, so the place and its root each read it, and
                 // not its name alone, which no JS declares (#1110).
-                if Self::rooted_from(*place).is_some()
-                    && (std::iter::once(place.local).chain(place.projection.iter().filter_map(|elem| match elem {
-                        PlaceElem::Index(local) => Some(local),
-                        _ => None,
-                    })))
-                    .any(|local| state.pending.iter().any(|(l, _)| *l == local))
-                {
-                    self.flush(state, out)?;
+                if Self::rooted_from(*place).is_some() {
+                    self.read_more_than_once(state, *place, out)?;
                 }
                 let target = self.mir_place(state, *place, span, out)?;
                 // Only read through, of what a reference or box refers to:
@@ -825,101 +826,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
-    /// Where `place`'s root ends, the projection its steps start at, past
-    /// its last `Deref`, of a place reached through more than one field or
-    /// item from there, which `place_in_root` roots; `None` of one step.
-    fn rooted_from(place: Place<'tcx>) -> Option<usize> {
-        let start = (place.projection.iter())
-            .rposition(|elem| elem == PlaceElem::Deref)
-            .map_or(0, |at| at + 1);
-        (place.projection.len() - start >= 2).then_some(start)
-    }
-
-    /// Of `place`, a raw pointer's, reached through more than one field or
-    /// item from where its projections start, its local or what its last
-    /// `Deref` reads: that root's JS, an object, and the place's byte offset
-    /// in it, rustc's layout for wasm32, so its address is in the root's
-    /// allocation, not the inner object's own (#1089). `None` of a place of
-    /// one step, or of a step whose layout isn't known here, a variant's,
-    /// or an index whose value is pending.
-    fn place_in_root(
-        &mut self,
-        state: &mut State<'_, 'tcx>,
-        place: Place<'tcx>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Option<(Expr, Expr)>> {
-        let Some(start) = Self::rooted_from(place) else {
-            return Ok(None);
-        };
-        let steps = &place.projection[start..];
-        let root = Place {
-            local: place.local,
-            projection: self.tcx.mk_place_elems(&place.projection[..start]),
-        };
-        let decls = &state.body.local_decls;
-        let mut ty = root.ty(decls, self.tcx);
-        if !self.is_object(ty.ty) {
-            return Ok(None);
-        }
-        let (mut bytes, mut indices): (u64, Vec<(Local, u64)>) = (0, Vec::new());
-        for &elem in steps {
-            let size = |cx: &Self, ty: Ty<'tcx>| cx.layout(ty).map(|layout| layout.size.bytes());
-            match elem {
-                PlaceElem::Field(field, _) if ty.variant_index.is_none() => {
-                    let Some(layout) = self.layout(ty.ty) else {
-                        return Ok(None);
-                    };
-                    bytes += layout.fields.offset(field.index()).bytes();
-                }
-                PlaceElem::ConstantIndex {
-                    offset,
-                    from_end: false,
-                    ..
-                } => {
-                    let Some(item) = size(self, ty.projection_ty(self.tcx, elem).ty) else {
-                        return Ok(None);
-                    };
-                    bytes += offset * item;
-                }
-                PlaceElem::Index(local) if !state.pending.iter().any(|(l, _)| *l == local) => {
-                    let Some(item) = size(self, ty.projection_ty(self.tcx, elem).ty) else {
-                        return Ok(None);
-                    };
-                    indices.push((local, item));
-                }
-                _ => return Ok(None),
-            }
-            ty = ty.projection_ty(self.tcx, elem);
-        }
-        let root = self.mir_place(state, root, span, out)?;
-        // An index that's a number is in the offset, `8`; another, its
-        // value times its item's size, `i * 8 + 4`.
-        let mut scaled = Vec::new();
-        for (local, item) in indices {
-            let index = self.read_local(state, local, out)?;
-            match index.kind {
-                js::ExprKind::Num(n) if n >= 0.0 && n.fract() == 0.0 => bytes += n as u64 * item,
-                _ => scaled.push(Expr::bin(js::Op::Mul, index, Expr::int(i128::from(item)))),
-            }
-        }
-        let at = (scaled.into_iter())
-            .reduce(|all, part| Expr::bin(js::Op::Add, all, part))
-            .map_or_else(
-                || Expr::int(i128::from(bytes)),
-                |parts| match bytes {
-                    0 => parts,
-                    _ => Expr::bin(js::Op::Add, parts, Expr::int(i128::from(bytes))),
-                },
-            );
-        Ok(Some((root, at)))
-    }
-
     /// The byte offset of `place`'s last field in its struct or tuple,
     /// rustc's layout for wasm32 (ADR 0562): where its address is in the JS
     /// object or array the field is on (#1081). `Unsaid` of a place that
     /// isn't a field's; `LaidOutByCaller` of a type a caller lays out.
-    fn field_offset(&self, place: Place<'tcx>, decls: &IndexVec<Local, mir::LocalDecl<'tcx>>) -> Offset {
+    pub(super) fn field_offset(&self, place: Place<'tcx>, decls: &IndexVec<Local, mir::LocalDecl<'tcx>>) -> Offset {
         let Some((base, PlaceElem::Field(field, _))) = place.as_ref().last_projection() else {
             return Offset::Unsaid;
         };

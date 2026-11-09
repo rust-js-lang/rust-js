@@ -46,6 +46,7 @@ pub(in crate::lower) use queries::{referred_constant, referred_key};
 mod rvalues;
 mod scopes;
 mod std_calls;
+mod stored;
 mod structure;
 mod temporaries;
 mod threaded;

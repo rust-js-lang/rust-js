@@ -3,12 +3,12 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "rooted-place-temporary-unmade",
-    breaks: "a nested place whose root is what a `Deref` gives, `(*cell.borrow())[2].a`, reads the temporary holding it by its name, `_25`, which no JS declares: a `ReferenceError` (#1110)",
+    name: "stored-at-reference-unrecorded",
+    breaks: "a reference made to an object's place, `&(other.0).0`, doesn't record where it's stored, so a field's address through it is its own allocation's, `4294963208` where native Rust's is `8` (#1113)",
     file: "src/lower/mir/rvalues.rs",
-    find: "                    self.flush(state, out)?;\n                }\n                let target = self.mir_place(state, *place, span, out)?;\n",
-    replace: "                }\n                let target = self.mir_place(state, *place, span, out)?;\n",
-    tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field_through_a_deref.rs$"],
+    find: "        if let Rvalue::Ref(_, _, place) | Rvalue::RawPtr(mir::RawPtrKind::Mut | mir::RawPtrKind::Const, place) = rvalue\n",
+    replace: "        if let Rvalue::RawPtr(mir::RawPtrKind::Mut | mir::RawPtrKind::Const, place) = rvalue\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_where_its_object_is_stored.rs$"],
   },
   {
     name: "rooted-item-of-no-offset-unrooted",
@@ -17,30 +17,7 @@ export const mutations: Mutation[] = [
     find: 'if callee.helper_name() == Some("$ptr") && matches!(given.len(), 2 | 3) =>',
     replace: 'if callee.helper_name() == Some("$ptr") && given.len() == 3 =>',
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field_through_a_deref.rs$"],
-  },
-  {
-    name: "nested-place-unrooted",
-    breaks: "a raw pointer to a place reached through more than one field or item is given no root, so its address is the inner object's own, 4096 from the root's where native Rust's is 8 (#1089)",
-    file: "src/lower/mir/rvalues.rs",
-    find: "        (place.projection.len() - start >= 2).then_some(start)\n",
-    replace: "        (place.projection.len() - start >= 99).then_some(start)\n",
-    tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field.rs$"],
-  },
-  {
-    name: "nested-place-index-unscaled",
-    breaks: "a nested place's index that's a variable's is its offset as it is, not times its item's size, `items[i].b` at `i` where native Rust's is `i * 8` (#1089)",
-    file: "src/lower/mir/rvalues.rs",
-    find: "                _ => scaled.push(Expr::bin(js::Op::Mul, index, Expr::int(i128::from(item)))),\n",
-    replace: "                _ => scaled.push(index),\n",
-    tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field.rs$"],
-  },
-  {
-    name: "nested-place-field-offset-lost",
-    breaks: "a nested place's field steps add no offset, `o.inner.a` at `o.inner`'s, where native Rust's is 4 past it (#1089)",
-    file: "src/lower/mir/rvalues.rs",
-    find: "                    bytes += layout.fields.offset(field.index()).bytes();\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field.rs$"],
+    snapshots: true,
   },
   {
     name: "item-written-at-its-own-index-only",

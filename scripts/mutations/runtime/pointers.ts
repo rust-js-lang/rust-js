@@ -3,19 +3,35 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "stored-item-stride-unread",
+    breaks: "an array's item recorded with its size isn't placed by it, so an item of an array a tuple holds, reached through a reference, is its own allocation's (#1113)",
+    file: "src/runtime/pointers.js",
+    find: "        : typeof item.stride === \"number\"\n",
+    replace: "        : false\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_where_its_object_is_stored.rs$"],
+  },
+  {
+    name: "stored-root-kept-after-move",
+    breaks: "a handle rooted where its object was, before a `swap` moved it, keeps that root, so its field's address is in the container it left, `4294963212` where native Rust's is `12` (#1113)",
+    file: "src/runtime/pointers.js",
+    find: "  if (pointer.root !== undefined && pointer.bytes === undefined && $rooted(pointer)) {\n",
+    replace: "  if (pointer.root !== undefined && pointer.bytes === undefined) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_where_its_object_is_stored.rs$"],
+  },
+  {
+    name: "stored-record-unwritten",
+    breaks: "`$stored` records nothing, so a field's address through a reference is its object's own allocation's (#1113)",
+    file: "src/runtime/pointers.js",
+    find: "    $items.set(value, { of: handle.of, at: handle.at, offset: handle.offset, stride });\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_where_its_object_is_stored.rs$"],
+  },
+  {
     name: "stored-object-record-unchecked",
     breaks: "an item moved out of its `Vec` is still where its record says, its field's address in the buffer it left, `true` where native Rust's is `false` (#1113)",
     file: "src/runtime/pointers.js",
     find: "  if ($slot(item.of, item.at) === object) return item;\n",
     replace: "  return item;\n",
-    tests: ["test/corpus.test.ts", "-t", "^address_of_an_item_moved_in_its_vec.rs$"],
-  },
-  {
-    name: "stored-item-index-unfound",
-    breaks: "an item a `remove` before it shifted is taken for one moved out, its field's address its own allocation's, not `0` past the buffer's start (#1113)",
-    file: "src/runtime/pointers.js",
-    find: "  const at = Array.isArray(item.of) && item.offset === undefined ? item.of.indexOf(object) : -1;\n",
-    replace: "  const at = -1;\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_item_moved_in_its_vec.rs$"],
   },
   {
@@ -51,14 +67,6 @@ export const mutations: Mutation[] = [
     tests: ["test/runtime-package.test.ts", "-t", "allocation's bytes and its items"],
   },
   {
-    name: "rooted-place-its-objects-own",
-    breaks: "a field's pointer of a struct an array's item or a struct's field is, given its root, is at the inner object's own address, 4096 from the root's where native Rust's is 8 (#1089)",
-    file: "src/runtime/pointers.js",
-    find: "  if (pointer.root !== undefined && pointer.bytes === undefined) {\n",
-    replace: "  if (false) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field.rs$"],
-  },
-  {
     name: "tuple-field-at-index-times-stride",
     breaks: "a tuple's field's handle, an array's item in JS, is at its index times a size, `0 1 2` of a `(u8, u32, u16)` rustc lays out `4 0 6` (#1081)",
     file: "src/runtime/pointers.js",
@@ -83,14 +91,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_through_a_reference.rs$"],
   },
   {
-    name: "tuple-of-an-addressed-field-apart",
-    breaks: "a tuple struct whose field at its start, an object, has an address already is an allocation of its own, `&raw const last.0.1` asked before `&raw const last.0` 4096 apart (#1081)",
-    file: "src/runtime/pointers.js",
-    find: "      : pointer.offset === 0 && pointer.of === allocation && Array.isArray(allocation)\n",
-    replace: "      : false\n",
-    tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_through_a_reference.rs$"],
-  },
-  {
     name: "tuple-field-pointer-stepped",
     breaks: "`(&raw const t.0).add(1)` of a tuple's field steps to the field at the next index, which rustc's layout may put anywhere, where it's refused (#1081)",
     file: "src/runtime/pointers.js",
@@ -112,22 +112,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/pointers.js",
     find: "  if (item !== undefined) {\n    const range = $ranges.get(item.of);\n",
     replace: "  if (false) {\n    const range = $ranges.get(item.of);\n",
-    tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_through_a_reference.rs$"],
-  },
-  {
-    name: "field-of-a-later-item-at-the-first",
-    breaks: "`&raw const pair.1.b` is at the first item's address and the field's offset, not the second's (#1019)",
-    file: "src/runtime/pointers.js",
-    find: "(item.at === 0 ? 0 : item.at * range.stride)",
-    replace: "0",
-    tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_through_a_reference.rs$"],
-  },
-  {
-    name: "array-of-an-addressed-first-item-apart",
-    breaks: "`&raw const held.0.b` asked before any pointer to `held.0` is made, then `&raw const held.0`, are in two allocations (#1019)",
-    file: "src/runtime/pointers.js",
-    find: "  if (first !== undefined && (!items || first.base + allocation.length * stride <= first.end)) {\n",
-    replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_through_a_reference.rs$"],
   },
   {
@@ -288,14 +272,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/pointers.js",
     find: "  if (p.addr !== undefined && q.addr !== undefined) return p.addr === q.addr;\n",
     replace: "  if (p.addr !== undefined && q.addr !== undefined) return false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
-  },
-  {
-    name: "item-pointer-not-placed",
-    breaks: "`$ptrTo` of an array's item isn't the item's place, so its address is its own",
-    file: "src/runtime/pointers.js",
-    find: "    if (item !== null && typeof item === \"object\") $items.set(item, { of: object, at: key, offset });\n",
-    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
   },
   {

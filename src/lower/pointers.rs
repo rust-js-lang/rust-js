@@ -1422,7 +1422,7 @@ fn impls_are_arrays(
 
 /// `$index(items, i)`'s arguments, the message too where it's given: an
 /// item whose index is checked where it's reached.
-fn checked_item(e: &Expr) -> Option<&[Expr]> {
+pub(in crate::lower) fn checked_item(e: &Expr) -> Option<&[Expr]> {
     match &e.kind {
         js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$index") && args.len() >= 2 => Some(args),
         _ => None,

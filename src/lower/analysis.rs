@@ -41,6 +41,8 @@ mod scopes;
 pub(super) use scopes::Scopes;
 mod self_handles;
 pub(super) use self_handles::SelfHandles;
+mod stored_places;
+pub(in crate::lower) use stored_places::StoredPlaces;
 mod tests;
 mod throwing;
 mod unwinding;
@@ -519,6 +521,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// knowing its back (ADR 0545).
     pub back_stepped: BackStepped<'tcx>,
     pub changed_vecs: IndexSet<Ty<'tcx>>,
+    /// The types whose objects say where they're stored (#1113).
+    pub stored_places: StoredPlaces,
     /// Each generic function's type parameters it's given a drop function
     /// for (ADR 0098), by their indices.
     pub drop_params: IndexMap<DefId, Vec<u32>>,
@@ -1280,6 +1284,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
 
     let mutated = mutated_types(tcx, all_bodies);
     let changed_vecs = changed_vecs(tcx, all_bodies);
+    let stored_places = stored_places::stored_places(tcx, all_bodies);
     // What a caller gives generic code whose drop runs something, a value
     // of a destructor, a counted `Rc`'s or a guard's: the one answer the
     // lowering's drops give (ADR 0451).
@@ -1399,6 +1404,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         explicit_adapters,
         back_stepped,
         changed_vecs,
+        stored_places,
         drop_params,
         copied,
         clones,
