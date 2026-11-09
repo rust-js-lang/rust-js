@@ -1151,7 +1151,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && let Some((b, _)) = raw_pointee(self.tcx, to)
                     && self.is_handle_pointer(to) =>
             {
-                Ok(Some(self.pointer_to(Expr::member(value, js::HELD), b, Offset::Unsaid, span)?))
+                Ok(Some(self.pointer_to(
+                    Expr::member(value, js::HELD),
+                    b,
+                    Offset::Unsaid,
+                    span,
+                )?))
             }
             mir::CastKind::PtrToPtr if self.is_handle_pointer(from) && self.is_handle_pointer(to) => {
                 let (ty::RawPtr(a, _), ty::RawPtr(b, _)) = (from.kind(), to.kind()) else {

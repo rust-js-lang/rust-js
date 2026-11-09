@@ -637,7 +637,7 @@ export const mutations: Mutation[] = [
     name: "dyn-pointer-thin-refused",
     breaks: "a `*const dyn Trait` made thin, `z as *const A`, is refused",
     file: "src/lower/pointers.rs",
-    find: "                Ok(Some(self.pointer_to(Expr::member(value, js::HELD), b, Offset::Unsaid, span)?))\n",
+    find: "                Ok(Some(self.pointer_to(\n                    Expr::member(value, js::HELD),\n                    b,\n                    Offset::Unsaid,\n                    span,\n                )?))\n",
     replace:
       '                Err(refuse(self.tcx, span, Refused::Memory("a pair\'s pointer made thin")))\n',
     tests: ["test/corpus.test.ts", "-t", "^dyn_pointers.rs$"],
