@@ -1,5 +1,5 @@
 //! A local moved into a value that holds it: `boxed`, `option`,
-//! `rc-refcell` and `field`. Each `let x = e;` of a name bound once in its
+//! `rc-refcell`, `field`, `array` and `tuple`. Each `let x = e;` of a name bound once in its
 //! function holds `e` in the wrapper, and each use of `x` reads it there,
 //! a place as `x` was.
 
@@ -23,6 +23,10 @@ pub enum Wrap {
     RcRefCell,
     /// `MetamorphField(e)`, a one-field struct, read `(x.0)`.
     Field,
+    /// `[e]`, an array of one, read `(x[0])`.
+    Array,
+    /// `(e,)`, a tuple of one, read `(x.0)`.
+    Tuple,
 }
 
 impl Wrap {
@@ -32,6 +36,8 @@ impl Wrap {
             Wrap::Option => syn::parse_quote!(Some(#e)),
             Wrap::RcRefCell => syn::parse_quote!(::std::rc::Rc::new(::std::cell::RefCell::new(#e))),
             Wrap::Field => syn::parse_quote!(MetamorphField(#e)),
+            Wrap::Array => syn::parse_quote!([#e]),
+            Wrap::Tuple => syn::parse_quote!((#e,)),
         }
     }
 
@@ -41,6 +47,8 @@ impl Wrap {
             Wrap::Option => syn::parse_quote!(Option<#t>),
             Wrap::RcRefCell => syn::parse_quote!(::std::rc::Rc<::std::cell::RefCell<#t>>),
             Wrap::Field => syn::parse_quote!(MetamorphField<#t>),
+            Wrap::Array => syn::parse_quote!([#t; 1]),
+            Wrap::Tuple => syn::parse_quote!((#t,)),
         }
     }
 
@@ -52,7 +60,8 @@ impl Wrap {
             (Wrap::Option, true) => quote!((*#x.as_mut().unwrap())),
             (Wrap::RcRefCell, false) => quote!((*#x.borrow())),
             (Wrap::RcRefCell, true) => quote!((*#x.borrow_mut())),
-            (Wrap::Field, _) => quote!((#x.0)),
+            (Wrap::Field | Wrap::Tuple, _) => quote!((#x.0)),
+            (Wrap::Array, _) => quote!((#x[0])),
         }
     }
 }

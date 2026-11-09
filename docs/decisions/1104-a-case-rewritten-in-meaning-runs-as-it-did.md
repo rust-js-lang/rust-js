@@ -165,3 +165,60 @@ net stays the rule (main, on the user's behalf, 2026-11-09).
 On the M6, quiet, after a change to the compiler: 299 s (load 2.54), not
 501 s; and in a fresh worktree, 295 s (load 2.67), no native program built again, not 830 s. A store's first run is
 as before, 830 s (load 2.78).
+
+## Amended: round 3, forms the corpus writes one way (#939)
+
+Nine rewrites more, each of a form the corpus mostly writes one way,
+which rustc holds to the same meaning:
+
+- `array` and `tuple`: as `field`, each `let x = e;` held in an array of
+  one, `[e]`, read `(x[0])`, and a tuple of one, `(e,)`, read `(x.0)`
+  (`wrap.rs`).
+- `for-each`: a `for` loop whose body leaves it only at its end, no
+  `break`, `continue`, `return`, `?`, `.await` or label of its own, made
+  `(e).into_iter().for_each(|x| body)`; and `for-loop`, back, a statement
+  `e.for_each(|x| body)` of a closure of one untyped parameter that
+  doesn't `return` made `for x in e body` (`loops.rs`).
+- `if-let`: a `match` of two arms of no guards, one of which binds
+  nothing, `None` or `_`, made `if let P = (e) { a } else { b }`: rustc
+  held the `match` to cover every value, so the `else` is the other arm's.
+  And a `let x = match e { P(v) => v, _ => d };` made `let P(x) = e else
+  { d };`, a variant only where `d` diverges, as rustc refuses it otherwise
+  (`matches.rs`).
+- `method-fn`: an inherent method's body, of an impl of no generics, moved
+  into a free function given its receiver, `self` named `this`, `Self` the
+  type; and `fn-method`, back, a free function whose first parameter is a
+  reference to one of the case's types made a method of that type the
+  function calls (`methods.rs`).
+- `default-copy`: each default method of a trait of no generics written
+  out in each impl of it that takes it, `Self` the impl's type there as
+  it is where the default runs (`defaults.rs`).
+- `tuple-struct`: a struct of named fields that no other type of the case
+  names alike, of no rust-js or serde attribute, made a tuple struct: each
+  literal by its fields' places, its values first where it writes them out
+  of order, so they're made in its order; each pattern by places, `_` of
+  each it leaves out; each `.field` by its place, a macro's tokens too.
+  Not a struct a literal of which takes another's rest, `..base`; nor any
+  of a case with a binding, whose structs JS makes or reads by their keys,
+  an object, where a tuple struct is an array (`tuples.rs`).
+
+Its first run, every case of each, in both builds, 5 min 33 s on the
+12-core M6 in 10 parts: the rewrites made 1,747 (`array`, `tuple`), 458
+(`for-each`), 22 (`for-loop`), 212 (`if-let`), 87 (`method-fn`), 202
+(`fn-method`), 64 (`default-copy`) and 622 (`tuple-struct`) programs, of
+which 1,443, 1,735, 450, 22, 206, 85, 197, 61 and 619 rustc compiled; 5,
+0, 5, 0, 0, 0, 0, 1 and 14 of those ran otherwise than native or crashed
+rust-js. Four of `tuple-struct`'s were of a binding's struct, the
+rewrite's own fault, so it leaves out such a case; the other 21 are ten
+families, each listed under its issue in test/metamorphic-known.txt: a
+`&mut` of a place through a reference an array's item holds, read again
+where it's used; a write through `for_each`'s binding of `iter_mut()`'s
+item not seen as a change in place, so `vec![row; n]` shares one row; a
+closure's address read in another closure, `undefined`; a nested
+closure's new value named as the variable it sets, hiding it; an iterator
+`for_each` consumes not dropped where its closure panics; a generic
+impl's method's drop of what an `IntoIterator` gives, in std's iterator
+structs' build; an untagged enum's refusal read as a crash; a numbered
+field's address in a tuple struct another holds; a generic tuple struct's
+`RefCell` field made a cell and read as its value; and an untagged enum's
+array member matching its `otherwise` member, a tuple struct.

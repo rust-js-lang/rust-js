@@ -25,12 +25,34 @@
 //!   (`closures.rs`).
 //! - `library`: every item but `main` moved into a library crate the
 //!   program uses, printed library first (`library.rs`).
+//! - `array` and `tuple`: each `let x = e;` as `option`'s, held in an array
+//!   of one, `[e]`, read `(x[0])`, and a tuple of one, `(e,)`, read
+//!   `(x.0)` (`wrap.rs`).
+//! - `for-each`: a `for` loop whose body leaves it only at its end made
+//!   `(e).into_iter().for_each(|x| body)`; `for-loop`, a `for_each` of a
+//!   closure made a `for` loop (`loops.rs`).
+//! - `if-let`: a `match` of two arms, the second `_`, made an `if let`, and
+//!   a `let` of one whose first arm gives what it binds a `let else`
+//!   (`matches.rs`).
+//! - `method-fn`: an inherent method's body moved into a free function
+//!   given its receiver; `fn-method`, a free function of a reference to one
+//!   of the case's types made a method of it the function calls
+//!   (`methods.rs`).
+//! - `default-copy`: a trait's default method written out in each impl of
+//!   it that takes it (`defaults.rs`).
+//! - `tuple-struct`: a struct of named fields made a tuple struct, its
+//!   fields read by their places (`tuples.rs`).
 //!
 //! `<limit>`: only so many of the places a rewrite finds, in order.
 
 mod closures;
+mod defaults;
 mod generic;
 mod library;
+mod loops;
+mod matches;
+mod methods;
+mod tuples;
 mod wrap;
 
 use proc_macro2::TokenTree;
@@ -41,7 +63,7 @@ use syn::{Block, FnArg, Item, Pat, Stmt, Type};
 
 use wrap::Wrap;
 
-const REWRITES: &str = "outline|boxed|option|rc-refcell|field|dyn-ref|impl-ref|impl-owned|generic|closure-fn|library";
+const REWRITES: &str = "outline|boxed|option|rc-refcell|field|dyn-ref|impl-ref|impl-owned|generic|closure-fn|library|array|tuple|for-each|for-loop|if-let|method-fn|fn-method|default-copy|tuple-struct";
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -73,11 +95,20 @@ fn main() {
         "option" => wrap::wrap(&mut ast, Wrap::Option, &mut budget),
         "rc-refcell" => wrap::wrap(&mut ast, Wrap::RcRefCell, &mut budget),
         "field" => wrap::wrap(&mut ast, Wrap::Field, &mut budget),
+        "array" => wrap::wrap(&mut ast, Wrap::Array, &mut budget),
+        "tuple" => wrap::wrap(&mut ast, Wrap::Tuple, &mut budget),
         "dyn-ref" => refs(&mut ast, Refs::Dyn, &mut budget),
         "impl-ref" => refs(&mut ast, Refs::Impl, &mut budget),
         "impl-owned" => owned(&mut ast, &mut budget),
         "generic" => generic::generic(&mut ast, &mut budget),
         "closure-fn" => closures::closure_fn(&mut ast, file, &source, &mut budget),
+        "for-each" => loops::for_each(&mut ast, &mut budget),
+        "for-loop" => loops::for_loop(&mut ast, &mut budget),
+        "if-let" => matches::if_let(&mut ast, &mut budget),
+        "method-fn" => methods::method_fn(&mut ast, &mut budget),
+        "fn-method" => methods::fn_method(&mut ast, &mut budget),
+        "default-copy" => defaults::default_copy(&mut ast, &mut budget),
+        "tuple-struct" => tuples::tuple_struct(&mut ast, &mut budget),
         _ => {
             eprintln!("no rewrite `{rewrite}`: {REWRITES}");
             std::process::exit(64);

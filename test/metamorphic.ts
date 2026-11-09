@@ -17,13 +17,21 @@ import { root, target } from "./support";
 import { runSync } from "./child";
 
 /** Each rewrite, `metamorph`'s: `main`'s body outlined; each `let` of a
- * name bound once moved into a box, an `Option`, an `Rc<RefCell>` and a
- * struct's field; each reference parameter of a free function taken as
- * `&dyn` and as `&impl` of an identity trait; each owned one as `impl` of
- * one; a free function made generic over a type it takes; each closure
- * that captures nothing made a `fn`, and each function given as a value a
- * closure; every item but `main` moved into a library crate. */
-export const rewrites = ["outline", "boxed", "dyn-ref", "impl-ref", "impl-owned", "generic", "option", "rc-refcell", "field", "closure-fn", "library"] as const;
+ * name bound once moved into a box, an `Option`, an `Rc<RefCell>`, a
+ * struct's field, an array of one and a tuple of one; each reference
+ * parameter of a free function taken as `&dyn` and as `&impl` of an
+ * identity trait; each owned one as `impl` of one; a free function made
+ * generic over a type it takes; each closure that captures nothing made a
+ * `fn`, and each function given as a value a closure; every item but
+ * `main` moved into a library crate; a `for` loop made a `for_each` and a
+ * `for_each` a `for` loop; a `match` of two arms an `if let` or a `let
+ * else`; a method's body a free function's, and a free function's a
+ * method's; a trait's default written out in each impl; a struct of named
+ * fields a tuple struct. */
+export const rewrites = [
+  "outline", "boxed", "dyn-ref", "impl-ref", "impl-owned", "generic", "option", "rc-refcell", "field", "closure-fn", "library",
+  "array", "tuple", "for-each", "for-loop", "if-let", "method-fn", "fn-method", "default-copy", "tuple-struct",
+] as const;
 export type Rewrite = (typeof rewrites)[number];
 
 /** Where the rewriter's crate is, and what it builds. */
