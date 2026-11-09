@@ -267,4 +267,13 @@ export const mutations: Mutation[] = [
     replace: "self.displays_its_value(ty)",
     tests: ["test/corpus.test.ts", "-t", "^untagged_displayed_in_place.rs$"],
   },
+  {
+    name: "display-value-unevaluated",
+    breaks:
+      "a `{}` whose text doesn't read its value, a `FromUtf16Error`'s message, drops the call that made it, and an `unwrap_err` of an `Ok` doesn't panic (#1063)",
+    file: "src/lower/display/written.rs",
+    find: "        let evaluated = value.has_effects().then(|| value.clone());\n        let shown = self.display_shown(value, ty, span, pretty)?;\n",
+    replace: "        let evaluated = None;\n        let shown = self.display_shown(value, ty, span, pretty)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^text_of_a_value_made_by_a_call.rs$"],
+  },
 ];

@@ -400,6 +400,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         pretty: &Pretty,
     ) -> R<Expr> {
+        let evaluated = value.has_effects().then(|| value.clone());
+        let shown = self.display_shown(value, ty, span, pretty)?;
+        Ok(evaluated_first(evaluated, shown))
+    }
+
+    /// `display_string_with`'s text, which may leave the value unread.
+    fn display_shown(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let (value, ty) = self.shown_through(value, ty);
         let ty = self.shown_type(ty);
         // `js::shown`'s: the text JS's template makes of the value,

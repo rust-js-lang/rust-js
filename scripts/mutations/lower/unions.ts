@@ -46,4 +46,13 @@ export const mutations: Mutation[] = [
       "        let writable_whole = true || scalar || union_size.is_some_and(|size| self.fills(read_ty, size));\n",
     tests: ["test/runtime-package.test.ts", "-t", "union"],
   },
+  {
+    name: "unit-union-field-read-whole",
+    breaks:
+      "a union's `()` field, read where it holds another, is rust-js's error where it runs, though it reads no bytes (#1063)",
+    file: "src/lower/unions.rs",
+    find: "        if read_ty.is_unit() && !union.has_effects() {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
+  },
 ];

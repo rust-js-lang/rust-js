@@ -220,14 +220,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],
   },
   {
-    name: "debug-any-unrun",
-    breaks: "`{:?}` of a `dyn Any` made where it's shown skips what made it",
-    file: "src/lower/display/debug.rs",
-    find: '                return Ok(Expr::call(Expr::helper("$debugAny"), vec![value]));',
-    replace: '                return Ok(Expr::str("Any { .. }"));',
-    tests: ["test/corpus.test.ts", "-t", "dyn_any_generic"],
-  },
-  {
     name: "peek-mut-debug-heap",
     breaks: "`{:?}` of a `PeekMut` shows its heap",
     file: "src/lower/display/debug.rs",
@@ -428,9 +420,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`{:?}` of a `Vec<&mut i32>` shows each cell, not what it points at",
     file: "src/lower/display/debug.rs",
-    find: "    ) -> R<Expr> {\n        let (value, ty) = self.shown_through(value, ty);",
+    find: "pretty: &Pretty) -> R<Expr> {\n        let (value, ty) = self.shown_through(value, ty);",
     replace:
-      "    ) -> R<Expr> {\n        let (value, ty) = self.through_boxes(value, ty.peel_refs());",
+      "pretty: &Pretty) -> R<Expr> {\n        let (value, ty) = self.through_boxes(value, ty.peel_refs());",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
   },
   {
@@ -509,5 +501,14 @@ export const mutations: Mutation[] = [
     find: '            return Ok(self.pretty_or(pretty, plain, "Drain(", Expr::array(vec![left]), ")"));\n',
     replace: "            return Ok(plain);\n",
     tests: ["test/corpus.test.ts", "-t", "^pretty_debug_of_std_iterators.rs$"],
+  },
+  {
+    name: "debug-value-unevaluated",
+    breaks:
+      "a `{:?}` whose text doesn't read its value, `()`'s, a `Weak`'s, drops the call that made it, which never prints (#1063)",
+    file: "src/lower/display/debug.rs",
+    find: "        let evaluated = value.has_effects().then(|| value.clone());\n        let shown = self.debug_shown(value, ty, span, pretty)?;\n",
+    replace: "        let evaluated = None;\n        let shown = self.debug_shown(value, ty, span, pretty)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^text_of_a_value_made_by_a_call.rs$"],
   },
 ];

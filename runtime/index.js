@@ -8618,12 +8618,6 @@ export function $dynCell(cell, impl) {
   return cell;
 }
 
-// `{:?}` of a `dyn Any` made where it's shown (ADR 0331): what std shows of
-// any, once what made it ran.
-export function $debugAny() {
-  return "Any { .. }";
-}
-
 // `{:?}` of a `TypeId`, its hash, which rust-js doesn't keep: rust-js's
 // error where it's shown, as only an assertion that fails may show one
 // (ADR 0331).

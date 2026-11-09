@@ -20,19 +20,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         pretty: &Pretty,
     ) -> R<Expr> {
+        let evaluated = value.has_effects().then(|| value.clone());
+        let shown = self.debug_shown(value, ty, span, pretty)?;
+        Ok(evaluated_first(evaluated, shown))
+    }
+
+    /// `debug_string_with`'s text, which may leave the value unread, a
+    /// `()`'s `"()"` or a `Weak`'s `"(Weak)"`.
+    fn debug_shown(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let (value, ty) = self.shown_through(value, ty);
         // A raw pointer shows its address, which JS hasn't (ADR 0407), and
         // so does a function pointer.
         if self.is_handle_pointer(ty) || matches!(ty.kind(), ty::FnPtr(..)) {
             return self.pointer_shown(value, ty, span);
         }
-        // A `dyn Any` shows nothing of its value, as std's `Debug` doesn't;
+        // A `dyn Any` shows nothing of its value, as std's `Debug` doesn't,
+        // made first where making it does something (`evaluated_first`);
         // a `TypeId` its hash, which rust-js doesn't keep: its error where
         // it's shown, as a pointer's address is (ADR 0331).
         if self.recognition().is_dyn_any(ty) {
-            if value.has_effects() {
-                return Ok(Expr::call(Expr::helper("$debugAny"), vec![value]));
-            }
             return Ok(Expr::str("Any { .. }"));
         }
         if self.recognition().is_type_id(ty) {

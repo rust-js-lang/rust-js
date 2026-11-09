@@ -116,3 +116,26 @@ shown". The pair is read twice, for its dictionary and its value, and
 ..`, which the lowering there can write. Held by
 `test/corpus/dyn_shapes_shared.rs` and the mutation
 `dyn-debug-pair-unheld`.
+
+## Amendment: a value whose text doesn't read it is still made (2026-11-09, #1063)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's are kept. `{:?}` of a `()` is `"()"`, of a `Weak` `"(Weak)"`, and
+`{}` of a `FromUtf16Error` its message, none reading the value; the value,
+`give()`'s or `decoded(&units).unwrap_err()`'s, was dropped with it, so the
+call never printed, nor panicked on an `Ok`. **`debug_string_with` and
+`display_string_with`, which every `{}` and `{:?}` goes through, make the
+value first where it has effects and the text doesn't read it**
+(`evaluated_first`), and a `()` given its `Formatter`'s options does the
+same: `console.log(`${(give(), "()")}`)`, a comma sequence where the value
+is shown, the user's choice of 2026-11-09 over a statement before it (a
+rule lifting a sequence's leading items out of a statement, filed as a P3).
+One snapshot changes, a value Rust makes that JS dropped: `text_edits.js`'s
+`$unwrapErr($fromUtf16([56606]))`. A union's `()` field, which `unions.rs`
+shows, reads as `undefined` with no `$unionField`, which refused it where
+the union holds another field: a field of no bytes reads nothing, whatever
+the union holds (ADR 0406), so its `{:?}` is `"()"` as before.
+Held by the corpus case `text_of_a_value_made_by_a_call` and the mutations
+`shown-value-unevaluated`, `debug-value-unevaluated`,
+`display-value-unevaluated`, `formatted-unit-value-dropped` and
+`unit-union-field-read-whole`.

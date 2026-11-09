@@ -324,4 +324,22 @@ export const mutations: Mutation[] = [
     replace: "Expr::bin(Op::Add, target.clone(), part)",
     tests: ["test/bindings.test.ts", "-t", "any value is read as JS reads it"],
   },
+  {
+    name: "shown-value-unevaluated",
+    breaks:
+      "a value whose text doesn't read it, `()`'s `()`, a `Weak`'s `(Weak)`, an error's message, isn't made: the call that gives it never prints or panics (#1063)",
+    file: "src/lower/display.rs",
+    find: "        Some(value) if !shown.has_effects() => Expr::sequence(vec![value, shown]),\n",
+    replace: "        Some(_) if !shown.has_effects() => shown,\n",
+    tests: ["test/corpus.test.ts", "-t", "^text_of_a_value_made_by_a_call.rs$"],
+  },
+  {
+    name: "formatted-unit-value-dropped",
+    breaks:
+      "a `()` shown given its `Formatter`'s options, `fmt::Debug::fmt(give(), f)`, isn't made: the call that gives it never runs (#1063)",
+    file: "src/lower/display.rs",
+    find: "            Std::FmtDebug if ty.is_unit() => evaluated_first(value.has_effects().then_some(value), Expr::str(\"()\")),\n",
+    replace: "            Std::FmtDebug if ty.is_unit() => Expr::str(\"()\"),\n",
+    tests: ["test/corpus.test.ts", "-t", "^text_of_a_value_made_by_a_call.rs$"],
+  },
 ];

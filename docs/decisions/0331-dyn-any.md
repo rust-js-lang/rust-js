@@ -131,3 +131,12 @@ the mutations `nullable-any-given-its-pair` (`lower/mir/calls.ts`),
 `any-pair-of-a-conditional-kept` and `any-none-null-read`
 (`lower/std_types/any.ts`).
 
+
+## Amendment: a `dyn Any`'s `{:?}` made where it's shown is ADR 0060's rule (2026-11-09, #1063)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): no difference. What
+`$debugAny(made())` did, make the value and show `Any { .. }`, is now what
+every `{}` and `{:?}` does of a value its text doesn't read (ADR 0060,
+amended): `(made(), "Any { .. }")`, by the user's choice of a comma
+sequence. One rule, so `$debugAny` and its mutation `debug-any-unrun` are
+gone; `dyn_any_generic` holds it as `text_of_a_value_made_by_a_call` does.

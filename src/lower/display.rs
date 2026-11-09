@@ -354,7 +354,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call_helper("$debugInt", vec![shown_number(value), hex, options.clone()])
             }
             _ if num.is_some() || ty.is_bool() => shown_number(value),
-            Std::FmtDebug if ty.is_unit() => Expr::str("()"),
+            Std::FmtDebug if ty.is_unit() => evaluated_first(value.has_effects().then_some(value), Expr::str("()")),
             Std::FmtDisplay if self.is_string_like(ty) => value,
             _ => return None,
         };
@@ -839,5 +839,15 @@ pub(in crate::lower) fn may_be_write_error(result: &Expr) -> bool {
         js::ExprKind::Undefined => false,
         js::ExprKind::Call(callee, _) => callee.helper_name().is_some(),
         _ => true,
+    }
+}
+
+/// A value's text that doesn't read the value, a `()`'s `"()"`: the value
+/// is still made first where making it does something, a call's, as Rust
+/// makes it before showing it (#1063).
+fn evaluated_first(evaluated: Option<Expr>, shown: Expr) -> Expr {
+    match evaluated {
+        Some(value) if !shown.has_effects() => Expr::sequence(vec![value, shown]),
+        _ => shown,
     }
 }

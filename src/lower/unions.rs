@@ -44,11 +44,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type, `$unionField(u, "a", ["b"], { c: (value) => .. })`, or of
     /// another plain type, its bytes read as the field's, each other
     /// field's decoder as `transmute` reads them (ADRs 0408, 0562). A field
-    /// of no bytes, `()`, MIR never reads.
+    /// of no bytes, `()`, reads nothing, whatever the union holds: its one
+    /// value, `undefined`, as a `{:?}` of it reads it (#1063).
     pub(super) fn union_read(&mut self, union: Expr, ty: Ty<'tcx>, field: FieldIdx, span: Span) -> R<Expr> {
         let (adt, args) = self.union_of(ty).expect("a union");
         let fields = &adt.non_enum_variant().fields;
         let read_ty = self.field_ty(&fields[field], args);
+        if read_ty.is_unit() && !union.has_effects() {
+            return Ok(Expr::undefined());
+        }
         let key = field_key(self.tcx, &fields[field]).text().to_owned();
         let mut alike = Vec::new();
         let mut decoders = Vec::new();

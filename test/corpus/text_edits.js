@@ -16,6 +16,7 @@ import {
   $strDrain,
   $strExtendWithin,
   $strSplitOff,
+  $unwrapErr,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -96,7 +97,7 @@ function main() {
   console.log(
     `${value$2.TAG === "Ok" ? `Ok(${$debugStr(value$2._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"} ${value$3.TAG === "Ok" ? `Ok(${$debugStr(value$3._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"}`,
   );
-  console.log("invalid utf-16: lone surrogate found");
+  console.log(`${($unwrapErr($fromUtf16([56606])), "invalid utf-16: lone surrogate found")}`);
   console.log(`${$fromUtf16Lossy([104, 55348, 105])}`);
   console.log(`${$floorCharBoundary("héllo", 2)} ${$ceilCharBoundary("héllo", 2)}`);
   console.log(`${$floorCharBoundary("héllo", 99)} ${$ceilCharBoundary("héllo", 99)}`);
