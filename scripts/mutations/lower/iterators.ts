@@ -88,11 +88,12 @@ export const mutations: Mutation[] = [
   {
     name: "naming-parameter-not-as-it-is",
     breaks:
-      "`impl Is<I>`'s value, a `Countdown`, goes as a JS iterator its caller makes, where `I`, the same value, is given as it is: its drop reads what isn't there (#966)",
+      "`impl Is<I>` of an iterator given as it is isn't given as it is, so a `Vec`'s iterator of items whose drop may panic given for it is wrapped in its slice's steps, `$slicing(it, drop)`, which `I`'s dictionary steps already (#966, #1109)",
     file: "src/lower/iterators.rs",
     find: "        return names_given_as_it_is(tcx, id, param);\n",
     replace: "        return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_named_by_another_bound.rs$"],
+    snapshots: true,
   },
   {
     name: "given-as-it-is-not-in-input",

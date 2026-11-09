@@ -2,7 +2,9 @@
 // `impl Is<I>` parameter's or `F: FnOnce() -> I`'s, arrives as that one's
 // value, never one of its own: both are given as they are, with their
 // dictionaries, so generic code steps it from its back, asks its length and
-// drops it as it is (#966, #969).
+// drops it as it is (#966, #969). A `Vec`'s iterator of items whose drop may
+// panic goes as it is too, never wrapped in its slice's steps, which its
+// own dictionary steps already (#1109).
 struct Countdown(u32, &'static str);
 
 impl Iterator for Countdown {
@@ -34,6 +36,17 @@ impl ExactSizeIterator for Countdown {}
 impl Drop for Countdown {
     fn drop(&mut self) {
         println!("drop {} at {}", self.1, self.0);
+    }
+}
+
+struct Fragile(u32);
+
+impl Drop for Fragile {
+    fn drop(&mut self) {
+        if self.0 == 0 {
+            panic!("dropped 0");
+        }
+        println!("drop fragile {}", self.0);
     }
 }
 
@@ -75,6 +88,11 @@ fn first_back<I: DoubleEndedIterator<Item = u32>, P: Into<I>>(given: P) -> Optio
     it.next_back()
 }
 
+fn second_back<I: DoubleEndedIterator<Item = Fragile>>(it: impl Is<I>) -> Option<u32> {
+    let mut it: I = it.is();
+    it.nth_back(1).map(|f| f.0)
+}
+
 fn made<I: Iterator<Item = u32>, F: FnOnce() -> I>(make: F) -> u32 {
     make().sum()
 }
@@ -86,4 +104,6 @@ fn main() {
     println!("{:?}", first_back::<Countdown, _>(Wrapped(Countdown(2, "c"))));
     println!("{}", made(|| Countdown(3, "d")));
     println!("{:?}", backwards((1..4).map(|x| x * 2)));
+    let fragile = vec![Fragile(1), Fragile(2), Fragile(3), Fragile(4)];
+    println!("{:?}", second_back(fragile.into_iter()));
 }

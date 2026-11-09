@@ -165,3 +165,20 @@ functions alone. Mutations `std-iterable-param-unstepped` and
 `std-iterable-of-trait-method-unstepped`;
 `test/corpus/debug_entries_drop_as_std.rs` and
 `test/corpus/generic_iterables_given_to_std.rs`.
+
+## Amendment: what another bound names goes as it is, never wrapped (#1109)
+
+`names_given_as_it_is` (#966, #969) gives a type parameter as it is whose
+own bound names an iterator given as it is, or an `IntoIterator` held as
+it is: `impl Is<I>`'s, `P: Into<I>`'s. Since `into_iter_held_as_it_is`
+answers for the named parameter itself, no output changed with either of
+its two tests taken away, and both mutations survived (#1109). What they
+still decide is the form of what's given for it: one not given as it is
+is wrapped in its slice's steps where its items' drop may panic,
+`$slicing($iter(v), drop)`, though `I`'s own dictionary, a `Vec`'s
+iterator's, steps it as one slice already, and runs the same. So it's
+held by the snapshots: `iterator_named_by_another_bound.rs` and
+`into_iterator_named_by_another_bound.rs` each give a `Vec`'s iterator of
+items whose drop may panic for an `impl Is<I>`, against native Rust in
+both builds, and `naming-parameter-not-as-it-is` and
+`naming-parameter-of-into-iter-boxed` check their JS.
