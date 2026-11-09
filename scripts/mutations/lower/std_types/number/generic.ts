@@ -46,6 +46,22 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "slice-size-of-val-item-unscaled",
+    breaks: "`size_of_val` of a slice of a wider item is its length, not its bytes (#1101)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "                        1 => length,",
+    replace: "                        _ => length,",
+    tests: ["test/corpus.test.ts", "-t", "size_of_val_of_a_slice"],
+  },
+  {
+    name: "slice-align-of-val-its-size",
+    breaks: "`align_of_val` of a slice is its length's bytes, not its item's alignment (#1101)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "                    && fact != TypeFact::Align\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "size_of_val_of_a_slice"],
+  },
+  {
     name: "size-align-swap",
     breaks: "`align_of` is the type's size",
     file: "src/lower/std_types/number/generic.rs",

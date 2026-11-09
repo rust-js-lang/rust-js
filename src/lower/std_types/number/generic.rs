@@ -191,11 +191,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::Layout { fact, of_val } => {
                 let of = generic_args.types().next().expect("a size's type argument");
+                // A slice's, `size_of_val(src)` of a `&[u8]`, its length's
+                // items' bytes, as its `PtrMetadata` is its `length`; its
+                // alignment its item's.
+                let slice_item = match *of.kind() {
+                    ty::Slice(item) if of_val => Some(item),
+                    _ => None,
+                };
+                if let Some(item) = slice_item
+                    && fact != TypeFact::Align
+                {
+                    let item_bytes = self.layout_bytes((fact, false), item, span)?;
+                    let length = Expr::member(arg(), "length");
+                    return Ok(Some(match item_bytes {
+                        1 => length,
+                        _ => Expr::bin(Op::Mul, length, Expr::int(item_bytes)),
+                    }));
+                }
                 // A type's, its own fact; a value's of a type rustc knows, its
                 // bytes, which may be the value's own.
-                let bytes = match of_val && !matches!(of.kind(), ty::Param(_)) {
-                    true => Expr::int(self.layout_bytes((fact, of_val), of, span)?),
-                    false => self.type_fact_value(of, fact, span)?,
+                let bytes = match (slice_item, of_val && !matches!(of.kind(), ty::Param(_))) {
+                    (Some(item), _) => Expr::int(self.layout_bytes((fact, false), item, span)?),
+                    (None, true) => Expr::int(self.layout_bytes((fact, of_val), of, span)?),
+                    (None, false) => self.type_fact_value(of, fact, span)?,
                 };
                 // What's measured still runs, if it does anything.
                 if of_val {

@@ -351,3 +351,16 @@ are, `WrapItemMap`.
   impl. Mutations `super-item-*` (`lower/analysis/type_facts.ts`,
   `lower/traits.ts`, `lower/library.ts`), `map-made-unasked-of-mir` and
   `own-fact-given-in-trait-terms`.
+
+## Amended: a slice's `size_of_val` (2026-11-09, #1101)
+
+`size_of_val` of a slice, a value of no one size, was refused, and so was
+rand_core 0.10, whose `read_words` asserts `size_of_val(src)` of a `&[u8]`
+(found by the small Crater, #1087). A slice's size is its length times its
+item's, as the slice's `PtrMetadata` is its `length`: `src.length`, of a
+wider item `s.length * 8`, its item's size rustc's for wasm32 as any
+`size_of` is; `align_of_val` of one is its item's alignment, what's
+measured still run where it does something, as any `align_of_val` does. Case N: rustc's answer, kept. A
+`str`'s and a `dyn`'s are still refused. `test/corpus/size_of_val_of_a_slice.rs`,
+against native Rust in both builds; mutations `slice-size-of-val-item-unscaled`
+and `slice-align-of-val-its-size`.
