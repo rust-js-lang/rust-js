@@ -3,6 +3,30 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "nested-place-unrooted",
+    breaks: "a raw pointer to a place reached through more than one field or item is given no root, so its address is the inner object's own, 4096 from the root's where native Rust's is 8 (#1089)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "        if steps.len() < 2 {\n",
+    replace: "        if steps.len() < 99 {\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field.rs$"],
+  },
+  {
+    name: "nested-place-index-unscaled",
+    breaks: "a nested place's index that's a variable's is its offset as it is, not times its item's size, `items[i].b` at `i` where native Rust's is `i * 8` (#1089)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                _ => scaled.push(Expr::bin(js::Op::Mul, index, Expr::int(i128::from(item)))),\n",
+    replace: "                _ => scaled.push(index),\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field.rs$"],
+  },
+  {
+    name: "nested-place-field-offset-lost",
+    breaks: "a nested place's field steps add no offset, `o.inner.a` at `o.inner`'s, where native Rust's is 4 past it (#1089)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    bytes += layout.fields.offset(field.index()).bytes();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field.rs$"],
+  },
+  {
     name: "item-written-at-its-own-index-only",
     breaks:
       "an array's item given another reference, `cur[0] = &mut b`, isn't seen to change what a place through `cur[i]` is, so a handle or a `Cell`'s receiver made of it reads `cur[0]` again where it's used (#1075)",

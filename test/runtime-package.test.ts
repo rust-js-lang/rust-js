@@ -657,6 +657,42 @@ pub fn distance() -> isize {
   expect(call("distance")).toBe("rust-js does not support the distance between pointers to two places, which reads memory by where it is\n");
 });
 
+// A raw pointer to a place reached through more than one field or item is
+// given the root its place starts from and its byte offset there, rustc's
+// layout, so its address is in the root's allocation (#1089, the user's
+// decision); a place of one step is as it was.
+test("a nested place's pointer is given its root and its offset there", () => {
+  const dir = fixture("nested-field-pointer");
+  writeFileSync(join(dir, "lib.rs"), `pub struct P {
+    pub a: u8,
+    pub b: u32,
+}
+
+pub struct Outer {
+    pub x: u16,
+    pub inner: P,
+}
+
+pub fn offsets(items: [P; 3], o: Outer, i: usize) -> [usize; 4] {
+    let first = &raw const items as usize;
+    let at = &raw const o as usize;
+    [
+        &raw const items[1].b as usize - first,
+        &raw const items[i].a as usize - first,
+        &raw const o.inner.a as usize - at,
+        &raw const o.x as usize - at,
+    ]
+}
+`);
+  const out = join(dir, "lib.js");
+  run([compiler, join(dir, "lib.rs"), "-o", out]);
+  const js = readFileSync(out, "utf8");
+  expect(js).toContain(`$ptr(items[1], "b", 0, items, 8)`);
+  expect(js).toContain(`$ptr(items[i], "a", 4, items, i * 8 + 4)`);
+  expect(js).toContain(`$ptr(o.inner, "a", 4, o, 4)`);
+  expect(js).toContain(`$ptr(o, "x", 8)`);
+});
+
 // A pointer's address is a number of rust-js's own, shown as Rust shows one,
 // `0x` and hex; the same place shows the same, and a null one's is `0x0`,
 // as every program shows it (ADR 0562).

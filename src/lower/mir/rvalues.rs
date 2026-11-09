@@ -789,10 +789,106 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Its byte offset in its struct, where the struct's layout is
                 // known here (ADR 0562).
                 let offset = self.field_offset(*place, decls);
-                self.pointer_to(target, pointee, offset, span)?
+                // Of a place reached through more than one field or item, its
+                // root's and its offset there, so its address is in the
+                // root's allocation, `$ptr(items[1], "b", 0, items, 8)` (#1089).
+                let rooted = self.place_in_root(state, *place, span, out)?;
+                let pointer = self.pointer_to(target, pointee, offset, span)?;
+                match (pointer.kind, rooted) {
+                    (js::ExprKind::Call(callee, mut given), Some((root, at)))
+                        if callee.helper_name() == Some("$ptr") && given.len() == 3 =>
+                    {
+                        given.extend([root, at]);
+                        Expr::call(*callee, given)
+                    }
+                    (kind, _) => Expr { kind, ..pointer },
+                }
             }
             _ => return Err(self.unsupported(span, "this value, from its MIR")),
         }))
+    }
+
+    /// Of `place`, a raw pointer's, reached through more than one field or
+    /// item from where its projections start, its local or what its last
+    /// `Deref` reads: that root's JS, an object, and the place's byte offset
+    /// in it, rustc's layout for wasm32, so its address is in the root's
+    /// allocation, not the inner object's own (#1089). `None` of a place of
+    /// one step, or of a step whose layout isn't known here, a variant's,
+    /// or an index whose value is pending.
+    fn place_in_root(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        place: Place<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<(Expr, Expr)>> {
+        let start = (place.projection.iter())
+            .rposition(|elem| elem == PlaceElem::Deref)
+            .map_or(0, |at| at + 1);
+        let steps = &place.projection[start..];
+        if steps.len() < 2 {
+            return Ok(None);
+        }
+        let root = Place {
+            local: place.local,
+            projection: self.tcx.mk_place_elems(&place.projection[..start]),
+        };
+        let decls = &state.body.local_decls;
+        let mut ty = root.ty(decls, self.tcx);
+        if !self.is_object(ty.ty) {
+            return Ok(None);
+        }
+        let (mut bytes, mut indices): (u64, Vec<(Local, u64)>) = (0, Vec::new());
+        for &elem in steps {
+            let size = |cx: &Self, ty: Ty<'tcx>| cx.layout(ty).map(|layout| layout.size.bytes());
+            match elem {
+                PlaceElem::Field(field, _) if ty.variant_index.is_none() => {
+                    let Some(layout) = self.layout(ty.ty) else {
+                        return Ok(None);
+                    };
+                    bytes += layout.fields.offset(field.index()).bytes();
+                }
+                PlaceElem::ConstantIndex {
+                    offset,
+                    from_end: false,
+                    ..
+                } => {
+                    let Some(item) = size(self, ty.projection_ty(self.tcx, elem).ty) else {
+                        return Ok(None);
+                    };
+                    bytes += offset * item;
+                }
+                PlaceElem::Index(local) if !state.pending.iter().any(|(l, _)| *l == local) => {
+                    let Some(item) = size(self, ty.projection_ty(self.tcx, elem).ty) else {
+                        return Ok(None);
+                    };
+                    indices.push((local, item));
+                }
+                _ => return Ok(None),
+            }
+            ty = ty.projection_ty(self.tcx, elem);
+        }
+        let root = self.mir_place(state, root, span, out)?;
+        // An index that's a number is in the offset, `8`; another, its
+        // value times its item's size, `i * 8 + 4`.
+        let mut scaled = Vec::new();
+        for (local, item) in indices {
+            let index = self.read_local(state, local, out)?;
+            match index.kind {
+                js::ExprKind::Num(n) if n >= 0.0 && n.fract() == 0.0 => bytes += n as u64 * item,
+                _ => scaled.push(Expr::bin(js::Op::Mul, index, Expr::int(i128::from(item)))),
+            }
+        }
+        let at = (scaled.into_iter())
+            .reduce(|all, part| Expr::bin(js::Op::Add, all, part))
+            .map_or_else(
+                || Expr::int(i128::from(bytes)),
+                |parts| match bytes {
+                    0 => parts,
+                    _ => Expr::bin(js::Op::Add, parts, Expr::int(i128::from(bytes))),
+                },
+            );
+        Ok(Some((root, at)))
     }
 
     /// The byte offset of `place`'s last field in its struct or tuple,

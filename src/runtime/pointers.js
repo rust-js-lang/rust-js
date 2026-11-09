@@ -8,10 +8,17 @@ const $places = new WeakMap();
 // `$ptrTo` of the object is the item's place (ADR 0562).
 const $items = new WeakMap();
 
-function $ptr(object, key, offset) {
+// `root` and `at`, of a place reached through more than one field or item:
+// the object its projections start from, and the place's byte offset in it,
+// where its address is (#1089).
+function $ptr(object, key, offset, root, at) {
   let handles = $places.get(object);
   if (handles === undefined) $places.set(object, (handles = new Map()));
   let handle = handles.get(key);
+  if (handle !== undefined && root !== undefined && handle.root === undefined) {
+    handle.root = root;
+    handle.rootAt = at;
+  }
   if (handle === undefined) {
     const item = Array.isArray(object) && typeof key === "number" ? object[key] : undefined;
     if (item !== null && typeof item === "object") $items.set(item, { of: object, at: key, offset });
@@ -19,6 +26,8 @@ function $ptr(object, key, offset) {
       of: object,
       at: key,
       offset,
+      root,
+      rootAt: at,
       get value() {
         return $slot(object, key);
       },
@@ -221,6 +230,14 @@ function $addr(pointer, size) {
   if (pointer.addr !== undefined) return pointer.addr;
   if (pointer.bytes !== undefined && pointer.opaque) return $addr(pointer.typed, size);
   pointer = $placed(pointer);
+  // A place reached through more than one field or item: at its offset in
+  // the root its projections start from, whose address is the root's
+  // allocation's (#1089).
+  if (pointer.root !== undefined && pointer.bytes === undefined) {
+    const addr = $addr($ptrTo(pointer.root), 0) + pointer.rootAt;
+    $exposedPlaces.set(addr, pointer);
+    return addr;
+  }
   // A field of an object that's an array's item or a tuple's field,
   // `&raw const held.0.b` of a tuple struct's field: in the allocation
   // that holds it, at the object's address and the field's offset, as

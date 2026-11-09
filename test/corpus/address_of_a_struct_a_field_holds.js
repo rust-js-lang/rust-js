@@ -10,18 +10,18 @@ function main() {
   const held = [{ a: 1, b: 2, c: 3 }];
   const at = $addr($ptr(held, 0, 0), 12);
   console.log(
-    `${($addr($ptr(held[0], "b", 4), 4) - at) >>> 0} ${($addr($ptr(held[0], "c", 8), 2) - at) >>> 0} ${at % 4}`,
+    `${($addr($ptr(held[0], "b", 4, held, 4), 4) - at) >>> 0} ${($addr($ptr(held[0], "c", 8, held, 8), 2) - at) >>> 0} ${at % 4}`,
   );
   const referred = $addr(held[0], 12);
   console.log(`${referred === at} ${(held[0].a + (held[0].c & 255)) & 255}`);
   // A field's address asked before the struct's.
   const other = [{ a: 2, b: 3, c: 4 }];
   const start = $ptr(other, 0, 0);
-  const c = $addr($ptr(other[0], "c", 8), 2);
+  const c = $addr($ptr(other[0], "c", 8, other, 8), 2);
   console.log(`${(c - $addr(start, 12)) >>> 0}`);
   // And before any pointer to the struct is made.
   const last = [{ a: 5, b: 6, c: 7 }];
-  const b = $addr($ptr(last[0], "b", 4), 4);
+  const b = $addr($ptr(last[0], "b", 4, last, 4), 4);
   console.log(`${(b - $addr($ptr(last, 0, 0), 12)) >>> 0}`);
   const pair = [
     { a: 4, b: 5, c: 6 },
@@ -30,7 +30,7 @@ function main() {
   const first = $addr($ptr(pair, 0, 0), 12);
   const second = $addr($ptr(pair, 1, 12), 12);
   console.log(
-    `${($addr($ptr(pair[1], "b", 4), 4) - second) >>> 0} ${($addr($ptr(pair[0], "c", 8), 2) - first) >>> 0}`,
+    `${($addr($ptr(pair[1], "b", 4, pair, 16), 4) - second) >>> 0} ${($addr($ptr(pair[0], "c", 8, pair, 8), 2) - first) >>> 0}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "rooted-place-its-objects-own",
+    breaks: "a field's pointer of a struct an array's item or a struct's field is, given its root, is at the inner object's own address, 4096 from the root's where native Rust's is 8 (#1089)",
+    file: "src/runtime/pointers.js",
+    find: "  if (pointer.root !== undefined && pointer.bytes === undefined) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field.rs$"],
+  },
+  {
     name: "tuple-field-at-index-times-stride",
     breaks: "a tuple's field's handle, an array's item in JS, is at its index times a size, `0 1 2` of a `(u8, u32, u16)` rustc lays out `4 0 6` (#1081)",
     file: "src/runtime/pointers.js",
@@ -24,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/pointers.js",
     find: "      typeof item.offset === \"number\"\n        ? $addr($ptr(item.of, item.at, item.offset), 0)\n",
     replace: "      false\n        ? 0\n",
-    tests: ["test/corpus.test.ts", "-t", "^address_of_a_tuple_field.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_through_a_reference.rs$"],
   },
   {
     name: "tuple-of-an-addressed-field-apart",
@@ -32,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/pointers.js",
     find: "      : pointer.offset === 0 && pointer.of === allocation && Array.isArray(allocation)\n",
     replace: "      : false\n",
-    tests: ["test/corpus.test.ts", "-t", "^address_of_a_struct_a_field_holds.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_through_a_reference.rs$"],
   },
   {
     name: "tuple-field-pointer-stepped",
@@ -56,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/pointers.js",
     find: "  if (item !== undefined) {\n    const range = $ranges.get(item.of);\n",
     replace: "  if (false) {\n    const range = $ranges.get(item.of);\n",
-    tests: ["test/corpus.test.ts", "-t", "^address_of_a_(struct_a_field_holds|tuple_field).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_through_a_reference.rs$"],
   },
   {
     name: "field-of-a-later-item-at-the-first",
@@ -64,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/pointers.js",
     find: "(item.at === 0 ? 0 : item.at * range.stride)",
     replace: "0",
-    tests: ["test/corpus.test.ts", "-t", "^address_of_a_(struct_a_field_holds|tuple_field).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_through_a_reference.rs$"],
   },
   {
     name: "array-of-an-addressed-first-item-apart",
@@ -72,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/pointers.js",
     find: "  if (first !== undefined && (!items || first.base + allocation.length * stride <= first.end)) {\n",
     replace: "  if (false) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^address_of_a_struct_a_field_holds.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_through_a_reference.rs$"],
   },
   {
     name: "reference-to-an-item-its-objects-own-address",

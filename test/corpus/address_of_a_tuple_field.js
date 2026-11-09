@@ -26,7 +26,7 @@ function main() {
   const held = [[1, 2, 3]];
   const start = $addr($ptr(held, 0, 0), 12);
   console.log(
-    `${($addr($ptr(held[0], 1, 4), 4) - start) >>> 0} ${($addr($ptr(held[0], 2, 8), 2) - start) >>> 0}`,
+    `${($addr($ptr(held[0], 1, 4, held, 4), 4) - start) >>> 0} ${($addr($ptr(held[0], 2, 8, held, 8), 2) - start) >>> 0}`,
   );
   // An exposed field's address is that field again.
   const exposed = $addr($ptr(plain, 2, 6), 2);
@@ -41,7 +41,7 @@ function main() {
   const second = $ptr(items, 1);
   const first = $addr($ptr(items, 0), 8);
   console.log(
-    `${($addr($ptr(items[1], 1, 4), 4) - first) >>> 0} ${($addr($ptr(items[1], 0, 0), 1) - $addr(second, 8)) >>> 0}`,
+    `${($addr($ptr(items[1], 1, 4, items, 12), 4) - first) >>> 0} ${($addr($ptr(items[1], 0, 0, items, 8), 1) - $addr(second, 8)) >>> 0}`,
   );
   // Of a tuple a reference refers to.
   console.log(`[${offsets([1, 2n, 3]).join(", ")}]`);

@@ -621,10 +621,9 @@ no item, stepping a tuple's field's pointer, `p.add(1)`, and the
 distance between two, `offset_from`, are refused where they run, as of
 any pointer not into an array: the layout says which field is next.
 
-Not done: the address of a field of an object that's an array's item or
-a struct's field where no handle on that item or field was made, `&raw
-const items[1].b` beside `&raw const items` alone, or `&raw const
-o.inner.b` beside `&raw const o`, is still the object's own base (#1089).
+Not done then: the address of a field of an object that's an array's
+item or a struct's field where no handle on that item or field was made
+(#1089, below).
 
 Held by the corpus case `address_of_a_tuple_field`, against native Rust,
 `address_of_a_struct_a_field_holds` (whose pair is a tuple now held at
@@ -637,3 +636,37 @@ is at its offset, never an item", and mutations
 `tuple-field-pointers-distance` (`runtime/pointers.ts`). The metamorphic
 net's tuple-struct rewrite of `address_of_a_struct_a_field_holds` is off
 its list.
+
+## Amendment: a nested place's pointer is given its root and its offset there (#1089, the user's decision)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, the results changed.
+A field's pointer was placed in the allocation that holds its object only
+where a handle on that object's place was made first (`$items`, #1019,
+#1081). Without one, `&raw const items[1].b` beside `&raw const items`
+alone, or `&raw const o.inner.b` beside `&raw const o`, the inner object
+was an allocation of its own: `4096 8196` where native Rust prints `8 20`.
+
+**A raw pointer to a place reached through more than one field or item
+from where its projections start, its local or what its last `Deref`
+reads, is given that root and the place's byte offset in it**, rustc's
+layout for wasm32, `$ptr(items[1], "b", 0, items, 8)`, `$ptr(o.inner,
+"a", 4, o, 4)`; an index that's a variable's scaled by its item's size,
+`items, i * 8 + 4` (`place_in_root`). `$addr` of one is the root's
+allocation's base and that offset. A place of one step is as it was,
+`$ptr(o, "x", 8)` (the user's choice of the options: making the
+container's handle first, which leaves an array's stride unknown, or
+refusing, were the others). Only what a reference refers to isn't known
+where a pointer is made, so a place through one is found as the item or
+the field a pointer to it was made of, as before (#1019, #1081).
+`address_of_a_struct_a_field_holds` and `address_of_a_tuple_field`, whose
+nested places are of this rule, are given their roots.
+
+Held by the corpus cases `address_of_a_nested_field`, against native Rust,
+and `address_of_a_field_through_a_reference`, which holds #1019's and
+#1081's lookups of a place through a reference;
+`test/runtime-package.test.ts`'s "a nested place's pointer is given its
+root and its offset there"; mutations `nested-place-unrooted`,
+`nested-place-index-unscaled`, `nested-place-field-offset-lost`
+(`lower/mir/rvalues.ts`) and `rooted-place-its-objects-own`
+(`runtime/pointers.ts`), and #1019's and #1081's retargeted to the
+reference case.
