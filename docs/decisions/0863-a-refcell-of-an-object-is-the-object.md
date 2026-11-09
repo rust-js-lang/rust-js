@@ -1434,3 +1434,37 @@ it". `Foreign::lends_quiet_field`, `classes::field_given_of_mir` and the
 mutation `quiet-field-lent-unrefused` are gone; the crates test of #1032
 says the new words, and `field-giving-method-listed` still holds the
 manifest's listing. Supporting it is still #1054's.
+
+## Amendment: a tuple struct's `RefCell` field is its array's item, the cell by its type (#1082)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, the results changed.
+A tuple struct is an array of its fields (`shape`), each read `c[0]` as
+its value by its type alone, never a property its cell holds: a
+`RefCell<Vec<i32>>` field is the array where it isn't boxed, `{ value }`
+where it is. But `object_field`, which says where a struct's `RefCell`
+field holds its value (`holds_value`) and so what made it is no value of
+its cell's type (`made_places`), said so of a tuple struct's too. So
+`pub struct Cursor<T>(pub RefCell<T>)`, made by the generic `cursor()` of
+`RefCell::new(value)`, `[{ value }]`, was taken as that field's own value,
+boxing no other `RefCell` of an object, and `c.0.borrow_mut().push(3)` of
+a `Cursor<Vec<i32>>` read `c[0].push(3)`, which threw where native Rust
+prints `[1, 2, 3]`.
+
+**A tuple struct's field is never a property of an object**:
+`object_field` asks `representation::numbered_struct`, the one rule
+`shape` lays a struct out by, and a tuple struct's `RefCell` field is its
+cell's own form wherever it's made and read. Its generic `RefCell<T>` boxes
+each `RefCell` of an object, as generic code's does (`boxed_all`), so the
+`Cursor<Vec<i32>>` is `[{ value: [1, 2] }]`, read `c[0].value`. A first
+fix made a tuple struct's fields hold their value where made, which a
+read as its type's form, `root[0].value` of a boxed `RefCell<Rc<Fiber>>`,
+then didn't find (`written_breaks_beside_an_else`'s tuple-struct rewrite).
+Making tuple structs' fields hold their value at both ends instead would
+change the form of every tuple struct's `Cell` and `RefCell` field,
+`[{ value: 0 }]` to `[0]`, a choice of form not needed for correctness.
+
+Corpus case `refcell_tuple_struct_field_made`, against native Rust, holds
+it with the metamorphic net's tuple-struct rewrites of
+`refcell_generic_field_made` (off the known list) and
+`written_breaks_beside_an_else`; mutation `tuple-struct-field-holds-value`
+(`lower/drops/ref_cells.ts`).

@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "tuple-struct-field-holds-value",
+    breaks:
+      "a tuple struct's `RefCell<T>` field, an item of its array whose cell is by its type, is taken as a property that holds its value, so the generic `RefCell::new(value)` it's made of boxes no other `RefCell` of an object: `[{ value }]` read as the array, `c[0].push(3)` throws (#1082)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                && !crate::lower::representation::numbered_struct(adt)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_tuple_struct_field_made.rs$"],
+  },
+  {
     name: "key-borrow-counts-its-type",
     breaks:
       "a thread-local's borrow held while its hooks run counts every cell of its type, so a controller's listeners, which no hook can borrow while it's held, are checked (ADR 0960, amended)",
@@ -262,8 +271,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a transparent struct's `RefCell` of an array, React's taint `RequestCleanupQueue`, is taken for a field that holds its value, where the struct is the cell (ADRs 0584, 0863)",
     file: "src/lower/drops/ref_cells.rs",
-    find: "        DefKind::Struct => crate::lower::recognition::transparent_field(tcx, tcx.adt_def(owner)).is_none(),\n",
-    replace: "        DefKind::Struct => true,\n",
+    find: "            crate::lower::recognition::transparent_field(tcx, adt).is_none()\n                && !crate::lower::representation::numbered_struct(adt)\n",
+    replace: "            !crate::lower::representation::numbered_struct(adt)\n",
     tests: [
       "test/crates.test.ts",
       "-t",

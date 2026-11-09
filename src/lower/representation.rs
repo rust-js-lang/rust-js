@@ -451,9 +451,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .iter()
                     .map(|f| (field_key(self.tcx, f), self.field_ty(f, args)));
                 match variant.ctor_kind() {
+                    _ if numbered_struct(*adt) => Shape::Array(fields.map(|(_, ty)| ty).collect()),
                     None => Shape::Object(fields.collect()),
-                    Some(CtorKind::Fn) => Shape::Array(fields.map(|(_, ty)| ty).collect()),
-                    Some(CtorKind::Const) => Shape::Other,
+                    Some(CtorKind::Fn | CtorKind::Const) => Shape::Other,
                 }
             }
             _ => Shape::Other,
@@ -736,6 +736,13 @@ fn const_int(e: &Expr) -> Option<i128> {
         }
         _ => return None,
     })
+}
+
+/// Whether `adt` is a tuple struct, `struct P(u8, u8)`, laid out as an
+/// array of its fields, `[1, 2]`, which `shape` says of it: each field an
+/// item, its value by its type alone, never a property its cell holds.
+pub(in crate::lower) fn numbered_struct(adt: ty::AdtDef<'_>) -> bool {
+    adt.is_struct() && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Fn)
 }
 
 pub(super) fn is_fieldless_enum(adt: ty::AdtDef<'_>) -> bool {

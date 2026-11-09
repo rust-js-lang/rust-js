@@ -1230,7 +1230,9 @@ pub(in crate::lower) fn holds_itself<'tcx>(tcx: TyCtxt<'tcx>, held: Ty<'tcx>) ->
 
 /// Whether `field` is a property of the object its value is, where a
 /// `RefCell` field holds its value (ADR 0863, amended): a struct's, not
-/// `#[repr(transparent)]`, which is its field (ADR 0584); and a variant's,
+/// `#[repr(transparent)]`, which is its field (ADR 0584), nor a tuple
+/// struct's, an array's item (`numbered_struct`), whose cell is by its type
+/// alone where it's made and read (#1082); and a variant's,
 /// `{ TAG: "Effect", cleanup }`, a keyed one's own key (ADR 1071), as it's
 /// declared (#503). An untagged enum's payload, its value (ADR 0214), is a
 /// `RefCell` only of an object (`untagged::held_payloads`), the object; and
@@ -1238,7 +1240,11 @@ pub(in crate::lower) fn holds_itself<'tcx>(tcx: TyCtxt<'tcx>, held: Ty<'tcx>) ->
 pub(in crate::lower) fn object_field(tcx: TyCtxt<'_>, field: DefId) -> bool {
     let owner = tcx.parent(field);
     match tcx.def_kind(owner) {
-        DefKind::Struct => crate::lower::recognition::transparent_field(tcx, tcx.adt_def(owner)).is_none(),
+        DefKind::Struct => {
+            let adt = tcx.adt_def(owner);
+            crate::lower::recognition::transparent_field(tcx, adt).is_none()
+                && !crate::lower::representation::numbered_struct(adt)
+        }
         DefKind::Variant => true,
         _ => false,
     }
