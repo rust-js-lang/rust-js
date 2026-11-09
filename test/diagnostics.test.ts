@@ -48,6 +48,13 @@ for (const [name, source, message, crate] of [
   ["a union's field named __proto__", "pub union U { pub __proto__: u32, pub other: i32 }\npub fn f(u: &U) -> u32 { unsafe { u.__proto__ } }", "a field whose JS name is `__proto__`, `__proto__` of `U`"],
   ["a class's field named __proto__", "#[rust_js::class]\npub struct C { __proto__: Option<u32> }\n#[rust_js::class]\nimpl C {\n    pub fn new() -> Self { C { __proto__: None } }\n    pub fn get(&self) -> Option<u32> { self.__proto__ }\n}", "a field whose JS name is `__proto__`, `__proto__` of `C`"],
   ["an ES class's field named __proto__", "#[rust_js::class(es)]\npub struct C { __proto__: u32 }\n#[rust_js::class]\nimpl C {\n    pub fn new() -> Self { C { __proto__: 1 } }\n    pub fn get(&self) -> u32 { self.__proto__ }\n}", "a field whose JS name is `__proto__`, `__proto__` of `C`"],
+  // A module that exports `then` is a thenable, which `import()` of it
+  // calls (#1068, ADR 1106): of each way a module exports a name.
+  ["a function exported as then", "pub fn then(n: u32) -> u32 { n + 1 }", "`then` is exported as `then` in JS, which makes its module a thenable"],
+  ["a function given the JS name then", '#[rust_js::name = "then"]\npub fn chained(n: u32) -> u32 { n + 1 }', "`chained` is exported as `then` in JS"],
+  ["a static exported as then", "#[allow(non_upper_case_globals)]\npub static then: u32 = 1;", "`then` is exported as `then` in JS"],
+  ["a module's own function by a pub use as then", "pub fn own(n: u32) -> u32 { n + 1 }\npub use self::own as then;", "`own`, by its `pub use`, is exported as `then` in JS"],
+  ["another module's function by a pub use as then", "mod inner { pub fn step(n: u32) -> u32 { n * 2 } }\npub use inner::step as then;", "a `pub use` of `step` is exported as `then` in JS"],
   // A binding's nullable parameter is one of its own, an `Option` (ADR 0275).
   ["a nullable parameter that isn't an Option", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(n)]\npub fn f(n: u32) {}', "names no parameter of this function that's an `Option`"],
   // A `pub` thread-local is made as its module loads, as JS's importers

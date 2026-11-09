@@ -161,4 +161,12 @@ export const mutations: Mutation[] = [
       "an export its module names apart is exported by its own name",
     ],
   },
+  {
+    name: "then-alias-allowed",
+    breaks: "a `pub use` of the module's own function as `then` compiles, and its module is a thenable (#1068, ADR 1106)",
+    file: "src/lower/default_exports.rs",
+    find: "        super::bindings::then_export_refused(tcx, tcx.def_span(alias.item), &what, &alias.exported);\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "a module's own function by a pub use as then"],
+  },
 ];

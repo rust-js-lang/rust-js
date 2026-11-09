@@ -283,6 +283,9 @@ pub(super) fn reexports(
         }
     }
     forwarded_methods(tcx, module, (fns, forwarded), paths, &mut found);
+    for ((at, _), _, (export, alias)) in &found {
+        super::bindings::then_export_refused(tcx, *at, &format!("a `pub use` of `{export}`"), alias);
+    }
     found
 }
 

@@ -1057,6 +1057,8 @@ pub(super) fn name_items(
         let module = crate::lower::body_module(tcx, instances, def_id);
         let names = taken.entry(module).or_default();
         let js_name = item_js_name(tcx, def_id, trait_impls);
+        let what = || format!("`{}`", tcx.def_path_str(def_id));
+        failed |= exported(def_id) && bindings::then_export_refused(tcx, tcx.def_span(def_id), &what(), &js_name);
         if exported(def_id) {
             match exports.entry((module, js_name.clone())) {
                 Entry::Occupied(other) => {

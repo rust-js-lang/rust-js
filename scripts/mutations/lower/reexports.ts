@@ -482,4 +482,12 @@ export const mutations: Mutation[] = [
     replace: "                    (js::ImportFrom::Specifier(_), true) => None,\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of a library's module of every name its file exports is export \\* from"],
   },
+  {
+    name: "then-reexport-allowed",
+    breaks: "a `pub use` of another module's function as `then` compiles, and its module is a thenable (#1068, ADR 1106)",
+    file: "src/lower/reexports.rs",
+    find: '        super::bindings::then_export_refused(tcx, *at, &format!("a `pub use` of `{export}`"), alias);\n',
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "another module's function by a pub use as then"],
+  },
 ];

@@ -246,6 +246,10 @@ pub(super) fn aliases(
     fns: &IndexMap<DefId, super::FnInfo>,
 ) -> Vec<(DefId, (String, String))> {
     let own = own_aliases(tcx, module);
+    for alias in &own {
+        let what = format!("`{}`, by its `pub use`,", tcx.def_path_str(alias.item));
+        super::bindings::then_export_refused(tcx, tcx.def_span(alias.item), &what, &alias.exported);
+    }
     let mut aliases: Vec<_> = (own.iter())
         .filter_map(|alias| {
             let info = fns.get(&alias.item).filter(|info| info.owner.is_none())?;

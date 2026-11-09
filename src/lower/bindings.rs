@@ -1120,6 +1120,24 @@ pub(in crate::lower) fn exported_by_name(tcx: TyCtxt<'_>, def_id: DefId) -> bool
         && tcx.visibility(def_id).is_public()
 }
 
+/// Refused where a module of the crate's would export `name`, `what`'s JS
+/// name, as `then` (#1068, ADR 1106): a module that exports `then` is a
+/// thenable, so `import()` of it, a host's or a bundler's lazy chunk, calls
+/// it as `then(resolve, reject)` and gives what it resolves, not the
+/// module. Said where it's written, with what to write instead.
+pub(in crate::lower) fn then_export_refused(tcx: TyCtxt<'_>, span: rustc_span::Span, what: &str, name: &str) -> bool {
+    if name != "then" {
+        return false;
+    }
+    tcx.dcx().span_err(
+        span,
+        format!(
+            "rust-js: {what} is exported as `then` in JS, which makes its module a thenable: `import()` of it, a host's or a bundler's lazy chunk, calls it as `then(resolve, reject)`; give it another JS name, `#[rust_js::name = \"..\"]` (#1068, ADR 1106)"
+        ),
+    );
+    true
+}
+
 /// Whether another item of `def_id`'s module, a function's, a constant's
 /// or a thread-local's, is `name` in JS: a thread-local named after the
 /// function that reads it, `CACHE` of `cache()`, keeps its Rust name, as

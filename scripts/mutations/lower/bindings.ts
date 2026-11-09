@@ -721,4 +721,12 @@ export const mutations: Mutation[] = [
     replace: "                } else if is_optional(tcx, field) && holds_nested(tcx, field) && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^optional_of_a_nested_nullable_field_refused.rs$"],
   },
+  {
+    name: "then-export-allowed",
+    breaks: "a module that exports `then` compiles, and `import()` of it calls it as `then(resolve, reject)` (#1068, ADR 1106)",
+    file: "src/lower/bindings.rs",
+    find: '    if name != "then" {\n        return false;\n    }\n',
+    replace: "    if true {\n        return false;\n    }\n",
+    tests: ["test/corpus.test.ts", "-t", "^then_export_refused.rs$"],
+  },
 ];
