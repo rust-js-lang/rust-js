@@ -491,7 +491,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "      fold: \"fold\",\n      tryFold: \"tryFold\",\n      rfold: back ?",
     replace: "      fold: \"fold\",\n      rfold: back ?",
-    tests: ["test/corpus.test.ts", "-t", "^discarded_drop_leaks_the_accumulator.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(discarded_drop_leaks_the_accumulator|back_knowing_adapters_hint_and_try_fold).rs$"],
   },
   {
     name: "filter-ends-rfold-of-backs-by-back",
@@ -619,7 +619,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "  map.sizeHint = () => $sizeHint(it);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^map_ends_size_hint.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(map_ends_size_hint|back_knowing_adapters_hint_and_try_fold).rs$"],
   },
   {
     name: "filter-ends-hint-dropped",
@@ -627,7 +627,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "  filter.sizeHint = () => $upperOnly(it);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^map_ends_size_hint.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(map_ends_size_hint|back_knowing_adapters_hint_and_try_fold).rs$"],
   },
   {
     name: "filter-ends-count-hint-unasked",
@@ -635,7 +635,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "      $sizeHint(it);\n      return $Steps.prototype.count.call(filter, drop);\n",
     replace: "      return $Steps.prototype.count.call(filter, drop);\n",
-    tests: ["test/corpus.test.ts", "-t", "^map_ends_size_hint.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(map_ends_size_hint|back_knowing_adapters_hint_and_try_fold).rs$"],
   },
   {
     name: "step-by-ends-uncounted",
