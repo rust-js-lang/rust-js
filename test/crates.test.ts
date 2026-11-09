@@ -631,6 +631,27 @@ test("a library's function its consumer compiles is refused where it reads its l
   );
 }, 300_000);
 
+// A library's class's trait method that gives its field, `&self.slot`, has
+// no JS of its own (rd304), so its manifest lists none; a consumer that
+// calls it lends the field, which the library reads unchecked where
+// nothing there lends it: refused, clearly (#1032).
+test("a consumer lending a library's quiet field through a method that gives it is refused", () => {
+  const dir = fixture("library-quiet-field-lent");
+  const lib = join(dir, "dep");
+  mkdirSync(lib, { recursive: true });
+  const dep = "use std::cell::RefCell;\n\npub trait Slot {\n    fn slot(&self) -> &RefCell<Option<u32>>;\n}\n\n#[cfg_attr(rust_js, rust_js::class)]\npub struct Holder {\n    pub slot: RefCell<Option<u32>>,\n}\n\n#[cfg_attr(rust_js, rust_js::class)]\nimpl Holder {\n    pub fn new() -> Self {\n        Holder { slot: RefCell::new(Some(1)) }\n    }\n\n    pub fn read(&self) -> Option<u32> {\n        *self.slot.borrow()\n    }\n}\n\nimpl Slot for Holder {\n    fn slot(&self) -> &RefCell<Option<u32>> {\n        &self.slot\n    }\n}\n\npub fn fill(cell: &RefCell<Option<u32>>, holder: &Holder) {\n    let mut held = cell.borrow_mut();\n    *held = Some(2);\n    println!(\"{:?}\", holder.read());\n}\n";
+  writeFileSync(join(dir, "dep.rs"), dep);
+  run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
+  const items = JSON.parse(readFileSync(join(lib, "lib.manifest.json"), "utf8")).library.items.map((item: { rust_path: string }) => item.rust_path);
+  expect(items).toEqual(["dep::Holder::new", "dep::Holder::read", "dep::fill"]);
+  writeFileSync(join(dir, "app.rs"), "use dep::{Holder, Slot, fill};\n\npub fn main() {\n    let holder = Holder::new();\n    fill(holder.slot(), &holder);\n}\n");
+  expect(() => run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`])).toThrow(
+    "a call of it lends `dep::Holder::slot`, which `dep`, a rust-js library, reads unchecked, as nothing there lends it (ADR 0863): a consumer can't lend one yet",
+  );
+}, 300_000);
+
 // A library's generic function its consumer gives `()`s, which may look
 // like `None`, is its export where it makes no `Some` of them, as React
 // DOM's `runWithFiberInDEV(ancestor, () => { .. })` imports the reconciler's

@@ -1393,3 +1393,29 @@ lost. A box's deref is now `v` itself in that check. Results changed
 ([0262](0262-when-rust-and-js-disagree.md)), so Rust's panic is kept. Held
 by the corpus case `contains_guarded_set_through_a_box` and the mutation
 `unmet-box-content-set-unseen`.
+
+## Amendment: a library's quiet field lent by its consumer is refused (#1032)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): compile error, until
+it's supported. A library's field its contract says is quiet, no borrow
+of which can meet another as nothing there lends it, is read unchecked by
+the library's code, `this.slot`. A consumer that lends it, through a
+method that gives it, `holder.slot()` of `impl Slot for Holder { fn
+slot(&self) -> &RefCell<..> { &self.slot } }`, given to a function that
+holds its borrow while `holder.read()` runs, met no check where Rust
+panics. The method has no JS of its own (rd304), so the library's manifest
+no longer lists it, and its consumer compiles it itself (ADR 0914), read
+of its MIR (`classes::field_given_of_mir`), refused where its field is a
+quiet one (`Foreign::lends_quiet_field`): "a call of it lends
+`dep::Holder::slot`, which `dep`, a rust-js library, reads unchecked, as
+nothing there lends it (ADR 0863): a consumer can't lend one yet". Support
+needs the library's contract to say which methods give which fields and
+which quiet fields each function borrows, and the consumer to compile
+those it lends (#1054, a P2). Held by the crates test of it; mutations
+`field-giving-method-listed` (`lower/library.ts`) and
+`quiet-field-lent-unrefused` (`lower/instances.ts`).
+
+A library call among a receiver guard's arguments stays code rust-js
+can't see (rd360 above), a library's function among them: the metamorphic
+net lists `refcell_borrow_while_mut`'s library rewrite as that decided
+difference (`#rd360` in `test/metamorphic-known.txt`).

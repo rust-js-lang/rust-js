@@ -86,7 +86,10 @@ natively and as JS in both builds** (`scripts/metamorph`,
   of rust-js, or a run otherwise than native, is.
 - **test/metamorphic-known.txt** lists each failing rewrite under its
   issue, `<builds> <rewrite> <case>`; the nightly runs each, so the list
-  only shrinks.
+  only shrinks. A rewrite whose difference the user decided, listed in
+  ADR 0262 and the guide's differences, is listed under that decision,
+  `#rd<n>` (rd360's `refcell_borrow_while_mut`, #1032), not an issue's
+  `#<n>`: no wrong answer to fix, and taken off where it runs as Rust does.
 - **Where it runs**: each push runs one case in 128, by a hash of its name,
   so a case added changes only whether it's sampled (as #853's groups);
   the nightly's `metamorphic` job runs every case, in four parts. Of the

@@ -1133,6 +1133,11 @@ Pair test `library_singles_across_crates`; mutations
 `unwritten-closure-local-unmade` (`lower/mir.ts`). The two of #1032 left,
 `class_trait_field_lent` and `refcell_borrow_while_mut`, are a library's
 `RefCell` borrows a consumer may hold, which its own compile counts none of.
+They're settled in ADR 0863's amendment of #1032: `refcell_borrow_while_mut` is
+rd360's decided difference, and `class_trait_field_lent` is refused. Its
+method `Holder::slot`, a class's trait method that gives its field, has no
+JS of its own (rd304), so the library's manifest no longer lists it
+(`classes::gives_its_field`); its consumer compiles it itself.
 
 ## Amendment: a closure an instance makes of an inlined function is placed where the instance is (#1029)
 

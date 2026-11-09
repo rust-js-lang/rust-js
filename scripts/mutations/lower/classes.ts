@@ -443,24 +443,6 @@ export const mutations: Mutation[] = [
     tests: ["test/namespaces.test.ts", "-t", "what a namespace is refused"],
   },
   {
-    name: "field-accessor-reborrow-refused",
-    breaks:
-      "a method that gives a field, `&self.internal_root` reborrowed where it's given back, is no field accessor: a prototype method, `$fieldCell(this, ..)` (rd304)",
-    file: "src/lower/classes.rs",
-    find: "                && matches!(borrow.kind, Adjust::Borrow(AutoBorrow::Ref(AutoBorrowMutability::Not))) => {}\n",
-    replace: "                && false => {}\n",
-    tests: ["test/classes-traits.test.ts", "-t", "prototype's"],
-  },
-  {
-    name: "field-accessor-of-any-path",
-    breaks:
-      "a method that gives what isn't a field of its `self`, `&OTHER.f`, or of a field reached through another reference, is read as a field of `self` (rd304)",
-    file: "src/lower/classes.rs",
-    find: "                    [deref] if is_self && matches!(deref.kind, Adjust::Deref(DerefAdjustKind::Builtin)) => true,\n",
-    replace: "                    [_] => true,\n",
-    tests: ["test/corpus.test.ts", "-t", "^class_trait_field_borrows.rs$"],
-  },
-  {
     name: "field-accessor-held-allowed",
     breaks:
       "a trait of classes' method that gives a field is held as a function, `let given = <Root as RootType>::internal_root;`, though it's no function JS has (rd304)",
@@ -476,15 +458,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/classes.rs",
     find: "                    if fields.contains(&named) && !own.is_some_and(|own| field_accessor(tcx, own).is_some()) {\n",
     replace: "                    if fields.contains(&named) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^class_trait_field_borrows.rs$"],
-  },
-  {
-    name: "class-trait-unknown-self-any",
-    breaks:
-      "a default's call of a trait of classes' method, of a `Self` not known, may borrow anything, so a borrow held across `self.internal_root()` is counted and checked, `$borrow($fieldCell(this, ..))` (rd304)",
-    file: "src/lower/classes.rs",
-    find: "        Ok(None) => (implementations(tcx, callee).into_iter().flatten())\n",
-    replace: "        Ok(None) => (implementations(tcx, callee).into_iter().flatten().filter(|_| false))\n",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_field_borrows.rs$"],
   },
   {

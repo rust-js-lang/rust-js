@@ -1034,6 +1034,16 @@ fn compiled_because(foreign: &super::library::Foreign<'_, '_>, root: DefId) -> S
 /// its own file (ADR 0914).
 fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Body<'tcx>) {
     let tcx = calls.tcx;
+    // A method of a trait of classes that gives its field, which its
+    // library reads unchecked, as nothing there lends it: a call of it
+    // lends it, which the crate can't yet (#1032).
+    if let Some((field, library)) = calls.foreign.lends_quiet_field(id) {
+        tcx.dcx().err(format!(
+            "rust-js: this crate compiles `{}` itself, as its library's JS has none, and a call of it lends `{}`, which `{library}`, a rust-js library, reads unchecked, as nothing there lends it (ADR 0863): a consumer can't lend one yet",
+            tcx.def_path_str(id),
+            tcx.def_path_str(field),
+        ));
+    }
     struct Read<'tcx> {
         tcx: TyCtxt<'tcx>,
         read: Vec<DefId>,

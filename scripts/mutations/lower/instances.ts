@@ -442,4 +442,13 @@ export const mutations: Mutation[] = [
     replace: "    let drops = drops;\n",
     tests: ["test/crates.test.ts", "-t", "two crates: closure_made_by_an_inlined_function"],
   },
+  {
+    name: "quiet-field-lent-unrefused",
+    breaks:
+      "a consumer that compiles a library's method giving a field the library reads unchecked, as nothing there lends it, lends it unrefused, and `holder.read()` runs on where Rust panics (#1032)",
+    file: "src/lower/instances.rs",
+    find: "    if let Some((field, library)) = calls.foreign.lends_quiet_field(id) {\n",
+    replace: "    if let Some((field, library)) = calls.foreign.lends_quiet_field(id).filter(|_| false) {\n",
+    tests: ["test/crates.test.ts", "-t", "lending a library's quiet field"],
+  },
 ];

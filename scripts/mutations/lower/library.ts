@@ -703,4 +703,13 @@ export const mutations: Mutation[] = [
     replace: "                if true {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
+  {
+    name: "field-giving-method-listed",
+    breaks:
+      "a library's class's trait method that gives its field, which has no JS of its own (rd304), is listed in its manifest, `Holder.slot`, a member its consumer calls and finds undefined (#1032)",
+    file: "src/lower/library.rs",
+    find: "                && !super::classes::gives_its_field(tcx, id)\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "lending a library's quiet field"],
+  },
 ];

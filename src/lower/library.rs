@@ -2,6 +2,7 @@
 //! items a library exports, and the ones a consumer imports.
 
 mod built_types;
+mod cells;
 mod compiled_here;
 pub(super) use compiled_here::merging;
 
@@ -332,6 +333,9 @@ pub(super) fn exports<'tcx>(
             own(tcx, id)
                 && reachable(tcx, id)
                 && exported.contains(&(module_path(tcx, info.module), export_of(id, info)))
+                // Not a method of a trait of classes that gives its field,
+                // which has no JS of its own (rd304, #1032).
+                && !super::classes::gives_its_field(tcx, id)
         })
         .map(|(&id, info)| Item {
             key: key(tcx, id),
@@ -1073,38 +1077,6 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     fn counts_rc(&self, krate: rustc_span::def_id::CrateNum, pointee: rustc_middle::ty::Ty<'tcx>) -> bool {
         self.library(krate)
             .is_some_and(|library| (library.counted_rcs.iter()).any(|shape| may_be_shape(self.tcx, shape, pointee)))
-    }
-
-    /// What each library does with its `RefCell`s (ADR 0863), by its name.
-    /// Each field of a library's struct its contract says is `fact`, by its
-    /// key, and the library that says so (ADR 0906).
-    /// Whether `field`, a library's struct's, is one its contract says
-    /// `fact` of (ADR 0906).
-    pub(super) fn field_has(&self, field: DefId, fact: crate::library::FieldFact) -> bool {
-        !field.is_local()
-            && self
-                .library(field.krate)
-                .and_then(|library| library.fields.get(&key(self.tcx, field)))
-                .is_some_and(|facts| facts.contains(&fact))
-    }
-
-    pub(super) fn fields_saying(&self, fact: crate::library::FieldFact) -> IndexMap<String, String> {
-        (self.dependencies.libraries.iter())
-            .flat_map(|(name, library)| {
-                (library.fields.iter())
-                    .filter(move |(_, facts)| facts.contains(&fact))
-                    .map(move |(key, _)| (key.clone(), name.clone()))
-            })
-            .collect()
-    }
-
-    pub(super) fn ref_cell_facts(&self) -> Vec<(String, crate::library::RefCellFacts)> {
-        let mut facts: Vec<_> = (self.dependencies.libraries.iter())
-            .filter(|(_, library)| !library.ref_cells.is_empty())
-            .map(|(name, library)| (name.clone(), library.ref_cells.clone()))
-            .collect();
-        facts.sort_by(|a, b| a.0.cmp(&b.0));
-        facts
     }
 
     /// Do the writers of `krate`, a library's, take their `Formatter`'s
