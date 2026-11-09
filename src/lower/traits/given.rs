@@ -372,7 +372,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// dictionary or a fact of one, `B: Clone` of a fold's `B`. What it takes
     /// of its impl's a caller gives of the type it knows, the sides'
     /// dictionaries of an `Either<L, R>`'s `rfold` (#475); of its own, a
-    /// caller giving it no type of them, the runtime's fold, can't.
+    /// caller giving it no type of them, the runtime's fold, can't. A slot's
+    /// is its own where its type names one of its own (#840).
     pub(in crate::lower) fn takes_of_its_own(&self, id: DefId) -> bool {
         let impls = self.tcx.generics_of(id).parent_count as u32;
         let of_its_own = |ty: Ty<'tcx>| {
@@ -384,7 +385,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || bounds(self.tcx, self.krate.foreign, self.krate.given, id)
                 .iter()
                 .any(|tr| tr.args.types().any(of_its_own))
-            || self.facts_asked(id).iter().any(|&(index, _)| index >= impls)
+            // A fact of a slot of its own: a type parameter of its own, or an
+            // associated type or a type built of one; not of its impl's,
+            // `<I as Iterator>::Item`'s layout of a `MultiProduct<I>`'s
+            // `last`, which a caller gives of the type it knows (#840).
+            || (self.facts_asked(id).iter()).any(|&(index, _)| of_its_own(drop_slot(self.tcx, self.slots(), id, index)))
     }
 
     /// What a body takes after its own parameters, `evidence_slots`'

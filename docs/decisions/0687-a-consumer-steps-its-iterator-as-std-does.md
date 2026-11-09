@@ -138,3 +138,31 @@ refused, "given a dictionary of its own type parameter"
   `own-nth-impl-dictionaries-ungiven`, `own-method-of-its-own-ungiven`
   (`lower/iterators/stepping.ts`) and `its-own-is-its-impls`
   (`lower/traits/given.ts`).
+
+## Amendment (2026-11-09): a fact of its impl's associated type is its impl's (#840)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none decided; a
+refusal of valid Rust lifted.
+
+An iterator's own method is given what it takes of its impl's parameters
+by its caller, of the type it knows, and refused where it takes what's of
+its own type parameters, which a caller giving it no type of them can't
+give (#475, above). A fact of a slot was taken for its own by its number
+alone: slots are numbered past every type parameter, the impl's and the
+method's, so a fact of the impl's `<I as Iterator>::Item`, a collect's
+layout, `ItemSize`, looked like one of its own. itertools'
+`MultiProduct<I>`, whose own `last` collects its iterators, was refused
+where it's collected, "an iterator's own `last` given a dictionary of its
+own type parameter", and so was any iterator of the crate's whose own
+`last` collects its source, reached through a std adapter, `skip(1)`'s.
+
+**A fact's slot is the method's own where its type names one of the
+method's own type parameters, as a bound's is** (`takes_of_its_own`): a
+type parameter's own, or an associated type or a type built of one; one of
+the impl's, `<I as Iterator>::Item`, is the impl's, given of the type the
+caller knows.
+
+Held by `test/corpus/own_last_of_its_impls_item_layout.rs`, against
+native Rust in both builds: the crate's iterator's own `last` called, a
+`map`'s that doesn't call it, and a `skip`'s that does; and by the
+mutation `own-slot-fact-of-the-impl-counted-own`.

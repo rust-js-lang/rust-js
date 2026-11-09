@@ -139,7 +139,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a fact a method asks of its own type parameter, a fold's `B`, is taken for its impl's, which a caller of a type it knows gives, so it's given one of `()` (#475)",
     file: "src/lower/traits/given.rs",
-    find: "            || self.facts_asked(id).iter().any(|&(index, _)| index >= impls)\n",
+    find: "            || (self.facts_asked(id).iter()).any(|&(index, _)| of_its_own(drop_slot(self.tcx, self.slots(), id, index)))\n",
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "own fold asking of its own type parameter"],
   },
@@ -213,5 +213,13 @@ export const mutations: Mutation[] = [
     find: "            || !self.carried_super(carrier).contains(&(def_id, fact))\n",
     replace: "            || true\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts"],
+  },
+  {
+    name: "own-slot-fact-of-the-impl-counted-own",
+    breaks: "an iterator's own `last` that asks a fact of its impl's `I::Item`, a collect's layout, is taken for one asking a fact of its own type parameters, so `Wrap<I>`'s `last` through a std adapter, itertools' `MultiProduct` collected, is refused (#840)",
+    file: "src/lower/traits/given.rs",
+    find: "            || (self.facts_asked(id).iter()).any(|&(index, _)| of_its_own(drop_slot(self.tcx, self.slots(), id, index)))\n",
+    replace: "            || self.facts_asked(id).iter().any(|&(index, _)| index >= impls)\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_last_of_its_impls_item_layout.rs$"],
   },
 ];
