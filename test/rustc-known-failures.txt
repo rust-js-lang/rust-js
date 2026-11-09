@@ -5,8 +5,11 @@ abi/nullable-pointer-ffi-compat.rs	error: rust-js does not support addressable m
 associated-type-bounds/rpit.rs	error: rust-js does not support values of type `<<impl Tr1 + std::clone::Clone + std::iter::Iterator + std::ops::Add<u8> + std::convert::Into<u8> as Tr1>::As1 as std::iter::Iterator>::Item` yet
 associated-types/assoc-type-in-extern-fn-signature.rs	error: rust-js: a JS function is bound as an ordinary function, `#[cfg_attr(rust_js, rust_js::link_name = "issue_28983")] fn issue_28983(..) { unreachable!() }`, not in an `extern` block (ADR 0373)
 async-await/async-fn-size-moved-locals.rs	error: rust-js does not support `BigFut` as a promise yet: its `Future` is the crate's own, which rust-js never compiles (ADR 0425)
+async-await/async-fn-size-uninit-locals.rs	error: rust-js: this future runs as it's made, as a JS promise does, but it's given where rust-js can't follow when it's awaited (ADR 0029)
 async-await/in-trait/async-default-fn-overridden.rs	error: rust-js does not support calling `std::pin::pin_new_unchecked_in_helper` yet
 async-await/issue-73137.rs	error: rust-js does not support user implementations of `std::task::Wake` yet
+async-await/issues/issue-55809.rs	error: rust-js does not support a `&mut` of a number given back, from its MIR yet
+bench/issue-32062.rs	error: rust-js does not support stepping `I`, which rust-js found nothing here steps yet
 binding/func-arg-incomplete-pattern.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 binding/zero_sized_subslice_match.rs	error: rust-js does not support addressable memory yet: a pointer into what JS may hold a copy of
 binop/augmented-assignment.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&mut [i32]` as `&mut Slice`, which aren't numbers alone
@@ -33,6 +36,7 @@ consts/oncecell-const-init-57781.rs	error: rust-js does not support calling `std
 consts/zst_no_llvm_alloc.rs	node: ended {"panic":"assertion `left == right` failed\n  left: 0x10000\n right: 0x11000"}
 derives/debug/derive-debug.rs	error: rust-js does not support `{:?}` of a `*const dyn std::marker::Send` yet
 drop/drop-noncopyable-raw-pointer.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::boxed::Box<isize>` as `*const u8`, which aren't numbers alone
+drop/drop-uninhabited-enum.rs	error: rust-js does not support dropping `Foo` yet
 drop/dropck_legal_cycles.rs	error: rust-js does not support values of type `H<'_>` yet
 dst/dst-field-align.rs	node: ended {"panic":"assertion `left == right` failed\n  left: 0x10000\n right: 0x11000"}
 dst/dst-raw.rs	error: rust-js does not support addressable memory yet: values of type `*const dyn Trait`
