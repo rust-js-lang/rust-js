@@ -41,14 +41,14 @@ const built = join(target, "metamorph", "debug", "metamorph");
  * Cargo links its binary again on each build, even one with nothing to
  * do, so a part of a parallel run that spawned `built` while another
  * part's build linked it found no file there (ENOENT). */
-const binary = join(target, "metamorph", "metamorph");
+export const rewriter = join(target, "metamorph", "metamorph");
 
 /** The rewriter, built once: its own crate, apart from the compiler's. */
 export function buildRewriter(): void {
   const p = runSync(["cargo", "build", "--quiet", "--manifest-path", manifest, "--target-dir", join(target, "metamorph")], root, 600_000);
   if (p.code !== 0) throw new Error(`the rewriter doesn't build:\n${p.stderr}`);
   // Copied whole, though another part's build may be linking it now.
-  const copy = `${binary}.${process.pid}`;
+  const copy = `${rewriter}.${process.pid}`;
   for (let tries = 1; ; tries++) {
     try {
       copyFileSync(built, copy);
@@ -58,7 +58,7 @@ export function buildRewriter(): void {
       Bun.sleepSync(20);
     }
   }
-  renameSync(copy, binary);
+  renameSync(copy, rewriter);
 }
 
 /** `rewrite` of the case `file`, of so many of the places it finds,
@@ -66,7 +66,7 @@ export function buildRewriter(): void {
  * `library`, the library it uses. `closure-fn` asks rustc for a closure's
  * types, at the case's `edition`. */
 export function rewritten(rewrite: Rewrite, file: string, edition: string, limit?: number): { program: string; library?: string } | undefined {
-  const p = runSync([binary, rewrite, file, ...(limit === undefined ? [] : [String(limit)])], root, 60_000, { METAMORPH_EDITION: edition });
+  const p = runSync([rewriter, rewrite, file, ...(limit === undefined ? [] : [String(limit)])], root, 60_000, { METAMORPH_EDITION: edition });
   if (p.code === 2) return undefined;
   if (p.code !== 0) throw new Error(`metamorph ${rewrite} ${file}: ${p.stderr}`);
   if (rewrite !== "library") return { program: p.stdout };

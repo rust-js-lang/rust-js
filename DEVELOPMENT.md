@@ -777,6 +777,11 @@ the workflow's 2 machines; `--shards=4` splits it across four.
   checkout's above it, so its tests' JS imports that checkout's
   `@rust-js/runtime` and `@rust-js/std`, of another commit; `buildCompiler`
   (`test/support.ts`) fails a run that would.
+- **A failing program is reduced, not by hand** (ADR 1107):
+  `bun scripts/reduce.ts <case.rs> --build plain|std` shrinks it to a
+  program that fails the same way, in parallel, in seconds to a minute; the
+  metamorphic net's and the neighbour shuffle's failures come with theirs
+  (`NET_REDUCE=0` to skip it). Start a P0 from the reduced program.
 - **The inner loop is never delegated.** The failing test is seen to fail
   here, before the fix, and its mutations caught here, before the push.
 - **Read every bless patch before committing it.**

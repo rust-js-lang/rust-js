@@ -82,9 +82,12 @@ export const marker = (name: string) => `=== neighbour ${name}`;
 /** The crate of `group`: each case a module, `n0`, `n1`.., its `main`
  * called by `neighbour`; and a driver, the crate's `main`, that prints
  * each case's marker and calls it, in turn. */
-export function crateOf(group: string[]): string {
+export function crateOf(group: string[], inlined = false): string {
+  // Each case's text in its module where it's `inlined`, one file a
+  // failure is reduced from (#1088), else `include!`d where it is.
+  const of = (name: string) => (inlined ? readFileSync(join(corpus, name), "utf8") : `include!(${JSON.stringify(join(corpus, name))});`);
   const modules = group.map(
-    (name, i) => `mod n${i} {\n    include!(${JSON.stringify(join(corpus, name))});\n    pub fn neighbour() {\n        main()\n    }\n}\n`,
+    (name, i) => `mod n${i} {\n    ${of(name)}\n    pub fn neighbour() {\n        main()\n    }\n}\n`,
   );
   const calls = group.map((name, i) => `    println!(${JSON.stringify(marker(name))});\n    n${i}::neighbour();\n`);
   return `// The neighbour shuffle's crate (#853): ${group.join(", ")}.\n${modules.join("")}\nfn main() {\n${calls.join("")}}\n`;

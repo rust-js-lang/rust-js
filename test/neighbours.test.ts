@@ -11,10 +11,11 @@
 //   bun test/neighbours.ts crate a.rs b.rs                               # a pair's crate, by hand
 
 import { beforeAll, expect, test } from "bun:test";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { groups, listed, narrowed, neighbourly, readKnown, victim, writeCrate, type Known } from "./neighbours";
+import { crateOf, groups, listed, narrowed, neighbourly, readKnown, victim, writeCrate, type Known } from "./neighbours";
+import { reducedRepro } from "./reduced";
 import { agree, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, fixture } from "./support";
 import { shard } from "../scripts/shard";
@@ -88,6 +89,15 @@ async function fewest(group: string[], fails: (group: string[]) => Promise<boole
   return kept;
 }
 
+/** `group`'s crate as one file, each case's text in its module, in a
+ * fixture of its own: what a failure's reduced from (#1088). */
+function inlinedCrate(group: string[]): string {
+  const dir = fixture(`neighbours-reduced-${Bun.hash(group.join(" ")).toString(36)}`);
+  const file = join(dir, "neighbours.rs");
+  writeFileSync(file, crateOf(group, true));
+  return file;
+}
+
 /** The first lines where two outputs part. */
 function parting(a: string, b: string): string {
   const [x, y] = [a.split("\n"), b.split("\n")];
@@ -125,7 +135,8 @@ for (const index of chosen) {
             : await fewest(group, refused);
         const victimOf = named !== undefined && group.includes(named) ? named : undefined;
         if (!listed(known, build, victimOf, beside)) {
-          problems.push(`${build}: ${victimOf ?? "-"} refused beside ${beside.join(" ")}, though each compiles alone: ${ran}`);
+          const repro = reducedRepro(inlinedCrate([...(victimOf === undefined ? [] : [victimOf]), ...beside]), build);
+          problems.push(`${build}: ${victimOf ?? "-"} refused beside ${beside.join(" ")}, though each compiles alone: ${ran}${repro}`);
         }
         continue;
       }
@@ -144,10 +155,12 @@ for (const index of chosen) {
       const others = group.filter((name) => name !== hurt);
       const beside = hurt === undefined ? group : await narrowed(hurt, others, fails);
       if (hurt !== undefined && listed(known, build, hurt, beside)) continue;
+      const repro = reducedRepro(inlinedCrate(hurt === undefined ? group : [hurt, ...beside]), build);
       problems.push(
-        hurt === undefined
+        (hurt === undefined
           ? `${build}: ${group.join(" ")} ended ${show(ran.outcome)} where native ended ${show(whole.run.outcome)}${ran.bytes.stderr.equals(whole.run.bytes.stderr) ? "" : `, its stderr ${JSON.stringify(ran.stderr.slice(0, 300))} where native's is ${JSON.stringify(whole.run.stderr.slice(0, 300))}`}`
-          : `${build}: ${hurt} beside ${beside.join(" ")} runs otherwise than native, ending ${show(ran.outcome)}:\n${parting(whole.run.stdout, ran.stdout)}`,
+          : `${build}: ${hurt} beside ${beside.join(" ")} runs otherwise than native, ending ${show(ran.outcome)}:\n${parting(whole.run.stdout, ran.stdout)}`)
+          .concat(repro),
       );
     }
     // What isn't listed: an issue to file, and its pair to list under it,

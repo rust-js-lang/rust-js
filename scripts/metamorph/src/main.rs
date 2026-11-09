@@ -44,6 +44,10 @@
 //!   fields read by their places (`tuples.rs`).
 //!
 //! `<limit>`: only so many of the places a rewrite finds, in order.
+//!
+//! And `reduce`, a failing program's reductions (`reduce.rs`, #1088):
+//!
+//!   metamorph reduce <case.rs> [<n>]   # how many, or the program with the n-th made
 
 mod closures;
 mod defaults;
@@ -52,6 +56,7 @@ mod library;
 mod loops;
 mod matches;
 mod methods;
+mod reduce;
 mod tuples;
 mod wrap;
 
@@ -67,6 +72,20 @@ const REWRITES: &str = "outline|boxed|option|rc-refcell|field|dyn-ref|impl-ref|i
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
+    // A failing program's reductions (#1088, `reduce.rs`): how many, or one.
+    if let [command, file, rest @ ..] = &args[1..]
+        && command == "reduce"
+    {
+        let source = std::fs::read_to_string(file).expect("the program");
+        let mut ast = syn::parse_file(&source).expect("the program parses");
+        let target = rest.first().map(|n| n.parse::<usize>().expect("a reduction's number"));
+        match reduce::reduce(&mut ast, target) {
+            reduce::Reduced::Made => print!("{}", ast.to_token_stream()),
+            reduce::Reduced::Count(n) if target.is_none() => println!("{n}"),
+            reduce::Reduced::Count(_) => std::process::exit(2),
+        }
+        return;
+    }
     let (rewrite, file, limit) = match &args[1..] {
         [rewrite, file] => (rewrite.as_str(), file, usize::MAX),
         [rewrite, file, limit] => (rewrite.as_str(), file, limit.parse().expect("a limit")),

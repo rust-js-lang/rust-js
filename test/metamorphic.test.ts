@@ -17,6 +17,7 @@ import { join } from "node:path";
 import { corpus } from "./corpus-cases";
 import { runSync } from "./child";
 import { buildRewriter, libraryCrate, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
+import { reducedRepro } from "./reduced";
 import { agree, compileJs, compileJsLibrary, nativeFlags, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, fixture, root } from "./support";
 import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
@@ -58,7 +59,7 @@ const tally = (rewrite: Rewrite, name: string, what: string) => {
 /** What went wrong of `rewrite` of a case in each build, or nothing: its
  * JS run otherwise than native, or rust-js's crash. A refusal is safe, and
  * no wrong answer. */
-function wrong(rewrite: Rewrite, name: string, edition: string): Map<string, string> | undefined {
+function wrong(rewrite: Rewrite, name: string, edition: string): { problems: Map<string, string>; program?: string } | undefined {
   const file = join(corpus, name);
   const dir = fixture(`metamorphic-${rewrite}-${name.replace(/\.rs$/, "")}`);
   const variant = join(dir, "variant.rs");
@@ -134,21 +135,25 @@ function wrong(rewrite: Rewrite, name: string, edition: string): Map<string, str
       `ended ${show(ran.outcome)} where native ended ${show(native.outcome)}; native ${JSON.stringify(a.slice(at, at + 3))}, JS ${JSON.stringify(b.slice(at, at + 3))}${ran.stderr ? `; stderr ${JSON.stringify(ran.stderr.slice(0, 300))}` : ""}`,
     );
   }
-  return problems;
+  // The program that goes wrong, which a failure's reduced from (#1088):
+  // not a `library` variant's, two crates.
+  return { problems, program: made.library === undefined ? variant : undefined };
 }
 
 for (const { name, edition } of all.filter(({ name }) => chosen.has(name))) {
   test(`${name}, rewritten`, () => {
     const problems: string[] = [];
     for (const rewrite of rewrites) {
-      const found = wrong(rewrite, name, edition) ?? new Map<string, string>();
+      const found = wrong(rewrite, name, edition);
       for (const [build] of builds) {
         const listedAs = known.find((k) => k.name === name && k.rewrite === rewrite && k.builds.includes(build));
-        const problem = found.get(build);
+        const problem = found?.problems.get(build);
         if (listedAs !== undefined && problem === undefined) {
           problems.push(`${build} ${rewrite} ${name} runs as Rust does now: take it off test/metamorphic-known.txt (#${listedAs.issue})`);
         } else if (listedAs === undefined && problem !== undefined) {
-          problems.push(`${build} ${rewrite} ${name}: ${problem}`);
+          // With its program reduced (#1088), where it's one crate.
+          const repro = found?.program === undefined ? "" : reducedRepro(found.program, build, edition);
+          problems.push(`${build} ${rewrite} ${name}: ${problem}${repro}`);
         }
       }
     }
