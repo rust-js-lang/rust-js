@@ -451,15 +451,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(step) if step != 0 => n,
                     _ => self.spill("step", Expr::call(Expr::helper("$step"), vec![n]), out),
                 };
-                // Of a source that may give more after a `None`, as std's
-                // steps it, by `nth`, which a `None` stops (#161); of one
-                // whose `nth` reaches the crate's own, which std asks (#214);
-                // and of a range's numbers, whose `nth` is of its bounds,
-                // which tidy makes `$lazyRange(a, b, n)` where it's made
-                // there (#231).
-                if !self.recognition().is_fused_iterator(receiver_ty.peel_refs())
-                    || self.recognition().reaches_its_own(receiver_ty, OwnStep::Nth, Reach::Sure)
-                    || self.steps_a_range(receiver_ty.peel_refs())
+                // Of a source no array's items bound (`bounded_by_items`),
+                // by its `nth`, as std's `StepBy` steps it: one that may give
+                // more after a `None`, which a `None` stops (#161); one whose
+                // `nth` reaches the crate's own, which std asks (#214); a
+                // range's numbers, whose `nth` is of its bounds, which tidy
+                // makes `$lazyRange(a, b, n)` where it's made there (#231);
+                // a zip's, whose fold, std's `SpecFold`, stops where the
+                // shorter ends (#654); a flatten's, what its inner iterator
+                // hasn't given dropped after its source as a panic unwinds
+                // (#668); and its hint std's, its source's count `n` apart,
+                // which a collect asks its room by, where a filter's is none
+                // at least (#1046).
+                if !self.recognition().bounded_by_items(receiver_ty)
                     // And of a `Vec`'s reversed, whose `nth` drops what it
                     // passes over as one slice (#234), or of one whose first
                     // step asks a `Skip`'s `nth` of one (#294).
@@ -470,29 +474,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // before what's left, where std's `StepBy` steps it by
                     // `nth`, so it drops after (#710).
                     || self.folds_held_function(receiver_ty.peel_refs())
-                    // Or of a zip of two `TrustedLen` sides, of items with a
-                    // destructor: its fold, std's `SpecFold`, stops where the
-                    // shorter ends, where its `next` takes an item more of its
-                    // first side and drops it (#654).
-                    || crate::lower::recognition::zipped_sources(self.tcx, self.reveal(receiver_ty.peel_refs())).is_some()
-                        && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, receiver_ty.peel_refs())
-                        && self
-                            .iterator_item(receiver_ty.peel_refs())
-                            .is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing)
                     // And of a `Vec`'s, whose `nth` drops them as one slice
                     // in order, of items whose drop may panic, past which
                     // the slice's goes on (#668).
                     || (self.iterator_item(receiver_ty.peel_refs())).is_some_and(|item| self.drop_may_panic(item))
                         && self.recognition().nths_a_slice_in_order(receiver_ty)
-                    // And of a `flatten()`'s or a `flat_map()`'s of items with
-                    // a destructor: std's `StepBy` steps it by `nth`, so what
-                    // its inner iterator hasn't given stays in it, dropped
-                    // after its source as a panic unwinds, where a filter's
-                    // fold of its fold drops it first (#668).
-                    || crate::lower::recognition::flattened_source(self.tcx, self.reveal(receiver_ty.peel_refs()))
-                        .is_some()
-                        && (self.iterator_item(receiver_ty.peel_refs()))
-                            .is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing)
                     // And of a source whose steps may panic: std's `StepBy`
                     // takes its first `next` while its fold's frame holds only
                     // its parameters, so what drops with the consumer's `f`
@@ -501,11 +487,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // its source's fold, which drops the accumulator first
                     // (#773).
                     || self.steps_may_panic(receiver_ty.peel_refs())
-                    // And of a source no array's items bound: std's
-                    // `StepBy` hints its source's count `n` apart, which a
-                    // collect asks its room by, where a filter's hint is
-                    // none at least (#1046).
-                    || !self.recognition().bounded_by_items(receiver_ty)
                 {
                     let mut list = vec![items, n];
                     list.extend(self.item_drop_of(receiver_ty, span)?);

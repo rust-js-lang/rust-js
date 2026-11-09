@@ -92,21 +92,6 @@ pub(in crate::lower) enum RangeOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Whether an iterator of type `ty` steps a range's numbers, a range's,
-    /// a `rev()`'s or a `skip(n)`'s of one, whose `nth` is of its bounds,
-    /// which a `step_by` steps it by, not each number (#231).
-    pub(in crate::lower) fn steps_a_range(&self, ty: Ty<'tcx>) -> bool {
-        if self.range_kind(ty).is_some() {
-            return true;
-        }
-        let source = (self.recognition().reversed(ty)).or_else(|| {
-            crate::lower::recognition::counted_source(self.tcx, ty)
-                .filter(|(_, skip)| *skip)
-                .map(|(s, _)| s)
-        });
-        source.is_some_and(|source| self.steps_a_range(source))
-    }
-
     /// A range's own `nth(n)`, `last()` and `count()`, of `a..b` or
     /// `a..=b`, or of one reversed, `(a..b).rev()`, `values` it and `n`: of
     /// its bounds, without stepping each number, as std's are (#163),

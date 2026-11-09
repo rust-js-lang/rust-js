@@ -42,6 +42,15 @@ impl Drop for Dropped {
     }
 }
 
+struct Cloned(u8);
+
+impl Clone for Cloned {
+    fn clone(&self) -> Cloned {
+        println!("cloned {}", self.0);
+        Cloned(self.0)
+    }
+}
+
 struct Up(u32);
 
 impl Iterator for Up {
@@ -116,6 +125,7 @@ fn main() {
     check("own chained take of a counted count", || {
         std::iter::repeat(1u32).chain(Up(0)).take(counted(few)).collect::<Vec<_>>()
     });
+    check("repeat_n of a cloned few", || std::iter::repeat_n(Cloned(4), few).collect::<Vec<_>>().len());
     let few_held = Some(few);
     check("repeat_n of a held few", || {
         std::iter::repeat_n(5u32, *few_held.as_ref().unwrap()).collect::<Vec<_>>()

@@ -56,6 +56,12 @@ function droppedDrop_drop(dropped) {
   console.log(`dropped ${dropped[0]}`);
 }
 
+export const clonedClone = { clone: clonedClone_clone };
+function clonedClone_clone(cloned) {
+  console.log(`cloned ${cloned[0]}`);
+  return [cloned[0]];
+}
+
 function upIterator_next(up) {
   up[0] = (up[0] + 1) >>> 0;
   return up[0] < 6 ? up[0] : undefined;
@@ -240,6 +246,15 @@ function main() {
         ),
       ),
     vecDebug,
+  );
+  check(
+    "repeat_n of a cloned few",
+    () => {
+      const it = $repeatingN([4], few, (value) => clonedClone_clone(value));
+      $roomFor(few, 1);
+      return Array.from(it).length;
+    },
+    usizeDebug,
   );
   const fewHeld = few;
   check(

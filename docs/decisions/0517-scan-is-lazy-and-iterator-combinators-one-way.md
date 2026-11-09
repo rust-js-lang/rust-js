@@ -210,3 +210,15 @@ native Rust in both builds. Mutations: `lazy-scan-state-undropped`,
 diagnostics test's refusal of a function a lazy scan holds is now one of
 `from_fn`'s, which nothing closes to drop it; the guide's limitations
 page lists the state's refusal no more.
+
+## Amendment: a `step_by` of what no array's items bound is `$stepBy` (2026-11-09, #1046)
+
+Since #1046 a `step_by(n)` of what no array's items bound
+(`bounded_by_items`) is `$stepBy`, as its hint must be std's `StepBy`'s.
+That one rule covers each it was before for its own reason: a source that
+may give more after a `None` (#161), one whose `nth` reaches the crate's
+own (#214), a range's numbers (`steps_a_range`, gone, #231), a zip's
+(#654) and a flatten's (#668), none of which an array's items bound; their
+five conditions, which no case reached apart from it, are gone, and so are
+their mutations, one, `step-by-of-unbounded-as-filter`, holding the cases
+each held. A filter of every `n`th stays for an array's items.

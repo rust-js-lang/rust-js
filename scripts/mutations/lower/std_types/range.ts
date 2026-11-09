@@ -249,15 +249,7 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
     snapshots: true,
   },
-  {
-    name: "steps-a-range-not-reversed",
-    breaks:
-      "a `rev()` of a range isn't said to step a range's numbers, so its `step_by` held steps each one (#231)",
-    file: "src/lower/std_types/range.rs",
-    find: "        let source = (self.recognition().reversed(ty)).or_else(|| {\n",
-    replace: "        let source = None.or_else(|| {\n",
-    tests: ["test/corpus.test.ts", "-t", "^range_steps_anywhere.rs$"],
-  },
+
   {
     name: "range-step-by-unfolded",
     breaks:

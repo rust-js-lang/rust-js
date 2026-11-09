@@ -40,6 +40,7 @@ export const mutations: Mutation[] = [
     replace:
       "            if false && !skip && self.recognition().endless_by_type(source) {\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
+    snapshots: true,
   },
   {
     name: "step-by-uncounted",
@@ -58,6 +59,7 @@ export const mutations: Mutation[] = [
     find: "            && let Some([_, n, ..]) = crate::lower::iterators::repeating_n_parts(it)\n",
     replace: "            && let Some([_, n, ..]) = crate::lower::iterators::repeating_n_parts(it).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
+    snapshots: true,
   },
   {
     name: "given-copied-lengthless",
@@ -508,6 +510,7 @@ export const mutations: Mutation[] = [
     find: "            && let Some([_, n, ..]) = crate::lower::iterators::repeating_n_parts(it)\n",
     replace: "            && let Some([_, n]) = crate::lower::iterators::repeating_n_parts(it)\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
+    snapshots: true,
   },
   {
     name: "held-length-uncounted",

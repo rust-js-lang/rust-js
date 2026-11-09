@@ -300,15 +300,7 @@ export const mutations: Mutation[] = [
       "                if !sides.iter().all(|&side| self.is_vec_like(side)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^unzip_into_maps.rs$"],
   },
-  {
-    name: "step-by-unfused-filtered",
-    breaks:
-      "`step_by` of an iterator that gives `None` then more counts on past it, a filter of each `n`th, not std's `nth`",
-    file: "src/lower/combinators/adapters.rs",
-    find: "                if !self.recognition().is_fused_iterator(receiver_ty.peel_refs())\n",
-    replace: "                if false\n",
-    tests: ["test/corpus.test.ts", "-t", "^restarting_iterators.rs$"],
-  },
+
   {
     name: "nth-own-by-drop",
     breaks: "nth of what reaches the crate's own nth is its nth",
@@ -325,24 +317,8 @@ export const mutations: Mutation[] = [
     replace: 'Expr::call_helper("$nth", vec![items, next()])',
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
-  {
-    name: "step-by-own-nth-filtered",
-    breaks:
-      "`step_by` of a fused source whose `nth` reaches the crate's own is a filter of indices, which asks it none, where std's asks `nth` (#214)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "                    || self.recognition().reaches_its_own(receiver_ty, OwnStep::Nth, Reach::Sure)\n",
-    replace: "                    || false\n",
-    tests: ["test/corpus.test.ts", "-t", "^(own_nth_through_adapters|own_fold_and_count_where_adapters_call_them|step_by_of_own_nth_that_never_unwinds).rs$"],
-  },
-  {
-    name: "step-by-range-filtered",
-    breaks:
-      "a `step_by` of a held range is a filter of every `n`th, which steps each number and doesn't finish (#231)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "                    || self.steps_a_range(receiver_ty.peel_refs())\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^range_steps_anywhere.rs$"],
-  },
+
+
   {
     name: "resize-room-unasked",
     breaks: "`resize(n)` past `isize::MAX` bytes is no panic",
@@ -424,14 +400,7 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^any_of_one_value_is_includes.rs$"],
     snapshots: true,
   },
-  {
-    name: "step-by-of-trusted-zip-filtered",
-    breaks: "a `step_by()` of a zip of a reversed `Vec`'s items and a range is a filter by index, which folds the zip by its `TrustedLen` fold, where std's `StepBy` steps it by `next`, which takes an item more of its first side and drops it before the rest (#654)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "                    || crate::lower::recognition::zipped_sources(self.tcx, self.reveal(receiver_ty.peel_refs())).is_some()\n",
-    replace: "                    || false\n",
-    tests: ["test/corpus.test.ts", "-t", "^reversed_vec_rest_through_zip_and_enumerate.rs$"],
-  },
+
   {
     name: "step-by-slice-in-order-filtered",
     breaks: "a `step_by(n)` of a `Vec`'s items whose drop may panic is a filter by index, each it passes dropped as it's rejected, so a panic there drops the fold's accumulator before the rest of std's slice (#668)",
@@ -440,14 +409,7 @@ export const mutations: Mutation[] = [
     replace: "                        && false\n",
     tests: ["test/corpus.test.ts", "-t", "^nth_passed_drops_unwind.rs$"],
   },
-  {
-    name: "step-by-of-a-flatten-filtered",
-    breaks: "a `step_by()` of a `flatten()` of items with a destructor is a filter by index, whose fold folds the flatten's own, so a consumer's panic drops what the inner iterator hasn't given before the source's rest, where std's `StepBy` steps it by `nth` and leaves it in the `Flatten`, dropped after (#668)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "                    || crate::lower::recognition::flattened_source(self.tcx, self.reveal(receiver_ty.peel_refs()))\n",
-    replace: "                    || false && crate::lower::recognition::flattened_source(self.tcx, self.reveal(receiver_ty.peel_refs()))\n",
-    tests: ["test/corpus.test.ts", "-t", "^step_by_of_a_flatten_unwinds.rs$"],
-  },
+
   {
     name: "flat-map-own-count-js",
     breaks: "a flatten of inner iterators whose own `count` it reaches is JS's `flatMap`, which has no `count`, so each is counted by `next` (#736)",
@@ -497,14 +459,19 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = dropped;\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
+
   {
     name: "step-by-of-unbounded-as-filter",
     breaks:
-      "`repeat(1u8).step_by(2).take(n)` held is a filter of every 2nd, whose hint is none at least, so its `collect()` of `usize::MAX` asks room for one and throws JS's `RangeError` where std's `StepBy` hints that many and panics `capacity overflow` (#1046)",
+      "a `step_by(n)` of what no array's items bound is a filter of every `n`th, stepped by `next` where std's `StepBy` steps it by `nth`: a source that gives more after a `None` goes on, the crate's own `nth` is never asked, a range steps each number, a zip's or a flatten's drops come in another order, and its hint, a filter's, asks no room where std panics `capacity overflow` (#161, #214, #231, #654, #668, #1046)",
     file: "src/lower/combinators/adapters.rs",
-    find: "                    || !self.recognition().bounded_by_items(receiver_ty)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^counted_iterators_held_ask_room.rs$"],
+    find: "                if !self.recognition().bounded_by_items(receiver_ty)\n",
+    replace: "                if false\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(counted_iterators_held_ask_room|restarting_iterators|own_nth_through_adapters|range_steps_anywhere|reversed_vec_rest_through_zip_and_enumerate).rs$",
+    ],
     snapshots: true,
   },
 ];
