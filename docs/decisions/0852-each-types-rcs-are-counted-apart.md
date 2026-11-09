@@ -351,3 +351,51 @@ counted is left uncounted; it lifts a refusal.
 Held by the pair `library_fn_dyns_of_two_results`, against native Rust,
 and the mutation `rc-dyn-fn-output-uncompared` (`analysis/rc_counts.ts`);
 `rc-dyn-fn-any-other` now drops the output too.
+
+## Amendment: generic code's `Rc`, of each type its callers give (#1009)
+
+The amendment for #1001 narrowed a bare `Rc<T>` alone, and only where every
+function holding one was resolved; an `Rc<Slot<T>>` still counted every
+`Rc<Slot<_>>`, and a trait method's `Rc<T>`, called through a dictionary,
+every `Rc`, so one case's generic code made a neighbour's `Rc` counted, and
+an untagged enum's `Rc` variant beside it refused (#1036, found by the
+neighbour shuffle). Counted-ness is now a fact of each instance:
+
+- **Each pointee that holds a type parameter has its origins**: the
+  functions it's in, a body's, a parameter's or a count read's, or `None`
+  of a field's or an impl's header, which any type may be given.
+- **Its instances are each type its callers give put in its parameters'
+  places**, `Slot<T>` each `Slot<u32>` its namings give, through generic
+  callers in turn (`given_types`, `instances_of`): of a trait's method, or
+  an impl's of one, its own parameters each naming gives, the trait's
+  method's or the impl's, `count_of::<Item>` though `Self` is a
+  dictionary's. It may be any type, a wildcard as before, where an origin
+  is a field's or an impl's, where a function is `pub`, JS's or a
+  consumer's to call, or its trait is, std's among them, where its `Self`
+  or an impl's own parameter is the dictionary's, where a caller gives
+  what's resolved no further, or past 64 instances.
+- **One fixed point, one representation**: a counted generic pointee
+  whose instances are seen counts each of them and no other type, and is
+  counted where one of them is; one that may be any type counts every type
+  it may be, as before. `Counted::counts` answers exactly of a resolved
+  one (`resolved`), and a library's manifest names its instances, never the
+  resolved generic, which a consumer would take for any type.
+
+`rc_counted_by_callers_instances.rs` holds it: generic code's counted
+`Rc<Slot<T>>` and a trait method's `Rc<T>` beside an untagged enum of an
+`Rc<Slot<String>>` and an `Rc<Label>`, refused before, now told apart, run
+against native Rust. No snapshot of the corpus changed. An impl's header's
+`Rc<T>` keeps its wildcard, `unsafe impl<T> StableDeref for Rc<T>`, whose
+instances are the dictionaries made where it's used, not callers: #1060's
+refusal is that one's, still listed. Where callers can't all be seen, a
+`pub` trait's methods, the wildcard's rules are held by
+`rc_counted_where_callers_unseen.rs`, `rc_dropped_where_callers_unseen.rs`
+and `rc_dropped_in_a_closure_where_callers_unseen.rs`, each refused or
+wrong without its rule, whose cases the resolved instances had come to
+cover elsewhere. Mutations put back each wildcard:
+`rc-param-resolution-unasked`, `rc-param-impl-method-resolved` and
+`rc-public-callers-seen`. An impl's own parameter is the dictionary's by
+construction, and stays a wildcard: `rc_counted_by_an_impls_parameter.rs`
+runs it through generic code, but no program of one crate tells it from a
+method's own, as each dictionary its namings resolve names the impl's
+method with its parameter's type too, so no mutation holds that line.

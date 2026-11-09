@@ -470,7 +470,12 @@ pub(super) fn exports<'tcx>(
                     of: None,
                     args: Vec::new(),
                 }],
-                false => counted.types.iter().map(|&ty| rc_shape(tcx, ty)).collect(),
+                // Of a pointee whose callers are seen, its instances alone,
+                // which its consumers count as it does (#1009).
+                false => (counted.types.iter())
+                    .filter(|ty| !counted.resolved.contains(*ty))
+                    .map(|&ty| rc_shape(tcx, ty))
+                    .collect(),
             };
             shapes.sort();
             shapes.dedup();

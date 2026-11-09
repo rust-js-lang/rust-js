@@ -38,15 +38,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "library-counts-every-rc",
-    breaks:
-      "a crate that counts one type's `Rc`s counts every one, React's context `{ value, strong, weak }` beside a counted `Rc<Slot<T>>` (ADR 0852)",
-    file: "src/lower/analysis/rc_counts.rs",
-    find: "    if counted.types.iter().any(|&t| head(tcx, t).is_none()) {\n",
-    replace: "    counted.all = !counted.types.is_empty();\n    if counted.types.iter().any(|&t| head(tcx, t).is_none()) {\n",
-    tests: ["test/crates.test.ts", "-t", "counts each type"],
-  },
-  {
     name: "copy-param-dropping",
     breaks:
       "an `Rc` of a `Copy` associated type's value, `U::Value`'s, is taken to drop it, so a library holding one counts it (ADR 0844)",
@@ -94,37 +85,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "counts each type"],
   },
   {
-    name: "rc-generic-uncounted",
-    breaks: "a generic function's `Rc<T>` isn't counted where its caller's is",
-    file: "src/lower/analysis/rc_counts.rs",
-    find: "                counted.types.iter().any(|&t| may_be(tcx, t, pointee))\n                    || ",
-    replace: "                false || ",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(rc_count_through_generic|rc_counted_per_type).rs$",
-    ],
-    snapshots: true,
-  },
-  {
-    name: "rc-destructor-uncounted",
-    breaks:
-      "an `Rc` of a value with a destructor isn't counted, and is refused",
-    file: "src/lower/analysis/rc_counts.rs",
-    find: "                    || !pointee.has_non_region_param() && runs(counted, pointee)\n",
-    replace: "                    || false && runs(counted, pointee)\n",
-    tests: ["test/corpus.test.ts", "-t", "^rc_destructors.rs$"],
-  },
-  {
-    name: "rc-destructor-one-round",
-    breaks:
-      "an `Rc` of a value that holds a counted `Rc` isn't counted, as its drop runs only once that one is",
-    file: "src/lower/analysis/rc_counts.rs",
-    find: "        counted.types.extend(more);\n    };\n",
-    replace: "        counted.types.extend(more);\n        break;\n    };\n",
-    tests: ["test/corpus.test.ts", "-t", "^rc_destructors.rs$"],
-  },
-  {
     name: "rc-made-counted-uncounted",
     breaks:
       "an `Rc` made a counted `Rc<RefCell<dyn T>>` isn't counted itself: the two disagree on what an `Rc` is, and a method reads what isn't there",
@@ -143,7 +103,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/corpus.test.ts",
       "-t",
-      "^(generic_rc_drops|rc_of_param_unnamed).rs$",
+      "^(generic_rc_drops|rc_of_param_unnamed|rc_dropped_where_callers_unseen).rs$",
     ],
   },
   {
@@ -301,7 +261,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/rc_counts.rs",
     find: "                    held.extend(args.as_closure().upvar_tys());\n",
     replace: "                    let _ = args;\n",
-    tests: ["test/cross-crate-dyn-fns.test.ts", "-t", "holds none of its type parameters"],
+    tests: ["test/cross-crate-dyn-fns.test.ts", "test/corpus.test.ts", "-t", "holds none of its type parameters|^rc_dropped_in_a_closure_where_callers_unseen.rs$"],
   },
   {
     name: "compared-uncounted-always",
@@ -338,22 +298,6 @@ export const mutations: Mutation[] = [
     find: "            DefKind::Impl { .. } => found(\n",
     replace: "            DefKind::Impl { .. } if false => found(\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_of_an_impls_parameter_counted_as_any.rs$"],
-  },
-  {
-    name: "rc-param-resolution-unasked",
-    breaks: "a generic function's counted `Rc<T>` counts every `Rc`, though each of its callers is seen giving `T` a type, so a class constructor's `Rc<Self>` beside it is refused (#1001)",
-    file: "src/lower/analysis/rc_counts.rs",
-    find: "        match given {\n",
-    replace: "        match given.filter(|_| false) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^rc_counted_by_a_generic_beside_a_class.rs$"],
-  },
-  {
-    name: "rc-param-impl-method-resolved",
-    breaks: "a trait impl's generic method that counts an `Rc<T>`, called through its trait by callers its own calls don't name, is taken for one given nothing, so the `Rc` it's given isn't counted and its count is wrong (#1001)",
-    file: "src/lower/analysis/rc_counts.rs",
-    find: "        || tcx.trait_impl_of_assoc(owner).is_some()\n",
-    replace: "        || false\n",
-    tests: ["test/corpus.test.ts", "-t", "^rc_counted_by_a_trait_method.rs$"],
   },
   {
     name: "rc-dyn-fn-any-other",
@@ -529,5 +473,69 @@ export const mutations: Mutation[] = [
     find: "                && unsized_later.contains(&owner)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_rcs.rs$"],
+  },
+  {
+    name: "library-counts-every-rc",
+    breaks: "a crate that counts one type's `Rc`s counts every one, React's context `{ value, strong, weak }` beside a counted `Rc<Slot<T>>` (ADR 0852)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "    counted.all = counted.types.iter().any(|&t| wild(t) && head(tcx, t).is_none());\n",
+    replace: "    counted.all = !counted.types.is_empty();\n",
+    tests: ["test/crates.test.ts", "-t", "counts each type"],
+  },
+  {
+    name: "rc-generic-uncounted",
+    breaks: "a generic function's `Rc<T>` isn't counted where its caller's is",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "            let may = (counted.types.iter()).any(|&t| (wild(t) || wild(pointee)) && may_be(tcx, t, pointee));\n",
+    replace: "            let may = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(rc_count_through_generic|rc_counted_per_type|rc_counted_where_callers_unseen).rs$"],
+  },
+  {
+    name: "rc-destructor-uncounted",
+    breaks: "an `Rc` of a value with a destructor isn't counted, and is refused",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "            if of_counted || instance || may || !pointee.has_non_region_param() && runs(&counted, pointee) {\n",
+    replace: "            if of_counted || instance || may || false && runs(&counted, pointee) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_destructors.rs$"],
+  },
+  {
+    name: "rc-destructor-one-round",
+    breaks: "an `Rc` of a value that holds a counted `Rc` isn't counted, as its drop runs only once that one is",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "        counted.types.extend(more);\n    }\n",
+    replace: "        counted.types.extend(more);\n        break;\n    }\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_destructors.rs$"],
+  },
+  {
+    name: "rc-param-resolution-unasked",
+    breaks: "a generic function's counted `Rc<T>` or `Rc<Slot<T>>` counts every `Rc` it may be, though each of its callers is seen giving `T` a type, so an untagged enum's `Rc` variants, or a class constructor's `Rc<Self>`, beside it are refused (#1001, #1009)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "            (pointee, made())\n",
+    replace: "            (pointee, made().filter(|_| false))\n",
+    tests: ["test/corpus.test.ts", "-t", "^(rc_counted_by_a_generic_beside_a_class|rc_counted_by_callers_instances).rs$"],
+  },
+  {
+    name: "rc-param-impl-method-resolved",
+    breaks: "a trait impl's generic method that counts an `Rc<T>`, called through its trait, isn't asked what the trait's method's namings give its own `T`, so it's taken for one given nothing, the `Rc` it's given isn't counted and its count is wrong (#1001, #1009)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "        if declared != owner {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(rc_counted_by_a_trait_method|rc_counted_by_callers_instances).rs$"],
+  },
+  {
+    name: "rc-public-callers-seen",
+    breaks: "a `pub` generic function's `Rc<T>` counts only what the crate's own calls give it, though JS or a consumer may give it any type, whose `Rc` is then uncounted there (#1009)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "    if tcx.visibility(owner).is_public() {\n        return None;\n    }\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "counts each type"],
+  },
+  {
+    name: "rc-resolved-after-settling",
+    breaks: "which generic pointees' instances are seen isn't known while settling, so `runs`, asking `counts` of a type whose drop drops its own `Rc`, takes a resolved `T` for any type, and counts it: an untagged enum's `Rc<Label>` beside a bare `Rc<T>` of `Loud` is refused (#1009, the neighbour shuffle's seed 57)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "    counted.resolved = (instances.iter())\n",
+    replace: "    counted.resolved = IndexSet::default();\n    let _: IndexSet<Ty<'tcx>> = (instances.iter())\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_counted_by_callers_instances.rs$"],
   },
 ];
