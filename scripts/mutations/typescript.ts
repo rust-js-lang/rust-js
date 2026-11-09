@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "printer-of-its-package-alone",
     breaks: "which `@rust-js/typescript` prints a build's `.d.ts` is its package's manifest alone, so a change to its module, a checkout's `typescript/index.js`, keeps the `.d.ts` the one before printed (#675)",
     file: "src/typescript.rs",
-    find: "    for file in [module, package.as_path()] {\n",
+    find: "    for file in [module.as_path(), package.as_path()] {\n",
     replace: "    for file in [package.as_path()] {\n",
     tests: ["test/cargo-workspace.test.ts", "-t", "told which declarations printer"],
   },

@@ -3,6 +3,15 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "printer-reads-unrecorded",
+    breaks:
+      "a compile that prints declarations by the printer `RUST_JS_TYPESCRIPT` names doesn't record its files, so a test's kept compile is given again after the printer or its TypeScript changed (ADR 1099, amended)",
+    file: "src/main.rs",
+    find: "            reading.extend(printer_reads.clone().unwrap_or_default());\n",
+    replace: "",
+    tests: ["test/compiles.test.ts", "-t", "a file's record of its build"],
+  },
+  {
     name: "ub-checks-in-library-mir",
     breaks: "a library's MIR keeps a debug build's checks of a pointer's address before it's read, so a consumer compiling its `vec![t]` refuses it (#378)",
     file: "src/main.rs",
@@ -174,8 +183,8 @@ export const mutations: Mutation[] = [
     name: "file-record-of-hooks",
     breaks: "a file's record is written of a crate whose hooks, programs of its own, read and write what it can't say (ADR 1099)",
     file: "src/main.rs",
-    find: "        if build.declarations || !hooks.transform.is_empty() || !hooks.check.is_empty() {\n",
-    replace: "        if build.declarations || !hooks.check.is_empty() {\n",
+    find: "        if printer_reads.is_none() || !hooks.transform.is_empty() || !hooks.check.is_empty() {\n",
+    replace: "        if printer_reads.is_none() || !hooks.check.is_empty() {\n",
     tests: ["test/compiles.test.ts", "-t", "a file's record of its build"],
   },
 ];

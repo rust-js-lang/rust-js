@@ -103,8 +103,10 @@ export function currentBuild(program = testsCompiler): string | undefined {
 
 // What rust-js does that isn't a compile of a crate, or that writes or
 // reads what a record can't say: Cargo's build, std's sysroot beside the
-// compiler, TypeScript's declarations.
-const notKept = new Set(["--version-json", "--version", "--runtime-module", "--tidy-passes", "--prepare-passes", "--rustc", "--checks", "--format-jsx", "--cargo", "--std-bodies", "--declarations"]);
+// compiler. A compile that prints declarations is kept where
+// `RUST_JS_TYPESCRIPT` names the printer, whose files its record names;
+// else rust-js says it can't be recorded (`unrecordable`).
+const notKept = new Set(["--version-json", "--version", "--runtime-module", "--tidy-passes", "--prepare-passes", "--rustc", "--checks", "--format-jsx", "--cargo", "--std-bodies"]);
 
 /** A file's content, by its hash, read again only where the file has
  * changed since, by its inode, size and times: the toolchain's crates a

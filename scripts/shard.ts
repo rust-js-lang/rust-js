@@ -255,8 +255,9 @@ export const parts: Part[] = [
 ];
 
 /** The settings test files read that select no part: the harness's own,
- * what a test sets for a child it runs, Miri's sysroot, which a run asks
- * for once (test/miri.ts), and a report's. */
+ * what a test sets for a child it runs, the printer of declarations its
+ * compiles name (test/setup.ts), Miri's sysroot, which a run asks for once
+ * (test/miri.ts), and a report's. */
 export const harness = [
   "BLESS",
   "BUN_TEST_WORKER_ID",
@@ -284,4 +285,5 @@ export const harness = [
   "RUST_JS_SNAPSHOTS",
   "RUST_JS_TARGET",
   "RUST_JS_TEST_VALUE",
+  "RUST_JS_TYPESCRIPT",
 ];

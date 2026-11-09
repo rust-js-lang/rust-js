@@ -80,7 +80,8 @@ test("Cargo is told which rust-js it runs, so another one's crates are built aga
   const identity = JSON.parse(run([compiler, "--version-json"]));
   expect(identity.build).toMatch(/^[0-9a-f]{16}$/);
   const line = `rust-js: ${identity.version}, Rust ${identity.toolchain}, ABI ${identity.abi}, build ${identity.build}`;
-  const said = run([compiler, "rustc", "-vV"]);
+  // With no printer of declarations named, whose hash it says too.
+  const said = run([compiler, "rustc", "-vV"], undefined, { RUST_JS_TYPESCRIPT: undefined });
   expect(said).toBe(run(["rustc", "-vV"]) + line + "\n");
   // As Cargo asked it, and kept what it said.
   const dir = fixture("crates-cargo-identity");

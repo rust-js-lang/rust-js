@@ -19,6 +19,13 @@ asNode();
 // passed its minute and failed, where alone it takes seconds.
 setDefaultTimeout(underLoad(60_000));
 
+// The printer of declarations the tests' compiles run, named, as `rust-js
+// build` names its own (ADR 0412): the checkout's, which Node would find
+// from a fixture in it, so a compile that prints declarations says what it
+// read and is kept (ADR 1099, amended). A test of a crate's own printer
+// takes it out.
+process.env.RUST_JS_TYPESCRIPT ??= Bun.resolveSync("@rust-js/typescript", import.meta.dir);
+
 // The compiler, before any file's tests. `bun run test` builds it before
 // Bun starts and gives it to every process from the start, which is what
 // reaches a child a file spawns; a bare `bun test` has it built here, by

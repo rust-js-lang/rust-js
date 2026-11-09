@@ -575,14 +575,19 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     let (mut rustc_args, staged) = build.rustc_args()?;
     // A file's record says all its build read (ADR 1099): not what a hook,
     // a program of the crate's own, reads, nor the TypeScript Node finds
-    // to print its declarations.
+    // to print its declarations, where no `RUST_JS_TYPESCRIPT` names the
+    // printer, whose files it reads then (`printer_reads`).
+    let printer_reads = match build.declarations {
+        true => crate::typescript::printer_reads()?,
+        false => Some(Vec::new()),
+    };
     if !build.cargo && staged.dep_info.is_some() {
         let hooks = &read_settings.hooks;
-        if build.declarations || !hooks.transform.is_empty() || !hooks.check.is_empty() {
+        if printer_reads.is_none() || !hooks.transform.is_empty() || !hooks.check.is_empty() {
             return Err(format!(
                 "--emit=dep-info can't say all a build reads {}: rust-js runs programs it doesn't see into",
-                if build.declarations {
-                    "that prints declarations, with TypeScript"
+                if printer_reads.is_none() {
+                    "that prints declarations, with TypeScript no `RUST_JS_TYPESCRIPT` names"
                 } else {
                     "whose crate has hooks"
                 }
@@ -683,6 +688,8 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
             let written = written.clone();
             let mut reading: Vec<PathBuf> = callbacks.dependencies.inputs.clone();
             reading.extend(plan.settings.manifest.clone());
+            // And the printer's, of its declarations (`printer_reads`).
+            reading.extend(printer_reads.clone().unwrap_or_default());
             if let Some(previous) = plan.manifest.as_ref().filter(|path| path.exists()) {
                 reading.push(paths::absolute(previous)?);
             }

@@ -22,7 +22,8 @@ test("the committed @rust-js/std is std's bodies as the compiler compiles them",
   mkdirSync(join(dir, "std"), { recursive: true });
   cpSync(join(stdDir, "lib.rs"), join(dir, "std", "lib.rs"));
   const build = stdBuild(compiler, dir);
-  const made = runSync(build.cmd, build.cwd, underLoad(600_000));
+  // Without `RUSTC_BOOTSTRAP`, which the next test's build is given.
+  const made = runSync(build.cmd, build.cwd, underLoad(600_000), { RUSTC_BOOTSTRAP: undefined });
   if (made.code !== 0) throw new Error(`std's build failed:\n${made.stderr}`);
   const manifest = JSON.parse(readFileSync(join(dir, "std", "manifest.json"), "utf8"));
   const committed = JSON.parse(readFileSync(join(stdDir, "manifest.json"), "utf8"));
@@ -52,36 +53,29 @@ test("the committed @rust-js/std is std's bodies as the compiler compiles them",
   // compile (ADRs 0908, 0917): past 30 s beside check:fast's other jobs.
 }, underLoad(120_000));
 
-// std's crate hash is of its inputs alone (#1094): built in two places, one
-// with `RUSTC_BOOTSTRAP` given as a test run or Cargo gives it, each is the
-// committed one. It was rustc's, of where the checkout was, of whether that
-// was given, and of a `core` built from where the toolchain is, so each
-// checkout and machine committed another.
+// std's crate hash is of its inputs alone (#1094): built in another place,
+// deeper, with `RUSTC_BOOTSTRAP` given as a test run or Cargo gives it, it's
+// the committed one, as the build of the test before, without it, is. It was
+// rustc's, of where the checkout was, of whether that was given, and of a
+// `core` built from where the toolchain is, so each checkout and machine
+// committed another. One build of std's bodies, not two: each is some 6
+// CPU-seconds of every `check:fast --all` (#882).
 test("std's crate hash is the same built anywhere, with or without RUSTC_BOOTSTRAP", () => {
   const committed = JSON.parse(readFileSync(join(stdDir, "manifest.json"), "utf8")).library.crate_hash;
   const given = process.env.RUSTC_BOOTSTRAP;
-  const hashes = [
-    ["std-hash-here", undefined],
-    ["std-hash-elsewhere", "1"],
-  ].map(([name, bootstrap]) => {
-    // The second deeper in a place of its own: another path.
-    const dir = bootstrap === undefined ? fixture(name as string) : join(fixture(name as string), "deeper");
-    mkdirSync(join(dir, "std"), { recursive: true });
-    cpSync(join(stdDir, "lib.rs"), join(dir, "std", "lib.rs"));
-    const build = stdBuild(compiler, dir);
-    // As the caller's environment has it, which the build takes out.
-    if (bootstrap === undefined) delete process.env.RUSTC_BOOTSTRAP;
-    else process.env.RUSTC_BOOTSTRAP = bootstrap;
-    try {
-      const made = runSync(build.cmd, build.cwd, underLoad(600_000));
-      if (made.code !== 0) throw new Error(`std's build failed:\n${made.stderr}`);
-    } finally {
-      if (given === undefined) delete process.env.RUSTC_BOOTSTRAP;
-      else process.env.RUSTC_BOOTSTRAP = given;
-    }
-    return JSON.parse(readFileSync(join(dir, "std", "manifest.json"), "utf8")).library.crate_hash;
-  });
-  expect(hashes).toEqual([committed, committed]);
+  const dir = join(fixture("std-hash-elsewhere"), "deeper");
+  mkdirSync(join(dir, "std"), { recursive: true });
+  cpSync(join(stdDir, "lib.rs"), join(dir, "std", "lib.rs"));
+  const build = stdBuild(compiler, dir);
+  process.env.RUSTC_BOOTSTRAP = "1";
+  try {
+    const made = runSync(build.cmd, build.cwd, underLoad(600_000));
+    if (made.code !== 0) throw new Error(`std's build failed:\n${made.stderr}`);
+  } finally {
+    if (given === undefined) delete process.env.RUSTC_BOOTSTRAP;
+    else process.env.RUSTC_BOOTSTRAP = given;
+  }
+  expect(JSON.parse(readFileSync(join(dir, "std", "manifest.json"), "utf8")).library.crate_hash).toBe(committed);
 }, underLoad(120_000));
 
 // What the compiler writes imports the package by its name alone, its one

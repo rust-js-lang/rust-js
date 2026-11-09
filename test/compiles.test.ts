@@ -162,9 +162,24 @@ test("a file's record of its build says what it wrote and all it read, and chang
   rmSync(join(dir, "out"), { recursive: true });
   expect(Bun.spawnSync([compiler, ...args], { cwd: root }).exitCode).toBe(0);
   for (const [file, text] of Object.entries(written)) expect([file, readFileSync(join(dir, "out", file), "utf8")]).toEqual([file, text]);
-  // What it can't say all of is refused: TypeScript's declarations, and a
-  // crate's hooks, programs of its own.
-  const declared = Bun.spawnSync([compiler, ...args, "--declarations", "--", `--emit=dep-info=${record}`], { cwd: root, stderr: "pipe" });
+  // Declarations printed by the printer `RUST_JS_TYPESCRIPT` names: its
+  // module, its package's manifest, and the TypeScript it finds, which pins
+  // the release it runs, are what it read (ADR 1099, amended).
+  const printer = Bun.resolveSync("@rust-js/typescript", root);
+  const declaredBy = Bun.spawnSync([compiler, ...args, "--declarations", "--", `--emit=dep-info=${record}`], {
+    cwd: root,
+    stderr: "pipe",
+    env: { ...process.env, RUST_JS_TYPESCRIPT: printer },
+  });
+  expect(declaredBy.stderr.toString()).toBe("");
+  expect(parseRecord(readFileSync(record, "utf8")).read).toEqual(
+    expect.arrayContaining([printer, join(root, "typescript", "package.json"), join(root, "typescript", "node_modules", "typescript", "package.json")]),
+  );
+  // What it can't say all of is refused: declarations a crate's own
+  // TypeScript, which Node finds, prints, and a crate's hooks, programs of
+  // its own.
+  const { RUST_JS_TYPESCRIPT: _, ...unnamed } = process.env;
+  const declared = Bun.spawnSync([compiler, ...args, "--declarations", "--", `--emit=dep-info=${record}`], { cwd: root, stderr: "pipe", env: unnamed });
   expect(declared.stderr.toString()).toContain("--emit=dep-info can't say all a build reads that prints declarations");
   writeFileSync(join(dir, "Cargo.toml"), `[package]\nname = "hooked"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js.hooks]\ntransform = [["cat"]]\n`);
   const hooked = Bun.spawnSync([compiler, ...args, "--", `--emit=dep-info=${record}`], { cwd: root, stderr: "pipe" });

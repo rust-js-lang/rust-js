@@ -221,3 +221,23 @@ and 5 GB of an app's. React's port's `ownBuildOnly`, which emptied its
 build of another compiler's, is gone: `rust-js build` does that now for
 every app. Held by `test/in-source.test.ts`' two tests of it; the tooling
 has no mutations, as #914's stores have none.
+
+## Amendment: a compile that prints declarations is kept where its printer is named (2026-11-09, #882)
+
+A compile with `--declarations` was refused a record, as the TypeScript
+Node found to print its `.d.ts` was nothing rust-js could name: some 285
+compiles a `check:fast --all`, about 62 s summed, compiled again every run.
+Given the models, what the printer prints is of its own files alone: its
+module, its package's manifest, and the TypeScript it finds, whose manifest
+pins the release, its platform's binary of the same. **Where
+`RUST_JS_TYPESCRIPT` names the printer, as `rust-js build` names its own
+(ADR 0412), a compile that prints declarations reads those three files, and
+says so in its record** (`typescript::printer_reads`); where none is named,
+the crate's own found from where it is, it's refused a record as before. The
+tests name the checkout's (`test/setup.ts`), which Node would find from a
+fixture in it, so theirs are kept, and `test/compiles.ts` no longer leaves
+`--declarations` out. `test/declarations.test.ts` alone, warm, on the 12-core
+M6: 18.1 CPU-seconds and 11.2 s before, 14.8 and 7.4 s after (load 1.9–2.7).
+Held by `test/compiles.test.ts`'s "a file's record of its build", whose
+record of a compile by the named printer names its three files and which
+refuses one without, and mutation `printer-reads-unrecorded` (`main.ts`).
