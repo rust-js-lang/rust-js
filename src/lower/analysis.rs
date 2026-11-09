@@ -992,7 +992,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // instance's, or refused (ADR 0914). A program's of a type parameter's
     // value drops where a caller gives it one whose drop runs (#580); a
     // library's callers are its consumers, which it can't see.
-    let library_drops = (reached.fn_dyns_of.iter()).any(|key| foreign.drops_fn_dyns(key));
+    let library_drops = (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name));
     let given_a_drop = |owner, index| given.contains(&(owner, index));
     let made = closures::dropping_fn_dyns(
         tcx,
@@ -1007,8 +1007,10 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     }
     // A library whose `dyn Fn`s drop nothing that holds one the crate's
     // may be: it would drop nothing of one it's given (ADR 0626, amended).
-    if drops && let Some(key) = (reached.fn_dyns_of.iter()).find(|key| !foreign.drops_fn_dyns(key)) {
-        closures::refuse_dropping_fn_dyn(tcx, foreign.library_named(key), made.first().filter(|_| !library_drops), &self_handles);
+    if drops && let Some(name) = (reached.fn_dyns_of.iter()).find(|name| !foreign.drops_fn_dyns(name)) {
+        // Its crate's name, which the refusal says (#1130).
+        let name = foreign.library_named(name);
+        closures::refuse_dropping_fn_dyn(tcx, name, made.first().filter(|_| !library_drops), &self_handles);
         return None;
     }
     // A program its tests use whose `dyn`s of its own trait drop nothing

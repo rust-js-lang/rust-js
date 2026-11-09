@@ -1095,8 +1095,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// what drops, or is handed one so, which a `dyn Fn` it hands the crate
     /// may then be, and which drops one it's given (ADR 0626, amended)?
     pub(super) fn drops_fn_dyns(&self, key: &str) -> bool {
-        (self.dependencies.libraries.get(key))
-            .is_some_and(|library| !library.builtin && library.makes_dropping_fn_dyns)
+        (self.dependencies.libraries.get(key)).is_some_and(|library| !library.builtin && library.makes_dropping_fn_dyns)
     }
 
     /// The crate's name of the library `key`, which what's said of it names.

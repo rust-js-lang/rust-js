@@ -1,6 +1,7 @@
-// A crate named as one std is made of, `cfg_if`: std's sysroot has its own,
-// loaded beside std, and a program's of that name is another crate, its
-// library the build's (#1130). A git repository stands in for crates.io.
+// Crates named as ones std is made of, `cfg_if`, `libc`: std's sysroot has
+// its own, loaded beside std, and a program's of that name is another
+// crate, its library the build's (#1130). A git repository stands in for
+// crates.io.
 
 import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -11,26 +12,36 @@ import { buildCompiler, compiler, fixture, root, run } from "./support";
 
 beforeAll(buildCompiler, 600_000);
 
-test("a crate named as one std is made of, cfg_if, is the program's, compiled and called", () => {
+// Each a crate std is made of too, of rustc's sysroot, which rustc loads
+// beside std: `cfg_if`, `libc` and `adler2` (#1130).
+test("crates named as ones std is made of, cfg_if, libc and adler2, are the program's, compiled and called", () => {
   const dir = fixture("sysroot-names");
-  const crate = join(dir, "cfg-if");
-  mkdirSync(join(crate, "src"), { recursive: true });
-  writeFileSync(join(crate, "Cargo.toml"), '[package]\nname = "cfg-if"\nversion = "1.0.5"\nedition = "2024"\n');
-  writeFileSync(join(crate, "src", "lib.rs"), "#![no_std]\n\n#[macro_export]\nmacro_rules! cfg_if {\n    ($($t:tt)*) => {\n        pub fn arch() -> u32 {\n            32\n        }\n    };\n}\n\npub fn one() -> u32 {\n    1\n}\n");
-  const git = (...args: string[]) => expect(runSync(["git", "-c", "user.name=t", "-c", "user.email=t@t", ...args], crate, 60_000).code).toBe(0);
-  git("init", "-q");
-  git("add", ".");
-  git("commit", "-q", "-m", "cfg-if");
+  const standIn = (name: string, version: string, source: string) => {
+    const crate = join(dir, name);
+    mkdirSync(join(crate, "src"), { recursive: true });
+    writeFileSync(join(crate, "Cargo.toml"), `[package]\nname = "${name}"\nversion = "${version}"\nedition = "2024"\n`);
+    writeFileSync(join(crate, "src", "lib.rs"), source);
+    const git = (...args: string[]) => expect(runSync(["git", "-c", "user.name=t", "-c", "user.email=t@t", ...args], crate, 60_000).code).toBe(0);
+    git("init", "-q");
+    git("add", ".");
+    git("commit", "-q", "-m", name);
+    return `${name} = { git = ${JSON.stringify(`file://${crate}`)} }`;
+  };
+  const deps = [
+    standIn("cfg-if", "1.0.5", "#![no_std]\n\n#[macro_export]\nmacro_rules! cfg_if {\n    ($($t:tt)*) => {\n        pub fn arch() -> u32 {\n            32\n        }\n    };\n}\n\npub fn one() -> u32 {\n    1\n}\n"),
+    standIn("libc", "0.2.177", "#![no_std]\n\npub fn two() -> u32 {\n    2\n}\n"),
+    standIn("adler2", "2.0.1", "#![no_std]\n\npub fn four() -> u32 {\n    4\n}\n"),
+  ];
   const app = join(dir, "app");
   mkdirSync(join(app, "src"), { recursive: true });
-  writeFileSync(join(app, "Cargo.toml"), `[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[dependencies]\ncfg-if = { git = ${JSON.stringify(`file://${crate}`)} }\n\n[workspace]\n`);
-  writeFileSync(join(app, "src", "lib.rs"), "cfg_if::cfg_if! {}\n\npub fn sum() -> u32 {\n    arch() + cfg_if::one()\n}\n");
+  writeFileSync(join(app, "Cargo.toml"), `[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[dependencies]\n${deps.join("\n")}\n\n[workspace]\n`);
+  writeFileSync(join(app, "src", "lib.rs"), "cfg_if::cfg_if! {}\n\npub fn sum() -> u32 {\n    arch() + cfg_if::one() + libc::two() + adler2::four()\n}\n");
   const built = runSync([process.execPath, join(root, "tooling", "cli.js"), "build"], app, 300_000, { RUST_JS_COMPILER: compiler });
   expect(built.stderr).toBe("");
   expect(built.code).toBe(0);
-  expect(readFileSync(join(app, "src", "lib.js"), "utf8")).toContain('from "../rust-js/crates/cfg-if-1.0.5/src/lib.js"');
+  for (const crate of ["cfg-if-1.0.5", "libc-0.2.177", "adler2-2.0.1"]) expect(readFileSync(join(app, "src", "lib.js"), "utf8")).toContain(`from "../rust-js/crates/${crate}/src/lib.js"`);
   const program = `console.log((await import(${JSON.stringify(join(app, "src", "lib.js"))})).sum());`;
-  expect(run([node ?? "node", "--input-type=module", "--eval", program]).trim()).toBe("33");
+  expect(run([node ?? "node", "--input-type=module", "--eval", program]).trim()).toBe("39");
 }, 600_000);
 
 // Two releases of one crate in one graph, each a library of its own name,

@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/library.rs",
     find: "            let loaded = (named.iter()).any(|&&krate| self.tcx.crate_hash(krate).to_string() == library.crate_hash);\n",
     replace: "            let loaded = (named.iter()).all(|&&krate| self.tcx.crate_hash(krate).to_string() == library.crate_hash);\n",
-    tests: ["test/sysroot-names.test.ts", "-t", "cfg_if, is the program's"],
+    tests: ["test/sysroot-names.test.ts", "-t", "cfg_if, libc and adler2, are the program's"],
   },
   {
     name: "library-changed-unwritten",
@@ -67,9 +67,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's manifest is taken beside the metadata of another build of it",
     file: "src/lower/library.rs",
-    find: "            if let Some(library) = self.library(krate)\n",
-    replace:
-      "            if let Some(library) = self.library(krate).filter(|_| false)\n",
+    find: "            if !named.is_empty() && !loaded {\n",
+    replace: "            if false && !named.is_empty() && !loaded {\n",
     tests: ["test/crates.test.ts", "-t", "another build"],
   },
   {
@@ -177,7 +176,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Box<dyn FnMut>` a library's function gives, of its own closure with a destructor, is taken to drop nothing",
     file: "src/lower/library.rs",
-    find: "                reached.fn_dyns_of.insert(library_name(tcx, krate).to_string());\n",
+    find: "                reached.fn_dyns_of.insert(library_key(tcx, krate));\n",
     replace: "",
     tests: [
       "test/cargo-link.test.ts",
@@ -559,11 +558,11 @@ export const mutations: Mutation[] = [
   {
     name: "std-library-by-crate-name",
     breaks:
-      "std's crates' library is found by their names, which a program's library named `core` has, so std's `core` is that library's and `@rust-js/std` is never found (#455, ADR 1054)",
+      "std's crates are known by their crate's key, not `@rust-js/std`'s, so the facts of std's compiled bodies, a writer's write that may fail, are never found (#455, ADR 1054, #1130)",
     file: "src/lower/library.rs",
-    find: "        Some(_) => rustc_span::Symbol::intern(crate::runtime::PACKAGE),\n",
-    replace: "        Some(_) => tcx.crate_name(krate),\n",
-    tests: ["test/crates.test.ts", "-t", "crate_named_core"],
+    find: "        Some(_) => crate::runtime::PACKAGE.to_string(),\n",
+    replace: "        Some(_) => crate::library::key(tcx.crate_name(krate).as_str(), &crate_id(tcx, krate)),\n",
+    tests: ["test/corpus.test.ts", "-t", "writer"],
   },
   {
     name: "owned-by-return-of-a-library-unread",
