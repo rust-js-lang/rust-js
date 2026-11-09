@@ -225,7 +225,8 @@ Mutations: `nth-back-of-a-take-unasked`, `nth-back-not-through-try-rfold`
 and `nths-a-slice-not-through-adapters` (`lower/recognition/slice_steps.ts`);
 `try-rfolds-not-through-fuse`, `try-rfolds-not-through-peekable`,
 `rfolds-not-through-peekable`, `nths-its-own-no-peekable` and
-`chain-nths-no-slice` (`lower/recognition/own_steps.ts`). The catalog's
+`chain-nths-no-slice` (`lower/recognition/own_steps.ts`; the last removed
+with its rule, ADR 0465's amendment of #1109). The catalog's
 `nths-its-own-no-enumerate` and `nths-its-own-no-fuse` also run the slice
 case that the old list's mutations of those adapters ran.
 

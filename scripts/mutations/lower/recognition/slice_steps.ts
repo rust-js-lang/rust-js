@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `step_by` of a `Skip`, a `Fuse`, a `Peekable` or an `Enumerate` of a reversed `Vec` is a `filter`, which drops each item it passes, back to front, not as `nth_back`'s one slice: the `OwnStep` catalog's `nth` is not asked (#261, #277, #697)",
     file: "src/lower/recognition/slice_steps.rs",
-    find: "        let mut sources = asked.chain(self.nth_advanced_source(ty));\n",
-    replace: "        let mut sources = asked.take(0).chain(self.nth_advanced_source(ty));\n",
+    find: "            .any(|(source, _)| self.nth_drops_a_slice(source, in_order))\n",
+    replace: "            .any(|(source, _)| false && self.nth_drops_a_slice(source, in_order))\n",
     tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
   },
   {

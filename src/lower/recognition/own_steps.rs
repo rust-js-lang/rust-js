@@ -214,17 +214,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .collect()
     }
 
-    /// What std's `nth` of a `ty`, one of std's adapters, asks an
-    /// `advance_by` of, a step the crate's iterator doesn't write, so not
-    /// `OwnStep::asked_of`'s: a chain's first side, before its second's
-    /// `nth` (#214, #261).
-    pub(in crate::lower) fn nth_advanced_source(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-        let ty::Adt(adt, args) = self.reveal(ty).kind() else {
-            return None;
-        };
-        (std_path(self.tcx, adt.did()) == "std::iter::Chain").then(|| args.types().next())?
-    }
-
     /// Whether what std asks of an iterator of type `ty` reaches the crate's
     /// own `nth`, `last` or `nth_back`, each of which an adapter that
     /// passes it on gives, and a `map` doesn't (#235).

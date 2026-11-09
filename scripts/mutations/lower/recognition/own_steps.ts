@@ -149,15 +149,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
   },
   {
-    name: "chain-nths-no-slice",
-    breaks:
-      "`rev().chain(..).step_by(2)` of a `Vec` is a filter dropping what it steps over from the back one at a time, not `$stepBy` asking the chain's `nth`, its first side's `advance_by`, one slice (#261)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: '        (std_path(self.tcx, adt.did()) == "std::iter::Chain").then(|| args.types().next())?\n',
-    replace: '        (std_path(self.tcx, adt.did()) == "std::iter::Never").then(|| args.types().next())?\n',
-    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
-  },
-  {
     name: "nths-its-own-no-enumerate",
     breaks: "enumerate's nth is its source's",
     file: "src/lower/recognition/own_steps.rs",

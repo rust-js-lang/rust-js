@@ -9,8 +9,7 @@ use crate::lower::recognition::OwnStep;
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Whether `ty`'s `nth` drops what it passes over as one slice: a `Rev`
     /// of one that does so from its back, a `Vec`'s, or an adapter whose
-    /// `nth` asks one that does, the `OwnStep` catalog's, or a `Chain` with
-    /// such a side (#234, #261, #697).
+    /// `nth` asks one that does, the `OwnStep` catalog's (#234, #261, #697).
     pub(in crate::lower) fn nths_a_slice(&self, ty: Ty<'tcx>) -> bool {
         self.nth_drops_a_slice(ty, false)
     }
@@ -33,13 +32,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if in_order && self.drops_passed_as_slice(ty) {
             return true;
         }
-        // What its `nth` asks an `nth` or an `advance_by` of, the `OwnStep`
-        // catalog's.
-        let asked = (self.asked_sources(ty, OwnStep::Nth).into_iter())
+        // What its `nth` asks an `nth` of, the `OwnStep` catalog's.
+        (self.asked_sources(ty, OwnStep::Nth).into_iter())
             .filter(|&(_, asked)| asked == OwnStep::Nth)
-            .map(|(source, _)| source);
-        let mut sources = asked.chain(self.nth_advanced_source(ty));
-        sources.any(|source| self.nth_drops_a_slice(source, in_order))
+            .any(|(source, _)| self.nth_drops_a_slice(source, in_order))
     }
 
     /// What std's `fold` of a `ty`, an iterator, asks an `nth_back` of:

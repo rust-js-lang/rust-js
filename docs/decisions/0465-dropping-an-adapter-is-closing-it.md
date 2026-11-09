@@ -2296,3 +2296,22 @@ what they step as a panic unwinds`. Mutations: `heap-extend-unclosed`,
 `from-iter-dictionary-unclosed` new; `heap-extend-unrebuilt`,
 `is-sorted-by-steps-all`, `splice-replacement-spread` and
 `extend-text-iterable-unstepped` refitted.
+
+## Amendment: a chain's first side is no longer asked whether its `nth` drops a slice (#1109)
+
+c252705d7 (#261) made `nths_a_slice` see through a `Chain`, its first
+side's `advance_by` (`nth_advanced_source`), so `rev().chain(..).step_by(3)`
+of a `Vec` was `$stepBy`, asking the chain's `nth`, not the filter that
+dropped each from the back (`chain_sides_own_steps.rs`, fuzz seed 46975).
+Since 911f6702d a `step_by` is `$stepBy` of any source no array's items
+bound (`bounded_by_items`), and no `Chain` is; nor is any adapter of one,
+so a source `bounded_by_items` holds never has a chain to ask. The first
+side decided nothing that changed any output: its mutation
+`chain-nths-no-slice` survived; a probe at it logged 610 decisions in the
+whole net, all with the same JS; and the case passes without it in both
+builds, as do a chain's enumeration asked `nth`, `skip`, `step_by`,
+`count` and `last`. With the bound test taken out too
+(`step-by-of-unbounded-as-filter`), `chain_sides_own_steps.rs` fails,
+where that one alone doesn't: the bound test is the one answer.
+`nth_advanced_source` is removed with its mutation. A chain's `nth`
+still asks its second side's, the `OwnStep` catalog's.
