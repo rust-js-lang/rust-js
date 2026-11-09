@@ -3,15 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "zip-folding-apart-in-place",
-    breaks:
-      "a zip whose sides are `TrustedLen` but not both `TrustedRandomAccess`, made in place, is the recognizers' `$lazyZip`, whose `collect()` runs the longer side's closure once more than std's `SpecFold` (#380)",
-    file: "src/lower/recognition/std_items.rs",
-    find: "    (runs_code && (by_index || holds(a, trusted_len) && holds(b, trusted_len))).then_some(by_index)\n",
-    replace: "    (runs_code && by_index).then_some(by_index)\n",
-    tests: ["test/corpus.test.ts", "-t", "^zip_fold_steps_the_shorter.rs$"],
-  },
-  {
     name: "zip-clone-uncompiled",
     breaks:
       "a held zip's `clone()` isn't std's compiled `Zip::clone`: the std package isn't what its catalog makes, and with std's structs alone it's refused (ADR 0975)",
@@ -411,24 +402,6 @@ export const mutations: Mutation[] = [
     find: "        for value in named_fns(tcx, body) {\n",
     replace: "        for value in Vec::<DefId>::new() {\n",
     tests: ["test/std-package.test.ts"],
-  },
-  {
-    name: "map-of-a-zip-folded-apart-made-in-place",
-    breaks:
-      "a `map()` of a zip std folds as a whole is made in place, a JS `map` the collect steps by `next`, where std's `extend_trusted` folds it by the zip's fold: a reversed `Vec`'s rest is dropped back to front (#654)",
-    file: "src/lower/recognition/std_items.rs",
-    find: "        || (super::mapped_source(tcx, ty))\n",
-    replace: "        || false && (super::mapped_source(tcx, ty))\n",
-    tests: ["test/corpus.test.ts", "-t", "^zip_mapped_collect_folds.rs$"],
-  },
-  {
-    name: "enumerate-of-a-zip-folded-apart-made-in-place",
-    breaks:
-      "an `enumerate()` of a zip std folds as a whole is made in place, stepped by `next` as it's collected, where std folds it by the zip's fold (#654)",
-    file: "src/lower/recognition/std_items.rs",
-    find: "            .or_else(|| super::enumerated_source(tcx, ty))\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^zip_mapped_collect_folds.rs$"],
   },
   {
     name: "flatten-count-uncompiled",

@@ -101,11 +101,17 @@ pub(super) fn refuse_what_callers_decide<'tcx>(
                         .skip_normalization();
                     tcx.erase_and_anonymize_regions(ty)
                 };
+                // A zip's normalized, a side `<Vec<T> as IntoIterator>::IntoIter`
+                // its `IntoIter<T>`, whose facts are asked (#1162).
+                let zip_made = |ty: Ty<'tcx>| {
+                    let ty = made(ty);
+                    (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))).unwrap_or(ty)
+                };
                 for &asked in own {
                     let asked = match asked {
                         Asked::Eq(a, b) => Asked::Eq(made(a), made(b)),
-                        Asked::ZipFold(zip) => Asked::ZipFold(made(zip)),
-                        Asked::ZipStep(zip) => Asked::ZipStep(made(zip)),
+                        Asked::ZipFold(zip) => Asked::ZipFold(zip_made(zip)),
+                        Asked::ZipStep(zip) => Asked::ZipStep(zip_made(zip)),
                     };
                     let generic = match asked {
                         Asked::Eq(a, b) => a.has_param() || b.has_param(),

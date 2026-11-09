@@ -485,6 +485,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Vec::new();
         };
         let into_iter = |into: Ty<'tcx>| self.iterator_of(into).map(DropsExhausted);
+        let clones = stepping_clones(self.tcx, self.typing_env, ty).map(Clones);
         match name {
             "Skip" | "StepBy" | "SkipWhile" | "Take" | "Filter" | "TakeWhile" => {
                 first.map(DropsItemsOf).into_iter().collect()
@@ -496,10 +497,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 .map(DropsExhausted)
                 .collect(),
             "Fuse" => first.map(DropsExhausted).into_iter().collect(),
-            "Cycle" => first
-                .into_iter()
-                .flat_map(|source| [Clones(source), DropsExhausted(source)])
-                .collect(),
+            "Cycle" => clones.into_iter().chain(first.map(DropsExhausted)).collect(),
             "Flatten" => {
                 let inner = first.and_then(|source| self.iterator_item(source)).and_then(into_iter);
                 first.map(DropsExhausted).into_iter().chain(inner).collect()
@@ -514,8 +512,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     .chain(inner)
                     .collect()
             }
-            "Cloned" => self.iterator_item(ty).map(Clones).into_iter().collect(),
-            "Repeat" | "RepeatN" => first.map(Clones).into_iter().collect(),
+            "Cloned" | "Repeat" | "RepeatN" => clones.into_iter().collect(),
             _ => Vec::new(),
         }
     }

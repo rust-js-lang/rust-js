@@ -201,6 +201,9 @@ for (const [name, source, message, crate] of [
   // So is a zip it folds, which std stops at the shorter side of without stepping its first again.
   ["a zip of a map collected in generic code", 'fn pairs<A: Iterator<Item = u32>, B: Iterator<Item = u32>>(a: A, b: B) -> Vec<(u32, u32)> { a.zip(b).collect() }\npub fn f(v: &[u32], w: &[u32]) -> Vec<(u32, u32)> { pairs(v.iter().map(|x| { println!("a"); *x }), w.iter().copied()) }', "giving generic code a zip it folds or steps, which std stops at its shorter side"],
   // And one it steps by `next()`, of sides std reads by index, whose `next()` stops there too.
+  // A `repeat()` of the crate's clones zipped and collected in generic code, its `IntoIter` side a
+  // projection where the caller's types are made (#1162).
+  ["a zip of a repeat of the crate's clones collected in generic code", 'pub struct C(u32);\nimpl Clone for C { fn clone(&self) -> C { C(self.0 + 1) } }\nfn pairs<I: Iterator<Item = C>, J: IntoIterator<Item = C>>(it: I, arg: J) -> usize { it.zip(arg).count() }\npub fn f() -> usize { pairs(std::iter::repeat(C(7)), vec![C(1), C(2)]) }', "a zip it folds or steps, which std stops at its shorter side"],
   ["a zip of a map stepped in generic code", 'fn first<A: Iterator<Item = u32>, B: Iterator<Item = u32>>(a: A, b: B) -> u32 { let mut n = 0; for (x, y) in a.zip(b) { n += x * y; } n }\npub fn f(v: &[u32], w: &[u32]) -> u32 { first(v.iter().map(|x| { println!("a"); *x }), w.iter().copied()) }', "giving generic code a zip it folds or steps, which std stops at its shorter side"],
   // A function with a destructor an iterator keeps, `from_fn`'s, that nothing closes to drop it (ADR 0991).
   ["a function with a destructor from_fn keeps", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(d: D) -> usize { std::iter::from_fn(move || { let _g = &d; None::<u32> }).count() }', "a function that holds a value with a destructor, kept by what it's given to"],

@@ -20,10 +20,11 @@ mod std_items;
 mod traits;
 mod types;
 mod wrappers;
+mod zip_folds;
 
 pub(super) use self::{
     calls::*, fmt::*, iterators::*, json::*, serde::*, sorts::*, specialization::*, std_crates::*, std_items::*,
-    traits::*, types::*, wrappers::*,
+    traits::*, types::*, wrappers::*, zip_folds::*,
 };
 
 use super::combinators::{Comb, IterComb, IterSource, StepOp};

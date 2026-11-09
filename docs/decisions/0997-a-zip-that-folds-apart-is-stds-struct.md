@@ -144,3 +144,36 @@ side whose closure counts its calls, and a drop that panics after the
 fold's last pair. Mutations: `zip-ends-folds-past-the-shorter`,
 `zip-ends-not-to-the-shorter`, `zip-folding-apart-held-from-its-back`,
 `zip-of-droppers-unrecorded`.
+
+## Amendment: a step that clones what may be the crate's own runs code (#1162)
+
+`zip_folds_to_the_shorter` took a zip's first side's step to run code
+where it ran a closure or a function or gave an item with a destructor.
+A `repeat()`'s step clones its value, which runs the crate's `Clone`
+where the value is its own: `repeat(C(7)).zip(vec![C(1), C(2), C(3)])`
+collected, counted or `for_each`ed was made in place and folded as its
+`next()` steps it, cloning `C(7)` a fourth time where std's `SpecFold`
+clones it three times. And generic code given such a zip wasn't refused
+(ADR 1014): `callers_decide` made the zip of the caller's types without
+normalizing them, so its side `<Vec<C> as IntoIterator>::IntoIter` wasn't
+seen to be `TrustedLen`; in the std build it cloned once more (the
+consumer net's generic callers, #1162).
+
+**A step runs code where it clones what may run the crate's code**, a
+type parameter or a closure, one of the crate's types or a library's
+whose `Clone` it writes, or derives of a field that may (`clone_runs_crates_code`), not a
+derived `Clone` of plain fields: what a
+step clones is `stepping_clones`', the one catalog, of a `cloned()`'s
+items, a `repeat()`'s or a `repeat_n()`'s value and a `cycle()`'s
+iterator, which `stepping_work`'s `Clones` reads too. Such a zip folds
+apart (`folds_apart`), std's struct where it's made, in both builds; and
+`callers_decide` normalizes the zips it makes of the caller's types, so
+generic code given one is refused. The rule moves out of `std_items.rs`,
+past its cap, to a module of its own, `recognition/zip_folds.rs`.
+
+Held by `test/corpus/zip_of_a_repeat_folds_to_the_shorter.rs` against
+native Rust in both builds, and `test/diagnostics.test.ts`'s generic zip
+of a `repeat()`, refused. Mutations `zip-clone-runs-no-code`, `derived-clone-runs-code` and
+`callers-zip-unnormalized` new; `cloned-clones-nothing`,
+`cycle-clones-nothing` and `repeat-clones-nothing` moved to
+`stepping_clones` (`lower/recognition/std_items.ts`).

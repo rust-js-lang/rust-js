@@ -61,30 +61,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
   },
   {
-    name: "cloned-clones-nothing",
-    breaks: "a `cloned()` is taken to clone nothing, so the panic of the crate's clone leaves what it collected undropped (#708)",
-    file: "src/lower/recognition/iterators.rs",
-    find: '            "Cloned" => self.iterator_item(ty).map(Clones).into_iter().collect(),\n',
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
-  },
-  {
-    name: "cycle-clones-nothing",
-    breaks: "a `cycle()` is taken to clone nothing, so the panic of its clone of the crate's iterator leaves what it holds undropped (#708)",
-    file: "src/lower/recognition/iterators.rs",
-    find: "                .flat_map(|source| [Clones(source), DropsExhausted(source)])\n",
-    replace: "                .flat_map(|source| [DropsExhausted(source)])\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
-  },
-  {
-    name: "repeat-clones-nothing",
-    breaks: "a `repeat()` is taken to clone nothing, so the panic of the crate's clone leaves what its collect collected undropped (#708)",
-    file: "src/lower/recognition/iterators.rs",
-    find: '            "Repeat" | "RepeatN" => first.map(Clones).into_iter().collect(),\n',
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
-  },
-  {
     name: "flat-map-function-unheld",
     breaks:
       "a `flat_map()`'s function with a destructor isn't seen to be held by it, and is never dropped (ADR 0991)",

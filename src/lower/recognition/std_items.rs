@@ -544,56 +544,6 @@ pub(crate) fn is_trusted_len<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<
     })
 }
 
-/// Whether `ty` is a zip std folds otherwise than it steps it, where that
-/// shows: of sides both `TrustedLen` but not both `TrustedRandomAccess`,
-/// whose `SpecFold` takes the shorter's count of pairs, where `next()` steps
-/// `a` once more, and a step of `a` runs code, a closure's or a `fn`'s, or
-/// gives an item with a destructor. The recognizers' JS iterator can't tell
-/// a fold from its steps, so it's std's struct where it's made too (#380).
-/// And a `TrustedLen` adapter whose fold is its source's, each item mapped,
-/// a `map()`'s or an `enumerate()`'s, of one that folds apart: its fold is
-/// that zip's, so it's std's struct too, which a collect into a `Vec` folds
-/// as `extend_trusted` does (#654). Of a type rustc knows whole.
-pub(crate) fn folds_apart<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    zip_folds_to_the_shorter(tcx, ty) == Some(false)
-        || (super::mapped_source(tcx, ty))
-            .or_else(|| super::enumerated_source(tcx, ty))
-            .is_some_and(|source| folds_apart(tcx, source))
-}
-
-/// Of a zip of type `ty`, rustc knowing it whole, where std's fold of it
-/// takes the shorter side's count of pairs, where `next()` steps `a` once
-/// more, and a step of `a` runs code, a closure's or a `fn`'s, or gives an
-/// item with a destructor: `Some(true)` of sides both `TrustedRandomAccess`,
-/// read by index (ADR 0973), `Some(false)` of sides both `TrustedLen` but not
-/// both that, by `SpecFold` (ADR 0997). `None` where its fold steps as
-/// `next()` does, or what it steps runs nothing.
-pub(crate) fn zip_folds_to_the_shorter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<bool> {
-    let (a, b) = zipped_sources(tcx, ty)?;
-    let typing_env = ty::TypingEnv::fully_monomorphized();
-    let (Some(trusted_len), Some(random_access)) = (
-        super::fact_trait(tcx, TypeFact::TrustedLen),
-        super::fact_trait(tcx, TypeFact::RandomAccess),
-    ) else {
-        return None;
-    };
-    let holds = |ty: Ty<'tcx>, tr: DefId| {
-        let tr = tcx.erase_and_anonymize_regions(ty::TraitRef::new(tcx, tr, [ty]));
-        tcx.codegen_select_candidate(typing_env.as_query_input(tr)).is_ok()
-    };
-    let iterator = std_item(tcx, StdItem::Iterator);
-    let item = Ty::new_projection(tcx, ty::IsRigid::No, trait_method(tcx, iterator, "Item"), [a]);
-    let item = tcx
-        .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(item))
-        .unwrap_or(item);
-    let runs_code = a
-        .walk()
-        .any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn()))
-        || item.needs_drop(tcx, typing_env);
-    let by_index = holds(a, random_access) && holds(b, random_access);
-    (runs_code && (by_index || holds(a, trusted_len) && holds(b, trusted_len))).then_some(by_index)
-}
-
 /// Whether std's zip of `a` and `b`, `IntoIterator`s, reads each item by
 /// its index, as its
 /// `TrustedRandomAccess` specialization does, where that's seen: both
