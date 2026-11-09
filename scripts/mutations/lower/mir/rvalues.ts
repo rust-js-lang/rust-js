@@ -3,6 +3,24 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "item-written-at-its-own-index-only",
+    breaks:
+      "an array's item given another reference, `cur[0] = &mut b`, isn't seen to change what a place through `cur[i]` is, so a handle or a `Cell`'s receiver made of it reads `cur[0]` again where it's used (#1075)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "    path.len() >= written.len() && (path.iter().zip(written)).all(|(a, b)| a == b || (item(a) && item(b)))\n",
+    replace: "    path.len() >= written.len() && (path.iter().zip(written)).all(|(a, b)| a == b)\n",
+    tests: ["test/corpus.test.ts", "-t", "^reference_an_item_holds_set_again.rs$"],
+  },
+  {
+    name: "item-reference-written-unseen",
+    breaks:
+      "a `&mut` held in an aggregate, of a place through a reference an array's item holds, isn't made where it's borrowed, so it reads `cur[0]` again after `cur[0] = &mut b` (#1075)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "            written.local == local && !written.projection.is_empty() && within(holder, written.projection)\n",
+    replace: "            written.local == local && !written.projection.is_empty() && holder.starts_with(written.projection.as_slice())\n",
+    tests: ["test/corpus.test.ts", "-t", "^reference_an_item_holds_set_again.rs$"],
+  },
+  {
     name: "nested-field-tested-loose",
     breaks: "a nested field's `None` is tested `== null`, so `{ value: null }` is `None` (#470)",
     file: "src/lower/mir/rvalues.rs",
@@ -829,8 +847,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`held.0.v.set({ held.0 = Box::new(c); .. })` of a `Box<&Node>` field sets `c`'s, a write of what holds the reference not counted as its (#1034)",
     file: "src/lower/mir/rvalues.rs",
-    find: "                && holder.starts_with(written.projection.as_slice())\n",
-    replace: "                && holder == written.projection.as_slice()\n",
+    find: "            written.local == local && !written.projection.is_empty() && within(holder, written.projection)\n",
+    replace: "            written.local == local && !written.projection.is_empty() && holder == written.projection.as_slice()\n",
     tests: ["test/corpus.test.ts", "-t", "^reference_a_field_holds_set_again.rs$"],
   },
   {

@@ -702,7 +702,7 @@ pub(super) fn written_or_lent<'a, 'tcx>(statement: &'a mir::Statement<'tcx>) -> 
 /// what holds it, `node` or `node.0` of `(*node.0).v`, a box's content of
 /// `**b`, or an index it's at, `i` of `v[i]` (#1034).
 pub(super) fn writes_reach<'tcx>(place: &Place<'tcx>, written: &Place<'tcx>) -> bool {
-    (written.local == place.local && place.projection.as_slice().starts_with(written.projection.as_slice()))
+    (written.local == place.local && super::rvalues::within(place.projection, written.projection))
         || (written.projection.is_empty() && place.projection.contains(&PlaceElem::Index(written.local)))
 }
 

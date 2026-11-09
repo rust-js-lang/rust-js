@@ -14,13 +14,6 @@ plain std generic bytes_through_pointers.rs
 plain std library refcell_borrow_while_mut.rs
 
 
-#1075 P0: a &mut stored in an aggregate, of a place reached through a reference held in an array element, re-reads the element where it's used
-plain std array box_read_before_its_write.rs
-plain std array cache_node_walk.rs
-plain std array given_last_unwinds.rs
-plain std array mut_ref_local.rs
-plain std array reference_a_field_holds_set_again.rs
-
 #1076 P0 (copies): a write through a for_each closure's binding of an iter_mut() item isn't an in-place change, so to_vec()/vec![row; n] items share one value
 plain std for-each enumerate_mut_patterns.rs
 plain std for-each table_rows_kept_by_views.rs

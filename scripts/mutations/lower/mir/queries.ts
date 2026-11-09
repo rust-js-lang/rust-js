@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "item-reach-of-another-local",
+    breaks: "a write of another local's item, `other[0] = ..`, is taken to change what `cur[0]` reaches, so a place is held where it's made though nothing sets it (#1075)",
+    file: "src/lower/mir/queries.rs",
+    find: "    (written.local == place.local && super::rvalues::within(place.projection, written.projection))\n",
+    replace: "    super::rvalues::within(place.projection, written.projection)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(reference_a_field_holds_set_again|reference_an_item_holds_set_again|given_last_unwinds|cache_node_walk).rs$"],
+    snapshots: true,
+  },
+  {
     name: "tested-and-taken-returned",
     breaks:
       "an `Option` or `Result` given back whole is taken for one only tested: a `try_from`'s `return result;` of nothing made (#366), a `position`'s `-1` given back as `None` (rd316)",
@@ -491,7 +500,7 @@ export const mutations: Mutation[] = [
     name: "read-before-written-box-content-unwritten",
     breaks: "a `Cell` reached through a box of a reference, set after `*node = b`, or through a field's reference set after `node.0 = b`, is taken for read before what it's reached through is written, so it sets the new node's (#980, #1034)",
     file: "src/lower/mir/queries.rs",
-    find: "    (written.local == place.local && place.projection.as_slice().starts_with(written.projection.as_slice()))\n",
+    find: "    (written.local == place.local && super::rvalues::within(place.projection, written.projection))\n",
     replace: "    (written.local == place.local && written.projection.is_empty())\n",
     tests: [
       "test/corpus.test.ts",

@@ -336,3 +336,23 @@ other case's JS changed. Held by the corpus case
 `place-where-made-handle-unfixed`, `written-or-lent-lends-nothing` and
 `read-before-written-box-content-unwritten`; the net's two `field` lines
 of #1034 run as native, and #1035's `given_last_unwinds`.
+
+## Amendment: a reference an array's item holds, set again (#1075)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's. What #1034 made of a reference a field holds was of a field
+alone: a write reached a place only where its projection was the start of
+the place's, so `cur[0] = &mut b` didn't reach `(*cur[_5]).count`, MIR's
+two reads of `cur[0]` each an index of its own temporary. A `&mut` held
+in an array, `[&mut cur[0].count]`, then read `cur[0]` again where it was
+used, `b`'s count where Rust's borrow is of `a`'s, `1 16` where native
+prints `2 15`; and a `Cell` set through such an item while what it's set
+to gives the item another, `node[0].v.set({ node[0] = &b; .. })`, set
+`b`'s. The metamorphic net's `array` rewrite of five cases found it. An
+item at an index of an array or a slice may be the one at any other now,
+in the one answer of whether a write reaches a place
+(`rvalues::within`), which `writes_reach` and `reference_written` both
+ask. Held by the corpus case `reference_an_item_holds_set_again` against
+native Rust; mutations `item-written-at-its-own-index-only`,
+`item-reach-of-another-local` (`lower/mir/queries.ts`) and
+`item-reference-written-unseen` (`lower/mir/rvalues.ts`).

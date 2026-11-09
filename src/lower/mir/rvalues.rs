@@ -1229,6 +1229,20 @@ fn index_copied_from_set(state: &State<'_, '_>, index: mir::Local) -> bool {
     })
 }
 
+/// Whether what `written`, a local's projection, writes holds what `path`,
+/// another of the same local, reaches: it's a start of `path`, an item at
+/// an index of an array or a slice being any item at another, `cur[0] =
+/// &mut b` of `(*cur[i]).count` (#1075).
+pub(super) fn within<'tcx>(path: &[PlaceElem<'tcx>], written: &[PlaceElem<'tcx>]) -> bool {
+    let item = |elem: &PlaceElem<'tcx>| {
+        matches!(
+            elem,
+            PlaceElem::Index(_) | PlaceElem::ConstantIndex { .. } | PlaceElem::Subslice { .. }
+        )
+    };
+    path.len() >= written.len() && (path.iter().zip(written)).all(|(a, b)| a == b || (item(a) && item(b)))
+}
+
 /// Whether the reference a part of `local` holds, `holder`, `h.node` or a
 /// box's `*h.node`, is given another anywhere in `body`, `h.node = &mut
 /// other`, or what holds it is, `h.node = Box::new(..)`, or either is lent
@@ -1238,9 +1252,7 @@ fn index_copied_from_set(state: &State<'_, '_>, index: mir::Local) -> bool {
 fn reference_written<'tcx>(body: &mir::Body<'tcx>, local: mir::Local, holder: &[PlaceElem<'tcx>]) -> bool {
     (body.basic_blocks.iter().flat_map(|block| &block.statements)).any(|statement| {
         written_or_lent(statement).any(|written| {
-            written.local == local
-                && !written.projection.is_empty()
-                && holder.starts_with(written.projection.as_slice())
+            written.local == local && !written.projection.is_empty() && within(holder, written.projection)
         })
     })
 }
