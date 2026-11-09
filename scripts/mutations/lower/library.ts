@@ -729,4 +729,13 @@ export const mutations: Mutation[] = [
     replace: "        id.is_local()\n",
     tests: ["test/crates.test.ts", "-t", "two crates: tree"],
   },
+  {
+    name: "library-writes-never-fail",
+    breaks:
+      "a consumer doesn't read whether a library's writes may fail, so std's `write_all` of the library's `io::Write`, whose `write` fails, is taken as never failing and its `Err` thrown past `put(..).is_err()` (#1072)",
+    file: "src/lower/library.rs",
+    find: ".any(|library| library.writes_may_fail)",
+    replace: ".any(|_| false)",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_io_writer_fails"],
+  },
 ];

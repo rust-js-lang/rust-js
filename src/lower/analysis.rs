@@ -553,6 +553,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub carried_super: type_facts::CarriedSuper,
     /// The functions that may return `Err(fmt::Error)` (ADR 0187).
     pub failing: IndexSet<DefId>,
+    /// Whether any write of the crate's or its libraries' may fail, of a
+    /// function whatever it returns, a writer's `write` too (#1072).
+    pub writes_may_fail: bool,
     /// The throwing functions, whose result is a throwing JS call's (ADR 0644).
     pub throwing: IndexSet<DefId>,
     /// The functions that never unwind, whose call throws only where what
@@ -1349,7 +1352,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         taken: &drop_params,
     };
     let facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given, &recognition, item_drops);
-    let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
+    let (failing, writes_may_fail) = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
     let throwing = throwing::throwing_fns(tcx, &recognition, all_bodies);
     let (never_unwinding, quiet_fns) = unwinding::found(tcx, &recognition, all_bodies, &runs);
     let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
@@ -1413,6 +1416,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         carried_super: facts.carried_super,
         built_slots: facts.built_slots,
         failing,
+        writes_may_fail,
         throwing,
         never_unwinding,
         quiet_fns,

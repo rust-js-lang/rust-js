@@ -23,8 +23,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a writer that returns `Err(fmt::Error)` is taken as one that never fails",
     file: "src/lower/analysis/fmt_failures.rs",
-    find: "        if makes_write_error(tcx, body) {\n            failing.insert(caller);\n        }",
-    replace: "        if makes_write_error(tcx, body) {}",
+    find: "        if makes_err(tcx, body, |ty| is_write_result_type(tcx, ty)) {\n            failing.insert(caller);\n        }",
+    replace: "        if makes_err(tcx, body, |ty| is_write_result_type(tcx, ty)) {}",
     tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
@@ -123,5 +123,32 @@ export const mutations: Mutation[] = [
     find: "if foreign.compiled_by_rust_js(adt.did()))",
     replace: "if adt.did().is_local())",
     tests: ["test/crates.test.ts", "-t", "library_writer_formatted_fails"],
+  },
+  {
+    name: "io-write-error-uncounted",
+    breaks:
+      "an `io::Write`'s `write` that makes an `Err` of its `io::Result<usize>` isn't counted as failing, so std's `write_all` of it is taken as never failing and its `Err` is thrown past `put(..).is_err()` (#1072)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "        if makes_err(tcx, body, |ty| of_write_error(tcx, ty)) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^failing_io_writer\\.rs$"],
+  },
+  {
+    name: "writer-failure-unasked",
+    breaks:
+      "whether any of the crate's writes may fail isn't asked of its writers' `write`s, so a crate whose only failing writer no function returning a write's result gives on lowers `main`'s `write_all` of it as never failing, its `Err` thrown (#1072)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "    let any = !failing.is_empty() || writer_fails || foreign.writes_may_fail();\n",
+    replace: "    let any = !failing.is_empty() || foreign.writes_may_fail();\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_writer_fails_in_main\\.rs$"],
+  },
+  {
+    name: "writer-helper-unfollowed",
+    breaks:
+      "a writer's `write` that gives on its own method's `Err` of an `io::Result<usize>` isn't one that may fail, so `main`'s `write_all` of it is taken as never failing (#1072)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "                gives_errors.push((caller, id));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^io_writer_fails_in_main\\.rs$"],
   },
 ];

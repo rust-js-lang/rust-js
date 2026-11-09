@@ -71,6 +71,9 @@ pub(super) struct Contracts<'a, 'tcx> {
     /// amended), and which are stepped by a trait (ADR 0548).
     pub(super) given: super::traits::Given<'a>,
     pub(super) failing: &'a IndexSet<DefId>,
+    /// Whether any write of its may fail, of a function whatever it
+    /// returns, a writer's `write` too (#1072).
+    pub(super) writes_may_fail: bool,
     pub(super) no_drops: &'a IndexMap<DefId, BTreeSet<u32>>,
     pub(super) type_facts: &'a IndexMap<DefId, Vec<(u32, super::recognition::TypeFact)>>,
     /// What its consumers' impls of its traits carry of a std supertrait's
@@ -299,6 +302,7 @@ pub(super) fn exports<'tcx>(
         built_slots: _,
         given: _,
         failing,
+        writes_may_fail,
         caller_locations,
         reads_arguments,
         keeps_capacity,
@@ -446,6 +450,7 @@ pub(super) fn exports<'tcx>(
         },
         inputs: Vec::new(),
         keeps_capacity: *keeps_capacity,
+        writes_may_fail: *writes_may_fail,
         writers_take_options: *writers_take_options,
         debug_hex: *debug_hex,
         reads_formatter_options: sorted_keys(tcx, reads_formatter_options.iter()),
@@ -1134,9 +1139,14 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         self.library(krate).is_some_and(|library| library.writers_take_options)
     }
 
-    /// May any of the libraries' items?
-    pub(super) fn any_fails(&self) -> bool {
-        self.all().any(|item| item.calling.has(ItemFact::Fails))
+    /// May any write of a library's fail, of a function whatever it
+    /// returns, a writer's `write` too (#1072)? Then std's `write_all` of
+    /// its writer may, and a dictionary's call, which may be any.
+    pub(super) fn writes_may_fail(&self) -> bool {
+        self.dependencies
+            .libraries
+            .values()
+            .any(|library| library.writes_may_fail)
     }
 
     /// The program, compiled for its tests (`--tested`), whose dictionary

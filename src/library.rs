@@ -327,6 +327,13 @@ pub struct Library {
     /// wrote before kept none.
     #[serde(default)]
     pub keeps_capacity: bool,
+    /// Whether any write of its may fail, of a function whatever it
+    /// returns, a writer's `write` too (ADR 0462, amended; #1072): a
+    /// consumer's call of std's `write_all` of its writer, or of what's
+    /// given a dictionary, may then fail. A library a compiler wrote before
+    /// had none that could.
+    #[serde(default)]
+    pub writes_may_fail: bool,
     /// Whether its writers take their `Formatter`'s options after their
     /// arguments (ADRs 0058, 0137): a consumer's call of one gives them
     /// only then.
@@ -615,6 +622,7 @@ pub struct Exports {
     /// no metadata is checked against its hash.
     pub builtin: bool,
     pub keeps_capacity: bool,
+    pub writes_may_fail: bool,
     pub writers_take_options: bool,
     pub debug_hex: bool,
     /// Its functions that read a `Formatter`'s options, by key (#1026).
@@ -740,6 +748,7 @@ impl Dependencies {
                 makes_dropping_fn_dyns: library.makes_dropping_fn_dyns,
                 dictionary_consts: library.dictionary_consts.map(|keys| keys.into_iter().collect()),
                 dyns_drop_nothing: library.dyns_drop_nothing.into_iter().collect(),
+                writes_may_fail: library.writes_may_fail,
                 writers_take_options: library.writers_take_options,
                 debug_hex: library.debug_hex,
                 reads_formatter_options: library.reads_formatter_options.into_iter().collect(),
@@ -921,6 +930,7 @@ impl Dependencies {
             makes_dropping_fn_dyns: library.makes_dropping_fn_dyns,
             dictionary_consts: library.dictionary_consts.map(|keys| keys.into_iter().collect()),
             dyns_drop_nothing: library.dyns_drop_nothing.into_iter().collect(),
+            writes_may_fail: library.writes_may_fail,
             writers_take_options: library.writers_take_options,
             debug_hex: library.debug_hex,
             reads_formatter_options: library.reads_formatter_options.into_iter().collect(),

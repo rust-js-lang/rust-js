@@ -106,3 +106,35 @@ function doubled(s) {
 `test/corpus/io_unit_result.rs` and its `_expect` and `_panic` cases run
 each against native Rust.
 
+
+## Amendment: a writer's `write` that makes an `Err` may fail (#1072)
+
+"A function that makes an `Err` of either" asked of a write's result's own
+types alone, `fmt::Result` and `io::Result<()>`, so an `io::Write`'s
+`write`, whose `io::Result<usize>` is a value's `Result` of a write's
+error, was never one that may fail. A crate whose only failing writer was
+such a `write` was lowered as one whose writes never fail: `put(..)`, std's
+`write_all` of it, was called bare, its error thrown past
+`put(..).is_err()`, and the program ended `Error: undefined` where Rust
+prints `true`. Rust's results change, so Rust's behavior is kept (ADR
+0262).
+
+- **Whether any write may fail asks of the crate's writers too**,
+  `writes_may_fail`: one of its functions that returns a write's result
+  may fail, as before, or a method of its `io::Write` impls makes an `Err`
+  of a value's `Result` of a write's error, `io::Result<usize>`'s, or calls
+  what gives one on, `self.take(n)` of a method that makes it. Then std's
+  `write_all` of its writer may fail, and so may a dictionary's call,
+  which may be any. A function that makes such an `Err` and is no writer's,
+  a parse's `io::Result<u32>`, makes no write fail: its JS is as before.
+- **A library's manifest says it**, `writes_may_fail`, and a consumer asks
+  it of its libraries, where it asked whether any of their items may fail,
+  which a writer's `write`'s impl isn't. A library a compiler wrote before
+  says none may; std's says none may.
+
+No snapshot of the corpus changes. `test/corpus/failing_io_writer.rs` and
+`io_writer_fails_in_main.rs` run against native Rust, and so does the
+crate pair `library_io_writer_fails`. The mutations
+`io-write-error-uncounted`, `writer-failure-unasked`,
+`writer-helper-unfollowed` and `library-writes-never-fail` put each old
+answer back.

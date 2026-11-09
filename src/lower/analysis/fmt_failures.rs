@@ -3,13 +3,16 @@
 //! as chrono's formatting does, `?` of a value's `Result` of a write's
 //! error, or that calls or formats what may, of the crate's or a library's,
 //! a crate's own writer through std's `write_all`. Only one that returns a
-//! write's result passes one on; a crate none of whose functions do is
-//! lowered as one whose writes never fail (ADRs 0054, 0132).
+//! write's result passes one on; a crate none of whose functions may, nor
+//! its `io::Write` impls' methods (#1072), is lowered as one whose writes
+//! never fail (ADRs 0054, 0132).
 
 use crate::collections::IndexSet;
 use crate::lower::Body;
 use crate::lower::library::Foreign;
-use crate::lower::recognition::{fmt_trait_called, is_err_variant, is_generic_fmt_result, is_write_result_type};
+use crate::lower::recognition::{
+    StdItem, fmt_trait_called, is_err_variant, is_generic_fmt_result, is_std_def, is_write_result_type,
+};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
@@ -22,20 +25,36 @@ enum Callee {
     Unknown,
 }
 
+/// The functions that return a write's result and may give its `Err`; and
+/// whether any write of the crate's or its libraries' may fail: one of
+/// those may, or a writer's own `write` may, whose `io::Result<usize>`'s
+/// `Err` std's `write_all` gives on, where nothing of the crate's that
+/// returns a write's result does (#1072).
 pub(super) fn failing_fns<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
     foreign: &Foreign<'_, 'tcx>,
-) -> IndexSet<DefId> {
+) -> (IndexSet<DefId>, bool) {
     let mut failing: IndexSet<DefId> = IndexSet::default();
     let mut calls: Vec<(DefId, Callee)> = Vec::new();
+    // What makes an `Err` of a value's `Result` of a write's error, an
+    // `io::Result<usize>`'s, and what calls what gives one, each as its
+    // caller has it: of which a writer's `write` may give its error to
+    // std's `write_all` (#1072).
+    let mut erring: IndexSet<DefId> = IndexSet::default();
+    let mut gives_errors: Vec<(DefId, DefId)> = Vec::new();
     for body in all_bodies {
         // A closure's own, which its call resolves to, not its maker's (#1042).
         let caller = body.def_id;
         let typing_env = ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(caller));
         // A write's error made, `Err(fmt::Error)`.
-        if makes_write_error(tcx, body) {
+        if makes_err(tcx, body, |ty| is_write_result_type(tcx, ty)) {
             failing.insert(caller);
+        }
+        // Of a value's `Result`, `Err(io::Error::other(..))` of an
+        // `io::Result<usize>`.
+        if makes_err(tcx, body, |ty| of_write_error(tcx, ty)) {
+            erring.insert(caller);
         }
         // Each function it names, as its THIR names it, or a body of MIR
         // alone, a library's the crate compiles (ADR 0914), its MIR.
@@ -93,6 +112,12 @@ pub(super) fn failing_fns<'tcx>(
                 .output();
             let output =
                 (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(output))).unwrap_or(output);
+            if !is_write_result_type(tcx, output)
+                && of_write_error(tcx, output)
+                && let Some(Callee::Known(id)) = resolve(tcx, typing_env, callee, args)
+            {
+                gives_errors.push((caller, id));
+            }
             // A `Result`'s method that makes one of a value's `Result`
             // of a write's error, `map` of an `io::Result<usize>`: its
             // `Err`, given on.
@@ -127,8 +152,23 @@ pub(super) fn failing_fns<'tcx>(
             }
         }
     }
+    // A writer's `write` may fail where it makes an `Err`, or calls what
+    // gives one, as a function that may fail may.
+    erring.extend(failing.iter().copied());
+    let mut changed = true;
+    while changed {
+        changed = false;
+        for &(caller, callee) in &gives_errors {
+            if erring.contains(&callee) && erring.insert(caller) {
+                changed = true;
+            }
+        }
+    }
+    let writer_fails = erring.iter().any(|&id| {
+        (tcx.trait_impl_of_assoc(id)).is_some_and(|imp| is_std_def(tcx, tcx.impl_trait_id(imp), StdItem::IoWrite))
+    });
     // A generic `T`'s may fail where any of the crate's or a library's does.
-    let any = !failing.is_empty() || foreign.any_fails();
+    let any = !failing.is_empty() || writer_fails || foreign.writes_may_fail();
     let mut changed = true;
     while changed {
         changed = false;
@@ -142,12 +182,13 @@ pub(super) fn failing_fns<'tcx>(
             }
         }
     }
+    let any = any || !failing.is_empty();
     // Only one that returns a write's result passes its error on; another
     // that formats one panics, as std's `format!` does.
     failing.retain(|&id| {
         tcx.def_kind(id).is_fn_like() && output_of(tcx, id).is_some_and(|output| is_write_result_type(tcx, output))
     });
-    failing
+    (failing, any)
 }
 
 /// What the function or closure `id` gives back, as it's declared; `None`
@@ -168,13 +209,14 @@ fn output_of<'tcx>(tcx: TyCtxt<'tcx>, id: DefId) -> Option<ty::Ty<'tcx>> {
     }
 }
 
-/// Whether `body` makes a write's error, `Err(fmt::Error)`, of its THIR. A
-/// body of MIR alone, a library's the crate compiles (ADR 0914), has none
+/// Whether `body` makes an `Err` of a `Result` that `of` says, of its THIR:
+/// a write's error, `Err(fmt::Error)`, or a value's `Result` of one. A body
+/// of MIR alone, a library's the crate compiles (ADR 0914), has none
 /// rust-js lowers: optimized MIR makes it of a constant `fmt::Error`, which
 /// is refused.
-fn makes_write_error<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> bool {
+fn makes_err<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, of: impl Fn(ty::Ty<'tcx>) -> bool) -> bool {
     (body.thir.exprs.iter()).any(|expr| {
-        matches!(expr.kind, ExprKind::Adt(ref adt) if is_write_result_type(tcx, expr.ty)
+        matches!(expr.kind, ExprKind::Adt(ref adt) if of(expr.ty)
             && is_err_variant(tcx, adt.adt_def.variant(adt.variant_index).def_id))
     })
 }

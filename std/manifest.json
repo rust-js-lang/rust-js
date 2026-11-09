@@ -8,7 +8,7 @@
   "library": {
     "version": 24,
     "name": "rust_js_std",
-    "crate_hash": "a6e126c80151ecb3754b5f15d6cd4b80",
+    "crate_hash": "ebc39387bcbc5c479d9f229d42dcdc0a",
     "items": [
       {
         "key": "core::iter::adapters::filter::{impl#9}::assume_count_le_upper_bound",
@@ -12749,6 +12749,7 @@
       }
     ],
     "keeps_capacity": false,
+    "writes_may_fail": false,
     "writers_take_options": true,
     "debug_hex": false,
     "makes_dropping_anys": false,
