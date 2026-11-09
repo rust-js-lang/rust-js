@@ -533,7 +533,7 @@ fn map_made<'tcx>(
     caller: DefId,
     (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
 ) -> Option<(u32, TypeFact)> {
-    if callee.is_local() || foreign.in_library(callee) {
+    if foreign.compiled_by_rust_js(callee) {
         return None;
     }
     let output = (tcx.fn_sig(callee).instantiate(tcx, args))

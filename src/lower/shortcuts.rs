@@ -168,11 +168,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.recognition().hint_reaches_own(ty)
     }
 
-    /// A trait rust-js compiled: the crate's own, or a library's (ADR 0100).
-    pub(super) fn is_rust_trait(&self, id: DefId) -> bool {
-        self.recognition().is_rust_trait(id)
-    }
-
     pub(super) fn is_std_type(&self, ty: Ty<'tcx>, item: StdItem) -> bool {
         self.recognition().is_std_type(ty, item)
     }

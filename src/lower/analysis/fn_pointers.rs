@@ -901,11 +901,7 @@ impl<'tcx> Made<'_, '_, 'tcx> {
             peeled = pointee.peel_refs();
         }
         match peeled.kind() {
-            ty::Adt(adt, _)
-                if adt.is_struct() && (adt.did().is_local() || self.recognition.foreign.in_library(adt.did())) =>
-            {
-                Some(of)
-            }
+            ty::Adt(adt, _) if adt.is_struct() && self.recognition.foreign.compiled_by_rust_js(adt.did()) => Some(of),
             _ => None,
         }
     }

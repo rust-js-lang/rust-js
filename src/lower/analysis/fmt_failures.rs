@@ -116,13 +116,13 @@ pub(super) fn failing_fns<'tcx>(
             if is_write_result_type(tcx, output)
                 && let Some(callee) = resolve(tcx, typing_env, callee, args)
             {
-                // std's own, `write_all`, of a crate's writer, whose
-                // `write` may fail as any of the crate's may.
+                // std's own, `write_all`, of a writer rust-js compiled, the
+                // crate's or a library's, whose `write` may fail as any of
+                // theirs may.
                 let own_writer = matches!(callee, Callee::Known(id) if !id.is_local())
-                    && args
-                        .types()
-                        .next()
-                        .is_some_and(|this| matches!(this.peel_refs().kind(), ty::Adt(adt, _) if adt.did().is_local()));
+                    && args.types().next().is_some_and(|this| {
+                        matches!(this.peel_refs().kind(), ty::Adt(adt, _) if foreign.compiled_by_rust_js(adt.did()))
+                    });
                 calls.push((caller, if own_writer { Callee::Unknown } else { callee }));
             }
         }

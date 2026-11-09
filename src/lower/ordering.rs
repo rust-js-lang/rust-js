@@ -84,7 +84,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 recognition.user_impl(ty::TraitRef::new_from_args(self.tcx, tr, recognition.args_of(tr, ty)))
             })
             .collect();
-        let rust_adt = |id: DefId| id.is_local() || self.krate.foreign.in_library(id);
+        let rust_adt = |id: DefId| self.krate.foreign.compiled_by_rust_js(id);
         let total = match ty.kind() {
             // A hand-written one, each of whose methods orders totally; a
             // derived one, as its fields do.
@@ -977,7 +977,7 @@ fn order_may_in<'tcx>(
     let impls: Vec<DefId> = (traits.iter().copied())
         .filter_map(|tr| recognition.user_impl(ty::TraitRef::new_from_args(tcx, tr, recognition.args_of(tr, ty))))
         .collect();
-    let rust_adt = |id: DefId| id.is_local() || recognition.foreign.in_library(id);
+    let rust_adt = |id: DefId| recognition.foreign.compiled_by_rust_js(id);
     let result = match ty.kind() {
         _ if !impls.is_empty() => impls.iter().any(|&imp| may(imp)),
         // A derived order of the crate's type, as its fields' orders.

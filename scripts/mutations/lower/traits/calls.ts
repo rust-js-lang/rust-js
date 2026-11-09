@@ -108,7 +108,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a method std provides, called through a `dyn Error`, is its dictionary's, which hasn't it, and JS throws",
     file: "src/lower/traits/calls.rs",
-    find: "            if !self.is_rust_trait(trait_id) && self.tcx.defaultness(id).has_value() && !in_std_dictionary(self.tcx, id)\n            {",
+    find: "            if !self.krate.foreign.compiled_by_rust_js(trait_id)\n                && self.tcx.defaultness(id).has_value()\n                && !in_std_dictionary(self.tcx, id)\n            {",
     replace: "            if false\n            {",
     tests: [
       "test/diagnostics.test.ts",

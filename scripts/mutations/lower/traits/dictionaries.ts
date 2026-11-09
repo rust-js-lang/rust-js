@@ -33,8 +33,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic impl's dictionary of an object's, `impl<T: Pick> Wrap for Holder<T>` of a `Holder<Clicks>`, is made though its `T::pick(Some(&mut ..))` gives `Clicks`'s entry generic code's box: what it writes is lost (#685)",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                && let Some(here) = self.impl_nested_mut_object(impl_id, impl_args)\n",
-    replace: "                && let Some(here) = None::<Ty<'tcx>>\n",
+    find: "            if let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {\n",
+    replace: "            if let Some(here) = None::<Ty<'tcx>> {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a generic impl's &mut T"],
   },
   {
@@ -661,5 +661,14 @@ export const mutations: Mutation[] = [
     find: "            false => self.carried_super(tr.def_id),\n",
     replace: "            false => Vec::new(),\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts"],
+  },
+  {
+    name: "library-impl-dispatch-unasked",
+    breaks:
+      "a consumer's dictionary of a library's generic impl, made of its own type, that gives a bound trait's method a `Vec<&mut T>` isn't refused as the library's own is (#685, #686, the `is_local()` audit)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            if let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {\n",
+    replace: "            if impl_id.is_local() && let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {\n",
+    tests: ["test/crates.test.ts", "-t", "dictionary of a library's generic impl giving"],
   },
 ];

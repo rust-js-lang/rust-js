@@ -81,8 +81,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // crate's: generic code's each `&mut` is a box (ADR 0454), where
         // the caller's `&mut` of an object is the object, adapted one level
         // only, `given_box`'s, so it would be a box short (#167).
-        let crate_call =
-            self.is_rust_fn(def_id) || self.tcx.trait_of_assoc(def_id).is_some_and(|tr| self.is_rust_trait(tr));
+        let crate_call = self.is_rust_fn(def_id)
+            || self
+                .tcx
+                .trait_of_assoc(def_id)
+                .is_some_and(|tr| self.krate.foreign.compiled_by_rust_js(tr));
         if crate_call
             && let Some(ty) = generic_args.types().find(|&ty| {
                 matches!(ty.kind(), ty::Ref(_, inner, ty::Mutability::Mut)
@@ -381,7 +384,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if matches!(tr.self_ty().kind(), ty::Dynamic(..)) && operational(self.tcx, self.krate.foreign, trait_id) {
             // A std trait's dictionary has only what it's given: `Error`'s, its
             // `source` (ADR 0141), and none of the methods std provides.
-            if !self.is_rust_trait(trait_id) && self.tcx.defaultness(id).has_value() && !in_std_dictionary(self.tcx, id)
+            if !self.krate.foreign.compiled_by_rust_js(trait_id)
+                && self.tcx.defaultness(id).has_value()
+                && !in_std_dictionary(self.tcx, id)
             {
                 let what = format!("`{}` of a `{}`", self.tcx.item_name(id), tr.self_ty());
                 return Err(self.unsupported(span, &what));
@@ -618,7 +623,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A std trait's dictionary has only its required methods, and those
         // provided ones it's given.
         if operational(self.tcx, self.krate.foreign, trait_id)
-            && !self.is_rust_trait(trait_id)
+            && !self.krate.foreign.compiled_by_rust_js(trait_id)
             && self.tcx.defaultness(id).has_value()
             && !in_std_dictionary(self.tcx, id)
         {

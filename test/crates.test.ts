@@ -315,6 +315,29 @@ test("a library's request whose callback is a public field refuses its consumer'
   expect(native).toBe("a is ready\nno request\n");
 }, 300_000);
 
+// #682 across crates: a library's generic code gives a `Vec<&mut S>` to
+// its trait's method through `S`'s dictionary, which a consumer's impl's
+// entry takes as objects: refused at the consumer's call, as the library's
+// own call of it is, though the trait isn't the consumer's (the
+// `is_local()` audit).
+test("a consumer's call giving a library trait's method a Vec of &mut objects through generic code is refused", () => {
+  const native = chain(join(root, "test", "crates", "refused"), "library_trait_dispatch_takes_mut_vec", ["dep", "app"], [
+    "rust-js does not support a `&mut C` inside a generic function's parameters or result yet",
+    "app.rs:17:5",
+  ]);
+  expect(native).toBe("2 7\n");
+}, 300_000);
+
+// And of a library's generic impl whose dictionary its consumer makes of
+// its own type (#685, #686 across crates).
+test("a consumer's dictionary of a library's generic impl giving a Vec of &mut objects through its bound is refused", () => {
+  const native = chain(join(root, "test", "crates", "refused"), "library_impl_dispatch_takes_mut_vec", ["dep", "app"], [
+    "a `&mut C` inside what a generic impl gives a method of a trait it's bound by",
+    "app.rs:",
+  ]);
+  expect(native).toBe("2 7\n");
+}, 300_000);
+
 // #476, ADR 0145, amended: a library's manifest says what its traits'
 // dictionaries carry of each associated type; a consumer's ask of what
 // they don't carry is refused, never read as `undefined` of them.

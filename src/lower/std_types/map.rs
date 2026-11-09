@@ -1019,7 +1019,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         seen.push(ty);
         match ty.kind() {
             ty::Adt(adt, _) if self.js_eq(ty).is_some() => {
-                !self.is_rust_adt(adt.did()) || self.recognition().derives(self.ord_trait(), ty)
+                !self.krate.foreign.compiled_by_rust_js(adt.did()) || self.recognition().derives(self.ord_trait(), ty)
             }
             _ if self.js_eq(ty).is_some() => true,
             ty::Tuple(parts) => parts.iter().all(|t| self.orders_by_value(t, seen)),
@@ -1260,7 +1260,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of std's, one whose `PartialEq` is derived, a path's `Component`,
             // of what its values are made of.
             ty::Adt(adt, args) => {
-                (self.is_rust_adt(adt.did()) || self.std_enum_derives_eq(ty))
+                (self.krate.foreign.compiled_by_rust_js(adt.did()) || self.std_enum_derives_eq(ty))
                     && self.recognition().derives(self.partial_eq_trait(), ty)
                     && adt
                         .variants()

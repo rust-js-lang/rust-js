@@ -1077,7 +1077,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(_) if crate::lower::recognition::is_compiled_std(self.tcx, def_id) => Some((def_id, generic_args)),
             Some(trait_id) => match self.impl_method(def_id, generic_args)? {
                 Some(method) => Some(method),
-                None if (self.is_rust_trait(trait_id)
+                None if (self.krate.foreign.compiled_by_rust_js(trait_id)
                     || (is_std_def(self.tcx, trait_id, StdItem::Hash)
                         || crate::lower::recognition::is_extend(self.tcx, trait_id))
                         && self.is_unknown(generic_args.type_at(0)))

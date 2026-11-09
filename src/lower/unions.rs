@@ -20,7 +20,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// holds (ADR 0332).
     fn union_of(&self, ty: Ty<'tcx>) -> Option<(ty::AdtDef<'tcx>, ty::GenericArgsRef<'tcx>)> {
         match *ty.kind() {
-            ty::Adt(adt, args) if adt.is_union() && self.is_rust_adt(adt.did()) => Some((adt, args)),
+            ty::Adt(adt, args) if adt.is_union() && self.krate.foreign.compiled_by_rust_js(adt.did()) => {
+                Some((adt, args))
+            }
             _ => None,
         }
     }

@@ -319,7 +319,7 @@ pub(super) fn has_dictionary_of<'tcx>(
 /// is `named(value)`. A `dyn` of it still carries its impl's, whose `$drop`
 /// drops it (ADR 0098). `Copy` isn't one: its dictionary copies.
 pub(super) fn is_marker(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '_>, id: DefId) -> bool {
-    (id.is_local() || foreign.in_library(id))
+    foreign.compiled_by_rust_js(id)
         && (tcx.associated_items(id).in_definition_order()).all(|item| bindings::is_binding(tcx, item.def_id))
         && supertraits(tcx, id, ty::GenericArgs::identity_for_item(tcx, id))
             .iter()

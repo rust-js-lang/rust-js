@@ -108,17 +108,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
-    /// A trait rust-js compiled: the crate's own, or a library's (ADR 0100).
-    /// Any other is std's, whose dictionaries rust-js makes as it knows them.
-    pub(in crate::lower) fn is_rust_trait(&self, id: DefId) -> bool {
-        id.is_local() || self.foreign.in_library(id)
-    }
-
     /// A trait whose `dyn` is a pair, its value and its dictionary (ADR
     /// 0049): one rust-js compiled, or std's `Display`, `ToString`, `Error`,
     /// `io::Write`, `fmt::Write` or `Any` (ADRs 0141, 0331, 0446).
     pub(in crate::lower) fn is_pair_trait(&self, id: DefId) -> bool {
-        self.is_rust_trait(id) || self.is_std_pair_trait(id)
+        self.foreign.compiled_by_rust_js(id) || self.is_std_pair_trait(id)
     }
 
     /// Whether a dictionary of `id`'s holds its supertraits': a pair trait's,
@@ -354,8 +348,7 @@ pub(in crate::lower) fn operational(
     foreign: &crate::lower::library::Foreign<'_, '_>,
     id: DefId,
 ) -> bool {
-    id.is_local()
-        || foreign.in_library(id)
+    foreign.compiled_by_rust_js(id)
         || tcx.is_lang_item(id, LangItem::Copy)
         || tcx.is_lang_item(id, LangItem::Clone)
         || tcx.is_lang_item(id, LangItem::PartialEq)

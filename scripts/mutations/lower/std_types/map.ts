@@ -292,8 +292,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a B-tree keyed by a tuple holding a fieldless enum whose `Ord` is the crate's own is a `$KeyMap`, which finds a key by its fields",
     file: "src/lower/std_types/map.rs",
-    find: "                !self.is_rust_adt(adt.did()) || self.recognition().derives(self.ord_trait(), ty)\n",
-    replace: "                true || !self.is_rust_adt(adt.did())\n",
+    find: "                !self.krate.foreign.compiled_by_rust_js(adt.did()) || self.recognition().derives(self.ord_trait(), ty)\n",
+    replace: "                true || !self.krate.foreign.compiled_by_rust_js(adt.did())\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$"],
     snapshots: true,
   },
@@ -474,8 +474,8 @@ export const mutations: Mutation[] = [
     name: "std-enum-key-refused",
     breaks: "a set of std's `Component`s, compared by value, is refused",
     file: "src/lower/std_types/map.rs",
-    find: "(self.is_rust_adt(adt.did()) || self.std_enum_derives_eq(ty))",
-    replace: "self.is_rust_adt(adt.did())",
+    find: "(self.krate.foreign.compiled_by_rust_js(adt.did()) || self.std_enum_derives_eq(ty))",
+    replace: "self.krate.foreign.compiled_by_rust_js(adt.did())",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
   },
   {

@@ -681,7 +681,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's blanket impl has no entry to its consumer, so `&mut c as &mut dyn Reset` is a box whose `*self = T::default()` leaves `c` as it was (#1032)",
     file: "src/lower/traits/impls.rs",
-    find: "            .filter(|(imp, _)| imp.is_local() || self.krate.foreign.in_library(*imp))?;\n",
+    find: "            .filter(|(imp, _)| self.krate.foreign.compiled_by_rust_js(*imp))?;\n",
     replace: "            .filter(|(imp, _)| imp.is_local())?;\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
   },

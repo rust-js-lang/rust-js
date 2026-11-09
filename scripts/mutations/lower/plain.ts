@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a zeroed `Wrapping<u32>` is made as a struct of its field, where JS has its number",
     file: "src/lower/plain.rs",
-    find: "            ty::Adt(adt, args) if adt.is_struct() && self.is_rust_adt(adt.did()) => {\n",
+    find: "            ty::Adt(adt, args) if adt.is_struct() && self.krate.foreign.compiled_by_rust_js(adt.did()) => {\n",
     replace: "            ty::Adt(adt, args) if adt.is_struct() => {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a zeroed std wrapper"],
   },

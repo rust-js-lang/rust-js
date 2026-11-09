@@ -272,7 +272,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// crate's own, or a library's (ADR 0100), or `Result`.
     pub(super) fn is_copy_enum(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if adt.is_enum()
-            && (adt.did().is_local() || self.krate.foreign.in_library(adt.did()) || self.is_std_type(ty, StdItem::Result)))
+            && (self.krate.foreign.compiled_by_rust_js(adt.did()) || self.is_std_type(ty, StdItem::Result)))
             && self.is_copy(ty)
     }
 

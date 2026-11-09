@@ -860,10 +860,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `&mut` to an object its generic code gives within what a
             // bound trait's method takes, which `T`'s dictionary's entry
             // gives its impl as generic code's box where it doesn't adapt
-            // it, a `Vec<&mut Self>`'s (#685, #686).
-            if impl_id.is_local()
-                && let Some(here) = self.impl_nested_mut_object(impl_id, impl_args)
-            {
+            // it, a `Vec<&mut Self>`'s (#685, #686): of the crate's impl,
+            // or a library's it compiles itself.
+            if let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {
                 let what = format!("a `{here}` inside what a generic impl gives a method of a trait it's bound by");
                 return Err(self.unsupported(span, &what));
             }
@@ -1064,7 +1063,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // dictionary hasn't got, as `lower_dictionary` leaves out.
             if !item.is_fn()
                 || self.tcx.generics_require_sized_self(item.def_id)
-                || (!self.is_rust_trait(tr.def_id)
+                || (!self.krate.foreign.compiled_by_rust_js(tr.def_id)
                     && self.tcx.defaultness(item.def_id).has_value()
                     && !in_std_dictionary(self.tcx, item.def_id))
             {

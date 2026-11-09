@@ -1269,3 +1269,38 @@ native's. Case ([0262](0262-when-rust-and-js-disagree.md)): C.
 Held by the pair `library_dyn_method_identities`, against native Rust, and
 the mutation `dyn-method-resolved-to-the-trait`
 (`lower/library/compiled_here.ts`).
+
+## Amendment: whether an item is rust-js's is one answer, whichever crate is compiled (the `is_local()` audit)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's behavior is kept: a consumer that compiles or calls a library's
+function asks of it what the library's own compile asked. `id.is_local()`
+answers whether `id` is the compiling crate's, which the two compiles
+answer apart; where the question is whether rust-js compiled `id`, the
+crate's own or a library's, `Foreign::compiled_by_rust_js` is its one
+answer. Three of the audit's sites asked `is_local()` of what a library's
+consumer must ask too:
+
+- `mut_refs::dispatched_takes`: a library's generic `go<S: Pick>` giving
+  its trait's method a `Vec<&mut S>` was refused in the library's own
+  compile and not in a consumer that gave it its own objects, whose impl's
+  entry then wrote the boxes generic code gave it (#682 across crates).
+  Refused there now; pair `library_trait_dispatch_takes_mut_vec`, mutation
+  `library-trait-dispatch-unasked`.
+- Its impl-side twin in `traits::dictionaries`: a library's generic impl
+  whose dictionary its consumer makes of its own type (#685, #686). Pair
+  `library_impl_dispatch_takes_mut_vec`, mutation
+  `library-impl-dispatch-unasked`.
+- `fmt_failures`' `own_writer`: std's `write_fmt` of a library's writer,
+  whose `write_str` may fail, was taken as never failing in its consumer,
+  `put(..).is_err()` folded to `false`. Pair
+  `library_writer_formatted_fails`, mutation `library-writer-never-fails`.
+  The same of an `io::Write` whose `write` fails is wrong in one crate
+  too, #1072.
+
+Thirteen inline copies of `is_local() || in_library(..)`, and the helpers
+`is_rust_adt` and `is_rust_trait`, which were that, ask the owner now; an
+architecture test refuses another copy. Left open:
+`classes::is_class_trait`, whose answer, every impl a class's, needs the
+library's contract to say which of its traits are of classes, as a
+consumer sees only some of their impls (#1073).

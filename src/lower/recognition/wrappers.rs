@@ -133,7 +133,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         };
         let args = self.tcx.mk_args(&[ty.into()]);
         matches!(crate::lower::items::resolve_instance_in(self.tcx, self.typing_env, method, args),
-            Ok(Some(instance)) if self.tcx.trait_impl_of_assoc(instance.def_id()).is_some_and(|imp| self.is_rust_trait(imp)))
+            Ok(Some(instance)) if self.tcx.trait_impl_of_assoc(instance.def_id()).is_some_and(|imp| self.foreign.compiled_by_rust_js(imp)))
     }
 
     /// A type whose `IntoFuture` is the crate's own (ADR 0571), awaited as

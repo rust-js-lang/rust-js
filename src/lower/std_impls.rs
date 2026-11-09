@@ -200,11 +200,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         needs
     }
 
-    /// A type rust-js compiled: the crate's own, or a library's (ADR 0100).
-    pub(super) fn is_rust_adt(&self, id: DefId) -> bool {
-        id.is_local() || self.krate.foreign.in_library(id)
-    }
-
     /// std enums whose fields are what JS has: `Option`, `Result`, `Ordering`.
     fn is_known_std(&self, ty: Ty<'tcx>) -> bool {
         self.is_lang_adt(ty, LangItem::Option)
@@ -385,13 +380,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// holds one is cloned in place.
     pub(super) fn is_recursive(&self, ty: Ty<'tcx>) -> bool {
         let mut seen = Vec::new();
-        matches!(ty.kind(), ty::Adt(adt, _) if self.is_rust_adt(adt.did())) && self.holds(ty, ty, &mut seen)
+        matches!(ty.kind(), ty::Adt(adt, _) if self.krate.foreign.compiled_by_rust_js(adt.did()))
+            && self.holds(ty, ty, &mut seen)
     }
 
     /// Does `outer` hold `target` anywhere inside it?
     fn holds(&self, outer: Ty<'tcx>, target: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
         let parts: Vec<Ty<'tcx>> = match outer.kind() {
-            ty::Adt(adt, args) if self.is_rust_adt(adt.did()) => {
+            ty::Adt(adt, args) if self.krate.foreign.compiled_by_rust_js(adt.did()) => {
                 adt.all_fields().map(|f| self.field_ty(f, args)).collect()
             }
             ty::Adt(_, args) => args.types().collect(),

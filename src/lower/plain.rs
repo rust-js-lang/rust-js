@@ -258,7 +258,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let fields: Vec<Ty<'tcx>> = match ty.kind() {
             ty::Tuple(items) => items.to_vec(),
             ty::Array(item, len) => vec![*item; len.try_to_target_usize(self.tcx)? as usize],
-            ty::Adt(adt, args) if adt.is_struct() && self.is_rust_adt(adt.did()) => {
+            ty::Adt(adt, args) if adt.is_struct() && self.krate.foreign.compiled_by_rust_js(adt.did()) => {
                 adt.all_fields().map(|f| self.field_ty(f, args)).collect()
             }
             _ => return None,

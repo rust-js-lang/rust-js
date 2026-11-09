@@ -133,15 +133,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "library-recursive-clone-inline",
-    breaks:
-      "a clone of a library's type inside itself isn't a function that calls itself, and never ends",
-    file: "src/lower/std_impls.rs",
-    find: "        id.is_local() || self.krate.foreign.in_library(id)\n",
-    replace: "        id.is_local()\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: tree"],
-  },
-  {
     name: "eq-without-cells",
     breaks:
       "`o == Some(&mut 7)` of an `Option<&mut i32>` compares the cells, not what they point at",

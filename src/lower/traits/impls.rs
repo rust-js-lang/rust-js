@@ -287,7 +287,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let own_clone_from = is_clone_from(self.tcx, item.def_id) && self.recognition().has_clone_from(id);
             let own_operator = crate::lower::ordering::held_by_comparison_dictionary(self.tcx, item.def_id)
                 && self.tcx.impl_item_implementor_ids(id).contains_key(&item.def_id);
-            if !self.is_rust_trait(tr.def_id)
+            if !self.krate.foreign.compiled_by_rust_js(tr.def_id)
                 && self.tcx.defaultness(item.def_id).has_value()
                 && !in_std_dictionary(self.tcx, item.def_id)
                 && !own_clone_from
@@ -777,7 +777,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // The crate's, or a library's, whose entry its library made of the
         // same signatures (#1032).
         let (imp, _) = super::evidence_impl(self.tcx, self.typing_env, tr)
-            .filter(|(imp, _)| imp.is_local() || self.krate.foreign.in_library(*imp))?;
+            .filter(|(imp, _)| self.krate.foreign.compiled_by_rust_js(*imp))?;
         // As the impl's dictionary makes its entry (`lower_dictionary`): in
         // the impl's own terms, the impl's method or the default it keeps.
         let impl_tr = self.tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization();
@@ -801,7 +801,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A default the dictionary copies in (`lower_dictionary`): the
             // crate's trait's, not a library's, whose body is its own.
             None if self.tcx.defaultness(item).has_value()
-                && self.is_rust_trait(tr.def_id)
+                && self.krate.foreign.compiled_by_rust_js(tr.def_id)
                 && !self.krate.foreign.in_library(item)
                 && self.krate.fns.contains_key(&item) =>
             {

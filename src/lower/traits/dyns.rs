@@ -69,7 +69,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// holds the function.
     pub(in crate::lower) fn cell_dyn_trait(&self, held: Ty<'tcx>) -> Option<DefId> {
         match held.kind() {
-            ty::Dynamic(predicates, ..) => predicates.principal_def_id().filter(|&id| self.is_rust_trait(id)),
+            ty::Dynamic(predicates, ..) => predicates
+                .principal_def_id()
+                .filter(|&id| self.krate.foreign.compiled_by_rust_js(id)),
             _ => None,
         }
     }
@@ -90,7 +92,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let named = methods(trait_id);
         let bounds = self.declared_bounds(held, self.typing_env.param_env);
         self.tcx.all_traits_including_private().find(|&other| {
-            self.is_rust_trait(other)
+            self.krate.foreign.compiled_by_rust_js(other)
                 && !under(trait_id, other)
                 && !under(other, trait_id)
                 && (bounds.contains(&other) || self.has_user_impl(other, held))
@@ -300,7 +302,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     fn is_own_struct(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && self.is_rust_adt(adt.did()))
+        matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && self.krate.foreign.compiled_by_rust_js(adt.did()))
     }
 
     /// The fields from a `ty` to the struct its last `dyn` field is in, each
@@ -464,7 +466,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A pointer of the crate's own, as `#[derive(CoercePointee)]` makes
         // one, would hold a `dyn`'s value and impl where it holds the value.
         if let ty::Adt(adt, _) = target.kind()
-            && (adt.did().is_local() || self.krate.foreign.in_library(adt.did()))
+            && self.krate.foreign.compiled_by_rust_js(adt.did())
         {
             return Err(self.unsupported(span, &format!("unsizing a `{target}`")));
         }

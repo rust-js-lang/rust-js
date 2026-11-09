@@ -866,7 +866,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(false);
         }
         if let Some(trait_id) = tcx.trait_of_assoc(def_id)
-            && (tcx.fn_trait_kind_from_def_id(trait_id).is_some() || self.is_rust_trait(trait_id))
+            && (tcx.fn_trait_kind_from_def_id(trait_id).is_some() || self.krate.foreign.compiled_by_rust_js(trait_id))
         {
             return Ok(false);
         }
@@ -1053,7 +1053,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (rust_impl
                 || (crate::lower::recognition::operational(tcx, self.krate.foreign, trait_id)
                     && (!gives_ref
-                        || self.is_rust_trait(trait_id)
+                        || self.krate.foreign.compiled_by_rust_js(trait_id)
                         // One known by its bounds, its dictionary's: `W::write_char(w, c)`
                         // of a generic writer, `T::Buffer`'s `as_mut()` (ADRs 0180, 0533).
                         || (generic_args.types().next()).is_some_and(|t| known_by_bounds(t.peel_refs())))))

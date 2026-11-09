@@ -513,7 +513,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         bound: ty::PolyTraitPredicate<'tcx>,
     ) -> Vec<Ty<'tcx>> {
         let args = bound.skip_binder().trait_ref.args;
-        if !bound.def_id().is_local()
+        // Of a trait rust-js compiled, a library's too, whose impls' entries
+        // its consumer's calls give as its own compile's do.
+        if !self.krate.foreign.compiled_by_rust_js(bound.def_id())
             || !matches!(args.type_at(0).kind(), ty::Param(_))
             || self.tcx.trait_of_assoc(def_id) == Some(bound.def_id())
         {

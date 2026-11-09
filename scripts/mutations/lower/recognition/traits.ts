@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's trait isn't one whose impls are dictionaries, so a call of its generic function passes none",
     file: "src/lower/recognition/traits.rs",
-    find: "        || foreign.in_library(id)\n",
-    replace: "        || false\n",
+    find: "    foreign.compiled_by_rust_js(id)\n        || tcx.is_lang_item(id, LangItem::Copy)\n",
+    replace: "    id.is_local()\n        || tcx.is_lang_item(id, LangItem::Copy)\n",
     tests: ["test/crates.test.ts", "-t", "two crates: dict"],
   },
   {

@@ -720,4 +720,13 @@ export const mutations: Mutation[] = [
     replace: "            for (&carrier, facts) in contracts.carried_super.iter().filter(|_| false) {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts"],
   },
+  {
+    name: "library-recursive-clone-inline",
+    breaks:
+      "an item rust-js compiled is the crate's own alone, not a library's too, so a clone of a library's type inside itself isn't a function that calls itself, and never ends",
+    file: "src/lower/library.rs",
+    find: "        id.is_local() || self.in_library(id)\n",
+    replace: "        id.is_local()\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: tree"],
+  },
 ];

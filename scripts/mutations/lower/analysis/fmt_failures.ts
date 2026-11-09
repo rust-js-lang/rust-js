@@ -115,4 +115,13 @@ export const mutations: Mutation[] = [
       "^closure_writes_captured_formatter.rs$",
     ],
   },
+  {
+    name: "library-writer-never-fails",
+    breaks:
+      "std's `write_fmt` of a library's writer, whose `write_str` may fail, is taken as never failing in its consumer, so `put(..).is_err()` is `false` where Rust's is `true` (the `is_local()` audit)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "if foreign.compiled_by_rust_js(adt.did()))",
+    replace: "if adt.did().is_local())",
+    tests: ["test/crates.test.ts", "-t", "library_writer_formatted_fails"],
+  },
 ];

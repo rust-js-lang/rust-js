@@ -34,7 +34,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let may = match ty.kind() {
             _ if let Some(imp) = self.recognition().user_impl(tr) => self.impl_may_unwind(imp),
             ty::Adt(..) if self.is_rc(ty) || self.counted_rc(ty).is_some() || self.counted_weak(ty).is_some() => false,
-            ty::Adt(adt, args) if self.is_rust_adt(adt.did()) => {
+            ty::Adt(adt, args) if self.krate.foreign.compiled_by_rust_js(adt.did()) => {
                 (adt.all_fields()).any(|f| self.clone_may_panic_in(self.field_ty(f, args), seen))
             }
             ty::Adt(_, args) => args.types().any(|arg| self.clone_may_panic_in(arg, seen)),

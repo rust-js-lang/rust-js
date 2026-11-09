@@ -1125,6 +1125,17 @@ test("the crates rust-js compiles are the ones the tooling names, a binding crat
   expect(wrappers).toEqual([]);
 });
 
+// Whether an item is rust-js's, the crate's own or a library's, has one
+// answer, `Foreign::compiled_by_rust_js`: `id.is_local()` alone is the
+// compiling crate's, which a library's own compile and its consumer's
+// answer apart (the `is_local()` audit, ADR 0914, amended), and an inline
+// `is_local() || in_library(..)` is a second copy of the owner's rule.
+test("whether an item is rust-js's is compiled_by_rust_js alone", () => {
+  const copies = files("src/lower").filter((file) => file.endsWith(".rs") && file !== "src/lower/library.rs")
+    .filter((file) => /is_local\(\)\s*\|\|\s*[\w.()]*in_library\(/.test(read(file)));
+  expect(copies).toEqual([]);
+});
+
 // Whether a type is a raw pointer, a `NonNull`, which is its pointer, or a
 // pattern type of one, has one answer, `pointers::raw_pointee` (ADR 0407):
 // no other module matches rustc's raw pointer itself.

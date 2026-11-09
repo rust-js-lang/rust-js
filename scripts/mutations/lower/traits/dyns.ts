@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a pointer of the crate's own, unsized to a `dyn`, is the value it was, not a `dyn`'s",
     file: "src/lower/traits/dyns.rs",
-    find: "        if let ty::Adt(adt, _) = target.kind()\n            && (adt.did().is_local() || self.krate.foreign.in_library(adt.did()))\n",
+    find: "        if let ty::Adt(adt, _) = target.kind()\n            && self.krate.foreign.compiled_by_rust_js(adt.did())\n",
     replace:
       "        if let ty::Adt(adt, _) = target.kind()\n            && (adt.did().is_local() || self.krate.foreign.in_library(adt.did()))\n            && false\n",
     tests: ["test/diagnostics.test.ts", "-t", "pointer of the crate"],
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `RefCell<dyn T>` is refused, as a struct whose last field is a `dyn`",
     file: "src/lower/traits/dyns.rs",
-    find: "            ty::Dynamic(predicates, ..) => predicates.principal_def_id().filter(|&id| self.is_rust_trait(id)),\n            _ => None,\n",
+    find: "            ty::Dynamic(predicates, ..) => predicates\n                .principal_def_id()\n                .filter(|&id| self.krate.foreign.compiled_by_rust_js(id)),\n            _ => None,\n",
     replace: "            ty::Dynamic(..) => None,\n            _ => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cells.rs$"],
   },
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `RefCell<dyn FnMut>` is taken for a pair, and its guard's `value` called, where it's the function",
     file: "src/lower/traits/dyns.rs",
-    find: "            ty::Dynamic(predicates, ..) => predicates.principal_def_id().filter(|&id| self.is_rust_trait(id)),\n            _ => None,\n",
+    find: "            ty::Dynamic(predicates, ..) => predicates\n                .principal_def_id()\n                .filter(|&id| self.krate.foreign.compiled_by_rust_js(id)),\n            _ => None,\n",
     replace:
       "            ty::Dynamic(predicates, ..) => predicates.principal_def_id(),\n            _ => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^unsized_struct_fn.rs$"],
@@ -246,7 +246,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/dyns.rs",
     find: "                if self.recognition().is_pair_dyn(traits) || self.is_dyn_debug(tail))\n",
     replace:
-      "                if traits.principal_def_id().is_some_and(|id| self.is_rust_trait(id)) || self.is_dyn_debug(tail))\n",
+      "                if traits.principal_def_id().is_some_and(|id| self.krate.foreign.compiled_by_rust_js(id)) || self.is_dyn_debug(tail))\n",
     tests: [
       "test/diagnostics.test.ts",
       "-t",
@@ -269,7 +269,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/dyns.rs",
     find: "        matches!(tail.kind(), ty::Dynamic(traits, ..) if self.recognition().is_pair_dyn(traits))\n",
     replace:
-      "        matches!(tail.kind(), ty::Dynamic(traits, ..) if traits.principal_def_id().is_some_and(|id| self.is_rust_trait(id)))\n",
+      "        matches!(tail.kind(), ty::Dynamic(traits, ..) if traits.principal_def_id().is_some_and(|id| self.krate.foreign.compiled_by_rust_js(id)))\n",
     tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
   },
   {

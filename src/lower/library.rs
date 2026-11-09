@@ -834,6 +834,15 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         matched
     }
 
+    /// Is `id` an item rust-js compiled, the crate's own or a library's
+    /// (ADR 0100), whose JS and dictionaries are rust-js's, whichever crate
+    /// is compiled now: the one answer of which items are, never
+    /// `id.is_local()` alone, which a library's own compile and its
+    /// consumer's answer apart. Any other is std's.
+    pub(in crate::lower) fn compiled_by_rust_js(&self, id: DefId) -> bool {
+        id.is_local() || self.in_library(id)
+    }
+
     /// Is `id` a dependency's, one rust-js compiled as a library? Of
     /// `@rust-js/std`, built into the compiler, only what it compiled: the
     /// rest of std is std's (ADR 0561).

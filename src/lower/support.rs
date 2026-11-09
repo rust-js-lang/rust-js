@@ -49,7 +49,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if predicates.principal_def_id().is_none_or(|id| {
                     // The crate's own or a library's (ADR 0100), whose
                     // `dyn` is its pair either way.
-                    self.recognition().is_rust_trait(id) && self.dyn_supported(id)
+                    self.krate.foreign.compiled_by_rust_js(id) && self.dyn_supported(id)
                         || self.recognition().is_std_pair_trait(id)
                 }) =>
             {

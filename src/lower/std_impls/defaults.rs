@@ -73,7 +73,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 self.default_may_panic_in(args.type_at(0), seen)
             }
-            ty::Adt(adt, args) if adt.is_struct() && self.is_rust_adt(adt.did()) => {
+            ty::Adt(adt, args) if adt.is_struct() && self.krate.foreign.compiled_by_rust_js(adt.did()) => {
                 (adt.all_fields()).any(|f| self.default_may_panic_in(self.field_ty(f, args), seen))
             }
             _ => false,

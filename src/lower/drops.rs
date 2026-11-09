@@ -302,7 +302,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         match ty.kind() {
             ty::Param(_) | ty::Dynamic(..) | ty::Alias(..) => true,
-            ty::Adt(adt, args) if adt.did().is_local() || self.krate.foreign.in_library(adt.did()) => {
+            ty::Adt(adt, args) if self.krate.foreign.compiled_by_rust_js(adt.did()) => {
                 let own = (self.tcx.adt_destructor(adt.did()))
                     .is_some_and(|destructor| !self.drop_never_unwinds(destructor.did, args));
                 own || self.glue_part_may_panic(ty, seen)
@@ -585,7 +585,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Which is inside itself is the drop query's to say, through
         // whatever drops it, a map's entries too.
         if let ty::Adt(adt, _) = ty.kind()
-            && (adt.did().is_local() || self.krate.foreign.in_library(adt.did()))
+            && (self.krate.foreign.compiled_by_rust_js(adt.did()))
             && (self.drops_itself(ty) || self.drop_size(ty, &mut Vec::new()) > 8)
         {
             let type_name = self.tcx.item_name(adt.did()).to_string();

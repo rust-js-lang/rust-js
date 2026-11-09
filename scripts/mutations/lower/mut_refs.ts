@@ -359,4 +359,13 @@ export const mutations: Mutation[] = [
     replace: "                ty::Ref(..))\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_given_for_a_parameter_read_as_another.rs$"],
   },
+  {
+    name: "library-trait-dispatch-unasked",
+    breaks:
+      "a consumer's call of a library's generic code that gives its trait's method a `Vec<&mut S>` of the consumer's objects isn't refused as the library's own call is, so its impl's entry is given boxes, `{ value: b }`, and writes them, not `b` (the `is_local()` audit)",
+    file: "src/lower/mut_refs.rs",
+    find: "        if !self.krate.foreign.compiled_by_rust_js(bound.def_id())\n",
+    replace: "        if !bound.def_id().is_local()\n",
+    tests: ["test/crates.test.ts", "-t", "Vec of &mut objects through generic code"],
+  },
 ];
