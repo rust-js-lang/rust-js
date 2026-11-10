@@ -28,8 +28,11 @@ export function callInNode(modules: Record<string, string>, calls: Call[], dir: 
 }
 
 /** What a run printed, as text for its reports and as bytes to compare
- * (`Exit`), how it ended, and how long it took, of one this process ran. */
-export type Run = { stdout: string; stderr: string; bytes: Exit["bytes"]; outcome: Outcome | string; ms?: number };
+ * (`Exit`), how it ended, and how long it took, of one this process ran;
+ * `stopped` where it didn't end by itself, but was stopped: past its time
+ * or its output's or memory's limit, or killed (`stopped`), so what it
+ * printed is a cut run's, no program's whole answer (#1252). */
+export type Run = { stdout: string; stderr: string; bytes: Exit["bytes"]; outcome: Outcome | string; ms?: number; stopped?: boolean };
 
 // A case runs for at most this long, so one that never ends fails instead
 // of stopping the suite, and is compiled for at most the other, natively or
@@ -65,7 +68,7 @@ export function execute(cmd: string[], outcomeFile: string, limit = timeout): Ru
   const ran = (outcome: Outcome | string): Run => ({ stdout, stderr, bytes, outcome, ms });
   if (p.signal === "SIGABRT" && !p.timedOut) return ran(aborted);
   const why = stopped(p, limit);
-  if (why) return ran(why);
+  if (why) return { ...ran(why), stopped: true };
   // An abort from a stack overflow's deepest frame, whose `exit` handler
   // had no room to write the outcome: `$abort`'s exit and its line (#1193).
   if (!existsSync(outcomeFile)) {

@@ -30,6 +30,16 @@ test("a run that exits 0 with its outcome is taken at its word", () => {
   const file = join(fixture("programs-ok"), "outcome.json");
   const run = execute(script(`require("fs").writeFileSync(${JSON.stringify(file)}, '{"value":null}')`), file);
   expect(agree(run, clean)).toBe(true);
+  expect(run.stopped).toBeUndefined();
+});
+
+// A run stopped past its time didn't end by itself: what it printed is a
+// cut run's, which a net doesn't compare (#1252).
+test("a run stopped past its time is said to be stopped", () => {
+  const file = join(fixture("programs-endless"), "outcome.json");
+  const run = execute(script("setInterval(() => {}, 1000)"), file, 300);
+  expect(run.outcome).toBe("didn't finish in 0.3s");
+  expect(run.stopped).toBe(true);
 });
 
 // What a run printed is compared byte for byte: a byte that isn't UTF-8

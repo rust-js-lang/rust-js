@@ -418,3 +418,17 @@ nullable parameter given a variable a generic `Some` was assigned to
 (#1248), and a closure cloned in generic code that is the same function,
 `Rc::ptr_eq` of an `Rc<dyn Fn>` of each `true` (#1249). Each is listed
 under its issue.
+
+## Amendment: a rewrite native Rust doesn't end is no variant (#1252)
+
+`generic-instances` can make a program native Rust never ends:
+`repeat_count_panics.rs`' `repeat(L(3)).skip(2)` given on through an
+identity `map` is a `Map`, whose `count()` folds the endless `Repeat`
+where std's `Repeat::count` panics. Its native run and the JS's were each
+cut, past 10 s or 16 MB of output, and compared, a verdict that flipped
+with timing (`range_own_steps.rs` too). A native run stopped by the
+harness is no program's whole answer: `execute` marks it `stopped`
+(`test/programs.ts`), and a rewrite whose native run is is no variant, as
+one rustc rejects or one that aborts on wasm32 is; the net tries its first
+place alone, then none. Its two rows are off the known list. ADR 0262's
+case: none, the compiler's JS is unchanged.

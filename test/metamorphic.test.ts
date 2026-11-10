@@ -94,8 +94,11 @@ function wrong(rewrite: Rewrite, name: string, edition: string, target: "host" |
     }
     const ran = runNative(variant, dir, edition, target, rustc);
     // On wasm32 a panic aborts, with no outcome to judge the JS's by: no
-    // variant, as one rustc rejects is.
-    const unjudged = typeof ran !== "string" && target === "wasm32" && typeof ran.outcome === "string";
+    // variant, as one rustc rejects is. Nor one native Rust doesn't end
+    // within its limits, an endless iterator a rewrite gives `count()`:
+    // its run and the JS's are both cut, where timing says, and no
+    // answer to compare (#1252).
+    const unjudged = typeof ran !== "string" && ((target === "wasm32" && typeof ran.outcome === "string") || ran.stopped === true);
     if (typeof ran !== "string" && !unjudged && !overlapping(rewrite, ran.outcome)) {
       native = ran;
       tally(rewrite, name, "variant");
