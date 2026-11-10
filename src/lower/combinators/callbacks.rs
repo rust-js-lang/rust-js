@@ -12,8 +12,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         known: Option<crate::lower::recognition::Std>,
         (tys, output): (&[Ty<'tcx>], Ty<'tcx>),
+        callee: Option<rustc_span::def_id::DefId>,
         span: Span,
     ) -> R<Vec<(usize, Option<Unused>)>> {
+        // How `callee` calls each it's given, by its own parameter's `Fn*`
+        // bound, `any<P: FnMut(..)>`'s: what a boxed one's kind is, which its
+        // type doesn't say, `Box<dyn FnMut(..)>`'s; none of one it keeps,
+        // `push(T)`'s (#1220).
+        let inputs = callee.map(|callee| self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs());
+        let called = |at: usize| {
+            let (callee, inputs) = (callee?, inputs?);
+            crate::lower::recognition::function_kind(self.tcx, callee, *inputs.get(at)?)
+        };
         // What it gives as the type it stands for, as each argument's is:
         // `Rc::new(f)`'s `Rc<impl Fn>` of a function that gives it back is
         // the `Rc` of `f`'s closure, which keeps it (#464).
@@ -21,7 +31,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for (at, &ty) in tys.iter().enumerate() {
             // What an `impl FnMut` a function gives is, its closure, which
             // carries its drop (#259).
-            let Some(when) = self.handled_argument(known, at, ty) else {
+            let Some(when) = self.handled_argument(known, at, ty, called(at)) else {
                 continue;
             };
             // Kept by a lazy adapter it's given to, `map(f)`'s, it drops with it
@@ -76,6 +86,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         known: Option<crate::lower::recognition::Std>,
         at: usize,
         ty: Ty<'tcx>,
+        called: Option<ty::ClosureKind>,
     ) -> Option<Option<Unused>> {
         let unused = || {
             (unused_arguments(known?).iter())
@@ -89,7 +100,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ) {
             return None;
         }
-        let Some(kind) = crate::lower::recognition::function_kind(self.tcx, self.frame.owner, ty) else {
+        // Or, of one whose type doesn't say, a boxed one's, as its callee
+        // calls it (`given_unused`, #1220).
+        let kind = crate::lower::recognition::function_kind(self.tcx, self.frame.owner, ty).or(called);
+        let Some(kind) = kind else {
             return unused().filter(|_| self.drops_function(ty));
         };
         if !self.drops_function(ty) {

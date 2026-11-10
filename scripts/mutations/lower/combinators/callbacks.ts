@@ -190,4 +190,12 @@ export const mutations: Mutation[] = [
     replace: "                && kept\n                && false && (self.recognition().closed_on_drop(output))\n",
     tests: ["test/corpus.test.ts", "-t", "^scan_drops_its_function_and_state.rs$"],
   },
+  {
+    name: "boxed-function-kind-unread",
+    breaks: "a `Box<dyn FnMut>` given by value to `any`, `all`, `fold` or `for_each` is never dropped, its kind, which its type doesn't say, not read from its callee's `Fn` bound (#1220)",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "        let kind = crate::lower::recognition::function_kind(self.tcx, self.frame.owner, ty).or(called);\n",
+    replace: "        let kind = crate::lower::recognition::function_kind(self.tcx, self.frame.owner, ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_fn_given_to_consumers_drops.rs$"],
+  },
 ];

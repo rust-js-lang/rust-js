@@ -43,7 +43,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // as `dropped_after` says (#1120).
         let consumed = self.consumed_at(def_id, tys);
         let tys: Vec<Ty<'tcx>> = (tys.iter().enumerate())
-            .map(|(at, &ty)| match self.handled_argument(Some(known), at, ty) {
+            .map(|(at, &ty)| match self.handled_argument(Some(known), at, ty, None) {
                 Some(_) => self.tcx.types.unit,
                 None if consumed == Some(at) => self.tcx.types.unit,
                 None => ty,

@@ -797,7 +797,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let given = match std {
             true => {
                 let known = self.recognition().classify(def_id, generic_args);
-                self.given_unused(known, (arg_tys, output), span)?
+                self.given_unused(known, (arg_tys, output), Some(def_id), span)?
             }
             false => {
                 self.check_called_once(def_id, arg_tys, span)?;

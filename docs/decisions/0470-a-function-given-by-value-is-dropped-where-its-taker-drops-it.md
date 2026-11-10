@@ -361,3 +361,22 @@ its message now ADR 0626's. The mutations are
 `instance-given-closures-another-crates` (`lower/drops/facts.ts`),
 `closure-of-a-parameter-drops-nothing` (`lower/instances.ts`) and
 `instance-dyn-fns-unseen` (`lower/analysis/closures.ts`).
+
+## Amended (2026-11-10, #1220): a boxed function is called as its taker calls it
+
+A `Box<dyn FnMut(..)>` given by value to `all`, `any`, `fold` or
+`for_each` was never dropped: not after the call, and not as a panic in it
+unwound. Native Rust drops it as the call returns. How a given function is
+called decides where it's dropped, and that was read from the given type
+alone (`function_kind`): a closure's kind, or a type parameter's bound. A
+box has neither, so it was taken for a value std keeps. A `FnOnce` box
+given to `or_insert_with` or `catch_unwind` was right only because those
+list it as unused where it isn't run.
+
+Where the given type doesn't say, its callee's own parameter does,
+`any<P: FnMut(Self::Item) -> bool>`'s `P` (`given_unused`'s `called`).
+A box `push(T)` keeps, whose `T` no `Fn` bound names, is still kept, never
+dropped after the call. Case C ([0262](0262-when-rust-and-js-disagree.md)):
+a destructor's output is seen.
+`test/corpus/boxed_fn_given_to_consumers_drops.rs` holds each consumer
+and a panic unwinding through `any`, against native Rust.
