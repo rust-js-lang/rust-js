@@ -38,8 +38,12 @@ function collected(it, BFromIteratorIItem, IInPlace, IItemSize, IItemAlign, drop
   return BFromIteratorIItem.fromIter(
     $closing(Iterator.from(it), dropI, false),
     IInPlace,
-    dropI,
-    dropI,
+    (closing) => {
+      closing.return();
+    },
+    (closing) => {
+      closing.return();
+    },
   );
 }
 

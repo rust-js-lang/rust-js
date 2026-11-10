@@ -538,8 +538,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic collect into its caller's `T: FromIterator<D>` calls the dictionary's `from_iter` with the items alone, so a `Vec`'s iterator's in-place buffer and its drops aren't given (#794)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                args.extend(self.own_evidence(method, generic_args, None, span)?);\n",
-    replace: "                let _ = (method, generic_args);\n",
+    find: "                args.extend(self.own_evidence(method, generic_args, None, closed, span)?);\n",
+    replace: "                let _ = (method, generic_args, closed);\n",
     tests: ["test/corpus.test.ts", "-t", "^from_iter_impl_of_dropping.rs$"],
     snapshots: true,
   },
@@ -615,5 +615,13 @@ export const mutations: Mutation[] = [
     find: "            true => Expr::call_helper(\"$untracked\", vec![collected]),\n",
     replace: "            true => collected,\n",
     tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
+  },
+  {
+    name: "from-iter-given-closed-drops-as-its-type",
+    breaks: "generic code's `collect()` into a `B: FromIterator` gives `from_iter` the `$closing` it made of the crate's own iterator, and the iterator's own drop for it, which reads fields the closing hasn't: `Cannot read properties of undefined (reading '_loud')` (#1286)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                let closed = crate::lower::iterators::closed_parts(&args[0]).map(|_| iter_ty);\n",
+    replace: "                let closed = crate::lower::iterators::closed_parts(&args[0]).and(None);\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_collected_by_generic_code_into_own_from_iterator.rs$"],
   },
 ];

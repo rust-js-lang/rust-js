@@ -65,8 +65,12 @@ function relayed(iter, TFromIteratorD, IIntoIterInPlace, dropIIntoIter) {
   return TFromIteratorD.fromIter(
     $closing($intoIter(iter), dropIIntoIter, false),
     IIntoIterInPlace,
-    dropIIntoIter,
-    dropIIntoIter,
+    (closing) => {
+      closing.return();
+    },
+    (closing) => {
+      closing.return();
+    },
   );
 }
 

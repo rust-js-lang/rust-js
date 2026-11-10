@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`SShape.describe(s, label)` in generic code isn't given `T`'s `Display`, and the entry reads `undefined`",
     file: "src/lower/traits/calls.rs",
-    find: "        let location = self.caller_location(span);\n        values.extend(self.own_evidence(id, generic_args, Some(location), span)?);\n",
+    find: "        let location = self.caller_location(span);\n        values.extend(self.own_evidence(id, generic_args, Some(location), None, span)?);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "generic_trait_methods"],
   },
@@ -159,9 +159,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic method called through a dictionary is given no drop for its own type parameters",
     file: "src/lower/traits/calls.rs",
-    find: "                    let ty = self.drop_slot_of(id, index, generic_args);\n                    drops.push(self.drop_function(ty, span)?);\n",
-    replace:
-      "                    let _ = self.drop_slot_of(id, index, generic_args);\n                    drops.push(None);\n",
+    find: "                        false => self.drop_function(ty, span)?,\n",
+    replace: "                        false => None,\n",
     tests: ["test/corpus.test.ts", "-t", "generic_method_drops"],
   },
   {
@@ -563,5 +562,13 @@ export const mutations: Mutation[] = [
     find: "        let compiled_provided = crate::lower::recognition::is_compiled_std(self.tcx, id);\n",
     replace: "        let compiled_provided = crate::lower::recognition::is_compiled_std(self.tcx, id) && !matches!(tr.self_ty().kind(), ty::Dynamic(..));\n",
     tests: ["test/corpus.test.ts", "-t", "^io_buf_read.rs$"],
+  },
+  {
+    name: "own-evidence-closed-drop-unseen",
+    breaks: "a trait's generic method given a value closed, `$closing`'s, is given its type's drop for it, not the closing's `return()` (#1286)",
+    file: "src/lower/traits/calls.rs",
+    find: "                    drops.push(match closed == Some(ty) {\n",
+    replace: "                    drops.push(match closed == Some(ty) && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_collected_by_generic_code_into_own_from_iterator.rs$"],
   },
 ];

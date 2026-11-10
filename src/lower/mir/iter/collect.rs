@@ -487,7 +487,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some(iter_ty) = iter_ty {
                 let method = crate::lower::recognition::trait_method(self.tcx, from_iterator, "from_iter");
                 let generic_args = self.tcx.mk_args(&[output.into(), item.into(), iter_ty.into()]);
-                args.extend(self.own_evidence(method, generic_args, None, span)?);
+                // Of one closed here, `$closing`'s, which owns its drop: the
+                // closing's, `return()`, of what it's given (#1286).
+                let closed = crate::lower::iterators::closed_parts(&args[0]).map(|_| iter_ty);
+                args.extend(self.own_evidence(method, generic_args, None, closed, span)?);
             }
             return Ok(Expr::call(Expr::member(dictionary, from_iter), args));
         }

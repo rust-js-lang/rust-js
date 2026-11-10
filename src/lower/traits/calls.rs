@@ -485,7 +485,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // as rustc's shim gives it, and nothing comes after: a `dyn`'s
             // method has no type parameters of its own (ADR 0427).
             let location = tracks_caller(self.tcx, id).then(|| self.caller_location(span));
-            values.extend(self.own_evidence(id, generic_args, location, span)?);
+            values.extend(self.own_evidence(id, generic_args, location, None, span)?);
             let called = Expr::call(Expr::member(dictionary, bindings::fn_name(self.tcx, id)), values);
             return Ok(Some(self.fmt_result_value(id, generic_args, called)));
         }
@@ -711,18 +711,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .to_vec();
         self.given_iterators(id, &mut values, &given, span, out)?;
         let location = self.caller_location(span);
-        values.extend(self.own_evidence(id, generic_args, Some(location), span)?);
+        values.extend(self.own_evidence(id, generic_args, Some(location), None, span)?);
         Ok(values)
     }
 
     /// What a trait's generic method is given where it's called through a
     /// dictionary, after its arguments: its own bounds' evidence, for this call
-    /// (ADR 0106). None for one that isn't generic.
+    /// (ADR 0106). None for one that isn't generic. Of `closed`, a type whose
+    /// value it's given closed, `$closing`'s, which owns that value's own
+    /// drop, its drop is the closing's, `(closing) => { closing.return(); }`,
+    /// named for what it drops as a type's drop is, not the type's (#1286).
     pub(in crate::lower) fn own_evidence(
         &mut self,
         id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
         location: Option<Expr>,
+        closed: Option<Ty<'tcx>>,
         span: Span,
     ) -> R<Vec<Expr>> {
         // Each of its own `evidence_slots`', of the types given for them:
@@ -752,7 +756,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Slot::Drop(index) => {
                     let ty = self.drop_slot_of(id, index, generic_args);
-                    drops.push(self.drop_function(ty, span)?);
+                    drops.push(match closed == Some(ty) {
+                        true => {
+                            let close = Expr::call(Expr::member(Expr::var("closing"), "return"), Vec::new());
+                            Some(Expr::arrow(
+                                vec!["closing".into()],
+                                vec![StmtKind::Expr(close).at(js::Span::NONE)],
+                            ))
+                        }
+                        false => self.drop_function(ty, span)?,
+                    });
                 }
             }
         }

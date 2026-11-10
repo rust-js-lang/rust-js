@@ -193,3 +193,40 @@ item (`iterated_slot`). They're compared with their regions erased. Held by
 `own_iterator_holding_a_closure_dropped_by_generic_code.rs` and the
 mutation `iterated-slot-told-apart-by-a-region`; three of #1239's
 `generic-instances` rows run as Rust does.
+
+## Amendment: what's given closed is dropped by its closing (#1286)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a throw where Rust
+runs, so Rust's behavior is kept.
+
+Generic code's `collect()` into its caller's `B: FromIterator`,
+`collected<I: Iterator, B>(it: I) -> B { it.collect() }`, gives the
+dictionary's `from_iter` what it made of `it`:
+`$closing(Iterator.from(it), dropI, false)`, which owns `it`'s drop
+(#1239). It gave `dropI` as the drop of `from_iter`'s `I` and
+`I::IntoIter` too. Of the crate's own iterator, `dropI` is the drop of
+what the caller's `$iterator(count, next)` was made of, `(it) =>
+loudDrop_drop(it.of._loud)` (#766). The `$closing` `from_iter` drops
+has no `of`, so `collected::<Count, Summed>` printed `summed 3` and then
+threw "Cannot read properties of undefined (reading '_loud')", where
+native Rust prints `drop x`.
+
+What's given closed is dropped by its closing, `(closing) => {
+closing.return(); }`, which drops what it holds once, by `dropI`, as an
+adapter's drop does, `(map) => { map.return(); }`, its parameter named for
+what it drops as that one's is. `own_evidence` takes `closed`, the type
+whose value it's given closed. `collected_into` names it,
+`iter_ty`, where `closed_parts` says the value it passes is one. Four
+corpus cases' `collected` now give `from_iter` the closing's drop in
+place of `dropI`, each running as before against native Rust:
+`from_iter_impl_of_dropping`, `from_iter_holds_what_generic_code_gives`,
+`iterator_held_in_a_place_dropped_with_it` and
+`own_iterator_holding_a_closure_dropped_by_generic_code`.
+
+`test/corpus/own_iterator_collected_by_generic_code_into_own_from_iterator.rs`
+holds the crate's own iterator collected whole, stopped early (what's
+left dropped where `from_iter` returns), through a `map`, while
+`from_iter` panics holding it, and a `Vec`'s `IntoIter`, against native
+Rust in both builds. Mutations: `from-iter-given-closed-drops-as-its-type`
+and `own-evidence-closed-drop-unseen`; `dictionary-collect-without-own-evidence`
+and `dictionary-call-own-drops-missing` refitted.
