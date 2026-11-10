@@ -66,3 +66,24 @@ because the corpus's JS and output were the same without it. The arm is
 gone, and with it that mutation and `filter-map-ends-boxed`.
 `filter_ends.rs`, `held_filter_map_from_its_back.rs` and the rest of the
 corpus give the same JS and agree with native Rust.
+
+## Amendment: its front steps by its source's `find` (#1226)
+
+A filter made knowing its back, `$filterEnds`, stepped its source's `next`
+for each of its own steps from the front. Std's `Filter::next` asks its
+source's `find`, a `try_fold`, and for most sources the two are the same.
+They differ where the source's `try_fold` is its own: `Rev::find` is its
+source's `rfind`, and a `take(n)`'s `try_rfold` trims its back by
+`nth_back(len - n - 1)`. Its `next_back` trims by `nth_back(len - n)`, one
+slice dropped front to back. So a filter of `v.into_iter().take(3)`
+reversed, made knowing its back as generic code that steps it from either
+end makes it, dropped what the take trims as 4 then 5, where Rust drops 5
+then 4. Results changed, so Rust's behavior is kept (ADR
+[0262](0262-when-rust-and-js-disagree.md)'s third case).
+
+The front step is now `$Steps`' own `filter`'s (`$filterDropping`), the
+one owner of `Filter::next`, which already asked its source's `tryFold`.
+`$filterEnds` adds its back to it and no longer restates the front.
+`test/corpus/filter_of_a_take_reversed_trims_by_its_try_rfold.rs` holds it
+against native Rust in both builds, and the mutation
+`filter-ends-steps-by-next` holds the line.

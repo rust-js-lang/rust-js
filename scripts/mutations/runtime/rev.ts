@@ -98,5 +98,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_rev_folds_its_source.rs$"],
   },
-
+  {
+    name: "rev-bounds-unpassed",
+    breaks:
+      "a range's `rev()` made knowing its back, `$rev(..)`, as a type generic code folds from its back is, has no bounds: its own `count()` throws `Cannot read properties of undefined (reading 'start')` where Rust gives 5 (#721, #1226)",
+    file: "src/runtime/rev.js",
+    find: "  if (it.of !== undefined) rev.of = it.of;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rev_range_counted_beside_a_generic_rfold.rs$"],
+  },
 ];

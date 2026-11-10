@@ -4913,14 +4913,13 @@ export function $stepByEnds(it, step, drop) {
 export function $filterEnds(it, p, drop) {
   // Each item `p` keeps, the one it was asked of dropped where it throws,
   // a panic, as std's `Filter` holds it as it unwinds (#423), and each it
-  // doesn't by `drop`: `$kept`'s.
+  // doesn't by `drop`: `$kept`'s. Its step, std's `Filter::next`, its
+  // source's `find`, a `try_fold`: `$Steps`' own `filter`'s, which reaches
+  // its source's own, a `rev()`'s of a `take(n)`, which trims its back by
+  // its `try_rfold`, not by its `next_back` (#1226).
+  const front = $filterDropping(it, p, drop);
   const filter = new $Steps(
-    () => {
-      for (let at = it.next(); !at.done; at = it.next()) {
-        if ($kept(p, drop, at.value)) return at;
-      }
-      return { done: true, value: undefined };
-    },
+    () => front.next(),
     () => $closed(it),
   );
   // Std's `Filter::next_back`, its source's `rfind`, `$findBack`'s: its
@@ -16473,6 +16472,13 @@ export function $rev(it) {
     },
   });
   if (it.dropItem !== undefined) rev.dropItem = it.dropItem;
+  // What its source steps, `$iterator`'s `of`, a range's bounds: what a
+  // reversed range's own `count`, `last` and `nth` read, of one made
+  // knowing its back, `$rev($iterator(range, $rangeNext, false,
+  // $rangeNextBack))`, as of `$iterator(range, $rangeNextBack)` (#721): a
+  // type generic code steps from its back, which each value of it is made
+  // knowing, through an `impl` that gives it as it is too (#1226).
+  if (it.of !== undefined) rev.of = it.of;
   return rev;
 }
 

@@ -1638,3 +1638,26 @@ in `main` the knowing form, whose `last()` then read what wasn't there.
 
 `test/corpus/impl_trait_adapter_is_its_value.rs` holds it against native
 Rust in both builds. `test/diagnostics.test.ts` holds the refusal.
+
+## Amendment: `$rev` passes on its source's bounds again (#1226)
+
+d4af55baf made a `rev()`'s knowing form its value's fact and dropped
+`$rev`'s `of`, which nothing read then. A type that generic code steps
+from its back is still on `BackStepped::typed`, though: each instance its
+callers give, through an `impl` that gives its value as it is too. So in a
+crate whose generic code `rfold`s `(1..6u32).rev()`, every `rev()` of a
+`Range<u32>` is made `$rev($iterator(range, ..))`, and that range's own
+`count()`, `last()` and `nth()` of another of them read its bounds, `.of`,
+from the `$rev`. They threw `Cannot read properties of undefined (reading
+'start')` where Rust gives 5. A wrong answer, so Rust's behavior is kept
+(ADR [0262](0262-when-rust-and-js-disagree.md)'s third case).
+
+`$rev` passes on its source's `of` again, as #721 had it. The bounds are a
+runtime property of what a range's iterator steps, so they're read the same
+however the value was made. A compile-time read through the `$rev` misses
+an `nth()` whose `&mut` receiver drops the `$rev` mark.
+`test/corpus/rev_range_counted_beside_a_generic_rfold.rs` holds it against
+native Rust in both builds, and the mutation `rev-bounds-unpassed` holds
+the line. This also fixes the metamorphic rows `opaque
+rev_range_counted_beside_its_rfold.rs` and `generic-instances
+range_inclusive_exhausted.rs`.

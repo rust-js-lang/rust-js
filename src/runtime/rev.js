@@ -45,5 +45,12 @@ function $rev(it) {
     },
   });
   if (it.dropItem !== undefined) rev.dropItem = it.dropItem;
+  // What its source steps, `$iterator`'s `of`, a range's bounds: what a
+  // reversed range's own `count`, `last` and `nth` read, of one made
+  // knowing its back, `$rev($iterator(range, $rangeNext, false,
+  // $rangeNextBack))`, as of `$iterator(range, $rangeNextBack)` (#721): a
+  // type generic code steps from its back, which each value of it is made
+  // knowing, through an `impl` that gives it as it is too (#1226).
+  if (it.of !== undefined) rev.of = it.of;
   return rev;
 }

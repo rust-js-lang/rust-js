@@ -16,10 +16,6 @@ plain std library refcell_borrow_while_mut.rs
 #1132 P2 (pointers): a pointer to an Option of an object that holds None, made of a reference or a box, is refused where it runs
 plain std boxed address_of_an_option_payload.rs
 
-#1226 P0 (impl Trait): a std adapter returned as impl Trait is compiled from std's bodies, but the code using it reads it as rust-js's JS-iterator form
-plain opaque rev_range_counted_beside_its_rfold.rs
-plain opaque take_rev_trims_from_the_back_in_each_holder.rs
-
 #1232 P0 (drops): an iterator a std consumer takes by value isn't dropped as its boxed function panics
 plain std dyn-fn consumed_iterator_dropped_as_its_function_panics.rs
 
@@ -67,7 +63,6 @@ plain std generic-instances own_steps_behind_adapters_unwind.rs
 plain std generic-instances panic_mid_iteration_drops.rs
 plain std generic-instances panic_part_way_drops.rs
 plain std generic-instances passed_item_drops_that_panic.rs
-plain generic-instances range_inclusive_exhausted.rs
 plain std generic-instances scan_dropped_once.rs
 plain std generic-instances shunt_steps_by_try_fold.rs
 plain std generic-instances size_hint_of_adapters.rs

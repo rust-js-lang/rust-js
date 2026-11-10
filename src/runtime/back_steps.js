@@ -287,14 +287,13 @@ function $stepByEnds(it, step, drop) {
 function $filterEnds(it, p, drop) {
   // Each item `p` keeps, the one it was asked of dropped where it throws,
   // a panic, as std's `Filter` holds it as it unwinds (#423), and each it
-  // doesn't by `drop`: `$kept`'s.
+  // doesn't by `drop`: `$kept`'s. Its step, std's `Filter::next`, its
+  // source's `find`, a `try_fold`: `$Steps`' own `filter`'s, which reaches
+  // its source's own, a `rev()`'s of a `take(n)`, which trims its back by
+  // its `try_rfold`, not by its `next_back` (#1226).
+  const front = $filterDropping(it, p, drop);
   const filter = new $Steps(
-    () => {
-      for (let at = it.next(); !at.done; at = it.next()) {
-        if ($kept(p, drop, at.value)) return at;
-      }
-      return { done: true, value: undefined };
-    },
+    () => front.next(),
     () => $closed(it),
   );
   // Std's `Filter::next_back`, its source's `rfind`, `$findBack`'s: its

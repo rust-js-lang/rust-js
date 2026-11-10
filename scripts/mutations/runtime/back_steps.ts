@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     name: "filter-ends-keeps-all",
     breaks: "a filter stepped from either end keeps every item, its test asked of none",
     file: "src/runtime/back_steps.js",
-    find: "      if ($kept(p, drop, at.value)) return at;\n",
-    replace: "      return at;\n",
+    find: "  const front = $filterDropping(it, p, drop);\n",
+    replace: "  const front = $filterDropping(it, () => true, drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^back_predicate_unwinds.rs$"],
   },
   {
@@ -294,8 +294,8 @@ export const mutations: Mutation[] = [
     name: "filter-ends-unclosed",
     breaks: "closing a `filter` stepped from its back doesn't close its source (#225)",
     file: "src/runtime/back_steps.js",
-    find: "      return { done: true, value: undefined };\n    },\n    () => $closed(it),\n",
-    replace: "      return { done: true, value: undefined };\n    },\n    () => {},\n",
+    find: "    () => front.next(),\n    () => $closed(it),\n",
+    replace: "    () => front.next(),\n    () => {},\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
   },
   {
@@ -326,8 +326,8 @@ export const mutations: Mutation[] = [
     name: "filter-ends-keeps-dropped",
     breaks: "a filter stepped from either end drops none it doesn't keep, of items with a destructor",
     file: "src/runtime/back_steps.js",
-    find: "      if ($kept(p, drop, at.value)) return at;\n",
-    replace: "      if ($kept(p, undefined, at.value)) return at;\n",
+    find: "  const front = $filterDropping(it, p, drop);\n",
+    replace: "  const front = $filterDropping(it, p, undefined);\n",
     tests: ["test/corpus.test.ts", "-t", "^back_predicate_unwinds.rs$"],
   },
   {
@@ -708,5 +708,15 @@ export const mutations: Mutation[] = [
     find: "    stepped.hold();\n    const folded = $consumed(stepped, () => tryRfold(",
     replace: "    const folded = $consumed(stepped, () => tryRfold(",
     tests: ["test/corpus.test.ts", "-t", "^step_by_source_dropped_at_its_folds_end.rs$"],
+  },
+  {
+    name: "filter-ends-steps-by-next",
+    breaks:
+      "a filter made knowing its back steps its source by `next`, not its `find`, a `try_fold`, as std's `Filter::next` does: of a `take(3)` reversed, what it trims drops 4 then 5 where Rust drops 5 then 4 (#1226)",
+    file: "src/runtime/back_steps.js",
+    find: "    () => front.next(),\n",
+    replace:
+      "    () => {\n      for (let at = it.next(); !at.done; at = it.next()) {\n        if ($kept(p, drop, at.value)) return at;\n      }\n      return { done: true, value: undefined };\n    },\n",
+    tests: ["test/corpus.test.ts", "-t", "^filter_of_a_take_reversed_trims_by_its_try_rfold.rs$"],
   },
 ];
