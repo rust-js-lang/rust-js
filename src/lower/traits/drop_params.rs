@@ -437,7 +437,7 @@ pub(in crate::lower) fn may_have_destructors(
 /// An associated type's drop in its impl's dictionary, `$dropOffset`: a
 /// name no Rust method can have, as `$drop` is (ADR 0178).
 pub(in crate::lower) fn item_drop_key(tcx: TyCtxt<'_>, item: DefId) -> String {
-    format!("$drop{}", tcx.item_name(item))
+    format!("$drop{}", super::words::item_word(tcx, item))
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {

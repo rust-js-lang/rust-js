@@ -47,4 +47,12 @@ export const mutations: Mutation[] = [
     replace: "            && helper.helper_name() == Some(\"$dropItemz\")\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_take_count_drops_a_slice.rs$"],
   },
+  {
+    name: "compiled-struct-dropped-as-made-of",
+    breaks: "std's compiled struct a dictionary makes the JS iterator it is, `$knowing`'s, is dropped as what an `$iterator` was made of, `it.of`, which it hasn't: \"reading 'return'\" (#1296)",
+    file: "src/lower/drops/functions.rs",
+    find: "        if !iterated || !self.has_drops(ty) || crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {\n",
+    replace: "        if !iterated || !self.has_drops(ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_trait_of_a_trait_method_dropped_by_its_dictionary.rs$"],
+  },
 ];

@@ -814,6 +814,25 @@ test("a library's generic function drops a consumer's iterator where Rust does",
   expect(printed(join(dir, "app.js"))).toBe("drop b\ndrop a\na\ncount dropped at 5\nSome(5)\n");
 }, 300_000);
 
+// A library's generic code that holds and drops what a trait method of its
+// gives behind an `impl Trait`, `S::hidden(3)`, has its drop from the
+// dictionary of its consumer's impl, `$dropHidden`, as an associated
+// type's, `$dropItem` (#1296): dropped where Rust drops it, in the library.
+test("a library's generic code drops a consumer's impl Trait by its dictionary", () => {
+  const dir = fixture("library-impl-trait-drops");
+  const lib = join(dir, "dep");
+  mkdirSync(lib, { recursive: true });
+  writeFileSync(join(dir, "dep.rs"), "pub trait Source {\n    fn hidden(n: u32) -> impl DoubleEndedIterator<Item = u32>;\n    fn loud(name: &'static str) -> impl Sized;\n}\npub fn last_of<S: Source>() -> Option<u32> {\n    let mut it = S::hidden(3);\n    let last = it.next_back();\n    println!(\"stepped\");\n    last\n}\npub fn held<S: Source>() {\n    let _kept = S::loud(\"kept\");\n    println!(\"holding\");\n}\n");
+  writeFileSync(join(dir, "app.rs"), "struct Loud(&'static str);\nimpl Drop for Loud {\n    fn drop(&mut self) {\n        println!(\"drop {}\", self.0);\n    }\n}\nstruct Tens;\nimpl dep::Source for Tens {\n    fn hidden(n: u32) -> impl DoubleEndedIterator<Item = u32> {\n        let guard = Loud(\"hidden\");\n        (0..n).map(move |x| {\n            let _ = &guard;\n            x * 10\n        })\n    }\n    fn loud(name: &'static str) -> impl Sized {\n        Loud(name)\n    }\n}\npub fn main() {\n    println!(\"{:?}\", dep::last_of::<Tens>());\n    dep::held::<Tens>();\n}\n");
+  run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "dep", "--edition=2024", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
+  expect(readFileSync(join(lib, "lib.js"), "utf8")).toContain("SSource.$dropHidden?.(it);");
+  run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "app", "--crate-type=lib", "--edition=2024", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
+  expect(readFileSync(join(dir, "app.js"), "utf8")).toContain("$dropHidden(map) {");
+  expect(printed(join(dir, "app.js"))).toBe("stepped\ndrop hidden\nSome(20)\nholding\ndrop kept\n");
+}, 300_000);
+
 // A library's generic fold drops the iterator its consumer gives once it's
 // done (ADR 0464); its peekable, which gives it back, is std's own, dropped
 // with what it holds when the consumer consumes it (ADR 0561).

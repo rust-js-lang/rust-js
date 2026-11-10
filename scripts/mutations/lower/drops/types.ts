@@ -295,8 +295,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic `a + b`'s `Output` with a destructor isn't dropped by its dictionary's `$dropOutput`, and is refused",
     file: "src/lower/drops/types.rs",
-    find: "        (!tcx.is_impl_trait_in_trait(def_id)).then(|| (alias.trait_ref(tcx), def_id))\n",
-    replace: "        None\n",
+    find: "        carried.then(|| (alias.trait_ref(tcx), def_id))\n",
+    replace: "        carried.then(|| (alias.trait_ref(tcx), def_id)).and(None)\n",
     tests: ["test/corpus.test.ts", "-t", "^operator_output_drops.rs$"],
   },
   {
@@ -463,5 +463,21 @@ export const mutations: Mutation[] = [
     find: "        if ref_cells.maps_to(tcx, ty) {\n            return false;\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_guards_mapped.rs$"],
+  },
+  {
+    name: "impl-trait-item-drop-unasked",
+    breaks: "generic code holding what a trait method gives behind an `impl Trait` asks no dictionary for its drop, and is refused (#1296)",
+    file: "src/lower/drops/types.rs",
+    find: "        let carried = !tcx.is_impl_trait_in_trait(def_id)\n            || crate::lower::traits::one_impl_trait_of(tcx, def_id) && tcx.generics_of(def_id).own_params.is_empty();\n",
+    replace: "        let carried = !tcx.is_impl_trait_in_trait(def_id);\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_trait_of_a_trait_method_dropped_by_its_dictionary.rs$"],
+  },
+  {
+    name: "impl-traits-beside-another-unnamed",
+    breaks: "the refusal of a value of a trait method's `impl Trait` beside another in its signature doesn't name #1320, which would carry it",
+    file: "src/lower/drops/types.rs",
+    find: "                (false, true) if self.shares_its_word(ty) => Drops::Unsupported(\n",
+    replace: "                (false, true) if false && self.shares_its_word(ty) => Drops::Unsupported(\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_traits_beside_another_of_a_trait_method.rs$"],
   },
 ];

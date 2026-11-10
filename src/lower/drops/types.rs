@@ -197,7 +197,11 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         else {
             return None;
         };
-        (!tcx.is_impl_trait_in_trait(def_id)).then(|| (alias.trait_ref(tcx), def_id))
+        // A trait method's `impl Trait`'s, where its dictionary has one
+        // (`item_types`, #1296).
+        let carried = !tcx.is_impl_trait_in_trait(def_id)
+            || crate::lower::traits::one_impl_trait_of(tcx, def_id) && tcx.generics_of(def_id).own_params.is_empty();
+        carried.then(|| (alias.trait_ref(tcx), def_id))
     }
 
     /// `ty`, an associated type, normalized where its bounds say what it is.
@@ -211,6 +215,15 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
     /// not (ADR 0489).
     fn is_slot(&self, alias: ty::AliasTy<'tcx>) -> bool {
         self.state.slots.contains(&alias)
+    }
+
+    /// Whether `ty` is a trait method's `impl Trait` beside another in its
+    /// signature, which its dictionary carries nothing of (`one_impl_trait_of`,
+    /// #1320).
+    fn shares_its_word(&self, ty: Ty<'tcx>) -> bool {
+        let tcx = self.recognition.tcx;
+        matches!(*ty.kind(), ty::Alias(_, ty::AliasTy { kind: ty::Projection { def_id }, .. })
+            if tcx.is_impl_trait_in_trait(def_id) && !crate::lower::traits::one_impl_trait_of(tcx, def_id))
     }
 
     /// Is an associated type's drop given, in a dictionary this function has?
@@ -554,6 +567,12 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 },
             ) if self.recognition.is_unknown(ty) => match (self.has_item_drop(ty), self.may_have_destructors()) {
                 (true, true) => Drops::Runs,
+                // A trait method's `impl Trait` of more than one its signature
+                // has, which its dictionary carries no drop of (#1320).
+                (false, true) if self.shares_its_word(ty) => Drops::Unsupported(
+                    ty,
+                    "a value of a trait method's `impl Trait` beside another in its signature (#1320), where a type may have a destructor",
+                ),
                 (false, true) => {
                     Drops::Unsupported(ty, "a value of an associated type, where a type may have a destructor")
                 }

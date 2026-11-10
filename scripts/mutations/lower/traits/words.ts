@@ -124,4 +124,12 @@ export const mutations: Mutation[] = [
     replace: "        .filter(|&other| tcx.impl_trait_id(other) == tcx.impl_trait_id(id) && named(other, false, &module_of(other)) == name)\n",
     tests: ["test/corpus.test.ts", "-t", "^traits_of_one_name_in_const_blocks.rs$"],
   },
+  {
+    name: "impl-trait-word-uncapitalized",
+    breaks: "what a trait method's `impl Trait` is called in its dictionary's keys is its method's name as it is, `$drophidden`, not as an associated type's reads, `$dropHidden` (#1296)",
+    file: "src/lower/traits/words.rs",
+    find: "                .map_or(name.clone(), |first| first.to_uppercase().chain(chars).collect())\n",
+    replace: "                .map_or(name.clone(), |first| std::iter::once(first).chain(chars).collect())\n",
+    tests: ["test/crates.test.ts", "-t", "drops a consumer's impl Trait by its dictionary"],
+  },
 ];

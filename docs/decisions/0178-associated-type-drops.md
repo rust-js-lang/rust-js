@@ -72,3 +72,53 @@ caller's drop (`has_generic_drop`): after a consumer that doesn't close it,
 `collect()`, and closed with the adapters that hold it, `rev()`; a callee
 given such a type is given its drop, where an impl gives the type one whose
 drop runs (`item_may_drop`). Corpus case `associated_iterator_dropped`.
+
+## Amendment: a trait method's `impl Trait` is dropped by its dictionary too (2026-11-11, #1296)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): a refusal lifted;
+results kept as Rust's.
+
+What a trait method gives behind an `impl Trait`, `fn hidden(n: u32) ->
+impl DoubleEndedIterator<Item = u32>`, is rustc's anonymous associated
+type of its trait. Generic code holding one and dropping it,
+`let mut it = S::hidden(3); it.next_back()`, was refused wherever a type
+of the crate may have a destructor ("a value of an associated type,
+where a type may have a destructor"), in a library and in a program. No
+dictionary carried its drop: `item_types` and `item_drop_of` left out an
+`impl Trait`, and `item_drop_key` read an item's name, which an
+anonymous associated type hasn't.
+
+A dictionary now carries an `impl Trait`'s drop as it carries a named
+associated type's. Its key's word is its method's name, capitalized as
+an associated type's name is, so it reads as `$dropItem` does:
+`$dropHidden`, `$dropLoud` (`item_word`, traits/words.rs, which
+`item_fact_key` builds `HiddenConstSize` of for #1312; m6-react's
+decision for the user, 2026-11-11). Generic code reads it as any item's,
+`SSource.$dropHidden?.(it)`. An impl whose value drops nothing has
+none. Of std's compiled struct, which a dictionary makes the JS iterator
+it is, `$knowing(struct, ..)` (#1292), the drop is its own,
+`$dropHidden(map) { map.return(); }`, not #978's `it.of`, which only an
+`$iterator(value, ..)` has. That drop threw "reading 'return'", and the
+same was latent in #1292's `type Iter = Map<..>` wherever its closure
+holds a value with a destructor (`held_drop_function`).
+
+Left out: a method with more than one `impl Trait` in its signature, `->
+(impl A, impl B)`, whose two would share a word. Its value is refused as
+before, now naming #1320 (`one_impl_trait_of`, `shares_its_word`). A
+method with generics of its own, whose `impl Trait`'s entry is a function
+of them, is #1312's.
+
+`test/corpus/impl_trait_of_a_trait_method_dropped_by_its_dictionary.rs`
+(a compiled `Map` whose closure holds a `Loud`, an `impl Sized` that is
+one, and an impl of neither) runs against native Rust in both builds and
+as a library. `test/crates.test.ts`'s "a library's generic code drops a
+consumer's impl Trait by its dictionary" covers a library's generic code
+and a consumer's impl. `test/corpus/impl_traits_beside_another_of_a_trait_method.rs`
+holds the #1320 refusal. Mutations: `impl-trait-item-uncarried`,
+`impl-trait-item-drop-unasked`, `impl-traits-beside-another-unnamed`,
+`compiled-struct-dropped-as-made-of` and `impl-trait-word-uncapitalized`;
+`operator-output-drop-unseen` refitted. The same refusal of the
+neighbours net, `associated_iterator_of_stds_struct_from_its_back.rs`
+beside `compiled_adapters_closed_as_a_collect_unwinds.rs` in the build of
+std's structs, whose neighbour made the drop asked (#1319), runs as native
+Rust, its line off `test/neighbours-known.txt`.

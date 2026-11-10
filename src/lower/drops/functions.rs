@@ -158,7 +158,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// drop, `drop.each`, what a `Vec`'s slice it passes over is dropped by
     /// (#718).
     pub(in crate::lower) fn held_drop_function(&mut self, ty: Ty<'tcx>, iterated: bool, span: Span) -> R<Option<Expr>> {
-        if !iterated || !self.has_drops(ty) {
+        // Of std's compiled struct, which a dictionary makes the JS iterator
+        // it is, `$knowing(struct, ..)` (#1292): its own (#1296).
+        if !iterated || !self.has_drops(ty) || crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {
             return self.drop_function(ty, span);
         }
         // A type parameter's, or an associated type's of one, `I::IntoIter`

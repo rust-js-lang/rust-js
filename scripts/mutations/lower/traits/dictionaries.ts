@@ -738,4 +738,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^io_buf_read.rs$"],
   },
 
+  {
+    name: "impl-trait-item-uncarried",
+    breaks: "an impl's dictionary carries no drop of what a trait method gives behind an `impl Trait`, so generic code holding one, where a type may have a destructor, is refused (#1296)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                    && (!item.is_impl_trait_in_trait() || super::words::one_impl_trait_of(self.tcx, item.def_id))\n",
+    replace: "                    && !item.is_impl_trait_in_trait()\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_trait_of_a_trait_method_dropped_by_its_dictionary.rs$"],
+  },
 ];
