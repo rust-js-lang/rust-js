@@ -75,19 +75,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "copied_closure_bound"],
   },
   {
-    name: "relayed-copy-lost",
-    breaks:
-      "a type parameter passed on to a function that copies isn't given a copy itself, so `relay(p)` shares `p`'s object",
-    file: "src/lower/analysis/mutation.rs",
-    find: "            if given.contains(&from) && given.insert(to) {",
-    replace: "            if false && given.insert(to) {",
-    tests: [
-      "test/lowering-functions.test.ts",
-      "-t",
-      "a Copy bound takes a copy only",
-    ],
-  },
-  {
     name: "trait-method-copies-by-callers",
     breaks:
       "a trait method's `Copy` bound is decided by the crate's direct calls, though it's called through a dictionary",
@@ -213,19 +200,6 @@ export const mutations: Mutation[] = [
     find: "        ty::Adt(..)\n            if crate::lower::recognition::rc_pointee(tcx, ty).is_some()\n                || crate::lower::recognition::weak_pointee(tcx, ty).is_some() =>\n        {\n            false\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_assigned_through_mut.rs$"],
-  },
-  {
-    name: "clone-given-of-its-own-clone",
-    breaks:
-      "a `T: Clone` given only what's its own clone, `Option<Rc<Cache>>`, still takes a `TClone`, and its clone under a library's unchecked borrow is refused (ADR 0914, amended)",
-    file: "src/lower/analysis/mutation.rs",
-    find: "                    _ if itself(given_ty) => {}\n",
-    replace: "",
-    tests: [
-      "test/cross-crate-items.test.ts",
-      "-t",
-      "judged by what its callers give",
-    ],
   },
   {
     name: "string-clone-not-itself",

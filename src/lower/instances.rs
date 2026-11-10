@@ -1136,6 +1136,61 @@ fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Bo
     }
 }
 
+/// Of `items`, each type parameter `bounded` names that some caller gives
+/// what isn't `itself`, carried through generic callers: a caller's own type
+/// parameter given on is given what that one is. A function `seen_whole`
+/// says isn't, whose callers aren't all its crate's calls, is given every
+/// type. The carrier's second question beside `instances_of`'s (ADR 1115):
+/// `instances_of` answers which types, of a function whose visibility says
+/// its callers are seen; this whether any fails `itself`, of one
+/// `seen_whole` says is, `copies_by_callers` for the copies, clones and
+/// `Some`s a caller gives (ADRs 0289, 0914, 0051), as a consumer that gives
+/// more compiles its own and JS's is a copy apart.
+pub(super) fn params_given<'a, 'tcx>(
+    callers: &Callers<'tcx>,
+    (items, is_item): (impl Iterator<Item = &'a DefId>, &dyn Fn(DefId) -> bool),
+    seen_whole: &dyn Fn(DefId) -> bool,
+    bounded: &dyn Fn(DefId) -> Vec<u32>,
+    itself: &dyn Fn(Ty<'tcx>) -> bool,
+) -> IndexSet<(DefId, u32)> {
+    let mut given = IndexSet::default();
+    for &id in items {
+        if !seen_whole(id) {
+            given.extend(bounded(id).into_iter().map(|index| (id, index)));
+        }
+    }
+    let mut passed = Vec::new();
+    for (&callee, calls) in callers {
+        if !is_item(callee) {
+            continue;
+        }
+        for &(caller, args) in calls {
+            for index in bounded(callee) {
+                let Some(given_ty) = args.get(index as usize).and_then(|arg| arg.as_type()) else {
+                    continue;
+                };
+                match given_ty.kind() {
+                    ty::Param(param) => passed.push(((caller, param.index), (callee, index))),
+                    _ if itself(given_ty) => {}
+                    _ => {
+                        given.insert((callee, index));
+                    }
+                }
+            }
+        }
+    }
+    let mut changed = true;
+    while changed {
+        changed = false;
+        for &(from, to) in &passed {
+            if given.contains(&from) && given.insert(to) {
+                changed = true;
+            }
+        }
+    }
+    given
+}
+
 /// Each function the crate names, called or as a value, and each naming of
 /// it: by what, its body's owner, and its generic arguments there.
 pub(super) type Callers<'tcx> = IndexMap<DefId, Vec<(DefId, ty::GenericArgsRef<'tcx>)>>;

@@ -14,7 +14,7 @@ src/lower/analysis/iterator_steps.rs	13
 src/lower/analysis/js_given.rs	5
 src/lower/analysis/lazy_locals.rs	1
 src/lower/analysis/may_run.rs	1
-src/lower/analysis/mutation.rs	2
+src/lower/analysis/mutation.rs	1
 src/lower/analysis/rc_counts.rs	2
 src/lower/analysis/stored_places.rs	1
 src/lower/analysis/type_facts.rs	15
@@ -40,7 +40,7 @@ src/lower/drops/ref_cells.rs	3
 src/lower/drops/scopes.rs	1
 src/lower/drops/types.rs	7
 src/lower/drops/uses.rs	1
-src/lower/instances.rs	11
+src/lower/instances.rs	12
 src/lower/iterators.rs	11
 src/lower/iterators/clones.rs	3
 src/lower/iterators/hint_asks.rs	9

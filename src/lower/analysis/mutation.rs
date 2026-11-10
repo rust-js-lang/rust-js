@@ -392,6 +392,8 @@ pub(super) fn type_params(tcx: TyCtxt<'_>, id: DefId) -> Vec<u32> {
 /// one of a function a dictionary may call, and of the others those a
 /// caller of the crate's gives a value it isn't `itself` of, or a type
 /// parameter of its own that is one.
+/// Carried by `instances.rs`' `params_given`, `copies_by_callers` its
+/// policy of a function seen whole (ADR 1115).
 fn given_params<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
@@ -400,44 +402,14 @@ fn given_params<'a, 'tcx>(
     bounded: &dyn Fn(DefId) -> Vec<u32>,
     itself: &dyn Fn(Ty<'tcx>) -> bool,
 ) -> IndexSet<(DefId, u32)> {
-    let mut given = IndexSet::default();
-    for &id in items {
-        if !copies_by_callers(tcx, foreign, id) {
-            given.extend(bounded(id).into_iter().map(|index| (id, index)));
-        }
-    }
-    let mut passed = Vec::new();
-    // Each call's, as the callers' instances are carried (ADR 1115).
     let callers = crate::lower::instances::callers_of(tcx, all_bodies);
-    for (&callee, calls) in &callers {
-        if !is_item(callee) {
-            continue;
-        }
-        for &(caller, args) in calls {
-            for index in bounded(callee) {
-                let Some(given_ty) = args.get(index as usize).and_then(|arg| arg.as_type()) else {
-                    continue;
-                };
-                match given_ty.kind() {
-                    ty::Param(param) => passed.push(((caller, param.index), (callee, index))),
-                    _ if itself(given_ty) => {}
-                    _ => {
-                        given.insert((callee, index));
-                    }
-                }
-            }
-        }
-    }
-    let mut changed = true;
-    while changed {
-        changed = false;
-        for &(from, to) in &passed {
-            if given.contains(&from) && given.insert(to) {
-                changed = true;
-            }
-        }
-    }
-    given
+    crate::lower::instances::params_given(
+        &callers,
+        (items, is_item),
+        &|id| copies_by_callers(tcx, foreign, id),
+        bounded,
+        itself,
+    )
 }
 
 /// Whether `id`'s type parameter `index`'s `Clone` bound takes no

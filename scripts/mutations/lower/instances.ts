@@ -466,4 +466,30 @@ export const mutations: Mutation[] = [
     replace: "            if let Some(called) = super::fn_def(constant.ty()) {\n",
     tests: ["test/crates.test.ts", "-t", "library_some_through_a_dyn"],
   },
+  {
+    name: "relayed-copy-lost",
+    breaks:
+      "a type parameter passed on to a function that copies isn't given a copy itself, so `relay(p)` shares `p`'s object",
+    file: "src/lower/instances.rs",
+    find: "            if given.contains(&from) && given.insert(to) {",
+    replace: "            if false && given.insert(to) {",
+    tests: [
+      "test/lowering-functions.test.ts",
+      "-t",
+      "a Copy bound takes a copy only",
+    ],
+  },
+  {
+    name: "clone-given-of-its-own-clone",
+    breaks:
+      "a `T: Clone` given only what's its own clone, `Option<Rc<Cache>>`, still takes a `TClone`, and its clone under a library's unchecked borrow is refused (ADR 0914, amended)",
+    file: "src/lower/instances.rs",
+    find: "                    _ if itself(given_ty) => {}\n",
+    replace: "",
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "judged by what its callers give",
+    ],
+  },
 ];
