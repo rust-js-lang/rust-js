@@ -590,6 +590,10 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
   nth ??= $rangeNthOf(next);
   nthBack ??= nextBack && $rangeNthOf(nextBack);
   hint ??= $rangeHintOf(next);
+  // And its `advance_by` and `advance_back_by`, std's, of its bounds, which
+  // a chain's `advance_by` of it asks, and a `rev()`'s of it (#1240).
+  const advance = $rangeAdvanceOf(next);
+  const advanceBack = nextBack && $rangeAdvanceOf(nextBack);
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = new $Steps(() => step(next(iterator)));
   // An inclusive range's own `try_fold`, std's, which what folds it asks,
@@ -628,6 +632,8 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
     last: last && (() => step(last(iterator))),
     nthBack: nthBack && ((k) => step(nthBack(iterator, k))),
     count: count && (() => count(iterator)),
+    advanceBy: advance && ((m) => advance(iterator, m)),
+    advanceBackBy: advanceBack && ((m) => advanceBack(iterator, m)),
   });
   // `ownNth`, `ownNthBack` and the like say each is the crate's own, which
   // drops what it passes itself, or takes it, where std's defaults of a
@@ -5352,6 +5358,23 @@ export function $rangeNthOf(next) {
   };
 }
 
+// The `advance_by(m)` of a range stepped by `next`, `$rangeNthOf`'s: std's
+// `Range::advance_by`, of its bounds, how many of `m` there weren't, so a
+// chain's or a `rev()`'s `advance_by` of it, a `skip`'s, doesn't step each
+// number (#1240). `undefined` of another `next`.
+export function $rangeAdvanceOf(next) {
+  const nth = $rangeNthOf(next);
+  const hint = $rangeHintOf(next);
+  if (nth === undefined || hint === undefined) return undefined;
+  return (range, m) => {
+    if (m === 0) return 0;
+    // Of `usize::MAX` or more left, its lower bound, as many as `m` at most.
+    const [left] = hint(range);
+    nth(range, m - 1);
+    return Math.max(0, m - left);
+  };
+}
+
 export function $nextBackSome(it) {
   const step = it.back();
   return step.done ? undefined : $some(step.value);
@@ -5568,8 +5591,8 @@ export function $parseBig(s, min, max, radix = 10) {
 
 // A range's numbers, made as they're stepped, `step` apart: `$lazyRange(0,
 // n)` of `0..n`, `$lazyRange(0, n, 3)` of `(0..n).step_by(3)`. Its `nth`
-// is std's `Range::nth`, of its bounds, which `skip` and `step_by` step it
-// by, so they don't make each number (#231).
+// and `advance_by` are std's `Range`'s, of its bounds, which `skip` and
+// `step_by` step it by, so they don't make each number (#231, #1240).
 export function $lazyRange(start, end = Infinity, step = 1) {
   let at = start;
   const range = new $Steps(() => {
@@ -5582,6 +5605,15 @@ export function $lazyRange(start, end = Infinity, step = 1) {
     nth: (k) => {
       if (k > 0 && at < end) at = Number(at) + k * step;
       return range.next();
+    },
+    // And its `advance_by(m)`, std's `Range::advance_by`, of its bounds, how
+    // many of `m` there weren't, which a chain's `advance_by` of it asks, a
+    // `skip`'s (#1240).
+    advanceBy: (m) => {
+      const left = !(at < end) ? 0 : end === Infinity ? Infinity : Math.ceil((Number(end) - Number(at)) / step);
+      const passed = Math.min(m, left);
+      if (passed > 0) at = Number(at) + passed * step;
+      return m - passed;
     },
   });
   // Its `size_hint`, std's, exact, of how many it has left; of `n..`,

@@ -114,4 +114,12 @@ export const mutations: Mutation[] = [
     replace: "    const left = b - a;\n",
     tests: ["test/corpus.test.ts", "-t", "^range_hints_given.rs$"],
   },
+  {
+    name: "range-advance-of-none",
+    breaks: "a range given to generic code has no `advance_by` of its bounds, so a skip of it through a chain steps each number (#1240)",
+    file: "src/runtime/range_len.js",
+    find: "  if (nth === undefined || hint === undefined) return undefined;\n  return (range, m) => {",
+    replace: "  return undefined;\n  return (range, m) => {",
+    tests: ["test/corpus.test.ts", "-t", "^range_advanced_by_its_bounds\\.rs$"],
+  },
 ];

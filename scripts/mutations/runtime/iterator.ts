@@ -279,4 +279,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_reversed_skipped_beside_its_back_stepped.rs$"],
   },
+  {
+    name: "given-range-advance-by-steps",
+    breaks: "a generic `skip(4_000_000_000)` of a chain of `(0..u32::MAX).rev()` given as a range stepped by its back steps each number, `$iterator` giving it no `advance_by` of its bounds (#1240)",
+    file: "src/runtime/iterator.js",
+    find: "    advanceBy: advance && ((m) => advance(iterator, m)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^range_advanced_by_its_bounds\\.rs$"],
+  },
+  {
+    name: "given-range-advance-back-by-steps",
+    breaks: "a compiled `Rev`'s `advance_by` of a range given with its dictionaries steps each number back, `$iterator` giving it no `advance_back_by` of its bounds (#1240)",
+    file: "src/runtime/iterator.js",
+    find: "    advanceBackBy: advanceBack && ((m) => advanceBack(iterator, m)),\n",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^range_advanced_by_its_bounds with std's iterator structs$"],
+  },
 ];

@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "    const left = (n) => n;\n",
     tests: ["test/corpus.test.ts", "-t", "^counted_iterators_held_ask_room.rs$"],
   },
+  {
+    name: "lazy-range-advance-by-steps",
+    breaks: "a generic `skip(4_000_000_000)` of a chain of `0..u32::MAX` steps each number, `$lazyRange` having no `advance_by` of its bounds, where std's `Range::advance_by` ends at once (#1240)",
+    file: "src/runtime/lazy_range.js",
+    find: "      if (passed > 0) at = Number(at) + passed * step;\n      return m - passed;\n",
+    replace: "      for (let k = 0; k < passed; k++) at = Number(at) + step;\n      return m - passed;\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_advanced_by_its_bounds\\.rs$"],
+  },
 ];

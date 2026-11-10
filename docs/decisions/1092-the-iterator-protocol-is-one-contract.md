@@ -1434,3 +1434,24 @@ collect's temporary does. Results changed
 Held by the conformance table's 48 cases and the points table's 16,
 listed under #1004 until the fix, the corpus case `shunt_steps_by_try_fold`,
 and the mutations `shunt-steps-by-next` and `shunt-end-left-open`.
+
+## Amendment: a range has std's `advance_by` too (2026-11-10, #1240)
+
+A range given to generic code had std's `Range::nth` of its bounds (#231)
+and `nth_back` (#950), but no `advance_by`, which std's `Chain::advance_by`
+asks of its side, and a `skip` of a chain asks that: so
+`(0..u32::MAX).chain(empty()).skip(4_000_000_000).next()` in generic code
+stepped each of four billion numbers, past the net's ten seconds, where
+native Rust prints `Some(4000000000)` at once; so did a reversed range's
+`advance_back_by`, which a compiled `Rev`'s `advance_by` asks. A range made
+`$lazyRange` and one given with its step, `$iterator`'s, have std's
+`advance_by` and `advance_back_by` now, of their bounds,
+`$rangeAdvanceOf` beside `$rangeNthOf`. Results are the same, the numbers
+having no side effects; the time isn't, which a program that skips that far
+can't wait out, so std's form is kept
+([0262](0262-when-rust-and-js-disagree.md): none observable but the time).
+An inclusive range's, whose std `advance_by` is the default of `next`,
+ends where `nth` past its end leaves it, as std's does. Held by
+`range_advanced_by_its_bounds.rs`, both builds, and four mutations; the
+`generic-instances` rows of `range_reversed_skipped_beside_its_back_stepped`
+run as Rust does.

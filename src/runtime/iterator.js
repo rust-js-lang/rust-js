@@ -18,6 +18,10 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
   nth ??= $rangeNthOf(next);
   nthBack ??= nextBack && $rangeNthOf(nextBack);
   hint ??= $rangeHintOf(next);
+  // And its `advance_by` and `advance_back_by`, std's, of its bounds, which
+  // a chain's `advance_by` of it asks, and a `rev()`'s of it (#1240).
+  const advance = $rangeAdvanceOf(next);
+  const advanceBack = nextBack && $rangeAdvanceOf(nextBack);
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = new $Steps(() => step(next(iterator)));
   // An inclusive range's own `try_fold`, std's, which what folds it asks,
@@ -56,6 +60,8 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
     last: last && (() => step(last(iterator))),
     nthBack: nthBack && ((k) => step(nthBack(iterator, k))),
     count: count && (() => count(iterator)),
+    advanceBy: advance && ((m) => advance(iterator, m)),
+    advanceBackBy: advanceBack && ((m) => advanceBack(iterator, m)),
   });
   // `ownNth`, `ownNthBack` and the like say each is the crate's own, which
   // drops what it passes itself, or takes it, where std's defaults of a

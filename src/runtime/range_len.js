@@ -186,3 +186,20 @@ function $rangeNthOf(next) {
     return next(range);
   };
 }
+
+// The `advance_by(m)` of a range stepped by `next`, `$rangeNthOf`'s: std's
+// `Range::advance_by`, of its bounds, how many of `m` there weren't, so a
+// chain's or a `rev()`'s `advance_by` of it, a `skip`'s, doesn't step each
+// number (#1240). `undefined` of another `next`.
+function $rangeAdvanceOf(next) {
+  const nth = $rangeNthOf(next);
+  const hint = $rangeHintOf(next);
+  if (nth === undefined || hint === undefined) return undefined;
+  return (range, m) => {
+    if (m === 0) return 0;
+    // Of `usize::MAX` or more left, its lower bound, as many as `m` at most.
+    const [left] = hint(range);
+    nth(range, m - 1);
+    return Math.max(0, m - left);
+  };
+}

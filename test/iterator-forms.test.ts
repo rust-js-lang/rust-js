@@ -97,6 +97,9 @@ const few = [
   "generic_folds_unwind.rs",
   "own_folds_unwind.rs",
   "range_inclusive_exhausted.rs",
+  // A range given to generic code advanced by its bounds, a compiled
+  // `Rev`'s `advance_by` of it its `advance_back_by` (#1240).
+  "range_advanced_by_its_bounds.rs",
   "panic_in_own_next_drops.rs",
   "panic_in_own_rfold_drops.rs",
   "panic_mid_fold_drops.rs",
