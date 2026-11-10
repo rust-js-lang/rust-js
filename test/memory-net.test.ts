@@ -7,10 +7,13 @@
 // target/memory-net/ with what each run printed, and reduced (#1088). What
 // rust-js refuses is counted by its reason, each part's in
 // target/memory-net/refused-<part>.json, so the model's next pieces are
-// chosen by need; the seeds a push runs, `slice`, compile but those
-// test/memory-net-known.txt lists, with why, so the list only shrinks.
-// Each push runs the slice where the pointers' code changes; the nightly
-// 400 seeds from the day's (`MEMORY_NET=all`).
+// chosen by need. What isn't yet as native Rust's is in
+// test/memory-net-known.txt by what it is, not by seed: a refusal by its
+// reason, a wrong answer by the form of the operation that first prints
+// otherwise, so a known one passes in any seed while a new one fails. The
+// slice and the nightly read it alike. Each push runs the slice where the
+// pointers' code changes; the nightly 400 seeds from the day's
+// (`MEMORY_NET=all`).
 //
 //   bun test test/memory-net.test.ts                                                        # the slice
 //   MEMORY_NET=all MEMORY_NET_START=5000 RUST_JS_CASES=1/4 bun test test/memory-net.test.ts  # 400 seeds from 5000, a quarter
@@ -42,17 +45,44 @@ const seeds = which === "all" ? Array.from({ length: nightly }, (_, i) => start 
 const [part, parts] = (process.env.RUST_JS_CASES ?? "1/1").split("/").map(Number);
 const chosen = seeds.filter((_, i) => i % parts === part - 1);
 
-/** The slice's seeds rust-js refuses, each with why, a line each, `<seed>
- * <build>: <why>`: one it compiles is taken off. */
-const known = new Map(
-  readFileSync(join(root, "test", "memory-net-known.txt"), "utf8")
+/** What rust-js doesn't yet do as native Rust does, filed, a line each of
+ * test/memory-net-known.txt: a refusal whose reason holds `signature`, or a
+ * wrong answer first printed by an operation of form `signature`. */
+type Known = { kind: "refused" | "wrong"; signature: string; line: string };
+export function knownOf(text: string): Known[] {
+  return text
     .split("\n")
     .filter((line) => line.trim() !== "" && !line.startsWith("#"))
     .map((line) => {
-      const at = line.indexOf(":");
-      return [line.slice(0, at).trim(), line.slice(at + 1).trim()] as const;
-    }),
-);
+      const parsed = /^(refused|wrong) (.+): #\d+ .+$/.exec(line);
+      if (parsed === null) throw new Error(`test/memory-net-known.txt: \`${line}\` isn't \`refused <its reason's words>: #<issue> <why>\` nor \`wrong <family>/<form>: #<issue> <why>\``);
+      return { kind: parsed[1] as Known["kind"], signature: parsed[2], line };
+    });
+}
+const known = knownOf(readFileSync(join(root, "test", "memory-net-known.txt"), "utf8"));
+/** How many programs met each known line, of this part. */
+const met = new Map<string, number>();
+
+/** The known line a refusal's reason or a wrong answer's form is, if any:
+ * counted as met. */
+function knownAs(kind: Known["kind"], what: string): Known | undefined {
+  const found = known.find((k) => k.kind === kind && (kind === "refused" ? what.includes(k.signature) : what === k.signature));
+  if (found !== undefined) met.set(found.line, (met.get(found.line) ?? 0) + 1);
+  return found;
+}
+
+/** The form of the operation whose line a run first prints otherwise than
+ * native Rust, or first leaves unprinted: each line starts with its
+ * operation's number. None where every line is native's, and only how it
+ * ended differs. */
+export function firstOtherwise(native: string, ran: string, forms: string[]): string | undefined {
+  const theirs = native.trimEnd().split("\n");
+  const ours = ran.trimEnd().split("\n");
+  const at = Array.from({ length: Math.max(theirs.length, ours.length) }, (_, i) => i).find((i) => theirs[i] !== ours[i]);
+  const line = at === undefined ? undefined : (theirs[at] ?? ours[at]);
+  const op = line === undefined ? null : /^(\d+) /.exec(line);
+  return op === null ? undefined : forms[Number(op[1]) - 1];
+}
 
 /** The two builds, as the corpus's. */
 const builds: [string, string[]][] = [
@@ -76,17 +106,23 @@ export function reasonOf(error: string): string {
   return line.replace(/^.*?rust-js( does not support|:)?\s*/, "").replace(/\b\d+\b/g, "N").trim();
 }
 
-test("the known refusals are of the slice's seeds and builds", () => {
-  for (const key of known.keys()) {
-    const [seed, build] = key.split(" ");
-    expect(slice).toContain(Number(seed));
-    expect(builds.map(([b]) => b)).toContain(build);
-  }
+test("each known wrong answer is of a form the generator makes", () => {
+  const made = new Set(Array.from({ length: 1000 }, (_, i) => memoryProgram(i + 1).forms).flat());
+  for (const k of known) if (k.kind === "wrong") expect(made, k.line).toContain(k.signature);
+});
+
+test("a wrong answer is the form of the operation that first prints otherwise", () => {
+  const forms = ["arith/write", "views/bytes", "copies/copy"];
+  const native = "1 a0 [1, 2]\n2 x2 [3]\n3 a1 [4]\n";
+  expect(firstOtherwise(native, "1 a0 [1, 2]\n2 x2 [9]\n3 a1 [4]\n", forms)).toBe("views/bytes");
+  expect(firstOtherwise(native, "1 a0 [1, 2]\n", forms)).toBe("views/bytes");
+  expect(firstOtherwise(native, native, forms)).toBeUndefined();
+  expect(firstOtherwise(native, `${native}3 a1 [5]\n`, forms)).toBe("copies/copy");
 });
 
 for (const seed of chosen) {
   test(`seed ${seed}`, () => {
-    const { text, swarm } = memoryProgram(seed);
+    const { text, swarm, forms } = memoryProgram(seed);
     const dir = fixture(`memory-${seed}`);
     // Where its text says, so the same program is one kept native binary.
     const file = join(contentDirectory(text), "program.rs");
@@ -100,20 +136,15 @@ for (const seed of chosen) {
     const problems: string[] = [];
     for (const [build, flags] of builds) {
       const key = `${seed} ${build}`;
-      // What went otherwise than native Rust, a refusal or a wrong answer:
-      // of the slice, one test/memory-net-known.txt lists is as it says.
-      const went = (problem: string) => {
-        if (which !== "all" && known.has(key)) return;
-        problems.push(problem);
-      };
       const compiled = compileJs(file, dir, "2024", false, {}, flags);
       if ("error" in compiled) {
         if (compiled.kind === "crashed") {
-          went(`${key}: rust-js crashed: ${compiled.reason}\n${compiled.error.slice(0, 2000)}`);
+          problems.push(`${key}: rust-js crashed: ${compiled.reason}\n${compiled.error.slice(0, 2000)}`);
           continue;
         }
-        refused(build, reasonOf(compiled.error), seed);
-        if (which !== "all") went(`${key}: refused, and it isn't in test/memory-net-known.txt:\n${compiled.error.split("\n").slice(0, 6).join("\n")}`);
+        const reason = reasonOf(compiled.error);
+        refused(build, reason, seed);
+        if (knownAs("refused", reason) === undefined) problems.push(`${key}: refused, and its reason isn't in test/memory-net-known.txt:\n${compiled.error.split("\n").slice(0, 6).join("\n")}`);
         continue;
       }
       const [runtime, cmd] = runtimes[0];
@@ -122,16 +153,16 @@ for (const seed of chosen) {
       // as native Rust up to it: counted as a refusal, at run time.
       const error = typeof ran.outcome === "object" && "error" in ran.outcome ? String(ran.outcome.error) : "";
       if (error.includes("rust-js does not support") && native.bytes.stdout.subarray(0, ran.bytes.stdout.length).equals(ran.bytes.stdout)) {
-        refused(build, `at run time: ${reasonOf(error)}`, seed);
-        if (which !== "all") went(`${key}: refused where it runs, and it isn't in test/memory-net-known.txt:\n${error}`);
+        const reason = `at run time: ${reasonOf(error)}`;
+        refused(build, reason, seed);
+        if (knownAs("refused", reason) === undefined) problems.push(`${key}: refused where it runs, and its reason isn't in test/memory-net-known.txt:\n${error}`);
         continue;
       }
-      if (agree(ran, native)) {
-        if (known.has(key)) problems.push(`${key} runs as Rust does now: take it off test/memory-net-known.txt (${known.get(key)})`);
-        continue;
-      }
-      // Reduced only where it's no known one.
-      if (which === "all" || !known.has(key)) problems.push(wrong(seed, build, file, text, native, ran));
+      if (agree(ran, native)) continue;
+      // A wrong answer of a known form passes; another is kept and reduced.
+      const form = firstOtherwise(native.stdout, ran.stdout, forms);
+      if (form !== undefined && knownAs("wrong", form) !== undefined) continue;
+      problems.push(wrong(seed, build, file, text, native, ran, form));
     }
     expect(problems.join("\n\n")).toBe("");
   }, 600_000);
@@ -148,16 +179,21 @@ function refused(build: string, reason: string, seed: number) {
 /** A wrong answer, kept in target/memory-net/ before it's reduced, so a
  * job stopped can't lose it: what each run printed, and the program
  * reduced. */
-function wrong(seed: number, build: string, file: string, text: string, native: Run, ran: Run): string {
+function wrong(seed: number, build: string, file: string, text: string, native: Run, ran: Run, form: string | undefined): string {
   const out = join(target, "memory-net");
   mkdirSync(out, { recursive: true });
   writeFileSync(join(out, `seed-${seed}.rs`), text);
   const detail = `native: ${show(native.outcome)}\n${native.stdout}\nJS (${build}): ${show(ran.outcome)}\n${ran.stdout}${ran.stderr.slice(0, 2000)}`;
   writeFileSync(join(out, `seed-${seed}.${build}.txt`), detail);
-  return `seed ${seed}, ${build}: a wrong answer\n${detail}${reducedRepro(file, build)}`;
+  const first = form === undefined ? "only in how it ended" : `first printed by a \`${form}\``;
+  return `seed ${seed}, ${build}: a wrong answer, ${first}\n${detail}${reducedRepro(file, build)}`;
 }
 
 afterAll(() => {
+  // How many programs each known line met, of this part: what its fix
+  // takes off.
+  const counted = known.filter((k) => met.has(k.line)).map((k) => `${String(met.get(k.line)).padStart(4)}  ${k.line}`);
+  if (counted.length > 0) console.log(`known, by how many programs each met:\n${counted.join("\n")}`);
   if (refusals.size === 0) return;
   const out = join(target, "memory-net");
   mkdirSync(out, { recursive: true });

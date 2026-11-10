@@ -337,3 +337,16 @@ push of the pointers' code (`memoryPaths`) runs the slice, seeds 1 to
 `test/memory-net-known.txt` lists under their issues; the nightly runs
 400 from the day's under Miri. Its first run found #1253, #1254 and
 #1255.
+
+**Its known list is of what fails, not of seeds** (2026-11-10). Listed
+by seed, it covered only the slice's 24, so the nightly's 400 went red on
+any wrong answer, a family already filed or not, and a red that's always
+red hides the new one. Each line of `test/memory-net-known.txt` is now a
+refusal, by words of its reason, or a wrong answer, by the form of the
+operation whose line the JS first prints otherwise than native Rust, or
+first leaves unprinted: the generator names each operation's form,
+`<family>/<name>` (`views/mutable-narrower`), and each printed line
+starts with its operation's number. A known one passes in any seed, the
+slice's or the nightly's; a new refusal, a new form's wrong answer, or
+a crash fails either. A run prints how many programs each line met. The
+seeds' programs are as before: the names cost the generator no draw.

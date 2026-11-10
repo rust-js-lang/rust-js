@@ -1,37 +1,20 @@
-# The memory net slice's seeds that don't run as native Rust does yet
-# (test/memory-net.test.ts), a line each, `<seed> <build>: #<issue> <why>`:
-# refused, at compile time or where it runs, or a wrong answer filed P0.
-# One that runs as Rust does is taken off, so the list only shrinks.
+# What the memory net knows rust-js doesn't yet do as native Rust does
+# (test/memory-net.test.ts), by what it is, not by seed, so a known one
+# passes in any seed, the slice's and the nightly's, while a new one fails
+# either. A line each, filed:
+#
+#   refused <words of its reason>: #<issue> <why>
+#       a refusal, at compile time or where it runs (`at run time: `),
+#       whose reason, as the run's ranking writes it, holds those words
+#   wrong <family>/<form>: #<issue> <why>
+#       a wrong answer whose first line unlike native Rust's, or first
+#       left unprinted, is of an operation of that form (test/memory-net.ts)
+#
+# A line goes with the fix of its issue; each run prints how many programs
+# each line met.
 
-1 plain: #1256 `as_ptr_range` refused
-1 std: #1256 `as_ptr_range` refused
-2 plain: #1256 `as_ptr_range` refused
-2 std: #1256 `as_ptr_range` refused
-4 plain: #1256 `ptr::swap_nonoverlapping` refused
-4 std: #1256 `ptr::swap_nonoverlapping` refused
-6 plain: #1256 `as_ptr_range` refused
-6 std: #1256 `as_ptr_range` refused
-7 plain: #1256 `as_ptr_range` refused
-7 std: #1256 `as_ptr_range` refused
-9 plain: #1256 `as_mut_ptr_range` refused
-9 std: #1256 `as_mut_ptr_range` refused
-10 plain: #1257 a mutable slice of another type's bytes refused where it runs
-10 std: #1257 a mutable slice of another type's bytes refused where it runs
-11 plain: #1256 `ptr::swap_nonoverlapping` refused
-11 std: #1256 `ptr::swap_nonoverlapping` refused
-12 plain: #1256 `byte_offset_from` refused
-12 std: #1256 `byte_offset_from` refused
-14 plain: #1256 `as_ptr_range` refused
-14 std: #1256 `as_ptr_range` refused
-16 plain: #1256 `as_ptr_range` refused
-16 std: #1256 `as_ptr_range` refused
-17 plain: #1256 `as_ptr_range` refused
-17 std: #1256 `as_ptr_range` refused
-18 plain: #1256 `as_mut_ptr_range` refused
-18 std: #1256 `as_mut_ptr_range` refused
-20 plain: #1256 `as_mut_ptr_range` refused
-20 std: #1256 `as_mut_ptr_range` refused
-21 plain: #1256 `as_ptr_range` refused
-21 std: #1256 `as_ptr_range` refused
-24 plain: #1256 `ptr::swap_nonoverlapping` refused
-24 std: #1256 `ptr::swap_nonoverlapping` refused
+refused `core::slice::<impl [T]>::as_ptr_range`: #1256 `as_ptr_range` refused
+refused `core::slice::<impl [T]>::as_mut_ptr_range`: #1256 `as_mut_ptr_range` refused
+refused swap_nonoverlapping: #1256 `ptr::swap_nonoverlapping` refused
+refused byte_offset_from: #1256 `byte_offset_from` refused
+refused at run time: a mutable slice of another type's bytes: #1257 a mutable slice of another type's bytes refused where it runs

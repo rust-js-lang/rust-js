@@ -87,14 +87,16 @@ const unions: Record<number, { name: string; fields: [string, string][] }> = {
 /** What a program uses of the items it may declare. */
 type Uses = { half: boolean; mixed: boolean; unions: Set<number>; helpers: Set<string>; mem: boolean; ptr: boolean; slice: boolean; uninit: boolean };
 
-/** Seed `seed`'s program, and the families it has. */
-export function memoryProgram(seed: number): { text: string; swarm: Family[] } {
+/** Seed `seed`'s program, the families it has, and each operation's form,
+ * `forms[op - 1]` of the operation whose lines it prints start `op`. */
+export function memoryProgram(seed: number): { text: string; swarm: Family[]; forms: string[] } {
   const r = random(seed);
   const swarm = families.filter(() => r.chance(0.5));
   if (swarm.length === 0) swarm.push(r.pick(families));
   const uses: Uses = { half: false, mixed: false, unions: new Set(), helpers: new Set(), mem: false, ptr: false, slice: false, uninit: false };
   const buffers: Buffer[] = [];
   const lines: string[] = [];
+  const forms: string[] = [];
   const count = 2 + r.int(3);
   for (let i = 0; i < count; i++) {
     const ty = i === 0 && swarm.includes("unaligned") ? "u8" : r.pick(ints);
@@ -115,6 +117,7 @@ export function memoryProgram(seed: number): { text: string; swarm: Family[] } {
   for (let op = 1; op <= ops; op++) {
     const family = r.pick(swarm);
     const made = operation(r, family, buffers, uses, held, read, op);
+    forms.push(made.form);
     lines.push(...made.body.map((line) => `    ${line}`));
     for (const shown of made.shown) lines.push(`    println!("${op} ${shown.replace(/[{}]/g, "")} {:?}", ${shown});`);
   }
@@ -130,7 +133,7 @@ export function memoryProgram(seed: number): { text: string; swarm: Family[] } {
   }
   for (const helper of [...uses.helpers].sort()) head.push("", ...helperText[helper]);
   const text = [`// The memory net's seed ${seed} (#1172): ${swarm.join(", ")}.`, ...head, "", "fn main() {", ...lines, "}", ""].join("\n");
-  return { text, swarm };
+  return { text, swarm, forms };
 }
 
 /** The helpers an operation may call: generic code given raw pointers, and
@@ -179,6 +182,17 @@ const helperText: Record<string, string[]> = {
   ],
 };
 
+/** An operation: its statements, what it shows after, and its form,
+ * `<family>/<name>`, which names a wrong answer it first shows. */
+type Made = { body: string[]; shown: string[]; form: string };
+
+/** One of `forms` of `family`, by a coin, its form named by its key: a
+ * form that makes another where it can't be made says which. */
+function oneOf(r: Random, family: Family, forms: Record<string, () => Omit<Made, "form"> & { form?: string }>): Made {
+  const [name, make] = r.pick(Object.entries(forms));
+  return { form: `${family}/${name}`, ...make() };
+}
+
 /** An operation of `family`: its statements, and what it shows after. */
 function operation(
   r: Random,
@@ -188,7 +202,7 @@ function operation(
   held: Record<number, string | undefined>,
   read: (b?: Buffer) => string,
   op: number,
-): { body: string[]; shown: string[] } {
+): Made {
   const b = r.pick(buffers);
   const i = r.int(b.n);
   const j = r.int(b.n);
@@ -197,29 +211,29 @@ function operation(
     case "arith": {
       const lo = Math.min(i, j);
       const hi = Math.max(i, j);
-      return r.pick([
-        () => ({ body: [`unsafe {`, `    let p = ${b.name}.as_mut_ptr();`, `    *p.add(${i}) = ${v()};`, `}`], shown: [b.name] }),
-        () => ({ body: [`unsafe { ${b.name}.as_mut_ptr().add(${i}).write(${v()}) };`], shown: [b.name] }),
-        () => ({
+      return oneOf(r, family, {
+        "write-at": () => ({ body: [`unsafe {`, `    let p = ${b.name}.as_mut_ptr();`, `    *p.add(${i}) = ${v()};`, `}`], shown: [b.name] }),
+        "write": () => ({ body: [`unsafe { ${b.name}.as_mut_ptr().add(${i}).write(${v()}) };`], shown: [b.name] }),
+        "add-of-another": () => ({
           body: [`unsafe {`, `    let p = ${b.name}.as_mut_ptr();`, `    *p.add(${i}) = (*p.add(${j})).wrapping_add(${v()});`, `}`],
           shown: [b.name],
         }),
-        () => ({
+        "neg-from-its-end": () => ({
           body: [`unsafe {`, `    let end = ${b.name}.as_mut_ptr().add(${hi});`, `    *end.sub(${hi - lo}) = (*end).wrapping_neg();`, `}`],
           shown: [b.name],
         }),
-        () => {
+        "swap": () => {
           uses.ptr = true;
           return { body: [`unsafe {`, `    let p = ${b.name}.as_mut_ptr();`, `    ptr::swap(p.add(${i}), p.add(${j}));`, `}`], shown: [b.name] };
         },
-        () => {
+        "replace": () => {
           uses.ptr = true;
           return { body: [`let old${op} = unsafe { ptr::replace(${b.name}.as_mut_ptr().add(${i}), ${v()}) };`], shown: [`old${op}`, b.name] };
         },
-        () => ({ body: [`let x${op} = unsafe { *${b.name}.as_ptr().add(${i}) };`], shown: [`x${op}`] }),
-        () => ({ body: [`let x${op} = unsafe { ${b.name}.as_ptr().wrapping_add(${i}).read() };`], shown: [`x${op}`] }),
-        () => ({ body: [`let x${op} = unsafe { *${b.name}.as_ptr().offset(${i} as isize) };`], shown: [`x${op}`] }),
-        () => ({
+        "read-at": () => ({ body: [`let x${op} = unsafe { *${b.name}.as_ptr().add(${i}) };`], shown: [`x${op}`] }),
+        "wrapping-read": () => ({ body: [`let x${op} = unsafe { ${b.name}.as_ptr().wrapping_add(${i}).read() };`], shown: [`x${op}`] }),
+        "offset-read": () => ({ body: [`let x${op} = unsafe { *${b.name}.as_ptr().offset(${i} as isize) };`], shown: [`x${op}`] }),
+        "step-each": () => ({
           body: [
             `unsafe {`,
             `    let mut q = ${b.name}.as_mut_ptr().add(${lo});`,
@@ -231,15 +245,15 @@ function operation(
           ],
           shown: [b.name],
         }),
-        () => ({
+        "compare": () => ({
           body: [`let p${op} = ${b.name}.as_ptr();`, `let x${op} = (p${op}.wrapping_add(${i}) < p${op}.wrapping_add(${j}), p${op}.wrapping_add(${i}) == p${op}.wrapping_add(${j}));`],
           shown: [`x${op}`],
         }),
-        () => {
+        "read-back": () => {
           const back = r.int(i + 1);
           return { body: [`let x${op} = unsafe { *${b.name}.as_ptr().add(${i}).sub(${back}) };`], shown: [`x${op}`] };
         },
-        () => ({
+        "walk-to-the-end": () => ({
           body: [
             `let mut x${op} = Vec::new();`,
             `let mut q${op} = ${b.name}.as_ptr();`,
@@ -251,28 +265,28 @@ function operation(
           ],
           shown: [`x${op}`],
         }),
-      ])();
+      });
     }
     case "offsets": {
       uses.mem = true;
-      return r.pick([
-        () => ({ body: [`let x${op} = unsafe { ${b.name}.as_ptr().add(${i}).offset_from(${b.name}.as_ptr().add(${j})) };`], shown: [`x${op}`] }),
-        () => ({ body: [`let x${op} = ${b.name}.as_ptr().wrapping_add(${i}) as usize - ${b.name}.as_ptr() as usize;`], shown: [`x${op}`] }),
-        () => ({ body: [`let x${op} = unsafe { ${b.name}.as_ptr().add(${i}).byte_offset_from(${b.name}.as_ptr()) };`], shown: [`x${op}`] }),
-        () => ({
+      return oneOf(r, family, {
+        "offset-from": () => ({ body: [`let x${op} = unsafe { ${b.name}.as_ptr().add(${i}).offset_from(${b.name}.as_ptr().add(${j})) };`], shown: [`x${op}`] }),
+        "address-difference": () => ({ body: [`let x${op} = ${b.name}.as_ptr().wrapping_add(${i}) as usize - ${b.name}.as_ptr() as usize;`], shown: [`x${op}`] }),
+        "byte-offset-from": () => ({ body: [`let x${op} = unsafe { ${b.name}.as_ptr().add(${i}).byte_offset_from(${b.name}.as_ptr()) };`], shown: [`x${op}`] }),
+        "ptr-range": () => ({
           body: [`let r${op} = ${b.name}.as_ptr_range();`, `let x${op} = unsafe { r${op}.end.offset_from(r${op}.start) };`],
           shown: [`x${op}`],
         }),
-        () => ({
+        "offset-from-in-bytes": () => ({
           body: [`let x${op} = unsafe { (${b.name}.as_ptr().add(${i}) as *const u8).offset_from(${b.name}.as_ptr() as *const u8) };`],
           shown: [`x${op}`],
         }),
-        () => ({ body: [`let x${op} = (mem::size_of_val(&${b.name}[..]), mem::align_of_val(&${b.name}[0]));`], shown: [`x${op}`] }),
-        () => ({
+        "size-and-align": () => ({ body: [`let x${op} = (mem::size_of_val(&${b.name}[..]), mem::align_of_val(&${b.name}[0]));`], shown: [`x${op}`] }),
+        "offset-from-stepped-in-bytes": () => ({
           body: [`let x${op} = unsafe { ${b.name}.as_ptr().cast::<u8>().add(${i * sizeOf[b.ty]}).cast::<${b.ty}>().offset_from(${b.name}.as_ptr()) };`],
           shown: [`x${op}`],
         }),
-      ])();
+      });
     }
     case "transmute": {
       uses.mem = true;
@@ -293,9 +307,9 @@ function operation(
         const bytes = w.n * sizeOf[w.ty];
         const target = r.pick(plainOfSize[bytes] ?? [`[u8; ${bytes}]`]).replace(/^f(32|64)$/, "u$1");
         noteTypes(uses, target, target);
-        return { body: [`let x${op} = unsafe { mem::transmute::<[${w.ty}; ${w.n}], ${target}>(${w.name}) };`], shown: [`x${op}`] };
+        return { body: [`let x${op} = unsafe { mem::transmute::<[${w.ty}; ${w.n}], ${target}>(${w.name}) };`], shown: [`x${op}`], form: "transmute/whole-array" };
       }
-      return { body: [`let x${op} = unsafe { mem::transmute::<${from}, ${into}>(${value}) };`], shown: [`x${op}`] };
+      return { body: [`let x${op} = unsafe { mem::transmute::<${from}, ${into}>(${value}) };`], shown: [`x${op}`], form: "transmute/value" };
     }
     case "unions": {
       const size = r.pick([4, 8]);
@@ -324,14 +338,14 @@ function operation(
       const readable = u.fields.filter(([f, t]) => !holdsFloat(t) || held[size] === f);
       const [other] = r.pick(readable);
       body.push(`let x${op} = unsafe { ${name}.${other} };`);
-      return { body, shown: [`x${op}`] };
+      return { body, shown: [`x${op}`], form: "unions/other-field" };
     }
     case "uninit": {
       uses.uninit = true;
       const n = b.n;
       const values = () => Array.from({ length: n }, (_, k) => r.chance(0.5) ? literal(r, b.ty) : `${b.name}[${k}].wrapping_add(1)`);
-      return r.pick([
-        () => {
+      return oneOf(r, family, {
+        "slots-transmuted": () => {
           uses.mem = true;
           const vs = values();
           return {
@@ -343,7 +357,7 @@ function operation(
             shown: [`x${op}`],
           };
         },
-        () => {
+        "slots-mapped": () => {
           const vs = values();
           return {
             body: [
@@ -356,7 +370,7 @@ function operation(
             shown: [`x${op}`],
           };
         },
-        () => {
+        "slots-through-their-pointers": () => {
           uses.ptr = true;
           const k = 1 + r.int(n);
           return {
@@ -370,7 +384,7 @@ function operation(
             shown: [`x${op}`],
           };
         },
-        () => {
+        "array-through-an-item-pointer": () => {
           const vs = values();
           return {
             body: [
@@ -382,7 +396,7 @@ function operation(
             shown: [`x${op}`],
           };
         },
-        () => {
+        "slots-read-as-an-array": () => {
           uses.ptr = true;
           const vs = values();
           return {
@@ -394,8 +408,8 @@ function operation(
             shown: [`x${op}`],
           };
         },
-        () => ({ body: [`let x${op} = unsafe { MaybeUninit::<[${b.ty}; ${n}]>::zeroed().assume_init() };`], shown: [`x${op}`] }),
-      ])();
+        "zeroed": () => ({ body: [`let x${op} = unsafe { MaybeUninit::<[${b.ty}; ${n}]>::zeroed().assume_init() };`], shown: [`x${op}`] }),
+      });
     }
     case "views": {
       uses.slice = true;
@@ -404,13 +418,13 @@ function operation(
       const into = r.pick(narrower);
       const total = b.n * sizeOf[b.ty];
       const len = total / sizeOf[into];
-      return r.pick([
-        () => ({
+      return oneOf(r, family, {
+        "bytes": () => ({
           body: [`let x${op} = unsafe { slice::from_raw_parts(${b.name}.as_ptr() as *const u8, mem::size_of_val(&${b.name}[..])) };`],
           shown: [`x${op}`],
         }),
-        () => ({ body: [`let x${op} = unsafe { slice::from_raw_parts(${b.name}.as_ptr().cast::<${into}>(), ${len}) };`], shown: [`x${op}`] }),
-        () => {
+        "narrower": () => ({ body: [`let x${op} = unsafe { slice::from_raw_parts(${b.name}.as_ptr().cast::<${into}>(), ${len}) };`], shown: [`x${op}`] }),
+        "mutable-narrower": () => {
           const k = r.int(len);
           return {
             body: [
@@ -421,7 +435,7 @@ function operation(
             shown: [b.name],
           };
         },
-        () => {
+        "sub-slice": () => {
           const from = r.int(b.n);
           const n = r.int(b.n - from + 1);
           return {
@@ -429,38 +443,38 @@ function operation(
             shown: [`x${op}`],
           };
         },
-        () => {
+        "byte-read": () => {
           const k = r.int(total);
           return { body: [`let x${op} = unsafe { ${b.name}.as_ptr().cast::<u8>().add(${k}).read() };`], shown: [`x${op}`] };
         },
-        () => {
+        "byte-write": () => {
           const k = r.int(total);
           return { body: [`unsafe { *${b.name}.as_mut_ptr().cast::<u8>().add(${k}) = ${literal(r, "u8")} };`], shown: [b.name] };
         },
-        () => ({
+        "bytes-compared": () => ({
           body: [
             `let bytes${op} = unsafe { slice::from_raw_parts(${b.name}.as_ptr().cast::<u8>(), ${total}) };`,
             `let x${op} = ${b.name}.iter().flat_map(|x| x.to_ne_bytes()).collect::<Vec<u8>>() == bytes${op};`,
           ],
           shown: [`x${op}`],
         }),
-      ])();
+      });
     }
     case "copies": {
       uses.ptr = true;
       const same = buffers.filter((x) => x !== b && x.ty === b.ty);
-      return r.pick([
-        () => {
+      return oneOf(r, family, {
+        "copy": () => {
           const n = r.int(b.n - Math.max(i, j) + 1);
           return { body: [`unsafe {`, `    let p = ${b.name}.as_mut_ptr();`, `    ptr::copy(p.add(${i}), p.add(${j}), ${n});`, `}`], shown: [b.name] };
         },
-        () => {
+        "write-bytes": () => {
           const n = r.int(b.n - i + 1);
           return { body: [`unsafe { ptr::write_bytes(${b.name}.as_mut_ptr().add(${i}), ${literal(r, "u8")}, ${n}) };`], shown: [b.name] };
         },
-        () => {
+        "copy-bytes-between": () => {
           const o = r.pick(buffers.filter((x) => x !== b));
-          if (o === undefined) return { body: [`unsafe { ${b.name}.as_mut_ptr().add(${i}).write_bytes(0, 1) };`], shown: [b.name] };
+          if (o === undefined) return { body: [`unsafe { ${b.name}.as_mut_ptr().add(${i}).write_bytes(0, 1) };`], shown: [b.name], form: "copies/write-bytes" };
           const from = r.int(b.n * sizeOf[b.ty]);
           const to = r.int(o.n * sizeOf[o.ty]);
           const n = r.int(Math.min(b.n * sizeOf[b.ty] - from, o.n * sizeOf[o.ty] - to) + 1);
@@ -469,9 +483,9 @@ function operation(
             shown: [o.name],
           };
         },
-        () => {
+        "copy-from-nonoverlapping": () => {
           const o = r.pick(same);
-          if (o === undefined) return { body: [`unsafe { ${b.name}.as_mut_ptr().add(${i}).copy_from(${b.name}.as_ptr().add(${j}), 1) };`], shown: [b.name] };
+          if (o === undefined) return { body: [`unsafe { ${b.name}.as_mut_ptr().add(${i}).copy_from(${b.name}.as_ptr().add(${j}), 1) };`], shown: [b.name], form: "copies/copy-from" };
           // Where in `o`, within its own length.
           const k = r.int(o.n);
           const n = r.int(Math.min(b.n - i, o.n - k) + 1);
@@ -480,9 +494,9 @@ function operation(
             shown: [o.name],
           };
         },
-        () => {
+        "swap-nonoverlapping": () => {
           const o = r.pick(same);
-          if (o === undefined) return { body: [`unsafe { ptr::write(${b.name}.as_mut_ptr().add(${i}), ${v()}) };`], shown: [b.name] };
+          if (o === undefined) return { body: [`unsafe { ptr::write(${b.name}.as_mut_ptr().add(${i}), ${v()}) };`], shown: [b.name], form: "copies/write" };
           const k = r.int(o.n);
           const n = r.int(Math.min(b.n - i, o.n - k) + 1);
           return {
@@ -490,7 +504,7 @@ function operation(
             shown: [b.name, o.name],
           };
         },
-      ])();
+      });
     }
     case "unaligned": {
       uses.ptr = true;
@@ -498,30 +512,30 @@ function operation(
       const fits = ints.filter((t) => sizeOf[t] <= total);
       const ty = r.pick(fits);
       const at = r.int(total - sizeOf[ty] + 1);
-      return r.pick([
-        () => ({ body: [`let x${op} = unsafe { ${b.name}.as_ptr().cast::<u8>().add(${at}).cast::<${ty}>().read_unaligned() };`], shown: [`x${op}`] }),
-        () => ({
+      return oneOf(r, family, {
+        "read-unaligned": () => ({ body: [`let x${op} = unsafe { ${b.name}.as_ptr().cast::<u8>().add(${at}).cast::<${ty}>().read_unaligned() };`], shown: [`x${op}`] }),
+        "write-unaligned": () => ({
           body: [`unsafe { ${b.name}.as_mut_ptr().cast::<u8>().add(${at}).cast::<${ty}>().write_unaligned(${literal(r, ty)}) };`],
           shown: [b.name],
         }),
-        () => ({ body: [`let x${op} = unsafe { ptr::read_unaligned(${b.name}.as_ptr().cast::<u8>().add(${at}) as *const ${ty}) };`], shown: [`x${op}`] }),
-      ])();
+        "ptr-read-unaligned": () => ({ body: [`let x${op} = unsafe { ptr::read_unaligned(${b.name}.as_ptr().cast::<u8>().add(${at}) as *const ${ty}) };`], shown: [`x${op}`] }),
+      });
     }
     case "helpers": {
-      return r.pick([
-        () => {
+      return oneOf(r, family, {
+        "fill": () => {
           uses.helpers.add("fill");
           const n = r.int(b.n - i + 1);
           return { body: [`unsafe { fill(${b.name}.as_mut_ptr().add(${i}), ${n}, ${v()}) };`], shown: [b.name] };
         },
-        () => {
+        "each": () => {
           uses.helpers.add("each");
           return {
             body: [`let x${op} = unsafe { each(${b.name}.as_ptr(), ${b.name}.len(), |x| x.count_ones() + ${r.int(4)}) };`],
             shown: [`x${op}`],
           };
         },
-        () => {
+        "cursor": () => {
           uses.helpers.add("cursor");
           const steps = r.int(b.n + 2);
           return {
@@ -536,7 +550,7 @@ function operation(
             shown: [`x${op}`, `left${op}`, b.name],
           };
         },
-      ])();
+      });
     }
   }
 }
