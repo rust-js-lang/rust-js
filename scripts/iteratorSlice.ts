@@ -241,7 +241,7 @@ export function touchesConsumers(files: string[]): boolean {
  * crate corpus in each push's check (check.yml's `crates`) and in plain
  * `check:fast`: 9353847cd refused itertools, which only the nightly saw
  * (#1188). */
-export const cratePaths = ["src/**", "std/**", "Cargo.lock", "docs/crate-corpus.md", "scripts/crate-corpus.ts", "scripts/crate-corpus/**"];
+export const cratePaths = ["src/**", "std/**", "vendor/**", "Cargo.lock", "docs/crate-corpus.md", "scripts/crate-corpus.ts", "scripts/crate-corpus/**"];
 
 const crateGlobs = cratePaths.map((path) => new Bun.Glob(path));
 
@@ -256,7 +256,7 @@ export function touchesCrates(files: string[]): boolean {
  * port at its pin in each push's check (check.yml's `react-in-rust-port`),
  * failing on any file that differs: ba69090b3's port diff went unseen
  * until the nightly (#1188, #1189). */
-export const portPaths = ["src/**", "std/**", "tooling/**", "builtins/**", "react/**", "webapi/**", "Cargo.lock", "ports/react-in-rust.pin", "scripts/react-in-rust.ts"];
+export const portPaths = ["src/**", "std/**", "vendor/**", "tooling/**", "builtins/**", "react/**", "webapi/**", "Cargo.lock", "ports/react-in-rust.pin", "scripts/react-in-rust.ts"];
 
 const portGlobs = portPaths.map((path) => new Bun.Glob(path));
 
