@@ -604,6 +604,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && crate::lower::recognition::is_fn_dyn(self.tcx, predicates)
         {
             let function = self.pointee(source);
+            // A `&mut` to a function JS holds in a cell, `&mut Box<dyn
+            // FnMut>`'s `{ value }` (ADR 1086): the `dyn FnMut` is the
+            // function it holds, which a call through it only calls, as
+            // the box can't be written while it's lent (#1222).
+            let value = match *source.kind() {
+                ty::Ref(_, _, Mutability::Mut) if self.mut_ref_form(function).is_cell() => Expr::held(value),
+                _ => value,
+            };
             // A `Box`, an `Rc` or an `Arc` made one of a function another
             // may hold too, where the crate reads a `dyn Fn`'s address: a
             // function of its own that calls it, as two are two allocations

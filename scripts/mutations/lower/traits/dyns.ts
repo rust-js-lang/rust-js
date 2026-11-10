@@ -598,4 +598,13 @@ export const mutations: Mutation[] = [
     replace: "            Some(ty::Tuple(_args)) => 0,\n            _ => 0,\n        };\n        self.own_function_of(count, f, out)\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_boxes.rs$"],
   },
+  {
+    name: "mut-ref-of-a-boxed-function-its-cell",
+    breaks:
+      "a `&mut Box<dyn FnMut>` made a `&mut dyn FnMut` is the cell JS holds the box in, `{ value }`, not the function in it: its call throws `f is not a function` (#1222)",
+    file: "src/lower/traits/dyns.rs",
+    find: "                ty::Ref(_, _, Mutability::Mut) if self.mut_ref_form(function).is_cell() => Expr::held(value),\n",
+    replace: "                ty::Ref(_, _, Mutability::Mut) if false => Expr::held(value),\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_boxed_function_as_dyn.rs$"],
+  },
 ];

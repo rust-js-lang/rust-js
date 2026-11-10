@@ -323,3 +323,19 @@ JS changed. Held by the corpus case
 `written_through_a_guard_or_a_reference_to_an_object` and the mutation
 `mut-ref-to-a-shared-ref-the-object`.
 
+
+## Amendment: a `&mut Box<dyn FnMut>` made a `&mut dyn FnMut` is the function its cell holds (#1222)
+
+A `&mut` to a boxed function, `&mut Box<dyn FnMut(i32)>`, is a cell, `{
+value }`, as `mut_ref_form` of the box says, since a write through it,
+`*r = Box::new(g)`, replaces the function. Made a `&mut dyn FnMut`, the
+unsizing coercion of the `dyn` branch (`traits/dyns.rs`,
+`unsize_trait`) gave that cell as the `dyn FnMut`, and its call threw
+`f is not a function` (found by #1204's `dyn-fn` rewrite: three corpus
+cases). A `dyn FnMut` can't be written whole, and the box can't be while
+it's lent, so the `dyn FnMut` is the function the cell holds,
+`Expr::held(value)`, read where it's made: the coercion asks
+`mut_ref_form` of the pointee as every other reader of a `&mut`'s form
+does. Results changed ([0262](0262-when-rust-and-js-disagree.md)), so
+Rust's are kept. Corpus case `mut_ref_of_a_boxed_function_as_dyn`,
+mutation `mut-ref-of-a-boxed-function-its-cell`.
