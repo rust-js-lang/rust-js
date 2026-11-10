@@ -23,7 +23,7 @@ import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, sta
 import { availableParallelism, cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
-import { changedCases, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet } from "./iteratorSlice";
+import { changedCases, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins } from "./iteratorSlice";
 import { mappedFiles, pickChange, readersOf } from "./testMap";
 import { browsers, caseParts, compilerBuilds, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
 import { said, strays } from "./strays";
@@ -173,6 +173,9 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
   const consumers = touchesConsumers([...changed, ...branch]);
   // And to std's collections', slices', strings' or cells' code, the std net (#1171).
   const stdNet = touchesStdNet([...changed, ...branch]);
+  // And to the iterators' code, the runtime's among it, the twin net: the
+  // runtime's helpers against std's own bodies (#1205).
+  const twins = touchesTwins([...changed, ...branch]);
   // And each corpus case it adds or edits, each of its metamorphic
   // rewrites, plain or `--all` (#1165).
   const cases = changedCases([...changed, ...branch]);
@@ -364,6 +367,15 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
               timeout: 300,
               weight: parts,
               ci: "bun scripts/iteratorSlice.ts run std",
+            }),
+          ]
+        : []),
+      ...(twins
+        ? [
+            job("the twin net", ["bun", "scripts/iteratorSlice.ts", "run", "twins", String(parts)], {
+              timeout: 300,
+              weight: parts,
+              ci: "bun scripts/iteratorSlice.ts run twins",
             }),
           ]
         : []),

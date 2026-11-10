@@ -19,6 +19,7 @@
 //   bun scripts/iteratorSlice.ts run consumers [parts]     the consumer net, of a change to the iterators' code or the drops'
 //   bun scripts/iteratorSlice.ts run metamorphic [parts [since]]  each metamorphic rewrite of each corpus case the change adds or edits (#1165)
 //   bun scripts/iteratorSlice.ts run memory [parts]        the memory net's slice (#1172), of a change to the pointers' code
+//   bun scripts/iteratorSlice.ts run twins [parts]         the twin net (#1205), the runtime's helpers against std's own bodies, of a change to the iterators' code
 //
 // And a change to the formatting code, `formatPaths`, runs the formatting
 // grid's slice (test/format-grid.ts, #941), each push's check's
@@ -33,12 +34,15 @@
 // `consumerPaths`, the consumer net, all of it (test/consumer-net.ts),
 // `consumer-net`; and to what std's collections, slices, strings and cells
 // lower to, `stdNetPaths`, the std net, all of it (test/std-net.ts,
-// #1171), `std-net`.
-import { mkdirSync, writeFileSync } from "node:fs";
+// #1171), `std-net`; and to the iterators' code, the runtime's among it,
+// the twin net (test/twin-net.ts, #1205), `twin-net`.
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { dirname, join } from "node:path";
 import { noteRate, pick } from "./iteratorRows";
 import { caseParts } from "./shard";
+import { twinHelpers } from "../test/iterator-matrix";
+import { helpersOf, sharedProblems } from "../test/twin-net";
 
 const root = join(import.meta.dir, "..");
 
@@ -274,6 +278,18 @@ export function touchesNumbers(files: string[]): boolean {
   return files.some((file) => numberGlobs.some((glob) => glob.match(file)));
 }
 
+/** What the twin net pits against std's own bodies, as globs of the
+ * repository's paths: the iterators' code, the runtime's helpers among it,
+ * and the net's list of the helpers it can't pit (#1205). */
+export const twinPaths = [...iteratorPaths, "test/twin-net.ts"];
+
+const twinGlobs = twinPaths.map((path) => new Bun.Glob(path));
+
+/** Whether a change of `files` touches what the twin net pits. */
+export function touchesTwins(files: string[]): boolean {
+  return files.some((file) => twinGlobs.some((glob) => glob.match(file)));
+}
+
 /** Whether a change of `files` touches the iterators' code. */
 export function touchesIterators(files: string[]): boolean {
   return files.some((file) => globs.some((glob) => glob.match(file)));
@@ -304,6 +320,14 @@ export const runs = {
   // The slice's seeds, each a program of unsafe Rust over plain data, Miri
   // where it's installed: some 30 s in 8 parts.
   memory: [{ name: "the memory net's slice", file: "test/memory-net.test.ts", env: {} }],
+  // Each table against std's own bodies, no native run (#1205): all of
+  // each but the matrix, of which a sample of each adapter with each
+  // consumer.
+  twins: (["conformance", "points", "unwind", "consumers", "std", "matrix"] as const).map((table) => ({
+    name: `the ${table} table against std's bodies`,
+    file: "test/iterator-matrix.test.ts",
+    env: { ITERATOR_TABLE: table, ITERATOR_ORACLE: "std", ITERATOR_MATRIX: table === "matrix" ? "pairs" : "all" },
+  })),
 } as const;
 
 /** `of`, in `parts` processes at once, each its share of the cases
@@ -326,6 +350,8 @@ export async function run(of: keyof typeof runs | "rows", parts: number, list?: 
     console.log(`the metamorphic rewrites of ${cases.join(", ")}`);
     parts = Math.min(parts, cases.length);
   }
+  // The twin net's helpers, each batch's, of this run alone (#1205).
+  if (of === "twins") rmSync(twinHelpers, { recursive: true, force: true });
   let passed = true;
   const each: Run[] = of === "rows" ? changeRows(parts) : [...runs[of]];
   for (const { name, file, env, rate } of each) {
@@ -349,6 +375,13 @@ export async function run(of: keyof typeof runs | "rows", parts: number, list?: 
     // its time (scripts/iteratorRows.ts's `budgetOf`).
     if (rate !== undefined && rate.rows > 0) noteRate({ ...rate, seconds, parts });
     passed &&= ok;
+  }
+  // Of the whole net, each helper both builds import is one `shared` says
+  // why of, and none it lists is pitted now or imported by none.
+  if (of === "twins" && list === undefined) {
+    const problems = sharedProblems(helpersOf());
+    for (const problem of problems) console.log(problem);
+    passed &&= problems.length === 0;
   }
   return passed;
 }
@@ -387,7 +420,7 @@ function changeRows(parts: number): Run[] {
 
 if (import.meta.main) {
   const [command, of, count, list] = process.argv.slice(2);
-  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|declarations|async|consumers|memory|rows [parts [cases]] | metamorphic [parts [since]]");
+  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|declarations|async|consumers|memory|twins|rows [parts [cases]] | metamorphic [parts [since]]");
   const parts = count === undefined ? caseParts(availableParallelism() * 2) : Number(count);
   process.exit((await run(of as keyof typeof runs | "rows", parts, list)) ? 0 : 1);
 }

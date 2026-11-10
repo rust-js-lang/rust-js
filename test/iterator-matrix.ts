@@ -60,6 +60,9 @@ export const table: Table = (() => {
 export const failures = join(target, "iterator-matrix");
 /** The known failures a run found running as Rust does, one a line. */
 export const fixedFile = join(failures, "fixed.txt");
+/** Where a run against std's own bodies (`ITERATOR_ORACLE=std`, #1205)
+ * writes what each build of each batch imported of the runtime. */
+export const twinHelpers = join(target, "twin-net");
 const knownFile = join(root, "test", "iterator-matrix-known.txt");
 
 /** How the known list names a build's cases of `of`: `plain` of the

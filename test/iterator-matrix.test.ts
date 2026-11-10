@@ -19,6 +19,7 @@
 //   ITERATOR_TABLE=numbers ITERATOR_MATRIX=all bun test test/iterator-matrix.test.ts # every number operation of each type's boundary values (#940)
 //   ITERATOR_TABLE=async bun test test/iterator-matrix.test.ts                   # panic points across `.await` (#942)
 //   ITERATOR_TABLE=consumers bun test test/iterator-matrix.test.ts               # each std method that takes an iterator by value (test/consumer-net.ts)
+//   ITERATOR_ORACLE=std ITERATOR_MATRIX=all bun test test/iterator-matrix.test.ts   # the runtime's helpers against std's own bodies, no native run (#1205)
 //   ITERATOR_MATRIX_REPORT=1 ...                                                 # and each case refused, and why
 //   bun scripts/iteratorSlice.ts run                                             # both tables' slices, in parts at once (#731)
 //
@@ -29,12 +30,13 @@
 // alone.
 
 import { beforeAll, expect, test } from "bun:test";
-import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 
 import { tableOf } from "./matrix-tables";
-import { builds, failures, fixedFile, knownCases, listedBuild, ofTable, readKnown, segments, table, version, type Row } from "./iterator-matrix";
+import { builds, failures, fixedFile, knownCases, listedBuild, ofTable, readKnown, segments, table, twinHelpers, version, type Row } from "./iterator-matrix";
 import { same, type Outcome } from "./oracle";
+import { importedHelpers } from "./twin-net";
 import { aborted, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, fixture } from "./support";
 import { shard } from "../scripts/shard";
@@ -58,6 +60,12 @@ if (which !== undefined && which !== "all" && issue === undefined && paired === 
     `ITERATOR_MATRIX=${which}: \`all\`, \`#<issue>\` for the batches of an issue's known cases, \`/<regex>/\` for the cases whose ids match, \`pairs[:<n>]\` for <n> of each adapter with each consumer, of those a pattern after it matches, or unset for its slice`,
   );
 }
+// Of `std`, the oracle is std's own bodies, the build of std's iterator
+// structs alone (`--std-iterators`, ADR 0908), not native Rust: the plain
+// build, whose recognizers lower to the runtime's hand-written helpers, is
+// judged against it, case by case, with no native compile (#1205).
+const oracle = partSetting("ITERATOR_ORACLE");
+if (oracle !== undefined && oracle !== "std") throw new Error(`ITERATOR_ORACLE=${oracle}: \`std\`, or unset for native Rust`);
 const list = readKnown();
 const known = knownCases(list);
 const of = tableOf(table);
@@ -150,7 +158,7 @@ function refusedCases(stderr: string, text: string, cases: Row[], file: string):
 
 /** Each case of `cases`, compiled with `flags` and run, against what
  * native Rust printed of it. */
-function judge(cases: Row[], native: Map<string, string>, dir: string, build: string, flags: string[], aborts = false): Map<Row, Verdict> {
+function judge(cases: Row[], native: Map<string, string>, dir: string, build: string, flags: string[], aborts = false, helpers?: Set<string>): Map<Row, Verdict> {
   const verdicts = new Map<Row, Verdict>();
   mkdirSync(dir, { recursive: true });
   let pending = cases;
@@ -172,7 +180,7 @@ function judge(cases: Row[], native: Map<string, string>, dir: string, build: st
         }
         const half = Math.ceil(pending.length / 2);
         [pending.slice(0, half), pending.slice(half)].forEach((cases, i) => {
-          for (const [c, v] of judge(cases, native, join(at, `half-${i}`), build, flags)) verdicts.set(c, v);
+          for (const [c, v] of judge(cases, native, join(at, `half-${i}`), build, flags, false, helpers)) verdicts.set(c, v);
         });
         return verdicts;
       }
@@ -180,6 +188,7 @@ function judge(cases: Row[], native: Map<string, string>, dir: string, build: st
       pending = pending.filter((c) => !refused.has(c));
       continue;
     }
+    for (const name of helpers === undefined ? [] : importedHelpers(readFileSync(compiled.js, "utf8"))) helpers!.add(name);
     const [runtime, cmd] = runtimes[0];
     const ran = runJs(cmd, compiled.js, at, runtime);
     const js = segments(ran.stdout);
@@ -212,10 +221,48 @@ function judge(cases: Row[], native: Map<string, string>, dir: string, build: st
   return verdicts;
 }
 
+/** Of `ITERATOR_ORACLE=std` (#1205): each case of `batch` as the plain
+ * build runs it, the runtime's helpers in place of std's bodies, against
+ * what the build of std's own bodies printed of it, which needs no native
+ * run. A case std's build refuses, or whose run ended in it, has no
+ * oracle, and isn't judged; one either build lists as known isn't
+ * either. What each build imported is written beside the batch, for
+ * `bun test/twin-net.ts helpers`. */
+function againstStd(batch: Row[], dir: string, index: number) {
+  const [plain, std] = (["plain", "std"] as const).map((name) => builds.find(([build]) => build === name)!);
+  const stdHelpers = new Set<string>();
+  const oracleOf = new Map<string, string>();
+  for (const [c, verdict] of judge(batch, new Map(), dir, std[0], std[1], false, stdHelpers)) {
+    if (verdict.kind === "differs" && verdict.why === undefined) oracleOf.set(c.id, verdict.js);
+  }
+  const judged = batch.filter((c) => oracleOf.has(c.id));
+  const plainHelpers = new Set<string>();
+  const problems: string[] = [];
+  for (const [c, verdict] of judge(judged, oracleOf, dir, plain[0], plain[1], false, plainHelpers)) {
+    if (verdict.kind !== "differs" && verdict.kind !== "crashed") continue;
+    if (builds.some(([build]) => known.has(`${listedBuild(build)} ${c.n}`))) continue;
+    mkdirSync(failures, { recursive: true });
+    const repro = join(failures, `against-std-${c.id.replaceAll(/[^A-Za-z0-9]+/g, "-")}.rs`);
+    writeFileSync(repro, of.program([c]));
+    const said =
+      verdict.kind === "crashed"
+        ? `rust-js crashed: ${verdict.why}`
+        : `${verdict.why ? `${verdict.why}\n` : ""}std's bodies printed\n${oracleOf.get(c.id)}\nwhere the runtime's helpers printed\n${verdict.js}`;
+    problems.push(problems.length < 3 ? `${c.id}, in ${repro}:\n${said}` : `${c.id}, in ${repro}`);
+  }
+  mkdirSync(twinHelpers, { recursive: true });
+  writeFileSync(
+    join(twinHelpers, `${table}-${index}.json`),
+    JSON.stringify({ judged: judged.length, of: batch.length, plain: [...plainHelpers].sort(), std: [...stdHelpers].sort() }),
+  );
+  expect(problems.join("\n\n")).toBe("");
+}
+
 for (const index of mine) {
   const batch = run[index];
   test(`batch ${index + 1} of ${run.length}${picked === undefined ? "" : ` of ${which}`}: ${batch.length} cases`, () => {
     const dir = fixture(`iterator-${table}-${picked === undefined ? "" : "picked-"}${index}`);
+    if (oracle === "std") return againstStd(batch, dir, index);
     const file = join(dir, "native.rs");
     writeFileSync(file, of.program(batch));
     const native: Run | string = runNative(file, dir);

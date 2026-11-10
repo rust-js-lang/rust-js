@@ -1,0 +1,66 @@
+# 1122. The runtime's helpers against std's own bodies
+
+Status: Accepted. Extends [1090](1090-an-iterator-conformance-matrix.md)
+and [0908](0908-one-meaning-per-iterator.md).
+
+Case: none of [0262](0262-when-rust-and-js-disagree.md)'s: a net, no
+change to what any program does.
+
+## Context
+
+rust-js's runtime copies much of std by hand: its iterator adapters and
+consumers, `extend`, `splice`, capacity growth, size hints, the `Debug`
+builders (#1205). Each helper is a second copy of std, which can drift
+from the first. rust-js can also compile std's own bodies: with
+`--std-iterators` (ADR 0908) std's iterator structs are its JS, in place
+of the recognizers' helpers. The tables (ADR 1090) run each case in both
+builds against native Rust, but native's compile costs as much as both
+builds' together, so a push runs a slice of them.
+
+## Decision
+
+**A net pits the plain build, the runtime's helpers, against the build of
+std's own bodies, case by case, with no native run: `ITERATOR_ORACLE=std`
+of `test/iterator-matrix.test.ts`.** The std build's printed lines are the
+oracle. A case it refuses, or whose run ended in it, has none and isn't
+judged; a case either build's known list names isn't either.
+
+- **Per push of the iterators' code** (`twinPaths`, the runtime's among
+  it): `bun scripts/iteratorSlice.ts run twins`, check.yml's `twin-net`
+  and `check:fast`'s. It runs all of the conformance, points, unwind,
+  consumer and std tables, and the matrix's `pairs` sample. That's 53,082
+  cases, 49,554 of them judged, in 56 s on the 12-core Mac. A batch costs
+  about half of a run against native.
+- **What it pits**: a helper the plain build of a batch imports and its
+  std build doesn't, as std's body ran in its place. That's 35 helpers:
+  the lazy adapters, `$rev`, `$stepBy`, `$flatMap`, `$lazyZip`, `$sizeHint`,
+  `$foldBack` and their kin.
+- **What it can't, `shared`** (`test/twin-net.ts`): each other helper the
+  plain build imports, which the std build imports too, with why std's
+  build has no body of its own there. Of 231: glue, how JS holds a value or
+  a panic (47); `Iterator`'s provided consumers, which std's build lowers
+  as the plain one does (33); iterators whose structs it doesn't compile,
+  a slice's, `Chars`, `Repeat` (12); ranges, `Step`'s (8); collections'
+  methods, `extend`, `splice`, capacity, maps (122); sorts (4); `Debug`
+  (5). After a whole run, the runner fails on a helper neither pitted nor
+  listed, and on one listed that's pitted now or that nothing imports.
+  `test/twin-net.test.ts` holds each listed name to a helper the runtime
+  declares.
+- **The nightly doesn't run it**: its tables run every case in both builds
+  against native Rust, which holds the two to each other too.
+
+## Why
+
+- **It's cheap**: no native compile, so a push of the runtime's or the
+  iterators' code runs every table but the matrix whole, in parallel parts.
+- **It names the copies**: `shared` is the list of the runtime's copies
+  of std that nothing yet pits against std's own, the next net's work.
+
+## Consequences
+
+- Its first run, of all of the matrix too (131,205 cases, 129,843
+  judged), found none that differ.
+- Its `shared` list is longest for the collections' methods, which no
+  build compiles from std's bodies yet: pitting them needs a build of
+  std's `Vec`, `String` and maps, which `--std-iterators` isn't.
+- TESTS.md has its row; docs/finding-wrong-answers.md its technique.

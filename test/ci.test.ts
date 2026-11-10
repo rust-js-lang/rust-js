@@ -267,14 +267,15 @@ test("each part of a test file a setting selects runs where `parts` says", () =>
 // slices, the corpus with std's iterator structs and the declarations'
 // callers, which the nightly skips, as its `matrix`, `conformance`, `forms`,
 // `format`, `numbers`, `async`, `consumers` and `std` run all of each, and
-// its suite the callers; and `crater-report`, the Crater's shards said as
+// its suite the callers; `twin-net`, whose two builds those tables hold to
+// native Rust; and `crater-report`, the Crater's shards said as
 // one, which here's `crater` runs whole.
 test("the nightly, here, has each job the nightly has", () => {
   const ids = (file: string) => {
     const text = readFileSync(join(root, ".github/workflows", file), "utf8");
     return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
   };
-  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators", "iterator-conformance", "iterator-forms", "format-grid", "number-grid", "memory-net", "declarations", "async-points", "consumer-net", "std-net", "metamorphic-cases", "crate-corpus", "react-in-rust-port", "crater-report"].includes(id));
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators", "iterator-conformance", "iterator-forms", "format-grid", "number-grid", "memory-net", "declarations", "async-points", "consumer-net", "std-net", "twin-net", "metamorphic-cases", "crate-corpus", "react-in-rust-port", "crater-report"].includes(id));
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 
