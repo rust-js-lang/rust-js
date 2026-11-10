@@ -63,14 +63,19 @@ export function cargoEnv(compiler, react, { apps, crates, dependencies = [] }, {
  * binds is JS's own, and rust-js reads its metadata (ADR 0024). And the
  * crates of crates.io's or git's, `dependencies`, each by its directory,
  * name and version, which rust-js compiles where it can, its types alone
- * where it can't (ADR 0415). And the workspace's members, by name.
- * @param {{ manifestPath: string, toolchain?: string, offline?: boolean }} options
+ * where it can't (ADR 0415). And the workspace's members, by name. Of the
+ * features the build is asked for, `features` and `noDefaultFeatures`, as
+ * its graph is: a dependency a feature brings in, getrandom's `wasm_js`
+ * `wasm-bindgen`, is the patch's too (ADR 1112).
+ * @param {{ manifestPath: string, toolchain?: string, offline?: boolean, features?: string[], noDefaultFeatures?: boolean }} options
  * @returns {Promise<{ apps: string[], crates: string[], dependencies: { dir: string, name: string, version: string }[], members: string[], own?: string }>} */
-export async function cargoBuild({ manifestPath, toolchain, offline = false }) {
+export async function cargoBuild({ manifestPath, toolchain, offline = false, features = [], noDefaultFeatures = false }) {
   const manifest = resolve(manifestPath);
   // The graph rust-js's target builds: a dependency of another platform's,
   // chrono's `cfg(unix)` iana-time-zone, is none of it (#1121).
   const args = [...(toolchain ? [`+${toolchain}`] : []), "metadata", "--format-version=1", "--filter-platform", target, "--manifest-path", manifest, ...(offline ? ["--offline"] : [])];
+  if (features.length) args.push("--features", features.join(","));
+  if (noDefaultFeatures) args.push("--no-default-features");
   const read = async () => {
     const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
       throw new Error(`cargo metadata failed:\n${error.stderr ?? error.message}`);
@@ -330,7 +335,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   if (features.length) args.push("--features", features.join(","));
   if (noDefaultFeatures) args.push("--no-default-features");
   if (offline) args.push("--offline");
-  const build = await cargoBuild({ manifestPath: manifest, toolchain, offline });
+  const build = await cargoBuild({ manifestPath: manifest, toolchain, offline, features, noDefaultFeatures });
   // Of a test build, each package's library is what `rust-js build` makes
   // of it, so its tests run the JS it ships: its integration tests use it
   // as a crate of their own, held to what it decided (ADR 1076, amended).

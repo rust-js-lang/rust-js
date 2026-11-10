@@ -313,6 +313,28 @@ test("a crate's #[wasm_bindgen_test]s are #[test]s rust-js test runs, of the fea
   const refused = test();
   expect(refused.code).not.toBe(0);
   expect(refused.stdout + refused.stderr).toContain("rust-js's wasm-bindgen-test doesn't run an `async` test yet");
+  // Imported as `test`, getrandom's `use wasm_bindgen_test::wasm_bindgen_test
+  // as test;`: the built-in `#[test]` it makes isn't this attribute again.
+  writeFileSync(join(crate, "src", "lib.rs"), "#[cfg(test)]\nmod tests {\n    use wasm_bindgen_test::wasm_bindgen_test as test;\n\n    #[test]\n    fn imported() {\n        assert_eq!(1 + 1, 2);\n    }\n}\n");
+  const imported = test();
+  expect(imported.code).toBe(0);
+  expect(imported.stdout + imported.stderr).toContain("imported");
+}, 600_000);
+
+// The patch is of the graph the build's features make: getrandom's
+// `wasm_js` feature brings wasm-bindgen in, which the patch names then,
+// so its tests use rust-js's own, not crates.io's (ADR 1112).
+test("the patch is of the graph of the features rust-js test is given", () => {
+  const dir = fixture("compat-feature-graph");
+  const crate = join(dir, "getrandom");
+  mkdirSync(join(crate, "src"), { recursive: true });
+  writeFileSync(join(crate, "Cargo.toml"), '[package]\nname = "getrandom"\nversion = "0.3.4"\nedition = "2024"\n\n[features]\nwasm_js = ["dep:wasm-bindgen"]\n\n[dependencies]\nwasm-bindgen = { version = "0.2", optional = true }\n');
+  writeFileSync(join(crate, "Cargo.toml.orig"), readFileSync(join(crate, "Cargo.toml"), "utf8"));
+  writeFileSync(join(crate, "src", "lib.rs"), "#[cfg(feature = \"wasm_js\")]\npub fn answer() -> u32 {\n    format!(\"{:?}\", wasm_bindgen::JsValue::from_f64(42.0)).len() as u32\n}\n\n#[cfg(test)]\nmod tests {\n    #[test]\n    #[cfg(feature = \"wasm_js\")]\n    fn answers() {\n        assert_eq!(super::answer(), 11);\n    }\n}\n");
+  const ran = runSync([process.execPath, cli, "test", "--features", "wasm_js"], crate, 300_000, { RUST_JS_COMPILER: compiler });
+  expect(ran.stdout + ran.stderr).not.toContain("error");
+  expect(config(crate)).toContain("wasm-bindgen = { path");
+  expect(ran.code).toBe(0);
 }, 600_000);
 
 // wasm-bindgen's `unwrap_throw` and `expect_throw` are upstream's native

@@ -356,3 +356,20 @@ Held by `test/compat.test.ts`: `None.unwrap_throw()`'s message, an `Err`'s
 many\nat refuse)`, an array's `JsValue([1, "a", null])`, each caught by
 `catch_unwind`; and by `test/crater.test.ts`, a test's attributes of several
 lines.
+
+## Amendment: the patch of the features' graph; `wasm_bindgen_test` imported as `test` (2026-11-10)
+
+getrandom 0.3's `wasm_js` feature brings wasm-bindgen in, so its graph has
+it only of that feature: `cargoBuild` read Cargo's metadata of the default
+features, and the patch named only wasm-bindgen-test, so `rust-js test
+--features wasm_js` built crates.io's wasm-bindgen, whose `JsValue` has a
+destructor rust-js refuses. **The metadata the patch is settled of is the
+build's, of the features it's given, `--features` and
+`--no-default-features` (#1140).** And getrandom's tests import the
+attribute as `test`, `use wasm_bindgen_test::wasm_bindgen_test as test;`,
+where the `#[test]` rust-js's attribute made was itself again, a recursion:
+**it makes the built-in one by its path, `#[::core::prelude::v1::test]`.**
+getrandom 0.3.4 with `wasm_js` is a row of the crate corpus: its probe as
+native, the Crater 6 of its 9 tests (#1191, #1192). `test/compat.test.ts`:
+a feature's wasm-bindgen patched, an attribute imported as `test`.
+

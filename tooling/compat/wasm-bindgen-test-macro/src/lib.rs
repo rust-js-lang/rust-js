@@ -30,8 +30,11 @@ pub fn wasm_bindgen_test(attr: TokenStream, item: TokenStream) -> TokenStream {
     if function.attrs.iter().any(|attr| attr.path().is_ident("rustc_test_marker")) {
         return quote!(#function).into();
     }
+    // The built-in `#[test]` by its path: a crate may import this one as
+    // `test`, getrandom's `use wasm_bindgen_test::wasm_bindgen_test as
+    // test;`, where `#[test]` would be this attribute again.
     quote! {
-        #[test]
+        #[::core::prelude::v1::test]
         #function
     }
     .into()
