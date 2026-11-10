@@ -71,11 +71,11 @@ export const mutations: Mutation[] = [
   {
     name: "generic-instance-unknown-bound-unmet",
     breaks:
-      "a bound of a type parameter given another's, a generic function's own `Map<I, F>` cloned where it's made, is asked where nothing's known of it, and unmet, so its `items.map(f).cycle()` isn't made cloned apart (#955)",
+      "a bound none of a cloned type's parameters' values decide, `L: Display` beside a generic function's own `Map<I, F>` cloned where it's made, is asked where nothing's known of it, and unmet, so its `items.map(f).cycle()` isn't made cloned apart (#955, #1109)",
     file: "src/lower/copies.rs",
     find: "        bound.has_param() || {\n",
     replace: "        {\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_map_cloned_where_its_made.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^generic_map_cloned_beside_another_bound.rs$"],
   },
   {
     name: "generic-instance-unmatched",
