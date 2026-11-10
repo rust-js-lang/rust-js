@@ -109,7 +109,25 @@ Migrations, each its own step with its tests, listed on #1170:
    `dyn`, a `Box<dyn Iterator>`, and one given as it is, returned or in a
    struct.
 4. The `Instances` analyses onto one carrier of callers' instances,
-   `instances_of`: `unboxed_params`, `js_given`, `callers_decide`.
+   `instances_of`: `unboxed_params`, `js_given`, `callers_decide`. Done
+   (2026-11-10), each step byte-identical: one index of the calls that
+   give generic code its parameters' values, `callers_of`, of
+   `given_calls_of` (step A); `params_given`, the carrier's second
+   question beside `instances_of`'s, whether any caller gives a parameter
+   what isn't its own copy, clone or value (step B); `callers_decide` and
+   `js_given` carry what they ask through the same index, `calls_by_caller`
+   the other way round, so a body of MIR alone is seen too (step C); and
+   one rule of whether a function's callers are all seen, `seen_whole(owner,
+   fact)`, which asks whether a caller the crate doesn't see gets its own
+   copy for the fact: of a copy, a `Clone` dictionary or an unboxed `Some`
+   (`Fact::CopiedApart`) a consumer compiles its own and JS's is apart, so a
+   `pub` function's crate calls are all; of an `Rc` counted, a place
+   stored or a clone apart (`Fact::Shared`) none does, so a `pub` one's
+   aren't. Its probes found #1217 (`reached` blind to a body of MIR alone)
+   and held each policy against native. Two follow-ups, each changing
+   output: #1233 (`CopiedApart` following a trait's generic method through
+   its namings) and #1234 (`Rc` counts among what a consumer compiles its
+   own for, #1112).
 5. The **Alone** sites that pick a form, each checked against every
    instance or moved to a route: `mir/entries.rs`' `moved_apart`,
    `iterators/hint_asks.rs`, `iterators/clones.rs`' `dropped`.

@@ -454,8 +454,8 @@ export const mutations: Mutation[] = [
     name: "rc-public-callers-seen",
     breaks: "a `pub` generic function's `Rc<T>` counts only what the crate's own calls give it, though JS or a consumer may give it any type, whose `Rc` is then uncounted there (#1009)",
     file: "src/lower/instances.rs",
-    find: "    if tcx.visibility(owner).is_public() {\n        return None;\n    }\n",
-    replace: "",
+    find: "        Fact::Shared => !tcx.visibility(owner).is_public(),\n",
+    replace: "        Fact::Shared => true,\n",
     tests: ["test/crates.test.ts", "-t", "counts each type"],
   },
   {
@@ -490,6 +490,41 @@ export const mutations: Mutation[] = [
       "test/cross-crate-items.test.ts",
       "-t",
       "judged by what its callers give",
+    ],
+  },
+  {
+    name: "trait-method-copies-by-callers",
+    breaks:
+      "a trait method's `Copy` bound is decided by the crate's direct calls, though it's called through a dictionary",
+    file: "src/lower/instances.rs",
+    find: "                && tcx.trait_of_assoc(id).is_none()\n                && tcx.trait_impl_of_assoc(id).is_none()\n",
+    replace: "                && tcx.trait_impl_of_assoc(id).is_none()\n",
+    tests: [
+      "test/lowering-functions.test.ts",
+      "-t",
+      "a Copy bound takes a copy only",
+    ],
+  },
+  {
+    name: "trait-impl-copies-by-callers",
+    breaks:
+      "a trait impl's own `T: Copy` takes no copy function, which its method's dictionary is given, so a copy of an `Option<Point>` its method makes is the value it copies, and a change to it shows there",
+    file: "src/lower/instances.rs",
+    find: "                && !matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^trait_impl_copy_bound.rs$"],
+  },
+  {
+    name: "instance-copies-unasked",
+    breaks:
+      "a library's function the crate compiles itself takes a copy of each `Copy` type parameter, as one a dictionary calls, `pairOf(value, dropped, TCopy, dropD)` where its callers give its own copy (ADR 0914)",
+    file: "src/lower/instances.rs",
+    find: "            (id.is_local() || foreign.is_instance(id))\n",
+    replace: "            id.is_local()\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "is its program's, alone or a dependency",
     ],
   },
 ];

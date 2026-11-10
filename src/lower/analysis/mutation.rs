@@ -343,7 +343,7 @@ pub(in crate::lower) fn cloned_params<'tcx>(
 
 /// The type parameters of the crate's own functions a `Some` of which is
 /// the value itself, never a box (ADR 0051, amended): of a function only
-/// its crate's calls call (`copies_by_callers`), those none of its calls
+/// its crate's calls call (`seen_whole`, `Fact::CopiedApart`), those none of its calls
 /// gives what may look like `None`, `()` or an `Option`
 /// (`representation::may_look_like_none`), or a type parameter of its own
 /// that may be one. Every other is given one, a JS caller's `R` too, which
@@ -365,7 +365,10 @@ pub(in crate::lower) fn unboxed_params<'tcx>(
         &|ty| !crate::lower::representation::may_look_like_none(recognition.tcx, ty),
     );
     (items.iter().copied())
-        .filter(|&id| copies_by_callers(tcx, foreign, id) && tcx.typeck_root_def_id(id) == id)
+        .filter(|&id| {
+            crate::lower::instances::seen_whole(tcx, id, crate::lower::instances::Fact::CopiedApart(foreign))
+                && tcx.typeck_root_def_id(id) == id
+        })
         .flat_map(|id| type_params(tcx, id).into_iter().map(move |index| (id, index)))
         .filter(|param| !nullish.contains(param))
         .collect()
@@ -392,7 +395,7 @@ pub(super) fn type_params(tcx: TyCtxt<'_>, id: DefId) -> Vec<u32> {
 /// one of a function a dictionary may call, and of the others those a
 /// caller of the crate's gives a value it isn't `itself` of, or a type
 /// parameter of its own that is one.
-/// Carried by `instances.rs`' `params_given`, `copies_by_callers` its
+/// Carried by `instances.rs`' `params_given`, `seen_whole` of `Fact::CopiedApart` its
 /// policy of a function seen whole (ADR 1115).
 fn given_params<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -406,7 +409,7 @@ fn given_params<'a, 'tcx>(
     crate::lower::instances::params_given(
         &callers,
         (items, is_item),
-        &|id| copies_by_callers(tcx, foreign, id),
+        &|id| crate::lower::instances::seen_whole(tcx, id, crate::lower::instances::Fact::CopiedApart(foreign)),
         bounded,
         itself,
     )
@@ -422,24 +425,8 @@ pub(in crate::lower) fn clones_by_itself(
     clones: &IndexSet<(DefId, u32)>,
     (id, index): (DefId, u32),
 ) -> bool {
-    copies_by_callers(tcx, foreign, id) && !clones.contains(&(tcx.typeck_root_def_id(id), index))
-}
-
-/// Is `id` one only its crate's callers call, whose `Copy` bounds take a
-/// copy function only where they give one (ADR 0289)? A trait's method, an
-/// impl's, and their closures are called through dictionaries, and a trait
-/// impl's own bounds are its dictionary's. A library's function the crate
-/// compiles itself is its own (ADR 0914).
-pub(in crate::lower) fn copies_by_callers(
-    tcx: TyCtxt<'_>,
-    foreign: &crate::lower::library::Foreign<'_, '_>,
-    id: DefId,
-) -> bool {
-    let id = tcx.typeck_root_def_id(id);
-    (id.is_local() || foreign.is_instance(id))
-        && !matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })
-        && tcx.trait_of_assoc(id).is_none()
-        && tcx.trait_impl_of_assoc(id).is_none()
+    crate::lower::instances::seen_whole(tcx, id, crate::lower::instances::Fact::CopiedApart(foreign))
+        && !clones.contains(&(tcx.typeck_root_def_id(id), index))
 }
 
 /// The type parameters of `id` bound by `Copy`, by their indices, an

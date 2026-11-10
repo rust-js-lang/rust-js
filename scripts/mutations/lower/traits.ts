@@ -143,9 +143,9 @@ export const mutations: Mutation[] = [
     breaks:
       "every `Copy` bound takes a copy function, so `twice(name)` is given `{ copy: (value) => value }`",
     file: "src/lower/traits.rs",
-    find: "    if tcx.is_lang_item(tr.def_id, LangItem::Copy)\n        && super::analysis::copies_by_callers(tcx, foreign, id)",
+    find: "    if tcx.is_lang_item(tr.def_id, LangItem::Copy)\n        && super::instances::seen_whole(tcx, id, super::instances::Fact::CopiedApart(foreign))",
     replace:
-      "    if false\n        && super::analysis::copies_by_callers(tcx, foreign, id)",
+      "    if false\n        && super::instances::seen_whole(tcx, id, super::instances::Fact::CopiedApart(foreign))",
     tests: [
       "test/lowering-functions.test.ts",
       "-t",

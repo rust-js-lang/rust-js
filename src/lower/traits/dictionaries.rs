@@ -827,7 +827,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `Copied` too (ADR 0938).
             let item = self.tcx.typeck_root_def_id(self.item);
             if let ty::Param(param) = ty.kind()
-                && crate::lower::analysis::copies_by_callers(self.tcx, self.krate.foreign, item)
+                && crate::lower::instances::seen_whole(
+                    self.tcx,
+                    item,
+                    crate::lower::instances::Fact::CopiedApart(self.krate.foreign),
+                )
                 && !self.krate.given.copied.contains(&(item, param.index))
             {
                 return Ok(Expr::undefined());

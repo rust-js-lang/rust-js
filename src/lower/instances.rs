@@ -1136,6 +1136,42 @@ fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Bo
     }
 }
 
+/// A fact what callers give generic code decides, as whether a caller the
+/// crate doesn't see gets its own copy of the function for it asks.
+#[derive(Clone, Copy)]
+pub(in crate::lower) enum Fact<'f, 'a, 'tcx> {
+    /// A copy, a `Clone` dictionary, an unboxed `Some` (ADRs 0289, 0914,
+    /// 0051): a consumer whose call gives more than the export takes
+    /// compiles its own copy (`gives_more`), and JS's is a copy apart
+    /// (`js_given`), so the crate's own calls are every caller of its.
+    CopiedApart(&'f crate::lower::library::Foreign<'a, 'tcx>),
+    /// An `Rc` counted, a place an object's stored, a clone apart (#1009,
+    /// #1114, #1119): no caller compiles its own for these, so a `pub`
+    /// function's are any a consumer or JS may give (#1234).
+    Shared,
+}
+
+/// Whether every caller of `owner`, a function or a trait, that may give
+/// it what decides `fact` is one the crate sees: the one rule of the
+/// callers' instances' carrier, `params_given`'s and `instances_of`'s
+/// (ADR 1115), which asks whether a caller the crate doesn't see gets its
+/// own copy for `fact`. Of `CopiedApart`, a function of the crate's, or of
+/// a library's it compiles itself, called by name: not a trait's method,
+/// nor an impl's, which a dictionary calls (#1233). Of `Shared`, one no
+/// other crate or JS can name.
+pub(in crate::lower) fn seen_whole(tcx: TyCtxt<'_>, owner: DefId, fact: Fact<'_, '_, '_>) -> bool {
+    match fact {
+        Fact::CopiedApart(foreign) => {
+            let id = tcx.typeck_root_def_id(owner);
+            (id.is_local() || foreign.is_instance(id))
+                && !matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })
+                && tcx.trait_of_assoc(id).is_none()
+                && tcx.trait_impl_of_assoc(id).is_none()
+        }
+        Fact::Shared => !tcx.visibility(owner).is_public(),
+    }
+}
+
 /// Of `items`, each type parameter `bounded` names that some caller gives
 /// what isn't `itself`, carried through generic callers: a caller's own type
 /// parameter given on is given what that one is. A function `seen_whole`
@@ -1143,7 +1179,7 @@ fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Bo
 /// type. The carrier's second question beside `instances_of`'s (ADR 1115):
 /// `instances_of` answers which types, of a function whose visibility says
 /// its callers are seen; this whether any fails `itself`, of one
-/// `seen_whole` says is, `copies_by_callers` for the copies, clones and
+/// `seen_whole` says is, of `Fact::CopiedApart`, for the copies, clones and
 /// `Some`s a caller gives (ADRs 0289, 0914, 0051), as a consumer that gives
 /// more compiles its own and JS's is a copy apart.
 pub(super) fn params_given<'a, 'tcx>(
@@ -1250,7 +1286,7 @@ fn given_types<'tcx>(
     if !seen.insert((owner, index)) {
         return Some(IndexSet::default());
     }
-    if tcx.visibility(owner).is_public() {
+    if !seen_whole(tcx, owner, Fact::Shared) {
         return None;
     }
     // Of a trait's method, or an impl's of one, each naming of the trait's
@@ -1258,7 +1294,7 @@ fn given_types<'tcx>(
     let mut namings = vec![(owner, index)];
     if let Some(declared) = tcx.trait_item_of(owner).or(tcx.trait_of_assoc(owner).map(|_| owner)) {
         let own = index.checked_sub(tcx.generics_of(owner).parent_count as u32)?;
-        if tcx.visibility(tcx.parent(declared)).is_public() {
+        if !seen_whole(tcx, tcx.parent(declared), Fact::Shared) {
             return None;
         }
         if declared != owner {

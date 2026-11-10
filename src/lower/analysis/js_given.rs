@@ -75,7 +75,11 @@ impl JsGiven {
         let routed: IndexSet<DefId> = (items.iter().copied())
             .filter(|&id| {
                 tcx.typeck_root_def_id(id) == id
-                    && super::mutation::copies_by_callers(tcx, recognition.foreign, id)
+                    && crate::lower::instances::seen_whole(
+                        tcx,
+                        id,
+                        crate::lower::instances::Fact::CopiedApart(recognition.foreign),
+                    )
                     && !super::mutation::type_params(tcx, id).is_empty()
                     && copyable(id)
             })

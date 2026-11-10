@@ -267,7 +267,7 @@ fn bound_of<'tcx>(
     // A `Copy` bound only the crate's callers give, none of them a value
     // whose copy isn't itself, takes no copy function (ADR 0289).
     if tcx.is_lang_item(tr.def_id, LangItem::Copy)
-        && super::analysis::copies_by_callers(tcx, foreign, id)
+        && super::instances::seen_whole(tcx, id, super::instances::Fact::CopiedApart(foreign))
         && let ty::Param(param) = tr.self_ty().kind()
         && !given.copied.contains(&(tcx.typeck_root_def_id(id), param.index))
     {
@@ -288,7 +288,7 @@ fn bound_of<'tcx>(
     // export's that its contract says takes none (ADR 0914, amended).
     if tcx.is_lang_item(tr.def_id, LangItem::Clone)
         && let ty::Param(param) = tr.self_ty().kind()
-        && match super::analysis::copies_by_callers(tcx, foreign, id) {
+        && match super::instances::seen_whole(tcx, id, super::instances::Fact::CopiedApart(foreign)) {
             true => super::analysis::clones_by_itself(tcx, foreign, given.clones, (id, param.index)),
             false => (foreign.item(id)).is_some_and(|item| {
                 !(item.calling.param(param.index)).is_some_and(|param| param.has(crate::library::ParamFact::Clone))

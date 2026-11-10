@@ -72,9 +72,9 @@ pub(super) use debug::{FormatCall, format_calls};
 pub(super) use debug::{WriterFacts, Writes};
 use drops::drop_params;
 use generic_consts::generic_consts;
+pub(super) use mutation::clones_by_itself;
 pub(super) use mutation::{clone_bounded, clones_itself, copies_itself, copy_bounded};
 use mutation::{cloned_params, copied_params, mutated_types, unboxed_params};
-pub(super) use mutation::{clones_by_itself, copies_by_callers};
 use naming::{
     exported_across_modules, js_uses, local_consts, local_functions, name_imports, name_items, named_expressions,
     refuse_two_names, required_uses,
