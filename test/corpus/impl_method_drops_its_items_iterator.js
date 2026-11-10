@@ -5,6 +5,7 @@ import {
   $collectDropping,
   $dropEach,
   $dropItems,
+  $held,
   $iter,
   $iterator,
   $next,
@@ -74,7 +75,7 @@ function wrapperKeeping_held(
       (it) => {
         dropI?.(it.of[0]);
       },
-    ).map((i) => ({ iter: WrapperItemIntoIterator.intoIter(i) })),
+    ).map((i) => ({ iter: $held(WrapperItemIntoIterator.intoIter(i)) })),
     (held) => {
       console.log("drop held");
       dropIItemIntoIter?.(held.iter);

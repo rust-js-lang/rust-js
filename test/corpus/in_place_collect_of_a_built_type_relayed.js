@@ -15,6 +15,7 @@ import {
   $folded,
   $given,
   $givenDrop,
+  $held,
   $index,
   $intoIter,
   $iter,
@@ -44,7 +45,7 @@ function heldDrop_drop(held, dropI) {
 
 function held(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, dropHItemIntoIter) {
   const iter = $closing(Iterator.from(iters), dropH, false).map((i) => ({
-    iter: HItemIntoIterator.intoIter(i),
+    iter: $held(HItemIntoIterator.intoIter(i)),
   }));
   let result;
   try {
@@ -136,7 +137,7 @@ function ranged(t, HeldSize, HeldAlign) {
  */
 function listed(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, dropHItemIntoIter) {
   const iter = $closing(Iterator.from(iters), dropH, false).map((i) => ({
-    iter: HItemIntoIterator.intoIter(i),
+    iter: $held(HItemIntoIterator.intoIter(i)),
   }));
   return $collectDropping(
     $folded(iter),
@@ -236,7 +237,7 @@ function tHolding(
     () => ({
       heldAll(self, SelfItemIntoIterator) {
         const iter = $closing($given(self, TIterator, true), $givenDrop(dropT), false).map((i) => ({
-          iter: SelfItemIntoIterator.intoIter(i),
+          iter: $held(SelfItemIntoIterator.intoIter(i)),
         }));
         let result;
         try {

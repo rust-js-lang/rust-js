@@ -204,7 +204,7 @@ function swapped(source, other, SSource) {
   const items = $held(SSource.items(source));
   let tmp;
   try {
-    tmp = $some(SSource.items(other));
+    tmp = $some($held(SSource.items(other)));
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);

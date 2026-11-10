@@ -3,6 +3,7 @@
 import {
   $borrowMut,
   $cleanup,
+  $held,
   $iter,
   $iterator,
   $lent,
@@ -139,7 +140,7 @@ function summed(it) {
 }
 
 function last(source, SSource) {
-  const items = { value: { value: SSource.items(source) }, strong: 1, weak: 0 };
+  const items = { value: { value: $held(SSource.items(source)) }, strong: 1, weak: 0 };
   let borrowMut;
   try {
     borrowMut = $borrowMut(items.value, true);
@@ -171,7 +172,7 @@ function last(source, SSource) {
 }
 
 function secondOf(source, SSource) {
-  const items = { value: { value: SSource.items(source) }, strong: 1, weak: 0 };
+  const items = { value: { value: $held(SSource.items(source)) }, strong: 1, weak: 0 };
   let borrowMut;
   try {
     borrowMut = $borrowMut(items.value, true);

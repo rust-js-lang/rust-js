@@ -309,3 +309,27 @@ One a variable holds and moves into a consumer stepped to its end, `let
 mut c = ..; c.collect()`, still closes there, as Rust drops it. Held by
 `from_iter_holds_what_generic_code_gives.rs` and the mutations
 `closing-steps-by-closing-next` and `own-next-unkept`.
+
+## Amendment: an iterator moved into what holds it is held (2026-11-11, #1270)
+
+A temporary iterator is held, `$held(..)`, where the body drops it as it
+runs on or steps it by reference (`owned_where_run`): not one only moved
+into a call. But one moved into a value that holds it, `RefCell::new(it)`,
+`Some(it)`, a struct's field, an array or a tuple, is dropped with that
+value, where its owner drops it; unheld, what closes it, a `$closing`
+generic code gave it, closed it as it was stepped to its end, so a
+`from_iter` that kept it in an `Rc<RefCell<..>>` saw it dropped before it
+printed what it summed. `moved_into_a_holder` is the one answer of every
+place a temporary iterator can be moved into: an aggregate, or a call whose
+value's type holds its type and isn't an iterator itself as the body's
+bounds say (`may_hold_by_bounds`), so std's adapter of it, generic code's
+`Take<Cycle<I>>` too, held through its own `hold()`, still closes what it
+holds where it's done; not std's struct, compiled, which has no `hold()`
+(#243), nor what std's own bodies move into theirs, a flatten's
+`frontiter`, which they drop where they replace it. A `Box<I>` is `I` in JS, held as it is. Held by
+`iterator_held_in_a_place_dropped_with_it.rs`, both builds, the six place
+rewrites of `from_iter_holds_what_generic_code_gives.rs`, and the mutations
+`moved-into-a-holder-unheld`, `boxed-iterator-unheld`,
+`compiled-struct-in-a-holder-held`, `std-bodies-holder-held` and
+`adapter-of-it-a-holder`. The crate's
+own iterator so given, not an adapter of it, throws on its drop, #1286.

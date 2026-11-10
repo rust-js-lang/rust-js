@@ -5,6 +5,7 @@ import {
   $count,
   $dropEach,
   $given,
+  $held,
   $intoIter,
   $rangeNext,
   $took,
@@ -91,7 +92,7 @@ function tJoining(TIterator, dropT, dropTItem) {
     heldWith(self, extra, dropU, dropUItem, dropUIntoIter) {
       let held;
       try {
-        held = { iter: $intoIter(extra) };
+        held = { iter: $held($intoIter(extra)) };
       } catch (error) {
         $cleanup(() => {
           dropT?.(self);

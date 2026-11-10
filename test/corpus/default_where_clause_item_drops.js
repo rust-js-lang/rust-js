@@ -81,7 +81,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
           const i = $someValue(tmp);
           let iter$1;
           try {
-            iter$1 = SelfItemIntoIterator.intoIter(i);
+            iter$1 = $held(SelfItemIntoIterator.intoIter(i));
           } catch (error) {
             $cleanup(() => {
               dropT?.(iter);
@@ -126,7 +126,9 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
         let result;
         try {
           result =
-            next != null ? { iter: SelfItemIntoIterator.intoIter($someValue(next)) } : undefined;
+            next != null
+              ? { iter: $held(SelfItemIntoIterator.intoIter($someValue(next))) }
+              : undefined;
         } catch (error) {
           $cleanup(() => {
             dropT?.(self);
@@ -207,7 +209,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
           const i = $someValue(tmp);
           let iter$1;
           try {
-            iter$1 = SelfItemIntoIterator.intoIter(i);
+            iter$1 = $held(SelfItemIntoIterator.intoIter(i));
           } catch (error) {
             $cleanup(() => {
               dropT?.(iter);

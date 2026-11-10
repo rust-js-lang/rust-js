@@ -4,6 +4,7 @@ import {
   $at,
   $borrowMut,
   $enumerate,
+  $held,
   $intoIter,
   $iter,
   $iterator,
@@ -19,7 +20,7 @@ export function entry() {
 }
 
 function sumFromIterator_u32__u32__fromIter(items) {
-  const it = { value: $intoIter(items) };
+  const it = { value: $held($intoIter(items)) };
   let sum = 0;
   while (true) {
     const borrowMut = $borrowMut(it, true);

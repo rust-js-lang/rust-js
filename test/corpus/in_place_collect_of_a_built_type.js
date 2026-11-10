@@ -10,6 +10,7 @@ import {
   $dropEach,
   $dropItems,
   $foldToArray,
+  $held,
   $index,
   $iter,
   $iterator,
@@ -32,7 +33,7 @@ function heldDrop_drop(held, dropI) {
 
 function held(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, dropHItemIntoIter) {
   const iter = $closing(Iterator.from(iters), dropH, false).map((i) => ({
-    iter: HItemIntoIterator.intoIter(i),
+    iter: $held(HItemIntoIterator.intoIter(i)),
   }));
   let result;
   try {

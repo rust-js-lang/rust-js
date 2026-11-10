@@ -7,6 +7,7 @@ import {
   $collectDropping,
   $dropEach,
   $dropItems,
+  $held,
   $iter,
   $iterator,
   $next,
@@ -141,7 +142,7 @@ function wrapperKeeping(IIterator, dropI, dropIItem, dropIItemItem, dropIItemInt
             (it) => {
               dropI?.(it.of[0]);
             },
-          ).map((i) => ({ iter: SelfItemIntoIterator.intoIter(i) })),
+          ).map((i) => ({ iter: $held(SelfItemIntoIterator.intoIter(i)) })),
           (held) => {
             console.log("drop held");
             dropIItemIntoIter?.(held.iter);
@@ -330,7 +331,7 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
               }
               dropU?.(it.of[1]);
             },
-          ).map((i) => ({ iter: SelfItemIntoIterator.intoIter(i) })),
+          ).map((i) => ({ iter: $held(SelfItemIntoIterator.intoIter(i)) })),
           (held) => {
             console.log("drop held");
             dropIItemIntoIter?.(held.iter);

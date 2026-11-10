@@ -202,7 +202,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of a generic body, an iterator of a type it's given, which may be
     /// one: a function's `impl Iterator` stepped by `next()` (#392).
     pub(super) fn holds_dropped_iterator(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
-        let ty = state.body.local_decls[place.local].ty;
+        // A `Box<I>` is `I` in JS (#1270).
+        let mut ty = state.body.local_decls[place.local].ty;
+        while let Some(inner) = ty.boxed_ty() {
+            ty = inner;
+        }
         place.projection.is_empty()
             && (self.dropped_by_closing(ty) || self.recognition().bounded_iterator(ty))
             && self.owned_where_run(state, place.local)
@@ -258,7 +262,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             if lent.local == local && lent.projection.is_empty()))
                     })
             });
-        dropped || lent
+        dropped || lent || self.moved_into_a_holder(body, local)
+    }
+
+    /// Whether `local` is moved into a value that holds it, which its owner
+    /// drops where Rust does: an aggregate, `Some(it)`, a struct, an array
+    /// or a tuple, or a call whose value's type holds its type and isn't an
+    /// iterator itself, `RefCell::new(it)` (#1270); not std's struct, compiled.
+    /// Not std's adapter of it,
+    /// an iterator, held through its own `hold()` where its owner holds it,
+    /// and closing what it holds where it's done; nor a consumer, whose
+    /// value holds no iterator. The one answer of every place a temporary
+    /// iterator can be moved into.
+    fn moved_into_a_holder(&self, body: &mir::Body<'tcx>, local: mir::Local) -> bool {
+        // Std's struct, compiled, which steps what it holds as Rust does and
+        // has no `hold()` (#243); and what std's own bodies move into theirs,
+        // a flatten's `frontiter`, which they drop where they replace it.
+        if crate::lower::recognition::is_compiled_std_iterator(self.tcx, body.local_decls[local].ty)
+            || !body.source.def_id().is_local()
+        {
+            return false;
+        }
+        let moved = |operand: &mir::Operand<'tcx>| matches!(operand, mir::Operand::Move(place) if place.local == local && place.projection.is_empty());
+        let ty = self.tcx.erase_and_anonymize_regions(body.local_decls[local].ty);
+        let holds = |made: Ty<'tcx>| {
+            let made = self.tcx.erase_and_anonymize_regions(made);
+            // An iterator itself, as the body's bounds say, generic code's
+            // `Take<Cycle<I>>` too, whose item is `I::Item`.
+            let iterator = crate::lower::recognition::std_item(self.tcx, crate::lower::recognition::StdItem::Iterator);
+            made != ty
+                && made.walk().any(|part| part.as_type() == Some(ty))
+                && !self.recognition().may_hold_by_bounds(made, iterator)
+        };
+        (body.basic_blocks.iter()).any(|data| {
+            !data.is_cleanup
+                && (data.statements.iter().any(|statement| {
+                    matches!(&statement.kind, mir::StatementKind::Assign(assign)
+                        if matches!(&assign.1, mir::Rvalue::Aggregate(_, operands) if operands.iter().any(moved)))
+                }) || matches!(&data.terminator().kind, TerminatorKind::Call { args, destination, .. }
+                    if args.iter().any(|arg| moved(&arg.node))
+                        && holds(destination.ty(&body.local_decls, self.tcx).ty)))
+        })
     }
 
     /// What `body`'s drops drop, `None` if none drops anything JS sees, and
