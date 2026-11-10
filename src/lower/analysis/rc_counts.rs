@@ -32,6 +32,10 @@ pub struct Counted<'tcx> {
     /// callers are seen: it's counted, and its instances are, no other type
     /// it may be (#1009).
     pub resolved: IndexSet<Ty<'tcx>>,
+    /// Each pointee that holds a type parameter whose every function's
+    /// callers are seen, counted or not: what it may be is its instances
+    /// alone, so one not counted is none other type that's counted (#1227).
+    pub seen: IndexSet<Ty<'tcx>>,
     /// Whether the crate compares an `Rc<dyn Fn>` it doesn't count,
     /// `Rc::ptr_eq` of one whose pointee is in `asked` and not counted:
     /// its identity is its JS function's (ADR 0959), so a closure made an
@@ -119,13 +123,16 @@ impl<'tcx> Counted<'tcx> {
     /// Is an `Rc` of `pointee` counted? Where it's one counted, or may be:
     /// one generic code holds as `Rc<Slot<T>>` is any `Rc<Slot<_>>`, so
     /// the two are one representation (ADR 0852); but of one whose callers
-    /// are seen, `resolved`, the types they give alone, each counted itself
-    /// (#1009).
+    /// are seen, `seen`, the types they give alone, each counted itself
+    /// (#1009): one of those not counted is none that's counted, whatever
+    /// another counted type it might have been, generic code's `Rc<F>` of
+    /// an `F` its callers give functions, beside an `Rc<u8>` counted, the
+    /// `Rc<dyn Fn>` they make of it uncounted too (#1227).
     pub fn counts(&self, tcx: TyCtxt<'tcx>, pointee: Ty<'tcx>) -> bool {
         let pointee = tcx.erase_and_anonymize_regions(pointee);
         self.all
             || self.types.contains(&pointee)
-            || !self.resolved.contains(&pointee)
+            || !self.seen.contains(&pointee)
                 && (self.types.iter())
                     .filter(|t| !self.resolved.contains(*t))
                     .any(|&t| may_be(tcx, t, pointee))
@@ -567,6 +574,7 @@ pub(super) fn counted_rcs<'tcx>(
     let mut counted = Counted {
         all: false,
         resolved: IndexSet::default(),
+        seen: IndexSet::default(),
         compared_uncounted: false,
         points_at_functions,
         apart,
@@ -608,6 +616,7 @@ pub(super) fn counted_rcs<'tcx>(
         .filter(|(_, of)| of.is_some())
         .map(|(&t, _)| t)
         .collect();
+    counted.seen = counted.resolved.clone();
     // Settled to a fixed point (ADR 0852, amended): what's counted counts
     // each type it may be, one representation for both. Of a pointee whose
     // instances are seen, that's they alone: generic code's `Rc<Slot<T>>`

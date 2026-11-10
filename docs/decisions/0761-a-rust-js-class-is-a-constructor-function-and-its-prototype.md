@@ -907,3 +907,19 @@ or union** (ADR 1084), a class's of either form too, so `class(es,
 fields)` no longer asks it of the fields it declares: its refusal of a
 field of no JS name, `data-x`, says `` `data-x` is no JS name, which no
 class declares ``.
+
+## Amended (2026-11-10, #1227): a method whose `self` is a counted `Rc<Self>` is refused
+
+A class's constructor that gives an `Rc` of it the crate counts is refused
+(rd554): `new` gives the instance, not `{ value, strong, weak }`. A method
+whose `self` is such an `Rc`, `self: &Rc<Self>` beside a `strong_count`,
+was lowered as a prototype method whose `this` is the box, and called on
+the box, a plain object, `chunk.watch is not a function`. JS calls a
+class's method on its instance and the crate's callers have the box that
+counts it, so no one method takes both (ADR 0262: Rust's behavior can't be
+preserved). It's refused too, the user's decision, as the constructor is:
+take `&self`, or write it as a function of an `&Rc` of it outside the
+class's impl. A counted `Rc` of a class that is the instance itself, which
+would lift both, is a design issue of its own. Held by
+`class_method_of_a_counted_rc_self_refused.rs`, the guide's limitations and
+the mutation `counted-rc-self-method-allowed`.

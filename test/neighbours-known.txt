@@ -18,8 +18,5 @@ plain std identity_inside_keys.rs beside drop_impl_indirect.rs dyn_fn_of_a_param
 #1060 P2 (neighbours): untagged_in_untagged.rs refused beside guard_deref_dictionary.rs + rc_from_box.rs: an Rc variant can't be told apart
 plain std untagged_in_untagged.rs beside guard_deref_dictionary.rs rc_from_box.rs
 
-#1058 P2: ptr::addr_eq(&*a, &*b) of two counted Rc<dyn Fn>s is refused: "size_of of a value without one size"
-plain std dyn_fn_addresses_of_rcs.rs beside dyn_tail_in_a_ref_cell.rs
-
 #1112 P2 (neighbours): a generic whose callers can't be seen, a pub trait's method, counts every Rc beside it
 plain std class_constructor_rc.rs beside rc_dropped_where_callers_unseen.rs

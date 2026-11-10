@@ -4,7 +4,8 @@
 //! task, `createTask(this, ..)`. An `Rc` the crate counts no count of is
 //! the value it points at (ADR 0844), so `new RequestInstance(..)` is the
 //! `Rc`; one it counts is `{ value, strong, weak }`, which `new` can't
-//! give, so it's refused.
+//! give, so it's refused, and so is a method JS calls on the instance whose
+//! `self` is such an `Rc` (#1227).
 
 use super::{constructor_of, is_class};
 use crate::collections::{IndexMap, IndexSet};
@@ -50,6 +51,37 @@ pub(crate) fn refuse_counted_instances<'tcx>(tcx: TyCtxt<'tcx>, counts: impl Fn(
                 ),
             );
             valid = false;
+        }
+        // And each of its methods JS calls on its instance, `this`, whose
+        // `self` is an `Rc` of it the crate counts: Rust's callers have the
+        // box that counts it, JS's the instance, and no one method takes
+        // both (#1227).
+        let own = tcx.type_of(id).instantiate_identity().skip_normalization();
+        for &imp in tcx.inherent_impls(id) {
+            for &method in tcx.associated_item_def_ids(imp) {
+                if !tcx.def_kind(method).is_fn_like()
+                    || !tcx.associated_item(method).is_method()
+                    || super::receivers::body_receiver(tcx, method) != super::receivers::Receiver::This
+                {
+                    continue;
+                }
+                let receiver = tcx
+                    .fn_sig(method)
+                    .instantiate_identity()
+                    .skip_normalization()
+                    .skip_binder()
+                    .inputs()[0];
+                if rc_pointee(tcx, receiver.peel_refs()) == Some(own) && counts(own) {
+                    tcx.dcx().span_err(
+                        tcx.def_span(method),
+                        format!(
+                            "rust-js: a `#[rust_js::class]` method whose `self` is `{receiver}` is called on the class's instance, as JS calls it, an `Rc` the crate counts nothing of; this crate counts it, `{{ value, strong, weak }}`, as it reads its counts or its last owner runs a destructor: take `&self`, or write it as a function of an `&Rc` of it, `fn {}(this: {receiver})`, outside the class's impl (#1227, ADR 0761)",
+                            tcx.item_name(method)
+                        ),
+                    );
+                    valid = false;
+                }
+            }
         }
     }
     valid

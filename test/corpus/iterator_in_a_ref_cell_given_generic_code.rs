@@ -1,3 +1,4 @@
+//@ library-differs
 // An iterator a `RefCell` holds, of a type only a caller knows, stepped
 // through its guard: `(*items.borrow_mut()).next()` of an `I: Iterator`,
 // or an associated type's, `S::Iter`, and given on, `&mut *held`, to

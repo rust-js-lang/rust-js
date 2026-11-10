@@ -242,27 +242,21 @@ function through(f) {
 }
 
 function called(f) {
-  const held = { value: { value: f }, strong: 1, weak: 0 };
-  let result;
+  const held = { value: f };
+  const borrowMut = $borrowMut(held, true);
+  let first;
   try {
-    const borrowMut = $borrowMut(held.value, true);
-    let first;
-    try {
-      first = through(borrowMut.value);
-    } finally {
-      $unborrow(borrowMut);
-    }
-    const value = (first * 10) >>> 0;
-    const value$1 = $borrowMut(held.value, true);
-    try {
-      result = (value + value$1.value()) >>> 0;
-    } finally {
-      $unborrow(value$1);
-    }
+    first = through(borrowMut.value);
   } finally {
-    $rcDrop(held);
+    $unborrow(borrowMut);
   }
-  return result;
+  const value = (first * 10) >>> 0;
+  const value$1 = $borrowMut(held, true);
+  try {
+    return (value + value$1.value()) >>> 0;
+  } finally {
+    $unborrow(value$1);
+  }
 }
 
 function main() {

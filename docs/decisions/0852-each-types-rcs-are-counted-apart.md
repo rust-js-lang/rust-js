@@ -399,3 +399,20 @@ construction, and stays a wildcard: `rc_counted_by_an_impls_parameter.rs`
 runs it through generic code, but no program of one crate tells it from a
 method's own, as each dictionary its namings resolve names the impl's
 method with its parameter's type too, so no mutation holds that line.
+
+## Amended (2026-11-10, #1227): a pointee whose instances are seen and none counted is uncounted
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, now
+Rust's. `counts` asks whether an `Rc` of a type is counted: one in
+`types`, or one that may be one of them. Of a pointee that holds a type
+parameter whose callers are all seen (#1009), only its instances are what
+it may be; but `resolved` kept only those counted, so one whose instances
+none is counted was asked as any type it may be. Generic code's `Rc<F>`,
+`Rc::new(f)` of an `F` its callers give a fn item and a closure, made an
+`Rc<dyn Fn>`, beside an `Rc<u8>` a generic `strong_count` counts, was
+counted, as `F` might have been `u8`, and the `Rc<dyn Fn>` its callers call
+wasn't: `a is not a function`. `seen` keeps every such pointee, counted or
+not, and `counts` asks one of them for itself alone. Found by #1204's
+context rewrite `fact-rc-counts` of `dyn_fn_addresses_of_rcs.rs`. Held by
+`rc_of_functions_uncounted_beside_a_counted_one.rs` and the mutation
+`seen-uncounted-may-be-any`.

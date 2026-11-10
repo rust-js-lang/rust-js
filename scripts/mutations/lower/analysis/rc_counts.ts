@@ -522,4 +522,12 @@ export const mutations: Mutation[] = [
     replace: "    counted.resolved = IndexSet::default();\n    let _: IndexSet<Ty<'tcx>> = (instances.iter())\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_counted_by_callers_instances.rs$"],
   },
+  {
+    name: "seen-uncounted-may-be-any",
+    breaks: "generic code's `Rc<F>` of an `F` whose callers give functions, none counted, is counted as any type `F` may be beside a counted `Rc<u8>`, and the `Rc<dyn Fn>` made of it, which callers call uncounted, is `{ value, strong, weak }`: `a is not a function` (#1227)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "            || !self.seen.contains(&pointee)",
+    replace: "            || !self.resolved.contains(&pointee)",
+    tests: ["test/corpus.test.ts", "-t", "^rc_of_functions_uncounted_beside_a_counted_one\\.rs$"],
+  },
 ];

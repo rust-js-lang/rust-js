@@ -82,4 +82,12 @@ export const mutations: Mutation[] = [
     replace: "            field_def(tcx, field).is_some()\n",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
   },
+  {
+    name: "counted-rc-self-method-allowed",
+    breaks: "a class's method whose `self` is an `Rc` of it the crate counts compiles, called on the box as a prototype method: `chunk.watch is not a function` (#1227)",
+    file: "src/lower/classes/constructors.rs",
+    find: "                if rc_pointee(tcx, receiver.peel_refs()) == Some(own) && counts(own) {",
+    replace: "                if false && rc_pointee(tcx, receiver.peel_refs()) == Some(own) && counts(own) {",
+    tests: ["test/corpus.test.ts", "-t", "^class_method_of_a_counted_rc_self_refused\\.rs$"],
+  },
 ];
