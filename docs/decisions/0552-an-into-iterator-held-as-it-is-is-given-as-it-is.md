@@ -200,5 +200,5 @@ iterator does:
 `Array.from($roomForHint(IRefIntoIterator.intoIter(r), 4, false))`, and a
 `String`'s `.join("")`. `test/corpus/from_iter_of_a_bound_reference.rs`
 holds both, of a newtype's `&Word` and of a `&Vec`, against native Rust
-in both builds. `flat_map(|_| r)` in the std-structs build stays refused
-(#1273).
+in both builds. `flat_map(|_| r)`, whose constant size of `&I` was
+refused, is ADR [0899](0899-a-flatten-held-is-stds.md)'s (#1273).

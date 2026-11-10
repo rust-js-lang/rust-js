@@ -138,6 +138,16 @@ pub(crate) fn held_facts<'tcx>(
             None => vec![(of, fact)],
         };
     }
+    // A reference's constant size, of a type only a caller knows, `&I`'s:
+    // its pointee's, as std's `ConstSizeIntoIterator` gives `N` of a `[T;
+    // N]`, a `&[T; N]` and a `&mut [T; N]` alike, and no reference to a
+    // reference is an `IntoIterator` of one (ADR 0899, #1273).
+    if fact == TypeFact::ConstSize
+        && let ty::Ref(_, pointee, _) = *of.kind()
+        && known_by_bounds(pointee)
+    {
+        return vec![(pointee, fact)];
+    }
     let Some(fact_trait) = fact_trait(tcx, fact) else {
         return vec![(of, fact)];
     };

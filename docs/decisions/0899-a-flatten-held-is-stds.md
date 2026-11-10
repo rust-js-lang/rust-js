@@ -191,3 +191,29 @@ as the function's given it (`const_arg`), `[T; N]`'s `N`.
 const length, collected and asked their hint, against native Rust in
 both builds, and in `iterator-forms.test.ts`' few. Mutations:
 `const-size-of-built-type-asked`, `const-size-of-a-const-length-none`.
+
+## Amendment: a reference's constant size is its pointee's (2026-11-11, #1273)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): a refusal lifted; no
+observable difference to decide.
+
+Generic code given `r: &'a I` bounded `&'a I: IntoIterator`, flattening
+it, `[0, 1].iter().flat_map(|_| r)`, was refused in both builds: "its
+constant size of `&I`, which no caller gives". A caller answers facts
+of a type parameter, `I`, and `&I` had no answer of its own. std gives
+`N` for a `[T; N]`, a `&[T; N]` and a `&mut [T; N]` alike, and
+`&&[T; N]` is no `IntoIterator`, so `&I`'s and `&mut I`'s constant size
+is `I`'s whatever `I` is. `held_facts`, which already says a `&mut I`'s
+`TrustedLen` is `I`'s (ADR 0975), now says so of a constant size of a
+reference to a type only a caller knows. Both the analysis, which asks
+the caller (`asked_of_caller`), and the lowering (`type_fact_value`)
+read it there, so the function is given `IConstSize`: `3` from a
+caller's `&[char; 3]`, nothing from a `&Vec` or a newtype's `&Word`.
+
+`test/corpus/flat_map_of_a_bound_reference.rs` steps and collects `&I`
+and `&mut I` flattened, asks each hint as it goes, and passes a reference
+on through another generic function, against native Rust in both
+builds. Mutation: `ref-const-size-not-its-pointees`. A
+`size_hint()` of `once(i).flatten()` or `once(r).flat_map(..)` stays
+refused, of a plain `I: IntoIterator` as well: `Once`'s hint of what
+it holds, a separate gap.

@@ -38,6 +38,8 @@ const few = [
   // A generic flatten's items' constant size, of what's no array and of
   // an array of a const parameter's length (#813).
   "generic_flatten_of_vecs.rs",
+  // And of a `&I` whose `IntoIterator` is its caller's bound, `I`'s (#1273).
+  "flat_map_of_a_bound_reference.rs",
   "std_flat_map.rs",
   // Std's `zip` given a `&I` whose `IntoIterator` is its caller's bound,
   // whose dictionary it's given (#1264).

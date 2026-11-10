@@ -117,4 +117,12 @@ export const mutations: Mutation[] = [
     replace: "        ) if false => {\n",
     tests: ["test/std-package.test.ts", "-t", "committed @rust-js/std is std's bodies"],
   },
+  {
+    name: "ref-const-size-not-its-pointees",
+    breaks: "a flatten's items' constant size, of a reference to a type only a caller knows, `&I`'s, is refused, \"which no caller gives\", where it's `I`'s, as std's `ConstSizeIntoIterator` gives a `&[T; N]`'s (#1273)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "        && known_by_bounds(pointee)\n    {\n        return vec![(pointee, fact)];\n",
+    replace: "        && false\n    {\n        return vec![(pointee, fact)];\n",
+    tests: ["test/corpus.test.ts", "-t", "^flat_map_of_a_bound_reference.rs$"],
+  },
 ];
