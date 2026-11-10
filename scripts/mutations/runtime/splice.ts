@@ -4,11 +4,12 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "splice-replaces-nothing",
-    breaks: "`splice` removes the range but puts nothing in its place",
+    breaks: "`splice` of items with a destructor removes the range but puts nothing in its gap",
     file: "src/runtime/splice.js",
     find: "      items.push(step.value);\n",
     replace: "      void step.value;\n",
-    tests: ["test/corpus.test.ts", "-t", "vec_edits"],
+    // `vec_edits`' splices, of numbers, are `$splice`'s (#1189).
+    tests: ["test/corpus.test.ts", "-t", "^splice_drops_and_fills_as_std.rs$"],
   },
   {
     name: "splice-replacement-spread",

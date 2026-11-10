@@ -211,6 +211,9 @@ for (const [name, source, message, crate] of [
   // `TrustedLen` iterators does, so a caller's maps, which JS can't count, are refused, through a
   // generic caller too, as the map that runs code there (#386, #1182).
   ["eq in generic code of two maps", 'fn same<I: Iterator<Item = u32>>(a: I, b: I) -> bool { a.eq(b) }\nfn passed<I: Iterator<Item = u32>>(a: I, b: I) -> bool { same(a, b) }\npub fn f(v: &[u32], w: &[u32]) -> bool { let g = |x: &u32| { println!("a"); *x }; passed(v.iter().map(g), w.iter().map(g)) }', "a `TrustedLen` whose length std compares first, which JS can't count before stepping it"],
+  // Of sides generic code builds itself, `a.map(f)`, whose `TrustedLen` its
+  // caller's types decide (#386; a side given as it is, above, is #1182's).
+  ["eq in generic code of maps it builds", 'fn same<I: Iterator<Item = u32>>(a: I, b: I) -> bool { a.map(|x| x + 1).eq(b.map(|x| x + 1)) }\npub fn f(v: &[u32], w: &[u32]) -> bool { same(v.iter().copied(), w.iter().copied()) }', "giving generic code two iterators it compares by `eq`, which std asks the lengths of first"],
   // So is a zip it folds, which std stops at the shorter side of without stepping its first again.
   ["a zip of a map collected in generic code", 'fn pairs<A: Iterator<Item = u32>, B: Iterator<Item = u32>>(a: A, b: B) -> Vec<(u32, u32)> { a.zip(b).collect() }\npub fn f(v: &[u32], w: &[u32]) -> Vec<(u32, u32)> { pairs(v.iter().map(|x| { println!("a"); *x }), w.iter().copied()) }', "giving generic code a zip it folds or steps, which std stops at its shorter side"],
   // And one it steps by `next()`, of sides std reads by index, whose `next()` stops there too.

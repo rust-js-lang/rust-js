@@ -74,6 +74,11 @@ fn main() {
     print!("{} ", e.capacity());
     e.extend(vec![7u32; 9]);
     println!("{}", e.capacity());
+    // Grown item by item, `4` then `8`, where reserving all five it adds
+    // first would give `5`.
+    let mut f: Vec<u32> = Vec::new();
+    f.extend((0..10).filter(|x| x % 2 == 0));
+    println!("{}", f.capacity());
     let mut s = vec![String::new()];
     s.extend([String::from("t"), String::from("u")].iter().cloned());
     println!("{}", s.capacity());

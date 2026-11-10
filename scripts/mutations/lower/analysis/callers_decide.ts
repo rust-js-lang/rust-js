@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/callers_decide.rs",
     find: "                            if !trusted || !(runs_code(a) || runs_code(b)) {\n",
     replace: "                            if true {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "eq in generic code of two maps"],
+    tests: ["test/diagnostics.test.ts", "-t", "eq in generic code of maps it builds"],
   },
   {
     name: "callers-zip-unnormalized",

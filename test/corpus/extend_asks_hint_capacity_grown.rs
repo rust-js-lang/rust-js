@@ -1,6 +1,8 @@
 // An `extend` that asks the crate's own `size_hint` as a `Vec` fills, of a
 // `Vec` pushed first, collected of what isn't `TrustedLen`, a caller's, or
-// a field's by an iterator generic code is given:
+// a field's by an iterator generic code is given, or a collection generic
+// code extends through its `Extend`, which a crate that keeps capacities
+// grows as std's does, never refused:
 // its capacity std's wherever it was made, as the crate keeps each `Vec`'s
 // as std grows it, so the hint is asked when std asks it (#849, #1180).
 struct Loud(u32);
@@ -54,6 +56,10 @@ impl Buf {
     }
 }
 
+fn extended<C: Extend<u32>, I: IntoIterator<Item = u32>>(c: &mut C, items: I) {
+    c.extend(items);
+}
+
 fn main() {
     println!("{}", pushed_first());
     println!("{}", collected_first(&[1, 2, 3, 4, 5]));
@@ -68,4 +74,7 @@ fn main() {
     b.fill(0..3);
     b.fill(Loud(3));
     println!("{}", b.v.capacity());
+    let mut c: Vec<u32> = Vec::new();
+    extended(&mut c, Loud(5));
+    println!("{}", c.capacity());
 }

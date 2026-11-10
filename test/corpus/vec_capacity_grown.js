@@ -147,6 +147,18 @@ function main() {
   }
   $grew(e, 4, length$3);
   console.log(`${$capacity(e, 4)}`);
+  // Grown item by item, `4` then `8`, where reserving all five it adds
+  // first would give `5`.
+  const f = [];
+  $extend(
+    f,
+    $grownBy(
+      f,
+      $lazyRange(0, 10).filter((x) => x % 2 === 0),
+      4,
+    ),
+  );
+  console.log(`${$capacity(f, 4)}`);
   const s = [""];
   $grew(s, 12, s.length, s.push("t", "u"));
   console.log(`${$capacity(s, 12)}`);

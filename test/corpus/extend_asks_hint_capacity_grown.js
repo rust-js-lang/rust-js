@@ -2,6 +2,7 @@
 
 import {
   $capacity,
+  $cellOf,
   $extend,
   $grew,
   $grownBy,
@@ -106,6 +107,10 @@ const Buf = {
   },
 };
 
+function extended(c, items, CExtendU32, IIntoIterInPlace) {
+  CExtendU32.extend(c, items, IIntoIterInPlace);
+}
+
 function main() {
   console.log(`${pushedFirst()}`);
   console.log(`${collectedFirst([1, 2, 3, 4, 5])}`);
@@ -123,5 +128,16 @@ function main() {
     $iterator([3], loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
   );
   console.log(`${$capacity(b.v, 4)}`);
+  const c = [];
+  extended(
+    $cellOf(c),
+    $iterator([5], loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
+    {
+      extend(collection, items) {
+        $extend(collection.value, $grownBy(collection.value, items, 4, false, undefined, true));
+      },
+    },
+  );
+  console.log(`${$capacity(c, 4)}`);
 }
 //# sourceMappingURL=case.js.map
