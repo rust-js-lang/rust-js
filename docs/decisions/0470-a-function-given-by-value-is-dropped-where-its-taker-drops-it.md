@@ -391,3 +391,10 @@ through a call, now counts as one its taker calls once. And std's compiled
 the arrow carried nothing for; the arrow of a boxed `dyn Fn` that drops
 carries the box's drop now, `$dropping(arrow, () => $dispose(f))`.
 `test/corpus/boxed_fn_through_a_call_drops.rs` holds both, in both builds.
+
+And its kind is the box's own `dyn` trait, where the callee calls what it's
+given (its parameter bound by an `Fn*`): a `Box<dyn Fn()>` given to
+`catch_unwind`, whose `F: FnOnce` calls it once, isn't consumed by its
+call, as a `dyn FnOnce`'s is, so it's dropped as the call returns
+(`boxed_function_kind`). The context rewrite's four rows under #1220 run as
+Rust does.

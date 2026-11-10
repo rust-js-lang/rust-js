@@ -202,8 +202,16 @@ export const mutations: Mutation[] = [
     name: "boxed-function-unrun-undropped",
     breaks: "a boxed `FnOnce` that `or_insert_with` leaves unrun, its key there, is never dropped, its kind, which its type doesn't say, not taken as its taker's (#1220)",
     file: "src/lower/combinators/callbacks.rs",
-    find: "        (kind == Some(ty::ClosureKind::FnOnce) || kind.is_none() && boxed) && self.drops_function(ty)\n",
-    replace: "        kind == Some(ty::ClosureKind::FnOnce) && self.drops_function(ty)\n",
+    find: "        (kind == Some(ty::ClosureKind::FnOnce) || kind.is_none() && self.boxed_function_kind(ty).is_some())\n",
+    replace: "        (kind == Some(ty::ClosureKind::FnOnce))\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_fn_through_a_call_drops.rs$"],
+  },
+  {
+    name: "boxed-fn-called-as-its-taker-calls",
+    breaks: "a `Box<dyn Fn()>` given to `catch_unwind`, whose `F: FnOnce` calls it once, is taken to drop itself as its call ends, which a `dyn Fn`'s call doesn't, so it's never dropped (#1220)",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "            self.boxed_function_kind(tys[at])\n",
+    replace: "            crate::lower::recognition::function_kind(self.tcx, callee, *inputs.get(at)?)\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_fn_through_a_call_drops.rs$"],
   },
 ];

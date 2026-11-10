@@ -1,7 +1,7 @@
 // A boxed function that reaches std through a call, `at_0(Box::new(f)) as
 // Box<dyn ..>`, or as a local: left unrun by `or_insert_with` of a key
 // that's there, it's dropped there, as std's drops it; run by
-// `catch_unwind`; and held by a `scan`, whose function generic code takes
+// `catch_unwind`, a `dyn Fn`'s dropped as its call returns; and held by a `scan`, whose function generic code takes
 // through an arrow that gives it the state's box, dropped with the scan,
 // before its state, as `Scan { iter, f, state }` drops its fields, in both
 // builds (#1220).
@@ -38,6 +38,10 @@ fn entries_and_catch() {
     let r = catch_unwind(AssertUnwindSafe(
         at_0(Box::new(move || c.get())) as Box<dyn FnOnce() -> u32>
     ));
+    println!("caught {:?}", r.ok());
+    // A `dyn Fn` box, whose call doesn't consume it: dropped as it returns.
+    let e = Loud(60);
+    let r = catch_unwind(AssertUnwindSafe(at_0(Box::new(move || e.get())) as Box<dyn Fn() -> u32>));
     println!("caught {:?}", r.ok());
     let d = Loud(50);
     let sums: Vec<u32> = [1u32, 2]
