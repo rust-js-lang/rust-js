@@ -50,6 +50,7 @@ export const iteratorPaths = [
   "src/lower/mir/iter.rs",
   "src/lower/mir/iter/**",
   "src/lower/mir/vec_growth.rs",
+  "src/lower/recognition/adapter_types.rs",
   "src/lower/recognition/iterators.rs",
   "src/lower/recognition/lengths.rs",
   "src/lower/recognition/own_steps.rs",

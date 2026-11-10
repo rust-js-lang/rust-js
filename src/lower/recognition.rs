@@ -1,5 +1,6 @@
 //! Read-only library-operation recognition. No function lowering state or JS emission.
 
+mod adapter_types;
 mod calls;
 mod chars;
 mod fmt;
@@ -26,8 +27,8 @@ mod wrappers;
 mod zip_folds;
 
 pub(super) use self::{
-    calls::*, fmt::*, iterators::*, json::*, serde::*, sorts::*, specialization::*, std_crates::*, std_items::*,
-    traits::*, types::*, wrappers::*, zip_folds::*,
+    adapter_types::*, calls::*, fmt::*, iterators::*, json::*, serde::*, sorts::*, specialization::*, std_crates::*,
+    std_items::*, traits::*, types::*, wrappers::*, zip_folds::*,
 };
 
 use super::combinators::{Comb, IterComb, IterSource, StepOp};
