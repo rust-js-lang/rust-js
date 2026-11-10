@@ -320,7 +320,7 @@ test("a store keeps nothing below the disk's floor, and a retired store is remov
   for (const retired of retiredStores) mkdirSync(join(retired, "left"), { recursive: true });
   // Of the machine's stores as they are: some 18,000 native builds, 10 GB,
   // each one's size read, 6 s on the Mac (2026-11-09).
-  pruneKeptStores();
+  pruneKeptStores(() => floorBytes);
   expect(retiredStores.map(existsSync)).toEqual([false, false]);
 }, underLoad(60_000));
 
@@ -380,7 +380,7 @@ test("a verified run's key is of each input whole, and found once recorded", () 
   expect(runKey(["a", "b"])).toBe(runKey(["a", Buffer.from("b")]));
   const cache = fixture("verified-runs");
   expect(verified("k", cache)).toBe(false);
-  record("k", "case.rs", cache);
+  record("k", "case.rs", cache, () => floorBytes);
   expect(verified("k", cache)).toBe(true);
   expect(readFileSync(join(cache, "k", "passed"), "utf8")).toBe("case.rs\n");
   // The JS as written, its header's path the run's folder's, is one text.

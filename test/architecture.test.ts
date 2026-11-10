@@ -1466,3 +1466,34 @@ test("no thread-local or static holds rustc's ids but the lowering session's cac
   expect(session.match(/\.take\(\)/g)?.length).toBe(1);
   expect(session).toContain("impl Drop for Session");
 });
+
+// A test of what a store keeps gives it the disk's answer: a store keeps
+// nothing below the disk's floor (test/bounded.ts), so one asked of the real
+// disk passes or fails by the machine's free space, as the kept-app test
+// (#1190) and the verified-runs test (#1208) did. Each call, in the files
+// that test the stores, of a function that asks the floor passes its own
+// `free` (or `room`, `floorBytes`, a `KeptApp`'s `keep`); the one test of
+// the real disk itself (#963) is named so.
+test("a test of what a store keeps gives it the disk's answer", () => {
+  const asks = /\b(record|mayKeep|pruneKept|pruneKeptApps|pruneKeptStores|prune|bound|keptCompile|new KeptApp)\(/g;
+  const answered = /\bfree\b|\broom\b|floorBytes|, true\)$/;
+  const unanswered: string[] = [];
+  for (const file of ["test/support.test.ts", "test/compiles.test.ts", "test/manifest.test.ts"]) {
+    const text = read(file);
+    for (const match of text.matchAll(asks)) {
+      // The call's text, to its closing parenthesis.
+      let depth = 0;
+      let end = match.index + match[0].length - 1;
+      for (; end < text.length; end++) {
+        if (text[end] === "(") depth++;
+        if (text[end] === ")" && --depth === 0) break;
+      }
+      const call = text.slice(match.index, end + 1);
+      const testName = [...text.slice(0, match.index).matchAll(/\btest\("([^"]*)"/g)].at(-1)?.[1] ?? "";
+      if (testName.includes("real disk") || answered.test(call)) continue;
+      const line = text.slice(0, match.index).split("\n").length;
+      unanswered.push(`${file}:${line}: ${call.split("\n")[0]}`);
+    }
+  }
+  expect(unanswered).toEqual([]);
+});

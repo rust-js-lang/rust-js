@@ -11,6 +11,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
+import { freeBytes } from "../tooling/bounded.js";
 import { markUsed, mayKeep, verifiedRuns } from "./kept";
 import { node } from "./programs";
 import { root, run, stdDir } from "./support";
@@ -34,10 +35,11 @@ export function verified(key: string, cache = verifiedRuns): boolean {
 }
 
 /** Runs of `key` verified now, `note` saying whose; not kept below the
- * disk's floor (test/bounded.ts). */
-export function record(key: string, note: string, cache = verifiedRuns) {
+ * disk's floor (test/bounded.ts), `free` the disk's free bytes, which its
+ * test gives (#1208). */
+export function record(key: string, note: string, cache = verifiedRuns, free = () => freeBytes(cache)) {
   mkdirSync(cache, { recursive: true });
-  if (!mayKeep(cache)) return;
+  if (!mayKeep(cache, free)) return;
   mkdirSync(join(cache, key), { recursive: true });
   writeFileSync(join(cache, key, "passed"), `${note}\n`);
 }

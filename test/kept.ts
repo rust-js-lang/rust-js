@@ -100,12 +100,13 @@ export function pruneKept(
  * programs' builds and verified runs, which nothing reads now. */
 export const retiredStores = [join(checkoutTarget, "native-cache"), join(checkoutTarget, "corpus-cache")];
 
-/** Each store of `keptStores` pruned, each to its cap, and each retired
- * store removed whole. */
-export function pruneKeptStores() {
+/** Each store of `keptStores` pruned, each to its cap and, where `free`
+ * says the disk is below its floor, to above it, and each retired store
+ * removed whole. */
+export function pruneKeptStores(free?: () => number) {
   for (const dir of retiredStores) if (dir !== verifiedRuns) rmSync(dir, { recursive: true, force: true });
-  for (const { dir, cap } of keptStores) pruneKept(dir, { cap });
-  pruneKeptApps();
+  for (const { dir, cap } of keptStores) pruneKept(dir, free ? { cap, free } : { cap });
+  pruneKeptApps(free ? { free } : {});
 }
 
 /** Where apps kept between runs are (`KeptApp`, test/support.ts): the
