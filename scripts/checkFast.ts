@@ -23,7 +23,7 @@ import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, sta
 import { availableParallelism, cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
-import { changedCases, runs, touchesAsync, touchesConsumers, touchesDeclarations, touchesFormatting, touchesIterators, touchesNumbers } from "./iteratorSlice";
+import { changedCases, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesNumbers } from "./iteratorSlice";
 import { mappedFiles, pickChange, readersOf } from "./testMap";
 import { browsers, caseParts, compilerBuilds, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
 import { said, strays } from "./strays";
@@ -168,6 +168,9 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
   // And each corpus case it adds or edits, each of its metamorphic
   // rewrites, plain or `--all` (#1165).
   const cases = changedCases([...changed, ...branch]);
+  // And the crate corpus, of a change to what compiles it, plain too, as a
+  // push's check runs it (#1188); `--all`'s always (#998).
+  const crates = all || touchesCrates([...changed, ...branch]);
 
   // What a script that runs its own parts at once runs in, the iterator
   // slices' (scripts/shard.ts).
@@ -246,12 +249,14 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
       ...(all
         ? [
             job("cargo test", ["cargo", "test", "--locked", "--quiet"], { timeout: 600, weight: 2, memory: peakGB.compilerCheck, ci: "cargo test --locked" }),
-            // The crates of crates.io's corpus against docs/crate-corpus.md,
-            // half the cores' at once: 33 s, which only the Nightly ran, so
-            // a refusal that stopped itertools went unseen (#857).
-            job("the crate corpus", ["bun", "scripts/crate-corpus.ts", "--check"], { weight: half, memory: half * peakGB.crate }),
             job("the Vite example's build", ["bun", "run", "--cwd", "examples/vite-react", "build"], { ci: "bun run --cwd examples/vite-react build" }),
           ]
+        : []),
+      // The crates of crates.io's corpus against docs/crate-corpus.md,
+      // half the cores' at once: 22–33 s, which only the Nightly ran, so a
+      // refusal that stopped itertools went unseen (#857, #1188).
+      ...(crates
+        ? [job("the crate corpus", ["bun", "scripts/crate-corpus.ts", "--check"], { weight: half, memory: half * peakGB.crate, ci: "bun scripts/crate-corpus.ts --check" })]
         : []),
       ...inParts("corpus", "test/corpus.test.ts"),
       ...(all ? everyFile : suites),

@@ -26,7 +26,7 @@ import {
   unitTestsModule,
 } from "../scripts/mutations";
 import { jobs, leftToCi, readabilityPaths, touchesReadability } from "../scripts/checkFast";
-import { changedCases, runs } from "../scripts/iteratorSlice";
+import { changedCases, runs, touchesCrates } from "../scripts/iteratorSlice";
 import { loadScale } from "../scripts/timing";
 import { jobs as localNightly } from "../scripts/nightly";
 import { caseParts, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, pooledParts, shard } from "../scripts/shard";
@@ -135,6 +135,22 @@ test("the readability passes run where readability-passes.yml's paths say, of --
   expect(() => readabilityPaths("on:\n  push:\n")).toThrow("no `on.push.paths`");
 });
 
+// The crate corpus runs of a change to what compiles it, plain check:fast's
+// and each push's (`plan`'s `crates`), not only `--all`'s and the
+// nightly's: 9353847cd refused itertools unseen (#1188).
+test("the crate corpus runs where its paths say, of plain check:fast too", () => {
+  const named = (scope: { all: boolean; changed: string[]; branch: string[] }) =>
+    jobs({ ...scope, added: [], extra: [], cores: 12 }).jobs.some((job) => job.name === "the crate corpus");
+  expect(named({ all: false, changed: ["src/lower/mir/iter/closing.rs"], branch: [] })).toBe(true);
+  expect(named({ all: false, changed: [], branch: ["src/runtime/byte_len.js"] })).toBe(true);
+  expect(named({ all: false, changed: ["scripts/crate-corpus/itertools.rs"], branch: [] })).toBe(true);
+  expect(named({ all: false, changed: ["docs/guide/README.md", "test/ci.test.ts"], branch: [] })).toBe(false);
+  expect(named({ all: true, changed: ["docs/guide/README.md"], branch: [] })).toBe(true);
+  expect(touchesCrates(["std/lib.rs"])).toBe(true);
+  expect(touchesCrates(["tooling/build.js"])).toBe(false);
+  expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("needs.plan.outputs.crates == 'true'");
+});
+
 test("each command a push's check runs is check:fast --all's, or left to CI by name", () => {
   type Step = { run?: string; parallel?: Step[] };
   type Job = { uses?: string; steps?: Step[] };
@@ -237,7 +253,7 @@ test("the nightly, here, has each job the nightly has", () => {
     const text = readFileSync(join(root, ".github/workflows", file), "utf8");
     return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
   };
-  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators", "iterator-conformance", "iterator-forms", "format-grid", "number-grid", "declarations", "async-points", "consumer-net", "metamorphic-cases"].includes(id));
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators", "iterator-conformance", "iterator-forms", "format-grid", "number-grid", "declarations", "async-points", "consumer-net", "metamorphic-cases", "crate-corpus"].includes(id));
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 

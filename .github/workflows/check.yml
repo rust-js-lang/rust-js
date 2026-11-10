@@ -74,6 +74,7 @@ jobs:
       async: ${{ steps.plan.outputs.async }}
       consumers: ${{ steps.plan.outputs.consumers }}
       cases: ${{ steps.plan.outputs.cases }}
+      crates: ${{ steps.plan.outputs.crates }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -372,6 +373,33 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+
+  # The crates of crates.io's corpus against docs/crate-corpus.md (ADR
+  # 1067), of a check whose change is what compiles them, as `plan` says
+  # (scripts/iteratorSlice.ts's `cratePaths`): the compiler, its runtime,
+  # std's crate or the corpus's own files. 9353847cd refused itertools and
+  # only the nightly's `crates` saw it (#1188). The nightly runs its own.
+  crate-corpus:
+    name: crate corpus
+    needs: plan
+    if: ${{ !inputs.nightly && needs.plan.outputs.crates == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Compile and run each crate's probe
+        env:
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: bun scripts/crate-corpus.ts --check
 
   lint:
     runs-on: ubuntu-latest

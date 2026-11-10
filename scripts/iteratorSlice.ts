@@ -171,6 +171,21 @@ export function touchesConsumers(files: string[]): boolean {
   return files.some((file) => consumerGlobs.some((glob) => glob.match(file)));
 }
 
+/** What the crates of crates.io's corpus are compiled by, as globs of the
+ * repository's paths: the compiler, its runtime and std's own crate, and
+ * the corpus's list, probes and locks. A change to any of them runs the
+ * crate corpus in each push's check (check.yml's `crates`) and in plain
+ * `check:fast`: 9353847cd refused itertools, which only the nightly saw
+ * (#1188). */
+export const cratePaths = ["src/**", "std/**", "Cargo.lock", "docs/crate-corpus.md", "scripts/crate-corpus.ts", "scripts/crate-corpus/**"];
+
+const crateGlobs = cratePaths.map((path) => new Bun.Glob(path));
+
+/** Whether a change of `files` touches what compiles crates.io's corpus. */
+export function touchesCrates(files: string[]): boolean {
+  return files.some((file) => crateGlobs.some((glob) => glob.match(file)));
+}
+
 /** The corpus cases among a change's `files`, `test/corpus/<case>.rs`, by
  * name, those it adds or edits: each of their metamorphic rewrites runs,
  * as a case that runs as Rust does may not rewritten, #1115's moved into

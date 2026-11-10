@@ -153,3 +153,16 @@ not a regression.
 
 Case: none ([0262](0262-when-rust-and-js-disagree.md)); this decides what
 is measured, not what the JS does.
+
+## Amendment: the crate corpus runs per push of what compiles it (#1188)
+
+The crate corpus ran in `check:fast --all` (#857) and at night, not in a
+push's check: 9353847cd, an interim refusal of #1182, refused itertools,
+its push's check passed, and only the nightly's `crates` saw it. A push
+whose change is the compiler's, its runtime's, std's crate's or the
+corpus's own files (`cratePaths`, `scripts/iteratorSlice.ts`, the one
+list, which `plan`'s `crates` and `check:fast` both read) runs it in a job
+of its own, `crate-corpus`, about 95 s of a runner beside the suite; and
+plain `check:fast` of such a change runs it too, 22–33 s at half the
+cores. It has no kept verdicts: each crate's graph compiles again with
+the compiler of the push, whose every change may change any of them.
