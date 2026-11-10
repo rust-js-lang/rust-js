@@ -27,6 +27,9 @@ export const nets = [
   "port",
   "audit",
   "review",
+  "mutations",
+  "rustc-tests",
+  "unknown",
 ] as const;
 export type Net = (typeof nets)[number];
 
@@ -52,6 +55,8 @@ const said: [Net, RegExp][] = [
   ["neighbour", /neighbou?r(s)? (net|shuffle)|#853\b|test\/neighbours/i],
   ["metamorphic", /metamorphic|#939\b|#1008\b|EMI net|#1086\b/i],
   ["crate-corpus", /crate[- ]corpus/i],
+  ["mutations", /surviv(ing|ed|or)s? (of )?(a |the )?mutation|mutation (that )?survived|mutation survivors?/i],
+  ["rustc-tests", /rustc's (own )?(run-pass )?tests|rustc tests?\b|rustc \/ report|test:rustc|rustc-known-failures/i],
   ["crater", /\bcrater/i],
   ["fuzz", /fuzz|generated program|program-stages|\bseed \d{5,}/i],
   [

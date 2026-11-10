@@ -372,3 +372,32 @@ test("generic-instances calls each consumer and adapter of an iterator the case 
   );
   expect(program).toContain("pub fn at_1 < I : :: std :: iter :: Iterator > (it : I) -> usize { it . count () }");
 });
+
+test("generic-instances copies, clones, wraps in `Some` and drops in generic code each value the case does", () => {
+  const dir = fixture("metamorphic-generic-values-harness");
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, "case.rs");
+  writeFileSync(file, `#[derive(Clone, Debug)]
+struct P(u32);
+
+fn main() {
+    let v = vec![1u32];
+    let r = &v[0];
+    let x = *r;
+    let p = P(x);
+    let o = Some(p.clone());
+    drop(p);
+    println!("{o:?} {}", *r);
+}
+`);
+  const program = rewritten("generic-instances", file, "2024")?.program.replaceAll(/\s+/g, " ") ?? "";
+  // `*r` given to a `let` and to a macro, copied; what's inside first.
+  expect(program).toContain("let x = metamorph_generic :: at_0 (& * (r))");
+  expect(program).toContain("let o = metamorph_generic :: at_2 (metamorph_generic :: at_1 (& (p)))");
+  expect(program).toContain("metamorph_generic :: at_3 (p) ;");
+  expect(program).toContain('println ! ("{o:?} {}" , metamorph_generic :: at_4 (& * (r)))');
+  expect(program).toContain("pub fn at_0 < T : :: std :: marker :: Copy > (x : & T) -> T { * x }");
+  expect(program).toContain("pub fn at_1 < T : :: std :: clone :: Clone > (x : & T) -> T { x . clone () }");
+  expect(program).toContain("pub fn at_2 < T > (x : T) -> :: std :: option :: Option < T > { :: std :: option :: Option :: Some (x) }");
+  expect(program).toContain("pub fn at_3 < T > (x : T) { :: std :: mem :: drop (x) }");
+});

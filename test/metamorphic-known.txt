@@ -30,7 +30,6 @@ plain std generic-instances asked_length_overflow.rs
 plain std generic-instances back_knowing_adapters_hint_and_try_fold.rs
 plain std generic-instances boxed_fn_given_to_consumers_drops.rs
 plain std generic-instances boxed_fn_through_a_call_drops.rs
-plain generic-instances by_ref_lends.rs
 plain std generic-instances capacity_of_text_patterns.rs
 plain std generic-instances capacity_of_what_std_hints_less.rs
 plain std generic-instances chain_stepped_from_its_back_elsewhere.rs
@@ -87,10 +86,21 @@ plain generic-instances own_count_through_adapters.rs
 plain std generic-instances range_own_steps.rs
 plain std generic-instances range_reversed_skipped_beside_its_back_stepped.rs
 plain std generic-instances repeat_count_panics.rs
-plain generic-instances size_hint.rs
-plain generic-instances size_hints_made_in_place.rs
 plain generic-instances take_and_filter_of_a_type_parameter_hint_as_std.rs
-plain generic-instances zip_size_hints.rs
 
 #1244 P0 (library): vec_last_takes_its_back's library rewrite drops the vec's last item late (JS: skipped None, chained, drop 1; native: drop 4, skipped None, chained)
 plain library vec_last_takes_its_back.rs
+
+#1246 P0 (functions-calls): generic code's Clone dictionary of an Option<Option<T>> declares its parameter's name again, a SyntaxError
+plain std generic-instances boxed_option_unwraps.rs
+plain std generic-instances refcell_clone_through_rc.rs
+
+#1247 P0 (mut-refs): a () copied in generic code through a &mut () a struct holds reads .value of undefined
+plain std generic-instances generic_deref.rs
+
+#1248 P0 (nullability): a nullable parameter given a variable a generic function's Some was assigned to takes its None for a Some
+plain std generic-instances nulled_returns_given_on.rs
+
+#1249 P0 (functions-calls): a closure cloned in generic code is the same function, so Rc::ptr_eq of an Rc<dyn Fn> of each is true
+plain std generic-instances rc_fn_ptr_eq_of_cloned.rs
+plain std generic-instances rc_of_an_impls_parameter_counted_as_any.rs

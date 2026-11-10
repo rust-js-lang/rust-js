@@ -12,6 +12,12 @@
 //! rustc rejects is given the case's own instance, then left as it was;
 //! an adapter's promises, `DoubleEndedIterator`, .., are what its instance
 //! keeps (`narrow.rs`).
+//!
+//! And what the case does with a value, done in generic code of a `T`
+//! that's each value the corpus has, a number, an object, a dropping
+//! type, an `Option`: `x.clone()` cloned there, `Some(x)` made there,
+//! `drop(x)` dropped there, `*r` given to a call, a macro or a `let`
+//! copied there (`VALUES`).
 
 use quote::{ToTokens, format_ident, quote};
 use syn::visit_mut::{self, VisitMut};
@@ -184,6 +190,41 @@ const METHODS: &[Method] = &[
     },
 ];
 
+/// What generic code does with a value the case gives it, each a place of
+/// its own, `metamorph_generic::at_k(..)`: its function, `{at}` its name,
+/// of a `T` that's each value the corpus has, a number, an object, a
+/// dropping type, an `Option` (#1237). `x.clone()` cloned there, `Some(x)`
+/// made there, `drop(x)` dropped there, and `*r`, given to a call, a macro
+/// or a `let`, copied there.
+const VALUES: &[(Value, &str)] = &[
+    (
+        Value::Clone,
+        "pub fn {at}<T: ::std::clone::Clone>(x: &T) -> T { x.clone() }",
+    ),
+    (
+        Value::Some,
+        "pub fn {at}<T>(x: T) -> ::std::option::Option<T> { ::std::option::Option::Some(x) }",
+    ),
+    (Value::Drop, "pub fn {at}<T>(x: T) { ::std::mem::drop(x) }"),
+    (Value::Copy, "pub fn {at}<T: ::std::marker::Copy>(x: &T) -> T { *x }"),
+];
+
+#[derive(Clone, Copy, PartialEq)]
+enum Value {
+    Clone,
+    Some,
+    Drop,
+    Copy,
+}
+
+/// What a place calls in generic code: an iterator's method, of
+/// `METHODS`, or what's done with a value, of `VALUES`.
+#[derive(Clone, Copy, PartialEq)]
+enum Op {
+    Method(usize),
+    Value(Value),
+}
+
 /// The arguments' types of a method of `args` arguments, each a `usize`:
 /// `nth`'s, `take`'s, `skip`'s and `step_by`'s.
 fn arguments(args: usize) -> Vec<syn::FnArg> {
@@ -195,29 +236,121 @@ fn arguments(args: usize) -> Vec<syn::FnArg> {
         .collect()
 }
 
-/// A place: its method, its instance, and an adapter's promises; `None`
-/// where it's left as it was.
+/// A place: what it calls, its instance, and an adapter's promises; `None`
+/// where it's left as it was. A value's place has the case's own instance,
+/// `0`, alone.
 #[derive(Clone)]
 struct Place {
-    method: usize,
+    op: Op,
     instance: usize,
     promised: Vec<bool>,
 }
 
 struct Wrap<'p> {
     places: &'p [Option<Place>],
-    /// Each place met, its method, in order.
-    met: Vec<usize>,
+    /// Each place met, what it calls, in order.
+    met: Vec<Op>,
+    /// How many of them are an iterator's, whose instances turn.
+    iterators: usize,
     /// Where the instances start turning, the case's own.
     shift: usize,
     budget: usize,
     depth_const: usize,
 }
 
+/// What `e` does with a value, if it's one `VALUES` calls in generic code:
+/// `x.clone()`, `Some(x)`, `drop(x)` or `mem::drop(x)`.
+fn value_of(e: &Expr) -> Option<Value> {
+    match e {
+        Expr::MethodCall(call) if call.method == "clone" && call.args.is_empty() && call.turbofish.is_none() => {
+            Some(Value::Clone)
+        }
+        Expr::Call(call) if call.args.len() == 1 => {
+            let Expr::Path(path) = &*call.func else { return None };
+            if path.qself.is_some() {
+                return None;
+            }
+            let names: Vec<String> = path.path.segments.iter().map(|s| s.ident.to_string()).collect();
+            let names: Vec<&str> = names.iter().map(String::as_str).collect();
+            match names.as_slice() {
+                ["Some"] | ["Option", "Some"] => Some(Value::Some),
+                ["drop"] | ["mem", "drop"] | ["std", "mem", "drop"] => Some(Value::Drop),
+                _ => None,
+            }
+        }
+        _ => None,
+    }
+}
+
+impl Wrap<'_> {
+    /// The next place, calling `op`: its number and its instance, or
+    /// `None` where it's left as it was.
+    fn place(&mut self, op: Op) -> Option<(usize, usize)> {
+        let k = self.met.len();
+        self.met.push(op);
+        let turned = match op {
+            Op::Method(_) => {
+                self.iterators += 1;
+                (self.iterators - 1 + self.shift) % INSTANCES.len()
+            }
+            Op::Value(_) => 0,
+        };
+        if k >= self.budget {
+            return None;
+        }
+        match self.places.get(k) {
+            Some(None) => None,
+            Some(Some(place)) => Some((k, place.instance)),
+            None => Some((k, turned)),
+        }
+    }
+
+    /// `e`, what `value` is done with, done in generic code.
+    fn value(&mut self, e: &mut Expr, value: Value) {
+        let Some((k, _)) = self.place(Op::Value(value)) else {
+            return;
+        };
+        let module = format_ident!("{MODULE}");
+        let at = format_ident!("at_{k}");
+        *e = match (value, &*e) {
+            (Value::Clone, Expr::MethodCall(call)) => {
+                let receiver = &call.receiver;
+                syn::parse_quote!(#module::#at(&(#receiver)))
+            }
+            (Value::Copy, Expr::Unary(unary)) => {
+                let read = &unary.expr;
+                syn::parse_quote!(#module::#at(&*(#read)))
+            }
+            (_, Expr::Call(call)) => {
+                let given = &call.args[0];
+                syn::parse_quote!(#module::#at(#given))
+            }
+            _ => unreachable!("a value's place is of its own shape"),
+        };
+    }
+
+    /// `e`, given to a call, a macro or a `let`: of `*r`, copied in
+    /// generic code.
+    fn copied(&mut self, e: &mut Expr) {
+        if self.depth_const == 0 && matches!(e, Expr::Unary(unary) if matches!(unary.op, syn::UnOp::Deref(_))) {
+            self.value(e, Value::Copy);
+        }
+    }
+}
+
 impl VisitMut for Wrap<'_> {
     fn visit_expr_mut(&mut self, e: &mut Expr) {
         visit_mut::visit_expr_mut(self, e);
         if self.depth_const > 0 {
+            return;
+        }
+        match e {
+            Expr::Call(call) => call.args.iter_mut().for_each(|arg| self.copied(arg)),
+            Expr::MethodCall(call) => call.args.iter_mut().for_each(|arg| self.copied(arg)),
+            _ => {}
+        }
+        if let Some(value) = value_of(e) {
+            self.value(e, value);
             return;
         }
         let Expr::MethodCall(call) = e else { return };
@@ -235,15 +368,8 @@ impl VisitMut for Wrap<'_> {
         if !MAKERS.contains(&made.method.to_string().as_str()) {
             return;
         }
-        let k = self.met.len();
-        self.met.push(method);
-        if k >= self.budget {
+        let Some((k, instance)) = self.place(Op::Method(method)) else {
             return;
-        }
-        let instance = match self.places.get(k) {
-            Some(None) => return,
-            Some(Some(place)) => place.instance,
-            None => (k + self.shift) % INSTANCES.len(),
         };
         let receiver = call.receiver.to_token_stream().to_string();
         let given: Expr =
@@ -261,6 +387,13 @@ impl VisitMut for Wrap<'_> {
             Some(ty) => syn::parse_quote!(#module::#at::<_, #ty>(#given #(, #args)*)),
             None => syn::parse_quote!(#module::#at(#given #(, #args)*)),
         };
+    }
+
+    fn visit_local_mut(&mut self, local: &mut syn::Local) {
+        visit_mut::visit_local_mut(self, local);
+        if let Some(init) = &mut local.init {
+            self.copied(&mut init.expr);
+        }
     }
 
     // What std's macros of expressions are given, `println!("{:?}",
@@ -293,6 +426,7 @@ impl VisitMut for Wrap<'_> {
         };
         for arg in args.iter_mut() {
             self.visit_expr_mut(arg);
+            self.copied(arg);
         }
         m.tokens = args.to_token_stream();
     }
@@ -342,11 +476,12 @@ impl VisitMut for Wrap<'_> {
 
 /// `ast` with each place `places` keeps called in generic code, and the
 /// module of their functions; and each place's method, in order.
-fn made(ast: &syn::File, places: &[Option<Place>], shift: usize, budget: usize) -> (syn::File, Vec<usize>) {
+fn made(ast: &syn::File, places: &[Option<Place>], shift: usize, budget: usize) -> (syn::File, Vec<Op>) {
     let mut ast = ast.clone();
     let mut wrap = Wrap {
         places,
         met: Vec::new(),
+        iterators: 0,
         shift,
         budget,
         depth_const: 0,
@@ -354,17 +489,25 @@ fn made(ast: &syn::File, places: &[Option<Place>], shift: usize, budget: usize) 
     wrap.visit_file_mut(&mut ast);
     let fns: Vec<_> = (wrap.met.iter().enumerate())
         .filter(|&(k, _)| k < budget)
-        .filter_map(|(k, &method)| {
+        .filter_map(|(k, &op)| {
             let place = match places.get(k) {
                 Some(place) => place.clone()?,
                 None => Place {
-                    method,
+                    op,
                     instance: 0,
                     promised: vec![true; PROMISES.len()],
                 },
             };
-            let m = &METHODS[method];
             let at = format_ident!("at_{k}");
+            let method = match place.op {
+                Op::Method(method) => method,
+                Op::Value(value) => {
+                    let (_, item) = VALUES.iter().find(|(v, _)| *v == value).expect("a value's function");
+                    let item: syn::Item = syn::parse_str(&item.replace("{at}", &at.to_string())).expect("a function");
+                    return Some(item.to_token_stream());
+                }
+            };
+            let m = &METHODS[method];
             let bound: proc_macro2::TokenStream = m.bound.parse().expect("a bound");
             let params: proc_macro2::TokenStream = m.params.parse().expect("parameters");
             let body: Expr = syn::parse_str(m.body).expect("a body");
@@ -427,11 +570,21 @@ pub fn generic_instances(ast: &mut syn::File, source: &str, budget: &mut usize) 
     if met.is_empty() {
         return false;
     }
-    let mut places: Vec<Option<Place>> = (met.iter().enumerate())
-        .map(|(k, &method)| {
+    // An iterator's instance turns with the iterators' places alone; a
+    // value's is its own.
+    let mut iterators = 0;
+    let mut places: Vec<Option<Place>> = (met.iter())
+        .map(|&op| {
+            let instance = match op {
+                Op::Method(_) => {
+                    iterators += 1;
+                    (iterators - 1 + shift) % INSTANCES.len()
+                }
+                Op::Value(_) => 0,
+            };
             Some(Place {
-                method,
-                instance: (k + shift) % INSTANCES.len(),
+                op,
+                instance,
                 promised: vec![true; PROMISES.len()],
             })
         })
@@ -461,8 +614,9 @@ pub fn generic_instances(ast: &mut syn::File, source: &str, budget: &mut usize) 
                 // else the case's own instance; else the place as it was.
                 // One already off, `Skip<I>: DoubleEndedIterator` asking
                 // `I: ExactSizeIterator`: every promise off.
-                let adapter =
-                    METHODS[place.method].adapter && error.code == "E0277" && !error.message.contains("impl Iterator");
+                let adapter = matches!(place.op, Op::Method(m) if METHODS[m].adapter)
+                    && error.code == "E0277"
+                    && !error.message.contains("impl Iterator");
                 if adapter && named.iter().any(|&i| place.promised[i]) {
                     for i in named {
                         place.promised[i] = false;

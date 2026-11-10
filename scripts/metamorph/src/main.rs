@@ -53,8 +53,9 @@
 //!   accepts (`narrow.rs`).
 //! - `generic-instances`: each consumer or adapter the case calls on an
 //!   iterator it makes called in generic code, given another instance of
-//!   the iterator, a `filter`, a `chain`, a `map`, the net's own
-//!   (`instances.rs`, #1237).
+//!   the iterator, a `filter`, a `chain`, a `map`, the net's own; and each
+//!   value it copies, clones, makes a `Some` of or drops, done in generic
+//!   code (`instances.rs`, #1237).
 //! - `fact-<fact>`: the case given a neighbour, never run, that turns on
 //!   one of the facts rust-js decides for the whole crate, an address
 //!   asked, a capacity, a function's identity (`facts.rs`, #1204).

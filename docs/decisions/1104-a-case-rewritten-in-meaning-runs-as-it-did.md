@@ -390,8 +390,15 @@ to itself, a `fuse`, or the net's own iterator that forwards `next`,
 place and the case's length, so the corpus covers every instance of every
 method. A place rustc rejects gets the case's own instance, then is left
 as it was (`narrow.rs`). An iterator held in a variable isn't moved into
-the call, because the variable may be used again. Value instances (a
-copy, a clone, `Some`, a drop) are left for later.
+the call, because the variable may be used again. What the case does
+with a value is done in generic code too (#1237's value instances): each
+`x.clone()` is cloned by `fn at_k<T: Clone>(x: &T) -> T`, each `Some(x)`
+made by `fn at_k<T>(x: T) -> Option<T>`, each `drop(x)` dropped by `fn
+at_k<T>(x: T)`, and each `*r` given to a call, a macro or a `let` copied by
+`fn at_k<T: Copy>(x: &T) -> T`, of whatever `T` the case has there, a
+number, an object, a dropping type or an `Option`. An iterator's instance
+turns with the iterators' places alone, so the value places leave it as it
+was.
 
 Its first run covered every case in both builds in 118 s, in 12 parts on
 the 12-core M6 (2026-11-10). It made 639 programs, and 65 cases failed.
@@ -401,3 +408,13 @@ the in-place and unwinding drops differ. Native monomorphizes
 `B = Vec<T>`, while rust-js goes through the dictionary. The other 11
 are #1240: `size_hint`, `count`, `last` and `nth` in generic code of
 some instances. All are listed under their issues.
+
+The value instances' first run, with every other rewrite, `METAMORPHIC=all`
+over every case in both builds, 2,022 cases in 45 min in 12 parts on the
+12-core M6 (2026-11-10), found 7 cases wrong under four issues: a `Clone`
+dictionary of an `Option<Option<T>>` that declares its parameter's name
+again (#1246), a `()` copied through a `&mut ()` a struct holds (#1247), a
+nullable parameter given a variable a generic `Some` was assigned to
+(#1248), and a closure cloned in generic code that is the same function,
+`Rc::ptr_eq` of an `Rc<dyn Fn>` of each `true` (#1249). Each is listed
+under its issue.

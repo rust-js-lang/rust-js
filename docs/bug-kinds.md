@@ -101,6 +101,9 @@ which always says what found it.
 | `found-by: port` | A port: react-in-rust, alien-signals, its names and bindings runs, an app built with rust-js |
 | `found-by: audit` | Found while fixing or probing a sibling: a probe, a hand-written grid, a case written for another fix, an agent's audit of an area |
 | `found-by: review` | A person's report, or a review of the code |
+| `found-by: mutations` | A surviving mutation showed it: a mutation its tests missed, whose case then found the wrong answer |
+| `found-by: rustc-tests` | rustc's own test suite, run as JS, or its report: a test newly failing or failing worse (ADR 0089) |
+| `found-by: unknown` | The issue gives no evidence of how it was found |
 
 A net that found it while someone fixed another issue is that net's, not
 an audit's: "found by the metamorphic net's `library` rewrite while fixing
