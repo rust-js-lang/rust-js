@@ -169,7 +169,11 @@ export const nightly = [
  * their files reaches of the compiler, and the corpus's each case, so that a
  * change runs only those it can affect (scripts/testMap.ts, #877). */
 export const plainSuites: { name: string; starts: string[]; when?: "shared" | "jsx" }[] = [
-  { name: "architecture, mutation lists", starts: ["architecture.test.ts", "architecture-iterators.test.ts", "architecture-nones.test.ts", "architecture-cleanups.test.ts", "architecture-writes.test.ts", "mutations.test.ts"] },
+  // Every architecture test by its name's start, each of which reads the
+  // compiler's sources by their folders, a `src/lower` change able to fail
+  // it: listed one by one, the four added since, `architecture-generic-facts`
+  // among them, ran in no plain check, and main went red twice in a day.
+  { name: "architecture, mutation lists", starts: ["architecture", "mutations.test.ts"] },
   // Each a file of a concept's (ADR 0572), `test/lowering` all of lowering's.
   { name: "lowering", starts: ["lowering"] },
   { name: "compiler", starts: ["compiler.test.ts"] },

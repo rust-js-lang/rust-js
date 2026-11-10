@@ -394,3 +394,19 @@ test("a change to a corpus case's or a snapshot's JS, or readability's baseline,
   writeFileSync(reader, `const js = [...new Bun.Glob("test/corpus/*.js").scanSync(root)];\nconst own = [...new Bun.Glob("*.rs").scanSync(dir)];\n`);
   expect([...readsOf(relative(root, reader), false)]).toEqual(["test/corpus/*.js"]);
 });
+
+// A test that reads the compiler's sources by their folders, as each
+// architecture test does, `files("src/lower")`, fails on a change to any of
+// them: each is a plain suite's file, so a `src/lower` change runs it with
+// the map, which runs a sources' reader on every change, or without, by its
+// suite. `architecture-generic-facts.test.ts` was in none, and main went red
+// twice in a day (7121088df, adfe4aeb0).
+test("every architecture test is a plain suite's, which a compiler change runs", () => {
+  const files = readdirSync(join(root, "test"))
+    .filter((name) => name.endsWith(".test.ts"))
+    .map((name) => `test/${name}`);
+  const architecture = files.filter((file) => file.startsWith("test/architecture"));
+  expect(architecture).toContain("test/architecture-generic-facts.test.ts");
+  const plain = jobs({ all: false, changed: ["src/lower/mir/iter.rs"], branch: [], added: [], extra: [], cores: 12 }).jobs.map((job) => job.name);
+  expect(architecture.filter((file) => !plain.includes(file) || !readsSources(file))).toEqual([]);
+});
