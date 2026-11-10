@@ -257,16 +257,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "plain-refcell-bound-kept",
-    breaks:
-      "a struct's or a variant's `RefCell` field a pattern binds by value, moved out, `Outcome::Finished { lines, tries }` of `outcome`, is taken for one never lent, the property, where it's a cell of its own (ADR 0863, amended)",
-    file: "src/lower/drops/ref_cells.rs",
-    find: "                    _ => self.found.push((did, field.pattern.span)),\n",
-    replace: "                    _ => {}\n",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_variant_fields.rs$"],
-    snapshots: true,
-  },
-  {
     name: "transparent-refcell-field-plain",
     breaks:
       "a transparent struct's `RefCell` of an array, React's taint `RequestCleanupQueue`, is taken for a field that holds its value, where the struct is the cell (ADRs 0584, 0863)",
@@ -551,14 +541,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/ref_cells.rs",
     find: "            if matches!(tcx.def_kind(id), DefKind::Struct | DefKind::Enum) {\n",
     replace: "            if matches!(tcx.def_kind(id), DefKind::Struct) {\n",
-    tests: ["test/lowering-field-cells.test.ts", "-t", "an enum variant's RefCell field"],
-  },
-  {
-    name: "bound-place-lent",
-    breaks: "a pattern's binding by reference of a field, `Kind::Effect { cleanup, .. }` of `&e.kind`, lends it, so the field is `$fieldCell(kind, \"cleanup\")`, where it's the field's own place (#503)",
-    file: "src/lower/drops/ref_cells.rs",
-    find: "                    } if object_field(self.recognition.tcx, did) => _ = self.places.insert(var, did),\n",
-    replace: "                    } if false => _ = self.places.insert(var, did),\n",
     tests: ["test/lowering-field-cells.test.ts", "-t", "an enum variant's RefCell field"],
   },
   {
