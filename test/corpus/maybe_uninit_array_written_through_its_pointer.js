@@ -10,6 +10,12 @@ function pairDebug_fmt(pair) {
   return `Pair { left: ${pair.left}, right: ${pair.right} }`;
 }
 
+function fill(slot) {
+  const p = $ptr(slot.value, 0);
+  p.value = 4;
+  $ptrAdd(p, 1).value = 5;
+}
+
 function squares(N) {
   const slots = Array.from({ length: N });
   const first = $ptr(slots, 0);
@@ -46,8 +52,23 @@ function main() {
   console.log(`${s.value}`);
 
   console.log(`[${squares(4).join(", ")}]`);
-  let whole = Array.from({ length: 2 });
-  whole = [7, 8];
+  const whole = [7, 8];
   console.log(`[${whole.join(", ")}]`);
+
+  let given = Array.from({ length: 2 });
+  const slot = { value: given };
+  fill(slot);
+  given = slot.value;
+  console.log(`[${given.join(", ")}]`);
+  let boxed = Array.from({ length: 2 });
+  const slot$1 = { value: boxed };
+  fill(slot$1);
+  boxed = slot$1.value;
+  console.log(`[${boxed.join(", ")}]`);
+
+  const read = [1, -2, 3];
+  const written = read;
+  written[1] = 20;
+  console.log(`[${read.join(", ")}] [${read.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

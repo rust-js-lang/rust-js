@@ -2,6 +2,9 @@
 // A `MaybeUninit<[T; N]>` written an item at a time through its pointer,
 // `m.as_mut_ptr() as *mut T`, then taken whole: an array, each item
 // written where it is (#1255, ADR 0417); found by the memory net (#1172).
+// One only written whole and read whole is its value, `const m = [..]`,
+// and one given to a function, which may write it through its pointer, or
+// boxed, its slots (#1258).
 use std::mem::MaybeUninit;
 use std::ptr;
 
@@ -9,6 +12,14 @@ use std::ptr;
 struct Pair {
     left: i32,
     right: u8,
+}
+
+fn fill(slot: &mut MaybeUninit<[u32; 2]>) {
+    let p = slot.as_mut_ptr() as *mut u32;
+    unsafe {
+        p.write(4);
+        p.add(1).write(5);
+    }
 }
 
 fn squares<const N: usize>() -> [u64; N] {
@@ -56,4 +67,18 @@ fn main() {
     let mut whole = MaybeUninit::<[u8; 2]>::uninit();
     whole.write([7, 8]);
     println!("{:?}", unsafe { whole.assume_init() });
+
+    let mut given = MaybeUninit::<[u32; 2]>::uninit();
+    fill(&mut given);
+    println!("{:?}", unsafe { given.assume_init() });
+    let mut boxed = Box::new(MaybeUninit::<[u32; 2]>::uninit());
+    fill(&mut boxed);
+    println!("{:?}", unsafe { boxed.assume_init() });
+
+    let mut read = MaybeUninit::<[i16; 3]>::uninit();
+    let written = read.write([1, -2, 3]);
+    written[1] = 20;
+    println!("{:?} {:?}", unsafe { read.assume_init_ref() }, unsafe {
+        read.assume_init_read()
+    });
 }

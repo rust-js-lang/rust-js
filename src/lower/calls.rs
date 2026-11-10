@@ -53,12 +53,16 @@ pub(super) struct Call<'c, 'tcx> {
     /// Whether the reference it's given was made as its place's pointer
     /// (`Pointed::lent_calls`, ADR 1114).
     pub(super) lent: bool,
+    /// Of `MaybeUninit::uninit()` of an array, whether what it makes is only
+    /// written whole and read whole (`uninit_written_whole`, #1258).
+    pub(super) written_whole: bool,
     pub(super) span: Span,
 }
 
 /// What MIR says of a call's arguments that their values don't, as `Call`
 /// carries it: `nulled`, `quiet`, `momentary`, `none_form`,
-/// `read_alike`, `flattened` and `lent`; and of what it gives, `unread`.
+/// `read_alike`, `flattened` and `lent`; and of what it gives, `unread`
+/// and `written_whole`.
 #[derive(Clone, Copy, Default)]
 pub(super) struct Given<'c> {
     pub(super) nulled: &'c [bool],
@@ -69,6 +73,7 @@ pub(super) struct Given<'c> {
     pub(super) unread: bool,
     pub(super) flattened: [bool; 2],
     pub(super) lent: bool,
+    pub(super) written_whole: bool,
 }
 
 impl<'c, 'tcx> Call<'c, 'tcx> {
@@ -89,6 +94,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             unread,
             flattened,
             lent,
+            written_whole,
         } = given;
         Call {
             def_id,
@@ -102,6 +108,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             unread,
             flattened,
             lent,
+            written_whole,
             span,
         }
     }

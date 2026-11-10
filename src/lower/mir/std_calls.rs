@@ -87,6 +87,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             unread: self.result_unread(state),
             flattened: cells.flattened.get(&state.at).copied().unwrap_or_default(),
             lent: state.facts.pointed().lent_calls.contains(&state.at),
+            written_whole: self.uninit_written_whole(state.body, state.at),
         }
     }
 }

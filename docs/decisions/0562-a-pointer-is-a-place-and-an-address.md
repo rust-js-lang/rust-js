@@ -1145,3 +1145,28 @@ Corpus cases `slice_pointer_range_walked_by_a_cursor.rs`,
 builds, through `METAMORPHIC=all`, whose rewrites found #1262. The memory
 net's seeds 1 to 400 then ran as Rust does, but for 50 programs in each
 build that #1257 stops where they run; none were wrong.
+
+## Amendment: a `MaybeUninit<[T; N]>` written whole is its value (#1258)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable. This
+changes only how the JS reads.
+
+#1255 made a `MaybeUninit` of an array of any items its slots,
+`Array.from({ length: n })`, so its pointer may write it an item at a
+time. One only written whole then read `let m = Array.from({ length: 2
+}); m = [7, 8];` where it had read `const m = [7, 8]`. **A
+`MaybeUninit<[T; N]>` whose every use is a whole write, `m.write([..])`
+through a reference, or a whole read, `assume_init()`,
+`assume_init_ref()` and `assume_init_read()`, of its local or a copy of
+it, is `undefined` till it's written**, as before #1255. Anything else,
+a pointer to it or a reference given to another function, which may
+write it through `as_mut_ptr()`, keeps the slots. The fact is the call's,
+`Call::written_whole`, found from the body's MIR where the call is
+lowered (`uninit_written_whole`). An array of `MaybeUninit`s keeps its
+slots whatever its uses, as arrayvec's `uninit().assume_init()` reads it
+before any item is written. Corpus case
+`maybe_uninit_array_written_through_its_pointer.rs`, given a function
+that writes it through its pointer and one written whole and read by
+reference. Mutations `uninit-written-whole-unasked`,
+`uninit-written-whole-given-anywhere`, `uninit-written-whole-of-no-write`
+and `uninit-written-whole-named-is-used`.

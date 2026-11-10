@@ -9,6 +9,7 @@
 
 #1022 P2: a pointer read as another type's, in generic code, throws at run time instead of refusing at compile time
 plain std generic bytes_through_pointers.rs
+plain std generic maybe_uninit_array_written_through_its_pointer.rs
 
 #rd360 a guard that's only a call's receiver is held while the call runs, of what its arguments run only a borrow rust-js sees asking (ADR 0863, the guide's differences 39): a library's `total(&held)` doesn't
 plain std library refcell_borrow_while_mut.rs
