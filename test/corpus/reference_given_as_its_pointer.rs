@@ -37,6 +37,14 @@ fn same<T: ?Sized>(p: *mut T) -> *mut T {
     p
 }
 
+fn std_from_mut<T: ?Sized>(r: &mut T) -> *mut T {
+    std::ptr::from_mut(r)
+}
+
+fn std_from_ref<T: ?Sized>(r: &T) -> *const T {
+    std::ptr::from_ref(r)
+}
+
 // Generic code's own `&T` given on, of a type only its callers know.
 fn from_ref_on<T: ?Sized>(r: &T) -> *const T {
     ptr_from_ref(r)
@@ -141,6 +149,21 @@ fn main() {
     store_in(&mut t, &mut out);
     unsafe { *out += 1 };
     println!("{t}");
+
+    // std's own, the polyfill's one path, in generic code and here.
+    let m = std_from_mut(&mut n);
+    unsafe { *m *= 10 };
+    let mut k = 1u32;
+    let direct = std::ptr::from_mut(&mut k);
+    unsafe { *direct += 1 };
+    println!("{n} {} {k} {}", std::ptr::eq(m, &raw mut n), std::ptr::eq(direct, &raw mut k));
+    let read = std::ptr::from_ref(&k);
+    println!("{} {}", unsafe { *read }, std::ptr::eq(read, &raw const k));
+    let w = std_from_mut(&mut words);
+    unsafe { (*w).push(String::from("d")) };
+    let s = std_from_mut(&mut bytes[..]);
+    unsafe { (*s)[0] = 9 };
+    println!("{words:?} {bytes:?} {}", unsafe { (&(*std_from_ref(&bytes[..]))).len() });
 
     // A field's, and an item's.
     let mut counter = Counter {

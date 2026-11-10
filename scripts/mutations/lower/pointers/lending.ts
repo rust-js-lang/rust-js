@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "std-from-place-not-lent",
+    breaks:
+      "std's `ptr::from_mut(&mut k)` and `ptr::from_ref(&k)` aren't given the place's pointer, their pointer not `&raw mut k`'s",
+    file: "src/lower/pointers/lending.rs",
+    find: "                        args.iter().map(|arg| (arg.node.clone(), true)).collect()",
+    replace: "                        args.iter().map(|arg| (arg.node.clone(), false)).collect()",
+    tests: ["test/corpus.test.ts", "-t", "^reference_given_as_its_pointer\\.rs$"],
+  },
+  {
     name: "lent-reborrow-not-followed",
     breaks:
       "a number lent through a reborrow, `&mut *r` of `r = &mut n`, isn't a cell, and its pointer is refused",

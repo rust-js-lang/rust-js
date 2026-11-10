@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "from-place-lent-reread",
+    breaks:
+      "std's `ptr::from_ref(&k)` of a number lent as its place's pointer is lowered as `FromRef`, which refuses a shared number's pointer as of a copy",
+    file: "src/lower/pointers.rs",
+    find: "            PointerOp::FromPlace if lent => arg(),",
+    replace: "            PointerOp::FromPlace if lent && false => arg(),",
+    tests: ["test/corpus.test.ts", "-t", "^reference_given_as_its_pointer\\.rs$"],
+  },
+  {
     name: "write-bytes-of-items-not-bytes",
     breaks: "`ptr::write_bytes(dst, byte, n)` of a wider type fills `n` bytes, not `n` items' bytes, so `[7u32; 3]` filled from its second with `0x01`, 2 items, is `[7, 257, 7]` (#1133)",
     file: "src/lower/pointers.rs",

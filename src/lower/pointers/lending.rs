@@ -33,7 +33,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
-        for data in body.basic_blocks.iter() {
+        for (block, data) in body.basic_blocks.iter_enumerated() {
             let mir::TerminatorKind::Call {
                 func,
                 args,
@@ -57,6 +57,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .collect()
                 }
                 _ => match crate::lower::fn_def(callee) {
+                    // std's `ptr::from_mut(r)` and `ptr::from_ref(r)`, the
+                    // polyfill's own: given its place's pointer, a shared
+                    // reference's too.
+                    Some((fn_id, fn_args))
+                        if self.recognition().classify(fn_id, fn_args)
+                            == Some(crate::lower::recognition::Std::Pointer(super::PointerOp::FromPlace)) =>
+                    {
+                        args.iter().map(|arg| (arg.node.clone(), true)).collect()
+                    }
                     // A closure's, an `F: FnMut(&mut T) -> *mut T`'s or a
                     // `dyn`'s: its arguments' tuple and what it returns.
                     Some((fn_id, fn_args))
@@ -109,6 +118,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     continue;
                 };
                 pointed.lent_as_pointers.insert(given.local);
+                pointed.lent_calls.insert(block);
                 // A whole local, or what a reference made once of one refers
                 // to, a reborrow's, `&mut *r` of `r = &mut n`.
                 let whole = match of.projection.as_slice() {

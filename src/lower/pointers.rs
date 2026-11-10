@@ -104,6 +104,11 @@ pub(in crate::lower) enum PointerOp {
     /// `$ptrTo(object)` of an object; a `&mut` of what isn't one is a
     /// handle on its place already (ADR 0099).
     FromRef,
+    /// std's `ptr::from_mut(r)` and `ptr::from_ref(r)`: where `r` is made
+    /// there, `&mut n`, lent as its place's pointer (`Pointed::lent_calls`),
+    /// that pointer, as the polyfill `fn(r: &mut T) -> *mut T { r }` is
+    /// given (ADR 1114); else as `FromRef`.
+    FromPlace,
     /// `p.addr()`, `p.expose_provenance()`: its address, `$addr(p, size)`
     /// (ADR 0562).
     Addr,
@@ -231,6 +236,8 @@ pub(super) struct Pointed {
     /// pointer to its place for it (`given_its_pointer`), made as that
     /// pointer, `&raw mut` of its place (ADR 1114).
     pub(super) lent_as_pointers: IndexSet<Local>,
+    /// Each call one of those is given to, by its block.
+    pub(super) lent_calls: IndexSet<mir::BasicBlock>,
 }
 
 /// `lent_copies`, each reference a call gives that's a copy in JS, `s.as_bytes()`'s.
@@ -351,6 +358,7 @@ fn pointed_locals(body: &mir::Body<'_>, lent_copies: IndexSet<Local>) -> Pointed
         lent_copies,
         read_only: IndexSet::default(),
         lent_as_pointers: IndexSet::default(),
+        lent_calls: IndexSet::default(),
     }
 }
 
@@ -776,6 +784,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             tys,
             span,
             generic_args,
+            lent,
             ..
         } = call;
         let mut arg = || values.next().expect("rustc checked the arguments");
@@ -909,7 +918,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let name = if mutable { "$ptrSliceMut" } else { "$ptrSlice" };
                 helper(name, vec![arg(), arg()])
             }
-            PointerOp::FromRef => {
+            // Lent as its place's pointer where it's made: that pointer.
+            PointerOp::FromPlace if lent => arg(),
+            PointerOp::FromRef | PointerOp::FromPlace => {
                 let reference = arg();
                 let (referent, mutable) = match tys.first().map(|t| t.kind()) {
                     Some(ty::Ref(_, referent, m)) => (*referent, m.is_mut()),

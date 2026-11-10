@@ -31,6 +31,10 @@ const POINTER_FNS: &[(&str, PointerOp)] = &[
     // A `MaybeUninit`'s, which is its value's place (ADR 0332).
     ("std::mem::MaybeUninit::<T>::as_ptr", PointerOp::FromRef),
     ("std::mem::MaybeUninit::<T>::as_mut_ptr", PointerOp::FromRef),
+    // A reference as a raw pointer to what it refers to, the polyfill's
+    // `r` (ADR 1114).
+    ("std::ptr::from_mut", PointerOp::FromPlace),
+    ("std::ptr::from_ref", PointerOp::FromPlace),
     // A pointer to a slice, of an item's pointer and a length: a view of
     // them, as `from_raw_parts_mut`'s, or the whole array, it.
     ("std::ptr::slice_from_raw_parts", PointerOp::Slice { mutable: true }),

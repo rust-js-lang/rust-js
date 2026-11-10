@@ -38,6 +38,14 @@ function same(p) {
   return p;
 }
 
+function stdFromMut(r) {
+  return r;
+}
+
+function stdFromRef(r) {
+  return $ptrTo(r);
+}
+
 // Generic code's own `&T` given on, of a type only its callers know.
 function fromRefOn(r) {
   return ptrFromRef(r);
@@ -140,6 +148,27 @@ function main() {
   out.value = (out.value + 1) & 255;
   console.log(`${t.value}`);
 
+  // std's own, the polyfill's one path, in generic code and here.
+  let m = stdFromMut($ptr(n, "value", 0));
+  m.value = (m.value * 10) >>> 0;
+  let k = { value: 1 };
+  const direct = $ptr(k, "value", 0);
+  direct.value = (direct.value + 1) >>> 0;
+  const value = $ptrEq(m, $ptr(n, "value", 0), 4);
+  const arg$4 = $ptrEq(direct, $ptr(k, "value", 0), 4);
+  console.log(`${n.value} ${value} ${k.value} ${arg$4}`);
+  const value$2 = k.value;
+  const read = $ptr(k, "value", 0);
+  console.log(`${read.value} ${$ptrEq(read, $ptr(k, "value", 0), 4)}`);
+  const w = stdFromMut($ptrTo(words));
+  w.value.push("d");
+  const s = stdFromMut($ptrTo(bytes)).value;
+  s[$at(s, 0)] = 9;
+  const arg$5 = stdFromRef(bytes).value.length;
+  console.log(
+    `[${words.map((item) => $debugStr(item)).join(", ")}] [${bytes.join(", ")}] ${arg$5}`,
+  );
+
   // A field's, and an item's.
   const counter = {
     n: 1,
@@ -161,21 +190,21 @@ function main() {
   console.log(`[${more.join(", ")}]`);
 
   // The caller's own type parameter.
-  const k = { value: 2n };
+  k = { value: 2n };
   const kp = bumpThrough($ptr(k, "value", 0), 3n, { add: (a, b) => BigInt.asIntN(64, a + b) });
   kp.value = BigInt.asIntN(64, kp.value * 2n);
   console.log(`${k.value}`);
 
   // Through a bound's dictionary.
-  const m = { value: 9 };
+  m = { value: 9 };
   const mp = throughBound($ptr(m, "value", 0), u32Pointed);
   mp.value = (mp.value + 1) >>> 0;
   const v = [1];
   const vp = throughBound($ptrTo(v), vecPointed);
   vp.value.push(2);
-  const value = $ptrEq(mp, $ptr(m, "value", 0), 4);
-  const arg$4 = $ptrEq(vp, $ptrTo(v), 12);
-  console.log(`${m.value} [${v.join(", ")}] ${value} ${arg$4}`);
+  const value$1 = $ptrEq(mp, $ptr(m, "value", 0), 4);
+  const arg$6 = $ptrEq(vp, $ptrTo(v), 12);
+  console.log(`${m.value} [${v.join(", ")}] ${value$1} ${arg$6}`);
   // An impl's method called of its own type, an object's and a number's.
   const own = vecPointed_pointer(v);
   own.value.push(3);
@@ -188,24 +217,24 @@ function main() {
   const z = { value: 100 };
   const zp = f($ptr(z, "value", 0));
   zp.value = (zp.value + 1) >>> 0;
-  const arg$5 = $ptrEq(zp, $ptr(z, "value", 0), 4);
-  console.log(`${z.value} ${arg$5}`);
+  const arg$7 = $ptrEq(zp, $ptr(z, "value", 0), 4);
+  console.log(`${z.value} ${arg$7}`);
 
   // Through a closure, and a `dyn`.
   const g = (r) => r;
   const y = { value: 50 };
   const yp = g($ptr(y, "value", 0));
   yp.value = (yp.value + 1) >>> 0;
-  const arg$6 = $ptrEq(yp, $ptr(y, "value", 0), 4);
-  console.log(`${y.value} ${arg$6}`);
+  const arg$8 = $ptrEq(yp, $ptr(y, "value", 0), 4);
+  console.log(`${y.value} ${arg$8}`);
   const x = { value: 70 };
   const xp = givenOn($ptr(x, "value", 0), (r) => r);
   xp.value = (xp.value + 1) >>> 0;
   const list = [1];
   const lp = givenOn($ptrTo(list), (x0) => $ptrTo(x0.value));
   lp.value.push(2);
-  const arg$7 = $ptrEq(xp, $ptr(x, "value", 0), 4);
-  console.log(`${x.value} ${arg$7} [${list.join(", ")}]`);
+  const arg$9 = $ptrEq(xp, $ptr(x, "value", 0), 4);
+  console.log(`${x.value} ${arg$9} [${list.join(", ")}]`);
   const held = {
     n: 3,
     label: "d",

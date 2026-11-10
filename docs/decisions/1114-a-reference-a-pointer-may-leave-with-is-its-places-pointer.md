@@ -135,10 +135,6 @@ a slice's instance, whose concrete callers give the object, it's refused
   takes its type's form (#1187).
 - A struct of generic code holding a `*mut T`, a field, crossing the
   boundary, of a slice's instance: not adapted, as a result's is.
-- std's own `ptr::from_mut` and `ptr::from_ref`: refused, as before; made
-  of a reference, their pointer would be no handle `&raw mut` of the place
-  is, `ptr::eq` of them `false` where Rust's is `true`. The polyfill crates
-  write is their own function, which this compiles.
 - A pointer of a reference that escapes another way, into a `static`:
   refused, as before.
 - The real getrandom 0.3 with `wasm_js`, through ADR 1112's patch, fills
@@ -173,3 +169,19 @@ JS object's instance as a `fn`; all against native Rust and with
 `METAMORPHIC=all`; and twenty
 mutations, `lower/mut_refs.ts`, `lower/pointers.ts`, `lower/mir/assign.ts`,
 `lower/mir/rvalues.ts`, `lower/generic_facts.ts` and `lower.ts`.
+
+## Amendment: std's `ptr::from_mut` and `ptr::from_ref`, the polyfill's one path (2026-11-10)
+
+std's own `ptr::from_mut(r)` and `ptr::from_ref(r)` were refused, odd beside
+the polyfill compiling: made of a reference as `FromRef` makes one, their
+pointer was no handle `&raw mut` of the place is, `ptr::eq` of them `false`
+where Rust's is `true`. **They're the polyfill's one path
+(`PointerOp::FromPlace`): the reference given to one, made where it's
+given, `&mut k` or `&k`, a shared one's too, is lent as its place's pointer
+(`Pointed::lent_calls`), and the call is that pointer,
+`std::ptr::from_mut(&mut k)` `$ptr(k, "value", 0)`, `&raw mut k`'s handle;
+one given otherwise, a parameter's `r` as it is, as `FromRef`.** Held by
+`reference_given_as_its_pointer.rs`, std's in generic code and of a local,
+a shared number's read and `ptr::eq`, and the mutations
+`from-place-lent-reread` and `std-from-place-not-lent`.
+
