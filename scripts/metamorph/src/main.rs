@@ -42,6 +42,10 @@
 //!   it that takes it (`defaults.rs`).
 //! - `tuple-struct`: a struct of named fields made a tuple struct, its
 //!   fields read by their places (`tuples.rs`).
+//! - `loud`: the case made to say what std does with its values, each
+//!   struct's and enum's drops and clones, each closure's calls and each
+//!   `for` loop's steps a numbered line, `~loud <n> <what>`; with
+//!   `METAMORPH_PANIC_AT=<n>`, a panic at the n-th (`loud.rs`, #1203).
 //!
 //! - `emi-probe`, `emi-prune` and `emi-insert`: code a case's run never
 //!   reaches, found by the probe's native run, deleted, made
@@ -60,6 +64,7 @@ mod emi;
 mod generic;
 mod library;
 mod loops;
+mod loud;
 mod matches;
 mod methods;
 mod reduce;
@@ -74,7 +79,7 @@ use syn::{Block, FnArg, Item, Pat, Stmt, Type};
 
 use wrap::Wrap;
 
-const REWRITES: &str = "outline|boxed|option|rc-refcell|field|dyn-ref|impl-ref|impl-owned|generic|closure-fn|library|array|tuple|for-each|for-loop|if-let|method-fn|fn-method|default-copy|tuple-struct|emi-probe|emi-prune|emi-insert";
+const REWRITES: &str = "outline|boxed|option|rc-refcell|field|dyn-ref|impl-ref|impl-owned|generic|closure-fn|library|array|tuple|for-each|for-loop|if-let|method-fn|fn-method|default-copy|tuple-struct|loud|emi-probe|emi-prune|emi-insert";
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -134,6 +139,7 @@ fn main() {
         "fn-method" => methods::fn_method(&mut ast, &mut budget),
         "default-copy" => defaults::default_copy(&mut ast, &mut budget),
         "tuple-struct" => tuples::tuple_struct(&mut ast, &mut budget),
+        "loud" => loud::loud(&mut ast, &mut budget),
         "emi-probe" => emi::probe(&mut ast),
         "emi-prune" => match emi::hits_given() {
             Some(hits) => emi::prune(&mut ast, &hits, &mut budget),

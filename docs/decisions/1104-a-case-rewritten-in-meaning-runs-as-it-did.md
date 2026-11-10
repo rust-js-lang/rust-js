@@ -266,3 +266,44 @@ Two new cases took 9 s in 2 parts on the 12-core M6, cold (2026-11-10);
 a change of no case runs nothing. `test/ci.test.ts` holds that a change
 adding or editing a case runs its rewrites, and that a change of neither
 doesn't.
+
+## Amendment: the case made loud (#1203)
+
+About half of a day's P0s (2026-11-10's review) were std's behaviour
+rust-js writes in its runtime, drop orders, clone counts, a panic part
+way, and the consumer net found 11 of them in a day as its types print
+their drops and clones and it panics at each point. Most corpus cases are
+quiet: a drop or a clone out of place prints nothing. Five rewrites make
+each case loud (`loud.rs`):
+
+- `loud`: each struct and enum of the case's own, in any scope, of no
+  `Drop` and not `Copy`, given a `Drop` that prints, `~loud <n> drop
+  <its Debug>` (a non-generic one that derives `Debug`) or `drop <Name>`;
+  each derived `Clone` written out as `derive(Clone)` writes it, printing
+  `clone ..` first, and each `Drop` and `Clone` of the case's own printing
+  first too; each closure's call, `call <k>`, and each `for` loop's step,
+  `step <k>`, a line. One counter numbers every event; past 2,000 they're
+  counted, not printed. A `Drop` rustc rejects, of a type moved out of
+  or one a `const fn` drops, is taken off the types its errors name, then
+  off all, then the clones written out (rustc `--emit=metadata`).
+- `loud-drop`, `loud-clone`, `loud-call` and `loud-step`: `loud` with a
+  panic at the middle event of that kind in `loud`'s own native run
+  (`METAMORPH_PANIC_AT`, `panicPoint`), where nothing is unwinding
+  already, so the rest of the run is what the unwind drops. Of a case run
+  natively on wasm32, which aborts on a panic, none is a variant.
+
+Native Rust's run of each is the oracle, as of every rewrite: what the
+JS drops, clones and calls, and in what order, is what it prints.
+
+Its first run, every case of each in both builds, about 6½ min on the
+12-core M6 in 12 parts (the part with the case below 15 min): the
+rewrites made 1,684 (`loud`), 1,168 (`loud-drop`), 132 (`loud-clone`),
+959 (`loud-call`) and 611 (`loud-step`) programs, of which 1,683, 1,157,
+130, 953 and 605 rustc compiled. **None ran otherwise than native**:
+the nets before it, the consumer net's loud iterators and the tables'
+panic points, had found what a case's own drops, clones and unwinds
+show. One crashed rust-js: `loud`'s `Drop` on `nested_generic_types.rs`'
+innermost doubling type took two minutes to compile (#1214, ADR 0098
+amended, fixed before this landed). And the rewriter's own: a closure's
+body `unsafe { .. } as u32` written after the call's line read as a
+statement; a body not a block is now in parentheses.

@@ -16,7 +16,7 @@ import { join } from "node:path";
 
 import { corpus } from "./corpus-cases";
 import { runSync } from "./child";
-import { buildRewriter, libraryCrate, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
+import { buildRewriter, libraryCrate, middleEvent, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
 import { reducedRepro } from "./reduced";
 import { agree, compileJs, compileJsLibrary, nativeFlags, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, caseShard, fixture, root } from "./support";
@@ -243,4 +243,67 @@ test("a listed rewrite is read under its issue or its decision, and a malformed 
   expect(() => readKnown("#rdx t\nplain boxed a.rs\n")).toThrow();
   expect(() => readKnown("plain boxed a.rs\n")).toThrow();
   expect(() => readKnown("#7 t\nplain inlined a.rs\n")).toThrow();
+});
+
+// The case made loud (#1203): its types' drops and clones, its closures'
+// calls and its loops' steps each a numbered line, and a panic at the
+// middle event of a kind.
+const loudCase = `#[derive(Clone, Debug)]
+struct Token(u32);
+
+fn main() {
+    let a = Token(1);
+    let b = a.clone();
+    let add = |x: u32| x + b.0;
+    for i in 0..3 {
+        println!("{}", add(i));
+    }
+}
+`;
+
+test("loud makes the case's drops, clones, calls and steps a numbered line each", () => {
+  const dir = fixture("metamorphic-loud-harness");
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, "case.rs");
+  writeFileSync(file, loudCase);
+  const made = rewritten("loud", file, "2024");
+  expect(made).toBeDefined();
+  const program = join(dir, "loud.rs");
+  writeFileSync(program, made!.program);
+  const ran = runNative(program, dir, "2024");
+  if (typeof ran === "string") throw new Error(ran);
+  const events = ran.stdout.split("\n").filter((line) => line.startsWith("~loud "));
+  // The derived `Clone` written out says its clone, the `Drop` added each
+  // drop, in the order native Rust runs them.
+  expect(events).toEqual([
+    "~loud 1 clone Token(1)",
+    "~loud 2 step 1",
+    "~loud 3 call 1",
+    "~loud 4 step 1",
+    "~loud 5 call 1",
+    "~loud 6 step 1",
+    "~loud 7 call 1",
+    "~loud 8 drop Token(1)",
+    "~loud 9 drop Token(1)",
+  ]);
+  expect(ran.stdout).toContain("\n1\n~loud");
+  expect(middleEvent(ran.stdout, "call")).toBe(5);
+  expect(middleEvent(ran.stdout, "drop")).toBe(8);
+  expect(middleEvent(ran.stdout, "clone")).toBe(1);
+  expect(middleEvent(ran.stdout, "panic")).toBeUndefined();
+});
+
+test("loud-call panics at the middle call, and what's held is dropped as it unwinds", () => {
+  const dir = fixture("metamorphic-loud-call-harness");
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, "case.rs");
+  writeFileSync(file, loudCase);
+  const made = rewritten("loud-call", file, "2024");
+  expect(made).toBeDefined();
+  const program = join(dir, "loud.rs");
+  writeFileSync(program, made!.program);
+  const ran = runNative(program, dir, "2024");
+  if (typeof ran === "string") throw new Error(ran);
+  expect(ran.outcome).toEqual({ panic: "~loud panic at 5" });
+  expect(ran.stdout.split("\n").filter((line) => line.startsWith("~loud ")).slice(-3)).toEqual(["~loud 5 call 1", "~loud 6 drop Token(1)", "~loud 7 drop Token(1)"]);
 });

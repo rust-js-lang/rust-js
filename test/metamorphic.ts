@@ -28,13 +28,18 @@ import { compileJs, runJs, runNative, runtimes } from "./programs";
  * `for_each` a `for` loop; a `match` of two arms an `if let` or a `let
  * else`; a method's body a free function's, and a free function's a
  * method's; a trait's default written out in each impl; a struct of named
- * fields a tuple struct. */
+ * fields a tuple struct; and the case made loud, its types' drops and
+ * clones, its closures' calls and its loops' steps each a line, and each
+ * kind's middle event made a panic (#1203). */
 export const rewrites = [
   "outline", "boxed", "dyn-ref", "impl-ref", "impl-owned", "generic", "option", "rc-refcell", "field", "closure-fn", "library",
   "array", "tuple", "for-each", "for-loop", "if-let", "method-fn", "fn-method", "default-copy", "tuple-struct",
   // Equivalence modulo inputs (#1086): what the run never reaches made
   // `unreachable!()`, and code never run added.
   "emi-prune", "emi-insert",
+  // The case made loud (#1203): what std does with its values a line each,
+  // and a panic at the middle event of each kind.
+  "loud", "loud-drop", "loud-clone", "loud-call", "loud-step",
 ] as const;
 export type Rewrite = (typeof rewrites)[number];
 
@@ -77,7 +82,15 @@ export function rewritten(rewrite: Rewrite, file: string, edition: string, limit
     if (hits === undefined) return undefined;
     env.METAMORPH_EMI_HITS = hits.join(",");
   }
-  const p = runSync([rewriter, rewrite, file, ...(limit === undefined ? [] : [String(limit)])], root, 60_000, env);
+  // A loud panic's is `loud` with its point, the event `loud`'s run says.
+  const panics = /^loud-(\w+)$/.exec(rewrite)?.[1];
+  if (panics !== undefined) {
+    const at = panicPoint(file, edition, panics, limit);
+    if (at === undefined) return undefined;
+    env.METAMORPH_PANIC_AT = String(at);
+  }
+  const by = panics === undefined ? rewrite : "loud";
+  const p = runSync([rewriter, by, file, ...(limit === undefined ? [] : [String(limit)])], root, 60_000, env);
   if (p.code === 2) return undefined;
   if (p.code !== 0) throw new Error(`metamorph ${rewrite} ${file}: ${p.stderr}`);
   if (rewrite !== "library") return { program: p.stdout };
@@ -105,6 +118,29 @@ function reached(file: string, edition: string): number[] | undefined {
   const compiled = compileJs(program, dir, edition);
   const js = "js" in compiled ? runJs(runtimes[0][1], compiled.js, dir, runtimes[0][0]).stderr : "";
   return [...new Set([...said(ran.stderr), ...said(js)])];
+}
+
+/** The event a `loud-<kind>` panics at: of the events of `kind` that
+ * `loud`'s native run of `file` says, `~loud <n> <kind> ..`, the middle
+ * one, where some are behind it and some ahead; or `undefined` where it
+ * says none, or doesn't run to its end. */
+function panicPoint(file: string, edition: string, kind: string, limit: number | undefined): number | undefined {
+  const made = runSync([rewriter, "loud", file, ...(limit === undefined ? [] : [String(limit)])], root, 60_000, { METAMORPH_EDITION: edition });
+  if (made.code !== 0) return undefined;
+  const dir = join(target, "metamorph-loud", Bun.hash(made.stdout).toString(36));
+  mkdirSync(dir, { recursive: true });
+  const program = join(dir, "loud.rs");
+  writeFileSync(program, made.stdout);
+  const ran = runNative(program, dir, edition);
+  if (typeof ran === "string") return undefined;
+  return middleEvent(ran.stdout, kind);
+}
+
+/** Of the events of `kind` that a loud run's `stdout` says, the middle
+ * one's number. */
+export function middleEvent(stdout: string, kind: string): number | undefined {
+  const events = [...stdout.matchAll(/^~loud (\d+) (\w+)/gm)].filter((m) => m[2] === kind).map((m) => Number(m[1]));
+  return events.length === 0 ? undefined : events[Math.floor((events.length - 1) / 2)];
 }
 
 /** The line `library` prints between the library and the program
