@@ -153,3 +153,17 @@ whole text each step of semver's `identifier`, quadratic; with a long
 text's facts kept (ADR 0126, amended) `test_new` runs in 0.9 s, semver is
 14 of 34 as native, its `test_identifier.rs` asked, and the Crater's wall
 time 2 min 9 s on the 12-core M6 at a load of 4–7, 2026-11-10.)
+
+## Amendment: a refusal at run time is its own column (2026-11-10, #1192)
+
+A test whose JS failed with rust-js's refusal at run time, an error whose
+message is "rust-js does not support ..", was counted WRONG with the
+wrong answers: getrandom's `test_diff_u32` and `test_diff_u64` (#1191) hid
+any real one among them and sent the reader hunting. `jsOutcomes` reads
+each failure's error that Node's runner says again after the run, and a
+test whose error is a refusal is `refused at run time: <message>`; a
+crate's line counts them in a column of their own beside the refused,
+`2 refused at run time: <test> (<message>)`, and `--check` fails on the
+WRONG alone. Each such refusal is still an issue of its own, a refusal to
+make a compile error where it can be. `test/crater.test.ts` holds Node's
+runner's own words of a refused test and a failing one.

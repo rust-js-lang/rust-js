@@ -2,7 +2,7 @@
 // and its cut of a refused test from the JS's copy of a crate (#1087,
 // scripts/crater.ts). The net itself runs each night.
 import { expect, test } from "bun:test";
-import { attributesFrom, cut, cutFor, decidedOf, declaredIn, differences, errorsAt, executables, forTheJs, innerAttributes, integrationFiles, items, jsOutcomes, libraryTestsOnly, modulePath, nativeOutcomes, offTarget, oneIntegrationTest, onlyForTests, testModulePath, testOnlyFile, undecided } from "../scripts/crater";
+import { attributesFrom, cut, cutFor, decidedOf, declaredIn, differences, errorsAt, executables, forTheJs, innerAttributes, integrationFiles, items, jsOutcomes, judged, libraryTestsOnly, modulePath, nativeOutcomes, offTarget, oneIntegrationTest, onlyForTests, said, testModulePath, testOnlyFile, undecided } from "../scripts/crater";
 
 test("each test's outcome is read of cargo test's lines and of Node's runner's", () => {
   expect(nativeOutcomes("running 3 tests\ntest a::t1 ... ok\ntest a::t2 ... FAILED\ntest t3 ... ignored, slow\n")).toEqual({
@@ -11,6 +11,42 @@ test("each test's outcome is read of cargo test's lines and of Node's runner's",
     t3: "ignored",
   });
   expect(jsOutcomes("✔ a::t1 (0.1ms)\n✖ a::t2 (1ms)\n﹣ t3 (0ms) # SKIP\nℹ tests 3\n")).toEqual({ "a::t1": "ok", "a::t2": "failed", t3: "ignored" });
+});
+
+// Node's runner's own words, of a test that throws rust-js's refusal and one
+// whose assertion fails (#1192).
+const refusedRun = `✖ a::refused (0.3ms)
+✖ a::wrong (0.1ms)
+✔ a::ok (0.1ms)
+ℹ tests 3
+
+✖ failing tests:
+
+test at src/lib.test.js:3:1
+✖ a::refused (0.3ms)
+  Error: rust-js does not support a pointer read as another type's, which reads memory by where it is
+      at TestContext.<anonymous> (file:///src/lib.test.js:4:9)
+
+test at src/lib.test.js:6:1
+✖ a::wrong (0.1ms)
+  Error: assertion \`left == right\` failed
+    left: 1
+   right: 2
+      at TestContext.<anonymous> (file:///src/lib.test.js:7:9)
+`;
+
+test("a test that fails with rust-js's refusal at run time is refused, with its message, and no wrong answer", () => {
+  const js = jsOutcomes(refusedRun);
+  expect(js).toEqual({
+    "a::refused": "refused at run time: rust-js does not support a pointer read as another type's, which reads memory by where it is",
+    "a::wrong": "failed",
+    "a::ok": "ok",
+  });
+  const crate = { name: "c", version: "1.0.0" } as Parameters<typeof said>[0];
+  const verdict = judged({ "a::refused": "ok", "a::wrong": "ok", "a::ok": "ok" }, js, {}, "/nonexistent");
+  expect(said(crate, verdict)).toBe(
+    "c 1.0.0: 1 of 3 as native, 0 refused, 1 refused at run time: a::refused (rust-js does not support a pointer read as another type's, which reads memory by where it is), 1 WRONG: a::wrong (failed)",
+  );
 });
 
 test("a test that passes natively and not as JS differs, unless it was cut as refused", () => {

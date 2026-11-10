@@ -48,8 +48,13 @@ const work = join(root, "target", "crater");
 const compiler =
   process.env.RUST_JS_COMPILER ?? join(root, "target", "debug", "rust-js");
 
-/** Each test's outcome, by its path, `train::tests::test19`. */
-export type Outcomes = Record<string, "ok" | "failed" | "ignored">;
+/** Each test's outcome, by its path, `train::tests::test19`: as JS, one
+ * that failed with rust-js's refusal at run time, an error whose message
+ * is "rust-js does not support ..", is that, with its message (#1192). */
+export type Outcomes = Record<string, "ok" | "failed" | "ignored" | `${typeof refusedAtRunTime}${string}`>;
+
+/** How an outcome of a test refused at run time starts, its message after. */
+export const refusedAtRunTime = "refused at run time: ";
 
 /** What a crate's tests did: natively, and as JS, each test cut from its
  * build with why; and each test that passed natively and, not cut, didn't
@@ -61,6 +66,10 @@ export type Verdict =
       js: Outcomes;
       cut: Record<string, string>;
       differ: { name: string; js: string }[];
+      /** Native tests that, not cut, failed as JS with rust-js's refusal
+       * at run time, each with its message: refusals, no wrong answer,
+       * each a refusal to make a compile error where it can be (#1192). */
+      refusedAtRun?: { name: string; why: string }[];
       /** Native tests of a module a cfg leaves off wasm32, chrono's
        * `#[cfg(unix)] mod tz_info`'s: no test of rust-js's target. */
       offTarget?: string[];
@@ -87,12 +96,19 @@ export function jsOutcomes(said: string): Outcomes {
   for (const [, mark, name, rest] of said.matchAll(
     /^\s*(✔|✖|﹣) (\S+)(.*)$/gm,
   )) {
+    // The heading of the failures said again after the run, no test.
+    if (mark === "✖" && name === "failing" && rest === " tests:") continue;
     outcomes[name] =
       mark === "✖"
         ? "failed"
         : mark === "﹣" || rest.includes("# SKIP")
           ? "ignored"
           : "ok";
+  }
+  // Node's runner says each failure's error under its name again, after
+  // the run: one that's rust-js's refusal at run time is refused (#1192).
+  for (const [, name, why] of said.matchAll(/^\s*✖ (\S+).*\n\s*(?:\w*Error: )?(rust-js does not support .*)$/gm)) {
+    if (outcomes[name] === "failed") outcomes[name] = `${refusedAtRunTime}${why}`;
   }
   return outcomes;
 }
@@ -902,11 +918,16 @@ export function offTarget(name: string, read: (path: string) => string | undefin
 
 /** A crate's verdict of its tests' outcomes: each native one not run as
  * JS of a module a cfg leaves off wasm32 apart from those that differ. */
-function judged(native: Outcomes, js: Outcomes, cut: Record<string, string>, dir: string): Verdict {
+export function judged(native: Outcomes, js: Outcomes, cut: Record<string, string>, dir: string): Verdict {
   const read = (path: string) => (existsSync(join(dir, path)) ? readFileSync(join(dir, path), "utf8") : undefined);
-  const differ = differences(native, js, cut);
-  const off = differ.filter((d) => d.js === "not run" && offTarget(d.name, read)).map((d) => d.name);
-  return { native, js, cut, differ: differ.filter((d) => !off.includes(d.name)), offTarget: off };
+  const all = differences(native, js, cut);
+  const off = all.filter((d) => d.js === "not run" && offTarget(d.name, read)).map((d) => d.name);
+  // A refusal at run time is no wrong answer: a column of its own (#1192).
+  const refusedAtRun = all
+    .filter((d) => d.js.startsWith(refusedAtRunTime))
+    .map((d) => ({ name: d.name, why: d.js.slice(refusedAtRunTime.length) }));
+  const differ = all.filter((d) => !off.includes(d.name) && !d.js.startsWith(refusedAtRunTime));
+  return { native, js, cut, differ, refusedAtRun, offTarget: off };
 }
 
 /** A crate's verdict in a line. */
@@ -920,11 +941,13 @@ export function said(crate: Crate, verdict: Verdict, decided: Map<string, string
     return `${name}: its library refused, ${passed} native tests unrun: ${verdict.refused.slice(0, 3).join("; ")}`;
   const cut = Object.keys(verdict.cut).length;
   const off = verdict.offTarget?.length ?? 0;
-  const same = passed - cut - off - verdict.differ.length;
+  const atRun = verdict.refusedAtRun ?? [];
+  const same = passed - cut - off - atRun.length - verdict.differ.length;
   const wrong = undecided(crate.name, verdict.differ, decided);
   const known = verdict.differ.length - wrong.length;
   const shown = wrong.slice(0, 5).map((d) => `${d.name} (${d.js})`);
-  return `${name}: ${same} of ${passed} as native, ${cut} refused${off > 0 ? `, ${off} not of wasm32` : ""}${known > 0 ? `, ${known} decided` : ""}${wrong.length > 0 ? `, ${wrong.length} WRONG: ${shown.join(", ")}${wrong.length > 5 ? ", .." : ""}` : ""}`;
+  const refusedAtRun = atRun.slice(0, 3).map((d) => `${d.name} (${d.why})`);
+  return `${name}: ${same} of ${passed} as native, ${cut} refused${atRun.length > 0 ? `, ${atRun.length} refused at run time: ${refusedAtRun.join(", ")}${atRun.length > 3 ? ", .." : ""}` : ""}${off > 0 ? `, ${off} not of wasm32` : ""}${known > 0 ? `, ${known} decided` : ""}${wrong.length > 0 ? `, ${wrong.length} WRONG: ${shown.join(", ")}${wrong.length > 5 ? ", .." : ""}` : ""}`;
 }
 
 if (import.meta.main) {
