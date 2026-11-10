@@ -81,3 +81,17 @@ is boxed as it's made (`refuses_boxed_option`), in any case or test, each
 probed: those arms are gone, with `max-by-leaves-drops` and
 `boxed-max-by-refused`. Where
 one were reached, it'd be refused, never wrong.
+
+## Amendment: a `_key` form's key is what its function gives (2026-11-10, #1223)
+
+`max_by_key`, `min_by_key` and `is_sorted_by_key` read their key's type
+from the function's signature, a closure's or `fn_sig`'s, which a
+`Box<dyn FnMut>`, a `&mut F` or any other `FnMut` but those hasn't:
+rust-js crashed. The key is what std's bound names it,
+`<F as FnOnce<(&Self::Item,)>>::Output` (`collect.rs`' `key_of`),
+normalized in the body's typing environment, whatever `F` is, so its
+drop is asked of the type it is. Found by #1204's `dyn-fn` rewrite of
+eight corpus cases. Corpus case `key_functions_boxed`, mutation
+`key-of-a-boxed-function-by-its-signature`. A key with a destructor kept
+past a function with one is dropped after the function in native Rust and
+before it in JS, closures too: #1231, filed.

@@ -1132,12 +1132,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(Expr::call_helper("$isSortedBy", args))
             }
             IterMethod::IsSortedByKey => {
-                let tcx = self.tcx;
-                let sig = match *arg_tys[1].kind() {
-                    ty::Closure(_, args) => args.as_closure().sig(),
-                    _ => arg_tys[1].fn_sig(tcx),
-                };
-                let key = tcx.instantiate_bound_regions_with_erased(sig).output();
+                let key = self.key_of(arg_tys[1], item);
                 // A key with a destructor, given its drop: each one
                 // replaced dropped, and where two are out of order the later,
                 // then the last, as std's `is_sorted_by` drops them (#776).
@@ -1162,19 +1157,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         let tcx = self.tcx;
-        let (max, key) = match method {
+        let (max, keyed) = match method {
             IterMethod::Max | IterMethod::Min => return self.extreme_of(method == IterMethod::Max, it, item, span),
-            IterMethod::MaxBy(max) => (max, None),
-            IterMethod::MaxByKey(max) => {
-                let sig = match *arg_tys[1].kind() {
-                    ty::Closure(_, args) => args.as_closure().sig(),
-                    _ => arg_tys[1].fn_sig(tcx),
-                };
-                (max, Some(tcx.instantiate_bound_regions_with_erased(sig).output()))
-            }
+            IterMethod::MaxBy(max) => (max, false),
+            IterMethod::MaxByKey(max) => (max, true),
             _ => unreachable!("only `max()` and its kind"),
         };
         let item = item.ok_or_else(|| self.unsupported(span, "this iterator's items"))?;
+        // Of a `_key` form, the key its function gives an item's reference.
+        let key = keyed.then(|| self.key_of(arg_tys[1], Ty::new_imm_ref(tcx, tcx.lifetimes.re_erased, item)));
         let f = arg();
         let ends = self.consumed_ends(Some(method), arg_tys, &f, span)?;
         // Of a key that drops, over the crate's iterator with a destructor:
@@ -1188,6 +1179,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Given as it is: its helper calls it with Rust's arguments alone,
         // `compare(kept, item)` or `key(item)`, as the recognizers' does.
         self.extreme_by_call((max, key), (it, f), item, ends, span)
+    }
+
+    /// What `f`, a key function, gives `given`: `<F as FnOnce<(given,)>>::Output`,
+    /// of a closure, a function, a `Box<dyn FnMut>` or a `&mut F` alike, as
+    /// std's `max_by_key<B, F: FnMut(&Self::Item) -> B>` names it (#1223).
+    fn key_of(&self, f: Ty<'tcx>, given: Ty<'tcx>) -> Ty<'tcx> {
+        let tcx = self.tcx;
+        let output = tcx.require_lang_item(LangItem::FnOnceOutput, rustc_span::DUMMY_SP);
+        let key = Ty::new_projection(tcx, ty::IsRigid::No, output, [f, Ty::new_tup(tcx, &[given])]);
+        tcx.normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(key))
     }
 
     /// The drop of what a by-value consumer `method` of `arg_tys` moves into

@@ -28,17 +28,6 @@ plain std dyn-fn back_predicate_unwinds.rs
 plain std dyn-fn clone_of_a_borrowed_parameter.rs
 plain std dyn-fn rc_fn_made_of_a_counted_rc.rs
 
-#1223 P1 (compile crash): max_by_key/min_by_key given a Box<dyn FnMut> panics: Ty::fn_sig() called on non-fn type
-plain std dyn-fn boxed_option_unwraps.rs
-plain std dyn-fn consumed_iterator_dropped_as_its_function_panics.rs
-plain std dyn-fn consumers_step_each.rs
-plain std dyn-fn fold_drops_moved_function_first.rs
-plain std dyn-fn keys_with_a_destructor_drop_where_std_drops_them.rs
-plain std dyn-fn max_by_drops_its_function_first.rs
-plain std dyn-fn max_by_key_of_a_dropping_key_over_its_iterator.rs
-plain std dyn-fn panic_mid_fold_drops.rs
-plain std dyn-fn panic_part_way_drops.rs
-
 #1226 P0 (impl Trait): a std adapter returned as impl Trait is compiled from std's bodies, but the code using it reads it as rust-js's JS-iterator form
 plain opaque back_predicate_unwinds.rs
 plain opaque back_steps.rs
@@ -95,3 +84,6 @@ plain std opaque into_iterator_named_by_another_bound.rs
 plain std opaque generic_chain_of_into.rs
 plain std opaque into_iter_of_items.rs
 plain std opaque user_into_iter.rs
+
+#1232 P0 (drops): an iterator a std consumer takes by value isn't dropped as its boxed function panics
+plain std dyn-fn consumed_iterator_dropped_as_its_function_panics.rs

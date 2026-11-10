@@ -930,4 +930,14 @@ export const mutations: Mutation[] = [
     replace: "            true => collected,\n",
     tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
   },
+  {
+    name: "key-of-a-boxed-function-by-its-signature",
+    breaks:
+      "`max_by_key`, `min_by_key` and `is_sorted_by_key` read their key's type from the function's signature, which a `Box<dyn FnMut>` or a `&mut F` hasn't: rust-js crashes, where `<F as FnOnce>::Output` names it (#1223)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        let key = Ty::new_projection(tcx, ty::IsRigid::No, output, [f, Ty::new_tup(tcx, &[given])]);\n",
+    replace:
+      "        let _ = (output, given);\n        let key = match *f.kind() {\n            ty::Closure(_, args) => tcx.instantiate_bound_regions_with_erased(args.as_closure().sig()).output(),\n            _ => tcx.instantiate_bound_regions_with_erased(f.fn_sig(tcx)).output(),\n        };\n",
+    tests: ["test/corpus.test.ts", "-t", "^key_functions_boxed.rs$"],
+  },
 ];
