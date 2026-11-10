@@ -49,4 +49,20 @@ export const mutations: Mutation[] = [
       '        let _ = (format!(\n            "its crate is its types alone',
     tests: ["test/registry-crates.test.ts", "-t", "types alone"],
   },
+  {
+    name: "open-call-issue-unnamed",
+    breaks: "a refused call an open issue covers doesn't name it, `calling \`std::hint::spin_loop\` yet`, so whoever meets it can't find what's left to do (guide limitations.md)",
+    file: "src/lower/refusal.rs",
+    find: '    format!("calling `{}`{}", tcx.def_path_str(id), issue.unwrap_or_default())\n',
+    replace: '    format!("calling `{}`", tcx.def_path_str(id))\n',
+    tests: ["test/diagnostics.test.ts", "-t", "a spin loop's hint"],
+  },
+  {
+    name: "slice-behind-mut-issue-unnamed",
+    breaks: "a slice reference behind a `&mut` is refused without its issue, #1282",
+    file: "src/lower/refusal.rs",
+    find: "        if matches!(inner.kind(), ty::Ref(_, slice, _) if matches!(slice.kind(), ty::Slice(_))))\n",
+    replace: "        if matches!(inner.kind(), ty::Ref(_, slice, _) if matches!(slice.kind(), ty::Str)))\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a slice reference behind a &mut"],
+  },
 ];

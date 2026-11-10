@@ -588,7 +588,7 @@ test("a parameter of a `&mut` to a slice reference is refused from MIR", () => {
     cwd: root,
     stderr: "pipe",
   });
-  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` yet")]);
+  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` (#1282) yet")]);
 });
 
 // A variable of a type JS can't hold, a struct of a \`&mut\` to a \`&mut [i32]\`,
@@ -613,7 +613,7 @@ pub fn run() -> Vec<i32> {
     cwd: root,
     stderr: "pipe",
   });
-  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` yet")]);
+  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` (#1282) yet")]);
   // And one assigned again, which MIR declares first.
   writeFileSync(join(dir, "lib.rs"), `struct Holder<'a, 'b> {
     s: &'a mut &'b mut [i32],
@@ -635,7 +635,7 @@ pub fn run(again: bool) -> Vec<i32> {
     cwd: root,
     stderr: "pipe",
   });
-  expect([again.exitCode === 0, again.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` yet")]);
+  expect([again.exitCode === 0, again.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` (#1282) yet")]);
 });
 
 // What JS can't do soundly is refused: each compiled to output that ran

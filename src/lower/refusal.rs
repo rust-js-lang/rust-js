@@ -2,9 +2,9 @@
 //! "rust-js does not support .. yet", of a feature, a call or a type; and
 //! of addressable memory, which JavaScript has none of, that, with why.
 
-use super::recognition::{addresses_memory, is_memory_type};
+use super::recognition::{OpenCall, addresses_memory, is_memory_type, open_call};
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{Ty, TyCtxt};
+use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::{ErrorGuaranteed, Span};
 
 /// What's refused.
@@ -61,13 +61,24 @@ pub(crate) fn words<'tcx>(tcx: TyCtxt<'tcx>, refused: Refused<'_, 'tcx>) -> Stri
     let what = match refused {
         Refused::Feature(what) | Refused::Because(what, _) | Refused::Memory(what) => what.to_string(),
         Refused::Call(id) => calling(tcx, id),
-        Refused::Type(what, ty) => format!("{what} of type `{ty}`"),
+        Refused::Type(what, ty) => format!(
+            "{what} of type `{ty}`{}",
+            if slice_behind_mut(ty) { " (#1282)" } else { "" }
+        ),
     };
     match (of_memory(tcx, refused), refused) {
         (true, _) => format!("rust-js does not support addressable memory yet: {what}"),
         (false, Refused::Because(_, why)) => format!("rust-js does not support {what} yet: {why}"),
         (false, _) => format!("rust-js does not support {what} yet"),
     }
+}
+
+/// Whether `ty` is a slice reference behind a `&mut`, `&mut &mut [u8]`,
+/// std's cursor over a buffer, `impl Write for &mut [u8]`'s, whose refusal
+/// #1282 covers.
+fn slice_behind_mut(ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Ref(_, inner, ty::Mutability::Mut)
+        if matches!(inner.kind(), ty::Ref(_, slice, _) if matches!(slice.kind(), ty::Slice(_))))
 }
 
 /// Whether what's refused is of addressable memory: a call of std's that
@@ -82,7 +93,13 @@ fn of_memory<'tcx>(tcx: TyCtxt<'tcx>, refused: Refused<'_, 'tcx>) -> bool {
     }
 }
 
-/// What a refused call is called: "calling `std::env::args`".
+/// What a refused call is called: "calling `std::env::args`", and where
+/// an open issue covers it, that issue, "calling `std::hint::spin_loop`
+/// (#1285)", as a refusal names what's left to do (guide limitations.md).
 pub(crate) fn calling(tcx: TyCtxt<'_>, id: DefId) -> String {
-    format!("calling `{}`", tcx.def_path_str(id))
+    let issue = open_call(tcx, id).map(|open| match open {
+        OpenCall::Conversion => " (#1284)",
+        OpenCall::ThreadBlock => " (#1285)",
+    });
+    format!("calling `{}`{}", tcx.def_path_str(id), issue.unwrap_or_default())
 }

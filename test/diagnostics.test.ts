@@ -35,7 +35,11 @@ for (const [name, source, message, crate] of [
   ["a struct's pointer as a later field's", "#[repr(C)] pub struct R { name: String, n: u32 }\npub fn f(p: *const R) -> u32 { unsafe { *(p as *const u32) } }", "does not support addressable memory yet: a pointer read as another type's"],
   ["a pointer into a subslice's copy", "pub fn f() -> bool { let x = [1u8, 2, 3]; let [_, ref y @ ..] = x; let p = &y[0] as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
   ["a pointer to a constant", "const C: &u8 = &1;\npub fn f() -> bool { let p = C as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
-  ["a pointer through a &mut", "pub fn f(r: &mut u32) { let p: *mut u32 = r; unsafe { *p += 1 } }", "does not support addressable memory yet: a raw pointer to what a `&mut` refers to, which JS holds in a box of a copy: a function whose signature has a raw pointer in its result or another parameter is given its place's pointer (ADR 1114)"],
+  ["a pointer through a &mut", "pub fn f(r: &mut u32) { let p: *mut u32 = r; unsafe { *p += 1 } }", "does not support addressable memory yet: a raw pointer to what a `&mut` refers to, which JS holds in a box of a copy: a function whose signature has a raw pointer in its result or another parameter is given its place's pointer (ADR 1114, #1283)"],
+  // A refusal an open issue covers names it (guide limitations.md).
+  ["a spin loop's hint", "pub fn f() { std::hint::spin_loop() }", "does not support calling `std::hint::spin_loop` (#1285) yet"],
+  ["a thread-local's try_with", "thread_local! { static N: std::cell::Cell<u32> = const { std::cell::Cell::new(0) }; }\npub fn f() -> u32 { N.try_with(|n| n.get()).unwrap_or(0) }", "does not support calling `std::thread::LocalKey::<T>::try_with` (#1285) yet"],
+  ["a slice reference behind a &mut", "pub fn f(buf: &mut &mut [u8]) { let b = std::mem::take(buf); *buf = &mut b[1..]; }", "does not support values of type `&mut &mut [u8]` (#1282) yet"],
   ["a pointer to a value a box holds", "pub fn f(b: Box<u32>) -> bool { let p: *const u32 = &*b; p.is_null() }", "does not support addressable memory yet: a raw pointer to this place"],
   // A `pub use` of what has JS but no module of rust-js's to be re-exported
   // from, and of a module's every name, refused, not left out (ADR 0240, amended).

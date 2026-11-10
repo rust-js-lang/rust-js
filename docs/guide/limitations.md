@@ -8,6 +8,13 @@ lists what's refused. How a program that compiles behaves is
 [the semantics](semantics.md), area by area, and where it deliberately
 differs from native Rust, [its one list](semantics.md#differences-from-native-rust-in-one-list).
 
+A refusal an open issue covers names it, `(#N)`, at the end of what it
+says isn't supported, before `yet`, beside a decision it names, `(ADR
+1114, #1283)`: ``rust-js does not support calling `std::hint::spin_loop`
+(#1285) yet``; and the line here says it too, so
+whoever meets one finds what's left to do. The words are the refusal's
+own, as its owner writes them; the issue goes with the fix that lifts it.
+
 Many of these will go; this page goes with them. Each item that's refused
 at compile time ends with an example, which `test/limitations.test.ts`
 compiles: one that compiles fails the test, so the page is kept true. A

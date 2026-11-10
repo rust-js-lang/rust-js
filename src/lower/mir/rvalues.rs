@@ -804,7 +804,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             tcx,
                             span,
                             Refused::Memory(
-                                "a raw pointer to what a `&mut` refers to, which JS holds in a box of a copy: a function whose signature has a raw pointer in its result or another parameter is given its place's pointer (ADR 1114)",
+                                "a raw pointer to what a `&mut` refers to, which JS holds in a box of a copy: a function whose signature has a raw pointer in its result or another parameter is given its place's pointer (ADR 1114, #1283)",
                             ),
                         ));
                     }

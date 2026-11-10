@@ -11,6 +11,7 @@ mod js_items;
 mod json;
 mod lengths;
 mod methods;
+mod open_calls;
 pub(in crate::lower) use methods::keeps_each;
 mod own_steps;
 pub(in crate::lower) use chars::reaches_str_chars;
@@ -31,8 +32,9 @@ mod wrappers;
 mod zip_folds;
 
 pub(super) use self::{
-    adapter_types::*, c_strs::*, calls::*, fmt::*, iterators::*, js_items::*, json::*, serde::*, sorts::*,
-    specialization::*, std_crates::*, std_items::*, traits::*, type_facts::*, types::*, wrappers::*, zip_folds::*,
+    adapter_types::*, c_strs::*, calls::*, fmt::*, iterators::*, js_items::*, json::*, open_calls::*, serde::*,
+    sorts::*, specialization::*, std_crates::*, std_items::*, traits::*, type_facts::*, types::*, wrappers::*,
+    zip_folds::*,
 };
 
 use super::combinators::{Comb, IterComb, IterSource, StepOp};
