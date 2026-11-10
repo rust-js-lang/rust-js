@@ -1,3 +1,4 @@
+//@ library-differs
 // More items than JS's bound of a call's arguments, about 120,000 in
 // Node: `extend_from_within` and a Debug builder's `entries` push each,
 // never spread into one call, which throws a `RangeError` (#334).

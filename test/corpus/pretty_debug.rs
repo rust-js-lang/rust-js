@@ -1,3 +1,4 @@
+//@ library-differs
 // `{:#?}`, pretty Debug (ADR 0137): each part on a line of its own, indented
 // by four spaces, its own lines too, and ended by a comma, for std's types,
 // derived and hand-written `Debug`s, and generic code; `f.alternate()` says

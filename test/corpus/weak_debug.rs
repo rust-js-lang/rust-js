@@ -1,3 +1,4 @@
+//@ library-differs
 // A `Weak` shows none of what it points at, `(Weak)`, as std's does, in a
 // struct's `Debug` too.
 use std::cell::RefCell;

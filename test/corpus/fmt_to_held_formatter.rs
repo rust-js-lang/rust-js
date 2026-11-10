@@ -1,3 +1,4 @@
+//@ library-differs
 // A `fmt` trait's method called as a function on a `Formatter` held where
 // it isn't its writer's (ADR 0461), `Display::fmt(&x, self.0)`: what it
 // writes, appended to the handle's text, as anyhow's `Quoted` writer

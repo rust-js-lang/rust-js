@@ -1,3 +1,4 @@
+//@ library-differs
 // `{:?}` of an untagged enum's variant without fields is its Rust name, as
 // a derived `Debug` shows it: of one that's `undefined` or `null`
 // (`#[rust_js::undefined]`, `#[rust_js::null]`, ADR 0676) too, which no

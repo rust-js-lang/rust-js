@@ -1,3 +1,4 @@
+//@ library-differs
 // `ParseIntError::kind()`, and `{:?}` of another crate's enum without
 // fields, std's `IntErrorKind`: its variant's name, as deranged's errors
 // keep and show it.

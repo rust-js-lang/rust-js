@@ -1,3 +1,4 @@
+//@ library-differs
 // `{:#?}` of std's iterators that show what they have left: a slice's
 // `Iter`, its slice on a line of its own as std's `debug_tuple` puts it; a
 // string's `Chars`, `Chars(` and a pretty list; a string's `Drain`. And of

@@ -1,3 +1,4 @@
+//@ library-differs
 // A `Debug` builder held in a variable, stepped in a branch or a loop, or
 // not at all: each step's part as it's taken, and `finish` or
 // `finish_non_exhaustive` of what it was given, as Rust's writes it, plain

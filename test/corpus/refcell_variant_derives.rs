@@ -1,3 +1,4 @@
+//@ library-differs
 // An enum variant's `RefCell` field that holds its value, read by the
 // enum's derives as a struct's is, `Clone` a copy of what it holds, `==`
 // and `Debug` what it holds, one of a hand-written `==` too, and a

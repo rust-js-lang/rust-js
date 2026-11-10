@@ -1,3 +1,4 @@
+//@ library-differs
 // `{:#?}` of the crate's derived `Debug`s, with nothing else asking for
 // `alternate()`: the placeholder alone says the crate shows them pretty
 // (ADR 0137).
