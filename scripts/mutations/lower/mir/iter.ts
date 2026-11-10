@@ -839,4 +839,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(hint) = None::<Expr> {\n",
     tests: ["test/corpus.test.ts", "-t", "^take_and_filter_of_a_type_parameter_hint_as_std\\.rs$"],
   },
+  {
+    name: "boxed-function-panic-unseen",
+    breaks: "a by-value consumer given a boxed function, `Box<dyn FnMut>`, that may panic isn't taken to unwind through its call, so the iterator it took isn't dropped as it unwinds (#1232)",
+    file: "src/lower/mir/iter.rs",
+    find: "            let ty = ty.boxed_ty().unwrap_or(ty);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_function_panics_drop_the_consumed_iterator.rs$"],
+  },
 ];

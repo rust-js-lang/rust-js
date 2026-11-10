@@ -2440,3 +2440,14 @@ its mutations, `enumerate-reversible-compiled-count-taken` and
 `enumerate-reversible-compiled-count-unseen`, which go with it.
 `enumerate-compiled-count-unseen` runs `enumerate_of_a_reversible_source.rs`
 too.
+
+## Amended (2026-11-10, #1232): a boxed function's panic unwinds too
+
+A by-value consumer drops the iterator it took as a panic in the function
+it's given unwinds through it (#1079). Whether that function may panic was
+asked of the given type peeled of references alone, so a `Box<dyn
+FnMut>` wasn't a function. `Loud(0).fold(0, f)` of a boxed `f` that panics
+never dropped `Loud`, where native Rust does. A box is asked as what it
+holds now, its `dyn Fn*`, anyone's, which may panic.
+`test/corpus/boxed_function_panics_drop_the_consumed_iterator.rs` holds
+`fold` and `for_each`.

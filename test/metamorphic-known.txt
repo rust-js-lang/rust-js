@@ -95,3 +95,6 @@ plain generic-instances size_hint.rs
 plain generic-instances size_hints_made_in_place.rs
 plain generic-instances take_and_filter_of_a_type_parameter_hint_as_std.rs
 plain generic-instances zip_size_hints.rs
+
+#1244 P0 (library): vec_last_takes_its_back's library rewrite drops the vec's last item late (JS: skipped None, chained, drop 1; native: drop 4, skipped None, chained)
+plain library vec_last_takes_its_back.rs

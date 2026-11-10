@@ -564,9 +564,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut dropped = Vec::new();
         self.dropped_consumed(held, (receiver_ty, def_id, output), span, &mut dropped)?;
         // Or a function it's given that may panic, `for_each(f)`'s, which
-        // unwinds through the method that took it (#1079).
+        // unwinds through the method that took it (#1079); a boxed one's, as
+        // what it holds, `Box<dyn FnMut>`'s `dyn` (#1232).
         let given_may_panic = (arg_tys.iter().filter(|&&ty| ty != receiver_ty)).any(|&ty| {
             let ty = ty.peel_refs();
+            let ty = ty.boxed_ty().unwrap_or(ty);
             self.is_callable(ty) && self.call_may_unwind(ty)
         });
         match receiver_ty.has_param() || self.steps_may_panic(receiver_ty) || given_may_panic {
