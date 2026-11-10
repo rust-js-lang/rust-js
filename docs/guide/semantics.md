@@ -445,7 +445,7 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   `$guardMap(guard, () => guard.name, "value")`. Two cells' guards mapped
   to one object, a `RefCell<Rc<X>>`'s two, or a guard mapped to a cell,
   whose own guards it would meet, throw where they're made, naming
-  #1275, never a release of another cell
+  #1307, never a release of another cell
   ([0328](../decisions/0328-refcell-borrow-counts.md#amendment-a-guard-mapped-to-a-part-1275)).
   A call of a fn pointer runs what the crate made one of that type of,
   `Math.clz32` or a fallback, unless a value of its type may come from

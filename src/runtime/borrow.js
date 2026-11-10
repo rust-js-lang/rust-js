@@ -50,10 +50,10 @@ function $guardTicket(guard) {
 // A guard of a part, `made`, in its guard's form, holding `ticket`: the
 // object itself (`object`), a box writing through the handle `made` is
 // (`box`), or a `{ value }`; a guard of a cell, whose own guards a
-// mapped one's release would meet, refused (#1275).
+// mapped one's release would meet, refused (#1307).
 function $guardOf(made, form, ticket) {
   if (form === "cell") {
-    throw $unsupported("rust-js does not support a guard mapped to a cell, whose own guards would release what the mapped one holds (#1275)");
+    throw $unsupported("rust-js does not support a guard mapped to a cell, whose own guards would release what the mapped one holds (#1307)");
   }
   const guard =
     form === "object"
@@ -74,7 +74,7 @@ function $guardOf(made, form, ticket) {
   const tickets = $guardTickets.get(guard);
   if (tickets === undefined) $guardTickets.set(guard, [ticket]);
   else if (tickets[0].cell === ticket.cell) tickets.push(ticket);
-  else throw $unsupported("rust-js does not support two cells' guards mapped to one object, whose releases it can't tell apart (#1275)");
+  else throw $unsupported("rust-js does not support two cells' guards mapped to one object, whose releases it can't tell apart (#1307)");
   return guard;
 }
 

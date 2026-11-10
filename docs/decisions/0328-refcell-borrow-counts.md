@@ -242,7 +242,7 @@ guard's, `$unborrow`, which releases the cell it was made of:
 - A guard type a map gives is counted whatever a cell of what it guards
   is (`RefCells::maps_to`): its drop releases the cell it was made of.
 
-What the form can't tell apart throws `$unsupported`, naming #1275, where
+What the form can't tell apart throws `$unsupported`, naming #1307, where
 the guard is made, never releasing another cell:
 - two cells' guards mapped to one object, a `RefCell<Rc<X>>`'s two, one
   guard object whose drop can't say which cell it releases;
