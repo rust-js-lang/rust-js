@@ -3,7 +3,6 @@
 import {
   $charIndices,
   $charIndicesOffset,
-  $charIndicesStr,
   $chars,
   $debugStr,
   $encodeCharUtf16,
@@ -54,7 +53,7 @@ function main() {
   it = $charIndices("aé😀b");
   $nextBack(it);
   $next(it);
-  console.log(`${$charIndicesOffset(it)} ${$debugStr($charIndicesStr(it))}`);
+  console.log(`${$charIndicesOffset(it)} ${$debugStr($restStr(it))}`);
 
   const buf = [0, 0];
   for (const ch of ["a", "é", "😀"]) {
@@ -80,6 +79,7 @@ function main() {
   console.log(
     `${value == null ? "None" : `Some(${$debugStr(value, "'")})`} Drain(${$debugStr($restStr(d))})`,
   );
+  console.log(`${$debugStr($restStr(d))}`);
   const back = $rest(d).toReversed().join("");
   console.log(`${back} ${s}`);
 }

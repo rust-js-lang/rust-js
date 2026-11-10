@@ -620,29 +620,17 @@ export const mutations: Mutation[] = [
     breaks:
       "a hasher given through a `T: Hash`'s dictionary isn't boxed, where its `Hasher`'s reads a box's `value`",
     file: "src/lower/mir/assign.rs",
-    find: "                    || (is_std_def(self.tcx, trait_id, StdItem::Hash)\n                        || crate::lower::recognition::is_extend(self.tcx, trait_id))\n                        && self.is_unknown(generic_args.type_at(0)))\n",
+    find: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash)\n                    || crate::lower::recognition::is_extend(self.tcx, trait_id))\n",
     replace: "                    || false)\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
-  },
-  {
-    name: "hash-hasher-boxed-where-known",
-    breaks:
-      "a hasher given to a known type's `Hash` is boxed and copied back, as for a dictionary's",
-    file: "src/lower/mir/assign.rs",
-    find: "                    || (is_std_def(self.tcx, trait_id, StdItem::Hash)\n                        || crate::lower::recognition::is_extend(self.tcx, trait_id))\n                        && self.is_unknown(generic_args.type_at(0)))\n",
-    replace:
-      "                    || is_std_def(self.tcx, trait_id, StdItem::Hash)\n                        || crate::lower::recognition::is_extend(self.tcx, trait_id))\n",
-    tests: ["test/corpus.test.ts", "-t", "^(hash_values|vec_edits).rs$"],
-    snapshots: true,
   },
   {
     name: "extend-of-unknown-unboxed",
     breaks:
       "`a.extend(b)` of an `I::Item` that's an `IntoIterator` gives its dictionary `a`, where it reads a box",
     file: "src/lower/mir/assign.rs",
-    find: "                    || (is_std_def(self.tcx, trait_id, StdItem::Hash)\n                        || crate::lower::recognition::is_extend(self.tcx, trait_id))\n",
-    replace:
-      "                    || (is_std_def(self.tcx, trait_id, StdItem::Hash))\n",
+    find: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash)\n                    || crate::lower::recognition::is_extend(self.tcx, trait_id))\n                    && !matches!(",
+    replace: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash))\n                    && !matches!(",
     tests: ["test/corpus.test.ts", "-t", "^nested_item_drops.rs$"],
   },
   {

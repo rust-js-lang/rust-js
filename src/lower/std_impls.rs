@@ -230,9 +230,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// could tell a clone from it, and otherwise a copy of the parts that
     /// could, calling each hand-written `clone` on the way.
     pub(super) fn clone_value(&mut self, place: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        // What an `impl Trait` is, a returned struct's or closure's.
-        let ty = self.reveal(ty);
-        // A closure is its JS function, which shares what it captured: a
+        // What an `impl Trait` is arrives revealed, as MIR's types are
+        // after analysis, a returned struct's or closure's, held or not
+        // (`impl_trait_clone_held.rs`). A closure is its JS function, which shares what it captured: a
         // clone is the same function where nothing could tell (ADR 0522);
         // one cloned apart makes itself again, of a clone of what it took.
         // As the crate decided of each it clones, a library's as its library

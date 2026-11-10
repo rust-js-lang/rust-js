@@ -87,7 +87,9 @@ was refused (#118).
   std shows it. Its `{:#?}` stays refused.
 - **`CharIndices::offset()`** is where its next `char` starts, in UTF-8
   bytes, or the string's length past its last: `$charIndicesOffset`. Its
-  `as_str()` is the text of the `char`s it has left: `$charIndicesStr`.
+  `as_str()` is the text of the `char`s it has left: `$restStr`, as
+  `chars()`' is, both `$chars`' own `rest()` since #1186 (amended, #1109:
+  `$charIndicesStr` was the same function by another name).
 - **`c.encode_utf16(&mut buf)`** writes its units at `buf`'s start and
   gives the `&mut [u16]` of them, panicking with std's text where `buf` is
   too short: `$encodeCharUtf16`.

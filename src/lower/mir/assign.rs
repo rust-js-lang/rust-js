@@ -1081,8 +1081,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Option<(rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>)>> {
         // What's called: a trait's method resolved to its impl's, whose
         // parameters say which are boxes, or the crate's trait's own, a
-        // dictionary's, and `Hash`'s of a type only a caller knows, whose
-        // hasher is a `&mut H` of its own (ADR 0463), and `Extend`'s, whose
+        // dictionary's, and `Hash`'s with no impl here, a type only a
+        // caller knows (a known type's std impl is a std call, lowered or
+        // refused before), whose hasher is a `&mut H` of its own (ADR
+        // 0463), and `Extend`'s, whose
         // `&mut Self` its dictionary takes in a box, an `I::Item`'s that's an
         // `IntoIterator` too (ADR 0478); not a `dyn`'s, whose pair is its
         // `&mut`, nor std's, but a provided method std's body is compiled
@@ -1093,9 +1095,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(trait_id) => match self.impl_method(def_id, generic_args)? {
                 Some(method) => Some(method),
                 None if (self.krate.foreign.compiled_by_rust_js(trait_id)
-                    || (is_std_def(self.tcx, trait_id, StdItem::Hash)
-                        || crate::lower::recognition::is_extend(self.tcx, trait_id))
-                        && self.is_unknown(generic_args.type_at(0)))
+                    || is_std_def(self.tcx, trait_id, StdItem::Hash)
+                    || crate::lower::recognition::is_extend(self.tcx, trait_id))
                     && !matches!(generic_args.type_at(0).kind(), ty::Dynamic(..)) =>
                 {
                     Some((def_id, generic_args))

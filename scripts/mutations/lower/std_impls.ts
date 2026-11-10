@@ -636,15 +636,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
   {
-    name: "clone-value-opaque-unrevealed",
-    breaks:
-      "a clone of a value returned as `impl Trait + Clone` is written of its opaque type, which rust-js refuses to clone",
-    file: "src/lower/std_impls.rs",
-    find: "        let ty = self.reveal(ty);\n        // A closure is its JS function",
-    replace: "        // A closure is its JS function",
-    tests: ["test/corpus.test.ts", "-t", "^impl_trait_clone.rs$"],
-  },
-  {
     name: "copies-of-shared",
     breaks:
       "what std copies of `Copy` structs, `extend` of references, `concat`, `partition`, is the same objects, so changing a copy changes the original",

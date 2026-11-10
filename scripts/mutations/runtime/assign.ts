@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/assign.js",
     find: "  if (target === value) return;\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","generic_mut_map"],
+    tests: ["test/corpus.test.ts", "-t", "^pointer_read_written_back.rs$"],
   },
   {
     name: "assign-std-struct-methods",

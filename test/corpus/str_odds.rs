@@ -46,6 +46,7 @@ fn main() {
     let mut s = String::from("héllo wörld");
     let mut d = s.drain(1..10);
     println!("{:?} {d:?}", d.next_back());
+    println!("{:?}", d.as_str());
     let back: String = d.rev().collect();
     println!("{back} {s}");
 }

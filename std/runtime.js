@@ -15522,12 +15522,6 @@ export function $charsHint() {
   return [Math.ceil(bytes / 4), bytes];
 }
 
-// `it.as_str()` of a string's `char_indices()`: the text of the `char`s
-// it has left (#118).
-export function $charIndicesStr(it) {
-  return it.rest();
-}
-
 // `it.offset()` of a string's `char_indices()`: where its next `char`
 // starts, in UTF-8 bytes, or the string's length past its last, as std's
 // front is (#118).

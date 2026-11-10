@@ -8,6 +8,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/rest_str.js",
     find: "it.items.slice(it.at, it.end)",
     replace: "it.items.slice(it.at)",
-    tests: ["test/corpus.test.ts","-t","iter_next_back"],
+    tests: ["test/corpus.test.ts", "-t", "^str_odds.rs$"],
   },
 ];

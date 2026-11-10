@@ -157,14 +157,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-string-places.test.ts", "-t", "owner stack"],
   },
   {
-    name: "char-indices-as-str-pairs",
-    breaks: "CharIndices::as_str reads its [byte, char]s",
-    file: "src/lower/mir/std_calls/iterators.rs",
-    find: "StepOp::AsStr if this.recognition().is_char_indices(arg_tys[0].peel_refs()) => {",
-    replace: "StepOp::AsStr if false => {",
-    tests: ["test/corpus.test.ts", "-t", "str_odds"],
-  },
-  {
     name: "chain-array-argument-unstepped",
     breaks:
       "an array given to `chain` is `Iterator.from(xs)`, not a `$iter`, so its `nth` isn't a `Vec`'s and the chain's `skip` steps each (#250)",
