@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/folded.js",
     find: "  if (it.fold === undefined) return it;\n",
     replace: "",
-    tests: ["test/lowering-iterators.test.ts", "-t", "a fold-taking collect in generic code of a JS iterator"],
+    tests: ["test/lowering-generic-iterators.test.ts", "-t", "a fold-taking collect in generic code of a JS iterator"],
   },
   {
     name: "folded-fold-unexposed",

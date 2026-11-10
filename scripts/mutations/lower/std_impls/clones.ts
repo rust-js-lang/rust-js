@@ -187,7 +187,7 @@ export const mutations: Mutation[] = [
     replace:
       "            && false\n        {\n            return self.copied_clone(place, (ty, source), span, out);\n",
     tests: [
-      "test/lowering-iterators.test.ts",
+      "test/lowering-generic-iterators.test.ts",
       "-t",
       "a clone of a generic iterator.s copied",
     ],

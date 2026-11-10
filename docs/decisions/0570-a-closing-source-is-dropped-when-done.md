@@ -192,7 +192,7 @@ All 759 + 253 probe programs agree but `take(1).fuse().any(..)` and
 `.position(..)`. std's `Fuse` of a `FusedIterator` keeps its inner
 iterator, and the compiled generic one clears it (#244). The droppable
 sweep's 2,100 programs agree. Held by `test/corpus/consumer_drops_what_is_left.rs`,
-28 mutations, and `test/lowering-iterators.test.ts`'s bare generic
+28 mutations, and `test/lowering-generic-iterators.test.ts`'s bare generic
 `collect`. A value moved into an adapter that is held itself isn't held
 again, since the adapter's `hold()` holds it. The readability baseline's
 `$iter` share grows by 1.5 and its renamed `x$1` share by 3.2 in 10,000

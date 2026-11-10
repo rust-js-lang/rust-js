@@ -64,6 +64,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/iter.js",
     find: "  if (typeof items.length !== \"number\") throw new TypeError(\"rust-js: an iterator stepped as an array's, which doesn't know its back\");\n",
     replace: "",
-    tests: ["test/lowering-iterators.test.ts", "-t", "never stepped as an empty array"],
+    tests: ["test/lowering-generic-iterators.test.ts", "-t", "never stepped as an empty array"],
   },
 ];

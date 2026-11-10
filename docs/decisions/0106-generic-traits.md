@@ -260,7 +260,7 @@ array again.
 
 `test/corpus/associated_iterator_of_stds_struct_from_its_back.rs` holds
 `next_back`, `rev()` and `rfold` of both forms against native Rust in both
-builds. `test/lowering-iterators.test.ts` holds the flatten, which the
+builds. `test/lowering-generic-iterators.test.ts` holds the flatten, which the
 build of std's structs alone refuses ("its constant size of `<S as
 Source>::Iter`"), and `$iter`'s throw. Mutations
 `made-js-iterator-of-std-struct-unseen`, `entry-output-unnormalized` and

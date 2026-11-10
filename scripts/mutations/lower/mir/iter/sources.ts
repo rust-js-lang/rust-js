@@ -272,7 +272,7 @@ export const mutations: Mutation[] = [
     find: "                false => self.js_iterator(value),\n",
     replace: "                false => value,\n",
     tests: [
-      "test/lowering-iterators.test.ts",
+      "test/lowering-generic-iterators.test.ts",
       "-t",
       "takes the crate's own from behind",
     ],
