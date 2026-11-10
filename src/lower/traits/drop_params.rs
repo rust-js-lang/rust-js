@@ -121,6 +121,13 @@ pub(in crate::lower) fn std_method_facts<'tcx>(
                 })
             });
             facts.extend(place.map(|place| (item_slot(tcx, method, place), TypeFact::InPlace)));
+            // And of `FromIterator::from_iter`'s, whether it's `TrustedLen`,
+            // of which and `IInPlace` an entry that collects a `Vec` makes
+            // how std's `SpecFromIter` collects it, where it knows its items'
+            // layout, which a generic caller may not (#1239).
+            if tcx.trait_of_assoc(method) == Some(std_item(tcx, StdItem::FromIterator)) {
+                facts.extend(place.map(|place| (item_slot(tcx, method, place), TypeFact::TrustedLen)));
+            }
         }
     }
     facts.sort();

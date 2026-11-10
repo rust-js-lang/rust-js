@@ -542,7 +542,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .instantiate(self.tcx, args)
                     .skip_normalization();
                 let of = self.drop_slot_of(item.def_id, index, args);
-                if self.given.type_facts.iter().any(|&(at, _, _)| at == of) {
+                // The same fact of it given twice; two facts of one type, its
+                // `IInPlace` and `IVecCollect`, are each their own (#1239).
+                if self
+                    .given
+                    .type_facts
+                    .iter()
+                    .any(|&(at, given, _)| at == of && given == fact)
+                {
                     return Err(self.unsupported(span, "a trait method's type parameter's fact here"));
                 }
                 let name = self.fresh(&format!("{}{}", drop_word(self.tcx, declared), fact.word()));
@@ -552,10 +559,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Everything the method takes that its caller through the dictionary
             // doesn't give: its dictionaries, then its drops (ADR 0098), which
             // are this impl's own, and its own type parameters' it's given.
+            // The method's own environment in the instance's terms: the
+            // dictionary's, the impl's, holds the impl's parameters alone, not
+            // the method's own and their bounds, `fn from_iter<I: IntoIterator<
+            // Item = i32>>`'s. What it gives is read in it, below (#1292, #1304,
+            // #1308); a fact it asks of its own, how std collects a `Vec` of
+            // what it's given, by its own parameters' bounds alone beside the
+            // dictionary's, so it knows its items (#1239), its impl's evidence
+            // never taken for a bound's.
+            let tcx = self.tcx;
+            let bounds = (tcx.param_env(method).caller_bounds().iter()).map(|bound| {
+                ty::EarlyBinder::bind(tcx, bound)
+                    .instantiate(tcx, instance.args)
+                    .skip_normalization()
+            });
+            let method_env = ty::TypingEnv::new(
+                ty::ParamEnv::new(tcx.mk_clauses_from_iter(bounds)),
+                self.typing_env.typing_mode(),
+            );
+            let own_params: Vec<Ty<'tcx>> = (instance.args.iter().skip(tcx.generics_of(method).parent_count))
+                .filter_map(|arg| arg.as_type())
+                .collect();
+            let own = |ty: Ty<'tcx>| own_params.contains(&ty);
+            let own_bounds =
+                (method_env.param_env.caller_bounds().iter()).filter(|clause| match clause.kind().skip_binder() {
+                    ty::ClauseKind::Trait(bound) => own(bound.self_ty()),
+                    ty::ClauseKind::Projection(projection) => own(projection.projection_term.self_ty()),
+                    _ => false,
+                });
+            let own_env = ty::TypingEnv::new(
+                ty::ParamEnv::new(
+                    tcx.mk_clauses_from_iter(self.typing_env.param_env.caller_bounds().iter().chain(own_bounds)),
+                ),
+                self.typing_env.typing_mode(),
+            );
+            let outer_env = std::mem::replace(&mut self.typing_env, own_env);
             let evidence = match declared.is_empty() {
                 true => self.evidence_args_with(method, instance.args, location, span),
                 false => self.method_evidence(method, instance.args, &declared, &names, location, span),
             };
+            self.typing_env = outer_env;
             self.given.const_params.truncate(mark);
             self.given.type_facts.truncate(fact_mark);
             for lent in replaced {
@@ -576,22 +619,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .output();
             // As the impl makes it, `<Tens as Source>::Iter` its `Map`, an
             // `impl`'s hidden type std's struct it hides (#1292), and its
-            // form, in the method's own environment in the instance's terms:
-            // the dictionary's, the impl's, holds the impl's parameters,
-            // `Tens<T>`'s `T`, not the method's own and their bounds, `fn
-            // tagged<U: Copy>`'s, whose closure copying a `U` is an `FnMut`
-            // only by it, nor `fn hidden<const M: u32>`'s `M`, which rustc's
-            // normalization panicked finding (#1304, #1308).
-            let tcx = self.tcx;
-            let bounds = (tcx.param_env(method).caller_bounds().iter()).map(|bound| {
-                ty::EarlyBinder::bind(tcx, bound)
-                    .instantiate(tcx, instance.args)
-                    .skip_normalization()
-            });
-            let method_env = ty::TypingEnv::new(
-                ty::ParamEnv::new(tcx.mk_clauses_from_iter(bounds)),
-                self.typing_env.typing_mode(),
-            );
+            // form, in the method's own environment (`method_env`): `fn
+            // tagged<U: Copy>`'s closure copying a `U` is an `FnMut` only by
+            // it, and `fn hidden<const M: u32>`'s `M` rustc's normalization
+            // panicked finding elsewhere (#1304, #1308).
             let output = (tcx.fn_sig(method).instantiate(tcx, instance.args))
                 .skip_normalization()
                 .skip_binder()

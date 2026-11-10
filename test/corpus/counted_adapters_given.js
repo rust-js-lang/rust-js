@@ -3,6 +3,7 @@
 import {
   $clone,
   $cloning,
+  $collectVec,
   $exactLen,
   $filterEnds,
   $foldOf,
@@ -11,7 +12,6 @@ import {
   $knowing,
   $next,
   $nextBack,
-  $roomForHint,
   $sizeHint,
   $skipping,
   $taking,
@@ -37,12 +37,20 @@ export function entry() {
   main();
 }
 
-function ends(it, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone, IItemSize) {
+function ends(
+  it,
+  IIterator,
+  IDoubleEndedIterator,
+  IExactSizeIterator,
+  IClone,
+  IVecCollect,
+  IItemSize,
+) {
   const first = IIterator.next(it);
   const len = IExactSizeIterator.len(it);
   const copy = IClone.clone(it);
   const last = IDoubleEndedIterator.next_back(it);
-  const rest = Array.from($roomForHint($given(copy, IIterator, true), IItemSize, false));
+  const rest = $collectVec($given(copy, IIterator, true), IItemSize, IVecCollect);
   return [len, first, last, IExactSizeIterator.len(it), rest];
 }
 
@@ -100,6 +108,7 @@ function main() {
     takeDoubleEndedIterator,
     takeExactSizeIterator,
     TakeClone,
+    "fold",
     4,
   );
   console.log(
@@ -140,6 +149,7 @@ function main() {
     },
     { len: (iterator) => enumerateExactSizeIterator_len(iterator, exactSizeIterator) },
     enumerateClone(clone),
+    "fold",
     8,
   );
   console.log(
@@ -191,6 +201,7 @@ function main() {
     },
     { len: (iterator) => enumerateExactSizeIterator_len(iterator, takeExactSizeIterator) },
     enumerateClone(TakeClone),
+    "fold",
     8,
   );
   console.log(

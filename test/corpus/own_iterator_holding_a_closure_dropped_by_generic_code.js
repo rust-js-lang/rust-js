@@ -4,7 +4,9 @@ import {
   $advanceSlice,
   $cleanup,
   $closing,
+  $collectVec,
   $collecting,
+  $collectsInPlace,
   $dropEach,
   $foldOf,
   $held,
@@ -13,7 +15,7 @@ import {
   $lazyTakeWhile,
   $next,
   $nextSome,
-  $roomForHint,
+  $vecCollectWay,
   iterator_map,
   iterator_zip,
 } from "@rust-js/std";
@@ -34,9 +36,10 @@ function even(l) {
   return l[0] % 2 === 0;
 }
 
-function collected(it, BFromIteratorIItem, IInPlace, IItemSize, IItemAlign, dropI) {
+function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, IItemSize, IItemAlign, dropI) {
   return BFromIteratorIItem.fromIter(
     $closing(Iterator.from(it), dropI, false),
+    ITrustedLen,
     IInPlace,
     (closing) => {
       closing.return();
@@ -145,9 +148,12 @@ function main() {
       true,
     ),
     {
-      fromIter: (items, IInPlace) =>
-        $collecting(items, () => Array.from($roomForHint(items, 2, false))),
+      fromIter: (items, ITrustedLen, IInPlace) =>
+        $collecting(items, () =>
+          $collectVec(items, 2, $vecCollectWay($collectsInPlace(IInPlace, 2, 1), ITrustedLen)),
+        ),
     },
+    false,
     undefined,
     2,
     1,

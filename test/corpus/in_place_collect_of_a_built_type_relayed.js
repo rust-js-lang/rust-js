@@ -22,9 +22,11 @@ import {
   $iterator,
   $lazyRange,
   $live,
+  $mapEnds,
   $next,
   $nextSome,
   $rangeInclusiveNext,
+  $rangeInclusiveNextBack,
   $roomForHint,
   $traitImpl,
   $unwindsOn,
@@ -114,7 +116,10 @@ function relayed(options, JInPlace, HeldSize, HeldAlign, dropT, dropJ) {
  */
 function ranged(t, HeldSize, HeldAlign) {
   const value = held(
-    $lazyRange(1, 3).map(() => t),
+    $mapEnds(
+      $iterator({ start: 1, end: 2 }, $rangeInclusiveNext, false, $rangeInclusiveNextBack),
+      () => t,
+    ),
     {
       intoIter: (items) => $iter(items == null ? [] : [items]),
       IntoIterIterator: () => ({ next: $next }),
@@ -155,7 +160,10 @@ function listed(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, 
  */
 function listedRanged(t) {
   const value = listed(
-    $lazyRange(1, 3).map(() => t),
+    $mapEnds(
+      $iterator({ start: 1, end: 2 }, $rangeInclusiveNext, false, $rangeInclusiveNextBack),
+      () => t,
+    ),
     {
       intoIter: (items) => $iter(items == null ? [] : [items]),
       IntoIterIterator: () => ({ next: $next }),
@@ -371,13 +379,16 @@ function main() {
       $iterator({ start: 1n, end: 4n }, $rangeInclusiveNext).map((n) => [n]),
     );
     return relayed(
-      $closing($iter(wides), (intoIter) => {
-        for (const item of intoIter) {
-          if (item != null) {
-            dDrop_drop(item);
+      $mapEnds(
+        $closing($iter(wides), (intoIter) => {
+          for (const item of intoIter) {
+            if (item != null) {
+              dDrop_drop(item);
+            }
           }
-        }
-      }).map(wide),
+        }),
+        wide,
+      ),
       [16, 8],
       16,
       8,

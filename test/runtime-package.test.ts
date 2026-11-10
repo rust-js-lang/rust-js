@@ -1109,3 +1109,22 @@ test("a long text's kept facts are its own, at every byte, and at most $textKept
   expect($textFactsKept.has(oldest)).toBe(true);
   expect($textFactsKept.has(texts[texts.length - $textKept + 1])).toBe(false);
 });
+
+// How std's `SpecFromIter` collects an iterator into a `Vec`, `IVecCollect`
+// (#1239): the compiler's `recognition::vec_collect_way` answers it of a
+// type its caller knows, the runtime's `$vecCollectWay` of what a generic
+// caller's caller gives. Each is held to test/vec-collect-ways.txt, the
+// compiler's by `cargo test vec_collect_ways`, the runtime's here.
+test("$vecCollectWay answers the table vec_collect_way answers", () => {
+  const module = join(fixture("runtime-vec-collect-way"), "runtime.js");
+  writeFileSync(module, run([compiler, "--runtime-module"]));
+  const rows = readFileSync(join(root, "test/vec-collect-ways.txt"), "utf8").split("\n")
+    .filter((line) => line && !line.startsWith("#")).map((line) => line.split("\t"));
+  expect(rows.length).toBe(4);
+  const script = `
+const { $vecCollectWay } = await import(${JSON.stringify(module)});
+const rows = ${JSON.stringify(rows)};
+console.log(rows.map(([inPlace, trusted]) => $vecCollectWay(inPlace === "true", trusted === "true")).join(","));`;
+  const printed = run([node ?? "node", "--input-type=module", "--eval", script]).trim();
+  expect(printed).toBe(rows.map(([, , way]) => way).join(","));
+});

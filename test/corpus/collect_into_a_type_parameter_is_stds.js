@@ -2,12 +2,17 @@
 
 import {
   $chars,
+  $collectVec,
   $collecting,
+  $collectsInPlace,
+  $filterEnds,
   $folded,
+  $iter,
   $iterator,
   $reserveHint,
   $rev,
   $roomForHint,
+  $vecCollectWay,
 } from "@rust-js/std";
 
 export function entry() {
@@ -27,14 +32,16 @@ function loudIterator_sizeHint(loud) {
   return [n, n];
 }
 
-function collect(it, BFromIteratorIItem, IInPlace) {
-  return BFromIteratorIItem.fromIter(Iterator.from(it), IInPlace);
+function collect(it, BFromIteratorIItem, ITrustedLen, IInPlace) {
+  return BFromIteratorIItem.fromIter(Iterator.from(it), ITrustedLen, IInPlace);
 }
 
 function main() {
   const fromIterator = {
-    fromIter: (items, IInPlace) =>
-      $collecting(items, () => Array.from($roomForHint(items, 4, false))),
+    fromIter: (items, ITrustedLen, IInPlace) =>
+      $collecting(items, () =>
+        $collectVec(items, 4, $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen)),
+      ),
   };
   const direct = Array.from(
     $roomForHint(
@@ -47,29 +54,37 @@ function main() {
   const generic = collect(
     $iterator([0, 3], loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
     fromIterator,
+    false,
   );
   console.log(`[${generic.join(", ")}]`);
   const filtered = collect(
-    [1, 2, 3, 4, 5].values().filter((x) => x % 2 === 1),
+    $filterEnds($iter([1, 2, 3, 4, 5]), (x) => x % 2 === 1),
     fromIterator,
+    false,
   );
   console.log(`[${filtered.join(", ")}]`);
   const deque = collect(
     $iterator([5, 7], loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
     fromIterator,
+    false,
   );
   console.log(`[${deque.join(", ")}]`);
-  const text = collect($rev($chars("abc")), {
-    fromIter: (items, IInPlace) =>
-      $collecting(items, () => Array.from($reserveHint($folded(items), 1)).join("")),
-  });
+  const text = collect(
+    $rev($chars("abc")),
+    {
+      fromIter: (items, ITrustedLen, IInPlace) =>
+        $collecting(items, () => Array.from($reserveHint($folded(items), 1)).join("")),
+    },
+    false,
+  );
   console.log(`${text}`);
   let set = collect(
     $iterator([0, 2], loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
     {
-      fromIter: (items, IInPlace) =>
+      fromIter: (items, ITrustedLen, IInPlace) =>
         $collecting(items, () => new Set($reserveHint($folded(items), 4, 4))),
     },
+    false,
   );
   set = Array.from(set);
   set.sort((a, b) => a - b);

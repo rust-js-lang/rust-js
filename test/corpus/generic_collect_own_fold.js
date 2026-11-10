@@ -3,13 +3,13 @@
 import {
   $chars,
   $cmp,
+  $collectVec,
   $debugStr,
   $enumerate,
   $folded,
   $iter,
   $iterator,
   $reserveHint,
-  $roomForHint,
 } from "@rust-js/std";
 
 export function entry() {
@@ -72,8 +72,8 @@ function upper(it) {
   ).join("");
 }
 
-function listed(it) {
-  return Array.from($roomForHint(Iterator.from(it), 4, false));
+function listed(it, IVecCollect) {
+  return $collectVec(Iterator.from(it), 4, IVecCollect);
 }
 
 function main() {
@@ -115,6 +115,7 @@ function main() {
         undefined,
         lettersIterator_fold,
       ),
+      "next",
     )
       .map((item) => $debugStr(item, "'"))
       .join(", ")}]`,

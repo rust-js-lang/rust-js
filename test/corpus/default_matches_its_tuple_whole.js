@@ -4,10 +4,8 @@ import {
   $advanceSlice,
   $cleanup,
   $closing,
-  $collectDropping,
-  $collectsInPlace,
+  $collectVec,
   $dropEach,
-  $foldToArray,
   $given,
   $givenDrop,
   $held,
@@ -15,7 +13,6 @@ import {
   $live,
   $next,
   $nextSome,
-  $roomForHint,
   $someValue,
   $traitImpl,
   $unwindsOn,
@@ -77,22 +74,15 @@ function _A__A_Tuple_taken(it, dropA, dropI) {
 
 const $iExt = new WeakMap();
 
-function iExt(IIterator, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
-  return $traitImpl($iExt, [IIterator, IInPlace, IItemSize, IItemAlign, dropI, dropIItem], () => ({
+function iExt(IIterator, IVecCollect, IItemSize, dropI, dropIItem) {
+  return $traitImpl($iExt, [IIterator, IVecCollect, IItemSize, dropI, dropIItem], () => ({
     listed(self) {
-      return $collectsInPlace(IInPlace, IItemSize, IItemAlign)
-        ? $foldToArray($closing($given(self, IIterator, true), $givenDrop(dropI), false), dropIItem)
-        : $collectDropping(
-            $roomForHint(
-              $closing($given(self, IIterator, true), $givenDrop(dropI), false),
-              IItemSize,
-              false,
-              false,
-              dropIItem,
-            ),
-            dropIItem,
-            true,
-          );
+      return $collectVec(
+        $closing($given(self, IIterator, true), $givenDrop(dropI), false),
+        IItemSize,
+        IVecCollect,
+        dropIItem,
+      );
     },
     nextTuple(self, SelfIterator, TTuple) {
       return TTuple.taken($given(self, SelfIterator, true), dropI);
@@ -102,14 +92,12 @@ function iExt(IIterator, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
       let elt$live = false;
       let nextTuple;
       try {
-        nextTuple = iExt(
+        nextTuple = iExt(SelfIterator, IVecCollect, IItemSize, dropI, TTuple.$dropItem).nextTuple(
+          self,
           SelfIterator,
-          IInPlace,
-          IItemSize,
-          IItemAlign,
-          dropI,
-          TTuple.$dropItem,
-        ).nextTuple(self, SelfIterator, TTuple, dropT);
+          TTuple,
+          dropT,
+        );
       } catch (error) {
         $cleanup(() => {
           dropI?.(self);
@@ -195,8 +183,7 @@ function main() {
   const _D__D_Tuple = _A__A_Tuple(dDrop_drop);
   const IntoIterExt = iExt(
     { next: $next, advanceBy: $advanceSlice },
-    [4, 4],
-    4,
+    "inPlace",
     4,
     $dropEach(dDrop_drop),
     dDrop_drop,

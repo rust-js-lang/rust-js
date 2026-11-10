@@ -751,4 +751,20 @@ export const mutations: Mutation[] = [
     replace: "            let dictionary_env = self.typing_env;\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_of_a_method_with_its_own_generics.rs$"],
   },
+  {
+    name: "entry-facts-without-the-methods-bounds",
+    breaks: "a dictionary's entry makes the facts its impl's method asks of its own type parameter in the dictionary's environment, without the method's bounds, so a crate's `from_iter` that collects a `Vec` of what it's given doesn't know its items and is refused (#1239)",
+    file: "src/lower/traits/impls.rs",
+    find: "            let outer_env = std::mem::replace(&mut self.typing_env, own_env);\n",
+    replace: "            let outer_env = self.typing_env;\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_fallible_into.rs$"],
+  },
+  {
+    name: "entry-facts-under-the-impls-bounds",
+    breaks: "a dictionary's entry makes its impl's method's facts under the impl's bounds too, by which its impl's evidence is taken for a bound's and refused (#1239)",
+    file: "src/lower/traits/impls.rs",
+    find: "                ty::ClauseKind::Trait(bound) => own(bound.self_ty()),\n",
+    replace: "                ty::ClauseKind::Trait(_) => true,\n",
+    tests: ["test/crates.test.ts", "-t", "generic_impl_const_of_instance"],
+  },
 ];

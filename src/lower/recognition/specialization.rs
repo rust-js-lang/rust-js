@@ -124,6 +124,28 @@ pub(crate) fn held_facts<'tcx>(
     of: Ty<'tcx>,
     fact: TypeFact,
 ) -> Vec<(Ty<'tcx>, TypeFact)> {
+    // How std collects an iterator into a `Vec`, `IVecCollect`, of one
+    // built of type parameters: of what says whether it's collected in
+    // place, where that's a caller's, `collects_in_place`'s `None`, its
+    // `IInPlace` and its items' layout, as `in_place_asked` asks them; and,
+    // where it isn't, of what says whether it's `TrustedLen` (#1239).
+    if fact == TypeFact::VecCollect && !known_by_bounds(of) {
+        let Some(item) = iterator_item_of(tcx, typing_env, of) else {
+            return Vec::new();
+        };
+        let in_place = collects_in_place(tcx, typing_env, of, item);
+        let mut facts = Vec::new();
+        if in_place.is_none() {
+            facts.extend(held_facts(tcx, typing_env, of, TypeFact::InPlace));
+            if fits_in_place(tcx, typing_env, item, item).is_none() {
+                facts.extend([(item, TypeFact::Size), (item, TypeFact::Align)]);
+            }
+        }
+        if in_place != Some(true) {
+            facts.extend(vec_collect_trusted_facts(tcx, typing_env, of));
+        }
+        return facts;
+    }
     // What an iterator's buffer std may collect in place is: what its
     // adapters keep's, `I`'s of a `Map<I, F>`, or a source's items' layout
     // (#672).
@@ -154,6 +176,67 @@ pub(crate) fn held_facts<'tcx>(
     (held_bounds(tcx, typing_env, of, fact_trait).into_iter())
         .map(|held| (held, fact))
         .collect()
+}
+
+/// Whether std collects an iterator of `iter` into a `Vec` of `item`s in
+/// place: by its `InPlaceSource`, `None` where that's a caller's, of what
+/// its adapters keep of a type parameter's, or of a source's items whose
+/// layout is (#672).
+pub(crate) fn collects_in_place<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    iter: Ty<'tcx>,
+    item: Ty<'tcx>,
+) -> Option<bool> {
+    match in_place_source(tcx, typing_env, iter)? {
+        InPlaceSource::Never => Some(false),
+        InPlaceSource::Items(src) => fits_in_place(tcx, typing_env, src, item),
+        InPlaceSource::Of(_) => None,
+    }
+}
+
+/// How std's `SpecFromIter` collects an iterator into a `Vec`,
+/// `IVecCollect`'s value: in place where it is, else by its fold where it's
+/// `TrustedLen`, else by `next` (#1239). Of what a generic caller's caller
+/// gives, the runtime's `$vecCollectWay` answers it; test/vec-collect-ways.txt
+/// holds both to one table.
+pub(crate) fn vec_collect_way(in_place: bool, trusted: bool) -> &'static str {
+    match (in_place, trusted) {
+        (true, _) => "inPlace",
+        (false, true) => "fold",
+        (false, false) => "next",
+    }
+}
+
+/// The facts of what an iterator of `of`, built of type parameters, holds
+/// that say whether it's `TrustedLen`, where rustc can't say it of `of`,
+/// `I`'s of a `Map<I, F>`, or of one known by its bounds, its own: none
+/// where it can, of a type known here or a `Filter<I, P>`, never one
+/// (#1239).
+pub(crate) fn vec_collect_trusted_facts<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    of: Ty<'tcx>,
+) -> Vec<(Ty<'tcx>, TypeFact)> {
+    if known_by_bounds(of) {
+        return vec![(of, TypeFact::TrustedLen)];
+    }
+    if is_trusted_len(tcx, typing_env, of) {
+        return Vec::new();
+    }
+    let held = held_facts(tcx, typing_env, of, TypeFact::TrustedLen);
+    match held.iter().any(|&(held, _)| held == of) {
+        true => Vec::new(),
+        false => held,
+    }
+}
+
+/// What an iterator of `iterator` gives, its `Item`, normalized.
+fn iterator_item_of<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, iterator: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    let item = trait_method(tcx, std_item(tcx, StdItem::Iterator), "Item");
+    let projection = Ty::new_projection(tcx, ty::IsRigid::No, item, [iterator]);
+    tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(projection))
+        .ok()
 }
 
 /// The types whose `trait_id` is `of`'s, `held_facts`' of a trait: `of`,
@@ -738,4 +821,29 @@ fn has_impl_for_head<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, trait_id: DefId) -> 
         let of = tcx.type_of(imp).instantiate_identity().skip_normalization();
         matches!(of.kind(), ty::Param(_)) || head(of).is_none() || head(of) == head(ty)
     })
+}
+
+#[cfg(test)]
+mod tests {
+    /// `vec_collect_way` answers test/vec-collect-ways.txt's table, as
+    /// the runtime's `$vecCollectWay` does (test/runtime-package.test.ts).
+    #[test]
+    fn vec_collect_ways() {
+        let table = include_str!("../../../test/vec-collect-ways.txt");
+        let rows: Vec<_> = (table.lines())
+            .filter(|line| !line.is_empty() && !line.starts_with('#'))
+            .map(|line| line.split('\t').collect::<Vec<_>>())
+            .collect();
+        assert_eq!(rows.len(), 4);
+        for row in rows {
+            let [in_place, trusted, way] = row[..] else {
+                panic!("a row of three: {row:?}")
+            };
+            assert_eq!(
+                super::vec_collect_way(in_place == "true", trusted == "true"),
+                way,
+                "{row:?}"
+            );
+        }
+    }
 }

@@ -83,6 +83,10 @@ impl Counter {
     }
 }
 
+pub fn all<I: IntoIterator<Item = u32>>(items: I) -> Vec<u32> {
+    items.into_iter().collect()
+}
+
 pub fn total() -> usize {
     size::<u64>() + named::<u8>().len() + usize::from(is_u32(1u32)) + Counter::new().size_of::<u16>()
 }
@@ -123,6 +127,10 @@ test("a function whose JS takes a fact of a type or a dictionary is a note, not 
   expect(declarations).toContain(note("Counter.sizeOf", "`T`'s size_of"));
   expect(declarations).toContain("export function first<T>(items: T[]): T | null | undefined;");
   expect(declarations).toContain("export function total(): number;");
+  // A collect into a `Vec` takes how std collects it, `IVecCollect`, which
+  // a JS caller leaves out, its iterable no Rust iterator (#1239): declared.
+  expect(js).toContain("export function all(items, IIntoIterVecCollect) {");
+  expect(declarations).toContain("export function all<I>(items: I): number[];");
   // TypeScript that imports one is refused; one declared is called.
   writeFileSync(
     join(dir, "use.ts"),

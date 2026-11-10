@@ -41,7 +41,7 @@ const $summedFromIteratorU32 = new Map();
 
 export function summedFromIteratorU32(PLACE) {
   return $traitImpl($summedFromIteratorU32, [PLACE], () => ({
-    fromIter: (arg0, TIntoIterInPlace, dropT, dropTIntoIter) =>
+    fromIter: (arg0, TIntoIterTrustedLen, TIntoIterInPlace, dropT, dropTIntoIter) =>
       summedFromIteratorU32_fromIter(arg0, PLACE, dropT, dropTIntoIter),
   }));
 }
@@ -211,9 +211,10 @@ function summedFromIteratorU32_fromIter(items, PLACE, dropI, dropIIntoIter) {
   return [sum];
 }
 
-function collected(it, BFromIteratorIItem, IInPlace, IItemSize, IItemAlign, dropI) {
+function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, IItemSize, IItemAlign, dropI) {
   return BFromIteratorIItem.fromIter(
     $closing(Iterator.from(it), dropI, false),
+    ITrustedLen,
     IInPlace,
     (closing) => {
       closing.return();
@@ -230,6 +231,7 @@ function main() {
       loudDrop_drop(it.of._loud);
     }).filter(() => true),
     summedFromIteratorU32(0),
+    false,
     undefined,
     4,
     4,
@@ -242,6 +244,7 @@ function main() {
       loudDrop_drop(it.of._loud);
     }).filter(() => true),
     summedFromIteratorU32(1),
+    false,
     undefined,
     4,
     4,
@@ -254,6 +257,7 @@ function main() {
       loudDrop_drop(it.of._loud);
     }).filter(() => true),
     summedFromIteratorU32(2),
+    false,
     undefined,
     4,
     4,
@@ -266,6 +270,7 @@ function main() {
       loudDrop_drop(it.of._loud);
     }).filter(() => true),
     summedFromIteratorU32(3),
+    false,
     undefined,
     4,
     4,
@@ -278,6 +283,7 @@ function main() {
       loudDrop_drop(it.of._loud);
     }).filter(() => true),
     summedFromIteratorU32(4),
+    false,
     undefined,
     4,
     4,
@@ -290,6 +296,7 @@ function main() {
       loudDrop_drop(it.of._loud);
     }).filter(() => true),
     summedFromIteratorU32(5),
+    false,
     undefined,
     4,
     4,

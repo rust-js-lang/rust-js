@@ -591,7 +591,26 @@ impl<'tcx> ItemDrops<'_, 'tcx> {
     }
 }
 
-/// What `caller`'s call asks as a collect, `in_place_asked` and
+/// The iterator a collect into a `Vec`, `collect()` or `Vec::from_iter`,
+/// collects as it's given, a type parameter's or an associated type's of
+/// one: how std's `SpecFromIter` collects it, in place, by its fold or by
+/// `next`, is its caller's, `IVecCollect`, of items that drop or not
+/// (#1239). Of what std grows as a `Vec`, not a `LinkedList`, whose own
+/// `extend` collects it.
+fn vec_collected<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Option<ty::Ty<'tcx>> {
+    let (this, output, _, false) =
+        crate::lower::recognition::collected_items(recognition.tcx, typing_env, callee, args)?
+    else {
+        return None;
+    };
+    (recognition.grows_as_vec(output) && crate::lower::recognition::known_by_bounds(this)).then_some(this)
+}
+
+/// What `caller`'s call asks as a collect, `vec_collected`'s, `in_place_asked` and
 /// `grown_asked`: of a trait's default, of each of the crate's impls that
 /// copies it, in its terms, of its own type parameters, `I` of `impl<I:
 /// Iterator> Sorted for I`, which its dictionary is given, as the copied
@@ -606,7 +625,19 @@ fn collect_asks<'tcx>(
 ) -> Vec<(DefId, Asked<'tcx>)> {
     let (tcx, foreign) = (recognition.tcx, recognition.foreign);
     let asked_by = |typing_env: ty::TypingEnv<'tcx>, owner: DefId, args: ty::GenericArgsRef<'tcx>| {
-        let mut asked = in_place_asked(tcx, foreign, typing_env, drops, owner, (callee, args));
+        // Of a collect into a `Vec` of what its caller gives, how std
+        // collects it, `IVecCollect`, which answers what `IInPlace` would.
+        let mut asked = match vec_collected(recognition, typing_env, (callee, args)) {
+            Some(this) => Vec::from_iter(asked_of(
+                tcx,
+                foreign,
+                typing_env,
+                owner,
+                (this, TypeFact::VecCollect),
+                &None,
+            )),
+            None => in_place_asked(tcx, foreign, typing_env, drops, owner, (callee, args)),
+        };
         asked.extend(grown_asked(
             recognition,
             typing_env,

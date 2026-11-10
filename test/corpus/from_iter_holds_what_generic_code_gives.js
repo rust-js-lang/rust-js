@@ -28,7 +28,7 @@ function countIterator_next(count) {
 }
 
 export const sumFromIterator_u32__u32_ = {
-  fromIter: (arg0, TIntoIterInPlace, dropT, dropTIntoIter) =>
+  fromIter: (arg0, TIntoIterTrustedLen, TIntoIterInPlace, dropT, dropTIntoIter) =>
     sumFromIterator_u32__u32__fromIter(arg0, dropT, dropTIntoIter),
 };
 function sumFromIterator_u32__u32__fromIter(items, dropI, dropIIntoIter) {
@@ -57,9 +57,10 @@ function sumFromIterator_u32__u32__fromIter(items, dropI, dropIIntoIter) {
   return result;
 }
 
-function collected(it, BFromIteratorIItem, IInPlace, IItemSize, IItemAlign, dropI) {
+function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, IItemSize, IItemAlign, dropI) {
   return BFromIteratorIItem.fromIter(
     $closing(Iterator.from(it), dropI, false),
+    ITrustedLen,
     IInPlace,
     (closing) => {
       closing.return();
@@ -79,6 +80,7 @@ function main() {
       $iterator({ start: 50 }, $rangeFromStep(0, 4294967295)),
     ),
     sumFromIterator_u32__u32_,
+    false,
     undefined,
     8,
     4,
@@ -92,6 +94,7 @@ function main() {
       loudDrop_drop(it.of._loud);
     }).map((n) => [n, n]),
     sumFromIterator_u32__u32_,
+    false,
     undefined,
     8,
     4,

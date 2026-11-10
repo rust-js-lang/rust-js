@@ -176,4 +176,12 @@ export const mutations: Mutation[] = [
     replace: "        let self_ty = bound.self_ty();\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_method_drops_its_items_iterator.rs$"],
   },
+  {
+    name: "from-iter-entry-given-no-trusted-len",
+    breaks: "std's `from_iter` declares no `ITrustedLen` of its iterator, so a `Vec` entry can't make how std collects it and steps an endless `TrustedLen` before its \"capacity overflow\" (#1239)",
+    file: "src/lower/traits/drop_params.rs",
+    find: "                facts.extend(place.map(|place| (item_slot(tcx, method, place), TypeFact::TrustedLen)));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^vec_entry_of_an_adapter_generic_code_makes.rs$"],
+  },
 ];

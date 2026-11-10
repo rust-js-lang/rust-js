@@ -2,12 +2,12 @@
 
 import {
   $checked,
+  $collectVec,
   $count,
   $given,
   $intsOrdered,
   $iter,
   $next,
-  $roomForHint,
   $traitImpl,
 } from "@rust-js/std";
 
@@ -17,10 +17,10 @@ export function entry() {
 
 const $iReversed = new WeakMap();
 
-function iReversed(IIterator, IItemSize) {
-  return $traitImpl($iReversed, [IIterator, IItemSize], () => ({
+function iReversed(IIterator, IVecCollect, IItemSize) {
+  return $traitImpl($iReversed, [IIterator, IVecCollect, IItemSize], () => ({
     reversed(self, SelfItemOrd) {
-      const v = Array.from($roomForHint($given(self, IIterator, true), IItemSize, false));
+      const v = $collectVec($given(self, IIterator, true), IItemSize, IVecCollect);
       v.reverse();
       return v;
     },
@@ -67,8 +67,8 @@ function dynamic(s) {
   return s.impl.total(s.value);
 }
 function main() {
-  const CountReversed = iReversed({ next: countIterator_next }, 1);
-  const IntoIterReversed = iReversed({ next: $next }, 4);
+  const CountReversed = iReversed({ next: countIterator_next }, "next", 1);
+  const IntoIterReversed = iReversed({ next: $next }, "inPlace", 4);
   console.log(
     `[${through($iter([5, 3, 9, 1]), IntoIterReversed, $intsOrdered).join(
       ", ",

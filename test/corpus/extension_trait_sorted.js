@@ -2,6 +2,7 @@
 
 import {
   $cmp,
+  $collectVec,
   $debugStr,
   $eq,
   $foldOf,
@@ -12,7 +13,6 @@ import {
   $ord,
   $partialEq,
   $partialOrd,
-  $roomForHint,
   $sortStable,
   $traitImpl,
   iterator_map,
@@ -45,10 +45,10 @@ function countedOrd_cmp(counted, other) {
 
 const $iSorted = new WeakMap();
 
-function iSorted(IIterator, IItemSize) {
-  return $traitImpl($iSorted, [IIterator, IItemSize], () => ({
+function iSorted(IIterator, IVecCollect, IItemSize) {
+  return $traitImpl($iSorted, [IIterator, IVecCollect, IItemSize], () => ({
     sorted(self, SelfItemOrd, SelfItemSize, SelfItemStableSort) {
-      const v = Array.from($roomForHint($given(self, IIterator, true), IItemSize, false));
+      const v = $collectVec($given(self, IIterator, true), IItemSize, IVecCollect);
       $sortStable(v, (a, b) => SelfItemOrd.PartialOrd().lt(a, b), SelfItemStableSort, IItemSize);
       return v;
     },
@@ -60,7 +60,7 @@ function through(t, TSorted, TItemOrd, TItemSize, TItemStableSort) {
 }
 
 function main() {
-  const IntoIterSorted = iSorted({ next: $next }, 4);
+  const IntoIterSorted = iSorted({ next: $next }, "inPlace", 4);
   console.log(
     `[${through($iter([5, 3, 9, 1]), IntoIterSorted, $intsOrdered, 4, "general8").join(", ")}]`,
   );
@@ -76,7 +76,11 @@ function main() {
   ];
   const sorted = through(
     iterator_map($iter(items), ([n, c]) => [n, c]),
-    iSorted({ next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked }, 8),
+    iSorted(
+      { next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked },
+      "fold",
+      8,
+    ),
     countedOrd,
     8,
     "general8",

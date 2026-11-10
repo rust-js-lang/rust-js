@@ -7,10 +7,9 @@ import {
   $closing,
   $cmp,
   $collectDropping,
-  $collectsInPlace,
+  $collectVec,
   $debugStr,
   $foldOf,
-  $foldToArray,
   $intoIter,
   $iter,
   $iterator,
@@ -18,7 +17,6 @@ import {
   $live,
   $next,
   $rangeInclusiveNext,
-  $roomForHint,
   $sortedKeys,
   $traitImpl,
   $unwindsOn,
@@ -65,8 +63,8 @@ function wrapperGather(IIterator, dropI, dropIItem) {
   }));
 }
 
-function sortedSet(items) {
-  return new $BTreeSet($roomForHint($intoIter(items), 1, false));
+function sortedSet(items, JIntoIterVecCollect) {
+  return new $BTreeSet($collectVec($intoIter(items), 1, JIntoIterVecCollect));
 }
 
 function loudDrop_drop(loud) {
@@ -80,23 +78,22 @@ function counterIterator_next(counter) {
   }
 }
 
-function gathered(t, TInPlace, TItemSize, TItemAlign, dropT, dropTItem) {
-  const v = $collectsInPlace(TInPlace, TItemSize, TItemAlign)
-    ? $foldToArray($closing(Iterator.from(t), dropT, false), dropTItem)
-    : $collectDropping(
-        $roomForHint($closing(Iterator.from(t), dropT, false), TItemSize, false, false, dropTItem),
-        dropTItem,
-        true,
-      );
+function gathered(t, TVecCollect, TItemSize, dropT, dropTItem) {
+  const v = $collectVec(
+    $closing(Iterator.from(t), dropT, false),
+    TItemSize,
+    TVecCollect,
+    dropTItem,
+  );
   console.log("gathered");
   return v;
 }
 
-function given(j, dropJIntoIter) {
+function given(j, JIntoIterVecCollect, dropJIntoIter) {
   const iter = $intoIter(j);
   let result;
   try {
-    result = $collectDropping($roomForHint(iter, 4, false));
+    result = $collectVec(iter, 4, JIntoIterVecCollect);
   } catch (error) {
     $cleanup(() => {
       dropJIntoIter?.(iter);
@@ -140,12 +137,13 @@ function main() {
             (iterator) => wrapperIterator_next(iterator, { next: $next }),
             true,
           ),
+          "next",
         ),
         $cmp,
       ),
     ).join(", ")}}`,
   );
-  console.log(`{${Array.from($sortedKeys(sortedSet([9, 7]), $cmp)).join(", ")}}`);
+  console.log(`{${Array.from($sortedKeys(sortedSet([9, 7], "inPlace"), $cmp)).join(", ")}}`);
   const louds = $collectDropping(
     $iterator(
       [
@@ -176,12 +174,12 @@ function main() {
     }
   }
   console.log(
-    `[${gathered($iterator([2, "generic"], counterIterator_next), undefined, 4, 4, (it) => {
+    `[${gathered($iterator([2, "generic"], counterIterator_next), "next", 4, (it) => {
       console.log(`drop ${it.of[1]}`);
     }).join(", ")}]`,
   );
   console.log(
-    `[${given($iterator([2, "into"], counterIterator_next), (it) => {
+    `[${given($iterator([2, "into"], counterIterator_next), "next", (it) => {
       console.log(`drop ${it.of[1]}`);
     }).join(", ")}]`,
   );

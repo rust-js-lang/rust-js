@@ -2,12 +2,12 @@
 
 import {
   $cmp,
+  $collectVec,
   $debugStr,
   $given,
   $intsOrdered,
   $iter,
   $next,
-  $roomForHint,
   $selectNthUnstable,
   $slice,
   $sortUnstable,
@@ -34,10 +34,10 @@ function smallest(items, k, TOrd, TSort) {
 
 const $iSorted = new WeakMap();
 
-function iSorted(IIterator, IItemSize) {
-  return $traitImpl($iSorted, [IIterator, IItemSize], () => ({
+function iSorted(IIterator, IVecCollect, IItemSize) {
+  return $traitImpl($iSorted, [IIterator, IVecCollect, IItemSize], () => ({
     sortedUnstable(self, SelfItemOrd, SelfItemSort) {
-      const v = Array.from($roomForHint($given(self, IIterator, true), IItemSize, false));
+      const v = $collectVec($given(self, IIterator, true), IItemSize, IVecCollect);
       $sortUnstable(v, (a, b) => SelfItemOrd.PartialOrd().lt(a, b), SelfItemSort);
       return v;
     },
@@ -61,7 +61,7 @@ function main() {
   console.log(`${$debugStr(wide.map((t) => t[3]).join(""))}`);
   console.log(`[${smallest([9, 3, 7, 1, 8, 2], 3, $intsOrdered, "network").join(", ")}]`);
   console.log(
-    `[${iSorted({ next: $next }, 4)
+    `[${iSorted({ next: $next }, "inPlace", 4)
       .sortedUnstable($iter([5, 3, 9, 1]), $intsOrdered, "network")
       .join(", ")}]`,
   );

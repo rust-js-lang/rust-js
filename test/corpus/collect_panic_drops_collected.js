@@ -3,12 +3,11 @@
 import {
   $catchUnwind,
   $collectDropping,
-  $collectsInPlace,
+  $collectVec,
   $dropEach,
   $foldToArray,
   $intoIter,
   $lazyRange,
-  $roomForHint,
 } from "@rust-js/std";
 
 export function entry() {
@@ -38,14 +37,8 @@ function held() {
   return v.length;
 }
 
-function gathered(iter, IIntoIterInPlace) {
-  return $collectsInPlace(IIntoIterInPlace, 4, 4)
-    ? $foldToArray($intoIter(iter), dDrop_drop)
-    : $collectDropping(
-        $roomForHint($intoIter(iter), 4, false, false, dDrop_drop),
-        dDrop_drop,
-        true,
-      );
+function gathered(iter, IIntoIterVecCollect) {
+  return $collectVec($intoIter(iter), 4, IIntoIterVecCollect, dDrop_drop);
 }
 
 function ofVec(v) {
@@ -64,12 +57,17 @@ function panicked(f, dropT) {
 function main() {
   console.log(`${panicked(concrete, $dropEach(dDrop_drop))}`);
   console.log(`${panicked(held)}`);
-  console.log(`${panicked(() => gathered($lazyRange(1, 6).map(made)), $dropEach(dDrop_drop))}`);
   console.log(
-    `${panicked(() => gathered([1, 2, 3, 4].values().map(made), [4, 4]), $dropEach(dDrop_drop))}`,
+    `${panicked(() => gathered($lazyRange(1, 6).map(made), "fold"), $dropEach(dDrop_drop))}`,
+  );
+  console.log(
+    `${panicked(
+      () => gathered([1, 2, 3, 4].values().map(made), "inPlace"),
+      $dropEach(dDrop_drop),
+    )}`,
   );
   console.log(`${panicked(() => ofVec([1, 2, 3, 4]), $dropEach(dDrop_drop))}`);
-  const fine = gathered($lazyRange(1, 3).map(made));
+  const fine = gathered($lazyRange(1, 3).map(made), "fold");
   console.log(`${fine.length}`);
   for (const item of fine) {
     dDrop_drop(item);

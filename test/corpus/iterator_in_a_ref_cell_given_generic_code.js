@@ -3,6 +3,7 @@
 import {
   $borrowMut,
   $cleanup,
+  $collectVec,
   $held,
   $iter,
   $iterator,
@@ -10,7 +11,6 @@ import {
   $next,
   $nextBack,
   $rcDrop,
-  $roomForHint,
   $unborrow,
 } from "@rust-js/std";
 
@@ -226,7 +226,7 @@ function secondOf(source, SSource) {
   return result;
 }
 
-function replaced(it, other) {
+function replaced(it, other, IVecCollect) {
   const held = { value: it };
   $borrowMut(held).value = other;
   const borrowMut = $borrowMut(held, true);
@@ -235,7 +235,7 @@ function replaced(it, other) {
   } finally {
     $unborrow(borrowMut);
   }
-  return Array.from($roomForHint(Iterator.from(held.value), 4, false));
+  return $collectVec(Iterator.from(held.value), 4, IVecCollect);
 }
 
 function through(f) {
@@ -282,7 +282,7 @@ function main() {
   console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
   const value$7 = secondOf([[7, 8]], listedSource);
   console.log(`${value$7 == null ? "None" : `Some(${value$7})`}`);
-  console.log(`[${replaced($iter([1, 2]), $iter([7, 8, 9])).join(", ")}]`);
+  console.log(`[${replaced($iter([1, 2]), $iter([7, 8, 9]), "inPlace").join(", ")}]`);
   let n = 0;
   console.log(
     `${called(() => {

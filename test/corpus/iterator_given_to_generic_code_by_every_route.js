@@ -3,6 +3,7 @@
 import {
   $BTreeSet,
   $cmp,
+  $collectVec,
   $given,
   $intoIter,
   $iterator,
@@ -11,9 +12,10 @@ import {
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
-  $roomForHint,
   $sortedKeys,
 } from "@rust-js/std";
+
+const listedVecU32 = (arg0) => listed(arg0, "inPlace");
 
 export function entry() {
   main();
@@ -99,8 +101,8 @@ function byShapes() {
 function summed(it) {
   return Iterator.from(it).reduce((a, b) => (a + b) >>> 0, 0);
 }
-function listed(c) {
-  return Array.from($roomForHint($intoIter(c), 4, false));
+function listed(c, CIntoIterVecCollect) {
+  return $collectVec($intoIter(c), 4, CIntoIterVecCollect);
 }
 function back(it) {
   return $nextBack(it);
@@ -116,7 +118,7 @@ function byValues() {
   // Direct calls.
   const value = summed($lazyRange(0, 4));
   const value$1 = summed($iterator({ n: 0 }, countIterator_next));
-  const value$2 = listed([5, 6]);
+  const value$2 = listed([5, 6], "inPlace");
   const value$3 = back($iterator({ start: 1, end: 4 }, $rangeNext, false, $rangeNextBack));
   console.log(
     `${value} ${value$1} [${value$2.join(", ")}] ${value$3 == null ? "None" : `Some(${value$3})`} ${sized(
@@ -126,8 +128,8 @@ function byValues() {
   // As fn pointers.
   const t = (x) => summed($iterator(x, $rangeNext));
   const c = (x) => summed($iterator(x, countIterator_next));
-  const l = listed;
-  const s = (x) => listed($sortedKeys(x, $cmp));
+  const l = listedVecU32;
+  const s = (x) => listed($sortedKeys(x, $cmp), "fold");
   const b = (x) => back($iterator(x, $rangeNext, false, $rangeNextBack));
   const z = (x) => sized($iterator(x, $rangeNext, false, undefined, $rangeLen));
   const value$4 = t({ start: 0, end: 4 });
@@ -150,7 +152,7 @@ function byValues() {
       { start: 2, end: 5 },
     )}`,
   );
-  console.log(`${apply((v) => listed(v).length, [1, 2, 3])}`);
+  console.log(`${apply((v) => listed(v, "inPlace").length, [1, 2, 3])}`);
   // Through dyn.
   const d = (x) => summed($iterator(x, $rangeNext));
   console.log(`${d({ start: 0, end: 5 })}`);

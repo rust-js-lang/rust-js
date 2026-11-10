@@ -563,4 +563,20 @@ export const mutations: Mutation[] = [
     replace: "    if let Some(item) = grown.filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
   },
+  {
+    name: "vec-collect-unasked",
+    breaks: "generic code's `collect()` into a `Vec` asks its caller no `IVecCollect`, so it collects as it did, an endless `TrustedLen` stepped before its \"capacity overflow\" (#1239)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            Some(this) => Vec::from_iter(asked_of(\n",
+    replace: "            Some(_) if true => Vec::new(),\n            Some(this) => Vec::from_iter(asked_of(\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
+  },
+  {
+    name: "vec-collect-asks-in-place-too",
+    breaks: "a collect `IVecCollect` answers asks `IInPlace` of its iterator too, a parameter its JS takes for nothing (#1239)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        let mut asked = match vec_collected(recognition, typing_env, (callee, args)) {\n",
+    replace: "        let mut asked = match vec_collected(recognition, typing_env, (callee, args)).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
+  },
 ];

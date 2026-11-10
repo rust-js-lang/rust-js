@@ -360,3 +360,17 @@ the sum against native Rust in both builds; mutation
 Whether a `take` is `$taking` by its type crate-wide or by the function
 that makes it, #1330's other defect, which changes no answer now, is
 #1333's.
+
+## Amendment: a `Vec` generic code collects closes what it's given at its end (2026-11-11, #1239)
+
+Generic code's `collect()` or `Vec::from_iter` into a `Vec` of what its
+caller gives is one runtime call, `$collectVec(it, IItemSize,
+IVecCollect, drop)` ([0145](0145-type-facts.md), amended), which steps what it's
+given by JS's protocol, by its fold or its `next` as std's `SpecFromIter`
+does, and so closes it at its end, where std's collect drops it, before
+the `Vec` is given back; a `B: FromIterator`'s entry runs it inside
+`$collecting`, which closes it where it's done, as before. Of items that
+drop, a panic closes it as each of std's ways unwinds, by `$foldToArray`
+or `$collectDropping`. Held by
+`vec_collect_as_its_caller_knows.rs` and the `generic-instances` row of
+`fold_drops_moved_function_first.rs`, off the metamorphic net's list.

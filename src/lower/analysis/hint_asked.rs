@@ -119,7 +119,9 @@ pub(super) fn of_crate<'tcx>(
             }
             // `size_hint()` of a type of its type parameters, asked of what
             // its callers give, each instance below.
-            if callee == size_hint
+            // Or a `collect()` of one, which asks its hint as the `Vec` it
+            // makes grows, std's `SpecFromIter` (#1239).
+            if (callee == size_hint || callee == collect)
                 && let Some(of) = args.types().next().map(|ty| ty.peel_refs())
                 && rustc_middle::ty::TypeVisitableExt::has_param(&of)
             {

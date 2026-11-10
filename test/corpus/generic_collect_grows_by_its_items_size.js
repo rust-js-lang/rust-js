@@ -4,6 +4,8 @@ import {
   $BTreeMap,
   $BTreeSet,
   $catchUnwind,
+  $collectVec,
+  $collectsInPlace,
   $given,
   $intsOrdered,
   $iter,
@@ -14,6 +16,7 @@ import {
   $some,
   $traitImpl,
   $treeFromSorted,
+  $vecCollectWay,
 } from "@rust-js/std";
 
 const endlessU32 = () => endless({ default: () => 0 });
@@ -37,13 +40,13 @@ function own(end, make) {
 }
 
 /** Of `T`'s items, the caller's. */
-function all(it, TSize) {
-  return Array.from($roomForHint(Iterator.from(it), TSize, false));
+function all(it, TSize, IVecCollect) {
+  return $collectVec(Iterator.from(it), TSize, IVecCollect);
 }
 
 /** Of `I::Item`s, the caller's. */
-function items(it, IItemSize) {
-  return Array.from($roomForHint(Iterator.from(it), IItemSize, false));
+function items(it, IVecCollect, IItemSize) {
+  return $collectVec(Iterator.from(it), IItemSize, IVecCollect);
 }
 
 /** Of a filter's, which passes on its source's hint's upper bound. */
@@ -58,29 +61,30 @@ function kept(it, keep, TSize) {
 }
 
 /** A generic caller's, which gives its own caller's size on. */
-function relayed(it, USize) {
-  return all(it, USize).length;
+function relayed(it, USize, JVecCollect) {
+  return all(it, USize, JVecCollect).length;
 }
 
 /** And one more, of an associated type's. */
-function relayedTwice(it, JItemSize) {
+function relayedTwice(it, JTrustedLen, JInPlace, JItemSize, JItemAlign) {
   return (
     (relayed(
       Iterator.from(it).map((x) => x),
       JItemSize,
+      $vecCollectWay($collectsInPlace(JInPlace, JItemSize, JItemAlign), JTrustedLen),
     ) +
-      items($iter([]), JItemSize).length) >>>
+      items($iter([]), "fold", JItemSize).length) >>>
     0
   );
 }
 
 /** Into what std collects as a `Vec` first: a boxed slice, a `VecDeque`. */
-function boxed(it, TSize) {
-  return Array.from($roomForHint(Iterator.from(it), TSize, false));
+function boxed(it, TSize, IVecCollect) {
+  return $collectVec(Iterator.from(it), TSize, IVecCollect);
 }
 
-function queued(it, TSize) {
-  return Array.from($roomForHint(Iterator.from(it), TSize, false));
+function queued(it, TSize, IVecCollect) {
+  return $collectVec(Iterator.from(it), TSize, IVecCollect);
 }
 
 /** Of items built of a type parameter, whose layout its caller gives. */
@@ -110,20 +114,20 @@ function taggedRelayed(it, UU8Size) {
 }
 
 /** Into a B-tree, which std collects as a `Vec` first. */
-function sortedSet(it, TOrd, TSize, TTreeSet, TStableSort) {
+function sortedSet(it, TOrd, TSize, TTreeSet, TStableSort, IVecCollect) {
   return $treeFromSorted(
     new TTreeSet(),
-    $roomForHint(Iterator.from(it), TSize, false),
+    $collectVec(Iterator.from(it), TSize, IVecCollect),
     TOrd,
     TStableSort,
     TSize,
   );
 }
 
-function sortedMap(it, KOrd, KTreeMap, KVSize, KVStableSort) {
+function sortedMap(it, KOrd, KTreeMap, IVecCollect, KVSize, KVStableSort) {
   return $treeFromSorted(
     new KTreeMap(),
-    $roomForHint(Iterator.from(it), KVSize, false),
+    $collectVec(Iterator.from(it), KVSize, IVecCollect),
     KOrd,
     KVStableSort,
     KVSize,
@@ -147,9 +151,9 @@ function endless(TDefault) {
 
 const $iGathered = new WeakMap();
 
-function iGathered(IIterator, IItemSize) {
-  return $traitImpl($iGathered, [IIterator, IItemSize], () => ({
-    gathered: (self) => Array.from($roomForHint($given(self, IIterator, true), IItemSize, false)),
+function iGathered(IIterator, IVecCollect, IItemSize) {
+  return $traitImpl($iGathered, [IIterator, IVecCollect, IItemSize], () => ({
+    gathered: (self) => $collectVec($given(self, IIterator, true), IItemSize, IVecCollect),
   }));
 }
 
@@ -166,6 +170,7 @@ function main() {
           ownIterator_sizeHint,
         ),
         1,
+        "next",
       ).length
     }`,
   );
@@ -181,11 +186,12 @@ function main() {
           ownIterator_sizeHint,
         ),
         4,
+        "next",
       ).length
     }`,
   );
   console.log(
-    `longs ${all($iterator(own(20, BigInt), ownIterator_next, true, undefined, undefined, ownIterator_sizeHint), 8).length}`,
+    `longs ${all($iterator(own(20, BigInt), ownIterator_next, true, undefined, undefined, ownIterator_sizeHint), 8, "next").length}`,
   );
   console.log(
     `of no size ${
@@ -199,6 +205,7 @@ function main() {
           ownIterator_sizeHint,
         ),
         0,
+        "next",
       ).length
     }`,
   );
@@ -214,6 +221,7 @@ function main() {
           ownIterator_sizeHint,
         ),
         2000,
+        "next",
       ).length
     }`,
   );
@@ -228,6 +236,7 @@ function main() {
           undefined,
           ownIterator_sizeHint,
         ),
+        "next",
         2,
       ).length
     }`,
@@ -259,10 +268,11 @@ function main() {
         ownIterator_sizeHint,
       ),
       1,
+      "next",
     )}`,
   );
   console.log(
-    `relayed, longs ${relayed($iterator(own(20, BigInt), ownIterator_next, true, undefined, undefined, ownIterator_sizeHint), 8)}`,
+    `relayed, longs ${relayed($iterator(own(20, BigInt), ownIterator_next, true, undefined, undefined, ownIterator_sizeHint), 8, "next")}`,
   );
   console.log(
     `relayed twice, pairs ${relayedTwice(
@@ -274,7 +284,10 @@ function main() {
         undefined,
         ownIterator_sizeHint,
       ),
+      false,
+      undefined,
       8,
+      4,
     )}`,
   );
   console.log(
@@ -287,10 +300,13 @@ function main() {
         undefined,
         ownIterator_sizeHint,
       ),
+      false,
+      undefined,
       0,
+      1,
     )}`,
   );
-  console.log(`of a range ${all($lazyRange(1, 20), 1).length}`);
+  console.log(`of a range ${all($lazyRange(1, 20), 1, "fold").length}`);
   console.log(
     `boxed ${
       boxed(
@@ -303,6 +319,7 @@ function main() {
           ownIterator_sizeHint,
         ),
         4,
+        "next",
       ).length
     }`,
   );
@@ -318,6 +335,7 @@ function main() {
           ownIterator_sizeHint,
         ),
         1,
+        "next",
       ).length
     }`,
   );
@@ -397,6 +415,7 @@ function main() {
         1,
         $BTreeSet,
         "general8",
+        "next",
       ).size
     }`,
   );
@@ -413,6 +432,7 @@ function main() {
         ),
         $intsOrdered,
         $BTreeMap,
+        "next",
         16,
         "general8",
       ).size
@@ -420,7 +440,7 @@ function main() {
   );
   console.log(
     `gathered ${
-      iGathered({ next: ownIterator_next, sizeHint: ownIterator_sizeHint }, 4).gathered(
+      iGathered({ next: ownIterator_next, sizeHint: ownIterator_sizeHint }, "next", 4).gathered(
         own(10, (n) => n),
       ).length
     }`,

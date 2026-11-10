@@ -284,6 +284,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (param.name.to_string(), Form::Value { ty, optional: false })
                 }
                 Slot::Bound(bound) => (super::traits::bound_word(tcx, bound), Form::Dictionary(bound)),
+                // How std collects a `Vec` of it, `IVecCollect`, which a JS
+                // caller leaves out: what it gives is no Rust iterator, which
+                // `undefined` collects by `next`, as JS steps it (#1239).
+                Slot::Fact(_, crate::lower::recognition::TypeFact::VecCollect) => (String::new(), Form::LeftOut),
                 Slot::Fact(..) => (String::new(), Form::Unknowable),
                 Slot::Drop(_) => (String::new(), Form::LeftOut),
             };

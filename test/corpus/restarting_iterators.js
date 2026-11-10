@@ -4,6 +4,7 @@ import {
   $advanceSlice,
   $cleanup,
   $collectDropping,
+  $collectVec,
   $dropEach,
   $fromFn,
   $held,
@@ -19,7 +20,6 @@ import {
   $lent,
   $next,
   $range,
-  $roomForHint,
   $stepBy,
   iterator_fuse,
   iterator_peekable,
@@ -44,16 +44,22 @@ function loudDrop_drop(loud) {
 function f() {
   return { n: 0 };
 }
-function twice(it) {
-  const a = Array.from($roomForHint($lent(Iterator.from(it)), 4, false));
-  const b = Array.from($roomForHint($lent(Iterator.from(it)), 4, false));
-  const c = Array.from($roomForHint(Iterator.from(it), 4, false));
+function twice(it, IVecCollect) {
+  const a = $collectVec($lent(Iterator.from(it)), 4, IVecCollect);
+  const b = $collectVec($lent(Iterator.from(it)), 4, IVecCollect);
+  const c = $collectVec(Iterator.from(it), 4, IVecCollect);
   return [a, b, c];
 }
 function main() {
-  const value = twice($iterator(f(), flakyIterator_next).map((x) => (x * 10) >>> 0));
+  const value = twice(
+    $iterator(f(), flakyIterator_next).map((x) => (x * 10) >>> 0),
+    "next",
+  );
   console.log(`map ([${value[0].join(", ")}], [${value[1].join(", ")}], [${value[2].join(", ")}])`);
-  const value$1 = twice($iterator(f(), flakyIterator_next).filter((x) => x % 2 === 0));
+  const value$1 = twice(
+    $iterator(f(), flakyIterator_next).filter((x) => x % 2 === 0),
+    "next",
+  );
   console.log(
     `filter ([${value$1[0].join(", ")}], [${value$1[1].join(", ")}], [${value$1[2].join(", ")}])`,
   );
@@ -61,6 +67,7 @@ function main() {
     $iterator(f(), flakyIterator_next)
       .map((x, i) => [i, x])
       .map(([i, x]) => (((i * 100) >>> 0) + x) >>> 0),
+    "next",
   );
   console.log(
     `enumerate ([${value$2[0].join(", ")}], [${value$2[1].join(", ")}], [${value$2[2].join(", ")}])`,
@@ -71,31 +78,38 @@ function main() {
       inspect(item);
       return item;
     }),
+    "next",
   );
   console.log(
     `inspect ([${value$3[0].join(", ")}], [${value$3[1].join(", ")}], [${value$3[2].join(", ")}])`,
   );
-  const value$4 = twice($iterator(f(), flakyIterator_next).drop(1));
+  const value$4 = twice($iterator(f(), flakyIterator_next).drop(1), "next");
   console.log(
     `skip ([${value$4[0].join(", ")}], [${value$4[1].join(", ")}], [${value$4[2].join(", ")}])`,
   );
-  const value$5 = twice($iterator(f(), flakyIterator_next).drop(3));
+  const value$5 = twice($iterator(f(), flakyIterator_next).drop(3), "next");
   console.log(
     `skip3 ([${value$5[0].join(", ")}], [${value$5[1].join(", ")}], [${value$5[2].join(", ")}])`,
   );
-  const value$6 = twice($iterator(f(), flakyIterator_next).take(4));
+  const value$6 = twice($iterator(f(), flakyIterator_next).take(4), "next");
   console.log(
     `take ([${value$6[0].join(", ")}], [${value$6[1].join(", ")}], [${value$6[2].join(", ")}])`,
   );
-  const value$7 = twice($stepBy($iterator(f(), flakyIterator_next), 2));
+  const value$7 = twice($stepBy($iterator(f(), flakyIterator_next), 2), "next");
   console.log(
     `step_by ([${value$7[0].join(", ")}], [${value$7[1].join(", ")}], [${value$7[2].join(", ")}])`,
   );
-  const value$8 = twice($lazySkipWhile($iterator(f(), flakyIterator_next), (x) => x < 2));
+  const value$8 = twice(
+    $lazySkipWhile($iterator(f(), flakyIterator_next), (x) => x < 2),
+    "next",
+  );
   console.log(
     `skip_while ([${value$8[0].join(", ")}], [${value$8[1].join(", ")}], [${value$8[2].join(", ")}])`,
   );
-  const value$9 = twice($lazyTakeWhile($iterator(f(), flakyIterator_next), (x) => x < 5));
+  const value$9 = twice(
+    $lazyTakeWhile($iterator(f(), flakyIterator_next), (x) => x < 5),
+    "next",
+  );
   console.log(
     `take_while ([${value$9[0].join(", ")}], [${value$9[1].join(", ")}], [${value$9[2].join(", ")}])`,
   );
@@ -103,11 +117,12 @@ function main() {
     $lazyZip($iterator(f(), flakyIterator_next), $lazyRange(100, 200)).map(
       ([a, b]) => (a + b) >>> 0,
     ),
+    "next",
   );
   console.log(
     `zip ([${value$10[0].join(", ")}], [${value$10[1].join(", ")}], [${value$10[2].join(", ")}])`,
   );
-  const value$11 = twice($lazyChain($lazyRange(0, 1), $iterator(f(), flakyIterator_next)));
+  const value$11 = twice($lazyChain($lazyRange(0, 1), $iterator(f(), flakyIterator_next)), "next");
   console.log(
     `chain ([${value$11[0].join(", ")}], [${value$11[1].join(", ")}], [${value$11[2].join(", ")}])`,
   );
@@ -119,6 +134,7 @@ function main() {
         }
       })
       .filter((item) => item != null),
+    "next",
   );
   console.log(
     `filter_map ([${value$12[0].join(", ")}], [${value$12[1].join(", ")}], [${value$12[2].join(", ")}])`,
@@ -133,6 +149,7 @@ function main() {
       },
       (item) => item != null,
     ),
+    "next",
   );
   console.log(
     `map_while ([${value$13[0].join(", ")}], [${value$13[1].join(", ")}], [${value$13[2].join(", ")}])`,
@@ -142,19 +159,23 @@ function main() {
       s.value = (s.value + x) >>> 0;
       return s.value;
     }),
+    "next",
   );
   console.log(
     `scan ([${value$14[0].join(", ")}], [${value$14[1].join(", ")}], [${value$14[2].join(", ")}])`,
   );
-  const value$15 = twice($iterator(f(), flakyIterator_next).flatMap((x) => $lazyRange(0, x % 3)));
+  const value$15 = twice(
+    $iterator(f(), flakyIterator_next).flatMap((x) => $lazyRange(0, x % 3)),
+    "next",
+  );
   console.log(
     `flat_map ([${value$15[0].join(", ")}], [${value$15[1].join(", ")}], [${value$15[2].join(", ")}])`,
   );
-  const value$16 = twice(iterator_fuse(f(), { next: flakyIterator_next }, false));
+  const value$16 = twice(iterator_fuse(f(), { next: flakyIterator_next }, false), "next");
   console.log(
     `fuse ([${value$16[0].join(", ")}], [${value$16[1].join(", ")}], [${value$16[2].join(", ")}])`,
   );
-  const value$17 = twice(iterator_peekable(f(), { next: flakyIterator_next }));
+  const value$17 = twice(iterator_peekable(f(), { next: flakyIterator_next }), "next");
   console.log(
     `peekable ([${value$17[0].join(", ")}], [${value$17[1].join(", ")}], [${value$17[2].join(", ")}])`,
   );
@@ -168,7 +189,10 @@ function main() {
       }
     }),
   );
-  const value$18 = twice(from.map((x) => (x + 1) >>> 0));
+  const value$18 = twice(
+    from.map((x) => (x + 1) >>> 0),
+    "next",
+  );
   console.log(
     `from_fn ([${value$18[0].join(", ")}], [${value$18[1].join(", ")}], [${value$18[2].join(", ")}])`,
   );
@@ -178,6 +202,7 @@ function main() {
     $iterator(f(), flakyIterator_next)
       .map((x) => (x + 1) >>> 0)
       .drop(3),
+    "next",
   );
   console.log(
     `map skip3 ([${skipped[0].join(", ")}], [${skipped[1].join(", ")}], [${skipped[2].join(", ")}])`,

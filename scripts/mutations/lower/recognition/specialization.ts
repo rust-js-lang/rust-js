@@ -125,4 +125,28 @@ export const mutations: Mutation[] = [
     replace: "        && false\n    {\n        return vec![(pointee, fact)];\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_of_a_bound_reference.rs$"],
   },
+  {
+    name: "vec-collect-of-a-built-type-asks-no-in-place",
+    breaks: "`IVecCollect` of an adapter generic code makes of its type parameter's iterator asks its caller no `IInPlace`, so its collect is refused (#1239)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "        if in_place.is_none() {\n            facts.extend(held_facts(tcx, typing_env, of, TypeFact::InPlace));\n",
+    replace: "        if false {\n            facts.extend(held_facts(tcx, typing_env, of, TypeFact::InPlace));\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
+  },
+  {
+    name: "vec-collect-of-a-built-type-asks-no-trusted-len",
+    breaks: "`IVecCollect` of an adapter generic code makes of its type parameter's iterator asks its caller no `ITrustedLen`, so its collect is refused (#1239)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "        if in_place != Some(true) {\n            facts.extend(vec_collect_trusted_facts(tcx, typing_env, of));\n",
+    replace: "        if false {\n            facts.extend(vec_collect_trusted_facts(tcx, typing_env, of));\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
+  },
+  {
+    name: "vec-collect-way-fold-by-next",
+    breaks: "the compiler's `vec_collect_way` says a `TrustedLen` not collected in place is collected by `next`, which the runtime's `$vecCollectWay` and std's `SpecFromIter` fold (#1239)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "        (false, true) => \"fold\",\n",
+    replace: "        (false, true) => \"next\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
+  },
 ];

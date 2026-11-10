@@ -4,6 +4,7 @@ import {
   $BTreeMap,
   $BTreeSet,
   $cmp,
+  $collectVec,
   $debugStr,
   $drainAll,
   $eq,
@@ -20,7 +21,6 @@ import {
   $removeEntry,
   $retainMap,
   $retainSet,
-  $roomForHint,
   $setAlgebra,
   $setReplace,
   $sortStable,
@@ -47,8 +47,8 @@ export function entry() {
   main();
 }
 
-function sorted(items, TOrd, TClone, TSize, TStableSort) {
-  items = Array.from($roomForHint(Iterator.from(items), TSize, false));
+function sorted(items, TOrd, TClone, TSize, TStableSort, IteratorVecCollect) {
+  items = $collectVec(Iterator.from(items), TSize, IteratorVecCollect);
   $sortStable(items, (a, b) => TOrd.PartialOrd().lt(a, b), TStableSort, TSize);
   return items;
 }
@@ -84,6 +84,7 @@ function main() {
       clone,
       12,
       "general8",
+      "next",
     )
       .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
       .join(", ")}]`,
@@ -92,7 +93,7 @@ function main() {
   console.log(`${value == null ? "None" : `Some((${$debugStr(value[0])}, ${value[1]}))`}`);
   const value$1 = $removeEntry(scores, "c");
   console.log(`${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${value$1[1]}))`}`);
-  const drained = sorted($iter($drainAll(scores)), tupleOrd, clone, 12, "general8");
+  const drained = sorted($iter($drainAll(scores)), tupleOrd, clone, 12, "general8", "next");
   console.log(
     `[${drained.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}] ${scores.size === 0}`,
   );
@@ -101,12 +102,13 @@ function main() {
     [2, "two"],
   ]);
   console.log(
-    `[${sorted($iter(Array.from(new Map(names).keys())), $intsOrdered, clone, 4, "general8").join(", ")}] [${sorted(
+    `[${sorted($iter(Array.from(new Map(names).keys())), $intsOrdered, clone, 4, "general8", "next").join(", ")}] [${sorted(
       $iter(Array.from(new Map(names).values())),
       $ordered,
       clone,
       12,
       "general8",
+      "next",
     )
       .map((item) => $debugStr(item))
       .join(", ")}]`,
@@ -117,10 +119,10 @@ function main() {
   const a = new Set([1, 2, 3]);
   const b = new Set([2, 3, 4]);
   console.log(
-    `[${sorted($iter($setAlgebra(a, b, "union")), $intsOrdered, clone, 4, "general8").join(", ")}] [${sorted($iter($setAlgebra(a, b, "intersection")), $intsOrdered, clone, 4, "general8").join(", ")}]`,
+    `[${sorted($iter($setAlgebra(a, b, "union")), $intsOrdered, clone, 4, "general8", "next").join(", ")}] [${sorted($iter($setAlgebra(a, b, "intersection")), $intsOrdered, clone, 4, "general8", "next").join(", ")}]`,
   );
   console.log(
-    `[${sorted($iter($setAlgebra(a, b, "difference")), $intsOrdered, clone, 4, "general8").join(", ")}] [${sorted($iter($setAlgebra(a, b, "symmetric")), $intsOrdered, clone, 4, "general8").join(", ")}]`,
+    `[${sorted($iter($setAlgebra(a, b, "difference")), $intsOrdered, clone, 4, "general8", "next").join(", ")}] [${sorted($iter($setAlgebra(a, b, "symmetric")), $intsOrdered, clone, 4, "general8", "next").join(", ")}]`,
   );
   console.log(
     `${$isSubset(a, b, false)} ${$isSubset(new Set([2]), a, false)} ${$isDisjoint(a, b)}`,
@@ -140,7 +142,7 @@ function main() {
   );
   $retainSet(taken, (x) => x % 2 === 1, taken);
   console.log(
-    `[${sorted($iter(Array.from(taken)), $intsOrdered, clone, 4, "general8").join(", ")}]`,
+    `[${sorted($iter(Array.from(taken)), $intsOrdered, clone, 4, "general8", "next").join(", ")}]`,
   );
 
   const tree = new $BTreeMap([

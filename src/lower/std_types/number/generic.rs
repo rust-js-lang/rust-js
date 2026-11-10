@@ -228,6 +228,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
+    /// How std's `SpecFromIter` collects an iterator of `of`, of `item`s,
+    /// into a `Vec`, `IVecCollect`'s value: `vec_collect_way` of whether
+    /// it's collected in place and whether it's `TrustedLen` (#1239). Of one
+    /// built of a generic caller's own type parameters, where either is a
+    /// caller's, the runtime's `$vecCollectWay` of the facts it's given of
+    /// them that `held_facts` names, `$collectsInPlace(IInPlace, ..)` and
+    /// `ITrustedLen`.
+    pub(in crate::lower) fn vec_collect_way_of(&mut self, of: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Expr> {
+        let in_place = self.collects_in_place(Some(of), Some(item));
+        let trusted = (in_place == Some(true)
+            || crate::lower::recognition::vec_collect_trusted_facts(self.tcx, self.typing_env, of).is_empty())
+        .then(|| crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, of));
+        if let (Some(in_place), Some(trusted)) = (in_place, trusted) {
+            return Ok(Expr::str(crate::lower::recognition::vec_collect_way(in_place, trusted)));
+        }
+        let in_place = match in_place {
+            Some(known) => Expr::bool(known),
+            None => self.caller_in_place(of, item, span)?,
+        };
+        let trusted = match trusted {
+            Some(known) => Expr::bool(known),
+            None => self.type_fact_value(of, TypeFact::TrustedLen, span)?,
+        };
+        Ok(Expr::call_helper("$vecCollectWay", vec![in_place, trusted]))
+    }
+
     /// A fact of `of` (ADR 0145): its size or alignment, as rustc works it out
     /// for the wasm32 target, or its name; of a type parameter, the one this
     /// function was given for it.
@@ -286,6 +312,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Whether generic code's `eq` compares it by its length first (#1182).
         if fact == TypeFact::LengthFirst {
             return self.length_first(of, span);
+        }
+        // How std's `SpecFromIter` collects it into a `Vec`, `vec_collect_way`
+        // of whether it's collected in place and whether it's `TrustedLen`
+        // (#1239). Of one built of a generic caller's own type parameters,
+        // where either is a caller's, the runtime's `$vecCollectWay` of the
+        // facts it's given of them that `held_facts` names,
+        // `$collectsInPlace(IInPlace, ..)` and `ITrustedLen`.
+        if fact == TypeFact::VecCollect {
+            let item = (self.iterator_item(of))
+                .ok_or_else(|| self.unsupported(span, &format!("{what} of `{of}`, which no caller gives")))?;
+            return self.vec_collect_way_of(of, item, span);
         }
         // What std may collect an iterator in, in place: its source's items'
         // `[size, align]`, or `undefined`; of what its adapters keep of a

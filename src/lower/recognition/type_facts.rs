@@ -58,11 +58,14 @@ pub(crate) enum TypeFact {
     /// where its value reports it, `"pure"` where it's collected first,
     /// which runs nothing and drops nothing, or `false` of another (#1182).
     LengthFirst,
+    /// How std's `SpecFromIter` collects an iterator into a `Vec`: in
+    /// place, by its fold, a `TrustedLen`'s, or by `next` (#1239).
+    VecCollect,
 }
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 20] = [
+    pub(crate) const ALL: [TypeFact; 21] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
@@ -83,6 +86,7 @@ impl TypeFact {
         TypeFact::InPlace,
         TypeFact::Eq,
         TypeFact::LengthFirst,
+        TypeFact::VecCollect,
     ];
 
     /// What it is, as an error or a note says it: `size_of`, `the
@@ -103,6 +107,7 @@ impl TypeFact {
             TypeFact::RandomAccess => "whether it's a `TrustedRandomAccess`",
             TypeFact::RandomAccessNoCoerce => "whether it's a `TrustedRandomAccessNoCoerce`",
             TypeFact::TrustedLen => "whether it's a `TrustedLen`",
+            TypeFact::VecCollect => "how std collects it into a `Vec`",
             TypeFact::InPlace => "the buffer std collects an iterator in place in",
             TypeFact::Eq => "whether it's `Eq`, which std's `==` of two `Rc`s of it asks",
             TypeFact::LengthFirst => "whether `eq` compares its length first",
@@ -134,6 +139,7 @@ impl TypeFact {
             TypeFact::RandomAccess => "RandomAccess",
             TypeFact::RandomAccessNoCoerce => "RandomAccessNoCoerce",
             TypeFact::TrustedLen => "TrustedLen",
+            TypeFact::VecCollect => "VecCollect",
             TypeFact::InPlace => "InPlace",
             TypeFact::Eq => "Eq",
             TypeFact::LengthFirst => "LengthFirst",

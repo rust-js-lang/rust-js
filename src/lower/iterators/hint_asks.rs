@@ -421,7 +421,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// again (`$roomForHint`'s, #728): `room_item_size`; but of items whose
     /// size is its caller's where that hint may run the crate's own
     /// (`grows_by_callers_size`), the caller's, `TSize` (#796).
-    fn grown_item_size(&mut self, output: Ty<'tcx>, iter_ty: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub(in crate::lower) fn grown_item_size(
+        &mut self,
+        output: Ty<'tcx>,
+        iter_ty: Ty<'tcx>,
+        item: Ty<'tcx>,
+        span: Span,
+    ) -> R<Expr> {
         match (self.recognition()).grows_by_callers_size(output, iter_ty, item, (false, self.krate.keeps_capacity)) {
             true => self.type_fact_value(item, TypeFact::Size, span),
             false => Ok(self.room_item_size(item)),

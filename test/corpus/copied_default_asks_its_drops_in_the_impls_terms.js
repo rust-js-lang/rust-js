@@ -4,11 +4,10 @@ import {
   $cleanup,
   $closing,
   $collectDropping,
-  $collectsInPlace,
+  $collectVec,
   $debugStr,
   $dropItems,
   $foldOf,
-  $foldToArray,
   $given,
   $givenDrop,
   $intsOrdered,
@@ -17,7 +16,6 @@ import {
   $live,
   $next,
   $ordered,
-  $roomForHint,
   $sortUnstable,
   $traitImpl,
   $unwindsOn,
@@ -35,27 +33,17 @@ function noisyDrop_drop(noisy) {
 
 const $tExt = new WeakMap();
 
-function tExt(TIterator, TInPlace, TItemSize, TItemAlign, dropT, dropTItem) {
-  return $traitImpl($tExt, [TIterator, TInPlace, TItemSize, TItemAlign, dropT, dropTItem], () => ({
+function tExt(TIterator, TVecCollect, TItemSize, dropT, dropTItem) {
+  return $traitImpl($tExt, [TIterator, TVecCollect, TItemSize, dropT, dropTItem], () => ({
     sortedByKeyUnstable(self, key, KOrd, SelfItemSort, dropK, dropFn) {
       let v;
       try {
-        v = $collectsInPlace(TInPlace, TItemSize, TItemAlign)
-          ? $foldToArray(
-              $closing($given(self, TIterator, true), $givenDrop(dropT), false),
-              dropTItem,
-            )
-          : $collectDropping(
-              $roomForHint(
-                $closing($given(self, TIterator, true), $givenDrop(dropT), false),
-                TItemSize,
-                false,
-                false,
-                dropTItem,
-              ),
-              dropTItem,
-              true,
-            );
+        v = $collectVec(
+          $closing($given(self, TIterator, true), $givenDrop(dropT), false),
+          TItemSize,
+          TVecCollect,
+          dropTItem,
+        );
       } catch (error) {
         $cleanup(() => {
           dropFn?.(key);
@@ -87,19 +75,12 @@ function tExt(TIterator, TInPlace, TItemSize, TItemAlign, dropT, dropTItem) {
       return result;
     },
     sortedUnstable(self, SelfItemOrd, SelfItemSort) {
-      const v = $collectsInPlace(TInPlace, TItemSize, TItemAlign)
-        ? $foldToArray($closing($given(self, TIterator, true), $givenDrop(dropT), false), dropTItem)
-        : $collectDropping(
-            $roomForHint(
-              $closing($given(self, TIterator, true), $givenDrop(dropT), false),
-              TItemSize,
-              false,
-              false,
-              dropTItem,
-            ),
-            dropTItem,
-            true,
-          );
+      const v = $collectVec(
+        $closing($given(self, TIterator, true), $givenDrop(dropT), false),
+        TItemSize,
+        TVecCollect,
+        dropTItem,
+      );
       try {
         $sortUnstable(v, (a, b) => SelfItemOrd.PartialOrd().lt(a, b), SelfItemSort);
       } catch (error) {
@@ -164,7 +145,7 @@ function main() {
     getUnchecked: (iterator, i) =>
       mapIterator___iteratorGetUnchecked(iterator, i, { next: $next }, noisyDrop_drop),
   };
-  const sorted = tExt(mapIterator, undefined, 4, 4, undefined, noisyDrop_drop).sortedByKeyUnstable(
+  const sorted = tExt(mapIterator, "fold", 4, undefined, noisyDrop_drop).sortedByKeyUnstable(
     iterator_map($iter([3, 1, 2]), (value) => [value], { next: $next }, undefined, noisyDrop_drop),
     (n) => n[0],
     $intsOrdered,
@@ -186,7 +167,7 @@ function main() {
     }
   }
   const words = Array.from(
-    tExt({ next: $next }, undefined, 12, 4).sortedUnstable(
+    tExt({ next: $next }, "fold", 12).sortedUnstable(
       $iter(["pear", "fig", "apple"].map((s) => s)),
       $ordered,
       "general8",

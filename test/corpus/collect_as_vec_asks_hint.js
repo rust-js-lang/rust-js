@@ -8,6 +8,7 @@ import {
   $catchUnwind,
   $cmp,
   $collectDropping,
+  $collectVec,
   $debugStr,
   $eq,
   $heapFrom,
@@ -304,6 +305,7 @@ function main() {
           undefined,
           ownIterator_sizeHint,
         ),
+        "next",
       ).length,
   );
   run(
@@ -318,6 +320,7 @@ function main() {
           undefined,
           ownIterator_sizeHint,
         ),
+        "next",
       ).size,
   );
   // Of std's own iterators, whose hints the program doesn't see.
@@ -344,11 +347,11 @@ function main() {
  * Generic code's collects, of what its caller gives, whose hint its
  * caller's dictionary passes on.
  */
-function heaped(it) {
-  return $heapFrom(Array.from($roomForHint(Iterator.from(it), 4, false)), $partiallyOrdered);
+function heaped(it, IVecCollect) {
+  return $heapFrom($collectVec(Iterator.from(it), 4, IVecCollect), $partiallyOrdered);
 }
 
-function sorted(it) {
-  return new $BTreeSet($roomForHint(Iterator.from(it), 4, false));
+function sorted(it, IVecCollect) {
+  return new $BTreeSet($collectVec(Iterator.from(it), 4, IVecCollect));
 }
 //# sourceMappingURL=case.js.map

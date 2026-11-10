@@ -114,6 +114,7 @@ export const shared: Record<string, keyof typeof why> = {
   "$collectOptions": "consumers",
   "$collectResults": "consumers",
   "$collectsInPlace": "consumers",
+  "$collectVec": "consumers",
   "$copyFromSlice": "collections",
   "$copyRange": "collections",
   "$copyWithin": "collections",

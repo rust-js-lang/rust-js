@@ -52,6 +52,31 @@ function $consume(it, step, init, f, unwind, ends) {
   return folded;
 }
 
+// How std's `SpecFromIter` collects an iterator into a `Vec`, its
+// `IVecCollect`, of what a generic caller's caller gives: whether it's
+// collected in place, and whether it's `TrustedLen` (#1239). The compiler's
+// `vec_collect_way` answers it of a type known; test/vec-collect-ways.txt
+// holds both to one table.
+function $vecCollectWay(inPlace, trusted) {
+  return inPlace ? "inPlace" : trusted ? "fold" : "next";
+}
+
+// `collect()` into a `Vec` of what generic code was given, as std's
+// `SpecFromIter` collects the type its caller knows, `how`, its
+// `IVecCollect` (#1239): "inPlace", in the buffer it holds, by its
+// `try_fold`, nothing asked of its hint; "fold", a `TrustedLen`'s, room for
+// its hint, then each item by its fold, `extend_trusted`; "next",
+// `SpecFromIterNested`'s, its first item, then room for its hint as the
+// `Vec` grows (`$roomForHint`), as of `undefined`, a JS caller's, whose
+// iterable is no Rust iterator. Of items with a destructor, `drop`: what it
+// collected dropped as a panic unwinds, what's left first where it isn't
+// in place (#423, #672).
+function $collectVec(it, size, how, drop) {
+  if (how === "inPlace") return $foldToArray(it, drop, false, true);
+  if (how === "fold") return $foldToArray($roomForHint(it, size, true, false), drop, true, false);
+  return $collectDropping($roomForHint(it, size, false, false, drop), drop, true);
+}
+
 // `collect()` into a `Vec` of a `TrustedLen` iterator, as std's
 // `extend_trusted` does it: each item through its `fold`, std's compiled one
 // where it's std's struct, a zip's `SpecFold` say, which steps no item past

@@ -1,0 +1,10 @@
+# How std's `SpecFromIter` collects an iterator into a `Vec`, `IVecCollect`
+# (#1239): whether it's collected in place, whether it's `TrustedLen`, and
+# the way. The compiler's `recognition::vec_collect_way` answers it of a
+# type its caller knows, the runtime's `$vecCollectWay` of what a generic
+# caller's caller gives; `cargo test vec_collect_ways` and
+# test/runtime-package.test.ts hold each to this one table.
+true	true	inPlace
+true	false	inPlace
+false	true	fold
+false	false	next

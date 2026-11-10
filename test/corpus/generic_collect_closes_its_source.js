@@ -4,14 +4,12 @@ import {
   $catchUnwind,
   $cleanup,
   $closing,
-  $collectDropping,
   $collectOptions,
+  $collectVec,
   $collectsInPlace,
   $dropEach,
-  $foldToArray,
   $iter,
   $iterator,
-  $roomForHint,
 } from "@rust-js/std";
 
 export function entry() {
@@ -30,14 +28,8 @@ function everyIterator_next(every) {
   return every.at <= 5 ? [every.at] : undefined;
 }
 
-function collected(src, IInPlace, dropI) {
-  const v = $collectsInPlace(IInPlace, 4, 4)
-    ? $foldToArray($closing(Iterator.from(src), dropI, false), dDrop_drop)
-    : $collectDropping(
-        $roomForHint($closing(Iterator.from(src), dropI, false), 4, false, false, dDrop_drop),
-        dDrop_drop,
-        true,
-      );
+function collected(src, IVecCollect, dropI) {
+  const v = $collectVec($closing(Iterator.from(src), dropI, false), 4, IVecCollect, dDrop_drop);
   console.log(`collected ${v.length}`);
   for (const item of v) {
     dDrop_drop(item);
@@ -78,7 +70,7 @@ function main() {
   console.log(
     `${
       $catchUnwind(() =>
-        collected($iterator({ at: 0, boom: 3 }, everyIterator_next), undefined, (it) => {
+        collected($iterator({ at: 0, boom: 3 }, everyIterator_next), "next", (it) => {
           console.log(`drop src at ${it.of.at}`);
         }),
       ).TAG === "Err"
@@ -87,14 +79,14 @@ function main() {
   console.log(
     `${
       $catchUnwind(() =>
-        collected($iterator({ at: 0, boom: 0 }, everyIterator_next), undefined, (it) => {
+        collected($iterator({ at: 0, boom: 0 }, everyIterator_next), "next", (it) => {
           console.log(`drop src at ${it.of.at}`);
         }),
       ).TAG === "Err"
     }`,
   );
   console.log(
-    `${$catchUnwind(() => collected($iter([[7], [8]]), [4, 4], $dropEach(dDrop_drop))).TAG === "Err"}`,
+    `${$catchUnwind(() => collected($iter([[7], [8]]), "inPlace", $dropEach(dDrop_drop))).TAG === "Err"}`,
   );
   console.log(
     `${

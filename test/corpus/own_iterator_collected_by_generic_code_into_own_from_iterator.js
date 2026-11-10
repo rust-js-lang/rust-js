@@ -28,7 +28,7 @@ function countIterator_next(count) {
 }
 
 export const summedFromIteratorU32 = {
-  fromIter: (arg0, TIntoIterInPlace, dropT, dropTIntoIter) =>
+  fromIter: (arg0, TIntoIterTrustedLen, TIntoIterInPlace, dropT, dropTIntoIter) =>
     summedFromIteratorU32_fromIter(arg0, dropT, dropTIntoIter),
 };
 function summedFromIteratorU32_fromIter(items, dropI, dropIIntoIter) {
@@ -58,7 +58,7 @@ function summedFromIteratorU32_fromIter(items, dropI, dropIIntoIter) {
 // What stops early: what's left drops where `from_iter` returns.
 
 export const firstFromIteratorU32 = {
-  fromIter: (arg0, TIntoIterInPlace, dropT, dropTIntoIter) =>
+  fromIter: (arg0, TIntoIterTrustedLen, TIntoIterInPlace, dropT, dropTIntoIter) =>
     firstFromIteratorU32_fromIter(arg0, dropT, dropTIntoIter),
 };
 function firstFromIteratorU32_fromIter(items, dropI, dropIIntoIter) {
@@ -80,7 +80,7 @@ function firstFromIteratorU32_fromIter(items, dropI, dropIIntoIter) {
 // What panics holding it: it drops as the panic unwinds.
 
 export const refusedFromIteratorU32 = {
-  fromIter: (arg0, TIntoIterInPlace, dropT, dropTIntoIter) =>
+  fromIter: (arg0, TIntoIterTrustedLen, TIntoIterInPlace, dropT, dropTIntoIter) =>
     refusedFromIteratorU32_fromIter(arg0, dropT, dropTIntoIter),
 };
 function refusedFromIteratorU32_fromIter(items, dropI, dropIIntoIter) {
@@ -107,9 +107,10 @@ function refusedFromIteratorU32_fromIter(items, dropI, dropIIntoIter) {
   dropIIntoIter?.(it);
 }
 
-function collected(it, BFromIteratorIItem, IInPlace, IItemSize, IItemAlign, dropI) {
+function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, IItemSize, IItemAlign, dropI) {
   return BFromIteratorIItem.fromIter(
     $closing(Iterator.from(it), dropI, false),
+    ITrustedLen,
     IInPlace,
     (closing) => {
       closing.return();
@@ -120,12 +121,13 @@ function collected(it, BFromIteratorIItem, IInPlace, IItemSize, IItemAlign, drop
   );
 }
 
-function doubled(it, BFromIteratorU32, IInPlace, dropI) {
+function doubled(it, BFromIteratorU32, ITrustedLen, IInPlace, dropI) {
   const iter = $closing(Iterator.from(it), dropI, false).map((n) => (n * 2) >>> 0);
   let result;
   try {
     result = BFromIteratorU32.fromIter(
       iter,
+      ITrustedLen,
       IInPlace,
       (map) => {
         map.return();
@@ -149,6 +151,7 @@ function main() {
   const [sum] = collected(
     $iterator(count("all"), countIterator_next),
     summedFromIteratorU32,
+    false,
     undefined,
     4,
     4,
@@ -160,6 +163,7 @@ function main() {
   const [first] = collected(
     $iterator(count("first"), countIterator_next),
     firstFromIteratorU32,
+    false,
     undefined,
     4,
     4,
@@ -171,18 +175,20 @@ function main() {
   const [sum$1] = doubled(
     $iterator(count("doubled"), countIterator_next),
     summedFromIteratorU32,
+    false,
     undefined,
     (it) => {
       loudDrop_drop(it.of._loud);
     },
   );
   console.log(`${sum$1}`);
-  const [sum$2] = collected($iter([4, 5]), summedFromIteratorU32, [4, 4], 4, 4);
+  const [sum$2] = collected($iter([4, 5]), summedFromIteratorU32, true, [4, 4], 4, 4);
   console.log(`${sum$2}`);
   const refused = $catchUnwind(() => {
     collected(
       $iterator(count("refused"), countIterator_next),
       refusedFromIteratorU32,
+      false,
       undefined,
       4,
       4,

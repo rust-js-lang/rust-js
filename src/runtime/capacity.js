@@ -162,6 +162,10 @@ function $roomForHint(it, size, trusted, endless = false, drop) {
     unwound(() => {
       if (endless) throw new Error("capacity overflow");
       const [lower, upper] = $sizeHint(it);
+      // A `TrustedLen`'s hint of no upper bound is more than `usize::MAX`,
+      // its lower bound that, as std's contract says: so generic code's,
+      // whose type its caller knows, `repeat(x).map(f)` (#1239).
+      if (upper === undefined && lower >= 2 ** 32 - 1) throw new Error("capacity overflow");
       $roomFor(upper !== undefined ? upper : Math.min(lower + 1, 2 ** 32 - 1), size);
     });
     return it;

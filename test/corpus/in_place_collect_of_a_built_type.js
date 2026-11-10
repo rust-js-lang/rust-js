@@ -14,6 +14,7 @@ import {
   $index,
   $iter,
   $iterator,
+  $mapEnds,
   $next,
   $rangeInclusiveNext,
   $roomForHint,
@@ -175,13 +176,16 @@ function main() {
       $iterator({ start: 1n, end: 4n }, $rangeInclusiveNext).map((n) => [n]),
     );
     const value = held(
-      $closing($iter(wides), (intoIter) => {
-        for (const item of intoIter) {
-          if (item != null) {
-            dDrop_drop(item);
+      $mapEnds(
+        $closing($iter(wides), (intoIter) => {
+          for (const item of intoIter) {
+            if (item != null) {
+              dDrop_drop(item);
+            }
           }
-        }
-      }).map(wide),
+        }),
+        wide,
+      ),
       {
         intoIter: (items) => $iter(items == null ? [] : [items]),
         IntoIterIterator: () => ({ next: $next }),
@@ -259,13 +263,16 @@ function main() {
       true,
     );
     const value = held(
-      $closing($iter(narrows), (intoIter) => {
-        for (const item of intoIter) {
-          for (const item$1 of item) {
-            dDrop_drop(item$1);
+      $mapEnds(
+        $closing($iter(narrows), (intoIter) => {
+          for (const item of intoIter) {
+            for (const item$1 of item) {
+              dDrop_drop(item$1);
+            }
           }
-        }
-      }).map(narrow),
+        }),
+        narrow,
+      ),
       {
         intoIter: (items) => $iter(items),
         IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),

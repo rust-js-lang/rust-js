@@ -150,4 +150,12 @@ export const mutations: Mutation[] = [
     replace: "        Some(inputs.len() - usize::from(formatter) + usize::from(options) + evidence + usize::from(receiver) * 0)\n",
     tests: ["test/corpus.test.ts", "-t", "^class_bool_methods.rs$"],
   },
+  {
+    name: "vec-collect-fact-unknowable",
+    breaks: "a function whose JS takes `IVecCollect` is left out of its crate's declarations, as one a JS caller can't give, where a JS caller leaves it out, its iterable collected by `next` (#1239)",
+    file: "src/lower/signatures.rs",
+    find: "                Slot::Fact(_, crate::lower::recognition::TypeFact::VecCollect) => (String::new(), Form::LeftOut),\n",
+    replace: "",
+    tests: ["test/declarations-ungiven.test.ts", "-t", "is a note, not declared"],
+  },
 ];

@@ -5,7 +5,9 @@ import {
   $chars,
   $cmp,
   $collectResults,
+  $collectVec,
   $collecting,
+  $collectsInPlace,
   $debugStr,
   $folded,
   $intoIter,
@@ -15,6 +17,7 @@ import {
   $rev,
   $roomForHint,
   $sortedEntries,
+  $vecCollectWay,
 } from "@rust-js/std";
 
 export function entry() {
@@ -22,11 +25,14 @@ export function entry() {
 }
 
 function gather(n, BFromIteratorU32) {
-  return BFromIteratorU32.fromIter($lazyRange(1, n + 1).map((x) => (x * 2) >>> 0));
+  return BFromIteratorU32.fromIter(
+    $lazyRange(1, n + 1).map((x) => (x * 2) >>> 0),
+    true,
+  );
 }
 
 function made(text, BFromIteratorChar) {
-  return BFromIteratorChar.fromIter($rev($chars(text)));
+  return BFromIteratorChar.fromIter($rev($chars(text)), false);
 }
 
 function bagDebug_fmt(bag) {
@@ -47,26 +53,31 @@ function bagFromIteratorU32_fromIter(items) {
 }
 
 function parsed(words, BFromIteratorResult) {
-  return BFromIteratorResult.fromIter(words.values().map((w) => $parseInt(w, 0, 4294967295)));
+  return BFromIteratorResult.fromIter(
+    words.values().map((w) => $parseInt(w, 0, 4294967295)),
+    true,
+  );
 }
 
 function main() {
   const resultFromIterator = {
-    fromIter: (items, IInPlace) =>
+    fromIter: (items, ITrustedLen, IInPlace) =>
       $collecting(items, () => $collectResults(items, undefined, undefined, false, 4)),
   };
   const vecFromIterator = {
-    fromIter: (items, IInPlace) =>
-      $collecting(items, () => Array.from($roomForHint(items, 4, false))),
+    fromIter: (items, ITrustedLen, IInPlace) =>
+      $collecting(items, () =>
+        $collectVec(items, 4, $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen)),
+      ),
   };
   const v = gather(3, vecFromIterator);
   const s = gather(2, {
-    fromIter: (items, IInPlace) =>
+    fromIter: (items, ITrustedLen, IInPlace) =>
       $collecting(items, () => new Set($reserveHint($folded(items), 4, 4))),
   });
   const b = gather(4, bagFromIteratorU32);
   const t = made("abc", {
-    fromIter: (items, IInPlace) =>
+    fromIter: (items, ITrustedLen, IInPlace) =>
       $collecting(items, () => Array.from($reserveHint($folded(items), 1)).join("")),
   });
   const pairs = new $BTreeMap(

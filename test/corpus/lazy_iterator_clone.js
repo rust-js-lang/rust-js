@@ -3,6 +3,8 @@
 import {
   $clone,
   $cloning,
+  $collectVec,
+  $filterEnds,
   $foldToArray,
   $given,
   $iter,
@@ -19,10 +21,10 @@ export function entry() {
   main();
 }
 
-function both(it, IIterator, IClone) {
+function both(it, IIterator, IClone, IVecCollect) {
   return [
-    Array.from($roomForHint($given(IClone.clone(it), IIterator), 4, false)),
-    Array.from($roomForHint($given(it, IIterator), 4, false)),
+    $collectVec($given(IClone.clone(it), IIterator), 4, IVecCollect),
+    $collectVec($given(it, IIterator), 4, IVecCollect),
   ];
 }
 
@@ -89,9 +91,11 @@ function main() {
       () => make$1(seen),
     );
   const makeFilter$1 = (it, f) =>
-    $cloning(it.filter(f), () => makeFilter$1($iter(it.items.slice(it.at, it.end)), $clone(f)));
+    $cloning($filterEnds(it, f), () =>
+      makeFilter$1($iter(it.items.slice(it.at, it.end)), $clone(f)),
+    );
   const odd = makeFilter$1(copied, make$1(seen$1));
-  const value$1 = both(odd, { next: $next }, clone);
+  const value$1 = both(odd, { next: $next }, clone, "next");
   console.log(`([${value$1[0].join(", ")}], [${value$1[1].join(", ")}])`);
 
   // A `copied()` of a map over a slice, cloned apart: its clone is what it

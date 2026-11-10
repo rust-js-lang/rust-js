@@ -734,11 +734,13 @@ pub fn run() {
   // a `Vec`'s iterator's in-place buffer through the dictionary, and so does
   // the consumer's own of it (ADR 0914), as it compiles the impl, which takes
   // it.
-  const fact = /TFromIteratorD\.fromIter\(\s*\$closing\(\$iter\(v\)[\s\S]*?\),\s*\[4, 4\],/;
+  // And whether it's `TrustedLen`, of which the impl's entry makes how std
+  // collects it, where it knows its items (#1239).
+  const fact = /TFromIteratorD\.fromIter\(\s*\$closing\(\$iter\(v\)[\s\S]*?\),\s*true,\s*\[4, 4\],/;
   expect(readFileSync(join(dir, "items", "src", "lib.js"), "utf8")).toMatch(fact);
   const app = readFileSync(join(dir, "app", "src", "lib.js"), "utf8");
-  expect(app).toContain("fromIter(\n      iter,\n      [4, 4],");
-  expect(app).toContain("function reqFromIteratorD_fromIter(iter, IIntoIterInPlace,");
+  expect(app).toContain("fromIter(\n      iter,\n      true,\n      [4, 4],");
+  expect(app).toContain("function reqFromIteratorD_fromIter(iter, IIntoIterVecCollect,");
   const ran = runSync([node ?? "node", "--input-type=module", "--eval", `(await import(${JSON.stringify(join(dir, "app", "src", "lib.js"))})).run();`], dir, 30_000);
   expect(ran.stdout).toBe(nativeRun);
 }, 600_000);

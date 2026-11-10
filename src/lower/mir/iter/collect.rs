@@ -197,14 +197,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         iter_ty: Option<Ty<'tcx>>,
         item: Option<Ty<'tcx>>,
     ) -> Option<bool> {
-        use crate::lower::recognition::{InPlaceSource, fits_in_place, in_place_source};
         let (iter_ty, item) = iter_ty.zip(item)?;
-        let typing_env = self.typing_env;
-        match in_place_source(self.tcx, typing_env, iter_ty)? {
-            InPlaceSource::Never => Some(false),
-            InPlaceSource::Items(src) => fits_in_place(self.tcx, typing_env, src, item),
-            InPlaceSource::Of(_) => None,
-        }
+        crate::lower::recognition::collects_in_place(self.tcx, self.typing_env, iter_ty, item)
     }
 
     /// The `restFirst` of a collect into `output` of `item`s, of an iterator
@@ -244,7 +238,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `None`): `$collectsInPlace(IInPlace, size, align)`, its fact of what
     /// the adapters keep, or of a source's items' layout, `[TSize, TAlign]`,
     /// against the items' (#672). Refused where the adapters don't tell.
-    fn caller_in_place(&mut self, iter_ty: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub(in crate::lower) fn caller_in_place(&mut self, iter_ty: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Expr> {
         use crate::lower::recognition::{InPlaceSource, TypeFact, in_place_source};
         let typing_env = self.typing_env;
         let source = match in_place_source(self.tcx, typing_env, iter_ty) {
@@ -604,6 +598,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         iterable: bool,
         span: Span,
     ) -> R<Expr> {
+        // Of a type parameter's iterator, or an associated type's of one, as
+        // given: how std's `SpecFromIter` collects it, in place, by its
+        // fold, a `TrustedLen`'s, or by `next`, is its caller's,
+        // `IVecCollect`, which one runtime call does (#1239).
+        // Of what std grows as a `Vec`, not a `LinkedList`, whose own
+        // `extend` collects it. Its items' drop, where they drop, run as a
+        // panic unwinds it.
+        if crate::lower::recognition::known_by_bounds(iter_ty)
+            && self.recognition().grows_as_vec(output)
+            && let Some(item) = item
+            && let Some(how) = self.given_vec_collect(iter_ty, item, span)?
+        {
+            let size = self.grown_item_size(output, iter_ty, item, span)?;
+            let mut args = vec![it, size, how];
+            if self.drops(item) != crate::lower::drops::Drops::Nothing {
+                args.extend(self.drop_function(item, span)?);
+            }
+            let collected = Expr::call_helper("$collectVec", args);
+            return Ok(self.untracked_where_in_place(collected, output, iter_ty, Some(item)));
+        }
         // What it asks of its hint as std grows a `Vec` of it (`grown_ask`).
         let trusted = crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
         let grown = self.grown_ask(output, item, iter_ty, self.compiled_struct(iter_ty, given), span)?;
@@ -658,16 +672,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             iterable,
             span,
         )?;
-        // Of a crate that keeps capacities, one std may collect in place,
-        // whose capacity is its source's, which isn't kept: not known, which
-        // `capacity()` refuses (#1180).
-        let collected = match self.krate.keeps_capacity
-            && self.recognition().grows_as_vec(output)
-            && self.collects_in_place(Some(iter_ty), item) != Some(false)
-        {
-            true => Expr::call_helper("$untracked", vec![collected]),
-            false => collected,
-        };
+        let collected = self.untracked_where_in_place(collected, output, iter_ty, item);
         // Kept where its collect steps it, not where it's collected in place.
         Ok(match grown_call {
             Some((name, call)) if collected.mentions_var(&name) => Expr::call_helper(
@@ -682,6 +687,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ),
             _ => collected,
         })
+    }
+
+    /// `collected`, of a crate that keeps capacities, where std may collect
+    /// it in place, whose capacity is its source's, which isn't kept: not
+    /// known, which `capacity()` refuses (#1180).
+    fn untracked_where_in_place(
+        &self,
+        collected: Expr,
+        output: Ty<'tcx>,
+        iter_ty: Ty<'tcx>,
+        item: Option<Ty<'tcx>>,
+    ) -> Expr {
+        match self.krate.keeps_capacity
+            && self.recognition().grows_as_vec(output)
+            && self.collects_in_place(Some(iter_ty), item) != Some(false)
+        {
+            true => Expr::call_helper("$untracked", vec![collected]),
+            false => collected,
+        }
+    }
+
+    /// How std collects an iterator of `iter_ty`, a type parameter's or an
+    /// associated type's of one, into a `Vec`, as its caller gives it,
+    /// `IVecCollect`, where the facts owner asked it (`type_facts.rs`); or,
+    /// in a `B: FromIterator`'s entry, which std's `from_iter` gives its
+    /// iterator's `IInPlace` and `ITrustedLen` (`std_method_facts`), made
+    /// of them where its items' layout is known (#1239).
+    fn given_vec_collect(&mut self, iter_ty: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        use crate::lower::recognition::TypeFact;
+        if let Some(how) = self.given_fact_of(iter_ty, TypeFact::VecCollect) {
+            return Ok(Some(how));
+        }
+        let given = |fact| self.given_fact_of(iter_ty, fact).is_some();
+        match given(TypeFact::InPlace) && given(TypeFact::TrustedLen) {
+            true => self.vec_collect_way_of(iter_ty, item, span).map(Some),
+            false => Ok(None),
+        }
     }
 
     /// `it`, what `collected_as_vec` collects, grown as std grows it, and

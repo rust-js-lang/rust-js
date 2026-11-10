@@ -17,6 +17,7 @@ import {
   $iterator,
   $last,
   $lazyChain,
+  $mapEnds,
   $next,
   $nth,
   $roomForHint,
@@ -227,7 +228,7 @@ function kept(src, TSize, TAlign, IInPlace, dropT, dropI) {
 
 function passed(src, JInPlace, dropJ) {
   return mapped(
-    $closing(Iterator.from(src), dropJ, false).map((x) => {
+    $mapEnds($closing(src, dropJ, false), (x) => {
       const result = [(x[0] + 10) >>> 0];
       dDrop_drop(x);
       return result;
@@ -350,7 +351,7 @@ function main() {
     `${
       $catchUnwind(() =>
         counted(
-          pairs().map(([a, b]) => [(a + b) >>> 0]),
+          $mapEnds(pairs(), ([a, b]) => [(a + b) >>> 0]),
           [8, 4],
         ),
       ).TAG === "Err"

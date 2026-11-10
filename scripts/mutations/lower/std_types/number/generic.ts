@@ -286,4 +286,28 @@ export const mutations: Mutation[] = [
     replace: "                && false\n",
     tests: ["test/lowering-generic-iterators.test.ts", "-t", "a flatten of what a trait method with its own generics gives"],
   },
+  {
+    name: "vec-collect-trusted-by-next",
+    breaks: "a caller gives `IVecCollect` of a `TrustedLen` as `\"next\"`, so generic code's collect of an endless one steps it before std's \"capacity overflow\" (#1239)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "            return Ok(Expr::str(crate::lower::recognition::vec_collect_way(in_place, trusted)));\n",
+    replace: "            return Ok(Expr::str(crate::lower::recognition::vec_collect_way(in_place, false)));\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
+  },
+  {
+    name: "vec-collect-of-a-built-type-never-in-place",
+    breaks: "`IVecCollect` of an adapter generic code makes of its type parameter's iterator is never `\"inPlace\"`, so a panic of a collect std makes in place drops what's left of its source before what it collected (#1239)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "            None => self.caller_in_place(of, item, span)?,\n",
+    replace: "            None => Expr::bool(false),\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
+  },
+  {
+    name: "vec-collect-of-a-built-type-never-trusted",
+    breaks: "`IVecCollect` of an adapter generic code makes of its type parameter's iterator is never `\"fold\"`, so an endless `TrustedLen` is stepped before std's \"capacity overflow\" (#1239)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "            None => self.type_fact_value(of, TypeFact::TrustedLen, span)?,\n",
+    replace: "            None => Expr::bool(false),\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
+  },
 ];

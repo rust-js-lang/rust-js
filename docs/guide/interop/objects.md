@@ -462,9 +462,13 @@ A type parameter with no bound takes none, unless the function asks a fact
 of it: `size_of::<T>()`, `align_of::<T>()`, `type_name::<T>()`, its
 `TypeId` (a `T: 'static` made a `dyn Any` or compared by `TypeId::of`),
 `needs_drop::<T>()`, the class of a map keyed by it, an unstable sort of
-its items, or, of an iterator collected into a `Vec` of items with a
-destructor, whether std collects it in place, `IInPlace`, which picks what a
-panic drops first ([ADR 0465](../../decisions/0465-dropping-an-adapter-is-closing-it.md),
+its items, how std collects it into a `Vec` where it's an iterator, by
+`collect()` or `Vec::from_iter`, `IVecCollect`, `"inPlace"`, `"fold"` or
+`"next"`, which picks what it asks of its hint and what a panic drops
+first, and which a JS caller leaves out, so such a function stays
+declared, or, of an iterator its adapters keep collected into a `Vec` of items
+with a destructor, whether std collects it in place, `IInPlace`, which
+picks what a panic drops first ([ADR 0465](../../decisions/0465-dropping-an-adapter-is-closing-it.md),
 amended), and the layout of those items where their type is built of its
 type parameters, `HeldSize` of a `Vec<Held<I::IntoIter>>`. Then it takes
 that fact after its arguments, `size(TSize)`, which only a Rust caller

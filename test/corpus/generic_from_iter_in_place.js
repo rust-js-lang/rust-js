@@ -4,14 +4,11 @@ import {
   $catchUnwind,
   $cleanup,
   $closing,
-  $collectDropping,
-  $collectsInPlace,
+  $collectVec,
   $dropEach,
   $dropItems,
-  $foldToArray,
   $intsOrdered,
   $iter,
-  $roomForHint,
   $sortStable,
 } from "@rust-js/std";
 
@@ -26,24 +23,17 @@ function dDrop_drop(d) {
   }
 }
 
-function all(iter, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
-  return $collectsInPlace(IInPlace, IItemSize, IItemAlign)
-    ? $foldToArray($closing(Iterator.from(iter), dropI, false), dropIItem)
-    : $collectDropping(
-        $roomForHint(
-          $closing(Iterator.from(iter), dropI, false),
-          IItemSize,
-          false,
-          false,
-          dropIItem,
-        ),
-        dropIItem,
-        true,
-      );
+function all(iter, IVecCollect, IItemSize, dropI, dropIItem) {
+  return $collectVec(
+    $closing(Iterator.from(iter), dropI, false),
+    IItemSize,
+    IVecCollect,
+    dropIItem,
+  );
 }
 
-function sorted(iter, IItemOrd, IItemSize, IItemStableSort) {
-  const v = Array.from($roomForHint(Iterator.from(iter), IItemSize, false));
+function sorted(iter, IItemOrd, IVecCollect, IItemSize, IItemStableSort) {
+  const v = $collectVec(Iterator.from(iter), IItemSize, IVecCollect);
   $sortStable(v, (a, b) => IItemOrd.PartialOrd().lt(a, b), IItemStableSort, IItemSize);
   return v;
 }
@@ -55,8 +45,7 @@ function main() {
       dDrop_drop(d);
       return result;
     }),
-    [4, 4],
-    4,
+    "inPlace",
     4,
     (map) => {
       map.return();
@@ -72,7 +61,7 @@ function main() {
     throw error;
   }
   $dropItems(v, dDrop_drop);
-  console.log(`[${sorted($iter([3, 1, 2]), $intsOrdered, 4, "general8").join(", ")}]`);
+  console.log(`[${sorted($iter([3, 1, 2]), $intsOrdered, "inPlace", 4, "general8").join(", ")}]`);
   // Of one whose map drops what it's given, a panic: what it collected
   // and what's left dropped, as std's in-place collect drops them.
   const r = $catchUnwind(() => {
@@ -82,8 +71,7 @@ function main() {
         dDrop_drop(d);
         return result;
       }),
-      [4, 4],
-      4,
+      "inPlace",
       4,
       (map) => {
         map.return();

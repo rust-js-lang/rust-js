@@ -4,7 +4,7 @@ import {
   $catchUnwind,
   $cleanup,
   $closing,
-  $collectDropping,
+  $collectVec,
   $collectsInPlace,
   $dropEach,
   $foldToArray,
@@ -12,8 +12,8 @@ import {
   $iter,
   $lazyRange,
   $live,
-  $roomForHint,
   $unwindsOn,
+  $vecCollectWay,
 } from "@rust-js/std";
 
 export function entry() {
@@ -25,45 +25,55 @@ function dDrop_drop(d) {
 }
 
 export const reqFromIteratorD = {
-  fromIter: reqFromIteratorD_fromIter,
+  fromIter(arg0, TIntoIterTrustedLen, TIntoIterInPlace, dropT, dropTIntoIter) {
+    return reqFromIteratorD_fromIter(
+      arg0,
+      $vecCollectWay($collectsInPlace(TIntoIterInPlace, 4, 4), TIntoIterTrustedLen),
+      dropT,
+      dropTIntoIter,
+    );
+  },
   $drop(req) {
     for (const item of req.cs) {
       dDrop_drop(item);
     }
   },
 };
-function reqFromIteratorD_fromIter(iter, IIntoIterInPlace, dropI, dropIIntoIter) {
+function reqFromIteratorD_fromIter(iter, IIntoIterVecCollect, dropI, dropIIntoIter) {
   return {
-    cs: $collectsInPlace(IIntoIterInPlace, 4, 4)
-      ? $foldToArray($closing($intoIter(iter), dropIIntoIter, false), dDrop_drop)
-      : $collectDropping(
-          $roomForHint(
-            $closing($intoIter(iter), dropIIntoIter, false),
-            4,
-            false,
-            false,
-            dDrop_drop,
-          ),
-          dDrop_drop,
-          true,
-        ),
+    cs: $collectVec(
+      $closing($intoIter(iter), dropIIntoIter, false),
+      4,
+      IIntoIterVecCollect,
+      dDrop_drop,
+    ),
   };
 }
 
 function collected(n, TFromIteratorD) {
-  return TFromIteratorD.fromIter($lazyRange(1, n + 1).map((value) => [value]));
+  return TFromIteratorD.fromIter(
+    $lazyRange(1, n + 1).map((value) => [value]),
+    true,
+  );
 }
 
 // Of a `Vec`'s own iterator, which std collects in place: its buffer's
 // facts given through the dictionary.
 function collectedVec(v, TFromIteratorD) {
-  return TFromIteratorD.fromIter($iter(v), [4, 4], $dropEach(dDrop_drop), $dropEach(dDrop_drop));
+  return TFromIteratorD.fromIter(
+    $iter(v),
+    true,
+    [4, 4],
+    $dropEach(dDrop_drop),
+    $dropEach(dDrop_drop),
+  );
 }
 
 // Of its own `I`, whose `IntoIter`'s facts it's given by its caller.
-function relayed(iter, TFromIteratorD, IIntoIterInPlace, dropIIntoIter) {
+function relayed(iter, TFromIteratorD, IIntoIterTrustedLen, IIntoIterInPlace, dropIIntoIter) {
   return TFromIteratorD.fromIter(
     $closing($intoIter(iter), dropIIntoIter, false),
+    IIntoIterTrustedLen,
     IIntoIterInPlace,
     (closing) => {
       closing.return();
@@ -77,7 +87,7 @@ function relayed(iter, TFromIteratorD, IIntoIterInPlace, dropIIntoIter) {
 function main() {
   const direct = reqFromIteratorD_fromIter(
     $iter([[1], [2]]),
-    [4, 4],
+    "inPlace",
     $dropEach(dDrop_drop),
     $dropEach(dDrop_drop),
   );
@@ -102,7 +112,7 @@ function main() {
   for (const item of fromVec.cs) {
     dDrop_drop(item);
   }
-  const fromRelay = relayed([[6], [7]], reqFromIteratorD, [4, 4], $dropEach(dDrop_drop));
+  const fromRelay = relayed([[6], [7]], reqFromIteratorD, true, [4, 4], $dropEach(dDrop_drop));
   console.log(`relayed ${fromRelay.cs.length}`);
   for (const item of fromRelay.cs) {
     dDrop_drop(item);
@@ -116,6 +126,7 @@ function main() {
           return [n];
         }
       }),
+      "fold",
     ).cs) {
       dDrop_drop(item);
     }

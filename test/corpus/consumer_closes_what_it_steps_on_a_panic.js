@@ -6,7 +6,9 @@ import {
   $catchUnwind,
   $closing,
   $cmp,
+  $collectVec,
   $collecting,
+  $collectsInPlace,
   $dropEach,
   $entriesShown,
   $heapExtend,
@@ -16,10 +18,10 @@ import {
   $iter,
   $live,
   $partiallyOrdered,
-  $roomForHint,
   $sortedKeys,
   $splicing,
   $unwindsOn,
+  $vecCollectWay,
 } from "@rust-js/std";
 
 export function entry() {
@@ -50,6 +52,7 @@ function key(d) {
 function collected(v, CFromIteratorU32) {
   return CFromIteratorU32.fromIter(
     $closing($iter(v), $dropEach(dDrop_drop)).map(key),
+    true,
     [4, 4],
     (map) => {
       map.return();
@@ -89,8 +92,18 @@ function main() {
   r = $catchUnwind(
     () =>
       collected(ds(), {
-        fromIter: (items, IInPlace) =>
-          $collecting(items, () => new $BTreeSet($roomForHint(items, 4, false))),
+        fromIter: (items, ITrustedLen, IInPlace) =>
+          $collecting(
+            items,
+            () =>
+              new $BTreeSet(
+                $collectVec(
+                  items,
+                  4,
+                  $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen),
+                ),
+              ),
+          ),
       }).size,
   );
   console.log(`collect ${r.TAG === "Err"}`);
@@ -101,7 +114,7 @@ function main() {
   );
   console.log(`sorted ${r.TAG === "Err"}`);
   console.log(
-    `[${collected([[5], [6]], { fromIter: (items, IInPlace) => $collecting(items, () => Array.from($roomForHint(items, 4, false))) }).join(", ")}]`,
+    `[${collected([[5], [6]], { fromIter: (items, ITrustedLen, IInPlace) => $collecting(items, () => $collectVec(items, 4, $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen))) }).join(", ")}]`,
   );
   console.log(
     `${$isSortedBy(

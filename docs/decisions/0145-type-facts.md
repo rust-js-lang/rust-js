@@ -364,3 +364,51 @@ measured still run where it does something, as any `align_of_val` does. Case N: 
 `str`'s and a `dyn`'s are still refused. `test/corpus/size_of_val_of_a_slice.rs`,
 against native Rust in both builds; mutations `slice-size-of-val-item-unscaled`
 and `slice-align-of-val-its-size`.
+
+## Amendment (2026-11-11): how std collects a `Vec`, `IVecCollect` (#1239)
+
+std's `SpecFromIter` collects into a `Vec` one of three ways, by the
+iterator's type: in place, in the buffer a `vec::IntoIter` holds, asking
+nothing of its hint; by its fold, a `TrustedLen`'s, room for its hint's
+upper bound first, or a "capacity overflow" panic where it has none,
+stepping nothing; or by `next`, its first item, then room for its hint as
+the `Vec` grows. Generic code's `collect()` or `Vec::from_iter` of a type
+parameter's iterator knew none of them: it asked no hint, stepped an
+endless `TrustedLen` before the panic and folded no `TrustedLen` by its
+fold. Which way is a fact of the iterator, `VecCollect`, `IVecCollect`:
+`"inPlace"`, `"fold"` or `"next"`, a string, which the concrete caller
+computes of `recognition`'s answers, the in-place rule
+(`collects_in_place`) and `is_trusted_len`, and a generic caller passes on
+as it's given it. Of an iterator generic code builds of its own type
+parameters, `Map<I, F>`, it's made of their facts, which `held_facts`
+names: `$vecCollectWay($collectsInPlace(IInPlace, size, align),
+ITrustedLen)`, each part only where it's a caller's. Asked by the facts' owner of a collect into a `Vec`,
+`recognition::collected_items`'s, whose iterator is so given
+(`vec_collected`), in place of `IInPlace`, which it answers: one question,
+one fact, one path. A `B: FromIterator`'s entry, which knows its items where
+a generic caller may not, itertools' `MapSpecialCase::collect` of an
+`R::Out`, is given `IInPlace` and `ITrustedLen` of its iterator, as std's
+`from_iter` declares them (`std_method_facts`), and makes its way of them,
+`vec_collect_way_of`; and it makes the facts its impl's method asks of
+its own type parameter under the trait method's bounds for the impl, `T:
+IntoIterator<Item = i32>`, so a crate's `from_iter` that collects a `Vec`
+of what it's given knows its items. A JS caller
+leaves it out, `undefined`, `Form::LeftOut`'s, as it leaves out a drop:
+what it gives is no Rust iterator, which `undefined` collects by `next`,
+as JS steps it; so an exported generic collect stays declared (ADR 1077).
+The rule is one on each side, the compiler's `vec_collect_way` of a type
+known and the runtime's `$vecCollectWay` of what a generic caller's
+caller gives, and `test/vec-collect-ways.txt` holds both to one table,
+`cargo test vec_collect_ways` and test/runtime-package.test.ts. One runtime
+call collects by it, `$collectVec(it, IItemSize, IVecCollect, drop)`, and
+of items that drop, drops them as a panic unwinds each way as std does: in
+place by its `try_fold`, what's left of the source after what it
+collected; by fold, what's left first, as `extend_trusted`'s fold unwinds;
+by `next`, what's left first (#423). `ITrustedLen` keeps its own
+use, what std's zip reads ([0975](0975-std-s-zip-is-compiled-its-impl-picked-by-its-sides-facts.md)). Held by
+`test/corpus/vec_collect_as_its_caller_knows.rs`, against native Rust, and
+the metamorphic net's `generic-instances` rows of
+`zip_of_a_boxed_map.rs`, `collect_endless_once_stepped.rs` and
+`fold_drops_moved_function_first.rs`, now off its list, and the whole
+corpus's `generic` and `generic-instances` rewrites. Mutations
+`vec-collect-*` and `collect-vec-*`.

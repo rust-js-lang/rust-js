@@ -31,13 +31,13 @@ function total(v, SSumU32) {
   return SSumU32.sum($iter(v));
 }
 
-function tryCollect(it, ResultFromIteratorResult, IInPlace) {
-  return ResultFromIteratorResult.fromIter(Iterator.from(it), IInPlace);
+function tryCollect(it, ResultFromIteratorResult, ITrustedLen, IInPlace) {
+  return ResultFromIteratorResult.fromIter(Iterator.from(it), ITrustedLen, IInPlace);
 }
 
 function main() {
   const resultFromIterator = {
-    fromIter: (items, IInPlace) =>
+    fromIter: (items, ITrustedLen, IInPlace) =>
       $collecting(items, () => $collectResults(items, undefined, undefined, false, 1)),
   };
   const value = sum1($iter([1, 2, 3]), {
@@ -70,6 +70,7 @@ function main() {
       { TAG: "Ok", _0: 2 },
     ]),
     resultFromIterator,
+    true,
     [12, 4],
   );
   const err = tryCollect(
@@ -79,6 +80,7 @@ function main() {
       { TAG: "Ok", _0: 3 },
     ]),
     resultFromIterator,
+    true,
     [12, 4],
   );
   console.log(

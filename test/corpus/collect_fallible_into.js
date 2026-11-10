@@ -7,13 +7,13 @@ import {
   $cmp,
   $collectOptions,
   $collectResults,
+  $collectVec,
   $debugStr,
   $intoIter,
   $iter,
   $lazyRange,
   $parseBig,
   $parseInt,
-  $roomForHint,
   $sortedEntries,
   $sortedKeys,
   $splitOnce,
@@ -56,8 +56,8 @@ function bagDebug_fmt(bag) {
   return `Bag([${bag[0].join(", ")}])`;
 }
 
-function bagFromIteratorI32_fromIter(it) {
-  const v = Array.from($roomForHint($intoIter(it), 4, false));
+function bagFromIteratorI32_fromIter(it, IIntoIterVecCollect) {
+  const v = $collectVec($intoIter(it), 4, IIntoIterVecCollect);
   v.sort((a, b) => a - b);
   return [v];
 }
@@ -68,13 +68,17 @@ function bag(words) {
       const result = $parseInt(w, -2147483648, 2147483647);
       return result.TAG === "Err" ? { TAG: "Err", _0: `${w}: ${result._0}` } : result;
     }),
-    bagFromIteratorI32_fromIter,
+    (values) => bagFromIteratorI32_fromIter(values, "fold"),
   );
 }
 
 function main() {
-  const some = $collectOptions($iter([5, 4]), false, bagFromIteratorI32_fromIter);
-  let none = $collectOptions($iter([5, undefined]), false, bagFromIteratorI32_fromIter);
+  const some = $collectOptions($iter([5, 4]), false, (values) =>
+    bagFromIteratorI32_fromIter(values, "fold"),
+  );
+  let none = $collectOptions($iter([5, undefined]), false, (values) =>
+    bagFromIteratorI32_fromIter(values, "fold"),
+  );
   const value = bag(["3", "1", "2"]);
   const value$1 = bag(["1", "x"]);
   console.log(

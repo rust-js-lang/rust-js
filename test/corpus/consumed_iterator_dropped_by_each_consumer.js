@@ -5,7 +5,9 @@ import {
   $BTreeSet,
   $cmp,
   $collectDropping,
+  $collectVec,
   $collecting,
+  $collectsInPlace,
   $foldToArray,
   $iter,
   $iterator,
@@ -14,10 +16,10 @@ import {
   $mapFrom,
   $max,
   $next,
-  $roomForHint,
   $sortedEntries,
   $sortedKeys,
   $unwindsOn,
+  $vecCollectWay,
 } from "@rust-js/std";
 
 export function entry() {
@@ -41,6 +43,7 @@ function built(it, CFromIteratorU32) {
   try {
     return CFromIteratorU32.fromIter(
       $iterator(iter, (iterator) => loudIterator_next(iterator, { next: $next }), true),
+      false,
       undefined,
       loudDrop_drop,
       loudDrop_drop,
@@ -190,13 +193,21 @@ function main() {
   const c = result$7;
   console.log(`{${Array.from($sortedKeys(c, $cmp)).join(", ")}}`);
   let g = built(loud([7], "generic vec"), {
-    fromIter: (items, IInPlace) =>
-      $collecting(items, () => Array.from($roomForHint(items, 4, false))),
+    fromIter: (items, ITrustedLen, IInPlace) =>
+      $collecting(items, () =>
+        $collectVec(items, 4, $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen)),
+      ),
   });
   console.log(`[${g.join(", ")}]`);
   g = built(loud([8], "generic set"), {
-    fromIter: (items, IInPlace) =>
-      $collecting(items, () => new $BTreeSet($roomForHint(items, 4, false))),
+    fromIter: (items, ITrustedLen, IInPlace) =>
+      $collecting(
+        items,
+        () =>
+          new $BTreeSet(
+            $collectVec(items, 4, $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen)),
+          ),
+      ),
   });
   console.log(`{${Array.from($sortedKeys(g, $cmp)).join(", ")}}`);
   const iter$8 = loud([1, 2], "sum");

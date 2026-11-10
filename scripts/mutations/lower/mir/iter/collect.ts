@@ -624,4 +624,12 @@ export const mutations: Mutation[] = [
     replace: "                let closed = crate::lower::iterators::closed_parts(&args[0]).and(None);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_collected_by_generic_code_into_own_from_iterator.rs$"],
   },
+  {
+    name: "vec-collect-drops-nothing",
+    breaks: "`$collectVec` of items that drop is given no drop, so a panic leaves what it collected undropped (#1239)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            let mut args = vec![it, size, how];\n            if self.drops(item) != crate::lower::drops::Drops::Nothing {\n",
+    replace: "            let mut args = vec![it, size, how];\n            if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
+  },
 ];
