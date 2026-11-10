@@ -97,7 +97,17 @@ Migrations, each its own step with its tests, listed on #1170:
    **Given**, by the value, not a **Form**, so there's nothing to adapt
    (amended below).
 3. The iterator given as it is: `given_as_it_is`, `given_as_iterator`,
-   `given_iterable` and `slicing`.
+   `given_iterable` and `slicing`. Done (2026-11-10) as it was: the
+   adaptation already has one owner, `stepping.rs`' `given_iterators`,
+   which a call's arguments and a function value's arrow both go through,
+   `(x) => total($iterator(x, $rangeNext))` of a `fn` pointer, as the
+   catalogue now says; `as_js_iterator` and `iterable_items`, which std's
+   calls ask everywhere, make a JS iterator of a value, not the boundary's
+   choice. `iterator_given_to_generic_code_by_every_route.rs` holds each
+   route against native Rust, both builds and every rewrite: a call, a
+   `fn` pointer, an `F`, a `dyn Fn`, a closure, a trait's method through a
+   `dyn`, a `Box<dyn Iterator>`, and one given as it is, returned or in a
+   struct.
 4. The `Instances` analyses onto one carrier of callers' instances,
    `instances_of`: `unboxed_params`, `js_given`, `callers_decide`.
 5. The **Alone** sites that pick a form, each checked against every
