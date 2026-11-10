@@ -212,6 +212,18 @@ export const jobs: Record<string, Part[]> = {
     cores: 1,
     timeout: 10 * minutes,
   })),
+  // All of the twin net (#1205): each table against std's own bodies, no
+  // native run; a push runs each table's slice.
+  twins: [
+    {
+      id: "twins",
+      cmd: ["bun", "scripts/iteratorSlice.ts", "run", "twinsAll", String(cores)],
+      env: { ...compiler },
+      after: ["build"],
+      cores,
+      timeout: 20 * minutes,
+    },
+  ],
   // The day's 600 generated programs (ADR 0092).
   fuzz: parts("fuzz", 12, (i) => ({
     cmd: ["bun", "test", "--timeout=600000", "test/fuzz.test.ts"],

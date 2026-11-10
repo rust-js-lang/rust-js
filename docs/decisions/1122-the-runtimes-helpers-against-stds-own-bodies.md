@@ -64,3 +64,20 @@ judged; a case either build's known list names isn't either.
   build compiles from std's bodies yet: pitting them needs a build of
   std's `Vec`, `String` and maps, which `--std-iterators` isn't.
 - TESTS.md has its row; docs/finding-wrong-answers.md its technique.
+
+## Amendment: a push runs each table's slice (2026-11-11)
+
+Case: none of [0262](0262-when-rust-and-js-disagree.md)'s: no program
+changes.
+
+The whole net took 9 min 15 s as CI's `twin-net` job (run 42887915279),
+more than a push's check should wait for. A push runs each table's slice
+now, the sample its run against native takes, 63 s on the Mac in 4
+parts. The night runs all of it, nightly.yml's `twins`, `bun
+scripts/iteratorSlice.ts run twinsAll`. A slice may see a helper only
+where both builds import it, where a whole run pits it, so
+`test/twin-net.ts` lists the pitted ones too, `pitted`. A run fails on a
+helper both builds import that neither list names. A whole run also
+fails on a list that says what it doesn't: a `shared` helper pitted now
+or imported by none, a `pitted` one no case pits, one pitted that
+`pitted` doesn't list.

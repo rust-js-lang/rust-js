@@ -452,11 +452,11 @@ jobs:
 
   # The twin net (test/twin-net.ts, #1205), of a check whose change is the
   # iterators' code, the runtime's among it, as `plan` says
-  # (scripts/iteratorSlice.ts's `twinPaths`): the tables' cases in the plain
-  # build, the runtime's hand-written helpers, against the build of std's
-  # own bodies, no native run; and each helper both builds import is one
-  # test/twin-net.ts's `shared` says why of. The nightly's tables, each
-  # build against native Rust, hold the same of every case.
+  # (scripts/iteratorSlice.ts's `twinPaths`): each table's slice in the
+  # plain build, the runtime's hand-written helpers, against the build of
+  # std's own bodies, no native run; and each helper both builds import is
+  # one test/twin-net.ts's `shared` says why of. All of it, 9 min on CI's
+  # machine, is the nightly's `twins`.
   twin-net:
     name: twin net
     needs: plan

@@ -19,7 +19,8 @@
 //   bun scripts/iteratorSlice.ts run consumers [parts]     the consumer net, of a change to the iterators' code or the drops'
 //   bun scripts/iteratorSlice.ts run metamorphic [parts [since]]  each metamorphic rewrite of each corpus case the change adds or edits (#1165)
 //   bun scripts/iteratorSlice.ts run memory [parts]        the memory net's slice (#1172), of a change to the pointers' code
-//   bun scripts/iteratorSlice.ts run twins [parts]         the twin net (#1205), the runtime's helpers against std's own bodies, of a change to the iterators' code
+//   bun scripts/iteratorSlice.ts run twins [parts]         the twin net's slice (#1205), the runtime's helpers against std's own bodies, of a change to the iterators' code
+//   bun scripts/iteratorSlice.ts run twinsAll [parts]      all of the twin net, the nightly's
 //
 // And a change to the formatting code, `formatPaths`, runs the formatting
 // grid's slice (test/format-grid.ts, #941), each push's check's
@@ -320,19 +321,32 @@ export const runs = {
   // The slice's seeds, each a program of unsafe Rust over plain data, Miri
   // where it's installed: some 30 s in 8 parts.
   memory: [{ name: "the memory net's slice", file: "test/memory-net.test.ts", env: {} }],
-  // Each table against std's own bodies, no native run (#1205): all of
-  // each but the matrix, of which a sample of each adapter with each
-  // consumer.
-  twins: (["conformance", "points", "unwind", "consumers", "std", "matrix"] as const).map((table) => ({
-    name: `the ${table} table against std's bodies`,
-    file: "test/iterator-matrix.test.ts",
-    env: { ITERATOR_TABLE: table, ITERATOR_ORACLE: "std", ITERATOR_MATRIX: table === "matrix" ? "pairs" : "all" },
-  })),
+  // Each table against std's own bodies, no native run (#1205): each
+  // table's slice, as a push's run of it against native Rust takes, the
+  // whole net 9 min on CI's machine; `twinsAll`, all of each but the
+  // matrix's sample, the nightly's.
+  twins: twinTables({}),
+  twinsAll: twinTables({ all: true }),
 } as const;
 
 /** The most corpus cases a run of the change's metamorphic rewrites takes,
  * some 6 a part, about 2 min a part on CI's machine. */
 export const metamorphicMost = 24;
+
+/** The twin net's runs, each table's against std's own bodies (#1205):
+ * its slice, or of `all`, every batch but the matrix's, of which a sample
+ * of each adapter with each consumer. */
+function twinTables({ all = false }: { all?: boolean }) {
+  return (["conformance", "points", "unwind", "consumers", "std", "matrix"] as const).map((table) => ({
+    name: `the ${table} table against std's bodies`,
+    file: "test/iterator-matrix.test.ts",
+    env: {
+      ITERATOR_TABLE: table,
+      ITERATOR_ORACLE: "std",
+      ...(all ? { ITERATOR_MATRIX: table === "matrix" ? "pairs" : "all" } : {}),
+    },
+  }));
+}
 
 /** `of`, in `parts` processes at once, each its share of the cases
  * (`RUST_JS_CASES`), or of those `list` names, a line each, as plain
@@ -361,7 +375,7 @@ export async function run(of: keyof typeof runs | "rows", parts: number, list?: 
     parts = Math.min(parts, cases.length);
   }
   // The twin net's helpers, each batch's, of this run alone (#1205).
-  if (of === "twins") rmSync(twinHelpers, { recursive: true, force: true });
+  if (of === "twins" || of === "twinsAll") rmSync(twinHelpers, { recursive: true, force: true });
   let passed = true;
   const each: Run[] = of === "rows" ? changeRows(parts) : [...runs[of]];
   for (const { name, file, env, rate } of each) {
@@ -389,10 +403,10 @@ export async function run(of: keyof typeof runs | "rows", parts: number, list?: 
     if (rate !== undefined && rate.rows > 0) noteRate({ ...rate, seconds, parts });
     passed &&= ok;
   }
-  // Of the whole net, each helper both builds import is one `shared` says
-  // why of, and none it lists is pitted now or imported by none.
-  if (of === "twins" && list === undefined) {
-    const problems = sharedProblems(helpersOf());
+  // Each helper both builds import is one `shared` says why of; and of the
+  // whole net, none it lists is pitted now or imported by none.
+  if ((of === "twins" || of === "twinsAll") && list === undefined) {
+    const problems = sharedProblems(helpersOf(), of === "twinsAll");
     for (const problem of problems) console.log(problem);
     passed &&= problems.length === 0;
   }
@@ -446,7 +460,7 @@ function changeRows(parts: number): Run[] {
 
 if (import.meta.main) {
   const [command, of, count, list] = process.argv.slice(2);
-  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|declarations|async|consumers|memory|twins|rows [parts [cases]] | metamorphic [parts [since]]");
+  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|declarations|async|consumers|memory|twins|twinsAll|rows [parts [cases]] | metamorphic [parts [since]]");
   const parts = count === undefined ? caseParts(availableParallelism() * 2) : Number(count);
   process.exit((await run(of as keyof typeof runs | "rows", parts, list)) ? 0 : 1);
 }

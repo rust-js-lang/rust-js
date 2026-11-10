@@ -4,16 +4,17 @@
 // build, whose recognizers lower to the runtime's helpers, and in the
 // build of std's iterator structs alone (`--std-iterators`, ADR 0908),
 // which is the oracle: `ITERATOR_ORACLE=std` of
-// test/iterator-matrix.test.ts. No native run, so it's cheap enough for
-// each push of the iterators' code or the runtime's
-// (`bun scripts/iteratorSlice.ts run twins`, check.yml's `twin-net`).
+// test/iterator-matrix.test.ts. No native run: each push of the iterators'
+// code or the runtime's runs each table's slice (`bun
+// scripts/iteratorSlice.ts run twins`, check.yml's `twin-net`), the night
+// all of it (`run twinsAll`, nightly.yml's `twins`).
 //
 // A helper is pitted where a case's plain build imports it and its std
 // build doesn't: std's body ran in its place. Each other helper the plain
 // build imports, the std build imports too, so no case pits it: `shared`
-// says why, by its kind. After a run, `bun test/twin-net.ts
-// helpers` fails on a helper neither pitted nor listed, and on one listed
-// that's pitted now or that nothing imports.
+// says why, by its kind. A run fails on a helper neither pitted nor
+// listed, and a whole one on one listed that's pitted now or that nothing
+// imports; `bun test/twin-net.ts helpers` asks it of the last run's.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -36,6 +37,46 @@ const why = {
   sort: "a sort, which rust-js writes as its own in both builds",
   format: "`Debug`, which std's build doesn't compile",
 } as const;
+
+/** Each helper a whole run pits against std's body: a slice may see one
+ * only where both builds import it. */
+export const pitted: string[] = [
+  "$closing",
+  "$collectDropping",
+  "$consume",
+  "$enumerate",
+  "$exactLen",
+  "$filterDropping",
+  "$filterEnds",
+  "$findBack",
+  "$flatMap",
+  "$flattenEnds",
+  "$foldBack",
+  "$holding",
+  "$iterator",
+  "$knowing",
+  "$lazyChain",
+  "$lazyMapWhile",
+  "$lazyRange",
+  "$lazyRangeBack",
+  "$lazyScan",
+  "$lazySkipWhile",
+  "$lazyTakeWhile",
+  "$lazyZip",
+  "$mapEnds",
+  "$nextBack",
+  "$range",
+  "$rangeLen",
+  "$rev",
+  "$sizeHint",
+  "$skipping",
+  "$stepBy",
+  "$stepByEnds",
+  "$taking",
+  "$trustedZip",
+  "$trustedZipEnds",
+  "$zipEnds",
+];
 
 /** Each helper both builds import, by why no case pits it against std's
  * body. */
@@ -294,13 +335,26 @@ export function helpersOf(dir = twinHelpers): { pitted: Set<string>; unpitted: S
   return { pitted, unpitted: new Set([...used].filter((helper) => !pitted.has(helper))), judged, of };
 }
 
-/** What's wrong with `shared`, of a whole run's helpers. */
-export function sharedProblems({ pitted, unpitted }: { pitted: Set<string>; unpitted: Set<string> }): string[] {
-  return [
-    ...[...unpitted].filter((helper) => shared[helper] === undefined).map((helper) => `${helper}: both builds import it and \`shared\` doesn't say why std's build has no body of its own in its place`),
-    ...Object.keys(shared).filter((helper) => pitted.has(helper)).map((helper) => `${helper}: a case pits it against std's body now: take it off \`shared\``),
-    ...Object.keys(shared).filter((helper) => !pitted.has(helper) && !unpitted.has(helper)).map((helper) => `${helper}: no case imports it now: take it off \`shared\``),
-  ].sort();
+/** What's wrong with `pitted` and `shared`, of a run's helpers: a helper
+ * both builds import that neither lists; and of a whole run, `whole`, one
+ * `shared` lists that's pitted now or that nothing imports, and one
+ * `pitted` lists that no case pits now, or one pitted that it doesn't,
+ * which a slice can't say. */
+export function sharedProblems(run: { pitted: Set<string>; unpitted: Set<string> }, whole = true): string[] {
+  const listed = new Set(pitted);
+  const problems = [...run.unpitted]
+    .filter((helper) => shared[helper] === undefined && !listed.has(helper))
+    .map((helper) => `${helper}: both builds import it and \`shared\` doesn't say why std's build has no body of its own in its place`);
+  if (whole) {
+    const off = (helpers: string[], list: string, said: string) => helpers.map((helper) => `${helper}: ${said}: take it off \`${list}\``);
+    problems.push(
+      ...off(Object.keys(shared).filter((helper) => run.pitted.has(helper)), "shared", "a case pits it against std's body now"),
+      ...off(Object.keys(shared).filter((helper) => !run.pitted.has(helper) && !run.unpitted.has(helper)), "shared", "no case imports it now"),
+      ...off(pitted.filter((helper) => !run.pitted.has(helper)), "pitted", "no case pits it now"),
+      ...[...run.pitted].filter((helper) => !listed.has(helper)).map((helper) => `${helper}: a case pits it against std's body: add it to \`pitted\``),
+    );
+  }
+  return problems.sort();
 }
 
 if (import.meta.main) {

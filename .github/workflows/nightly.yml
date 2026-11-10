@@ -777,6 +777,38 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  # All of the twin net (test/twin-net.ts, #1205): each table's cases in the
+  # plain build, the runtime's hand-written helpers, against the build of
+  # std's own bodies, no native run; and each helper both builds import is
+  # one test/twin-net.ts's `shared` says why of, none it lists pitted now or
+  # imported by none. A push runs each table's slice.
+  twins:
+    name: twin net
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run it in 4 parts
+        env:
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: bun scripts/iteratorSlice.ts run twinsAll 4
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: twin-net
+          path: target/iterator-matrix
+          if-no-files-found: ignore
+          retention-days: 14
+
   # The crates from crates.io the guide says run (docs/crate-corpus.md):
   # each compiled with every crate it uses, its probe run beside native
   # Rust, a crate doing worse than its row says failing the job, as chrono
