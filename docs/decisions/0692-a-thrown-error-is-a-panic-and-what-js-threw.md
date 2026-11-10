@@ -159,12 +159,17 @@ the runtime's other 26): no `catch_unwind` takes it for a panic and no
 cleanup runs past it, as for the runtime's own bug.
 
 A library's export a JS host calls gives the host the engine's error as
-it is, where nothing of the crate's catches it: the host decides. (A
-binary's `main` wrapped so an overflow there aborts is the next change,
-the user's decision.) The harness compares native Rust's stderr without
+it is, where nothing of the crate's catches it: the host decides. The
+user decided a binary's `main` should be wrapped so that an overflow
+there aborts. rust-js compiles no binary, though: every crate is a
+library, and Cargo's `bin` targets are rustc's own. So the compiler has no
+`main` to wrap. The corpus harness, which calls a case's `main` as Rust's
+runtime does, throws on what it throws through the runtime's `$unwindsOn`.
+An overflow there is the abort, so a case whose code drops nothing aborts
+as it does natively. The harness compares native Rust's stderr without
 its thread's OS id, `thread 'main' (174910222)`, which no JS has, and
 takes an exit 134 whose handler had no room to write as the abort.
-`stack_overflow_aborts.rs` and `stack_overflow_uncaught_aborts.rs` hold it
-against native Rust; 564 snapshots take the new forms; React's port moves
+`stack_overflow_aborts.rs`, `stack_overflow_uncaught_aborts.rs` and
+`stack_overflow_no_drops_aborts.rs` hold it against native Rust; 564 snapshots take the new forms; React's port moves
 its pin.
 

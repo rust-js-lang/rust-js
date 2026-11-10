@@ -17,7 +17,25 @@ import { helpersModule } from "./packages-of.ts";
 // The runtime the generated JS imports, a runtime mutant's own in its
 // target (#720): one module, so a panic it throws is one its `$isPanic`
 // knows, an `$Unwinding` of its own class.
-const { $isPanic } = (await import(pathToFileURL(helpersModule).href)) as { $isPanic: (e: unknown) => boolean };
+const { $isPanic, $unwindsOn } = (await import(pathToFileURL(helpersModule).href)) as {
+  $isPanic: (e: unknown) => boolean;
+  $unwindsOn: (e: unknown) => unknown;
+};
+
+/** `run`, a case's `main`, as Rust's runtime runs it: what it throws is
+ * thrown on through the runtime's `$unwindsOn`, which, of a stack overflow,
+ * is Rust's abort, its lines and exit 134. rust-js compiles no binary, so
+ * nothing in its JS does this; an export's caller, as this host, does
+ * (#1193). */
+export function asMain(run: () => unknown): () => unknown {
+  return () => {
+    try {
+      return run();
+    } catch (e) {
+      throw $unwindsOn(e);
+    }
+  };
+}
 
 // `{ exit }` is a run that ended the process: one that aborted, as Rust does
 // where a drop panics while a panic unwinds, `{ exit: 134 }` (#847).

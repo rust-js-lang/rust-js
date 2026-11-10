@@ -11,7 +11,7 @@
 import { writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
-import { observe } from "./oracle.ts";
+import { asMain, observe } from "./oracle.ts";
 
 const [module, outcomeFile, ...program] = process.argv.slice(2);
 process.argv = [process.argv[0], ...program];
@@ -27,6 +27,7 @@ const run = await import(pathToFileURL(module).href).then(
     throw error;
   },
 );
-const outcome = observe(run);
+// Of `main`, as Rust's runtime runs it (#1193).
+const outcome = observe(asMain(run));
 ended = true;
 writeFileSync(outcomeFile, JSON.stringify(outcome));
