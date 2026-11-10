@@ -854,8 +854,9 @@ test("recognition depends on neither destructors nor effects", () => {
 });
 
 test("library identity checks and method tables stay in recognition", () => {
-  for (const file of files("src/lower").filter(file => !file.includes("/recognition") && !file.endsWith("/library.rs"))) {
-    // The scalar linkage adapter owns canonical crate names, not library intrinsics.
+  for (const file of files("src/lower").filter(file => !file.includes("/recognition") && !file.endsWith("/library.rs") && !file.endsWith("/library/exports.rs"))) {
+    // The scalar linkage adapter owns canonical crate names, not library
+    // intrinsics: its contract's writer too, `library/exports.rs`.
     expect(read(file), file).not.toMatch(/\.crate_name\s*\(|fn classify(?:_\w+)?\s*\(/);
   }
   for (const file of ["src/lower/calls.rs", "src/lower/ordering.rs", "src/lower/traits.rs", ...files("src/lower/traits")]) {
@@ -1258,7 +1259,7 @@ test("what a module exports an item as is exported_as's alone", () => {
   expect(asking.sort()).toEqual(["src/lower/analysis.rs", "src/lower/bindings/held.rs"]);
   const made = lowering.filter((file) => /default_exports::module_default\(/.test(read(file)));
   expect(made).toEqual(["src/lower/pipeline.rs"]);
-  expect(read("src/lower/library.rs")).toContain(".then(|| super::default_exports::exported_as(tcx, id, info.exported()))");
+  expect(read("src/lower/library/exports.rs")).toContain(".then(|| crate::lower::default_exports::exported_as(tcx, id, info.exported()))");
   // A module's `pub use`s of its own items by other names are found
   // there alone, `aliases`; the module's JS lists them, and exports them
   // by no other.
