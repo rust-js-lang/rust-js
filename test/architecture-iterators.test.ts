@@ -539,8 +539,8 @@ test("an iterator std's code consumes is dropped by mir_iter_call's consumed_cal
   // And what a std combinator consumes, `extend`'s, `unzip`'s or
   // `partition`'s, before it's lowered (#1120).
   expect(body("consumed_by_std")).toContain("self.consumed_call(");
-  const dispatch = read("src/lower/mir/dispatch.rs");
-  const value = dispatch.slice(dispatch.indexOf("fn mir_std_value("));
+  const known = read("src/lower/mir/dispatch/known_calls.rs");
+  const value = known.slice(known.indexOf("fn mir_std_value("));
   expect(value.slice(0, value.indexOf("\n    }\n"))).toContain("self.consumed_by_std(");
 });
 
