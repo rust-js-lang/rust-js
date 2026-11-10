@@ -1,6 +1,6 @@
 // A small Crater (#1087): each crate of the crate corpus, at its exact
 // release (docs/crate-corpus.md's rows, the one list, ADR 1067), its own
-// `#[test]`s run natively, `cargo test --lib`, and as JS, `rust-js test`
+// `#[test]`s run natively, `cargo test --lib --tests`, and as JS, `rust-js test`
 // (ADR 0916), and each test's outcome compared. A test that passes natively
 // and fails or is missing as JS is a wrong answer to reduce, a P0. A test
 // whose build rust-js refuses is cut from the JS's copy of the source,
@@ -17,9 +17,11 @@
 //
 // Each crate's source, as crates.io packs it, is copied to
 // `target/crater/<name>-<version>` and its tests built there, natively in
-// `target/crater/native` and as JS in `target/crater/js`, the targets each
-// crate shares. A crate's verdict is kept by its release, the compiler's
-// build, its row's features and the tooling's files, `target/crater/kept/`,
+// `target/crater/native`, which every crate shares, and as JS in
+// `target/crater/js/<name>`, its own, gone once it's asked; its library's
+// tests and each integration test's file by itself. A crate's verdict is
+// kept by its release, the compiler's build, its row's features, how the
+// Crater asks and the tooling's files, `target/crater/kept/`,
 // and asked again only where one changed.
 // Writes `target/crater.json` and prints a line per crate.
 
@@ -35,7 +37,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { currentBuild } from "../test/compiles";
 import { corpusRows, type Crate } from "./crate-corpus";
 import { memoryBudget } from "./shard";
@@ -402,8 +404,9 @@ export function testOnlyFile(file: string, read: (path: string) => string | unde
  * text is `text`: the `#[test]` it's in, by its path, `tests::t`, or a
  * function only tests reach, one inside a `#[cfg(test)]` module or a file
  * only tests build, `testOnly`, each its attributes' first line; or
- * nothing, where it's the library's own code. */
-export function cutFor(file: string, text: string, line: number, testOnly = false): { from: number; test?: string } | undefined {
+ * nothing, where it's the library's own code. `path` is its module's, of an
+ * integration test's crate `testModulePath`'s. */
+export function cutFor(file: string, text: string, line: number, testOnly = false, path = modulePath(file)): { from: number; test?: string } | undefined {
   const all = items(text);
   const around = all
     .filter((item) => item.from <= line && line <= item.to)
@@ -420,7 +423,7 @@ export function cutFor(file: string, text: string, line: number, testOnly = fals
     return {
       from: test.from,
       test: [
-        ...modulePath(file),
+        ...path,
         ...mods(test).map((m) => m.name),
         test.name,
       ].join("::"),
@@ -458,11 +461,21 @@ function spawned(
       cwd,
       env: { ...process.env, ...env },
       stdio: ["ignore", "pipe", "pipe"],
+      // A group of its own, which its timeout ends whole: the test runner
+      // `rust-js test` starts, and the JS it runs, never left behind.
+      detached: true,
     });
     let said = "";
     p.stdout.on("data", (d) => (said += d));
     p.stderr.on("data", (d) => (said += d));
-    const timer = setTimeout(() => p.kill("SIGKILL"), seconds * 1000);
+    const timer = setTimeout(() => {
+      said += `\nrust-js's Crater: timed out after ${seconds} s\n`;
+      try {
+        process.kill(-(p.pid ?? 0), "SIGKILL");
+      } catch {
+        p.kill("SIGKILL");
+      }
+    }, seconds * 1000);
     p.on("close", (code) => {
       clearTimeout(timer);
       done({ code, said });
@@ -502,12 +515,17 @@ async function source(crate: Crate): Promise<string | { problem: string }> {
   );
 }
 
+/** How the Crater asks, kept with each verdict: another way of asking asks
+ * each crate again. 2: its integration tests too, each file by itself, and
+ * getrandom's WebAssembly feature (#1087). */
+const asking = 2;
+
 /** What a crate's kept verdict is of, beside its release and the
- * compiler's build: the features its row names, and the tooling that builds
- * it, rust-js's own wasm-bindgen family among it, which a change to asks it
- * again (#1121). */
+ * compiler's build: the features its row names, how the Crater asks, and
+ * the tooling that builds it, rust-js's own wasm-bindgen family among it,
+ * which a change to asks it again (#1121). */
 function keptKey(crate: Crate, build: string): string {
-  const hash = createHash("sha256").update(`${build}\n${(crate.features ?? []).join(",")}\n`);
+  const hash = createHash("sha256").update(`${build}\n${(crate.features ?? []).join(",")}\n${asking}\n`);
   const walk = (dir: string) => {
     for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
       if (entry.name === "node_modules" || entry.name === "target") continue;
@@ -520,6 +538,21 @@ function keptKey(crate: Crate, build: string): string {
   return hash.digest("hex").slice(0, 24);
 }
 
+/** Each test binary `cargo test --no-run` built: its target, `src/lib.rs`
+ * or an integration test's file, `tests/version.rs`, and its path. Run each
+ * by itself, its outcomes are its own: `cargo test`'s `Running` lines are
+ * its stderr's and the tests' its stdout's, which a pipe doesn't keep in
+ * order, so itertools' quick.rs tests were read as the next file's. */
+export function executables(said: string): { target: string; path: string }[] {
+  return [...said.matchAll(/^\s+Executable (?:unittests )?(\S+) \((.+)\)$/gm)].map((m) => ({ target: m[1], path: m[2] }));
+}
+
+/** The integration tests' files of `outcomes`, `tests/version.rs`, each
+ * once, in order. */
+export function integrationFiles(outcomes: Outcomes): string[] {
+  return [...new Set(Object.keys(outcomes).flatMap((name) => /^(tests\/[^/]+\.rs)::/.exec(name)?.[1] ?? []))];
+}
+
 async function measure(crate: Crate, build: string): Promise<Verdict> {
   const kept = join(
     work,
@@ -527,6 +560,17 @@ async function measure(crate: Crate, build: string): Promise<Verdict> {
     `${crate.name}-${crate.version}-${keptKey(crate, build)}.json`,
   );
   if (existsSync(kept)) return JSON.parse(readFileSync(kept, "utf8"));
+  const verdict = await asked(crate);
+  // One that couldn't be asked is asked again next time.
+  if (!("problem" in verdict)) {
+    mkdirSync(join(work, "kept"), { recursive: true });
+    writeFileSync(kept, JSON.stringify(verdict));
+  }
+  return verdict;
+}
+
+/** `crate`'s tests natively and as JS, each compared. */
+async function asked(crate: Crate): Promise<Verdict> {
   const from = await source(crate);
   if (typeof from !== "string") return from;
   const dir = join(work, `${crate.name}-${crate.version}`);
@@ -537,19 +581,28 @@ async function measure(crate: Crate, build: string): Promise<Verdict> {
   // The features its row names, its default ones off, Cargo's own flags,
   // the same to both runs (#1121).
   const featured = crate.features ? ["--no-default-features", "--features", crate.features.join(",")] : [];
-  const native = await spawned(
-    ["cargo", "test", "--lib", "--no-fail-fast", ...locked, ...featured],
-    dir,
-    { CARGO_TARGET_DIR: join(work, "native"), TZ: zone },
-    900,
-  );
-  const nativeRan = nativeOutcomes(native.said);
-  if (native.code === 0 && /^running 0 tests$/m.test(native.said) && Object.keys(nativeRan).length === 0) {
-    return { problem: "it has no library tests: its tests are integration tests alone" };
+  const nativeEnv = { CARGO_TARGET_DIR: join(work, "native"), TZ: zone };
+  // Its library's tests and its integration tests'; where those don't
+  // build, its library's alone: each test binary built, then run by itself,
+  // an integration test's outcomes keyed by its file, `tests/version.rs::t1`
+  // (`executables`). A binary's tests aren't counted.
+  let native = await spawned(["cargo", "test", "--lib", "--tests", "--no-run", ...locked, ...featured], dir, nativeEnv, 900);
+  if (executables(native.said).length === 0) {
+    native = await spawned(["cargo", "test", "--lib", "--no-run", ...locked, ...featured], dir, nativeEnv, 900);
+  }
+  const nativeRan: Outcomes = {};
+  for (const { target, path } of executables(native.said)) {
+    const prefix = target === "src/lib.rs" ? "" : /^tests\/[^/]+\.rs$/.test(target) ? `${target}::` : undefined;
+    if (prefix === undefined) continue;
+    const ran = await spawned([resolve(dir, path)], dir, { TZ: zone, CARGO_MANIFEST_DIR: dir }, 900);
+    for (const [name, how] of Object.entries(nativeOutcomes(ran.said))) nativeRan[`${prefix}${name}`] = how;
   }
   if (Object.keys(nativeRan).length === 0) {
     return {
-      problem: `its tests don't run natively: ${native.said.trim().split("\n").slice(-3).join(" ")}`,
+      problem:
+        native.code === 0
+          ? "it has no tests: crates.io's package has none of its library's or integration tests"
+          : `its tests don't run natively: ${native.said.trim().split("\n").slice(-3).join(" ")}`,
     };
   }
   // The JS's own copy, whose refused tests are cut from it, round by round:
@@ -557,59 +610,127 @@ async function measure(crate: Crate, build: string): Promise<Verdict> {
   const jsDir = `${dir}-js`;
   rmSync(jsDir, { recursive: true, force: true });
   cpSync(from, jsDir, { recursive: true });
-  // Its library's tests alone, as natively: no integration test is built.
-  writeFileSync(
-    join(jsDir, "Cargo.toml"),
-    libraryTestsOnly(readFileSync(join(jsDir, "Cargo.toml"), "utf8"), (lib) => sourceNames(join(jsDir, "src"), lib)),
-  );
+  const manifest = readFileSync(join(jsDir, "Cargo.toml"), "utf8");
+  const lock = existsSync(join(jsDir, "Cargo.lock")) ? readFileSync(join(jsDir, "Cargo.lock"), "utf8") : "";
+  // Its JS builds' target, its own: crates built at once in one target
+  // raced on a dependency both build, num-traits' metadata of one build
+  // read as the other's, and chrono's whole run failed (#1087). Made anew
+  // each time, as a build that stopped may have left its unit as done
+  // with no tests written, and gone after, as its verdict is kept.
+  const target = join(work, "js", crate.name);
+  rmSync(target, { recursive: true, force: true });
+  try {
+    return await askedAsJs(nativeRan, jsDir, target, manifest, lock, featured);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+}
+
+/** A crate's tests as JS, in `jsDir`, built in `target`, compared with
+ * `nativeRan`: its library's, then each integration test's file. */
+async function askedAsJs(
+  nativeRan: Outcomes,
+  jsDir: string,
+  target: string,
+  manifest: string,
+  lock: string,
+  featured: string[],
+): Promise<Verdict> {
+  const js: Outcomes = {};
   const cutTests: Record<string, string> = {};
-  // Its unit of an earlier run, which a build that stopped may have left
-  // as done with no tests written: built again.
-  await spawned(
-    [
-      "cargo",
-      "clean",
-      "--package",
-      crate.name,
-      "--target",
-      "wasm32-unknown-unknown",
-    ],
-    jsDir,
-    { CARGO_TARGET_DIR: join(work, "js") },
-    120,
-  );
-  let verdict: Verdict | undefined;
-  for (let round = 0; round < 12 && !verdict; round++) {
+  // Its library's tests, as natively: no integration test built, nor a
+  // dev-dependency only they name.
+  if (Object.keys(nativeRan).some((name) => !name.startsWith("tests/"))) {
+    const ran = await built(jsDir, target, libraryTestsOnly(manifest, (lib) => sourceNames(join(jsDir, "src"), lib)), lock, featured);
+    if ("refused" in ran) return { native: nativeRan, refused: ran.refused };
+    if ("problem" in ran) return ran;
+    Object.assign(js, ran.js);
+    Object.assign(cutTests, ran.cut);
+  }
+  // Each integration test's file by itself, its library as `rust-js build`
+  // compiles it, so each error is its own.
+  for (const file of integrationFiles(nativeRan)) {
+    const named = (lib: string) => sourceNames(join(jsDir, "src"), lib) || sourceNames(join(jsDir, "tests"), lib);
+    const only = oneIntegrationTest(manifest, file, named);
+    if (only === undefined) continue;
+    const ran = await built(jsDir, target, only, lock, featured, file);
+    const its = Object.keys(nativeRan).filter((name) => name.startsWith(`${file}::`));
+    // Its library refused as its test uses it: each of its tests refused.
+    if ("refused" in ran || "problem" in ran) {
+      const why = "refused" in ran ? ran.refused[0] : ran.problem;
+      for (const name of its) cutTests[name] = why;
+      continue;
+    }
+    for (const [name, how] of Object.entries(ran.js)) js[`${file}::${name}`] = how;
+    for (const [name, why] of Object.entries(ran.cut)) cutTests[`${file}::${name}`] = why;
+  }
+  return judged(nativeRan, js, cutTests, jsDir);
+}
+
+/** `cutUntilBuilt` of `manifest`, its Cargo.toml; of one getrandom doesn't
+ * build for, the WebAssembly feature its release has turned on
+ * (`forTheJs`). Only then: a graph with getrandom's backend in it isn't one
+ * rust-js's own wasm-bindgen family serves, and one that never builds
+ * getrandom, chrono's library tests, would lose it (ADR 1112). */
+async function built(
+  jsDir: string,
+  target: string,
+  manifest: string,
+  lock: string,
+  featured: string[],
+  rootFile?: string,
+): ReturnType<typeof cutUntilBuilt> {
+  writeFileSync(join(jsDir, "Cargo.toml"), manifest);
+  const ran = await cutUntilBuilt(jsDir, target, featured, rootFile);
+  const withFeature = forTheJs(manifest, lock);
+  if (!("problem" in ran && ran.problem.includes("could not compile `getrandom`")) || withFeature === manifest) return ran;
+  writeFileSync(join(jsDir, "Cargo.toml"), withFeature);
+  return cutUntilBuilt(jsDir, target, featured, rootFile);
+}
+
+/** `rust-js test` in `jsDir`, each refused test cut from the source and
+ * the rest built again, up to twelve rounds: what ran, and what was cut and
+ * why; or where an error is in no test, what the library's code refused;
+ * or why it couldn't be asked. `rootFile` is the integration test's file
+ * being built, `tests/version.rs`, whose crate's modules are its own, every
+ * one of `tests/` only tests build; none of the library's tests. */
+async function cutUntilBuilt(
+  jsDir: string,
+  target: string,
+  featured: string[],
+  rootFile?: string,
+): Promise<{ js: Outcomes; cut: Record<string, string> } | { refused: string[] } | { problem: string }> {
+  const cutTests: Record<string, string> = {};
+  for (let round = 0; round < 12; round++) {
     const js = await spawned(
       ["bun", join(root, "tooling", "cli.js"), "test", ...featured],
       jsDir,
-      { RUST_JS_COMPILER: compiler, CARGO_TARGET_DIR: join(work, "js"), TZ: zone },
+      { RUST_JS_COMPILER: compiler, CARGO_TARGET_DIR: target, TZ: zone },
       1200,
     );
     const jsRan = jsOutcomes(js.said);
-    if (Object.keys(jsRan).length > 0) {
-      verdict = judged(nativeRan, jsRan, cutTests, jsDir);
-      break;
-    }
-    const errors = errorsAt(js.said).filter((e) => e.file.startsWith("src/"));
+    if (Object.keys(jsRan).length > 0) return { js: jsRan, cut: cutTests };
+    const errors = errorsAt(js.said).filter((e) => e.file.startsWith("src/") || (rootFile !== undefined && e.file.startsWith("tests/")));
     // Each of its tests cut: none left to run.
-    if (errors.length === 0 && js.code === 0 && Object.keys(cutTests).length > 0) {
-      verdict = judged(nativeRan, jsRan, cutTests, jsDir);
-      break;
-    }
+    if (errors.length === 0 && js.code === 0 && Object.keys(cutTests).length > 0) return { js: jsRan, cut: cutTests };
     if (errors.length === 0) {
-      verdict = {
+      return {
         problem:
           js.code === 0 ? "`rust-js test` passed having run no test" : `its JS tests didn't run: ${js.said.trim().split("\n").slice(-3).join(" ")}`,
       };
-      break;
     }
     const byFile = new Map<string, number[]>();
     const library: string[] = [];
     for (const error of errors) {
       const text = readFileSync(join(jsDir, error.file), "utf8");
       const read = (path: string) => (existsSync(join(jsDir, path)) ? readFileSync(join(jsDir, path), "utf8") : undefined);
-      const at = cutFor(error.file, text, error.line, testOnlyFile(error.file, read));
+      // An integration test's file is its crate's; the library's own code,
+      // as that test uses it, is never cut.
+      const at = error.file.startsWith("tests/")
+        ? cutFor(error.file, text, error.line, true, testModulePath(error.file, rootFile ?? ""))
+        : rootFile === undefined
+          ? cutFor(error.file, text, error.line, testOnlyFile(error.file, read))
+          : undefined;
       if (!at) {
         library.push(`${error.why} (${error.file}:${error.line})`);
         continue;
@@ -617,25 +738,21 @@ async function measure(crate: Crate, build: string): Promise<Verdict> {
       if (at.test && !(at.test in cutTests)) cutTests[at.test] = error.why;
       byFile.set(error.file, [...(byFile.get(error.file) ?? []), at.from]);
     }
-    if (library.length > 0) {
-      verdict = { native: nativeRan, refused: [...new Set(library)] };
-      break;
-    }
-    for (const [file, froms] of byFile)
-      writeFileSync(
-        join(jsDir, file),
-        cut(readFileSync(join(jsDir, file), "utf8"), froms),
-      );
+    if (library.length > 0) return { refused: [...new Set(library)] };
+    for (const [file, froms] of byFile) writeFileSync(join(jsDir, file), cut(readFileSync(join(jsDir, file), "utf8"), froms));
   }
-  verdict ??= {
-    problem: "its JS tests still didn't build after 12 rounds of cuts",
-  };
-  // One that couldn't be asked is asked again next time.
-  if (!("problem" in verdict)) {
-    mkdirSync(join(work, "kept"), { recursive: true });
-    writeFileSync(kept, JSON.stringify(verdict));
-  }
-  return verdict;
+  return { problem: "its JS tests still didn't build after 12 rounds of cuts" };
+}
+
+/** A module's path in an integration test's crate, whose root is `root`,
+ * `tests/version.rs`: none of the root, `util` of `tests/util/mod.rs` or
+ * `tests/util.rs`. */
+export function testModulePath(file: string, root: string): string[] {
+  if (file === root) return [];
+  return file
+    .replace(/^tests\//, "")
+    .replace(/(\/mod)?\.rs$/, "")
+    .split("/");
 }
 
 /** The time zone both runs have, so a test of local time, chrono's
@@ -685,6 +802,36 @@ export function libraryTestsOnly(text: string, named: (lib: string) => boolean =
     .join("");
 }
 
+/** A crate's manifest, `text`, building the integration test of `file`
+ * alone, `tests/version.rs`, and none of its library's tests: its
+ * `[[test]]` table kept, the others gone, `autotests = false`, its
+ * library's `test = false`, and no dev-dependency neither names
+ * (`libraryTestsOnly`'s `named`). None where the test isn't one Cargo runs
+ * with its harness, `harness = false`, whose outcomes say no tests. */
+export function oneIntegrationTest(text: string, file: string, named: (lib: string) => boolean = () => true): string | undefined {
+  const tables = libraryTestsOnly(text, named).split(/^(?=\[)/m);
+  const its = text.split(/^(?=\[)/m).find((table) => table.startsWith("[[test]]") && table.includes(`path = "${file}"`));
+  const table = its ?? `[[test]]\nname = "${file.replace(/^tests\//, "").replace(/\.rs$/, "")}"\npath = "${file}"\n\n`;
+  if (/^harness\s*=\s*false/m.test(table)) return undefined;
+  const lib = tables.findIndex((t) => t.startsWith("[lib]"));
+  const withLib = lib >= 0 ? tables.map((t, i) => (i === lib ? t.replace(/^test\s*=.*\n/m, "").replace("[lib]\n", "[lib]\ntest = false\n") : t)) : [...tables, "[lib]\ntest = false\n\n"];
+  return [...withLib, table.endsWith("\n\n") ? table : `${table}\n`].join("");
+}
+
+/** A crate's manifest, `text`, as the JS's copy builds it: getrandom's
+ * WebAssembly feature on, of each release its lock has, `js` of 0.2's and
+ * `wasm_js` of 0.3's and 0.4's, as a wasm-bindgen app's manifest turns it
+ * on, which wasm32 needs; its backend's `wasm-bindgen` and `js-sys` are
+ * rust-js's own (ADR 1112). */
+export function forTheJs(text: string, lock: string): string {
+  const majors = [...new Set([...lock.matchAll(/^name = "getrandom"\nversion = "(0\.[234])\.\d+"/gm)].map((m) => m[1]))];
+  const features = majors.map((major) => {
+    const feature = major === "0.2" ? "js" : "wasm_js";
+    return `[target.'cfg(target_arch = "wasm32")'.dev-dependencies.crater-getrandom-${major.replace(".", "-")}]\npackage = "getrandom"\nversion = "${major}"\nfeatures = ["${feature}"]\n\n`;
+  });
+  return [text.endsWith("\n") ? text : `${text}\n`, ...features].join("");
+}
+
 /** The differences decided (ADR 0262), `scripts/crater-decided.txt`'s
  * lines, `num-traits float::tests::copysign  why`: each test's why, by its
  * crate and path, `num-traits float::tests::copysign`. */
@@ -702,11 +849,40 @@ export function undecided(crate: string, differ: { name: string; js: string }[],
   return differ.filter((d) => !decided.has(`${crate} ${d.name}`));
 }
 
-/** A crate's verdict in a line. */
+/** A file's inner attributes, `#![..]`, each its own, at its start before
+ * any item, comments and blank lines skipped. */
+export function innerAttributes(text: string): string {
+  const found: string[] = [];
+  let at = 0;
+  for (;;) {
+    const rest = text.slice(at);
+    const skipped = /^(\s+|\/\/[^\n]*\n?|\/\*[\s\S]*?\*\/)/.exec(rest);
+    if (skipped) {
+      at += skipped[0].length;
+      continue;
+    }
+    if (!rest.startsWith("#![")) return found.join("\n");
+    let depth = 0;
+    let end = 2;
+    for (; end < rest.length; end++) {
+      if (rest[end] === "[") depth++;
+      else if (rest[end] === "]" && --depth === 0) break;
+    }
+    found.push(rest.slice(0, end + 1));
+    at += end + 1;
+  }
+}
+
 /** Whether the test `name`, `a::b::tests::t`, is of a module a cfg leaves
  * off wasm32 in a test build, `#[cfg(unix)] mod tz_info;`, read of the
- * crate's source through `read` (#1153). */
+ * crate's source through `read` (#1153); or of an integration test's file,
+ * `tests/dateutils.rs::t`, whose own `#![cfg(unix)]` leaves it off. */
 export function offTarget(name: string, read: (path: string) => string | undefined): boolean {
+  const integration = /^(tests\/[^/]+\.rs)::/.exec(name)?.[1];
+  if (integration !== undefined) {
+    const text = read(integration) ?? "";
+    return cfgsOf(innerAttributes(text).replaceAll("#![", "#[")).some((cfg) => cfgHolds(cfg, true) === false);
+  }
   const modules = name.split("::").slice(0, -1);
   let file = read("src/lib.rs") !== undefined ? "src/lib.rs" : "src/main.rs";
   let scope: { from: number; to: number } | undefined;
@@ -736,6 +912,7 @@ function judged(native: Outcomes, js: Outcomes, cut: Record<string, string>, dir
   return { native, js, cut, differ: differ.filter((d) => !off.includes(d.name)), offTarget: off };
 }
 
+/** A crate's verdict in a line. */
 export function said(crate: Crate, verdict: Verdict, decided: Map<string, string> = new Map()): string {
   const name = `${crate.name} ${crate.version}`;
   if ("problem" in verdict) return `${name}: not asked, ${verdict.problem}`;

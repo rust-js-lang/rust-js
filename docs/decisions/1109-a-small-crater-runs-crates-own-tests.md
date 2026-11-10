@@ -92,3 +92,59 @@ chrono 0.4.45 with its default features, its row's now: 240 of its 272
 tests as native, 12 refused, 20 not of wasm32, none differing. Held by
 `test/crater.test.ts`: chrono's tz_data cfg test-only and others not, and
 `tz_info`'s test of no target's.
+
+## Amendment: integration tests too, each file by itself (2026-11-10, #1087)
+
+A crate's integration tests, `tests/*.rs`, are its authors' tests as its
+library's are, and semver's, time's, strum's and thiserror's are all
+they have. The Crater runs them now.
+
+- **Natively, each test binary by itself**: `cargo test --lib --tests
+  --no-run` builds them (`--lib` alone where those don't build), and each
+  is run on its own, its outcomes its target's, `tests/zip.rs::t`
+  (`executables`). Read off `cargo test`'s combined output, a test's
+  `Running` line, its stderr, and its tests' lines, its stdout, weren't
+  kept in order by the pipe, and itertools' `quick.rs` tests were counted
+  as the next file's.
+- **As JS, each integration test's file by itself**, its library as
+  `rust-js build` compiles it, none of the library's tests
+  (`oneIntegrationTest`: its `[[test]]` table alone, `[lib] test = false`,
+  no harness-less test), so each refusal is its own; a refusal in the
+  library its test uses refuses that file's tests, never the crate. A
+  refusal in `tests/` cuts the test it's in, by the module path of that
+  test's crate (`testModulePath`). A file whose own `#![cfg(unix)]` leaves
+  it off wasm32, chrono's `dateutils.rs`, is "not of wasm32".
+- **Each crate's JS builds in a target of its own**, `target/crater/js/<name>`,
+  gone once it's asked: crates built at once in one target raced on a
+  dependency both build, num-traits' metadata of one build read as the
+  other's, and chrono's whole run failed.
+- **getrandom's WebAssembly feature, of each release its lock has, only
+  where a build fails on getrandom** (`forTheJs`, `built`): `js` of 0.2,
+  `wasm_js` of 0.3 and 0.4. Turned on everywhere, it put getrandom's
+  backend in graphs rust-js's own wasm-bindgen family then didn't serve
+  (ADR 1112), and chrono's `js_sys::Date` was refused.
+- **A timeout ends the process group** it started, `rust-js test`'s
+  runner and its JS among it.
+- Its verdicts are kept by how it asks too (`asking`, 2).
+
+The night's 22 crates, before and after, on the 12-core M6 (one wall
+time each; the kept verdicts cleared):
+
+| | before | after |
+|---|---|---|
+| crates asked (tests compared) | 9, and chrono alone | 12 |
+| native tests passing, of crates asked | 374, and chrono's 272 | 1,523 |
+| as native | 335, and chrono's 242 | 674 |
+| refused (cut) | 21, and chrono's 10 | 483 |
+| not of wasm32 | 20 (chrono) | 21 |
+| decided (num-traits' NaN sign and payload) | 2 | 2 |
+| wrong answers | 0 | 1, itertools `tests/zip.rs::test_zip_longest_size_hint`: `Cycle::size_hint`, filed (P0) |
+| wall time | 107 s (chrono's run raced) | 20 min 22 s |
+
+New: thiserror 38 of 53 (its tests are integration tests alone), semver
+11 of 34, num-traits 60 of 62 (16 integration), arrayvec 2 of 43 and
+itertools 37 of 408 (most refused, on the way to being asked), and
+anyhow's, url's and base64's library refusals now name 71, 67 and 192
+native tests unrun. The wall time is semver's one integration file, whose
+5.6 MB identifier's byte views run past the 20-minute `rust-js test`
+timeout, alone after the rest are done: a slow spot (DEVELOPMENT.md).

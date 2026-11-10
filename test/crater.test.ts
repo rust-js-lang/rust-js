@@ -2,7 +2,7 @@
 // and its cut of a refused test from the JS's copy of a crate (#1087,
 // scripts/crater.ts). The net itself runs each night.
 import { expect, test } from "bun:test";
-import { attributesFrom, cut, cutFor, offTarget, onlyForTests, decidedOf, declaredIn, differences, errorsAt, items, jsOutcomes, libraryTestsOnly, modulePath, nativeOutcomes, testOnlyFile, undecided } from "../scripts/crater";
+import { attributesFrom, cut, cutFor, decidedOf, declaredIn, differences, errorsAt, executables, forTheJs, innerAttributes, integrationFiles, items, jsOutcomes, libraryTestsOnly, modulePath, nativeOutcomes, offTarget, oneIntegrationTest, onlyForTests, testModulePath, testOnlyFile, undecided } from "../scripts/crater";
 
 test("each test's outcome is read of cargo test's lines and of Node's runner's", () => {
   expect(nativeOutcomes("running 3 tests\ntest a::t1 ... ok\ntest a::t2 ... FAILED\ntest t3 ... ignored, slow\n")).toEqual({
@@ -151,4 +151,55 @@ test("a test of a module a cfg leaves off wasm32 is of no test of its", () => {
   const read = (path: string) => files[path];
   expect(offTarget("offset::tz_info::tests::t", read)).toBe(true);
   expect(offTarget("offset::fixed::tests::t", read)).toBe(false);
+});
+
+// Each integration test's file is built by itself as JS, its outcomes keyed
+// by its file, as `cargo test --lib --tests` heads each target's.
+test("each test binary is run by itself, an integration test's outcomes keyed by its file", () => {
+  const said = [
+    "  Executable unittests src/lib.rs (out/debug/deps/semver-1)",
+    "  Executable tests/test_version.rs (/abs/out/debug/deps/test_version-2)",
+    "  Executable unittests src/main.rs (out/debug/deps/bin-3)",
+    "     Running tests/compiletest.rs (out/debug/deps/compiletest-4)",
+  ].join("\n");
+  expect(executables(said)).toEqual([
+    { target: "src/lib.rs", path: "out/debug/deps/semver-1" },
+    { target: "tests/test_version.rs", path: "/abs/out/debug/deps/test_version-2" },
+    { target: "src/main.rs", path: "out/debug/deps/bin-3" },
+  ]);
+  expect(integrationFiles({ "a::t1": "ok", "tests/test_version.rs::t1": "ok", "tests/test_version.rs::t2": "failed" })).toEqual(["tests/test_version.rs"]);
+  expect(testModulePath("tests/test_version.rs", "tests/test_version.rs")).toEqual([]);
+  expect(testModulePath("tests/util/mod.rs", "tests/test_version.rs")).toEqual(["util"]);
+  expect(cutFor("tests/util/mod.rs", "pub fn helper() {\n    1;\n}\n", 2, true, ["util"])).toEqual({ from: 1 });
+  expect(cutFor("tests/test_version.rs", "#[test]\nfn t1() {\n    1;\n}\n", 3, true, [])).toEqual({ from: 1, test: "t1" });
+});
+
+test("an integration test's file is built by itself, none of its library's tests, and none of no harness", () => {
+  const manifest =
+    '[package]\nname = "semver"\nautotests = false\n\n[lib]\nname = "semver"\npath = "src/lib.rs"\n\n[[test]]\nname = "test_a"\npath = "tests/test_a.rs"\n\n[[test]]\nname = "test_b"\npath = "tests/test_b.rs"\n\n[[test]]\nname = "ui"\npath = "tests/ui.rs"\nharness = false\n\n[dev-dependencies.criterion]\nversion = "0.4"\n\n';
+  expect(oneIntegrationTest(manifest, "tests/test_b.rs", (lib) => lib !== "criterion")).toBe(
+    '[package]\nautotests = false\nname = "semver"\n\n[lib]\ntest = false\nname = "semver"\npath = "src/lib.rs"\n\n[[test]]\nname = "test_b"\npath = "tests/test_b.rs"\n\n',
+  );
+  expect(oneIntegrationTest(manifest, "tests/ui.rs")).toBeUndefined();
+});
+
+test("the JS's copy turns on getrandom's WebAssembly feature of each release its lock has", () => {
+  const manifest = '[package]\nname = "base64"\n\n[dev-dependencies.rand]\nversion = "0.8"\n';
+  const lock = '[[package]]\nname = "getrandom"\nversion = "0.2.12"\n\n[[package]]\nname = "getrandom"\nversion = "0.3.4"\n\n[[package]]\nname = "getrandom"\nversion = "0.1.16"\n';
+  expect(forTheJs(manifest, lock)).toBe(
+    manifest +
+      '[target.\'cfg(target_arch = "wasm32")\'.dev-dependencies.crater-getrandom-0-2]\npackage = "getrandom"\nversion = "0.2"\nfeatures = ["js"]\n\n' +
+      '[target.\'cfg(target_arch = "wasm32")\'.dev-dependencies.crater-getrandom-0-3]\npackage = "getrandom"\nversion = "0.3"\nfeatures = ["wasm_js"]\n\n',
+  );
+  expect(forTheJs(manifest, "")).toBe(manifest);
+});
+
+// chrono's tests/dateutils.rs, `#![cfg(all(unix, feature = "clock", feature = "std"))]`:
+// an integration test's file its own cfg leaves off wasm32 is of no test of its.
+test("an integration test's file its own cfg leaves off wasm32 is of no test of its", () => {
+  const text = '//! Its doc.\n#![cfg(all(unix, feature = "clock", feature = "std"))]\n\nuse chrono::Local;\n';
+  expect(innerAttributes(text)).toBe('#![cfg(all(unix, feature = "clock", feature = "std"))]');
+  const read = (files: Record<string, string>) => (path: string) => files[path];
+  expect(offTarget("tests/dateutils.rs::try_verify", read({ "tests/dateutils.rs": text }))).toBe(true);
+  expect(offTarget("tests/other.rs::t", read({ "tests/other.rs": '#![cfg(feature = "std")]\nfn a() {}\n' }))).toBe(false);
 });
