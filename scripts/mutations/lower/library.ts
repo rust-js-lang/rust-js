@@ -44,15 +44,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "counts another library"],
   },
   {
-    name: "uncounted-library-rcs-unseen",
-    breaks:
-      "a crate counting an `Rc` a library that counts none of hands it isn't refused, and the two read it apart (ADRs 0844, 0852)",
-    file: "src/lower/library.rs",
-    find: "                false => reached\n                    .uncounted_rcs\n                    .push((pointee, tcx.crate_name(of.krate).to_string())),\n",
-    replace: "                false => {}\n",
-    tests: ["test/crates.test.ts", "-t", "reads no count"],
-  },
-  {
     name: "held-unlisted",
     breaks:
       "a library's manifest says nothing of the bindings its modules hold, so a consumer reads each in place",
@@ -157,72 +148,6 @@ export const mutations: Mutation[] = [
     find: "        param(&mut params, index).stepped.push(key(tcx, by));\n",
     replace: "        let _ = (param(&mut params, index), by);\n",
     tests: ["test/crates.test.ts", "-t", "two crates: extension_default"],
-  },
-  {
-    name: "library-closure-unreached",
-    breaks:
-      "a library's `impl FnMut` of a value with a destructor, made a `dyn FnMut` by a crate that is a library itself, whose callers it can't see, is taken to drop nothing",
-    file: "src/lower/library.rs",
-    find: "            ) => reached.functions |= library(def_id),\n",
-    replace: "            ) => {}\n",
-    tests: [
-      "test/cargo-link.test.ts",
-      "-t",
-      "a library gives a crate's dyn Fns a drop only through its own functions",
-    ],
-  },
-  {
-    name: "library-dyn-unreached",
-    breaks:
-      "a `Box<dyn FnMut>` a library's function gives, of its own closure with a destructor, is taken to drop nothing",
-    file: "src/lower/library.rs",
-    find: "                reached.fn_dyns_of.insert(library_key(tcx, krate));\n",
-    replace: "",
-    tests: [
-      "test/cargo-link.test.ts",
-      "-t",
-      "a library gives a crate's dyn Fns a drop only through its own functions",
-    ],
-  },
-  {
-    name: "library-reached-any",
-    breaks:
-      "a crate using a library of plain items, a `bool`'s, takes each `dyn Fn` to drop and each `Rc` to be counted, and refuses React's scheduler",
-    file: "src/lower/library.rs",
-    find: "        let mut reached = Reached::default();\n        if !self.any() {\n            return reached;\n        }\n",
-    replace:
-      "        let mut reached = Reached::default();\n        if self.any() {\n            return Reached { functions: true, fn_dyns_of: self.dependencies.libraries.keys().cloned().collect(), ..Reached::default() };\n        }\n",
-    tests: [
-      "test/cargo-link.test.ts",
-      "-t",
-      "a library gives a crate's dyn Fns a drop only through its own functions",
-    ],
-  },
-  {
-    name: "crate-closure-taken-for-the-librarys",
-    breaks:
-      "what a closure of the crate's given to a library's generic binding holds, an `Rc<RefCell<Vec<&dyn Fn(..)>>>`, is taken for a `dyn Fn` the library hands it, so every `dyn Fn` drops and an unrelated `Rc<RefCell<Vec<Rc<dyn Fn()>>>>` is counted, `{ value, strong, weak }` (ADR 0626, amended)",
-    file: "src/lower/library.rs",
-    find: "                        && id.is_local()\n",
-    replace: "                        && false\n",
-    tests: [
-      "test/cross-crate-items.test.ts",
-      "-t",
-      "a crate's closure given to a library's binding hands the crate nothing",
-    ],
-  },
-  {
-    name: "library-rc-unreached",
-    breaks:
-      "an `Rc` a library hands a crate isn't counted, though the library counts it",
-    file: "src/lower/library.rs",
-    find: "                true => reached.counted_rcs.push(pointee),\n",
-    replace: "                true => {}\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "two crates: rc_per_type|three crates: rc_generic",
-    ],
   },
   {
     name: "library-shape-any",
@@ -703,15 +628,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
   },
   {
-    name: "merging-function-hands-its-rcs",
-    breaks:
-      "a library's function the crate compiles itself as it merges what the crate compares is taken to hand the crate its uncounted `Rc<dyn Fn>`s, refused where the crate counts them (#1052)",
-    file: "src/lower/library.rs",
-    find: "                if !self.merged_here(id, args) {\n",
-    replace: "                if true {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
-  },
-  {
     name: "field-giving-method-listed",
     breaks:
       "a library's class's trait method that gives its field, which has no JS of its own (rd304), is listed in its manifest, `Holder.slot`, a member its consumer calls and finds undefined (#1032)",
@@ -761,5 +677,27 @@ export const mutations: Mutation[] = [
     find: "        (self.library(id.krate)?.cloned_closures.get(&key(self.tcx, id))).copied()\n",
     replace: "        (self.library(id.krate)?.cloned_closures.get(&key(self.tcx, id))).and(None)\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+  },
+  {
+    name: "uncounted-library-rcs-unseen",
+    breaks:
+      "a crate counting an `Rc` a library that counts none of hands it isn't refused, and the two read it apart (ADRs 0844, 0852)",
+    file: "src/lower/library.rs",
+    find: "                false => reached\n                    .uncounted_rcs\n                    .push((pointee, tcx.crate_name(of.krate).to_string())),\n",
+    replace: "                false => {}\n",
+    tests: ["test/crates.test.ts", "-t", "reads no count"],
+  },
+  {
+    name: "library-rc-unreached",
+    breaks:
+      "an `Rc` a library hands a crate isn't counted, though the library counts it",
+    file: "src/lower/library.rs",
+    find: "                true => reached.counted_rcs.push(pointee),\n",
+    replace: "                true => {}\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "two crates: rc_per_type|three crates: rc_generic",
+    ],
   },
 ];

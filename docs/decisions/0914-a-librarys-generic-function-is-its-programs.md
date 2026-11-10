@@ -1320,3 +1320,22 @@ MIR path of a library body compiled here, ask `fn_def` of the constant's
 type past its references. Found by the metamorphic net's library rewrite.
 Held by the crate pair `library_some_through_a_dyn` and the mutation
 `promoted-fn-ref-unseen`.
+
+## Amended (2026-11-10, #1217): what a body of MIR alone names is reached
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, now
+Rust's. A library's `Rc`s a consumer must count are those its reached items
+hold, each library item a body's types name, by its signature and fields,
+counted where the library counts it (`reached`, `holds_rcs`). It read each
+body's THIR, and a library's function the crate compiles itself has MIR
+alone: `by_default<K: Keep>`, which makes an `Rc<Vec<u8>>` and gives it its
+library's trait's generic method `keep<T>(&self, r: &Rc<T>)`, which counts
+it, named `<K as Keep>::keep::<Vec<u8>>` only in its MIR, so the consumer's
+copy left the `Rc` uncounted, and `Rc::strong_count` read `NaN`. Such a
+body's locals and the functions it names are reached as its THIR's would
+be. Found by the metamorphic net's library rewrite of
+`rc_counted_through_a_traits_generic_method.rs`. Its siblings, a copy, a
+clone, a `Some(())` and a drop given such a method by the same caller, were
+already right (`library_traits_generic_method_facts_through_its_caller`).
+Held by the crate pair `library_rc_counted_through_a_traits_generic_method`
+and the mutation `mir-bodys-calls-unreached`.
