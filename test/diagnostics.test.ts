@@ -97,7 +97,9 @@ for (const [name, source, message, crate] of [
   // std grows it; and a bound's `extend` of a `Vec<T>` whose items' size is
   // a type parameter's, which its dictionary isn't given.
   ["a Vec collected of chars where a capacity is read", "pub fn f(s: &str) -> usize {\n    let v: Vec<char> = s.chars().collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
-  ["a Vec collected of a split where a capacity is read", "pub fn f(s: &str) -> usize {\n    let v: Vec<&str> = s.split(',').collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
+  // A slice's, whose hint's lower bound is 1 where JS counts (a string's is
+  // std's, #1180's (3)).
+  ["a Vec collected of a slice's split where a capacity is read", "pub fn f(v: &[u32]) -> usize {\n    let w: Vec<&[u32]> = v.split(|x| *x == 0).collect();\n    w.capacity()\n}", "whose lower bound JS's doesn't have"],
   // A chain's exact-sized part made of JS's own adapters, which know no hint (#1200).
   ["a Vec collected of a chain of a skip where a capacity is read", "pub fn f(a: &[u32]) -> usize {\n    let v: Vec<&u32> = a.iter().skip(1).chain(a.iter().filter(|x| **x > 9)).collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
   // A set's merge, whose hint's lower bound its state gives as it's stepped (#1215).

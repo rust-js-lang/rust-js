@@ -134,11 +134,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "lower-bound-of-counted-arrays-stds",
-    breaks: "a `split(..)` JS counts is taken to have std's lower bound, so a `Vec` collected of it in a crate that reads a capacity compiles, its capacity another (#1180)",
+    breaks: "a slice's `split(..)`, which JS counts, is taken to have std's lower bound, so a `Vec` collected of it in a crate that reads a capacity compiles, its capacity another (#1180)",
     file: "src/lower/recognition/lengths.rs",
     find: "        !self.is_array_iter(ty)\n            || self\n",
     replace: "        true || !self.is_array_iter(ty)\n            || self\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of a split"],
+    tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of a slice's split"],
   },
   {
     name: "lower-bound-of-lazy-chars-stds",
@@ -160,8 +160,8 @@ export const mutations: Mutation[] = [
     name: "range-hinted-as-counted",
     breaks: "a B-tree's `range(..)` collected in a crate that reads a capacity is grown by JS's count of what's in range, 38, where std's hint has no lower bound and its capacity is 64 (#1215)",
     file: "src/lower/recognition/lengths.rs",
-    find: "            \"std::collections::btree_map::Range\"\n                | \"std::collections::btree_map::RangeMut\"\n                | \"std::collections::btree_set::Range\"\n",
-    replace: "            \"std::collections::btree_map::RangeMut\"\n",
+    find: "                    | \"std::collections::btree_map::Range\"\n                    | \"std::collections::btree_map::RangeMut\"\n                    | \"std::collections::btree_set::Range\"\n",
+    replace: "                    | \"std::collections::btree_map::RangeMut\"\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
   },
   {
@@ -171,5 +171,13 @@ export const mutations: Mutation[] = [
     find: "        if self.hints_merged_lower_bound(ty) {\n            return false;\n        }\n",
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of a set's difference"],
+  },
+  {
+    name: "text-patterns-hinted-as-counted",
+    breaks: "a string's `split(..)` given to generic code that collects it, in a crate that reads a capacity, is grown by JS's count of its parts, where std's hint has no lower bound (#1180's (3))",
+    file: "src/lower/recognition/lengths.rs",
+    find: "        self.is_str_split(ty)\n            || matches!(\n",
+    replace: "        false\n            || matches!(\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_text_patterns.rs$"],
   },
 ];

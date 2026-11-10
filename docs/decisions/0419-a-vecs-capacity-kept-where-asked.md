@@ -172,8 +172,8 @@ know it again, its length. An `extend` that asks its hint as it fills,
 `$grownBy`, steps one unknown without asking it, its hint's timing
 unseen, and throws the same error where the hint is the crate's own
 (`own`), whose asking is seen. `test/lowering-collections.test.ts` holds
-each. Still silent: `chars()` or `split(..)` given to generic code that
-collects it, whose JS value is any array's iterator, and a `Vec` a library
+each. Still silent: adapters of JS's own given to generic code that
+collects them (below, #1180's (3)), and a `Vec` a library
 that keeps none grew, whose growth no code of its marks; #1180 lists them.
 The conformance table's 148 cases that read the capacity of a collect std
 may make in place throw it now, listed under #1180 till its source's is
@@ -252,3 +252,26 @@ bounds are 0 once an item is taken, which is when std asks.
 items, built both ways (with std's iterator structs too), against native
 Rust. `capacity_exact_size_adapters.rs` asks `b.range(2..).skip(1)` again.
 `test/diagnostics.test.ts` holds the refusal.
+
+## Amended (2026-11-10, #1180's (3)): a string's patterns hint as std's do
+
+A string's `split(..)` and its kin, `rsplit`, `splitn`, `split_terminator`,
+`split_inclusive`, `matches`, `match_indices`, `split_whitespace`,
+`split_ascii_whitespace` and `lines`, have no `size_hint` of their own, so
+std's has no lower bound. Their JS is the array of their parts, which
+`$iter` counted, so generic code that grew a `Vec` of one it was given
+reached another capacity, silently: `s.split(',')` of 6 parts, chained
+with one more, 5 where std's is 8. They're `hints_no_lower_bound`'s, as
+#1215's are: where capacities are kept their `$iter` is `$iter(parts,
+true)`, whose hint is std's, and a `Vec` collected of one where it's made,
+refused before, compiles with std's capacity. A slice's `split(..)`, whose
+std hint's lower bound is 1, stays refused. `chars()` given to generic code
+was std's already: its `$chars` hints as std's `Chars` does (ADR 1117).
+
+`test/corpus/capacity_of_text_patterns.rs` holds them, given to generic
+code and collected where they're made, against native Rust.
+
+What's left silent of (3): an adapter of JS's own, `.drop(n)` or
+`.map(f)`, made of what's then given to generic code, `chars().skip(2)` or
+`b.iter().skip(1).copied()`, and one generic code makes of what it's
+given, whose hints are none; #1180 lists them.

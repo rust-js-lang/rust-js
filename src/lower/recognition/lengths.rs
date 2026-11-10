@@ -168,17 +168,34 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn hints_no_lower_bound(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty.peel_refs());
         let ty::Adt(adt, _) = ty.kind() else { return false };
-        matches!(
-            std_path(self.tcx, adt.did()),
-            "std::collections::btree_map::Range"
-                | "std::collections::btree_map::RangeMut"
-                | "std::collections::btree_set::Range"
-                | "std::collections::btree_set::Intersection"
-                | "std::collections::btree_set::SymmetricDifference"
-                | "std::collections::hash_set::Difference"
-                | "std::collections::hash_set::Intersection"
-                | "std::collections::hash_set::SymmetricDifference"
-        )
+        // A string's pattern's, whose `size_hint` is std's default, and
+        // what's filtered or mapped of one (#1180's (3)); a B-tree's range
+        // and the sets' (#1215).
+        self.is_str_split(ty)
+            || matches!(
+                std_path(self.tcx, adt.did()),
+                "std::str::SplitN"
+                    | "std::str::RSplitN"
+                    | "std::str::RSplit"
+                    | "std::str::SplitTerminator"
+                    | "std::str::RSplitTerminator"
+                    | "std::str::SplitInclusive"
+                    | "std::str::MatchIndices"
+                    | "std::str::RMatchIndices"
+                    | "std::str::Matches"
+                    | "std::str::RMatches"
+                    | "std::str::SplitWhitespace"
+                    | "std::str::SplitAsciiWhitespace"
+                    | "std::str::Lines"
+                    | "std::collections::btree_map::Range"
+                    | "std::collections::btree_map::RangeMut"
+                    | "std::collections::btree_set::Range"
+                    | "std::collections::btree_set::Intersection"
+                    | "std::collections::btree_set::SymmetricDifference"
+                    | "std::collections::hash_set::Difference"
+                    | "std::collections::hash_set::Intersection"
+                    | "std::collections::hash_set::SymmetricDifference"
+            )
     }
 
     /// Whether std's hint of an iterator of type `ty` has a lower bound its
