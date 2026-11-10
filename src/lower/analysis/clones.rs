@@ -81,13 +81,16 @@ pub(super) fn cloned_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], 
         }
     };
     // What an `impl Clone` hides, revealed: a caller's clone of what a
-    // function gives is of what that function makes.
+    // function gives is of what that function makes. Not std's struct a
+    // function makes, cloned by its compiled `Clone`, its value's (#1241).
+    let mut compiled = IndexSet::default();
     let mut todo: Vec<Ty<'tcx>> = (all_bodies.iter())
         .flat_map(|body| {
             let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
             let owner = body.def_id;
             called_clones(tcx, &body.thir)
-                .map(move |ty| {
+                .map(|ty| {
+                    compiled.extend(crate::lower::recognition::compiled_behind_an_impl(tcx, typing_env, ty));
                     (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))).unwrap_or(ty)
                 })
                 .flat_map(|ty| instances(owner, ty))
@@ -99,7 +102,7 @@ pub(super) fn cloned_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], 
     }
     while let Some(ty) = todo.pop() {
         let ty = tcx.erase_and_anonymize_regions(ty);
-        if cloned.types.insert(ty) {
+        if !compiled.contains(&ty) && cloned.types.insert(ty) {
             todo.extend(clones_in_turn(tcx, ty));
         }
     }

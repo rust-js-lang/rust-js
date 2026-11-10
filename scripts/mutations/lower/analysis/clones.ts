@@ -84,4 +84,12 @@ export const mutations: Mutation[] = [
     replace: "                    hidden,\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
   },
+  {
+    name: "compiled-behind-an-impl-cloned-apart",
+    breaks: "std's struct a function makes behind an `impl Iterator + Clone` is taken for an adapter the crate clones apart, so a clone of a filter over it clones it as one, `f[$cloneKey] is not a function` (#1241)",
+    file: "src/lower/analysis/clones.rs",
+    find: "        if !compiled.contains(&ty) && cloned.types.insert(ty) {\n",
+    replace: "        if cloned.types.insert(ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_of_an_adapter_over_a_returned_impl.rs$"],
+  },
 ];

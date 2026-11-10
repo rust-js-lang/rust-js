@@ -411,4 +411,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
+  {
+    name: "library-impl-taken-for-compiled",
+    breaks: "what a library gives behind an `impl Iterator + Clone`, which it makes cloned apart as its contract says, is taken for std's struct, so its consumer's clone is refused (#1241)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "        if !def_id.is_local() {\n            continue;\n        }\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+  },
 ];

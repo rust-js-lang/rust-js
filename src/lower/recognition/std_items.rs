@@ -671,6 +671,52 @@ pub(crate) fn is_held_compiled(tcx: TyCtxt<'_>, ty: ty::Ty<'_>) -> bool {
     matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_held_compiled_def(tcx, adt.did()))
 }
 
+/// What an `impl` in `ty` hides that's std's compiled struct, `HELD_COMPILED`'s
+/// of this build, regions erased: what the function that gives it makes
+/// where it's held, std's struct (ADR 0871), in the function's own terms,
+/// not its type parameters' values, which its callers make. Its form is its
+/// value's, as a named type's is: never a type the crate's makers make
+/// knowing its back (`back_stepped`), nor one it clones apart (`clones`),
+/// whose question is of every value of it (#1226, the user's decision (A);
+/// #1241).
+pub(crate) fn compiled_behind_an_impl<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    ty: ty::Ty<'tcx>,
+) -> crate::collections::IndexSet<ty::Ty<'tcx>> {
+    let mut compiled = crate::collections::IndexSet::default();
+    for part in ty.walk().filter_map(|part| part.as_type()) {
+        let ty::Alias(
+            _,
+            ty::AliasTy {
+                kind: ty::Opaque { def_id },
+                args,
+                ..
+            },
+        ) = *part.kind()
+        else {
+            continue;
+        };
+        // A library's, whose form its library decides and its contract
+        // says, cloned apart where it gives one out (#1032, #1202).
+        if !def_id.is_local() {
+            continue;
+        }
+        let hidden = tcx.type_of(def_id).instantiate_identity().skip_normalization();
+        for inner in hidden.walk().filter_map(|inner| inner.as_type()) {
+            if is_held_compiled(tcx, inner) {
+                let made = ty::EarlyBinder::bind(tcx, inner)
+                    .instantiate(tcx, args)
+                    .skip_normalization();
+                let made =
+                    (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(made))).unwrap_or(made);
+                compiled.insert(tcx.erase_and_anonymize_regions(made));
+            }
+        }
+    }
+    compiled
+}
+
 /// Whether `id` is one of `HELD_COMPILED`'s adapters' definitions.
 pub(crate) fn is_held_compiled_def(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_compiled_std_type(tcx, id)

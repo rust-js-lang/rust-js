@@ -276,3 +276,23 @@ and `generic-cloned-apart-unseen-callers-unasked`
 (`lower/body_queries.ts`); `cloned-param-matches-every-adapter` and
 `cloned-closures-not-generic`, whose sites only a caller unseen now
 reaches, are held by the second case.
+
+## Amended (2026-11-10, #1241): what a function makes behind an `impl` is its value's
+
+`doubled(&v).filter(..).clone()` of `fn doubled(v) -> impl Iterator + Clone
+{ v.iter().map(|x| x * 2) }` threw `f[$cloneKey] is not a function`. The
+crate's clone of the filter put the `Map` it held among the types it clones
+apart, which each of its makers makes a function of its parts, `$cloning`.
+But `doubled` made it std's struct, where it's held (ADR 0871). The filter's
+clone then cloned that struct as a value cloned apart.
+
+The user's decision (A) on #1226 holds here too: what a function of the
+crate makes behind an `impl` is its value's form. `clones.rs` leaves out
+std's struct a crate's function makes behind an `impl`
+(`recognition::compiled_behind_an_impl`, the one answer, which
+`back_stepped` asks too), so it's cloned by its own compiled `Clone`. A
+library's `impl .. + Clone` is its library's to make, cloned apart where it
+gives one out, as its contract says (#1032, #1202). Case C
+([0262](0262-when-rust-and-js-disagree.md)): a program threw where Rust
+runs. `test/corpus/clone_of_an_adapter_over_a_returned_impl.rs` holds a
+filter's, a map's and a chain's clone of it, in both builds.

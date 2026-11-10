@@ -95,7 +95,7 @@ pub(super) fn back_stepped<'tcx>(
                 let given = hidden != asked;
                 // Not std's compiled struct a function gives, nor what holds
                 // one, whose value is its maker's (#1226).
-                let compiled = compiled_behind_an_impl(tcx, recognition, hidden);
+                let compiled = crate::lower::recognition::compiled_behind_an_impl(tcx, recognition.typing_env, hidden);
                 // Not through a std adapter, whose own call steps what it
                 // holds: `filter(p).map(f).rev()`'s is `rev()`'s.
                 for held in asked.walk().filter_map(|part| part.as_type()) {
@@ -267,7 +267,7 @@ fn given_behind_an_impl<'tcx>(
     hidden: Ty<'tcx>,
     drops: impl Fn(Ty<'tcx>) -> bool,
 ) -> Vec<Ty<'tcx>> {
-    let compiled = compiled_behind_an_impl(tcx, recognition, hidden);
+    let compiled = crate::lower::recognition::compiled_behind_an_impl(tcx, recognition.typing_env, hidden);
     (recognition.reveal(hidden).walk().filter_map(|part| part.as_type()))
         .filter_map(|held| {
             matches!(held.kind(), ty::Adt(a, _) if is_iter_adapter_def(tcx, a.did()))
@@ -276,46 +276,6 @@ fn given_behind_an_impl<'tcx>(
         })
         .filter(|&made| !holds_compiled(tcx, made, &compiled))
         .collect()
-}
-
-/// What an `impl` in `ty` hides that's std's compiled struct, `HELD_COMPILED`'s
-/// of this build, regions erased: a value the function that gives it makes
-/// where it's held, std's struct (ADR 0871), not one its type's makers make
-/// knowing its back. Its form is its value's, as a named type's is: what
-/// steps it from its back where it's given is refused, as of a named one,
-/// never assumed made so (#1226, the user's decision (A)).
-fn compiled_behind_an_impl<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    recognition: Recognition<'_, 'tcx>,
-    ty: Ty<'tcx>,
-) -> IndexSet<Ty<'tcx>> {
-    let mut compiled = IndexSet::default();
-    for part in ty.walk().filter_map(|part| part.as_type()) {
-        let ty::Alias(
-            _,
-            ty::AliasTy {
-                kind: ty::Opaque { def_id },
-                args,
-                ..
-            },
-        ) = *part.kind()
-        else {
-            continue;
-        };
-        // Of what it hides in its own terms: what it makes, not its type
-        // parameters' values, which its callers make, `at<I>(it: I) ->
-        // impl Iterator { it }`'s.
-        let hidden = tcx.type_of(def_id).instantiate_identity().skip_normalization();
-        for inner in hidden.walk().filter_map(|inner| inner.as_type()) {
-            if crate::lower::recognition::is_held_compiled(tcx, inner) {
-                let made = ty::EarlyBinder::bind(tcx, inner)
-                    .instantiate(tcx, args)
-                    .skip_normalization();
-                compiled.insert(tcx.erase_and_anonymize_regions(recognition.reveal(made)));
-            }
-        }
-    }
-    compiled
 }
 
 /// Whether `made`, an adapter the crate may make knowing its back, is or
