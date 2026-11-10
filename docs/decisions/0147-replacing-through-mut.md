@@ -1,6 +1,6 @@
 # 0147. Replacing a value whole through a `&mut`: an object in place, an enum by its place
 
-Status: Accepted; amended (std's enums too, an `Rc`'s place, and a closure's write of what it took by reference, #469, below). Extends [0025](0025-vec-loops-refcell-mut.md),
+Status: Accepted; amended (std's enums too, an `Rc`'s place, a closure's write of what it took by reference, #469, and the old value given back as it was held, #1238, below). Extends [0025](0025-vec-loops-refcell-mut.md),
 [0033](0033-enums-with-fields.md) and [0099](0099-mut-references.md).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)).
@@ -264,3 +264,24 @@ before.
   taken alone and a copy kept in an array against native Rust.
 - The mutations are `closure-write-through-capture-unseen` and
   `closure-field-write-through-capture-unseen` (`analysis/mutation.rs`).
+
+## Amendment: the old value is given back as it was held (#1238)
+
+`mem::replace`'s old value, and `mem::take`'s, is what its place held,
+in the form its type is held in: a `Rev<Range>`'s std struct, a `Vec`'s
+iterator's `$iter`. The call's value was made an iterator again, as a std
+call that makes one of an array is (`std_value_as`), and in a crate that
+reads a capacity, where std's `ExactSizeIterator`s are counted as `$iter`s
+(#1215), that was `$iter(old)`, an array's iterator of what is no array:
+`old.len()` of a reversed range threw `Cannot read properties of
+undefined (reading 'start')`, and a `Vec`'s iterator's drop threw. What a
+place held is given back as it is (`Std::gives_back_held`). ADR 0262's
+"results change" case: Rust's behavior is kept.
+
+- `test/corpus/iterator_replaced_where_capacities_are_kept.rs`: a
+  reversed range's, a `Vec`'s, a slice's and a `split`'s iterator
+  replaced, one of items with a destructor dropped, in a crate that reads
+  a capacity, both builds against native Rust; the metamorphic net's
+  `fact-capacity` rows of `iterator_values_meet.rs` and
+  `iterator_values_meet_drops.rs` run as Rust does.
+- The mutation is `replaced-made-an-iterator-again`.

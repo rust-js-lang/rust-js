@@ -1199,6 +1199,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out,
         )?;
         let value = self.write_value(state, (known, output), value, span, out)?;
+        // What a place held, given back as it was held (#1238).
+        if known.gives_back_held() {
+            return Ok(value);
+        }
         Ok(self.std_value_as(value, output, arg_tys))
     }
 

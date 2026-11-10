@@ -116,4 +116,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_index_generic.rs$"],
   },
+  {
+    name: "replaced-made-an-iterator-again",
+    breaks:
+      "`mem::replace`'s old value is made an iterator again, as a std call that makes one of an array is: in a crate that reads a capacity, `$iter(old)` of a reversed range, whose `len()` throws (#1238)",
+    file: "src/lower/recognition.rs",
+    find: "        matches!(self, Std::Replace | Std::MemTake)\n",
+    replace: "        matches!(self, Std::MemTake)\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_replaced_where_capacities_are_kept.rs$"],
+  },
 ];

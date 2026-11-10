@@ -556,6 +556,14 @@ pub(super) enum StreamOp {
 }
 
 impl Std {
+    /// Does it give back what a place held, as it was held there: the old
+    /// value of `mem::replace` and `mem::take`, whatever form its type's is,
+    /// std's iterator struct or a `$iter`, never one std made of an array,
+    /// which `std_value_as` would make an iterator again (#1238).
+    pub(super) fn gives_back_held(self) -> bool {
+        matches!(self, Std::Replace | Std::MemTake)
+    }
+
     /// Does it give its `&mut` to a number or text as a cell already: its
     /// receiver, the `{ value }` box that is (ADRs 0317, 0318, 0320), or one it
     /// makes (ADR 0327): no handle (ADR 0152) to make.

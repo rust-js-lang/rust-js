@@ -81,7 +81,7 @@ function main() {
   it = iterator_map({ start: 0, end: 3 }, tens, { next: $rangeNext });
   const value$2 = $next(it);
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const old = replaced(it, iterator_map({ start: 5, end: 7 }, tens, { next: $rangeNext }));
+  let old = replaced(it, iterator_map({ start: 5, end: 7 }, tens, { next: $rangeNext }));
   console.log(`[${$foldToArray($roomForHint(it, 4, true)).join(", ")}]`);
   console.log(`[${$foldToArray($roomForHint(old, 4, true)).join(", ")}]`);
 
@@ -159,11 +159,10 @@ function main() {
   it = iterator_map({ start: 0, end: 3 }, tens, { next: $rangeNext });
   const value$7 = $next(it);
   console.log(`${value$7 == null ? "None" : `Some(${value$7})`}`);
-  const old$2 = it;
+  old = it;
   it = iterator_map({ start: 5, end: 8 }, tens, { next: $rangeNext });
-  let old$1 = Iterator.from(old$2);
   const value$8 = $sizeHint(it);
-  const value$9 = $sizeHint(old$1);
+  const value$9 = $sizeHint(old);
   console.log(
     `(${value$8[0]}, ${value$8[1] == null ? "None" : `Some(${value$8[1]})`}) (${value$9[0]}, ${value$9[1] == null ? "None" : `Some(${value$9[1]})`})`,
   );
@@ -172,7 +171,7 @@ function main() {
     nthBack: $rangeNthBack,
   });
   console.log(
-    `${value$10 == null ? "None" : `Some(${value$10})`} ${mapExactSizeIterator_len(old$1, { len: $rangeLen })}`,
+    `${value$10 == null ? "None" : `Some(${value$10})`} ${mapExactSizeIterator_len(old, { len: $rangeLen })}`,
   );
   let other = iterator_map({ start: 10, end: 12 }, tens, { next: $rangeNext });
   const t = it;
@@ -208,9 +207,9 @@ function main() {
 
   const value$11 = $next(items$1);
   console.log(`${value$11 == null ? "None" : `Some(${value$11})`}`);
-  old$1 = refill(iterator_map({ start: 7, end: 9 }, tens, { next: $rangeNext }));
+  old = refill(iterator_map({ start: 7, end: 9 }, tens, { next: $rangeNext }));
   console.log(
-    `${mapExactSizeIterator_len(items$1, { len: $rangeLen })} ${mapExactSizeIterator_len(old$1, { len: $rangeLen })}`,
+    `${mapExactSizeIterator_len(items$1, { len: $rangeLen })} ${mapExactSizeIterator_len(old, { len: $rangeLen })}`,
   );
   const value$12 = mapDoubleEndedIterator_nextBack(items$1, {
     next_back: $rangeNextBack,
@@ -218,7 +217,7 @@ function main() {
   });
   console.log(`${value$12 == null ? "None" : `Some(${value$12})`}`);
   console.log(
-    `[${$foldToArray($roomForHint(items$1, 4, true)).join(", ")}] [${$foldToArray($roomForHint(old$1, 4, true)).join(", ")}]`,
+    `[${$foldToArray($roomForHint(items$1, 4, true)).join(", ")}] [${$foldToArray($roomForHint(old, 4, true)).join(", ")}]`,
   );
 
   // Other adapters: a filter, a chain, a rev, a take and a skip.
@@ -228,14 +227,12 @@ function main() {
   );
   const value$13 = $next(filtered);
   console.log(`${value$13 == null ? "None" : `Some(${value$13})`}`);
-  old$1 = replaced(
+  old = replaced(
     filtered,
     $filterEnds($iterator({ start: 6, end: 10 }, $rangeNext, false, $rangeNextBack), odd),
   );
   const value$14 = $nextBack(filtered);
-  console.log(
-    `${value$14 == null ? "None" : `Some(${value$14})`} [${Array.from(old$1).join(", ")}]`,
-  );
+  console.log(`${value$14 == null ? "None" : `Some(${value$14})`} [${Array.from(old).join(", ")}]`);
   console.log(`[${Array.from(filtered).join(", ")}]`);
 
   const chained = iterator_chain(
@@ -246,7 +243,7 @@ function main() {
   );
   const value$15 = $next(chained);
   console.log(`${value$15 == null ? "None" : `Some(${value$15})`}`);
-  old$1 = replaced(
+  old = replaced(
     chained,
     iterator_chain(
       { start: 10, end: 11 },
@@ -256,12 +253,12 @@ function main() {
     ),
   );
   const value$16 = $sizeHint(chained);
-  const value$17 = $sizeHint(old$1);
+  const value$17 = $sizeHint(old);
   console.log(
     `(${value$16[0]}, ${value$16[1] == null ? "None" : `Some(${value$16[1]})`}) (${value$17[0]}, ${value$17[1] == null ? "None" : `Some(${value$17[1]})`})`,
   );
   console.log(
-    `[${$foldToArray($roomForHint(chained, 4, true)).join(", ")}] [${$foldToArray($roomForHint(old$1, 4, true)).join(", ")}]`,
+    `[${$foldToArray($roomForHint(chained, 4, true)).join(", ")}] [${$foldToArray($roomForHint(old, 4, true)).join(", ")}]`,
   );
 
   let reversed = iterator_rev(
@@ -271,18 +268,17 @@ function main() {
   );
   const value$18 = $next(reversed);
   console.log(`${value$18 == null ? "None" : `Some(${value$18})`}`);
-  const old$3 = reversed;
+  old = reversed;
   reversed = iterator_rev(
     { start: 10, end: 13 },
     { next: $rangeNext },
     { next_back: $rangeNextBack, nthBack: $rangeNthBack },
   );
-  const old$4 = Iterator.from(old$3);
   console.log(
-    `${revExactSizeIterator_len(reversed, { len: $rangeLen })} ${revExactSizeIterator_len(old$4, { len: $rangeLen })}`,
+    `${revExactSizeIterator_len(reversed, { len: $rangeLen })} ${revExactSizeIterator_len(old, { len: $rangeLen })}`,
   );
   console.log(
-    `[${$foldToArray($roomForHint(reversed, 4, true)).join(", ")}] [${$foldToArray($roomForHint(old$4, 4, true)).join(", ")}]`,
+    `[${$foldToArray($roomForHint(reversed, 4, true)).join(", ")}] [${$foldToArray($roomForHint(old, 4, true)).join(", ")}]`,
   );
 
   const taken = iterator_take({ start: 0, end: 10 }, 3, { next: $rangeNext });
@@ -293,9 +289,8 @@ function main() {
     `${next == null ? "None" : `Some(${next})`} ${value$19 == null ? "None" : `Some(${value$19})`}`,
   );
   const oldTaken = replaced(taken, iterator_take({ start: 20, end: 30 }, 2, { next: $rangeNext }));
-  const old$5 = skipped;
+  const oldSkipped = skipped;
   skipped = iterator_skip({ start: 20, end: 25 }, 3, { next: $rangeNext });
-  const oldSkipped = Iterator.from(old$5);
   const value$20 = $sizeHint(taken);
   const value$21 = $sizeHint(skipped);
   console.log(

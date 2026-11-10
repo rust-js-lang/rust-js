@@ -76,18 +76,16 @@ function main() {
   try {
     const first = $next(it);
     try {
-      const old = Iterator.from(
-        $take(
-          it,
-          iterator_map(
-            $iter([[6], [7]]),
-            seen,
-            { next: $next, advanceBy: $advanceSlice },
-            $dropEach(loudDrop_drop),
-            loudDrop_drop,
-            undefined,
-            loudDrop_drop,
-          ),
+      const old = $take(
+        it,
+        iterator_map(
+          $iter([[6], [7]]),
+          seen,
+          { next: $next, advanceBy: $advanceSlice },
+          $dropEach(loudDrop_drop),
+          loudDrop_drop,
+          undefined,
+          loudDrop_drop,
         ),
       );
       console.log("replaced");
