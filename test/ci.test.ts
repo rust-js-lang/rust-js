@@ -6,7 +6,7 @@ import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, sta
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
-import { corpusRows, crashes, dependency, lockedVersion, lockOf, written } from "../scripts/crate-corpus";
+import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
 import {
   batches,
   type Change,
@@ -267,13 +267,14 @@ test("each part of a test file a setting selects runs where `parts` says", () =>
 // slices, the corpus with std's iterator structs and the declarations'
 // callers, which the nightly skips, as its `matrix`, `conformance`, `forms`,
 // `format`, `numbers`, `async`, `consumers` and `std` run all of each, and
-// its suite the callers.
+// its suite the callers; and `crater-report`, the Crater's shards said as
+// one, which here's `crater` runs whole.
 test("the nightly, here, has each job the nightly has", () => {
   const ids = (file: string) => {
     const text = readFileSync(join(root, ".github/workflows", file), "utf8");
     return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
   };
-  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators", "iterator-conformance", "iterator-forms", "format-grid", "number-grid", "memory-net", "declarations", "async-points", "consumer-net", "std-net", "metamorphic-cases", "crate-corpus", "react-in-rust-port"].includes(id));
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators", "iterator-conformance", "iterator-forms", "format-grid", "number-grid", "memory-net", "declarations", "async-points", "consumer-net", "std-net", "metamorphic-cases", "crate-corpus", "react-in-rust-port", "crater-report"].includes(id));
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 
@@ -686,6 +687,8 @@ test("the crate corpus is its table's rows, each at an exact release", () => {
       "docs/crate-corpus.md's row `either 1.15` names no exact release: write the crate's name and version, `either 1.19.0`, and its features after them, `chrono 0.4.45 (`alloc`)`",
   });
   expect(corpusRows(table("strum 0.27.2 (`std`, `derive`)"))).toEqual([{ name: "strum", version: "0.27.2", features: ["std", "derive"], bar: "runs" }]);
+  // A release's build metadata is part of it, as its lock names it (#1174).
+  expect(corpusRows(table("toml 1.2.1+spec-1.1.0", "blocked"))).toEqual([{ name: "toml", version: "1.2.1+spec-1.1.0", bar: "blocked" }]);
 });
 
 
@@ -767,4 +770,26 @@ test("a change adding or editing a corpus case runs each of its rewrites", () =>
     expect(ofCases({ all, changed: ["src/lower/mir.rs", "test/corpus/new_case.js"], branch: [] })).toEqual([]);
   }
   expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("bun scripts/iteratorSlice.ts run metamorphic 4 ${{ needs.plan.outputs.since }}");
+});
+
+// A push's check asks every row but the top crates by downloads', and of
+// those one in 8, a new set each commit; the nightly asks every row (#1174).
+test("a sampled table's rows are marked, and a push's commit picks one in 8 of them, a new set each commit", () => {
+  const doc = `| Crate | Verdict | Refusals |\n|---|---|---|\n| either 1.19.0 | runs | |\n\n| ${sampledHeader} | Verdict | Refusals |\n|---|---|---|\n| syn 3.0.10 | blocked | |\n`;
+  expect(corpusRows(doc)).toEqual([
+    { name: "either", version: "1.19.0", bar: "runs" },
+    { name: "syn", version: "3.0.10", bar: "blocked", sampled: true },
+  ]);
+  const rows = corpusRows(readFileSync(join(root, "docs/crate-corpus.md"), "utf8"));
+  if (!Array.isArray(rows)) throw new Error(rows.problem);
+  const sampled = rows.filter((c) => c.sampled);
+  expect(sampled.length).toBeGreaterThan(70);
+  // Every other row, every commit.
+  expect(rows.filter((c) => !c.sampled).every((c) => sampledIn(c, "a"))).toBe(true);
+  // About one in 8 of a commit's, over many commits, and not the same set.
+  const seeds = Array.from({ length: 200 }, (_, i) => `commit${i}`);
+  const picked = seeds.map((seed) => sampled.filter((c) => sampledIn(c, seed)).map((c) => c.name).join());
+  const share = seeds.reduce((n, seed) => n + sampled.filter((c) => sampledIn(c, seed)).length, 0) / (seeds.length * sampled.length);
+  expect(Math.abs(share - 1 / sampledOneIn)).toBeLessThan(0.02);
+  expect(new Set(picked).size).toBeGreaterThan(150);
 });

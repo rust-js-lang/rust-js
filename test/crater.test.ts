@@ -2,7 +2,11 @@
 // and its cut of a refused test from the JS's copy of a crate (#1087,
 // scripts/crater.ts). The net itself runs each night.
 import { expect, test } from "bun:test";
-import { attributesFrom, cut, cutFor, decidedOf, declaredIn, differences, errorsAt, executables, forTheJs, innerAttributes, integrationFiles, items, jsOutcomes, judged, libraryTestsOnly, modulePath, nativeOutcomes, offTarget, oneIntegrationTest, onlyForTests, said, testModulePath, testOnlyFile, undecided } from "../scripts/crater";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { boundCrater, cutFirst, decidedOf, differences, firstError, executables, forTheJs, integrationFiles, jsOutcomes, inShard, judged, knownOf, libraryTestsOnly, listedButSame, merged, nativeOutcomes, oneIntegrationTest, ranked, reasonOf, said, undecided } from "../scripts/crater";
+import { attributesFrom, cut, cutFor, declaredIn, dropped, errorsAt, innerAttributes, items, modulePath, offTarget, onlyForTests, placeOf, testModulePath, testOnlyFile, underItems } from "../scripts/crater-cuts";
 
 test("each test's outcome is read of cargo test's lines and of Node's runner's", () => {
   expect(nativeOutcomes("running 3 tests\ntest a::t1 ... ok\ntest a::t2 ... FAILED\ntest t3 ... ignored, slow\n")).toEqual({
@@ -103,7 +107,7 @@ test("what's cut for an error is its test, or a function only tests reach, never
   expect(modulePath("src/a/b.rs")).toEqual(["a", "b"]);
   expect(modulePath("src/a/mod.rs")).toEqual(["a"]);
   expect(cutFor("src/lib.rs", source, 17)).toEqual({ from: 13, test: "tests::refused" });
-  expect(cutFor("src/a.rs", source, 10)).toEqual({ from: 9 });
+  expect(cutFor("src/a.rs", source, 10)).toEqual({ from: 9, item: "a::tests::helper" });
   expect(cutFor("src/lib.rs", source, 2)).toBeUndefined();
   const cutSource = cut(source, [13, 9]);
   expect(cutSource.split("\n")[8]).toBe("    #[cfg(any())] // rust-js's Crater: refused");
@@ -134,7 +138,7 @@ test("a file only tests build, `#[cfg(test)] mod tests;`, has its functions cut,
   expect(declaredIn("src/tests/iter.rs", (path) => path in files)).toEqual({ parent: "src/tests/mod.rs", name: "iter" });
   expect(testOnlyFile("src/tests/iter.rs", read)).toBe(true);
   expect(testOnlyFile("src/util.rs", read)).toBe(false);
-  expect(cutFor("src/tests/iter.rs", files["src/tests/iter.rs"], 2, true)).toEqual({ from: 1 });
+  expect(cutFor("src/tests/iter.rs", files["src/tests/iter.rs"], 2, true)).toEqual({ from: 1, item: "tests::iter::helper" });
   expect(cutFor("src/util.rs", files["src/util.rs"], 1, false)).toBeUndefined();
 });
 
@@ -206,7 +210,7 @@ test("each test binary is run by itself, an integration test's outcomes keyed by
   expect(integrationFiles({ "a::t1": "ok", "tests/test_version.rs::t1": "ok", "tests/test_version.rs::t2": "failed" })).toEqual(["tests/test_version.rs"]);
   expect(testModulePath("tests/test_version.rs", "tests/test_version.rs")).toEqual([]);
   expect(testModulePath("tests/util/mod.rs", "tests/test_version.rs")).toEqual(["util"]);
-  expect(cutFor("tests/util/mod.rs", "pub fn helper() {\n    1;\n}\n", 2, true, ["util"])).toEqual({ from: 1 });
+  expect(cutFor("tests/util/mod.rs", "pub fn helper() {\n    1;\n}\n", 2, true, ["util"])).toEqual({ from: 1, item: "util::helper" });
   expect(cutFor("tests/test_version.rs", "#[test]\nfn t1() {\n    1;\n}\n", 3, true, [])).toEqual({ from: 1, test: "t1" });
 });
 
@@ -238,4 +242,158 @@ test("an integration test's file its own cfg leaves off wasm32 is of no test of 
   const read = (files: Record<string, string>) => (path: string) => files[path];
   expect(offTarget("tests/dateutils.rs::try_verify", read({ "tests/dateutils.rs": text }))).toBe(true);
   expect(offTarget("tests/other.rs::t", read({ "tests/other.rs": '#![cfg(feature = "std")]\nfn a() {}\n' }))).toBe(false);
+});
+
+// What stops the crates' tests, ranked by the crates each reason stops, then
+// the native tests: a cut test, one refused at run time, every test of a
+// library refused, and a crate that couldn't be asked (#1174).
+test("each refusal's reason is ranked by the crates and then the native tests it stops", () => {
+  expect(reasonOf("rust-js does not support `io::Read` (src/de.rs:12)")).toBe("rust-js does not support `io::Read`");
+  const verdicts = new Map<string, Parameters<typeof said>[1]>([
+    ["a", { native: { t1: "ok", t2: "ok", t3: "failed" }, js: { t1: "ok" }, cut: { t2: "rust-js does not support `io::Read`", t3: "rust-js does not support `io::Read`" }, differ: [] }],
+    ["b", { native: { u1: "ok", u2: "ok", u3: "ignored" }, refused: ["rust-js does not support `io::Read` (src/lib.rs:4)", "rust-js does not support `thread::spawn` (src/lib.rs:9)"] }],
+    ["c", { native: { v1: "ok" }, js: {}, cut: {}, differ: [], refusedAtRun: [{ name: "v1", why: "rust-js does not support a byte view" }] }],
+    ["d", { problem: "its tests don't run natively: x" }],
+  ]);
+  expect(ranked(verdicts)).toEqual([
+    { why: "rust-js does not support `io::Read`", crates: ["a", "b"], tests: 3 },
+    { why: "rust-js does not support `thread::spawn`", crates: ["b"], tests: 2 },
+    { why: "at run time: rust-js does not support a byte view", crates: ["c"], tests: 1 },
+    { why: "not asked: its tests don't run natively: x", crates: ["d"], tests: 0 },
+  ]);
+});
+
+// base64's `src/tests.rs`, `#[cfg(test)] mod tests;`, has an impl of
+// `Distribution` for its tests; a refusal in it is its tests', never the
+// library's. An array type's `;` in a signature ends no item (#1174).
+test("an impl only tests build is cut as a function is, and an array type's `;` ends no item", () => {
+  const tests = [
+    "use super::*;",
+    "",
+    "impl Distribution<Mode> for Standard {",
+    "    fn sample<R: Rng>(&self, rng: &mut R) -> Mode {",
+    "        Mode::A",
+    "    }",
+    "}",
+    "",
+    "fn takes(bytes: [u8; 4], f: impl Fn() -> u8) -> impl Iterator<Item = u8> {",
+    "    bytes.into_iter()",
+    "}",
+  ].join("\n");
+  expect(cutFor("src/tests.rs", tests, 5, true)).toEqual({ from: 3 });
+  expect(cutFor("src/tests.rs", tests, 10, true)).toEqual({ from: 9, item: "tests::takes" });
+  expect(cutFor("src/lib.rs", tests, 5)).toBeUndefined();
+  expect(items(tests).map((item) => [item.kind, item.name, item.from, item.to])).toEqual([
+    ["fn", "sample", 4, 6],
+    ["impl", "", 3, 7],
+    ["fn", "takes", 9, 11],
+  ]);
+});
+
+// base64's test files `use crate::tests::random_config;`, which an earlier
+// round cut; the `use` is cut, never the library, and a test cut that
+// didn't pass natively isn't counted, proc-macro2's (#1174).
+test("a `use` only tests build is cut, and only tests that passed natively count as cut", () => {
+  const tests = ["use super::*;", "use crate::{", "    alphabet,", "    tests::{random_config, random_engine},", "};", "", "fn helper() {}"].join("\n");
+  expect(cutFor("src/read/decoder_tests.rs", tests, 3, true)).toEqual({ from: 2 });
+  expect(cutFor("src/read/decoder_tests.rs", tests, 1, true)).toEqual({ from: 1 });
+  // Of a `use` of several names, the one unresolved alone, the rest kept.
+  const unresolved = cutFor("src/read/decoder_tests.rs", tests, 4, true, ["read", "decoder_tests"], "unresolved import `crate::tests::random_config`");
+  expect(unresolved).toEqual({ from: 4, drop: ["random_config"] });
+  // Several of one `use`, rustc's one error of them: those of its line.
+  const both = "unresolved imports `crate::tests::random_config`, `crate::tests::random_engine`, `crate::other`";
+  expect(cutFor("src/read/decoder_tests.rs", tests, 4, true, ["read", "decoder_tests"], both)).toEqual({ from: 4, drop: ["random_config", "random_engine"] });
+  expect(dropped(tests, 4, "random_config").split("\n")[3]).toBe("    tests::{random_engine},");
+  expect(dropped(tests, 3, "alphabet").split("\n")[2]).toBe("    ");
+  expect(cutFor("src/lib.rs", tests, 3)).toBeUndefined();
+  const inModule = ["pub fn f() {}", "", "#[cfg(test)]", "mod tests {", "    use crate::gone;", "}"].join("\n");
+  expect(cutFor("src/lib.rs", inModule, 5)).toEqual({ from: 5 });
+  const crate = { name: "c", version: "1.0.0" } as Parameters<typeof said>[0];
+  const verdict = judged({ a: "ok", b: "ok", c: "failed" }, { a: "ok" }, { b: "refused", c: "refused" }, "/nonexistent");
+  expect(said(crate, verdict)).toBe("c 1.0.0: 1 of 2 as native, 1 refused");
+});
+
+// A wrong answer known, listed under its open issue, is shown as known and
+// fails no check; and a listed test that runs as native fails `--check`, so
+// the list only shrinks (#1174, strsim's under #1264).
+test("a difference listed under an open issue is a known wrong answer, and a listed test that runs as native is to take off", () => {
+  const decided = decidedOf("c tests::a  #1264 zip in generic code\nc tests::b  a NaN's sign isn't kept\nc tests::d  #1264 zip\n");
+  const differ = [
+    { name: "tests::a", js: "failed" },
+    { name: "tests::b", js: "failed" },
+  ];
+  expect(knownOf("c", differ, decided)).toEqual([{ name: "tests::a", js: "failed" }]);
+  expect(undecided("c", differ, decided)).toEqual([]);
+  const crate = { name: "c", version: "1.0.0" } as Parameters<typeof said>[0];
+  const verdict = judged({ "tests::a": "ok", "tests::b": "ok", "tests::d": "ok" }, { "tests::d": "ok" }, {}, "/nonexistent");
+  expect(said(crate, verdict, decided)).toBe("c 1.0.0: 1 of 3 as native, 0 refused, 1 decided, 1 WRONG known (#1264)");
+  expect(listedButSame("c", verdict, decided)).toEqual(["tests::d"]);
+});
+
+// The nightly's Crater in shards, each every n-th crate, merged as one run,
+// a shard missing or twice refused (#1174).
+test("the Crater's shards are every n-th crate, and merge as one run only whole", () => {
+  expect(inShard([1, 2, 3, 4, 5], 2, 2)).toEqual([2, 4]);
+  expect(inShard([1, 2, 3, 4, 5], 1, 1)).toEqual([1, 2, 3, 4, 5]);
+  const verdict = { problem: "x" };
+  const all = merged([{ shard: 2, of: 2, verdicts: { b: verdict } }, { shard: 1, of: 2, verdicts: { a: verdict } }]);
+  expect(all instanceof Map && [...all.keys()].sort()).toEqual(["a", "b"]);
+  expect(merged([{ shard: 1, of: 2, verdicts: {} }])).toEqual({ problem: "shards 1 of 2: each of 1, 2 once" });
+  expect(merged([{ shard: 1, of: 2, verdicts: {} }, { shard: 1, of: 2, verdicts: {} }])).toEqual({ problem: "shards 1, 1 of 2: each of 1, 2 once" });
+  expect(merged([])).toEqual({ problem: "there are no shards" });
+});
+
+// rstest's `#[apply(all_engines)] fn f`, no `#[test]`, makes tests under
+// its path, `engine::tests::f::case_1`: cut with it, never read as not run
+// (#1174, base64's).
+test("a function only tests reach is cut with the tests a macro made of it", () => {
+  const tests = ["#[apply(all_engines)]", "fn decode<E: EngineWrapper>(engine: E) {", "    refused();", "}"].join("\n");
+  expect(cutFor("src/engine/tests.rs", tests, 3, true)).toEqual({ from: 1, item: "engine::tests::decode" });
+  expect(underItems(["engine::tests::decode::case_1", "engine::tests::decoder", "engine::tests::other"], { "engine::tests::decode": "refused" })).toEqual({ "engine::tests::decode::case_1": "refused" });
+});
+
+// typenum's `uint::tests::binary` hangs rust-js's layout (#1269): the list
+// cuts it before its JS is built, found by its path in its source (#1174).
+test("a test the list cuts first is found by its path and never asked", () => {
+  const decided = decidedOf("typenum uint::tests::binary  cut: #1269 a layout of half an hour\ntypenum uint::tests::other  #1264 zip\n");
+  expect(cutFirst("typenum", decided)).toEqual({ "uint::tests::binary": "#1269 a layout of half an hour" });
+  expect(cutFirst("other", decided)).toEqual({});
+  const files: Record<string, string> = {
+    "src/lib.rs": "mod uint;\n",
+    "src/uint.rs": "pub fn f() {}\n\n#[cfg(test)]\nmod tests {\n    #[test]\n    fn binary() {}\n}\n",
+    "tests/zip.rs": "mod inner {\n    #[test]\n    fn t() {}\n}\n",
+  };
+  const read = (path: string) => files[path];
+  expect(placeOf("uint::tests::binary", read)).toEqual({ file: "src/uint.rs", from: 5 });
+  expect(placeOf("uint::tests::gone", read)).toBeUndefined();
+  expect(placeOf("tests/zip.rs::inner::t", read)).toEqual({ file: "tests/zip.rs", from: 2 });
+});
+
+// tinyvec's feature `real_blackbox = ["criterion/real_blackbox"]` names a
+// dev-dependency its source doesn't: kept, or Cargo can't read the
+// manifest (#1174).
+test("a dev-dependency a feature names is kept for the library's tests", () => {
+  const manifest = '[package]\nname = "tinyvec"\n\n[features]\nreal_blackbox = ["criterion/real_blackbox"]\nserde = ["dep:serde"]\n\n[dev-dependencies.criterion]\nversion = "0.3"\n\n[dev-dependencies.smallvec]\nversion = "1"\n';
+  expect(libraryTestsOnly(manifest, () => false)).toBe('[package]\nautotests = false\nname = "tinyvec"\n\n[features]\nreal_blackbox = ["criterion/real_blackbox"]\nserde = ["dep:serde"]\n\n[dev-dependencies.criterion]\nversion = "0.3"\n\n');
+});
+
+// A build that failed is said by its first error, not Cargo's last words
+// (#1174, futures-util's said only a note).
+test("a failed build is said by its first error", () => {
+  expect(firstError("   Checking a v1\nerror[E0432]: unresolved import `x`\n  --> src/lib.rs:3:5\nerror: aborting due to 1 previous error\nwarning: build failed, waiting for other jobs to finish...\nnote: this project has React 19.3.0\n")).toBe("error[E0432]: unresolved import `x` --> src/lib.rs:3:5");
+  expect(firstError("a\nb\nc\nd\n")).toBe("b c d");
+});
+
+// The Crater's builds, 13 GiB of 100 crates' native tests, held to their cap
+// with the disk's other stores; its verdicts never (#1174, #1213).
+test("the Crater's store is held to its cap, its kept verdicts never", () => {
+  const dir = mkdtempSync(join(tmpdir(), "crater-store-"));
+  for (const name of ["kept", "native", "a-1.0.0-js"]) {
+    mkdirSync(join(dir, name));
+    writeFileSync(join(dir, name, "f"), "x".repeat(64 * 1024));
+  }
+  const held = boundCrater({ dir, cap: 0, free: () => Number.POSITIVE_INFINITY });
+  expect(held.removed).toBe(2);
+  expect(readdirSync(dir)).toEqual(["kept"]);
+  rmSync(dir, { recursive: true, force: true });
 });

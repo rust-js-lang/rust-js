@@ -808,10 +808,17 @@ jobs:
   # The small Crater (ADR 1109): each crate of the corpus's own `#[test]`s,
   # natively and as JS, each test compared; a refused one cut and the rest
   # run. A wrong answer scripts/crater-decided.txt doesn't list fails it.
+  # Every fourth crate on each of four machines: its 100 crates took about
+  # 8,000 crate-seconds on the Mac, two at a time on a runner's 4 cores
+  # (#1174); `crater-report` says them as one run.
   crater:
-    name: small Crater
+    name: small Crater ${{ matrix.shard }} of 4
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
@@ -826,7 +833,40 @@ jobs:
       - name: Run each crate's tests natively and as JS
         env:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: bun scripts/crater.ts --check
+        run: bun scripts/crater.ts --shard=${{ matrix.shard }}/4 --out=crater-${{ matrix.shard }}.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: crater-${{ matrix.shard }}
+          path: crater-${{ matrix.shard }}.json
+          retention-days: 14
+
+  # The Crater's shards as one run: each crate's line, what stops them
+  # ranked by crates and tests (#1174), and `--check`'s wrong answers.
+  crater-report:
+    name: small Crater's report
+    needs: crater
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: crater-*
+          path: crater
+          merge-multiple: true
+      - run: bun scripts/crater.ts --merge --check crater/*.json
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: crater-refusals
+          path: target/crater-refusals.json
+          if-no-files-found: ignore
+          retention-days: 14
 
   # React's port (scripts/react-in-rust.ts): react-in-rust at the commit
   # `ports/react-in-rust.pin` names, each of its crates compiled to JS by
@@ -872,7 +912,7 @@ jobs:
   # again that day, commented on, naming each failed job with its link: the
   # issue watch gives it an owner that day, and no one polls for it.
   issue:
-    needs: [check, seeds, fuzz, stages, programs, forms, determinism, memory, mut-refs, matrix, conformance, points, unwind, format, numbers, async, consumers, std, crates, port]
+    needs: [check, seeds, fuzz, stages, programs, forms, determinism, memory, mut-refs, matrix, conformance, points, unwind, format, numbers, async, consumers, std, crates, crater-report, port]
     if: always() && github.ref == 'refs/heads/main' && contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 10

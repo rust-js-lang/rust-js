@@ -17,7 +17,7 @@
 //                           `--measure`, as walking `target/` takes 3.5 s
 
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
@@ -25,13 +25,14 @@ import { checkout, floorBytes, machineStore, mainCheckoutOf, tempRoot } from "..
 import { compileCache, capBytes as compileCap, prune as pruneCompiles } from "../test/compiles";
 import { keptAppsCap, keptStores, pruneKeptStores } from "../test/kept";
 import { boundCrateProjects, crateProjectsCap } from "./crate-corpus";
+import { boundCrater, craterCap } from "./crater";
 import { bound as boundPorts, ports, portsCap } from "./react-in-rust";
 import { keptMaps, mapStore, pruneMaps } from "./testMap";
 
 const GiB = 2 ** 30;
 
 /** The most every store inside the checkouts keeps together, `.cache/`,
- * the worktrees' `target/`s and the temp root: their caps, 24 GiB, and a
+ * the worktrees' `target/`s and the temp root: their caps, 32 GiB, and a
  * build of the compiler and its tests' fixtures, about 6 GiB, with room for
  * a second worktree's (#1213). `check:fast` warns past 90% of it. */
 export const budgetBytes = 40 * GiB;
@@ -145,6 +146,7 @@ export function stores(): Store[] {
     const label = (path: string) => (tree === main ? `target/${path}` : `${resolve(tree).split("/").pop()}/target/${path}`);
     inChecks.push(
       { name: label("crate-corpus"), dir: at("crate-corpus"), cap: crateProjectsCap, bound: (free) => void boundCrateProjects({ dir: at("crate-corpus"), free }) },
+      { name: label("crater"), dir: at("crater"), cap: craterCap, bound: (free) => void boundCrater({ dir: at("crater"), free }) },
       { name: label("kept-apps"), dir: at("kept-apps"), cap: keptAppsCap },
       { name: label("compile-cache"), dir: at("compile-cache"), cap: compileCap(), bound: own ? (free) => void pruneCompiles({ root: compileCache, free }) : undefined },
       { name: label("mutants"), dir: at("mutants"), cap: mutantsCap, bound: (free) => void boundEntries(at("mutants"), mutantsCap, free) },
@@ -173,7 +175,7 @@ export function stores(): Store[] {
 }
 
 /** A worktree's `target/` entries that are stores of their own. */
-const storedIn = new Set(["crate-corpus", "kept-apps", "compile-cache", "mutants", "native-sources"]);
+const storedIn = new Set(["crate-corpus", "crater", "kept-apps", "compile-cache", "mutants", "native-sources"]);
 
 /** What `store` takes of the disk: its entries', or its directory's. */
 export function bytesOfStore(store: Store): number {
@@ -214,6 +216,8 @@ if (import.meta.main) {
   }
   const sized = all.map((store) => ({ store, bytes: bytesOfStore(store) }));
   const total = sized.filter(({ store }) => !store.outside).reduce((n, { bytes }) => n + bytes, 0);
+  // A checkout that has kept nothing yet has no `.cache/`.
+  mkdirSync(machineStore, { recursive: true });
   writeFileSync(measured, JSON.stringify({ total, at: new Date().toISOString() }));
   if (process.argv.includes("--measure")) process.exit(0);
   const rows = sized.map(({ store, bytes }) => [store.name, size(bytes), store.cap === undefined ? (store.outside ? "-" : "a build") : size(store.cap), oldest(store), store.outside ? "outside" : ""]);

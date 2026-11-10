@@ -13,7 +13,13 @@
 //   bun scripts/crater.ts --check [name ...]
 //                                        and fail on a wrong answer that
 //                                        scripts/crater-decided.txt doesn't
-//                                        list as decided
+//                                        list, or a listed one that runs
+//                                        as native
+//   bun scripts/crater.ts --shard=2/4 --out=c2.json [--check]
+//                                        every fourth crate, from the
+//                                        second, its verdicts written
+//   bun scripts/crater.ts --merge [--check] c1.json c2.json ..
+//                                        the shards, said as one run
 //
 // Each crate's source, as crates.io packs it, is copied to
 // `target/crater/<name>-<version>` and its tests built there, natively in
@@ -23,7 +29,10 @@
 // kept by its release, the compiler's build, its row's features, how the
 // Crater asks and the tooling's files, `target/crater/kept/`,
 // and asked again only where one changed.
-// Writes `target/crater.json` and prints a line per crate.
+// What it reads and cuts of a crate's source is scripts/crater-cuts.ts's.
+// Writes `target/crater.json` and prints a line per crate; then what stops
+// them, each reason ranked by the crates and tests it stops,
+// `target/crater-refusals.json` (`ranked`, #1174).
 
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -36,11 +45,15 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { join, resolve } from "node:path";
 import { currentBuild } from "../test/compiles";
+import { floorBytes } from "../test/bounded";
+import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { corpusRows, type Crate } from "./crate-corpus";
+import { cut, cutFor, dropped, errorsAt, items, modulePath, offTarget, placeOf, testModulePath, testOnlyFile, underItems } from "./crater-cuts";
 import { memoryBudget } from "./shard";
 
 const root = join(import.meta.dir, "..");
@@ -138,333 +151,51 @@ export function differences(
     .map(([name]) => ({ name, js: js[name] ?? "not run" }));
 }
 
-/** Each error a build said, rustc's or rust-js's, and the place it names,
- * `src/lib.rs:1812`. */
-export function errorsAt(
-  said: string,
-): { why: string; file: string; line: number }[] {
-  return [
-    ...said.matchAll(/^error(?:\[E\d+\])?: (.*)\n\s*--> ([^:\n]+):(\d+):\d+/gm),
-  ].map((m) => ({ why: m[1], file: m[2], line: Number(m[3]) }));
+/** What a build that failed said first went wrong: its first error, of
+ * the crate it was building, or its last lines where it said none, never
+ * Cargo's last words, `build failed, waiting for other jobs` or a note,
+ * futures-util's (#1174). */
+export function firstError(said: string): string {
+  const lines = said.trim().split("\n");
+  const at = lines.findIndex((line) => /^error(?:\[E\d+\])?: /.test(line) && !line.startsWith("error: aborting"));
+  if (at < 0) return lines.slice(-3).join(" ");
+  const place = lines.slice(at + 1, at + 3).find((line) => /^\s*--> /.test(line));
+  return [lines[at], place?.trim()].filter(Boolean).join(" ");
 }
 
-/** rustc's cfgs of rust-js's target, `rustc --print cfg --target
- * wasm32-unknown-unknown`'s: a name alone, `target_has_atomic`, or a name
- * and each of its values, `target_os="unknown"`. The one source of them,
- * read once (#1153). */
-let wasmCfgs: Map<string, Set<string>> | undefined;
-function targetCfgs(): Map<string, Set<string>> {
-  if (wasmCfgs) return wasmCfgs;
-  const printed = spawnSync("rustc", ["--print", "cfg", "--target", "wasm32-unknown-unknown"], { cwd: root, encoding: "utf8" });
-  if (printed.status !== 0) throw new Error(`rustc --print cfg failed: ${printed.stderr}`);
-  wasmCfgs = new Map();
-  for (const line of printed.stdout.split("\n").filter(Boolean)) {
-    const [name, value] = line.split("=");
-    const values = wasmCfgs.get(name) ?? new Set<string>();
-    if (value !== undefined) values.add(JSON.parse(value));
-    wasmCfgs.set(name, values);
-  }
-  return wasmCfgs;
-}
+/** Each process group `spawned` started that hasn't closed: a Crater
+ * stopped, its own process ended by a signal, ends them too, as each is a
+ * group of its own that outlived it, its builds and test runs going on
+ * (#1174). */
+const groups = new Set<number>();
 
-/** Each `#[cfg(..)]` of attributes' text, as `cfg(..)`. */
-export function cfgsOf(attributes: string): string[] {
-  const found: string[] = [];
-  for (let at = attributes.indexOf("#[cfg("); at >= 0; at = attributes.indexOf("#[cfg(", at + 1)) {
-    let depth = 0;
-    for (let i = at + 5; i < attributes.length; i++) {
-      if (attributes[i] === "(") depth++;
-      else if (attributes[i] === ")" && --depth === 0) {
-        found.push(attributes.slice(at + 2, i + 1));
-        break;
-      }
+/** A run's own process, ended by `signal`, ending each group it started. */
+function endedWith(signal: "SIGINT" | "SIGTERM" | "SIGHUP") {
+  for (const pid of groups) {
+    try {
+      process.kill(-pid, "SIGKILL");
+    } catch {
+      // Gone already.
     }
   }
-  return found;
+  process.exit(128 + ({ SIGINT: 2, SIGTERM: 15, SIGHUP: 1 } as const)[signal]);
 }
 
-/** Whether `cfg`, `cfg(..)`'s text, holds on wasm32 only because of
- * `test`: false of a build without it, whatever features are on, which the
- * Crater can't know, so a `feature = ".."` is neither (#1153). */
-export function onlyForTests(cfg: string): boolean {
-  return cfgHolds(cfg, false) === false && cfgHolds(cfg, true) !== false;
-}
+/** The most the Crater keeps of `target/crater/` but its verdicts, `kept/`:
+ * its 100 crates' native test builds are 13 GiB in one target (2026-11-11,
+ * #1174), which the disk's budget can't hold (#1213, ADR 1118). Past it they
+ * go, and its next run builds them again: 1,360 s for the 100, not 383 s. */
+export const craterCap = 6 * 2 ** 30;
 
-/** Whether `cfg` holds on wasm32, of a build with `test` or without: true,
- * false, or `undefined` where it's of a feature, which the Crater can't
- * know. Of rustc's own cfgs of the target (`targetCfgs`). */
-export function cfgHolds(cfg: string, test: boolean): boolean | undefined {
-  const facts = targetCfgs();
-  type Truth = boolean | undefined;
-  const tokens = cfg.match(/"(?:[^"\\]|\\.)*"|[A-Za-z_][A-Za-z0-9_]*|[(),=]/g) ?? [];
-  const evaluate = (): Truth => {
-    let i = 0;
-    const list = (): Truth[] => {
-      const items: Truth[] = [];
-      if (tokens[i] !== "(") throw new Error(`unreadable cfg: ${cfg}`);
-      i++;
-      while (tokens[i] !== ")") {
-        items.push(predicate());
-        if (tokens[i] === ",") i++;
-      }
-      i++;
-      return items;
-    };
-    const predicate = (): Truth => {
-      const name = tokens[i++];
-      if (name === "all") return list().reduce<Truth>((a, b) => (a === false || b === false ? false : a === undefined || b === undefined ? undefined : true), true);
-      if (name === "any") return list().reduce<Truth>((a, b) => (a === true || b === true ? true : a === undefined || b === undefined ? undefined : false), false);
-      if (name === "not") {
-        const [inner] = list();
-        return inner === undefined ? undefined : !inner;
-      }
-      if (tokens[i] === "=") {
-        i++;
-        const value = JSON.parse(tokens[i++]);
-        if (name === "feature") return undefined;
-        return facts.get(name)?.has(value) ?? false;
-      }
-      if (name === "test") return test;
-      return facts.has(name) && facts.get(name)!.size === 0;
-    };
-    if (tokens[i++] !== "cfg") throw new Error(`unreadable cfg: ${cfg}`);
-    const [whole] = list();
-    return whole;
-  };
-  return evaluate();
-}
-
-/** Where the attributes just above line `at`, from 1, start: each line that
- * starts with `#[`, and each attribute of several lines, uuid's
- * `#[cfg_attr(\n    all(..),\n    wasm_bindgen_test\n)]` between its
- * `#[test]` and its `fn`, its lines from `#[` to `]` one balanced
- * attribute (#1121). */
-export function attributesFrom(lines: string[], at: number): number {
-  let from = at;
-  while (from > 1) {
-    const above = lines[from - 2];
-    if (/^\s*#\[/.test(above)) {
-      from--;
-      continue;
-    }
-    if (!/\]\s*$/.test(above)) break;
-    let start = from - 2;
-    while (start > 0 && !/^\s*#\[/.test(lines[start])) start--;
-    const attribute = lines.slice(start, from - 1).join("\n");
-    const opened = (attribute.match(/\[/g) ?? []).length;
-    if (!/^\s*#\[/.test(lines[start]) || opened !== (attribute.match(/\]/g) ?? []).length) break;
-    from = start + 1;
-  }
-  return from;
-}
-
-/** An item of a Rust source, by a scan of its text: a `fn`'s or a `mod`'s
- * name, the lines its attributes start and its body ends, from 1, and
- * whether it's a `#[test]` or `#[cfg(test)]`. Strings, characters and
- * comments are skipped for their braces; a raw string's aren't. */
-export type Item = {
-  kind: "fn" | "mod";
-  name: string;
-  from: number;
-  to: number;
-  test: boolean;
-  cfgTest: boolean;
-  /** Its `#[cfg(..)]`s, `cfg(unix)`. */
-  cfgs: string[];
-  /** A module of a file of its own, `mod tests;`. */
-  file?: boolean;
-};
-
-export function items(text: string): Item[] {
-  const lines = text.split("\n");
-  // Each offset's line, from 1.
-  const lineAt: number[] = [];
-  lines.forEach((line, i) => {
-    for (let k = 0; k <= line.length; k++) lineAt.push(i + 1);
-  });
-  const found: Item[] = [];
-  const open: { item: Item | undefined }[] = [];
-  let pending: { kind: "fn" | "mod"; name: string; at: number } | undefined;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (c === "/" && text[i + 1] === "/") {
-      i = text.indexOf("\n", i);
-      if (i < 0) break;
-      continue;
-    }
-    if (c === "/" && text[i + 1] === "*") {
-      i = text.indexOf("*/", i + 2) + 1;
-      if (i <= 0) break;
-      continue;
-    }
-    if (c === '"') {
-      for (i++; i < text.length && text[i] !== '"'; i++)
-        if (text[i] === "\\") i++;
-      continue;
-    }
-    // A character, `'{'`, not a lifetime, `'a`.
-    if (
-      c === "'" &&
-      (text[i + 2] === "'" ||
-        (text[i + 1] === "\\" && text.indexOf("'", i + 2) - i <= 10))
-    ) {
-      i = text.indexOf("'", i + 2);
-      continue;
-    }
-    const word = /^(fn|mod)\s+([A-Za-z_][A-Za-z0-9_]*)/.exec(
-      text.slice(i, i + 80),
-    );
-    if (word && !/[A-Za-z0-9_]/.test(text[i - 1] ?? " ")) {
-      pending = { kind: word[1] as "fn" | "mod", name: word[2], at: i };
-      i += word[0].length - 1;
-      continue;
-    }
-    if (c === ";" && pending) {
-      // A module of a file of its own, `mod tests;`.
-      if (pending.kind === "mod") {
-        const from = attributesFrom(lines, lineAt[pending.at]);
-        const attributes = lines.slice(from - 1, lineAt[pending.at]).join("\n");
-        found.push({
-          kind: "mod",
-          name: pending.name,
-          from,
-          to: lineAt[i],
-          test: false,
-          cfgTest: cfgsOf(attributes).some(onlyForTests),
-          cfgs: cfgsOf(attributes),
-          file: true,
-        });
-      }
-      pending = undefined;
-    }
-    if (c === "{") {
-      let item: Item | undefined;
-      if (pending) {
-        // Its attributes: those just above it (`attributesFrom`).
-        const from = attributesFrom(lines, lineAt[pending.at]);
-        const attributes = lines.slice(from - 1, lineAt[pending.at]).join("\n");
-        item = {
-          kind: pending.kind,
-          name: pending.name,
-          from,
-          to: 0,
-          test: /#\[(?:\w+::)*test\b/.test(attributes),
-          cfgTest: cfgsOf(attributes).some(onlyForTests),
-          cfgs: cfgsOf(attributes),
-        };
-        pending = undefined;
-      }
-      open.push({ item });
-    }
-    if (c === "}") {
-      const closed = open.pop();
-      if (closed?.item) {
-        closed.item.to = lineAt[i];
-        found.push(closed.item);
-      }
-    }
-  }
-  return found;
-}
-
-/** A module's path in its crate, of its file, `src/a/b.rs` or `src/a/b/mod.rs`
- * `a::b`, `src/lib.rs` none. */
-export function modulePath(file: string): string[] {
-  const parts = file
-    .replace(/^src\//, "")
-    .replace(/\.rs$/, "")
-    .split("/");
-  if (
-    parts.at(-1) === "mod" ||
-    (parts.length === 1 && (parts[0] === "lib" || parts[0] === "main"))
-  )
-    parts.pop();
-  return parts;
-}
-
-/** The file that declares the module of `file`, `src/a/b.rs`'s `mod b;` in
- * `src/a.rs` or `src/a/mod.rs`, and the module's name; none of `src/lib.rs`. */
-export function declaredIn(file: string, exists: (path: string) => boolean): { parent: string; name: string } | undefined {
-  const path = modulePath(file);
-  const name = path.at(-1);
-  if (!name) return undefined;
-  const above = path.slice(0, -1);
-  const parent =
-    above.length === 0
-      ? exists("src/lib.rs")
-        ? "src/lib.rs"
-        : "src/main.rs"
-      : exists(`src/${above.join("/")}.rs`)
-        ? `src/${above.join("/")}.rs`
-        : `src/${above.join("/")}/mod.rs`;
-  return { parent, name };
-}
-
-/** Whether `file`'s module, or one it's in, is declared `#[cfg(test)]`,
- * `#[cfg(test)] mod tests;`: built only for tests. */
-export function testOnlyFile(file: string, read: (path: string) => string | undefined): boolean {
-  const declared = declaredIn(file, (path) => read(path) !== undefined);
-  if (!declared) return false;
-  const text = read(declared.parent);
-  if (text === undefined) return false;
-  const all = items(text);
-  const at = all.find((item) => item.kind === "mod" && item.file && item.name === declared.name);
-  if (!at) return false;
-  return (
-    at.cfgTest ||
-    all.some((item) => item.kind === "mod" && item.cfgTest && item.from < at.from && at.to <= item.to) ||
-    testOnlyFile(declared.parent, read)
-  );
-}
-
-/** What to cut of the test build for an error at `line` of `file`, whose
- * text is `text`: the `#[test]` it's in, by its path, `tests::t`, or a
- * function only tests reach, one inside a `#[cfg(test)]` module or a file
- * only tests build, `testOnly`, each its attributes' first line; or
- * nothing, where it's the library's own code. `path` is its module's, of an
- * integration test's crate `testModulePath`'s. */
-export function cutFor(file: string, text: string, line: number, testOnly = false, path = modulePath(file)): { from: number; test?: string } | undefined {
-  const all = items(text);
-  const around = all
-    .filter((item) => item.from <= line && line <= item.to)
-    .sort((a, b) => b.from - a.from);
-  const test = around.find((item) => item.kind === "fn" && item.test);
-  const mods = (at: Item) =>
-    all
-      .filter(
-        (item) =>
-          item.kind === "mod" && item.from < at.from && at.to <= item.to,
-      )
-      .sort((a, b) => a.from - b.from);
-  if (test)
-    return {
-      from: test.from,
-      test: [
-        ...path,
-        ...mods(test).map((m) => m.name),
-        test.name,
-      ].join("::"),
-    };
-  // The outermost function around it, inside a module only tests build.
-  const fns = around.filter((item) => item.kind === "fn");
-  const outer = fns.at(-1);
-  if (outer && (testOnly || mods(outer).some((m) => m.cfgTest))) return { from: outer.from };
-  return undefined;
-}
-
-/** `#[cfg(any())]` above each line of `froms` in `text`, so what starts
- * there isn't built. */
-export function cut(text: string, froms: number[]): string {
-  const lines = text.split("\n");
-  for (const from of [...new Set(froms)].sort((a, b) => b - a)) {
-    const indent = /^\s*/.exec(lines[from - 1])?.[0] ?? "";
-    lines.splice(
-      from - 1,
-      0,
-      `${indent}#[cfg(any())] // rust-js's Crater: refused`,
-    );
-  }
-  return lines.join("\n");
+/** `target/crater/` held to `cap`, its least recently changed entries
+ * first, its verdicts never, nothing kept below the disk's floor. */
+export function boundCrater({ dir = work, cap = craterCap, free = () => freeBytes(dir) }: { dir?: string; cap?: number; free?: () => number } = {}): { removed: number; size: number } {
+  if (!existsSync(dir)) return { removed: 0, size: 0 };
+  const entries: Kept[] = readdirSync(dir)
+    .filter((name) => name !== "kept")
+    .map((name) => join(dir, name))
+    .map((path) => ({ path, bytes: bytesOf(path), used: statSync(path).mtimeMs }));
+  return evict(entries, { cap, free, floor: floorBytes });
 }
 
 function spawned(
@@ -482,6 +213,7 @@ function spawned(
       // `rust-js test` starts, and the JS it runs, never left behind.
       detached: true,
     });
+    if (p.pid !== undefined) groups.add(p.pid);
     let said = "";
     p.stdout.on("data", (d) => (said += d));
     p.stderr.on("data", (d) => (said += d));
@@ -495,6 +227,7 @@ function spawned(
     }, seconds * 1000);
     p.on("close", (code) => {
       clearTimeout(timer);
+      if (p.pid !== undefined) groups.delete(p.pid);
       done({ code, said });
     });
   });
@@ -530,8 +263,14 @@ async function source(crate: Crate): Promise<string | { problem: string }> {
 
 /** How the Crater asks, kept with each verdict: another way of asking asks
  * each crate again. 2: its integration tests too, each file by itself, and
- * getrandom's WebAssembly feature (#1087). */
-const asking = 2;
+ * getrandom's WebAssembly feature (#1087). 4: an impl and a `use` only
+ * tests build cut as a function is, base64's (#1174). 6: of a `use` of
+ * several names, those unresolved taken off, and its lints at most
+ * warnings, a function's macro's tests cut with it and 40 rounds, and a
+ * listed test cut first, a dev-dependency a feature names kept, and a
+ * failed build's first error said, and getrandom's feature asked of what Cargo
+ * couldn't compile, not of a message (#1174). */
+const asking = 12;
 
 /** What a crate's kept verdict is of, beside its release and the
  * compiler's build: the features its row names, how the Crater asks, and
@@ -539,6 +278,8 @@ const asking = 2;
  * which a change to asks it again (#1121). */
 function keptKey(crate: Crate, build: string): string {
   const hash = createHash("sha256").update(`${build}\n${(crate.features ?? []).join(",")}\n${asking}\n`);
+  // And the tests the list cuts of it first.
+  hash.update(JSON.stringify(cutFirst(crate.name, decidedOf(readFileSync(join(import.meta.dir, "crater-decided.txt"), "utf8")))));
   const walk = (dir: string) => {
     for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
       if (entry.name === "node_modules" || entry.name === "target") continue;
@@ -615,7 +356,7 @@ async function asked(crate: Crate): Promise<Verdict> {
       problem:
         native.code === 0
           ? "it has no tests: crates.io's package has none of its library's or integration tests"
-          : `its tests don't run natively: ${native.said.trim().split("\n").slice(-3).join(" ")}`,
+          : `its tests don't run natively: ${firstError(native.said)}`,
     };
   }
   // The JS's own copy, whose refused tests are cut from it, round by round:
@@ -632,8 +373,18 @@ async function asked(crate: Crate): Promise<Verdict> {
   // with no tests written, and gone after, as its verdict is kept.
   const target = join(work, "js", crate.name);
   rmSync(target, { recursive: true, force: true });
+  // The tests listed to cut before its JS is built, each under its issue,
+  // typenum's that hangs rust-js's layout (#1269): cut, never asked.
+  const first = cutFirst(crate.name, decidedOf(readFileSync(join(import.meta.dir, "crater-decided.txt"), "utf8")));
+  for (const [test, why] of Object.entries(first)) {
+    const read = (path: string) => (existsSync(join(jsDir, path)) ? readFileSync(join(jsDir, path), "utf8") : undefined);
+    const at = placeOf(test, read);
+    if (!at) return { problem: `scripts/crater-decided.txt cuts ${test}, which isn't a test of its source: take its line off` };
+    writeFileSync(join(jsDir, at.file), cut(read(at.file)!, [at.from]));
+    first[test] = why;
+  }
   try {
-    return await askedAsJs(nativeRan, jsDir, target, manifest, lock, featured);
+    return await askedAsJs(nativeRan, jsDir, target, manifest, lock, featured, first);
   } finally {
     rmSync(target, { recursive: true, force: true });
   }
@@ -648,17 +399,18 @@ async function askedAsJs(
   manifest: string,
   lock: string,
   featured: string[],
+  first: Record<string, string>,
 ): Promise<Verdict> {
   const js: Outcomes = {};
-  const cutTests: Record<string, string> = {};
+  const cutTests: Record<string, string> = { ...first };
   // Its library's tests, as natively: no integration test built, nor a
   // dev-dependency only they name.
   if (Object.keys(nativeRan).some((name) => !name.startsWith("tests/"))) {
     const ran = await built(jsDir, target, libraryTestsOnly(manifest, (lib) => sourceNames(join(jsDir, "src"), lib)), lock, featured);
     if ("refused" in ran) return { native: nativeRan, refused: ran.refused };
-    if ("problem" in ran) return ran;
+    if ("problem" in ran) return { problem: ran.problem };
     Object.assign(js, ran.js);
-    Object.assign(cutTests, ran.cut);
+    Object.assign(cutTests, underItems(Object.keys(nativeRan).filter((name) => !name.startsWith("tests/")), ran.items), ran.cut);
   }
   // Each integration test's file by itself, its library as `rust-js build`
   // compiles it, so each error is its own.
@@ -675,7 +427,8 @@ async function askedAsJs(
       continue;
     }
     for (const [name, how] of Object.entries(ran.js)) js[`${file}::${name}`] = how;
-    for (const [name, why] of Object.entries(ran.cut)) cutTests[`${file}::${name}`] = why;
+    const inFile = its.map((name) => name.slice(file.length + 2));
+    for (const [name, why] of Object.entries({ ...underItems(inFile, ran.items), ...ran.cut })) cutTests[`${file}::${name}`] = why;
   }
   return judged(nativeRan, js, cutTests, jsDir);
 }
@@ -696,14 +449,20 @@ async function built(
   writeFileSync(join(jsDir, "Cargo.toml"), manifest);
   const ran = await cutUntilBuilt(jsDir, target, featured, rootFile);
   const withFeature = forTheJs(manifest, lock);
-  if (!("problem" in ran && ran.problem.includes("could not compile `getrandom`")) || withFeature === manifest) return ran;
+  if (!("problem" in ran && ran.uncompiled.includes("getrandom")) || withFeature === manifest) return ran;
   writeFileSync(join(jsDir, "Cargo.toml"), withFeature);
   return cutUntilBuilt(jsDir, target, featured, rootFile);
 }
 
+/** How many rounds of cuts a build is given: base64's rstest tests,
+ * each round's cuts of its helpers showing the next, took more than the
+ * twelve it had (#1174). */
+const rounds = 40;
+
 /** `rust-js test` in `jsDir`, each refused test cut from the source and
- * the rest built again, up to twelve rounds: what ran, and what was cut and
- * why; or where an error is in no test, what the library's code refused;
+ * the rest built again, up to `rounds` rounds: what ran, and what was cut
+ * and why, the tests by their paths and the functions only tests reach,
+ * `items`, by theirs; or where an error is in no test, what the library's code refused;
  * or why it couldn't be asked. `rootFile` is the integration test's file
  * being built, `tests/version.rs`, whose crate's modules are its own, every
  * one of `tests/` only tests build; none of the library's tests. */
@@ -712,27 +471,40 @@ async function cutUntilBuilt(
   target: string,
   featured: string[],
   rootFile?: string,
-): Promise<{ js: Outcomes; cut: Record<string, string> } | { refused: string[] } | { problem: string }> {
+): Promise<{ js: Outcomes; cut: Record<string, string>; items: Record<string, string> } | { refused: string[] } | { problem: string; uncompiled: string[] }> {
   const cutTests: Record<string, string> = {};
-  for (let round = 0; round < 12; round++) {
+  const items: Record<string, string> = {};
+  // Its first round's first error: what the rest of its cuts follow from.
+  let first: string | undefined;
+  for (let round = 0; round < rounds; round++) {
     const js = await spawned(
       ["bun", join(root, "tooling", "cli.js"), "test", ...featured],
       jsDir,
-      { RUST_JS_COMPILER: compiler, CARGO_TARGET_DIR: target, TZ: zone },
+      // Its lints at most warnings: the copy's cuts are the Crater's edits,
+      // which a lint its author denies refused, base64's
+      // `unused_import_braces` of a `use` a name was taken off (#1174). A
+      // lint changes no program, and native Rust built the author's source.
+      { RUST_JS_COMPILER: compiler, CARGO_TARGET_DIR: target, TZ: zone, RUSTFLAGS: "--cap-lints=warn" },
       1200,
     );
     const jsRan = jsOutcomes(js.said);
-    if (Object.keys(jsRan).length > 0) return { js: jsRan, cut: cutTests };
+    if (Object.keys(jsRan).length > 0) return { js: jsRan, cut: cutTests, items };
     const errors = errorsAt(js.said).filter((e) => e.file.startsWith("src/") || (rootFile !== undefined && e.file.startsWith("tests/")));
     // Each of its tests cut: none left to run.
-    if (errors.length === 0 && js.code === 0 && Object.keys(cutTests).length > 0) return { js: jsRan, cut: cutTests };
+    if (errors.length === 0 && js.code === 0 && Object.keys(cutTests).length + Object.keys(items).length > 0) return { js: jsRan, cut: cutTests, items };
     if (errors.length === 0) {
       return {
+        // Each crate Cargo said it couldn't compile, the one fact `built`
+        // asks of a failure, not its words (#1174).
+        uncompiled: [...js.said.matchAll(/could not compile `([^`]+)`/g)].map((m) => m[1]),
         problem:
-          js.code === 0 ? "`rust-js test` passed having run no test" : `its JS tests didn't run: ${js.said.trim().split("\n").slice(-3).join(" ")}`,
+          js.code === 0 ? "`rust-js test` passed having run no test" : `its JS tests didn't run: ${firstError(js.said)}`,
       };
     }
+    first ??= errors[0].why;
     const byFile = new Map<string, number[]>();
+    // Each name of a `use` of several to take off its line, by file.
+    const drops = new Map<string, { line: number; name: string }[]>();
     const library: string[] = [];
     for (const error of errors) {
       const text = readFileSync(join(jsDir, error.file), "utf8");
@@ -740,32 +512,30 @@ async function cutUntilBuilt(
       // An integration test's file is its crate's; the library's own code,
       // as that test uses it, is never cut.
       const at = error.file.startsWith("tests/")
-        ? cutFor(error.file, text, error.line, true, testModulePath(error.file, rootFile ?? ""))
+        ? cutFor(error.file, text, error.line, true, testModulePath(error.file, rootFile ?? ""), error.why)
         : rootFile === undefined
-          ? cutFor(error.file, text, error.line, testOnlyFile(error.file, read))
+          ? cutFor(error.file, text, error.line, testOnlyFile(error.file, read), modulePath(error.file), error.why)
           : undefined;
       if (!at) {
         library.push(`${error.why} (${error.file}:${error.line})`);
         continue;
       }
       if (at.test && !(at.test in cutTests)) cutTests[at.test] = error.why;
-      byFile.set(error.file, [...(byFile.get(error.file) ?? []), at.from]);
+      if (at.item && !(at.item in items)) items[at.item] = error.why;
+      if (at.drop) drops.set(error.file, [...(drops.get(error.file) ?? []), ...at.drop.map((name) => ({ line: at.from, name }))]);
+      else byFile.set(error.file, [...(byFile.get(error.file) ?? []), at.from]);
     }
     if (library.length > 0) return { refused: [...new Set(library)] };
+    // Names taken off their lines first, which moves none, then the cuts.
+    for (const [file, names] of drops) {
+      writeFileSync(join(jsDir, file), names.reduce((text, { line, name }) => dropped(text, line, name), readFileSync(join(jsDir, file), "utf8")));
+    }
     for (const [file, froms] of byFile) writeFileSync(join(jsDir, file), cut(readFileSync(join(jsDir, file), "utf8"), froms));
   }
-  return { problem: "its JS tests still didn't build after 12 rounds of cuts" };
-}
-
-/** A module's path in an integration test's crate, whose root is `root`,
- * `tests/version.rs`: none of the root, `util` of `tests/util/mod.rs` or
- * `tests/util.rs`. */
-export function testModulePath(file: string, root: string): string[] {
-  if (file === root) return [];
-  return file
-    .replace(/^tests\//, "")
-    .replace(/(\/mod)?\.rs$/, "")
-    .split("/");
+  // What its first round cut for, so the ranking says what stops it, not
+  // how many rounds it took: base64's `rand` `Distribution` of its test
+  // helpers, which each rstest test reaches, one a round (#1174).
+  return { uncompiled: [], problem: `its JS tests still didn't build after ${rounds} rounds of cuts${first ? `, the first for: ${reasonOf(first)}` : ""}` };
 }
 
 /** The time zone both runs have, so a test of local time, chrono's
@@ -791,7 +561,12 @@ export function libraryTestsOnly(text: string, named: (lib: string) => boolean =
   // its integration tests use, chrono's wasm32 `wasm-bindgen-test`: not
   // built, as no test that uses it is, so its graph is the library's
   // tests' alone (ADR 1112).
-  const used = (dependency: string) => named(dependency.replaceAll("-", "_"));
+  // Or one a feature names, `real_blackbox = ["criterion/real_blackbox"]`,
+  // tinyvec's: Cargo reads a manifest whose feature names a dependency it
+  // hasn't as no manifest at all (#1174).
+  const features = /^\[features\]\n([\s\S]*?)(?=^\[|(?![\s\S]))/m.exec(text)?.[1] ?? "";
+  const inFeatures = new Set([...features.matchAll(/"(?:dep:)?([\w-]+)\??\//g), ...features.matchAll(/"dep:([\w-]+)"/g)].map((m) => m[1]));
+  const used = (dependency: string) => inFeatures.has(dependency) || named(dependency.replaceAll("-", "_"));
   const tables = text
     .split(/^(?=\[)/m)
     .filter((table) => !table.startsWith("[[test]]"))
@@ -857,63 +632,38 @@ export function decidedOf(text: string): Map<string, string> {
   return found;
 }
 
+/** The tests of `crate` the list says to cut before its JS is built, by
+ * a reason `cut: #1269 ..`, each with its reason after `cut: `: one that
+ * can't be asked, typenum's `uint::tests::binary`, whose layout takes
+ * rust-js half an hour (#1174). Taken off with its issue's fix. */
+export function cutFirst(crate: string, decided: Map<string, string>): Record<string, string> {
+  return Object.fromEntries(
+    [...decided]
+      .filter(([key, why]) => key.startsWith(`${crate} `) && why.startsWith("cut: "))
+      .map(([key, why]) => [key.slice(crate.length + 1), why.slice("cut: ".length)]),
+  );
+}
+
+/** Of `crate`'s listed differences, those listed under an open issue,
+ * `#1264 ..`, a wrong answer known and being fixed, not a decision (#1174). */
+export function knownOf(crate: string, differ: { name: string; js: string }[], decided: Map<string, string>) {
+  return differ.filter((d) => /^#\d+\b/.test(decided.get(`${crate} ${d.name}`) ?? ""));
+}
+
+/** Each listed test of `verdict`'s crate that ran as JS as it did natively:
+ * fixed, or decided no longer, so its line is taken off and the list only
+ * shrinks, as the metamorphic net's known list does (#1174). */
+export function listedButSame(crate: string, verdict: Verdict, decided: Map<string, string>): string[] {
+  if (!("js" in verdict)) return [];
+  return [...decided.keys()]
+    .filter((key) => key.startsWith(`${crate} `))
+    .map((key) => key.slice(crate.length + 1))
+    .filter((test) => verdict.native[test] === "ok" && verdict.js[test] === "ok");
+}
+
 /** Of `crate`'s differences, those no decision says, each a wrong answer. */
 export function undecided(crate: string, differ: { name: string; js: string }[], decided: Map<string, string>) {
   return differ.filter((d) => !decided.has(`${crate} ${d.name}`));
-}
-
-/** A file's inner attributes, `#![..]`, each its own, at its start before
- * any item, comments and blank lines skipped. */
-export function innerAttributes(text: string): string {
-  const found: string[] = [];
-  let at = 0;
-  for (;;) {
-    const rest = text.slice(at);
-    const skipped = /^(\s+|\/\/[^\n]*\n?|\/\*[\s\S]*?\*\/)/.exec(rest);
-    if (skipped) {
-      at += skipped[0].length;
-      continue;
-    }
-    if (!rest.startsWith("#![")) return found.join("\n");
-    let depth = 0;
-    let end = 2;
-    for (; end < rest.length; end++) {
-      if (rest[end] === "[") depth++;
-      else if (rest[end] === "]" && --depth === 0) break;
-    }
-    found.push(rest.slice(0, end + 1));
-    at += end + 1;
-  }
-}
-
-/** Whether the test `name`, `a::b::tests::t`, is of a module a cfg leaves
- * off wasm32 in a test build, `#[cfg(unix)] mod tz_info;`, read of the
- * crate's source through `read` (#1153); or of an integration test's file,
- * `tests/dateutils.rs::t`, whose own `#![cfg(unix)]` leaves it off. */
-export function offTarget(name: string, read: (path: string) => string | undefined): boolean {
-  const integration = /^(tests\/[^/]+\.rs)::/.exec(name)?.[1];
-  if (integration !== undefined) {
-    const text = read(integration) ?? "";
-    return cfgsOf(innerAttributes(text).replaceAll("#![", "#[")).some((cfg) => cfgHolds(cfg, true) === false);
-  }
-  const modules = name.split("::").slice(0, -1);
-  let file = read("src/lib.rs") !== undefined ? "src/lib.rs" : "src/main.rs";
-  let scope: { from: number; to: number } | undefined;
-  const path: string[] = [];
-  for (const module of modules) {
-    const text = read(file);
-    if (text === undefined) return false;
-    const declared = items(text).find((item) => item.kind === "mod" && item.name === module && (!scope || (scope.from < item.from && item.to <= scope.to)));
-    if (!declared) return false;
-    if (declared.cfgs.some((cfg) => cfgHolds(cfg, true) === false)) return true;
-    path.push(module);
-    if (declared.file) {
-      const flat = `src/${path.join("/")}.rs`;
-      file = read(flat) !== undefined ? flat : `src/${path.join("/")}/mod.rs`;
-      scope = undefined;
-    } else scope = declared;
-  }
-  return false;
 }
 
 /** A crate's verdict of its tests' outcomes: each native one not run as
@@ -930,6 +680,45 @@ export function judged(native: Outcomes, js: Outcomes, cut: Record<string, strin
   return { native, js, cut, differ, refusedAtRun, offTarget: off };
 }
 
+/** A refusal's reason, its place taken off, `(src/lib.rs:12)`: one reason
+ * of every place it's said (#1174). */
+export function reasonOf(why: string): string {
+  return why.replace(/ \([^()\s]+\.rs:\d+\)$/, "");
+}
+
+/** What stops the crates' tests, each reason ranked by the crates it
+ * stops and then the native tests (#1174): a test cut for it, or refused
+ * at run time with it, or every test of a crate whose library it refuses;
+ * each of a library's reasons stops all its tests, as each must go before
+ * any runs. A crate that couldn't be asked is ranked by why too, so what
+ * no row says still shows. So ecosystem work is chosen by need. */
+export function ranked(verdicts: Map<string, Verdict>): { why: string; crates: string[]; tests: number }[] {
+  const reasons = new Map<string, { crates: Set<string>; tests: number }>();
+  const stops = (why: string, crate: string, tests: number) => {
+    const reason = reasons.get(why) ?? { crates: new Set<string>(), tests: 0 };
+    reason.crates.add(crate);
+    reason.tests += tests;
+    reasons.set(why, reason);
+  };
+  for (const [crate, verdict] of verdicts) {
+    if ("problem" in verdict) {
+      stops(`not asked: ${verdict.problem}`, crate, 0);
+      continue;
+    }
+    const passed = (name: string) => verdict.native[name] === "ok";
+    if ("refused" in verdict) {
+      const tests = Object.keys(verdict.native).filter(passed).length;
+      for (const why of new Set(verdict.refused.map(reasonOf))) stops(why, crate, tests);
+      continue;
+    }
+    for (const [name, why] of Object.entries(verdict.cut)) if (passed(name)) stops(reasonOf(why), crate, 1);
+    for (const { why } of verdict.refusedAtRun ?? []) stops(`at run time: ${why}`, crate, 1);
+  }
+  return [...reasons]
+    .map(([why, { crates, tests }]) => ({ why, crates: [...crates].sort(), tests }))
+    .sort((a, b) => b.crates.length - a.crates.length || b.tests - a.tests || a.why.localeCompare(b.why));
+}
+
 /** A crate's verdict in a line. */
 export function said(crate: Crate, verdict: Verdict, decided: Map<string, string> = new Map()): string {
   const name = `${crate.name} ${crate.version}`;
@@ -939,65 +728,137 @@ export function said(crate: Crate, verdict: Verdict, decided: Map<string, string
   ).length;
   if ("refused" in verdict)
     return `${name}: its library refused, ${passed} native tests unrun: ${verdict.refused.slice(0, 3).join("; ")}`;
-  const cut = Object.keys(verdict.cut).length;
+  // Of the tests that passed natively, as `passed` counts: a test cut
+  // that failed or was ignored natively is neither (#1174, proc-macro2's).
+  const cut = Object.keys(verdict.cut).filter((test) => verdict.native[test] === "ok").length;
   const off = verdict.offTarget?.length ?? 0;
   const atRun = verdict.refusedAtRun ?? [];
   const same = passed - cut - off - atRun.length - verdict.differ.length;
   const wrong = undecided(crate.name, verdict.differ, decided);
-  const known = verdict.differ.length - wrong.length;
+  const open = knownOf(crate.name, verdict.differ, decided);
+  const issues = [...new Set(open.map((d) => decided.get(`${crate.name} ${d.name}`)!.match(/^#\d+/)![0]))];
+  const known = verdict.differ.length - wrong.length - open.length;
   const shown = wrong.slice(0, 5).map((d) => `${d.name} (${d.js})`);
   const refusedAtRun = atRun.slice(0, 3).map((d) => `${d.name} (${d.why})`);
-  return `${name}: ${same} of ${passed} as native, ${cut} refused${atRun.length > 0 ? `, ${atRun.length} refused at run time: ${refusedAtRun.join(", ")}${atRun.length > 3 ? ", .." : ""}` : ""}${off > 0 ? `, ${off} not of wasm32` : ""}${known > 0 ? `, ${known} decided` : ""}${wrong.length > 0 ? `, ${wrong.length} WRONG: ${shown.join(", ")}${wrong.length > 5 ? ", .." : ""}` : ""}`;
+  return `${name}: ${same} of ${passed} as native, ${cut} refused${atRun.length > 0 ? `, ${atRun.length} refused at run time: ${refusedAtRun.join(", ")}${atRun.length > 3 ? ", .." : ""}` : ""}${off > 0 ? `, ${off} not of wasm32` : ""}${known > 0 ? `, ${known} decided` : ""}${open.length > 0 ? `, ${open.length} WRONG known (${issues.join(", ")})` : ""}${wrong.length > 0 ? `, ${wrong.length} WRONG: ${shown.join(", ")}${wrong.length > 5 ? ", .." : ""}` : ""}`;
 }
 
-if (import.meta.main) {
-  const named = process.argv.slice(2).filter((arg) => !arg.startsWith("--"));
-  const rows = corpusRows(
-    readFileSync(join(root, "docs", "crate-corpus.md"), "utf8"),
-  );
-  if ("problem" in rows) throw new Error(rows.problem);
-  const chosen =
-    named.length > 0
-      ? rows.filter((crate) => named.includes(crate.name))
-      : rows;
-  if (chosen.length === 0)
-    throw new Error(`no crate of the corpus is named ${named.join(", ")}`);
-  const build = currentBuild(compiler);
-  if (!build) throw new Error(`no compiler at ${compiler}: run cargo build`);
-  // A crate's native test build and its JS one, each a Cargo build of its
-  // graph: half the cores' crates at once, and no more than the memory
-  // holds at about 2 GB a crate (scripts/shard.ts).
-  const width = Math.max(
-    1,
-    Math.min(
-      Math.floor(availableParallelism() / 2),
-      Math.floor(memoryBudget() / 2),
-    ),
-  );
-  const decided = decidedOf(readFileSync(join(import.meta.dir, "crater-decided.txt"), "utf8"));
-  const verdicts = new Map<string, Verdict>();
-  let next = 0;
-  await Promise.all(
-    Array.from({ length: Math.min(width, chosen.length) }, async () => {
-      while (next < chosen.length) {
-        const crate = chosen[next++];
-        const verdict = await measure(crate, build);
-        verdicts.set(crate.name, verdict);
-        console.log(said(crate, verdict, decided));
-      }
-    }),
-  );
+/** A shard's verdicts, as `--shard --out` writes them: which of how many
+ * it is, and each crate's verdict by its name (#1174). */
+export type Shard = { shard: number; of: number; verdicts: Record<string, Verdict> };
+
+/** The crates of `rows` shard `shard` of `of` asks, from 1: every
+ * `of`th, from the `shard`th, as the rustc suite's shards are. */
+export function inShard<T>(rows: T[], shard: number, of: number): T[] {
+  return rows.filter((_, i) => i % of === shard - 1);
+}
+
+/** Shards taken as one run: each crate's verdict, or what's wrong with
+ * them, a shard missing or two of one, so a night whose machine failed
+ * isn't read as a crate's verdict gone. */
+export function merged(shards: Shard[]): Map<string, Verdict> | { problem: string } {
+  const of = shards[0]?.of;
+  if (of === undefined) return { problem: "there are no shards" };
+  const seen = shards.map((s) => s.shard).sort((a, b) => a - b);
+  const all = Array.from({ length: of }, (_, i) => i + 1);
+  if (shards.some((s) => s.of !== of) || seen.join() !== all.join()) {
+    return { problem: `shards ${seen.join(", ")} of ${of}: each of ${all.join(", ")} once` };
+  }
+  return new Map(shards.flatMap((s) => Object.entries(s.verdicts)));
+}
+
+/** A run's verdicts said: `target/crater.json`, what stops them, ranked,
+ * and with `check`, a wrong answer no line lists or a listed one that runs
+ * as native fails it. */
+function reported(chosen: Crate[], verdicts: Map<string, Verdict>, decided: Map<string, string>, check: boolean) {
   writeFileSync(
     join(root, "target", "crater.json"),
     JSON.stringify(Object.fromEntries(verdicts), null, 2),
   );
+  // What stops them, ranked: each reason's crates and tests (#1174).
+  const reasons = ranked(verdicts);
+  writeFileSync(join(root, "target", "crater-refusals.json"), JSON.stringify(reasons, null, 2));
+  if (reasons.length > 0) console.log("\nWhat stops them, by crates and then tests:");
+  for (const { why, crates, tests } of reasons) {
+    console.log(`  ${crates.length} crate${crates.length === 1 ? "" : "s"}, ${tests} test${tests === 1 ? "" : "s"}: ${why} (${crates.join(", ")})`);
+  }
   // With `--check`, a wrong answer no decision says fails it.
   const wrong = chosen.flatMap((crate) => {
     const verdict = verdicts.get(crate.name);
     return verdict && "differ" in verdict ? undecided(crate.name, verdict.differ, decided).map((d) => `${crate.name} ${d.name}`) : [];
   });
-  if (process.argv.includes("--check") && wrong.length > 0) {
+  if (check && wrong.length > 0) {
     console.log(`\n${wrong.length} wrong answer(s), each a P0 to reduce: ${wrong.join(", ")}`);
     process.exitCode = 1;
+  }
+  // And a listed one that runs as native now, its line to take off.
+  const same = chosen.flatMap((crate) => {
+    const verdict = verdicts.get(crate.name);
+    return verdict ? listedButSame(crate.name, verdict, decided).map((test) => `${crate.name} ${test}`) : [];
+  });
+  if (check && same.length > 0) {
+    console.log(`\n${same.length} listed in scripts/crater-decided.txt run(s) as native now: take each off: ${same.join(", ")}`);
+    process.exitCode = 1;
+  }
+}
+
+if (import.meta.main) {
+  for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) process.on(signal, () => endedWith(signal));
+  const args = process.argv.slice(2);
+  const option = (name: string) => args.find((arg) => arg.startsWith(`--${name}=`))?.slice(name.length + 3);
+  const check = args.includes("--check");
+  const rows = corpusRows(
+    readFileSync(join(root, "docs", "crate-corpus.md"), "utf8"),
+  );
+  if ("problem" in rows) throw new Error(rows.problem);
+  const decided = decidedOf(readFileSync(join(import.meta.dir, "crater-decided.txt"), "utf8"));
+  if (args.includes("--merge")) {
+    // The shards' verdicts, `--shard --out`'s files, as one run.
+    const shards = args.filter((arg) => !arg.startsWith("--")).map((file) => JSON.parse(readFileSync(file, "utf8")) as Shard);
+    const verdicts = merged(shards);
+    if ("problem" in verdicts) throw new Error(verdicts.problem);
+    const chosen = rows.filter((crate) => verdicts.has(crate.name));
+    for (const crate of chosen) console.log(said(crate, verdicts.get(crate.name)!, decided));
+    reported(chosen, verdicts, decided, check);
+  } else {
+    const named = args.filter((arg) => !arg.startsWith("--"));
+    const [shard, of] = (option("shard") ?? "1/1").split("/").map(Number);
+    if (!(of >= 1 && shard >= 1 && shard <= of)) throw new Error(`--shard=${option("shard")}: write it \`--shard=2/4\``);
+    const chosen = inShard(
+      named.length > 0
+        ? rows.filter((crate) => named.includes(crate.name))
+        : rows,
+      shard,
+      of,
+    );
+    if (chosen.length === 0)
+      throw new Error(`no crate of the corpus is named ${named.join(", ")}`);
+    const build = currentBuild(compiler);
+    if (!build) throw new Error(`no compiler at ${compiler}: run cargo build`);
+    // A crate's native test build and its JS one, each a Cargo build of its
+    // graph: half the cores' crates at once, and no more than the memory
+    // holds at about 2 GB a crate (scripts/shard.ts).
+    const width = Math.max(
+      1,
+      Math.min(
+        Math.floor(availableParallelism() / 2),
+        Math.floor(memoryBudget() / 2),
+      ),
+    );
+    const verdicts = new Map<string, Verdict>();
+    let next = 0;
+    await Promise.all(
+      Array.from({ length: Math.min(width, chosen.length) }, async () => {
+        while (next < chosen.length) {
+          const crate = chosen[next++];
+          const verdict = await measure(crate, build);
+          verdicts.set(crate.name, verdict);
+          console.log(said(crate, verdict, decided));
+        }
+      }),
+    );
+    const out = option("out");
+    if (out) writeFileSync(out, JSON.stringify({ shard, of, verdicts: Object.fromEntries(verdicts) } satisfies Shard));
+    reported(chosen, verdicts, decided, check);
   }
 }

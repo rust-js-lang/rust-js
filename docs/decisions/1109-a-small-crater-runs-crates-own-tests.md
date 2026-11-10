@@ -167,3 +167,93 @@ crate's line counts them in a column of their own beside the refused,
 WRONG alone. Each such refusal is still an issue of its own, a refusal to
 make a compile error where it can be. `test/crater.test.ts` holds Node's
 runner's own words of a refused test and a failing one.
+
+## Amendment: the top 100 crates by downloads, and what stops them ranked (2026-11-11, #1174)
+
+The Crater's 22 crates were the ones the corpus had picked by hand. #1174
+asked for the crates an app meets first: crates.io's most downloaded.
+
+- **The list stays one.** docs/crate-corpus.md's second table, the 77
+  crates of crates.io's 300 most downloaded on 2026-11-10 whose library
+  builds for `wasm32-unknown-unknown` with its default features and whose
+  package has `#[test]`s of its own, no proc-macro crate and none of the
+  wasm-bindgen family rust-js serves itself (ADR 1112): with the first
+  table's 23, the first 100. Each row at its exact release, its build
+  metadata too, `toml 1.2.1+spec-1.1.0`, its graph locked as every row's is.
+  A push's `crate-corpus.ts --check --sample` asks every row of the first
+  table and one in 8 of the second, a hash of the commit and the crate
+  picking them (`sampledIn`): the second table's graphs refused somewhere
+  are built again every run, 94 s of the 100 rows' warm run where the first
+  table takes 6 s; sampled, 8 s warm and 24 s cold. The nightly asks every
+  row; `crateProjectsCap` is 4 GiB, as 100 graphs are 1.2 GiB built once.
+- **What stops them, ranked** (`ranked`): each refusal's reason, its place
+  taken off, by the crates it stops and then their native tests, a test cut
+  for it, refused at run time with it, or every test of a library it
+  refuses; a crate not asked is ranked by why. `target/crater-refusals.json`
+  and the night's `crater-refusals` artifact, so ecosystem work is chosen by
+  need.
+- **The nightly in four shards** (`--shard=i/4 --out`, `--merge`), every
+  fourth crate a machine, as the rustc suite's: 100 crates are about 8,000
+  crate-seconds on the Mac, two at a time on a runner. `crater-report` says
+  them as one run and fails a night a shard is missing.
+- **The list of differences says three kinds**, each a line under its
+  reason: a decision (the guide's), a wrong answer known under its open
+  issue, `#1264 ..`, shown as `WRONG known`, and a test cut before its JS
+  is built, `cut: #1269 ..`, that would hang a shard. `--check` fails where
+  a listed difference runs as native, so the list only shrinks.
+- **Cuts that real crates' tests needed:** an impl only tests build, cut
+  as a function is (base64's `impl Distribution for Standard`); of a `use`
+  of several names only tests build, the one unresolved taken off its line,
+  not the `use` (base64's `use crate::{alphabet, tests::random_config}`); a
+  function only tests reach cut with the tests a macro made of it, rstest's
+  `f::case_1`, which were read as not run, a wrong answer that wasn't; the
+  JS build's lints at most warnings, as a cut is the Crater's edit and a
+  lint its author denies refused it (base64's `unused_import_braces`); 40
+  rounds, not 12; a dev-dependency a feature names kept (tinyvec's
+  `criterion`); a cut test that failed natively not counted as refused
+  (proc-macro2's "-4 of 57"); a failed build said by its first error, not
+  Cargo's last words; getrandom's feature asked of the crates Cargo couldn't
+  compile, not of a message's words; and a Crater stopped by a signal ends
+  its process groups, which had gone on building.
+- **`target/crater/` a store of its own** (`craterCap`, 6 GiB, `bun run disk`):
+  the 100 crates' native test builds are 13 GiB in one target, which the
+  disk's budget can't hold (ADR 1118); past the cap they go, its kept
+  verdicts never, and a run after builds them again.
+- **What it reads and cuts of a crate's source** is a module of its own,
+  `scripts/crater-cuts.ts`, as `scripts/crater.ts` reached 1,350 lines.
+
+The 100 crates on the Mac (2026-11-11, at aa155116c; the kept verdicts
+cleared, the native test builds kept):
+
+| | before (23 crates) | after (100 crates) |
+|---|---|---|
+| crates asked (tests compared) | 13 | 35 |
+| native tests passing, of crates asked | 1,190 | 3,750 |
+| as native | 694 | 2,619 |
+| refused (cut) | 471 | 1,107 |
+| refused at run time | 2 | 0 |
+| not of wasm32 | 21 | 21 |
+| decided (num-traits' NaN sign and payload) | 2 | 2 |
+| wrong answers | 0 | 12 tests of strsim, #1264 (P0), fixed in 7bcf6b29a; getrandom's `test_diff_u64`, its `MaybeUninit<u64>` written through a byte view since d5c8e881b, #1279 (P1, listed) |
+| crates whose library is refused (native tests unrun) | 5 (342) | 35 (2,663) |
+| crates not asked | 5 | 30 |
+| wall time | 167 s | 594 s; 1,360 s with every native build cold and typenum's hang (#1269) |
+
+Not asked, by why: 10 packages with no tests (serde, strum, time, nix,
+futures and others); 9 whose dev-dependencies don't build for wasm32 (mio's
+hyper, h2 and tokio-util; wait-timeout's winnow, toml_edit and nom;
+snapbox's clap_builder; net2's futures-util; criterion's tinyvec), and
+rand_chacha's getrandom, whose package has no lock to say its release; 5
+whose tests don't build natively (tokio, syn, http, rustls-webpki,
+rust_decimal); hashbrown, indexmap and memchr, which rust-js reads as rustc
+builds them (`READ_AS_RUSTC_BUILDS_THEM`), so no test of theirs is ever
+rust-js's; base64, its 40 rounds spent, its first cut for a user `rand`
+`Distribution`; and zerocopy, a crash of rust-js's (`back_stepped`).
+
+Found: #1264, strsim's `jaro`, `zip` in generic code of a `&I` whose
+`IntoIterator` is the crate's zipping the value itself; #1269, typenum's
+`Binary` of a type 32 deep, oxc_formatter's layout doubling with each level
+of nested calls. The refusals that stop the most crates: `LocalKey::try_with`
+(4 crates, 132 tests), `Into::into` and `TryInto::try_into` called
+(4 crates), a pointer read as another type's (3), `std::process::Command`
+(3), and `&mut &mut [T]` values (bytes, miniz_oxide, httparse: 1,050 tests).

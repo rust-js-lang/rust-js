@@ -1,5 +1,12 @@
-# The small Crater's differences that are decided (ADR 0262), each a crate's
-# test that passes natively and not as JS for a reason the guide lists:
-# `<crate> <test path>  <why>`, a line each (scripts/crater.ts, #1087).
+# The small Crater's differences that are listed, each a crate's test that
+# passes natively and not as JS: one decided (ADR 0262), for a reason the
+# guide lists, or a wrong answer known, under its open issue, `#1264`, until
+# its fix; or a test cut before its JS is built, `cut: #1269 ..`, one that
+# can't be asked, under its open issue until its fix. `<crate> <test path>
+# <why>`, a line each (scripts/crater.ts, #1087). `--check` fails where a
+# listed difference runs as native, so the list only shrinks: take its line
+# off (#1174).
 num-traits float::tests::copysign  a NaN's sign isn't kept (the guide's differences from native Rust, 4)
 num-traits float::tests::total_cmp  a NaN's payload isn't kept (the guide's differences from native Rust, 4)
+typenum uint::fmt_tests::binary  cut: #1269 laying out a `Binary` dictionary of a type 32 deep takes rust-js about 30 minutes
+getrandom tests/mod.rs::test_diff_u64  #1279 a `MaybeUninit<u64>` written through a byte view throws converting `undefined` to a BigInt

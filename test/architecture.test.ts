@@ -8,7 +8,11 @@ import { underLoad } from "../scripts/timing";
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 // In name order, as macOS lists them and Linux, CI's, doesn't: a test that
 // names the files it finds names them in one order everywhere.
+// A directory's source files: none of an install's or a build's, which no
+// checkout tracks, `examples/pilot/node_modules/`'s copies of the binding
+// crates a local install had left (#1174).
 const files = (directory: string): string[] => readdirSync(join(root, directory), { withFileTypes: true })
+  .filter(entry => !(entry.isDirectory() && (entry.name === "node_modules" || entry.name === "target")))
   .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
   .flatMap(entry => entry.isDirectory() ? files(`${directory}/${entry.name}`) : [`${directory}/${entry.name}`]);
 

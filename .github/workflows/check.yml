@@ -450,7 +450,8 @@ jobs:
   # 1067), of a check whose change is what compiles them, as `plan` says
   # (scripts/iteratorSlice.ts's `cratePaths`): the compiler, its runtime,
   # std's crate or the corpus's own files. 9353847cd refused itertools and
-  # only the nightly's `crates` saw it (#1188). The nightly runs its own.
+  # only the nightly's `crates` saw it (#1188). The nightly runs its own,
+  # every row; a push, one in 8 of the top crates by downloads (#1174).
   crate-corpus:
     name: crate corpus
     needs: plan
@@ -471,7 +472,7 @@ jobs:
       - name: Compile and run each crate's probe
         env:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: bun scripts/crate-corpus.ts --check
+        run: bun scripts/crate-corpus.ts --check --sample
 
   # React's port at its pin (scripts/react-in-rust.ts), of a check whose
   # change is what compiles it, as `plan` says (`portPaths`): its crates

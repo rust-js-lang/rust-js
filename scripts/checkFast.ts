@@ -262,9 +262,10 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
         : []),
       // The crates of crates.io's corpus against docs/crate-corpus.md,
       // half the cores' at once: 22–33 s, which only the Nightly ran, so a
-      // refusal that stopped itertools went unseen (#857, #1188).
+      // refusal that stopped itertools went unseen (#857, #1188). Its top
+      // crates by downloads sampled, one in 8 by the commit (#1174).
       ...(crates
-        ? [job("the crate corpus", ["bun", "scripts/crate-corpus.ts", "--check"], { weight: half, memory: half * peakGB.crate, ci: "bun scripts/crate-corpus.ts --check" })]
+        ? [job("the crate corpus", ["bun", "scripts/crate-corpus.ts", "--check", "--sample"], { weight: half, memory: half * peakGB.crate, ci: "bun scripts/crate-corpus.ts --check --sample" })]
         : []),
       ...inParts("corpus", "test/corpus.test.ts"),
       ...(all ? everyFile : suites),

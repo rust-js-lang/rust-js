@@ -23,6 +23,7 @@
 // crashed, then whether its probe runs as natively.
 
 import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { availableParallelism } from "node:os";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -40,8 +41,10 @@ export const crateProjects = join(resolve(import.meta.dir, ".."), "target/crate-
  * the compiler adds about a copy of every crate's dependencies, which no run
  * removes, so they'd grown to 25 GB, `url`'s 190 copies of each, 5.8 GB
  * (#1213). At 2 GiB a crate's rebuilt about every third build of the
- * compiler, two seconds of it. */
-export const crateProjectsCap = 2 * 2 ** 30;
+ * compiler, two seconds of it. With the top crates by downloads, 100 rows,
+ * they're 1.2 GiB from nothing (2026-11-10, #1174), and 4 GiB keeps that
+ * rate. */
+export const crateProjectsCap = 4 * 2 ** 30;
 
 /** The crates' projects in `dir` held to `cap`, the least recently measured
  * first, and nothing kept below the disk's floor, `free` its free bytes
@@ -69,24 +72,47 @@ type Verdict = "runs" | "compiles" | "refused" | "blocked";
 /** A crate of the corpus, as its row in docs/crate-corpus.md says: its exact
  * release; the features it's built with, its default ones off, where the
  * row names any; and the verdict that's its bar, with what an open issue
- * says it does now, where one does. */
-export type Crate = { name: string; version: string; features?: string[]; bar: Verdict; open?: { now: Verdict; issue: string } };
+ * says it does now, where one does; and whether a push's check samples it
+ * (`sampled`). */
+export type Crate = { name: string; version: string; features?: string[]; bar: Verdict; open?: { now: Verdict; issue: string }; sampled?: true };
+
+/** The first cell of the header of a table whose rows a push's check
+ * samples, one in `sampledOneIn` (#1174): the top crates by downloads,
+ * each graph refused somewhere rebuilt on every run, 94 s of the 100 rows
+ * where the rest take 6. The nightly runs every row. */
+export const sampledHeader = "Crate, one in 8 a push";
+
+/** How many of a sampled table's rows a push's check asks one of. */
+export const sampledOneIn = 8;
+
+/** Whether a push's check of `seed`, its commit, asks `crate`: every row
+ * but a sampled table's, and of those the ones a hash of the seed and the
+ * crate's name picks, a new set each commit (#1174). */
+export function sampledIn(crate: Crate, seed: string): boolean {
+  if (!crate.sampled) return true;
+  return createHash("sha256").update(`${seed}\n${crate.name}`).digest().readUInt32BE(0) % sampledOneIn === 0;
+}
 
 /** docs/crate-corpus.md's table, the corpus's one list (ADR 1067): each row
  * whose second cell is a verdict is a crate, its first cell the crate's
  * name, its exact release and, in parentheses, its features, `chrono 0.4.45
  * (`alloc`)`. A row of no exact release is refused: crates.io's newest
  * release had turned crates red with no change here (either 1.19.0,
- * smallvec 1.16.4), and a new release is measured by editing its row. The
+ * smallvec 1.16.4), and a new release is measured by editing its row, its
+ * build metadata too where it has some, `toml 1.2.1+spec-1.1.0`. The
  * verdict is `runs`, or `runs (refused: #467)` where an open issue says
- * the crate does worse now. Or why the table can't be read. */
+ * the crate does worse now. A row of a table whose header's first cell is
+ * `sampledHeader` is `sampled`. Or why the table can't be read. */
 export function corpusRows(doc: string): Crate[] | { problem: string } {
   const crates: Crate[] = [];
+  let sampled = false;
   for (const line of doc.split("\n")) {
     const cells = line.split("|").map((cell) => cell.trim());
+    if (cells.length > 3 && cells[2] === "Verdict") sampled = cells[1] === sampledHeader;
     const said = cells[2]?.match(/^(runs|compiles|refused|blocked)(?: \((runs|compiles|refused|blocked): (#\d+)\))?$/);
     if (cells.length <= 3 || !said) continue;
-    const named = cells[1].match(/^([\w-]+) (\d+\.\d+\.\d+)(?: \((`[\w-]+`(?:, `[\w-]+`)*)\))?$/);
+    // A release's build metadata is part of it, toml's `1.2.1+spec-1.1.0`.
+    const named = cells[1].match(/^([\w-]+) (\d+\.\d+\.\d+(?:\+[\w.-]+)?)(?: \((`[\w-]+`(?:, `[\w-]+`)*)\))?$/);
     if (!named) {
       return {
         problem: `docs/crate-corpus.md's row \`${cells[1]}\` names no exact release: write the crate's name and version, \`either 1.19.0\`, and its features after them, \`chrono 0.4.45 (\`alloc\`)\``,
@@ -99,6 +125,7 @@ export function corpusRows(doc: string): Crate[] | { problem: string } {
       ...(named[3] ? { features: named[3].split(", ").map((feature) => feature.slice(1, -1)) } : {}),
       bar,
       ...(now && issue ? { open: { now, issue } } : {}),
+      ...(sampled ? { sampled: true as const } : {}),
     });
   }
   return crates;
@@ -189,7 +216,10 @@ async function main() {
   }
   const check = process.argv.includes("--check");
   const lock = process.argv.includes("--lock");
-  const wanted = process.argv.slice(2).filter((arg) => arg !== "--check" && arg !== "--lock");
+  // A push's check: every row but a sampled table's, and of those the
+  // ones its commit picks (#1174).
+  const sample = process.argv.includes("--sample");
+  const wanted = process.argv.slice(2).filter((arg) => arg !== "--check" && arg !== "--lock" && arg !== "--sample");
   const unknown = wanted.filter((name) => !corpus.some((c) => c.name === name));
   if (unknown.length) {
     console.error(`docs/crate-corpus.md has no row of ${unknown.join(", ")}`);
@@ -201,7 +231,13 @@ async function main() {
     console.error("`--lock` resolves the graph of each crate named: name each, `bun scripts/crate-corpus.ts --lock url`");
     process.exit(1);
   }
-  const chosen = wanted.length ? corpus.filter((c) => wanted.includes(c.name)) : corpus;
+  const seed = sample ? spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).stdout.trim() : "";
+  if (sample && !seed) {
+    console.error("`--sample` picks a push's rows by its commit, and `git rev-parse HEAD` gave none");
+    process.exit(1);
+  }
+  const chosen = wanted.length ? corpus.filter((c) => wanted.includes(c.name)) : sample ? corpus.filter((c) => sampledIn(c, seed)) : corpus;
+  if (sample) console.log(`${chosen.filter((c) => c.sampled).map((c) => c.name).join(", ") || "none"} of the sampled rows, one in ${sampledOneIn}, by ${seed.slice(0, 9)}`);
   const unlocked = lock ? [] : chosen.filter((c) => !existsSync(lockOf(c.name)));
   if (unlocked.length) {
     const names = unlocked.map((c) => c.name).join(" ");
