@@ -257,13 +257,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Not the crate's own impl, `impl FromIterator<C> for Req`, of the
         // `A` it's given: its `from_iter` is its entry (#794).
         if is_std_def(self.tcx, tr.def_id, StdItem::FromIterator) && !self.is_user_impl(tr) {
-            // What's left of them closed where stepping them throws (#1126).
-            let items = Expr::call_helper("$foldToArray", vec![Expr::var("items")]);
-            let made = self.collected_into(items, ty, Some(tr.args.type_at(1)), None, span)?;
-            let from_iter = Expr::arrow(
-                vec!["items".into()],
-                vec![StmtKind::Return(Some(made)).at(js::Span::NONE)],
-            );
+            let from_iter = self.collecting_entry(ty, tr.args.type_at(1), span)?;
             return Ok(Expr::object(vec![Prop::Field(
                 bindings::trait_method_name(self.tcx, tr.def_id, "from_iter"),
                 from_iter,
@@ -1171,11 +1165,79 @@ fn reads_only_at_top(e: &Expr, given: &IndexSet<String>) -> bool {
     let mut each = e.clone();
     each.each_mut(&mut |part| {
         if let js::ExprKind::Var(name) = &part.kind {
+            // A JS global, `Array` of `Array.from`, which no local's name
+            // is (ADR 0352), as a helper is: read the same at the top (#1239).
             only &= part.helper_name().is_some()
+                || crate::names::is_js_global(name)
                 || part.facts.has(js::Known::Item)
                 || bound.contains(name)
                 || given.contains(name);
         }
     });
     only
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A std collection's `from_iter`, of `output` of `item`s, as generic
+    /// code's `collect()` into a `B: FromIterator<A>` calls it,
+    /// `fromIter(items, ..facts)`: the collect of an iterator generic code is
+    /// given, `I: Iterator<Item = A>`, lowered as generic code's own collect
+    /// of one is, the one lowering of it (#1239). A type parameter stands
+    /// for `I`, bound so here alone, and each fact `from_iter`'s declaration
+    /// carries of what it's given (`std_method_facts`), its `IInPlace`, is
+    /// the entry's parameter after the items, as generic code's call gives
+    /// it, so the call keeps its shape.
+    fn collecting_entry(&mut self, output: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Expr> {
+        let tcx = self.tcx;
+        let iterator = std_item(tcx, StdItem::Iterator);
+        let from_iterator = std_item(tcx, StdItem::FromIterator);
+        let from_iter = crate::lower::recognition::trait_method(tcx, from_iterator, "from_iter");
+        // Numbered past any body's own, so it's no parameter of this one.
+        let param = Ty::new_param(tcx, 1 << 20, rustc_span::Symbol::intern("I"));
+        let item_def = crate::lower::recognition::trait_method(tcx, iterator, "Item");
+        let bounds: [ty::Clause<'tcx>; 2] = [
+            ty::TraitRef::new(tcx, iterator, [param]).upcast(tcx),
+            ty::ProjectionPredicate {
+                projection_term: match *Ty::new_projection(tcx, ty::IsRigid::No, item_def, [param]).kind() {
+                    ty::Alias(_, alias) => alias.into(),
+                    _ => unreachable!("a projection is an alias"),
+                },
+                term: item.into(),
+            }
+            .upcast(tcx),
+        ];
+        let clauses = self.typing_env.param_env.caller_bounds().iter().chain(bounds);
+        let typing_env = ty::TypingEnv::new(
+            ty::ParamEnv::new(tcx.mk_clauses_from_iter(clauses)),
+            self.typing_env.typing_mode(),
+        );
+        let facts = crate::lower::traits::std_method_facts(tcx, self.krate.foreign, from_iter);
+        let mut params: Vec<String> = vec!["items".into()];
+        let given: Vec<(Ty<'tcx>, crate::lower::recognition::TypeFact, Expr)> = (facts.iter())
+            .map(|&(_, fact)| {
+                let name = format!("I{}", fact.word());
+                params.push(name.clone());
+                (param, fact, Expr::var(&name))
+            })
+            .collect();
+        let made = self.with_given_facts(typing_env, given, |cx| {
+            cx.collected_into(Expr::var("items"), output, Some(item), Some(param), span)
+        });
+        let made = made?;
+        // What's left of what it's given closed where collecting it panics,
+        // as std drops the iterator its collect holds as it unwinds (#1141):
+        // the type parameter says nothing of what it holds, so it's closed,
+        // `$collecting`'s.
+        let made = Expr::call_helper(
+            "$collecting",
+            vec![
+                Expr::var("items"),
+                Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(made)).at(js::Span::NONE)]),
+            ],
+        );
+        Ok(Expr::arrow(
+            params.into_iter().map(Into::into).collect(),
+            vec![StmtKind::Return(Some(made)).at(js::Span::NONE)],
+        ))
+    }
 }

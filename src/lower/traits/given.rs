@@ -274,6 +274,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.given_type_fact(index, TypeFact::Fused)
     }
 
+    /// `lower` run under `typing_env` given `facts` too, a type's facts and
+    /// the values that give them, then as it was: a dictionary's entry
+    /// lowered as generic code is, of a type parameter of its own, bound
+    /// there alone (`collecting_entry`, #1239).
+    pub(in crate::lower) fn with_given_facts<T>(
+        &mut self,
+        typing_env: ty::TypingEnv<'tcx>,
+        facts: Vec<(Ty<'tcx>, TypeFact, Expr)>,
+        lower: impl FnOnce(&mut Self) -> T,
+    ) -> T {
+        let saved = std::mem::replace(&mut self.typing_env, typing_env);
+        let before = self.given.type_facts.len();
+        self.given.type_facts.extend(facts);
+        let made = lower(self);
+        self.given.type_facts.truncate(before);
+        self.typing_env = saved;
+        made
+    }
+
     pub(in crate::lower) fn given_type_fact(&self, index: u32, fact: TypeFact) -> Option<Expr> {
         (self.given.type_facts.iter())
             .find(|&&(of, given, _)| matches!(of.kind(), ty::Param(p) if p.index == index) && given == fact)

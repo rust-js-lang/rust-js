@@ -110,3 +110,37 @@ Mutations: new `extend-text-pieces-lost`, `extend-text-iterable-unstepped`
 `string-extend-unjoined`, `string-extend-unreserved`, `mir-push-str-lost`,
 `extended-cows-as-objects`, `joined-text-of-iterable-unarrayed` and
 `joined-text-own-items` refitted.
+
+## Amendment: a collection's `from_iter` is the collect generic code's own is (2026-11-10, #1239)
+
+Generic code's `collect()` into a `B: FromIterator<A>` calls the
+dictionary its caller gives, `B.fromIter(it, IInPlace)`. A std
+collection's entry was its own lowering, `$foldToArray(items)` then made
+into the collection, where the same collect written into a `Vec` in
+generic code, `it.collect::<Vec<I::Item>>()`, grows as std's
+`SpecFromIterNested` does: `$roomForHint(it, size, ..)`, which asks the
+hint as it grows. Two lowerings of one rule, and the dictionary's asked no
+hint, so `collect::<B>()` of `B = Vec<u32>` printed none of a hint that
+prints, among 54 corpus cases' `generic-instances` rewrites (#1237).
+
+The entry is now that one lowering (`from_iter_entry`): the collect of a
+type parameter `I: Iterator<Item = A>`, bound so in the entry alone, its
+facts the entry's parameters after the items, as `from_iter`'s declaration
+carries them (`std_method_facts`, #794), `IInPlace`, which generic code's
+call already gives: the call keeps its shape. What's left of what it's
+given is closed where collecting it panics, as std drops the iterator its
+collect holds (#1141), which the `$foldToArray` it replaces did: the
+runtime's `$collecting(items, () => ..)`, of `$unwinds`, one helper for
+every entry, the collect itself the compiler's; the type parameter says
+nothing of what it holds, so it's always closed then. An entry reads like
+`fromIter: (items, IInPlace) => $collecting(items, () =>
+Array.from($roomForHint(items, 4, false)))`, and one a body gives twice is
+declared once, `vecFromIterator` (ADR 0979, amended). A `Vec` so collected is
+`$untracked` as generic code's own is, std perhaps collecting it in place
+(#1180), so its `capacity()` is refused at run time, not a number std's
+isn't. Held by `collect_into_a_type_parameter_is_stds.rs` (a `Vec`, a
+filter's, a `VecDeque`, a `String`, a `HashSet`),
+`consumer_closes_what_it_steps_on_a_panic.rs`, and the mutations
+`from-iter-entry-folds-to-an-array`, `collecting-left-unclosed` and
+`from-iter-dictionary-unclosed`, refitted; 39 of #1239's 52 cases' rows run as
+Rust does.

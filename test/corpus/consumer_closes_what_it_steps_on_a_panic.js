@@ -6,9 +6,9 @@ import {
   $catchUnwind,
   $closing,
   $cmp,
+  $collecting,
   $dropEach,
   $entriesShown,
-  $foldToArray,
   $heapExtend,
   $heapFrom,
   $heapSorted,
@@ -16,6 +16,7 @@ import {
   $iter,
   $live,
   $partiallyOrdered,
+  $roomForHint,
   $sortedKeys,
   $splicing,
   $unwindsOn,
@@ -86,7 +87,11 @@ function main() {
   $splicing(w, 1, 1, $sortedKeys(new $BTreeSet([4, 3]), $cmp)).return();
   console.log(`[${w.join(", ")}]`);
   r = $catchUnwind(
-    () => collected(ds(), { fromIter: (items) => new $BTreeSet($foldToArray(items)) }).size,
+    () =>
+      collected(ds(), {
+        fromIter: (items, IInPlace) =>
+          $collecting(items, () => new $BTreeSet($roomForHint(items, 4, false))),
+      }).size,
   );
   console.log(`collect ${r.TAG === "Err"}`);
   r = $catchUnwind(() => $byteLen(listedDebug_fmt(undefined)));
@@ -96,7 +101,7 @@ function main() {
   );
   console.log(`sorted ${r.TAG === "Err"}`);
   console.log(
-    `[${collected([[5], [6]], { fromIter: (items) => $foldToArray(items) }).join(", ")}]`,
+    `[${collected([[5], [6]], { fromIter: (items, IInPlace) => $collecting(items, () => Array.from($roomForHint(items, 4, false))) }).join(", ")}]`,
   );
   console.log(
     `${$isSortedBy(

@@ -5,11 +5,13 @@ import {
   $chars,
   $cmp,
   $collectResults,
+  $collecting,
   $debugStr,
-  $foldToArray,
+  $folded,
   $intoIter,
   $lazyRange,
   $parseInt,
+  $reserveHint,
   $rev,
   $roomForHint,
   $sortedEntries,
@@ -49,12 +51,24 @@ function parsed(words, BFromIteratorResult) {
 }
 
 function main() {
-  const vecFromIterator = { fromIter: (items) => $foldToArray(items) };
-  const resultFromIterator = { fromIter: (items) => $collectResults($foldToArray(items)) };
+  const resultFromIterator = {
+    fromIter: (items, IInPlace) =>
+      $collecting(items, () => $collectResults(items, undefined, undefined, false, 4)),
+  };
+  const vecFromIterator = {
+    fromIter: (items, IInPlace) =>
+      $collecting(items, () => Array.from($roomForHint(items, 4, false))),
+  };
   const v = gather(3, vecFromIterator);
-  const s = gather(2, { fromIter: (items) => new Set($foldToArray(items)) });
+  const s = gather(2, {
+    fromIter: (items, IInPlace) =>
+      $collecting(items, () => new Set($reserveHint($folded(items), 4, 4))),
+  });
   const b = gather(4, bagFromIteratorU32);
-  const t = made("abc", { fromIter: (items) => $foldToArray(items).join("") });
+  const t = made("abc", {
+    fromIter: (items, IInPlace) =>
+      $collecting(items, () => Array.from($reserveHint($folded(items), 1)).join("")),
+  });
   const pairs = new $BTreeMap(
     gather(2, vecFromIterator)
       .values()

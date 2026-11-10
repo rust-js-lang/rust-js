@@ -113,3 +113,15 @@ dropT)`; `main`'s dictionaries of types known whole, one of another. The mutatio
 are `generic-dictionary-repeats-unnamed` (`traits/dictionaries.ts`),
 `given-names-without-evidence` and `given-names-without-drops`
 (`traits/given.ts`).
+
+## Amendment: a dictionary that reads a JS global is declared once too (2026-11-10, #1239)
+
+A dictionary a body writes twice is declared once at its top only where
+what it reads is read the same there (`reads_only_at_top`): helpers, its
+own parameters, what the body is given. A JS global, `Array` of
+`Array.from`, is read the same anywhere, as no local is named it where its
+module reads it (ADR 0352, `names::is_js_global`), so it counts as a
+helper does. A std collection's `from_iter`, the collect generic code's own
+is (ADR 0445, amended), reads `Array.from` and `new Set`, and was written
+out at each use; `generic_collect`'s `vecFromIterator` is declared once
+again. Held by the mutation `dictionary-reading-a-global-unkept`.

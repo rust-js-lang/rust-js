@@ -499,4 +499,12 @@ export const mutations: Mutation[] = [
     replace: "  $inTurn(close, ends);\n  return folded;\n}",
     tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
   },
+  {
+    name: "collecting-left-unclosed",
+    breaks: "generic code's collect into a std collection by its dictionary leaves what's left of what it's given unclosed where collecting it panics, where std drops it as it unwinds (#1141, #1239)",
+    file: "src/runtime/steps.js",
+    find: "  return $unwinds(collect, () => items.return?.());\n",
+    replace: "  return collect();\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic\\.rs$"],
+  },
 ];

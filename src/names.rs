@@ -170,6 +170,12 @@ const GLOBALS: &[&str] = &[
 
 /// Whether JS keeps `name` for itself, so a variable named so is named apart
 /// for good.
+/// Whether `name` is one of JS's globals, `GLOBALS`', which the output's
+/// own names are named apart from wherever its module reads it (ADR 0352).
+pub(crate) fn is_js_global(name: &str) -> bool {
+    GLOBALS.contains(&name)
+}
+
 pub(crate) fn kept_word(name: &str) -> bool {
     KEPT.contains(&name)
 }

@@ -5,6 +5,7 @@ import {
   $BTreeSet,
   $cmp,
   $collectDropping,
+  $collecting,
   $foldToArray,
   $iter,
   $iterator,
@@ -13,6 +14,7 @@ import {
   $mapFrom,
   $max,
   $next,
+  $roomForHint,
   $sortedEntries,
   $sortedKeys,
   $unwindsOn,
@@ -187,9 +189,15 @@ function main() {
   }
   const c = result$7;
   console.log(`{${Array.from($sortedKeys(c, $cmp)).join(", ")}}`);
-  let g = built(loud([7], "generic vec"), { fromIter: (items) => $foldToArray(items) });
+  let g = built(loud([7], "generic vec"), {
+    fromIter: (items, IInPlace) =>
+      $collecting(items, () => Array.from($roomForHint(items, 4, false))),
+  });
   console.log(`[${g.join(", ")}]`);
-  g = built(loud([8], "generic set"), { fromIter: (items) => new $BTreeSet($foldToArray(items)) });
+  g = built(loud([8], "generic set"), {
+    fromIter: (items, IInPlace) =>
+      $collecting(items, () => new $BTreeSet($roomForHint(items, 4, false))),
+  });
   console.log(`{${Array.from($sortedKeys(g, $cmp)).join(", ")}}`);
   const iter$8 = loud([1, 2], "sum");
   let result$8;
