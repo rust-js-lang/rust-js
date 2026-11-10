@@ -1181,22 +1181,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     continue;
                 }
             }
-            // A `&mut` to what's a cell, held as a value, the box it is, given
-            // on as it is: one this function was given, `items(copy _1)` of a
-            // library's MIR, optimized, where the MIR built of the crate's own
-            // reborrows it, `&mut *self` (#472), or a tuple's `len_ptr` of
-            // smallvec's `triple_mut()` given on to its `SetLenOnDrop::new`
-            // (#476). A `&mut` to its place, the box's `value`, as a reborrow
-            // is.
-            let held_box = |cx: &Self| {
-                arg_tys.get(i).is_some_and(
-                    |&ty| matches!(*ty.kind(), ty::Ref(_, pointee, ty::Mutability::Mut) if cx.mut_ref_form(pointee).is_cell()),
-                )
-            };
-            let value = match value {
-                Value::Expr(boxed) if held_box(self) => Value::Ref(Expr::held(boxed)),
-                value => value,
-            };
             let place = match value {
                 // A `&mut` to a function or an iterator given for a type
                 // parameter read as one that's called or stepped, `P: Is<F>`:

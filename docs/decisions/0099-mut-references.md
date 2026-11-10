@@ -622,3 +622,23 @@ references (`text_place`), as a value of its type is. Pair tests
 `library_string_pushed_through_a_reference` and
 `library_writers_given_options`'s `Message`; mutation
 `text-place-through-a-cell-unread` (`lower/mir/std_calls.ts`).
+
+## Amended (2026-11-10, #1109): a held box is given on by the one route that gives a value as it is
+
+#472's box a function was given, held as a value, `items(copy _1)` of a
+library's optimized MIR, was made a `&mut` to its place, `box.value`, so
+the call found the box again (`box_of_place`) or, where it didn't, made
+another of the place and copied it back: a library's function as a value,
+`let add = dep::add_to::<u8>`, gave its arrow's box as `{ value:
+total.value }`, copied back once the call returned. Since an object's
+`&mut` where generic code has its box is an in-place cell (ADR 0454,
+amended), a value that's neither is given as it is, so the box is given
+on as it is with no step of its own: `(a, b) => Dep.addTo(a, b, ..)`.
+Case ([0262](0262-when-rust-and-js-disagree.md)): no difference; no
+snapshot changed, the corpus and every crate pair agree with native Rust.
+The crate pair `fnvalue` now keeps the value, called twice and given on.
+The mutation `given-box-boxed-again`, of the conversion, and
+`called-value-copy-back-outside`, of the arrow's copy back, which no
+arrow makes now (its arguments are its parameters' values, never a
+place), are retired; one that made a place to copy back would be an
+internal error, asserted, not a copy back nothing reaches.

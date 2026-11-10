@@ -465,17 +465,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
   },
   {
-    name: "called-value-copy-back-outside",
-    breaks:
-      "a `&mut` method as a value copies its box back outside the arrow, where nothing has it",
-    file: "src/lower/mir/dispatch.rs",
-    find: '        if !copy_backs.is_empty() {\n            value = self.spill("value", value, &mut body);\n',
-    replace:
-      '        if false {\n            value = self.spill("value", value, &mut body);\n',
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer_replaced.rs$"],
-  },
-  {
     name: "variadic-value-rest-unpassed",
     breaks:
       "a trait's `&mut self` C-variadic method as a value gives the method none of what it's given past the rest",

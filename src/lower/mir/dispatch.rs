@@ -424,9 +424,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             values.push(Value::Expr(Expr::spread(Expr::var(rest))));
             inputs.push(tcx.types.i32);
         }
-        // What's made for the call is the arrow's, not what's around it: the
-        // boxes it gives a `&mut` too, copied back in it once the call returns,
-        // as a call's are after it (ADR 0099).
+        // What's made for the call is the arrow's, not what's around it. It
+        // copies nothing back: its arguments are its parameters' values,
+        // never a place, so a box it's given is given on as it is (ADR 0099,
+        // amended, #1109).
         let mut body = Vec::new();
         let (value, copy_backs) = self.in_fresh_evaluation(state, |cx, state| {
             let called = cx.mir_call_values(
@@ -441,14 +442,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let flushed = cx.flush(state, &mut body);
             value.and_then(|value| flushed.map(|()| value))
         });
-        let mut value = value?;
-        if !copy_backs.is_empty() {
-            value = self.spill("value", value, &mut body);
-            for (place, boxed) in copy_backs {
-                let js_span = self.js_span(span);
-                body.push(self.copied_back(place, &boxed, js_span));
-            }
-        }
+        let value = value?;
+        assert!(
+            copy_backs.is_empty(),
+            "a function value's arrow gives its call its parameters' values, never a place to box and copy back"
+        );
         // What it gives back in generic code's form too, a slice's raw
         // pointer `$ptrTo(r)`.
         let output = (def_id, declared.output(), self.instantiated(declared.output(), args));

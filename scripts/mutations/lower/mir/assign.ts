@@ -985,15 +985,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_reference_changed_through_mut\\.rs$"],
   },
   {
-    name: "given-box-boxed-again",
-    breaks:
-      "a box a function was given, or a `&mut` to a cell held as a value, given on as it is in a library's optimized MIR, `items(copy _1)` or smallvec's `SetLenOnDrop::new(len_ptr)`, is boxed again, `{ get value() { return self; } }`, so a consumer's instance throws where native runs (#472, #476)",
-    file: "src/lower/mir/assign.rs",
-    find: "                Value::Expr(boxed) if held_box(self) => Value::Ref(Expr::held(boxed)),\n",
-    replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: (library_default_mut_self_instance|mut_ref_of_tuple_given_on)$"],
-  },
-  {
     name: "held-reference-place-rewritten",
     breaks:
       "a reference read out of a field, `inner.s` of a `&str`, is read where it's used, after the field's written, `inner.s = \"new\"; both(inner.s, 1)`, where Rust gives the old one",

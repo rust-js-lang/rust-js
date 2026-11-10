@@ -8,4 +8,15 @@ pub fn main() {
     let mut total = 1;
     add(&mut total, 3);
     println!("{}", total);
+    // Kept as a value, called twice and given on: its arrow gives the
+    // library the box it's given, which the library writes.
+    add(&mut total, 4);
+    let mut other = 10;
+    each(add, &mut other);
+    println!("{} {}", total, other);
+}
+
+fn each(f: fn(&mut u32, u8), n: &mut u32) {
+    f(n, 1);
+    f(n, 2);
 }

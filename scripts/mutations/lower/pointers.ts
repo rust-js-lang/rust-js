@@ -424,7 +424,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pointers.rs",
     find: "            let read = place.projection.is_empty() && place.local != mir::RETURN_PLACE;\n",
     replace: "            let read = place.projection.is_empty();\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a pointer through a &mut"],
+    tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_captured_variable_returned_refused\\.rs$"],
   },
   {
     name: "text-pointer-compared",
