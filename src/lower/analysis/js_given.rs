@@ -88,14 +88,9 @@ impl JsGiven {
             unboxed: unboxed.clone(),
             copies: IndexMap::default(),
         };
-        // What each function's bodies, its closures' too, call.
-        let mut calls: IndexMap<DefId, Vec<(DefId, ty::GenericArgsRef<'tcx>)>> = IndexMap::default();
-        for body in all_bodies {
-            let caller = tcx.typeck_root_def_id(body.def_id);
-            let called = crate::lower::instances::given_calls_of(tcx, body).into_iter();
-            let routed = called.filter(|&(callee, ..)| given.routed.contains(&callee));
-            (calls.entry(caller).or_default()).extend(routed.map(|(callee, args, _)| (callee, args)));
-        }
+        // What each function's bodies, its closures' too, call, the
+        // carrier's (ADR 1115).
+        let calls = crate::lower::instances::calls_by_caller(tcx, all_bodies, &|callee| given.routed.contains(&callee));
         // From each function's own JS, a generic one's or not.
         let mut work: Vec<(DefId, Params)> = (calls.keys().copied()).map(|id| (id, given.main(tcx, id))).collect();
         while let Some((caller, params)) = work.pop() {

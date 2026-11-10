@@ -93,17 +93,17 @@ pub(super) fn refuse_what_callers_decide<'tcx>(
             || recognition.iterator_item(ty).is_some_and(&drops)
     };
     let mut refused = IndexSet::default();
+    // Each call, as the callers' instances are carried (ADR 1115): of a
+    // library's function the crate compiles itself too, of MIR alone.
+    let callers = crate::lower::instances::callers_of(tcx, all_bodies);
     // Through what calls each caller in turn, as far as 32 calls deep, as a
     // function calling itself with a type made of its own would go on.
     for _ in 0..32 {
         let mut more = Vec::new();
-        for body in all_bodies {
-            let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
-            for expr in body.thir.exprs.iter() {
-                let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
-                    continue;
-                };
-                let Some(own) = of_body.get(&callee) else { continue };
+        for (&callee, calls) in &callers {
+            let Some(own) = of_body.get(&callee) else { continue };
+            for &(caller, args, span) in calls {
+                let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
                 let made = |ty: Ty<'tcx>| {
                     let ty = ty::EarlyBinder::bind(tcx, ty)
                         .instantiate(tcx, args)
@@ -128,8 +128,8 @@ pub(super) fn refuse_what_callers_decide<'tcx>(
                         Asked::ZipFold(zip) | Asked::ZipStep(zip) => zip.has_param(),
                     };
                     if generic {
-                        if !of_body.get(&body.def_id).is_some_and(|known| known.contains(&asked)) {
-                            more.push((body.def_id, asked));
+                        if !of_body.get(&caller).is_some_and(|known| known.contains(&asked)) {
+                            more.push((caller, asked));
                         }
                         continue;
                     }
@@ -162,12 +162,8 @@ pub(super) fn refuse_what_callers_decide<'tcx>(
                             )
                         }
                     };
-                    if refused.insert(expr.span) {
-                        crate::lower::refusal::refuse(
-                            tcx,
-                            expr.span,
-                            crate::lower::refusal::Refused::Because(what, why),
-                        );
+                    if refused.insert(span) {
+                        crate::lower::refusal::refuse(tcx, span, crate::lower::refusal::Refused::Because(what, why));
                     }
                 }
             }

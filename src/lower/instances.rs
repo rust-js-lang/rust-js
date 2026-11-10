@@ -1164,7 +1164,7 @@ pub(super) fn params_given<'a, 'tcx>(
         if !is_item(callee) {
             continue;
         }
-        for &(caller, args) in calls {
+        for &(caller, args, _) in calls {
             for index in bounded(callee) {
                 let Some(given_ty) = args.get(index as usize).and_then(|arg| arg.as_type()) else {
                     continue;
@@ -1191,9 +1191,29 @@ pub(super) fn params_given<'a, 'tcx>(
     given
 }
 
+/// What each function's bodies, its closures' too, call or name as a value
+/// of the functions `called` says, as `callers_of` has them, by caller, in
+/// the order its bodies make them: the carrier's index the other way round,
+/// for an analysis that carries what a caller needs to what it calls.
+pub(super) fn calls_by_caller<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    called: &dyn Fn(DefId) -> bool,
+) -> IndexMap<DefId, Vec<(DefId, ty::GenericArgsRef<'tcx>)>> {
+    let mut calls: IndexMap<DefId, Vec<(DefId, ty::GenericArgsRef<'tcx>)>> = IndexMap::default();
+    for body in all_bodies {
+        let caller = tcx.typeck_root_def_id(body.def_id);
+        let named = given_calls_of(tcx, body)
+            .into_iter()
+            .filter(|&(callee, ..)| called(callee));
+        (calls.entry(caller).or_default()).extend(named.map(|(callee, args, _)| (callee, args)));
+    }
+    calls
+}
+
 /// Each function the crate names, called or as a value, and each naming of
-/// it: by what, its body's owner, and its generic arguments there.
-pub(super) type Callers<'tcx> = IndexMap<DefId, Vec<(DefId, ty::GenericArgsRef<'tcx>)>>;
+/// it: by what, its body's owner, its generic arguments there, and where.
+pub(super) type Callers<'tcx> = IndexMap<DefId, Vec<(DefId, ty::GenericArgsRef<'tcx>, rustc_span::Span)>>;
 
 /// The callers' instances' one carrier (ADR 1115): each naming of each
 /// function `all_bodies` call or name as a value that's given its type
@@ -1204,8 +1224,8 @@ pub(super) fn callers_of<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) ->
     let mut callers: Callers<'tcx> = IndexMap::default();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
-        for (callee, args, _) in given_calls_of(tcx, body) {
-            callers.entry(callee).or_default().push((caller, args));
+        for (callee, args, span) in given_calls_of(tcx, body) {
+            callers.entry(callee).or_default().push((caller, args, span));
         }
     }
     callers
@@ -1247,7 +1267,7 @@ fn given_types<'tcx>(
     }
     let mut given = IndexSet::default();
     for (named, at) in namings {
-        for &(caller, args) in callers.get(&named).into_iter().flatten() {
+        for &(caller, args, _) in callers.get(&named).into_iter().flatten() {
             let arg = tcx.erase_and_anonymize_regions(args.get(at as usize)?.as_type()?);
             match *arg.kind() {
                 ty::Param(param) => given.extend(given_types(tcx, callers, (caller, param.index), seen)?),
