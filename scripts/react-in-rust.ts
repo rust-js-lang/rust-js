@@ -131,10 +131,12 @@ function fetch() {
     rmSync(link, { force: true });
     symlinkSync(root, link);
   }
-  if (!existsSync(join(port, ".git"))) {
-    must(["git", "init", "-q", port], home);
-    must(["git", "remote", "add", "origin", repository], port);
-  }
+  if (!existsSync(join(port, ".git"))) must(["git", "init", "-q", port], home);
+  // Its remote, which a run stopped between the two lost: added, or set
+  // where it names another.
+  const remote = run(["git", "remote", "get-url", "origin"], port);
+  if (!remote.ok) must(["git", "remote", "add", "origin", repository], port);
+  else if (remote.stdout.trim() !== repository) must(["git", "remote", "set-url", "origin", repository], port);
   if (run(["git", "rev-parse", "HEAD"], port).stdout.trim() !== pin) {
     must(["git", "fetch", "-q", "--depth=1", "origin", pin], port);
   }
