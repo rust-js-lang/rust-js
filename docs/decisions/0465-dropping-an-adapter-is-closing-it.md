@@ -2451,3 +2451,18 @@ never dropped `Loud`, where native Rust does. A box is asked as what it
 holds now, its `dyn Fn*`, anyone's, which may panic.
 `test/corpus/boxed_function_panics_drop_the_consumed_iterator.rs` holds
 `fold` and `for_each`.
+
+## Amendment: an identity map hides its source's own `count` (2026-11-10, #1240)
+
+An identity `map(|x| x)` is left out where nothing it hides is observable
+(#493): it stayed where its source's own `nth`, `last` or `nth_back` would
+answer through it (#235), but not its own `count`. std's `Map` counts by
+its `fold`, and a `fuse()` passes `count` on to its source, so
+`counted(Upto(0).fuse().map(|x| x))` of an iterator with its own `count`
+answered by that `count`, `own count from 0` and its answer, where native
+Rust counts the five items its `next` gives. The map stays where its
+source's own `count` would answer too (`reaches_own_steps`). Held by
+`identity_map_hides_its_sources_own_count.rs` and the mutation
+`identity-map-shows-own-count`; the `generic-instances` rows of
+`own_count_through_adapters` and `flatten_count_takes_each_inner_count` run
+as Rust does.

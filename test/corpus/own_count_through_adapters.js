@@ -101,7 +101,23 @@ function main() {
     `${$count($enumerate($iterator([0], countIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, countIterator_count)))}`,
   );
   console.log(
-    `${$iterator([0], countIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, countIterator_count).reduce((n) => n + 1, 0)}`,
+    `${$iterator(
+      [0],
+      countIterator_next,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      countIterator_count,
+    )
+      .map((x) => x)
+      .reduce((n) => n + 1, 0)}`,
   );
   console.log(
     `${$count($iterator([0], countIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, countIterator_count).take(2))}`,

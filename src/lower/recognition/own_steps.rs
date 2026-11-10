@@ -215,10 +215,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// Whether what std asks of an iterator of type `ty` reaches the crate's
-    /// own `nth`, `last` or `nth_back`, each of which an adapter that
-    /// passes it on gives, and a `map` doesn't (#235).
+    /// own `nth`, `last`, `nth_back` or `count`, each of which an adapter
+    /// that passes it on gives, a `fuse()`'s `count` its source's, and a
+    /// `map` doesn't, its `count` its `fold`'s (#235, #1240).
     pub(in crate::lower) fn reaches_own_steps(&self, ty: Ty<'tcx>) -> bool {
-        [OwnStep::Nth, OwnStep::Last, OwnStep::NthBack]
+        [OwnStep::Nth, OwnStep::Last, OwnStep::NthBack, OwnStep::Count]
             .into_iter()
             .any(|step| self.reaches_its_own(ty, step, Reach::Sure))
     }

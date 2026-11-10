@@ -352,4 +352,12 @@ export const mutations: Mutation[] = [
     replace: "        \"std::iter::Repeat\" => Some(&[OwnStep::Nth]),\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_count_panics.rs$"],
   },
+  {
+    name: "identity-map-shows-own-count",
+    breaks: "a `map(|x| x)` of a `fuse()` of the crate's iterator with its own `count` is left out, so a `count()` of it reaches the crate's `count` through the fuse, where std's `Map` counts by its `fold` (#1240)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "        [OwnStep::Nth, OwnStep::Last, OwnStep::NthBack, OwnStep::Count]",
+    replace: "        [OwnStep::Nth, OwnStep::Last, OwnStep::NthBack]",
+    tests: ["test/corpus.test.ts", "-t", "^identity_map_hides_its_sources_own_count\\.rs$"],
+  },
 ];

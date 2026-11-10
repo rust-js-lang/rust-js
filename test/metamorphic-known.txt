@@ -74,7 +74,5 @@ plain std generic-instances zip_second_side_panics.rs
 plain std generic-instances zip_sides_dropped_with_it.rs
 
 #1240 P0 (iterators): size_hint, count, last and nth in generic code answer otherwise than std of some instances
-plain generic-instances flatten_count_takes_each_inner_count.rs
-plain generic-instances own_count_through_adapters.rs
 plain std generic-instances range_own_steps.rs
 plain std generic-instances repeat_count_panics.rs
