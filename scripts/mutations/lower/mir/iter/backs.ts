@@ -818,8 +818,16 @@ export const mutations: Mutation[] = [
     name: "hinted-skip-source-unclosed",
     breaks: "a `skip(n)` generic code asks the hint of is made `$skipping` of its source unclosed, so where a drop of what's left panics the rest aren't dropped, where `IntoIter`'s drop goes on (#1244)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                let it = self.closing(receiver.clone(), held, span)?;\n                let n = values.next().expect(\"how many\");\n                let mut given = vec![it, n];\n                if let Some(item) = self.iterator_item(output) {\n                    given.extend(self.std_drop_function(item, span)?);\n                }\n                let skip = method == Some(IterMethod::Skip);\n                Expr::call_helper(",
-    replace: "                let n = values.next().expect(\"how many\");\n                let mut given = vec![receiver.clone(), n];\n                if let Some(item) = self.iterator_item(output) {\n                    given.extend(self.std_drop_function(item, span)?);\n                }\n                let skip = method == Some(IterMethod::Skip);\n                Expr::call_helper(",
+    find: "                let it = self.closing(it, held, span)?;\n                let n = values.next().expect(\"how many\");\n                let mut given = vec![it, n];\n                if let Some(item) = self.iterator_item(output) {\n                    given.extend(self.std_drop_function(item, span)?);\n                }\n                let skip = method == Some(IterMethod::Skip);\n                Expr::call_helper(",
+    replace: "                let n = values.next().expect(\"how many\");\n                let mut given = vec![it, n];\n                if let Some(item) = self.iterator_item(output) {\n                    given.extend(self.std_drop_function(item, span)?);\n                }\n                let skip = method == Some(IterMethod::Skip);\n                Expr::call_helper(",
     tests: ["test/corpus.test.ts", "-t", "^skip_hinted_closes_its_source.rs$"],
+  },
+  {
+    name: "hinted-receiver-as-it-is",
+    breaks: "a `skip(1)` made for its hint of a range generic code is given with its dictionary steps the range object itself, `(0, None)`, not `$given(it, IIterator)` (#1240)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                let it = self.as_js_iterator(receiver.clone(), iter_ty, span)?;\n                let it = self.closing(it, held, span)?;\n",
+    replace: "                let it = self.closing(receiver.clone(), held, span)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint\\.rs$"],
   },
 ];

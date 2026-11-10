@@ -14,6 +14,7 @@ use crate::lower::recognition::{
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
+use rustc_span::def_id::DefId;
 
 /// What `of_crate` finds: the adapters, and the sources, whose makers make
 /// them knowing their back, which knows their hint too, to join a back
@@ -22,7 +23,21 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 /// made (`hinted`).
 pub(in crate::lower) struct HintAsked<'tcx> {
     pub(in crate::lower) knowing: IndexSet<Ty<'tcx>>,
-    pub(in crate::lower) hinted: IndexSet<Ty<'tcx>>,
+    pub(in crate::lower) hinted: Hinted<'tcx>,
+}
+
+/// The adapters made knowing their hint, which the crate's makers read:
+/// of a type of no type parameter, wherever it's made (`types`); and of one
+/// generic code makes of its own parameters, only in the function that
+/// makes it, by its owner, as `Take<I>` is the same type of every generic
+/// function's `I` (#1240): a `take(n)`'s, a `skip(n)`'s and a
+/// `step_by(n)`'s made `$taking`, `$skipping` or `$stepBy` (`counted_in`),
+/// and a map's and the like made knowing its back (`knowing_in`).
+#[derive(Default)]
+pub(in crate::lower) struct Hinted<'tcx> {
+    pub(in crate::lower) types: IndexSet<Ty<'tcx>>,
+    pub(in crate::lower) counted_in: IndexSet<(DefId, Ty<'tcx>)>,
+    pub(in crate::lower) knowing_in: IndexSet<(DefId, Ty<'tcx>)>,
 }
 
 /// What `all_bodies` ask the hint of, through generic code and libraries.
@@ -33,14 +48,14 @@ pub(super) fn of_crate<'tcx>(
 ) -> HintAsked<'tcx> {
     let mut asked = HintAsked {
         knowing: IndexSet::default(),
-        hinted: IndexSet::default(),
+        hinted: Hinted::default(),
     };
     let size_hint = crate::lower::recognition::trait_method(
         tcx,
         crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Iterator),
         "size_hint",
     );
-    let mut of_params: Vec<(rustc_span::def_id::DefId, Ty<'tcx>)> = Vec::new();
+    let mut of_params: Vec<(DefId, Ty<'tcx>)> = Vec::new();
     for body in all_bodies {
         for expr in body.thir.exprs.iter() {
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
@@ -58,23 +73,42 @@ pub(super) fn of_crate<'tcx>(
             // the crate can't see, may ask.
             if recognition.foreign.is_library(callee.krate) {
                 for given in args.types() {
-                    mark_hint_knowing(
+                    _ = mark_hint_knowing(
                         tcx,
                         recognition,
                         given.peel_refs(),
-                        (&mut asked.knowing, &mut asked.hinted),
+                        (&mut asked.knowing, &mut asked.hinted.types),
                     );
                 }
             }
         }
     }
     // Each instance a caller the crate sees gives, through generic callers
-    // (the callers' instances' carrier, `Fact::Marked`, ADR 1115).
+    // (the callers' instances' carrier, `Fact::Marked`, ADR 1115); and what
+    // a generic caller makes of its own parameters on the way, `i.take(2)`
+    // of `taken<I>`'s, one JS function of every instance, made knowing
+    // where one of them steps an array's items, or where callers the crate
+    // can't see may give one (#1240).
     if !of_params.is_empty() {
         let callers = crate::lower::instances::callers_of(tcx, all_bodies);
         for (owner, of) in of_params {
-            for instance in crate::lower::instances::seen_instances_of(tcx, &callers, of, owner) {
-                mark_hint_knowing(tcx, recognition, instance, (&mut asked.knowing, &mut asked.hinted));
+            let (instances, made) = crate::lower::instances::seen_instances_of(tcx, &callers, of, owner);
+            // Of every caller where the crate sees them all, or any it may
+            // be given, a library's `pub` function's, whose callers are its
+            // consumers'.
+            let mut of_items = crate::lower::instances::instances_of(tcx, &callers, of, owner).is_none();
+            for instance in instances {
+                of_items |= mark_hint_knowing(
+                    tcx,
+                    recognition,
+                    instance,
+                    (&mut asked.knowing, &mut asked.hinted.types),
+                );
+            }
+            if of_items {
+                for (maker, made) in made {
+                    mark_made_in(tcx, maker, made, &mut asked.hinted);
+                }
             }
         }
     }
@@ -90,19 +124,32 @@ pub(super) fn of_crate<'tcx>(
 /// filter's, `$filterEnds`; a `take(n)`'s, a `skip(n)`'s or a
 /// `step_by(n)`'s made `$taking`, `$skipping` or `$stepBy` (`hinted`), and
 /// its source, where it's no adapter, a `Vec`'s `iter()`, `$iter` (#1236).
+/// Whether it steps an array's items, so was marked.
 fn mark_hint_knowing<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
     instance: Ty<'tcx>,
+    marked: (&mut IndexSet<Ty<'tcx>>, &mut IndexSet<Ty<'tcx>>),
+) -> bool {
+    let of_items = (instance.walk().filter_map(|part| part.as_type())).any(|held| {
+        !adapter(tcx, held) && (recognition.array_source(held).is_some() || recognition.iterates_items(held))
+    });
+    if of_items {
+        mark_each(tcx, instance, marked);
+    }
+    of_items
+}
+
+fn adapter<'tcx>(tcx: TyCtxt<'tcx>, held: Ty<'tcx>) -> bool {
+    matches!(held.kind(), ty::Adt(adapter, _) if is_iter_adapter_def(tcx, adapter.did()))
+}
+
+/// Each adapter `instance` holds made knowing its hint, and its source.
+fn mark_each<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    instance: Ty<'tcx>,
     (typed, hinted): (&mut IndexSet<Ty<'tcx>>, &mut IndexSet<Ty<'tcx>>),
 ) {
-    let adapter =
-        |held: Ty<'tcx>| matches!(held.kind(), ty::Adt(adapter, _) if is_iter_adapter_def(tcx, adapter.did()));
-    let of_items = (instance.walk().filter_map(|part| part.as_type()))
-        .any(|held| !adapter(held) && (recognition.array_source(held).is_some() || recognition.iterates_items(held)));
-    if !of_items {
-        return;
-    }
     for held in instance.walk().filter_map(|part| part.as_type()) {
         let held = tcx.erase_and_anonymize_regions(held);
         if made_knowing_by_its_maker(tcx, held) {
@@ -114,9 +161,25 @@ fn mark_hint_knowing<'tcx>(
         {
             hinted.insert(held);
             let source = tcx.erase_and_anonymize_regions(source.peel_refs());
-            if !adapter(source) {
+            if !adapter(tcx, source) {
                 typed.insert(source);
             }
+        }
+    }
+}
+
+/// Each adapter `made`, a type of `maker`'s own type parameters, holds made
+/// knowing its hint in `maker` alone: neither its source, a type parameter
+/// whose callers' values are their own, nor another function's of the same
+/// type (#1240).
+fn mark_made_in<'tcx>(tcx: TyCtxt<'tcx>, maker: DefId, made: Ty<'tcx>, hinted: &mut Hinted<'tcx>) {
+    for held in made.walk().filter_map(|part| part.as_type()) {
+        let held = tcx.erase_and_anonymize_regions(held);
+        if made_knowing_by_its_maker(tcx, held) {
+            hinted.knowing_in.insert((maker, held));
+        }
+        if counted_source(tcx, held).is_some() || stepped_by_source(tcx, held).is_some() {
+            hinted.counted_in.insert((maker, held));
         }
     }
 }

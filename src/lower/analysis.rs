@@ -18,6 +18,7 @@ pub(super) use cell_borrows::{
 pub(super) use cell_flow::CellClass;
 mod clones;
 pub(in crate::lower) use clones::Cloned;
+pub(in crate::lower) use hint_asked::Hinted;
 mod closures;
 mod debug;
 mod drops;
@@ -527,7 +528,7 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// The `take(n)`s, `skip(n)`s and `step_by(n)`s whose hint generic
     /// code asks of what its callers give, each made `$taking`, `$skipping`
     /// or `$stepBy` where it's made (`hint_asked.rs`, #1236).
-    pub hinted: IndexSet<Ty<'tcx>>,
+    pub hinted: Hinted<'tcx>,
     /// Whether the crate asks a string's `Chars` its rest, its `Debug`, or
     /// makes a `dyn` of one, so each is `$chars(s)`, not JS's own string
     /// iterator (#1186).

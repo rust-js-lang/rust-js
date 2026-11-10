@@ -72,4 +72,20 @@ export const mutations: Mutation[] = [
     replace: "            true => \"\",\n",
     tests: ["test/diagnostics.test.ts", "-t", "a flatten of a function's impl stepped from its back"],
   },
+  {
+    name: "knowing-in-its-maker-unread",
+    breaks: "a `map` generic code makes of its own type parameter's iterator, where its hint is asked, is JS's own, `(0, None)` (#1240)",
+    file: "src/lower/iterators/back_facts.rs",
+    find: "            || (self.krate.hinted.knowing_in).contains(&(self.tcx.typeck_root_def_id(self.frame.owner), ty))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint\\.rs$"],
+  },
+  {
+    name: "counted-in-its-maker-unread",
+    breaks: "a `take(2)` generic code makes of its own type parameter's iterator, where its hint is asked, is JS's own `.take(2)`, `(0, None)` (#1240)",
+    file: "src/lower/iterators/back_facts.rs",
+    find: " || self.krate.hinted.counted_in.contains(&(owner, ty))",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint\\.rs$"],
+  },
 ];

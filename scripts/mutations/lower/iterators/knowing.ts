@@ -727,4 +727,12 @@ export const mutations: Mutation[] = [
     replace: "                false => return Err(self.unsupported(span, \"an enumeration\")),\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
   },
+  {
+    name: "generic-not-double-ended-refused",
+    breaks: "a `map` of an `I: Iterator` made for its hint is refused as a `DoubleEndedIterator` rust-js can't step from its back, though nothing can step it so (#1240)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if self.recognition().never_double_ended(ty) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint\\.rs$"],
+  },
 ];

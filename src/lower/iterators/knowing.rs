@@ -767,6 +767,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Expr::call_helper("$filterEnds", [vec![source_value], given].concat()));
             }
         }
+        // A type of generic code's whose own bounds don't make it
+        // double-ended, `I` or `Take<I>` of an `I: Iterator`, whatever its
+        // callers give: nothing steps it from its back, here or where it's
+        // given, so it's as it is, a map of it made `$mapEnds` of it for its
+        // hint (#1240).
+        if self.recognition().never_double_ended(ty) {
+            return Ok(value);
+        }
         let why = self.back_refused_because(ty);
         Err(self.unsupported(
             span,

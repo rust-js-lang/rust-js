@@ -664,6 +664,36 @@ impl<'tcx> Recognition<'_, 'tcx> {
     pub(crate) fn trait_holds(&self, ty: Ty<'tcx>, trait_id: DefId) -> Option<bool> {
         trait_holds_in(self.tcx, self.typing_env, ty, trait_id)
     }
+
+    /// Whether `ty`, a type of this body's type parameters, may have
+    /// `trait_id`'s impl as its own bounds say: `Take<I>`'s
+    /// `DoubleEndedIterator` where `I` is bound by `Iterator` alone may
+    /// not, whatever its callers give, so nothing it's given to uses it
+    /// (#1240).
+    pub(crate) fn may_hold_by_bounds(&self, ty: Ty<'tcx>, trait_id: DefId) -> bool {
+        use rustc_trait_selection::infer::TyCtxtInferExt;
+        use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt;
+        let infcx = self.tcx.infer_ctxt().build(ty::TypingMode::PostAnalysis);
+        let obligation = rustc_trait_selection::traits::Obligation::new(
+            self.tcx,
+            rustc_trait_selection::traits::ObligationCause::dummy(),
+            self.typing_env.param_env,
+            ty::TraitRef::new(self.tcx, trait_id, [self.tcx.erase_and_anonymize_regions(ty)]),
+        );
+        infcx.predicate_may_hold(&obligation)
+    }
+
+    /// Whether `ty`, a type of generic code's, `I` or `Take<I>` of an
+    /// `I: Iterator`, is never a `DoubleEndedIterator`, whatever its
+    /// callers give, as its own bounds say: nothing steps it from its back,
+    /// here or where it's given, so a map of it made for its hint,
+    /// `$mapEnds`, is made of it as it is (#1240).
+    pub(crate) fn never_double_ended(&self, ty: Ty<'tcx>) -> bool {
+        rustc_middle::ty::TypeVisitableExt::has_param(&ty)
+            && self
+                .double_ended_iterator()
+                .is_some_and(|double_ended| !self.may_hold_by_bounds(ty, double_ended))
+    }
 }
 
 /// `Recognition::trait_holds` in `typing_env`.

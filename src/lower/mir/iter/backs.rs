@@ -381,7 +381,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // its items' drop, and its source closed to drop what it holds,
             // as above, so what's left drops as a drop of it panics (#1244).
             Some(IterMethod::Skip | IterMethod::Take) if self.made_knowing_its_hint(output) && !held.is_ref() => {
-                let it = self.closing(receiver.clone(), held, span)?;
+                // As a JS iterator: generic code's given its dictionary,
+                // `$given(it, IIterator)`, not the range it may be (#1240).
+                let it = self.as_js_iterator(receiver.clone(), iter_ty, span)?;
+                let it = self.closing(it, held, span)?;
                 let n = values.next().expect("how many");
                 let mut given = vec![it, n];
                 if let Some(item) = self.iterator_item(output) {

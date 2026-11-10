@@ -20,6 +20,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn stepped_from_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.tcx.erase_and_anonymize_regions(ty.peel_refs());
         self.krate.back_stepped.typed.contains(&ty)
+            // What this generic function makes of its own parameters, given
+            // where a hint is asked (`hint_asked.rs`, #1240).
+            || (self.krate.hinted.knowing_in).contains(&(self.tcx.typeck_root_def_id(self.frame.owner), ty))
             || !self.asking_made.get()
                 && (self.made_into.iter().chain(&self.made_from)).any(|&(local, made)| {
                     let local = (self.krate.back_stepped.borrows)
@@ -115,7 +118,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `$stepBy` where it's made, as `hint_asked.rs` says (#1236).
     pub(in crate::lower) fn made_knowing_its_hint(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.tcx.erase_and_anonymize_regions(ty.peel_refs());
-        self.krate.hinted.contains(&ty)
+        let owner = self.tcx.typeck_root_def_id(self.frame.owner);
+        self.krate.hinted.types.contains(&ty) || self.krate.hinted.counted_in.contains(&(owner, ty))
     }
 
     pub(in crate::lower) fn made_stepped_from_its_back(&self) -> bool {

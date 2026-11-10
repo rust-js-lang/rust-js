@@ -527,4 +527,12 @@ export const mutations: Mutation[] = [
       "is its program's, alone or a dependency",
     ],
   },
+  {
+    name: "made-of-own-parameters-unresolved",
+    breaks: "what a generic caller makes of its own type parameters and gives on, `Map<Take<I>, F>`, is given no instances, so nothing it's made of is made knowing its hint (#1240)",
+    file: "src/lower/instances.rs",
+    find: "                    made.insert((caller, arg));\n                    given.extend(instances_in(tcx, (callers, fact), (arg, caller), (seen, made))?);\n",
+    replace: "                    return None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint\\.rs$"],
+  },
 ];

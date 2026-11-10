@@ -1278,18 +1278,41 @@ pub(super) fn callers_of<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) ->
 /// trait's or an impl's method's `Self` and its impl's parameters are a
 /// dictionary's, though its own each naming gives, `count_of::<Item>`,
 /// whether of the trait's method or the impl's (#1009); and one given what
-/// holds a type parameter, not one, is given what's resolved no further.
+/// a caller makes of its own type parameters, `Map<Take<I>, F>` of
+/// `taken<I>`, each instance of it its callers give, in turn, each such
+/// The way to a parameter, each met on it, and what's made on it: each
+/// type a generic caller makes of its own parameters, with that caller.
+type TheWay<'a, 'tcx> = (&'a mut IndexSet<(DefId, u32)>, &'a mut Made<'tcx>);
+
+/// Each type a generic caller makes of its own parameters and gives on,
+/// with that caller (#1240).
+pub(super) type Made<'tcx> = IndexSet<(DefId, Ty<'tcx>)>;
+
+/// type kept in `made`, with the caller that makes it (#1240).
 fn given_types<'tcx>(
     tcx: TyCtxt<'tcx>,
     (callers, fact): (&Callers<'tcx>, Fact<'_, '_, 'tcx>),
     (owner, index): (DefId, u32),
-    seen: &mut IndexSet<(DefId, u32)>,
+    (seen, made): TheWay<'_, 'tcx>,
 ) -> Option<IndexSet<Ty<'tcx>>> {
-    // Met again, a caller's own: what reaches it is what its other callers
-    // give, which they answer for.
+    // Met again on the way to it, a caller's own: what reaches it is what
+    // its other callers give, which they answer for. `seen` is the way, not
+    // every parameter met: two of a type's parameters may each be given a
+    // caller's one.
     if !seen.insert((owner, index)) {
         return Some(IndexSet::default());
     }
+    let given = given_on_the_way(tcx, (callers, fact), (owner, index), (seen, made));
+    seen.shift_remove(&(owner, index));
+    given
+}
+
+fn given_on_the_way<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (callers, fact): (&Callers<'tcx>, Fact<'_, '_, 'tcx>),
+    (owner, index): (DefId, u32),
+    (seen, made): TheWay<'_, 'tcx>,
+) -> Option<IndexSet<Ty<'tcx>>> {
     if !seen_whole(tcx, owner, fact) {
         return None;
     }
@@ -1310,8 +1333,13 @@ fn given_types<'tcx>(
         for &(caller, args, _) in callers.get(&named).into_iter().flatten() {
             let arg = tcx.erase_and_anonymize_regions(args.get(at as usize)?.as_type()?);
             match *arg.kind() {
-                ty::Param(param) => given.extend(given_types(tcx, (callers, fact), (caller, param.index), seen)?),
-                _ if arg.has_non_region_param() => return None,
+                ty::Param(param) => {
+                    given.extend(given_types(tcx, (callers, fact), (caller, param.index), (seen, made))?)
+                }
+                _ if arg.has_non_region_param() => {
+                    made.insert((caller, arg));
+                    given.extend(instances_in(tcx, (callers, fact), (arg, caller), (seen, made))?);
+                }
                 _ => _ = given.insert(arg),
             }
         }
@@ -1333,26 +1361,42 @@ pub(super) fn instances_of<'tcx>(
     pointee: Ty<'tcx>,
     owner: DefId,
 ) -> Option<IndexSet<Ty<'tcx>>> {
-    instances_where(tcx, (callers, Fact::Shared), pointee, owner)
+    instances_in(
+        tcx,
+        (callers, Fact::Shared),
+        (pointee, owner),
+        (&mut IndexSet::default(), &mut IndexSet::default()),
+    )
 }
 
 /// What each caller the crate sees gives `pointee`, a type of `owner`'s
 /// type parameters, whatever callers it doesn't see give: what they mark
-/// knowing their hint (`Fact::Marked`, #1236).
+/// knowing their hint (`Fact::Marked`, #1236); and, made on the way, each
+/// type a generic caller makes of its own parameters and gives it, with
+/// that caller, which makes it as its instances are made (#1240).
 pub(super) fn seen_instances_of<'tcx>(
     tcx: TyCtxt<'tcx>,
     callers: &Callers<'tcx>,
     pointee: Ty<'tcx>,
     owner: DefId,
-) -> IndexSet<Ty<'tcx>> {
-    instances_where(tcx, (callers, Fact::Marked), pointee, owner).unwrap_or_default()
+) -> (IndexSet<Ty<'tcx>>, Made<'tcx>) {
+    let mut made = IndexSet::default();
+    let instances = instances_in(
+        tcx,
+        (callers, Fact::Marked),
+        (pointee, owner),
+        (&mut IndexSet::default(), &mut made),
+    );
+    (instances.unwrap_or_default(), made)
 }
 
-fn instances_where<'tcx>(
+/// Each instance of `pointee`, a type of `owner`'s type parameters, its
+/// callers give, each choice of a type for each parameter.
+fn instances_in<'tcx>(
     tcx: TyCtxt<'tcx>,
     (callers, fact): (&Callers<'tcx>, Fact<'_, '_, 'tcx>),
-    pointee: Ty<'tcx>,
-    owner: DefId,
+    (pointee, owner): (Ty<'tcx>, DefId),
+    (seen, made): TheWay<'_, 'tcx>,
 ) -> Option<IndexSet<Ty<'tcx>>> {
     let mut params: Vec<u32> = (pointee.walk())
         .filter_map(|part| match *part.as_type()?.kind() {
@@ -1365,7 +1409,7 @@ fn instances_where<'tcx>(
     // Each choice of a type for each parameter, by its index.
     let mut choices: Vec<IndexMap<u32, Ty<'tcx>>> = vec![IndexMap::default()];
     for index in params {
-        let given = given_types(tcx, (callers, fact), (owner, index), &mut IndexSet::default())?;
+        let given = given_types(tcx, (callers, fact), (owner, index), (seen, made))?;
         choices = (choices.into_iter())
             .flat_map(|chosen| {
                 given.iter().map(move |&ty| {

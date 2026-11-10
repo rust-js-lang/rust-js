@@ -144,3 +144,34 @@ knowing its back is. Elsewhere in the crate, `ds().into_iter().skip(1)
 where `IntoIter`'s drop goes on. The two had the same type, so the one
 made for its hint was made so everywhere. The source is closed now, as the
 other's is. `test/corpus/skip_hinted_closes_its_source.rs` holds it.
+
+## Amended (2026-11-10, #1240): what generic code makes and gives on
+
+Generic code that makes an adapter of its own type parameter's iterator
+and gives it to code that asks its hint, `hint(it.take(2).map(f))` of
+`fn first_two<I: Iterator<Item = u32>>(it: I)`, made it JS's own,
+`Iterator.from(it).take(2).map(f)`, `(0, None)`, where std's is
+`(2, Some(2))`. The callers' instances' carrier (`instances.rs`) gave up
+where a caller gives a type it makes of its own parameters,
+`Map<Take<I>, F>`. It now follows such a type through that caller's own
+callers, and keeps each one with its maker. `hint_asked.rs` marks what the
+maker makes of its parameters, `Map<Take<I>, F>` and `Take<I>`, as made
+knowing its hint in that function alone (`Hinted::knowing_in`,
+`counted_in`): `Take<I>` is the same type in every generic function whose
+parameter is `I`, and another's isn't asked its hint. It marks them where
+one of its instances steps an array's items, or where callers it can't
+see, a library's consumers, may give one. A type parameter itself is never
+marked. The maker makes `$mapEnds` and `$taking` of `$given(it, IIterator)`
+or `$closing(it, drop)`, as a JS iterator of what it's given, whose hint
+`$given` and `$Steps` know, its source closed as #1244's is.
+`as_double_ended` leaves as it is a type of generic code that its own
+bounds don't make double-ended, `I` or `Take<I>` of an `I: Iterator`:
+nothing can step it from its back, here or where it's given
+(`may_hold_by_bounds`). Held by
+`adapter_made_in_generic_code_asked_its_hint.rs` (a map, a take and a
+skip of a slice's, a range's and a `Vec`'s iterator; a range given with its
+dictionary; another generic function's `take` of items whose drop panics,
+still dropping the rest), the crate pair
+`library_adapter_made_in_generic_code_asked_its_hint`, and seven
+mutations.
+
