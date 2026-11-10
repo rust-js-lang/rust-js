@@ -155,3 +155,34 @@ closure behaves as native Rust's. Held by the crate pair
 `library_closures_cloned_as_made`, of a closure its library made plain
 and three it cloned apart, one hidden behind a private function's
 `impl Iterator + Clone`, against native Rust, and by its mutations.
+
+## Amendment: a copy of a closure cloned apart is its clone, in whatever holds it (#1211)
+
+A clone of what holds a closure that changes what it captured, `Some(f)`,
+`(f, 1)`, a `Vec`, a `Box`, a `Result` or a struct that derives `Clone`,
+was right only where the holder wasn't `Copy`. A `Copy` closure, `move ||
+{ n += 1; n }` of an `i32`, makes its `Option` and its tuple `Copy`, and
+std's `Option::clone` and a derived `Clone` of a `Copy` struct are a copy:
+rust-js copies only what's changed in place, so `held.clone()` was
+`held`, the one JS function, and the clone's calls counted on from the
+original's count, `1 2` where native Rust prints `1 1`. A copy of the
+holder, `let copied = held;`, shared it the same way, where a copy of the
+closure itself was refused (ADR 0246).
+
+The crate already clones such a closure apart wherever it's cloned, held
+or not, as the types it clones are walked for the closures they hold, and
+a `Copy` bound is a `Clone` one. So a copy of one is its clone, as Rust's
+copy is a value of its own captures: `copies.rs` takes a `Copy` closure
+that writes what it took (`writes_what_it_took`, `clone_shares`' rule) and
+that the crate clones apart as a type changed in place, whose copy is
+`$clone(f)`, so each holder's copy copies it: `[$clone(pair[0]), pair[1]]`,
+`held == null ? held : $clone(held)`. A library's, as its library decided
+(#1202), and so in both builds. A copy of one the crate never clones,
+held by value in a tuple, an array, a struct or an enum's field or
+another closure's capture, is refused as the closure's own copy is.
+
+ADR 0262's case: results change, so Rust's. Held by
+`closure_cloned_in_a_holder.rs` (each holder, cloned and copied),
+`copied_closure_bound.rs`, now run, and `copied_closure_in_a_holder.rs`
+and `copied_closure_in_a_struct.rs` (refused), against native Rust, the
+crate pair `library_closures_cloned_in_a_holder`, and their mutations.

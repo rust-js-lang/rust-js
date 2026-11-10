@@ -106,6 +106,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.copied_apart(ty) {
                     return Expr::call(Expr::member(place, "bind"), Vec::new());
                 }
+                // A closure that changes what it captured, which the crate
+                // clones apart: its copy is its clone, of its own captures,
+                // as Rust's copy is (ADR 0522, #1211).
+                if self.own_captures_copied(ty) == Some(true) {
+                    return once(place, &|f| Expr::call_helper("$clone", vec![f]));
+                }
                 if let Some(inner) = self.option_of(ty) {
                     if !self.contains_mutated(inner) {
                         return place;
@@ -278,11 +284,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.is_copy(ty)
     }
 
-    /// Is `ty` a `Copy` closure that changes what it captured? Rust gives
-    /// each copy its own captures, where a copy of a JS function is the
-    /// function, sharing them (ADR 0246).
+    /// Of a `Copy` closure that changes what it captured, whether its copy
+    /// is its clone: Rust gives each copy its own captures, where a copy of
+    /// a JS function is the function, sharing them (ADR 0246), but one the
+    /// crate clones apart (ADR 0522) is made again by `$clone`, of its own
+    /// captures. `None` of what's no such closure.
+    fn own_captures_copied(&self, ty: Ty<'tcx>) -> Option<bool> {
+        let ty::Closure(id, args) = *ty.kind() else { return None };
+        (super::analysis::writes_what_it_took(self.tcx, id, args) && self.is_copy(ty))
+            .then(|| self.krate.closure_facts.clones_apart(id))
+    }
+
+    /// Would a copy of `ty` share what a closure it holds changes, as a copy
+    /// of a JS function does: one it is or holds by value, in a tuple, an
+    /// array, a struct's or an enum's field or another closure's capture,
+    /// `Some(counter())` too, that changes what it captured, which the crate
+    /// doesn't clone apart (#1211)? Such a copy is refused.
     pub(super) fn copies_own_captures(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Closure(_, args) if args.as_closure().kind() != ty::ClosureKind::Fn) && self.is_copy(ty)
+        self.holds_by_value(ty, &|t| self.own_captures_copied(t) == Some(false), 0)
+    }
+
+    /// Whether `ty` is, or holds by value, a type `found` says: not through
+    /// a reference or a pointer, which a copy shares as Rust's does.
+    fn holds_by_value(&self, ty: Ty<'tcx>, found: &dyn Fn(Ty<'tcx>) -> bool, depth: usize) -> bool {
+        if found(ty) {
+            return true;
+        }
+        if depth > 16 {
+            return false;
+        }
+        match *ty.kind() {
+            ty::Tuple(parts) => parts.iter().any(|t| self.holds_by_value(t, found, depth + 1)),
+            ty::Array(item, _) => self.holds_by_value(item, found, depth + 1),
+            ty::Closure(_, args) => {
+                (args.as_closure().upvar_tys().iter()).any(|t| self.holds_by_value(t, found, depth + 1))
+            }
+            ty::Adt(adt, args) => adt
+                .all_fields()
+                .any(|f| self.holds_by_value(self.field_ty(f, args), found, depth + 1)),
+            _ => false,
+        }
     }
 
     pub(super) fn is_copy(&self, ty: Ty<'tcx>) -> bool {
@@ -340,6 +381,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.is_unknown(ty)
             || self.mutated_itself(ty)
             || self.copied_apart(ty)
+            // A closure whose copy is its clone, of its own captures (#1211).
+            || self.own_captures_copied(ty) == Some(true)
             || match self.shape(ty) {
                 Shape::Object(fields) => fields.iter().any(|&(_, t)| self.contains_mutated(t)),
                 Shape::Array(tys) => tys.iter().any(|&t| self.contains_mutated(t)),

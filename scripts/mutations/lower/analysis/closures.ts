@@ -155,8 +155,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of a closure that moves what it took out is the closure itself, so both give, and change, the one value",
     file: "src/lower/analysis/closures.rs",
-    find: "    } || closure.kind() == ty::ClosureKind::FnOnce;\n",
-    replace: "    };\n",
+    find: "    let writes = writes_what_it_took(tcx, id, args) || closure.kind() == ty::ClosureKind::FnOnce;\n",
+    replace: "    let writes = writes_what_it_took(tcx, id, args);\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_once_cloned.rs$"],
   },
   {

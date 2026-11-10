@@ -67,7 +67,7 @@ use super::{Body, FnInfo, module_path};
 use crate::lower::recognition::{
     Recognition, StdItem, TypeFact, is_js_object_deref, is_std_def, is_unlowered_impl, known_derive,
 };
-pub(super) use closures::{ClosureFacts, borrowed_fixed_bindings, clone_shares, taken_by_value};
+pub(super) use closures::{ClosureFacts, borrowed_fixed_bindings, clone_shares, taken_by_value, writes_what_it_took};
 pub(super) use debug::{FormatCall, format_calls};
 pub(super) use debug::{WriterFacts, Writes};
 use drops::drop_params;

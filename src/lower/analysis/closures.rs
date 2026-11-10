@@ -221,9 +221,24 @@ pub(in crate::lower) fn clone_shares<'tcx>(
         return true;
     };
     let closure = args.as_closure();
-    // One that writes what it took, by value or through a `&mut`: a
-    // `FnMut` may be one only by the bound it's given to, `map(|x| x * 2)`.
-    let writes = match id.as_local() {
+    let writes = writes_what_it_took(tcx, id, args) || closure.kind() == ty::ClosureKind::FnOnce;
+    // Nor one of what it owns, a `Box<Cell<i32>>`'s, which a clone copies
+    // apart (#989).
+    !writes
+        && (closure.upvar_tys().iter())
+            .all(|t| !crate::lower::recognition::owns_interior_mutability(tcx, typing_env, t) && !drops(t))
+}
+
+/// Whether the closure `id` writes what it took, by value or through a
+/// `&mut`: a `FnMut` may be one only by the bound it's given to, `map(|x|
+/// x * 2)`, which writes nothing. Of another crate's, whose captures are
+/// its compile's to see, any that isn't `Fn`.
+pub(in crate::lower) fn writes_what_it_took<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> bool {
+    match id.as_local() {
         Some(local) => tcx
             .closure_captures(local)
             .iter()
@@ -231,13 +246,8 @@ pub(in crate::lower) fn clone_shares<'tcx>(
                 ty::UpvarCapture::ByRef(kind) => kind != ty::BorrowKind::Immutable,
                 ty::UpvarCapture::ByValue | ty::UpvarCapture::ByUse => captured.mutability == ty::Mutability::Mut,
             }),
-        None => closure.kind() != ty::ClosureKind::Fn,
-    } || closure.kind() == ty::ClosureKind::FnOnce;
-    // Nor one of what it owns, a `Box<Cell<i32>>`'s, which a clone copies
-    // apart (#989).
-    !writes
-        && (closure.upvar_tys().iter())
-            .all(|t| !crate::lower::recognition::owns_interior_mutability(tcx, typing_env, t) && !drops(t))
+        None => args.as_closure().kind() != ty::ClosureKind::Fn,
+    }
 }
 
 /// Of each capture of `closure`, by its index among them, whether it

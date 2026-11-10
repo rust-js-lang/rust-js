@@ -3,6 +3,46 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "closure-copy-shares-its-captures",
+    breaks: "a copy of a `Copy` closure that changes what it captured, which the crate clones apart, is the same JS function, so the copy counts on from the original's count (#1211)",
+    file: "src/lower/copies.rs",
+    find: "                if self.own_captures_copied(ty) == Some(true) {\n                    return once(place, &|f| Expr::call_helper(\"$clone\", vec![f]));\n                }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(closure_cloned_in_a_holder|copied_closure_bound).rs$"],
+  },
+  {
+    name: "closure-copy-unchanged-in-place",
+    breaks: "a holder of a closure that changes what it captured, `Some(counter())`, `(f, 1)`, is no type changed in place, so its copy and its clone are the same object, sharing the closure (#1211)",
+    file: "src/lower/copies.rs",
+    find: "            || self.own_captures_copied(ty) == Some(true)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^closure_cloned_in_a_holder.rs$"],
+  },
+  {
+    name: "holder-copy-of-closure-unrefused",
+    breaks: "a copy of what holds a closure that changes what it captured, which the crate never clones, a tuple's, is the same JS function, sharing its count, where a copy of the closure itself is refused (#1211)",
+    file: "src/lower/copies.rs",
+    find: "            ty::Tuple(parts) => parts.iter().any(|t| self.holds_by_value(t, found, depth + 1)),\n",
+    replace: "            ty::Tuple(_) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_closure_in_a_holder.rs$"],
+  },
+  {
+    name: "closure-copy-refused-where-cloned-apart",
+    breaks: "a copy of a closure the crate clones apart, one a `Copy` bound is given, is refused, though its copy is its clone",
+    file: "src/lower/copies.rs",
+    find: "            .then(|| self.krate.closure_facts.clones_apart(id))\n",
+    replace: "            .then(|| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_closure_bound.rs$"],
+  },
+  {
+    name: "struct-copy-of-closure-unrefused",
+    breaks: "a copy of a struct holding a closure that changes what it captured, which the crate never clones, is the same JS function, sharing its count (#1211)",
+    file: "src/lower/copies.rs",
+    find: "            ty::Adt(adt, args) => adt\n                .all_fields()\n                .any(|f| self.holds_by_value(",
+    replace: "            ty::Adt(adt, args) if false => adt\n                .all_fields()\n                .any(|f| self.holds_by_value(",
+    tests: ["test/corpus.test.ts", "-t", "^copied_closure_in_a_struct.rs$"],
+  },
+  {
     name: "copied-closure-shared",
     breaks: "a copy of a `Copy` closure that captures something, a reference to which is made a `&dyn Fn` where the crate reads its address, is the same JS function, so `ptr::eq(&c1, &c2)` is `true` where native Rust's is `false` (#1090)",
     file: "src/lower/copies.rs",
@@ -169,8 +209,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure that changes nothing it captured is taken for one that does, and its copy rejected",
     file: "src/lower/copies.rs",
-    find: "matches!(ty.kind(), ty::Closure(_, args) if args.as_closure().kind() != ty::ClosureKind::Fn) && self.is_copy(ty)",
-    replace: "matches!(ty.kind(), ty::Closure(..)) && self.is_copy(ty)",
+    find: "        (super::analysis::writes_what_it_took(self.tcx, id, args) && self.is_copy(ty))\n",
+    replace: "        (self.is_copy(ty))\n",
     tests: ["test/corpus.test.ts", "-t", "moved_closure"],
   },
   {

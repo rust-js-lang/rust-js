@@ -836,10 +836,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, "Copy without representation evidence"));
             }
             // What a `Copy` bound lets be copied, as each call of a `Copy`
-            // `FnOnce` is (ADR 0246).
-            if self.copies_own_captures(ty) {
-                return Err(self.unsupported(span, "copying a closure that changes what it captured"));
-            }
+            // `FnOnce` is (ADR 0246): a closure that changes what it
+            // captured is a `Clone` bound's too, so the crate clones it
+            // apart, and its copy is its clone (#1211).
             let value = Expr::var("value");
             let copy = self.copy(value.clone(), ty);
             // A value that's its own copy is given none (ADR 0289, amended).

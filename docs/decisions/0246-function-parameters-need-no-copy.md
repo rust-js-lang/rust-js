@@ -58,3 +58,19 @@ export function Next({ total, next }) {
   mutation keeps them whole. The corpus rejects a copy and a `Copy`
   bound's, and runs a move and a copy of an `Fn` closure; mutations
   allow each, or reject the move, the call and the `Fn` copy.
+
+## Amendment: a copy of a closure the crate clones apart is its clone (#1211)
+
+A copy of a `Copy` closure that changes what it captured is no longer an
+error where the crate clones it apart (ADR 0522, amended): its copy is its
+clone, `$clone(f)`, of its own captures, as Rust's is. A `Copy` bound is a
+`Clone` bound, so every closure a `Copy` bound is given is cloned apart,
+and its dictionary's `copy` is `$clone`: `copied_closure_bound.rs` runs,
+through generic code and held in a tuple too. What "changes what it
+captured" means is `clone_shares`' rule, a capture written by value or
+through a `&mut` (`writes_what_it_took`), not the kind rustc infers: a
+closure `FnMut` only by the bound it's given to, `twice(|| 5)`, writes
+nothing, and its copies share nothing that changes. A copy of one the
+crate never clones is still refused, now wherever it's held by value: a
+tuple's, an array's, a struct's or an enum's field, another closure's
+capture, which shared it before.
