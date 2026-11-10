@@ -32,7 +32,8 @@ import { beforeAll, expect, test } from "bun:test";
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 
-import { builds, failures, fixedFile, knownCases, listedBuild, ofTable, readKnown, segments, table, tableOf, version, type Row } from "./iterator-matrix";
+import { tableOf } from "./matrix-tables";
+import { builds, failures, fixedFile, knownCases, listedBuild, ofTable, readKnown, segments, table, version, type Row } from "./iterator-matrix";
 import { same, type Outcome } from "./oracle";
 import { aborted, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, fixture } from "./support";
