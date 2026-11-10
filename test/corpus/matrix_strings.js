@@ -26,6 +26,7 @@ import {
   $trimEnd,
   $trimMatches,
   $trimStart,
+  $utf8Bytes,
   $utf8Lossy,
 } from "@rust-js/std";
 
@@ -93,7 +94,7 @@ function main() {
     const value$2 = Array.from($splitN(a, 2, " "));
     const value$3 = Array.from($rsplit(a, " "));
     const splitOnce = $splitOnce(a, ",");
-    const sum = Array.from(new TextEncoder().encode(a)).reduce((a, b) => (a + b) >>> 0, 0);
+    const sum = $utf8Bytes(a).reduce((a, b) => (a + b) >>> 0, 0);
     const value$4 = $charIndices(a);
     const isCharBoundary = $charBoundary(a, 1) !== undefined;
     const get = $strGet(a, 0, 1);
@@ -109,7 +110,7 @@ function main() {
     const repeat = a.repeat(2);
     const parse = $parseInt(a, -2147483648, 2147483647);
     const value$6 = $parseF64(a);
-    const value$7 = $utf8Lossy(Array.from(new TextEncoder().encode(a)));
+    const value$7 = $utf8Lossy($utf8Bytes(a));
     const arg$3 = Array.from(a).every((c) => /^\p{White_Space}$/u.test(c));
     console.log(
       `${$debugStr(a)}: find ${find == null ? "None" : `Some(${find})`} ${rfind == null ? "None" : `Some(${rfind})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${count} replace ${$debugStr(replace)} ${$debugStr(repeat)} fmt [${$pad(a, 8, ">")}] [${$pad(a, 8, "<")}] [${$pad(a, 8, "^")}] [${Array.from(a).slice(0, 2).join("")}] parse ${parse.TAG === "Ok" ? `Ok(${parse._0})` : `Err(${$debugParseError(parse._0, "ParseIntError")})`} ${value$6.TAG === "Ok" ? `Ok(${$debugF64(value$6._0)})` : `Err(${$debugParseError(value$6._0, "ParseFloatError")})`} lossy ${$debugStr(value$7._0)} all ${arg$3}`,

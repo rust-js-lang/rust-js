@@ -8,6 +8,7 @@ import {
   $fromBytes,
   $rotateBits,
   $toBytes,
+  $utf8Bytes,
 } from "@rust-js/std";
 
 export function entry() {
@@ -17,7 +18,7 @@ export function entry() {
 // FNV-1a, as small hashes are written: a `wrapping_mul` and a `^`.
 function fnv1a(text) {
   let hash = 0x811c9dc5;
-  for (const byte of Array.from(new TextEncoder().encode(text))) {
+  for (const byte of $utf8Bytes(text)) {
     hash = (hash ^ byte) >>> 0;
     hash = Math.imul(hash, 0x01000193) >>> 0;
   }

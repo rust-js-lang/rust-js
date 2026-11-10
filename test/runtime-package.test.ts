@@ -1022,3 +1022,73 @@ console.log(JSON.stringify(seen));
     false, "rust-js internal error: a move", "rust-js internal error: a move",
   ]);
 });
+
+// A long text's UTF-8 facts are kept by its text, for the few asked last
+// (#1184): what each says is what counting from the text's start says, at
+// every byte of texts of every width, and no more than `$textKept` are kept,
+// the one asked longest ago forgotten first.
+test("a long text's kept facts are its own, at every byte, and at most $textKept are kept", async () => {
+  const { $byteLen, $strSlice, $utf8Bytes, $textFactsKept, $textKept, $textLong } = await import(helpersModule);
+  // Counted from the start, as `$unitAt` did before the facts were kept.
+  const unitAt = (s: string, at: number) => {
+    let bytes = 0;
+    let unit = 0;
+    for (const c of s) {
+      if (bytes === at) return unit;
+      bytes += new TextEncoder().encode(c).length;
+      if (bytes > at) return undefined;
+      unit += c.length;
+    }
+    return unit;
+  };
+  // Each byte of `s`: its bytes, length, and each part from it, or the
+  // panic inside a character, as counting says. Each part of a long text
+  // from a character, and each part of that, its own facts of where it is.
+  const asked = (s: string, depth: number) => {
+    const bytes = new TextEncoder().encode(s);
+    expect($byteLen(s)).toBe(bytes.length);
+    expect($utf8Bytes(s)).toEqual(Array.from(bytes));
+    expect(Object.isFrozen($utf8Bytes(s))).toBe(true);
+    for (let at = 0; at <= bytes.length; at++) {
+      const unit = unitAt(s, at);
+      if (unit === undefined) {
+        expect(() => $strSlice(s, at), `${s.length} ${at}`).toThrow(/is not a char boundary; it is inside '.+' \(bytes \d+\.\.\d+ of string\)/);
+        continue;
+      }
+      const part = $strSlice(s, at);
+      expect(part, `${s.length} ${at}`).toBe(s.slice(unit));
+      if (depth > 0 && at % 37 === 1 && part.length >= $textLong) asked(part, depth - 1);
+    }
+  };
+  const pieces = ["a", "é", "日", "🦀", "z", "ß"];
+  for (const mixed of [false, true]) {
+    for (const length of [$textLong - 1, $textLong, 200, 333]) {
+      let s = "";
+      for (let i = 0; s.length < length; i++) s += mixed ? pieces[(i * 7 + (i >> 2)) % pieces.length] : "a";
+      asked(s, 2);
+    }
+  }
+  // The panic's bytes are the part's own, not its text's.
+  const tail = $strSlice(`ab${"é".repeat($textLong)}`, 2);
+  expect(() => $strSlice(tail, 3)).toThrow("byte index 3 is not a char boundary; it is inside 'é' (bytes 2..4 of string)");
+  // A long text's bytes are made once; a short one's each time; neither
+  // is written.
+  const long = "x".repeat($textLong);
+  expect($utf8Bytes(long)).toBe($utf8Bytes(long));
+  expect($utf8Bytes("short")).not.toBe($utf8Bytes("short"));
+  expect(() => {
+    $utf8Bytes(long)[0] = 1;
+  }).toThrow();
+  // A long text more than are kept: the first forgotten, and one asked
+  // again kept longer than one asked before it.
+  const texts = Array.from({ length: $textKept + 3 }, (_, i) => `${i}`.padEnd($textLong, "-"));
+  for (const text of texts) $byteLen(text);
+  expect($textFactsKept.size).toBe($textKept);
+  expect($textFactsKept.has(texts[0])).toBe(false);
+  expect($textFactsKept.has(texts.at(-1))).toBe(true);
+  const oldest = texts[texts.length - $textKept];
+  $byteLen(oldest);
+  $byteLen("next".padEnd($textLong, "-"));
+  expect($textFactsKept.has(oldest)).toBe(true);
+  expect($textFactsKept.has(texts[texts.length - $textKept + 1])).toBe(false);
+});

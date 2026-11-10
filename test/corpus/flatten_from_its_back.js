@@ -16,6 +16,7 @@ import {
   $roomFor,
   $roomForHint,
   $tryOf,
+  $utf8Bytes,
   flatMapDoubleEndedIterator_nextBack,
   flatMapDoubleEndedIterator_tryRfold,
   flattenDoubleEndedIterator_nextBack,
@@ -132,7 +133,7 @@ function main() {
     `[${Array.from(
       $rev(
         $flattenEnds(
-          $mapEnds($iter(words), (w) => Array.from(new TextEncoder().encode(w))),
+          $mapEnds($iter(words), (w) => $utf8Bytes(w)),
           (item) => $iter(item),
         ),
       ),

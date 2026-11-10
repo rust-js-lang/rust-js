@@ -5800,14 +5800,31 @@ export function $parseErrorDyn(name) {
 
 // Where the byte `at` of `s` is, in UTF-16 units: if a `char` starts there,
 // or it's the end. Otherwise `undefined`, as `is_char_boundary` is `false`.
+// Of a long text, from its facts (#1184): of one all ASCII, `at` itself; of
+// a part of another, that one's; else from the step of bytes before it.
 export function $charBoundary(s, at) {
   let bytes = 0;
   let unit = 0;
-  for (const c of s) {
+  if (s.length >= $textLong) {
+    const facts = $textFacts(s);
+    if (at >= facts.bytes) return at === facts.bytes ? s.length : undefined;
+    if (facts.ascii) return at;
+    if (facts.root !== undefined) {
+      const inRoot = $charBoundary(facts.root, facts.rootByte + at);
+      return inRoot === undefined ? undefined : inRoot - facts.rootUnit;
+    }
+    const stops = $textStops(s, facts);
+    const step = Math.floor(at / $textStep);
+    bytes = stops[2 * step];
+    unit = stops[2 * step + 1];
+  }
+  while (unit < s.length) {
     if (bytes === at) return unit;
     if (bytes > at) return undefined;
-    bytes += $byteLen(c);
-    unit += c.length;
+    const code = s.charCodeAt(unit);
+    const pair = code >= 0xd800 && code < 0xdc00;
+    bytes += code < 0x80 ? 1 : code < 0x800 ? 2 : pair ? 4 : 3;
+    unit += pair ? 2 : 1;
   }
   return bytes === at ? unit : undefined;
 }
@@ -15164,7 +15181,50 @@ export function $debugDuration(duration, precision) {
   return `${integer}${precision > 0 ? "." + kept.padEnd(precision, "0") : ""}${unit}`;
 }
 
-export function $byteLen(s) {
+// A long text's UTF-8 facts, kept by its text for the few read last
+// (#1184): its length in bytes, whether it's all ASCII, where each step of
+// `$textStep` bytes starts, and its bytes, each made once where it's first
+// asked; or, of a part `&s[a..b]` of another, where it is in that one, its
+// `root`, whose facts are its own. Rust's `len()`, `as_bytes()` and
+// `&s[i..]` cost nothing to ask again, and a parser asks them each step:
+// JS's text has no bytes to ask, so each counted them again, and a loop
+// over a long text was quadratic. Text is a value, never changed, so what's
+// kept of it is always its own. Text shorter than `$textLong` units is
+// counted each time, in fewer steps than a lookup; the facts of at most
+// `$textKept` long ones are kept, the one asked longest ago forgotten first.
+export const $textLong = 64;
+export const $textKept = 8;
+export const $textStep = 64;
+export const $textFactsKept = new Map();
+
+export function $textFacts(s) {
+  let facts = $textFactsKept.get(s);
+  if (facts !== undefined) {
+    // The one asked last is the last one kept, forgotten last.
+    $textFactsKept.delete(s);
+    $textFactsKept.set(s, facts);
+    return facts;
+  }
+  const bytes = $bytesCounted(s);
+  return $textKeep(s, { bytes, ascii: bytes === s.length, stops: undefined, utf8: undefined, root: undefined, rootByte: 0, rootUnit: 0 });
+}
+
+export function $textKeep(s, facts) {
+  $textFactsKept.set(s, facts);
+  if ($textFactsKept.size > $textKept) $textFactsKept.delete($textFactsKept.keys().next().value);
+  return facts;
+}
+
+// The facts of `part`, a long text that's `s`'s from its byte `byte` and
+// unit `unit` on, `bytes` long, of `s`'s, which needn't count it again.
+export function $textPart(part, s, byte, unit, bytes) {
+  if ($textFactsKept.has(part)) return;
+  const of = $textFacts(s);
+  const root = of.ascii ? undefined : (of.root ?? s);
+  $textKeep(part, { bytes, ascii: of.ascii, stops: undefined, utf8: undefined, root, rootByte: of.rootByte + byte, rootUnit: of.rootUnit + unit });
+}
+
+export function $bytesCounted(s) {
   let bytes = 0;
   for (let i = 0; i < s.length; i++) {
     const unit = s.charCodeAt(i);
@@ -15178,28 +15238,69 @@ export function $byteLen(s) {
   return bytes;
 }
 
+// `s.as_bytes()`: its UTF-8 bytes, lent, never written: frozen, so a write
+// is an error, not a change to what another reads. A long text's are made
+// once, kept with its facts; where they're owned, `to_vec()`'s, they're
+// copied, as a slice lent is.
+export function $utf8Bytes(s) {
+  if (s.length < $textLong) return Object.freeze(Array.from(new TextEncoder().encode(s)));
+  const facts = $textFacts(s);
+  return (facts.utf8 ??= Object.freeze(Array.from(new TextEncoder().encode(s))));
+}
+
+export function $byteLen(s) {
+  return s.length < $textLong ? $bytesCounted(s) : $textFacts(s).bytes;
+}
+
+// Of a long text that isn't all ASCII, where each step of `$textStep`
+// bytes is: the byte and the unit the character at or before it starts at,
+// `[byte, unit, byte, unit, ...]`, so the unit of a byte is found from the
+// step before it, not from the text's start.
+export function $textStops(s, facts) {
+  if (facts.stops !== undefined) return facts.stops;
+  const stops = new Uint32Array(2 * (Math.floor(facts.bytes / $textStep) + 1));
+  let bytes = 0;
+  let next = 0;
+  for (let unit = 0; unit < s.length; ) {
+    const code = s.charCodeAt(unit);
+    const width = code < 0x80 ? 1 : code < 0x800 ? 2 : code >= 0xd800 && code < 0xdc00 ? 4 : 3;
+    while (next * $textStep < bytes + width) {
+      stops[2 * next] = bytes;
+      stops[2 * next + 1] = unit;
+      next++;
+    }
+    bytes += width;
+    unit += width === 4 ? 2 : 1;
+  }
+  for (; 2 * next < stops.length; next++) {
+    stops[2 * next] = bytes;
+    stops[2 * next + 1] = s.length;
+  }
+  return (facts.stops = stops);
+}
+
 export function $strSlice(s, start, end) {
   const length = $byteLen(s);
   end ??= length;
   if (start > length) throw new Error(`start byte index ${start} is out of bounds for string of length ${length}`);
   if (end > length) throw new Error(`end byte index ${end} is out of bounds for string of length ${length}`);
   if (start > end) throw new Error(`byte range starts at ${start} but ends at ${end}`);
-  return s.slice($unitAt(s, start, "start"), $unitAt(s, end, "end"));
+  const from = $unitAt(s, start, "start");
+  const part = s.slice(from, $unitAt(s, end, "end"));
+  // A long part's facts are of where it is in `s` (#1184).
+  if (part.length >= $textLong) $textPart(part, s, start, from, end - start);
+  return part;
 }
 
+// The UTF-16 unit byte `at` of `s` starts at, `at` within it, or Rust's
+// panic where it's inside a character.
 export function $unitAt(s, at, which) {
-  let bytes = 0;
-  let unit = 0;
-  for (const c of s) {
-    if (bytes === at) return unit;
-    const next = bytes + $byteLen(c);
-    if (next > at) {
-      throw new Error(`${which} byte index ${at} is not a char boundary; it is inside ${$debugStr(c, "'")} (bytes ${bytes}..${next} of string)`);
-    }
-    bytes = next;
-    unit += c.length;
-  }
-  return unit;
+  const unit = $charBoundary(s, at);
+  if (unit !== undefined) return unit;
+  let from = at - 1;
+  while ($charBoundary(s, from) === undefined) from--;
+  const c = String.fromCodePoint(s.codePointAt($charBoundary(s, from)));
+  throw new Error(`${which} byte index ${at} is not a char boundary; it is inside ${$debugStr(c, "'")} (bytes ${from}..${from + $byteLen(c)} of string)`);
 }
 
 export function $find(s, pattern) {

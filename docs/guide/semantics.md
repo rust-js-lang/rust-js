@@ -127,7 +127,13 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   `truncate`, `retain` and `clear` give its place the new string, and panic
   where Rust's do ([0149](../decisions/0149-string-editing.md)).
 - **`chars()` is by code point; `bytes()` and `as_bytes()` are the UTF-8
-  bytes;** a byte string `b"GET"` is `[71, 69, 84]`
+  bytes,** lent, `$utf8Bytes(s)`, an array never written, copied where
+  they're owned, `to_vec()`'s; `into_bytes()` is an array of its own. A
+  long text's length in bytes, its bytes and where each byte is are kept by
+  its text, so a parser asking `as_bytes()`, `len()` or `&s[i..]` each step
+  costs what Rust's does. Their address isn't Rust's: `ptr::eq` of them is
+  refused, and a pointer into them is only read through, stepped along and
+  compared with another into them. A byte string `b"GET"` is `[71, 69, 84]`
   ([0126](../decisions/0126-byte-strings.md)), and one of more than 16 KiB,
   an `include_bytes!` say, `$bytes("R0VU…")` of its base64 text, which
   makes the same array ([1110](../decisions/1110-a-large-byte-constant-is-base64-text.md)).

@@ -9,6 +9,7 @@ import {
   $trimEnd,
   $trimMatches,
   $trimStart,
+  $utf8Bytes,
   $utf8Decode,
 } from "@rust-js/std";
 
@@ -33,7 +34,7 @@ function main() {
   owned += "héllo";
   $textRoomFor(owned, 1);
   console.log(
-    `[${Array.from(new TextEncoder().encode(owned)).join(", ")}] [${Array.from(new TextEncoder().encode(owned)).join(", ")}]`,
+    `[${$utf8Bytes(owned).join(", ")}] [${Array.from(new TextEncoder().encode(owned)).join(", ")}]`,
   );
   const boxed = owned;
   const back = boxed;

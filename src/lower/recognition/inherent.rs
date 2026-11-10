@@ -131,8 +131,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "into_boxed_slice" if adt(StdItem::Vec) => Some(Std::Same),
             // A `Box<str>` is its string, and a `Box<[T]>` its array.
             "into_boxed_str" if string => Some(Std::Same),
-            // A `String`'s bytes, a new array, as a `str`'s are.
-            "as_bytes" | "into_bytes" if string => Some(Std::Text(TextOp::Bytes)),
+            "as_bytes" if string => Some(Std::Text(TextOp::Bytes)),
+            "into_bytes" if string => Some(Std::Text(TextOp::IntoBytes)),
             "into_string" if owner.is_str() => Some(Std::Same),
             "into_vec" if owner.is_slice() => Some(Std::Same),
             "into_flattened" if adt(StdItem::Vec) => Some(Std::Comb(Comb::Concat)),

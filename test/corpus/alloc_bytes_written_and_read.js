@@ -13,6 +13,7 @@ import {
   $ptrRetyped,
   $ptrSlice,
   $unwrapOk,
+  $utf8Bytes,
   $vecFromRaw,
   $zeroPad,
 } from "@rust-js/std";
@@ -41,7 +42,7 @@ function make(text) {
     remaining >>>= 7;
     write = $ptrAdd(write, 1);
   }
-  $ptrCopy($ptr(Array.from(new TextEncoder().encode(text)), 0), write, len);
+  $ptrCopy($ptr($utf8Bytes(text), 0), write, len);
   return [ptr, layout];
 }
 

@@ -752,4 +752,12 @@ export const mutations: Mutation[] = [
       '        if false && path == "std::ptr::hash" {\n',
     tests: ["test/corpus.test.ts", "-t", "^identity_keys.rs$"],
   },
+  {
+    name: "vec-from-text-lent",
+    breaks: "`Vec::from(s)` of text is its bytes lent, never written, where they're its own, so a write to them is an error",
+    file: "src/lower/recognition/calls.rs",
+    find: "            return Some(Std::Text(TextOp::IntoBytes));",
+    replace: "            return Some(Std::Text(TextOp::Bytes));",
+    tests: ["test/corpus.test.ts", "-t", "^text_bytes_lent_and_owned.rs$"],
+  },
 ];

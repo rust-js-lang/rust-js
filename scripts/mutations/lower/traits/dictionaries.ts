@@ -688,4 +688,12 @@ export const mutations: Mutation[] = [
     replace: "            let items = Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![Expr::var(\"items\")]);\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic.rs$"],
   },
+  {
+    name: "as-ref-bytes-of-text-its-text",
+    breaks: "std's `AsRef<[u8]>` of text gives the text, not its UTF-8 bytes",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            let bytes = Expr::call(Expr::helper(\"$utf8Bytes\"), vec![Expr::var(\"value\")]);\n",
+    replace: "            let bytes = Expr::var(\"value\");\n",
+    tests: ["test/corpus.test.ts", "-t", "^as_ref_bytes.rs$"],
+  },
 ];

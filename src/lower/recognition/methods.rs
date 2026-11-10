@@ -33,9 +33,10 @@ pub(super) fn text(name: &str, char: bool, str: bool) -> Option<TextOp> {
         "split_whitespace" if str => TextOp::SplitWhitespace,
         // `lines_any`, deprecated, is `lines` (ADR 0322).
         "lines" | "lines_any" if str => TextOp::Lines,
-        // `s.bytes()` is `s.as_bytes()` iterated: the same array.
-        // So is a `Box<str>`'s `into_boxed_bytes()`, a copy of its own.
-        "as_bytes" | "bytes" | "into_boxed_bytes" if str => TextOp::Bytes,
+        // `s.bytes()` is `s.as_bytes()` iterated: the same array, lent.
+        "as_bytes" | "bytes" if str => TextOp::Bytes,
+        // A `Box<str>`'s `into_boxed_bytes()`, a copy of its own.
+        "into_boxed_bytes" if str => TextOp::IntoBytes,
         // `s.as_ptr()`, a pointer to those bytes' first, only read through.
         "as_ptr" if str => TextOp::BytesPointer,
         "parse" if str => TextOp::Parse,

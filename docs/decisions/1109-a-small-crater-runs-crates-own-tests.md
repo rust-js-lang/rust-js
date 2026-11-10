@@ -148,3 +148,8 @@ anyhow's, url's and base64's library refusals now name 71, 67 and 192
 native tests unrun. The wall time is semver's one integration file, whose
 5.6 MB identifier's byte views run past the 20-minute `rust-js test`
 timeout, alone after the rest are done: a slow spot (DEVELOPMENT.md).
+(Amended, #1184: it wasn't the byte views but `as_bytes()` encoding the
+whole text each step of semver's `identifier`, quadratic; with a long
+text's facts kept (ADR 0126, amended) `test_new` runs in 0.9 s, semver is
+14 of 34 as native, its `test_identifier.rs` asked, and the Crater's wall
+time 2 min 9 s on the 12-core M6 at a load of 4–7, 2026-11-10.)

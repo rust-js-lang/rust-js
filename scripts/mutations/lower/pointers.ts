@@ -422,19 +422,19 @@ export const mutations: Mutation[] = [
     breaks:
       "text's `as_ptr()` compared with another is taken, where each is a copy's, never equal",
     file: "src/lower/pointers.rs",
-    find: "            || destination.projection.is_empty() && self.only_read_through(body, destination.local)\n",
+    find: "            || destination.projection.is_empty() && self.kept_within_its_copy(body, destination.local)\n",
     replace: "            || true\n",
     tests: ["test/diagnostics.test.ts", "-t", "text's pointer compared"],
   },
   {
     name: "copy-source-not-a-read",
     breaks:
-      "what `ptr::copy` copies from isn't taken as a read through it, so text's `as_ptr()` copied from is refused",
+      "what `ptr::copy` copies from isn't taken as a read through it, so a pointer to what a reference refers to, copied from, is refused",
     file: "src/lower/pointers.rs",
     find: "                    Some(Std::Pointer(PointerOp::Copy { dst_first })) => at == Some(usize::from(dst_first)),\n",
     replace:
       "                    Some(Std::Pointer(PointerOp::Copy { .. })) => false,\n",
-    tests: ["test/corpus.test.ts", "-t", "^text_bytes_pointer.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^pointer_of_a_reference_copied_from.rs$"],
   },
   {
     name: "call-result-not-a-store",
@@ -765,5 +765,21 @@ export const mutations: Mutation[] = [
       "        && let Some(same) = same_object(a, b, true).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^ptr_eq_through_refs.rs$"],
     snapshots: true,
+  },
+  {
+    name: "lent-bytes-not-copies",
+    breaks: "a reference text's `as_bytes()` lends isn't a copy's, so `ptr::eq(s.as_bytes(), s.as_bytes())` compares two arrays, `false` where Rust's is `true` (#1183)",
+    file: "src/lower/pointers.rs",
+    find: "    let mut copies = lent_copies.clone();\n",
+    replace: "    let mut copies = IndexSet::default();\n",
+    tests: ["test/diagnostics.test.ts", "-t", "text's bytes compared by ptr::eq"],
+  },
+  {
+    name: "lent-bytes-copied-reference-not-followed",
+    breaks: "a copy of a reference to text's bytes, `let x = s.as_bytes()`, isn't one, so its `as_ptr()` is compared with another's (#1183)",
+    file: "src/lower/pointers.rs",
+    find: "                Rvalue::Use(mir::Operand::Copy(of) | mir::Operand::Move(of), _) => lent_copies.contains(&of.local),\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "text's bytes' pointers compared"],
   },
 ];

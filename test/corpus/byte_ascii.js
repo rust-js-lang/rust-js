@@ -8,6 +8,7 @@ import {
   $lent,
   $rangeInclusiveNextBack,
   $unwrapOk,
+  $utf8Bytes,
 } from "@rust-js/std";
 
 export function entry() {
@@ -16,7 +17,7 @@ export function entry() {
 
 function digits(text) {
   let n = 0;
-  for (const b of Array.from(new TextEncoder().encode(text))) {
+  for (const b of $utf8Bytes(text)) {
     if (b < 48 || b > 57) {
       break;
     }

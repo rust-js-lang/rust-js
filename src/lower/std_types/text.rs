@@ -60,8 +60,13 @@ pub(in crate::lower) enum TextOp {
     /// `c.to_uppercase()`: its `char`s, as JS's own mapping gives them (`ß` is `SS`).
     CharCase(bool),
     Lines,
-    /// `s.as_bytes()` and `s.bytes()`: its UTF-8 bytes, a copy, as nothing writes through it (ADR 0126).
+    /// `s.as_bytes()` and `s.bytes()`: its UTF-8 bytes, lent, `$utf8Bytes(s)`,
+    /// one array of a long text's, kept, never written (ADR 0126, amended,
+    /// #1184): copied where it's owned, as a slice lent is.
     Bytes,
+    /// `s.into_bytes()`, `into_boxed_bytes()` and `Vec::from(s)`: its UTF-8
+    /// bytes, owned, an array of their own (ADR 0126).
+    IntoBytes,
     /// `s.as_ptr()`: a pointer to the first of those bytes, where it's only
     /// read through, which a copy reads the same (ADR 0407).
     BytesPointer,
@@ -509,15 +514,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 method(chars, "some", vec![arg()])
             }
             TextOp::Lines => Expr::call(Expr::helper("$lines"), vec![arg()]),
-            // `Array.from(new TextEncoder().encode(s))`: an array of `u8`s, as a
-            // slice of them is.
-            TextOp::Bytes | TextOp::BytesPointer => {
-                let bytes = utf8_bytes(arg());
-                match op {
-                    TextOp::BytesPointer => call("$ptr", vec![bytes, Expr::int(0)]),
-                    _ => bytes,
-                }
-            }
+            // `$utf8Bytes(s)`: an array of `u8`s, as a slice of them is, one
+            // of a long text's kept, never written (#1184); a pointer to its
+            // first, only read through (`check_text_pointer`).
+            TextOp::Bytes => call("$utf8Bytes", vec![arg()]),
+            TextOp::BytesPointer => call("$ptr", vec![call("$utf8Bytes", vec![arg()]), Expr::int(0)]),
+            // `Array.from(new TextEncoder().encode(s))`: owned, its own.
+            TextOp::IntoBytes => utf8_bytes(arg()),
             TextOp::SplitN => call("$splitN", vec![arg(), arg(), arg()]),
             TextOp::Rsplit(limited) => {
                 let mut list = vec![arg()];
@@ -1065,9 +1068,9 @@ pub(in crate::lower) fn range_read(op: TextOp) -> TextOp {
     }
 }
 
-/// Text's UTF-8 bytes, `Array.from(new TextEncoder().encode(s))`: an array
-/// of `u8`s, as a slice of them is, `as_bytes()`'s and `AsRef<[u8]>`'s.
-pub(in crate::lower) fn utf8_bytes(text: Expr) -> Expr {
+/// Text's UTF-8 bytes, owned, `Array.from(new TextEncoder().encode(s))`: an
+/// array of `u8`s of its own, `into_bytes()`'s.
+fn utf8_bytes(text: Expr) -> Expr {
     let encoder = Expr::new_(Expr::var("TextEncoder"), Vec::new());
     let encoded = Expr::call(Expr::member(encoder, "encode"), vec![text]);
     Expr::call(Expr::member(Expr::var("Array"), "from"), vec![encoded])

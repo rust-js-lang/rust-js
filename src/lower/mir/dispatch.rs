@@ -89,7 +89,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(defined) = self.mir_defined(state, def_id, args, span, out)? {
             return Ok(Value::Expr(defined));
         }
-        self.check_call(state.body, (def_id, generic_args), destination, span)?;
+        self.check_call(state.body, (def_id, generic_args), args, destination, span)?;
         // `..Default::default()` of a struct whose `Default` is derived, an
         // update's base: each default the update reads, none it replaces that
         // does nothing, a component's `children: C` among them, which needs no

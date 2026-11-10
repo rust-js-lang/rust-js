@@ -278,7 +278,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Refused, a call each owner says JS can't make as Rust does: of a
-    /// string's bytes' pointer (`pointers.rs`), rest arguments as a value
+    /// string's bytes' pointer (`pointers.rs`, `pointers/into_copies.rs`),
+    /// rest arguments as a value
     /// given as a type parameter's (`check_rest_unspread`), a counted
     /// `Rc` or a boxed `RefCell` given to a binding (`std_types/rc.rs`),
     /// and std's lending from inside its receiver where rust-js doesn't
@@ -287,10 +288,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         body: &rustc_middle::mir::Body<'tcx>,
         (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
+        args: &[rustc_span::Spanned<rustc_middle::mir::Operand<'tcx>>],
         destination: rustc_middle::mir::Place<'tcx>,
         span: Span,
     ) -> R<()> {
         self.check_text_pointer(body, (def_id, generic_args), destination, span)?;
+        self.check_copy_pointer(body, (def_id, generic_args), args, destination, span)?;
         self.check_rest_unspread(def_id, generic_args, span)?;
         self.check_lent((def_id, generic_args), span)?;
         self.check_given_to_js(def_id, generic_args, span)

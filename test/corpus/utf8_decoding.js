@@ -6,6 +6,7 @@ import {
   $debugUtf8Error,
   $fromUtf8,
   $slice,
+  $utf8Bytes,
   $utf8Decode,
   $utf8ErrorMessage,
   $utf8Lossy,
@@ -29,7 +30,7 @@ function show(bytes) {
 function main() {
   const inputs = [
     [112, 108, 97, 105, 110],
-    Array.from(new TextEncoder().encode("héllo €😀")),
+    $utf8Bytes("héllo €😀"),
     [97, 98, 255, 99, 100],
     [195],
     [226, 130],

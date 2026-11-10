@@ -415,6 +415,7 @@ const PURE: &[&str] = &[
     "$find",
     "$rfind",
     "$byteLen",
+    "$utf8Bytes",
     "$f64Max",
     "$f64Min",
     "$binarySearch",

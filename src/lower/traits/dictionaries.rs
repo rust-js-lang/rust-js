@@ -659,14 +659,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::helper("$componentText"),
             )]));
         }
-        // std's `AsRef<[u8]>` of text: its UTF-8 bytes, as `as_bytes()` gives
-        // them (ADR 0162).
+        // std's `AsRef<[u8]>` of text: its UTF-8 bytes, lent, as `as_bytes()`
+        // gives them (ADRs 0162, 0126).
         if is_std_def(self.tcx, tr.def_id, StdItem::AsRef)
             && !self.has_user_impl(tr.def_id, ty)
             && self.is_string_like(ty)
             && matches!(tr.args.type_at(1).kind(), ty::Slice(item) if *item == self.tcx.types.u8)
         {
-            let bytes = crate::lower::std_types::text::utf8_bytes(Expr::var("value"));
+            let bytes = Expr::call(Expr::helper("$utf8Bytes"), vec![Expr::var("value")]);
             let as_ref = Expr::arrow(
                 vec!["value".into()],
                 vec![StmtKind::Return(Some(bytes)).at(js::Span::NONE)],

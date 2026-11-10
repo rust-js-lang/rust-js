@@ -22,6 +22,7 @@ use super::{FnCx, R};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 
 mod catalog;
+mod into_copies;
 pub(in crate::lower) use catalog::address_facts;
 pub(super) use catalog::pointer_op;
 
@@ -216,6 +217,9 @@ pub(super) struct Pointed {
     /// places aren't the array's; and a named constant, each use of which
     /// is a value of its own, where Rust's may be one place.
     pub(super) copies: IndexSet<Local>,
+    /// Of `copies`, each a call lends, text's bytes, `s.as_bytes()`, or a
+    /// copy or reborrow of one: its `as_ptr()` a copy's place too (#1183).
+    pub(super) lent_copies: IndexSet<Local>,
     /// Each reference or box `r` whose every pointer, `&raw const *r`, is
     /// only read through, `ptr::read(p)` or `*p`, arrayvec's `Drain`'s:
     /// never compared, kept or written through, so a cell of what `r`
@@ -224,12 +228,14 @@ pub(super) struct Pointed {
     pub(super) read_only: IndexSet<Local>,
 }
 
-fn pointed_locals(body: &mir::Body<'_>) -> Pointed {
+/// `lent_copies`, each reference a call gives that's a copy in JS, `s.as_bytes()`'s.
+fn pointed_locals(body: &mir::Body<'_>, lent_copies: IndexSet<Local>) -> Pointed {
     let mut refs: IndexMap<Local, Option<Local>> = IndexMap::default();
     let mut taken = Vec::new();
     let mut borrowed = IndexSet::default();
     let mut whole_refs: IndexMap<Local, Local> = IndexMap::default();
-    let mut copies = IndexSet::default();
+    let mut copies = lent_copies.clone();
+    let mut lent_copies = lent_copies;
     for data in body.basic_blocks.iter() {
         for statement in &data.statements {
             let StatementKind::Assign(assign) = &statement.kind else {
@@ -300,6 +306,16 @@ fn pointed_locals(body: &mir::Body<'_>) -> Pointed {
             if copied && place.projection.is_empty() {
                 copies.insert(place.local);
             }
+            let lent = match rvalue {
+                Rvalue::Ref(_, _, of) => {
+                    of.projection.first() == Some(&PlaceElem::Deref) && lent_copies.contains(&of.local)
+                }
+                Rvalue::Use(mir::Operand::Copy(of) | mir::Operand::Move(of), _) => lent_copies.contains(&of.local),
+                _ => false,
+            };
+            if lent && place.projection.is_empty() {
+                lent_copies.insert(place.local);
+            }
             if let Rvalue::RawPtr(kind, of) = rvalue
                 && *kind != mir::RawPtrKind::FakeForPtrMetadata
             {
@@ -327,6 +343,7 @@ fn pointed_locals(body: &mir::Body<'_>) -> Pointed {
         refs,
         borrowed,
         copies,
+        lent_copies,
         read_only: IndexSet::default(),
     }
 }
@@ -335,7 +352,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `body` takes raw pointers to, of what isn't an object, whose
     /// pointer is the object's: its cells.
     pub(super) fn pointed_locals(&self, body: &mir::Body<'tcx>) -> Pointed {
-        let mut pointed = pointed_locals(body);
+        let mut pointed = pointed_locals(body, self.lent_copies(body));
         pointed.locals.retain(|&local| {
             let ty = body.local_decls[local].ty;
             !self.is_object(ty) || self.mut_ref_form(ty).is_cell()
@@ -474,7 +491,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<()> {
         let text = super::std_types::text::TextOp::BytesPointer;
         if self.recognition().classify(def_id, generic_args) != Some(Std::Text(text))
-            || destination.projection.is_empty() && self.only_read_through(body, destination.local)
+            || destination.projection.is_empty() && self.kept_within_its_copy(body, destination.local)
         {
             return Ok(());
         }

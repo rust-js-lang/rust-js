@@ -13,6 +13,7 @@ import {
   $stdoutWriter,
   $unwrap,
   $unwrapOk,
+  $utf8Bytes,
   $vecWriter,
   $writeText,
 } from "@rust-js/std";
@@ -66,7 +67,7 @@ function main() {
   shout(intoVec, "vec");
   const written = $printBytes([119, 114, 111, 116, 101, 10], 0);
   console.log(`${written}`);
-  $printBytes(Array.from(new TextEncoder().encode("é whole\n")), 0);
+  $printBytes($utf8Bytes("é whole\n"), 0);
   // A character split between two writes, and a byte that's no text.
   $printBytes([195], 0);
   $printBytes([169, 10, 255, 10], 0);

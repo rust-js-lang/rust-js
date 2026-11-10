@@ -393,4 +393,12 @@ export const mutations: Mutation[] = [
     replace: '"encode_utf16" if owner.is_char() && false =>',
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
+  {
+    name: "into-bytes-lent",
+    breaks: "a `String`'s `into_bytes()` is its text's bytes lent, never written, where they're its own, so a write to them is an error",
+    file: "src/lower/recognition/inherent.rs",
+    find: "            \"into_bytes\" if string => Some(Std::Text(TextOp::IntoBytes)),\n",
+    replace: "            \"into_bytes\" if string => Some(Std::Text(TextOp::Bytes)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^text_bytes_lent_and_owned.rs$"],
+  },
 ];

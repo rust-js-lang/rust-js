@@ -10,6 +10,7 @@ import {
   $repeatingN,
   $roomForHint,
   $splice,
+  $utf8Bytes,
   $vecWriter,
   $writeText,
 } from "@rust-js/std";
@@ -22,12 +23,12 @@ function main() {
   const text = "ab".repeat(600000);
   const bytes = [];
   $writeText(bytes, text);
-  const items = Array.from(new TextEncoder().encode(text));
+  const items = $utf8Bytes(text);
   for (let i = 0; i < items.length; i++) {
     bytes.push(items[i]);
   }
   const writer = { value: bytes, impl: $vecWriter };
-  writer.impl.writeAll(writer, Array.from(new TextEncoder().encode(text)));
+  writer.impl.writeAll(writer, $utf8Bytes(text));
   const value = bytes.at(-1);
   console.log(`${bytes.length} ${value == null ? "None" : `Some(${value})`}`);
 

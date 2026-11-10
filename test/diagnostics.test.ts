@@ -131,6 +131,15 @@ for (const [name, source, message, crate] of [
   // number is its value, so a place's address isn't JS's (ADR 0285).
   // Text's `as_ptr()` is a copy's: compared, it'd be another's (ADR 0407).
   ["text's pointer compared", "pub fn f(a: &str, b: &str) -> bool { a.as_ptr() == b.as_ptr() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
+  // Text's bytes, lent, `$utf8Bytes(s)`, are the same array of two
+  // `String`s of the same text: their address isn't Rust's (#1183).
+  ["text's bytes compared by ptr::eq", "pub fn f(s: &str) -> bool { std::ptr::eq(s.as_bytes(), s.as_bytes()) }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
+  ["text's bytes' pointers compared", "pub fn f(a: &str, p: *const u8) -> bool { let x = a.as_bytes(); let y = x; y.as_ptr() == p }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
+  ["text's bytes' pointer returned", "pub fn f(s: &str) -> *const u8 { unsafe { s.as_bytes().as_ptr().add(1) } }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
+  ["text's bytes' pointer kept", "pub struct P(pub *const u8);\npub fn f(s: &str) -> P { P(s.as_bytes().as_ptr()) }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
+  ["text's bytes' pointer stored in a field", "pub struct P(pub *const u8);\npub fn f(s: &str) -> P { let mut p = P(std::ptr::null()); p.0 = s.as_bytes().as_ptr(); p }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
+  ["text's bytes written through", "pub fn f(s: &str) { unsafe { *(s.as_bytes().as_ptr() as *mut u8) = 1 } }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
+  ["text's bytes copied into", "pub fn f(s: &str, from: &[u8]) { unsafe { std::ptr::copy(from.as_ptr(), s.as_bytes().as_ptr().cast_mut(), 1) } }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
   // A crate's own `Future` is never lowered: no JS promise is one (ADR 0425).
   ["an await of a crate's future", "use std::{future::Future, pin::Pin, task::{Context, Poll}};\npub struct S(u32);\nimpl Future for S { type Output = u32; fn poll(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<u32> { Poll::Ready(self.0) } }\npub async fn f() -> u32 { S(1).await }", "rust-js does not support `S` as a promise yet: its `Future` is the crate's own"],
   ["a crate's future given as an F: Future", "use std::{future::Future, pin::Pin, task::{Context, Poll}};\npub struct S(u32);\nimpl Future for S { type Output = u32; fn poll(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<u32> { Poll::Ready(self.0) } }\nasync fn g<F: Future<Output = u32>>(f: F) -> u32 { f.await }\npub async fn f() -> u32 { g(S(1)).await }", "rust-js does not support `S` as a promise yet"],

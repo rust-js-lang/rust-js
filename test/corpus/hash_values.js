@@ -9,6 +9,7 @@ import {
   $someValue,
   $toBytes,
   $traitImpl,
+  $utf8Bytes,
 } from "@rust-js/std";
 
 export function entry() {
@@ -321,7 +322,7 @@ function main() {
     })}`,
   );
   console.log(
-    `${digest(Array.from(new TextEncoder().encode("bytes")), {
+    `${digest($utf8Bytes("bytes"), {
       hash(value, state, H) {
         H.writeLengthPrefix(state, value.length);
         H.write(state, value);

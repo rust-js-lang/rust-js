@@ -8,6 +8,7 @@ import {
   $panicMessage,
   $print,
   $unwound,
+  $utf8Bytes,
 } from "@rust-js/std";
 
 export function entry() {
@@ -57,10 +58,7 @@ function firstDiff(server, client) {
   let clientText = client;
   let firstDiff = 0;
   while (firstDiff < serverText.length && firstDiff < clientText.length) {
-    if (
-      Array.from(new TextEncoder().encode(serverText))[firstDiff] !=
-      Array.from(new TextEncoder().encode(clientText))[firstDiff]
-    ) {
+    if ($utf8Bytes(serverText)[firstDiff] != $utf8Bytes(clientText)[firstDiff]) {
       break;
     }
     firstDiff++;

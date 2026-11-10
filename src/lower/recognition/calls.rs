@@ -956,7 +956,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // A `Vec<u8>` of text, its bytes, as `into_bytes()` gives them.
         if vec && (from_ty.peel_refs().is_str() || self.is_lang_adt(from_ty, LangItem::String)) {
-            return Some(Std::Text(TextOp::Bytes));
+            return Some(Std::Text(TextOp::IntoBytes));
         }
         if self.is_std_type(to_ty, StdItem::BinaryHeap) {
             return Some(Std::Heap(HeapOp::From));

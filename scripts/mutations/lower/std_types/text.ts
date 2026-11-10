@@ -90,12 +90,12 @@ export const mutations: Mutation[] = [
   {
     name: "as-bytes-utf16",
     breaks:
-      "`s.as_bytes()` is each UTF-16 unit, `é` one byte where UTF-8 has two",
+      "`s.into_bytes()` is each UTF-16 unit, `é` one byte where UTF-8 has two",
     file: "src/lower/std_types/text.rs",
     find: '    let encoded = Expr::call(Expr::member(encoder, "encode"), vec![text]);\n    Expr::call(Expr::member(Expr::var("Array"), "from"), vec![encoded])\n}\n',
     replace:
       '    let _ = encoder;\n    Expr::call(Expr::member(Expr::var("Array"), "from"), vec![text, Expr::arrow(vec!["c".into()], vec![crate::js::StmtKind::Return(Some(Expr::call(Expr::member(Expr::var("c"), "charCodeAt"), vec![Expr::int(0)]))).at(crate::js::Span::NONE)])])\n}\n',
-    tests: ["test/corpus.test.ts", "-t", "byte_strings"],
+    tests: ["test/corpus.test.ts", "-t", "^text_bytes_lent_and_owned.rs$"],
   },
   {
     name: "slice-to-inclusive-end-dropped",
@@ -466,5 +466,13 @@ export const mutations: Mutation[] = [
     find: "            let text = self.joined_text(items, ty, span, out)?;\n",
     replace: "            let text = items;\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
+  },
+  {
+    name: "as-bytes-encoded-each-time",
+    breaks: "`s.as_bytes()` encodes the text each time it's asked, so a parser's loop asking it each step is quadratic, semver's 5.6 MB identifier past twenty minutes (#1184)",
+    file: "src/lower/std_types/text.rs",
+    find: "            TextOp::Bytes => call(\"$utf8Bytes\", vec![arg()]),\n",
+    replace: "            TextOp::Bytes => utf8_bytes(arg()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^long_text_read_byte_by_byte.rs$"],
   },
 ];
