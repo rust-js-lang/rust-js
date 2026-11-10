@@ -230,15 +230,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^debug_hex_composite.rs$"],
   },
   {
-    name: "format-of-box-not-what-it-holds",
-    breaks:
-      "a placeholder's options of what's shown inside, an `impl Display + Debug` a function gives, aren't of its type: `{:?}` of it refused. A `Box`'s or an `Rc`'s, `through_boxes` takes through first (#197)",
-    file: "src/lower/format_spec.rs",
-    find: "        let ty = self.shown_type(ty);\n        let (value, ty) = match kind {\n",
-    replace: "        let (value, ty) = match kind {\n",
-    tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
-  },
-  {
     name: "display-handed-on-nothing",
     breaks:
       "a placeholder's options of a `Wrapping`, a `Cow<str>`, a path's `display()` or a parse error are dropped, as std's `Display` hands them to what it shows",

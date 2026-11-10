@@ -502,10 +502,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "compiled-behind-an-impl-made-knowing",
-    breaks: "std's struct of an adapter a function gives behind an `impl`, `(0..n).rev()`, is taken for a type made knowing its back wherever it's made, so `(1..6).rev()` in `main` is made so too and its `last()` reads what isn't there (#1226, the user's decision (A))",
+    breaks: "std's struct of an adapter a function gives behind an `impl`, `(0..n).rev()`, is taken for one made knowing its back wherever it's made, so `(1..6).rev()` in `main` is made a JS iterator and given back unmade, `$rangeFirst($rev($iterator(range, ..)).of)`, where it's the range itself; the answer is the same since #1226's fix, so the form holds it (#1109)",
     file: "src/lower/analysis/back_stepped.rs",
     find: "        .filter(|&made| !holds_compiled(tcx, made, &compiled))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^impl_trait_adapter_is_its_value.rs$"],
+    snapshots: true,
   },
 ];

@@ -354,17 +354,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether what `ty`, an iterator or what makes one, drops once it's
-    /// given all its items is nothing: an array's, a `Vec`'s, an `Option`'s,
-    /// their iterators', or one closed as it ends, `repeat(x).take(n)`, whose
-    /// end drops what it holds (ADR 0422). Not the crate's, whose `Drop` runs.
+    /// given all its items is nothing: one closed as it ends,
+    /// `repeat(x).take(n)`, whose end drops what it holds (ADR 0422). An
+    /// array's, a `Vec`'s, an `Option`'s and their iterators' were asked
+    /// here too, but what they give is taken by `handled_argument` first:
+    /// those four clauses changed no answer, the corpus's or `v.extend([D(1)])`'s,
+    /// `vec![..]`'s, `Some(..)`'s or `vec![..].into_iter()`'s (#1109).
+    /// Not the crate's, whose `Drop` runs.
     fn ends_holding_nothing(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         let recognition = self.recognition();
-        matches!(ty.kind(), ty::Array(..))
-            || self.is_vec_like(ty)
-            || self.option_of(ty).is_some()
-            || recognition.owned_items(ty).is_some()
-            || recognition.closed_on_drop(ty).is_some()
+        recognition.closed_on_drop(ty).is_some()
     }
 
     /// Whether `known` gives an `Option` whose `Some` is boxed where it looks

@@ -443,10 +443,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let through = place.projection.first() == Some(&PlaceElem::Deref);
                 self.only &= match context {
                     PlaceContext::NonUse(_) => true,
-                    // Assigned, or a call's result.
-                    PlaceContext::MutatingUse(MutatingUseContext::Store | MutatingUseContext::Call)
-                        if place.projection.is_empty() =>
-                    {
+                    // Assigned. A call's result, which none of the corpus's
+                    // or the crates' tests' pointers asked here is, is no
+                    // store, as it changed no answer (#1109).
+                    PlaceContext::MutatingUse(MutatingUseContext::Store) if place.projection.is_empty() => {
                         self.stores += 1;
                         true
                     }

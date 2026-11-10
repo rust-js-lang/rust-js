@@ -1,6 +1,7 @@
 // A range's numbers, made as they're stepped, `step` apart: `$lazyRange(0,
 // n)` of `0..n`, `$lazyRange(0, n, 3)` of `(0..n).step_by(3)`. Its `nth`
-// and `advance_by` are std's `Range`'s, of its bounds, which `skip` and
+// and `advance_by` are std's `Range`'s, of its bounds, its `nth` by its
+// `advance_by`, which `skip` and
 // `step_by` step it by, so they don't make each number (#231, #1240).
 function $lazyRange(start, end = Infinity, step = 1) {
   let at = start;
@@ -10,14 +11,11 @@ function $lazyRange(start, end = Infinity, step = 1) {
     at = Number(at) + step;
     return { done: false, value };
   });
+  // Its `advance_by(m)`, std's `Range::advance_by`, of its bounds, how many
+  // of `m` there weren't, which a chain's `advance_by` of it asks, a
+  // `skip`'s (#1240), and its `nth(k)`, std's default, `$Steps`', of it:
+  // the range's own `nth` had done the same (#1109).
   $forward(range, undefined, {
-    nth: (k) => {
-      if (k > 0 && at < end) at = Number(at) + k * step;
-      return range.next();
-    },
-    // And its `advance_by(m)`, std's `Range::advance_by`, of its bounds, how
-    // many of `m` there weren't, which a chain's `advance_by` of it asks, a
-    // `skip`'s (#1240).
     advanceBy: (m) => {
       const left = !(at < end) ? 0 : end === Infinity ? Infinity : Math.ceil((Number(end) - Number(at)) / step);
       const passed = Math.min(m, left);

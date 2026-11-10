@@ -4,20 +4,21 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "param-owned-through-a-fn-dyn",
-    breaks:
-      "a struct holding `Box<dyn Fn(&K)>` is taken to own a `K`, so a generic `Rc` of it is refused once the crate has a `Drop` (#497)",
+    breaks: "a parameter a function's `Fn` trait object holds is taken for one it may own, so the `Rc` it's in is counted, `{ value, strong: 1, weak: 0 }` and a `$dropping` closure, where a plain object and closure do; the answer is the same, so the form holds it (#1109)",
     file: "src/lower/analysis/closures.rs",
     find: "        ty::Ref(..) | ty::FnPtr(..) | ty::FnDef(..) | ty::Dynamic(..) => false,\n",
     replace: "        ty::Ref(..) | ty::FnPtr(..) | ty::FnDef(..) => false,\n",
-    tests: ["test/corpus.test.ts", "-t", "^rc_of_functions_of_a_param.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops_by_its_signature.rs$"],
+    snapshots: true,
   },
   {
     name: "param-owned-through-a-raw-pointer",
-    breaks: "an `Rc`'s `NonNull` is taken to own what it points at, so a generic `Rc` of functions is refused (#497)",
+    breaks: "a parameter a raw pointer of the function's holds is taken for one it may own, so the `Rc` beside it is counted, `{ value, strong: 1, weak: 0 }` and a `$dropping` closure, where a plain object and closure do; the answer is the same, so the form holds it (#1109)",
     file: "src/lower/analysis/closures.rs",
     find: "    if !ty.has_non_region_param() || !seen.insert(ty) || raw_pointee(tcx, ty).is_some() {\n",
     replace: "    if !ty.has_non_region_param() || !seen.insert(ty) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^rc_of_functions_of_a_param.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops_by_its_signature.rs$"],
+    snapshots: true,
   },
   {
     name: "param-unowned-through-phantom-data",

@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/stepping.rs",
     find: "            && self.given_as_iterator(callee, ty::Ty::new_param(self.tcx, param.index, param.name), given)\n",
     replace: "            && true\n",
-    tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(std_projection_drops|trait_param_drops|adapter_drops).rs$"],
   },
   {
     name: "double-ended-given-forgetting-its-back",

@@ -19,14 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
   },
   {
-    name: "lazy-range-nth-stepped",
-    breaks: "a lazy range has no `nth` of its bounds, so a `step_by` of one given to generic code steps each number and doesn't finish (#231)",
-    file: "src/runtime/lazy_range.js",
-    find: "    nth: (k) => {\n",
-    replace: "    unused: (k) => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^range_steps_anywhere.rs$"],
-  },
-  {
     name: "lazy-range-hint-unknown",
     breaks: "a range written in place, given to generic code, says nothing of how many it has left, `(0, None)` where Rust's is exact (ADR 0918)",
     file: "src/runtime/lazy_range.js",
@@ -65,5 +57,13 @@ export const mutations: Mutation[] = [
     find: "      if (passed > 0) at = Number(at) + passed * step;\n      return m - passed;\n",
     replace: "      for (let k = 0; k < passed; k++) at = Number(at) + step;\n      return m - passed;\n",
     tests: ["test/corpus.test.ts", "-t", "^range_advanced_by_its_bounds\\.rs$"],
+  },
+  {
+    name: "lazy-range-advanced-each",
+    breaks: "a lazy range has no `advance_by` of its bounds, so its `nth`, std's default of it, given to generic code steps each number and doesn't finish (#231, #1240)",
+    file: "src/runtime/lazy_range.js",
+    find: "    advanceBy: (m) => {\n",
+    replace: "    unused: (m) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^lazy_range_nth_given_to_generic_code.rs$"],
   },
 ];

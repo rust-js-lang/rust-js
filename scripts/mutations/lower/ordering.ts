@@ -151,12 +151,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "numbered-ordered-by-name",
-    breaks:
-      "a numbered enum's derived order is by its names' places, of numbers no name is, so each is equal and a sort leaves them as they were",
+    breaks: "an enum JS holds as its numbers is compared by a ladder of its variants' positions, `$cmp(Two === One ? 0 : Two === Two ? 1 : 2, ..) < 0`, where its numbers compare as they are, `Two < Max`; the answer is the same since it was form-only (#1109)",
     file: "src/lower/ordering.rs",
     find: "LangItem::OrderingEnum) || numbered\n",
     replace: "LangItem::OrderingEnum)\n",
-    tests: ["test/corpus.test.ts", "-t", "^repr_enum_numbers.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(enum_order|repr_enum_numbers).rs$"],
+    snapshots: true,
   },
   {
     name: "cmp-without-cells",

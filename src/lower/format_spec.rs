@@ -149,10 +149,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (width, precision): (Option<Expr>, Option<Expr>),
         span: Span,
     ) -> R<Expr> {
-        // A `Box` or an `Rc` is what it holds in JS, and its `fmt` hands the
-        // placeholder's options to what it holds: `{:>4}` of `Box::new("s")`
-        // pads the string.
-        let ty = self.shown_type(ty);
         let (value, ty) = match kind {
             Std::FmtDisplay => self.display_handed_on(value, ty),
             _ => (value, ty),

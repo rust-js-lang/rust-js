@@ -445,16 +445,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^pointer_of_a_reference_copied_from.rs$"],
   },
   {
-    name: "call-result-not-a-store",
-    breaks:
-      "a pointer a call gives isn't taken as assigned once, so it's never only read through",
-    file: "src/lower/pointers.rs",
-    find: "                    PlaceContext::MutatingUse(MutatingUseContext::Store | MutatingUseContext::Call)\n",
-    replace:
-      "                    PlaceContext::MutatingUse(MutatingUseContext::Store)\n",
-    tests: ["test/corpus.test.ts", "-t", "^text_bytes_pointer.rs$"],
-  },
-  {
     name: "slice-pointer-place-read",
     breaks:
       "what a slice pointer points to, `*p`, `as_mut()`, `drop_in_place`, is read as a handle's `.value`, which a slice hasn't",

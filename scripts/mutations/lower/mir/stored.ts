@@ -12,11 +12,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "stored-slice-item-recorded",
-    breaks: "an item of a shared subslice, a copy of its items (ADR 0063), is recorded as stored in the copy, so `split_at`'s halves' items are another allocation's, `4104` where native Rust's is `8` (#1113)",
+    breaks: "an item of a shared subslice, a copy of its items (ADR 0063), is recorded as stored in the copy, `$stored($ptr(left, 0), 12)` before each read of one, where it's read in place, `$index(left, 0)`; its address is native Rust's since #1185's records, so the form holds it (#1109)",
     file: "src/lower/mir/stored.rs",
     find: "!self.field_is_its_base(from) && !from.ty.is_slice() && stored.records(to.ty)",
     replace: "!self.field_is_its_base(from) && stored.records(to.ty)",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_item_std_lends.rs$"],
+    snapshots: true,
   },
   {
     name: "rooted-place-temporary-unmade",

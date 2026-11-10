@@ -496,16 +496,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^rev_lazy_drops.rs$"],
   },
   {
-    name: "user-iterator-opaque-unrevealed",
-    breaks:
-      "an `impl Iterator` the crate's iterator is isn't taken for it, so consuming it, `count().sum()`, never drops it",
-    file: "src/lower/recognition/iterators.rs",
-    find: "        let ty = self.reveal(ty.peel_refs());\n        matches!(ty.kind(), ty::Adt(..)) && self.has_user_impl(iterator, ty)",
-    replace:
-      "        let ty = ty.peel_refs();\n        matches!(ty.kind(), ty::Adt(..)) && self.has_user_impl(iterator, ty)",
-    tests: ["test/corpus.test.ts", "-t", "^drops_of_consumed_iterators.rs$"],
-  },
-  {
     name: "option-into-iter-unstepped",
     breaks:
       "an `Option`'s `into_iter()` can't be stepped from its back, so `chain(Some(x)).rev()` is refused",

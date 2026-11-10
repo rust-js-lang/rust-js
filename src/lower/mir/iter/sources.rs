@@ -48,13 +48,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty::Ref(_, _, Mutability::Mut) => self.lent_iterator(it),
                 _ => it,
             }),
-            // A type parameter's whose `IntoIterator` is held as it is, its
-            // caller's own value: its dictionary's `into_iter` (#966).
-            None if matches!(ty.kind(), ty::Param(_))
-                && let Some(items) = self.items_by_dictionary(value.clone(), ty, span)? =>
-            {
-                Ok(items)
-            }
             // A type parameter's, which may be given an array (ADR 0061): JS's
             // iterator of it. An associated type's is what a dictionary
             // gives, a JS iterator already.

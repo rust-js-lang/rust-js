@@ -140,15 +140,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "boxable-opaque-unrevealed",
-    breaks:
-      "a `&mut` of a closure returned as `impl FnMut` is a box of it, `{ value: f }`, which what's lent it calls as the function",
-    file: "src/lower/representation/mut_ref.rs",
-    find: "        let ty = self.reveal(ty);\n        // A `Pin` is its pointer",
-    replace: "        // A `Pin` is its pointer",
-    tests: ["test/corpus.test.ts", "-t", "^impl_fn_mut_lent.rs$"],
-  },
-  {
     name: "type-parameter-mut-not-handle",
     breaks:
       "a `&mut` of a type parameter's item std gives a closure, generic `retain_mut`'s, is the item, where the closure made at the call writes its handle's `value`",

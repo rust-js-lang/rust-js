@@ -223,38 +223,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
   },
   {
-    name: "extend-of-array-refused",
-    breaks: "`v.extend([..])` of items with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
-    find: "        matches!(ty.kind(), ty::Array(..))\n",
-    replace: "        false\n",
-    tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
-  },
-  {
-    name: "extend-of-vec-refused",
-    breaks: "`v.extend(vec)` of items with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
-    find: "            || self.is_vec_like(ty)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
-  },
-  {
-    name: "extend-of-option-refused",
-    breaks: "`v.extend(Some(x))` of an item with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
-    find: "            || self.option_of(ty).is_some()\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
-  },
-  {
-    name: "extend-of-vec-iter-refused",
-    breaks: "`v.extend(vec.into_iter())` of items with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
-    find: "            || recognition.owned_items(ty).is_some()\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
-  },
-  {
     name: "swap-takes-drops",
     breaks:
       "a generic `swap` of items with a destructor takes none of its callers'",
