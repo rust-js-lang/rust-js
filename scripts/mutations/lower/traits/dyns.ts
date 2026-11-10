@@ -496,12 +496,13 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-fn-dyn-boxed-again-drops-itself",
     breaks:
-      "a `Box<dyn Fn>` boxed again, `Box::new(greeter(\"twice\"))`, carries a drop that disposes itself, `$dropping(f, () => { $dispose(f); })`, and its drop never ends",
+      "a `Box<dyn Fn>` boxed again, `Box::new(greeter(\"twice\"))`, is wrapped in a function of its own carrying a drop that disposes the one it holds, `$dropping(f, () => { $dispose(f); })`, where it's the same function, its drop the one it carries (#1109; since #1221's `$dropping` wraps a function that carries a drop already, it drops once either way, so its snapshot holds it)",
     file: "src/lower/traits/dyns.rs",
     find: "            let carried = self.carries_own_drop(function);\n",
     replace:
       "            let carried = matches!(function.kind(), ty::Closure(..) | ty::Dynamic(..)) && self.carries_own_drop(function);\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_borrowed_function.rs$"],
+    snapshots: true,
   },
   {
     name: "generic-impl-pair-a-box",

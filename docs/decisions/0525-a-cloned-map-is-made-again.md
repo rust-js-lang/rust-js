@@ -320,3 +320,16 @@ uses, `instance_within_bounds` and `is_unknown_where`, take `tcx` and the
 typing environment, so the analysis asks them before a `Recognition`
 exists. `test/architecture-iterators.test.ts` holds that `fn cloned_apart`
 is defined in `stepping.rs` alone.
+
+## Amendment: the bounds are asked of `pub` generic code (#1109)
+
+Since #1119 a private generic function's adapter is asked as each instance
+its callers give it, so `instance_within_bounds`' check of its bounds is
+reached only where the callers aren't all seen, and
+`generic_map_beside_a_cloned_map.rs`'s private `tripled_back` and
+`chained_back` no longer reached it: mutation
+`generic-instance-bounds-unasked` survived main's check, as
+`generic-instance-unknown-bound-unmet` did (5426a7d66). Corpus case
+`generic_map_of_pub_code_beside_a_cloned_map.rs`, the case with its
+generic functions `pub`, both builds against native Rust; the mutation is
+retargeted to it and caught. ADR 0262's case: none, no JS changes.

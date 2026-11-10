@@ -410,7 +410,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-given-backs-unmade",
-    breaks: "a filter a crate gives a library's generic function that steps it from its back is JS's own `.filter`, and the library's `next_back` throws (#1024)",
+    breaks: "a filter of the library's own iterator, or of a `VecDeque`'s items, a crate gives a library's generic function that steps it from its back is JS's own `.filter`, and the library's `next_back` throws (#1024, #1109; a slice's is made knowing its hint, so its back, by hint_asked.rs's rule of what a library is given)",
     file: "src/lower/analysis/back_stepped.rs",
     find: "            if recognition.foreign.is_library(callee.krate) {\n",
     replace: "            if false {\n",

@@ -62,11 +62,11 @@ export const mutations: Mutation[] = [
   {
     name: "generic-instance-bounds-unasked",
     breaks:
-      "a generic function's `Map<I, F>`, its `I` an iterator of `u32`s, is taken for another function's cloned `Map` of a slice's `&i32`s, so its `items.map(f).rfold(..)` is refused as cloning a `Map<I, F>` where `I` isn't bound by `Clone` (#955)",
+      "a `pub` generic function's `Map<I, F>`, its `I` an iterator of `u32`s, is taken for another function's cloned `Map` of a slice's `&i32`s, so its `items.map(f).rfold(..)` is refused as cloning a `Map<I, F>` where `I` isn't bound by `Clone` (#955, #1109)",
     file: "src/lower/copies.rs",
     find: "    if !parameters_given(ty, general, &mut given) || given.is_empty() {\n",
     replace: "    if !parameters_given(ty, general, &mut given) || !given.is_empty() {\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_map_beside_a_cloned_map.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^generic_map_of_pub_code_beside_a_cloned_map.rs$"],
   },
   {
     name: "generic-instance-unknown-bound-unmet",

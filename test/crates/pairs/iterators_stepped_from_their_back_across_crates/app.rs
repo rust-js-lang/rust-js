@@ -1,6 +1,9 @@
 //! A library's iterators stepped from their back here, and adapters made
-//! here that its generic functions step from theirs (#1024).
-use dep::{Bag, back, filtered, last_mapped};
+//! here that its generic functions step from theirs (#1024): of a slice's
+//! items, of a `VecDeque`'s and of the library's own iterator, none of
+//! which JS's own `filter` steps from its back.
+use dep::{Bag, Down, back, filtered, last_mapped};
+use std::collections::VecDeque;
 
 pub fn main() {
     println!("{:?}", filtered().next_back());
@@ -12,4 +15,7 @@ pub fn main() {
     let v = vec![1u32, 2, 3, 4, 5];
     println!("{:?}", back(v.iter().copied().filter(|x| x % 2 == 1)));
     println!("{:?}", last_mapped((1..4u32).map(|x| x * 10)));
+    println!("{:?}", back(Down { n: 4 }.filter(|x| x % 2 == 0)));
+    let d: VecDeque<u32> = (1..6).collect();
+    println!("{:?}", back(d.iter().copied().filter(|x| x % 2 == 0)));
 }

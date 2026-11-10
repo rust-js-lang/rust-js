@@ -295,3 +295,15 @@ Results changed ([0262](0262-when-rust-and-js-disagree.md)), so Rust's are
 kept. Corpus case `boxed_function_boxed_again`, both builds; mutations
 `dropping-again-in-place`, `fn-once-dyn-of-a-box-unpeeled` and
 `fn-once-dyn-of-a-parameter-unasked`.
+
+## Amendment: a `Box<dyn Fn>` boxed again is held by its snapshot (#1109)
+
+Since #1221, `$dropping(f, drop)` of a function that carries a drop
+already wraps it in a function of its own, which carries the new drop, so
+a `Box<dyn Fn>` boxed again and taken for one that doesn't carry its own
+drop, `$dropping(f, () => { $dispose(f); })`, drops it once, as the
+function itself, its drop the one it carries, does. Which of the two it is
+is how the JS reads, not what it does: mutation
+`boxed-fn-dyn-boxed-again-drops-itself` survived main's check, and is
+held by `dyn_fn_of_a_borrowed_function.rs`'s snapshot now (`snapshots:
+true`). ADR 0262's case: none, no JS changes.

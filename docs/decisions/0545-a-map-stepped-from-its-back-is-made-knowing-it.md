@@ -1661,3 +1661,17 @@ native Rust in both builds, and the mutation `rev-bounds-unpassed` holds
 the line. This also fixes the metamorphic rows `opaque
 rev_range_counted_beside_its_rfold.rs` and `generic-instances
 range_inclusive_exhausted.rs`.
+
+## Amendment: what a library's generic function is given, of a source JS's `filter` can't step from its back (#1109)
+
+Since #1236, every iterator a crate gives a library's function is made
+knowing its hint where it steps an array's items (`hint_asked.rs`), which
+makes a slice's filter knowing its back too, so the two-crate case's
+`back(v.iter().copied().filter(..))` no longer reached `library_backs` of
+the caller, and mutation `library-given-backs-unmade` survived main's
+check. The rule still decides what that one doesn't: a filter of the
+library's own iterator, `back(Down { n: 4 }.filter(..))`, and of a
+`VecDeque`'s items, which are no array's, are JS's own `.filter` without
+it, whose `next_back` the library's body calls. ADR 0262's case: none, no
+JS changes. The two-crate case gives `back` both, against native Rust,
+and the mutation is caught again.

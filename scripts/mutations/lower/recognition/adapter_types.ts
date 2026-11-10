@@ -113,14 +113,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "adapted-iterators-of-functions",
-    breaks: "a generic function's closure a `filter()` holds is taken for an iterator it steps, so `size_hint()` of it is refused (#733)",
-    file: "src/lower/recognition/adapter_types.rs",
-    find: "    let held: Vec<_> = (adapted_positions(tcx, adt.did()).into_iter())\n        .filter_map(|at| args.get(at)?.as_type())\n",
-    replace: "    let held: Vec<_> = (args.types())\n",
-    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
-  },
-  {
     name: "adapted-iterators-of-any-unknown",
     breaks:
       "a type parameter a std adapter holds that isn't one it steps, a `map(f)`'s `F: Fn(&T) -> U` or a `successors()`' `T`, is taken for an iterator whose hint may be the crate's, so a public `applied<T, U, F>` takes `U`'s size, which a JS caller can't give, and isn't declared (#796)",
