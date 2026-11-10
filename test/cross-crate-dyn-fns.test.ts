@@ -256,6 +256,60 @@ pub fn twice(n: u32) -> (bool, u32) {
   expect(twice.twice(4)).toEqual([false, 10]);
 });
 
+// #1250: React's reconciler clones what its `pub` readContext<T> is given,
+// `T` any type a consumer gives, and keeps an `Rc<dyn Fn()>` of a closure
+// of its own, compared, `Rc::ptr_eq`, in a `Box<dyn Fn()>` it hands
+// react_isomorphic, whose `dyn Fn`s drop nothing. No consumer can give
+// `read` a closure of the crate's, so that closure isn't cloned, its `Rc`
+// isn't counted, and the boxed closure drops nothing (ADRs 0626, 0959). An
+// `Rc` of what `pub` generic code's clone gives back is made apart, so two
+// `Rc`s of one closure are two, as native Rust's `ptr_eq` says (#1249).
+test("a pub generic function's clone of any type makes no closure cloned but those the crate gives it", async () => {
+  const dir = fixture("cross-crate-dyn-fn-clone-of-any");
+  compiled(dir, `pub fn keep(f: Box<dyn Fn() -> u32>) -> u32 {
+    f()
+}
+`, `use std::rc::Rc;
+
+pub fn read<T: Clone>(value: &T) -> T {
+    value.clone()
+}
+
+pub fn run(n: u32) -> (u32, u32) {
+    let label = n.to_string();
+    let on_commit = move || label.len() as u32 + n;
+    let hook: Rc<dyn Fn() -> u32> = Rc::new(on_commit);
+    let hooks = vec![Rc::clone(&hook)];
+    let read_back = read(&n);
+    let kept = dep::keep(Box::new(move || {
+        let at = hooks.iter().position(|h| Rc::ptr_eq(h, &hook)).map_or(9, |i| i as u32);
+        hook() + at
+    }));
+    (kept, read_back)
+}
+`);
+  const lib = await import(join(dir, "app", "lib.js"));
+  expect(lib.run(4)).toEqual([5, 4]);
+  const twiceDir = fixture("cross-crate-dyn-fn-clone-of-any-twice");
+  compiled(twiceDir, "pub fn one() -> u32 {\n    1\n}\n", `use std::rc::Rc;
+
+pub fn dup<T: Clone>(value: &T) -> T {
+    value.clone()
+}
+
+pub fn twice(n: u32) -> (bool, bool, u32) {
+    let label = n.to_string();
+    let f = move || label.len() as u32 + n;
+    let a: Rc<dyn Fn() -> u32> = Rc::new(dup(&f));
+    let b: Rc<dyn Fn() -> u32> = Rc::new(f);
+    let c = Rc::clone(&a);
+    (Rc::ptr_eq(&a, &b), Rc::ptr_eq(&a, &c), a() + b() + dep::one())
+}
+`);
+  const twice = await import(join(twiceDir, "app", "lib.js"));
+  expect(twice.twice(4)).toEqual([false, true, 11]);
+});
+
 // rd597: React's decodeBoundActionMetaData<M>, generic over the bundler's
 // manifest, which its caller gives one whose drop may run, makes an
 // `Rc::new(|_| {})` of a closure that captures nothing. What an `Rc` of a

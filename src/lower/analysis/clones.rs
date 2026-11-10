@@ -39,6 +39,18 @@ impl<'tcx> Cloned<'tcx> {
         self.types.iter().chain(&self.compiled_here).copied()
     }
 
+    /// `with_compiled_here`'s, but a type parameter alone, generic code's
+    /// clone of whatever a caller the crate doesn't see gives it: what may
+    /// be a closure of the crate's cloned. No such caller can name one, and
+    /// one the crate gives out behind an `impl Clone` is among them by its
+    /// own type (`given_out_clone`), so an `Rc<dyn Fn>` of any other is made
+    /// of it once (#1249, #1250). An `Rc` made of what generic code gives
+    /// back, `Rc::new(dup(&f))`, is made apart, counted whatever's cloned.
+    pub(in crate::lower) fn of_named_types(&self) -> impl Iterator<Item = Ty<'tcx>> + '_ {
+        self.with_compiled_here()
+            .filter(|ty| !matches!(ty.kind(), ty::Param(_)))
+    }
+
     /// What `ty`, made in `owner`, of its type parameters, may be: each type
     /// its callers give them, where every one is seen; `None` of another,
     /// any type they may be.

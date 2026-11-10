@@ -510,8 +510,8 @@ pub(super) fn counted_rcs<'tcx>(
     // which no other is; one made of a reference given it may share it
     // with another (rd231).
     // Of the types the crate clones, its callers' instances of generic
-    // code's, one `from` may be (#1249).
-    let is_cloned = |from: Ty<'tcx>| cloned.with_compiled_here().any(|clone| may_be(tcx, clone, from));
+    // code's, one `from` may be (#1249), each by its own type (#1250).
+    let is_cloned = |from: Ty<'tcx>| cloned.of_named_types().any(|clone| may_be(tcx, clone, from));
     let made_with_it = |from: Ty<'tcx>| match *from.kind() {
         ty::Ref(_, function, _) if matches!(function.kind(), ty::Dynamic(predicates, ..) if is_fn_dyn(tcx, predicates)) => {
             made_with.contains(&from) && !made_apart.contains(&from)

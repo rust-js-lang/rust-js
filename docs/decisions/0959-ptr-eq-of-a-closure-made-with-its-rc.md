@@ -321,3 +321,32 @@ is gone.
   (`analysis/rc_counts.rs`), `generic-clones-unseen-by-rc-counts`
   (`analysis.rs`), and `library-closure-clones-unseen`, moved to its owner
   (`analysis/clones.rs`).
+
+## Amendment: a clone of any type is no closure of the crate's (2026-11-10, #1250)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; a refusal that
+#1249's change caused is lifted. Since #1249, whether a closure an
+`Rc<dyn Fn>` is made of is cloned asked each type the crate clones whether
+it may be that closure (`may_be`). Generic code whose callers aren't all
+seen, a `pub` function's, React's `read_context<T: Clone>`, clones its
+`T` as it is, any type a consumer or JS gives, and a type parameter may be
+any type, so every closure of the crate's was taken as cloned. Their
+`Rc<dyn Fn()>`s were counted, so the `dyn Fn`s that hold them dropped, and
+the reconciler's `Box<dyn Fn()>` holding one, handed `react_isomorphic`,
+whose `dyn Fn`s drop nothing, was refused (ADR 0626): the react-in-rust
+port didn't compile. No caller the crate doesn't see can give it a closure
+of the crate's, which only the crate names, and one it gives out behind
+an `impl Clone` is among the cloned types by its own type (#1032). So a
+type parameter alone among them is no closure of the crate's
+(`Cloned::of_named_types`, the clones' owner's answer, which the counts
+ask). An `Rc` made of what generic code gives back, `Rc::new(dup(&f))`,
+is made apart and counted as before, whatever's cloned.
+
+- **Tested** by `test/cross-crate-dyn-fns.test.ts`' "a pub generic
+  function's clone of any type makes no closure cloned but those the crate
+  gives it", the reconciler's shape, a `pub fn read<T: Clone>` beside an
+  `Rc<dyn Fn()>` compared and held in a `Box<dyn Fn()>` handed a library
+  whose `dyn Fn`s drop nothing; by the corpus case
+  `rc_fn_ptr_eq_of_a_closure_cloned_in_pub_generic_code.rs`, #1249's with
+  its generic functions `pub`, against native Rust; by the react-in-rust
+  port's regen at its pin; and mutation `clone-of-any-type-may-be-a-closure`.

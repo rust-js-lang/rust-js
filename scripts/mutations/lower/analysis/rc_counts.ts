@@ -204,7 +204,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc<dyn Fn>` made of a cloned closure, `Rc::new(read.clone())` beside `Rc::new(read)`, is the function, one JS function twice, so `ptr_eq` of the two is `true` (a wrong answer, ADR 0959, amended)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "    let is_cloned = |from: Ty<'tcx>| cloned.with_compiled_here().any(|clone| may_be(tcx, clone, from));\n",
+    find: "    let is_cloned = |from: Ty<'tcx>| cloned.of_named_types().any(|clone| may_be(tcx, clone, from));\n",
     replace: "    let is_cloned = |_: Ty<'tcx>| false;\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq_of_cloned.rs$"],
   },
@@ -395,8 +395,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure generic code makes and clones, `shown::<u8>`'s, is asked as generic code names it of the clones' owner, which holds its callers' instances, so it's taken to be made with each `Rc::new`, the two `Rc`s one function, `ptr_eq` `true` (#1249)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "    let is_cloned = |from: Ty<'tcx>| cloned.with_compiled_here().any(|clone| may_be(tcx, clone, from));\n",
-    replace: "    let is_cloned = |from: Ty<'tcx>| cloned.with_compiled_here().any(|clone| clone == from);\n",
+    find: "    let is_cloned = |from: Ty<'tcx>| cloned.of_named_types().any(|clone| may_be(tcx, clone, from));\n",
+    replace: "    let is_cloned = |from: Ty<'tcx>| cloned.of_named_types().any(|clone| clone == from);\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq_of_a_closure_cloned_in_generic_code.rs$"],
   },
   {

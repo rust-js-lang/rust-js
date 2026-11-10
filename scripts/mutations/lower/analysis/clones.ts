@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "clone-of-any-type-may-be-a-closure",
+    breaks:
+      "a `pub` generic function's clone of whatever a consumer gives, `T`, may be any closure of the crate's, so an `Rc<dyn Fn()>` of one, compared, is counted, and the `Box<dyn Fn()>` holding it, handed a library whose `dyn Fn`s drop nothing, is refused: the react-in-rust port's react-reconciler (#1250)",
+    file: "src/lower/analysis/clones.rs",
+    find: "            .filter(|ty| !matches!(ty.kind(), ty::Param(_)))\n",
+    replace: "",
+    tests: ["test/cross-crate-dyn-fns.test.ts", "-t", "clone of any type"],
+  },
+  {
     name: "clones-in-turn-unfollowed",
     breaks:
       "what a clone clones in turn, a derived `Clone`'s field's iterator, isn't seen to be cloned",

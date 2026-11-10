@@ -6,6 +6,7 @@ src/lower/analysis.rs	1
 src/lower/analysis/callers_decide.rs	6
 src/lower/analysis/cell_borrows.rs	12
 src/lower/analysis/cell_flow.rs	1
+src/lower/analysis/clones.rs	1
 src/lower/analysis/closures.rs	2
 src/lower/analysis/drops.rs	5
 src/lower/analysis/fmt_failures.rs	1
