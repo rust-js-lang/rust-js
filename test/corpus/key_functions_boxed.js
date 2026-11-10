@@ -106,27 +106,20 @@ function main() {
     }, error);
     throw error;
   }
-  let value$1;
-  try {
-    value$1 = $minByKey(
-      tmp$1,
-      dropping,
-      (a, b) => $cmp(a[0], b[0]),
-      false,
-      undefined,
-      undefined,
-      keyDrop_drop,
-    );
-  } catch (error) {
-    $cleanup(() => {
+  const value$1 = $minByKey(
+    tmp$1,
+    dropping,
+    (a, b) => $cmp(a[0], b[0]),
+    false,
+    undefined,
+    () => {
       $dispose(dropping);
-    }, error);
-    throw error;
-  }
-  $dispose(dropping);
+    },
+    keyDrop_drop,
+  );
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const held = "the key's box";
-  dropping = $dropping(
+  const dropping$1 = $dropping(
     (x) => (x % 4) | 0,
     () => {
       console.log(`drop ${held}`);
@@ -140,21 +133,21 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       if (dropping$2$live) {
-        $dispose(dropping);
+        $dispose(dropping$1);
       }
     }, error);
     throw error;
   }
   let value$2;
   try {
-    value$2 = $maxByKey(tmp$2, dropping, $cmp);
+    value$2 = $maxByKey(tmp$2, dropping$1, $cmp);
   } catch (error) {
     $cleanup(() => {
-      $dispose(dropping);
+      $dispose(dropping$1);
     }, error);
     throw error;
   }
-  $dispose(dropping);
+  $dispose(dropping$1);
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   console.log("end");
 }

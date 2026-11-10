@@ -398,3 +398,14 @@ given (its parameter bound by an `Fn*`): a `Box<dyn Fn()>` given to
 call, as a `dyn FnOnce`'s is, so it's dropped as the call returns
 (`boxed_function_kind`). The context rewrite's four rows under #1220 run as
 Rust does.
+
+## Amended (2026-11-10, #1231): a key function drops before the key it kept
+
+`max_by_key(f)` and `min_by_key(f)` are std's `let (_, x) =
+self.map(key(f)).max_by(compare)?;`. The `Map` holding `f` is dropped as
+`max_by` returns, and the kept pair's key only as the `let` takes it apart.
+`f`'s drop was the fold's (`consumed_function`) only where the iterator
+dropped something, and was otherwise dropped after the call, past the key
+`$maxByKey` had dropped. Of a key with a destructor it's the fold's too
+(`keeps_a_dropping_key`), `$extremeByKey`'s `ends`, before the kept key.
+`test/corpus/key_function_drops_before_its_key.rs` holds it.

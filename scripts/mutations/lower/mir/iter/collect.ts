@@ -940,4 +940,12 @@ export const mutations: Mutation[] = [
       "        let _ = (output, given);\n        let key = match *f.kind() {\n            ty::Closure(_, args) => tcx.instantiate_bound_regions_with_erased(args.as_closure().sig()).output(),\n            _ => tcx.instantiate_bound_regions_with_erased(f.fn_sig(tcx)).output(),\n        };\n",
     tests: ["test/corpus.test.ts", "-t", "^key_functions_boxed.rs$"],
   },
+  {
+    name: "kept-key-dropped-before-its-function",
+    breaks: "`max_by_key(f)` whose key has a destructor and whose `f` holds one drops the kept key before `f`, where std drops the `Map` holding `f` as `max_by` returns, then the key as `let (_, x)` takes it apart (#1231)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                    || self.keeps_a_dropping_key(method, arg_tys)))\n",
+    replace: "                    || false))\n",
+    tests: ["test/corpus.test.ts", "-t", "^key_function_drops_before_its_key.rs$"],
+  },
 ];

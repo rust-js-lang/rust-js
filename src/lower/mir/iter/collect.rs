@@ -213,7 +213,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.drops(arg_tys[1]) != crate::lower::drops::Drops::Nothing;
         stranded
             || (by_value
-                && (self.drops(iter_ty) != crate::lower::drops::Drops::Nothing || self.folds_held_function(iter_ty)))
+                && (self.drops(iter_ty) != crate::lower::drops::Drops::Nothing
+                    || self.folds_held_function(iter_ty)
+                    || self.keeps_a_dropping_key(method, arg_tys)))
+    }
+
+    /// Whether `max_by_key(f)` or `min_by_key(f)` of `arg_tys` keeps a key
+    /// with a destructor, which std drops as `let (_, x) = ..?` takes the
+    /// kept pair apart, after the `Map` holding `f` is dropped as `max_by`
+    /// returns: so `f`'s drop is the fold's, before the key's (#1231).
+    fn keeps_a_dropping_key(&self, method: Option<IterMethod>, arg_tys: &[Ty<'tcx>]) -> bool {
+        let (Some(IterMethod::MaxByKey(_)), [iter_ty, f, ..]) = (method, arg_tys) else {
+            return false;
+        };
+        self.iterator_item(*iter_ty).is_some_and(|item| {
+            let given = Ty::new_imm_ref(self.tcx, self.tcx.lifetimes.re_erased, item);
+            self.drops(self.key_of(*f, given)) != crate::lower::drops::Drops::Nothing
+        })
     }
 
     /// `it`, an iterator of type `iter_ty`, as a consumer std routes through
