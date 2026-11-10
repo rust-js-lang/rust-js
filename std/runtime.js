@@ -7694,6 +7694,18 @@ export function $strExtendWithin(s, start, end) {
   return s + s.slice(from, to);
 }
 
+// `s.retain(keep)`, of a `keep` that may panic: each character it keeps, in
+// order. Where it throws, a panic, `set` is given those it kept of the
+// characters before, as std's `String::retain` leaves only them as it
+// unwinds, what it hadn't asked of gone too (#1171).
+export function $retainText(s, keep, set) {
+  let kept = "";
+  for (const c of s) {
+    if ($unwinds(() => keep(c), () => set(kept))) kept += c;
+  }
+  return kept;
+}
+
 // A `str`'s splits and searches from the end, by UTF-8 bytes (ADR 0323).
 
 // `s.split_inclusive(p)`: each piece with the match that ends it, and none
@@ -8346,9 +8358,8 @@ export function $pushFrontMut(v, x, handle) {
 
 // A `VecDeque`'s `insert(i, x)` and `insert_mut`: checked as its
 // `assert!` checks, and a `&mut` to what it put in.
-export function $dequeInsert(v, i, x, handle) {
-  if (i > v.length) throw new Error("index out of bounds");
-  v.splice(i, 0, x);
+export function $dequeInsert(v, i, x, handle, drop) {
+  $insertAt(v, i, x, drop, "index out of bounds");
   return handle ? $mutAt(v, i) : x;
 }
 
@@ -15729,9 +15740,12 @@ export function $extend(v, items, byFold = false) {
   );
 }
 
-export function $insertAt(v, index, item) {
+// Past its end, `item`, which Rust's `insert` took, is dropped by `drop`
+// as the panic unwinds, then the panic, `message` or `Vec`'s (#1171).
+export function $insertAt(v, index, item, drop, message) {
   if (index > v.length) {
-    throw new Error(`insertion index (is ${index}) should be <= len (is ${v.length})`);
+    drop?.(item);
+    throw new Error(message ?? `insertion index (is ${index}) should be <= len (is ${v.length})`);
   }
   v.splice(index, 0, item);
 }

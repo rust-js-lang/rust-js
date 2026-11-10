@@ -501,4 +501,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^extend_reserves_by_hint.rs$"],
     snapshots: true,
   },
+  {
+    name: "retain-text-unwinding-unasked",
+    breaks:
+      "a `String`'s `retain` whose closure may panic is JS's `filter`, so its panic leaves the text it had (#1171)",
+    file: "src/lower/std_types/text.rs",
+    find: "            StringEdit::Retain if unwinds => {\n",
+    replace: "            StringEdit::Retain if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
+  },
 ];

@@ -890,3 +890,15 @@ that `leaves_none` is gone. No output changed: the corpus and the five
 iterator tables give the same JS and agree with native Rust. ADR
 [0262](0262-when-rust-and-js-disagree.md)'s first case applies: nothing
 observable differs.
+
+## Amendment: an `insert` past the end drops what it took (#1171)
+
+`Vec::insert` and `VecDeque::insert` take their item by value. An index
+past the end panics, and Rust drops the item as it unwinds. `$insertAt`
+threw first and never dropped it, so a `Drop` that prints was missing. The
+std net (#1171) found it. `$insertAt(v, i, x, drop, message)` now drops `x`
+by its item's drop before the panic, and `$dequeInsert` checks through it
+with its own message. The `Vec`'s is given its drop by `inserted_dropping`
+and the `VecDeque`'s by `SliceOp::DequeInsert`'s. An `insert` its body's
+ranges show in bounds is `splice` and needs none.
+`test/corpus/edits_that_panic_keep_what_std_keeps.rs` holds both.

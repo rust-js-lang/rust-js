@@ -482,4 +482,13 @@ export const mutations: Mutation[] = [
     replace: "                if let Some(last) = drops.iter().rposition(Option::is_some).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
   },
+  {
+    name: "vec-insert-drop-unpassed",
+    breaks:
+      "a `Vec`'s `insert` past its end isn't given its item's drop, so what it took is never dropped as it panics (#1171)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "        Ok(inserted(subject, at, value, false, drop))\n",
+    replace: "        Ok(inserted(subject, at, value, false, None))\n",
+    tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
+  },
 ];

@@ -317,11 +317,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `edit` of a string whose text is `current`, of what it's `given`:
     /// its new text, and what it took out, if it takes anything (ADR 0364).
+    /// Of a closure it's given that may unwind, `unwinds`, what it leaves
+    /// where that panics is written to `current` first (`$retainText`, #1171).
     pub(in crate::lower) fn string_edit_values(
         &mut self,
         edit: StringEdit,
-        current: Expr,
-        given: Vec<Expr>,
+        (current, unwinds): (Expr, bool),
+        mut given: Vec<Expr>,
         out: &mut Vec<Stmt>,
     ) -> (Expr, Option<Expr>) {
         let helper = |name: &'static str, mut list: Vec<Expr>| {
@@ -337,6 +339,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             StringEdit::AsciiCase { upper } => (helper("$asciiCase", vec![Expr::bool(upper)]), None),
             StringEdit::PathPush => (helper("$pathJoin", given), None),
             StringEdit::SetFileName => (helper("$pathSetFileName", given), None),
+            // Of a closure that may panic, std's `String::retain` leaves
+            // what it kept of the characters before (#1171).
+            StringEdit::Retain if unwinds => {
+                let set = vec![StmtKind::Assign(current.clone(), Expr::var("kept")).at(js::Span::NONE)];
+                given.push(Expr::arrow(vec!["kept".into()], set));
+                (helper("$retainText", given), None)
+            }
             StringEdit::Retain => {
                 let kept = Expr::call(
                     Expr::member(

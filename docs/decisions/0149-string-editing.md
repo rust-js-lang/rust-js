@@ -69,3 +69,20 @@ function tidy(s) {
 
 - Each builds a new string, as `s += t` does: an edit is as costly as the
   string is long.
+
+## Amendment: `retain` whose closure may panic (#1171)
+
+A `String`'s `retain` is JS's `Array.from(s).filter(f).join("")`, assigned
+once it ends. Where `f` panics, that left the text as it was. Std's
+`String::retain` leaves only what it kept of the characters before, so
+`"héllo wörld"` whose closure panics at its 4th call is `"hé"`. The std
+net (#1171) found it. Results changed, so Rust's behavior is kept (ADR
+[0262](0262-when-rust-and-js-disagree.md)'s third case).
+
+Of a closure that may unwind, not one `never_unwinding` holds, it's
+`s = $retainText(s, f, (kept) => { s = kept; })`. The helper gives the
+setter what it kept before it rethrows, through `$unwinds`. One that can't
+unwind keeps JS's own form. `char::is_whitespace` isn't known never to
+panic, so a `retain` of it takes the helper too (`string_editing.js`).
+`test/corpus/edits_that_panic_keep_what_std_keeps.rs` holds both forms
+against native Rust.

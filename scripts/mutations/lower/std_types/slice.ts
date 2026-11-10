@@ -633,4 +633,13 @@ export const mutations: Mutation[] = [
     replace: "        let same = match false && by_ne && item.peel_refs() == rhs.peel_refs() && self.own_ne(item) {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
   },
+  {
+    name: "deque-insert-drop-unpassed",
+    breaks:
+      "a `VecDeque`'s `insert` isn't given its item's drop, so what it took past its end is never dropped as it panics (#1171)",
+    file: "src/lower/std_types/slice.rs",
+    find: "                given.extend(drop);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
+  },
 ];

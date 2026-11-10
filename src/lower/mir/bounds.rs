@@ -137,7 +137,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::Comb(Comb::Insert) => {
                 let (i, value) = (exprs.remove(0), exprs.remove(0));
-                let call = crate::lower::combinators::inserted(items, i, value, true);
+                let call = crate::lower::combinators::inserted(items, i, value, true, None);
                 out.push(StmtKind::Expr(call).at(self.js_span(span)));
                 return Ok(Value::Expr(Expr::undefined()));
             }

@@ -198,8 +198,8 @@ export const mutations: Mutation[] = [
     name: "deque-insert-vec-message",
     breaks: "`VecDeque::insert` past the end says `Vec`'s message",
     file: "src/runtime/slice_ops.js",
-    find: "  if (i > v.length) throw new Error(\"index out of bounds\");\n  v.splice(i, 0, x);",
-    replace: "  if (i > v.length) throw new Error(`insertion index (is ${i}) should be <= len (is ${v.length})`);\n  v.splice(i, 0, x);",
+    find: "  $insertAt(v, i, x, drop, \"index out of bounds\");\n",
+    replace: "  $insertAt(v, i, x, drop);\n",
     tests: ["test/corpus.test.ts","-t","deque_insert_past_len"],
   },
   {
@@ -417,5 +417,14 @@ export const mutations: Mutation[] = [
     find: "  const from = start < 0 ? Math.max(items.length + start, 0) : Math.min(start, items.length);\n",
     replace: "  const from = start < 0 ? 0 : Math.min(start, items.length);\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
+  },
+  {
+    name: "deque-insert-past-end-leaks",
+    breaks:
+      "a `VecDeque`'s `insert` past its end never drops what it took as it panics (#1171)",
+    file: "src/runtime/slice_ops.js",
+    find: "  $insertAt(v, i, x, drop, \"index out of bounds\");\n",
+    replace: "  $insertAt(v, i, x, undefined, \"index out of bounds\");\n",
+    tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
   },
 ];

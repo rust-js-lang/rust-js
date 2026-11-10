@@ -42,4 +42,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","string_drain_from_past_len"],
   },
+  {
+    name: "retain-text-unwinds-whole",
+    breaks:
+      "a `String`'s `retain` whose closure panics leaves the text it had, where std leaves what it kept of the characters before, `\"h\u00e9\"` (#1171)",
+    file: "src/runtime/str_edits.js",
+    find: "    if ($unwinds(() => keep(c), () => set(kept))) kept += c;\n",
+    replace: "    if (keep(c)) kept += c;\n",
+    tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
+  },
 ];

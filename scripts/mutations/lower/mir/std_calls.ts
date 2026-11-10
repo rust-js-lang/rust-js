@@ -794,4 +794,13 @@ export const mutations: Mutation[] = [
     replace: "                    let lazy = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^splice_drops_and_fills_as_std.rs$"],
   },
+  {
+    name: "retain-closure-taken-for-unwinding-never",
+    breaks:
+      "a closure given a `String`'s `retain` is taken never to unwind, so its panic leaves the text it had (#1171)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                        ty::Closure(id, _) => !this.krate.never_unwinding.contains(&id),\n",
+    replace: "                        ty::Closure(..) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
+  },
 ];

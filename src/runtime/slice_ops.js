@@ -553,9 +553,8 @@ function $pushFrontMut(v, x, handle) {
 
 // A `VecDeque`'s `insert(i, x)` and `insert_mut`: checked as its
 // `assert!` checks, and a `&mut` to what it put in.
-function $dequeInsert(v, i, x, handle) {
-  if (i > v.length) throw new Error("index out of bounds");
-  v.splice(i, 0, x);
+function $dequeInsert(v, i, x, handle, drop) {
+  $insertAt(v, i, x, drop, "index out of bounds");
   return handle ? $mutAt(v, i) : x;
 }
 

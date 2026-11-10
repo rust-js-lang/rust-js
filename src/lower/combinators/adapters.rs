@@ -76,6 +76,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ))
     }
 
+    /// `inserted` of a `Vec`'s `insert` its body's ranges don't show in
+    /// bounds, of type `ty`, given its items' drop, which drops what it took
+    /// as an index past the end panics (#1171).
+    pub(in crate::lower) fn inserted_dropping(
+        &mut self,
+        subject: Expr,
+        at: Expr,
+        value: Expr,
+        (ty, span): (Ty<'tcx>, Span),
+    ) -> R<Expr> {
+        let drop = self.items_drop(ty, span)?;
+        Ok(inserted(subject, at, value, false, drop))
+    }
+
     /// `list`, a call's arguments, and last, `items_drop` of `ty`, where it
     /// has one.
     pub(in crate::lower) fn dropping(&mut self, mut list: Vec<Expr>, ty: Ty<'tcx>, span: Span) -> R<Vec<Expr>> {
@@ -665,13 +679,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// front, which no length refuses, `v.unshift(value)`; where the body's
 /// ranges show `at` at most the length (`in_bounds`, ADR 0576),
 /// `v.splice(at, 0, value)`; else `$insertAt`, which refuses an index past
-/// the end.
-pub(in crate::lower) fn inserted(subject: Expr, at: Expr, value: Expr, in_bounds: bool) -> Expr {
+/// the end, dropping `value` by its item's `drop` as it panics, as Rust's
+/// `insert` drops what it took (#1171).
+pub(in crate::lower) fn inserted(subject: Expr, at: Expr, value: Expr, in_bounds: bool, drop: Option<Expr>) -> Expr {
     // An item, never left out, as `splice` counts them (ADR 0330, amended).
     let value = value.given_item();
     match at.as_int() {
         Some(0) => Expr::call(Expr::member(subject, "unshift"), vec![value]),
         _ if in_bounds => Expr::call(Expr::member(subject, "splice"), vec![at, Expr::int(0), value]),
-        _ => Expr::call(Expr::helper("$insertAt"), vec![subject, at, value]),
+        _ => Expr::call(
+            Expr::helper("$insertAt"),
+            [vec![subject, at, value], drop.into_iter().collect()].concat(),
+        ),
     }
 }

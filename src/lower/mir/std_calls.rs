@@ -608,7 +608,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         given.splice(0..0, [start, end.unwrap_or_else(Expr::undefined)]);
                     }
                     this.flush(state, out)?;
-                    let (edited, taken) = this.string_edit_values(edit, place.clone(), given, out);
+                    // Whether a closure it's given may unwind, which `retain`
+                    // leaves its text of (#1171).
+                    let unwinds = (arg_tys.get(1)).is_some_and(|ty| match *ty.peel_refs().kind() {
+                        ty::Closure(id, _) => !this.krate.never_unwinding.contains(&id),
+                        ty::FnDef(id, _) => id.is_local() && !this.krate.never_unwinding.contains(&id),
+                        _ => true,
+                    });
+                    let (edited, taken) = this.string_edit_values(edit, (place.clone(), unwinds), given, out);
                     out.push(StmtKind::Assign(place, edited).at(this.js_span(span)));
                     taken.unwrap_or_else(Expr::undefined)
                 }))

@@ -39,3 +39,15 @@ function $strExtendWithin(s, start, end) {
   const [from, to] = $strRange(s, start, end, false);
   return s + s.slice(from, to);
 }
+
+// `s.retain(keep)`, of a `keep` that may panic: each character it keeps, in
+// order. Where it throws, a panic, `set` is given those it kept of the
+// characters before, as std's `String::retain` leaves only them as it
+// unwinds, what it hadn't asked of gone too (#1171).
+function $retainText(s, keep, set) {
+  let kept = "";
+  for (const c of s) {
+    if ($unwinds(() => keep(c), () => set(kept))) kept += c;
+  }
+  return kept;
+}

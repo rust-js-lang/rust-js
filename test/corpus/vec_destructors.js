@@ -41,7 +41,7 @@ function ids(v) {
 function main() {
   let v = [[3], [1], [2]];
   try {
-    $insertAt(v, 1, [4]);
+    $insertAt(v, 1, [4], noisyDrop_drop);
     console.log(`[${ids(v).join(", ")}]`);
     const removed = $removeAt(v, 0);
     try {
@@ -220,7 +220,7 @@ function main() {
             deque.push([41]);
             deque.push([42]);
             deque.unshift([39]);
-            $dequeInsert(deque, 1, [38]);
+            $dequeInsert(deque, 1, [38], false, noisyDrop_drop);
             const front = deque.shift();
             let second;
             try {

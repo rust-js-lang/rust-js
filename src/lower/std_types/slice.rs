@@ -1302,9 +1302,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             SliceOp::DequeInsert { mutable } => {
                 let mut given = vec![arg(), arg(), arg()];
-                if mutable && self.handles_mut(item()) {
-                    given.push(Expr::bool(true));
+                let handle = mutable && self.handles_mut(item());
+                // What it took, dropped as its index past the end panics (#1171).
+                let drop = match self.drops(item()) != crate::lower::drops::Drops::Nothing {
+                    true => self.drop_function(item(), span)?,
+                    false => None,
+                };
+                if handle || drop.is_some() {
+                    given.push(Expr::bool(handle));
                 }
+                given.extend(drop);
                 helper("$dequeInsert", given)
             }
             SliceOp::DequeSwapRemove { front } => helper("$dequeSwapRemove", vec![arg(), arg(), Expr::bool(front)]),
