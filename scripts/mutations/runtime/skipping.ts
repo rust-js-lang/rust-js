@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "skipping-nth-only-own",
     breaks: "a `skip` steps a source with a `try_fold` of its own by `next`, not by its `nth`, whose `advance_by` std folds, so a `take_while` of a reversed `Vec`'s `skip` drops back to front (#294)",
     file: "src/runtime/skipping.js",
-    find: "(skipping.iter.ownNth || Object.hasOwn(skipping.iter, \"tryFold\"))",
-    replace: "skipping.iter.ownNth",
+    find: "(skipping.iter.ownNth || Object.hasOwn(skipping.iter, \"tryFold\") ||",
+    replace: "(skipping.iter.ownNth ||",
     tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
   },
   {
@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "skipping-next-each",
     breaks: "`rev().skip(n)` of a `Vec` drops the `n` one at a time from the back, not as its source's `nth` drops them, one slice (#234)",
     file: "src/runtime/skipping.js",
-    find: "      if (skipping.n > 0 && (skipping.iter.ownNth || Object.hasOwn(skipping.iter, \"tryFold\"))) {",
-    replace: "      if (false) {",
+    find: "      if (\n        skipping.n > 0 &&\n",
+    replace: "      if (\n        false &&\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
   {
@@ -267,5 +267,13 @@ export const mutations: Mutation[] = [
     find: "  $ownsAs(skipping, iter, \"nthBack\");\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^step_by_folded_from_its_back_as_std.rs$"],
+  },
+  {
+    name: "skip-of-own-advance-by-stepped",
+    breaks: "a `skip` of a source with an `advance_by` of its own, a lazy range's of its bounds, steps each it skips, so `skip(3_000_000_000)` in generic code doesn't finish (#1310)",
+    file: "src/runtime/skipping.js",
+    find: ' || Object.hasOwn(skipping.iter, "advanceBy"))\n',
+    replace: ")\n",
+    tests: ["test/corpus.test.ts", "-t", "^lazy_range_nth_given_to_generic_code.rs$"],
   },
 ];

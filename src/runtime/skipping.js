@@ -12,8 +12,13 @@ function $skipping(iter, n, drop) {
       // Std's `Skip::next`, its source's `nth(n)`, where that drops what
       // it passes over itself, a reversed `Vec`'s as one slice (#234).
       // And of one with a `try_fold` of its own, whose `nth` is std's
-      // default, `advance_by` by it, as std's `Skip::next` asks (#294).
-      if (skipping.n > 0 && (skipping.iter.ownNth || Object.hasOwn(skipping.iter, "tryFold"))) {
+      // default, `advance_by` by it, as std's `Skip::next` asks (#294);
+      // or an `advance_by` of its own, a lazy range's of its bounds, which
+      // a `skip` of billions in generic code stepped each of (#1310).
+      if (
+        skipping.n > 0 &&
+        (skipping.iter.ownNth || Object.hasOwn(skipping.iter, "tryFold") || Object.hasOwn(skipping.iter, "advanceBy"))
+      ) {
         const n = skipping.n;
         skipping.n = 0;
         return skipping.iter.nth(n, drop);
