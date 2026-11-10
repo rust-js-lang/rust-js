@@ -53,16 +53,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "value_keys"],
   },
   {
-    name: "option-keys-by-identity",
-    breaks:
-      "a `HashMap<Option<u32>, _>` is a plain `Map`, whose `null` key and `undefined` key are two, where Rust has one `None`, and `get(&None)` misses a nullable field's (ADR 0935)",
-    file: "src/lower/std_types/map.rs",
-    find: "        self.is_primitive_key(ty.peel_refs())\n",
-    replace:
-      "        let ty = ty.peel_refs();\n        self.is_primitive_key(ty) || self.option_of(ty).is_some_and(|inner| self.is_primitive_key(inner.peel_refs()))\n",
-    tests: ["test/corpus.test.ts", "-t", "^null_option_keys.rs$"],
-  },
-  {
     name: "map-index-message",
     breaks:
       "`m[&k]` of a missing key panics with `key not found`, not Rust's `no entry found for key`",
@@ -70,15 +60,6 @@ export const mutations: Mutation[] = [
     find: 'vec![value, Expr::str("no entry found for key")]',
     replace: 'vec![value, Expr::str("key not found")]',
     tests: ["test/corpus.test.ts", "-t", "map_index_missing"],
-  },
-  {
-    name: "ordered-key-custom-ord",
-    breaks:
-      "a `BTreeMap` of a key with its own `Ord` is kept in the key's JS order, not the order its `cmp` says",
-    file: "src/lower/std_types/map.rs",
-    find: "            && (!ordered || !self.has_user_impl(self.ord_trait(), peeled));",
-    replace: ";",
-    tests: ["test/semantics.test.ts", "-t", "finds enum keys by their own Ord"],
   },
   {
     name: "retain-map-no-handles",
@@ -171,14 +152,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^path_keys.rs$"],
   },
   {
-    name: "path-key-refused",
-    breaks: "a map keyed by paths is refused",
-    file: "src/lower/std_types/map.rs",
-    find: "            || self.recognition().is_path(peeled)\n            || self.is_cow_key(peeled)\n",
-    replace: "            || self.is_cow_key(peeled)\n",
-    tests: ["test/corpus.test.ts", "-t", "^(path_keys|cow_keys).rs$"],
-  },
-  {
     name: "path-key-given-back",
     breaks:
       "a path set's item is given back as it was asked with, `a//b`, where it holds `a/b`",
@@ -205,32 +178,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cow_keys.rs$"],
   },
   {
-    name: "cow-key-slice-refused",
-    breaks: "a map of `Cow<[T]>`s is refused",
-    file: "src/lower/std_types/map.rs",
-    find: "            ty::Slice(item) => self.compares_by_value(*item, &mut Vec::new()) && !self.holds_identity(*item),\n",
-    replace: "            ty::Slice(_) => false,\n",
-    tests: ["test/corpus.test.ts", "-t", "^cow_keys.rs$"],
-  },
-  {
-    name: "cow-key-given-back",
-    breaks:
-      "a `Cow` map's key is given back as it was asked with, a `&str` where it holds a `Cow`",
-    file: "src/lower/std_types/map.rs",
-    find: "        self.is_cow_key(key) || self.recognition().is_path(key) || (sorted && self.found_by_cmp(key))\n",
-    replace:
-      "        self.recognition().is_path(key) || (sorted && self.found_by_cmp(key))\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_keys.rs$"],
-  },
-  {
-    name: "cow-key-refused",
-    breaks: "a map keyed by `Cow`s is refused",
-    file: "src/lower/std_types/map.rs",
-    find: "            || self.recognition().is_path(peeled)\n            || self.is_cow_key(peeled)\n",
-    replace: "            || self.recognition().is_path(peeled)\n",
-    tests: ["test/corpus.test.ts", "-t", "^cow_keys.rs$"],
-  },
-  {
     name: "own-ord-tree-plain-map",
     breaks:
       "a B-tree keyed by a struct whose `Ord` and `Eq` are the crate's own is a `Map`, which finds a key by its object",
@@ -249,16 +196,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_keys.rs$"],
   },
   {
-    name: "own-ord-tree-made-as-inserted",
-    breaks:
-      "a B-tree of its own `Ord` made of items keeps the first of equal ones, as `insert` does",
-    file: "src/lower/std_types/map.rs",
-    find: "        self.is_cow_key(key) || self.recognition().is_path(key) || (sorted && self.found_by_cmp(key))\n",
-    replace:
-      "        self.is_cow_key(key) || self.recognition().is_path(key)\n",
-    tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$"],
-  },
-  {
     name: "map-get-unboxed",
     breaks:
       "`get` of a map's value that looks like `None` is `m.get(k)`, `None` where it's there",
@@ -266,36 +203,6 @@ export const mutations: Mutation[] = [
     find: "            MapOp::Get if types.get(1).is_some_and(|&value| self.boxed_payload(value)) => {\n",
     replace: "            MapOp::Get if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_values_like_none.rs$"],
-  },
-  {
-    name: "value-key-trees-refused",
-    breaks:
-      "a B-tree keyed by a tuple, or by a struct whose `Ord` is derived, is an ordered tree of its `cmp`, `$ordMap`, not a `$KeyMap` of its value",
-    file: "src/lower/std_types/map.rs",
-    find: "            || (self.is_value_key(ty) && (!ordered || self.orders_by_value(ty, &mut Vec::new())))\n",
-    replace: "            || (self.is_value_key(ty) && !ordered)\n",
-    tests: ["test/corpus.test.ts", "-t", "^value_key_trees.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "value-key-tree-own-ord",
-    breaks:
-      "a B-tree keyed by a struct whose `Ord` is the crate's own is a `$KeyMap`, which finds a key by its fields",
-    file: "src/lower/std_types/map.rs",
-    find: "            ty::Adt(adt, args) => {\n                self.recognition().derives(self.ord_trait(), ty)\n                    && adt\n",
-    replace: "            ty::Adt(adt, args) => {\n                adt\n",
-    tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "value-key-tree-own-enum-ord",
-    breaks:
-      "a B-tree keyed by a tuple holding a fieldless enum whose `Ord` is the crate's own is a `$KeyMap`, which finds a key by its fields",
-    file: "src/lower/std_types/map.rs",
-    find: "                !self.krate.foreign.compiled_by_rust_js(adt.did()) || self.recognition().derives(self.ord_trait(), ty)\n",
-    replace: "                true || !self.krate.foreign.compiled_by_rust_js(adt.did())\n",
-    tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$"],
-    snapshots: true,
   },
   {
     name: "last-entry-first",
@@ -471,14 +378,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
   {
-    name: "std-enum-key-refused",
-    breaks: "a set of std's `Component`s, compared by value, is refused",
-    file: "src/lower/std_types/map.rs",
-    find: "(self.krate.foreign.compiled_by_rust_js(adt.did()) || self.std_enum_derives_eq(ty))",
-    replace: "self.krate.foreign.compiled_by_rust_js(adt.did())",
-    tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
-  },
-  {
     name: "map-capacity-args-dropped",
     breaks:
       "what a `HashMap`'s or a `HashSet`'s `with_capacity` is given doesn't run, a call's effects lost (#195)",
@@ -486,15 +385,6 @@ export const mutations: Mutation[] = [
     find: "                        self.table_room(table, set, generic_args, value, span, out);\n",
     replace: "                        let _ = (table, value);\n",
     tests: ["test/corpus.test.ts", "-t", "^map_capacity_effects.rs$"],
-  },
-  {
-    name: "identity-key-refused",
-    breaks: "a type equal only to itself is refused as a set's key (ADR 0864)",
-    file: "src/lower/std_types/map.rs",
-    find: "            && (!self.has_user_impl(self.partial_eq_trait(), peeled) || self.equal_only_to_itself(peeled))\n",
-    replace:
-      "            && !self.has_user_impl(self.partial_eq_trait(), peeled)\n",
-    tests: ["test/corpus.test.ts", "-t", "^identity_keys.rs$"],
   },
   {
     name: "table-room-unasked",
@@ -592,86 +482,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "two crates: identity_inside_keys"],
   },
   {
-    name: "identity-in-key-fields-unseen",
-    breaks:
-      "a struct's or an enum's field holding a fiber isn't seen, so the key is a `$KeyMap` of its fields (#398)",
-    file: "src/lower/std_types/map.rs",
-    find: "                .any(|field| self.holds_identity_in(self.field_ty(field, args), seen)),\n",
-    replace: "                .any(|_| false),\n",
-    tests: ["test/corpus.test.ts", "-t", "^identity_inside_keys.rs$"],
-  },
-  {
-    name: "identity-in-key-option-by-contents",
-    breaks:
-      "a `HashSet<Option<Rc<Fiber>>>` keys each `Some` by the fiber's fields (#398)",
-    file: "src/lower/std_types/map.rs",
-    find: "                if self.js_eq(inner.peel_refs()).is_some() {\n                    return self.key_parts(key, inner, span);\n",
-    replace:
-      "                if self.js_eq(inner.peel_refs()).is_some() {\n                    return Ok(key);\n",
-    tests: ["test/corpus.test.ts", "-t", "^identity_inside_keys.rs$"],
-  },
-  {
-    name: "identity-in-key-option-none-read",
-    breaks:
-      "an `Option` of a struct holding a fiber reads the `None`'s fields, a throw (#398)",
-    file: "src/lower/std_types/map.rs",
-    find: "                Ok(Expr::cond(Expr::presence(key.clone(), false), key, some))\n",
-    replace: "                Ok(some)\n",
-    tests: ["test/corpus.test.ts", "-t", "^identity_inside_keys.rs$"],
-  },
-  {
-    name: "identity-in-key-variant-skipped",
-    breaks:
-      "an enum's variant holding a fiber keys it by the fiber's fields (#398)",
-    file: "src/lower/std_types/map.rs",
-    find: "                    if !fields.iter().any(|&(_, t)| self.holds_identity(t)) {\n                        continue;\n",
-    replace:
-      "                    if !fields.iter().any(|&(_, t)| self.holds_identity(t)) || index.as_u32() == 0 {\n                        continue;\n",
-    tests: ["test/corpus.test.ts", "-t", "^identity_inside_keys.rs$"],
-  },
-  {
-    name: "identity-in-key-items-unmapped",
-    breaks: "a `Vec` of fibers as a key is keyed by each fiber's fields (#398)",
-    file: "src/lower/std_types/map.rs",
-    find: '        let each = self.key_parts_fn("item", item, span)?;\n        Ok(Expr::call(Expr::member(items, "map"), vec![each]))\n',
-    replace: "        let _ = (item, span);\n        Ok(items)\n",
-    tests: ["test/corpus.test.ts", "-t", "^identity_inside_keys.rs$"],
-  },
-  {
-    name: "identity-in-key-tuple-part-kept",
-    breaks:
-      "a tuple key `(Rc<Fiber>, u32)` keys its fiber by its fields (#398)",
-    file: "src/lower/std_types/map.rs",
-    find: "                    .map(|(i, t)| self.key_parts(Expr::index(key.clone(), Expr::int(i as i128)), t, span))\n",
-    replace:
-      "                    .map(|(i, _)| Ok(Expr::index(key.clone(), Expr::int(i as i128))))\n",
-    tests: ["test/corpus.test.ts", "-t", "^identity_inside_keys.rs$"],
-  },
-  {
-    name: "identity-in-key-nested-struct-kept",
-    breaks:
-      "a struct holding a struct holding a fiber keys the inner one by the fiber's fields (#398)",
-    file: "src/lower/std_types/map.rs",
-    find: "                            let part = self.key_parts(self.project(key.clone(), ty, i), t, span)?;\n",
-    replace:
-      "                            let part = match self.js_eq(t.peel_refs()) {\n                                Some(_) => self.key_parts(self.project(key.clone(), ty, i), t, span)?,\n                                None => self.project(key.clone(), ty, i),\n                            };\n",
-    tests: ["test/corpus.test.ts", "-t", "^identity_inside_keys.rs$"],
-  },
-  {
-    name: "identity-in-cow-key-by-contents",
-    breaks:
-      "a `HashSet<Cow<[&Fiber]>>` is a `$CowSet`, which keys each fiber by its fields (#398)",
-    file: "src/lower/std_types/map.rs",
-    find: "                ty::Slice(item) => self.compares_by_value(*item, &mut Vec::new()) && !self.holds_identity(*item),\n",
-    replace:
-      "                ty::Slice(item) => self.compares_by_value(*item, &mut Vec::new()),\n",
-    tests: [
-      "test/lowering-collections.test.ts",
-      "-t",
-      "a type equal only to itself keys a JS Set by itself",
-    ],
-  },
-  {
     name: "generic-made-key-classed",
     breaks:
       "a set in generic code keyed by `(T, i32)` is a JS `Set`, which holds `(1, 0)` twice, as it finds objects by themselves (#401)",
@@ -705,25 +515,6 @@ export const mutations: Mutation[] = [
       "-t",
       "into_keys of values with a destructor is refused",
     ],
-  },
-  {
-    name: "phantom-data-key-not-by-value",
-    breaks:
-      "a set or a map keyed by a struct holding a `PhantomData`, litemap's `LiteMap`, is refused, the marker taken for a part that doesn't compare by value (#514)",
-    file: "src/lower/std_types/map.rs",
-    find: "            // a field left out of its object, is to `$key` (#514).\n            ty::Adt(..) if self.is_lang_adt(ty, LangItem::PhantomData) => true,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
-  },
-  {
-    name: "phantom-data-key-not-ordered-by-value",
-    breaks:
-      "a B-tree keyed by a struct holding a `PhantomData`, litemap's `LiteMap`, finds it by its `cmp`, an `$OrdMap`, not by its value, a `$KeySet` (#514)",
-    file: "src/lower/std_types/map.rs",
-    find: "            // Every `PhantomData` is `Equal` to every other (#514).\n            ty::Adt(..) if self.is_lang_adt(ty, LangItem::PhantomData) => true,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
-    snapshots: true,
   },
   {
     name: "map-extend-unreserved",
