@@ -41,4 +41,22 @@ export const mutations: Mutation[] = [
       "^collection_taken_drops_what_is_left.rs$",
     ],
   },
+  {
+    name: "splice-of-a-vec-lazy",
+    breaks: "a `Vec` given whole as a `splice`'s replacement isn't an array's items, so its `Splice` is the lazy one where nothing runs (#1189)",
+    file: "src/lower/recognition/owners.rs",
+    find: "                || matches!(it.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == \"std::vec::IntoIter\")\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^splice_of_array_items.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "splice-of-copies-lazy",
+    breaks: "a slice's `copied()` given as a `splice`'s replacement isn't an array's items, so its `Splice` is the lazy one where nothing runs (#1189)",
+    file: "src/lower/recognition/owners.rs",
+    find: "        (array(replacement) || copied)\n            .then(|| self.iterator_item(replacement))\n            .flatten()\n",
+    replace: "        array(replacement)\n            .then(|| self.iterator_item(replacement))\n            .flatten()\n",
+    tests: ["test/corpus.test.ts", "-t", "^splice_of_array_items.rs$"],
+    snapshots: true,
+  },
 ];

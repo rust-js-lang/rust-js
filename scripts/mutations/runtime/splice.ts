@@ -50,4 +50,20 @@ export const mutations: Mutation[] = [
     replace: "      closed,\n    );\n",
     tests: ["test/corpus.test.ts", "-t", "^splice_drops_and_fills_as_std.rs$"],
   },
+  {
+    name: "splice-now-tail-first",
+    breaks: "a `splice` put in place where it's made puts its tail back before its replacement (#1189)",
+    file: "src/runtime/splice.js",
+    find: "  $extend(items, replacement);\n  $extend(items, tail);\n  return $iter(removed);\n",
+    replace: "  $extend(items, tail);\n  $extend(items, replacement);\n  return $iter(removed);\n",
+    tests: ["test/corpus.test.ts", "-t", "^splice_of_array_items.rs$"],
+  },
+  {
+    name: "splice-now-takes-nothing",
+    breaks: "a `splice` put in place where it's made gives nothing of what it took out (#1189)",
+    file: "src/runtime/splice.js",
+    find: "  return $iter(removed);\n",
+    replace: "  return $iter([]);\n",
+    tests: ["test/corpus.test.ts", "-t", "^splice_of_array_items.rs$"],
+  },
 ];

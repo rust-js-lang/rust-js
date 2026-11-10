@@ -16,7 +16,7 @@ import {
   $nextBack,
   $rangeNext,
   $repeatingN,
-  $splice,
+  $splicing,
   iterator_map,
 } from "@rust-js/std";
 
@@ -61,7 +61,7 @@ function made() {
 }
 
 function generic(v, make, IIterator, dropI) {
-  $splice(
+  $splicing(
     v,
     0,
     1,
@@ -74,7 +74,7 @@ function main() {
   const v = [[10], [11], [12], [13]];
   // Collected, then put in place as it's dropped.
   try {
-    const removed = Array.from($splice(v, 1, 3, made(), dDrop_drop));
+    const removed = Array.from($splicing(v, 1, 3, made(), dDrop_drop));
     try {
       console.log(
         `[${removed.map((item) => dDebug_fmt(item)).join(", ")}] [${v.map((item) => dDebug_fmt(item)).join(", ")}]`,
@@ -85,7 +85,7 @@ function main() {
       }
     }
     // Held: what it hasn't given dropped where it's dropped, then filled.
-    let s = $splice(v, 0, 2, made(), dDrop_drop);
+    let s = $splicing(v, 0, 2, made(), dDrop_drop);
     let next;
     try {
       next = $next(s);
@@ -119,7 +119,7 @@ function main() {
     console.log("held");
     s.return();
     console.log(`[${v.map((item) => dDebug_fmt(item)).join(", ")}]`);
-    s = $splice(v, 0, 3, made(), dDrop_drop);
+    s = $splicing(v, 0, 3, made(), dDrop_drop);
     let nextBack;
     try {
       nextBack = $nextBack(s);
@@ -197,7 +197,7 @@ function main() {
     console.log(`[${v.map((item) => dDebug_fmt(item)).join(", ")}]`);
     // Dropped at once, of the crate's own iterator, of a clone, and of one
     // whose step panics: what's put stays, the tail put back.
-    $splice(
+    $splicing(
       v,
       0,
       1,
@@ -226,7 +226,7 @@ function main() {
       dDrop_drop,
     ).return();
     console.log(`[${v.map((item) => dDebug_fmt(item)).join(", ")}]`);
-    $splice(
+    $splicing(
       v,
       1,
       2,
@@ -235,7 +235,7 @@ function main() {
     ).return();
     console.log(`[${v.map((item) => dDebug_fmt(item)).join(", ")}]`);
     let r = $catchUnwind(() => {
-      $splice(
+      $splicing(
         v,
         1,
         2,
@@ -257,7 +257,7 @@ function main() {
     // Of one whose hint is no help, a filter's: the gap put in place as it's
     // stepped, what's past it collected apart, dropped where a step panics.
     r = $catchUnwind(() => {
-      $splice(
+      $splicing(
         v,
         1,
         3,
@@ -279,7 +279,7 @@ function main() {
     // At the end, with no tail: pushed as each is stepped.
     r = $catchUnwind(() => {
       const at = (v.length - 1) >>> 0;
-      $splice(
+      $splicing(
         v,
         at,
         v.length,

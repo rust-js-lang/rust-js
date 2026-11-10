@@ -59,7 +59,7 @@ function main() {
   console.log(`[${s.join(", ")}]`);
   const removed = Array.from($splice(s, 1, 3, [7, 8, 9]));
   console.log(`[${removed.join(", ")}] [${s.join(", ")}]`);
-  $splice(s, 0, 1, []).return();
+  $splice(s, 0, 1, []);
   console.log(`[${s.join(", ")}]`);
   const top = $popIfCell(s, (x) => x.value > 5);
   const kept = $popIfCell(s, (x) => x.value > 100);

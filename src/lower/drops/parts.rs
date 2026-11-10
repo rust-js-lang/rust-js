@@ -80,7 +80,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.drop_in(value, args.type_at(0), span, made, out)?
             }
             ty::Adt(_, args) if self.is_vec_like(ty) => self.drop_items(value, args.type_at(0), span, made, out)?,
-            // A `Vec`'s `Splice`: closed, `$splice`'s, which drops what it
+            // A `Vec`'s `Splice`: closed, `$splicing`'s, which drops what it
             // took out that it hasn't given, then puts its replacement in
             // place (#1149).
             ty::Adt(..) if self.recognition().is_vec_splice(ty) => {

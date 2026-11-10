@@ -786,4 +786,12 @@ export const mutations: Mutation[] = [
     replace: "        None\n",
     tests: ["test/corpus.test.ts", "-t", "^box_as_mut_and_ref.rs$"],
   },
+  {
+    name: "splice-eager-where-items-drop",
+    breaks: "a `splice` of items with a destructor is put in place where it's made, so what it took out drops after the replacement's steps, native Rust's other order (#1149, #1189)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    let lazy = op == TextOp::Splice && this.drops(output) != crate::lower::drops::Drops::Nothing;\n",
+    replace: "                    let lazy = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^splice_drops_and_fills_as_std.rs$"],
+  },
 ];

@@ -743,7 +743,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         op: TextOp,
         range: Expr,
         rest: Vec<Expr>,
-        clone: Option<Expr>,
+        (clone, lazy): (Option<Expr>, bool),
     ) -> Expr {
         let mut list = match range.kind {
             js::ExprKind::Call(_, list) => list,
@@ -773,7 +773,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             list.push(Expr::member(items, "length"));
         }
         list.extend(rest);
-        Expr::call(Expr::helper("$splice"), list)
+        Expr::call(Expr::helper(if lazy { "$splicing" } else { "$splice" }), list)
     }
 
     /// `&s[range]` of places of `s` in JS's units, `range` a `range_ty`:

@@ -429,4 +429,13 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(_, args) if false && self.recognition.is_vec_splice(ty) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^splice_drops_and_fills_as_std.rs$"],
   },
+  {
+    name: "splice-of-array-items-drops",
+    breaks: "a `Vec`'s `Splice` of an array's items with no destructor is std's lazy one, `$splicing(..).return()` where nothing it does runs code (#1189)",
+    file: "src/lower/drops/types.rs",
+    find: "                    .is_some_and(|item| self.drops_in(item, walk) == Drops::Nothing) =>\n",
+    replace: "                    .is_some_and(|item| self.drops_in(item, walk) == Drops::Nothing && false) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^splice_of_array_items.rs$"],
+    snapshots: true,
+  },
 ];

@@ -315,8 +315,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             def_id,
             generic_args,
             arg_tys,
+            output,
             span,
-            ..
         } = call;
         Some(match known {
             // `Display::fmt(&x, self.0)` of a `Formatter` held where it isn't
@@ -540,6 +540,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let item = this.slice_item(arg_tys[0]).expect("a `Vec`'s items");
                         rest.extend(this.std_drop_function(item, span)?);
                     }
+                    // A `Splice` whose drop runs nothing, of an array's items
+                    // that have no destructor, put in place where it's made,
+                    // `$splice`; else std's, `$splicing` (#1189).
+                    let lazy = op == TextOp::Splice && this.drops(output) != crate::lower::drops::Drops::Nothing;
                     let range =
                         this.slice_range_values((range_read(op), false), items, (range, arg_tys[1]), span, out)?;
                     let clone = match this.slice_item(arg_tys[0]) {
@@ -548,7 +552,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         _ => None,
                     };
-                    this.range_edit(op, range, rest, clone)
+                    this.range_edit(op, range, rest, (clone, lazy))
                 }))
             }),
             Std::StringEdit(edit) => lower(move |this, state, values, out| {

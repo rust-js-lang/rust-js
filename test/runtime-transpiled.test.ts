@@ -71,10 +71,15 @@ test("the runtime's helpers answer the same through Babel's loose transforms", a
   expect(rt.$pad("a😀", 4, "^", "*")).toBe("*a😀*");
   expect(rt.$split("a😀b", "")).toEqual(["", "a", "😀", "b", ""]);
   // A splice's replacement, any iterable, as a `Vec`'s `splice` takes one,
-  // put in place as its `Splice` is done with, stepped to its end (#1149).
+  // put in place as its `Splice` is done with, stepped to its end (#1149);
+  // of an array's items that drop nothing, where it's made (#1189).
   const items = [1, 2, 3];
-  expect(Array.from(rt.$splice(items, 1, 2, new Set([7, 8])))).toEqual([2]);
+  expect(Array.from(rt.$splicing(items, 1, 2, new Set([7, 8])))).toEqual([2]);
   expect(items).toEqual([1, 7, 8, 3]);
+  const now = [1, 2, 3];
+  const taken = rt.$splice(now, 0, 1, [9, 8]);
+  expect(now).toEqual([9, 8, 2, 3]);
+  expect(Array.from(taken)).toEqual([1]);
 });
 
 // What makes those answers hold, in the runtime's source: a spread, of an

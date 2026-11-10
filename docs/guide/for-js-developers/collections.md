@@ -384,13 +384,16 @@ export function at(v, i) {
   `undefined`; that's the `$index`. `v.get(i)` is the `Option`, and is
   `v[i]` in JS. `remove`, `insert`, `truncate`, `splice` and slicing check
   their bounds the same way, so they're helpers.
-- **`v.splice(range, items)` is std's `Splice`,** `$splice`: an iterator
-  over what it took out, which puts `items` in its place as it's done
-  with, dropped or stepped to its end, so `Array.from($splice(..))`
-  collects it and `$splice(v, 1, 2, items).return()` drops it at once.
-  What it hasn't given is dropped first, then `items` are stepped into the
-  gap, what's put there staying where a step panics, as std's drop does
-  ([ADR 0501](../../decisions/0501-a-splice-owns-what-it-takes-out.md)).
+- **`v.splice(range, items)` is std's `Splice`,** an iterator over what
+  it took out. Of an array's items with no destructor, `items` an array,
+  a `Vec` or a slice's iterator, nothing it does runs code, so it's put in
+  place where it's made, `$splice(v, 1, 2, items)`, as JS's `splice` is,
+  and `Array.from($splice(..))` collects what it took out. Otherwise it's
+  `$splicing`, which puts `items` in its place as it's done with, dropped
+  or stepped to its end, `$splicing(v, 1, 2, items).return()` dropped at
+  once: what it hasn't given is dropped first, then `items` are stepped
+  into the gap, what's put there staying where a step panics, as std's
+  drop does ([ADR 0501](../../decisions/0501-a-splice-owns-what-it-takes-out.md), amended).
 - Spread, `[...a, x]`, is `to_vec()` then `push`; `[...a, ...b]` is
   `[a, b].concat()`.
 - `&v[a..b]` is a copy of that part, as `slice(a, b)` is: nothing can

@@ -92,3 +92,28 @@ take its new form. Mutations `splice-removed-undropped`,
 `owned-iterator-item-first-arg`, `drain-not-owning` and
 `memchr-iter-backless` refitted; `splice-items-its-iterator` and
 `splice-unowned`, whose sites are gone, removed.
+
+## Amended (2026-11-10, #1189): put in place where it's made, where nothing it does runs code
+
+#1149 made every `Splice` std's lazy one, `$splice(..)`'s iterator whose
+drop puts the replacement in place, and a statement `$splice(..).return()`.
+That's needed where it can be seen: a replacement's steps that run code
+or panic, or items with a destructor, whose drops std orders around those
+steps. Where none can, it's noise: React's port, whose sites splice arrays
+of strings and of values with no destructor, took `.return()` at ten sites,
+and upstream React's JS is `array.splice(..)` alone.
+
+**A `Splice` of an array's items with no destructor, its replacement an
+array's, a `Vec`'s or an array's `IntoIter`, a slice's `Iter` or its
+`copied()`, drops nothing (`drops`, `Recognition::splice_of_array_items`),
+and is put in place where it's made, `$splice(v, a, b, items)`**, which
+gives a `$iter` of what it took out, collected, reversed or counted as
+std's `Splice` gives it. Nothing sees the `Vec` till the `Splice` is
+dropped, as it borrows it, and stepping such a replacement runs nothing
+and can't panic, so where it's put in is unseen (case A,
+[0262](0262-when-rust-and-js-disagree.md)). Every other `Splice` is std's,
+now `$splicing`. The one answer is `drops`': the call is `$splice` where
+its `Splice`'s drop is `Drops::Nothing`. `splice_of_array_items.rs` holds
+the eager form against native Rust, its result used each way; the port
+regenerates at its pin with no diff, its Fizz site's comment on its
+statement again.

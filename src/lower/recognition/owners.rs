@@ -4,6 +4,31 @@
 use super::*;
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// Of a `Vec`'s `Splice` of type `ty`, its items, where its replacement
+    /// is an array's, a `Vec`'s or an array's `IntoIter`, a slice's `Iter`
+    /// or its `copied()`: stepping it runs nothing and can't panic, so,
+    /// where its items have no destructor, its drop runs nothing either,
+    /// and it's put in place where it's made, as nothing sees the `Vec` till
+    /// it's dropped (`drops`, #1189).
+    pub(in crate::lower) fn splice_of_array_items(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let ty = self.reveal(ty);
+        let ty::Adt(_, args) = ty.kind() else { return None };
+        if !self.is_vec_splice(ty) {
+            return None;
+        }
+        let replacement = args.types().next()?;
+        let array = |it: Ty<'tcx>| {
+            self.is_std_type(it, StdItem::SliceIter)
+                || self.is_std_type(it, StdItem::ArrayIntoIter)
+                || matches!(it.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::vec::IntoIter")
+        };
+        let copied = matches!(replacement.kind(), ty::Adt(adt, held) if std_path(self.tcx, adt.did()) == "std::iter::Copied"
+            && held.types().next().is_some_and(|it| self.is_std_type(it, StdItem::SliceIter)));
+        (array(replacement) || copied)
+            .then(|| self.iterator_item(replacement))
+            .flatten()
+    }
+
     /// What an iterator that owns its items gives, `vec::IntoIter`'s,
     /// `drain(..)`'s, a map's `(K, V)`, its `into_keys()`'s `K` and its
     /// `into_values()`'s `V`, or `option::IntoIter`'s, each of which it drops

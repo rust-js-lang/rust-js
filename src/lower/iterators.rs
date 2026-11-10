@@ -610,7 +610,7 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 /// (`$splice`, #1149), `char::decode_utf16`'s, stepped as it's asked
 /// (`$decodeUtf16`, #1151), and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 39] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 40] = [
     "$stdIterator",
     "$memchrIter",
     "$mapEnds",
@@ -649,6 +649,7 @@ pub(crate) const ITERATOR_HELPERS: [&str; 39] = [
     "$treeSetAlgebra",
     "$mapExtractIf",
     "$splice",
+    "$splicing",
     "$decodeUtf16",
 ];
 

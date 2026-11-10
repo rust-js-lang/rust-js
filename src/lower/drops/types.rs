@@ -586,6 +586,16 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 Drops::Nothing
             }
             ty::Adt(..) if self.recognition.is_guard(ty) => Drops::Runs,
+            // A `Vec`'s `Splice` of an array's items that have no destructor:
+            // nothing, as it's put in place where it's made (#1189).
+            ty::Adt(..)
+                if self
+                    .recognition
+                    .splice_of_array_items(ty)
+                    .is_some_and(|item| self.drops_in(item, walk) == Drops::Nothing) =>
+            {
+                Drops::Nothing
+            }
             // A `Vec`'s `Splice`: its drop puts its replacement in place,
             // whatever its items are (#1149).
             ty::Adt(_, args) if self.recognition.is_vec_splice(ty) => {
