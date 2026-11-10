@@ -102,13 +102,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
   },
   {
-    name: "identity-key-refused",
-    breaks: "a type equal only to itself is refused as a set's key (ADR 0864)",
+    name: "identity-key-hashed",
+    breaks: "a type equal only to itself is a `$hashedSet`'s key, hashing its address and asking its `eq`, not a JS `Set`'s of the objects (ADRs 0864, 1120)",
     file: "src/lower/std_types/map_keys.rs",
     find: "            && (!self.has_user_impl(self.partial_eq_trait(), peeled) || self.equal_only_to_itself(peeled))\n",
     replace:
       "            && !self.has_user_impl(self.partial_eq_trait(), peeled)\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_keys.rs$"],
+    snapshots: true,
   },
   {
     name: "identity-in-key-fields-unseen",
@@ -192,12 +193,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "phantom-data-key-not-by-value",
-    breaks:
-      "a set or a map keyed by a struct holding a `PhantomData`, litemap's `LiteMap`, is refused, the marker taken for a part that doesn't compare by value (#514)",
+    breaks: "a key holding a `PhantomData` is a `$hashedMap`'s, hashing it, not a `$KeyMap`'s by its value (#514, ADR 1120)",
     file: "src/lower/std_types/map_keys.rs",
     find: "            // a field left out of its object, is to `$key` (#514).\n            ty::Adt(..) if self.is_lang_adt(ty, LangItem::PhantomData) => true,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
+    snapshots: true,
   },
   {
     name: "phantom-data-key-not-ordered-by-value",

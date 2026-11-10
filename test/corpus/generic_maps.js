@@ -79,6 +79,12 @@ function pHash_hash(p, state, HHasher) {
   HHasher.writeU8(state, p[1]);
 }
 
+// A map of a type parameter no bound here says is `Hash`, its class its
+// caller's (ADR 0466).
+function size(map) {
+  return map.size;
+}
+
 function main() {
   const IntoIterCounting = tCounting({ next: $next });
   const g = group(
@@ -197,5 +203,6 @@ function main() {
   console.log(
     `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
+  console.log(`${size(g)} ${size(pg)}`);
 }
 //# sourceMappingURL=case.js.map

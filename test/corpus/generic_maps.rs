@@ -50,6 +50,12 @@ impl<T: Iterator> Counting for T {}
 #[derive(Hash, PartialEq, Eq, Debug, Clone)]
 struct P(u8, u8);
 
+// A map of a type parameter no bound here says is `Hash`, its class its
+// caller's (ADR 0466).
+fn size<K, V>(map: &HashMap<K, V>) -> usize {
+    map.len()
+}
+
 fn main() {
     let g = group(vec![("a", 1), ("b", 2), ("a", 3)].into_iter());
     println!("{:?} {:?}", g.get("a"), g.get("b"));
@@ -65,4 +71,5 @@ fn main() {
     println!("{:?}", cs.get(&P(0, 1)));
     let by = ["ab", "cd", "a"].into_iter().tally_by(str::len);
     println!("{:?} {:?}", by.get(&2), by.get(&1));
+    println!("{} {}", size(&g), size(&pg));
 }
