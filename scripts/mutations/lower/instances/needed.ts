@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/instances/needed.rs",
     find: "            refuse_private_state(&calls, body.def_id, &mir.body);\n",
     replace: "            let _ = refuse_private_state;\n",
-    tests: ["test/crates.test.ts", "-t", "reads its library's private state"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "reads its library's private state"],
   },
   {
     name: "instance-copy-of-a-given-param-ignored",
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/instances/needed.rs",
     find: "if state && !binding && !def.is_local()",
     replace: "if state && !def.is_local()",
-    tests: ["test/crates.test.ts", "-t", "private state"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "private state"],
   },
   {
     name: "instance-relative-static-read",
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/instances/needed.rs",
     find: ".chain(statics)",
     replace: ".chain(statics.take(0))",
-    tests: ["test/crates.test.ts", "-t", "private state"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "private state"],
   },
   {
     name: "instance-unit-given-copied",
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/instances/needed.rs",
     find: "if sets && let Some(&key)",
     replace: "if false && sets && let Some(&key)",
-    tests: ["test/crates.test.ts", "-t", "private state"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "private state"],
   },
   {
     name: "through-library-compiled",
@@ -187,7 +187,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/instances/needed.rs",
     find: "    match foreign.writes_more(root) {\n",
     replace: "    match foreign.writes_more(root).filter(|_| false) {\n",
-    tests: ["test/crates.test.ts", "-t", "refused where it reads its library's private state"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "refused where it reads its library's private state"],
   },
   {
     name: "items-given-drops-unasked",
@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/instances/needed.rs",
     find: "        None if foreign.merges_identities(root) => \"one whose JS may give one function where Rust makes two, which this crate compares\".to_string(),\n",
     replace: "        None if false => \"one whose JS may give one function where Rust makes two, which this crate compares\".to_string(),\n",
-    tests: ["test/crates.test.ts", "-t", "may merge what its consumer compares"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "may merge what its consumer compares"],
   },
   {
     name: "closure-of-a-parameter-drops-nothing",
@@ -260,5 +260,14 @@ export const mutations: Mutation[] = [
     find: "    let drops = closes_over || drops;\n",
     replace: "    let drops = drops;\n",
     tests: ["test/crates.test.ts", "-t", "two crates: closure_made_by_an_inlined_function"],
+  },
+  {
+    name: "capacity-copy-reason-unsaid",
+    breaks:
+      "a function a consumer compiles itself to keep a capacity, refused as it reads its library's private state, gives another reason than its library keeping no capacity (#1180's (5))",
+    file: "src/lower/instances/needed.rs",
+    find: "        None if foreign.keeps_more(root) => \"one whose library keeps no `Vec`'s capacity, which this crate reads\".to_string(),\n",
+    replace: "",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
   },
 ];

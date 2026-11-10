@@ -10,7 +10,7 @@ export const mutations: Mutation[] = [
     find: "        changed: shapes(tcx, changed.mutated.iter().chain(changed.vecs).copied()),\n",
     replace: "        changed: shapes(tcx, changed.vecs.iter().copied().filter(|_| false)),\n",
     tests: [
-      "test/crates.test.ts",
+      "test/crates-compiled-here.test.ts",
       "-t",
       "a library's generic function is its program's",
     ],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/library/exports.rs",
     find: "                && exported.contains(&(module_path(tcx, info.module), export_of(id, info)))\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "library-fn-dyns-unwritten",

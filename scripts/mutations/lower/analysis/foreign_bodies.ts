@@ -10,7 +10,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/foreign_bodies.rs",
     find: "                makers.insert(closure, def_id);\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "inlined function is placed"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "inlined function is placed"],
   },
   {
     name: "foreign-const-without-mir",

@@ -1353,3 +1353,34 @@ writer's own rule is gone, one way to make the value; the test `a
 library's writer given as a value is its import` (`test/crates.test.ts`)
 holds the form, `library_writers_given_options` its output against
 native Rust.
+
+## Amendment: a library that keeps no capacity (#1180's (5))
+
+A library whose own code reads no `Vec`'s capacity keeps none (ADR 0419).
+Its JS grows a `Vec` as a JS array grows, so a consumer that reads a
+capacity got the length of each `Vec` that library grew, silently: 5 where
+std's is 8. That held for a `Vec` it returned, one it was lent, one behind
+an `Rc<RefCell<..>>`, and one its callback was given. Results changed, so
+Rust's behavior is kept (ADR [0262](0262-when-rust-and-js-disagree.md)'s
+third case).
+
+The user's decision: such a consumer compiles its own copy of each of
+those libraries' functions and impls it reaches. This is one more reason
+in `Foreign::compiles` (`library/compiled_here.rs`), beside a writer given
+more (#1026) and a function whose JS may merge identities (#1052):
+`keeps_more`, where the crate keeps capacities and the item's library, not
+`@rust-js/std`, keeps none. Its copy grows each `Vec` as std does, and each
+of the library's functions the copy reaches is compiled here in turn. The
+pipeline's `Foreign` is told the crate's own `asks_capacity`.
+
+The cost is the copies. In
+`test/crates/pairs/library_vecs_grown_where_no_capacity_is_kept`, the app's
+JS is 2,204 bytes where it was 1,220, its six functions' copies beside the
+library's 1,534. A crate that reads no capacity, and every crate of the
+React port, which reads none, compiles nothing more.
+
+A copy that reads its library's private state is refused, as any copy is,
+saying why it's compiled here:
+`test/crates/refused/capacity_kept_reads_private_state`. That program
+compiled before and printed its length as its capacity; it's refused now,
+which is loud where it had been wrong.

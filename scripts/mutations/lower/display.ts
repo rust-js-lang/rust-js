@@ -301,7 +301,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "        match writer.is_local() || self.krate.foreign.is_instance(writer) {\n",
     replace: "        match writer.is_local() {\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "class-display-called",

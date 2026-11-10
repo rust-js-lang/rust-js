@@ -278,3 +278,16 @@ test("a library's function its consumer compiles is refused where it reads its l
     "this crate compiles `<dep::Shown as std::fmt::Display>::fmt` itself, as its library's JS has none it can call: a writer given a placeholder's options, `{:>4}` or `{:#?}`, which its library's JS doesn't take; but it reads `dep::COUNT`, private to its library",
   );
 }, 300_000);
+
+// A consumer that reads a `Vec`'s capacity compiles its own of each function
+// it reaches of a library that keeps none, so what they grow has std's
+// capacity (#1180's (5)); one that reads its library's private state, which
+// a copy can't reach, is refused, saying why it's compiled here.
+test("a library that keeps no capacity has its functions compiled by a consumer that reads one", () => {
+  const out = chain(pairs, "library_vecs_grown_where_no_capacity_is_kept", ["dep", "app"]);
+  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain("function squaresTwice(n) {");
+  const native = chain(join(root, "test", "crates", "refused"), "capacity_kept_reads_private_state", ["dep", "app"], [
+    "this crate compiles `dep::made` itself, as its library's JS has none it can call: one whose library keeps no `Vec`'s capacity, which this crate reads; but it reads `dep::MADE`",
+  ]);
+  expect(native).toBe("5 8\n");
+}, 300_000);

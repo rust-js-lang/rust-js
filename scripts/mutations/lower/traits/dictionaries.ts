@@ -516,7 +516,7 @@ export const mutations: Mutation[] = [
     find: "            if js::same_path(&copy, &value) {\n",
     replace: "            if false {\n",
     tests: [
-      "test/crates.test.ts",
+      "test/crates-compiled-here.test.ts",
       "-t",
       "Copy bound takes a copy only where one is given",
     ],
@@ -571,7 +571,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/dictionaries.rs",
     find: "            && (self.krate.trait_impls.contains(&impl_id) || self.krate.foreign.compiled(impl_id))\n",
     replace: "            && (self.krate.trait_impls.contains(&impl_id))\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "class-display-dictionary-impl",

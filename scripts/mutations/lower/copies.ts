@@ -348,7 +348,7 @@ export const mutations: Mutation[] = [
     find: "                Expr::cond(dictionary.clone(), copy, place)\n",
     replace: "                copy\n",
     tests: [
-      "test/crates.test.ts",
+      "test/crates-compiled-here.test.ts",
       "-t",
       "Copy bound takes a copy only where one is given",
     ],
@@ -361,7 +361,7 @@ export const mutations: Mutation[] = [
     find: "                    || (self.krate.compiled_once && super::library::reachable(self.tcx, adt.did()))\n",
     replace:
       "                    || (self.krate.library && super::library::reachable(self.tcx, adt.did()))\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "borrowing-std-type-holds",

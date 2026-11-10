@@ -411,7 +411,7 @@ export const mutations: Mutation[] = [
     find: "        if !matches!(known, Some(Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_)))\n",
     replace:
       "        if !matches!(known, Some(Std::Any(_) | Std::Same | Std::FmtTo(_)))\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "mir-same-trait-dispatched",

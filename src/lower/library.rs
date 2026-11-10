@@ -457,6 +457,8 @@ pub(super) struct Foreign<'a, 'tcx> {
     writes: super::analysis::Writes,
     /// Whether the crate reads a function's identity (`merges_identities`).
     reads_fn_identity: bool,
+    /// Whether the crate reads a `Vec`'s capacity (`keeps_more`).
+    asks_capacity: bool,
 }
 
 impl<'a, 'tcx> Foreign<'a, 'tcx> {
@@ -473,7 +475,14 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             paths: std::cell::OnceCell::new(),
             writes,
             reads_fn_identity,
+            asks_capacity: false,
         }
+    }
+
+    /// Itself, of a crate that reads a `Vec`'s capacity, `asks_capacity`
+    /// (`keeps_more`, #1180's (5)).
+    pub(super) fn asking_capacity(self, asks_capacity: bool) -> Self {
+        Foreign { asks_capacity, ..self }
     }
 
     /// The library `krate`'s items are of, if it's one: `@rust-js/std` of

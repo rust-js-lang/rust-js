@@ -449,7 +449,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/calls.rs",
     find: "            || self.krate.foreign.is_instance(id)\n            || crate::lower::recognition::is_compiled_std",
     replace: "            || crate::lower::recognition::is_compiled_std",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "given-drop-ignored",

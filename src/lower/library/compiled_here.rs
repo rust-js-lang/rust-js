@@ -1,7 +1,8 @@
 //! Which of its libraries' items the crate compiles itself, from the MIR
 //! their metadata keeps, and why (ADR 0914): one its library's JS doesn't
-//! export, a writer given more than its library's JS takes (#1026), and one
-//! whose JS may merge what the crate compares (#1052).
+//! export, a writer given more than its library's JS takes (#1026), one
+//! whose JS may merge what the crate compares (#1052), and one whose library
+//! keeps no `Vec`'s capacity, which the crate reads (#1180's (5)).
 
 use super::{Foreign, key};
 use crate::collections::IndexSet;
@@ -98,6 +99,21 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         }
     }
 
+    /// Whether `id`, a library's function or impl, is compiled here to keep
+    /// a `Vec`'s capacity (#1180's (5), the user's decision): the crate
+    /// keeps capacities, as it or a library it uses reads one (ADR 0419),
+    /// and `id`'s library, not `@rust-js/std`, keeps none, so its JS grows
+    /// a `Vec` as a JS array does, which no `capacity()` of the crate's can
+    /// tell from std's. Its copy here grows each as std does, and so does
+    /// each of its library's functions it reaches, compiled here in turn.
+    pub(in crate::lower) fn keeps_more(&self, id: DefId) -> bool {
+        if id.is_local() || !self.is_library(id.krate) || !(self.asks_capacity || self.keeps_capacity()) {
+            return false;
+        }
+        self.library(id.krate)
+            .is_some_and(|library| !library.builtin && !library.keeps_capacity)
+    }
+
     /// Whether a call of `id`, a library's function, given `args`, calls
     /// one the crate compiles itself as its JS may merge what the crate
     /// compares (`merges_identities`): of a trait's method, the impl's
@@ -161,10 +177,11 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
                     _ => false,
                 }
         };
-        // Or a writer given more than its library's JS takes (#1026), or
-        // one whose JS may merge what the crate compares (#1052).
+        // Or a writer given more than its library's JS takes (#1026), one
+        // whose JS may merge what the crate compares (#1052), or one whose
+        // library keeps no capacity the crate reads (#1180's (5)).
         let writes_more = || {
-            (self.writes_more(id).is_some() || self.merges_identities(id))
+            (self.writes_more(id).is_some() || self.merges_identities(id) || self.keeps_more(id))
                 && (matches!(tcx.def_kind(id), DefKind::Impl { .. }) || tcx.is_mir_available(id))
                 && !crate::lower::bindings::is_binding(tcx, id)
         };

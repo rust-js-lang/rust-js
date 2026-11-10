@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     find: "        && !foreign.is_instance(id)\n",
     replace: "",
     tests: [
-      "test/crates.test.ts",
+      "test/crates-compiled-here.test.ts",
       "-t",
       "Copy bound takes a copy only where one is given",
     ],

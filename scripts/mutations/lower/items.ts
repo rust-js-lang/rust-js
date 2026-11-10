@@ -298,7 +298,7 @@ export const mutations: Mutation[] = [
     find: "            && (foreign.compiles(def_id) || (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id)))\n",
     replace:
       "            && (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id))\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "exported-copying-impl-imported",
@@ -307,7 +307,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/items.rs",
     find: "            && (foreign.compiles(def_id) || (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id)))\n",
     replace: "            && foreign.compiles(def_id)\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "namespace-read-of-a-default",

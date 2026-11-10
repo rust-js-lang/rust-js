@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/library/compiled_here.rs",
     find: "                DefKind::Impl { of_trait: true } => own(id),\n",
     replace: "                DefKind::Impl { of_trait: true } => false,\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "library-exported-impl-method-compiled",
@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/library/compiled_here.rs",
     find: "                        Some(imp) => own(imp),\n",
     replace: "                        Some(imp) => self.has_impl(imp),\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "library-dictionary-entry-unseen",
@@ -62,15 +62,15 @@ export const mutations: Mutation[] = [
     file: "src/lower/library/compiled_here.rs",
     find: "        let reads = |f: DefId| library.reads_formatter_options.contains(&key(tcx, f));\n",
     replace: "        let reads = |f: DefId| library.reads_formatter_options.contains(&key(tcx, f)) || f.krate == id.krate;\n",
-    tests: ["test/crates.test.ts", "-t", "a library's generic function is its program's, alone"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "a library's generic function is its program's, alone"],
   },
   {
     name: "merging-function-the-librarys",
     breaks:
       "a library's function its manifest lists as merging what Rust keeps apart is its import where the crate compares an identity, its `Rc::ptr_eq` and `ptr::addr_eq` `true` (#1052)",
     file: "src/lower/library/compiled_here.rs",
-    find: "            (self.writes_more(id).is_some() || self.merges_identities(id))\n",
-    replace: "            self.writes_more(id).is_some()\n",
+    find: "            (self.writes_more(id).is_some() || self.merges_identities(id) || self.keeps_more(id))\n",
+    replace: "            (self.writes_more(id).is_some() || self.keeps_more(id))\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
   {
@@ -117,5 +117,32 @@ export const mutations: Mutation[] = [
     find: "            && instance.def_id() != id\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "two crates: library_dyn_method_identities"],
+  },
+  {
+    name: "capacity-kept-library-not-compiled-here",
+    breaks:
+      "a consumer that reads a `Vec`'s capacity calls the JS of a library that keeps none, so each `Vec` that library grows has its length for its capacity, silently: `squares(5)`'s 5 where std's is 8 (#1180's (5))",
+    file: "src/lower/library/compiled_here.rs",
+    find: "            .is_some_and(|library| !library.builtin && !library.keeps_capacity)\n",
+    replace: "            .is_some_and(|library| !library.builtin && library.keeps_capacity)\n",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
+  },
+  {
+    name: "capacity-kept-by-a-library-alone",
+    breaks:
+      "a consumer that reads a `Vec`'s capacity keeps none of what its libraries grow unless one of them keeps one too: `squares(5)`'s 5 where std's is 8 (#1180's (5))",
+    file: "src/lower/library/compiled_here.rs",
+    find: "!(self.asks_capacity || self.keeps_capacity())",
+    replace: "!self.keeps_capacity()",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
+  },
+  {
+    name: "capacity-not-a-reason-compiled-here",
+    breaks:
+      "a library function whose library keeps no capacity isn't compiled by a consumer that reads one: its `Vec`s' capacities are their lengths, silently (#1180's (5))",
+    file: "src/lower/library/compiled_here.rs",
+    find: "|| self.keeps_more(id))",
+    replace: "|| false)",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
   },
 ];

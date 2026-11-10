@@ -163,7 +163,8 @@ pub fn lower_crate<'tcx>(
         called_from_elsewhere.extend(codecs.iter().copied().filter(|&id| super::library::reachable(tcx, id)));
     }
     let foreign =
-        super::library::Foreign::new(tcx, dependencies, instances, (writer_facts.writes(), reads_fn_identity));
+        super::library::Foreign::new(tcx, dependencies, instances, (writer_facts.writes(), reads_fn_identity))
+            .asking_capacity(asks_capacity);
     // Which of its libraries' functions may copy what the crate changes in place, which their
     // JS, copying what their own crates change, may share (ADR 0914, amended).
     let changed = super::copies::Changed {

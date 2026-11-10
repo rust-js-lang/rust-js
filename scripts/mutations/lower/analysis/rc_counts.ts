@@ -388,7 +388,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/rc_counts.rs",
     find: "        |from: Ty<'tcx>| made_with_it(from) || from.is_closure() && !copied.contains(&from) && !is_cloned(from);\n",
     replace: "        |from: Ty<'tcx>| made_with_it(from);\n",
-    tests: ["test/crates.test.ts", "-t", "merge what its consumer compares"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "merge what its consumer compares"],
   },
   {
     name: "rc-counts-clones-as-generic-code-names-them",

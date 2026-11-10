@@ -528,7 +528,7 @@ export const mutations: Mutation[] = [
     find: "            export: self.tcx.visibility(tr.def_id).is_public() && !self.krate.foreign.is_instance(id),\n",
     replace:
       "            export: self.tcx.visibility(tr.def_id).is_public(),\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "class-default-fields-unread",

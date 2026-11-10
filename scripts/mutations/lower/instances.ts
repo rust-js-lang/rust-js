@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/instances.rs",
     find: "            .or_else(|| self.placed.get(&id)))\n",
     replace: "            .or(None))\n",
-    tests: ["test/crates.test.ts", "-t", "inlined function is placed"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "inlined function is placed"],
   },
   {
     name: "closure-of-an-inlined-function-unplaced",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/instances.rs",
     find: "            made.push((closure, module));\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "inlined function is placed"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "inlined function is placed"],
   },
   {
     name: "library-changed-unshared",
@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
     find: "                .filter(|&&ty| !self.recognition.foreign.changes(library, ty))\n",
     replace: "                .filter(|_| true)\n",
     tests: [
-      "test/crates.test.ts",
+      "test/crates-compiled-here.test.ts",
       "-t",
       "a library's generic function is its program's",
     ],
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     find: "                    mir::Operand::Copy(place) if copy(place.ty(&self.body.local_decls, tcx).ty) => {\n",
     replace:
       "                    mir::Operand::Copy(place) if { let _ = &copy; true } => {\n",
-    tests: ["test/crates.test.ts", "-t", "grows a library.s boxed tree"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "grows a library.s boxed tree"],
   },
   {
     name: "instance-trait-call-unresolved",
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/instances.rs",
     find: "                                .map_or(callee, |instance| instance.def_id()),\n",
     replace: "                                .map_or(callee, |_| callee),\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "binding-result-copies",
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     find: "            let settled = self.asking.borrow_mut().drain(depth..).collect::<Vec<_>>();\n",
     replace: "            let settled = self.asking.borrow_mut().pop().into_iter().collect::<Vec<_>>();\n",
     tests: [
-      "test/crates.test.ts",
+      "test/crates-compiled-here.test.ts",
       "-t",
       "a library's generic function is its program's",
     ],
@@ -263,7 +263,7 @@ export const mutations: Mutation[] = [
     find: "            (id.is_local() || foreign.is_instance(id))\n",
     replace: "            id.is_local()\n",
     tests: [
-      "test/crates.test.ts",
+      "test/crates-compiled-here.test.ts",
       "-t",
       "is its program's, alone or a dependency",
     ],

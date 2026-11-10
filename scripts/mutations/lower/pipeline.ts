@@ -161,7 +161,7 @@ export const mutations: Mutation[] = [
     find: "                .filter(|&id| exports_reachable && super::library::reachable(tcx, id)),\n",
     replace:
       "                .filter(|&id| export_library && super::library::reachable(tcx, id)),\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "initializer-a-function",
@@ -468,7 +468,7 @@ export const mutations: Mutation[] = [
     find: "    if !asked.is_empty() && tcx.dcx().has_errors().is_none() {\n",
     replace:
       "    if false && !asked.is_empty() && tcx.dcx().has_errors().is_none() {\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "namespaced-library-variable-held",
@@ -583,5 +583,14 @@ export const mutations: Mutation[] = [
     find: "                        cloned_closures: closure_facts.clones(),\n",
     replace: "                        cloned_closures: Vec::new(),\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+  },
+  {
+    name: "pipeline-capacity-unasked",
+    breaks:
+      "the crate's own read of a `Vec`'s capacity isn't told to what decides which library functions it compiles itself: what a library that keeps none grows has its length for its capacity, silently (#1180's (5))",
+    file: "src/lower/pipeline.rs",
+    find: "            .asking_capacity(asks_capacity);\n",
+    replace: "            .asking_capacity(false);\n",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
   },
 ];

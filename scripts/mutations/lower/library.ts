@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
     replace:
       "        if id.is_local() || super::recognition::not_compiled_for_build(self.tcx, id) {\n",
     tests: [
-      "test/crates.test.ts",
+      "test/crates-compiled-here.test.ts",
       "-t",
       "Copy bound takes a copy only where one is given",
     ],
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     find: "        param(&mut params, index).marks.insert(ParamFact::Copy);\n",
     replace: "        let _ = (&mut params, index);\n",
     tests: [
-      "test/crates.test.ts",
+      "test/crates-compiled-here.test.ts",
       "-t",
       "is its program's, alone or a dependency",
     ],

@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     replace:
       "                .flat_map(|id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied().filter(|_| false))),\n",
     tests: [
-      "test/crates.test.ts",
+      "test/crates-compiled-here.test.ts",
       "-t",
       "a library's From impl nothing of its own calls",
     ],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline/reached.rs",
     find: "            foreign.is_instance(id)\n                || id.is_local()\n",
     replace: "            id.is_local()\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency|a consumer compiles is written where"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency|a consumer compiles is written where"],
   },
   {
     name: "own-name-fn-written",

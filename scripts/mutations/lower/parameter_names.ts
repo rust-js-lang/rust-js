@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/parameter_names.rs",
     find: "        uses.visit_body(body);\n        return uses.1;\n",
     replace: "        uses.visit_body(body);\n        return false;\n",
-    tests: ["test/crates.test.ts", "-t", "Copy bound takes a copy"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "Copy bound takes a copy"],
   },
   {
     name: "parameter-closure-bindings-unseen",

@@ -329,3 +329,11 @@ no second owner of what a hint is.
 
 Still silent of #1180: (5), a `Vec` a library that keeps no capacities
 grew.
+
+## Amended (2026-11-10, #1180's (5)): a library that keeps none
+
+A `Vec` grown by a library that keeps no capacities has std's capacity in a
+consumer that reads one. The consumer compiles its own copy of each of
+that library's functions it reaches (ADR
+[0914](0914-a-librarys-generic-function-is-its-programs.md), amended), by
+the user's decision. #1180's list of what's silent is empty.

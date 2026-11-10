@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/debug.rs",
     find: "                args.first().and_then(|&f| named(f))\n",
     replace: "                args.first().and_then(|&f| named(f)).filter(|_| false)\n",
-    tests: ["test/crates.test.ts", "-t", "a library's generic function is its program's, alone"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "a library's generic function is its program's, alone"],
   },
   {
     name: "pretty-flag-off",
