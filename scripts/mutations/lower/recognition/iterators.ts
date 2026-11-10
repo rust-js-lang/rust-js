@@ -666,4 +666,12 @@ export const mutations: Mutation[] = [
     replace: "        .then(|| args.types().nth(1))\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_from_iter_in_place.rs$"],
   },
+  {
+    name: "flattened-option-owns-nothing",
+    breaks: "a `flatten()` of `Option`s given to generic code with its drop is given std's `Flatten` struct's glue, `flatten.inner.iter.return()`, of a JS filter that has no `inner`: `Cannot read properties of undefined (reading 'iter')` (#1240)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "        match self.owned_into_items(inner).or_else(|| self.option_of(inner)) {",
+    replace: "        match self.owned_into_items(inner) {",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_given_to_generic_code\\.rs$"],
+  },
 ];

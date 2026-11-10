@@ -417,7 +417,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `inner`, an `IntoIterator`, drops, as `closing_source` says: a
     /// `Vec`'s items too (ADR 0510).
     fn closing_inner(&self, inner: Ty<'tcx>) -> Option<Option<Ty<'tcx>>> {
-        match self.owned_into_items(inner) {
+        // An `Option`, which owns the one item it gives, as its `IntoIter`
+        // does (#1240): a flatten of `Option`s holds what one it steps holds.
+        match self.owned_into_items(inner).or_else(|| self.option_of(inner)) {
             Some(item) => Some(Some(item)),
             None => self.closing_source(inner),
         }

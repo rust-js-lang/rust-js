@@ -220,3 +220,19 @@ already did for items with nothing to drop (#278). ADR 0262: results change
 `closed-inner-not-by-dictionary`. A generic function's own `I::Item:
 IntoIterator` of items with a destructor is still refused, as ADR 0190
 says.
+
+## Amended (2026-11-10, #1240): an `Option` inner owns its item
+
+A `flatten()` of `Option`s, or a `flat_map()` whose function gives one, is
+made as a filter of what isn't `None`. Given to generic code with its drop,
+`last_of(v.into_iter().flatten())` of items with a destructor, it was given
+std's `Flatten` struct's glue, `flatten.inner.iter.return()`, which that
+form doesn't have: `Cannot read properties of undefined (reading 'iter')`,
+where native Rust prints its last. What closing a flatten drops asked its
+inner `IntoIterator` what it owns, `closing_inner`, which knew a `Vec`'s
+and an array's items but not an `Option`'s, so it said the flatten isn't
+closed on its drop. An `Option` owns the one item it gives, as its
+`IntoIter` does; the flatten is closed, `it.return()`, as a map's and a
+filter's are. Held by `flatten_of_options_given_to_generic_code.rs` and the
+mutation `flattened-option-owns-nothing`; the `generic-instances` row of
+`flatten_last_takes_each_inner_last.rs` runs as Rust does.
