@@ -270,6 +270,25 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 .is_some_and(|exact| self.implements_trait(ty, exact))
     }
 
+    /// Whether JS's hint of an iterator of type `ty`, a chain or a zip, or a
+    /// copy of one, keeps std's lower bound once each part of it that's an
+    /// `ExactSizeIterator` is given knowing its length
+    /// (`hint_known_by_its_parts`): `a.iter().skip(1).chain(rest)`,
+    /// whose parts' JS, `drop(1)`, knows no hint, and whose runtime chain
+    /// sums its parts' as std's `Chain` does, a zip's the fewer (#1216).
+    pub(in crate::lower) fn lower_bound_kept_by_parts(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        if let Some(source) = super::copied_source(self.tcx, ty).or_else(|| super::mapped_source(self.tcx, ty)) {
+            return self.lower_bound_kept_by_parts(source);
+        }
+        let Some((a, b)) = super::chained_sources(self.tcx, ty).or_else(|| super::zipped_sources(self.tcx, ty)) else {
+            return false;
+        };
+        [a, b].into_iter().all(|part| {
+            self.lower_bound_is_stds(part) || self.grows_by_exact_len(part) || self.lower_bound_kept_by_parts(part)
+        })
+    }
+
     /// `lower_bound_is_stds`, of an iterator of type `ty` a caller gives
     /// generic code that grows a `Vec` by it (#1180's (3)): a string's
     /// `chars()` or `char_indices()` given is the runtime's `$chars`, whose

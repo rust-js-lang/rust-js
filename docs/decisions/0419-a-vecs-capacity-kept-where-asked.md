@@ -337,3 +337,38 @@ consumer that reads one. The consumer compiles its own copy of each of
 that library's functions it reaches (ADR
 [0914](0914-a-librarys-generic-function-is-its-programs.md), amended), by
 the user's decision. #1180's list of what's silent is empty.
+
+## Amended (2026-11-11, #1216): a chain's or a zip's exact-sized parts know their hints
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): a refusal lifted;
+the capacity is std's.
+
+#1200 refused a `Vec` grown by a chain or a zip with an exact-sized
+adapter part, `b.iter().skip(1).chain(rest)`, in a crate that reads a
+capacity. Its parts' JS was JS's own adapters, `values().drop(1)`, which
+know no hint, so the chain's lower bound was lost. The runtime's chain
+sums its parts' hints and its zip takes the fewer, as std's `Chain` and
+`Zip` do. So each part is now made knowing its hint where it's made:
+- `hint_asked.rs`' `mark_counted`, of each `collect` or `extend` of a
+  `Vec` such a crate grows by a chain or a zip, makes each `skip(n)` and
+  `take(n)` in it `$skipping` or `$taking`, in that function alone, as
+  #1240's are: of every function, a `HashSet`'s `extend` by
+  `repeat(x).take(3)` elsewhere lost the drop of what the `repeat` held.
+- What each counts is made knowing its hint too, down to its source: an
+  enumeration's `$enumerate`, the source's `$iter`. A map of the chain
+  is `$mapEnds`.
+- Not the chain or the zip itself, which needs no back.
+
+`lower_bound_kept_by_parts` (`lengths.rs`) says which such iterators can
+be made so: each part's lower bound std's as it is, exact-sized, or
+another such chain or zip, or a copy or a map of one.
+`hint_known_by_its_parts` checks it of what's grown, a variable's too,
+down to each part's source, and refuses what isn't. `knows_its_length`
+answers yes of a `skip(n)` or a `take(n)` made so. A chain part that's
+neither, a string's `chars()` skipped, is refused as before.
+`test/corpus/capacity_of_chains_of_exact_size_adapters.rs` has chains and
+zips of a set's, a map's keys' and values' and a slice's skips and takes.
+It also has a nested chain, an enumeration skipped, a map of a chain, an
+`extend` and an empty set, all against native Rust in both builds.
+Mutations `chain-of-exact-parts-refused`, `chain-parts-unmarked`,
+`chain-part-sources-unmarked` and `counted-part-made-knowing-uncounted`.

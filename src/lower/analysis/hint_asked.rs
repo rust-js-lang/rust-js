@@ -57,6 +57,7 @@ pub(super) fn of_crate<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
+    keeps_capacity: bool,
 ) -> HintAsked<'tcx> {
     let mut asked = HintAsked {
         knowing: IndexSet::default(),
@@ -66,6 +67,11 @@ pub(super) fn of_crate<'tcx>(
         tcx,
         crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Iterator),
         "size_hint",
+    );
+    let collect = crate::lower::recognition::trait_method(
+        tcx,
+        crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Iterator),
+        "collect",
     );
     let mut of_params: Vec<(DefId, Ty<'tcx>)> = Vec::new();
     let mut grown: Vec<(DefId, Ty<'tcx>)> = Vec::new();
@@ -87,6 +93,29 @@ pub(super) fn of_crate<'tcx>(
                     tcx.typeck_root_def_id(body.def_id),
                     tcx.erase_and_anonymize_regions(iter_ty),
                 ));
+            }
+            // Of a crate that keeps capacities, a `Vec` grown by a chain or
+            // a zip, `collect`'s or `extend`'s, whose exact-sized parts,
+            // `b.iter().skip(1)`, JS's own adapters know no hint of: each
+            // made knowing it where it's made, `$skipping`, so the runtime's
+            // chain sums them as std's does (#1216).
+            let grown_by = match () {
+                _ if !keeps_capacity => None,
+                _ if callee == collect && args.types().nth(1).is_some_and(|into| recognition.grows_as_vec(into)) => {
+                    args.types().next()
+                }
+                _ if recognition.extend_grows(callee, args) => args.types().nth(2).map(|iterable| {
+                    let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
+                    crate::lower::recognition::iterator_type_of(tcx, typing_env, iterable)
+                }),
+                _ => None,
+            };
+            if let Some(iter_ty) = grown_by.map(|ty| tcx.erase_and_anonymize_regions(ty.peel_refs()))
+                && !rustc_middle::ty::TypeVisitableExt::has_param(&iter_ty)
+                && !recognition.lower_bound_is_stds(iter_ty)
+                && recognition.lower_bound_kept_by_parts(iter_ty)
+            {
+                mark_counted(tcx, tcx.typeck_root_def_id(body.def_id), iter_ty, &mut asked.hinted);
             }
             // `size_hint()` of a type of its type parameters, asked of what
             // its callers give, each instance below.
@@ -209,6 +238,38 @@ fn mark_each<'tcx>(
             let source = tcx.erase_and_anonymize_regions(source.peel_refs());
             if !adapter(tcx, source) {
                 typed.insert(source);
+            }
+        }
+    }
+}
+
+/// Each `take(n)`, `skip(n)` or `step_by(n)` `instance` holds made knowing
+/// its hint, `$taking`, `$skipping` or `$stepBy`, its source, where it's
+/// no adapter, `$iter`, and each other adapter its maker makes knowing it,
+/// in `maker` alone, as `mark_made_in`'s are (#1240): not the chain or the
+/// zip that holds them, whose runtime one sums their hints or takes the
+/// fewer, as it's made (#1216).
+fn mark_counted<'tcx>(tcx: TyCtxt<'tcx>, maker: DefId, instance: Ty<'tcx>, hinted: &mut Hinted<'tcx>) {
+    for held in instance.walk().filter_map(|part| part.as_type()) {
+        let held = tcx.erase_and_anonymize_regions(held);
+        // A map of them, `$mapEnds`, which keeps its source's hint.
+        if crate::lower::recognition::mapped_source(tcx, held).is_some() {
+            hinted.counted_in.insert((maker, held));
+        }
+        let Some(source) = counted_source(tcx, held)
+            .map(|(source, _)| source)
+            .or_else(|| stepped_by_source(tcx, held))
+        else {
+            continue;
+        };
+        hinted.counted_in.insert((maker, held));
+        // What it counts, made knowing its hint down to its own source: an
+        // enumeration's `$enumerate`, a map's `$mapEnds`, the source's
+        // `$iter`.
+        for below in source.walk().filter_map(|part| part.as_type()) {
+            let below = tcx.erase_and_anonymize_regions(below.peel_refs());
+            if made_knowing_by_its_maker(tcx, below) || !adapter(tcx, below) && below.is_adt() {
+                hinted.knowing_in.insert((maker, below));
             }
         }
     }

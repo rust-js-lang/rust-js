@@ -210,8 +210,8 @@ export const mutations: Mutation[] = [
     name: "unkept-lower-bound-unrefused",
     breaks: "a `Vec` grown by what JS's hint hasn't std's lower bound of, `chars()`'s, in a crate that reads a capacity, compiles, its capacity another (#1180)",
     file: "src/lower/iterators/hint_asks.rs",
-    find: "        if self.hint_reaches_own(iter_ty) || self.recognition().lower_bound_is_stds(iter_ty) {\n",
-    replace: "        if true {\n",
+    find: "        if self.hint_reaches_own(iter_ty)\n            || self.recognition().lower_bound_is_stds(iter_ty)\n",
+    replace: "        if true\n            || self.recognition().lower_bound_is_stds(iter_ty)\n",
     tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of chars"],
   },
   {

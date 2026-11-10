@@ -207,4 +207,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_text_patterns.rs$"],
   },
+  {
+    name: "chain-of-exact-parts-refused",
+    breaks: "a `Vec` grown by a chain of exact-sized adapters, `b.iter().skip(1).chain(..)`, in a crate that reads a capacity is refused, though its parts are made knowing their hints (#1216)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "            self.lower_bound_is_stds(part) || self.grows_by_exact_len(part) || self.lower_bound_kept_by_parts(part)\n",
+    replace: "            self.lower_bound_is_stds(part) || self.lower_bound_kept_by_parts(part)\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_chains_of_exact_size_adapters.rs$"],
+  },
 ];

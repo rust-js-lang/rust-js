@@ -1083,7 +1083,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let mut back_stepped = back_stepped::of_crate(tcx, recognition, all_bodies, (library, drop_runs), &cloned);
     // What generic code asks the hint of, made knowing it where it's made,
     // by the makers of what's stepped from its back (#1236).
-    let hint_asked = hint_asked::of_crate(tcx, recognition, all_bodies);
+    // A `Vec`'s capacity kept as std grows it where the crate, or a library it uses, asks it (ADR 0419).
+    let asks_capacity = vec_uses::asks_capacity(tcx, all_bodies) || recognition.extends_as_it_fills(all_bodies);
+    let hint_asked = hint_asked::of_crate(tcx, recognition, all_bodies, asks_capacity || foreign.keeps_capacity());
     back_stepped.typed.extend(hint_asked.knowing);
     let chars_whole = chars_asked::asks_chars_whole(tcx, recognition, all_bodies, library);
     // What generic code compares by `eq` of two `TrustedLen` iterators
@@ -1376,8 +1378,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         drops: &items_drop,
         taken: &drop_params,
     };
-    // A `Vec`'s capacity kept as std grows it where the crate, or a library it uses, asks it (ADR 0419).
-    let asks_capacity = vec_uses::asks_capacity(tcx, all_bodies) || recognition.extends_as_it_fills(all_bodies);
     let kept = (item_drops, asks_capacity || foreign.keeps_capacity());
     let facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given, &recognition, kept);
     let (failing, writes_may_fail) = fmt_failures::failing_fns(tcx, all_bodies, &foreign);

@@ -751,4 +751,12 @@ export const mutations: Mutation[] = [
     replace: "        StmtKind::Return(Some(value)) if plain && before.is_empty() => Some((param, before, value)),\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_of_given_adapters_from_its_back.rs$"],
   },
+  {
+    name: "counted-part-made-knowing-uncounted",
+    breaks: "a `skip(n)` made `$skipping` for a hint asked of it isn't taken to know its length, so a zip of it is refused (#1216)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if crate::lower::recognition::counted_source(self.tcx, ty).is_some() && self.made_knowing_its_hint(ty) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_chains_of_exact_size_adapters.rs$"],
+  },
 ];

@@ -61,4 +61,20 @@ export const mutations: Mutation[] = [
     replace: "                None => {}\n",
     tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
   },
+  {
+    name: "chain-parts-unmarked",
+    breaks: "a chain's exact-sized parts a `Vec` grows by where a capacity is read aren't made knowing their hints where they're made, JS's own `drop(n)` (#1216)",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: "                mark_counted(tcx, tcx.typeck_root_def_id(body.def_id), iter_ty, &mut asked.hinted);\n",
+    replace: "                _ = iter_ty;\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_chains_of_exact_size_adapters.rs$"],
+  },
+  {
+    name: "chain-part-sources-unmarked",
+    breaks: "what a chain's counted part counts, an enumeration, isn't made knowing its hint, so the `skip(n)` of it knows none: a capacity of 8 where std's is 6 (#1216)",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: "                hinted.knowing_in.insert((maker, below));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_chains_of_exact_size_adapters.rs$"],
+  },
 ];

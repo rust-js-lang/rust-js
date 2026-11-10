@@ -266,6 +266,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the length of and what its callers give it.
     pub(in crate::lower) fn knows_its_length(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
+        // A `skip(n)` or a `take(n)` made `$skipping` or `$taking` where it's
+        // made, of its source made `$iter`, as `hint_asked.rs` asks of a
+        // chain's or a zip's parts a `Vec` grows by (#1216).
+        if crate::lower::recognition::counted_source(self.tcx, ty).is_some() && self.made_knowing_its_hint(ty) {
+            return true;
+        }
         // Of an array's items made knowing its back, `$mapEnds` of their
         // `$iter`, which knows its length too.
         if let Some(source) = crate::lower::recognition::length_kept_source(self.tcx, ty) {

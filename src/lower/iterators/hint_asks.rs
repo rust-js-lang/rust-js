@@ -193,6 +193,10 @@ pub(in crate::lower) struct Grown<'tcx> {
     /// `ExactSizeIterator` std grows by its lower bound, which JS's own
     /// adapters, `drop(n)`'s, know nothing of (#1200).
     exact: bool,
+    /// Whether each of its parts that's an `ExactSizeIterator`, a chain's
+    /// or a zip's, is given knowing its length, whose hints it then sums or
+    /// takes the fewer of as std's do (`parts_knowing_lengths`, #1216).
+    parts: bool,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -202,7 +206,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `size_hint()` is: so its capacity would be another (#1180). Not of
     /// one whose hint runs the crate's own, its own.
     fn refuse_unkept_lower_bound(&self, iter_ty: Ty<'tcx>, span: Span) -> R<()> {
-        if self.hint_reaches_own(iter_ty) || self.recognition().lower_bound_is_stds(iter_ty) {
+        if self.hint_reaches_own(iter_ty)
+            || self.recognition().lower_bound_is_stds(iter_ty)
+            || self.recognition().lower_bound_kept_by_parts(iter_ty)
+        {
             return Ok(());
         }
         Err(self.unsupported(
@@ -263,6 +270,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if kept && !exact {
             self.refuse_unkept_lower_bound(iter_ty, span)?;
         }
+        // Of a chain or a zip, each exact-sized part given knowing its length
+        // (#1216); not one whose lower bound is std's as it is.
+        let parts = kept
+            && !exact
+            && !self.hint_reaches_own(iter_ty)
+            && !self.recognition().lower_bound_is_stds(iter_ty)
+            && self.recognition().lower_bound_kept_by_parts(iter_ty);
         Ok(item
             .filter(|_| {
                 asks_room
@@ -278,7 +292,87 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 trusted,
                 endless: endless || endless_once,
                 exact,
+                parts,
             }))
+    }
+
+    /// `it`, of type `ty`, a chain or a zip, `$lazyChain(a, b)` or
+    /// `$lazyZip(a, b, ..)`, or a copy of one, each of whose parts that's
+    /// an `ExactSizeIterator` is made knowing its length, `as_exact_size`'s,
+    /// so its hint, which the runtime's chain sums and zip takes the fewer
+    /// of, is std's (`lower_bound_kept_by_parts`, #1216). A part whose
+    /// lower bound is std's as it is stays; another is refused.
+    fn parts_knowing_lengths(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let ty = ty.peel_refs();
+        // What's made knowing its hint where it's made, as `hint_asked.rs`
+        // asks of this collect's parts, down to its source.
+        if self.hint_known_by_its_parts(ty) {
+            return Ok(it);
+        }
+        // A copy of one, which it is.
+        if let Some(source) = crate::lower::recognition::copied_source(self.tcx, ty) {
+            return self.parts_knowing_lengths(it, source, span);
+        }
+        if self.recognition().grows_by_exact_len(ty) && !self.compiled_struct(ty, &it) {
+            return self.as_exact_size(it, ty, false, span);
+        }
+        if self.recognition().lower_bound_is_stds(ty) {
+            return Ok(it);
+        }
+        let sources = crate::lower::recognition::chained_sources(self.tcx, ty)
+            .map(|sources| ("$lazyChain", sources))
+            .or_else(|| crate::lower::recognition::zipped_sources(self.tcx, ty).map(|sources| ("$lazyZip", sources)));
+        if let Some((helper, (a, b))) = sources
+            && let js::ExprKind::Call(callee, args) = &it.kind
+            && callee.helper_name() == Some(helper)
+            && let [first, second, rest @ ..] = args.as_slice()
+        {
+            let first = self.parts_knowing_lengths(first.clone(), a, span)?;
+            let second = self.parts_knowing_lengths(second.clone(), b, span)?;
+            let args = [vec![first, second], rest.to_vec()].concat();
+            return Ok(Expr::call(Expr::helper(helper), args));
+        }
+        // One made elsewhere, a variable's, each of whose parts its maker
+        // made knowing its hint, which the runtime's chain or zip it's made
+        // into combines.
+        if self.hint_known_by_its_parts(ty) {
+            return Ok(it);
+        }
+        Err(self.unsupported(
+            span,
+            &format!(
+                "a `Vec` grown by a `{ty}` in a crate that reads a `Vec`'s capacity, which std grows by that iterator's `size_hint()`, whose lower bound JS's doesn't have"
+            ),
+        ))
+    }
+
+    /// Whether a chain or a zip of type `ty`, or a copy of one, knows std's
+    /// hint as it's made: each part a `skip(n)` or a `take(n)` made knowing
+    /// its hint (`made_knowing_its_hint`), one whose lower bound is std's
+    /// as it is, or another such chain or zip.
+    fn hint_known_by_its_parts(&self, ty: Ty<'tcx>) -> bool {
+        let ty = ty.peel_refs();
+        if self.recognition().lower_bound_is_stds(ty) || self.knows_its_length(ty) {
+            return true;
+        }
+        // Of a source that knows it, made so too.
+        if let Some((source, _)) = crate::lower::recognition::counted_source(self.tcx, ty)
+            && self.made_knowing_its_hint(ty)
+        {
+            return self.hint_known_by_its_parts(source);
+        }
+        if let Some(source) = crate::lower::recognition::copied_source(self.tcx, ty) {
+            return self.hint_known_by_its_parts(source);
+        }
+        // A map made knowing its source's hint where it's made, `$mapEnds`.
+        if let Some(source) = crate::lower::recognition::mapped_source(self.tcx, ty)
+            && self.made_knowing_its_hint(ty)
+        {
+            return self.hint_known_by_its_parts(source);
+        }
+        crate::lower::recognition::chained_sources(self.tcx, ty)
+            .or_else(|| crate::lower::recognition::zipped_sources(self.tcx, ty))
+            .is_some_and(|(a, b)| self.hint_known_by_its_parts(a) && self.hint_known_by_its_parts(b))
     }
 
     /// `it` grown as `grown` says, `$roomForHint(it, size, trusted)`: the
@@ -301,10 +395,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             trusted,
             endless,
             exact,
+            parts,
         } = grown;
         // Not std's compiled struct, whose own hint, its struct's, is std's.
         let it = match exact && !self.compiled_struct(iter_ty, &it) {
             true => self.as_exact_size(it, iter_ty, false, span)?,
+            false if parts => self.parts_knowing_lengths(it, iter_ty, span)?,
             false => it,
         };
         let size = self.grown_item_size(output, iter_ty, item, span)?;

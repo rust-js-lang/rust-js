@@ -26,6 +26,7 @@ plain std generic-instances fold_drops_moved_function_first.rs
 plain std generic-instances zip_of_a_boxed_map.rs
 
 #1263 P2 (capacity): capacity() after generic code's collect into a B: FromIterator of an iterator std can't collect in place throws #1180's error
+plain std generic-instances capacity_of_chains_of_exact_size_adapters.rs
 plain std generic-instances capacity_of_text_patterns.rs
 plain std generic-instances capacity_of_what_std_hints_less.rs
 plain std generic-instances extend_asks_hint_capacity_grown.rs
