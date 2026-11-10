@@ -18,7 +18,7 @@
 //! | a bound's methods, its dictionary (ADR 0049) | Given | `src/lower/traits/routes.rs evidence_for` |
 //! | a std function's `Iterator` dictionary of what it's given as it is (#1147, #1163) | Given | `src/lower/analysis/iterator_steps.rs stepped_params` |
 //! | what dropping one runs, its drop slot (ADR 0421) | Given | `src/lower/traits/drop_params.rs drop_slot` |
-//! | a raw pointer whose pointee is a type parameter, a handle (ADR 1114) | Form | `src/lower/generic_facts.rs form_given` |
+//! | a raw pointer whose pointee is a type parameter, a handle (ADR 1114), and a `&mut` of one at a value's boundary, its box (`Form::Box`) | Form | `src/lower/generic_facts.rs form_given` |
 //! | a `Some` of it, boxed or not (ADR 0051) | Form | `src/lower/representation/options.rs boxed_payload` |
 //! | a `&mut` of it, generic code's box (ADRs 0454, 1086), to move onto `form_given` | Form | `src/lower/mut_refs.rs boxed_in_call` |
 //! | an iterator or a function given as it is, not boxed (#992) | Form | `src/lower/iterators.rs given_as_it_is` |
@@ -31,7 +31,7 @@
 
 use super::FnCx;
 use crate::js::Expr;
-use rustc_middle::ty::{self, Ty};
+use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 
 /// A value's form that generic code has one of, whatever its instance, and
 /// its caller adapts at the boundary (ADR 1115).
@@ -42,6 +42,11 @@ pub(in crate::lower) enum Form {
     /// 1114). A caller whose pointer is the value itself, a slice's, a pair
     /// `dyn`'s or a JS object's, adapts it.
     Handle,
+    /// A `&mut` whose pointee is a type parameter: generic code's box,
+    /// whose `value` is the referent (ADRs 0099, 0454). A caller whose
+    /// `&mut` is the object, an object's or a slice's, gives an in-place
+    /// cell of it, `$cellOf(object)`, whose write changes it in place.
+    Box,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -55,7 +60,73 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 matches!(pointee(declared).map(|p| *p.kind()), Some(ty::Param(_)))
                     && pointee(instantiated).is_some_and(|p| self.pointee_is_itself(p) || self.is_js_object(p))
             }
+            Form::Box => {
+                let pointee = |ty: Ty<'tcx>| match ty.ref_mutability() {
+                    Some(ty::Mutability::Mut) => ty.builtin_deref(true),
+                    _ => None,
+                };
+                matches!(pointee(declared).map(|p| *p.kind()), Some(ty::Param(_)))
+                    && pointee(instantiated).is_some_and(|p| !self.mut_ref_form(p).is_cell())
+            }
         }
+    }
+
+    /// The form generic code has of `declared` where its caller's type is
+    /// `instantiated`, if it's another than the caller's.
+    pub(in crate::lower) fn form_of(&self, (declared, instantiated): (Ty<'tcx>, Ty<'tcx>)) -> Option<Form> {
+        [Form::Handle, Form::Box]
+            .into_iter()
+            .find(|&form| self.form_differs(form, declared, instantiated))
+    }
+
+    /// A generic function's instance `def_id` of `args` as a `fn` pointer,
+    /// `function` its value, of its own type `fn_def_ty`, which takes
+    /// generic code's forms: a function of its own, which takes its type's, as its type's
+    /// other functions do, and gives each in generic code's form, a slice's
+    /// pointer `$ptrTo(arg0)`, an object's `&mut` `$cellOf(arg0)`, and what
+    /// it gives back in its type's, `.value` (#1187). One for the instance,
+    /// its module's `const`, so two pointers to it are one, as a generic
+    /// function's value is (ADR 0395); of an instance of the caller's own
+    /// type parameters, the arrow made there.
+    pub(in crate::lower) fn reified_pointer(
+        &mut self,
+        (def_id, args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        (function, fn_def_ty): (Expr, Ty<'tcx>),
+    ) -> super::R<Expr> {
+        let declared = self
+            .tcx
+            .fn_sig(def_id)
+            .instantiate_identity()
+            .skip_normalization()
+            .skip_binder();
+        let inputs: Vec<(Ty<'tcx>, Ty<'tcx>)> = (declared.inputs().iter())
+            .map(|&input| (input, self.instantiated(input, args)))
+            .collect();
+        let output = (declared.output(), self.instantiated(declared.output(), args));
+        let made = move |cx: &mut Self| -> super::R<Expr> {
+            let params: Vec<String> = (0..inputs.len()).map(|i| format!("arg{i}")).collect();
+            let given = (params.iter().zip(&inputs))
+                .map(|(name, &given)| match cx.form_of(given) {
+                    Some(form) => cx.form_given(form, given, Expr::var(name)),
+                    None => Expr::var(name),
+                })
+                .collect();
+            let called = Expr::call(function, given);
+            let called = match cx.form_of(output) {
+                Some(form) => cx.form_back(form, output, called),
+                None => called,
+            };
+            Ok(Expr::arrow(
+                params.into_iter().map(Into::into).collect(),
+                vec![crate::js::StmtKind::Return(Some(called)).at(crate::js::Span::NONE)],
+            ))
+        };
+        if args.has_non_region_param() || args.has_aliases() {
+            return made(self);
+        }
+        let name = super::camel_case(self.tcx.item_name(def_id).as_str());
+        let base = format!("{}Fn", super::traits::instance_name(self.tcx, &name, args));
+        self.module_fn_pointer((fn_def_ty, &base), made)
     }
 
     /// Whether `ty`, a type of generic code's, is a raw pointer of its type
@@ -97,6 +168,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         match form {
             Form::Handle => Expr::call_helper("$ptrTo", vec![value]),
+            Form::Box => Expr::call_helper("$cellOf", vec![value]),
         }
     }
 
@@ -113,7 +185,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return value;
         }
         match form {
-            Form::Handle => Expr::held(value),
+            Form::Handle | Form::Box => Expr::held(value),
         }
     }
 }

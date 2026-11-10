@@ -392,9 +392,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect(),
         };
         // Given in generic code's forms, as generic code that calls it as an
-        // `F` gives them: a raw pointer of its type parameter its handle,
-        // read back as the call takes it, `x.value` of a slice's (ADR 1114).
-        let form = crate::lower::generic_facts::Form::Handle;
+        // `F` gives them: a raw pointer of its type parameter its handle, a
+        // `&mut` of one its box, read back as the call takes it, `x.value`
+        // of a slice's or an object's (ADRs 0454, 1114). A library's free
+        // function's alone: a trait's method's value is its impl's, of the
+        // instance's own types, and std's are as their calls are.
+        let generic_forms = tcx.trait_of_assoc(def_id).is_none() && self.krate.foreign.item(def_id).is_some();
         let declared = tcx
             .fn_sig(def_id)
             .instantiate_identity()
@@ -402,11 +405,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .skip_binder();
         let mut values: Vec<Value> = (params.iter().enumerate())
             .map(|(i, p)| {
-                let given = declared.inputs().get(i).map(|&of| (of, self.instantiated(of, args)));
-                Value::Expr(match given {
-                    Some(given) => self.form_back(form, given, Expr::var(p)),
-                    None => Expr::var(p),
-                })
+                let given = (declared.inputs().get(i))
+                    .filter(|_| generic_forms)
+                    .map(|&of| (of, self.instantiated(of, args)));
+                Value::Expr(
+                    match given.and_then(|given| self.form_of(given).map(|form| (form, given))) {
+                        Some((form, given)) => self.form_back(form, given, Expr::var(p)),
+                        None => Expr::var(p),
+                    },
+                )
             })
             .collect();
         // A C-variadic one's, given on what it's given past the rest, `(a,
@@ -445,7 +452,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What it gives back in generic code's form too, a slice's raw
         // pointer `$ptrTo(r)`.
         let output = (declared.output(), self.instantiated(declared.output(), args));
-        let value = self.form_given(form, output, value);
+        // What it gives back in generic code's form too, an object's `&mut`
+        // `$cellOf(r)`.
+        let value = match self.form_of(output).filter(|_| generic_forms) {
+            Some(form) => self.form_given(form, output, value),
+            None => value,
+        };
         body.push(StmtKind::Return(Some(value)).at(self.js_span(span)));
         let mut patterns: Vec<js::Pattern> = params.into_iter().map(Into::into).collect();
         patterns.extend(variadic.map(js::Pattern::Rest));

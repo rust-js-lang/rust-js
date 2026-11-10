@@ -5,6 +5,15 @@ const perModule = ["test/corpus.test.ts", "-t", "^recursive_fns_per_module.rs$"]
 
 export const mutations: Mutation[] = [
   {
+    name: "fn-pointer-keyed-as-its-value",
+    breaks:
+      "a generic function's pointer is keyed as its value is, and the instance's value, which takes generic code's forms, is the pointer's `const` too, or the other way round",
+    file: "src/lower/recursive_fns.rs",
+    find: "        let name = self.module_fn((Kind::FnPointer, fn_def_ty, base), &[], |cx, _, _| make(cx))?;",
+    replace: "        let name = self.module_fn((Kind::FnValue, fn_def_ty, base), &[], |cx, _, _| make(cx))?;",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fn_pointer_takes_its_types_forms\\.rs$"],
+  },
+  {
     name: "instance-value-alias-written",
     breaks: "an instance's value its drops left the function itself is written as an alias, `const keepLoud = keep`, and read as one (#974)",
     file: "src/lower/recursive_fns.rs",
@@ -26,8 +35,8 @@ export const mutations: Mutation[] = [
     name: "module-dictionary-as-function",
     breaks: "a module's dictionary `const` is written as a function returning it, which generic code reads as the dictionary (#944)",
     file: "src/lower/recursive_fns.rs",
-    find: "                constant: matches!(kind, Kind::Dictionary(_) | Kind::FnValue),\n",
-    replace: "                constant: matches!(kind, Kind::FnValue),\n",
+    find: "                constant: matches!(kind, Kind::Dictionary(_)) || kind.is_fn_value(),\n",
+    replace: "                constant: kind.is_fn_value(),\n",
     tests: ["test/lowering-dictionaries.test.ts", "-t", "an Ord dictionary holds its PartialOrd"],
   },
   {

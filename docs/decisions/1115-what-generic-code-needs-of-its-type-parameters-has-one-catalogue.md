@@ -81,10 +81,13 @@ adapted at a call by one boundary API.**
 Migrations, each its own step with its tests, listed on #1170:
 
 1. The `&mut` box's adaptations, `boxed_in_call`, `given_as_the_value`,
-   `unboxed_by_function`, `takes_box_itself` and `generic_result_values`,
-   onto `form_given` and `form_back`; and a generic function's instance as
-   a `fn` pointer a value of its own taking its type's form, which an
-   object's or a slice's `&mut T` is refused as till then (#1187).
+   `unboxed_by_function` and `generic_result_values`, onto `form_given`
+   and `form_back`. Begun (2026-11-10): `Form::Box` is the box's form, a
+   generic function's `fn` pointer adapts through both forms (#1187), a
+   library's function's value takes both, and a function given to generic
+   code is adapted for both (`unboxed_by_function`,
+   `takes_generic_form_itself`); a direct call's copy-back box
+   (`boxed_in_call`) is still its own.
 2. A `Some`'s payload: `boxed_payload`'s callers at a call's boundary
    onto the API; its hundred readers inside a body keep asking
    `boxed_payload`, the form's owner.

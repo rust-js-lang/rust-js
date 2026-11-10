@@ -3,12 +3,21 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "trait-method-value-takes-generic-forms",
+    breaks:
+      "a trait's method as a value, `Tally::bump`, reads generic code's box of its `&mut self` where its callers give the object",
+    file: "src/lower/mir/dispatch.rs",
+    find: "        let generic_forms = tcx.trait_of_assoc(def_id).is_none() && self.krate.foreign.item(def_id).is_some();",
+    replace: "        let generic_forms = true;",
+    tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer\\.rs$"],
+  },
+  {
     name: "library-fn-value-takes-callers-forms",
     breaks:
       "a library's generic function as a value, given to generic code as an `F`, takes its callers' forms, and generic code's handle of a slice's pointer is wrapped again, `measured(p)` reading `undefined`",
     file: "src/lower/mir/dispatch.rs",
-    find: "                    Some(given) => self.form_back(form, given, Expr::var(p)),",
-    replace: "                    Some(_) => Expr::var(p),",
+    find: "                        Some((form, given)) => self.form_back(form, given, Expr::var(p)),",
+    replace: "                        Some(_) => Expr::var(p),",
     tests: ["test/crates.test.ts", "-t", "library_generic_fn_item_forms"],
   },
   {

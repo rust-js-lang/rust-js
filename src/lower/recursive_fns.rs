@@ -29,6 +29,16 @@ pub(super) enum Kind {
     /// a `const`: one function, as Rust's pointer to it is one (ADR 0395,
     /// #974).
     FnValue,
+    /// A generic function's instance as a `fn` pointer that takes its
+    /// type's forms, adapting them to the instance's, a `const` (#1187).
+    FnPointer,
+}
+
+impl Kind {
+    /// Whether it's a function's value, its instance's or its pointer's.
+    fn is_fn_value(self) -> bool {
+        matches!(self, Kind::FnValue | Kind::FnPointer)
+    }
 }
 
 /// The crate's modules' functions, made as their bodies are lowered: each
@@ -134,7 +144,7 @@ impl<'tcx> ModuleFns<'tcx> {
     fn take_aliases(&mut self) -> IndexMap<String, Expr> {
         let mut aliases = IndexMap::default();
         for ((_, kind, _), made) in self.made.iter_mut() {
-            if *kind != Kind::FnValue {
+            if !kind.is_fn_value() {
                 continue;
             }
             let Some((function, _)) = &made.lowered else { continue };
@@ -159,7 +169,7 @@ impl<'tcx> ModuleFns<'tcx> {
     /// (#974).
     fn drop_unread_values(&mut self, read: &IndexSet<String>) {
         for ((_, kind, _), made) in self.made.iter_mut() {
-            if *kind == Kind::FnValue && !read.contains(&made.name) {
+            if kind.is_fn_value() && !read.contains(&made.name) {
                 made.lowered = None;
             }
         }
@@ -262,6 +272,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::var(&name).item())
     }
 
+    /// A generic function's instance as a `fn` pointer, the instance's own
+    /// type `fn_def_ty`, the arrow `make` makes: a `const` of its module
+    /// named `base`, one for the instance, as `module_fn_value`'s is (#1187).
+    pub(super) fn module_fn_pointer(
+        &mut self,
+        (fn_def_ty, base): (Ty<'tcx>, &str),
+        make: impl FnOnce(&mut Self) -> R<Expr>,
+    ) -> R<Expr> {
+        let name = self.module_fn((Kind::FnPointer, fn_def_ty, base), &[], |cx, _, _| make(cx))?;
+        Ok(Expr::var(&name).item())
+    }
+
     /// `recursive_fn`'s of a type its module knows: its module's function,
     /// or of a dictionary its `const`.
     fn module_fn(
@@ -302,7 +324,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 calls: IndexSet::default(),
                 used_by: IndexSet::default(),
                 written: false,
-                constant: matches!(kind, Kind::Dictionary(_) | Kind::FnValue),
+                constant: matches!(kind, Kind::Dictionary(_)) || kind.is_fn_value(),
             },
         );
         module_fns.called(key, self.item);

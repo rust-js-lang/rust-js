@@ -30,12 +30,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_fn_item_takes_generic_forms\\.rs$"],
   },
   {
-    name: "reified-slice-pointer-allowed",
-    breaks: "a generic function's instance whose raw pointer is a slice's, as a `fn` pointer, compiles, given the array where its value takes generic code's handle",
+    name: "reified-slice-pointer-as-its-value",
+    breaks: "a generic function's instance whose raw pointer is a slice's, as a `fn` pointer, is its value, given the array where it takes generic code's handle",
     file: "src/lower/mut_refs.rs",
     find: "            boxed || self.form_differs(handle, declared, self.instantiated(declared, args))",
     replace: "            boxed || (false && self.form_differs(handle, declared, self.instantiated(declared, args)))",
-    tests: ["test/corpus.test.ts", "-t", "^generic_fn_pointer_of_a_slices_pointer_refused\\.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^generic_fn_pointer_takes_its_types_forms\\.rs$"],
   },
   {
     name: "reified-trait-method-refused",

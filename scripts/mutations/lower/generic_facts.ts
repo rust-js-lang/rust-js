@@ -3,6 +3,24 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "box-form-unasked",
+    breaks:
+      "generic code's box of an object's `&mut` isn't a form that differs: a library's function given as an `F` reads its box as the object, and a `fn` pointer gives the instance the object",
+    file: "src/lower/generic_facts.rs",
+    find: "        [Form::Handle, Form::Box]",
+    replace: "        [Form::Handle]",
+    tests: ["test/crates.test.ts", "-t", "library_generic_fn_item_forms"],
+  },
+  {
+    name: "reified-object-mut-unboxed",
+    breaks:
+      "a `fn` pointer of an object's `&mut T` gives the instance the object where it takes generic code's box, `view::<Vec<u8>>` reading `r.value` of the vector",
+    file: "src/lower/generic_facts.rs",
+    find: "            Form::Box => Expr::call_helper(\"$cellOf\", vec![value]),",
+    replace: "            Form::Box => value,",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fn_pointer_takes_its_types_forms\\.rs$"],
+  },
+  {
     name: "shared-number-let-out-allowed",
     breaks:
       "a `&u32` given to generic code that may let it out as a raw pointer compiles, its pointer `$ptrTo(5)` thrown at run time",
@@ -34,8 +52,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a raw pointer of a concrete pointee is adapted too, an object's handle wrapped again",
     file: "src/lower/generic_facts.rs",
-    find: "                matches!(pointee(declared).map(|p| *p.kind()), Some(ty::Param(_)))",
-    replace: "                pointee(declared).is_some()",
+    find: "                matches!(pointee(declared).map(|p| *p.kind()), Some(ty::Param(_)))\n                    && pointee(instantiated).is_some_and(|p| self.pointee_is_itself(p)",
+    replace: "                pointee(declared).is_some()\n                    && pointee(instantiated).is_some_and(|p| self.pointee_is_itself(p)",
     tests: ["test/corpus.test.ts", "-t", "^reference_given_as_its_pointer\\.rs$"],
   },
 ];

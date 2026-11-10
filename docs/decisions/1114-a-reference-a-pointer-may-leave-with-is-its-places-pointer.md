@@ -131,10 +131,6 @@ threw before.
   a closure's, a library's) and per instantiation (a number, an object, a
   slice, the caller's own type parameter), with mutations of each
   adaptation, given in and given back, and the whole net.
-- A generic function's instance whose `&mut T` is an object's or a slice's,
-  or whose raw pointer is a slice's or a JS object's, as a `fn` pointer:
-  refused, until its pointer is a value of its own that takes its type's
-  forms and generic code adapts it as it does a closure (#1187).
 - A struct of generic code holding a `*mut T`, a field, crossing the
   boundary, of a slice's instance: not adapted, as a result's is.
 - A pointer of a reference that escapes another way, into a `static`:
@@ -201,4 +197,27 @@ refused (`reified_takes_generic_forms`, #1187).** Held by
 `generic_fn_item_takes_generic_forms.rs` against native Rust,
 `generic_fn_pointer_of_a_slices_pointer_refused.rs`, and the mutation
 `reified-slice-pointer-allowed`.
+
+## Amendment: a generic function's `fn` pointer is a function of its own (2026-11-10, #1187)
+
+A generic function's instance whose forms differ from generic code's, an
+object's or a slice's `&mut T`, a slice's or a JS object's raw pointer, was
+refused as a `fn` pointer, as its value takes generic code's forms and the
+pointer's concrete callers give their own. **Its `fn` pointer is a
+function of its own (`reified_pointer`, `generic_facts.rs`): it takes its
+type's forms, as its type's other functions do, and gives the instance
+generic code's, `Form::Handle`'s `$ptrTo(arg0)` and `Form::Box`'s
+`$cellOf(arg0)`, an in-place cell (ADR 0454), and what it gives back in
+its type's, `.value`; one for the instance, its module's `const`
+(`Kind::FnPointer`), so two pointers to it are one, as its value is (ADR
+0395).** Generic code given the pointer as an `F` gives it its type's forms,
+as for any function of that type (`unboxed_by_function`). A library's
+function's value, the arrow of its call, takes generic code's forms of
+both, its box too, as generic code gives it them (#975). Held by
+`generic_fn_pointer_takes_its_types_forms.rs` against native Rust with
+`METAMORPHIC=all`, which replaces the two refusals' cases, the crate pair
+`library_generic_fn_item_forms`, `test/webapi-objects.test.ts`' JS object's,
+and the mutations `reified-instance-as-its-value`,
+`reified-slice-pointer-as-its-value`, `reified-object-mut-unboxed`,
+`fn-pointer-keyed-as-its-value` and `box-form-unasked`.
 
