@@ -513,18 +513,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "get_or_insert_default" if option => Std::OptionPlace(OptionPlaceOp::GetOrInsertDefault),
             "insert" if option => Std::OptionPlace(OptionPlaceOp::Insert),
             "take_if" if option => Std::OptionPlace(OptionPlaceOp::TakeIf),
-            // A `String`'s `&str` is the string, a `Vec`'s slice the array, a
-            // box's or a reference's what it points at (ADRs 0211, 0326): of an
+            // What it derefs to is the value itself (`deref_is_itself`): of an
             // `Option` of one, it's the option; of a `Result`, the `Result`.
             // Another's `Deref` is refused.
             "as_deref" | "as_deref_mut"
                 if (option || result)
-                    && self_ty.is_some_and(|t| {
-                        self.is_lang_adt(t, LangItem::String)
-                            || self.is_std_type(t, StdItem::Vec)
-                            || t.is_box()
-                            || t.is_ref()
-                    }) =>
+                    && self_ty.is_some_and(|t| self.deref_is_itself(t, name.as_str() == "as_deref_mut")) =>
             {
                 if option {
                     Std::Pointee
@@ -762,6 +756,21 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
 /// Which of a `RefCell` guard's own functions, by its `name`, maps it, of
 /// a `Ref` or a `RefMut` (#1275).
+impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// Whether what `as_deref` (or, `mutable`, `as_deref_mut`) of a `t`
+    /// gives is `t`'s own JS value: a `String`'s `&str` is the string, a
+    /// `Vec`'s slice the array, a box's or a reference's what it points at
+    /// (ADRs 0211, 0326). Not `as_deref` of a `&mut`, whose `&T` may be what
+    /// a cell holds, which `Comb::AsDeref` reads by its form (#1311).
+    fn deref_is_itself(&self, t: Ty<'tcx>, mutable: bool) -> bool {
+        self.is_lang_adt(t, LangItem::String)
+            || self.is_std_type(t, StdItem::Vec)
+            || t.is_box()
+            || matches!(t.kind(), ty::Ref(_, _, ty::Mutability::Not))
+            || t.is_ref() && mutable
+    }
+}
+
 fn guard_map(name: &str, (shared, mutable): (bool, bool)) -> Option<Std> {
     use crate::lower::std_types::cell::GuardMapOp;
     let op = match name {

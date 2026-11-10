@@ -162,4 +162,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^option_of_a_ref_as_deref.rs$"],
   },
+  {
+    name: "result-copied-of-mut-ref-gives-handle",
+    breaks: "`copied()` of a `Result<&mut i32, E>` gives the handle on as it is, not its `value` (#1311)",
+    file: "src/lower/combinators/values.rs",
+    find: "        (comb == Comb::AsDeref || !self.mut_ref_form(pointee).read_is_itself()).then_some(pointee)",
+    replace: "        (comb == Comb::AsDeref).then_some(pointee)",
+    tests: ["test/corpus.test.ts", "-t", "^option_of_a_mut_ref_read_by_value.rs$"],
+  },
 ];

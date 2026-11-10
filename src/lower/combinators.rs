@@ -646,6 +646,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(test, mapped, fallback)
             }
             Comb::AsSlice => Expr::cond(some, Expr::array(vec![value]), Expr::array(Vec::new())),
+            // Of a `&mut`, what it points at as its form reads it (#1311).
+            Comb::ResultCloned | Comb::AsDeref if let Some(pointee) = self.held_mut_ref(subject_ty, comb) => {
+                self.read_through_held(comb, (subject, subject_ty), pointee, span, out)?
+            }
             Comb::AsDeref => {
                 let option = self.option_of(subject_ty);
                 let Some(inner) = self.dereffed(subject_ty) else {

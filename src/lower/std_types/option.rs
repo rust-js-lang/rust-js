@@ -111,9 +111,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => return false,
             };
-            // Of a place whole, or what a reference refers to.
-            if !matches!(from.projection.as_slice(), [] | [mir::PlaceElem::Deref]) {
-                return false;
+            // Of a place whole, or what a reference refers to: of a `&mut`,
+            // only where its read is itself, not a cell's `value`, `|x| *x`
+            // of a `&mut i32` (#1311).
+            match from.projection.as_slice() {
+                [] => {}
+                [mir::PlaceElem::Deref] => {
+                    if let ty::Ref(_, pointee, ty::Mutability::Mut) = *body.local_decls[from.local].ty.kind()
+                        && !self.mut_ref_form(pointee).read_is_itself()
+                    {
+                        return false;
+                    }
+                }
+                _ => return false,
             }
             at = from.local;
             steps += 1;
@@ -139,6 +149,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // Each write is a step, or it does something else.
         steps == writes.len() && dropped.iter().all(|&local| moved_whole(local))
+    }
+
+    /// `Some(value)` where `present` holds, else `None`: a `Some` not boxed
+    /// is its value, there, which a nullable place stores as it is
+    /// (`Known::Present`); of a payload that may look like `None`, its box
+    /// (ADR 0051). What `map` makes, and `copied()` of an `Option<&mut T>`.
+    pub(in crate::lower) fn some_where(&mut self, present: Expr, value: Expr, mapped: Ty<'tcx>) -> Expr {
+        let value = if self.boxed_payload(mapped) {
+            self.some(value)
+        } else {
+            value.present()
+        };
+        // Of an `Option` never falsy, `!!o`, as of `o != null`: `o?.m(x)`,
+        // which `Expr::cond` reads (`null_test`, ADR 0298).
+        match Expr::cond(present.clone(), value, Expr::undefined()) {
+            Expr {
+                kind: js::ExprKind::Cond(_, value, none),
+                span,
+                ..
+            } => Expr {
+                facts: js::Facts::NONE,
+                kind: js::ExprKind::Cond(Box::new(present), value, none),
+                span,
+                held_as: Default::default(),
+            },
+            chain => chain,
+        }
     }
 
     /// An `Option`'s or a `Result`'s method, and `bool::then` (ADRs 0030, 0062): `None` if `known` is another.
@@ -412,28 +449,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     None => Expr::call(f, vec![option.clone()]),
                 };
-                // A `Some` not boxed is its value, there, which a nullable
-                // place stores as it is (`Known::Present`).
-                let value = if self.boxed_payload(mapped) {
-                    self.some(value)
-                } else {
-                    value.present()
-                };
-                // Of an `Option` never falsy, `!!o`, as of `o != null`: `o?.m(x)`,
-                // which `Expr::cond` reads (`null_test`, ADR 0298).
-                match Expr::cond(present.clone(), value, Expr::undefined()) {
-                    Expr {
-                        kind: js::ExprKind::Cond(_, value, none),
-                        span,
-                        ..
-                    } => Expr {
-                        facts: js::Facts::NONE,
-                        kind: js::ExprKind::Cond(Box::new(present), value, none),
-                        span,
-                        held_as: Default::default(),
-                    },
-                    chain => chain,
-                }
+                self.some_where(present, value, mapped)
             }
             // Of a number or text, a handle on the `Option`'s own place: `Some(x)`
             // of one is `x` (ADR 0030), so writing it writes the `Option`.
@@ -451,7 +467,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // level deeper (ADR 0051): `$someValue` takes a level off,
             // `Some(None)` to `None`, and `None` is itself.
             Std::OptionFlatten => self.some_value(arg()),
-            // `Some(&x)` is `x`, and its clone is `x`'s.
+            // `Some(&x)` is `x`, and its clone is `x`'s. Of a `&mut` whose form
+            // is a cell, `Option<&mut i32>`'s, what it holds, its `value`, as
+            // `map(|x| *x)` reads it (#1311).
+            Std::OptionCloned
+                if self
+                    .option_of(tys[0])
+                    .is_some_and(|r| matches!(*r.kind(), ty::Ref(_, pointee, ty::Mutability::Mut) if !self.mut_ref_form(pointee).read_is_itself())) =>
+            {
+                let item = generic_args.types().next().expect("`Option<T>` has a `T`");
+                let option = arg();
+                let option = match &option.kind {
+                    js::ExprKind::Var(_) => option,
+                    _ => self.spill_subject("option", option, (true, false), out),
+                };
+                let present = Expr::presence(option.clone(), true);
+                let value = self.clone_value(Expr::held(option), item, span, out)?;
+                self.some_where(present, value, item)
+            }
             Std::OptionCloned => {
                 let item = generic_args.types().next().expect("`Option<T>` has a `T`");
                 let value = arg();

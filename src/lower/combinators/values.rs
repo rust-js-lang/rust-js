@@ -27,6 +27,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Err(self.unsupported(span, &format!("`as_deref` of a `{ty}`")))
     }
 
+    /// The `T` of the `&mut T` an `Option` or a `Result` of type `ty` holds,
+    /// where `comb` reads what it points at: `as_deref`'s `&T`, or
+    /// `copied()`'s and `cloned()`'s `T` where the `&mut` is a cell, whose
+    /// read is its `value`, not itself (#1311).
+    pub(super) fn held_mut_ref(&self, ty: Ty<'tcx>, comb: Comb) -> Option<Ty<'tcx>> {
+        let ty::Adt(_, args) = ty.kind() else { return None };
+        let ty::Ref(_, pointee, ty::Mutability::Mut) = *args.type_at(0).kind() else {
+            return None;
+        };
+        (comb == Comb::AsDeref || !self.mut_ref_form(pointee).read_is_itself()).then_some(pointee)
+    }
+
+    /// `comb`, `as_deref`, `copied()` or `cloned()`, of `subject`, an
+    /// `Option<&mut T>` or a `Result<&mut T, E>` of type `ty` (`held_mut_ref`):
+    /// what the `&mut` points at, as its form reads it, `*r`, a cell's
+    /// `value` (#1311); of `copied()` and `cloned()`, a clone of it.
+    pub(super) fn read_through_held(
+        &mut self,
+        comb: Comb,
+        (subject, ty): (Expr, Ty<'tcx>),
+        pointee: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let option = self.option_of(ty).is_some();
+        let held = match option {
+            true => subject.clone(),
+            false => result::held(subject.clone()),
+        };
+        let read = match self.mut_ref_form(pointee).read_is_itself() {
+            true => held,
+            false => Expr::held(held),
+        };
+        let (read, given) = match comb {
+            Comb::AsDeref => (read, Ty::new_imm_ref(self.tcx, self.tcx.lifetimes.re_erased, pointee)),
+            _ => (self.clone_value(read, pointee, span, out)?, pointee),
+        };
+        Ok(match option {
+            true => self.some_where(Expr::bin(Op::LooseNe, subject, Expr::null()), read, given),
+            false => Expr::cond(result::is(subject.clone(), true), result::ok(read), subject),
+        })
+    }
+
     /// `vec![item; n]`, of their values (ADR 0364), `n`'s value where
     /// rustc knows it, a constant's.
     pub(in crate::lower) fn copies_values(

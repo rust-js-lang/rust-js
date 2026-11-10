@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`Option<Vec<T>>::as_deref` isn't the option itself, as a `String`'s is",
     file: "src/lower/recognition/inherent.rs",
-    find: "                            || self.is_std_type(t, StdItem::Vec)\n",
+    find: "            || self.is_std_type(t, StdItem::Vec)\n",
     replace: "",
     tests: [
       "test/lowering-options.test.ts",
@@ -400,5 +400,13 @@ export const mutations: Mutation[] = [
     find: "            \"into_bytes\" if string => Some(Std::Text(TextOp::IntoBytes)),\n",
     replace: "            \"into_bytes\" if string => Some(Std::Text(TextOp::Bytes)),\n",
     tests: ["test/corpus.test.ts", "-t", "^text_bytes_lent_and_owned.rs$"],
+  },
+  {
+    name: "as-deref-of-mut-ref-is-itself",
+    breaks: "`as_deref()` of an `Option<&mut i32>` is taken for the option itself, its handle, not what it points at (#1311)",
+    file: "src/lower/recognition/inherent.rs",
+    find: "            || t.is_ref() && mutable\n",
+    replace: "            || t.is_ref()\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_of_a_mut_ref_read_by_value.rs$"],
   },
 ];

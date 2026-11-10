@@ -54,6 +54,16 @@ impl MutRefForm {
         }
     }
 
+    /// What `*r` reads through the `&mut` is the same JS value as `r`: the
+    /// object, a guard's object, what's given as it is, or the value
+    /// itself; not a cell's, whose read is its `value` (#1311).
+    pub(in crate::lower) fn read_is_itself(self) -> bool {
+        match self {
+            MutRefForm::Object | MutRefForm::Guard | MutRefForm::GivenAsItIs | MutRefForm::Itself => true,
+            MutRefForm::Box | MutRefForm::GenericBox => false,
+        }
+    }
+
     /// Generic code's box, `{ value }` of a type parameter (ADR 0099), which
     /// a caller of an object gives an in-place cell of it, `$cellOf`, and a
     /// dictionary's entry adapts (ADR 0454).

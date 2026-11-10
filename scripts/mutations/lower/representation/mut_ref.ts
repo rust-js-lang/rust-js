@@ -232,4 +232,12 @@ export const mutations: Mutation[] = [
     replace: "            MutRefForm::GenericBox | MutRefForm::Box | MutRefForm::Object",
     tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
   },
+  {
+    name: "mut-ref-cell-read-is-itself",
+    breaks: "a cell's read, `*r` of a `&mut i32`, is taken for the handle itself: `copied()` of an `Option<&mut i32>` gives the handle, `[object Object]` (#1311)",
+    file: "src/lower/representation/mut_ref.rs",
+    find: "            MutRefForm::Box | MutRefForm::GenericBox => false,\n        }\n    }\n\n    /// Generic code's box",
+    replace: "            MutRefForm::Box | MutRefForm::GenericBox => true,\n        }\n    }\n\n    /// Generic code's box",
+    tests: ["test/corpus.test.ts", "-t", "^option_of_a_mut_ref_read_by_value.rs$"],
+  },
 ];

@@ -374,8 +374,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `map`'s `Some` isn't known never `undefined`, so a nullable field given it is `(c ? c(..) : undefined) ?? null`",
     file: "src/lower/std_types/option.rs",
-    find: "                    value.present()\n",
-    replace: "                    value\n",
+    find: "            value.present()\n",
+    replace: "            value\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -520,5 +520,21 @@ export const mutations: Mutation[] = [
     find: "        // Where what it lends is stored, the payload just written (#1114).\n        self.record_inserted(&place, item, span, out)?;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_option_payload.rs$"],
+  },
+  {
+    name: "closure-deref-of-mut-ref-gives-itself",
+    breaks: "`map(|x| *x)` of an `Option<&mut i32>` is taken for a closure giving its argument, the option itself, the handle (#1311)",
+    file: "src/lower/std_types/option.rs",
+    find: "                        && !self.mut_ref_form(pointee).read_is_itself()\n                    {\n                        return false;",
+    replace: "                        && false\n                    {\n                        return false;",
+    tests: ["test/corpus.test.ts", "-t", "^option_of_a_mut_ref_read_by_value.rs$"],
+  },
+  {
+    name: "option-copied-of-mut-ref-gives-handle",
+    breaks: "`copied()` and `cloned()` of an `Option<&mut i32>` give the handle on as it is, not its `value` (#1311)",
+    file: "src/lower/std_types/option.rs",
+    find: "            Std::OptionCloned\n                if self\n",
+    replace: "            Std::OptionCloned\n                if false && self\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_of_a_mut_ref_read_by_value.rs$"],
   },
 ];

@@ -339,3 +339,45 @@ it's lent, so the `dyn FnMut` is the function the cell holds,
 does. Results changed ([0262](0262-when-rust-and-js-disagree.md)), so
 Rust's are kept. Corpus case `mut_ref_of_a_boxed_function_as_dyn`,
 mutation `mut-ref-of-a-boxed-function-its-cell`.
+
+## Amendment: what `*r` reads is `r` only where `read_is_itself` says (#1311)
+
+An `Option<&mut i32>` read by value gave the item's handle where Rust
+gives the number, `Some([object Object])`: `copied()`, `cloned()` and
+`map(|x| *x)` of `it.next()`, `nth(k)`, `last()`, `first_mut()` or
+`get_mut(i)`, in both builds. So did `copied()` of a `Result<&mut i32, E>`,
+`as_deref()` of an `Option<&mut i32>`, and `map(|s| s.as_str())` of an
+`Option<&mut String>`. Results changed
+([0262](0262-when-rust-and-js-disagree.md)'s third case), so Rust's are
+kept. Each took `*r` of a `&mut` for `r` itself, as it is of a shared
+`&T`, which is its value in JS. Three sites decided so, apart:
+`closure_gives_its_argument`'s step through `[Deref]`, `OptionCloned` and
+`ResultCloned`, which clone the value as `Option<&T>`'s do, and
+recognition's `as_deref`, which took any reference's pointee for the
+option.
+
+The question is the form's: `MutRefForm::read_is_itself`, whose match
+names every form. It is false of a cell's, `Box` and `GenericBox`, whose
+read is its `value`. It is true of the object, a guard's object, what's
+given as it is, and the value itself. `closure_gives_its_argument`'s
+`[Deref]` step of a `&mut` asks it. `copied()` and `cloned()` of an
+`Option<&mut T>` of a cell read its `value` and give `Some` of it as
+`map` does: `o?.value`, `o != null ? $some(o.value) : undefined` of an
+`&mut Option<i32>`. The `Some`-where-present tail `map` wrote inline is
+now `some_where`, which both use. `read_through_held` (combinators'
+values) does the same for a `Result<&mut T, E>`'s `copied()` and
+`cloned()`, `r.TAG === "Ok" ? { TAG: "Ok", _0: r._0.value } : r`, and for
+`as_deref` of either. Recognition's `deref_is_itself` keeps `as_deref_mut`
+of a `&mut` and `as_deref` of a `&T` as the option itself. `as_deref` of
+a `&mut` goes to `Comb::AsDeref`, which asks the form. A generic `T`'s
+`&mut`, `GenericBox`, is read the same way. `*o.unwrap()` and
+`map(|x| *x + 1)`, which lowered the read, were right before.
+
+`test/corpus/option_of_a_mut_ref_read_by_value.rs` holds each, of a
+number, a `String`, an `Option<i32>` (some, none and none outside), a
+generic `T` and a `Result`'s `Ok` and `Err`, against native Rust in both
+builds. Mutations: `mut-ref-cell-read-is-itself`,
+`closure-deref-of-mut-ref-gives-itself`,
+`option-copied-of-mut-ref-gives-handle`,
+`result-copied-of-mut-ref-gives-handle` and
+`as-deref-of-mut-ref-is-itself`.
