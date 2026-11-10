@@ -21,8 +21,9 @@ fn caps(n: u32) {
     let mapped: Vec<u32> = b.iter().skip(1).map(|x| x * 2).collect();
     let taken: Vec<&u32> = b.iter().skip(1).take(30).collect();
     let owned: Vec<u32> = b.clone().into_iter().skip(1).collect();
+    let ranged: Vec<&u32> = b.range(2..).skip(1).collect();
     println!(
-        "{n}: {} {} {} {} {} {} {} {} {} {} {} {}",
+        "{n}: {} {} {} {} {} {} {} {} {} {} {} {} {}",
         v.capacity(),
         e.capacity(),
         w.capacity(),
@@ -34,7 +35,8 @@ fn caps(n: u32) {
         reversed.capacity(),
         mapped.capacity(),
         taken.capacity(),
-        owned.capacity()
+        owned.capacity(),
+        ranged.capacity()
     );
 }
 

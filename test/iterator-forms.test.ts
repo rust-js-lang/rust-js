@@ -58,6 +58,10 @@ const few = [
   "skip_folded_by_consumers.rs",
   "last_takes_its_source.rs",
   "own_count_through_adapters.rs",
+  // The hint std's `Skip` and `Enumerate` ask of what JS steps as an
+  // array, of a crate that reads a capacity: a B-tree's `range(..)`'s, none,
+  // and a heap's `iter()`'s, its length (#1215).
+  "capacity_of_what_std_hints_less.rs",
   "drop_order_through_take_adapters.rs",
   "skip_of_short_take_drops.rs",
   "cow_texts_joined.rs",

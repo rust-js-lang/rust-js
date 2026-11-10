@@ -158,6 +158,46 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// Whether std's hint of an iterator of type `ty` has no lower bound, 0
+    /// wherever it's asked after its first item, where JS counts what's
+    /// left of the array it steps, `$iter`'s: a B-tree's `range(..)`, whose
+    /// `size_hint` is std's default, `(0, None)`, and a set's
+    /// `intersection(..)` and `symmetric_difference(..)`, and a hash set's
+    /// `difference(..)`, each `(0, upper)`. Stepped so, of a crate that keeps
+    /// capacities, its hint is std's, `$iter(items, true)` (#1215).
+    pub(in crate::lower) fn hints_no_lower_bound(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        let ty::Adt(adt, _) = ty.kind() else { return false };
+        matches!(
+            std_path(self.tcx, adt.did()),
+            "std::collections::btree_map::Range"
+                | "std::collections::btree_map::RangeMut"
+                | "std::collections::btree_set::Range"
+                | "std::collections::btree_set::Intersection"
+                | "std::collections::btree_set::SymmetricDifference"
+                | "std::collections::hash_set::Difference"
+                | "std::collections::hash_set::Intersection"
+                | "std::collections::hash_set::SymmetricDifference"
+        )
+    }
+
+    /// Whether std's hint of an iterator of type `ty` has a lower bound its
+    /// merge's state gives as it's stepped, which JS's array of the result
+    /// doesn't keep: a B-tree set's `difference(..)`, what's left of the
+    /// first less what's left of the second, and `union(..)`, the more of
+    /// the two, and a hash set's `union(..)`, what's left of the larger
+    /// (#1215).
+    fn hints_merged_lower_bound(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        let ty::Adt(adt, _) = ty.kind() else { return false };
+        matches!(
+            std_path(self.tcx, adt.did()),
+            "std::collections::btree_set::Difference"
+                | "std::collections::btree_set::Union"
+                | "std::collections::hash_set::Union"
+        )
+    }
+
     /// Whether a `Vec` std grows of an iterator of type `ty` that isn't
     /// `TrustedLen` is given it knowing its length (`as_exact_size`), so
     /// JS's hint is std's: an `ExactSizeIterator`'s, whose lower bound is
@@ -196,6 +236,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             return held.into_iter().all(|held| self.lower_bound_is_stds(held));
         }
+        // A set's merge, whose lower bound JS's array doesn't keep (#1215).
+        if self.hints_merged_lower_bound(ty) {
+            return false;
+        }
         // A string's `chars()` or `char_indices()`, lazy (#1186): JS's own
         // string iterator knows no hint, and JS's adapters of the runtime's
         // `$chars`, `drop(n)` and the like, keep none of its: refused, until
@@ -226,6 +270,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             || self.endless_once_stepped(ty) == Some(true)
         {
             return Some(true);
+        }
+        if self.hints_no_lower_bound(ty) {
+            return Some(false);
         }
         let ty::Adt(adt, args) = ty.kind() else { return None };
         let mut sources = args.types();

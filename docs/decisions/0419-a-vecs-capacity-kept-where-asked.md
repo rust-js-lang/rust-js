@@ -3,7 +3,7 @@
 Status: Accepted. Amends [0315](0315-vec-capacity-and-edits.md), which
 refused `capacity()`. Amended by
 [0774](0774-room-past-isize-max-bytes-panics.md): the room asked is checked
-first; and below (#849, #1180, #1200), its number std's growth's.
+first; and below (#849, #1180, #1200, #1215), its number std's growth's.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): `capacity()` is
 printed, so results change; its number is std's growth's (#1180, the
@@ -216,3 +216,39 @@ map's `keys()`.
 against native Rust; `test/diagnostics.test.ts` holds the refusal. The
 size hint generic code prints, `(0, None)` of these, is the guide's
 difference 14 (ADR 0170), which this leaves as it is.
+
+## Amended (2026-11-10, #1215): what std hints less of than JS counts
+
+Case C ([0262](0262-when-rust-and-js-disagree.md)): the capacity is printed,
+so std's number is kept.
+
+`b.range(2..).collect()` of 38 items, in a crate that reads a capacity,
+had capacity 38 where std's is 64. A B-tree's `Range` has no `size_hint` of
+its own, so std's is `(0, None)`, and std grows by its lower bound, 0. Its
+JS is the array of what's in range, stepped as `$iter(items)`, whose hint
+counts what's left. The same held for a set's `intersection(..)` and
+`symmetric_difference(..)` and a hash set's `difference(..)`, whose lower
+bounds are 0 once an item is taken, which is when std asks.
+
+- **Of what std hints no lower bound of, which JS counts, the `$iter` is
+  `$iter(items, true)`**, whose hint is std's lower bound, 0, and what's
+  left as its upper bound. `lengths.rs`'s `hints_no_lower_bound` lists
+  them. The one maker,
+  `stepped_items_of`, writes it where the crate keeps capacities: a
+  source's `$iter`, a reversal's, made of its source's type, and a clone's. `lower_bound_kept` gives
+  them `Some(false)`. `fresh_iter_source` reads either form.
+- **What the merge's state gives a lower bound of is refused**: a B-tree
+  set's `difference(..)` and `union(..)` and a hash set's `union(..)`,
+  whose lower bounds change as they're stepped (`hints_merged_lower_bound`).
+- **An exact-sized iterator over an array JS steps lazily, a heap's
+  `iter()`, is the array's `$iter`** where the crate keeps capacities
+  (`counted_where_kept`), so std's compiled `Skip` and `Enumerate` ask its
+  length. `as_exact_size` takes an enumeration of what isn't an array's
+  through its source given knowing its length. #1200 had refused
+  a map's `values_mut()`, a hash set's or a heap's iterator enumerated and
+  a heap's iterator collected; they compile.
+
+`test/corpus/capacity_of_what_std_hints_less.rs` holds each at 0 to 40
+items, built both ways (with std's iterator structs too), against native
+Rust. `capacity_exact_size_adapters.rs` asks `b.range(2..).skip(1)` again.
+`test/diagnostics.test.ts` holds the refusal.

@@ -4535,8 +4535,9 @@ export function $removeOpt(items, index) {
 
 // A JS iterator of an array that knows where it is (ADR 0071): an
 // `Iterator`, whose helpers, `map` and the like, step it as Rust's adapters
-// do.
-export function $iter(items) {
+// do. Of an iterator std hints no lower bound of, `lowerless`, a B-tree's
+// `range(..)`, its hint std's lower bound, 0, of what's left (#1215).
+export function $iter(items, lowerless) {
   // One already, a variable's that holds its own `$iter`: itself, where it
   // is, which an array's iterator given on may be (ADRs 0429, 0456).
   if (!Array.isArray(items) && items.back !== undefined) return items;
@@ -4556,6 +4557,12 @@ export function $iter(items) {
   it.len = function () {
     return this.end - this.at;
   };
+  // Of `this`, so a clone's is its own (ADR 0181).
+  if (lowerless) {
+    it.sizeHint = function () {
+      return [0, this.end - this.at];
+    };
+  }
   return it;
 }
 

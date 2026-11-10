@@ -156,4 +156,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of a chain of a skip"],
   },
+  {
+    name: "range-hinted-as-counted",
+    breaks: "a B-tree's `range(..)` collected in a crate that reads a capacity is grown by JS's count of what's in range, 38, where std's hint has no lower bound and its capacity is 64 (#1215)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "            \"std::collections::btree_map::Range\"\n                | \"std::collections::btree_map::RangeMut\"\n                | \"std::collections::btree_set::Range\"\n",
+    replace: "            \"std::collections::btree_map::RangeMut\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
+  },
+  {
+    name: "merged-lower-bound-unrefused",
+    breaks: "a B-tree set's `difference(..)` collected in a crate that reads a capacity compiles, grown by JS's count where std's merge gives another lower bound (#1215)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "        if self.hints_merged_lower_bound(ty) {\n            return false;\n        }\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of a set's difference"],
+  },
 ];

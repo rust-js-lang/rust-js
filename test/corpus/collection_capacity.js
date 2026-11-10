@@ -66,7 +66,7 @@ function main() {
     $grew(units, 0, units.length, $heapPush(units, undefined, unitPartialOrd));
   }
   console.log(
-    `${units.length} ${Iterator.from(units).reduce((n) => n + 1, 0)} ${((value) => (value == null ? "None" : "Some(())"))($someAt(units, 0))}`,
+    `${units.length} ${units.length} ${((value) => (value == null ? "None" : "Some(())"))($someAt(units, 0))}`,
   );
 }
 //# sourceMappingURL=case.js.map

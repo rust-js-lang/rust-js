@@ -317,6 +317,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn knows_its_length_of(&self, value: &Expr, ty: ty::Ty<'tcx>) -> bool {
         self.knows_its_length(ty)
             || crate::lower::iterators::was_made_knowing_its_length(value)
+            // An array's `$iter`, a hash set's `$iter(Array.from(set))` (#1200).
+            || super::fresh_iter_source(value).is_some()
             || self.kept_over_an_array(ty) && self.knows_its_back_of(value, ty)
     }
 
@@ -449,11 +451,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.steps_an_array(ty) {
             return Ok(self.std_iterator(value, ty));
         }
-        // An array's `$iter`, which knows its length, a hash table's
-        // `$iter(Array.from(set))` (#1200).
-        if super::fresh_iter_source(&value).is_some() {
-            return Ok(value);
-        }
         if let Some(zipped) = self.zip_knowing(&value, ty, back, span)? {
             return Ok(zipped);
         }
@@ -498,15 +495,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // An enumeration made here of an array's items, `$enumerate` of their
         // `$iter`, as `as_double_ended` makes it; one made so, itself (#764).
+        // Of another's, its source made knowing its length (#1215).
         if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)
             && let Some(enumerated) = crate::lower::iterators::enumerated_of(&value)
-            && (enumerated.form == crate::lower::iterators::EnumeratedForm::Made
-                || self.steps_an_array(source.peel_refs()))
         {
             if enumerated.form == crate::lower::iterators::EnumeratedForm::Made {
                 return Ok(value.clone());
             }
-            let items = self.std_iterator(enumerated.source.clone(), source.peel_refs());
+            let (source, value) = (source.peel_refs(), enumerated.source.clone());
+            let items = match self.steps_an_array(source) {
+                true => self.std_iterator(value, source),
+                false => self.as_exact_size(stepped_value(&value).unwrap_or(value), source, back, span)?,
+            };
             return Ok(crate::lower::iterators::enumerated_knowing(items));
         }
         // A `step_by(n)` made here, as `as_double_ended` makes it (#718).

@@ -151,8 +151,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `split`'s array MIR steps is `Iterator.from(…)`, so its chain stays a JS iterator's",
     file: "src/lower/mir/iter/sources.rs",
-    find: "        } else if made_array(&value) || self.steps_an_array(ty) {\n",
-    replace: "        } else if self.steps_an_array(ty) {\n",
+    find: "        } else if made_array(&value) || self.steps_an_array(ty) || self.counted_where_kept(ty) {\n",
+    replace: "        } else if self.steps_an_array(ty) || self.counted_where_kept(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(boxed_array_iter|calculator).rs$"],
     snapshots: true,
   },
@@ -515,5 +515,13 @@ export const mutations: Mutation[] = [
     find: "            && !self.compiled_struct(ty, it)\n            && self.knows_its_length_of(it, ty)\n",
     replace: "            && self.knows_its_length_of(it, ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^owned_maps_asked_their_length.rs$"],
+  },
+  {
+    name: "heap-iter-uncounted-where-kept",
+    breaks: "a heap's `iter()`, in a crate that reads a capacity, is JS's own iterator of its array, which std's compiled `Skip` asks a hint of and is given none, its capacity 64 where std's is 38 (#1215)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "        } else if made_array(&value) || self.steps_an_array(ty) || self.counted_where_kept(ty) {\n",
+    replace: "        } else if made_array(&value) || self.steps_an_array(ty) {\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "capacity_of_what_std_hints_less"],
   },
 ];

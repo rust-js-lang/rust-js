@@ -806,4 +806,12 @@ export const mutations: Mutation[] = [
     replace: "        let parameter = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_made_type_parameter_collected.rs$"],
   },
+  {
+    name: "reversed-range-counted",
+    breaks: "a `rev()` of a B-tree's `range(..)` is `$iter` of its items reversed with no mark, whose hint counts them, so a crate that reads a capacity grows a collect of it otherwise (#1215)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "        Ok(self.stepped_items_of(items, iter_ty))\n",
+    replace: "        Ok(self.stepped_items(items))\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
+  },
 ];

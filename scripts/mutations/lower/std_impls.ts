@@ -1116,4 +1116,12 @@ export const mutations: Mutation[] = [
     replace: "                Some(false) => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone.rs$"],
   },
+  {
+    name: "iter-clone-loses-lowerless",
+    breaks: "a clone of a B-tree's `range(..)` is `$iter` of what's left with no mark, whose hint counts it, so a crate that reads a capacity grows a collect of it otherwise (#1215)",
+    file: "src/lower/std_impls.rs",
+    find: "                Ok(self.stepped_items_of(left, ty))\n",
+    replace: "                Ok(self.stepped_items(left))\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "capacity_of_what_std_hints_less"],
+  },
 ];

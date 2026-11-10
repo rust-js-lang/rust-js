@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "    return this.items.length;\n",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_len.rs$"],
   },
+  {
+    name: "lowerless-iter-hint-counted",
+    breaks: "`$iter(items, true)`, of what std hints no lower bound of, hints what's left as its lower bound, so a crate that reads a capacity grows a collect of a B-tree's `range(..)` otherwise (#1215)",
+    file: "src/runtime/iter.js",
+    find: "      return [0, this.end - this.at];\n",
+    replace: "      return [this.end - this.at, this.end - this.at];\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
+  },
 ];

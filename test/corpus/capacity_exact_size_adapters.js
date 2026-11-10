@@ -23,6 +23,7 @@ import {
   $stepBy,
   $stepByEnds,
   $taking,
+  $treeRange,
   iterator_fuse,
   iterator_skip,
 } from "@rust-js/std";
@@ -87,6 +88,17 @@ function caps(n) {
     $roomForHint($skipping($iter($sortedKeys(new $BTreeSet(b), $cmp)), 1), 4, false),
     (grown) => Array.from(grown),
   );
+  const ranged = $grownVec(
+    $roomForHint(
+      $iter(
+        $treeRange(b, $cmp, true, "BTreeSet", { TAG: "Included", _0: 2 }, "Unbounded"),
+        true,
+      ).drop(1),
+      4,
+      false,
+    ),
+    (grown) => Array.from(grown),
+  );
   const capacity = $capacity(v, 4);
   const value = $capacity(e, 8);
   const value$1 = $capacity(w, 4);
@@ -98,9 +110,10 @@ function caps(n) {
   const value$7 = $capacity(reversed, 4);
   const value$8 = $capacity(mapped, 4);
   const value$9 = $capacity(taken, 4);
-  const arg = $capacity(owned, 4);
+  const value$10 = $capacity(owned, 4);
+  const arg = $capacity(ranged, 4);
   console.log(
-    `${n}: ${capacity} ${value} ${value$1} ${value$2} ${value$3} ${value$4} ${value$5} ${value$6} ${value$7} ${value$8} ${value$9} ${arg}`,
+    `${n}: ${capacity} ${value} ${value$1} ${value$2} ${value$3} ${value$4} ${value$5} ${value$6} ${value$7} ${value$8} ${value$9} ${value$10} ${arg}`,
   );
 }
 

@@ -139,6 +139,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         array_stepped(items)
     }
 
+    /// `$iter(items)` of std's iterator of type `ty` over them; of what std
+    /// hints no lower bound of, which JS counts, `$iter(items, true)`, whose
+    /// hint is std's, where the crate keeps capacities, which std grows by
+    /// it (`hints_no_lower_bound`, #1215).
+    pub(in crate::lower) fn stepped_items_of(&mut self, items: Expr, ty: ty::Ty<'tcx>) -> Expr {
+        let mut it = array_stepped(items);
+        if self.krate.keeps_capacity
+            && self.recognition().hints_no_lower_bound(ty)
+            && let js::ExprKind::Call(_, args) = &mut it.kind
+        {
+            args.push(Expr::bool(true));
+        }
+        it
+    }
+
     /// `$iterator(value, next)`: a JS iterator of `value`, a range, stepped
     /// by `next`, its `$rangeNext`.
     pub(in crate::lower) fn stepped_by(&mut self, value: Expr, next: Expr) -> Expr {

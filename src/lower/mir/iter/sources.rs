@@ -326,18 +326,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.recognition().is_path_items(ty)
     }
 
+    /// Whether std's iterator of type `ty`, an array's in JS, a heap's
+    /// `iter()`, is stepped as the array's `$iter`, whose hint is its
+    /// length: an `ExactSizeIterator`'s, std's, in a crate that keeps
+    /// capacities, which std grows by it, where what's made of it, std's
+    /// `Skip` say, asks it (#1215).
+    fn counted_where_kept(&self, ty: Ty<'tcx>) -> bool {
+        self.krate.keeps_capacity
+            && self.is_array_iter(ty)
+            && (self.recognition().exact_size_iterator())
+                .is_some_and(|exact| self.recognition().implements_trait(ty, exact))
+    }
+
     /// A std iterator of type `ty` made of `value`, an array or a text, as
     /// MIR steps it: over an array, a `$iter`, which knows where it is, so a
     /// clone of it does (ADR 0181); another, the JS iterator of `value`.
     pub(in crate::lower) fn std_iterator(&mut self, value: Expr, ty: Ty<'tcx>) -> Expr {
         if is_js_iterator(&value) {
             value
-        } else if made_array(&value) || self.steps_an_array(ty) {
+        } else if made_array(&value) || self.steps_an_array(ty) || self.counted_where_kept(ty) {
             // An array made of it, `s.split(",")`'s, or one `steps_an_array`
             // lists, a `VecDeque`'s say: a `$iter` of it, as of an array's;
             // std's over an array's items, said so (`Known::ArrayItems`).
             let items = self.recognition().steps_its_array(ty);
-            let mut it = self.stepped_items(value);
+            let mut it = self.stepped_items_of(value, ty);
             if items {
                 it.facts = it.facts.with(js::Known::ArrayItems);
             }

@@ -173,7 +173,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         };
         let items = crate::lower::iterators::reversed(items);
-        Ok(self.stepped_items(items))
+        Ok(self.stepped_items_of(items, iter_ty))
     }
 
     /// An adapter cloned apart (ADR 0525), `name`'s, `map`'s or `chain`'s,

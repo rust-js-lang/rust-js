@@ -672,7 +672,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.steps_an_array(ty) => {
                 let owns = self.array_source(ty).unwrap_or(false);
                 let left = self.stepped_left(place, ty, owns, span)?;
-                Ok(self.stepped_items(left))
+                Ok(self.stepped_items_of(left, ty))
             }
             _ if !matches!(ty.kind(), ty::Adt(adt, _) if self.is_std(adt.did())) => match self.shape(ty) {
                 Shape::Object(fields) => self.clone_fields(place, (ty, None), Self::named_fields(fields), span, out),

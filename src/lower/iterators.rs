@@ -824,9 +824,7 @@ pub(in crate::lower) fn stepped_by(e: &Expr) -> Option<(&Expr, i128)> {
 pub(in crate::lower) fn iterated(e: Expr) -> Expr {
     let from = iterator_from(&e).is_some();
     match e.kind {
-        js::ExprKind::Call(callee, mut args) if from || args.len() == 1 && callee.helper_name() == Some("$iter") => {
-            args.pop().expect("one")
-        }
+        js::ExprKind::Call(_, args) if from || is_stepped_items(&e) => args.into_iter().next().expect("one"),
         kind => Expr {
             facts: its_facts(e.facts),
             kind,
@@ -872,10 +870,15 @@ pub(in crate::lower) fn keys_in_source(e: &Expr) -> Option<&Expr> {
 }
 
 /// What `it`, an iterator made here of an array, `$iter(v)`, steps: `v`,
-/// all of it left.
+/// all of it left. Or `$iter(v, true)`, of what std hints no lower bound
+/// of, whose hint is std's (#1215).
 pub(in crate::lower) fn fresh_iter_source(it: &Expr) -> Option<&Expr> {
     match &it.kind {
-        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$iter") && args.len() == 1 => args.first(),
+        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$iter") => match args.as_slice() {
+            [items] => Some(items),
+            [items, lowerless] if lowerless.kind == js::ExprKind::Bool(true) => Some(items),
+            _ => None,
+        },
         _ => None,
     }
 }

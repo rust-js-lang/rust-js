@@ -120,9 +120,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what's left of a just-made `$iter(items)` is `it.items.slice(it.at, it.end)`, not `items`",
     file: "src/lower/iterators.rs",
-    find: '        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$iter") && args.len() == 1 => args.first(),\n',
-    replace:
-      '        js::ExprKind::Call(callee, args) if false && callee.helper_name() == Some("$iter") && args.len() == 1 => args.first(),\n',
+    find: '        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$iter") => match args.as_slice() {\n',
+    replace: '        js::ExprKind::Call(callee, args) if false && callee.helper_name() == Some("$iter") => match args.as_slice() {\n',
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
   },
@@ -365,6 +364,15 @@ export const mutations: Mutation[] = [
     find: "    if made_array(&items) {\n        return items;\n    }\n    match &items.kind {\n",
     replace: "    match &items.kind {\n",
     tests: ["test/corpus.test.ts", "-t", "^(slice_to_owned|clone_from).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "lowerless-iter-not-fresh",
+    breaks: "`$iter(items, true)`, of what std hints no lower bound of, isn't read as an array's `$iter`, so what steps it wraps it again, `$iter($iter(items, true), true)`, and a `for` loop steps it, not `items` (#1215)",
+    file: "src/lower/iterators.rs",
+    find: "            [items, lowerless] if lowerless.kind == js::ExprKind::Bool(true) => Some(items),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
     snapshots: true,
   },
 ];

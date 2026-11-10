@@ -403,4 +403,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^collect_fallible.rs$"],
     snapshots: true,
   },
+  {
+    name: "lowerless-iter-unmarked",
+    breaks: "what std hints no lower bound of, a B-tree's `range(..)`, is stepped as `$iter(items)`, whose hint counts what's left, so a crate that reads a capacity grows it otherwise (#1215)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "            args.push(Expr::bool(true));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
+  },
 ];
