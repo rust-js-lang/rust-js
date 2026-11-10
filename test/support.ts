@@ -550,12 +550,24 @@ let keptClaims: string[] | undefined;
  * not. A test that changes a file after, to build again, writes it as it
  * would anywhere: its time is new.
  */
+let keeping: boolean | undefined;
+
+/** Whether this process keeps its apps, asked where its first is made. */
+function keepsApps(): boolean {
+  keeping ??= mayKeep(keptApps);
+  return keeping;
+}
+
 export class KeptApp {
   readonly dir: string;
   private readonly written = new Set<string>();
-  constructor(name: string) {
-    // Below the disk's floor, a fixture, emptied, as nothing's kept there.
-    if (!mayKeep(keptApps)) {
+  /** `keep`, whether it's kept, the process's one answer: below the disk's
+   * floor where it first asks, a fixture, emptied, as nothing's kept there.
+   * Asked once, not each time, as what other tests write moves the disk's
+   * free space across the floor mid-test, and an app kept then not wasn't
+   * found again in the directory it was kept in (#1190). */
+  constructor(name: string, keep = keepsApps()) {
+    if (!keep) {
       this.dir = fixture(name);
       return;
     }

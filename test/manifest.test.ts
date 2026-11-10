@@ -249,7 +249,10 @@ test("the tooling's library ABI is the compiler's", () => {
 // one name at once are two directories; a file changed mid-test, then
 // changed back by the next run's write, is built again each time; and a
 // crate it depends on by path, a binding crate's source say, changed, is
-// built again with the app.
+// built again with the app. Kept whatever the disk's free space, as it's
+// what's tested: asked each time, the floor crossed mid-test under
+// check:fast's load made one of its apps a fixture, never found again
+// (#1190).
 test("an app kept between runs is built again where what it's built from changed, and only then", async () => {
   buildCompiler();
   const builder = createNativeBuilder({ root: repository, rustJs: compiler });
@@ -269,9 +272,9 @@ test("an app kept between runs is built again where what it's built from changed
     // In a process of its own: an import here keeps each module it reached.
     return Number(run([process.execPath, "-e", `import { answer } from ${JSON.stringify(built.js!)}; console.log(answer());`]).trim());
   };
-  const first = new KeptApp("kept-app");
+  const first = new KeptApp("kept-app", true);
   // Another claim of the name, at once, is another directory.
-  const other = new KeptApp("kept-app");
+  const other = new KeptApp("kept-app", true);
   expect(other.dir).not.toBe(first.dir);
   other.release();
   const options = write(first);
@@ -287,7 +290,7 @@ test("an app kept between runs is built again where what it's built from changed
   expect(await answer(options)).toBe(43);
   first.release();
   // The next run: the same directory, its text written back, built again.
-  const next = new KeptApp("kept-app");
+  const next = new KeptApp("kept-app", true);
   expect(next.dir).toBe(first.dir);
   writeFileSync(join(next.dir, "src", "stale.rs"), "this run didn't write it");
   writeFileSync(join(next.dir, "Cargo.lock"), "# not this run's\n");
@@ -301,7 +304,7 @@ test("an app kept between runs is built again where what it's built from changed
   expect(await answer(write(next))).toBe(52);
   next.release();
   // A run that writes no `extra.rs`: what the one before wrote is gone.
-  const last = new KeptApp("kept-app");
+  const last = new KeptApp("kept-app", true);
   last.write("src/lib.rs", "pub fn answer() -> u32 {\n    7\n}\n");
   last.done();
   expect([existsSync(join(last.dir, "src", "extra.rs")), existsSync(join(last.dir, "Cargo.toml"))]).toEqual([false, false]);
