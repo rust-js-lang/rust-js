@@ -74,6 +74,7 @@ export const iteratorPaths = [
   "src/lower/analysis/back_stepped.rs",
   "src/lower/analysis/hint_asked.rs",
   "src/lower/body_queries.rs",
+  "src/lower/body_queries/in_place.rs",
   "src/runtime.rs",
   "src/runtime/**",
   "std/runtime.js",

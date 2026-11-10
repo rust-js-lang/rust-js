@@ -347,7 +347,7 @@ test("a body's string offsets are found without emitting", () => {
 });
 
 test("body queries cannot access emission state", () => {
-  const source = read("src/lower/body_queries.rs");
+  const source = ["src/lower/body_queries.rs", "src/lower/body_queries/in_place.rs"].map(read).join("\n");
   expect(source).not.toMatch(/\b(?:FnCx|Dependencies|Evaluation)\b|\bRefCell\s*<|crate::js|runtime::/);
   expect(source).not.toMatch(/\bfn\s+\w+\s*\([^)]*&mut\s+self/);
 });

@@ -26,7 +26,7 @@ src/lower/bindings.rs	1
 src/lower/bindings/flattened.rs	2
 src/lower/bindings/nullable.rs	6
 src/lower/bindings/rest_values.rs	1
-src/lower/body_queries.rs	1
+src/lower/body_queries/in_place.rs	1
 src/lower/body_queries/ranges.rs	1
 src/lower/body_queries/ranges/present.rs	1
 src/lower/combinators/callbacks.rs	3
