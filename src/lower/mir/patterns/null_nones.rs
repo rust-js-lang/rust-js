@@ -18,6 +18,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `as_ref()` or `as_deref()`, or a test that reads `null` and
     /// `undefined` alike (`alike_reads`): React's `previousMeasurements`
     /// (rd632, the user's decision (B)).
+    /// Never a parameter, which holds what its caller gave before any write
+    /// the body makes, `undefined` for `None` as a call of the crate's gives
+    /// it (#1248).
     pub(super) fn mir_null_nones(
         &self,
         body: &mir::Body<'tcx>,
@@ -306,6 +309,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .chain(copies.iter().filter(|&&(_, of)| arm(of)).map(|&(copy, _)| copy))
             .collect();
         for local in candidates {
+            // A parameter's first value is its caller's, no write of the
+            // body's: `undefined` for `None` where that's what it's given.
+            if (1..=body.arg_count).contains(&local.as_usize()) {
+                continue;
+            }
             let (writes, none) = made.get(&local).copied().unwrap_or_default();
             // Of a function's result, each write: what isn't an `Option` it
             // makes is `nullable_written`'s.

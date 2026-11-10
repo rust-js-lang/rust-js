@@ -96,3 +96,27 @@ nothing to tell it by, the alternative this ADR rejected.
 So the port's `let nextFiber;` and `nextFiber = undefined` stay where
 upstream writes `null`, a difference left to the user to accept
 (AGENTS.md's ports): what JS reads of either is the same.
+
+## Amendment: never a parameter (2026-11-10, #1248)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. A local is `null` for `None` where each of its
+writes makes it so, which `mir_null_nones` counts among the body's writes;
+a parameter's first value is none of them, but its caller's, which a call
+of the crate's gives as it is, `undefined` for `None` (ADR 0861). A
+parameter the body sets again by a call, `reason = some("a")` of a
+generic `some<T>(x: T) -> Option<T>` or `reason = plain(true)` of one that
+may give `None`, and gives on to the crate's own `#[rust_js::nullable]`
+parameter only, was counted so, `null` or a value everywhere, so that
+parameter was found `null` or a value at every call and tested `!==
+null`: `through_generic(None, false)` read `undefined`'s `length`, where
+native Rust gives `0`. A parameter is never among them now
+(`mir/patterns/null_nones.rs`): its writes are a variable's, `reason =
+plain(true)`, no longer `plain(true) ?? null`, and the nullable parameter
+it reaches is tested `!= null`.
+
+- **Tested** by the corpus case `nullable_param_given_a_parameter_set_again.rs`,
+  a parameter set again by a generic function's `Some`, by a function that
+  may give `None` and to `None`, in both builds against native Rust, and
+  the `generic-instances` rewrite of `nulled_returns_given_on.rs`; mutation
+  `null-nones-parameter-taken`.

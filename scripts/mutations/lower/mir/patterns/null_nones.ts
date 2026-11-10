@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "null-nones-parameter-taken",
+    breaks:
+      "a parameter the body sets again by a call, `reason = some(\"a\")`, given on to a nullable parameter, is taken as `null` for `None` at each write, its caller's `undefined` forgotten, so `commit` tests it `!== null` and reads `undefined`'s `length` (#1248)",
+    file: "src/lower/mir/patterns/null_nones.rs",
+    find: "            if (1..=body.arg_count).contains(&local.as_usize()) {\n",
+    replace: "            if false && (1..=body.arg_count).contains(&local.as_usize()) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_param_given_a_parameter_set_again.rs$"],
+  },
+  {
     name: "tested-some-copy-unseen",
     breaks:
       "a `let` of `js::null()` set to a place just tested `is_some()` may be `undefined`, so the nullable parameter it's given is tested `!= null` (rd623)",

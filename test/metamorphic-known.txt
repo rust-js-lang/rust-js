@@ -87,6 +87,3 @@ plain std generic-instances range_own_steps.rs
 plain std generic-instances range_reversed_skipped_beside_its_back_stepped.rs
 plain std generic-instances repeat_count_panics.rs
 plain generic-instances take_and_filter_of_a_type_parameter_hint_as_std.rs
-
-#1248 P0 (nullability): a nullable parameter given a variable a generic function's Some was assigned to takes its None for a Some
-plain std generic-instances nulled_returns_given_on.rs
