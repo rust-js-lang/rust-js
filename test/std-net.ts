@@ -108,6 +108,7 @@ const kinds = {
   bset: { ty: "BTreeSet<L>", make: "BTreeSet::from([L(1), L(2), L(3), L(4)])", show: '"{c:?}"' },
   hash: { ty: "HashMap<K, u32>", make: "HashMap::from([(K(1), 1), (K(2), 2), (K(3), 3), (K(4), 4)])", show: '"{:?}", quiet(|| sorted(c.iter().map(|(k, v)| (k.0, *v)).collect()))' },
   counted: { ty: "HashMap<C, u32>", make: "HashMap::from([(C(1), 1), (C(2), 2)])", show: '"{:?}", quiet(|| sorted(c.iter().map(|(k, v)| (k.0, *v)).collect()))' },
+  cset: { ty: "HashSet<C>", make: "HashSet::from([C(1), C(2)])", show: '"{:?}", quiet(|| sorted(c.iter().map(|k| k.0).collect()))' },
   hset: { ty: "HashSet<K>", make: "HashSet::from([K(1), K(2), K(3), K(4)])", show: '"{:?}", quiet(|| sorted(c.iter().map(|k| k.0).collect()))' },
   cell: { ty: "Cell<u32>", make: "Cell::new(5)", show: '"{c:?}"' },
   refcell: { ty: "RefCell<Vec<L>>", make: "RefCell::new(vec![L(1), L(2), L(3)])", show: '"{c:?}"' },
@@ -224,9 +225,9 @@ export const templates: Template[] = [
   t("hash drain and extract_if", ["HashMap::drain", "HashMap::extract_if", "HashMap::clear"], "hash", 'let mut r: Vec<u32> = c.extract_if(|k, _| k.0 % 2 == 0).map(|(k, _)| k.0).collect();\nr.sort();\nprintln!("{r:?}");\nlet mut d: Vec<u32> = c.drain().map(|(k, _)| k.0).collect();\nd.sort();\nprintln!("{d:?}");\nc.insert(K(5), 5);\nc.clear();'),
   t("hash get_disjoint_mut", ["HashMap::get_disjoint_mut"], "hash", "if let [Some(a), Some(b)] = c.get_disjoint_mut([&K(1), &K(2)]) {\n    *a += 10;\n    *b += 20;\n}"),
   // Of a key whose own `Hash` and `Eq` count their calls, panicking at its
-  // 1st, before the table changes: refused till rust-js compiles a key's
-  // hand-written `Hash`, so the net shows when it does.
+  // 1st, before the table changes (ADR 1120).
   t("hash of a counted key", ["HashMap::insert", "HashMap::remove"], "counted", 'println!("{:?}", c.insert(C(9), 9));\nprintln!("{:?}", c.remove(&C(1)));', true, 1),
+  t("hset of a counted item", ["HashSet::insert", "HashSet::remove"], "cset", 'println!("{}", c.insert(C(9)));\nprintln!("{}", c.remove(&C(1)));', true, 1),
   t("hset insert and remove", ["HashSet::insert", "HashSet::replace", "HashSet::remove", "HashSet::take"], "hset", 'println!("{} {}", c.insert(K(9)), c.insert(K(2)));\nprintln!("{:?}", c.replace(K(3)).map(|k| k.0));\nprintln!("{} {:?}", c.remove(&K(1)), c.take(&K(4)).map(|k| k.0));'),
   t("hset retain, drain and extract_if", ["HashSet::retain", "HashSet::drain", "HashSet::extract_if", "HashSet::clear"], "hset", 'c.retain(|k| k.0 != 1);\nlet mut r: Vec<u32> = c.extract_if(|k| k.0 % 2 == 0).map(|k| k.0).collect();\nr.sort();\nprintln!("{r:?}");\nlet mut d: Vec<u32> = c.drain().map(|k| k.0).collect();\nd.sort();\nprintln!("{d:?}");\nc.insert(K(5));\nc.clear();'),
   // A slice's sorts, its comparison panicking at its 2nd call too, what's
@@ -296,8 +297,6 @@ export const excluded: Record<string, string> = Object.fromEntries([
  * seen (#1171). */
 export const refused: Record<string, [said: string, issue: number]> = {
   // A key whose own `Hash` and `Eq` are written by hand.
-  "hash of a counted key | ok": ["values of type `C`", 1271],
-  "hash of a counted key | panics": ["values of type `C`", 1271],
   // `&mut`-giving accessors and in-place adapters of items with a
   // destructor, one checkbox each on #1274.
   "heap peek_mut | ok": ["`std::collections::BinaryHeap::<T, A>::peek_mut` of a value with a destructor", 1274],
@@ -435,8 +434,8 @@ impl Ord for L {
 }
 
 /** A hash table's key, which prints nothing: a hash table's drops are in
- * no order std says. Its \`Hash\` and \`Eq\` derived, as a key whose own
- * count their calls, \`C\`, isn't one rust-js compiles yet. */
+ * no order std says. Its \`Hash\` and \`Eq\` derived; \`C\`'s count their
+ * calls. */
 #[derive(Debug, PartialEq, Eq, Hash)]
 struct K(u32);
 

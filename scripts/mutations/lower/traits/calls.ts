@@ -548,4 +548,12 @@ export const mutations: Mutation[] = [
     replace: "            let called = Expr::call(entry, values);\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_impl_method_where_clause"],
   },
+  {
+    name: "hashed-key-borrowed-unrefused",
+    breaks: "a hashed set's lookup by what its key's `Borrow` gives, `HashSet<Rc<u32>>::contains(&1)`, is lowered, hashing the `u32` as an `Rc` (ADR 1120)",
+    file: "src/lower/traits/calls.rs",
+    find: "            .find(|&(key, by)| key.peel_refs() != by.peel_refs() && self.found_by_hash(key))\n",
+    replace: "            .find(|_| false)\n",
+    tests: ["test/diagnostics.test.ts", "-t", "Borrow gives"],
+  },
 ];

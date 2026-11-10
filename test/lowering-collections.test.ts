@@ -627,7 +627,8 @@ pub fn queued(queue: &mut VecDeque<u32>) {
 // two is `===`, of the values as of references to them. Nothing reads its
 // `PartialEq`'s dictionary then, which isn't written (ADR 0864, amended),
 // but where generic code is given it. One whose `ne` is its own, or whose
-// `eq` compares another's address, isn't.
+// `eq` compares another's address, isn't: a `$hashedSet` finds it by its own
+// `Hash` and `eq` (ADR 1120).
 test("a type equal only to itself keys a JS Set by itself", () => {
   const source = (eq: string, ne: string, more = "") => `use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
@@ -686,10 +687,10 @@ pub fn equal_fibers(a: &Fiber, b: &Fiber) -> bool {
 `);
   expect(generic).toContain("export const fiberPartialEq = $partialEq({ eq: fiberPartialEq_eq });");
   expect(generic).toContain("  return equal(a, b, fiberPartialEq);\n");
-  expect(() => compile("identity-set-ne", "std::ptr::eq(self, other)", "\n\n    #[allow(clippy::partialeq_ne_impl)]\n    fn ne(&self, other: &Self) -> bool {\n        self.tag != other.tag\n    }"))
-    .toThrow("values of type");
-  expect(() => compile("identity-set-other", "std::ptr::eq(self, self) && self.tag == other.tag")).toThrow("values of type");
-  expect(() => compile("identity-set-self", "std::ptr::eq(self, self)")).toThrow("values of type");
+  const hashed = "const set = new ($hashedSet(fiberHash, fiberPartialEq_eq))(fibers);";
+  expect(compile("identity-set-ne", "std::ptr::eq(self, other)", "\n\n    #[allow(clippy::partialeq_ne_impl)]\n    fn ne(&self, other: &Self) -> bool {\n        self.tag != other.tag\n    }")).toContain(hashed);
+  expect(compile("identity-set-other", "std::ptr::eq(self, self) && self.tag == other.tag")).toContain(hashed);
+  expect(compile("identity-set-self", "std::ptr::eq(self, self)")).toContain(hashed);
   // A `Cow` of a slice of them, which `$cowKey` would find by what's in
   // each fiber, is refused (ADR 1015, amended).
   expect(() => compile("identity-set-cow", "std::ptr::eq(self, other)", "", `

@@ -665,7 +665,7 @@ What's refused is in [the limitations](limitations.md).
 |---|---|
 | `Vec`, `VecDeque` | array ([0068](../decisions/0068-queues.md)) |
 | `BinaryHeap` | array, in Rust's heap order: ties pop as Rust's do |
-| `HashMap`, `HashSet` | `Map`, `Set` ([0059](../decisions/0059-hashmap.md)); keyed by value for a struct, tuple or enum key with a derived `Eq`, or an `Option` key, `$KeyMap`, whatever its `Hash` ([0121](../decisions/0121-value-keys.md), [0168](../decisions/0168-user-hash.md)) |
+| `HashMap`, `HashSet` | `Map`, `Set` ([0059](../decisions/0059-hashmap.md)); keyed by value for a struct, tuple or enum key with a derived `Eq` and `Hash`, or an `Option` key, `$KeyMap` ([0121](../decisions/0121-value-keys.md)); by its own `Hash` and `Eq` for a key whose `Eq` is its own or whose `hash` runs its own code, `$hashedMap(KHash, eq)` ([1120](../decisions/1120-a-hash-key-found-by-its-own-hash-and-eq.md)) |
 | `BTreeMap`, `BTreeSet` | `Map`, `Set`, iterated in key order |
 
 - **An iterator chain is an array's methods,** `v.map(f).filter(p)`, when

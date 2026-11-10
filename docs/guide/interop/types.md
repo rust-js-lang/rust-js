@@ -290,7 +290,12 @@ export function middle(items) {
   tuple or an enum with a derived `Eq` is compared by value, in the
   runtime's `$KeyMap`, and so is an `Option`, whose `None` is one key
   whether it's `undefined` or `null`
-  ([ADR 0121](../../decisions/0121-value-keys.md), amended). A set's `iter().for_each(..)` is the set's own
+  ([ADR 0121](../../decisions/0121-value-keys.md), amended). A key whose
+  `Eq` or `Hash` is its own is found by them, in a `$hashedMap(KHash, eq)`
+  or `$hashedSet(KHash, eq)`, a `Map` and a `Set` whose `get`, `set`,
+  `has` and `delete` hash the key and compare it as Rust's table does
+  ([ADR 1120](../../decisions/1120-a-hash-key-found-by-its-own-hash-and-eq.md)).
+  A set's `iter().for_each(..)` is the set's own
   `forEach`, `tags.forEach((tag) => ..)`, each item given in the order
   `Array.from(tags)` has them
   ([ADR 0877](../../decisions/0877-a-sets-for-each-is-its-own.md)).

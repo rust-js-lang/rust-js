@@ -7,6 +7,7 @@ use crate::lower::calls::Call;
 use crate::lower::mut_refs::boxed;
 use crate::lower::recognition::{Std, StdItem, is_std_def, std_item};
 use crate::lower::{FnCx, R};
+use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
@@ -202,6 +203,57 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             dictionary,
             own: own.then_some(state),
         })
+    }
+
+    /// Does `hash` of a `ty` run a hand-written `Hash`, the crate's or a
+    /// library's, whose calls a program can see, a print or a panic (ADR
+    /// 1120)? std's and a derived one's, all through, run none, nor does a
+    /// type's equal only to itself, its address's (ADR 0864).
+    pub(in crate::lower) fn hash_runs_code(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
+        if seen.contains(&ty) {
+            return false;
+        }
+        seen.push(ty);
+        if let Some(hashed) = self.recognition().hashed_as(ty) {
+            return match hashed {
+                Hashed::Pointer(held) | Hashed::Slice(held) | Hashed::Items(held) | Hashed::Option(held) => {
+                    self.hash_runs_code(held, seen)
+                }
+                Hashed::Tuple(parts) => parts.into_iter().any(|part| self.hash_runs_code(part, seen)),
+                Hashed::Result(ok, err) => self.hash_runs_code(ok, seen) || self.hash_runs_code(err, seen),
+                Hashed::Number(_) | Hashed::Bool | Hashed::Char | Hashed::Text | Hashed::Address(_) => false,
+            };
+        }
+        match ty.kind() {
+            ty::Adt(..) if self.equal_only_to_itself(ty) => false,
+            // std's impl's, which hashes what its bounds say it does:
+            // `Reverse<T>`'s `T`, never `Discriminant<T>`'s.
+            ty::Adt(adt, _) if self.is_std(adt.did()) => {
+                let hash = std_item(self.tcx, StdItem::Hash);
+                let tr = self
+                    .tcx
+                    .erase_and_anonymize_regions(ty::TraitRef::new(self.tcx, hash, [ty]));
+                let Ok(ImplSource::UserDefined(imp)) = crate::lower::traits::select(self.tcx, self.typing_env, tr)
+                else {
+                    return false;
+                };
+                let bounds = self.tcx.param_env(imp.impl_def_id).caller_bounds();
+                bounds
+                    .iter()
+                    .filter_map(|clause| clause.as_trait_clause())
+                    .filter(|bound| bound.def_id() == hash)
+                    .map(|bound| {
+                        ty::EarlyBinder::bind(self.tcx, bound.skip_binder().self_ty())
+                            .instantiate(self.tcx, imp.args)
+                            .skip_normalization()
+                    })
+                    .any(|held| self.hash_runs_code(held, seen))
+            }
+            ty::Adt(adt, args) if self.recognition().derives(std_item(self.tcx, StdItem::Hash), ty) => adt
+                .all_fields()
+                .any(|field| self.hash_runs_code(self.field_ty(field, args), seen)),
+            _ => true,
+        }
     }
 
     /// A std hasher's `Hasher`, `$sipHasher`, its own methods; and a std

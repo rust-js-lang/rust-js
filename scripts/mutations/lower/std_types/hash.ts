@@ -129,4 +129,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
     snapshots: true,
   },
+  {
+    name: "hash-runs-code-of-derived-unwalked",
+    breaks: "a derived `Hash` is taken to run no code of its fields, so a key holding one whose own `hash` panics never calls it (ADR 1120)",
+    file: "src/lower/std_types/hash.rs",
+    find: "                .any(|field| self.hash_runs_code(self.field_ty(field, args), seen)),\n",
+    replace: "                .any(|_| false),\n",
+    tests: ["test/corpus.test.ts", "-t", "^keys_found_by_their_own_hash.rs$"],
+  },
+  {
+    name: "hash-runs-code-of-any-bound",
+    breaks: "std's impl is taken to hash what any of its bounds names, `Discriminant<T>`'s `T: Sized` too, so a map of discriminants asks a `Hash` its key's type hasn't (ADR 1120)",
+    file: "src/lower/std_types/hash.rs",
+    find: "                    .filter(|bound| bound.def_id() == hash)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
+  },
 ];

@@ -1,6 +1,7 @@
-// A type's own `Hash`, as semver's and arrayvec's are: a map keys by value,
-// as it does a derived one's, and never calls `hash`, so the impl, which
-// Rust requires to agree with `==`, changes nothing a program sees.
+//@ library-differs
+// A type's own `Hash`, as semver's and arrayvec's are: a map finds a key
+// by its `hash` and then its `==`, as std's table does, so a `hash` that
+// prints or panics is seen where std's calls it (ADR 1120).
 
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
@@ -35,8 +36,7 @@ impl Hash for Channel {
     }
 }
 
-// One impl for each of a generic type's arguments: no JS of either, so
-// no names to collide.
+// One impl for each of a generic type's arguments, each its own name.
 #[derive(PartialEq, Eq, Debug)]
 struct Tagged<T>(T);
 

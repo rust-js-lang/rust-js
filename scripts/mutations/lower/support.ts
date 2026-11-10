@@ -79,9 +79,8 @@ export const mutations: Mutation[] = [
     name: "btree-of-own-ord-unsupported",
     breaks: "a `BTreeMap` of keys whose `Ord` is the crate's own is refused",
     file: "src/lower/support.rs",
-    find: "                if !given && !self.is_sorted(ty) && !self.is_key(key, false) {\n",
-    replace:
-      "                if !given && !self.is_key(key, self.is_sorted(ty)) {\n",
+    find: "                    && !self.is_sorted(ty)\n                    && !self.is_key(key, false)\n",
+    replace: "                    && !self.is_key(key, self.is_sorted(ty))\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$"],
   },
   {
@@ -111,5 +110,13 @@ export const mutations: Mutation[] = [
       "-t",
       "rest arguments as a value are refused",
     ],
+  },
+  {
+    name: "hashed-key-refused",
+    breaks: "a hash map of keys whose `Eq` is their own is refused, though it finds them by their own `Hash` (ADR 1120)",
+    file: "src/lower/support.rs",
+    find: "                    && !self.recognition().implements_trait(key, hash)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^keys_found_by_their_own_hash.rs$"],
   },
 ];

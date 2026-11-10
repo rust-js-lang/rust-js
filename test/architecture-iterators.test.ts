@@ -560,6 +560,7 @@ test("the runtime steps what may be a Rust iterator by its stepping helpers alon
     "src/runtime/cycle.js": [1, "the array a cycle keeps"],
     "src/runtime/extract_if.js": [1, "a map's entries"],
     "src/runtime/fold_of.js": [1, "`$foldToArray`'s copy of an array"],
+    "src/runtime/hashed_map.js": [2, "a map or a set made of a collect's array or another's entries or items"],
     "src/runtime/hasher.js": [1, "a collection's items, hashed"],
     "src/runtime/index_map.js": [1, "a map's entries"],
     "src/runtime/key_map.js": [1, "a map made of a collect's array or another map's entries"],

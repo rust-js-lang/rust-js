@@ -21,6 +21,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
+    /// A hash map's or set's key a call finds by another type, what the
+    /// key's `Borrow` gives, `HashSet<Rc<Point>>::contains(&Point)`, of one
+    /// that finds its keys by their own `Hash` and `Eq` (ADR 1120), whose
+    /// `hash` and `eq` are the key's: the key, and that type.
+    fn hashed_key_borrowed(
+        &self,
+        def_id: DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+    ) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+        let imp = self.tcx.inherent_impl_of_assoc(def_id)?;
+        let map = self
+            .tcx
+            .type_of(imp)
+            .instantiate(self.tcx, generic_args)
+            .skip_normalization();
+        if !self.is_map(map) || self.is_sorted(map) {
+            return None;
+        }
+        let borrow = std_item(self.tcx, StdItem::Borrow);
+        let clauses = self.tcx.clauses_of(def_id).instantiate(self.tcx, generic_args).clauses;
+        clauses
+            .into_iter()
+            .filter_map(|clause| clause.skip_normalization().as_trait_clause())
+            .map(|clause| {
+                self.tcx
+                    .erase_and_anonymize_regions(self.tcx.instantiate_bound_regions_with_erased(clause).trait_ref)
+            })
+            .filter(|tr| tr.def_id == borrow)
+            .map(|tr| (tr.self_ty(), tr.args.type_at(1)))
+            .find(|&(key, by)| key.peel_refs() != by.peel_refs() && self.found_by_hash(key))
+    }
+
     /// A collection of the crate's that a call takes as any `IntoIterator`:
     /// generic code, std's or the crate's, iterates what it's given as JS
     /// does, which never calls the collection's own `into_iter` (ADR 0160).
@@ -76,6 +108,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(ty) = self.borrowed_by_user(def_id, generic_args)? {
             let path = self.tcx.def_path_str(def_id);
             return Err(self.unsupported(span, &format!("`{path}` of a `{ty}` as what its own `Borrow` gives")));
+        }
+        if let Some((key, by)) = self.hashed_key_borrowed(def_id, generic_args) {
+            let path = self.tcx.def_path_str(def_id);
+            let what = format!(
+                "`{path}` of a `{key}` key by a `{by}`, what its `Borrow` gives, where the map finds its keys by their own `Hash` and `Eq`"
+            );
+            return Err(self.unsupported(span, &what));
         }
         // A `&mut` of a `&mut` of an object for a type parameter of the
         // crate's: generic code's each `&mut` is a box (ADR 0454), where

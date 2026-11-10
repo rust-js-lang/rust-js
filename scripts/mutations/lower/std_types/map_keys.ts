@@ -42,9 +42,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Cow` map's key is given back as it was asked with, a `&str` where it holds a `Cow`",
     file: "src/lower/std_types/map_keys.rs",
-    find: "        self.is_cow_key(key) || self.recognition().is_path(key) || (sorted && self.found_by_cmp(key))\n",
-    replace:
-      "        self.recognition().is_path(key) || (sorted && self.found_by_cmp(key))\n",
+    find: "        self.is_cow_key(key)\n            || self.recognition().is_path(key)\n",
+    replace: "        self.recognition().is_path(key)\n",
     tests: ["test/corpus.test.ts", "-t", "^held_keys.rs$"],
   },
   {
@@ -60,9 +59,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a B-tree of its own `Ord` made of items keeps the first of equal ones, as `insert` does",
     file: "src/lower/std_types/map_keys.rs",
-    find: "        self.is_cow_key(key) || self.recognition().is_path(key) || (sorted && self.found_by_cmp(key))\n",
-    replace:
-      "        self.is_cow_key(key) || self.recognition().is_path(key)\n",
+    find: "                true => self.found_by_cmp(key),\n",
+    replace: "                true => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$"],
   },
   {
@@ -218,5 +216,21 @@ export const mutations: Mutation[] = [
     find: "                    || crate::lower::recognition::is_c_string_like(self.tcx, ty))",
     replace: ")",
     tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
+  },
+  {
+    name: "hashed-key-own-hash-unseen",
+    breaks: "a key whose `==` is derived but whose `hash` is its own is a `$KeyMap`, which never calls it: a `hash` that panics, std's table calls, never runs (ADR 1120)",
+    file: "src/lower/std_types/map_keys.rs",
+    find: "        (!self.is_key(key, false) && !key.peel_refs().is_unit()) || self.hash_runs_code(key, &mut Vec::new())\n",
+    replace: "        !self.is_key(key, false) && !key.peel_refs().is_unit()\n",
+    tests: ["test/corpus.test.ts", "-t", "^keys_found_by_their_own_hash.rs$"],
+  },
+  {
+    name: "hashed-key-given-back",
+    breaks: "a hashed set's `get` and `take` of a key found by its own `Eq` give back the key asked with, not the one the set holds (ADR 1120)",
+    file: "src/lower/std_types/map_keys.rs",
+    find: "                false => self.found_by_hash(key),\n",
+    replace: "                false => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^keys_found_by_their_own_hash.rs$"],
   },
 ];

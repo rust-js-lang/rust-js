@@ -129,6 +129,21 @@ class $SipHasher extends $Hasher {
     return Object.assign(Object.create($SipHasher.prototype), this);
   }
 }
+// What a key's own `hash` writes, which a hash map of keys found by their
+// own `Hash` keeps them under (ADR 1120): its bytes, every one, so two a
+// `finish()` would tell apart are told apart. Its `finish()` is a
+// `DefaultHasher`'s of them, as a `hash` that asks one is given.
+class $KeyHasher extends $Hasher {
+  written = "";
+  write(bytes) {
+    for (const byte of bytes) this.written += String.fromCharCode(byte);
+  }
+  finish() {
+    const hasher = new $SipHasher(1, 3);
+    hasher.write(Array.from(this.written, (byte) => byte.charCodeAt(0)));
+    return hasher.finish();
+  }
+}
 // A std hasher's dictionary, of its `&mut`, `{ value }`: its own methods.
 const $sipHasher = /* @__PURE__ */ Object.fromEntries(
   /* @__PURE__ */ ["write", "finish", ...$hasherProvided].map((name) => [name, (hasher, ...args) => hasher.value[name](...args)]),

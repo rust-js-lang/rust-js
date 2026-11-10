@@ -6,7 +6,9 @@ Extends [0121](0121-value-keys.md), [0141](0141-std-trait-objects.md).
 Extended by
 [0864](0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md):
 `ptr::hash` writes its pointer's address. Amended 2026-11-03: a
-`PhantomData` is known by its lang item, and writes nothing (#514).
+`PhantomData` is known by its lang item, and writes nothing (#514). Amended
+by [1120](1120-a-hash-key-found-by-its-own-hash-and-eq.md): a hash map of
+keys whose `Hash` or `Eq` is their own calls `hash` as std's table does.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): the same hash, bit for
 bit, as `wasm32`'s native Rust, rust-js's target (ADR 0090).

@@ -4,7 +4,7 @@
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 
-use crate::lower::recognition::TypeFact;
+use crate::lower::recognition::{StdItem, TypeFact, std_item};
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -369,6 +369,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ));
         }
         let name = match key {
+            // Found by its own `Hash` and `Eq` (ADR 1120).
+            Some(key) if !sorted && self.found_by_hash(key) => {
+                let hash = std_item(self.tcx, StdItem::Hash);
+                let hash = self
+                    .dictionary(ty::TraitRef::new(self.tcx, hash, [key]), span)
+                    .map_err(|_| {
+                        let what =
+                            format!("values of type `{key}` as a hash map's keys, whose `Hash` rust-js doesn't write");
+                        self.unsupported(span, &what)
+                    })?;
+                let eq = self.eq_fn(key, span)?;
+                return Ok(Expr::call_helper(
+                    ["$hashedMap", "$hashedSet"][usize::from(set)],
+                    vec![hash, eq],
+                ));
+            }
             // Paths, each kept under its components (ADR 0401).
             Some(key) if self.recognition().is_path(key) => ["$PathMap", "$PathSet"][usize::from(set)],
             // `Cow`s, each kept under what it borrows (ADR 0402).

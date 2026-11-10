@@ -190,8 +190,8 @@ for (const [name, source, message, crate] of [
   // A constant's each use is a copy (ADR 0031); a static's one value isn't.
   ["a static of a Vec of functions", 'pub fn f() {}\npub static V: Vec<fn()> = Vec::new();\npub fn g() -> usize { V.len() }', "statics of type"],
   // ADR 0121: a key found by its value is one a derived `Eq` compares.
-  ["map keyed by a struct of its own equality", '#[derive(Hash)] pub struct P { pub x: u32 }\nimpl PartialEq for P { fn eq(&self, o: &P) -> bool { self.x % 10 == o.x % 10 } }\nimpl Eq for P {}\npub fn f() -> usize { let m: std::collections::HashMap<P, u32> = std::collections::HashMap::new(); m.len() }', "does not support values of type `P`"],
-  ["map keyed by a struct with a field of its own equality", '#[derive(Hash)] pub struct Q(pub u32);\nimpl PartialEq for Q { fn eq(&self, o: &Q) -> bool { self.0 % 10 == o.0 % 10 } }\nimpl Eq for Q {}\n#[derive(PartialEq, Eq, Hash)] pub struct P { pub q: Q }\npub fn f() -> usize { let m: std::collections::HashSet<P> = std::collections::HashSet::new(); m.len() }', "does not support values of type `P`"],
+  // A hash map whose keys are found by their own `Hash` and `Eq` hashes a key of their type alone (ADR 1120).
+  ["a hashed set's lookup by what its key's Borrow gives", 'pub fn f(s: &std::collections::HashSet<std::rc::Rc<u32>>) -> bool { s.contains(&1) }', "of a `std::rc::Rc<u32>` key by a `u32`, what its `Borrow` gives"],
   ["parse to a type without FromStr support", 'pub fn f(s: &str) -> bool { s.parse::<std::net::IpAddr>().is_ok() }', "does not support"],
   // A string's byte offsets are counted (ADR 0138), but not yet of a closure's matches.
   // `*p` of a `P: DerefMut` is its dictionary's (ADR 0394), std's of a pointer

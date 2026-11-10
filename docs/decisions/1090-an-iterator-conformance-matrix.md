@@ -647,3 +647,9 @@ one that turns into a wrong answer, and one that's fixed are each seen,
 where a count would let them pass. Its templates are one method each where
 a method is refused, so a refusal takes no other method down with it: 176
 cases of 132 templates, 28 of them refused in both builds.
+
+Its key with a hand-written `Hash` runs (#1271, ADR
+[1120](1120-a-hash-key-found-by-its-own-hash-and-eq.md)): `hash of a
+counted key` is off `refused`, and `hset of a counted item` runs a
+`HashSet`'s the same, 178 cases of 133 templates, 26 refused in both
+builds, under #1274 to #1277.

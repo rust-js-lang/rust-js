@@ -26,6 +26,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.is_cow_key(peeled)
     }
 
+    /// A hash map's or a hash set's key it finds by its own `Hash` and
+    /// `Eq`, in a `$hashedMap` or a `$hashedSet` (ADR 1120): one JS can't
+    /// find by itself or by its value, its `==` its own, or whose `hash`
+    /// runs code a program sees, which std's table calls as it searches.
+    /// `()`, one value, is JS's `undefined`.
+    pub(in crate::lower) fn found_by_hash(&self, key: Ty<'tcx>) -> bool {
+        (!self.is_key(key, false) && !key.peel_refs().is_unit()) || self.hash_runs_code(key, &mut Vec::new())
+    }
+
     /// A key a B-tree finds as a `$KeyMap` keeps it: one whose `Ord` is
     /// derived, or std's, all through, so two it orders `Equal` are equal
     /// field by field, as `$key` tells them, and its order is `cmp_fn`'s
@@ -77,11 +86,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A key a map finds another by that it can be told apart from: a
     /// path, `a//b` finding `a/b` (ADR 0401), or a `Cow`, `Borrowed("a")`
     /// finding `Owned("a")` (ADR 0402), or a B-tree's found by its `cmp`
-    /// (ADR 0404). The key it holds given back isn't
+    /// (ADR 0404), or a hashed one's found by its own `Eq`, `Word("A")`
+    /// finding `Word("a")` (ADR 1120). The key it holds given back isn't
     /// the one asked with, and of equal ones a B-tree made of items keeps
     /// the last, where `insert` keeps the first.
     pub(super) fn finds_others(&self, key: Ty<'tcx>, sorted: bool) -> bool {
-        self.is_cow_key(key) || self.recognition().is_path(key) || (sorted && self.found_by_cmp(key))
+        self.is_cow_key(key)
+            || self.recognition().is_path(key)
+            || match sorted {
+                true => self.found_by_cmp(key),
+                false => self.found_by_hash(key),
+            }
     }
 
     /// A B-tree's key it finds by its `cmp`, in an `$OrdMap` (ADR 0404):

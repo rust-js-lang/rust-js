@@ -620,4 +620,12 @@ export const mutations: Mutation[] = [
     replace: "                    _ => items,\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_set_operators_seen.rs$"],
   },
+  {
+    name: "hashed-key-by-identity",
+    breaks: "a hash map of keys whose `Eq` is their own is a JS `Map`, which finds an object key by identity (ADR 1120)",
+    file: "src/lower/std_types/map.rs",
+    find: "            Some(key) if !sorted && self.found_by_hash(key) => {\n",
+    replace: "            Some(key) if false && self.found_by_hash(key) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^keys_found_by_their_own_hash.rs$"],
+  },
 ];

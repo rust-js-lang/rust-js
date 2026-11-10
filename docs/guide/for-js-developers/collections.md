@@ -1148,6 +1148,64 @@ export function at(b, row, col) {
 }
 ```
 
+- **A key whose `Eq` or `Hash` you wrote is found by them,** as std's
+  table finds it: the map is a `$hashedMap` of its `Hash` and its `eq`, a
+  set a `$hashedSet`. A search hashes the key once, then asks `eq` of the
+  keys it holds that hashed to the same bytes, so `Tag("RUST")` finds the
+  `Tag("rust")` a set holds, and a `hash` that prints or panics runs where
+  std's does ([ADR 1120](../../decisions/1120-a-hash-key-found-by-its-own-hash-and-eq.md)):
+
+```rust
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
+
+pub struct Tag(pub String);
+
+impl PartialEq for Tag {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.eq_ignore_ascii_case(&other.0)
+    }
+}
+
+impl Eq for Tag {}
+
+impl Hash for Tag {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.to_ascii_lowercase().hash(state);
+    }
+}
+
+pub fn tags(names: &[&str]) -> HashSet<Tag> {
+    names.iter().map(|name| Tag(name.to_string())).collect()
+}
+
+pub fn tagged(tags: &HashSet<Tag>, name: &str) -> bool {
+    tags.contains(&Tag(name.to_string()))
+}
+```
+
+```js
+import { $asciiCase, $hashSlice, $hashedSet, $partialEq } from "@rust-js/std";
+
+export const tagPartialEq = $partialEq({ eq: tagPartialEq_eq });
+function tagPartialEq_eq(tag, other) {
+  return $asciiCase(tag[0]) === $asciiCase(other[0]);
+}
+
+export const tagHash = { hash: tagHash_hash, hashSlice: $hashSlice(tagHash_hash) };
+function tagHash_hash(tag, state, HHasher) {
+  HHasher.writeStr(state, $asciiCase(tag[0]));
+}
+
+export function tags(names) {
+  return new ($hashedSet(tagHash, tagPartialEq_eq))(names.values().map((name) => [name]));
+}
+
+export function tagged(tags, name) {
+  return tags.has([name]);
+}
+```
+
 - **A key equal only to itself is keyed by itself,** as a JS `Set` keys an
   object. Say so in its own `PartialEq` and `Hash`, of its address,
   `ptr::eq` and `ptr::hash`, and a set of references to it is a `Set` of

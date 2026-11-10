@@ -6,6 +6,9 @@ Status: Accepted. Extends [0121](0121-value-keys.md). Extended by
 Superseded in part by [0463](0463-hashing-is-stds.md): a `Hash` impl is
 lowered, written only where it's reached, and `hash` called with std's
 hashers or a crate's own; a map still keys by value and never calls it.
+Superseded by [1120](1120-a-hash-key-found-by-its-own-hash-and-eq.md): a
+hash map finds a key whose `Hash` or `Eq` is its own by them, calling
+`hash` on each search as std's table does.
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 

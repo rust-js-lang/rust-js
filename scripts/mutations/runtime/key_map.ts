@@ -2,8 +2,9 @@
 import type { Mutation } from "../../mutations";
 
 // Not mutated: which of two equal keys `insert` keeps, and which a drop is
-// of. A key's `Eq` is derived (a key of a custom `PartialEq` is refused), so
-// two equal keys print and drop alike, and no program can tell them apart.
+// of. A key's `Eq` is derived (one of a custom `PartialEq` is a
+// `$hashedMap`'s), so two equal keys print and drop alike, and no program
+// can tell them apart.
 export const mutations: Mutation[] = [
   {
     name: "key-map-has-by-identity",

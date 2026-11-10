@@ -51,29 +51,24 @@ for (const [index, [name, , arg]] of cases.entries()) {
   });
 }
 
-// A hashed map finds a key by its fields, which a hand-written `Eq` may not
-// follow: refused. A B-tree finds one by its `cmp`, as std's does (ADR 0404).
+// A hashed map finds a key whose `Eq` is its own by its `Hash` and `Eq`, as
+// std's table does (ADR 1120); a B-tree by its `cmp`, as std's does (ADR
+// 0404).
 for (const collection of ["HashMap", "HashSet"]) {
-  test(`${collection} rejects enum keys with custom equality`, () => {
-    const dir = fixture("key-equality");
-    const source = `
-      #[derive(Clone, Copy, Eq, Hash)] enum Key { A, B }
+  test(`${collection} finds enum keys by their own Eq`, async () => {
+    const dir = fixture(`key-equality-${collection}`);
+    writeFileSync(join(dir, "keys.rs"), `
+      #[derive(Clone, Copy, Eq)] enum Key { A, B }
       impl PartialEq for Key { fn eq(&self, _: &Self) -> bool { true } }
-      impl Ord for Key { fn cmp(&self, _: &Self) -> std::cmp::Ordering { std::cmp::Ordering::Equal } }
-      impl PartialOrd for Key { fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> { Some(self.cmp(rhs)) } }
+      impl std::hash::Hash for Key { fn hash<H: std::hash::Hasher>(&self, _: &mut H) {} }
       pub fn size() -> usize {
         let mut keys = std::collections::${collection}::new();
         keys.insert(Key::A${collection.endsWith("Map") ? ", 1" : ""});
         keys.insert(Key::B${collection.endsWith("Map") ? ", 2" : ""});
         keys.len()
-      }`;
-    const input = join(dir, "keys.rs"), output = join(dir, "keys.js");
-    writeFileSync(input, source);
-    writeFileSync(output, "last successful build");
-    const result = Bun.spawnSync([compiler, input, "-o", output]);
-    expect(result.exitCode).not.toBe(0);
-    expect(result.stderr.toString()).toContain("does not support values of type `Key`");
-    expect(readFileSync(output, "utf8")).toBe("last successful build");
+      }`);
+    run([compiler, join(dir, "keys.rs"), "-o", join(dir, "keys.js")]);
+    expect((await import(join(dir, "keys.js"))).size()).toBe(1);
   });
 }
 
