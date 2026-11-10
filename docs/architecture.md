@@ -41,7 +41,7 @@ compiled for WASI; it is a separate build package, not a second compiler.
 
 | Responsibility | Code |
 | --- | --- |
-| Compiler entry, command parsing, Cargo wrapper, panic reporting, the `core` std's bodies are lowered of, built to unwind | `src/main.rs`, `src/command.rs`, `src/cargo.rs`, `src/panic_runtime.rs`, `src/std_sysroot.rs` |
+| Compiler entry, command parsing, Cargo wrapper, panic reporting, the `core` and `alloc` std's bodies are lowered of, built to unwind | `src/main.rs`, `src/command.rs`, `src/cargo.rs`, `src/panic_runtime.rs`, `src/std_sysroot.rs` |
 | `rust-js clippy`'s lints, clippy's crates registered as rustc's (ADR 0888) | `src/clippy.rs` |
 | JSX syntax expansion and provenance | `src/jsx_syntax.rs`, `src/jsx_syntax/` |
 | Rust analysis and lowering | `src/lower.rs`, `src/lower/` (detailed below) |

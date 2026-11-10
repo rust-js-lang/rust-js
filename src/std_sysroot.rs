@@ -1,15 +1,15 @@
 //! The standard library `--std-bodies` lowers std's bodies of, built to
 //! unwind (#424): wasm32's, as the toolchain ships it, is built to abort, so
 //! each call of its MIR unwinds nowhere, and a compiled body would drop
-//! nothing a panic unwinds past. `@rust-js/std` is `core`'s bodies alone
-//! (`std/lib.rs` is `#![no_std]`), so what's built is `core`, of the
-//! toolchain's own source, its metadata alone with each body's MIR, and a
-//! `compiler_builtins` that's a crate and nothing more, as the panic runtime
-//! a test harness is given is (`panic_runtime`). Nothing is linked. It's
-//! built once for a toolchain and a target, into the compiler's own
-//! directory, and given to the session as its `--sysroot`. Std's items are
-//! keyed by their paths, which this `core` shares with the one a program's
-//! session reads (`lower::library::key`).
+//! nothing a panic unwinds past. `@rust-js/std` is `core`'s and `alloc`'s
+//! bodies alone (`std/lib.rs` is `#![no_std]`), so what's built is `core`
+//! and `alloc` (ADR 1123), of the toolchain's own source, their metadata
+//! alone with each body's MIR, and a `compiler_builtins` that's a crate and
+//! nothing more, as the panic runtime a test harness is given is
+//! (`panic_runtime`). Nothing is linked. It's built once for a toolchain and
+//! a target, into the compiler's own directory, and given to the session as
+//! its `--sysroot`. Std's items are keyed by their paths, which these crates
+//! share with the ones a program's session reads (`lower::library::key`).
 
 use rustc_driver::Callbacks;
 use std::path::{Path, PathBuf};
@@ -33,9 +33,9 @@ const SETTINGS: Settings = Settings {
     inline_mir: true,
 };
 
-/// The sysroot whose `core`, for `target`, is built to unwind, of the
-/// toolchain at `toolchain`, the session's own sysroot: made where it
-/// isn't yet, beside the compiler.
+/// The sysroot whose `core` and `alloc`, for `target`, are built to
+/// unwind, of the toolchain at `toolchain`, the session's own sysroot: made
+/// where it isn't yet, beside the compiler.
 pub fn sysroot(toolchain: &Path, target: &str) -> Result<PathBuf, String> {
     let home = match std::env::var_os("RUST_JS_STD_SYSROOT") {
         Some(dir) => PathBuf::from(dir),
@@ -53,11 +53,13 @@ pub fn sysroot(toolchain: &Path, target: &str) -> Result<PathBuf, String> {
     // Kept by what it's built of: the toolchain, which its path names, the
     // target, and how each crate is built, its arguments and its settings,
     // so one built otherwise is never taken for it.
+    let alloc = toolchain.join("lib/rustlib/src/rust/library/alloc/src/lib.rs");
     let args = |building: &Path| {
         let lib = building.join("lib/rustlib").join(target).join("lib");
         [
             crate_args("core", &core.display().to_string(), building, &lib, target),
             crate_args("compiler_builtins", "compiler_builtins.rs", building, &lib, target),
+            crate_args("alloc", &alloc.display().to_string(), building, &lib, target),
         ]
     };
     let mut key = std::hash::DefaultHasher::new();
@@ -71,9 +73,10 @@ pub fn sysroot(toolchain: &Path, target: &str) -> Result<PathBuf, String> {
     let _ = std::fs::remove_dir_all(&building);
     let lib = building.join("lib/rustlib").join(target).join("lib");
     std::fs::create_dir_all(&lib).map_err(|error| format!("cannot make the unwinding std's sysroot: {error}"))?;
-    let [core_args, builtins_args] = args(&building);
+    let [core_args, builtins_args, alloc_args] = args(&building);
     build(core_args, None)?;
     build(builtins_args, Some(BUILTINS))?;
+    build(alloc_args, None)?;
     std::fs::write(building.join("done"), "").map_err(|error| format!("cannot finish the unwinding std: {error}"))?;
     // Another build's that finished first is as good.
     if std::fs::rename(&building, &made).is_err() {
