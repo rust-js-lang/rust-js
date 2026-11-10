@@ -25,10 +25,15 @@ import { buildCompiler, compiler, contentDirectory, fixture, root, target, write
 import { undefinedBehaviour } from "./miri";
 import { partSetting } from "./part-settings";
 
-/** A setting that's a whole number, at least `least`, or none, and then
- * `otherwise`: anything else fails the run before a seed does, not as a
- * run of none. */
-function whole(name: string, otherwise: number, least: number, most = Number.MAX_SAFE_INTEGER, value = partSetting(name)): number {
+/** A setting, `name`, that's a whole number, at least `least`, its
+ * `value` read by its caller, or none, and then `otherwise`: anything else
+ * fails the run before a seed does, not as a run of none. Its value is the
+ * caller's to read, `partSetting`'s of a part's setting and the
+ * environment's of another: a default parameter, `value =
+ * partSetting(name)`, was read where the environment had none, and the
+ * nightly's suite failed on `FUZZ_REDUCE_BUDGET`, no part's setting
+ * (#1305). */
+function whole(name: string, value: string | undefined, otherwise: number, least: number, most = Number.MAX_SAFE_INTEGER): number {
   if (value === undefined) return otherwise;
   if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)) || Number(value) < least || Number(value) > most) {
     throw new Error(`${name}=${value}: a whole number, from ${least} to ${most}, is a setting`);
@@ -39,8 +44,8 @@ function whole(name: string, otherwise: number, least: number, most = Number.MAX
 // A seed is a 32-bit number to the generator (`random`), so each batch's
 // seeds are in that range: past it, a seed would be another's program.
 const seedLimit = 2 ** 32;
-const start = whole("FUZZ_START", 1, 0, seedLimit - 1);
-const seeds = whole("FUZZ_SEEDS", 12, 1, seedLimit);
+const start = whole("FUZZ_START", partSetting("FUZZ_START"), 1, 0, seedLimit - 1);
+const seeds = whole("FUZZ_SEEDS", partSetting("FUZZ_SEEDS"), 12, 1, seedLimit);
 if (start + seeds > seedLimit) {
   throw new Error(`FUZZ_START=${start} FUZZ_SEEDS=${seeds}: the seeds end past ${seedLimit}, where the generator's seeds do`);
 }
@@ -51,7 +56,7 @@ const exploring = partSetting("FUZZ_START") !== undefined || partSetting("FUZZ_S
 // A reduction stops after this long, with the smallest program so far.
 // No part's setting, the seeds a part runs: read as it is (bbb2dc8c9's
 // `partSetting` refused it, #1218).
-const reduceBudget = whole("FUZZ_REDUCE_BUDGET", 300_000, 1, Number.MAX_SAFE_INTEGER, process.env.FUZZ_REDUCE_BUDGET);
+const reduceBudget = whole("FUZZ_REDUCE_BUDGET", process.env.FUZZ_REDUCE_BUDGET, 300_000, 1);
 
 beforeAll(buildCompiler);
 
