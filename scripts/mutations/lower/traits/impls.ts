@@ -16,8 +16,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl's own type parameter given as it is, its associated type's, goes to generic code as it is, which steps it as a JS iterator: `it.next is not a function` (#972)",
     file: "src/lower/traits/impls.rs",
-    find: "            && (self.range_kind(ty).is_some() || self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty))\n",
-    replace: "            && (self.range_kind(ty).is_some() || self.is_user_iterator(ty))\n",
+    find: "                || self.iterator_given_as_it_is(ty)\n                || crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty))\n",
+    replace: "                || crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty))\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_given_as_it_is.rs$"],
   },
   {
@@ -304,8 +304,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl's range for an associated type bound by `Iterator` is given to generic code as a range, which `for .. of` can't step",
     file: "src/lower/traits/impls.rs",
-    find: "            && (self.range_kind(ty).is_some() || self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty))\n",
-    replace: "            && false\n",
+    find: "            && (self.range_kind(ty).is_some()\n                || self.is_user_iterator(ty)\n",
+    replace: "            && (false\n                || self.is_user_iterator(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "generic_associated_types"],
   },
   {
@@ -710,5 +710,21 @@ export const mutations: Mutation[] = [
     find: "            None if self.asked_of_library(id) => {\n",
     replace: "            None if false => {\n",
     tests: ["test/library-classes.test.ts", "-t", "on the prototype"],
+  },
+  {
+    name: "made-js-iterator-of-std-struct-unseen",
+    breaks: "generic code takes std's struct of an adapter an impl gives for an associated iterator for a JS iterator that knows its back, stepping it as an empty one (#1292)",
+    file: "src/lower/traits/impls.rs",
+    find: "                || crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty))\n",
+    replace: "                || false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_of_stds_struct_from_its_back.rs$"],
+  },
+  {
+    name: "entry-output-unnormalized",
+    breaks: "an impl's entry asks of its method's output as written, `<Tens as Source>::Iter`, not std's struct the impl makes, and makes no JS iterator of it (#1292)",
+    file: "src/lower/traits/impls.rs",
+    find: "                .unwrap_or(output);\n            let env = self.tcx.param_env(item.def_id);\n",
+    replace: "                .map(|_| output)\n                .unwrap_or(output);\n            let env = self.tcx.param_env(item.def_id);\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_of_stds_struct_from_its_back.rs$"],
   },
 ];

@@ -1280,3 +1280,69 @@ pub fn of_str(text: &str) -> String {
   expect([lib.ofVec(["a", "b", "c"]), lib.ofStr("xyz"), lib.ofStr("")]).toEqual(["bc", "yz", ""]);
 });
 
+
+// A trait's associated iterator, and what its method hides behind an
+// `impl`, that an impl gives as std's struct of an adapter: generic code's
+// flatten of them, stepped from its back, steps each by its compiled
+// `next_back`, as the impl's dictionary makes it a JS iterator that knows
+// it, where it was stepped as an empty one; native Rust prints these
+// lines (#1292). The build of std's structs alone refuses the flatten's
+// constant size, so test/corpus/associated_iterator_of_stds_struct_from_its_back.rs
+// holds the rest.
+test("a flatten of a trait's associated iterators steps each from its back as the impl's dictionary makes it", async () => {
+  const dir = fixture("associated-iterator-flatten-back");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `trait Source {
+    type Iter: DoubleEndedIterator<Item = u32>;
+    fn items(n: u32) -> Self::Iter;
+    fn hidden(n: u32) -> impl DoubleEndedIterator<Item = u32>;
+}
+
+struct Tens;
+
+impl Source for Tens {
+    type Iter = std::iter::Map<std::ops::Range<u32>, fn(u32) -> u32>;
+    fn items(n: u32) -> Self::Iter {
+        (0..n).map(|x| x * 10)
+    }
+    fn hidden(n: u32) -> impl DoubleEndedIterator<Item = u32> {
+        (0..n).map(|x| x + 1)
+    }
+}
+
+fn by_name<S: Source>() -> Vec<u32> {
+    (1..4u32).flat_map(S::items).rev().collect()
+}
+
+fn hidden<S: Source>() -> Vec<u32> {
+    (1..4u32).flat_map(|n| S::hidden(n)).rev().collect()
+}
+
+pub fn flattened() -> Vec<Vec<u32>> {
+    vec![by_name::<Tens>(), hidden::<Tens>()]
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.flattened()).toEqual([
+    [20, 10, 0, 10, 0, 0],
+    [3, 2, 1, 2, 1, 1],
+  ]);
+});
+
+// `$iter` of what's neither an array nor an iterator that knows its back,
+// a compiler's mistake, throws, never steps it as an empty array, as
+// #1292's flatten did of std's struct; a `TypeError`, which no
+// `catch_unwind` takes for a panic.
+test("an iterator that doesn't know its back is never stepped as an empty array", async () => {
+  // The runtime a compiled module imports, a mutant's too.
+  const dir = fixture("iter-of-what-knows-no-back");
+  writeFileSync(join(dir, "lib.rs"), "pub fn none() {}\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  writeFileSync(join(dir, "iter.js"), 'export { $iter } from "@rust-js/std";\n');
+  const { $iter } = await import(join(dir, "iter.js"));
+  expect(() => $iter({ next: () => ({ done: true }) })).toThrow(TypeError);
+  expect([...$iter([1, 2])]).toEqual([1, 2]);
+});

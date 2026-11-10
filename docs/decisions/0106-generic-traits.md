@@ -233,3 +233,35 @@ changed. ADR 0262's "results change" case (the program didn't load).
   functions' clones of an `Option<Option<T>>` and a `Result<Option<T>, _>`,
   both builds against native Rust, through `METAMORPHIC=all`.
 - The mutation is `clone-fn-parameter-free-to-its-body`.
+
+## Amendment: std's struct of an adapter is made a JS iterator too (#1292)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): results changed,
+so Rust's are kept.
+
+#972 made the value an impl gives for an associated type bound by
+`Iterator` the JS iterator its dictionary makes of it, knowing its back
+and its length where the trait bounds them so: a range, the crate's own
+iterator, or the impl's type parameter given as it is. Std's struct of an
+adapter wasn't made one. An impl's `type Iter = Map<Range<u32>, fn(u32) ->
+u32>`, or a method's `-> impl DoubleEndedIterator`, gives std's compiled
+struct (ADR 0545, amended, the user's decision (A)). Generic code took it
+for a JS iterator that knows its back, as ADR 0480 says of an associated
+type. So `(1..4).flat_map(S::items).rev()` gave `[]` where native Rust
+gives `[20, 10, 0, 10, 0, 0]`, and `S::items(4).next_back()` threw.
+
+`made_js_iterator` now answers yes of std's struct of an adapter too: the
+entry makes it knowing its back by its compiled `next_back`
+(`knowing_held`), asked of the method's output as the impl makes it, its
+`<Tens as Source>::Iter` normalized, an `impl`'s hidden type revealed.
+And `$iter` of what's neither an array nor an iterator that knows its
+back throws a `TypeError`: a missing back is never stepped as an empty
+array again.
+
+`test/corpus/associated_iterator_of_stds_struct_from_its_back.rs` holds
+`next_back`, `rev()` and `rfold` of both forms against native Rust in both
+builds. `test/lowering-iterators.test.ts` holds the flatten, which the
+build of std's structs alone refuses ("its constant size of `<S as
+Source>::Iter`"), and `$iter`'s throw. Mutations
+`made-js-iterator-of-std-struct-unseen`, `entry-output-unnormalized` and
+`iter-of-what-knows-no-back-quiet`.

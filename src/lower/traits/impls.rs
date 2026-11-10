@@ -173,13 +173,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether generic code has a value of an associated type, `alias` as
     /// the trait declares it under `env`, of the type `ty` an impl gives it,
     /// as a JS iterator the impl's dictionary made of it (ADR 0061): one
-    /// bound by `Iterator`, a range, the crate's own iterator, or the impl's
-    /// type parameter given as it is, by its dictionaries (#972). The one
-    /// answer, of what its methods give and what its drop drops (#978).
+    /// bound by `Iterator`, a range, the crate's own iterator, the impl's
+    /// type parameter given as it is, by its dictionaries (#972), or std's
+    /// struct of an adapter, by its compiled steps, `next_back` too, which
+    /// generic code otherwise took for a JS iterator that knows its back
+    /// and stepped as an empty one (#1292). The one answer, of what its
+    /// methods give and what its drop drops (#978).
     pub(super) fn made_js_iterator(&self, alias: Ty<'tcx>, env: ty::ParamEnv<'tcx>, ty: Ty<'tcx>) -> bool {
         matches!(alias.kind(), ty::Alias(..))
             && (self.declared_bounds(alias, env).into_iter()).any(|id| is_std_def(self.tcx, id, StdItem::Iterator))
-            && (self.range_kind(ty).is_some() || self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty))
+            && (self.range_kind(ty).is_some()
+                || self.is_user_iterator(ty)
+                || self.iterator_given_as_it_is(ty)
+                || crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty))
     }
 
     /// An impl's dictionary: given nothing, the function whose one `return`
@@ -572,6 +578,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .skip_normalization()
                 .skip_binder()
                 .output();
+            // As the impl makes it, `<Tens as Source>::Iter` its `Map`, an
+            // `impl`'s hidden type std's struct it hides (#1292).
+            let output = (self.tcx)
+                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(output))
+                .unwrap_or(output);
             let env = self.tcx.param_env(item.def_id);
             let iterates = self.made_js_iterator(declared_output, env, output);
             let call = Expr::call(callee.clone(), values.clone());

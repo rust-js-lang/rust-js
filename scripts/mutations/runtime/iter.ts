@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "      return [this.end - this.at, this.end - this.at];\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
   },
+  {
+    name: "iter-of-what-knows-no-back-quiet",
+    breaks: "`$iter` steps an iterator that doesn't know its back as an empty array, a silent `[]`, where it throws (#1292)",
+    file: "src/runtime/iter.js",
+    find: "  if (typeof items.length !== \"number\") throw new TypeError(\"rust-js: an iterator stepped as an array's, which doesn't know its back\");\n",
+    replace: "",
+    tests: ["test/lowering-iterators.test.ts", "-t", "never stepped as an empty array"],
+  },
 ];

@@ -107,10 +107,6 @@ for (const [name, source, message, crate] of [
   ["a Vec collected of a slice's split where a capacity is read", "pub fn f(v: &[u32]) -> usize {\n    let w: Vec<&[u32]> = v.split(|x| *x == 0).collect();\n    w.capacity()\n}", "whose lower bound JS's doesn't have"],
   // A chain's exact-sized part made of JS's own adapters, which know no hint (#1200).
   ["a Vec collected of a chain of a skip where a capacity is read", "pub fn f(a: &[u32]) -> usize {\n    let v: Vec<&u32> = a.iter().skip(1).chain(a.iter().filter(|x| **x > 9)).collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
-  // Std's struct of a map a function gives behind an `impl`, flattened and
-  // stepped from its back: its value's form, as a named type's, refused till
-  // std's compiled `next_back` steps it (#1226, the user's decision (A); #1235).
-  ["a flatten of a function's impl stepped from its back", "fn doubled(g: &Vec<i32>) -> impl DoubleEndedIterator<Item = i32> + '_ {\n    g.iter().map(|x| x * 2)\n}\npub fn f(groups: &[Vec<i32>]) -> Vec<i32> {\n    groups.iter().flat_map(doubled).rev().collect()\n}", "which holds std's struct of an adapter a function gives (#1235)"],
   // A set's merge, whose hint's lower bound its state gives as it's stepped (#1215).
   ["a Vec collected of a set's difference where a capacity is read", "use std::collections::BTreeSet;\npub fn f(a: &BTreeSet<u32>, b: &BTreeSet<u32>) -> usize {\n    let v: Vec<&u32> = a.difference(b).collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
   ["a bound's extend of a Vec of a type parameter's items where a capacity is read", "fn fill<C: Extend<T>, T>(c: &mut C, x: T) {\n    c.extend(Some(x));\n}\npub fn f<T>(x: T) -> usize {\n    let mut v = Vec::new();\n    fill(&mut v, x);\n    v.capacity()\n}", "whose items' size std grows it by, a type parameter's"],
@@ -203,6 +199,9 @@ for (const [name, source, message, crate] of [
   ["a LazyCell given as a DerefMut", 'fn f<P: std::ops::DerefMut<Target = u32>>(mut p: P) { *p = 1; }\npub fn g() { f(std::cell::LazyCell::new(|| 1u32)) }', "implementation evidence for `<std::cell::LazyCell"],
   ["an Rc made a raw pointer", 'pub fn f(r: std::rc::Rc<u32>) -> *const u32 { std::rc::Rc::into_raw(r) }', "does not support"],
   ["a pointer of the crate's own to a dyn", "#![feature(derive_coerce_pointee)]\nuse std::ops::Deref;\n#[derive(std::marker::CoercePointee)] #[repr(transparent)] pub struct Ptr<'a, #[pointee] T: ?Sized> { ptr: &'a T }\nimpl<T: ?Sized> Deref for Ptr<'_, T> { type Target = T; fn deref(&self) -> &T { self.ptr } }\npub trait Get { fn get(&self) -> u32; }\npub struct V(u32);\nimpl Get for V { fn get(&self) -> u32 { self.0 } }\npub fn f() -> u32 { let v = V(10); let p: Ptr<dyn Get> = Ptr { ptr: &v }; p.get() }", "does not support unsizing a `Ptr<'_, dyn Get>`"],
+  // A flatten stepped from its back of std's structs a function gives, the
+  // function computed where it's given, which runs once: refused (#1235).
+  ["a flatten of a function's impl stepped from its back", "fn doubled(n: u32) -> std::iter::Map<std::ops::Range<u32>, fn(u32) -> u32> {\n    (0..n).map(|x| x * 2)\n}\nfn pick() -> fn(u32) -> std::iter::Map<std::ops::Range<u32>, fn(u32) -> u32> {\n    doubled\n}\npub fn f() -> Vec<u32> {\n    (1..4u32).flat_map(pick()).rev().collect()\n}", "which holds std's struct of an adapter a function gives (#1235)"],
   // A `dyn` of std's traits has no dictionary to carry a drop (ADR 0098).
   ["flatten of an Option of an Option of a value with a destructor", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(a: Option<Option<D>>) -> bool { a.flatten().is_some() }', "`std::option::Option::<std::option::Option<T>>::flatten` of a value with a destructor"],
   ["a Box<dyn Debug> of a value with a destructor", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\nimpl std::fmt::Debug for D { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { f.write_str("D") } }\npub fn f() { let _: Box<dyn std::fmt::Debug> = Box::new(D); }', "a `dyn` of a value with a destructor"],

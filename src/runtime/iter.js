@@ -6,6 +6,10 @@ function $iter(items, lowerless) {
   // One already, a variable's that holds its own `$iter`: itself, where it
   // is, which an array's iterator given on may be (ADRs 0429, 0456).
   if (!Array.isArray(items) && items.back !== undefined) return items;
+  // Of what's neither, an iterator that doesn't know its back, a compiler's
+  // mistake: loud, never read as an empty array (#1292). A `TypeError`, so
+  // no `catch_unwind` takes it for a panic.
+  if (typeof items.length !== "number") throw new TypeError("rust-js: an iterator stepped as an array's, which doesn't know its back");
   const it = Object.create(Iterator.prototype);
   it.items = items;
   it.at = 0;

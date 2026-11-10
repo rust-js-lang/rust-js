@@ -1675,3 +1675,24 @@ library's own iterator, `back(Down { n: 4 }.filter(..))`, and of a
 it, whose `next_back` the library's body calls. ADR 0262's case: none, no
 JS changes. The two-crate case gives `back` both, against native Rust,
 and the mutation is caught again.
+
+## Amendment: a flatten's items std's structs, stepped from its back (#1235)
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): a refusal lifted;
+what runs is std's.
+
+A flatten stepped from its back makes each item what `each` gives knowing
+its back. It read that from `each` as an arrow of one `return` alone. So
+`flat_map(pairs).rev()`, of a function given by its name, `pairs` or
+`Doubled::of`, whose `impl DoubleEndedIterator` is std's struct, was
+refused, naming #1235. So was a closure that did more first, `|n|
+owned(v(n))`, as a `Vec` collected in its body. Now `each_returned` reads
+an arrow's return after statements that hold no others, and a function
+given by its name as its call of a fresh item, `(item) => pairs(item)`.
+Each item is made knowing its back by its compiled `next_back`, as a
+closure's was. `test/corpus/flat_map_of_given_adapters_from_its_back.rs`
+holds these and each other adapter of one a function gives, stepped from
+its back, against native Rust in both builds. Still refused, naming
+#1235: a function computed where it's given, `flat_map(pick())`, which
+runs once, where `each` would call it for each item. Mutations
+`flatten-each-by-name-unknowing` and `flatten-each-with-a-body-unknowing`.

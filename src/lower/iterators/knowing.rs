@@ -608,16 +608,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let each = match inner.is_array() || inner.is_slice() || self.is_vec_like(inner) {
                 true => Some(each.clone()),
                 // What `each` gives of its item, `(item) => $iterator(item,
-                // next)`, made knowing its back where it's given (#716).
+                // next)`, made knowing its back where it's given (#716); of
+                // a function given by its name, `flat_map(pairs)`, what its
+                // call gives, `(item) => pairs(item)`, std's struct of an
+                // adapter it gives among them (#1235).
                 false
                     if self.implements_iterator(inner)
-                        && let Some((item, taken)) = returned_of(each) =>
+                        && let Some((item, mut body, taken)) = self.each_returned(each) =>
                 {
-                    let knowing = self.as_double_ended(taken.clone(), inner, span)?;
-                    Some(Expr::arrow(
-                        vec![item.as_str().into()],
-                        vec![StmtKind::Return(Some(knowing)).at(js::Span::NONE)],
-                    ))
+                    let knowing = self.as_double_ended(taken, inner, span)?;
+                    body.push(StmtKind::Return(Some(knowing)).at(js::Span::NONE));
+                    Some(Expr::arrow(vec![item.as_str().into()], body))
                 }
                 false => None,
             };
@@ -910,15 +911,52 @@ fn counted_parts(value: &Expr, skip: bool) -> Option<(Expr, Expr, Option<Expr>)>
 
 /// Of `f`, a function of one item that gives one value, `(item) =>
 /// value`: its item's name and what it gives.
-fn returned_of(f: &Expr) -> Option<(&String, &Expr)> {
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What a flatten's `each` gives of its item: its item's name, what its
+    /// body does first and what it returns, of an arrow that ends in its
+    /// one `return`; or of a function given by its name, `pairs` or
+    /// `Doubled.of`, which reads nothing that changes, its call of a fresh
+    /// item (#1235).
+    fn each_returned(&mut self, each: &Expr) -> Option<(String, Vec<Stmt>, Expr)> {
+        if let Some((item, body, taken)) = returned_of(each) {
+            return Some((item.clone(), body.to_vec(), taken.clone()));
+        }
+        let named = match &each.kind {
+            js::ExprKind::Var(_) => true,
+            js::ExprKind::Member(object, _) => matches!(object.kind, js::ExprKind::Var(_)),
+            _ => false,
+        };
+        if !named {
+            return None;
+        }
+        let item = self.fresh("item");
+        let taken = Expr::call(each.clone(), vec![Expr::var(&item)]);
+        Some((item, Vec::new(), taken))
+    }
+}
+
+fn returned_of(f: &Expr) -> Option<(&String, &[Stmt], &Expr)> {
     let js::ExprKind::Arrow(params, body) = &f.kind else {
         return None;
     };
-    let ([js::Pattern::Name(param)], [stmt]) = (params.as_slice(), body.as_slice()) else {
+    let ([js::Pattern::Name(param)], [before @ .., last]) = (params.as_slice(), body.as_slice()) else {
         return None;
     };
-    match &stmt.kind {
-        StmtKind::Return(Some(value)) => Some((param, value)),
+    // What it does first returns from nowhere: no statement that holds
+    // others, which might.
+    let plain = before.iter().all(|stmt| {
+        matches!(
+            stmt.kind,
+            StmtKind::Const(..)
+                | StmtKind::Let(..)
+                | StmtKind::Destructure { .. }
+                | StmtKind::Assign(..)
+                | StmtKind::Compound(..)
+                | StmtKind::Expr(_)
+        )
+    });
+    match &last.kind {
+        StmtKind::Return(Some(value)) if plain => Some((param, before, value)),
         _ => None,
     }
 }
