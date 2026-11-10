@@ -472,18 +472,21 @@ function operation(
         () => {
           const o = r.pick(same);
           if (o === undefined) return { body: [`unsafe { ${b.name}.as_mut_ptr().add(${i}).copy_from(${b.name}.as_ptr().add(${j}), 1) };`], shown: [b.name] };
-          const n = r.int(Math.min(b.n - i, o.n - j) + 1);
+          // Where in `o`, within its own length.
+          const k = r.int(o.n);
+          const n = r.int(Math.min(b.n - i, o.n - k) + 1);
           return {
-            body: [`unsafe { ${o.name}.as_mut_ptr().add(${j}).copy_from_nonoverlapping(${b.name}.as_ptr().add(${i}), ${n}) };`],
+            body: [`unsafe { ${o.name}.as_mut_ptr().add(${k}).copy_from_nonoverlapping(${b.name}.as_ptr().add(${i}), ${n}) };`],
             shown: [o.name],
           };
         },
         () => {
           const o = r.pick(same);
           if (o === undefined) return { body: [`unsafe { ptr::write(${b.name}.as_mut_ptr().add(${i}), ${v()}) };`], shown: [b.name] };
-          const n = r.int(Math.min(b.n - i, o.n - j) + 1);
+          const k = r.int(o.n);
+          const n = r.int(Math.min(b.n - i, o.n - k) + 1);
           return {
-            body: [`unsafe { ptr::swap_nonoverlapping(${b.name}.as_mut_ptr().add(${i}), ${o.name}.as_mut_ptr().add(${j}), ${n}) };`],
+            body: [`unsafe { ptr::swap_nonoverlapping(${b.name}.as_mut_ptr().add(${i}), ${o.name}.as_mut_ptr().add(${k}), ${n}) };`],
             shown: [b.name, o.name],
           };
         },

@@ -219,13 +219,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "pop" if self.peek_mut_of(owner).is_some() => Std::Heap(HeapOp::PeekPop),
             // What a `Box` or a `MaybeUninit` holds, or `undefined` before it's
             // written (ADR 0332).
-            "new_uninit" if owner.is_box() => Std::Uninit(UninitOp::Uninit),
+            "new_uninit" if owner.is_box() => Std::Uninit(UninitOp::Uninit { boxed: true }),
             "new_zeroed" if owner.is_box() => Std::Uninit(UninitOp::Zeroed),
             "new_uninit_slice" if owner.is_box() => Std::Uninit(UninitOp::Slice { zeroed: false }),
             "new_zeroed_slice" if owner.is_box() => Std::Uninit(UninitOp::Slice { zeroed: true }),
             "write" if owner.is_box() => Std::Uninit(UninitOp::BoxWrite),
             "assume_init" if owner.is_box() => Std::Same,
-            "uninit" if self.uninit_of(owner).is_some() => Std::Uninit(UninitOp::Uninit),
+            "uninit" if self.uninit_of(owner).is_some() => Std::Uninit(UninitOp::Uninit { boxed: false }),
             "zeroed" if self.uninit_of(owner).is_some() => Std::Uninit(UninitOp::Zeroed),
             "new" | "assume_init" | "assume_init_ref" | "assume_init_read" if self.uninit_of(owner).is_some() => {
                 Std::Same

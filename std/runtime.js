@@ -6713,16 +6713,32 @@ export function $ptrAdd(pointer, count) {
 }
 
 // `p.offset_from(q)`: how many items `p` is past `q`, along one array. Of
-// two, which Rust leaves undefined, rust-js's error.
+// two, which Rust leaves undefined, rust-js's error. Of a view of an
+// array's bytes and a pointer to its items, a pointer stepped in bytes and
+// cast back, `p.cast::<u8>().add(8).cast::<u64>()`, how many of the view's
+// width its bytes are past the other's, as both are into one array (#1254).
 export function $ptrOffsetFrom(p, q) {
   if (p === q) return 0;
-  if (p?.bytes !== undefined && q?.bytes !== undefined && $bytesOf(p) === $bytesOf(q)) {
-    return (p.at - q.at) / p.width;
+  if (p?.bytes !== undefined || q?.bytes !== undefined) {
+    const [from, to] = [$byteOffset(p), $byteOffset(q)];
+    if (from !== undefined && to !== undefined && from.of === to.of) {
+      return (from.at - to.at) / (p.bytes !== undefined ? p.width : q.width);
+    }
   }
   if (p.of !== q.of || !Array.isArray(p.of) || p.offset !== undefined || q.offset !== undefined) {
     throw $unsupported("rust-js does not support the distance between pointers to two places, which reads memory by where it is");
   }
   return p.at - q.at;
+}
+
+// Where a pointer is in the bytes of what it's into: a view's own offset,
+// or an array item's, at its index times the stride a view of the array
+// read it by; none of another.
+export function $byteOffset(pointer) {
+  if (pointer?.bytes !== undefined) return { of: $bytesOf(pointer), at: pointer.at };
+  if (!Array.isArray(pointer?.of) || typeof pointer.at !== "number" || pointer.offset !== undefined) return undefined;
+  const stride = $strides.get(pointer.of);
+  return stride === undefined ? undefined : { of: pointer.of, at: pointer.at * stride };
 }
 
 // `ptr::replace(p, v)`: what it pointed to, and `v` there now.
@@ -7248,7 +7264,7 @@ export function $ptrSlice(pointer, count) {
 export function $ptrSliceMut(pointer, count) {
   // A byte slice's own bytes write through; another's, read as bytes, don't.
   if (pointer.bytes !== undefined) {
-    if (pointer.plain === undefined && pointer.stride === 1 && pointer.width === 1 && pointer.signed === false) {
+    if ($itemsAreBytes(pointer) && pointer.width === 1 && pointer.signed === false) {
       $allocUsed(pointer, "bytes");
       return $view(pointer.of, pointer.at, pointer.at + count);
     }
@@ -7342,11 +7358,22 @@ export function $byteView(view) {
 }
 
 // A pointer to `u8`s as the view of their bytes it is: a view already; or
-// `$ptr(array, i)` into a byte array, whose items are its bytes, or one
-// `u8`'s handle, the byte its value is.
+// `$ptr(array, i)` into a byte array, whose items are its bytes, no codec;
+// or one `u8`'s handle, the byte its value is.
 export function $asBytes(pointer) {
   if (pointer === null || pointer.bytes !== undefined) return pointer;
+  if (Array.isArray(pointer.of) && typeof pointer.at === "number") {
+    $strides.set(pointer.of, 1);
+    return $byteView({ of: pointer.of, at: pointer.at, stride: 1, typed: pointer });
+  }
   return $ptrBytes(pointer, 1, (value) => [value], (bytes) => bytes[0]);
+}
+
+// Whether a view's items are its bytes, a `u8` array's, read and written
+// as they are; an `i8` array's, a byte each too, go through their codec,
+// as a number of its sign isn't its byte (#1253).
+export function $itemsAreBytes(view) {
+  return view.plain === undefined && view.stride === 1 && view.encode === undefined;
 }
 
 // `p.cast::<u32>()` of a pointer to bytes: the same bytes, read `width` at
@@ -7381,7 +7408,7 @@ export function $byteAt(view, i) {
   $allocUsed(view, "bytes");
   const at = view.at + i;
   if (view.plain !== undefined) return view.encode(view.plain.value)[at];
-  if (view.stride === 1) return $slot(view.of, at);
+  if ($itemsAreBytes(view)) return $slot(view.of, at);
   const item = Math.floor(at / view.stride);
   return view.encode($slot(view.of, item))[at % view.stride];
 }
@@ -7395,7 +7422,7 @@ export function $byteSet(view, i, byte) {
     view.plain.value = view.decode(bytes);
     return;
   }
-  if (view.stride === 1) {
+  if ($itemsAreBytes(view)) {
     view.of[at] = byte;
     return;
   }
@@ -7409,7 +7436,7 @@ export function $byteSet(view, i, byte) {
 // there, little-endian, `signed` as the type is; `write_unaligned` the
 // reverse.
 export function $readInt(view, width, signed) {
-  if (width === 1 && view.plain === undefined && view.stride === 1 && !signed) {
+  if (width === 1 && $itemsAreBytes(view) && !signed) {
     $allocUsed(view, "bytes");
     return $slot(view.of, view.at);
   }
@@ -7418,7 +7445,8 @@ export function $readInt(view, width, signed) {
 }
 
 export function $writeInt(view, width, value) {
-  const bytes = width === 1 ? [value] : $toBytes(value, width, true);
+  // An `i8`'s byte, of its sign, as `u8`'s it is (#1253).
+  const bytes = width === 1 ? [value & 0xff] : $toBytes(value, width, true);
   for (let i = 0; i < width; i++) $byteSet(view, i, bytes[i]);
 }
 

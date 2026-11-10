@@ -21,8 +21,6 @@
 11 std: #1256 `ptr::swap_nonoverlapping` refused
 12 plain: #1256 `byte_offset_from` refused
 12 std: #1256 `byte_offset_from` refused
-13 plain: #1253 an `i8` array's byte read as a `u8` keeps its sign
-13 std: #1253 an `i8` array's byte read as a `u8` keeps its sign
 14 plain: #1256 `as_ptr_range` refused
 14 std: #1256 `as_ptr_range` refused
 16 plain: #1256 `as_ptr_range` refused
@@ -35,7 +33,5 @@
 20 std: #1256 `as_mut_ptr_range` refused
 21 plain: #1256 `as_ptr_range` refused
 21 std: #1256 `as_ptr_range` refused
-23 plain: #1253 an `i8` array's bytes viewed as `u8`s keep their sign
-23 std: #1253 an `i8` array's bytes viewed as `u8`s keep their sign
 24 plain: #1256 `ptr::swap_nonoverlapping` refused
 24 std: #1256 `ptr::swap_nonoverlapping` refused

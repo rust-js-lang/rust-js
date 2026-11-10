@@ -1048,3 +1048,46 @@ is a copy out, lending nothing of the cell's.
   collected, folded and unwinding, beside addresses asked, in both builds
   against native Rust; `address_lent_by_a_once_cell_refused.rs` is still
   refused; mutation `lent-lifetime-of-the-callers-types`.
+
+## Amendment: an `i8`'s bytes, `offset_from` across a byte view, and a `MaybeUninit` array's items (2026-11-10, #1253, #1254, #1255)
+
+Three wrong answers the memory net (#1172) found on its first run, each a
+P0, ADR 0262's "results change" case, Rust's behaviour kept:
+
+- **An `i8` array's items aren't its bytes (#1253).** A pointer to `i8`s
+  was taken for one to bytes, as a `u8`'s is, so `slice::from_raw_parts(
+  a.as_ptr().cast::<u8>(), n)` of `[-21i8, ..]` was `[-21, ..]`, native
+  Rust's `[235, ..]`, and a `u8` written through it kept its number,
+  `235` in an `i8` array. Only a `u8` is a byte: an `i8`'s pointer goes
+  through its codec, `$ptrBytes`, as any other integer's (#1137), and to
+  an `i8` from bytes is `$ptrRetyped(view, 1, true)`. Whether a view's
+  items are its bytes is the runtime's one question, `$itemsAreBytes`,
+  of a `u8` array's view, no codec, which each byte read, write and the
+  mutable slice of bytes ask; an `i8` written through a byte pointer is
+  its byte, `value & 0xff`. A pointer to `[i8; N]` from bytes is refused,
+  as a pointer read as another type's, where it read the bytes unsigned.
+- **`offset_from` of a pointer stepped in bytes and cast back (#1254).**
+  `p.cast::<u8>().add(8).cast::<u64>().offset_from(p)` is a view of the
+  array's bytes and a handle on its item: the distance was the view's
+  byte offset less the item's index, `8`, native Rust's `1`. Each is
+  placed in the array's bytes, the view by its own offset and the item
+  by its index times the stride the view read the array by
+  (`$byteOffset`), and their distance is in the view's width.
+- **A `MaybeUninit<[T; N]>` written through its item pointer (#1255).**
+  `m.as_mut_ptr() as *mut u32` of a `MaybeUninit<[u32; 2]>` was the
+  first item of `undefined`, and the write threw a `TypeError`. A
+  `MaybeUninit` of an array of any items is its slots, none written yet,
+  `Array.from({ length: n })`, as one of `MaybeUninit`s was (ADR 0417),
+  so each item is written where it is; one written whole replaces them.
+  A `Box` made before its value, `vec![..]`'s `Box::new_uninit`, is
+  written whole, and stays `undefined` until it is.
+
+Corpus cases `pointer_cast_to_the_other_sign.rs`,
+`offset_from_of_a_pointer_stepped_in_bytes.rs` and
+`maybe_uninit_array_written_through_its_pointer.rs`, `//@ native:
+wasm32`, both builds, each Miri-clean; the memory net's 400 seeds of its
+first run run as Rust does but those its refusals stop. Mutations
+`signed-bytes-are-bytes`, `signed-items-are-bytes`,
+`signed-byte-written-unmasked`, `offset-from-of-a-view-and-an-item`,
+`byte-offset-of-an-item-unstrided` and
+`uninit-array-of-plain-items-undefined`.

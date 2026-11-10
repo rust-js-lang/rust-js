@@ -254,9 +254,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `MaybeUninit<T>`'s pointer cast to a `T`'s is refused, though JS holds it as its value",
     file: "src/lower/pointers.rs",
-    find: "        let value = |t: Ty<'tcx>| self.recognition().uninit_of(t).unwrap_or(t);\n        let (a, b) = (value(a), value(b));\n        let is_bytes",
-    replace:
-      "        let value = |t: Ty<'tcx>| t;\n        let (a, b) = (value(a), value(b));\n        let is_bytes",
+    find: "        let value = |t: Ty<'tcx>| self.recognition().uninit_of(t).unwrap_or(t);\n        let (a, b) = (value(a), value(b));\n",
+    replace: "        let value = |t: Ty<'tcx>| t;\n        let (a, b) = (value(a), value(b));\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -806,5 +805,13 @@ export const mutations: Mutation[] = [
     find: "            return Ok(Expr::call(Expr::helper(\"$slicePtrEq\"), vec![a, b, size]));\n",
     replace: "            return Ok(Expr::call(Expr::helper(\"$ptrEq\"), vec![Expr::call(Expr::helper(\"$ptr\"), vec![a, Expr::int(0)]), Expr::call(Expr::helper(\"$ptr\"), vec![b, Expr::int(0)]), size]));\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
+  },
+  {
+    name: "signed-bytes-are-bytes",
+    breaks: "a pointer to `i8`s is taken for one to bytes, so an `i8` array read through a `*const u8` keeps its sign, `-21` where native Rust's is `235` (#1253)",
+    file: "src/lower/pointers.rs",
+    find: "        let is_bytes = |t: Ty<'tcx>| matches!(t.kind(), ty::Uint(ty::UintTy::U8));\n",
+    replace: "        let is_bytes = |t: Ty<'tcx>| matches!(t.kind(), ty::Uint(ty::UintTy::U8) | ty::Int(ty::IntTy::I8));\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_cast_to_the_other_sign.rs$"],
   },
 ];

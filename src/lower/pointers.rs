@@ -1136,15 +1136,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
         let value = |t: Ty<'tcx>| self.recognition().uninit_of(t).unwrap_or(t);
         let (a, b) = (value(a), value(b));
-        let is_bytes = |t: Ty<'tcx>| matches!(t.kind(), ty::Uint(ty::UintTy::U8) | ty::Int(ty::IntTy::I8));
+        // Bytes are `u8`s: an `i8`'s items are numbers of their sign, whose
+        // bytes are their codec's, as any other integer's are (#1253).
+        let is_bytes = |t: Ty<'tcx>| matches!(t.kind(), ty::Uint(ty::UintTy::U8));
         let integer = |t: Ty<'tcx>| Num::of(t).is_some_and(|n| !n.float());
         match (a.kind(), b.kind()) {
             (ty::Array(item, _), _) if self.same_place(*item, b) => Ok(self.first_item_pointer(pointer)),
             (_, ty::Array(item, length)) if self.same_place(a, *item) && !is_bytes(a) => {
                 Ok(helper("$ptrWhole", vec![pointer, self.const_arg(*length, span)?]))
             }
-            // From bytes: an integer, a `u8`'s as an `i8` too, or a `[u8;
-            // N]`, read where they are; another type, what was cast to bytes.
+            // From bytes: an integer, an `i8` too, or a `[u8; N]`, read
+            // where they are; another type, what was cast to bytes.
             (_, _) if is_bytes(a) && integer(b) => {
                 let width = self.pointee_size(b, span)?;
                 let signed = Expr::bool(b.is_signed());
@@ -1155,10 +1157,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(helper("$ptrRetyped", vec![pointer, width, Expr::str("bytes")]))
             }
             (_, _) if is_bytes(a) => Ok(helper("$ptrTyped", vec![pointer])),
-            // To bytes: plain data's, a struct's or an integer's, as wasm32
-            // holds them, through its codec (ADR 0562); of what has none, an
-            // allocation's slots given to the allocator (ADR 0417), cast back
-            // only.
+            // To bytes: plain data's, a struct's or an integer's, an `i8`'s
+            // too, as wasm32 holds them, through its codec (ADR 0562); of
+            // what has none, an allocation's slots given to the allocator
+            // (ADR 0417), cast back only.
             (_, _) if is_bytes(b) => Ok(match self.plain_codec(a, span)? {
                 Some((size, encode, decode)) => helper("$ptrBytes", vec![pointer, size, encode, decode]),
                 None => helper("$ptrBytes", vec![pointer]),
@@ -1178,8 +1180,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // as its prefix `ErrorImpl<()>` and back: the same handle, its
             // fields read by name (ADR 0562).
             (ty::Adt(x, _), ty::Adt(y, _)) if x.did() == y.did() && x.is_struct() && x.repr().c() => Ok(pointer),
-            // Between integers of two widths, and plain data read as an
-            // integer or as bytes: through the bytes.
+            // Between integers of two widths or two signs, an `i8`'s and a
+            // `u8`'s too, and plain data read as an integer or as bytes:
+            // through the bytes.
             (_, _)
                 if (integer(a) || self.plain_codec(a, span)?.is_some())
                     && (integer(b) || matches!(b.kind(), ty::Array(item, _) if is_bytes(*item))) =>

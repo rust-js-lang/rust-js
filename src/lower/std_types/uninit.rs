@@ -11,8 +11,8 @@ use rustc_middle::ty;
 /// What's asked of a `MaybeUninit` or a `Box` of one.
 #[derive(Clone, Copy, PartialEq)]
 pub(in crate::lower) enum UninitOp {
-    /// `MaybeUninit::uninit()`, `Box::new_uninit()`: nothing yet.
-    Uninit,
+    /// `MaybeUninit::uninit()`, `Box::new_uninit()` (`boxed`): nothing yet.
+    Uninit { boxed: bool },
     /// `MaybeUninit::zeroed()`, `Box::new_zeroed()`: its type's zero.
     Zeroed,
     /// `Box::new_uninit_slice(n)`, `new_zeroed_slice(n)`.
@@ -49,11 +49,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(match op {
             // An array of `MaybeUninit`s, written an item at a time, is its
             // items, each not yet written: arrayvec's `MaybeUninit::uninit()
-            // .assume_init()` of `[MaybeUninit<T>; CAP]`; a type parameter
-            // that's an array, smallvec's `A: Array`, its slots, none yet
-            // (ADR 0417). Another's is written whole.
-            UninitOp::Uninit => match *item.kind() {
-                ty::Array(each, len) if self.recognition().uninit_of(each).is_some() => {
+            // .assume_init()` of `[MaybeUninit<T>; CAP]`; and so a
+            // `MaybeUninit` of an array of any items, which its pointer may
+            // write an item at a time, `m.as_mut_ptr() as *mut T` (#1255),
+            // where a `Box` made before its value, `vec![..]`'s, is written
+            // whole; a type parameter that's an array, smallvec's `A:
+            // Array`, its slots, none yet (ADR 0417). Another's is written
+            // whole.
+            UninitOp::Uninit { boxed } => match *item.kind() {
+                ty::Array(each, len) if !boxed || self.recognition().uninit_of(each).is_some() => {
                     let n = match len.try_to_target_usize(self.tcx) {
                         Some(n) => Expr::int(i128::from(n)),
                         None => self.const_arg(len, span)?,

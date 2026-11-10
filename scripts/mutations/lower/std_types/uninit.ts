@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an array of `MaybeUninit`s not yet written, arrayvec's `ArrayVec::new`, is `undefined`, so writing an item through its pointer fails",
     file: "src/lower/std_types/uninit.rs",
-    find: "                ty::Array(each, len) if self.recognition().uninit_of(each).is_some() => {\n",
+    find: "                ty::Array(each, len) if !boxed || self.recognition().uninit_of(each).is_some() => {\n",
     replace: "                ty::Array(each, len) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^zeroed_uninit_arrays.rs$"],
   },
@@ -55,5 +55,13 @@ export const mutations: Mutation[] = [
     find: "                _ if std::iter::successors(Some(item), |&t| self.recognition().uninit_of(t))\n                    .any(|t| self.is_array_param(t)) =>\n",
     replace: "                _ if self.is_array_param(item) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^uninit_array_param.rs$"],
+  },
+  {
+    name: "uninit-array-of-plain-items-undefined",
+    breaks: "a `MaybeUninit<[u32; N]>` is `undefined`, so a write through `m.as_mut_ptr() as *mut u32` throws where native Rust runs (#1255)",
+    file: "src/lower/std_types/uninit.rs",
+    find: "                ty::Array(each, len) if !boxed || self.recognition().uninit_of(each).is_some() => {\n",
+    replace: "                ty::Array(each, len) if self.recognition().uninit_of(each).is_some() => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_array_written_through_its_pointer.rs$"],
   },
 ];
