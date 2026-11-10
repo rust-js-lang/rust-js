@@ -17,8 +17,11 @@ const POINTER_FNS: &[(&str, PointerOp)] = &[
     ("std::ptr::write_volatile", PointerOp::Write),
     ("std::ptr::replace", PointerOp::Replace),
     ("std::ptr::swap", PointerOp::Swap),
+    ("std::ptr::swap_nonoverlapping", PointerOp::SwapEach),
     ("std::slice::<impl [T]>::as_ptr", PointerOp::FirstItem),
     ("std::slice::<impl [T]>::as_mut_ptr", PointerOp::FirstItem),
+    ("std::slice::<impl [T]>::as_ptr_range", PointerOp::ItemsRange),
+    ("std::slice::<impl [T]>::as_mut_ptr_range", PointerOp::ItemsRange),
     ("std::vec::Vec::<T, A>::as_ptr", PointerOp::FirstItem),
     ("std::vec::Vec::<T, A>::as_mut_ptr", PointerOp::FirstItem),
     ("std::boxed::Box::<T, A>::into_raw", PointerOp::IntoRaw),
@@ -80,6 +83,8 @@ const POINTER_METHODS: &[(&str, PointerOp)] = &[
     ("wrapping_sub", PointerOp::WrappingAdd { sub: true }),
     ("offset_from", PointerOp::OffsetFrom),
     ("offset_from_unsigned", PointerOp::OffsetFrom),
+    ("byte_offset_from", PointerOp::ByteOffsetFrom),
+    ("byte_offset_from_unsigned", PointerOp::ByteOffsetFrom),
     ("as_ref", PointerOp::AsRef),
     ("as_mut", PointerOp::AsMut),
     ("cast", PointerOp::Cast),
@@ -123,6 +128,8 @@ const NON_NULL_METHODS: &[(&str, PointerOp)] = &[
     ("sub", PointerOp::Sub),
     ("offset_from", PointerOp::OffsetFrom),
     ("offset_from_unsigned", PointerOp::OffsetFrom),
+    ("byte_offset_from", PointerOp::ByteOffsetFrom),
+    ("byte_offset_from_unsigned", PointerOp::ByteOffsetFrom),
     ("cast", PointerOp::Cast),
     ("copy_to", PointerOp::Copy { dst_first: false }),
     ("copy_to_nonoverlapping", PointerOp::Copy { dst_first: false }),
@@ -151,7 +158,7 @@ pub(in crate::lower) fn address_facts(path: &str) -> Option<&'static [TypeFact]>
         | PointerOp::ByteAdd { .. }
         | PointerOp::WrappingAdd { .. } => Some(&[TypeFact::Size]),
         PointerOp::IsAligned => Some(&[TypeFact::Size, TypeFact::Align]),
-        PointerOp::AddrEq | PointerOp::WriteBytes => Some(&[TypeFact::Size]),
+        PointerOp::AddrEq | PointerOp::WriteBytes | PointerOp::ByteOffsetFrom => Some(&[TypeFact::Size]),
         _ => None,
     }
 }

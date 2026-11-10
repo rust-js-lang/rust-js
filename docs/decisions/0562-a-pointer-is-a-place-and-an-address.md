@@ -1110,3 +1110,38 @@ metamorphic net's `field`, `array`, `tuple` and `rc-refcell` rewrites of
 #1256's `byte_offset_from` case found it. Corpus case
 `address_of_a_byte_view_of_a_stored_array.rs`, `//@ native: wasm32`, both
 builds; mutation `byte-view-of-a-stored-array-unplaced`.
+
+## Amendment: a slice's pointer range, `swap_nonoverlapping` and `byte_offset_from` (#1256)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable. Each
+does what Rust's does over the model above, and native wasm32 agrees in
+both builds. They were refused, and they stopped about half the memory
+net's programs.
+
+- **`as_ptr_range()`, `as_mut_ptr_range()`** of a slice is the range of
+  its first item's pointer to one past its last, made as `start..end` is,
+  `{ start: $ptr(items, 0), end: $ptr(items, items.length) }`. The slice
+  is spilled where it isn't a plain read, so it's evaluated once. The end
+  is the handle one past the last item, which `add` reaches and `==`
+  meets, so hashbrown's and smallvec's cursor over the two ends walks as
+  Rust's does. One of text's bytes, a copy, is refused, as its pointers
+  are read from the range and can't be followed (ADR 0126).
+- **`ptr::swap_nonoverlapping(a, b, n)`** is `$ptrSwap(a, b, n)`.
+  `ptr::swap`'s helper takes a count, as `$ptrCopy` does, and swaps each
+  of the `n` items along its array or its bytes' view.
+- **`p.byte_offset_from(q)`** is the difference of their addresses,
+  `$addr(p, size) - $addr(q, size)`, each asked by its own pointee's size.
+  A byte offset is that difference in one allocation, of any two types, at
+  any byte, and of two fields of one struct, and `asks_addresses` already
+  makes a crate that calls it record where its places are. The
+  alternatives were `$ptrOffsetFrom(p, q) * size`, right only for one
+  type, and std's body, both cast to bytes. Neither placed two fields of
+  a struct, which stopped where they ran (chosen 2026-11-10).
+  Its sign is kept, and like `p as usize` it exposes both addresses.
+
+Corpus cases `slice_pointer_range_walked_by_a_cursor.rs`,
+`items_swapped_nonoverlapping.rs` and
+`byte_offset_from_is_an_address_difference.rs`, `//@ native: wasm32`, both
+builds, through `METAMORPHIC=all`, whose rewrites found #1262. The memory
+net's seeds 1 to 400 then ran as Rust does, but for 50 programs in each
+build that #1257 stops where they run; none were wrong.

@@ -43,6 +43,10 @@ pub(in crate::lower) enum PointerOp {
     Write,
     Replace,
     Swap,
+    /// `ptr::swap_nonoverlapping(a, b, n)`: the `n` items from where each
+    /// points, the other's, `$ptrSwap(a, b, n)`, of bytes' views their
+    /// items, as std swaps their bytes.
+    SwapEach,
     /// `p.add(n)`, `p.offset(n)`, `p.sub(n)`: the item `n` along an array,
     /// which Rust keeps within the allocation.
     Add,
@@ -55,12 +59,21 @@ pub(in crate::lower) enum PointerOp {
     },
     /// `p.offset_from(q)`: how many items `p` is past `q` along one array.
     OffsetFrom,
+    /// `p.byte_offset_from(q)`: how many bytes, their addresses' difference,
+    /// `$addr(p, size) - $addr(q, size)`, as both are in one allocation: of
+    /// any two types, `q` at any byte of `p`'s, and of two fields of one
+    /// struct (ADR 0562).
+    ByteOffsetFrom,
     /// `p.as_ref()`, `p.as_mut()`: `None` of `null`.
     AsRef,
     AsMut,
     /// A slice's or a `Vec`'s `as_ptr()`, `as_mut_ptr()`: its first item's,
     /// `$ptr(items, 0)`.
     FirstItem,
+    /// A slice's `as_ptr_range()`, `as_mut_ptr_range()`: the range of its
+    /// first item's pointer to one past its last, `{ start: $ptr(items, 0),
+    /// end: $ptr(items, items.length) }`, as `start..end` is made.
+    ItemsRange,
     /// `Box::into_raw(b)`: a pointer to what it holds, a place of its own,
     /// `$ptrTo` of an object, a cell of another; `Box::from_raw(p)`, what
     /// it points to, as a `Box` is what it holds.
@@ -805,6 +818,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::undefined()
             }
             PointerOp::FirstItem => helper("$ptr", vec![arg(), Expr::int(0)]),
+            PointerOp::ItemsRange => {
+                let items = arg();
+                let items = match items.reads_same() {
+                    true => items,
+                    false => self.spill("items", items, out),
+                };
+                let end = helper("$ptr", vec![items.clone(), Expr::member(items.clone(), "length")]);
+                Expr::object(vec![
+                    js::Prop::Field("start".into(), helper("$ptr", vec![items, Expr::int(0)])),
+                    js::Prop::Field("end".into(), end),
+                ])
+            }
             PointerOp::IntoRaw => {
                 let held = match tys.first().map(|t| t.kind()) {
                     Some(ty::Adt(_, args)) => args.type_at(0),
@@ -841,12 +866,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             PointerOp::Replace => helper("$ptrReplace", vec![arg(), arg()]),
             PointerOp::Swap => helper("$ptrSwap", vec![arg(), arg()]),
+            PointerOp::SwapEach => helper("$ptrSwap", vec![arg(), arg(), arg()]),
             PointerOp::Add => helper("$ptrAdd", vec![arg(), arg()]),
             PointerOp::Sub => {
                 let pointer = arg();
                 helper("$ptrAdd", vec![pointer, Expr::unary(js::UnaryOp::Neg, arg())])
             }
             PointerOp::OffsetFrom => helper("$ptrOffsetFrom", vec![arg(), arg()]),
+            PointerOp::ByteOffsetFrom => {
+                let pointee = pointee.expect("a pointer");
+                let origin = (tys.get(1))
+                    .and_then(|t| raw_pointee(self.tcx, t.peel_refs()))
+                    .map(|(origin, _)| origin)
+                    .expect("a pointer");
+                let (p, q) = (arg(), arg());
+                let (p, q) = (
+                    helper("$addr", vec![p, self.pointee_size(pointee, span)?]),
+                    helper("$addr", vec![q, self.pointee_size(origin, span)?]),
+                );
+                Expr::bin(Op::Sub, p, q)
+            }
             // `None` of `null`, else `Some` of what it points to, boxed where
             // that looks like `None` (ADR 0051): a `&mut`'s of what isn't an
             // object, a cell, the handle itself.

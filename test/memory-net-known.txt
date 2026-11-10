@@ -13,8 +13,4 @@
 # A line goes with the fix of its issue; each run prints how many programs
 # each line met.
 
-refused `core::slice::<impl [T]>::as_ptr_range`: #1256 `as_ptr_range` refused
-refused `core::slice::<impl [T]>::as_mut_ptr_range`: #1256 `as_mut_ptr_range` refused
-refused swap_nonoverlapping: #1256 `ptr::swap_nonoverlapping` refused
-refused byte_offset_from: #1256 `byte_offset_from` refused
 refused at run time: a mutable slice of another type's bytes: #1257 a mutable slice of another type's bytes refused where it runs

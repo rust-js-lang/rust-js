@@ -166,7 +166,7 @@ export const mutations: Mutation[] = [
     name: "ptr-swap-one-way",
     breaks: "`ptr::swap` copies one way",
     file: "src/runtime/pointers.js",
-    find: "  b.value = held;\n",
+    find: "    y.value = held;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
@@ -538,5 +538,13 @@ export const mutations: Mutation[] = [
     find: "  if (pointer.bytes !== undefined && pointer.plain === undefined && $itemOf(pointer.of) !== undefined) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_byte_view_of_a_stored_array.rs$"],
+  },
+  {
+    name: "ptr-swap-each-unstepped",
+    breaks: "`ptr::swap_nonoverlapping(a, b, n)` swaps the first items `n` times, not each of the `n`, so of an even `n` nothing changes (#1256)",
+    file: "src/runtime/pointers.js",
+    find: "    const [x, y] = i === 0 ? [a, b] : [$ptrAdd(a, i), $ptrAdd(b, i)];\n",
+    replace: "    const [x, y] = [a, b];\n",
+    tests: ["test/corpus.test.ts", "-t", "^items_swapped_nonoverlapping.rs$"],
   },
 ];

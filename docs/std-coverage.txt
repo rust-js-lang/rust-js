@@ -678,7 +678,7 @@
 + str::trim_right_matches	memory
 + str::trim_start	memory
 + str::trim_start_matches	memory
-# slice 127 of 133; bodies: 35 safe, 8 spec, 0 opaque, 90 memory, 0 none
+# slice 129 of 133; bodies: 35 safe, 8 spec, 0 opaque, 90 memory, 0 none
 - slice::align_to	memory
 - slice::align_to_mut	memory
 + slice::array_windows	memory
@@ -691,9 +691,9 @@
 + slice::as_flattened_mut	memory
 + slice::as_mut_array	memory
 + slice::as_mut_ptr	memory
-- slice::as_mut_ptr_range	memory
++ slice::as_mut_ptr_range	memory
 + slice::as_ptr	memory
-- slice::as_ptr_range	memory
++ slice::as_ptr_range	memory
 + slice::as_rchunks	memory
 + slice::as_rchunks_mut	memory
 + slice::assume_init_drop	memory

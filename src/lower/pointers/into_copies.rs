@@ -44,13 +44,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         destination: mir::Place<'tcx>,
         span: Span,
     ) -> R<()> {
-        if self.recognition().classify(def_id, generic_args) != Some(Std::Pointer(PointerOp::FirstItem)) {
+        let op = self.recognition().classify(def_id, generic_args);
+        if !matches!(op, Some(Std::Pointer(PointerOp::FirstItem | PointerOp::ItemsRange))) {
             return Ok(());
         }
         // Asked only of a slice's pointer, which few calls make.
         let lent = self.pointed_locals(body).lent_copies;
         let of_copy = matches!(args.first().map(|arg| &arg.node),
             Some(Operand::Copy(of) | Operand::Move(of)) if of.projection.is_empty() && lent.contains(&of.local));
+        // A range of them, `as_ptr_range()`'s, whose pointers are read from
+        // its fields, is never kept within its copy: refused.
         if !of_copy || destination.projection.is_empty() && self.kept_within_its_copy(body, destination.local) {
             return Ok(());
         }
@@ -205,7 +208,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 Some(Std::Pointer(PointerOp::Read)) => true,
                                 // What it copies from, never where to.
                                 Some(Std::Pointer(PointerOp::Copy { dst_first })) => !given(usize::from(!dst_first)),
-                                Some(Std::Pointer(PointerOp::OffsetFrom)) => given(0) && given(1),
+                                Some(Std::Pointer(PointerOp::OffsetFrom | PointerOp::ByteOffsetFrom)) => {
+                                    given(0) && given(1)
+                                }
                                 _ => {
                                     self.cx.steps(self.body, func)
                                         && destination.projection.is_empty()

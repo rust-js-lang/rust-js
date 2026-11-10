@@ -6757,11 +6757,16 @@ export function $ptrReplace(pointer, value) {
   return old;
 }
 
-// `ptr::swap(a, b)`: what each points to, the other's.
-export function $ptrSwap(a, b) {
-  const held = a.value;
-  a.value = b.value;
-  b.value = held;
+// `ptr::swap(a, b)`: what each points to, the other's; and
+// `ptr::swap_nonoverlapping(a, b, count)`, of each of the `count` items
+// from where each points, along its array or its bytes' view.
+export function $ptrSwap(a, b, count = 1) {
+  for (let i = 0; i < count; i++) {
+    const [x, y] = i === 0 ? [a, b] : [$ptrAdd(a, i), $ptrAdd(b, i)];
+    const held = x.value;
+    x.value = y.value;
+    y.value = held;
+  }
 }
 
 // `{:p}` and `{:?}` of a pointer: its address (ADR 0562), `0x0` of `null`.
