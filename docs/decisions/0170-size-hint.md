@@ -133,3 +133,14 @@ questions can ask it too. Held by
 
 Still `(0, None)`: an iterator JS gives, a JS iterator's, which knows no
 hint, the guide's difference 14.
+
+## Amended (2026-11-10, #1244): a hinted `skip` closes its source
+
+A `skip(n)` or `take(n)` that generic code asks the hint of is made
+`$skipping` or `$taking` of its source, whose hint is std's (#1236). Its
+source wasn't closed to drop what it holds, as the same adapter made
+knowing its back is. Elsewhere in the crate, `ds().into_iter().skip(1)
+.last()` of items whose drop panics then stopped dropping at the panic,
+where `IntoIter`'s drop goes on. The two had the same type, so the one
+made for its hint was made so everywhere. The source is closed now, as the
+other's is. `test/corpus/skip_hinted_closes_its_source.rs` holds it.

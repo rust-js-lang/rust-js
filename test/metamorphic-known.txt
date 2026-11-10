@@ -88,9 +88,6 @@ plain std generic-instances range_reversed_skipped_beside_its_back_stepped.rs
 plain std generic-instances repeat_count_panics.rs
 plain generic-instances take_and_filter_of_a_type_parameter_hint_as_std.rs
 
-#1244 P0 (library): vec_last_takes_its_back's library rewrite drops the vec's last item late (JS: skipped None, chained, drop 1; native: drop 4, skipped None, chained)
-plain library vec_last_takes_its_back.rs
-
 #1246 P0 (functions-calls): generic code's Clone dictionary of an Option<Option<T>> declares its parameter's name again, a SyntaxError
 plain std generic-instances boxed_option_unwraps.rs
 plain std generic-instances refcell_clone_through_rc.rs

@@ -378,10 +378,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // One generic code asks the hint of, given it (#1236): `$taking`
             // or `$skipping` of its source, each std's hint of its source's,
             // which JS's own `.take(n)` and `.drop(n)` know none of; given
-            // its items' drop, as above.
+            // its items' drop, and its source closed to drop what it holds,
+            // as above, so what's left drops as a drop of it panics (#1244).
             Some(IterMethod::Skip | IterMethod::Take) if self.made_knowing_its_hint(output) && !held.is_ref() => {
+                let it = self.closing(receiver.clone(), held, span)?;
                 let n = values.next().expect("how many");
-                let mut given = vec![receiver.clone(), n];
+                let mut given = vec![it, n];
                 if let Some(item) = self.iterator_item(output) {
                     given.extend(self.std_drop_function(item, span)?);
                 }

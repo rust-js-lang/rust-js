@@ -814,4 +814,12 @@ export const mutations: Mutation[] = [
     replace: "        Ok(self.stepped_items(items))\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
   },
+  {
+    name: "hinted-skip-source-unclosed",
+    breaks: "a `skip(n)` generic code asks the hint of is made `$skipping` of its source unclosed, so where a drop of what's left panics the rest aren't dropped, where `IntoIter`'s drop goes on (#1244)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                let it = self.closing(receiver.clone(), held, span)?;\n                let n = values.next().expect(\"how many\");\n                let mut given = vec![it, n];\n                if let Some(item) = self.iterator_item(output) {\n                    given.extend(self.std_drop_function(item, span)?);\n                }\n                let skip = method == Some(IterMethod::Skip);\n                Expr::call_helper(",
+    replace: "                let n = values.next().expect(\"how many\");\n                let mut given = vec![receiver.clone(), n];\n                if let Some(item) = self.iterator_item(output) {\n                    given.extend(self.std_drop_function(item, span)?);\n                }\n                let skip = method == Some(IterMethod::Skip);\n                Expr::call_helper(",
+    tests: ["test/corpus.test.ts", "-t", "^skip_hinted_closes_its_source.rs$"],
+  },
 ];
