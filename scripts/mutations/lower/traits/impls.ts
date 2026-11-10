@@ -723,8 +723,16 @@ export const mutations: Mutation[] = [
     name: "entry-output-unnormalized",
     breaks: "an impl's entry asks of its method's output as written, `<Tens as Source>::Iter`, not std's struct the impl makes, and makes no JS iterator of it (#1292)",
     file: "src/lower/traits/impls.rs",
-    find: "                .unwrap_or(output);\n            let env = self.tcx.param_env(item.def_id);\n",
-    replace: "                .map(|_| output)\n                .unwrap_or(output);\n            let env = self.tcx.param_env(item.def_id);\n",
+    find: "                    .unwrap_or(output),\n            };\n            let env = self.tcx.param_env(item.def_id);\n",
+    replace: "                    .map(|_| output)\n                    .unwrap_or(output),\n            };\n            let env = self.tcx.param_env(item.def_id);\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_of_stds_struct_from_its_back.rs$"],
+  },
+  {
+    name: "dictionary-output-of-parameters-normalized",
+    breaks: "what an impl's method gives is normalized though it names a type or const parameter, which the dictionary's environment may not hold, and `fn foo<const N: usize>(&self) -> Self::Assoc<N>` crashes rustc: \"cannot find `N/#1` in param-env\" (#1304)",
+    file: "src/lower/traits/impls.rs",
+    find: "            let output = match ty::TypeVisitableExt::has_non_region_param(&output) {\n                true => output,\n",
+    replace: "            let output = match false {\n                true => output,\n",
+    tests: ["test/corpus.test.ts", "-t", "^const_generic_assoc_type_of_a_dictionary.rs$"],
   },
 ];

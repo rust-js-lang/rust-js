@@ -579,10 +579,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .skip_binder()
                 .output();
             // As the impl makes it, `<Tens as Source>::Iter` its `Map`, an
-            // `impl`'s hidden type std's struct it hides (#1292).
-            let output = (self.tcx)
-                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(output))
-                .unwrap_or(output);
+            // `impl`'s hidden type std's struct it hides (#1292). Of what
+            // names no type or const parameter alone: one names the impl's
+            // and the method's generics as the instance's arguments put them,
+            // which no one environment holds, the dictionary's lacking the
+            // method's `const N`, the trait method's the impl's `const CAP`,
+            // and rustc's normalization panicked finding either (#1304).
+            let output = match ty::TypeVisitableExt::has_non_region_param(&output) {
+                true => output,
+                false => (self.tcx)
+                    .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(output))
+                    .unwrap_or(output),
+            };
             let env = self.tcx.param_env(item.def_id);
             let iterates = self.made_js_iterator(declared_output, env, output);
             let call = Expr::call(callee.clone(), values.clone());
