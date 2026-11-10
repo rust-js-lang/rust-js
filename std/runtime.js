@@ -7015,6 +7015,13 @@ export function $addr(pointer, size, inner) {
   }
   if (pointer.addr !== undefined) return pointer.addr;
   if (pointer.bytes !== undefined && pointer.opaque) return $addr(pointer.typed, size, inner);
+  // A view of the bytes of an array stored by value in another object, a
+  // struct's field's: at its offset past the array's first item, which is
+  // where the record puts it, as its items' pointers are, not an
+  // allocation of the array's own.
+  if (pointer.bytes !== undefined && pointer.plain === undefined && $itemOf(pointer.of) !== undefined) {
+    return $addr($ptr(pointer.of, 0), pointer.stride, true) + pointer.at;
+  }
   pointer = $placed(pointer);
   // A pointer to what holds an object no slot is recorded as holding it at
   // `within`: the object's address less it, in the room before each

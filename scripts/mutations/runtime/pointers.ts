@@ -531,4 +531,12 @@ export const mutations: Mutation[] = [
     replace: "  return stride === undefined ? undefined : { of: pointer.of, at: pointer.at };\n",
     tests: ["test/corpus.test.ts", "-t", "^offset_from_of_a_pointer_stepped_in_bytes.rs$"],
   },
+  {
+    name: "byte-view-of-a-stored-array-unplaced",
+    breaks: "a view of the bytes of an array stored in another object is placed in an allocation of the array's own, so `q as usize - p as usize` of a byte pointer 3 bytes into a tuple struct's array and its first item's is `4294963203` where native Rust's is `3` (#1262)",
+    file: "src/runtime/pointers.js",
+    find: "  if (pointer.bytes !== undefined && pointer.plain === undefined && $itemOf(pointer.of) !== undefined) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_byte_view_of_a_stored_array.rs$"],
+  },
 ];

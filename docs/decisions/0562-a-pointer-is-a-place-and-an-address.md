@@ -1091,3 +1091,22 @@ first run run as Rust does but those its refusals stop. Mutations
 `signed-byte-written-unmasked`, `offset-from-of-a-view-and-an-item`,
 `byte-offset-of-an-item-unstrided` and
 `uninit-array-of-plain-items-undefined`.
+
+## Amendment: a byte view of a stored array is where its items are (#1262)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's are kept.
+
+An array stored by value in another object, a tuple struct's field or an
+array's item, is placed in its container's allocation once a pointer into
+the container is taken (#1113): its items' handles ask `$itemOf` of the
+array. A view of its bytes, `p.cast::<u8>().add(3)`, didn't. `$addr` gave
+the view an allocation of the array's own, so `q as usize - p as usize`
+was `4294963203` where native Rust's is `3`, and `byte_offset_from` across
+the two forms was as wrong. **A view of a stored array's bytes is at its
+byte offset past the array's first item**, which the record places, so
+both forms are in one allocation whichever is asked first. The
+metamorphic net's `field`, `array`, `tuple` and `rc-refcell` rewrites of
+#1256's `byte_offset_from` case found it. Corpus case
+`address_of_a_byte_view_of_a_stored_array.rs`, `//@ native: wasm32`, both
+builds; mutation `byte-view-of-a-stored-array-unplaced`.
