@@ -17,6 +17,24 @@ plain std identity_inside_keys.rs beside drop_impl_indirect.rs dyn_fn_of_a_param
 
 #1060 P2 (neighbours): untagged_in_untagged.rs refused beside guard_deref_dictionary.rs + rc_from_box.rs: an Rc variant can't be told apart
 plain std untagged_in_untagged.rs beside guard_deref_dictionary.rs rc_from_box.rs
+plain std untagged_told_by_members.rs beside drop_impl_indirect.rs weak_debug.rs
 
 #1112 P2 (neighbours): a generic whose callers can't be seen, a pub trait's method, counts every Rc beside it
 plain std class_constructor_rc.rs beside rc_dropped_where_callers_unseen.rs
+
+#1293 P2 (neighbours): std calls that lend from inside their storage are refused in any crate that asks an address
+plain std once_cells.rs beside module_text_truth.rs tagged_pointers.rs
+plain std once_cell_fields.rs beside drop_unit_guard.rs user_fmt_traits.rs
+plain std iter_next_back.rs beside address_of_a_tuple_field.rs
+plain std own_fold_through_adapters.rs beside pointer_addresses.rs
+plain std option_result_methods.rs beside bytes_through_pointers.rs
+plain std generic_mut_lent_by_std.rs beside address_of_an_item_std_lends.rs
+
+#1294 P2 (neighbours): a println! of a Vec or String local is refused in a crate that asks an address
+plain std btree_given_in_order.rs beside address_of_a_field_where_its_object_is_stored.rs
+plain std deque_range_mut.rs beside address_of_a_field_through_a_reference.rs
+plain std generic_mut_moved_out_other_ways.rs beside address_of_a_nested_field_through_a_deref.rs static_mut_pointers.rs
+plain std text_edits.rs beside address_of_an_item_moved_in_its_vec.rs
+
+#1295 P2 (neighbours): a borrow in generic code of an associated type's value is refused in any crate that asks an address
+plain std blanket_iterator_trait.rs beside map_extend_unwinds_what_is_left.rs text_bytes_pointer_within.rs
