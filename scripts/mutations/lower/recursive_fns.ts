@@ -93,4 +93,14 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: perModule,
   },
+  {
+    name: "unread-values-dropped-once",
+    breaks:
+      "an instance's value only an unread `fn` pointer's const read is written, `const keepRefMutVec = ..` that nothing calls (#1324)",
+    file: "src/lower/recursive_fns.rs",
+    find: "            if !dropped {\n                return;\n            }\n",
+    replace: "            let _ = dropped;\n            return;\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_of_a_held_mut_given_back_by_generic_code\\.rs$"],
+    snapshots: true,
+  },
 ];

@@ -43,9 +43,8 @@ export const mutations: Mutation[] = [
     name: "mir-fn-value-undefined",
     breaks: "a function as a value from MIR is `undefined`, not the function",
     file: "src/lower/mir/operands.rs",
-    find: "                    Some(f) => Ok(Value::Expr(f)),\n",
-    replace:
-      "                    Some(_) => Ok(Value::Expr(Expr::undefined())),\n",
+    find: "            Some(f) => Ok(f),\n",
+    replace: "            Some(_) => Ok(Expr::undefined()),\n",
     tests: ["test/corpus.test.ts", "-t", "fn_items_as_values"],
   },
   {
@@ -317,8 +316,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a function of rest arguments JS alone reads is lowered as its call's arrow, whose call of `signal_oper::<()>` needs a copy the analysis didn't make: refused (#565)",
     file: "src/lower/mir/operands.rs",
-    find: "                    None if crate::lower::instances::read_by_js_alone(self.tcx, None, Some(state.body))\n",
-    replace: "                    None if false && crate::lower::instances::read_by_js_alone(self.tcx, None, Some(state.body))\n",
+    find: "            None if crate::lower::instances::read_by_js_alone(self.tcx, None, Some(state.body))\n",
+    replace: "            None if false && crate::lower::instances::read_by_js_alone(self.tcx, None, Some(state.body))\n",
     tests: ["test/rest-parameters.test.ts", "-t", "a generic function of rest arguments JS alone reads is its own JS"],
   },
   {
@@ -346,5 +345,21 @@ export const mutations: Mutation[] = [
     replace: "        if false\n",
     tests: ["test/corpus.test.ts", "-t", "^byte_constants_large.rs$"],
     snapshots: true,
+  },
+  {
+    name: "reified-instance-as-its-value",
+    breaks: "a generic function's instance whose forms differ, as a value, is its JS function, given its callers' forms where it takes generic code's: `Some(&mut v).map(view)` reads `r.value` of the vector, a `fn` pointer of it too (#1187, #1324)",
+    file: "src/lower/mir/operands.rs",
+    find: "                let value = match self.reified_takes_generic_forms(def_id, args) {",
+    replace: "                let value = match false && self.reified_takes_generic_forms(def_id, args) {",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fn_(value_takes_its_callers|pointer_takes_its_types)_forms\\.rs$"],
+  },
+  {
+    name: "library-fn-value-in-generic-forms",
+    breaks: "a library's generic function as a value takes generic code's forms where its callers give theirs: `Some(&mut v).map(dep::view)` gives `view($cellOf(v.value))` (#1324)",
+    file: "src/lower/mir/operands.rs",
+    find: "                let arrow = self.mir_called_value(state, (def_id, args), span, Forms::Callers)?;",
+    replace: "                let arrow = self.mir_called_value(state, (def_id, args), span, Forms::Generic)?;",
+    tests: ["test/crates.test.ts", "-t", "library_fn_values_take_their_callers_forms"],
   },
 ];

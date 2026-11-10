@@ -602,21 +602,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         {
                             return Ok(Value::Expr(function));
                         }
-                        // A generic function's instance whose value takes generic
-                        // code's forms where its `fn`'s callers give theirs, an
-                        // object's or a slice's `&mut T`, a slice's raw pointer:
-                        // a function of its own, which takes its type's (#1187).
-                        if matches!(coercion, PointerCoercion::ReifyFnPointer(_))
-                            && let Some((def_id, args)) = crate::lower::fn_def(operand.ty(decls, tcx))
-                            && (self.is_rust_fn(def_id) || self.krate.foreign.item(def_id).is_some())
-                            && self.reified_takes_generic_forms(def_id, args)
-                        {
-                            let value = self.mir_operand(state, operand, out)?;
-                            let function = self.value_expr(value, span)?;
-                            return Ok(Value::Expr(
-                                self.reified_pointer((def_id, args), (function, operand.ty(decls, tcx)))?,
-                            ));
-                        }
+                        // A function's value, a generic function's instance's
+                        // in its callers' forms, its `fn` pointer (#1187, #1324).
                         let value = self.mir_operand(state, operand, out)?;
                         // A closure that only calls a function of the crate's
                         // with what it's given, or none of it, is that

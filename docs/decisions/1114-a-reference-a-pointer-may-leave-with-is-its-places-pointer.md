@@ -221,3 +221,51 @@ and the mutations `reified-instance-as-its-value`,
 `reified-slice-pointer-as-its-value`, `reified-object-mut-unboxed`,
 `fn-pointer-keyed-as-its-value` and `box-form-unasked`.
 
+
+## Amendment: a function value takes its callers' forms; generic code's `F` is given the function itself (2026-11-11, #1324, #1322)
+
+A generic function's value was its JS function, which takes generic code's
+forms, as generic code that calls it as an `F` gives them (#975). But
+every other taker gives its callers' forms. That covers std's code, a
+function of the crate's, a field, and an `F` of a concrete type.
+`Some(&mut v).map(view)` of `view<T: ?Sized>(r: &mut T) -> &T` gave `view`
+the vector, which it read as a box, `r.value`, and printed `0` where Rust
+prints `2`. `rows.iter_mut().map(view)` threw. A library's `dep::view`
+was the arrow of its call in generic code's forms, `view($cellOf(v.value))`,
+and did the same. Case ([0262](0262-when-rust-and-js-disagree.md)):
+results change, so Rust's behavior.
+
+**A function's value takes its callers' forms (`mir/operands.rs`,
+decided for the user by the coordinator, 2026-11-11).** Where a generic
+function's instance has forms that differ (`reified_takes_generic_forms`),
+its value is its `fn` pointer, `reified_pointer`'s `const` of its module:
+`rows.map(viewVecU8Fn)`, with `const viewVecU8Fn = (arg0) =>
+view($cellOf(arg0));`. A library's value is the arrow of its call in its
+callers' forms (`mir_called_value`'s `Forms::Callers`), in the same
+`const` (`reified_const`). #1187's library pointer used to adapt generic
+code's arrow back, `((a, b) => replaceWith($cellOf(a.value), b))($cellOf(arg0),
+arg1)`, and is now `(a, b) => replaceWith($cellOf(a), b)`.
+
+**Generic code that calls it as an `F` is given the function itself where
+it gives the function's own forms and takes back its own
+(`takes_forms_given`, `mut_refs.rs`):** `generic(&mut rows[1],
+emptied)` is `generic($cellOf($index(rows, 1)), emptiedVecU8)`, as #975
+made it. Where the forms aren't the function's own, the value is adapted
+as a closure's is (`unboxed_by_function`). This replaces
+`takes_generic_form_itself`, which said whether the function's own
+declaration takes generic code's form, whatever value it was given as.
+
+An instance's value that only another unread value read, the
+dictionaries' arrow an unread `fn` pointer adapts, is not written either
+(`drop_unread_values` runs until nothing more drops).
+
+Held by `generic_fn_value_takes_its_callers_forms.rs` against native Rust
+in both builds and through `METAMORPHIC=all`. It covers std's `map`, a
+function of the crate's, a field, a concrete `F`, generic code's `F`, and
+#1322's held `&mut`. Also held by the crate pair
+`library_fn_values_take_their_callers_forms`, and by the mutations
+`reified-instance-as-its-value` and `library-fn-value-in-generic-forms`
+(`mir/operands.ts`), `given-function-box-unboxed` and
+`reified-trait-method-refused` (`mut_refs.ts`), `held-box-form-unasked`
+(`generic_facts.ts`) and `unread-values-dropped-once`
+(`recursive_fns.ts`).

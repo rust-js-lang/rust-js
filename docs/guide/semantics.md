@@ -322,6 +322,12 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   a call, a `fn` pointer and a function value alike
   ([0454](../decisions/0454-a-mut-given-as-a-type-parameter.md), amended;
   [1115](../decisions/1115-what-generic-code-needs-of-its-type-parameters-has-one-catalogue.md)).
+  A generic function given as a value takes its callers' forms, so it can
+  be given to std's code, `rows.iter_mut().map(view)`: that's its `fn`
+  pointer, `const viewVecU8Fn = (arg0) => view($cellOf(arg0))`. Generic
+  code that calls it as an `F` in its own forms is given the function
+  itself ([1114](../decisions/1114-a-reference-a-pointer-may-leave-with-is-its-places-pointer.md),
+  amended).
 - **`*r = v` replaces the value whole, as Rust's does:** an object `r` is
   becomes `v` in place, `$assign(r, v)`, so every name for it sees `v`;
   `mem::replace`, `mem::swap` and `mem::take` the same. An enum with a

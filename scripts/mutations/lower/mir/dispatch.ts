@@ -16,8 +16,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a trait's method as a value, `Tally::bump`, reads generic code's box of its `&mut self` where its callers give the object",
     file: "src/lower/mir/dispatch.rs",
-    find: "        let generic_forms = tcx.trait_of_assoc(def_id).is_none() && self.krate.foreign.item(def_id).is_some();",
-    replace: "        let generic_forms = true;",
+    find: "        let generic_forms = forms == Forms::Generic\n            && tcx.trait_of_assoc(def_id).is_none()\n            && self.krate.foreign.item(def_id).is_some();",
+    replace: "        let generic_forms = forms == Forms::Generic;",
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer\\.rs$"],
   },
   {

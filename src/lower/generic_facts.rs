@@ -63,9 +63,8 @@ pub(in crate::lower) enum Form {
     /// box of the type parameter's value, which its caller's `Form::Box`
     /// is, the object's in-place cell. Given, a box whose `value` is that
     /// cell, `$heldCellOf(cell)` (#1300); given back, a box whose `value`
-    /// is the object, `$heldObjectOf(box)` (#1303). Asked where a `&mut`
-    /// is given or given back, not by `form_of`, whose askers take the
-    /// other two.
+    /// is the object, `$heldObjectOf(box)` (#1303), a direct call's as a
+    /// function value's, a `fn` pointer's (#1322).
     HeldBox,
 }
 
@@ -139,7 +138,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The form generic code has of `declared` where its caller's type is
     /// `instantiated`, if it's another than the caller's.
     pub(in crate::lower) fn form_of(&self, crossing: Crossing<'tcx>) -> Option<Form> {
-        [Form::Handle, Form::Box]
+        [Form::Handle, Form::Box, Form::HeldBox]
             .into_iter()
             .find(|&form| self.form_differs(form, crossing))
     }
@@ -186,19 +185,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![crate::js::StmtKind::Return(Some(called)).at(crate::js::Span::NONE)],
             ))
         };
+        self.reified_const((def_id, args), fn_def_ty, made)
+    }
+
+    /// A generic function's instance `def_id` of `args` as a function value
+    /// in its callers' forms, `made`: its module's `const`, so two pointers
+    /// to it are one, as a generic function's value is (ADR 0395); of an
+    /// instance of the caller's own type parameters, the arrow made there.
+    pub(in crate::lower) fn reified_const(
+        &mut self,
+        (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
+        fn_def_ty: Ty<'tcx>,
+        made: impl FnOnce(&mut Self) -> super::R<Expr>,
+    ) -> super::R<Expr> {
         if args.has_non_region_param() || args.has_aliases() {
             return made(self);
         }
         let name = super::camel_case(self.tcx.item_name(def_id).as_str());
         let base = format!("{}Fn", super::traits::instance_name(self.tcx, &name, args));
         self.module_fn_pointer((fn_def_ty, &base), made)
-    }
-
-    /// Whether `ty`, a type of generic code's, is a raw pointer of its type
-    /// parameter, `*mut T`: a handle on its place, whatever `T` is
-    /// (`Form::Handle`).
-    pub(in crate::lower) fn is_generic_handle(&self, ty: Ty<'tcx>) -> bool {
-        super::pointers::raw_pointee(self.tcx, ty).is_some_and(|(pointee, _)| matches!(pointee.kind(), ty::Param(_)))
     }
 
     /// The referent of a shared reference given where generic code's

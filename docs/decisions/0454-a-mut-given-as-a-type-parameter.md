@@ -831,3 +831,23 @@ against native Rust in both builds and through its metamorphic
 rewrites; mutations `held-box-given-back-as-it-is` and
 `held-box-of-no-box` (`lower/generic_facts.ts`) and
 `held-mut-value-given-as-it-is` (`lower/mir/assign/boxed_args.ts`).
+
+## Amendment: a function value of generic code given a held `&mut` (#1322)
+
+The #1303 amendment above said `form_of` doesn't ask `Form::HeldBox`
+because its askers, a function value's parameters and a closure's, take a
+box or a handle and are never given a held box. That was false. A `fn`
+pointer of `stamp::<&mut Vec<u8>>`, given to a function of the crate's
+that calls it, gave the instance its callers' box, whose `value` is the
+object. The instance read that box as a box of the object's cell and
+threw `Cannot read properties of undefined (reading 'push')`. Case
+([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior. `form_of` asks all three forms now, so a function value adapts
+a held `&mut` as a direct call does: `const stampRefMutVecFn = (arg0) =>
+stampRefMutVec($heldCellOf(arg0));`, and what it gives back through
+`$heldObjectOf`. A function value's form is its taker's
+([1114](1114-a-reference-a-pointer-may-leave-with-is-its-places-pointer.md),
+amended, #1324). Generic code's `F` of a held `&mut` is still refused, as
+any `&mut` to an object inside generic code's parameters is. Held by
+`generic_fn_value_takes_its_callers_forms.rs` and the mutation
+`held-box-form-unasked`.

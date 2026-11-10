@@ -1,6 +1,7 @@
 //! An operand as JS, and a constant: its value tree, or its MIR lowered
 //! as code.
 
+use super::dispatch::Forms;
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -246,21 +247,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 self.mir_operand_read(state, &Operand::Constant(Box::new(referred)), out)
             }
-            // A function as a value, `.map(double)` or `f as fn()`.
+            // A function as a value, `.map(double)` or `f as fn()`, in its
+            // callers' forms: a generic function's instance whose JS function
+            // takes generic code's where they differ, a function of its own
+            // that takes its type's, its `fn` pointer's (#1187), which std's
+            // code, a field and a function of the crate's call alike (#1324).
+            // Generic code that calls it as an `F` in its own forms is given
+            // the function itself (`boxed_args`, #975).
             Operand::Constant(c) if let Some((def_id, args)) = fn_def(c.ty()) => {
-                match self.fn_item_value(def_id, args, c.ty(), c.span, out)? {
-                    Some(f) => Ok(Value::Expr(f)),
-                    // Of rest arguments, given where JS alone reads it: its
-                    // JS function itself, which no call of it is (#565).
-                    None if crate::lower::instances::read_by_js_alone(self.tcx, None, Some(state.body))
-                        .iter()
-                        .any(|&(f, given)| f == def_id && given.contains(c.span))
-                        && let Some(itself) = self.rest_function_itself(def_id, args, c.span)? =>
-                    {
-                        Ok(Value::Expr(itself))
-                    }
-                    None => Ok(Value::Expr(self.mir_called_value(state, (def_id, args), c.span)?)),
-                }
+                let function = (def_id, args);
+                let value = match self.reified_takes_generic_forms(def_id, args) {
+                    true => self.fn_value_in_callers_forms(state, function, (c.ty(), c.span), out)?,
+                    false => self.fn_value_in_generic_forms(state, function, (c.ty(), c.span), out)?,
+                };
+                Ok(Value::Expr(value))
             }
             // A pointer to a `static mut`, a handle on its `{ value }`'s place
             // (ADRs 0096, 0407); a reference to one, the place. A library's
@@ -718,6 +718,53 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ty,
                     valtree: ty::ValTree::from_raw_bytes(self.tcx, bytes),
                 })
+            }
+        }
+    }
+
+    /// A function as a value, `.map(double)`, in generic code's forms where
+    /// a generic function's instance takes them: the crate's JS function,
+    /// given its dictionaries; a library's, the arrow of its call, which
+    /// takes them (#975); a std one's, `.map(str::trim)`, `(s) => s.trim()`.
+    pub(in crate::lower::mir) fn fn_value_in_generic_forms(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (def_id, args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        (ty, span): (Ty<'tcx>, Span),
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        match self.fn_item_value(def_id, args, ty, span, out)? {
+            Some(f) => Ok(f),
+            // Of rest arguments, given where JS alone reads it: its
+            // JS function itself, which no call of it is (#565).
+            None if crate::lower::instances::read_by_js_alone(self.tcx, None, Some(state.body))
+                .iter()
+                .any(|&(f, given)| f == def_id && given.contains(span))
+                && let Some(itself) = self.rest_function_itself(def_id, args, span)? =>
+            {
+                Ok(itself)
+            }
+            None => self.mir_called_value(state, (def_id, args), span, Forms::Generic),
+        }
+    }
+
+    /// A generic function's instance whose JS function takes generic code's
+    /// forms where its callers' differ, as a value: a function of its own
+    /// that takes its type's, its `fn` pointer's (#1187), the crate's
+    /// adapting its JS function, a library's the arrow of its call in its
+    /// callers' forms (#1324).
+    fn fn_value_in_callers_forms(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (def_id, args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        (ty, span): (Ty<'tcx>, Span),
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        match self.fn_item_value(def_id, args, ty, span, out)? {
+            Some(function) => self.reified_pointer((def_id, args), (function, ty)),
+            None => {
+                let arrow = self.mir_called_value(state, (def_id, args), span, Forms::Callers)?;
+                self.reified_const((def_id, args), ty, move |_| Ok(arrow))
             }
         }
     }

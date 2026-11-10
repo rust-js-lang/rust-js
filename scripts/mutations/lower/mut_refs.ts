@@ -16,8 +16,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure given to generic code as an `F: Fn(*mut T)` is given generic code's handle of a slice's pointer where it takes the array",
     file: "src/lower/mut_refs.rs",
-    find: "                    .is_some()\n                    && !given.is_some_and(|given| self.takes_generic_form_itself(given, Some(at)))",
-    replace: "                    .is_some_and(|form| form == Form::Box)\n                    && !given.is_some_and(|given| self.takes_generic_form_itself(given, Some(at)))",
+    find: "                self.form_of(crossing).map(|form| (form, crossing))",
+    replace: "                self.form_of(crossing).filter(|&form| form == Form::Box).map(|form| (form, crossing))",
     tests: ["test/corpus.test.ts", "-t", "^generic_fn_item_takes_generic_forms\\.rs$"],
   },
   {
@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure given to generic code gives back a slice's pointer as the array where generic code reads its handle",
     file: "src/lower/mut_refs.rs",
-    find: "        let wrapped = output.is_some_and(|out| {",
-    replace: "        let wrapped = false && output.is_some_and(|out| {",
+    find: "        let back = output.and_then(|out| ",
+    replace: "        let back = output.filter(|_| false).and_then(|out| ",
     tests: ["test/corpus.test.ts", "-t", "^generic_fn_item_takes_generic_forms\\.rs$"],
   },
   {
@@ -39,11 +39,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "reified-trait-method-refused",
-    breaks: "a trait's provided method as a `fn` pointer, `Tally::bump`, is refused as a generic function's instance, though its value is its impl's copy",
+    breaks: "a trait's provided method as a value, `Tally::bump`, is taken as a generic function's instance whose forms differ, though its value is its impl's, in its callers' forms already: a `fn` pointer's const of its own, `bumpTallyFn`",
     file: "src/lower/mut_refs.rs",
-    find: "        if self.tcx.trait_of_assoc(def_id).is_some() {\n            return false;\n        }\n        let sig",
-    replace: "        let sig",
+    find: "        if self.tcx.trait_of_assoc(def_id).is_some()\n            || !(self.is_rust_fn(def_id)",
+    replace: "        if !(self.is_rust_fn(def_id)",
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer\\.rs$"],
+    snapshots: true,
   },
   {
     name: "pointer-by-value-lets-out",
@@ -92,11 +93,12 @@ export const mutations: Mutation[] = [
   {
     name: "given-function-box-unboxed",
     breaks:
-      "a function given for an `F: FnMut(&mut T)` that takes generic code's box itself, `bumped::<Counter>`, is given the object out of it: `undefined` (#975)",
+      "a function given for an `F: FnMut(&mut T)` that takes generic code's box itself, `bumped::<Counter>`, is given as its value, its `fn` pointer adapted again, `(x0) => bumpedCounterFn(x0.value)`, not itself (#975, #1324)",
     file: "src/lower/mut_refs.rs",
-    find: "                    && !given.is_some_and(|given| self.takes_generic_form_itself(given, Some(at)))\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^generic_fn_value_is_one_function.rs$"],
+    find: "        if !self.reified_takes_generic_forms(def_id, args) {\n            return false;\n        }\n        let sig",
+    replace: "        if true {\n            return false;\n        }\n        let sig",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fn_value_takes_its_callers_forms\\.rs$"],
+    snapshots: true,
   },
   {
     name: "into-iter-self-items-given",

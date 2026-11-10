@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's box of an object's `&mut` isn't a form that differs: a library's function given as an `F` reads its box as the object, and a `fn` pointer gives the instance the object",
     file: "src/lower/generic_facts.rs",
-    find: "        [Form::Handle, Form::Box]",
-    replace: "        [Form::Handle]",
+    find: "        [Form::Handle, Form::Box, Form::HeldBox]",
+    replace: "        [Form::Handle, Form::HeldBox]",
     tests: ["test/crates.test.ts", "-t", "library_generic_fn_item_forms"],
   },
   {
@@ -100,5 +100,14 @@ export const mutations: Mutation[] = [
     find: "            ty::Ref(..) => self.is_generic_box_in(declared, param_env),\n",
     replace: "            ty::Ref(_, pointee, _) => matches!(pointee.kind(), ty::Param(_)),\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_mut_ref\\.rs$"],
+  },
+  {
+    name: "held-box-form-unasked",
+    breaks:
+      "a `&mut W` of a `W` given a `&mut` to an object isn't a form a function value is asked: `stamped` given to std's `map`, or as a `fn` pointer, is given its callers' box where it takes a box of its box (#1322)",
+    file: "src/lower/generic_facts.rs",
+    find: "        [Form::Handle, Form::Box, Form::HeldBox]",
+    replace: "        [Form::Handle, Form::Box]",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fn_value_takes_its_callers_forms\\.rs$"],
   },
 ];

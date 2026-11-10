@@ -3,6 +3,14 @@
 
 use super::*;
 
+/// The forms a function value's arrow takes: generic code's, as generic
+/// code that calls it as an `F` gives them (#975), or its callers' (#1324).
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum Forms {
+    Generic,
+    Callers,
+}
+
 mod known_calls;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -438,12 +446,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Any other function as a value, `.map(str::len)`: the arrow that calls
-    /// it, its call lowered as one from MIR is, of its parameters.
+    /// it, its call lowered as one from MIR is, of its parameters, which
+    /// take `forms`.
     pub(super) fn mir_called_value(
         &mut self,
         state: &mut State<'_, 'tcx>,
         (def_id, args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
         span: Span,
+        forms: Forms,
     ) -> R<Expr> {
         let tcx = self.tcx;
         let sig = tcx.fn_sig(def_id).instantiate(tcx, args).skip_normalization();
@@ -456,13 +466,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|i| self.fresh(["a", "b", "c", "d", "e", "f"].get(i).copied().unwrap_or("arg")))
                 .collect(),
         };
-        // Given in generic code's forms, as generic code that calls it as an
-        // `F` gives them: a raw pointer of its type parameter its handle, a
-        // `&mut` of one its box, read back as the call takes it, `x.value`
-        // of a slice's or an object's (ADRs 0454, 1114). A library's free
-        // function's alone: a trait's method's value is its impl's, of the
-        // instance's own types, and std's are as their calls are.
-        let generic_forms = tcx.trait_of_assoc(def_id).is_none() && self.krate.foreign.item(def_id).is_some();
+        // Given in generic code's forms where it's asked them, as generic
+        // code that calls it as an `F` gives them: a raw pointer of its type
+        // parameter its handle, a `&mut` of one its box, read back as the
+        // call takes it, `x.value` of a slice's or an object's (ADRs 0454,
+        // 1114). A library's free function's alone: a trait's method's value
+        // is its impl's, of the instance's own types, and std's are as their
+        // calls are.
+        let generic_forms = forms == Forms::Generic
+            && tcx.trait_of_assoc(def_id).is_none()
+            && self.krate.foreign.item(def_id).is_some();
         let declared = tcx
             .fn_sig(def_id)
             .instantiate_identity()

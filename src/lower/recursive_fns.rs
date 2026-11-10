@@ -130,11 +130,11 @@ impl<'tcx> ModuleFns<'tcx> {
             }
         }
         let mut read: IndexSet<String> = IndexSet::default();
-        let mut note = |name: &str| {
-            read.insert(name.to_owned());
-        };
-        items.iter().for_each(|function| function.visit_vars(&mut note));
-        self.functions_mut().for_each(|function| function.visit_vars(&mut note));
+        items.iter().for_each(|function| {
+            function.visit_vars(&mut |name: &str| {
+                read.insert(name.to_owned());
+            })
+        });
         self.drop_unread_values(&read);
     }
 
@@ -163,14 +163,29 @@ impl<'tcx> ModuleFns<'tcx> {
         aliases
     }
 
-    /// Each instance's value nothing reads, of the names `read`: made where
-    /// a body took the function as a value, which its tidy then left
-    /// unread, `let twice = count::<4>` of a direct call. Never written
-    /// (#974).
-    fn drop_unread_values(&mut self, read: &IndexSet<String>) {
-        for ((_, kind, _), made) in self.made.iter_mut() {
-            if kind.is_fn_value() && !read.contains(&made.name) {
-                made.lowered = None;
+    /// Each instance's value nothing reads, of the names the items read,
+    /// `by_items`, or a module's function still written: made where a body
+    /// took the function as a value, which its tidy then left unread, `let
+    /// twice = count::<4>` of a direct call. Never written (#974), nor what
+    /// only such a value read, the value of a `fn` pointer's instance that
+    /// adapts it (#1324).
+    fn drop_unread_values(&mut self, by_items: &IndexSet<String>) {
+        loop {
+            let mut read = by_items.clone();
+            self.functions_mut().for_each(|function| {
+                function.visit_vars(&mut |name: &str| {
+                    read.insert(name.to_owned());
+                })
+            });
+            let mut dropped = false;
+            for ((_, kind, _), made) in self.made.iter_mut() {
+                if kind.is_fn_value() && made.lowered.is_some() && !read.contains(&made.name) {
+                    made.lowered = None;
+                    dropped = true;
+                }
+            }
+            if !dropped {
+                return;
             }
         }
     }

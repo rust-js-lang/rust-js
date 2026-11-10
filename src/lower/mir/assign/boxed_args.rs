@@ -114,9 +114,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // an object here: one taking generic code's box of it, which
                 // it gives the object, `(x) => f(x.value)` (ADR 0454).
                 value => {
-                    let mut f = self.value_expr(value, span)?;
                     let given = arg_tys.get(i).copied();
-                    let unboxed = callee.and_then(|(id, args)| self.unboxed_by_function(id, i, args, given));
+                    let mut unboxed = callee.and_then(|(id, args)| self.unboxed_by_function(id, i, args));
+                    // A generic function's instance that takes the forms
+                    // generic code gives it, and gives back what it takes
+                    // back: the function itself, not its value, which takes
+                    // its callers' (#975, #1324).
+                    let itself = given.and_then(crate::lower::fn_def).filter(|&function| {
+                        unboxed
+                            .as_ref()
+                            .is_some_and(|forms| self.takes_forms_given(function, forms))
+                    });
+                    let mut f = match (itself, given) {
+                        (Some(function), Some(ty)) => {
+                            unboxed = None;
+                            self.fn_value_in_generic_forms(state, function, (ty, span), out)?
+                        }
+                        _ => self.value_expr(value, span)?,
+                    };
                     // A boxed `dyn Fn*` that drops, held where it's read
                     // twice, by the arrow and by its drop (#1220).
                     let boxed_drop = match given.is_some_and(|ty| {
@@ -135,19 +150,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         false => None,
                     };
                     exprs.push(match unboxed {
-                        Some((unboxed, wrapped)) => {
+                        Some((unboxed, back)) => {
                             let params: Vec<String> =
                                 (0..unboxed.len()).map(|at| self.fresh(&format!("x{at}"))).collect();
                             let given = (params.iter().zip(&unboxed))
                                 .map(|(param, &unboxed)| match unboxed {
-                                    true => Expr::held(Expr::var(param)),
-                                    false => Expr::var(param),
+                                    Some((form, crossing)) => self.form_back(form, crossing, Expr::var(param)),
+                                    None => Expr::var(param),
                                 })
                                 .collect();
                             let called = Expr::call(f, given);
-                            let called = match wrapped {
-                                true => Expr::call_helper("$ptrTo", vec![called]),
-                                false => called,
+                            let called = match back {
+                                Some(Form::Handle) => Expr::call_helper("$ptrTo", vec![called]),
+                                _ => called,
                             };
                             let body = vec![StmtKind::Return(Some(called)).at(js::Span::NONE)];
                             let arrow = Expr::arrow(params.into_iter().map(Into::into).collect(), body);

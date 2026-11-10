@@ -3,14 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "reified-instance-as-its-value",
-    breaks: "a generic function's instance whose forms differ, as a `fn` pointer, is its value, given its callers' forms where it takes generic code's, `view::<Vec<u8>>` reading `r.value` of the vector",
-    file: "src/lower/mir/rvalues.rs",
-    find: "                            && self.reified_takes_generic_forms(def_id, args)",
-    replace: "                            && self.reified_takes_generic_forms(def_id, args)\n                            && false",
-    tests: ["test/corpus.test.ts", "-t", "^generic_fn_pointer_takes_its_types_forms\\.rs$"],
-  },
-  {
     name: "parameter-given-its-pointer-boxed",
     breaks:
       "`&raw mut *r` of a parameter its callers give the pointer to its place for is refused as a box of a copy",

@@ -8,7 +8,12 @@ use super::{FnCx, R, Std};
 use crate::collections::IndexSet;
 use crate::js::{self, Expr, Prop, Stmt, StmtKind};
 use crate::lower::MutRefForm;
-use crate::lower::generic_facts::Form;
+use crate::lower::generic_facts::{Crossing, Form};
+
+/// The forms generic code gives a function it calls as an `F`, of each
+/// parameter where they differ from its callers', and gives back
+/// (`unboxed_by_function`).
+pub(super) type FormsGiven<'tcx> = (Vec<Option<(Form, Crossing<'tcx>)>>, Option<Form>);
 use rustc_ast::Mutability;
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
@@ -359,19 +364,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// in its own form where the caller has another, a box of what the
     /// caller has as an object, `&mut T` of a `T` that's one here (ADR 0454),
     /// or a handle of a raw pointer the caller has as the value, a slice's
-    /// (ADR 1114), each given the function as `x.value`; and whether what it
-    /// gives back is such a raw pointer, given generic code as `$ptrTo(r)`.
-    /// `None` where none is. Not where the function given, `given`'s, a
-    /// function of the crate's, takes or gives generic code's form there
-    /// itself, of its own type parameter's, `bump(c: &mut impl
-    /// GetMut<Counter>)` (#975).
+    /// (ADR 1114), each given the function as `x.value`, or a box of a
+    /// `&mut` to an object, given as `$heldObjectOf(x)` (#1322), each its
+    /// form and crossing, given back by `form_back`; and the form of what
+    /// it gives back, a raw pointer's given generic code as `$ptrTo(r)`.
+    /// `None` where none is. A function value takes its callers' forms
+    /// (#1324); where generic code's are its own, the function itself is
+    /// given (`takes_forms_given`).
     pub(super) fn unboxed_by_function(
         &self,
         def_id: DefId,
         i: usize,
         generic_args: ty::GenericArgsRef<'tcx>,
-        given: Option<Ty<'tcx>>,
-    ) -> Option<(Vec<bool>, bool)> {
+    ) -> Option<FormsGiven<'tcx>> {
         let sig = self
             .tcx
             .fn_sig(def_id)
@@ -402,16 +407,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .flat_map(|tr| tr.args.types().skip(1).collect::<Vec<_>>()),
             )
             .find(|&f| fn_bound(f).is_some())?;
-        let unboxed: Vec<bool> = fn_bound(f)?
+        let unboxed: Vec<Option<(Form, Crossing<'tcx>)>> = fn_bound(f)?
             .args
             .type_at(1)
             .tuple_fields()
             .iter()
-            .enumerate()
-            .map(|(at, passed)| {
-                self.form_of((def_id, passed, self.instantiated(passed, generic_args)))
-                    .is_some()
-                    && !given.is_some_and(|given| self.takes_generic_form_itself(given, Some(at)))
+            .map(|passed| {
+                let crossing = (def_id, passed, self.instantiated(passed, generic_args));
+                self.form_of(crossing).map(|form| (form, crossing))
             })
             .collect();
         // What it gives back, its bound's `Output`.
@@ -426,35 +429,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     )
             })
             .and_then(|projection| projection.term.as_type());
-        let wrapped = output.is_some_and(|out| {
-            (self.form_of((def_id, out, self.instantiated(out, generic_args)))).is_some_and(|form| form == Form::Handle)
-                && !given.is_some_and(|given| self.takes_generic_form_itself(given, None))
-        });
-        (unboxed.iter().any(|&unboxed| unboxed) || wrapped).then_some((unboxed, wrapped))
+        let back = output.and_then(|out| self.form_of((def_id, out, self.instantiated(out, generic_args))));
+        (unboxed.iter().any(Option::is_some) || back == Some(Form::Handle)).then_some((unboxed, back))
     }
 
-    /// Whether `given`, the type of a function of the crate's given as a
-    /// value, takes at its parameter `at`, or gives back where `at` is
-    /// `None`, generic code's form by its own declaration: a `&mut` of its
-    /// own type parameter's, which its body reads as generic code's box
-    /// (ADR 0099), or a raw pointer of one, its handle (ADR 1114), whatever
-    /// its instance is (#975).
-    fn takes_generic_form_itself(&self, given: Ty<'tcx>, at: Option<usize>) -> bool {
-        let Some((id, _)) = crate::lower::fn_def(given) else {
+    /// Whether a generic function's instance `def_id` given `args`, given
+    /// generic code that calls it as an `F` in the forms `given`
+    /// (`unboxed_by_function`'s), takes them itself: its value takes its
+    /// callers' forms where they differ from generic code's (#1324), and its
+    /// JS function, generic code's own, takes each form generic code gives
+    /// and gives back the form generic code takes back, so it's given
+    /// itself, `apply_mut(.., replace_with)` (#975).
+    pub(in crate::lower) fn takes_forms_given(
+        &self,
+        (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
+        (params, back): &FormsGiven<'tcx>,
+    ) -> bool {
+        if !self.reified_takes_generic_forms(def_id, args) {
             return false;
-        };
+        }
         let sig = self
             .tcx
-            .fn_sig(id)
+            .fn_sig(def_id)
             .instantiate_identity()
             .skip_normalization()
             .skip_binder();
-        let declared = match at {
-            Some(at) => sig.inputs().get(at).copied(),
-            None => Some(sig.output()),
-        };
-        declared
-            .is_some_and(|input| self.is_generic_box_in(input, self.tcx.param_env(id)) || self.is_generic_handle(input))
+        let own = |declared: Ty<'tcx>| self.form_of((def_id, declared, self.instantiated(declared, args)));
+        sig.inputs().len() == params.len()
+            && (sig.inputs().iter().zip(params)).all(|(&declared, given)| own(declared) == given.map(|(form, _)| form))
+            && own(sig.output()) == *back
     }
     /// Whether a generic function's instance `def_id` given `args`, as a
     /// `fn` pointer, would be given its callers' forms where its value takes
@@ -464,9 +467,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// raw pointer of one, generic code's handle, which its instance makes a
     /// slice's, a pair `dyn`'s or a JS object's, the value itself (ADR 1114).
     /// Not a trait's method, whose value is its impl's or its copied
-    /// default's, of the instance's own types.
+    /// default's, of the instance's own types; a function of the crate's or
+    /// a library's, whose JS rust-js wrote.
     pub(in crate::lower) fn reified_takes_generic_forms(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
-        if self.tcx.trait_of_assoc(def_id).is_some() {
+        if self.tcx.trait_of_assoc(def_id).is_some()
+            || !(self.is_rust_fn(def_id) || self.krate.foreign.item(def_id).is_some())
+        {
             return false;
         }
         let sig = self
@@ -921,13 +927,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // In the caller's form: a raw pointer of a type parameter's, a
         // handle in generic code, a slice's the array (ADR 1114); a `&mut`
         // generic code boxes, an object's the object (ADR 0454); a `&mut`
-        // to a type parameter given a `&mut` to an object, a box of it.
+        // to a type parameter given a `&mut` to an object, a box of its
+        // box, a box of the object (#1303).
         let crossing = (def_id, declared, self.instantiated(declared, generic_args));
         Ok(match self.form_of(crossing) {
             Some(form) => self.form_back(form, crossing, value),
-            // A `&mut W` of a `W` given a `&mut` to an object: its box of
-            // the object's cell, given back as a box of the object (#1303).
-            None => self.form_back(Form::HeldBox, crossing, value),
+            None => value,
         })
     }
 }
