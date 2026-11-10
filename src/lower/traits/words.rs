@@ -6,7 +6,18 @@ use super::*;
 /// The type, then the trait, then the trait's arguments other than their
 /// defaults: `circleShape`, `metersFromF64` for `impl From<f64> for
 /// Meters`, and `versionPartialEq`, whose `Rhs` is `Self` (ADR 0052).
+/// Found once an impl, the session's (#1298).
 pub(in crate::lower) fn impl_name(tcx: TyCtxt<'_>, id: DefId) -> String {
+    let caches = crate::lower::session::caches(tcx);
+    if let Some(name) = caches.impl_names.get(&id) {
+        return name;
+    }
+    caches.impl_names.keep(id, named_apart(tcx, id))
+}
+
+/// `impl_name`, found.
+fn named_apart(tcx: TyCtxt<'_>, id: DefId) -> String {
+    let caches = crate::lower::session::caches(tcx);
     let named = |id: DefId, full: bool, module: &str| {
         let tr = tcx.impl_trait_ref(id).instantiate_identity().skip_normalization();
         if !full {
@@ -32,37 +43,48 @@ pub(in crate::lower) fn impl_name(tcx: TyCtxt<'_>, id: DefId) -> String {
         }
         name
     };
-    let tr = tcx.impl_trait_ref(id).instantiate_identity().skip_normalization();
+    // Its type's and its trait's words alone, which every other impl's are
+    // compared with, found once an impl.
+    let short_of = |id: DefId| match caches.impl_short_names.get(&id) {
+        Some(short) => short,
+        None => caches.impl_short_names.keep(id, named(id, false, "")),
+    };
     // Two traits of one name for one type, serde's `de::Error` and
     // `ser::Error`: each named with its trait's module too, `errorDeError`.
-    let short = named(id, false, "");
-    let clash = tcx
-        .trait_impls_in_crate(id.krate)
-        .iter()
-        .any(|&other| tcx.impl_trait_id(other) != tr.def_id && named(other, false, "") == short);
-    let module = match clash {
-        true => {
-            // A crate root's is its path, the crate's name, or `crate`.
-            let parent = tcx.parent(tr.def_id);
-            let module = (tcx.opt_item_name(parent)).map_or_else(|| tcx.def_path_str(parent), |name| name.to_string());
-            crate::lower::upper_first(&crate::lower::camel_case(&module))
+    let module_of = |id: DefId| {
+        let tr = tcx.impl_trait_ref(id).instantiate_identity().skip_normalization();
+        let short = short_of(id);
+        let clash = (tcx.trait_impls_in_crate(id.krate).iter())
+            .any(|&other| tcx.impl_trait_id(other) != tr.def_id && short_of(other) == short);
+        match clash {
+            true => {
+                // A crate root's is its path, the crate's name, or `crate`.
+                let parent = tcx.parent(tr.def_id);
+                let module =
+                    (tcx.opt_item_name(parent)).map_or_else(|| tcx.def_path_str(parent), |name| name.to_string());
+                crate::lower::upper_first(&crate::lower::camel_case(&module))
+            }
+            false => String::new(),
         }
-        false => String::new(),
     };
+    let module = module_of(id);
     let name = named(id, false, &module);
     // Two impls of a trait for one type with other arguments, `Vec<i32>`'s and
     // `Vec<String>`'s: each named with the arguments, its type's and its
     // trait's, `vecI32Describe`; and, two types of one name, local to two
-    // functions, numbered in the order they're declared.
-    let mut alike: Vec<DefId> = tcx
-        .all_impls(tr.def_id)
-        .filter(|&other| other.krate == id.krate && named(other, false, &module) == name)
+    // functions, numbered in the order they're declared. So are two traits
+    // of one name in modules of one name, each a `const _`'s block's
+    // `Subtrait`, which zerocopy's macros write: `u16Subtrait` and
+    // `u16Subtrait2` (#1298).
+    let short = short_of(id);
+    let mut alike: Vec<DefId> = (tcx.trait_impls_in_crate(id.krate).iter().copied())
+        .filter(|&other| short_of(other) == short && named(other, false, &module_of(other)) == name)
         .collect();
     if alike.len() < 2 {
         return name;
     }
     let full = named(id, true, &module);
-    alike.retain(|&other| named(other, true, &module) == full);
+    alike.retain(|&other| named(other, true, &module_of(other)) == full);
     alike.sort_by_key(|other| other.index);
     match alike.iter().position(|&other| other == id) {
         Some(at) if at > 0 => format!("{full}{}", at + 1),

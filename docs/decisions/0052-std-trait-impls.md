@@ -236,3 +236,24 @@ Rust drops an aggregate's operands: a struct's, a variant's or a tuple's
 in `$madeInTurn((made) => ..)`, the latest first; a clone's items in
 `$madeEach(items, clone, drop)`, in order, as std's guard drops them.
 Where none may, the clone and the default read as before. [1102](1102-what-is-made-in-turn-drops-as-a-later-part-unwinds.md).
+
+## Amendment: impls of traits of one name, each a `const _` block's, are numbered (2026-11-11, #1298)
+
+zerocopy's `impl_or_verify!` and `static_assert!` each write a trait and
+an impl of it in a `const _: () = { .. };` block, many to one module: two
+`trait Subtrait` with `impl Subtrait for u16`. Two traits of one name are
+named apart by their modules, `errorDeError`, but each block's is `_`, so
+both were `u16_Subtrait` and rust-js refused zerocopy's library, its 139
+tests unrun: "generated trait implementation name collides; put the
+implementations in separate modules", a refusal of idiomatic Rust. Case
+([0262](0262-when-rust-and-js-disagree.md)): none, names. **What numbers
+impls of one trait whose names come out alike numbers any two trait impls
+of the crate whose names come out alike** (`impl_name`, `traits/words.rs`),
+in the order they're declared: `u16_Subtrait`, `u16_Subtrait2`. Only names
+that were refused change. Two impls of one name stay an error where the
+numbering can't tell them apart. Held by the corpus's
+`traits_of_one_name_in_const_blocks` against native Rust and the mutation
+`impls-of-alike-traits-unnumbered`. Each impl's name, and its type's and
+trait's words that every other's is compared with, are found once a session
+(`Caches::impl_names`, `impl_short_names`): asked of every impl for each name,
+zerocopy's many took its test build past the Crater's 20 minutes; now 82 s.

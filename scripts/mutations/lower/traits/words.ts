@@ -54,12 +54,13 @@ export const mutations: Mutation[] = [
   {
     name: "same-named-traits-collide",
     breaks:
-      "two traits of one name for one type, serde's `de::Error` and `ser::Error`, are named the same, an error",
+      "two traits of one name for one type, serde's `de::Error` and `ser::Error`, aren't told apart by their modules' words, `de_Error` and `ser_Error`, but spelled in full",
     file: "src/lower/traits/words.rs",
-    find: '        .any(|&other| tcx.impl_trait_id(other) != tr.def_id && named(other, false, "") == short);',
+    find: "            .any(|&other| tcx.impl_trait_id(other) != tr.def_id && short_of(other) == short);",
     replace:
-      '        .any(|&other| tcx.impl_trait_id(other) != tr.def_id && named(other, false, "") == short && false);',
+      "            .any(|&other| tcx.impl_trait_id(other) != tr.def_id && short_of(other) == short && false);",
     tests: ["test/corpus.test.ts", "-t", "impl_names"],
+    snapshots: true,
   },
   {
     name: "impl-trait-drop-named-as-written",
@@ -114,5 +115,13 @@ export const mutations: Mutation[] = [
     replace: "        let unmarked = name.as_str();\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
     snapshots: true,
+  },
+  {
+    name: "impls-of-alike-traits-unnumbered",
+    breaks: "two traits of one name in modules of one name, each a `const _`'s block's `Subtrait`, aren't numbered apart, and zerocopy's library is refused: \"generated trait implementation name collides\" (#1298)",
+    file: "src/lower/traits/words.rs",
+    find: "        .filter(|&other| short_of(other) == short && named(other, false, &module_of(other)) == name)\n",
+    replace: "        .filter(|&other| tcx.impl_trait_id(other) == tcx.impl_trait_id(id) && named(other, false, &module_of(other)) == name)\n",
+    tests: ["test/corpus.test.ts", "-t", "^traits_of_one_name_in_const_blocks.rs$"],
   },
 ];

@@ -25,6 +25,11 @@ pub(crate) struct Caches {
     gcx: usize,
     /// `std_path`'s answers, each of std's items printed once.
     pub std_paths: OnceMap<DefId, &'static str>,
+    /// Each impl's dictionary's name, and its type's and trait's words
+    /// alone, which every other impl's name is compared with: found once
+    /// each, not of every impl for each name asked, zerocopy's many (#1298).
+    pub impl_names: OnceMap<DefId, String>,
+    pub impl_short_names: OnceMap<DefId, String>,
     /// The std types whose bodies are compiled into `@rust-js/std`.
     pub compiled_types: OnceCell<IndexSet<DefId>>,
     /// std's bodies compiled into `@rust-js/std`, each found in std.
@@ -84,6 +89,8 @@ fn start_keyed(gcx: usize, flags: Flags) -> Session {
         *slot = Some(Rc::new(Caches {
             gcx,
             std_paths: OnceMap::default(),
+            impl_names: OnceMap::default(),
+            impl_short_names: OnceMap::default(),
             compiled_types: OnceCell::new(),
             compiled: OnceCell::new(),
             provided: OnceMap::default(),
