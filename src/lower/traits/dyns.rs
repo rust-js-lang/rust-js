@@ -667,10 +667,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of a `Fn` or an `FnMut` made a `dyn FnOnce`, whose call
             // consumes it, as std's `call_once` shim does: what it took
             // dropped as the call returns, or unwinds, `$droppingOnce(f,
-            // drop)`; an `FnOnce`'s own body drops it (#409).
+            // drop)`; one called by `FnOnce` alone drops what it holds as
+            // its body ends (#409, ADR 0470): an `FnOnce` closure, a `dyn
+            // FnOnce`, and a type parameter bound by `FnOnce` alone, whose
+            // caller gives it so (`function_kind`), each as a box of it is
+            // (#1221).
+            let called = std::iter::successors(Some(function), |ty| ty.boxed_ty())
+                .last()
+                .unwrap_or(function);
             let once = crate::lower::recognition::is_fn_once_dyn(self.tcx, predicates)
-                && !matches!(function.kind(), ty::Closure(_, args) if args.as_closure().kind() == ty::ClosureKind::FnOnce)
-                && !matches!(function.kind(), ty::Dynamic(of, ..) if crate::lower::recognition::is_fn_once_dyn(self.tcx, of));
+                && !matches!(called.kind(), ty::Dynamic(of, ..) if crate::lower::recognition::is_fn_once_dyn(self.tcx, of))
+                && crate::lower::recognition::function_kind(self.tcx, self.frame.owner, called)
+                    != Some(ty::ClosureKind::FnOnce);
             // A `dyn Fn`'s drop, of one only where the program makes one of
             // what has something to drop (ADR 0626, amended).
             let dropping = match function.kind() {

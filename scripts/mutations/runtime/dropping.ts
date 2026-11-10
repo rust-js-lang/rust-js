@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "dropping-carries-nothing",
     breaks: "`$dropping` gives back the closure carrying no drop",
     file: "src/runtime/dropping.js",
-    find: "  f[$disposeKey] = drop;\n",
+    find: "  own[$disposeKey] = drop;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
   },
@@ -33,5 +33,14 @@ export const mutations: Mutation[] = [
     find: "  return (...args) => f(...args);\n",
     replace: "  return f;\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_borrowed_function.rs$"],
+  },
+  {
+    name: "dropping-again-in-place",
+    breaks:
+      "a function that carries a drop already, a `Box<dyn Fn>` generic code boxes again, is given the new drop in place of its own, which calls `$dispose` of itself: its drop overflows the stack (#1221)",
+    file: "src/runtime/dropping.js",
+    find: "  const own = f[$disposeKey] === undefined ? f : (...args) => f(...args);\n",
+    replace: "  const own = f;\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_function_boxed_again.rs$"],
   },
 ];

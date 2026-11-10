@@ -3,10 +3,15 @@
 const $disposeKey = Symbol.dispose ?? Symbol.for("Symbol.dispose");
 
 // A closure that leaves where it's made, its maker's `impl Fn`, carrying
-// its drop, `drop`, which drops what it took (ADR 0484).
+// its drop, `drop`, which drops what it took (ADR 0484). One that carries a
+// drop already, a `Box<dyn Fn>` generic code boxes again, `boxed<F:
+// Fn>(f: F) -> Box<dyn Fn>` given one, is another allocation holding it: a
+// function of its own that calls it carries the new drop, which drops the
+// one it holds, its own drop kept (#1221).
 function $dropping(f, drop) {
-  f[$disposeKey] = drop;
-  return f;
+  const own = f[$disposeKey] === undefined ? f : (...args) => f(...args);
+  own[$disposeKey] = drop;
+  return own;
 }
 
 // A closure made elsewhere dropped: the drop it carries, `$dropping`'s, run.

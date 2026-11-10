@@ -266,3 +266,32 @@ none of whose kind drops, which disposed of nothing:
 Corpus case `dyn_fn_drops_by_its_signature`, mutation `fn-dyn-drops-any`.
 The readability baseline is blessed for it: the two cases' lines fewer,
 each other shape's share of them grows a little, not one more of it.
+
+## Amendment: a boxed function boxed again is another allocation (2026-11-10, #1221)
+
+Three shapes made a `dyn Fn` of a function that was one already, and
+dropped it wrongly (found by #1204's `dyn-fn` rewrite, five corpus cases):
+
+- **Generic code's `boxed<F: Fn>(f: F) -> Box<dyn Fn>` given a `Box<dyn
+  Fn>`** made it `$dropping(f, () => dropF?.(f))`, which set the drop on
+  `f` in place of the one `f` carried, so `dropF`, `$dispose(f)`, called
+  itself: a stack overflow. `$dropping` of a function that carries a drop
+  already gives a function of its own that calls it, carrying the new
+  drop, which drops the one it holds, as the box is another allocation
+  holding the first (`src/runtime/dropping.js`). A function that carries
+  none is given its drop in place, as before; no JS a compile writes
+  changes.
+- **A `Box<Box<dyn FnOnce>>` made a `dyn FnOnce`** was taken for a `Fn`
+  made one, `$droppingOnce(f, () => $dispose(f))`, so the inner's drop ran
+  after its call had consumed it: twice. Whether a function is called by
+  `FnOnce` alone is asked of what its boxes hold.
+- **Generic code's `once<F: FnOnce>(f: F) -> Box<dyn FnOnce>`** was taken
+  for a `Fn` made one too, though its callers give it a function called by
+  `FnOnce` alone, which drops what it holds as its body ends (ADR 0470): a
+  `Fn`-kind closure given it dropped twice. A type parameter is asked its
+  kind as a closure is, `function_kind`, its strongest bound's.
+
+Results changed ([0262](0262-when-rust-and-js-disagree.md)), so Rust's are
+kept. Corpus case `boxed_function_boxed_again`, both builds; mutations
+`dropping-again-in-place`, `fn-once-dyn-of-a-box-unpeeled` and
+`fn-once-dyn-of-a-parameter-unasked`.

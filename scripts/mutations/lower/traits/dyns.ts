@@ -435,8 +435,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `FnOnce` closure made a `dyn FnOnce` drops what it took in its body and again as its call returns (#409)",
     file: "src/lower/traits/dyns.rs",
-    find: "                && !matches!(function.kind(), ty::Closure(_, args) if args.as_closure().kind() == ty::ClosureKind::FnOnce)\n",
-    replace: "\n",
+    find: "                && crate::lower::recognition::function_kind(self.tcx, self.frame.owner, called)\n                    != Some(ty::ClosureKind::FnOnce);\n",
+    replace: ";\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_boxed_once_drops.rs$"],
   },
   {
@@ -444,8 +444,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `dyn FnOnce` made a `dyn FnOnce` again, returned or given on, is wrapped to drop as its call returns, dropping what it took twice (#409)",
     file: "src/lower/traits/dyns.rs",
-    find: "                && !matches!(function.kind(), ty::Dynamic(of, ..) if crate::lower::recognition::is_fn_once_dyn(self.tcx, of));",
-    replace: ";",
+    find: "                && !matches!(called.kind(), ty::Dynamic(of, ..) if crate::lower::recognition::is_fn_once_dyn(self.tcx, of))\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_once_drops_itself.rs$"],
   },
   {
@@ -606,5 +606,24 @@ export const mutations: Mutation[] = [
     find: "                ty::Ref(_, _, Mutability::Mut) if self.mut_ref_form(function).is_cell() => Expr::held(value),\n",
     replace: "                ty::Ref(_, _, Mutability::Mut) if false => Expr::held(value),\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_boxed_function_as_dyn.rs$"],
+  },
+  {
+    name: "fn-once-dyn-of-a-box-unpeeled",
+    breaks:
+      "a `Box<Box<dyn FnOnce>>` made a `dyn FnOnce` is taken for a `Fn` made one, `$droppingOnce`, so the inner's drop runs after its call consumed it: twice (#1221)",
+    file: "src/lower/traits/dyns.rs",
+    find: "            let called = std::iter::successors(Some(function), |ty| ty.boxed_ty())\n                .last()\n                .unwrap_or(function);\n",
+    replace: "            let called = function;\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_function_boxed_again.rs$"],
+  },
+  {
+    name: "fn-once-dyn-of-a-parameter-unasked",
+    breaks:
+      "generic code's `F: FnOnce` made a `dyn FnOnce` is taken for a `Fn` made one, `$droppingOnce`, though its caller's function drops what it holds as its body ends: a `Fn`-kind closure given it drops twice (#1221)",
+    file: "src/lower/traits/dyns.rs",
+    find: "                && crate::lower::recognition::function_kind(self.tcx, self.frame.owner, called)\n                    != Some(ty::ClosureKind::FnOnce);\n",
+    replace:
+      "                && !matches!(called.kind(), ty::Closure(_, args) if args.as_closure().kind() == ty::ClosureKind::FnOnce);\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_function_boxed_again.rs$"],
   },
 ];
