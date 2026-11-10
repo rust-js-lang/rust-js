@@ -105,9 +105,10 @@ test("which source an adapter's fold or nth asks is the OwnStep catalog's alone"
 // with the type where a compiled `fuse()` closed nothing of a `Vec`'s rest
 // (#653). Neither gate is given the JS it gates.
 test("whether an iterator's steps may panic is steps_may_panic's alone", () => {
-  const collect = read("src/lower/mir/iter/collect.rs");
+  const ends = ["collect.rs", "consumers.rs"].map((file) => read(`src/lower/mir/iter/${file}`)).join("\n");
   for (const gate of ["unwinding_collect", "stranded_drop"]) {
-    const signature = collect.slice(collect.indexOf(`fn ${gate}(`), collect.indexOf(") ->", collect.indexOf(`fn ${gate}(`)));
+    expect(ends, gate).toContain(`fn ${gate}(`);
+    const signature = ends.slice(ends.indexOf(`fn ${gate}(`), ends.indexOf(") ->", ends.indexOf(`fn ${gate}(`)));
     expect(signature, gate).not.toContain("Expr");
   }
   const lowering = ["src/lower.rs", ...files("src/lower")].map(read).join("\n");
@@ -177,9 +178,9 @@ test("a consumer's closure folded by value is dropped by $consume alone", () => 
   const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
   const writing = lowering.filter((file) => read(file).includes('"$consume"'));
   for (const file of writing) expect(read(file), file).toContain("consumed_ends(");
-  expect(writing.sort()).toEqual(["src/lower/mir/iter/backs.rs", "src/lower/mir/iter/collect.rs"]);
+  expect(writing.sort()).toEqual(["src/lower/mir/iter/backs.rs", "src/lower/mir/iter/consumers.rs"]);
   const asking = lowering.filter((file) => read(file).includes("consumed_function("));
-  expect(asking.sort()).toEqual(["src/lower/mir/dispatch.rs", "src/lower/mir/iter/collect.rs"]);
+  expect(asking.sort()).toEqual(["src/lower/mir/dispatch.rs", "src/lower/mir/iter/consumers.rs"]);
   expect(read("src/runtime/fold_of.js")).toContain("function $consume(it, step, init, f, unwind, ends)");
 });
 

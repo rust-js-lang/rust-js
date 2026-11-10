@@ -94,14 +94,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^collect_into_unit.rs$"],
   },
   {
-    name: "mir-sum-from-one",
-    breaks: "`sum` of an iterator starts from one",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "            true => (Op::Add, 0),\n",
-    replace: "            true => (Op::Add, 1),\n",
-    tests: ["test/corpus.test.ts", "-t", "assert_failure"],
-  },
-  {
     name: "mir-collect-map-refused",
     breaks: "`collect` into a map or a set is refused",
     file: "src/lower/mir/iter/collect.rs",
@@ -123,19 +115,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "mir-float-sum-from-zero",
-    breaks:
-      "a float's sum from MIR starts at 0, an empty sum `0`, not Rust's -0.0",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "(true, true) => Expr::num(-0.0),",
-    replace: "(true, true) => Expr::num(0.0),",
-    tests: [
-      "test/lowering-numbers.test.ts",
-      "-t",
-      "a float's sum from MIR keeps the sign",
-    ],
-  },
-  {
     name: "mir-collect-heap-unheaped",
     breaks:
       "`collect()` into a `BinaryHeap` from MIR is its items as they came, not in heap order",
@@ -143,20 +122,6 @@ export const mutations: Mutation[] = [
     find: "                true => self.heap_values(HeapOp::From, vec![items], (output, false), span)?,\n",
     replace: "                true => items,\n",
     tests: ["test/corpus.test.ts", "-t", "heap_peek_mut"],
-  },
-  {
-    name: "mir-fold-own-of-init",
-    breaks:
-      "MIR's `fold` asks whether what it starts from is the crate's function, not its callback",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "        let own = arg_tys.last().is_some_and(|ty| self.is_called_as_written(*ty));\n",
-    replace:
-      "        let own = arg_tys.get(1).is_some_and(|ty| self.is_called_as_written(*ty));\n",
-    tests: [
-      "test/lowering-iterators.test.ts",
-      "-t",
-      "a fold given a function of the crate's",
-    ],
   },
   {
     name: "mir-iterable-collected-lazy",
@@ -170,35 +135,6 @@ export const mutations: Mutation[] = [
       "-t",
       "methods are their type's object|webapi crate's bindings",
     ],
-  },
-  {
-    name: "fold-start-left-out",
-    breaks:
-      "`fold(None, f)`'s `reduce(f, undefined)` loses its start, so an empty slice's throws and another's starts from its first item",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "        crate::lower::calls::given_to_js(&mut args);\n        args.swap(0, 1);\n",
-    replace: "        args.swap(0, 1);\n",
-    tests: ["test/corpus.test.ts", "-t", "fold_from_none"],
-  },
-  {
-    name: "rposition-of-lent-wrapped",
-    breaks:
-      "`rposition` of a kept iterator is given its `$lent` wrapper, `$rposition($lent(it), f)`, where `it` is what it steps: the wrapper passes on its back and its length, so it finds the same, but the JS reads a helper no one wrote",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "        let items = crate::lower::iterators::unlent(&it).clone();\n",
-    replace: "        let items = it;\n",
-    tests: ["test/corpus.test.ts", "-t", "^rposition.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "rposition-of-lazy-unrefused",
-    breaks:
-      "`rposition` of a lazy chain isn't refused, and is given what it can't step from the back",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "        if self.array_source(iter_ty).is_none() {\n",
-    replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^rposition_of_lazy.rs$"],
-    snapshots: true,
   },
   {
     name: "own-from-iter-unused",
@@ -233,15 +169,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "try-fold-result-as-option",
-    breaks:
-      "`try_fold` into a `Result` stops at a `None`, which an `Ok` never is, and goes on past an `Err`",
-    file: "src/lower/mir/iter/collect.rs",
-    find: '            (None, None) => "$tryFoldOk",\n',
-    replace: '            (None, None) => "$tryFoldSome",\n',
-    tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
-  },
-  {
     name: "collect-into-held-param-unbound",
     breaks:
       "`collect()` into a `Result<U, E>` a bound says it's collected into is refused",
@@ -252,43 +179,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_accumulations.rs$"],
   },
   {
-    name: "reduce-unboxed",
-    breaks: "`reduce`'s `Some` of what may look like `None` isn't boxed",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "            let boxed = item.is_some_and(|item| self.boxed_payload(item));\n",
-    replace: "            let boxed = false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_reduce.rs$"],
-  },
-  {
     name: "boxed-slice-collect-refused",
     breaks: "`collect` into a `Box<[T]>` is refused",
     file: "src/lower/mir/iter/collect.rs",
     find: "        } else if self.is_vec_like(output) || output.boxed_ty().is_some_and(|inner| inner.is_slice()) {\n",
     replace: "        } else if self.is_vec_like(output) {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_slice_values.rs$"],
-  },
-  {
-    name: "try-for-each-fmt-result-tagged",
-    breaks:
-      "`try_for_each` into a `fmt::Result` reads its function's nothing as a `Result`, and throws",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "        if self.recognition().is_fmt_result(output) {\n",
-    replace: "        if false {\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^closure_writes_captured_formatter.rs$",
-    ],
-  },
-  {
-    name: "try-fold-boxed-option-refused",
-    breaks:
-      "`try_fold` into an `Option` of what could look like `None` is refused",
-    file: "src/lower/mir/iter/collect.rs",
-    find: '            (Some(_), _) => "$tryFoldSome",\n',
-    replace:
-      '            (Some(made), _) if !self.boxed_payload(made) => "$tryFoldSome",\n            (Some(_), _) => return Err(self.unsupported(span, "a boxed `try_fold`")),\n',
-    tests: ["test/corpus.test.ts", "-t", "^try_for_each.rs$"],
   },
   {
     name: "collect-fallible-source-unclosed",
@@ -298,26 +194,6 @@ export const mutations: Mutation[] = [
     find: "                Some(iter_ty) => self.closing(it, iter_ty, span)?,\n",
     replace: "                Some(_) => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^drops_of_consumed_iterators.rs$"],
-  },
-  {
-    name: "fallible-sum-of-results-as-options",
-    breaks:
-      "`sum()` into a `Result` collects as into an `Option`, so an `Err` is a value",
-    file: "src/lower/mir/iter/collect.rs",
-    find: '                None => Expr::call_helper("$collectResults", vec![it, into]),\n',
-    replace:
-      '                None => Expr::call_helper("$collectOptions", vec![it, Expr::bool(false), into]),\n',
-    tests: ["test/corpus.test.ts", "-t", "^sum_fallible.rs$"],
-  },
-  {
-    name: "fallible-sum-refused",
-    breaks:
-      "`sum()` into an `Option` of numbers is refused, as a dictionary of no impl",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "        if let Some(num) = option.or(result).and_then(Num::of) {\n",
-    replace:
-      "        if let Some(num) = option.or(result).and_then(Num::of).filter(|_| false) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^sum_fallible.rs$"],
   },
   {
     name: "from-iter-of-a-map-refused",
@@ -346,24 +222,6 @@ export const mutations: Mutation[] = [
     replace:
       "            || output.is_unit()\n            || self.is_vec_like(output)\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
-  },
-  {
-    name: "by-fold-ignores-own-nth",
-    breaks: "what takes by fold asks a skip's nth(n - 1)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "            || recognition.folds_by_its_own_nth(iter_ty)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
-  },
-  {
-    name: "rposition-of-lazy-refused",
-    breaks:
-      "`rposition` of a lazy exact-sized, double-ended iterator is made so by `as_exact_size`",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "            // What a `&mut` lends, which it's stepped from its back as it is.\n",
-    replace:
-      '            if self.knows_its_back(iter_ty) == self.knows_its_back(iter_ty) { return Err(self.unsupported(span, "`rposition`")); }\n',
-    tests: ["test/corpus.test.ts", "-t", "^rposition_of_lazy.rs$"],
   },
   {
     name: "counted-range-into-a-heap",
@@ -458,16 +316,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
-    name: "fold-acc-unwind-unseen",
-    breaks:
-      "a `fold` whose accumulator has a destructor is given no drop for it, so a stage's panic leaves it undropped (#423)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "        match may_throw && self.drops(acc) != crate::lower::drops::Drops::Nothing {",
-    replace:
-      "        match false && may_throw && self.drops(acc) != crate::lower::drops::Drops::Nothing {",
-    tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
-  },
-  {
     name: "fold-stage-by-type-unseen",
     breaks:
       "a `fold` whose stages its JS still holds as a variable is judged one no stage of may panic (#423)",
@@ -499,36 +347,6 @@ export const mutations: Mutation[] = [
       "            None if false && folded && self.collected_items(&it).is_none() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
     snapshots: true,
-  },
-  {
-    name: "try-fold-acc-unwind-unseen",
-    breaks:
-      "a `try_fold` into a `ControlFlow` of an accumulator with a destructor, a stage panicking part-way, leaves the accumulator undropped (#423)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "                self.stranded_drop(*receiver, *acc, span)?\n",
-    replace: "                let _ = (receiver, acc);\n                None\n",
-    tests: [
-      "test/corpus.test.ts",
-      "test/iterator-forms.test.ts",
-      "-t",
-      "^generic_folds_unwind.rs$|^panic_mid_fold_drops with",
-    ],
-  },
-  {
-    name: "by-fold-ignores-dropping-nth",
-    breaks: "a collect into a `LinkedList` of a `rev().take(3).skip(2).map(..)` of items with a destructor steps it by `next`, whose `nth(2)` drops a slice front to back, where std's fold drops each from the back (#494)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "            || recognition.nth_folded_sources(iter_ty).into_iter().any(drops)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
-  },
-  {
-    name: "string-of-strings-folded-whole",
-    breaks: "a `String` collected of `String`s folds its first item too, so a `skip`'s first step asks the crate's `nth(n - 1)`, not `nth(n)` (#494)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "            true if first_by_next => Expr::call_helper(\"$folded\", vec![it, Expr::bool(true)]),\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
   },
   {
     name: "collected-cows-as-objects",
@@ -570,14 +388,6 @@ export const mutations: Mutation[] = [
     find: " || self.unseen_steps_may_panic(iter_ty) ||",
     replace: " ||",
     tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
-  },
-  {
-    name: "try-fold-option-unwind-ungiven",
-    breaks: "a `try_fold` into an `Option` or a `Result` is given no drop of its accumulator, so one a panicking step strands is never dropped (rd767)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "            ([receiver, acc, _], IterMethod::TryFold | IterMethod::TryRFold) => {\n",
-    replace: "            ([receiver, acc, _], IterMethod::TryRFold) => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_steps_behind_adapters_unwind.rs$"],
   },
   {
     name: "collect-holding-unclosed",
@@ -628,14 +438,6 @@ export const mutations: Mutation[] = [
     find: "            InPlace::Yes => in_place(args),\n",
     replace: "            InPlace::Yes => Expr::call_helper(\"$collectDropping\", args),\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_leaks_what_a_discard_strands.rs$"],
-  },
-  {
-    name: "by-its-fold-past-nth-back",
-    breaks: "a `take(n).rev()` of a `Vec` of destructors collected into a `String` of `char`s steps by `next`, its source's `nth_back(len - n)`, where std's extend folds it, `nth_back(len - n - 1)`, dropping 4 before 5 (#670)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "            || recognition.nth_back_folded_sources(iter_ty).into_iter().any(drops)\n",
-    replace: "",
-    tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
   },
   {
     name: "generic-vec-collect-by-next",
@@ -690,22 +492,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
   {
-    name: "fold-given-no-ends",
-    breaks: "a compiled `Map::fold` gives the fold it asks no drop of the closure it moved into it, so its function drops after what the `take` left (#710)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "            return self.carries_its_drop(f) || self.given_drop(f).is_some();\n",
-    replace: "            return false;\n",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
-    name: "fold-given-no-ends-of-a-param",
-    breaks: "a compiled `Skip::fold` gives the fold it asks no drop of the `F` it was given, so a `map`'s function over it drops after what the `take` left (#710)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "            return self.carries_its_drop(f) || self.given_drop(f).is_some();\n",
-    replace: "            return self.carries_its_drop(f);\n",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
     name: "in-place-of-numbers-unsaid",
     breaks: "a collect in place of items with nothing to drop isn't said to be, so its fold moves a `map`'s function, which drops before what's left (#710)",
     file: "src/lower/mir/iter/collect.rs",
@@ -723,54 +509,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "consumed-function-never",
-    breaks: "no by-value consumer's closure is dropped by its fold, so it drops after what the fold closed (#734)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "        if !(by_value || tried) || iterator.is_mutable_ptr() {\n            return false;\n        }\n",
-    replace: "        if true || !(by_value || tried) || iterator.is_mutable_ptr() {\n            return false;\n        }\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
-  },
-  {
-    name: "consumed-rfold-not-by-value",
-    breaks: "an `rfold`'s closure isn't taken to be moved into its fold, so it drops after the crate's iterator (#734)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "                IterMethod::Fold\n                    | IterMethod::RFold\n",
-    replace: "                IterMethod::Fold\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
-  },
-  {
-    name: "consumer-own-fold-excluded",
-    breaks: "a consumer's closure folded by value over what reaches the crate's own `fold`, a `take()` of it, drops after what's left, where std's `fold(self, init, f)` drops it first (#734)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "            || (by_value\n                && (self.drops(iter_ty)",
-    replace: "            || (by_value\n                && !self.recognition().reaches_its_own(iter_ty, OwnStep::Fold, Reach::May)\n                && (self.drops(iter_ty)",
-    tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
-  },
-  {
-    name: "is-sorted-by-ends-lost",
-    breaks: "`is_sorted_by`'s function that holds what has a destructor is given nothing to drop it by, so it's never dropped (#763)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "                args.extend(ends);\n                Ok(Expr::call_helper(\"$isSortedBy\", args))\n",
-    replace: "                Ok(Expr::call_helper(\"$isSortedBy\", args))\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_is_sorted_by.rs$"],
-  },
-  {
-    name: "is-sorted-by-unconsumed",
-    breaks: "`is_sorted_by`'s function is dropped after the crate's iterator it's given, where std's `all` drops it first (#763)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "                    | IterMethod::Reduce\n                    | IterMethod::IsSortedBy\n",
-    replace: "                    | IterMethod::Reduce\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_is_sorted_by.rs$"],
-  },
-  {
-    name: "is-sorted-by-key-unmapped",
-    breaks: "`is_sorted_by_key` compares the items, not their keys (#763)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "                let keys = Expr::call(Expr::member(it, \"map\"), vec![self.unary_callback(arg(), own)]);\n",
-    replace: "                let _ = arg();\n                let keys = it;\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_is_sorted_by.rs$"],
-  },
-  {
     name: "in-place-collect-asks-room",
     breaks:
       "std's compiled collect in place of a `filter()` is given `$roomForHint`, which std's in-place collect never asks, so where a dropped item's drop panics it drops what it gathered, which rustc leaks (#770)",
@@ -778,42 +516,6 @@ export const mutations: Mutation[] = [
     find: "                args[0] = unroomed;\n",
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_collect_drops_rest_first with"],
-  },
-  {
-    name: "consumed-function-not-stranded",
-    breaks: "a fold whose accumulator a stage's panic may strand, of a source that drops nothing, isn't given what drops with `f`, so a `skip_while()`'s first step drops the accumulator first (#768)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "        stranded\n            || (by_value\n",
-    replace: "        false\n            || (by_value\n",
-    tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
-  },
-  {
-    name: "try-fold-given-no-ends",
-    breaks: "a `try_fold` isn't given what drops with `f`, so a `skip_while()`'s first step drops the accumulator first (#768)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "        let ends = self.consumed_ends(Some(method), arg_tys, &f, span)?;\n        let mut args = vec![it, init, self.binary_callback(f, own)];\n",
-    replace: "        let ends: Option<Expr> = None;\n        let mut args = vec![it, init, self.binary_callback(f, own)];\n",
-    tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
-  },
-  {
-    name: "max-by-unconsumed",
-    breaks: "`max_by`'s function is dropped after the crate's iterator it's given, where std's `reduce` drops it first (#734)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "                    | IterMethod::MaxBy(_)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^max_by_drops_its_function_first.rs$"],
-  },
-  {
-    name: "mir-max-is-min",
-    breaks: "`max()` of an iterator from MIR is its least item",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "return self.extreme_of(method == IterMethod::Max, it, item, span),",
-    replace: "return self.extreme_of(method == IterMethod::Min, it, item, span),",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "enum_order|opaque_iterators|generic_as_ref|returned_references",
-    ],
   },
   {
     name: "string-collect-asks-no-hint",
@@ -830,14 +532,6 @@ export const mutations: Mutation[] = [
     find: "                false => self.reserved_by_hint(\n                    it,\n                    iter_ty,\n",
     replace: "                false => self.reserved_by_hint(\n                    it,\n                    None,\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
-  },
-  {
-    name: "is-sorted-by-key-drop-unpassed",
-    breaks: "an iterator's `is_sorted_by_key` isn't given its keys' drop: no key with a destructor is ever dropped (#776)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "                self.is_sorted_call(keys, key, key_drop, span)\n",
-    replace: "                let _ = key_drop;\n                self.is_sorted_call(keys, key, None, span)\n",
-    tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
   },
   {
     name: "dictionary-collect-without-own-evidence",
@@ -857,14 +551,6 @@ export const mutations: Mutation[] = [
     find: "            Some(items) if self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none() => Some(items),\n",
     replace: "            Some(items) => Some(items),\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_panic_drops_collected.rs$"],
-  },
-  {
-    name: "keyed-extreme-unclosed",
-    breaks: "`max_by_key` of a key that drops over the crate's iterator with a destructor isn't given it closed, and nothing drops the iterator (#789)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "            true => self.closing(it, arg_tys[0], span)?,\n",
-    replace: "            true => it,\n",
-    tests: ["test/corpus.test.ts", "-t", "^max_by_key_of_a_dropping_key_over_its_iterator.rs$"],
   },
   {
     name: "heap-and-btree-not-grown-as-vec",
@@ -929,23 +615,5 @@ export const mutations: Mutation[] = [
     find: "            true => Expr::call_helper(\"$untracked\", vec![collected]),\n",
     replace: "            true => collected,\n",
     tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
-  },
-  {
-    name: "key-of-a-boxed-function-by-its-signature",
-    breaks:
-      "`max_by_key`, `min_by_key` and `is_sorted_by_key` read their key's type from the function's signature, which a `Box<dyn FnMut>` or a `&mut F` hasn't: rust-js crashes, where `<F as FnOnce>::Output` names it (#1223)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "        let key = Ty::new_projection(tcx, ty::IsRigid::No, output, [f, Ty::new_tup(tcx, &[given])]);\n",
-    replace:
-      "        let _ = (output, given);\n        let key = match *f.kind() {\n            ty::Closure(_, args) => tcx.instantiate_bound_regions_with_erased(args.as_closure().sig()).output(),\n            _ => tcx.instantiate_bound_regions_with_erased(f.fn_sig(tcx)).output(),\n        };\n",
-    tests: ["test/corpus.test.ts", "-t", "^key_functions_boxed.rs$"],
-  },
-  {
-    name: "kept-key-dropped-before-its-function",
-    breaks: "`max_by_key(f)` whose key has a destructor and whose `f` holds one drops the kept key before `f`, where std drops the `Map` holding `f` as `max_by` returns, then the key as `let (_, x)` takes it apart (#1231)",
-    file: "src/lower/mir/iter/collect.rs",
-    find: "                    || self.keeps_a_dropping_key(method, arg_tys)))\n",
-    replace: "                    || false))\n",
-    tests: ["test/corpus.test.ts", "-t", "^key_function_drops_before_its_key.rs$"],
   },
 ];

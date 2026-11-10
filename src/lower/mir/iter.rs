@@ -10,6 +10,7 @@ mod backs;
 pub(in crate::lower::mir) use backs::reversed_in_place;
 mod closing;
 mod collect;
+mod consumers;
 pub(in crate::lower::mir) mod sources;
 
 use self::sources::*;
