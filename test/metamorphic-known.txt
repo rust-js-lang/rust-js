@@ -73,6 +73,6 @@ plain std generic-instances zip_of_a_repeat_folds_to_the_shorter.rs
 plain std generic-instances zip_second_side_panics.rs
 plain std generic-instances zip_sides_dropped_with_it.rs
 
-#1240 P0 (iterators): size_hint, count, last and nth in generic code answer otherwise than std of some instances
+#1252 harness (metamorphic): a rewrite whose native run doesn't end is reported as a difference
 plain std generic-instances range_own_steps.rs
 plain std generic-instances repeat_count_panics.rs
