@@ -12,5 +12,3 @@
 #
 # A line goes with the fix of its issue; each run prints how many programs
 # each line met.
-
-refused at run time: a mutable slice of another type's bytes: #1257 a mutable slice of another type's bytes refused where it runs

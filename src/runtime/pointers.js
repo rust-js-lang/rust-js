@@ -15,8 +15,10 @@ const $items = new WeakMap();
 // where its address is (#1089).
 function $ptr(object, key, offset, root, at) {
   // An item of a part of a slice, `&v[1..3]`'s: the item of the array it's
-  // of, where Rust's is (#1185).
+  // of, where Rust's is (#1185); of a view of another type's bytes, the
+  // view stepped to it (#1257).
   const part = typeof key === "number" ? object[$placeOfPart] : undefined;
+  if (part?.bytes !== undefined) return $ptrAdd(part.bytes, key);
   if (part !== undefined) return $ptr(part.of, part.start + key, offset, root, at);
   // What a cell field that's the property it holds lends, through a
   // handle on it, or its one cell, `$fieldCell(x, "f")` (#1114).
@@ -685,13 +687,26 @@ function $ptrSlice(pointer, count) {
 // `slice::from_raw_parts_mut(p, n)`: a view of the `n` items from where `p`
 // points (ADR 0335), or all of an array, the array itself.
 function $ptrSliceMut(pointer, count) {
-  // A byte slice's own bytes write through; another's, read as bytes, don't.
   if (pointer.bytes !== undefined) {
+    // A byte array's own bytes, the array's items.
     if ($itemsAreBytes(pointer) && pointer.width === 1 && pointer.signed === false) {
       $allocUsed(pointer, "bytes");
       return $view(pointer.of, pointer.at, pointer.at + count);
     }
-    throw $unsupported("rust-js does not support a mutable slice of another type's bytes, which reads memory by where it is");
+    // Another's, a view of its bytes `width` at a time, each item read and
+    // written where its bytes are, through their codec, or a `[u8; N]`'s
+    // that writes through (#1257); a pointer into it is the view stepped to
+    // that item.
+    const target = [];
+    target[$placeOfPart] = { bytes: pointer };
+    return $proxy(
+      count,
+      (i) => $ptrAdd(pointer, i).value,
+      (i, item) => {
+        $ptrAdd(pointer, i).value = item;
+      },
+      target,
+    );
   }
   const [items, start] = $ptrItems(pointer, count);
   if (start + count > items.length && $spares.has(items)) {
@@ -764,7 +779,7 @@ function $byteView(view) {
       if (this.opaque) {
         throw $unsupported("rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type");
       }
-      if (this.signed === "bytes") return Array.from({ length: this.width }, (_, i) => $byteAt(this, i));
+      if (this.signed === "bytes") return $bytesRead(this);
       return $readInt(this, this.width, this.signed);
     },
     set(value) {
@@ -778,6 +793,27 @@ function $byteView(view) {
       $writeInt(this, this.width, value);
     },
   });
+}
+
+// A `[u8; N]` read through a view of another type's bytes: those bytes as
+// they are now, a copy, as a read of a `Copy` value is, whose every write,
+// `(*p)[1] = 9` or through a `&mut *p`, is also a write of the byte it
+// was read from (#1266). What's read and kept is copied where it's changed
+// in place after, as any such read is, so only a write through the place
+// it was read from reaches these; and a pointer into it is into the bytes.
+function $bytesRead(view) {
+  const bytes = Array.from({ length: view.width }, (_, i) => $byteAt(view, i));
+  const target = [];
+  target[$placeOfPart] = { bytes: $ptrRetyped(view, 1, false) };
+  return $proxy(
+    view.width,
+    (i) => bytes[i],
+    (i, byte) => {
+      bytes[i] = byte;
+      $byteSet(view, i, byte);
+    },
+    target,
+  );
 }
 
 // A pointer to `u8`s as the view of their bytes it is: a view already; or

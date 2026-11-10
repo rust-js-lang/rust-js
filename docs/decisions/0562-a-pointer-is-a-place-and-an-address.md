@@ -1170,3 +1170,43 @@ that writes it through its pointer and one written whole and read by
 reference. Mutations `uninit-written-whole-unasked`,
 `uninit-written-whole-given-anywhere`, `uninit-written-whole-of-no-write`
 and `uninit-written-whole-named-is-used`.
+
+## Amendment: a mutable slice of another type's bytes writes where they are (#1257, #1266)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is preserved. For #1257 the answer was a refusal; for
+#1266 it was wrong.
+
+`slice::from_raw_parts_mut` of a byte view of another type,
+`a.as_mut_ptr().cast::<u8>()` of a `[u32; 2]`, was refused where it ran.
+The memory net met it in about one program in eight. **It is a view of
+those bytes `width` at a time**, `$proxy(n, ..)`, as a `&mut v[a..b]` is
+a view of its items (ADR 0335). Each item is read and written through the
+byte view stepped to it, `$ptrAdd(view, i).value`, so through the words'
+codec, little-endian as wasm32 holds them. JS's own `reverse`, `fill`,
+`sort` and `copy_from_slice` write the words. Where it is goes under
+#1185's record of a part's place, as `{ bytes: view }`. A pointer to one
+of its items, `$ptr(slice, i)`, is the view stepped to that item, and a
+part of it, `&mut v[2..]`, is recorded at the view stepped to its start.
+So `bytes[2..].as_mut_ptr()` writes the words and is at their address.
+
+A `[u8; N]` read through such a view, `p.cast::<[u8; 2]>()`, was a fresh
+copy of its bytes, so a write into it, `(*p)[1] = 9` or through `&mut *p`,
+was lost (#1266, found checking #1257's siblings). **It is a copy of those
+bytes whose every write is also a write of the byte it was read from**,
+`$bytesRead(view)`. Reads are of the copy, so a pair read and kept, or the
+one `swap` holds while it writes its place, is what it was, as Rust's copy
+of a `[u8; N]` is. Only a write through the place it was read from reaches
+it: what's read and kept, then changed in place, is copied as any read of
+such a type is (`copies.rs`). A pointer into it is at the bytes it was
+read from. A mutable slice of `[u8; N]`s over another type's bytes is
+made of these.
+
+Corpus cases `mutable_slice_of_another_types_bytes.rs` and
+`byte_array_written_through_another_types_bytes.rs`, `//@ native:
+wasm32`, both builds, through `METAMORPHIC=all`. The memory net's known
+list loses #1257's line. Mutations
+`mutable-slice-of-another-types-bytes-refused`,
+`item-of-a-byte-slice-unplaced`, `part-of-a-byte-slice-unplaced`,
+`byte-array-read-written-to-its-copy`, `byte-array-read-live` and
+`byte-array-read-unplaced`.

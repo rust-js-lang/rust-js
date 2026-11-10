@@ -276,10 +276,12 @@ function $part(items, start, end) {
 // cost to make).
 const $placeOfPart = Symbol("rust-js part");
 
-// `part`, made of `items` from its item `start`, recorded so.
+// `part`, made of `items` from its item `start`, recorded so; of a view of
+// another type's bytes, `{ bytes }`, the view stepped to it (#1257).
 function $partPlaced(part, items, start) {
   const outer = items[$placeOfPart];
-  part[$placeOfPart] = outer === undefined ? { of: items, start } : { of: outer.of, start: outer.start + start };
+  if (outer?.bytes !== undefined) part[$placeOfPart] = { bytes: $ptrAdd(outer.bytes, start) };
+  else part[$placeOfPart] = outer === undefined ? { of: items, start } : { of: outer.of, start: outer.start + start };
   return part;
 }
 

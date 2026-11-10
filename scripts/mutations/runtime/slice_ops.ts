@@ -427,4 +427,12 @@ export const mutations: Mutation[] = [
     replace: "  $insertAt(v, i, x, undefined, \"index out of bounds\");\n",
     tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
   },
+  {
+    name: "part-of-a-byte-slice-unplaced",
+    breaks: "a part of a mutable slice of another type's bytes, `bytes[2..]`, is placed as a part of an array, which its slice isn't, so a pointer into it throws (#1257)",
+    file: "src/runtime/slice_ops.js",
+    find: "  if (outer?.bytes !== undefined) part[$placeOfPart] = { bytes: $ptrAdd(outer.bytes, start) };\n  else part",
+    replace: "  part",
+    tests: ["test/corpus.test.ts", "-t", "^mutable_slice_of_another_types_bytes.rs$"],
+  },
 ];

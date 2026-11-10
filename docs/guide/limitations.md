@@ -34,7 +34,8 @@ into an array, its `add`, `offset_from` and `byte_offset_from`, a slice's
 `as_ptr_range`, `ptr::swap_nonoverlapping`, a `transmute` between types of
 numbers alone (`u16` to `[u8; 2]`, a struct of two `u32`s to a `u64`),
 `slice::from_raw_parts` of an array's pointer, its items read as the
-pointer's type, an allocation of `std::alloc::alloc`'s used as its bytes
+pointer's type, and `from_raw_parts_mut`'s, written where their bytes are,
+a `u32` array's bytes written through a `&mut [u8]` (#1257), an allocation of `std::alloc::alloc`'s used as its bytes
 ([ADR 0417](../decisions/0417-an-allocation-is-an-array-of-slots.md)). A
 field's address is in the allocation its object is stored in, however the
 pointer reached it, through a reference, a call, an iterator: a crate that

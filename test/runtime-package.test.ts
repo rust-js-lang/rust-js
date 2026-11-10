@@ -787,8 +787,9 @@ pub fn signed_bytes_mut() -> i8 {
   expect(call("itemsThenBytes")).toBe(both);
   expect(call("itemsPastItsStart")).toBe("rust-js does not support a pointer into an allocation's bytes as one to another type, which reads memory by where it is\n");
   expect(call("vecOfWords")).toBe("rust-js does not support a `Vec` of what isn't an array's first item, which reads memory by where it is\n");
-  // Its slots are unsigned bytes, never an `i8`'s (#1107).
-  expect(call("signedBytesMut")).toBe("rust-js does not support a mutable slice of another type's bytes, which reads memory by where it is\n");
+  // Its slots are unsigned bytes, never an `i8`'s (#1107): a mutable
+  // slice of them as `i8`s reads each through its codec (#1257).
+  expect(call("signedBytesMut")).toBe("-1\n");
 });
 
 // A raw pointer to a place reached through more than one field or item is
