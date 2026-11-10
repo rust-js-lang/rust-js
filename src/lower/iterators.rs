@@ -319,18 +319,8 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
     // 0164, 0456).
     let read = of_param.iter().any(|&tr| reads_its_value(tcx, tr));
     // A value of it, not its `Item`'s, `Vec<I::Item>`: what's in a
-    // projection isn't given back.
-    let has = |ty: Ty<'tcx>| {
-        let mut walk = ty.walk();
-        while let Some(arg) = walk.next() {
-            match arg.as_type().map(|t| *t.kind()) {
-                Some(ty::Alias(..)) => walk.skip_current_subtree(),
-                Some(ty::Param(p)) if p.index == param.index => return true,
-                _ => {}
-            }
-        }
-        false
-    };
+    // projection isn't given back. What an `impl Trait` hides is (#1230).
+    let has = |ty: Ty<'tcx>| holds_value_of(tcx, id, ty, param, &mut Vec::new());
     let held = match tcx.def_kind(id) {
         rustc_hir::def::DefKind::Impl { .. } => Some(id),
         _ => tcx.impl_of_assoc(id),
@@ -362,6 +352,46 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
     // it is by the first test, `into_iter_held_as_it_is`'s, of a parameter
     // bound as an iterator, as one here is.
     held || signature || read
+}
+
+/// Whether `ty` holds a value of `id`'s type parameter `param`, not its
+/// `Item`'s, `Vec<I::Item>`: what's in a projection isn't given back. What an
+/// `impl Trait` of `id`'s crate hides is read as the type it is, `I` of `fn
+/// f<I: Iterator>(it: I) -> impl Iterator { it }`, whose caller reveals it
+/// as the value it gave (#1142): the one value, given as it is (#1230), as
+/// `into_iter_held_as_it_is` reads what one hides (ADR 0920). `seen`, the
+/// opaque types read, each once.
+fn holds_value_of<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    id: DefId,
+    ty: Ty<'tcx>,
+    param: ty::ParamTy,
+    seen: &mut Vec<DefId>,
+) -> bool {
+    let mut walk = ty.walk();
+    while let Some(arg) = walk.next() {
+        match arg.as_type().map(|t| *t.kind()) {
+            Some(ty::Alias(
+                _,
+                ty::AliasTy {
+                    kind: ty::Opaque { def_id },
+                    args,
+                    ..
+                },
+            )) if def_id.krate == id.krate && !seen.contains(&def_id) => {
+                walk.skip_current_subtree();
+                seen.push(def_id);
+                let hidden = tcx.type_of(def_id).instantiate(tcx, args).skip_normalization();
+                if holds_value_of(tcx, id, hidden, param, seen) {
+                    return true;
+                }
+            }
+            Some(ty::Alias(..)) => walk.skip_current_subtree(),
+            Some(ty::Param(p)) if p.index == param.index => return true,
+            _ => {}
+        }
+    }
+    false
 }
 
 /// Whether another bound of `id` names its type parameter `param`, of

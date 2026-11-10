@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`all<I>(i) -> Vec<I::Item>`, which gives back only its items, takes its `I` as it is, with a dictionary",
     file: "src/lower/iterators.rs",
-    find: "    // projection isn't given back.\n    let has = |ty: Ty<'tcx>| {\n        let mut walk = ty.walk();\n        while let Some(arg) = walk.next() {\n            match arg.as_type().map(|t| *t.kind()) {\n                Some(ty::Alias(..)) => walk.skip_current_subtree(),\n",
-    replace: "    // projection isn't given back.\n    let has = |ty: Ty<'tcx>| {\n        let mut walk = ty.walk();\n        while let Some(arg) = walk.next() {\n            match arg.as_type().map(|t| *t.kind()) {\n",
+    find: "            Some(ty::Alias(..)) => walk.skip_current_subtree(),\n            Some(ty::Param(p)) if p.index == param.index => return true,\n",
+    replace: "            Some(ty::Param(p)) if p.index == param.index => return true,\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_types.rs$"],
     snapshots: true,
   },
@@ -374,5 +374,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
     snapshots: true,
+  },
+  {
+    name: "given-as-it-is-blind-to-what-impl-trait-hides",
+    breaks:
+      "a type parameter generic code gives back behind an `impl Iterator`, `fn hidden<I>(it: I) -> impl Iterator { it }`, is a JS iterator its caller makes, where the caller reveals the hidden type as the value it gave and wraps it again: the crate's own iterator yields nothing (#1230)",
+    file: "src/lower/iterators.rs",
+    find: "            )) if def_id.krate == id.krate && !seen.contains(&def_id) => {\n",
+    replace: "            )) if false && def_id.krate == id.krate && !seen.contains(&def_id) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_given_on_behind_impl_trait.rs$"],
   },
 ];

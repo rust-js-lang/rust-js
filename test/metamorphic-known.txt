@@ -24,56 +24,8 @@ plain std dyn-fn dyn_fn_once_drops_itself.rs
 plain std dyn-fn fn_boxed_once_drops.rs
 
 #1226 P0 (impl Trait): a std adapter returned as impl Trait is compiled from std's bodies, but the code using it reads it as rust-js's JS-iterator form
-plain opaque back_predicate_unwinds.rs
-plain opaque back_steps.rs
-plain opaque chain_made_here_stepped_from_its_back.rs
-plain opaque chain_of_adapters_stepped_from_its_back.rs
-plain opaque chain_stepped_from_its_back_elsewhere.rs
-plain opaque chain_under_a_held_map_from_its_back.rs
-plain opaque enumerate_made_in_place_from_back.rs
-plain opaque enumerate_made_knowing_read_again.rs
-plain opaque enumerate_of_a_fuse_from_back.rs
-plain opaque enumerate_of_a_reversible_source.rs
-plain opaque enumerate_of_droppers_from_back.rs
-plain opaque enumerate_of_known_length.rs
-plain opaque enumerate_of_own_iterator_folded_from_its_back.rs
-plain opaque enumerate_of_take_from_back.rs
-plain opaque exact_size_len.rs
-plain opaque flatten_closed_part_way_drops_source_first.rs
-plain opaque flatten_fold_closure_panics.rs
-plain opaque flatten_folds_reach_its_sources_own.rs
-plain opaque flatten_from_both_ends_drops_its_inners.rs
-plain opaque flatten_last_takes_each_inner_last.rs
-plain opaque generic_map_beside_a_cloned_map.rs
-plain opaque held_chain_mapped_from_its_back.rs
-plain opaque impl_trait_hides_std_adapters.rs
-plain opaque iterators_held_in_a_generic_structs_field.rs
-plain opaque map_ends_size_hint.rs
-plain opaque own_iterator_flattened_from_its_back.rs
-plain opaque owned_items_through_fuse.rs
-plain opaque parts_close_past_a_panic.rs
-plain opaque range_mapped_by_a_function.rs
-plain opaque rev_of_a_type_parameter_held_as_it_is.rs
-plain opaque rev_of_rev_folds_its_source.rs
 plain opaque rev_range_counted_beside_its_rfold.rs
-plain opaque skip_of_a_peekable_from_back.rs
-plain opaque skip_of_own_from_its_back_asks_len_once.rs
-plain opaque skip_rfold_closes_as_it_unwinds.rs
-plain opaque skip_take_of_droppers_from_back.rs
-plain opaque step_by_folded_from_its_back_as_std.rs
-plain opaque step_by_source_dropped_at_its_folds_end.rs
-plain opaque step_by_stepped_from_its_back.rs
-plain opaque take_from_its_back_drops_as_std.rs
-plain opaque take_of_own_nth_where_known_back.rs
 plain opaque take_rev_trims_from_the_back_in_each_holder.rs
-plain opaque try_folds_of_stages_unwind.rs
-plain opaque vec_last_takes_its_back.rs
-plain opaque zip_reversed_stepped_from_its_back.rs
-
-#1230 P0 (impl Trait): into_iter() of something already an iterator, given on as impl Iterator, yields nothing or zeros
-plain std opaque generic_chain_of_into.rs
-plain std opaque into_iter_of_items.rs
-plain std opaque user_into_iter.rs
 
 #1232 P0 (drops): an iterator a std consumer takes by value isn't dropped as its boxed function panics
 plain std dyn-fn consumed_iterator_dropped_as_its_function_panics.rs

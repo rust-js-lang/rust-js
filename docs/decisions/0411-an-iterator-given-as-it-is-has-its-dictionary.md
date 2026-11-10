@@ -182,3 +182,22 @@ held by the snapshots: `iterator_named_by_another_bound.rs` and
 items whose drop may panic for an `impl Is<I>`, against native Rust in
 both builds, and `naming-parameter-not-as-it-is` and
 `naming-parameter-of-into-iter-boxed` check their JS.
+
+## Amendment: what an `impl Trait` hides holds it too (2026-11-10, #1230)
+
+`given_as_it_is` read a signature's types for a value of the parameter,
+`has`, and skipped every alias in them, an opaque type's too: `fn
+hidden<I: Iterator>(it: I) -> impl Iterator<Item = I::Item> { it }` gave
+`I` back hidden, so its caller made the crate's own `Count` a JS iterator,
+`$iterator(count, next)`, for it, then revealed the call's result as the
+`Count` it gave (#1142) and made a JS iterator of that again, which
+yielded nothing (found by #1204's `opaque` rewrite). What an opaque type
+of the crate's hides is read as the type it is, `type_of(..)` of its
+arguments, as `into_iter_held_as_it_is` reads one (ADR 0920), each once
+(`holds_value_of`): a parameter it holds, itself, the crate's struct of it
+or a `map` of it, is given as it is, as one a signature names is. The
+user's decision, option A of #1230, over leaving the opaque unrevealed
+at the caller; it changed no corpus case's JS but the new one's.
+Results changed ([0262](0262-when-rust-and-js-disagree.md)), so Rust's are
+kept. Corpus case `own_iterator_given_on_behind_impl_trait`, both
+builds; mutation `given-as-it-is-blind-to-what-impl-trait-hides`.
