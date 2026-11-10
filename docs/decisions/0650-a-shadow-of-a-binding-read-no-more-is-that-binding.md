@@ -241,3 +241,19 @@ a range's `if` chain, keeps the shadow apart, as before. Held by
 `test/corpus/shadow_made_where_none.rs` against native Rust and the
 mutations `shadow-of-an-if-branch-kept` and
 `shadow-emptied-if-unflipped` (`lower/mir/tidy/shadows.ts`).
+
+## Amendment: an arrow its call runs alone doesn't hold a binding (#1168)
+
+A binding a closure captures isn't reused by its shadow, as the closure may
+run after the shadow and read the new value. `$extendText(it, (piece) => {
+s += piece; })`, a `String`'s `extend` that steps its iterator (#1127),
+captured `s`, so `let mut s = String::new();` shadowing it after became `let
+s$1 = ""` where it had been `s = ""`. `$extendText` runs its callback only
+while it runs and keeps no hold of it after. So the callback is marked
+`Known::RunsInItsCall` where its one maker, `std_types::text::extend_text`,
+makes it, and tidy's `captured` skips an arrow so marked. The dictionary's
+`extend` of a `String` had made its own; it calls `extend_text` now, and
+`test/architecture-writes.test.ts` holds the one maker.
+`extend_reserves_by_hint.js` reads `s = ""` twice again. No other case's JS
+changed. ADR [0262](0262-when-rust-and-js-disagree.md)'s first case applies:
+nothing observable differs.

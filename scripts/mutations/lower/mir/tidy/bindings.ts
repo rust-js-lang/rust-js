@@ -708,4 +708,14 @@ export const mutations: Mutation[] = [
     replace: "                let deferred = false && set.contains(of);\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
   },
+  {
+    name: "in-call-arrow-captures",
+    breaks:
+      "an arrow its call runs only while it runs is taken to capture what it reads past its statement: a `String` shadowed after `extend` by `$extendText`'s callback is renamed, `let s$1 = \"\"`, where its binding is reused, `s = \"\"` (#1168)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "        ExprKind::Arrow(..) if e.facts.has(js::Known::RunsInItsCall) => {}\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^extend_reserves_by_hint.rs$"],
+    snapshots: true,
+  },
 ];

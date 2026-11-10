@@ -491,4 +491,14 @@ export const mutations: Mutation[] = [
     replace: "                match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^chars_size_hint.rs$"],
   },
+  {
+    name: "extend-text-callback-kept",
+    breaks:
+      "`$extendText`'s callback isn't said to run only in its call, so a `String` shadowed after its `extend` is renamed, `let s$1 = \"\"`, where its binding is reused (#1168)",
+    file: "src/lower/std_types/text.rs",
+    find: "    push.facts = push.facts.with(js::Known::RunsInItsCall);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^extend_reserves_by_hint.rs$"],
+    snapshots: true,
+  },
 ];

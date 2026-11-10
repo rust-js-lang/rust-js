@@ -83,3 +83,12 @@ test("whether a tree sets a variable is js::Writes' alone", () => {
   expect(found.filter((site) => !shapes.includes(site))).toEqual([]);
   expect(shapes.filter((site) => !found.includes(site))).toEqual([]);
 });
+
+// A `String`'s `extend` that steps its iterator is one form,
+// `std_types::text::extend_text`'s, its callback said to run in its call
+// alone, so tidy reuses a binding it captures past it (#1168): the
+// dictionary's `extend` made its own beside it.
+test("a String's stepped extend is extend_text's alone", () => {
+  const making = files("src/lower").filter((file) => file.endsWith(".rs") && read(file).includes('"$extendText"'));
+  expect(making).toEqual(["src/lower/std_types/text.rs"]);
+});

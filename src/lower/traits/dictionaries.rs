@@ -28,8 +28,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let piece = self.fresh("piece");
                 let added = Expr::bin(Op::Add, collection.clone(), Expr::var(&piece));
                 let push = vec![StmtKind::Assign(collection.clone(), added).at(js::Span::NONE)];
-                let push = Expr::arrow(vec![piece.as_str().into()], push);
-                let stepped = Expr::call_helper("$extendText", vec![items.clone(), push]);
+                let stepped = crate::lower::std_types::text::extend_text(items.clone(), &piece, push);
                 body.push(StmtKind::Expr(stepped).at(js::Span::NONE));
                 None
             }

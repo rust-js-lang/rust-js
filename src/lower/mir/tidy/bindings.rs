@@ -1214,6 +1214,9 @@ pub(super) fn captured(body: &[Stmt]) -> IndexSet<String> {
     let mut captured = IndexSet::default();
     let mut insert = |name: &str| _ = captured.insert(name.to_string());
     js::each_expr(body, &mut |e| match &e.kind {
+        // Not one its call runs alone while it runs, which reads what it
+        // captures before its statement ends (#1168).
+        ExprKind::Arrow(..) if e.facts.has(js::Known::RunsInItsCall) => {}
         ExprKind::Arrow(_, stmts) | ExprKind::AsyncArrow(_, stmts) => js::visit_stmts(stmts, &mut insert),
         ExprKind::Function(function) => js::visit_stmts(&function.body, &mut insert),
         _ => {}

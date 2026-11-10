@@ -281,4 +281,10 @@ pub enum Known {
     /// needn't enter it. One of an `include_bytes!` holds millions, which
     /// each step of a body's lowering walked again (#1096).
     Literal,
+    /// An arrow its call runs only while that call runs, and keeps no hold
+    /// of after, `$extendText(it, (piece) => { s += piece; })`'s: what it
+    /// reads it reads before the call's statement ends, so a binding it
+    /// captures that's read no more after may be shadowed past it (tidy's
+    /// `captured`, #1168).
+    RunsInItsCall,
 }

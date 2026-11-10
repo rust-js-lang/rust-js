@@ -47,17 +47,17 @@ function main() {
     },
   );
   console.log(`chars ${s}`);
-  let s$1 = "";
+  s = "";
   $extendText(
     $iterator(loud(2), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint).map(
       (x) => String(x),
     ),
     (piece) => {
-      s$1 += piece;
+      s += piece;
     },
   );
-  console.log(`strings ${s$1}`);
-  let s$2 = "";
+  console.log(`strings ${s}`);
+  s = "";
   const cs = ["x", "y"];
   $extendText(
     $reserveHint(
@@ -66,13 +66,13 @@ function main() {
       ),
       1,
       undefined,
-      s$2,
+      s,
     ),
     (piece) => {
-      s$2 += piece;
+      s += piece;
     },
   );
-  console.log(`char refs ${s$2}`);
+  console.log(`char refs ${s}`);
   const m = new Map();
   $extendMap(
     m,
