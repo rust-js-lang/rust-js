@@ -5,6 +5,7 @@
 
 use super::*;
 use crate::lower::bindings::Asked;
+use crate::lower::mir::locals::user_variable;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `js::is_defined(binding)`: `typeof MessageChannel !== "undefined"`,
@@ -170,7 +171,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => return Err(refused(self)),
                 };
                 for _ in 0..4 {
-                    if at.projection.is_empty() && body.local_decls[at.local].is_user_variable() {
+                    if at.projection.is_empty() && user_variable(&body.local_decls[at.local]) {
                         let mut values = self.take_operands(state, &[&Operand::Copy(at)], out)?;
                         return self.value_expr(values.remove(0), span);
                     }

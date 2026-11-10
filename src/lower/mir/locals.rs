@@ -351,6 +351,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     // ── Structure ───────────────────────────────────────────────────────
 }
 
+/// Whether `decl` is a variable the program named: none of a body whose
+/// locals' kinds rustc cleared, a constant's it evaluated, a `const fn`
+/// given a const generic's argument among them (#1281), or another crate's,
+/// whose `LocalDecl::is_user_variable` would panic. The one way a body's
+/// local is asked so (#1281).
+pub(in crate::lower) fn user_variable(decl: &mir::LocalDecl<'_>) -> bool {
+    matches!(decl.local_info, mir::ClearCrossCrate::Set(_)) && decl.is_user_variable()
+}
+
 /// Whether `local` is what a guarded arm's pattern binds for the arm's
 /// body, `first` of `Kind::Array(&[first, _]) if f(first) => ..`, which the
 /// guard reads through a reference of its own (ADR 0751).

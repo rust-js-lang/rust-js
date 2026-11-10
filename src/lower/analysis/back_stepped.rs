@@ -13,6 +13,7 @@
 //! lowering asks the value (`stepped_from_its_back`).
 
 use crate::collections::{IndexMap, IndexSet};
+use crate::lower::mir::locals::user_variable;
 use crate::lower::recognition::{
     Recognition, back_stepped_source, chained_sources, cloned_source, copied_source, counted_source, enumerated_source,
     enumerates_a_compiled_struct, filter_mapped_source, filtered_source, flattened_source, inspected_source,
@@ -667,7 +668,7 @@ pub(super) fn stepped_locals<'tcx>(
                     if crate::lower::recognition::zips_by_index(tcx, typing_env, a, b) && closure_drops(tcx, b, &drops)
                     {
                         let local = origin(local);
-                        let how = match mir.local_decls[local].is_user_variable() {
+                        let how = match user_variable(&mir.local_decls[local]) {
                             true => SteppedLocal::Given,
                             false => SteppedLocal::Lent,
                         };
@@ -753,7 +754,7 @@ pub(super) fn stepped_locals<'tcx>(
                         }
                     }
                     for &(local, lent, ty, held) in &given {
-                        let user = mir.local_decls[local].is_user_variable();
+                        let user = user_variable(&mir.local_decls[local]);
                         // A counted adapter lent, whose form no step reads
                         // where MIR holds it (#718); another held across what
                         // acts before its step, an argument's statement,
@@ -851,10 +852,10 @@ pub(super) fn stepped_locals<'tcx>(
                 // holds by its type alone, `mapDoubleEndedIterator_nextBack`'s:
                 // a question of the type (#851).
                 let held_by_struct = crate::lower::recognition::is_held_compiled(tcx, made)
-                    && mir.local_decls[destination.local].is_user_variable();
+                    && user_variable(&mir.local_decls[destination.local]);
                 for source in sources.into_iter().map(erased) {
                     for &(local, _, ty, _) in &given {
-                        let user = mir.local_decls[local].is_user_variable();
+                        let user = user_variable(&mir.local_decls[local]);
                         // Or of an adapter stepped from its back that holds a
                         // closure with a destructor, which MIR holds what it's
                         // made of before it's made, its form gone (#851).
@@ -933,7 +934,7 @@ fn held_across(
     let acts = |statement: &mir::Statement<'_>| match &statement.kind {
         mir::StatementKind::Assign(assign) => {
             let (place, _) = &**assign;
-            !place.projection.is_empty() || mir.local_decls[place.local].is_user_variable()
+            !place.projection.is_empty() || user_variable(&mir.local_decls[place.local])
         }
         mir::StatementKind::SetDiscriminant { .. } | mir::StatementKind::Intrinsic(..) => true,
         _ => false,

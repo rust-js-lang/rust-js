@@ -29,6 +29,7 @@
 //! closure, the cell captured read only by the chain that upgrades it.
 
 use crate::collections::{IndexMap, IndexSet};
+use crate::lower::mir::locals::user_variable;
 use crate::lower::recognition::{HandleStep, handle_step, weak_pointee};
 use crate::lower::{Body, fn_def};
 use rustc_middle::mir::{
@@ -663,12 +664,6 @@ fn only_made(body: &mir::Body<'_>, uses: &Uses, local: Local, made: &mut IndexSe
 /// Whether `operand` reads `local`.
 fn rvalue_reads(operand: &Operand<'_>, local: Local) -> bool {
     operand.place().is_some_and(|p| p.local == local)
-}
-
-/// Whether `decl` is a variable the program named: none of a body whose
-/// locals' kinds rustc cleared, a constant's evaluated or another crate's.
-fn user_variable(decl: &mir::LocalDecl<'_>) -> bool {
-    matches!(decl.local_info, mir::ClearCrossCrate::Set(_)) && decl.is_user_variable()
 }
 
 /// `Rc<RefCell<Option<Weak<D>>>>`'s `D`.

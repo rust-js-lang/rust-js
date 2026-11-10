@@ -32,7 +32,7 @@ mod iter;
 mod jsx_props;
 mod keyed_writes;
 mod local_facts;
-mod locals;
+pub(in crate::lower) mod locals;
 mod nested_options;
 mod nulled;
 mod offsets;

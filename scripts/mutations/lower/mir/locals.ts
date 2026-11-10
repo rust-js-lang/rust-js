@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n",
     tests: ["test/lowering-or-patterns.test.ts", "-t", "one place"],
   },
+  {
+    name: "user-variable-of-a-cleared-body-asked",
+    breaks: "a local of a body whose locals' kinds rustc cleared, a `const fn` evaluated for a const generic's argument, is asked if the program named it, and rust-js panics, \"unwrapping cross-crate data\" (#1281)",
+    file: "src/lower/mir/locals.rs",
+    find: "    matches!(decl.local_info, mir::ClearCrossCrate::Set(_)) && decl.is_user_variable()\n",
+    replace: "    decl.is_user_variable()\n",
+    tests: ["test/corpus.test.ts", "-t", "const_fn_evaluated_for_a_const_generic"],
+  },
 ];
