@@ -41,6 +41,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { dirname, join } from "node:path";
 import { noteRate, pick } from "./iteratorRows";
+import { lines } from "./parts";
 import { caseParts } from "./shard";
 import { twinHelpers } from "../test/iterator-matrix";
 import { helpersOf, sharedProblems } from "../test/twin-net";
@@ -412,19 +413,6 @@ export async function run(of: keyof typeof runs | "rows", parts: number, list?: 
     passed &&= problems.length === 0;
   }
   return passed;
-}
-
-/** Each line of `stream`, given `each` as it ends. */
-async function lines(stream: ReadableStream<Uint8Array>, each: (line: string) => void): Promise<void> {
-  const decoder = new TextDecoder();
-  let rest = "";
-  for await (const chunk of stream) {
-    rest += decoder.decode(chunk, { stream: true });
-    const parts = rest.split("\n");
-    rest = parts.pop() ?? "";
-    for (const line of parts) each(line);
-  }
-  if (rest !== "") each(rest);
 }
 
 /** The runs of the rows the change names, the working tree's since it left

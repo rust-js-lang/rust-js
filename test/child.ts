@@ -111,15 +111,17 @@ export function run(cmd: string[], cwd: string, timeout: number, env: Record<str
   return keptCompileAsync(cmd, cwd, env, (cmd) => spawned(cmd, cwd, timeout, env, memoryCap));
 }
 
-/** `pid` and each process it started, in turn, and the memory each holds,
- * in bytes, as `ps` says. */
-export function processTree(pid: number): { pid: number; bytes: number }[] {
-  const rows = Bun.spawnSync(["ps", "-eo", "pid=,ppid=,rss="]).stdout.toString().trim().split("\n");
-  const children = new Map<number, { pid: number; bytes: number }[]>();
-  let own: { pid: number; bytes: number } | undefined;
+/** `pid` and each process it started, in turn, the memory each holds, in
+ * bytes, and what it runs, as `ps` says. */
+export function processTree(pid: number): { pid: number; bytes: number; command: string }[] {
+  const rows = Bun.spawnSync(["ps", "-eo", "pid=,ppid=,rss=,args="]).stdout.toString().trim().split("\n");
+  const children = new Map<number, { pid: number; bytes: number; command: string }[]>();
+  let own: { pid: number; bytes: number; command: string } | undefined;
   for (const row of rows) {
-    const [id, parent, kb] = row.trim().split(/\s+/).map(Number);
-    const at = { pid: id, bytes: kb * 1024 };
+    const fields = /^\s*(\d+)\s+(\d+)\s+(\d+)\s?(.*)$/.exec(row);
+    if (fields === null) continue;
+    const [id, parent, kb] = fields.slice(1, 4).map(Number);
+    const at = { pid: id, bytes: kb * 1024, command: fields[4] };
     if (id === pid) own = at;
     children.set(parent, [...(children.get(parent) ?? []), at]);
   }

@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { buildRewriter, rewriter } from "./metamorphic";
 import { buildCompiler, fixture } from "./support";
 import { underLoad } from "../scripts/timing";
-import { failure, reduce, size } from "../scripts/reduce";
+import { checked, failure, reduce, size } from "../scripts/reduce";
 import { installMiri, miriInstalled } from "./miri";
 import { partSetting } from "./part-settings";
 
@@ -59,6 +59,31 @@ test("a program that runs as native Rust does isn't reduced", async () => {
   const file = join(dir, "passes.rs");
   writeFileSync(file, `fn main() {\n    println!("{}", 1 + 2);\n}\n`);
   expect(await reduce(file, { jobs: 2, budget: 60 })).toContain("runs as native Rust does");
+}, underLoad(120_000));
+
+// A variant's check holds at most its share of the memory, it and what it
+// starts together, or it's stopped and kept as no failure (#1306): a
+// variant whose loop no longer ends allocates without end, which on macOS
+// no `ulimit` stops. This one holds 400 MB natively for 3 s, by what
+// rust-js refuses, `sleep`: within 2 GB, its refusal; within 200 MB,
+// stopped.
+test("a variant's check past its memory is stopped, and is no failure to keep", async () => {
+  const dir = fixture("reduce-memory");
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, "variant.rs");
+  writeFileSync(
+    file,
+    `fn main() {
+    let held = vec![1u8; 400 << 20];
+    std::thread::sleep(std::time::Duration::from_secs(3));
+    println!("{}", held.iter().filter(|&&b| b == 1).count());
+}
+`,
+  );
+  const within = await checked(file, "plain", "2024", 2 * 2 ** 30);
+  expect(typeof within === "string" ? within : within.kind).toBe("rejected");
+  expect(JSON.stringify(within)).toContain("std::thread::sleep");
+  expect(await checked(file, "plain", "2024", 200 * 2 ** 20)).toBe("rejected");
 }, underLoad(120_000));
 
 test("each of the rewriter's reductions is smaller, and past the last there's none", () => {

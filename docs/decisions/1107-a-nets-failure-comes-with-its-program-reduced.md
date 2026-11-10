@@ -88,3 +88,41 @@ program that's undefined behaviour isn't reduced". They run where Miri is
 installed, and in the generated programs' nightly job, which installs it
 (`RUST_JS_REQUIRE_MIRI=1`, which fails them where it isn't). Without the
 check, each fails.
+
+## Amended (2026-11-11, #1306): a reduction holds its share of the memory, and a part of a net says what it held
+
+The nightly's neighbour shuffle was stopped by the runner's shutdown every
+night from 2026-11-08 to 11, and its metamorphic net ended in a bare exit
+143, no test failing in either. Each runs four parts at once on a 16 GB
+runner, and each part reduces its failures one at a time. Run on the 16 GB
+Mac with the day's seed, the shuffle's four parts held 5.4, 9.7, 9.7 and
+7.2 GB at their peaks, nearly all of it a reduction's native variants, one
+8.6 GB: a variant whose loop no longer ends allocates without end, which
+Linux stops at 4 GiB a run (`RLIMIT_DATA`) and macOS doesn't, so four parts
+reducing at once can hold 16 GB.
+
+- A reduction's variants together hold at most `--memory` GB, the run's
+  memory budget (`memoryBudget()`) unless it's given, and a part of a net
+  in `n` parts gives its `n`th (`test/reduced.ts`). Each variant's check
+  runs as at most that share, at least 1 GB, as many at once as the share
+  allows, and at most `variantTimeout`, 300 s: past either, it and every
+  process it started are stopped (`test/child.ts`'s `run`, its
+  `memoryCap`), and it's kept as no failure, as a variant native Rust
+  doesn't run is. Test: "a variant's check past its memory is stopped, and
+  is no failure to keep" (`test/reduce.test.ts`), a variant holding 400 MB
+  natively, refused within 2 GB and stopped within 200 MB.
+- The nightly runs each test file of cases in parts by `scripts/parts.ts`
+  alone, where a shell loop of `bun test .. &` printed nothing till every
+  part ended: each part's lines as they come, its peak memory, it and what
+  it started each second, and what held it then, said as it ends; the
+  machine's memory each minute; and a part that a signal ends, or that's
+  running as the job is stopped, said `killed (memory?)` with what it was
+  running, each command's fixture naming its case. `bun test` holds a
+  file's lines till it ends where its output is a pipe, so the last case a
+  killed part said may be none: what it was running is where it was. Tests
+  in `test/ci.test.ts`: a workflow runs a test file in parts by
+  `scripts/parts.ts` alone, and a part a signal kills is said so.
+
+The parts stay four at once: with a reduction held to its quarter, what a
+part holds is its own runs, a native one at most 4 GiB on Linux. The
+measured peaks of the next nightly are in TESTS.md.

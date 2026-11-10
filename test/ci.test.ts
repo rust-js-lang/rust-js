@@ -2,7 +2,7 @@
 // shards, the mutations a change touches, and each branch's latest run.
 
 import { expect, test } from "bun:test";
-import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
@@ -28,7 +28,8 @@ import {
 } from "../scripts/mutations";
 import { jobs, leftToCi, readabilityPaths, touchesReadability } from "../scripts/checkFast";
 import { changedCases, runs, touchesCrates, touchesPort } from "../scripts/iteratorSlice";
-import { loadScale } from "../scripts/timing";
+import { loadScale, underLoad } from "../scripts/timing";
+import { caseOf, partsOf, runParts, verdict } from "../scripts/parts";
 import { jobs as localNightly } from "../scripts/nightly";
 import { caseParts, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, plainSuiteFiles, pooledParts, shard } from "../scripts/shard";
 import { fixture, root } from "./support";
@@ -857,3 +858,49 @@ test("the vendored oxc_formatter_core is both compilers' and of their oxc tag", 
   expect(manifest("Cargo.toml")).toContain('[patch."https://github.com/oxc-project/oxc"]\noxc_formatter_core = { path = "vendor/oxc_formatter_core" }');
   expect(manifest("wasm/Cargo.toml")).toContain('[patch."https://github.com/oxc-project/oxc"]\noxc_formatter_core = { path = "../vendor/oxc_formatter_core" }');
 });
+
+// The nightly runs a test file in parts by scripts/parts.ts alone (#1306):
+// each part's lines as they come, its peak memory and what held it, and a
+// part the machine kills said so, with where it was. A shell loop of
+// `bun test ... &` printed nothing till every part ended, and nightly
+// 42884008739's metamorphic net ended in a bare exit 143.
+test("a workflow runs a test file in parts by scripts/parts.ts alone", () => {
+  for (const file of readdirSync(join(root, ".github/workflows")).filter((name) => name.endsWith(".yml"))) {
+    const text = readFileSync(join(root, ".github/workflows", file), "utf8");
+    expect(text, file).not.toMatch(/bun test[^\n]*&\s*$/m);
+  }
+});
+
+test("a part's spec names its parts, and a part's line says how it ended", () => {
+  expect(partsOf("4")).toEqual({ parts: [1, 2, 3, 4], count: 4 });
+  expect(partsOf("5-8/24")).toEqual({ parts: [5, 6, 7, 8], count: 24 });
+  for (const bad of ["0", "3-2/8", "7-9/8", "4/2", "x"]) expect(() => partsOf(bad), bad).toThrow();
+  expect(caseOf("(pass) seed 3 group 14: 16 cases [43707.03ms]")).toBe("seed 3 group 14: 16 cases");
+  expect(caseOf("(fail) a, rewritten")).toBe("a, rewritten");
+  expect(caseOf(" 53 pass")).toBeUndefined();
+  expect(verdict(0, null, "(pass) a\n 1 pass\n 0 fail\n")).toBe("passed");
+  expect(verdict(1, null, "(fail) a\n 0 pass\n 1 fail\n")).toBe("failed");
+  expect(verdict(1, null, 'Test filter "x" had no matches\n')).toBe("failed");
+  expect(verdict(null, "SIGKILL", "(pass) a\n")).toBe("killed (memory?)");
+  expect(verdict(143, null, "(pass) a\n")).toBe("killed (memory?)");
+});
+
+test("a part the machine kills is said killed, with what it ran and its peak", async () => {
+  // Outside test/, where this checkout's `bun test` finds no file.
+  const dir = mkdtempSync(join(tmpdir(), "parts-"));
+  try {
+    writeFileSync(join(dir, "killed.test.ts"), 'import { test } from "bun:test";\ntest("first", () => {});\ntest("second", async () => {\n  await Bun.sleep(1500);\n  process.kill(process.pid, "SIGKILL");\n});\n');
+    const said: string[] = [];
+    const log = console.log;
+    console.log = (line: string) => said.push(line);
+    try {
+      expect(await runParts("./killed.test.ts", partsOf("1"), 1, [], dir)).toBe(false);
+    } finally {
+      console.log = log;
+    }
+    const ended = said.find((line) => line.startsWith("── part 1/1 killed (memory?)"));
+    expect(ended, said.join("\n")).toMatch(/at most \d+\.\d GB.*; the last case it said ended none$/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}, underLoad(60_000));

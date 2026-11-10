@@ -210,16 +210,7 @@ jobs:
         env:
           METAMORPHIC: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: |
-          pids=()
-          for part in 1 2 3 4; do
-            RUST_JS_CASES=$part/4 bun test --timeout=1800000 test/metamorphic.test.ts > "metamorphic-$part.log" 2>&1 &
-            pids+=($!)
-          done
-          failed=0
-          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
-          cat metamorphic-*.log
-          exit $failed
+        run: bun scripts/parts.ts 4 test/metamorphic.test.ts --timeout=1800000
 
   # The object model's net (#891, ADR 1105): every corpus case's items moved
   # into a library, the program run with each value the library gives it
@@ -246,16 +237,7 @@ jobs:
         env:
           OBJECT_MODEL: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: |
-          pids=()
-          for part in 1 2 3 4; do
-            RUST_JS_CASES=$part/4 bun test --timeout=900000 test/object-model.test.ts > "object-model-$part.log" 2>&1 &
-            pids+=($!)
-          done
-          failed=0
-          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
-          cat object-model-*.log
-          exit $failed
+        run: bun scripts/parts.ts 4 test/object-model.test.ts --timeout=900000
 
   # The `None` matrix (#855, ADR 1096): an `Option` of each payload held in
   # each kind of place, each with its `NoneForm`, written each way and read
@@ -314,16 +296,7 @@ jobs:
           NEIGHBOURS: all
           NEIGHBOURS_SEED: ${{ needs.seeds.outputs.start }}
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: |
-          pids=()
-          for part in 1 2 3 4; do
-            RUST_JS_CASES=$part/4 bun test --timeout=1800000 test/neighbours.test.ts > "neighbours-$part.log" 2>&1 &
-            pids+=($!)
-          done
-          failed=0
-          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
-          cat neighbours-*.log
-          exit $failed
+        run: bun scripts/parts.ts 4 test/neighbours.test.ts --timeout=1800000
 
   # The memory net (#1172): 400 seeds from the day's, each a program of
   # unsafe Rust over plain data, run under Miri, which must find it
@@ -356,16 +329,7 @@ jobs:
           MEMORY_NET_START: ${{ needs.seeds.outputs.start }}
           RUST_JS_REQUIRE_MIRI: '1'
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: |
-          pids=()
-          for part in 1 2 3 4; do
-            RUST_JS_CASES=$part/4 bun test --timeout=1800000 test/memory-net.test.ts > "memory-$part.log" 2>&1 &
-            pids+=($!)
-          done
-          failed=0
-          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
-          cat memory-*.log
-          exit $failed
+        run: bun scripts/parts.ts 4 test/memory-net.test.ts --timeout=1800000
       - if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -427,17 +391,7 @@ jobs:
           ITERATOR_MATRIX: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
           MACHINE: ${{ matrix.machine }}
-        run: |
-          pids=()
-          for core in 1 2 3 4; do
-            part=$(( (MACHINE - 1) * 4 + core ))
-            RUST_JS_CASES=$part/24 bun test --timeout=900000 test/iterator-matrix.test.ts > "matrix-$part.log" 2>&1 &
-            pids+=($!)
-          done
-          failed=0
-          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
-          cat matrix-*.log
-          exit $failed
+        run: bun scripts/parts.ts $(( (MACHINE - 1) * 4 + 1 ))-$(( MACHINE * 4 ))/24 test/iterator-matrix.test.ts --timeout=900000
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
@@ -474,17 +428,7 @@ jobs:
           ITERATOR_MATRIX: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
           MACHINE: ${{ matrix.machine }}
-        run: |
-          pids=()
-          for core in 1 2 3 4; do
-            part=$(( (MACHINE - 1) * 4 + core ))
-            RUST_JS_CASES=$part/8 bun test --timeout=900000 test/iterator-matrix.test.ts > "conformance-$part.log" 2>&1 &
-            pids+=($!)
-          done
-          failed=0
-          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
-          cat conformance-*.log
-          exit $failed
+        run: bun scripts/parts.ts $(( (MACHINE - 1) * 4 + 1 ))-$(( MACHINE * 4 ))/8 test/iterator-matrix.test.ts --timeout=900000
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
@@ -517,16 +461,7 @@ jobs:
           ITERATOR_TABLE: points
           ITERATOR_MATRIX: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: |
-          pids=()
-          for part in 1 2 3 4; do
-            RUST_JS_CASES=$part/4 bun test --timeout=900000 test/iterator-matrix.test.ts > "points-$part.log" 2>&1 &
-            pids+=($!)
-          done
-          failed=0
-          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
-          cat points-*.log
-          exit $failed
+        run: bun scripts/parts.ts 4 test/iterator-matrix.test.ts --timeout=900000
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
@@ -560,16 +495,7 @@ jobs:
           ITERATOR_TABLE: unwind
           ITERATOR_MATRIX: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: |
-          pids=()
-          for part in 1 2 3 4; do
-            RUST_JS_CASES=$part/4 bun test --timeout=900000 test/iterator-matrix.test.ts > "unwind-$part.log" 2>&1 &
-            pids+=($!)
-          done
-          failed=0
-          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
-          cat unwind-*.log
-          exit $failed
+        run: bun scripts/parts.ts 4 test/iterator-matrix.test.ts --timeout=900000
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
@@ -601,16 +527,7 @@ jobs:
           ITERATOR_TABLE: format
           ITERATOR_MATRIX: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: |
-          pids=()
-          for part in 1 2 3 4; do
-            RUST_JS_CASES=$part/4 bun test --timeout=900000 test/iterator-matrix.test.ts > "format-$part.log" 2>&1 &
-            pids+=($!)
-          done
-          failed=0
-          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
-          cat format-*.log
-          exit $failed
+        run: bun scripts/parts.ts 4 test/iterator-matrix.test.ts --timeout=900000
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
@@ -643,16 +560,7 @@ jobs:
           ITERATOR_TABLE: numbers
           ITERATOR_MATRIX: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: |
-          pids=()
-          for part in 1 2 3 4; do
-            RUST_JS_CASES=$part/4 bun test --timeout=900000 test/iterator-matrix.test.ts > "numbers-$part.log" 2>&1 &
-            pids+=($!)
-          done
-          failed=0
-          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
-          cat numbers-*.log
-          exit $failed
+        run: bun scripts/parts.ts 4 test/iterator-matrix.test.ts --timeout=900000
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
@@ -717,16 +625,7 @@ jobs:
           ITERATOR_TABLE: consumers
           ITERATOR_MATRIX: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: |
-          pids=()
-          for part in 1 2 3 4; do
-            RUST_JS_CASES=$part/4 bun test --timeout=900000 test/iterator-matrix.test.ts > "consumers-$part.log" 2>&1 &
-            pids+=($!)
-          done
-          failed=0
-          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
-          cat consumers-*.log
-          exit $failed
+        run: bun scripts/parts.ts 4 test/iterator-matrix.test.ts --timeout=900000
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
@@ -759,16 +658,7 @@ jobs:
           ITERATOR_TABLE: std
           ITERATOR_MATRIX: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: |
-          pids=()
-          for part in 1 2 3 4; do
-            RUST_JS_CASES=$part/4 bun test --timeout=900000 test/iterator-matrix.test.ts > "std-$part.log" 2>&1 &
-            pids+=($!)
-          done
-          failed=0
-          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
-          cat std-*.log
-          exit $failed
+        run: bun scripts/parts.ts 4 test/iterator-matrix.test.ts --timeout=900000
       - if: failure()
         uses: actions/upload-artifact@v7
         with:

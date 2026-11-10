@@ -7,13 +7,17 @@
 //
 //   bun scripts/reduce.ts <case.rs> [--build plain|std] [--edition <year>]
 //                         [--oracle same|differs|error:<text>] [--budget <s>]
-//                         [--jobs <n>] [--out <file>]
+//                         [--jobs <n>] [--memory <GB>] [--out <file>]
 //
 // The oracle, `same` unless it's given: the same first line native Rust
 // and the JS print apart, or the same way it ends where they print alike,
 // or rust-js's same first error; `differs`, any way at all; `error:<text>`,
 // a compile error saying it. The reduced program, formatted, is written to
-// `--out`, `target/reduce/<case>.rs` unless it's given, and printed.
+// `--out`, `target/reduce/<case>.rs` unless it's given, and printed. Its
+// variants hold at most `--memory` GB together, the run's memory budget
+// unless it's given, each its share, and run at most `variantTimeout`:
+// one past either is stopped, it and what it started, and kept as no
+// failure (#1306).
 //
 //   bun scripts/reduce.ts --check <file> --build .. --edition ..
 //
@@ -23,6 +27,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { spawnSync } from "node:child_process";
 
+import { run } from "../test/child";
 import { agree, compileJs, jsLimit, runJs, runNative, runtimes, show } from "../test/programs";
 import { buildRewriter, rewriter } from "../test/metamorphic";
 import { root, target } from "../test/support";
@@ -106,19 +111,27 @@ function reduction(file: string, n: number): string | undefined {
   return p.status === 0 ? p.stdout : undefined;
 }
 
+/** How long a variant's check may take: its compiles in both builds, its
+ * native run, Miri's and its JS's, each with a limit of its own, on a
+ * loaded machine. */
+export const variantTimeout = 300_000;
+
+/** The least memory a variant's check is given, in bytes: a crate of a
+ * neighbour shuffle's group compiled whole. */
+const leastVariantMemory = 2 ** 30;
+
 /** `variant`'s failure, by this script's `--check`, run apart so many run
- * at once. */
-async function checked(variant: string, build: string, edition: string): Promise<Failure | NotAFailure> {
-  const p = Bun.spawn(["bun", join(root, "scripts", "reduce.ts"), "--check", variant, "--build", build, "--edition", edition], {
-    cwd: root,
-    env: process.env,
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  const out = await new Response(p.stdout).text();
-  await p.exited;
+ * at once; within `variantTimeout` and `memory` bytes, it and every
+ * process it starts together, or no failure to keep: a variant whose loop
+ * no longer ends may allocate without end, which on macOS no `ulimit`
+ * stops, and four parts of a net reducing at once took 5 to 10 GB each of
+ * a 16 GB Mac (#1306). */
+export async function checked(variant: string, build: string, edition: string, memory: number): Promise<Failure | NotAFailure> {
+  const cmd = ["bun", join(root, "scripts", "reduce.ts"), "--check", variant, "--build", build, "--edition", edition];
+  const p = await run(cmd, root, variantTimeout, {}, memory);
+  if (p.timedOut || p.overgrown || p.signal !== null) return "rejected";
   try {
-    return JSON.parse(out.trim().split("\n").pop() ?? "");
+    return JSON.parse(p.stdout.trim().split("\n").pop() ?? "");
   } catch {
     return "rejected";
   }
@@ -130,15 +143,20 @@ export type Reduced = { program: string; failure: Failure; from: number; to: num
  * smallest program found, or why there's none, it doesn't fail. */
 export async function reduce(
   file: string,
-  { build = "plain", edition = "2024", oracle = "same", budget = 600, jobs = reduceJobs() }: {
+  { build = "plain", edition = "2024", oracle = "same", budget = 600, jobs = reduceJobs(), memory = memoryBudget() }: {
     build?: "plain" | "std";
     edition?: string;
     oracle?: string;
     budget?: number;
     jobs?: number;
+    /** The GB its variants may hold together. */
+    memory?: number;
   } = {},
 ): Promise<Reduced | string> {
   const started = Date.now();
+  // As many at once as each has its least memory, and each its share.
+  jobs = Math.max(1, Math.min(jobs, Math.floor((memory * 2 ** 30) / leastVariantMemory)));
+  const each = Math.max(leastVariantMemory, (memory * 2 ** 30) / jobs);
   buildRewriter();
   const work = join(target, "reduce", `${basename(file, ".rs")}-${process.pid}`);
   rmSync(work, { recursive: true, force: true });
@@ -182,7 +200,7 @@ export async function reduce(
         n = k;
         continue;
       }
-      const found = await Promise.all(batch.map((v) => checked(v.path, build, edition)));
+      const found = await Promise.all(batch.map((v) => checked(v.path, build, edition, each)));
       checks += batch.length;
       const at = found.findIndex((f) => kept(oracle, first, f));
       for (const v of batch) rmSync(join(v.path, ".."), { recursive: true, force: true });
@@ -217,7 +235,7 @@ if (import.meta.main) {
   } else {
     const file = args.find((arg, i) => !arg.startsWith("--") && (i === 0 || !args[i - 1].startsWith("--")));
     if (file === undefined || !["plain", "std"].includes(build)) {
-      console.error("bun scripts/reduce.ts <case.rs> [--build plain|std] [--edition <year>] [--oracle same|differs|error:<text>] [--budget <s>] [--jobs <n>] [--out <file>]");
+      console.error("bun scripts/reduce.ts <case.rs> [--build plain|std] [--edition <year>] [--oracle same|differs|error:<text>] [--budget <s>] [--jobs <n>] [--memory <GB>] [--out <file>]");
       process.exit(64);
     }
     const reduced = await reduce(file, {
@@ -226,6 +244,7 @@ if (import.meta.main) {
       oracle: flag("--oracle") ?? "same",
       budget: Number(flag("--budget") ?? 600),
       jobs: Number(flag("--jobs") ?? reduceJobs()),
+      memory: Number(flag("--memory") ?? memoryBudget()),
     });
     if (typeof reduced === "string") {
       console.error(reduced);

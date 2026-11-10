@@ -11,11 +11,13 @@ import { copyFileSync, mkdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { root, target } from "./support";
+import { memoryBudget } from "../scripts/shard";
 
 /** `file`'s program, which goes wrong in `build`, reduced: what to append
  * to the failure, the reduced program or why there's none, or with
  * `NET_REDUCE=0` the command that reduces it. Of a part of a net run in
- * parts, `RUST_JS_CASES`'s, its share of the cores. */
+ * parts, `RUST_JS_CASES`'s, its share of the cores and of the memory, as
+ * each part may reduce at once (#1306). */
 export function reducedRepro(file: string, build: string, edition = "2024"): string {
   // Kept where the run's fixtures aren't, which go as it ends.
   const kept = join(target, "reduce", "net", `${Bun.hash(readFileSync(file, "utf8")).toString(36)}.rs`);
@@ -25,11 +27,12 @@ export function reducedRepro(file: string, build: string, edition = "2024"): str
   if (process.env.NET_REDUCE === "0") return `\nreduce it: ${command}`;
   const parts = Number((process.env.RUST_JS_CASES ?? "1/1").split("/")[1]) || 1;
   const jobs = Math.max(1, Math.floor(availableParallelism() / parts));
+  const memory = (memoryBudget() / parts).toFixed(1);
   const budget = process.env.NET_REDUCE_BUDGET ?? "300";
   const out = kept.replace(/\.rs$/, `.${build}.reduced.rs`);
   const p = spawnSync(
     "bun",
-    ["scripts/reduce.ts", kept, "--build", build, "--edition", edition, "--budget", budget, "--jobs", String(jobs), "--out", out],
+    ["scripts/reduce.ts", kept, "--build", build, "--edition", edition, "--budget", budget, "--jobs", String(jobs), "--memory", memory, "--out", out],
     { cwd: root, encoding: "utf8", timeout: (Number(budget) + 300) * 1000, maxBuffer: 64 * 1024 * 1024 },
   );
   const said = (p.stderr ?? "").trim().split("\n").pop() ?? "";
