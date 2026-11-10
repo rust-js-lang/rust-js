@@ -458,4 +458,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/crates.test.ts", "-t", "counts each type"],
   },
+  {
+    name: "promoted-fn-ref-unseen",
+    breaks: "a library's generic function made a `&dyn Fn`, `&dep::by_dyn`, a promoted `&FnDef` in MIR, isn't seen as named, so the consumer's `dyn` is the library's unboxed export and `d(())` is `None` (#1210)",
+    file: "src/lower/instances.rs",
+    find: "            if let Some(called) = super::fn_def(constant.ty().peel_refs()) {\n",
+    replace: "            if let Some(called) = super::fn_def(constant.ty()) {\n",
+    tests: ["test/crates.test.ts", "-t", "library_some_through_a_dyn"],
+  },
 ];

@@ -1304,3 +1304,19 @@ architecture test refuses another copy. Left open:
 `classes::is_class_trait`, whose answer, every impl a class's, needs the
 library's contract to say which of its traits are of classes, as a
 consumer sees only some of their impls (#1073).
+
+## Amended (2026-11-10, #1210): a function named through a reference is named
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, now
+Rust's. A consumer compiles its own copy of a library's generic function
+that a call or a `fn` pointer gives what its export takes nothing for, a
+`()` whose `Some` the export gives as it is (ADR 0051, amended). One made a
+`&dyn Fn`, `let d: &dyn Fn(()) -> Option<()> = &dep::by_dyn`, wasn't: MIR
+promotes `&by_dyn` to a constant of its own, of type `&FnDef`, which
+`needed`'s `called` didn't see, as it asked `fn_def` of a `FnDef` alone. So
+the `dyn` was the library's export, `return t`, and `d(())` was `None`. A
+function named through a reference is named: `called`, and `calls_of`'s
+MIR path of a library body compiled here, ask `fn_def` of the constant's
+type past its references. Found by the metamorphic net's library rewrite.
+Held by the crate pair `library_some_through_a_dyn` and the mutation
+`promoted-fn-ref-unseen`.

@@ -521,8 +521,9 @@ pub(super) fn calls_of<'tcx>(body: &Body<'tcx>) -> Vec<(DefId, ty::GenericArgsRe
         // And each one a closure it names as a constant holds, which optimized
         // MIR makes of one that captures only functions, std's inlined
         // `filter_map_fold` of `into_item` and `last`'s `some` (#645).
+        // A reference to one too, a promoted `&FnDef` (#1210).
         fn visit_const_operand(&mut self, constant: &mir::ConstOperand<'tcx>, _: mir::Location) {
-            if let Some((callee, args)) = super::fn_def(constant.ty()) {
+            if let Some((callee, args)) = super::fn_def(constant.ty().peel_refs()) {
                 self.0.push((callee, args, constant.span));
             } else if constant.ty().is_closure() {
                 for part in constant.ty().walk() {
@@ -646,12 +647,13 @@ fn called_through<'tcx>(
 }
 
 /// Each function `body` calls or names as a value, and its generic
-/// arguments there.
+/// arguments there: a reference to one too, `&f` made a `&dyn Fn`, which
+/// MIR promotes to a constant of its own, `&FnDef` (#1210).
 fn called<'tcx>(body: &mir::Body<'tcx>) -> Vec<(DefId, ty::GenericArgsRef<'tcx>)> {
     struct Called<'tcx>(Vec<(DefId, ty::GenericArgsRef<'tcx>)>);
     impl<'tcx> mir::visit::Visitor<'tcx> for Called<'tcx> {
         fn visit_const_operand(&mut self, constant: &mir::ConstOperand<'tcx>, _: mir::Location) {
-            if let Some(called) = super::fn_def(constant.ty()) {
+            if let Some(called) = super::fn_def(constant.ty().peel_refs()) {
                 self.0.push(called);
             }
         }
