@@ -301,7 +301,12 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   `clone()` copies what needs copying, and `vec![x; n]` makes `n` separate
   values ([0052](../decisions/0052-std-trait-impls.md),
   [0147](../decisions/0147-replacing-through-mut.md),
-  [`copy_mutation`](../../test/corpus/copy_mutation.rs)).
+  [`copy_mutation`](../../test/corpus/copy_mutation.rs)). A `Vec<T>`, a
+  `Box<[T]>` and a `CString`'s bytes are one array, which `into_vec()`,
+  `into_boxed_slice()` and `into_bytes_with_nul()` hand on without a copy:
+  a clone of one is copied where it may be changed in place as any of them
+  ([0530](../decisions/0530-std-iterators-of-arrays-clone-where-they-are.md),
+  amended).
 - **`&T` is the value. `&mut` to an object is the object**, changed in place
   ([0025](../decisions/0025-vec-loops-refcell-mut.md)). A `&mut` to a number, a
   string or an `Option` names its place when it's in a variable, `*r += 1`

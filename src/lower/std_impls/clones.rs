@@ -67,11 +67,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // is a `Vec` something takes `&mut` of.
             ty::Array(..) => true,
             // A slice a `Box<[T]>` holds, as a `Vec`'s items: where something
-            // changes one in place, `contains_mutated`'s, or its items need a
-            // clone (ADR 0530).
-            ty::Slice(item) => self.needs_clone_in(*item, seen),
+            // changes one in place, as a slice or as the `Vec` its
+            // `into_vec()` makes, `items_changed`'s, or its items need a
+            // clone (ADR 0530, amended).
+            ty::Slice(item) => self.items_changed(*item) || self.needs_clone_in(*item, seen),
+            // A `Vec`'s, of what `into_boxed_slice()` makes of it too.
             ty::Adt(_, args) if self.is_vec_like(ty) => {
-                self.vec_changed(ty) || self.needs_clone_in(args.type_at(0), seen)
+                self.vec_changed(ty)
+                    || (std(StdItem::Vec) && self.items_changed(args.type_at(0)))
+                    || self.needs_clone_in(args.type_at(0), seen)
             }
             ty::Adt(..)
                 if std(StdItem::Cell) || std(StdItem::RefCell) || std(StdItem::Atomic) || std(StdItem::OnceCell) =>

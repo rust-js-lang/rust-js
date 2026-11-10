@@ -430,15 +430,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Is `ty` a `Vec` type something may change (ADR 0052)? One another crate
-    /// can hold might be changed there (ADR 0100): in a crate using a library,
-    /// or `@rust-js/std`, any may be (`crosses_crates`).
+    /// can hold might be changed there, `vecs_changed_elsewhere`.
     pub(super) fn vec_changed(&self, ty: Ty<'tcx>) -> bool {
-        (self.krate.compiled_once || self.krate.foreign.any())
+        self.vecs_changed_elsewhere()
             || self
                 .krate
                 .changed_vecs
                 .iter()
                 .any(|&changed| self.instance_of(ty, changed))
+    }
+
+    /// Might the array of `item`s that a `Vec<item>` and a boxed `[item]`
+    /// are be changed in place, as either? They are one JS array, which
+    /// `into_vec()`, `into_boxed_slice()` and a C string's
+    /// `into_bytes_with_nul()` hand from one to the other without a copy:
+    /// a clone of one is told apart by a change of the other (ADR 0530,
+    /// amended). A `Vec<item>` something changes, `vec_changed`'s, or a
+    /// `[item]` changed in place, `contains_mutated`'s.
+    pub(super) fn items_changed(&self, item: Ty<'tcx>) -> bool {
+        let vec_of = |changed: Ty<'tcx>| {
+            self.is_std_type(changed, StdItem::Vec)
+                && matches!(changed.kind(), ty::Adt(_, args) if self.instance_of(item, args.type_at(0)))
+        };
+        self.vecs_changed_elsewhere()
+            || self.krate.changed_vecs.iter().any(|&changed| vec_of(changed))
+            || self.contains_mutated(Ty::new_slice(self.tcx, item))
+    }
+
+    /// Might any `Vec` be changed where this crate can't see? One another
+    /// crate can hold might be changed there (ADR 0100): in a crate using a
+    /// library, or `@rust-js/std`, any may be (`crosses_crates`).
+    fn vecs_changed_elsewhere(&self) -> bool {
+        self.krate.compiled_once || self.krate.foreign.any()
     }
 
     /// Is `ty` one of the types `general` stands for? A type mutated in a

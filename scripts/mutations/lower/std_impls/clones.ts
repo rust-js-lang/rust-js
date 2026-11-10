@@ -223,7 +223,7 @@ export const mutations: Mutation[] = [
     name: "slice-needs-no-clone",
     breaks: "a clone of a `Box<[T]>` shares its array",
     file: "src/lower/std_impls/clones.rs",
-    find: "            ty::Slice(item) => self.needs_clone_in(*item, seen),\n",
+    find: "            ty::Slice(item) => self.items_changed(*item) || self.needs_clone_in(*item, seen),\n",
     replace: "            ty::Slice(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_slice_values.rs$"],
   },
@@ -423,5 +423,23 @@ export const mutations: Mutation[] = [
     replace:
       "                if self.explicit_adapter(ty) && crate::lower::recognition::cycled_source(self.tcx, ty).is_some() && false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
+  },
+  {
+    name: "boxed-slice-items-changed-unasked",
+    breaks:
+      "a boxed slice's clone, a `CString`'s too, is the same array where what `into_vec()` or `into_bytes_with_nul()` makes of it is changed in place (#1290)",
+    file: "src/lower/std_impls/clones.rs",
+    find: "            ty::Slice(item) => self.items_changed(*item) || self.needs_clone_in(*item, seen),\n",
+    replace: "            ty::Slice(item) => self.needs_clone_in(*item, seen),\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_changed_as_a_vec_or_a_boxed_slice.rs$"],
+  },
+  {
+    name: "vec-items-changed-unasked",
+    breaks:
+      "a `Vec`'s clone is the same array where the boxed slice its `into_boxed_slice()` makes is changed in place (#1290)",
+    file: "src/lower/std_impls/clones.rs",
+    find: "                    || (std(StdItem::Vec) && self.items_changed(args.type_at(0)))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^clone_changed_as_a_vec_or_a_boxed_slice.rs$"],
   },
 ];

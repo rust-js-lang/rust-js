@@ -1,6 +1,6 @@
 # 0530. std's iterators of arrays, and a `rev`, clone where they are
 
-Status: Accepted. Extends [0181](0181-iterator-clones.md),
+Status: Accepted. Amended by #1290 (a `Vec` and a boxed slice are one array). Extends [0181](0181-iterator-clones.md),
 [0364](0364-mir-lowering.md) and [0516](0516-rev-steps-what-it-holds-from-its-back.md);
 accepts part of the [iterators draft](draft/cloned-and-buffering-iterators.md).
 
@@ -57,3 +57,24 @@ seven `peeking_next_by_clone!` refusals are gone.
 - Mutations take each off the list, refuse a `rev()`'s back or length,
   share a clone's items or source, take a given parameter's `rev()` for a
   `$rev`, and refuse a `Box<[T]>`'s collect and clone.
+
+## Amendment: a `Vec` and a boxed slice are one array (#1290)
+
+A `Box<[T]>`'s clone was the same array unless something changed a `[T]`
+in place, and a `Vec<T>`'s unless something changed a `Vec<T>`. But
+`into_vec()`, `into_boxed_slice()` and a `CString`'s
+`into_bytes_with_nul()` (ADR 1119) hand the one JS array from one type to
+the other without a copy. A clone changed as the other type changed what
+it was cloned from: `s.clone().into_vec()` then `v[0] = 7` changed `s`.
+
+**Whether the array of a `Vec<T>` or of a boxed `[T]` may change in place
+is one question, `copies.rs`'s `items_changed(T)`:** something changes a
+`Vec<T>` (`vec_changed`'s), or a `[T]` in place (`contains_mutated`'s).
+A boxed slice's clone asks it, and so does a `Vec`'s, beside its own
+`vec_changed`. Case C (ADR 0262): Rust's clone is its own.
+
+`clone_changed_as_a_vec_or_a_boxed_slice` holds a clone changed each way,
+in a struct with a derived `Clone`, of an `Option` and of a C string,
+against native Rust. The corpus's other snapshots don't change. Mutations
+take away each half of `items_changed`, and each of the two places that
+ask it.

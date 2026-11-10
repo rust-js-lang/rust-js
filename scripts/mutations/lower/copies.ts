@@ -114,8 +114,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate using a library clones a `Vec` without a copy, which the library changes through its own method",
     file: "src/lower/copies.rs",
-    find: "        (self.krate.compiled_once || self.krate.foreign.any())\n",
-    replace: "        (self.krate.compiled_once && self.krate.foreign.any())\n",
+    find: "        self.krate.compiled_once || self.krate.foreign.any()\n",
+    replace: "        self.krate.compiled_once && self.krate.foreign.any()\n",
     tests: [
       "test/crates.test.ts",
       "test/cargo-workspace.test.ts",
@@ -413,5 +413,23 @@ export const mutations: Mutation[] = [
     find: "                        .unwrap_or(ty)\n",
     replace: "                        .map(|_| ty)\n                        .unwrap_or(ty)\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
+  },
+  {
+    name: "items-changed-as-vecs-unasked",
+    breaks:
+      "a boxed slice's clone is the same array where the `Vec` its `into_vec()` makes is changed in place (#1290)",
+    file: "src/lower/copies.rs",
+    find: "            || self.krate.changed_vecs.iter().any(|&changed| vec_of(changed))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^clone_changed_as_a_vec_or_a_boxed_slice.rs$"],
+  },
+  {
+    name: "items-changed-as-slices-unasked",
+    breaks:
+      "a `Vec`'s clone is the same array where the boxed slice its `into_boxed_slice()` makes is changed in place (#1290)",
+    file: "src/lower/copies.rs",
+    find: "            || self.contains_mutated(Ty::new_slice(self.tcx, item))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^clone_changed_as_a_vec_or_a_boxed_slice.rs$"],
   },
 ];
