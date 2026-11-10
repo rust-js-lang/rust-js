@@ -28,7 +28,9 @@ test("an entry's and_modify then or_insert reads its map and key", () => {
 // bounds, of a crate that takes no slice's address, as before #1185; of
 // one that does, `$part(v, 1, 3)`, which records where it is in `v`, so a
 // pointer into it is one into `v`, and `ptr::eq` of two parts compares where
-// they start and their lengths. An owned copy of a range, `to_vec()`, is
+// they start and their lengths. A pointer to a `Vec`, `ptr::eq` of two or
+// the one a thread-local's initializer is read through, is to the vector,
+// not into its items, so it takes no slice's address. An owned copy of a range, `to_vec()`, is
 // `$copyOf(v, a, b)`, one copy that no record places in `v`, in either.
 test("a part of a slice is JS's slice where no slice's address is taken, else a part that says where it is", async () => {
   const dir = fixture("slice-parts");
@@ -41,6 +43,15 @@ test("a part of a slice is JS's slice where no slice's address is taken, else a 
 }
 pub fn owned(v: &[u8], n: usize) -> Vec<u8> {
     v[..n].to_vec()
+}
+thread_local! {
+    static NAMES: Vec<&'static str> = vec!["a", "b"];
+}
+pub fn names() -> usize {
+    NAMES.with(|names| names.len())
+}
+pub fn same_vec(a: &Vec<u8>, b: &Vec<u8>) -> bool {
+    std::ptr::eq(a, b)
 }
 ${taken ? "pub fn same(v: &[u8]) -> bool {\n    std::ptr::eq(&v[1..3], &v[1..3])\n}\n" : ""}`;
   for (const taken of [false, true]) {

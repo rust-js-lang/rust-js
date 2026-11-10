@@ -92,3 +92,18 @@ its length, `for .. of`, `Object.keys` and `JSON`, never see;
   Rust in both builds; #1185's own program prints `true true`.
 - Still a copy's address: a MIR subslice pattern's rest of a `&` and a
   named constant, `Pointed::copies`, whose pointers stay refused.
+
+## Amendment: a pointer to a `Vec` is to the vector, not into its items (2026-11-10)
+
+`takes_slice_addresses` took any raw pointer to a slice, an array or a
+`Vec` for a slice's address, so a crate with a `thread_local!` of a `Vec`,
+whose initializer std reads through a `*const Vec<T>`, wrote `$part(..)`
+for every in-bounds part, and React's port's `react-dom-bindings` lost
+upstream's `list.slice(0, list.length - 1)`. **A raw pointer to a `Vec`,
+that one or `ptr::eq` of two `Vec`s, is to the vector, which is the array
+in JS whatever its parts are: it takes no slice's address.** Only a raw
+pointer to a slice or an array is one; a `Vec`'s items are still reached
+by its `as_ptr()` family or a pointer to an item, `&v[1] as *const T`,
+which are. `test/lowering-collections.test.ts` holds a crate with both
+writing `v.slice(1, 3)`, and the mutation `slice-addresses-of-a-vec-pointer`
+puts the `Vec` back.

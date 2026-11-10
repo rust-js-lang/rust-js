@@ -36,4 +36,20 @@ export const mutations: Mutation[] = [
     replace: "    let slices = false;\n",
     tests: ["test/lowering-collections.test.ts", "-t", "a part of a slice is"],
   },
+  {
+    name: "slice-addresses-of-a-vec-pointer",
+    breaks: "a raw pointer to a `Vec`, the one a `thread_local!`'s initializer is read through, is taken for a slice's address, so its crate's in-bounds parts are `$part(..)`, not JS's own `slice` (React's port's `list.slice(0, list.length - 1)`)",
+    file: "src/lower/analysis/stored_places.rs",
+    find: ".is_some_and(|(pointee, _)| items(pointee)) => true,\n",
+    replace: ".is_some_and(|(pointee, _)| of_items(pointee)) => true,\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "a part of a slice is"],
+  },
+  {
+    name: "slice-addresses-pointer-unseen",
+    breaks: "a raw pointer to a slice, `ptr::eq` of two parts, isn't a slice's address taken, so the parts it compares are JS's own `slice`s, two arrays, and `ptr::eq` of two `&v[1..3]` is `false` (#1185)",
+    file: "src/lower/analysis/stored_places.rs",
+    find: ".is_some_and(|(pointee, _)| items(pointee)) => true,\n",
+    replace: ".is_some_and(|(pointee, _)| items(pointee) && false) => true,\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "a part of a slice is"],
+  },
 ];

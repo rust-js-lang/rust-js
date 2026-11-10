@@ -144,17 +144,19 @@ fn asks_addresses<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> bool {
 /// pointer to a slice or an array, `s as *const [T]`, `ptr::eq(a, b)`'s of
 /// two slices; a slice's, an array's or a `Vec`'s `as_ptr()`,
 /// `as_mut_ptr()`, or their ranges; or a pointer to an item of one, `&v[1]
-/// as *const T`.
+/// as *const T`. Not a raw pointer to a `Vec`, `ptr::eq` of two or the one
+/// a thread-local's initializer is read through: it's to the vector, not
+/// into its items, which only those forms point into.
 fn takes_slice_addresses<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> bool {
     let thir = &body.thir;
+    let items = |ty: Ty<'tcx>| ty.is_slice() || ty.is_array();
     let of_items = |ty: Ty<'tcx>| {
         let ty = ty.peel_refs();
-        ty.is_slice()
-            || ty.is_array()
+        items(ty)
             || matches!(ty.kind(), ty::Adt(adt, _) if crate::lower::recognition::is_std_def(tcx, adt.did(), crate::lower::recognition::StdItem::Vec))
     };
     thir.exprs.iter().any(|expr| match expr.kind {
-        _ if crate::lower::pointers::raw_pointee(tcx, expr.ty).is_some_and(|(pointee, _)| of_items(pointee)) => true,
+        _ if crate::lower::pointers::raw_pointee(tcx, expr.ty).is_some_and(|(pointee, _)| items(pointee)) => true,
         ExprKind::Call { fun, ref args, .. } => {
             crate::lower::fn_def(thir[fun].ty).is_some_and(|(id, _)| {
                 matches!(tcx.item_name(id).as_str(), "as_ptr" | "as_mut_ptr" | "as_ptr_range" | "as_mut_ptr_range")
