@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "extend-of-a-trusted-len-untracked",
     breaks: "in a crate that keeps capacities, an `extend` of a `TrustedLen` iterator keeps its length as its capacity, where std reserves as many as it adds (#1180)",
     file: "src/lower/mir/vec_growth.rs",
-    find: "            .then(|| crate::lower::recognition::grows_vec(self.tcx, def_id).or_else(|| extends().then_some(0)))\n",
-    replace: "            .then(|| crate::lower::recognition::grows_vec(self.tcx, def_id).or_else(|| extends().then_some(0).filter(|_| false)))\n",
+    find: "            .then(|| crate::lower::recognition::grows_vec(self.tcx, def_id).or_else(|| extend.then_some(0)))\n",
+    replace: "            .then(|| crate::lower::recognition::grows_vec(self.tcx, def_id).or_else(|| extend.then_some(0).filter(|_| false)))\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
   },
   {

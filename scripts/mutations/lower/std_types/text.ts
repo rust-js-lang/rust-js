@@ -475,4 +475,12 @@ export const mutations: Mutation[] = [
     replace: "            TextOp::Bytes => utf8_bytes(arg()),\n",
     tests: ["test/corpus.test.ts", "-t", "^long_text_read_byte_by_byte.rs$"],
   },
+  {
+    name: "into-bytes-capacity-known",
+    breaks: "`into_bytes()` of a string, in a crate that reads a capacity, gives its length as its capacity, where std's is the string's (#1180)",
+    file: "src/lower/std_types/text.rs",
+    find: "            TextOp::IntoBytes if self.krate.keeps_capacity => call(\"$untracked\", vec![utf8_bytes(arg())]),\n",
+    replace: "",
+    tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
+  },
 ];

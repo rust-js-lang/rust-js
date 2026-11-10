@@ -34,6 +34,9 @@ function main() {
       v,
       $iterator({ n: 7 }, loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
       4,
+      false,
+      undefined,
+      true,
     ),
   );
   $roomFor(v.length + 1, 4);
@@ -44,6 +47,9 @@ function main() {
       v,
       $iterator({ n: 6 }, loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
       4,
+      false,
+      undefined,
+      true,
     ),
   );
   console.log(`${v.length}`);

@@ -38,6 +38,9 @@ function pushedFirst() {
       v,
       $iterator([6], loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
       4,
+      false,
+      undefined,
+      true,
     ),
   );
   return $capacity(v, 4);
@@ -58,6 +61,9 @@ function collectedFirst(xs) {
       v,
       $iterator([5], loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
       4,
+      false,
+      undefined,
+      true,
     ),
   );
   return $capacity(v, 4);
@@ -70,6 +76,9 @@ function given(v) {
       v,
       $iterator([4], loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
       4,
+      false,
+      undefined,
+      true,
     ),
   );
   const n = $capacity(v, 4);
@@ -84,13 +93,16 @@ function lent(v) {
       v,
       $iterator([7], loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
       4,
+      false,
+      undefined,
+      true,
     ),
   );
 }
 
 const Buf = {
   fill(buf, items) {
-    $extend(buf.v, $grownBy(buf.v, items, 4));
+    $extend(buf.v, $grownBy(buf.v, items, 4, false, undefined, true));
   },
 };
 

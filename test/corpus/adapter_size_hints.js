@@ -41,7 +41,7 @@ function collected(it) {
   const [low] = $sizeHint(it);
   $roomFor(low, 4);
   const all = $withCapacity(low);
-  $extend(all, $grownBy(all, it, 4));
+  $extend(all, $grownBy(all, it, 4, false, undefined, true));
   return all;
 }
 

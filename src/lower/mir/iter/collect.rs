@@ -845,6 +845,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             iterable,
             span,
         )?;
+        // Of a crate that keeps capacities, one std may collect in place,
+        // whose capacity is its source's, which isn't kept: not known, which
+        // `capacity()` refuses (#1180).
+        let collected = match self.krate.keeps_capacity
+            && self.recognition().grows_as_vec(output)
+            && self.collects_in_place(Some(iter_ty), item) != Some(false)
+        {
+            true => Expr::call_helper("$untracked", vec![collected]),
+            false => collected,
+        };
         // Kept where its collect steps it, not where it's collected in place.
         Ok(match grown_call {
             Some((name, call)) if collected.mentions_var(&name) => Expr::call_helper(

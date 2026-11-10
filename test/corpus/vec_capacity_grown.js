@@ -95,7 +95,7 @@ function main() {
   const clone = { clone: (value) => value };
   const vecExtend = {
     extend(collection, items) {
-      $extend(collection.value, $grownBy(collection.value, items, 4));
+      $extend(collection.value, $grownBy(collection.value, items, 4, false, undefined, true));
     },
   };
   console.log(`[${pushes(1, 10, clone, 1).join(", ")}]`);

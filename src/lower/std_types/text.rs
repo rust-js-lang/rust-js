@@ -519,7 +519,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // first, only read through (`check_text_pointer`).
             TextOp::Bytes => call("$utf8Bytes", vec![arg()]),
             TextOp::BytesPointer => call("$ptr", vec![call("$utf8Bytes", vec![arg()]), Expr::int(0)]),
-            // `Array.from(new TextEncoder().encode(s))`: owned, its own.
+            // `Array.from(new TextEncoder().encode(s))`: owned, its own; of a
+            // crate that keeps capacities, whose capacity is its string's,
+            // which isn't kept, not known (#1180).
+            TextOp::IntoBytes if self.krate.keeps_capacity => call("$untracked", vec![utf8_bytes(arg())]),
             TextOp::IntoBytes => utf8_bytes(arg()),
             TextOp::SplitN => call("$splitN", vec![arg(), arg(), arg()]),
             TextOp::Rsplit(limited) => {

@@ -51,6 +51,9 @@ function main() {
       v,
       $iterator(loud(9), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
       4,
+      false,
+      undefined,
+      true,
     ),
   );
   console.log(`new ${v.length} ${$capacity(v, 4)}`);
@@ -61,6 +64,9 @@ function main() {
       v,
       $iterator(loud(5), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
       4,
+      false,
+      undefined,
+      true,
     ),
   );
   $extend(
@@ -69,6 +75,9 @@ function main() {
       v,
       $iterator(loud(3), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
       4,
+      false,
+      undefined,
+      true,
     ),
   );
   console.log(`with capacity ${v.length} ${$capacity(v, 4)}`);
@@ -79,6 +88,9 @@ function main() {
       v,
       $iterator(loud(4), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
       4,
+      false,
+      undefined,
+      true,
     ),
   );
   console.log(`literal ${v.length} ${$capacity(v, 4)}`);
@@ -93,6 +105,9 @@ function main() {
         (x) => x & 255,
       ),
       1,
+      false,
+      undefined,
+      true,
     ),
   );
   console.log(`bytes ${v.length} ${$capacity(v, 1)}`);
@@ -105,6 +120,9 @@ function main() {
       v,
       $iterator(loud(4), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
       4,
+      false,
+      undefined,
+      true,
     ),
   );
   console.log(`collected ${v.length} ${$capacity(v, 4)}`);
@@ -115,6 +133,9 @@ function main() {
       h,
       $iterator(loud(6), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
       4,
+      false,
+      undefined,
+      true,
     ),
     $partiallyOrdered,
   );
@@ -127,6 +148,8 @@ function main() {
       $iterator(loud(4), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
       4,
       true,
+      undefined,
+      true,
     ),
   );
   $extend(
@@ -135,6 +158,8 @@ function main() {
       d,
       $iterator(loud(9), loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
       4,
+      true,
+      undefined,
       true,
     ),
   );
@@ -148,6 +173,9 @@ function main() {
         () => {},
       ),
       0,
+      false,
+      undefined,
+      true,
     ),
   );
   console.log(`units ${units.length}`);
@@ -169,6 +197,7 @@ function main() {
           4,
           false,
           noisyDrop_drop,
+          true,
         ),
       );
       return v.length;

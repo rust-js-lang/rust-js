@@ -21,7 +21,8 @@ function $heapRebuildTail(heap, start, ord) {
 // the other's capacity, where they're kept (ADR 0419, amended, #1180).
 function $heapAppend(heap, other, ord) {
   if (heap.length < other.length && ($capacities.has(heap) || $capacities.has(other))) {
-    const [mine, theirs] = [$capacity(heap), $capacity(other)];
+    const kept = (v) => ($capacityUnknown(v) ? $unknownCapacity : $capacity(v));
+    const [mine, theirs] = [kept(heap), kept(other)];
     $capacities.set(heap, theirs);
     $capacities.set(other, mine);
   }

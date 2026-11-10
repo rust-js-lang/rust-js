@@ -11066,14 +11066,37 @@ export const $sliceIndexes = {
 // A `Vec`'s capacity (ADR 0419), which JS's array hasn't: kept where a
 // crate asks it, as std's growth gives it, by `with_capacity`, `reserve`,
 // and each call that adds to it (`$grew`, `$grownBy`, `$grownVec`), and
-// never less where it's shortened (#1180).
+// never less where it's shortened (#1180). Of one whose growth wasn't
+// kept, `$unknownCapacity`: a collect std may make in place, a string's
+// bytes, a type parameter's items no caller sizes, which `capacity()`
+// refuses (the user's decision, #1180).
 export const $capacities = new WeakMap();
+export const $unknownCapacity = -1;
 
 // `v.capacity()` of items of `size` bytes: of items of no size, std's
-// `usize::MAX`, as many as fit, whatever it was given (#1180).
+// `usize::MAX`, as many as fit, whatever it was given; of one whose growth
+// wasn't kept, an error naming #1180, never another number, and no panic,
+// which no `catch_unwind` takes for the program's (`$InternalError`, the
+// user's decision, #1180).
 export function $capacity(v, size) {
   if (size === 0) return 2 ** 32 - 1;
-  return Math.max(v.length, $capacities.get(v) ?? 0);
+  const kept = $capacities.get(v);
+  if (kept === $unknownCapacity) {
+    throw new $InternalError("this `Vec`'s capacity isn't known to rust-js: std's growth of it wasn't kept (#1180)");
+  }
+  return Math.max(v.length, kept ?? 0);
+}
+
+// Whether `v`'s capacity isn't known (`$unknownCapacity`).
+export function $capacityUnknown(v) {
+  return $capacities.get(v) === $unknownCapacity;
+}
+
+// `v`, whose growth wasn't kept: its capacity unknown, which `capacity()`
+// refuses (#1180).
+export function $untracked(v) {
+  $capacities.set(v, $unknownCapacity);
+  return v;
 }
 
 // `Vec::with_capacity(n)`: none yet, room for `n`.
@@ -11089,6 +11112,7 @@ export function $withCapacity(n) {
 // has the capacity native Rust's has (#849). Of items of no size, whose
 // capacity is `usize::MAX` (`$capacity`), room for as many as asked.
 export function $reserve(v, additional, size) {
+  if ($capacityUnknown(v)) return;
   const capacity = $capacity(v);
   if (capacity - v.length >= additional) return;
   const grown = size === 0 ? v.length + additional : Math.max(capacity * 2, v.length + additional, $leastCapacity(size));
@@ -11098,12 +11122,17 @@ export function $reserve(v, additional, size) {
 // `v.reserve_exact(n)`: where it hasn't room for `n` more, as many as it
 // needs (raw_vec/mod.rs `grow_exact`).
 export function $reserveExact(v, additional) {
+  if ($capacityUnknown(v)) return;
   if ($capacity(v) - v.length < additional) $capacities.set(v, v.length + additional);
 }
 
 // `v.shrink_to(n)`, `shrink_to_fit()` of `0`: no more than `n`, but its
-// length.
+// length; of one not known, known again where `n` is at most its length.
 export function $shrinkTo(v, min) {
+  if ($capacityUnknown(v)) {
+    if (min <= v.length) $capacities.set(v, v.length);
+    return;
+  }
   $capacities.set(v, Math.max(v.length, Math.min($capacity(v), min)));
 }
 
@@ -11112,15 +11141,25 @@ export function $shrinkTo(v, min) {
 // room for, std's `reserve` of as many, `grow_amortized`'s; of items of no
 // size, its length (#1180). The call's value, `made`.
 export function $grew(v, size, len, made) {
+  if ($capacityUnknown(v)) return made;
   const had = Math.max(len, $capacities.get(v) ?? 0);
   const added = v.length - len;
   if (added > had - len) $capacities.set(v, size === 0 ? v.length : Math.max(had * 2, len + added, $leastCapacity(size)));
   return made;
 }
 
-// Before it's shortened, `clear()`, `pop()` and the rest: what it has, kept.
+// What a call that adds to `v`, of items whose size no caller gives, `len`
+// long before it, leaves: where it added more than it had room for, a
+// capacity not known (#1180). The call's value, `made`.
+export function $grewUnsized(v, len, made) {
+  if (v.length > Math.max(len, $capacities.get(v) ?? 0)) $untracked(v);
+  return made;
+}
+
+// Before it's shortened, `clear()`, `pop()` and the rest: what it has, kept,
+// or not known.
 export function $keepCapacity(v) {
-  $capacities.set(v, $capacity(v));
+  if (!$capacityUnknown(v)) $capacities.set(v, $capacity(v));
 }
 
 // Room for `count` items of `size` bytes each, which std checks wherever a
@@ -11327,8 +11366,10 @@ export function $shuntGrowth(it, size) {
 // `spec_extend` asks it at its first item too. `v`'s capacity is native
 // Rust's where it's asked (`$reserve`, `$withCapacity`), and kept as it
 // grows. Where asking it throws, a panic, the item taken is dropped, then
-// `it` closed, as `extend` unwinds.
-export function $grownBy(v, items, size, deque = false, drop) {
+// `it` closed, as `extend` unwinds. Of `v` whose capacity isn't known, its
+// hint asked never, its capacity left unknown; where the hint is the
+// crate's own, `own`, whose asking is seen, an error naming #1180.
+export function $grownBy(v, items, size, deque = false, drop, own = false) {
   // An array given whole, generic code's, as its `IntoIter`, whose hint is
   // exact (#1180).
   const it = Array.isArray(items) ? $iter(items) : items[Symbol.iterator]();
@@ -11338,6 +11379,11 @@ export function $grownBy(v, items, size, deque = false, drop) {
     () => {
       const step = it.next();
       if (step.done) return step;
+      if ($capacityUnknown(v)) {
+        if (own) throw new $InternalError("this `Vec`'s capacity, by which its `extend` asks its hint, isn't known to rust-js: std's growth of it wasn't kept (#1180)");
+        first = false;
+        return step;
+      }
       const capacity = size === 0 ? Infinity : $capacity(v);
       if ((deque && first) || v.length === capacity) {
         $unwinds(
@@ -14337,7 +14383,8 @@ export function $heapRebuildTail(heap, start, ord) {
 // the other's capacity, where they're kept (ADR 0419, amended, #1180).
 export function $heapAppend(heap, other, ord) {
   if (heap.length < other.length && ($capacities.has(heap) || $capacities.has(other))) {
-    const [mine, theirs] = [$capacity(heap), $capacity(other)];
+    const kept = (v) => ($capacityUnknown(v) ? $unknownCapacity : $capacity(v));
+    const [mine, theirs] = [kept(heap), kept(other)];
     $capacities.set(heap, theirs);
     $capacities.set(other, mine);
   }

@@ -33,9 +33,9 @@ function itIterator_next(it, IIterator) {
 
 function extended(make, IIterator) {
   const v = [0];
-  $extend(v, $grownBy(v, $given(make(), IIterator), 4));
+  $extend(v, $grownBy(v, $given(make(), IIterator), 4, false, undefined, true));
   const d = [0];
-  $extend(d, $grownBy(d, $given(make(), IIterator), 4, true));
+  $extend(d, $grownBy(d, $given(make(), IIterator), 4, true, undefined, true));
   const l = [0];
   $extend(l, $folded($given(make(), IIterator)));
   const s = new $BTreeSet([0]);

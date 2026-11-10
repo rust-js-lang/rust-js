@@ -403,7 +403,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok((collection, items));
         }
         self.refuse_unkept_lower_bound(iter_ty, span)?;
-        self.grown_by(collection, items, (into, item), span, out)
+        // Of one whose hint is the crate's own, its type known here, not its
+        // caller's, whose callers decide (`refuse_unknown_capacity_extends`).
+        let own = self.hint_reaches_own(iter_ty);
+        let known_own = own && !(iterable.has_param() || iterable.has_aliases());
+        self.grown_by(collection, items, (into, item, (own, known_own)), span, out)
     }
 
     /// Generic code's `extend` of `into`, a std collection, through its
@@ -431,7 +435,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 &format!("a bound's `extend` of a `{into}`, whose items' size std grows it by, a type parameter's, in a crate that reads a `Vec`'s capacity: call `extend` of the `Vec` itself"),
             ));
         }
-        Ok(self.grown_by(collection, items, (into, item), span, out)?.1)
+        // Of an iterator its caller gives, which may be the crate's own.
+        Ok(self
+            .grown_by(collection, items, (into, item, (true, false)), span, out)?
+            .1)
     }
 
     /// The size of a `Vec`'s `item`s, by which std grows it, of a crate
@@ -448,13 +455,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `$grownBy(collection, items, size, deque, drop)`: of `into`'s items'
-    /// size, of `item`s' drop, as the iterator gives them.
+    /// `$grownBy(collection, items, size, deque, drop, own)`: of `into`'s
+    /// items' size, of `item`s' drop, as the iterator gives them, and
+    /// whether its hint may be the crate's own, `own`, which a `Vec` whose
+    /// capacity isn't known can't ask as std's does (#1180). Of items whose
+    /// size no caller gives, as it is, its growth not kept; refused where
+    /// its hint is the crate's own, its type known here, `known_own`, whose
+    /// asking would be seen.
     fn grown_by(
         &mut self,
         collection: Expr,
         items: Expr,
-        (into, item): (Ty<'tcx>, Ty<'tcx>),
+        (into, item, (own, known_own)): (Ty<'tcx>, Ty<'tcx>, (bool, bool)),
         span: Span,
         out: &mut Vec<crate::js::Stmt>,
     ) -> R<(Expr, Expr)> {
@@ -468,13 +480,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => None,
         };
         let Some(size) = self.capacity_item_size(self.slice_item(into).unwrap_or(item)) else {
+            if known_own {
+                return Err(self.unsupported(
+                    span,
+                    "an `extend` of a `Vec`, a `VecDeque` or a `BinaryHeap` by an iterator whose `size_hint` is the crate's own, which std asks as it fills, as its capacity says, of items whose size no caller gives: extend one of items of a known type",
+                ));
+            }
             return Ok((collection, items));
         };
         let mut args = vec![collection.clone(), items, size];
-        if deque || drop.is_some() {
+        if deque || drop.is_some() || own {
             args.push(Expr::bool(deque));
         }
-        args.extend(drop);
+        if drop.is_some() || own {
+            args.push(drop.unwrap_or_else(Expr::undefined));
+        }
+        if own {
+            args.push(Expr::bool(true));
+        }
         Ok((collection, Expr::call_helper("$grownBy", args)))
     }
 

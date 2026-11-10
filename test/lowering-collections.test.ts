@@ -1221,3 +1221,54 @@ pub fn flush(ids: &[u32]) -> usize {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.flush([]), lib.flush([1, 4, 2, 3])]).toEqual([0, 3]);
 });
+
+// A `Vec`'s capacity std's growth of it wasn't kept of, in a crate that
+// reads one: one std may collect in place, whose capacity is its source's,
+// and a string's bytes, whose capacity is the string's. `capacity()` of it
+// throws an error naming #1180, `$InternalError`, never another number; `shrink_to_fit()` knows it again, and a `push`
+// past it leaves it unknown (the user's decision, #1180).
+test("capacity() of a Vec whose growth wasn't kept throws, naming #1180", async () => {
+  const dir = fixture("capacity-unknown");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `fn grown() -> Vec<u32> {
+    let mut v = Vec::new();
+    for i in 0..5 {
+        v.push(i);
+    }
+    v
+}
+
+pub fn in_place() -> usize {
+    let w: Vec<u32> = grown().into_iter().map(|x| x + 1).collect();
+    w.capacity()
+}
+
+pub fn bytes() -> usize {
+    String::from("abc").into_bytes().capacity()
+}
+
+pub fn fitted() -> usize {
+    let mut w: Vec<u32> = grown().into_iter().map(|x| x + 1).collect();
+    w.shrink_to_fit();
+    w.capacity()
+}
+
+pub fn pushed() -> usize {
+    let mut w: Vec<u32> = grown().into_iter().map(|x| x + 1).collect();
+    w.push(9);
+    w.capacity()
+}
+
+pub fn known() -> usize {
+    grown().capacity()
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  for (const f of [lib.inPlace, lib.bytes, lib.pushed]) {
+    expect(() => f()).toThrow("this `Vec`'s capacity isn't known to rust-js: std's growth of it wasn't kept (#1180)");
+  }
+  expect([lib.fitted(), lib.known()]).toEqual([5, 8]);
+});

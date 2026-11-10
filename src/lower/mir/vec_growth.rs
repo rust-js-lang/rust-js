@@ -10,7 +10,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// crate that keeps capacities, `grows_vec`'s, and an `extend` that
     /// adds as many as it's given at once (`extend_fills`), what it adds
     /// grown as std's `reserve` of as many does, `$grew(v, size, v.length,
-    /// call)`, its length read before the call (#1180).
+    /// call)`, its length read before the call (#1180). Of items whose size
+    /// no caller gives (`capacity_item_size`'s `None`), an `extend` that
+    /// fills too, `$grewUnsized(v, v.length, call)`: where it outgrows what
+    /// it had, its capacity not known, which `capacity()` refuses (the
+    /// user's decision, #1180).
     #[allow(clippy::too_many_arguments)]
     pub(in crate::lower::mir) fn grown_std_call(
         &mut self,
@@ -23,17 +27,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
-        let extends = || {
-            self.recognition().extend_grows(def_id, generic_args)
-                && arg_tys.len() == 2
-                && !self.extend_fills(arg_tys[0].peel_refs(), arg_tys[1])
-        };
+        let extend = self.recognition().extend_grows(def_id, generic_args) && arg_tys.len() == 2;
+        let fills = extend && self.extend_fills(arg_tys[0].peel_refs(), arg_tys[1]);
         let grows = (self.krate.keeps_capacity)
-            .then(|| crate::lower::recognition::grows_vec(self.tcx, def_id).or_else(|| extends().then_some(0)))
+            .then(|| crate::lower::recognition::grows_vec(self.tcx, def_id).or_else(|| extend.then_some(0)))
             .flatten()
             .filter(|&at| at < values.len());
         let item = grows.and_then(|_| self.recognition().grown_vec_item(def_id, generic_args));
-        let size = item.and_then(|item| self.capacity_item_size(item));
+        // Its items' size, or none known, `None`; of an `extend` that
+        // fills, sized, `$grownBy`'s.
+        let size = item
+            .map(|item| self.capacity_item_size(item))
+            .filter(|size| !(fills && size.is_some()));
         let (Some(at), Some(size)) = (grows, size) else {
             return self.mir_std_call(
                 state,
@@ -72,9 +77,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             length = self.spill("length", length, out);
         }
         out.extend(made_out);
-        Ok(Value::Expr(Expr::call_helper(
-            "$grew",
-            vec![vector, size, length, made],
-        )))
+        Ok(Value::Expr(match size {
+            Some(size) => Expr::call_helper("$grew", vec![vector, size, length, made]),
+            None => Expr::call_helper("$grewUnsized", vec![vector, length, made]),
+        }))
     }
 }

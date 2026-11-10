@@ -922,4 +922,12 @@ export const mutations: Mutation[] = [
     replace: "            && self.compiled_struct(iter_ty, given))\n",
     tests: ["test/corpus.test.ts", "-t", "^take_from_its_back_drops_as_std.rs$"],
   },
+  {
+    name: "in-place-collect-capacity-known",
+    breaks: "a collect std may make in place, in a crate that reads a capacity, gives its length as its capacity, where std's is its source's (#1180)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            true => Expr::call_helper(\"$untracked\", vec![collected]),\n",
+    replace: "            true => collected,\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
+  },
 ];

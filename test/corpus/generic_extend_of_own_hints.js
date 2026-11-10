@@ -50,7 +50,7 @@ function outer(items, CExtendU32, CDefault, IIntoIterInPlace) {
 
 const Buf = {
   fill(buf, items) {
-    $extend(buf.v, $grownBy(buf.v, items, 4));
+    $extend(buf.v, $grownBy(buf.v, items, 4, false, undefined, true));
   },
 };
 
@@ -64,14 +64,14 @@ function letters(c, n, CExtendChar) {
 }
 
 function main() {
-  const vecExtend = {
-    extend(collection, items) {
-      $extend(collection.value, $grownBy(collection.value, items, 4));
-    },
-  };
   const hashSetExtend = {
     extend(collection, items) {
       $extendMap(collection.value, $reserveHint(items, 4, 4, collection.value), true);
+    },
+  };
+  const vecExtend = {
+    extend(collection, items) {
+      $extend(collection.value, $grownBy(collection.value, items, 4, false, undefined, true));
     },
   };
   const v = [];

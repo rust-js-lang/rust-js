@@ -149,3 +149,33 @@ parameter, `vec::IntoIter<I::Item>` (`capacity_item_size`'s `None`), which
 itertools pushes to: its growth isn't kept, as before, never refused, as
 #934's facts of associated types will give it.
 
+## Amended (2026-11-10, #1180): a capacity not kept is an error, never a number
+
+**User decision: a `Vec` whose growth wasn't kept has no recorded
+capacity, and `capacity()` of it throws a clear error naming #1180,
+instead of silently returning its length.** Nothing that compiled stops
+compiling. Of a crate that keeps capacities, `$untracked(v)` marks one:
+
+| Made by | Why its capacity isn't known |
+|---|---|
+| a `collect()` std may make in place (`collects_in_place` not `Some(false)`) | its source's, `src_cap × src_size / dst_size`, which needs a MIR link from the collect to its source |
+| `into_bytes()`, `into_boxed_bytes()`, `Vec::from(s)` of text | the string's, which a JS string has none of |
+| a call that adds items whose size no caller gives, past what it had (`$grewUnsized`) | an associated type's, `I::Item`, till #934 gives its facts |
+
+`capacity()` of it is `$InternalError`, "this `Vec`'s capacity isn't known
+to rust-js: std's growth of it wasn't kept (#1180)", which no
+`$catchUnwind` takes for a panic (the inline form's limit, ADR 0660, is
+#1193's). What keeps a capacity carries the mark: `push` and the rest,
+`reserve`, `reserve_exact`, `clear()` and what shortens it leave it
+unknown; `shrink_to_fit()`, and `shrink_to(n)` of `n` at most its length,
+know it again, its length. An `extend` that asks its hint as it fills,
+`$grownBy`, steps one unknown without asking it, its hint's timing
+unseen, and throws the same error where the hint is the crate's own
+(`own`), whose asking is seen. `test/lowering-collections.test.ts` holds
+each. Still silent: `chars()` or `split(..)` given to generic code that
+collects it, whose JS value is any array's iterator, and a `Vec` a library
+that keeps none grew, whose growth no code of its marks; #1180 lists them.
+The conformance table's 148 cases that read the capacity of a collect std
+may make in place throw it now, listed under #1180 till its source's is
+kept.
+

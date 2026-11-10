@@ -282,4 +282,28 @@ export const mutations: Mutation[] = [
     replace: "  const it = items[Symbol.iterator]();\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
   },
+  {
+    name: "unknown-capacity-its-length",
+    breaks: "`capacity()` of a `Vec` whose growth wasn't kept gives its length, silently another number than std's (#1180)",
+    file: "src/runtime/capacity.js",
+    find: "  if (kept === $unknownCapacity) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
+  },
+  {
+    name: "shrunk-unknown-stays",
+    breaks: "`shrink_to_fit()` of a `Vec` whose capacity isn't known leaves it unknown, where std's is its length (#1180)",
+    file: "src/runtime/capacity.js",
+    find: "    if (min <= v.length) $capacities.set(v, v.length);\n",
+    replace: "",
+    tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
+  },
+  {
+    name: "unknown-capacity-forgotten-by-push",
+    breaks: "a `push` of a `Vec` whose capacity isn't known gives it std's growth of its length, a number, silently (#1180)",
+    file: "src/runtime/capacity.js",
+    find: "  if ($capacityUnknown(v)) return made;\n",
+    replace: "",
+    tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
+  },
 ];
