@@ -1281,3 +1281,125 @@ pub fn known() -> usize {
   }
   expect([lib.fitted(), lib.known()]).toEqual([5, 8]);
 });
+
+// A `Vec` generic code grows by an iterator its caller gives, whose hint
+// std grows it by: where one caller's JS hint isn't std's, a string's
+// `chars()`, or a `skip(n)` JS makes of its own, its capacity is unknown
+// once it grows, and `capacity()` throws, naming #1180, as a `Vec` grown
+// by that iterator where its type is known is refused (#1180's (3)). One
+// whose every caller's hint is std's, a range's or a filter's, keeps std's,
+// as does one it never grew. One JS function is every caller's, so where
+// one caller's hint isn't std's, each caller's growth there is unknown. A
+// `pub` one's, whose callers aren't all seen, grows as before.
+test("capacity() of a Vec generic code grew by a hint JS lost throws, naming #1180", async () => {
+  const dir = fixture("capacity-generic-hint-lost");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `fn grow<I: Iterator<Item = char>>(v: &mut Vec<char>, it: I) {
+    v.extend(it);
+}
+
+fn grow_skipped<I: Iterator<Item = char>>(v: &mut Vec<char>, it: I) {
+    v.extend(it.skip(2));
+}
+
+fn grow_nums<I: Iterator<Item = u32>>(v: &mut Vec<u32>, it: I) {
+    v.extend(it);
+}
+
+fn grow_counted<I: Iterator<Item = u32>>(v: &mut Vec<u32>, it: I) {
+    v.extend(it);
+}
+
+struct Countdown(u32);
+
+impl Iterator for Countdown {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<u32> {
+        if self.0 == 0 {
+            return None;
+        }
+        self.0 -= 1;
+        Some(self.0)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.0 as usize, Some(self.0 as usize))
+    }
+}
+
+impl ExactSizeIterator for Countdown {}
+
+fn grow_own<I: Iterator<Item = u32>>(v: &mut Vec<u32>, it: I) {
+    v.extend(it);
+}
+
+pub fn own_mapped() -> usize {
+    let mut v = Vec::new();
+    grow_own(&mut v, Countdown(5).map(|n| n * 2));
+    v.capacity()
+}
+
+pub fn grow_any<I: Iterator<Item = char>>(v: &mut Vec<char>, it: I) {
+    v.extend(it);
+}
+
+const TEXT: &str = "the quick brown fox jumps over the lazy dog";
+
+pub fn any_counted() -> usize {
+    let mut v = Vec::new();
+    grow_any(&mut v, ('a'..='z').filter(|c| *c != 'q'));
+    v.capacity()
+}
+
+pub fn chars_skipped() -> usize {
+    let mut v = Vec::new();
+    grow(&mut v, TEXT.chars().skip(5));
+    v.capacity()
+}
+
+pub fn skipped_here() -> usize {
+    let mut v = vec!['x'];
+    grow_skipped(&mut v, TEXT.chars());
+    v.capacity()
+}
+
+pub fn vec_skipped() -> usize {
+    let mut v = vec![1];
+    grow_nums(&mut v, vec![1u32, 2, 3, 4, 5].into_iter().skip(1));
+    v.capacity()
+}
+
+pub fn range() -> usize {
+    let mut v = Vec::new();
+    grow_counted(&mut v, 0..40);
+    v.capacity()
+}
+
+pub fn filtered() -> usize {
+    let mut v = Vec::new();
+    grow_counted(&mut v, (0..40).filter(|n| n % 3 == 0));
+    v.capacity()
+}
+
+pub fn roomy() -> usize {
+    let mut v = Vec::with_capacity(100);
+    grow(&mut v, TEXT.chars().skip(5));
+    v.capacity()
+}
+
+pub fn never_grown() -> usize {
+    let mut v = vec!['x'];
+    grow_skipped(&mut v, "ab".chars());
+    v.capacity()
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  for (const f of [lib.charsSkipped, lib.skippedHere, lib.vecSkipped]) {
+    expect(() => f()).toThrow("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep");
+  }
+  expect([lib.range(), lib.filtered(), lib.roomy(), lib.neverGrown(), lib.anyCounted(), lib.ownMapped()]).toEqual([40, 16, 100, 1, 32, 5]);
+});

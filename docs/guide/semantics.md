@@ -851,8 +851,9 @@ What's refused is in [the limitations](limitations.md).
   needs; items of no size `usize::MAX`. Of a type parameter's items, by
   its caller's `TSize`. A crate that reads no capacity prints none of
   this. Of a `Vec` whose growth isn't kept, a `collect()` std may make in
-  place, a string's `into_bytes()`, `capacity()` throws an error naming
-  #1180, never another number.
+  place, a string's `into_bytes()`, or one generic code grew by an
+  iterator whose JS hint isn't std's, `chars().skip(n)` given to it,
+  `capacity()` throws an error naming #1180, never another number.
 - **A function passed where a closure goes is the arrow that calls it,**
   `.map(str::len)` being `.map((s) => $byteLen(s))` and `fold(0, i32::max)`
   being `reduce((a, b) => Math.max(a, b), 0)`; a constructor's makes what

@@ -17,7 +17,7 @@ function $capacity(v, size) {
   if (size === 0) return 2 ** 32 - 1;
   const kept = $capacities.get(v);
   if (kept === $unknownCapacity) {
-    throw $unsupported("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep: a collect std may make in place, a string's bytes, or items whose size no caller gives (#1180)");
+    throw $unsupported("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep: a collect std may make in place, a string's bytes, items whose size no caller gives, or one generic code grew by an iterator whose JS hint isn't std's (#1180)");
   }
   return Math.max(v.length, kept ?? 0);
 }
@@ -303,17 +303,31 @@ function $shuntGrowth(it, size) {
 // grows. Where asking it throws, a panic, the item taken is dropped, then
 // `it` closed, as `extend` unwinds. Of `v` whose capacity isn't known, its
 // hint asked never, its capacity left unknown; where the hint is the
-// crate's own, `own`, whose asking is seen, an error naming #1180.
-function $grownBy(v, items, size, deque = false, drop, own = false) {
+// crate's own, `own`, whose asking is seen, an error naming #1180. Of
+// generic code whose callers may give an iterator whose JS hint isn't
+// std's, `lost`, its capacity unknown once it grows (#1180's (3)).
+function $grownBy(v, items, size, deque = false, drop, own = false, lost = false) {
   // An array given whole, generic code's, as its `IntoIter`, whose hint is
   // exact (#1180).
   const it = Array.isArray(items) ? $iter(items) : items[Symbol.iterator]();
   const max = 2 ** 32 - 1;
   let first = true;
+  // Whether it asked its hint, by which std grew it: of generic code given
+  // an iterator whose JS hint isn't std's, `lost`, its capacity then isn't
+  // known once it ends or is closed, which `capacity()` refuses; till then
+  // it grows as its JS hint says, so a hint that's the crate's own is asked
+  // as std asks it (#1180's (3)).
+  let asked = false;
+  const ended = () => {
+    if (lost && asked) $untracked(v);
+  };
   const steps = new $Steps(
     () => {
       const step = it.next();
-      if (step.done) return step;
+      if (step.done) {
+        ended();
+        return step;
+      }
       if ($capacityUnknown(v)) {
         if (own) throw $unsupported("rust-js does not support an `extend` that asks the crate's own hint as a `Vec` fills, of a `Vec` whose growth it didn't keep (#1180)");
         first = false;
@@ -321,6 +335,7 @@ function $grownBy(v, items, size, deque = false, drop, own = false) {
       }
       const capacity = size === 0 ? Infinity : $capacity(v);
       if ((deque && first) || v.length === capacity) {
+        asked = true;
         $unwinds(
           () => {
             const [lower] = $sizeHint(it);
@@ -337,7 +352,10 @@ function $grownBy(v, items, size, deque = false, drop, own = false) {
       first = false;
       return step;
     },
-    () => it.return?.(),
+    () => {
+      ended();
+      return it.return?.();
+    },
   );
   steps.from = [it];
   return steps;

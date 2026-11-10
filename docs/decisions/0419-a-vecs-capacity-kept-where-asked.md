@@ -275,3 +275,44 @@ What's left silent of (3): an adapter of JS's own, `.drop(n)` or
 `.map(f)`, made of what's then given to generic code, `chars().skip(2)` or
 `b.iter().skip(1).copied()`, and one generic code makes of what it's
 given, whose hints are none; #1180 lists them.
+
+## Amended (2026-11-10, #1180's (3)): generic growth by a hint JS lost is unknown
+
+What the previous amendment left silent of (3) is now loud, under the user's
+decision above: a `capacity()` that would be wrong throws instead. Generic
+code's `extend` of a `Vec` grows it by the hint of whatever its caller gives.
+Where a caller gives an adapter JS makes of its own, the JS hint is none:
+`chars().skip(5)`'s `drop(5)`, a `Vec`'s `into_iter().skip(1)`, or generic
+code's own `it.skip(2)` of a string's `chars()`. The `Vec` then reached
+another capacity silently, 64 where std's is 60. Where the type is known,
+such an extend is refused at compile time (`refuse_unkept_lower_bound`).
+Generic code's type, `Skip<I>`, passed that check, because `I` stands for
+any type.
+
+`hint_asked.rs` now asks each `extend` that grows a `Vec` by an iterator of
+generic code's type parameters about each instance its callers give
+(`Hinted::lost`). The site is lost where one instance's hint, as it's
+given, has no lower bound std's has (`given_hint_is_stds`, which a
+`TrustedLen`'s does) and doesn't reach the crate's own (`hint_reaches_own`),
+which runs as it is, a `map` of its own exact-sized iterator's too. A bare
+`chars()` given is `$chars`, whose hint is std's, and so is its `rev()`.
+`$grownBy(.., lost)` grows such a `Vec` as its JS hint
+says, so a hint that's the crate's own is still asked at std's moments.
+Once it ends or is closed having asked its hint, the `Vec` is `$untracked`,
+and `capacity()` throws the #1180 error. A `Vec` that never grew there,
+with room enough or no items, keeps its capacity.
+
+A lost site's JS function is every caller's, so a caller whose hint is
+std's loses its capacity there too. That's loud, not wrong. Generic code's
+collects were already untracked as collects std may make in place. ADR
+[0262](0262-when-rust-and-js-disagree.md)'s third case applies: results
+changed, so where JS can't keep std's capacity, `capacity()` refuses.
+`test/lowering-collections.test.ts` holds the lost sites and the kept ones
+against native Rust's numbers.
+
+Where callers can't be seen, as a library's `pub` function's can't, the
+site grows as before. If every such site were lost, each library's generic
+`extend` would be, and a `Vec` then extended again by the crate's own hint
+would throw at the `extend`, where native runs. So what a consumer gives a
+library's generic `extend`, `chars().skip(n)`, stays silent. #1180 lists it
+beside (5), a `Vec` a library that keeps no capacities grew.

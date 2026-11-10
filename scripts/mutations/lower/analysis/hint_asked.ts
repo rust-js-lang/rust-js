@@ -34,4 +34,22 @@ export const mutations: Mutation[] = [
     replace: "false",
     tests: ["test/crates.test.ts", "-t", "two crates: library_adapter_made_in_generic_code_asked_its_hint$"],
   },
+  {
+    name: "generic-growth-lost-unseen",
+    breaks:
+      "a `pub` generic function's `extend` of a `Vec`, whose callers the crate can't see, is lost: its `capacity()` throws where std's is 32 (#1180's (3))",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: "                None => false,\n",
+    replace: "                None => true,\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+  },
+  {
+    name: "generic-growth-instances-unasked",
+    breaks:
+      "generic code's `extend` of a `Vec` by what its callers give is never lost: of `chars().skip(5)` given it, its capacity 64 where std's is 60, silently (#1180's (3))",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: "(instances.into_iter()).any(|instance| !recognition.given_growth_kept(instance)),",
+    replace: "(instances.into_iter()).any(|instance| false && !recognition.given_growth_kept(instance)),",
+    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+  },
 ];

@@ -306,4 +306,22 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
   },
+  {
+    name: "grown-by-lost-unasked",
+    breaks:
+      "a `Vec` generic code grew by a hint JS lost is unknown though it never asked it: one with room enough, or never given an item, throws at `capacity()` where std's is 100 or 1 (#1180's (3))",
+    file: "src/runtime/capacity.js",
+    find: "    if (lost && asked) $untracked(v);\n",
+    replace: "    if (lost) $untracked(v);\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+  },
+  {
+    name: "grown-by-lost-kept",
+    breaks:
+      "a `Vec` generic code grew by a hint JS lost keeps the capacity JS's hint grew it to: `chars().skip(5)`'s 64 where std's is 60, silently (#1180's (3))",
+    file: "src/runtime/capacity.js",
+    find: "    if (lost && asked) $untracked(v);\n",
+    replace: "",
+    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+  },
 ];

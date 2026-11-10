@@ -189,4 +189,22 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^eq_of_opaque_iterators.rs$"],
   },
+  {
+    name: "given-chars-hint-unkept",
+    breaks:
+      "a string's `chars()` given generic code that extends a `Vec` by it is taken for JS's own string iterator, whose hint is none, so its `capacity()` throws where std's is 76 (#1180's (3))",
+    file: "src/lower/recognition/lengths.rs",
+    find: "        if self.is_str_chars(ty) || self.is_char_indices(ty) {\n            return true;\n        }\n        match crate::lower::recognition::reversed_source",
+    replace: "        match crate::lower::recognition::reversed_source",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_text_patterns.rs$"],
+  },
+  {
+    name: "given-chars-rev-hint-unkept",
+    breaks:
+      "a `rev()` of a string's `chars()` given generic code that extends a `Vec` by it isn't seen to hint as its source does, so its `capacity()` throws where std's is 76 (#1180's (3))",
+    file: "src/lower/recognition/lengths.rs",
+    find: "            Some(source) => self.given_hint_is_stds(source),\n",
+    replace: "            Some(_) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_text_patterns.rs$"],
+  },
 ];

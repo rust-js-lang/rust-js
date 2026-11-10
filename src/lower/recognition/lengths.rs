@@ -270,6 +270,23 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 .is_some_and(|exact| self.implements_trait(ty, exact))
     }
 
+    /// `lower_bound_is_stds`, of an iterator of type `ty` a caller gives
+    /// generic code that grows a `Vec` by it (#1180's (3)): a string's
+    /// `chars()` or `char_indices()` given is the runtime's `$chars`, whose
+    /// hint is std's, not JS's own string iterator, and so is a `rev()` of
+    /// one, `$rev`'s, its source's. What JS adapts of one is as
+    /// `lower_bound_is_stds` says, a `skip(n)`'s `drop(n)` none.
+    pub(in crate::lower) fn given_hint_is_stds(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        if self.is_str_chars(ty) || self.is_char_indices(ty) {
+            return true;
+        }
+        match crate::lower::recognition::reversed_source(self.tcx, ty) {
+            Some(source) => self.given_hint_is_stds(source),
+            None => self.lower_bound_is_stds(ty),
+        }
+    }
+
     /// Whether the hint of an iterator of type `ty` has a lower bound above
     /// 0 wherever it has items, `Some(true)`: an `ExactSizeIterator`'s, a
     /// `TrustedLen`'s, one with no end once stepped, or a chain of such. Or

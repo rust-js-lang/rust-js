@@ -38,6 +38,13 @@ pub(in crate::lower) struct Hinted<'tcx> {
     pub(in crate::lower) types: IndexSet<Ty<'tcx>>,
     pub(in crate::lower) counted_in: IndexSet<(DefId, Ty<'tcx>)>,
     pub(in crate::lower) knowing_in: IndexSet<(DefId, Ty<'tcx>)>,
+    /// What generic code grows a `Vec` by, `extend`'s iterator, by its
+    /// owner, where an instance its callers give has a JS hint whose lower
+    /// bound isn't std's as it's given (`given_hint_is_stds`), so
+    /// std's growth by it can't be kept: the `Vec`'s capacity unknown once
+    /// it grows, which `capacity()` refuses (#1180's (3)). Where the type
+    /// is known, the extend is refused at compile time instead.
+    pub(in crate::lower) lost: IndexSet<(DefId, Ty<'tcx>)>,
 }
 
 /// What `all_bodies` ask the hint of, through generic code and libraries.
@@ -56,11 +63,26 @@ pub(super) fn of_crate<'tcx>(
         "size_hint",
     );
     let mut of_params: Vec<(DefId, Ty<'tcx>)> = Vec::new();
+    let mut grown: Vec<(DefId, Ty<'tcx>)> = Vec::new();
     for body in all_bodies {
         for expr in body.thir.exprs.iter() {
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
+            // A `Vec` generic code grows by an iterator of its type
+            // parameters, `extend`'s, whose hint std asks as it fills:
+            // asked of each instance its callers give, below.
+            if recognition.extend_grows(callee, args)
+                && let Some(iterable) = args.types().nth(2)
+                && rustc_middle::ty::TypeVisitableExt::has_param(&iterable)
+            {
+                let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
+                let iter_ty = crate::lower::recognition::iterator_type_of(tcx, typing_env, iterable);
+                grown.push((
+                    tcx.typeck_root_def_id(body.def_id),
+                    tcx.erase_and_anonymize_regions(iter_ty),
+                ));
+            }
             // `size_hint()` of a type of its type parameters, asked of what
             // its callers give, each instance below.
             if callee == size_hint
@@ -83,14 +105,31 @@ pub(super) fn of_crate<'tcx>(
             }
         }
     }
+    let callers =
+        (!of_params.is_empty() || !grown.is_empty()).then(|| crate::lower::instances::callers_of(tcx, all_bodies));
+    // Each `Vec` generic code grows by what one of its callers gives whose
+    // JS hint's lower bound isn't std's (#1180's (3)). Not where callers
+    // can't be seen, a library's `pub` function's, whose consumers' values
+    // grow it as before: lost, every one of its `extend`s would be, and
+    // what's then extended again by the crate's own hint would throw.
+    if let Some(callers) = &callers {
+        for (owner, iter_ty) in grown {
+            let lost = match crate::lower::instances::instances_of(tcx, callers, iter_ty, owner) {
+                Some(instances) => (instances.into_iter()).any(|instance| !recognition.given_growth_kept(instance)),
+                None => false,
+            };
+            if lost {
+                asked.hinted.lost.insert((owner, iter_ty));
+            }
+        }
+    }
     // Each instance a caller the crate sees gives, through generic callers
     // (the callers' instances' carrier, `Fact::Marked`, ADR 1115); and what
     // a generic caller makes of its own parameters on the way, `i.take(2)`
     // of `taken<I>`'s, one JS function of every instance, made knowing
     // where one of them steps an array's items, or where callers the crate
     // can't see may give one (#1240).
-    if !of_params.is_empty() {
-        let callers = crate::lower::instances::callers_of(tcx, all_bodies);
+    if let Some(callers) = callers.filter(|_| !of_params.is_empty()) {
         for (owner, of) in of_params {
             let (instances, made) = crate::lower::instances::seen_instances_of(tcx, &callers, of, owner);
             // Of every caller where the crate sees them all, or any it may

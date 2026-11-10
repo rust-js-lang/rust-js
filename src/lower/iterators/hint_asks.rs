@@ -24,6 +24,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.is_vec_like(ty) && !self.is_std_type(ty, crate::lower::recognition::StdItem::LinkedList)
     }
 
+    /// Whether std's growth of a `Vec` by `instance`, an iterator a caller
+    /// gives generic code that extends one, is kept in JS (`Hinted::lost`,
+    /// #1180's (3)): as `refuse_unkept_lower_bound` asks of a type known
+    /// where it grows, by a hint whose lower bound is std's as it's given;
+    /// or by one that reaches the crate's own, which runs as it is, a `map`
+    /// of its own exact-sized iterator's too.
+    pub(in crate::lower) fn given_growth_kept(&self, instance: Ty<'tcx>) -> bool {
+        self.given_hint_is_stds(instance) || self.hint_reaches_own(instance)
+    }
+
     /// Whether `def_id` is an `extend` std's collection asks its hint of as
     /// it fills: a `Vec`'s, a `VecDeque`'s or a `BinaryHeap`'s.
     pub(in crate::lower) fn extend_grows(
@@ -423,7 +433,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // caller's, whose callers decide (`refuse_unknown_capacity_extends`).
         let own = self.hint_reaches_own(iter_ty);
         let known_own = own && !(iterable.has_param() || iterable.has_aliases());
-        self.grown_by(collection, items, (into, item, (own, known_own)), span, out)
+        // Of generic code, by an iterator whose JS hint, of what one of its
+        // callers gives, isn't std's: its capacity unknown once it grows
+        // (`Hinted::lost`, #1180's (3)).
+        let lost = (self.krate.hinted.lost).contains(&(
+            self.tcx.typeck_root_def_id(self.frame.owner),
+            self.tcx.erase_and_anonymize_regions(iter_ty),
+        ));
+        self.grown_by(collection, items, (into, item, (own, known_own), lost), span, out)
     }
 
     /// Generic code's `extend` of `into`, a std collection, through its
@@ -453,7 +470,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Of an iterator its caller gives, which may be the crate's own.
         Ok(self
-            .grown_by(collection, items, (into, item, (true, false)), span, out)?
+            .grown_by(collection, items, (into, item, (true, false), false), span, out)?
             .1)
     }
 
@@ -471,10 +488,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `$grownBy(collection, items, size, deque, drop, own)`: of `into`'s
-    /// items' size, of `item`s' drop, as the iterator gives them, and
+    /// `$grownBy(collection, items, size, deque, drop, own, lost)`: of
+    /// `into`'s items' size, of `item`s' drop, as the iterator gives them,
     /// whether its hint may be the crate's own, `own`, which a `Vec` whose
-    /// capacity isn't known can't ask as std's does (#1180). Of items whose
+    /// capacity isn't known can't ask as std's does (#1180), and whether
+    /// its JS hint may not be std's, `lost`, its capacity then unknown
+    /// once it grows (#1180's (3)). Of items whose
     /// size no caller gives, as it is, its growth not kept; refused where
     /// its hint is the crate's own, its type known here, `known_own`, whose
     /// asking would be seen.
@@ -482,7 +501,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         collection: Expr,
         items: Expr,
-        (into, item, (own, known_own)): (Ty<'tcx>, Ty<'tcx>, (bool, bool)),
+        (into, item, (own, known_own), lost): (Ty<'tcx>, Ty<'tcx>, (bool, bool), bool),
         span: Span,
         out: &mut Vec<crate::js::Stmt>,
     ) -> R<(Expr, Expr)> {
@@ -505,13 +524,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok((collection, items));
         };
         let mut args = vec![collection.clone(), items, size];
-        if deque || drop.is_some() || own {
+        if deque || drop.is_some() || own || lost {
             args.push(Expr::bool(deque));
         }
-        if drop.is_some() || own {
+        if drop.is_some() || own || lost {
             args.push(drop.unwrap_or_else(Expr::undefined));
         }
-        if own {
+        if own || lost {
+            args.push(Expr::bool(own));
+        }
+        if lost {
             args.push(Expr::bool(true));
         }
         Ok((collection, Expr::call_helper("$grownBy", args)))
