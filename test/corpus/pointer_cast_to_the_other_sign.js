@@ -181,7 +181,7 @@ function main() {
     ),
     2,
     "bytes",
-  ).value;
+  ).value.slice();
   console.log(`[${asBytes.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

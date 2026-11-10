@@ -26,6 +26,9 @@ pub(in crate::lower) enum UninitOp {
     Write,
     /// `assume_init_mut()`: a `&mut` to what it holds.
     InitMut,
+    /// `assume_init_read()`: a copy of what it holds, as a pointer's read
+    /// is (#1265).
+    Read,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -79,6 +82,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => Expr::undefined(),
             },
             UninitOp::Zeroed => self.zero(item, span)?,
+            UninitOp::Read => self.copy_if_needed(arg(), item),
             // `Array.from({ length: n })`; of a zero, `new Array(n).fill(0)`,
             // or an object made for each.
             UninitOp::Slice { zeroed } => {
@@ -232,7 +236,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             // reference to it; not a function that's what it's
                             // given in another, `Box::new(m)`, whose `MaybeUninit`
                             // may be written through its pointer after.
-                            Some(Std::Same) => {
+                            Some(Std::Same | Std::Uninit(UninitOp::Read)) => {
                                 let gives = body.local_decls[destination.local].ty;
                                 given
                                     && !matches!(gives.kind(), ty::Ref(_, _, ty::Mutability::Mut))

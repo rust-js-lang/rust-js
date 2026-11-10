@@ -187,3 +187,25 @@ array's handle, as before. One past the array's end stays refused, as
 reading memory by where it is. Corpus case
 `pointer_to_part_of_an_array_as_an_array`, against native Rust; rustc's
 `const-generics/type-dependent/issue-70507.rs` passes again.
+
+## Amendment: a pointer's read is a copy (2026-11-11, #1265)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is preserved.
+
+The decision says a copy of what a pointer points to is a copy. `*p` was
+one, but `p.read()` wasn't: `ptr::read`, `read_unaligned`,
+`read_volatile` and `NonNull::read` gave the object in place, `p.value`.
+A later write into its place through the pointer then showed in what was
+read: `let d = p.add(1).read(); (*p.add(1))[0] = 9;` gave `d` as
+`[9, 4]` where native Rust's is `[3, 4]`. **A pointer's read is a read of
+its place, copied where `copies.rs` copies such a read
+(`copy_if_needed`), as `*p` is**: `p.value.slice()` of an array whose
+type is changed in place, `{ ...p.value }` of such a struct. The same
+applies to `MaybeUninit`'s `assume_init_read()` (ADR 0332), which was
+taken for its value itself and is now `UninitOp::Read`. It is still a
+whole read for #1258's `written_whole`. `replace` and `swap` move the
+value out of a place that no longer holds it, so neither needs a copy.
+Corpus case `pointer_read_is_a_copy.rs`, against native Rust, both builds,
+through `METAMORPHIC=all`. Mutations `pointer-read-uncopied`,
+`uninit-read-uncopied` and `uninit-read-not-a-whole-read`.

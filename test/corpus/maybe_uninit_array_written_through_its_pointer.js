@@ -69,6 +69,6 @@ function main() {
   const read = [1, -2, 3];
   const written = read;
   written[1] = 20;
-  console.log(`[${read.join(", ")}] [${read.join(", ")}]`);
+  console.log(`[${read.join(", ")}] [${read.slice().join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

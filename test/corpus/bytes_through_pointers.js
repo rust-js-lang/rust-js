@@ -37,7 +37,10 @@ function isEqualRaw(x, y, n) {
       case 2:
         return $ptrRetyped(x, 2, false).value === $ptrRetyped(y, 2, false).value;
       case 3:
-        return $eq($ptrRetyped(x, 3, "bytes").value, $ptrRetyped(y, 3, "bytes").value);
+        return $eq(
+          $ptrRetyped(x, 3, "bytes").value.slice(),
+          $ptrRetyped(y, 3, "bytes").value.slice(),
+        );
       default:
         throw new Error("internal error: entered unreachable code");
     }
@@ -65,7 +68,7 @@ function main() {
   );
   const unaligned = $ptrRetyped($ptrAdd(p, 1), 4, false).value;
   const half = $ptrRetyped($ptrAdd(p, 5), 2, false).value;
-  const three = $ptrRetyped($ptrAdd(p, 9), 3, "bytes").value;
+  const three = $ptrRetyped($ptrAdd(p, 9), 3, "bytes").value.slice();
   const signed = $ptrRetyped($ptrAdd(p, 11), 1, true).value;
   const stepped = $ptrAdd($ptrRetyped(p, 4, false), 2).value;
   console.log(

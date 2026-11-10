@@ -227,9 +227,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "assume_init" if owner.is_box() => Std::Same,
             "uninit" if self.uninit_of(owner).is_some() => Std::Uninit(UninitOp::Uninit { boxed: false }),
             "zeroed" if self.uninit_of(owner).is_some() => Std::Uninit(UninitOp::Zeroed),
-            "new" | "assume_init" | "assume_init_ref" | "assume_init_read" if self.uninit_of(owner).is_some() => {
-                Std::Same
-            }
+            "assume_init_read" if self.uninit_of(owner).is_some() => Std::Uninit(UninitOp::Read),
+            "new" | "assume_init" | "assume_init_ref" if self.uninit_of(owner).is_some() => Std::Same,
             "write" if self.uninit_of(owner).is_some() => Std::Uninit(UninitOp::Write),
             "assume_init_mut" if self.uninit_of(owner).is_some() => Std::Uninit(UninitOp::InitMut),
             "new" | "new_unchecked" | "into_inner" | "into_inner_unchecked" | "get_ref" | "static_ref"

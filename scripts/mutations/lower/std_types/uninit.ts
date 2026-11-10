@@ -107,4 +107,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_array_written_through_its_pointer.rs$"],
   },
+  {
+    name: "uninit-read-uncopied",
+    breaks: "`m.assume_init_read()` of a `MaybeUninit<[u32; 2]>` is the array in place, so a later write through its pointer shows in what was read (#1265)",
+    file: "src/lower/std_types/uninit.rs",
+    find: "            UninitOp::Read => self.copy_if_needed(arg(), item),\n",
+    replace: "            UninitOp::Read => arg(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_read_is_a_copy.rs$"],
+  },
+  {
+    name: "uninit-read-not-a-whole-read",
+    breaks: "a `MaybeUninit<[u32; 2]>` read by `assume_init_read()` isn't taken for one read whole, so it's its slots, `Array.from({ length: 2 })`, where it's its value (#1265, #1258)",
+    file: "src/lower/std_types/uninit.rs",
+    find: "                            Some(Std::Same | Std::Uninit(UninitOp::Read)) => {\n",
+    replace: "                            Some(Std::Same) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_read_is_a_copy.rs$"],
+    snapshots: true,
+  },
 ];

@@ -811,7 +811,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(match op {
             PointerOp::Null => Expr::null(),
             PointerOp::IsNull => Expr::bin(Op::Eq, arg(), Expr::null()),
-            PointerOp::Read => self.pointee_place(arg()),
+            // A read of its place, copied as `*p` is where what's there is
+            // changed in place after (#1265).
+            PointerOp::Read => self.copy_if_needed(self.pointee_place(arg()), pointee.expect("a pointer")),
             PointerOp::Write => {
                 let (pointer, value) = (arg(), arg());
                 out.push(StmtKind::Assign(self.pointee_place(pointer), value).at(self.js_span(span)));

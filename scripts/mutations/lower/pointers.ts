@@ -855,4 +855,12 @@ export const mutations: Mutation[] = [
     replace: "                Expr::bin(Op::Sub, q, p)\n",
     tests: ["test/corpus.test.ts", "-t", "^byte_offset_from_is_an_address_difference.rs$"],
   },
+  {
+    name: "pointer-read-uncopied",
+    breaks: "`p.read()` of a `[u8; 2]` is the array in place, so a later `(*p)[0] = 9` shows in what was read, `[9, 4]` where native Rust's is `[3, 4]` (#1265)",
+    file: "src/lower/pointers.rs",
+    find: '            PointerOp::Read => self.copy_if_needed(self.pointee_place(arg()), pointee.expect("a pointer")),\n',
+    replace: "            PointerOp::Read => self.pointee_place(arg()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_read_is_a_copy.rs$"],
+  },
 ];
