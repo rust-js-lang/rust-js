@@ -86,11 +86,63 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if !matches!(*sig.inputs().first()?.kind(), ty::Ref(_, of, Mutability::Mut) if of == tcx.types.self_param) {
             return None;
         }
-        let method = crate::lower::items::resolve_instance_in(tcx, self.typing_env, def_id, generic_args)
-            .ok()??
-            .def_id();
-        (tcx.impl_of_assoc(method).is_some() && self.is_std(method))
+        self.std_impl_writes(def_id, generic_args)
             .then(|| tcx.mk_args_from_iter(std::iter::once(inner.into()).chain(generic_args.iter().skip(1))))
+    }
+
+    /// Of a call of a std iterator trait's method `def_id` whose `Self`, in
+    /// `generic_args`, is a `Box<I>` of a sized `I`, which resolves to a
+    /// method std's impl writes: `I`'s own method's arguments. std's `impl
+    /// Iterator for Box<I>`, and its `DoubleEndedIterator` and
+    /// `ExactSizeIterator`, pass each method they write on to `I`'s,
+    /// `(**self).next()`, so the call is `I`'s, of the box's value, which a
+    /// `Box<I>` is in JS (#1278), as `passed_through_mut_ref` says of a
+    /// `&mut W`'s (#1309). Not a method the impl leaves its trait's default,
+    /// `by_ref()`'s or `take(n)`'s, which hold the box itself.
+    pub(in crate::lower) fn passed_through_box(
+        &self,
+        def_id: DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+    ) -> Option<ty::GenericArgsRef<'tcx>> {
+        let tcx = self.tcx;
+        let trait_id = tcx.trait_of_assoc(def_id)?;
+        let iterator_trait = is_std_def(tcx, trait_id, StdItem::Iterator)
+            || [self.double_ended_iterator(), self.exact_size_iterator()].contains(&Some(trait_id));
+        // Of `self` or `&self`, the box's value, `I`'s, a default's too,
+        // `take(n)`'s or `sum()`'s; of `&mut self`, only what std's impl
+        // writes, not `by_ref()`, which gives the `&mut` to the box. And of
+        // `self` of a `&mut Box<I>`, `(&mut boxed).take(1)`'s, a `&mut I`'s.
+        let sig = tcx
+            .fn_sig(def_id)
+            .instantiate_identity()
+            .skip_normalization()
+            .skip_binder();
+        let lends = matches!(*sig.inputs().first()?.kind(), ty::Ref(_, _, Mutability::Mut));
+        let by_value = !sig.inputs().first()?.is_ref();
+        let (inner, unboxed) = match *generic_args.types().next()?.kind() {
+            ty::Ref(region, boxed, Mutability::Mut) if by_value => {
+                let inner = boxed.boxed_ty()?;
+                (inner, Ty::new_mut_ref(tcx, region, inner))
+            }
+            _ => {
+                let inner = generic_args.types().next()?.boxed_ty()?;
+                (inner, inner)
+            }
+        };
+        (iterator_trait
+            && inner.is_sized(tcx, self.typing_env)
+            && (!lends || self.std_impl_writes(def_id, generic_args)))
+        .then(|| tcx.mk_args_from_iter(std::iter::once(unboxed.into()).chain(generic_args.iter().skip(1))))
+    }
+
+    /// Whether a call of `def_id` with `generic_args` resolves to a method a
+    /// std impl writes, not its trait's default (`passed_through_mut_ref`,
+    /// `passed_through_box`).
+    fn std_impl_writes(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
+        let method = crate::lower::items::resolve_instance_in(self.tcx, self.typing_env, def_id, generic_args);
+        method.ok().flatten().is_some_and(|instance| {
+            self.tcx.impl_of_assoc(instance.def_id()).is_some() && self.is_std(instance.def_id())
+        })
     }
 
     /// A type made of std's types alone, and no cell: no impl of the crate's

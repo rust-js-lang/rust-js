@@ -16,9 +16,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a method std's impl for a `&mut I` leaves its trait's default, `by_ref()`, which runs of the `&mut I` itself, is taken as `I`'s (#1309)",
     file: "src/lower/recognition/std_items.rs",
-    find: "        (tcx.impl_of_assoc(method).is_some() && self.is_std(method))",
-    replace: "        self.is_std(method)",
-    tests: ["test/corpus.test.ts", "-t", "^(std_method_of_a_mut_to_a_held_mut|by_ref_lends).rs$"],
+    find: "            self.tcx.impl_of_assoc(instance.def_id()).is_some() && self.is_std(instance.def_id())",
+    replace: "            self.is_std(instance.def_id())",
+    tests: ["test/corpus.test.ts", "-t", "^(std_method_of_a_mut_to_a_held_mut|by_ref_lends|boxed_iterator_stepped_as_what_it_boxes).rs$"],
   },
   {
     name: "passed-on-of-shared-self",
@@ -286,5 +286,29 @@ export const mutations: Mutation[] = [
     find: "                \"std::slice::memchr::memchr\" => Some(MemchrOp::Find { back: false }),\n",
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
+  {
+    name: "box-iterator-not-passed-through",
+    breaks: "a std iterator method of a `Box<I>` is the box's, not `I`'s: `next()` of a `Box<Map<..>>` steps the `&mut` to the box, `it.next is not a function` (#1278)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "        (iterator_trait\n            && inner.is_sized(tcx, self.typing_env)\n",
+    replace: "        (false\n            && inner.is_sized(tcx, self.typing_env)\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_stepped_as_what_it_boxes.rs$"],
+  },
+  {
+    name: "box-iterator-defaults-not-passed-through",
+    breaks: "a default of a `Box<I>`'s, `take(n)`, `map(f)` or `sum()`, is the box's, not `I`'s, though the box's value is `I`'s: `boxed.take is not a function` (#1278)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "            && (!lends || self.std_impl_writes(def_id, generic_args)))\n",
+    replace: "            && self.std_impl_writes(def_id, generic_args))\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_stepped_as_what_it_boxes.rs$"],
+  },
+  {
+    name: "box-iterator-of-a-mut-ref-not-passed-through",
+    breaks: "`(&mut boxed).take(n)` of a `Box<I>` takes the `&mut` to the box, not to `I`, which it holds (#1278)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "            ty::Ref(region, boxed, Mutability::Mut) if by_value => {\n",
+    replace: "            ty::Ref(region, boxed, Mutability::Mut) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_stepped_as_what_it_boxes.rs$"],
   },
 ];

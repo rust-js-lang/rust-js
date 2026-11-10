@@ -676,3 +676,50 @@ own); mutations `passed-on-receiver-not-read-through`
 (`lower/mir/dispatch.ts`), `passed-on-of-shared-self`,
 `passed-on-of-any-self` and `passed-on-a-default`
 (`lower/recognition/std_items.ts`).
+
+## Amended (2026-11-11, #1278): a std iterator method of a `Box<I>` is `I`'s
+
+`next()` of a `Box<I>` of a sized `I`, `let mut it =
+Box::new(v.into_iter().map(f)); it.next()`, is MIR's `<Box<I> as
+Iterator>::next(&mut it)`. Its receiver, the `&mut Box<I>`, is a place's
+handle, `{ get value() { return it; } .. }`. The lowering stepped that
+handle as the iterator and threw `it.next is not a function`, where
+native Rust runs. `size_hint()` and `next_back()` were refused, and the
+trait's defaults of a box's value, `boxed.take(2)`, threw `boxed.take
+is not a function`. Case ([0262](0262-when-rust-and-js-disagree.md)):
+results change, so Rust's behavior.
+
+A `Box<I>` is its `I` in JS. std's `impl Iterator for Box<I>`, and its
+`DoubleEndedIterator` and `ExactSizeIterator`, pass each method they write
+on to `(**self)`'s, as std's impls for a `&mut W` do (#1309 above). So a
+std iterator method whose `Self` is a `Box<I>` of a sized `I` is `I`'s
+(`passed_through_box`, recognition's, beside `passed_through_mut_ref`;
+both ask `std_impl_writes`). Of `self` and `&self` that holds of the
+trait's defaults too, `take(n)`, `map(f)`, `sum()`, as the box's value is
+`I`'s. Of `&mut self` it holds only of what std's impl writes, not
+`by_ref()`. And a method of `self` whose `Self` is a `&mut Box<I>`,
+`(&mut boxed).take(1)`'s, is the `&mut I`'s. The dispatch,
+`mir_call_values_of`, gives `I`'s method the receiver as `I`'s: a box or
+a `&Box<I>` as it is. A `&mut Box<I>` is given as what the box holds, its
+cell's `value` (read beneath a `$lent`, `read_beneath_lending`, the
+iterators' owner's), where a `&mut I` is that value, an iterator's or an
+object's: `$rangeNext(boxed.value)` of a `&mut Box<Range<i32>>`
+parameter. It isn't rewritten where a `&mut I` is a cell. A `Box<dyn
+Iterator>` is left as it was.
+
+Left as it was: `by_ref()` of a `Box<I>` lends the box's `&mut`, the cell,
+as an iterator, so `boxed.by_ref().take(2)` throws. A `&mut Box<I>` is a
+cell where a `&mut I` is the iterator itself (ADR 1086's #1222: a box's
+`&mut` is written whole as a cell), and that form is a decision of its
+own, not this one's.
+
+Corpus case `boxed_iterator_stepped_as_what_it_boxes`: a `Box<Map<..>>`'s
+`next`, the crate's own iterator's `next`, `size_hint` and `nth`, a
+range's `next_back`, `(&mut boxed).take(2)`, a generic `Box<I>`, a
+`Chars`' `last`, `take`, `map`, `for` and `sum` of a box, a `&mut Box<..>`
+parameter, and a `Box<dyn Iterator>`, against native Rust in both builds.
+The rest of the corpus is unchanged. Mutations
+`box-iterator-not-passed-through`, `box-iterator-defaults-not-passed-through`,
+`box-iterator-of-a-mut-ref-not-passed-through`
+(`lower/recognition/std_items.ts`) and `box-receiver-cell-unread`
+(`lower/mir/dispatch.ts`); `passed-on-a-default` refitted.

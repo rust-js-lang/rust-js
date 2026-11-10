@@ -86,6 +86,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (inner, std::iter::once(deref).chain(args[1..].iter().cloned()).collect())
     }
 
+    /// A method std's impl for a `Box<I>` passes on to `I`'s
+    /// (`passed_through_box`): `I`'s arguments, its receiver made `I`'s of
+    /// the box's (#1278). A `Box<I>` or a `&Box<I>` is `I`'s value; a `&mut
+    /// Box<I>` is what it points at, as its form reads it, where a `&mut I`
+    /// is that value too, an iterator's or an object's; `None` where it's a
+    /// cell, which the box's isn't, and of another call.
+    fn passed_through_box(
+        &mut self,
+        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        (values, arg_tys): (&mut [Value<'tcx>], &mut [Ty<'tcx>]),
+        span: Span,
+    ) -> R<Option<ty::GenericArgsRef<'tcx>>> {
+        let Some(args) = self.recognition().passed_through_box(def_id, generic_args) else {
+            return Ok(None);
+        };
+        let (Some(receiver), Some(receiver_ty)) = (values.first_mut(), arg_tys.first_mut()) else {
+            return Ok(None);
+        };
+        let (boxed, mutability) = match *receiver_ty.kind() {
+            ty::Ref(_, boxed, mutability) => (boxed, Some(mutability)),
+            _ => (*receiver_ty, None),
+        };
+        let Some(inner) = boxed.boxed_ty() else {
+            return Ok(None);
+        };
+        if mutability == Some(ty::Mutability::Mut) {
+            if !self.mut_ref_form(inner).read_is_itself() {
+                return Ok(None);
+            }
+            let given = std::mem::replace(receiver, Value::Expr(Expr::undefined()));
+            *receiver = match given {
+                given if self.mut_ref_form(boxed).read_is_itself() => given,
+                given => Value::Expr(crate::lower::iterators::read_beneath_lending(
+                    self.value_expr(given, span)?,
+                    Expr::held,
+                )),
+            };
+        }
+        *receiver_ty = match mutability {
+            Some(mutability) => Ty::new_ref(self.tcx, self.tcx.lifetimes.re_erased, inner, mutability),
+            None => inner,
+        };
+        Ok(Some(args))
+    }
+
     pub(super) fn mir_call(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -935,13 +980,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         state: &mut State<'_, 'tcx>,
         (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
-        (values, arg_tys, nulled): (Vec<Value<'tcx>>, &[Ty<'tcx>], &[bool]),
+        (mut values, arg_tys, nulled): (Vec<Value<'tcx>>, &[Ty<'tcx>], &[bool]),
         output: Ty<'tcx>,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
-        let arg_tys = arg_tys.to_vec();
+        let mut arg_tys = arg_tys.to_vec();
         let tcx = self.tcx;
+        // A method std's impl for a `Box<I>` passes on to `I`'s: `I`'s (#1278).
+        if let Some(args) = self.passed_through_box((def_id, generic_args), (&mut values, &mut arg_tys), span)? {
+            return self.mir_call_values_of(state, (def_id, args), (values, &arg_tys, nulled), output, span, out);
+        }
         // What's refused of a call: the crate's collection or `Borrow` where
         // std's code takes JS's (ADRs 0160, 0167).
         self.check_call_takes(def_id, generic_args, span)?;
