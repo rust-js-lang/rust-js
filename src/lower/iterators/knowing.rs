@@ -449,6 +449,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.steps_an_array(ty) {
             return Ok(self.std_iterator(value, ty));
         }
+        // An array's `$iter`, which knows its length, a hash table's
+        // `$iter(Array.from(set))` (#1200).
+        if super::fresh_iter_source(&value).is_some() {
+            return Ok(value);
+        }
         if let Some(zipped) = self.zip_knowing(&value, ty, back, span)? {
             return Ok(zipped);
         }

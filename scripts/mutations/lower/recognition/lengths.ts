@@ -148,4 +148,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n            return false;\n",
     tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of chars"],
   },
+  {
+    name: "chain-of-an-exact-adapter-trusted",
+    breaks: "in a crate that reads a capacity, a `Vec` collected of a chain whose part is an exact-sized adapter, `a.iter().skip(1).chain(rest)`, compiles, grown by JS's own `drop(n)`'s hint, none, its capacity another (#1200)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "            if self.grows_by_exact_len(ty) {\n                return false;\n            }\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of a chain of a skip"],
+  },
 ];

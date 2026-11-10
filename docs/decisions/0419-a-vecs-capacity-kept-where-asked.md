@@ -3,7 +3,7 @@
 Status: Accepted. Amends [0315](0315-vec-capacity-and-edits.md), which
 refused `capacity()`. Amended by
 [0774](0774-room-past-isize-max-bytes-panics.md): the room asked is checked
-first; and below (#849, #1180), its number std's growth's.
+first; and below (#849, #1180, #1200), its number std's growth's.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): `capacity()` is
 printed, so results change; its number is std's growth's (#1180, the
@@ -126,7 +126,7 @@ a crate that keeps none prints nothing more.
   grows a `Vec` that isn't `TrustedLen`: an array JS counts of an iterator
   std doesn't, no `ExactSizeIterator`, a string's `chars()` or
   `split(..)` (`lengths.rs`'s `lower_bound_is_stds`), as `size_hint()` of
-  them is; and a bound's `extend` of a `Vec<T>` of a type parameter's
+  them is, or a chain's part that's an exact-sized adapter (below, #1200); and a bound's `extend` of a `Vec<T>` of a type parameter's
   items, whose dictionary isn't given their size.
 
 `test/corpus/vec_capacity_grown.rs` asks each, of items of 1, 2, 8 and
@@ -179,3 +179,40 @@ The conformance table's 148 cases that read the capacity of a collect std
 may make in place throw it now, listed under #1180 till its source's is
 kept.
 
+
+## Amended (2026-11-10, #1200): an `ExactSizeIterator` collected knows its length
+
+Case C ([0262](0262-when-rust-and-js-disagree.md)): the capacity is printed,
+so std's number is kept.
+
+A `Vec` collected of a B-tree's or a hash table's iterator skipped,
+`b.iter().skip(1)`, of 40 items, had capacity 64 where std's is 39.
+`Skip<btree_set::Iter>` isn't `TrustedLen`, so std grows by its hint's
+lower bound, which is its length as an `ExactSizeIterator`'s. Its JS was
+JS's own `drop(n)` of an array's iterator, `$sortedKeys(b).values().drop(1)`,
+and neither knows a hint, so `$roomForHint` doubled from 4.
+`lower_bound_is_stds` trusted std's adapters over any source that isn't
+an array's iterator; the same held for `enumerate()`, `map(f)`, `take(n)`,
+`step_by(n)` and `rev()` after a `skip(n)`, and for `into_iter()` and a
+map's `keys()`.
+
+- **A collect of an `ExactSizeIterator` whose lower bound isn't always 0
+  is given knowing its length** (`lengths.rs`'s `grows_by_exact_len`),
+  through the owner of iterators that know their length, `as_exact_size`:
+  `$skipping($iter(items), 1)`, `$enumerate`, `$mapEnds`, `$taking`,
+  `$stepByEnds`, whose hints are std's. It isn't given that way where std's
+  compiled struct is collected, whose own hint is std's, or where the hint
+  runs the crate's own, which JS asks as it is. An array's `$iter`,
+  a hash table's `$iter(Array.from(set))`, knows its length as it is.
+- **What isn't one is refused where a part of it is an exact-sized
+  adapter**, a `chain`'s or a `zip`'s, `a.iter().skip(1).chain(rest)`. The
+  part is JS's own adapters of an array's iterator, and the whole isn't
+  given knowing its length, so its lower bound is lost. This includes a
+  `Vec`'s, which compiled with another capacity before. A chain of what
+  it steps as an array's `$iter`, `b.iter().chain(rest).skip(1)`, keeps
+  std's hint, as `$Steps`' `drop(n)` is `$skipping`'s.
+
+`test/corpus/capacity_exact_size_adapters.rs` holds each at 0 to 40 items
+against native Rust; `test/diagnostics.test.ts` holds the refusal. The
+size hint generic code prints, `(0, None)` of these, is the guide's
+difference 14 (ADR 0170), which this leaves as it is.

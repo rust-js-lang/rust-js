@@ -98,6 +98,8 @@ for (const [name, source, message, crate] of [
   // a type parameter's, which its dictionary isn't given.
   ["a Vec collected of chars where a capacity is read", "pub fn f(s: &str) -> usize {\n    let v: Vec<char> = s.chars().collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
   ["a Vec collected of a split where a capacity is read", "pub fn f(s: &str) -> usize {\n    let v: Vec<&str> = s.split(',').collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
+  // A chain's exact-sized part made of JS's own adapters, which know no hint (#1200).
+  ["a Vec collected of a chain of a skip where a capacity is read", "pub fn f(a: &[u32]) -> usize {\n    let v: Vec<&u32> = a.iter().skip(1).chain(a.iter().filter(|x| **x > 9)).collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
   ["a bound's extend of a Vec of a type parameter's items where a capacity is read", "fn fill<C: Extend<T>, T>(c: &mut C, x: T) {\n    c.extend(Some(x));\n}\npub fn f<T>(x: T) -> usize {\n    let mut v = Vec::new();\n    fill(&mut v, x);\n    v.capacity()\n}", "whose items' size std grows it by, a type parameter's"],
   // #832: what may look like `None` is `may_look_like_none`'s: a `Weak`,
   // `Weak::new()`'s `null`, a `Pin` of a `()` and a `MaybeUninit` too.

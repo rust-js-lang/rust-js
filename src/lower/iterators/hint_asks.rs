@@ -178,6 +178,11 @@ pub(in crate::lower) struct Grown<'tcx> {
     /// Whether it has no end its type knows, or none once it gives an
     /// item, a `cycle()`'s: a `capacity overflow` panic (ADR 0940).
     endless: bool,
+    /// Whether it's given knowing its length, `as_exact_size`'s, whose
+    /// hint is then std's: of a crate that keeps capacities, an
+    /// `ExactSizeIterator` std grows by its lower bound, which JS's own
+    /// adapters, `drop(n)`'s, know nothing of (#1200).
+    exact: bool,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -241,7 +246,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !trusted
             && item.is_some_and(|item| item.has_param() || sized(item))
             && self.collects_in_place(Some(iter_ty), item) == Some(false);
-        if kept {
+        // Of an `ExactSizeIterator`, it's given knowing its length, whose
+        // hint then is std's (#1200); not one whose hint runs the crate's
+        // own, which it asks as it is.
+        let exact = kept && !self.hint_reaches_own(iter_ty) && self.recognition().grows_by_exact_len(iter_ty);
+        if kept && !exact {
             self.refuse_unkept_lower_bound(iter_ty, span)?;
         }
         Ok(item
@@ -258,6 +267,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 item,
                 trusted,
                 endless: endless || endless_once,
+                exact,
             }))
     }
 
@@ -280,7 +290,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             item,
             trusted,
             endless,
+            exact,
         } = grown;
+        // Not std's compiled struct, whose own hint, its struct's, is std's.
+        let it = match exact && !self.compiled_struct(iter_ty, &it) {
+            true => self.as_exact_size(it, iter_ty, false, span)?,
+            false => it,
+        };
         let size = self.grown_item_size(output, iter_ty, item, span)?;
         let mut given = vec![it, size, callers_trusted.unwrap_or_else(|| Expr::bool(trusted))];
         let drop = match !trusted && self.drops(item) != crate::lower::drops::Drops::Nothing {

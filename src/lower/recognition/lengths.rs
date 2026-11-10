@@ -158,6 +158,20 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// Whether a `Vec` std grows of an iterator of type `ty` that isn't
+    /// `TrustedLen` is given it knowing its length (`as_exact_size`), so
+    /// JS's hint is std's: an `ExactSizeIterator`'s, whose lower bound is
+    /// its length, of no array JS counts and no adapter's of JS's own,
+    /// `drop(n)`'s, which know none (#1200). Not one whose lower bound is
+    /// always 0, which JS's adapters' is too.
+    pub(in crate::lower) fn grows_by_exact_len(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        self.lower_bound_kept(ty) != Some(false)
+            && self
+                .exact_size_iterator()
+                .is_some_and(|exact| self.implements_trait(ty, exact))
+    }
+
     /// Whether JS's hint of an iterator of type `ty` has std's lower bound,
     /// by which std grows a `Vec` it collects or extends where it isn't
     /// `TrustedLen` (#1180): always where std's is always 0
@@ -171,6 +185,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return true;
         }
         if let Some(held) = crate::lower::recognition::adapted_iterators(self.tcx, self.typing_env, ty) {
+            // An `ExactSizeIterator` adapter held by what isn't one, a
+            // `chain`'s part, `a.iter().skip(1)`: JS's own adapters of an
+            // array's iterator, `a.values().drop(1)`, which know no hint, so
+            // its lower bound, its length, is lost. One that's collected is
+            // given knowing its length (`grows_by_exact_len`) and never asked
+            // here (#1200).
+            if self.grows_by_exact_len(ty) {
+                return false;
+            }
             return held.into_iter().all(|held| self.lower_bound_is_stds(held));
         }
         // A string's `chars()` or `char_indices()`, lazy (#1186): JS's own

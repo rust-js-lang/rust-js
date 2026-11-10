@@ -973,4 +973,12 @@ export const mutations: Mutation[] = [
     replace: "                    && self.adapted_hint_known(held)\n",
     tests: ["test/corpus.test.ts", "-t", "^decode_utf16_steps_as_asked.rs$"],
   },
+  {
+    name: "exact-size-iter-of-an-array-uncounted",
+    breaks: "an array's `$iter`, a hash set's `$iter(Array.from(set))`, given where its length is asked, isn't taken as knowing it, so a capacity-reading crate's `h.iter().skip(1).collect()` is refused (#1200)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if super::fresh_iter_source(&value).is_some() {\n            return Ok(value);\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_exact_size_adapters.rs$"],
+  },
 ];
