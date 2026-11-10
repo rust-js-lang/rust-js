@@ -82,7 +82,8 @@ src/lower/representation/options.rs	3
 src/lower/serde.rs	1
 src/lower/shortcuts.rs	2
 src/lower/signatures.rs	2
-src/lower/std_impls.rs	8
+src/lower/std_impls.rs	6
+src/lower/std_impls/clones.rs	2
 src/lower/std_impls/defaults.rs	3
 src/lower/std_impls/in_turn.rs	1
 src/lower/std_impls/not_equal.rs	6

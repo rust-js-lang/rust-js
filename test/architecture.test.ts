@@ -446,8 +446,8 @@ const owners: Record<string, string[]> = {
   "self.walks.representable": ["src/lower/support.rs"],
   "self.walks.assumed": ["src/lower/support.rs"],
   "self.walks.mutated": ["src/lower/copies.rs"],
-  "self.walks.clones": ["src/lower/std_impls.rs"],
-  "self.walks.clone_assumed": ["src/lower/std_impls.rs"],
+  "self.walks.clones": ["src/lower/std_impls/clones.rs"],
+  "self.walks.clone_assumed": ["src/lower/std_impls/clones.rs"],
   "self.codecs": ["src/lower/serde.rs"],
   // A function's scope struct's methods, functions declared in it (ADR
   // 1043): their names, which calls of them call, and while one is
@@ -592,7 +592,7 @@ const idioms: [string, RegExp, string[]][] = [
   // pass of tidy's over them is the type's module's (the second review).
   ["a map's entry", /"\$orInsert"|"\$mutGet"/, ["src/lower/std_types/map.rs", "src/lower/mir/entries.rs", "src/lower/mut_refs.rs"]],
   ["a range made as stepped", /"\$lazyRange"/, ["src/lower/std_types/range.rs"]],
-  ["a cell's borrow", /"\$borrow(Mut)?"|"\$unborrow"/, ["src/lower/std_types/cell.rs", "src/lower/std_impls.rs", "src/lower/drops/parts.rs"]],
+  ["a cell's borrow", /"\$borrow(Mut)?"|"\$unborrow"/, ["src/lower/std_types/cell.rs", "src/lower/std_impls.rs", "src/lower/std_impls/clones.rs", "src/lower/drops/parts.rs"]],
   // A variant without fields as a body writes it, a numbered enum's by its
   // module's `const` (ADR 0722, amended), is `FnCx::unit_variant`'s: its
   // value, `bindings::unit_variant`, asked there alone, as a body's would

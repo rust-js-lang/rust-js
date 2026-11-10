@@ -39,10 +39,10 @@ test("the compiler's maps and sets are walked in an order the program decides", 
 // its one maker. Any other caller could hand it entries out of order.
 test("only a B-tree's clone makes one of sorted entries, `ofSorted`", () => {
   const makers = sources.filter((file) => /"ofSorted"/.test(read(file)));
-  expect(makers).toEqual(["src/lower/std_impls.rs"]);
-  const arm = read("src/lower/std_impls.rs").match(/\/\/\/ `clone_value` of a `ty` that needs a copy, part by part\.\n    fn clone_parts[\s\S]*?\n    }\n/)?.[0] ?? "";
+  expect(makers).toEqual(["src/lower/std_impls/clones.rs"]);
+  const arm = read("src/lower/std_impls/clones.rs").match(/\/\/\/ `clone_value` of a `ty` that needs a copy, part by part\.\n    fn clone_parts[\s\S]*?\n    }\n/)?.[0] ?? "";
   expect(arm.match(/"ofSorted"/g)?.length).toBe(1);
-  expect(read("src/lower/std_impls.rs").match(/"ofSorted"/g)?.length).toBe(1);
+  expect(read("src/lower/std_impls/clones.rs").match(/"ofSorted"/g)?.length).toBe(1);
   // The runtime defines it and never calls it.
   const runtime = files("src/runtime").filter((path) => path.endsWith(".js"));
   expect(runtime.filter((file) => /\.ofSorted\(/.test(read(file)))).toEqual([]);
