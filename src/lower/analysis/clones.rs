@@ -122,11 +122,11 @@ fn given_out_clone<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Vec<T
         {
             continue;
         }
+        // Its lifetimes erased, not left bound: what `impl .. + '_` hides
+        // holds the function's own, `Chars<'_>`, which no question of its
+        // `Clone` may hold unbound (#1201).
         let output = tcx
-            .fn_sig(id)
-            .instantiate_identity()
-            .skip_normalization()
-            .skip_binder()
+            .instantiate_bound_regions_with_erased(tcx.fn_sig(id).instantiate_identity().skip_normalization())
             .output();
         for part in output.walk().filter_map(|part| part.as_type()) {
             if let ty::Alias(_, alias) = *part.kind()

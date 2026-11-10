@@ -103,3 +103,17 @@ shared the cell a clone of the box copies (`1 2` where native prints `1
 capture owns, not through what it shares, an `Rc`'s, an `Arc`'s, a
 `Weak`'s or a reference's, whose clone shares the cell as the closure
 itself would. Corpus case `closure_clone_owned_cell`.
+
+## Amendment: a library's `impl Trait + Clone + '_`, its lifetimes erased (#1201)
+
+A library's public function's `impl Trait + Clone` is revealed so that a
+consumer may clone what it hides (`given_out_clone`). The function's
+output was read with its lifetimes left bound, and what an
+`impl Iterator + Clone + '_` hides holds the function's own lifetime,
+`Chars<'_>` or `Split<'_, char>`. Asking whether that type is `Clone`
+crashed rustc's trait selection on its escaping bound variable. The
+output is read with its lifetimes erased, as every other clone question
+is. This is a crash, not a choice between Rust's and JS's behavior, so
+ADR 0262's table doesn't apply. Held by the crate pair
+`library_opaque_clone_of_a_borrow` and the mutation
+`given-out-clone-bound-regions`.
