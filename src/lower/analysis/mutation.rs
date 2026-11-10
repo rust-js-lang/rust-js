@@ -407,12 +407,13 @@ fn given_params<'a, 'tcx>(
         }
     }
     let mut passed = Vec::new();
-    for body in all_bodies {
-        let caller = tcx.typeck_root_def_id(body.def_id);
-        for (callee, args, _) in crate::lower::instances::given_calls_of(tcx, body) {
-            if !is_item(callee) {
-                continue;
-            }
+    // Each call's, as the callers' instances are carried (ADR 1115).
+    let callers = crate::lower::instances::callers_of(tcx, all_bodies);
+    for (&callee, calls) in &callers {
+        if !is_item(callee) {
+            continue;
+        }
+        for &(caller, args) in calls {
             for index in bounded(callee) {
                 let Some(given_ty) = args.get(index as usize).and_then(|arg| arg.as_type()) else {
                     continue;

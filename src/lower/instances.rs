@@ -1140,11 +1140,16 @@ fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Bo
 /// it: by what, its body's owner, and its generic arguments there.
 pub(super) type Callers<'tcx> = IndexMap<DefId, Vec<(DefId, ty::GenericArgsRef<'tcx>)>>;
 
+/// The callers' instances' one carrier (ADR 1115): each naming of each
+/// function `all_bodies` call or name as a value that's given its type
+/// parameters' values, `given_calls_of`'s, not one of rest arguments JS
+/// alone reads, which gives it nothing. Every analysis of what callers give
+/// generic code reads it, `instances_of` and `given_params` alike.
 pub(super) fn callers_of<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Callers<'tcx> {
     let mut callers: Callers<'tcx> = IndexMap::default();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
-        for (callee, args, _) in calls_of(body) {
+        for (callee, args, _) in given_calls_of(tcx, body) {
             callers.entry(callee).or_default().push((caller, args));
         }
     }
