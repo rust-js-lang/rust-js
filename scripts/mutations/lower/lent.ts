@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "lent-lifetime-of-the-callers-types",
+    breaks:
+      "what a call lends from its receiver is read of its signature as the caller's types make it, every lifetime erased alike, so `it.by_ref().skip_while(|x| { calls += 1; .. })`, whose `Self` is a `&mut` and whose closure captures one, looks as if it lent `u32` from inside the iterator, refused in a crate that asks an address (#1199)",
+    file: "src/lower/lent.rs",
+    find: "        let sig = declared.skip_binder();\n",
+    replace: "        let sig = tcx.fn_sig(def_id).instantiate(tcx, args).skip_normalization().skip_binder();\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_of_a_borrowed_iterator_where_addresses_are_asked.rs$"],
+  },
+  {
     name: "lent-cell-unrecorded",
     breaks: "a `{ value }` cell std lends from isn't recorded where it's given, so what a `RefCell`, a `Mutex` or an `RwLock` lends is an allocation of its own, `4096` where wasm32 gives `4` (#1114)",
     file: "src/lower/lent.rs",

@@ -1022,3 +1022,29 @@ struct and an array of them, a byte view over wider items, a count of
 zero; and the signed array written a byte at a time. Also by the
 mutations `write-bytes-of-items-not-bytes`, `ptr-fill-of-none` and
 `array-byte-set-unsigned`, each caught.
+
+## Amendment: what a call lends is read of its declared signature (2026-11-10, #1199)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, a refusal lifted;
+what's lent and what's refused is otherwise as #1114 said. Whether a std
+call lends from inside its receiver, and what (`lent_from_receiver`), was
+read of its signature as the caller's types make it, every lifetime
+erased alike, so a lifetime the caller's types bring looked like the
+receiver's own: `it.by_ref().skip_while(|&x| { calls += 1; x < 2 })`,
+whose `Self` is a `&mut IntoIter<u32>` and whose closure captures a `&mut
+u32`, looked as if it lent a `u32` from inside the iterator, and was
+refused in any crate that asks an address anywhere, as the neighbour
+shuffle found beside `address_of_a_nested_field.rs`. It's read now of the
+signature std declares, where `skip_while` takes `self` and lends
+nothing, `OnceCell::get(&self) -> Option<&T>` lends its `T`; then the
+caller's types are put in, their lifetimes erased. So are the raw
+pointers it lends, the declared ones, `Cell::as_ptr`'s: a raw pointer
+the caller's type puts in what's returned, a `Cell<*const P>`'s `get()`,
+is a copy out, lending nothing of the cell's.
+
+- **Tested** by the corpus case
+  `adapter_of_a_borrowed_iterator_where_addresses_are_asked.rs`, a
+  `skip_while` and a `take_while` of `by_ref()` with closures that borrow,
+  collected, folded and unwinding, beside addresses asked, in both builds
+  against native Rust; `address_lent_by_a_once_cell_refused.rs` is still
+  refused; mutation `lent-lifetime-of-the-callers-types`.

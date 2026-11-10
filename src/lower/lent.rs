@@ -236,7 +236,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Option::as_ref`, `OnceCell::get`: the receiver's type, and what it
     /// lends, each type a reference of that lifetime, or a raw pointer, in
     /// the output refers to; a guard's, `Ref<'_, T>`, its `T`. `None` of
-    /// another, `Cell::set`.
+    /// another, `Cell::set`. Its lifetime and its raw pointers are the
+    /// function's own, as its signature declares them, not ones of what its
+    /// caller gives: a `skip_while` given a `&mut` iterator, `Self` a
+    /// reference, lends nothing, though its closure's captures are
+    /// references too, whose lifetimes, erased, look the same as the
+    /// receiver's (#1199); a `Cell<*const T>`'s `get()` copies a pointer
+    /// out, lending nothing of the cell's.
     pub(in crate::lower) fn lent_from_receiver(
         &self,
         (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
@@ -245,13 +251,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !matches!(tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn) {
             return None;
         }
-        let sig = tcx
-            .fn_sig(def_id)
-            .instantiate(tcx, args)
-            .skip_normalization()
-            .skip_binder();
+        let declared = tcx.fn_sig(def_id).instantiate_identity().skip_normalization();
+        let sig = declared.skip_binder();
         let &ty::Ref(region, receiver, _) = sig.inputs().first()?.kind() else {
             return None;
+        };
+        // A type of the signature as the caller's `args` make it, its own
+        // lifetimes erased.
+        let given = |ty: Ty<'tcx>| {
+            let ty = ty::EarlyBinder::bind(tcx, ty)
+                .instantiate(tcx, args)
+                .skip_normalization();
+            tcx.instantiate_bound_regions_with_erased(ty::Binder::bind_with_vars(ty, declared.bound_vars()))
         };
         let mut lent = Vec::new();
         let mut holds = false;
@@ -261,16 +272,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let Some(ty) = part.as_type() else { continue };
             if let Some((pointee, _)) = raw_pointee(tcx, ty) {
-                lent.push(pointee);
+                lent.push(given(pointee));
                 continue;
             }
             match *ty.kind() {
-                ty::Ref(r, pointee, _) if r == region => lent.push(pointee),
-                ty::Adt(_, args) if args.regions().any(|r| r == region) => lent.extend(args.types()),
+                ty::Ref(r, pointee, _) if r == region => lent.push(given(pointee)),
+                ty::Adt(_, args) if args.regions().any(|r| r == region) => lent.extend(args.types().map(given)),
                 _ => {}
             }
         }
-        (holds || !lent.is_empty()).then_some((receiver, lent))
+        (holds || !lent.is_empty()).then_some((given(receiver), lent))
     }
 
     /// Whether `local` of `body` is a reference std's call lent from a
