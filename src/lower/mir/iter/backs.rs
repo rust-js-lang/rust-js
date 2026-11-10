@@ -375,6 +375,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // source made knowing them and closed to drop what it holds, as a
             // map's is, given its items' drop, as `as_exact_size` makes one in
             // place. Not one through a `&mut`, its owner's.
+            // One generic code asks the hint of, given it (#1236): `$taking`
+            // or `$skipping` of its source, each std's hint of its source's,
+            // which JS's own `.take(n)` and `.drop(n)` know none of; given
+            // its items' drop, as above.
+            Some(IterMethod::Skip | IterMethod::Take) if self.made_knowing_its_hint(output) && !held.is_ref() => {
+                let n = values.next().expect("how many");
+                let mut given = vec![receiver.clone(), n];
+                if let Some(item) = self.iterator_item(output) {
+                    given.extend(self.std_drop_function(item, span)?);
+                }
+                let skip = method == Some(IterMethod::Skip);
+                Expr::call_helper(if skip { "$skipping" } else { "$taking" }, given)
+            }
             Some(IterMethod::Skip | IterMethod::Take) if self.made_stepped_from_its_back() && !held.is_ref() => {
                 let skip = method == Some(IterMethod::Skip);
                 let it = self.as_exact_size(receiver.clone(), iter_ty, true, span)?;

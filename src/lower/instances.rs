@@ -1149,6 +1149,9 @@ pub(in crate::lower) enum Fact<'f, 'a, 'tcx> {
     /// #1114, #1119): no caller compiles its own for these, so a `pub`
     /// function's are any a consumer or JS may give (#1234).
     Shared,
+    /// What a caller makes knowing, its hint (#1236): each caller the crate
+    /// sees marks what it gives, whatever others do, which nothing marks.
+    Marked,
 }
 
 /// Whether every caller of `owner`, a function or a trait, that may give
@@ -1169,6 +1172,7 @@ pub(in crate::lower) fn seen_whole(tcx: TyCtxt<'_>, owner: DefId, fact: Fact<'_,
                 && tcx.trait_impl_of_assoc(id).is_none()
         }
         Fact::Shared => !tcx.visibility(owner).is_public(),
+        Fact::Marked => true,
     }
 }
 
@@ -1277,7 +1281,7 @@ pub(super) fn callers_of<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) ->
 /// holds a type parameter, not one, is given what's resolved no further.
 fn given_types<'tcx>(
     tcx: TyCtxt<'tcx>,
-    callers: &Callers<'tcx>,
+    (callers, fact): (&Callers<'tcx>, Fact<'_, '_, 'tcx>),
     (owner, index): (DefId, u32),
     seen: &mut IndexSet<(DefId, u32)>,
 ) -> Option<IndexSet<Ty<'tcx>>> {
@@ -1286,7 +1290,7 @@ fn given_types<'tcx>(
     if !seen.insert((owner, index)) {
         return Some(IndexSet::default());
     }
-    if !seen_whole(tcx, owner, Fact::Shared) {
+    if !seen_whole(tcx, owner, fact) {
         return None;
     }
     // Of a trait's method, or an impl's of one, each naming of the trait's
@@ -1294,7 +1298,7 @@ fn given_types<'tcx>(
     let mut namings = vec![(owner, index)];
     if let Some(declared) = tcx.trait_item_of(owner).or(tcx.trait_of_assoc(owner).map(|_| owner)) {
         let own = index.checked_sub(tcx.generics_of(owner).parent_count as u32)?;
-        if !seen_whole(tcx, tcx.parent(declared), Fact::Shared) {
+        if !seen_whole(tcx, tcx.parent(declared), fact) {
             return None;
         }
         if declared != owner {
@@ -1306,7 +1310,7 @@ fn given_types<'tcx>(
         for &(caller, args, _) in callers.get(&named).into_iter().flatten() {
             let arg = tcx.erase_and_anonymize_regions(args.get(at as usize)?.as_type()?);
             match *arg.kind() {
-                ty::Param(param) => given.extend(given_types(tcx, callers, (caller, param.index), seen)?),
+                ty::Param(param) => given.extend(given_types(tcx, (callers, fact), (caller, param.index), seen)?),
                 _ if arg.has_non_region_param() => return None,
                 _ => _ = given.insert(arg),
             }
@@ -1329,6 +1333,27 @@ pub(super) fn instances_of<'tcx>(
     pointee: Ty<'tcx>,
     owner: DefId,
 ) -> Option<IndexSet<Ty<'tcx>>> {
+    instances_where(tcx, (callers, Fact::Shared), pointee, owner)
+}
+
+/// What each caller the crate sees gives `pointee`, a type of `owner`'s
+/// type parameters, whatever callers it doesn't see give: what they mark
+/// knowing their hint (`Fact::Marked`, #1236).
+pub(super) fn seen_instances_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    callers: &Callers<'tcx>,
+    pointee: Ty<'tcx>,
+    owner: DefId,
+) -> IndexSet<Ty<'tcx>> {
+    instances_where(tcx, (callers, Fact::Marked), pointee, owner).unwrap_or_default()
+}
+
+fn instances_where<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (callers, fact): (&Callers<'tcx>, Fact<'_, '_, 'tcx>),
+    pointee: Ty<'tcx>,
+    owner: DefId,
+) -> Option<IndexSet<Ty<'tcx>>> {
     let mut params: Vec<u32> = (pointee.walk())
         .filter_map(|part| match *part.as_type()?.kind() {
             ty::Param(param) => Some(param.index),
@@ -1340,7 +1365,7 @@ pub(super) fn instances_of<'tcx>(
     // Each choice of a type for each parameter, by its index.
     let mut choices: Vec<IndexMap<u32, Ty<'tcx>>> = vec![IndexMap::default()];
     for index in params {
-        let given = given_types(tcx, callers, (owner, index), &mut IndexSet::default())?;
+        let given = given_types(tcx, (callers, fact), (owner, index), &mut IndexSet::default())?;
         choices = (choices.into_iter())
             .flat_map(|chosen| {
                 given.iter().map(move |&ty| {

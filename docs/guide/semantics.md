@@ -1619,10 +1619,10 @@ React and JSX are [their own pages](README.md#react).
     ([0989](../decisions/0989-a-rev-hints-what-its-source-hints.md)), a
     zip's of its sides', as std's `Zip` combines them
     ([0899](../decisions/0899-a-flatten-held-is-stds.md), amended), a
-    `take(n)`'s or a `filter(f)`'s generic code makes of either, std's of
-    its source's ([0170](../decisions/0170-size-hint.md), amended), or
-    `(0, None)`: of a std adapter its caller makes, `filter`'s or `take`'s,
-    given generic code that asks its hint (#1236). An endless `n..`'s is
+    `take(n)`'s or a `filter(f)`'s generic code makes of either, and a std
+    adapter its caller makes, which is made knowing its hint where generic
+    code asks it, std's ([0170](../decisions/0170-size-hint.md), amended),
+    or `(0, None)`: of a JS iterator JS gives it. An endless `n..`'s is
     Rust's, `(usize::MAX, None)`.
 15. Recursion deeper than about 10,000 calls overflows the JS engine's
     stack, where Rust's 8 MB wouldn't: Rust's abort, exit 134 (#1193).

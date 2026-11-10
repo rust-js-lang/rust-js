@@ -24,6 +24,7 @@
 //! | a `Some` of it, boxed or not, by its value, `$some(x)`'s (ADR 0051) | Given | `src/lower/representation/options.rs boxed_payload` |
 //! | an iterator or a function given as it is, not boxed (#992) | Form | `src/lower/iterators.rs given_as_it_is` |
 //! | an iterator given where generic code steps a JS iterator, adapted at every route to it, a call, a `fn` pointer, a function value (ADR 0061) | Form | `src/lower/iterators/stepping.rs given_iterators` |
+//! | whether generic code asks the hint of what it's given, each caller's instance made knowing it (ADR 0170, amended) | Instances | `src/lower/analysis/hint_asked.rs mark_hint_knowing` |
 //! | whether an `Rc` of it is counted (#1009) | Instances | `src/lower/analysis/rc_counts.rs counted_rcs` |
 //! | whether a clone of it is a copy apart (#1119) | Instances | `src/lower/analysis/clones.rs instances_of` |
 //! | where an object of it is stored (#1114) | Instances | `src/lower/analysis/stored_places.rs instances` |

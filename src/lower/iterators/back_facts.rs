@@ -110,6 +110,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (text.is_str_chars(ty) || text.is_char_indices(ty)).then(|| self.chars_asked_whole(ty))
     }
 
+    /// Whether a `take(n)`, a `skip(n)` or a `step_by(n)` of type `ty` is
+    /// one generic code asks the hint of, made `$taking`, `$skipping` or
+    /// `$stepBy` where it's made, as `hint_asked.rs` says (#1236).
+    pub(in crate::lower) fn made_knowing_its_hint(&self, ty: ty::Ty<'tcx>) -> bool {
+        let ty = self.tcx.erase_and_anonymize_regions(ty.peel_refs());
+        self.krate.hinted.contains(&ty)
+    }
+
     pub(in crate::lower) fn made_stepped_from_its_back(&self) -> bool {
         self.made_into
             .and_then(|(local, _)| self.local_stepped_from_its_back(local))

@@ -106,7 +106,30 @@ before, is std's too. Found by the audit of #1170's migration 5. Held by
 `take_and_filter_of_a_type_parameter_hint_as_std.rs` and the mutation
 `in-place-adapter-hint-unasked`.
 
-Still `(0, None)`: a std adapter a caller makes as JS's own helper and
-gives generic code that asks its hint, `hint(v.into_iter().filter(..))`,
-as the caller doesn't know its callee asks it; the guide's difference 14,
-#1236's part (a).
+## Amendment: what generic code asks the hint of is made knowing it (#1236)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, now
+Rust's; the user's decision, A1, over a refusal. A std adapter a caller
+makes and gives generic code that asks its hint, `hint(v.iter().filter(p))`
+of `fn hint<I: Iterator>(i: I) { i.size_hint() }`, was JS's own,
+`values().filter(p)`, which knows no hint: `(0, None)` where std's is
+`(0, Some(4))`. The caller didn't know its callee asks it. Now a body's
+`size_hint()` of a type of its type parameters asks it of each instance
+its callers give (`hint_asked.rs`, the callers' instances' carrier's
+`seen_instances_of`, `Fact::Marked`: each caller seen marks what it
+gives), and a library's generic function's iterators, whose body the
+crate can't see, are asked so too. Of what steps an array's items, whose
+JS, `values()` and its own adapters, knows none, each is made in
+rust-js's form, which knows std's hint as its back: a map's or a filter's
+`$mapEnds` or `$filterEnds` of `$iter(v)` (the back's own makers, `typed`),
+a `take(n)`'s, a `skip(n)`'s or a `step_by(n)`'s `$taking`, `$skipping`
+or `$stepBy` (`hinted`). A range's, the crate's own iterator's and std's
+compiled ones are `$Steps` already, whose own adapters know it. The fact
+is the "made knowing" machinery's beside the back's, and #1180's capacity
+questions can ask it too. Held by
+`std_adapter_given_to_generic_code_that_asks_its_hint.rs`, the crate pair
+`library_hint_asked_of_what_its_given`, and the mutations
+`hint-asked-unmarked` and `library-callee-hint-unmarked`.
+
+Still `(0, None)`: an iterator JS gives, a JS iterator's, which knows no
+hint, the guide's difference 14.

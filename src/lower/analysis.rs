@@ -2,6 +2,8 @@
 
 pub(super) mod arguments;
 mod back_stepped;
+
+mod hint_asked;
 use crate::collections::{IndexMap, IndexSet};
 pub(in crate::lower) use back_stepped::{BackStepped, SteppedLocal, field_of, made_by};
 mod callers_decide;
@@ -522,6 +524,10 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// The map and filter types the crate steps from their back, each made
     /// knowing its back (ADR 0545).
     pub back_stepped: BackStepped<'tcx>,
+    /// The `take(n)`s, `skip(n)`s and `step_by(n)`s whose hint generic
+    /// code asks of what its callers give, each made `$taking`, `$skipping`
+    /// or `$stepBy` where it's made (`hint_asked.rs`, #1236).
+    pub hinted: IndexSet<Ty<'tcx>>,
     /// Whether the crate asks a string's `Chars` its rest, its `Debug`, or
     /// makes a `dyn` of one, so each is `$chars(s)`, not JS's own string
     /// iterator (#1186).
@@ -1072,7 +1078,11 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // What it steps from its back (ADR 0545, #814, #851), and of an array's
     // items with a destructor, which its native forms don't step.
     let drop_runs = |item| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, item);
-    let back_stepped = back_stepped::of_crate(tcx, recognition, all_bodies, (library, drop_runs), &cloned);
+    let mut back_stepped = back_stepped::of_crate(tcx, recognition, all_bodies, (library, drop_runs), &cloned);
+    // What generic code asks the hint of, made knowing it where it's made,
+    // by the makers of what's stepped from its back (#1236).
+    let hint_asked = hint_asked::of_crate(tcx, recognition, all_bodies);
+    back_stepped.typed.extend(hint_asked.knowing);
     let chars_whole = chars_asked::asks_chars_whole(tcx, recognition, all_bodies, library);
     // What generic code compares by `eq` of two `TrustedLen` iterators
     // given it, which it can't count: refused where comparing runs code
@@ -1420,6 +1430,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         cloned,
         explicit_adapters,
         back_stepped,
+        hinted: hint_asked.hinted,
         chars_whole,
         changed_vecs,
         stored_places,

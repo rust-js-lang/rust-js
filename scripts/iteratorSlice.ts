@@ -60,6 +60,7 @@ export const iteratorPaths = [
   "src/lower/recognition/zip_folds.rs",
   "src/lower/analysis/iterator_steps.rs",
   "src/lower/analysis/back_stepped.rs",
+  "src/lower/analysis/hint_asked.rs",
   "src/lower/body_queries.rs",
   "src/runtime.rs",
   "src/runtime/**",

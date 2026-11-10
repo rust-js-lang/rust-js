@@ -486,6 +486,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // its source's fold, which drops the accumulator first
                     // (#773).
                     || self.steps_may_panic(receiver_ty.peel_refs())
+                    // And of one generic code asks the hint of, given it,
+                    // whose hint `$stepBy` knows as std's (#1236).
+                    || self.made_knowing_its_hint(output)
                 {
                     let mut list = vec![items, n];
                     list.extend(self.item_drop_of(receiver_ty, span)?);
