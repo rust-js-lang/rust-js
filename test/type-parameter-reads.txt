@@ -56,7 +56,7 @@ src/lower/mir/iter/backs.rs	3
 src/lower/mir/iter/closing.rs	6
 src/lower/mir/iter/collect.rs	3
 src/lower/mir/iter/sources.rs	4
-src/lower/mir/patterns.rs	1
+src/lower/mir/patterns/null_nones.rs	1
 src/lower/mir/std_calls.rs	1
 src/lower/mir/writer.rs	1
 src/lower/mut_refs.rs	10
