@@ -456,4 +456,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^splice_of_array_items.rs$"],
     snapshots: true,
   },
+  {
+    name: "mapped-guard-type-uncounted",
+    breaks: "a guard type a map gives is uncounted where no cell of what it guards is, so its drop releases nothing (#1275)",
+    file: "src/lower/drops/types.rs",
+    find: "        if ref_cells.maps_to(tcx, ty) {\n            return false;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^ref_cell_guards_mapped.rs$"],
+  },
 ];

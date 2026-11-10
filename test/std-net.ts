@@ -301,10 +301,6 @@ export const refused: Record<string, [said: string, issue: number]> = {
   // `&mut`-giving accessors and in-place adapters of items with a
   // destructor, one checkbox each on #1274.
   // A cell's borrow mapped.
-  "ref map | ok": ["calling `std::cell::Ref::<'b, T>::map`", 1275],
-  "ref map | panics": ["calling `std::cell::Ref::<'b, T>::map`", 1275],
-  "refmut map | ok": ["calling `std::cell::RefMut::<'b, T>::map`", 1275],
-  "refmut map | panics": ["calling `std::cell::RefMut::<'b, T>::map`", 1275],
 };
 
 /** Why `m` is left out, or nothing where a template covers it. */

@@ -439,6 +439,14 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   meets none of it: `println!("{} {:?}", held(&log, 2), log.borrow())`,
   whose `held` returns before the `Ref` is made, counts nothing
   ([0328](../decisions/0328-refcell-borrow-counts.md#amendment-what-ran-before-a-guard-was-made-cant-meet-it-2026-11-04-552)).
+  A guard mapped to a part of what it guards, `Ref::map`, `RefMut::map`,
+  `filter_map` or `map_split`, is a guard of that part, which releases the
+  cell it was made of as it drops, a split's as the second half does:
+  `$guardMap(guard, () => guard.name, "value")`. Two cells' guards mapped
+  to one object, a `RefCell<Rc<X>>`'s two, or a guard mapped to a cell,
+  whose own guards it would meet, throw where they're made, naming
+  #1275, never a release of another cell
+  ([0328](../decisions/0328-refcell-borrow-counts.md#amendment-a-guard-mapped-to-a-part-1275)).
   A call of a fn pointer runs what the crate made one of that type of,
   `Math.clz32` or a fallback, unless a value of its type may come from
   JS or a library, an exported function's parameter say, which may be

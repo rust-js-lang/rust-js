@@ -46,6 +46,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(op) = once_method(tcx, def_id) {
             return Some(Std::Once(op));
         }
+        // A `RefCell`'s guard mapped to part of what it guards (#1275).
+        if let Some(map) = guard_map(name.as_str(), (adt(StdItem::RefCellRef), adt(StdItem::RefCellRefMut))) {
+            return Some(map);
+        }
         // A clock's: of its nanoseconds (ADR 0447).
         if let Some(clock) = clock_type_of(owner) {
             return clock_method(clock, name.as_str());
@@ -754,4 +758,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             _ => return None,
         })
     }
+}
+
+/// Which of a `RefCell` guard's own functions, by its `name`, maps it, of
+/// a `Ref` or a `RefMut` (#1275).
+fn guard_map(name: &str, (shared, mutable): (bool, bool)) -> Option<Std> {
+    use crate::lower::std_types::cell::GuardMapOp;
+    let op = match name {
+        _ if !shared && !mutable => return None,
+        "map" => GuardMapOp::Map,
+        "filter_map" => GuardMapOp::FilterMap,
+        "map_split" => GuardMapOp::MapSplit,
+        _ => return None,
+    };
+    Some(Std::GuardMap { mutable, op })
 }

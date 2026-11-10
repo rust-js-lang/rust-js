@@ -278,6 +278,11 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         let Some(held) = args.types().next().filter(|_| of_ref_cell) else {
             return false;
         };
+        // A map of a guard's, which releases the cell it was made of, of
+        // whatever type (#1275).
+        if ref_cells.maps_to(tcx, ty) {
+            return false;
+        }
         let cell = Ty::new_adt(
             tcx,
             tcx.adt_def(crate::lower::recognition::std_item(tcx, StdItem::RefCell)),

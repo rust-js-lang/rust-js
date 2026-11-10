@@ -213,3 +213,46 @@ its statement's call's receiver (ADR 0863, amended) is as before. Held by
 the mutations `ended-before-arguments`, `-callee`, `-parts`,
 `-left-side`, `-all-held`, `-all-unseen` and `ended-after-parts`
 (`lower/drops/facts.ts`).
+
+## Amendment: a guard mapped to a part (#1275)
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): refusals lifted;
+what's borrowed, and when it's released, is native Rust's. Its runtime
+form is m6-react's decision for the user (2026-11-11), on condition that
+what it can't tell apart throws.
+
+`Ref::map`, `RefMut::map`, their `filter_map` and `map_split` were
+refused. A mapped guard has `Ref<U>`'s type, so it takes the form a
+guard of `U` has: the object itself, a box over the handle `f` gives for
+a `&mut` of a number or text, or a `{ value }`. Its drop is every
+guard's, `$unborrow`, which releases the cell it was made of:
+- `$guardMap(guard, () => f(<what guard guards>), form)` makes the guard
+  of the part. `$guardFilterMap` makes `Ok` of one, or `Err` of the given
+  guard, still held. `$guardMapSplit` makes a guard of each half.
+- A WeakMap keeps each mapped guard's tickets, `{ cell, holders }`.
+  `$unborrow` of a guard with a ticket takes one, and releases its cell
+  where it's the last of the ticket's holders, a split's second.
+- A guard mapped again passes its ticket on, so nested maps and a map of
+  a split's half release the cell once, when the last guard drops. Two
+  maps of one cell to one object are two tickets of that cell, each
+  released as its guard drops.
+- Where `f` panics, the given guard is released first, as std drops it
+  as the panic unwinds.
+- A borrow nothing counted, a field's quiet one (ADR 0863), owes nothing.
+- A guard type a map gives is counted whatever a cell of what it guards
+  is (`RefCells::maps_to`): its drop releases the cell it was made of.
+
+What the form can't tell apart throws `$unsupported`, naming #1275, where
+the guard is made, never releasing another cell:
+- two cells' guards mapped to one object, a `RefCell<Rc<X>>`'s two, one
+  guard object whose drop can't say which cell it releases;
+- a guard mapped to a cell, `Ref::map(outer.borrow(), |o| &o.inner)` of
+  an `inner: RefCell<..>`, whose own guards are that object, so their
+  release would meet the mapped one's.
+
+`test/corpus/ref_cell_guards_mapped.rs` has a field lent and written,
+`filter_map`'s `Err`, `map_split`, a panicking map, a guard mapped again,
+a split's half mapped, and two maps of one cell to one object, each cell's
+`try_borrow_mut` asked as guards drop, against native Rust in both
+builds. `test/lowering-guard-maps.test.ts` holds the two refusals. The std
+net's four pins are off, and none is refused now.

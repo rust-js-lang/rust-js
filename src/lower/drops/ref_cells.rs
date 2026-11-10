@@ -32,6 +32,11 @@ pub(in crate::lower) struct RefCells<'tcx> {
     /// library that says so (ADR 0906).
     library_quiet: IndexMap<String, String>,
     counted: IndexSet<Ty<'tcx>>,
+    /// Each guard type a `Ref::map`, a `RefMut::map` or their kin gives,
+    /// regions erased: a guard of a part of what any cell holds, which
+    /// releases that cell as it drops, counted whatever a cell of what it
+    /// guards is (#1275).
+    mapped_guards: IndexSet<Ty<'tcx>>,
     /// Each counted only as a thread-local's own cell, by its key, that no
     /// `&RefCell` can be (`CellBorrows::reached_only_by_key`): its key's
     /// own writes count it, not a borrow of any cell of its type (ADR
@@ -197,6 +202,12 @@ impl<'tcx> RefCells<'tcx> {
     /// a library's consumers count none it doesn't while its code runs.
     /// `of_key`, whether it's a thread-local's own cell, by its key, which
     /// its key's own borrows count too (ADR 0960, amended).
+    /// Whether `guard` is a guard type a map of a guard gives, which
+    /// releases the cell it was made of as it drops, counted (#1275).
+    pub(in crate::lower) fn maps_to(&self, tcx: TyCtxt<'tcx>, guard: Ty<'tcx>) -> bool {
+        self.mapped_guards.contains(&tcx.erase_and_anonymize_regions(guard))
+    }
+
     pub(in crate::lower) fn quiet(
         &self,
         recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
@@ -426,6 +437,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // which borrows it while what it holds runs its own.
         let mut derived: IndexMap<DefId, rustc_span::Span> = IndexMap::default();
         let mut counted = IndexSet::default();
+        let mut mapped_guards: IndexSet<Ty<'tcx>> = IndexSet::default();
         let mut key_counted = IndexSet::default();
         let mut borrowed = IndexSet::default();
         let (mut counted_classes, mut counted_reached, mut counted_unknown) =
@@ -460,6 +472,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let (places, bound) = bound_ref_cells(&recognition, thir);
             for (field, span) in bound {
                 lent.entry(field).or_insert(span);
+            }
+            // Each guard a map of a guard gives (#1275).
+            for expr in thir.exprs.iter() {
+                if let ExprKind::Call { fun, .. } = expr.kind
+                    && let Some((def_id, generic_args)) = crate::lower::fn_def(thir[fun].ty)
+                    && matches!(
+                        recognition.classify(def_id, generic_args),
+                        Some(crate::lower::recognition::Std::GuardMap { .. })
+                    )
+                {
+                    let guards =
+                        (expr.ty.walk().filter_map(|part| part.as_type())).filter(|&part| recognition.is_guard(part));
+                    mapped_guards.extend(guards.map(|guard| tcx.erase_and_anonymize_regions(guard)));
+                }
             }
             let founds = self.counted_in(&recognition, (thir, &places), &facts);
             // How many of a callee's borrows are written at each place: its
@@ -628,6 +654,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (boxed_all, boxed, seen) = self.boxed_ref_cells(&loud);
         let mut found = RefCells {
             counted,
+            mapped_guards,
             key_counted,
             counted_classes,
             counted_reached,

@@ -196,6 +196,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::IsEmpty
                     // What a guard guards, through its `&mut` (ADR 0328).
                     | Std::GuardValue { .. }
+                    // A guard mapped, moved into what it gives, or given back,
+                    // `filter_map`'s `Err` (#1275).
+                    | Std::GuardMap { .. }
                     // A heap's top, through its `PeekMut`, and the top it pops (ADR 0333).
                     | Std::Heap(HeapOp::PeekTop { .. } | HeapOp::PeekPop | HeapOp::PeekMut)
                     // A raw pointer's: what it writes stays where it points,
@@ -701,6 +704,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::Borrow { .. }
             | Std::TryBorrow { .. }
             | Std::GuardValue { .. }
+            | Std::GuardMap { .. }
             | Std::Lock
             | Std::Drop
             | Std::Forget

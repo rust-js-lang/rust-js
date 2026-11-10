@@ -203,6 +203,13 @@ pub(super) enum Std {
     GuardValue {
         mutable: bool,
     },
+    /// A guard mapped to part of what it guards, `Ref::map`, `RefMut::map`,
+    /// their `filter_map` and `map_split`: a guard of the part that
+    /// releases what the given one held as it drops (#1275).
+    GuardMap {
+        mutable: bool,
+        op: crate::lower::std_types::cell::GuardMapOp,
+    },
     /// A lock's `into_inner()` and `get_mut()`: `Ok` of its `value`.
     Lock,
     /// A `Pin`'s functions, each its pointer's (ADR 0329).

@@ -10,7 +10,88 @@ use crate::lower::recognition::{Std, StdItem};
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
 
+/// Which of a `RefCell` guard's own functions maps it (#1275).
+#[derive(Clone, Copy, PartialEq)]
+pub(in crate::lower) enum GuardMapOp {
+    /// `map(orig, f)`: a guard of what `f` gives.
+    Map,
+    /// `filter_map(orig, f)`: `Ok` of a guard of what `f` gives, or `Err`
+    /// of `orig`, still held.
+    FilterMap,
+    /// `map_split(orig, f)`: a guard of each part `f` gives, the borrow
+    /// released when both have dropped.
+    MapSplit,
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A guard of type `guard_ty` mapped by `f` (#1275): `$guardMap(guard,
+    /// () => f(<what it guards>), form)`, `$guardFilterMap` or
+    /// `$guardMapSplit`, each guard it gives in the form a guard of its
+    /// part has, `output`'s (`guard_form`), linked to what `guard` held,
+    /// which its drop, `$unborrow`, releases.
+    fn guard_map(
+        &mut self,
+        (op, mutable): (GuardMapOp, bool),
+        (guard, f): (Expr, Expr),
+        (call, guard_ty): (&Call<'_, 'tcx>, Ty<'tcx>),
+        out: &mut Vec<Stmt>,
+    ) -> Expr {
+        let output = (self.tcx.fn_sig(call.def_id).instantiate(self.tcx, call.generic_args))
+            .skip_normalization()
+            .skip_binder()
+            .output();
+        let output = self.tcx.erase_and_anonymize_regions(output);
+        let guard = self.spill("guard", guard, out);
+        let guarded = self.guard_value(guard.clone(), guard_ty, mutable);
+        let made = Expr::arrow(
+            Vec::new(),
+            vec![StmtKind::Return(Some(Expr::call(f, vec![guarded]))).at(js::Span::NONE)],
+        );
+        let forms: Vec<Expr> = match (op, output.kind()) {
+            (GuardMapOp::Map, _) => vec![self.guard_form(output, mutable)],
+            // Its `Ok`'s, the guard of the part.
+            (GuardMapOp::FilterMap, ty::Adt(_, parts)) => vec![self.guard_form(parts.type_at(0), mutable)],
+            (GuardMapOp::MapSplit, ty::Tuple(parts)) => {
+                parts.iter().map(|part| self.guard_form(part, mutable)).collect()
+            }
+            _ => unreachable!("a guard's map gives a guard, a `Result` or a pair of them"),
+        };
+        let name = match op {
+            GuardMapOp::Map => "$guardMap",
+            GuardMapOp::FilterMap => "$guardFilterMap",
+            GuardMapOp::MapSplit => "$guardMapSplit",
+        };
+        Expr::call_helper(name, [vec![guard, made], forms].concat())
+    }
+
+    /// The form of a guard of type `guard`, as `guard_value` reads it: the
+    /// object it guards, `"object"`, or of a `&mut` that's a box, `"box"`,
+    /// or a `{ value }`, `"value"`; or `"cell"`, a guard of a cell, whose
+    /// own guards a mapped one's release would meet, which `$guardMap`
+    /// refuses as it runs (#1275).
+    fn guard_form(&self, guard: Ty<'tcx>, mutable: bool) -> Expr {
+        let ty::Adt(_, args) = guard.peel_refs().kind() else {
+            unreachable!("a guard")
+        };
+        let guarded = args.types().next().expect("what it guards").peel_refs();
+        let cell = [
+            StdItem::RefCell,
+            StdItem::Cell,
+            StdItem::Mutex,
+            StdItem::RwLock,
+            StdItem::OnceCell,
+        ]
+        .into_iter()
+        .any(|item| self.is_std_type(guarded, item));
+        let form = match () {
+            _ if cell => "cell",
+            _ if self.guards_value_cell(guard.peel_refs()) || self.cell_dyn_trait(guarded).is_some() => "object",
+            _ if mutable && self.mut_ref_form(guarded).is_cell() => "box",
+            _ => "value",
+        };
+        Expr::str(form)
+    }
+
     /// What `guard`, a `Ref`, a `RefMut` or a lock's guard of type `ty`,
     /// derefs to: its cell's `value`, or of a `&mut` that's a box, to a
     /// number, text or a type parameter (`mut_ref_form`), the cell, the `{
@@ -637,6 +718,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::helper(if lock { "$tryLock" } else { "$tryBorrow" }), given)
             }
             Std::GuardValue { mutable } => self.guard_value(arg(), generic_args.type_at(0), mutable),
+            Std::GuardMap { mutable, op } => self.guard_map((op, mutable), (arg(), arg()), (&call, tys[0]), out),
             Std::Lock => result::ok(Expr::held(arg())),
             // `mem::drop(x)` is `x`'s destructor, run now (ADR 0098).
             // Of a guard of a field's `RefCell` no borrow of which can meet

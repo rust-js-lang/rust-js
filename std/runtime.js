@@ -9657,9 +9657,93 @@ export function $borrowMut(cell, hold) {
   return cell;
 }
 
-// A guard dropped: one borrow fewer.
+// A guard dropped: one borrow fewer. Of a guard `$guardMap` gave, what it
+// owes: of its cell, one borrow fewer where it's the last of a ticket's
+// holders, `map_split`'s two (#1275).
 export function $unborrow(cell) {
+  const tickets = $guardTickets.get(cell);
+  if (tickets !== undefined) {
+    const ticket = tickets.pop();
+    if (tickets.length === 0) $guardTickets.delete(cell);
+    if (--ticket.holders.left === 0) $unborrow(ticket.cell);
+    return;
+  }
   $setBorrows(cell, cell.borrows > 0 ? cell.borrows - 1 : 0);
+}
+
+// What each guard `$guardMap` gave owes, by the guard: a ticket of each
+// borrow it holds, `{ cell, holders }`, the cell whose borrow it is and
+// how many guards share it, each one fewer as it drops (#1275). A guard
+// that's its part itself, an object, may be given more than once, each a
+// ticket, of one cell: two cells' guards of one object can't be told
+// apart, refused as they're made.
+export const $guardTickets = new WeakMap();
+
+// The ticket `guard` held, it taken: a mapped one's, or of its cell, one
+// guard's.
+export function $guardTicket(guard) {
+  const tickets = typeof guard === "object" && guard !== null ? $guardTickets.get(guard) : undefined;
+  if (tickets === undefined) return { cell: guard, holders: { left: 1 } };
+  const ticket = tickets.pop();
+  if (tickets.length === 0) $guardTickets.delete(guard);
+  return ticket;
+}
+
+// A guard of a part, `made`, in its guard's form, holding `ticket`: the
+// object itself (`object`), a box writing through the handle `made` is
+// (`box`), or a `{ value }`; a guard of a cell, whose own guards a
+// mapped one's release would meet, refused (#1275).
+export function $guardOf(made, form, ticket) {
+  if (form === "cell") {
+    throw $unsupported("rust-js does not support a guard mapped to a cell, whose own guards would release what the mapped one holds (#1275)");
+  }
+  const guard =
+    form === "object"
+      ? made
+      : form === "box"
+        ? {
+            get value() {
+              return made.value;
+            },
+            set value(value) {
+              made.value = value;
+            },
+          }
+        : { value: made };
+  // Of a borrow nothing counted, a field's no borrow of which can meet
+  // another, nothing owed (ADR 0863).
+  if (typeof ticket.cell !== "object" || ticket.cell === null) return guard;
+  const tickets = $guardTickets.get(guard);
+  if (tickets === undefined) $guardTickets.set(guard, [ticket]);
+  else if (tickets[0].cell === ticket.cell) tickets.push(ticket);
+  else throw $unsupported("rust-js does not support two cells' guards mapped to one object, whose releases it can't tell apart (#1275)");
+  return guard;
+}
+
+// `Ref::map(guard, f)` and `RefMut::map`: a guard of what `made`, `f` of
+// what `guard` guards, gives, in `form`, which releases what `guard`
+// held as it drops; where `f` panics, `guard` released first, as std
+// drops it as the panic unwinds (#1275).
+export function $guardMap(guard, made, form) {
+  const part = $unwinds(made, () => $unborrow(guard));
+  return $guardOf(part, form, $guardTicket(guard));
+}
+
+// `Ref::filter_map(guard, f)`: `Ok` of a guard of what `f` gives, or of
+// `None`, `Err` of `guard`, still held.
+export function $guardFilterMap(guard, made, form) {
+  const part = $unwinds(made, () => $unborrow(guard));
+  if (part === undefined || part === null) return { TAG: "Err", _0: guard };
+  return { TAG: "Ok", _0: $guardOf(part, form, $guardTicket(guard)) };
+}
+
+// `Ref::map_split(guard, f)`: a guard of each of the two parts `f` gives,
+// which share what `guard` held, released as the second drops.
+export function $guardMapSplit(guard, made, a, b) {
+  const [first, second] = $unwinds(made, () => $unborrow(guard));
+  const ticket = $guardTicket(guard);
+  ticket.holders.left += 1;
+  return [$guardOf(first, a, ticket), $guardOf(second, b, ticket)];
 }
 
 // Not enumerable: `==`, a clone and JSON see the cell's `value` alone.

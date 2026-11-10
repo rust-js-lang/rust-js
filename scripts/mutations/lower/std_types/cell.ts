@@ -1019,4 +1019,12 @@ export const mutations: Mutation[] = [
     replace: "                let place = match true {\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_made_and_taken_in_one_expression.rs$"],
   },
+  {
+    name: "mapped-mut-guard-unboxed",
+    breaks: "a `RefMut::map` to a number is a `{ value }` of it, not a box over its place, so what's written through it is lost (#1275)",
+    file: "src/lower/std_types/cell.rs",
+    find: "            _ if mutable && self.mut_ref_form(guarded).is_cell() => \"box\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^ref_cell_guards_mapped.rs$"],
+  },
 ];

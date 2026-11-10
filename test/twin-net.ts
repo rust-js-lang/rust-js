@@ -36,6 +36,7 @@ const why = {
   collections: "a method of `Vec`, `VecDeque`, a slice, `String`, `BinaryHeap` or a map or a set, whose body std's build doesn't compile: it compiles std's iterator structs alone",
   sort: "a sort, which rust-js writes as its own in both builds",
   format: "`Debug`, which std's build doesn't compile",
+  cells: "a `RefCell`'s borrows and its guards, a map of one too, which std's build doesn't compile",
 } as const;
 
 /** Each helper a whole run pits against std's body: a slice may see one
@@ -90,6 +91,8 @@ export const shared: Record<string, keyof typeof why> = {
   "$assign": "glue",
   "$at": "glue",
   "$binarySearchBy": "collections",
+  "$borrow": "cells",
+  "$borrowMut": "cells",
   "$BTreeMap": "collections",
   "$BTreeSet": "collections",
   "$btreeSet": "collections",
@@ -157,6 +160,9 @@ export const shared: Record<string, keyof typeof why> = {
   "$grew": "collections",
   "$grownBy": "collections",
   "$grownVec": "collections",
+  "$guardFilterMap": "cells",
+  "$guardMap": "cells",
+  "$guardMapSplit": "cells",
   "$hashedMap": "collections",
   "$hashedSet": "collections",
   "$hashSlice": "glue",
@@ -275,6 +281,7 @@ export const shared: Record<string, keyof typeof why> = {
   "$shift": "collections",
   "$showBorrowed": "format",
   "$slice": "collections",
+  "$sliceSplitAt": "collections",
   "$sliceSplitBy": "collections",
   "$sliceSplitByMut": "collections",
   "$slicing": "glue",
@@ -314,6 +321,7 @@ export const shared: Record<string, keyof typeof why> = {
   "$truncate": "collections",
   "$tryFoldOk": "consumers",
   "$tryOf": "glue",
+  "$unborrow": "cells",
   "$untracked": "collections",
   "$unwindsOn": "glue",
   "$unwound": "glue",
