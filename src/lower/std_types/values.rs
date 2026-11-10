@@ -132,6 +132,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             | MapOp::TreeRange { .. }
                             | MapOp::EndEntry { .. }
                             | MapOp::EntryInsert
+                            // Lends each value it finds (#1276).
+                            | MapOp::GetDisjointMut
                     )
                     // A cell keeps it, and gives the old one back; a `Cell` of one is
                     // refused by its type (ADR 0320).
@@ -266,7 +268,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // What drops what it takes out of a vector, given its
                     // items' drop, as std drops each (ADR 0098).
                     | Std::Comb(
-                        Comb::Truncate
+                        Comb::Truncate { .. }
                             | Comb::Dedup
                             | Comb::DedupBy
                             | Comb::DedupByKey

@@ -603,7 +603,10 @@ impl Std {
                 | Std::Leak
                 | Std::OptionIterMut
                 | Std::Map(
-                    MapOp::EntryGet { mutable: true } | MapOp::VacantInsert | MapOp::TreeRange { mutable: true }
+                    MapOp::EntryGet { mutable: true }
+                        | MapOp::VacantInsert
+                        | MapOp::TreeRange { mutable: true }
+                        | MapOp::GetDisjointMut
                 )
                 | Std::Slice(SliceOp::DequeRangeMut)
                 // A generic index's `index_mut`, its dictionary's handle (ADR 0418).

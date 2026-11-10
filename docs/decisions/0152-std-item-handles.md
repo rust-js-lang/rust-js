@@ -78,3 +78,24 @@ reads and writes `handle.value`. Held by the corpus case
 `as_mut_through_a_handle`, which changes a child's box in place and
 replaces it, and the mutation `as-mut-through-a-handle-refused`.
 
+## Amendment: a hash map's `get_disjoint_mut` (#1276)
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): a refusal lifted;
+what it gives and its panic are native Rust's.
+
+`HashMap::get_disjoint_mut(keys)`, stable since 1.86, was refused as a
+call rust-js didn't know. It's a map op now, `MapOp::GetDisjointMut`,
+`$mapGetDisjointMut(m, keys, handle)`:
+- It finds each key. Where two find one entry it panics `duplicate keys
+  found`, std's message, once it has found them all, the map as it was.
+  A key it doesn't hold gives `None` and may repeat.
+- It gives each value as `get_mut` does: a handle on a number or text,
+  `$mutGet`'s, or the object itself, so what's written goes in place.
+- A map of keys found by their own `Hash` and `Eq` (ADR 1120) finds the
+  key it holds. Two keys equal by its `eq` are one entry.
+
+`test/corpus/hash_map_get_disjoint_mut.rs` has numbers swapped and
+written, a struct's fields, missing keys, a duplicate's panic, and
+case-insensitive keys, against native Rust in both builds. The std net's
+pin is off. Mutations `disjoint-duplicates-unseen`,
+`disjoint-missing-keys-duplicate` and `disjoint-numbers-unhandled`.

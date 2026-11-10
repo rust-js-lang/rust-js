@@ -70,3 +70,19 @@ move it in: it's dropped as a clone of it panics, as a drop of what
 does, each loop under `$unwinds`; `vec!`'s clones made already are
 dropped after it, as `extend_with`'s frame unwinds before `from_elem`
 drops its `Vec`. [1102](1102-what-is-made-in-turn-drops-as-a-later-part-unwinds.md).
+
+## Amendment: a `VecDeque`'s `retain_back` (#1277)
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): a refusal lifted;
+what drops is native Rust's.
+
+`retain_back(len)`, stable since 1.99, keeps a deque's last `len` items
+and drops those before them. It was refused as a call rust-js didn't
+know. It's `truncate`'s sibling now, `Comb::Truncate { front: true }`, given its items'
+drop: `$retainBack(v, len, drop)` takes them off the front and drops each
+in their order. If one's drop panics, the rest are still dropped, as
+std's `drop_in_place` of each half goes on. A deque is one JS array, so
+its two halves are its items' order. `test/corpus/deque_retain_back.rs`
+has it across both halves, past its length, of numbers and with a
+panicking drop, against native Rust in both builds. The std net's pin is
+off. Mutations `retain-back-drops-none` and `retain-back-truncates`.

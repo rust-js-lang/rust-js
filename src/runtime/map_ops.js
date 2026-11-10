@@ -580,3 +580,17 @@ function $cloneIntoMap(m, from, make, drop) {
     else m.set(entry[0], entry[1]);
   }
 }
+
+// A hash map's `get_disjoint_mut(keys)`: each key's value, a handle on a
+// number or text (`handle`), or `None` where it isn't there; where two
+// find one entry, `duplicate keys found`, as std's does once it's found
+// them all (#1276).
+function $mapGetDisjointMut(m, keys, handle) {
+  const found = keys.map((key) => $found(m, key));
+  found.forEach((each, i) => {
+    if (each.there && found.slice(0, i).some((other) => other.there && other.key === each.key)) {
+      throw new Error("duplicate keys found");
+    }
+  });
+  return found.map((each, i) => (!each.there ? undefined : handle ? $mutGet(m, keys[i]) : each.value));
+}

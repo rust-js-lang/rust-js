@@ -102,6 +102,10 @@ pub(in crate::lower) enum MapOp {
     },
     /// Its `insert(v)`: what was there.
     EntryInsert,
+    /// A hash map's `get_disjoint_mut(keys)`: each key's value, a handle on
+    /// a number or text, or `None`; `duplicate keys found` where two find
+    /// one entry (#1276).
+    GetDisjointMut,
     /// A `VacantEntry`'s `insert(v)`: a `&mut` to what it put in.
     VacantInsert,
     /// An entry's `and_modify(f)`: `f` given its value where its key is
@@ -203,6 +207,7 @@ pub(in crate::lower) fn map_method(name: &str, of: MapOwner) -> Option<MapOp> {
         "insert" if map => MapOp::Insert,
         "insert" if set => MapOp::Add,
         "get" | "get_mut" if map => MapOp::Get,
+        "get_disjoint_mut" if map && !sorted => MapOp::GetDisjointMut,
         "contains_key" if map => MapOp::Has,
         "contains" if set => MapOp::Has,
         "remove" if map => MapOp::Remove,
@@ -757,6 +762,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     list.push(Expr::bool(true));
                 }
                 map_ops("$treeEnd", list)
+            }
+            MapOp::GetDisjointMut => {
+                let mut list = vec![arg(), arg()];
+                if types.get(1).is_some_and(|&value| self.handles_mut(value)) {
+                    list.push(Expr::bool(true));
+                }
+                map_ops("$mapGetDisjointMut", list)
             }
             MapOp::TreeSplitOff => {
                 let (m, key) = (arg(), arg());

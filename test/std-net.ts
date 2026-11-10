@@ -305,8 +305,6 @@ export const refused: Record<string, [said: string, issue: number]> = {
   "ref map | panics": ["calling `std::cell::Ref::<'b, T>::map`", 1275],
   "refmut map | ok": ["calling `std::cell::RefMut::<'b, T>::map`", 1275],
   "refmut map | panics": ["calling `std::cell::RefMut::<'b, T>::map`", 1275],
-  "hash get_disjoint_mut | ok": ["calling `std::collections::HashMap::<K, V, S, A>::get_disjoint_mut`", 1276],
-  "deque retain_back | ok": ["calling `std::collections::VecDeque::<T, A>::retain_back`", 1277],
 };
 
 /** Why `m` is left out, or nothing where a template covers it. */

@@ -628,4 +628,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(key) if false && self.found_by_hash(key) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^keys_found_by_their_own_hash.rs$"],
   },
+  {
+    name: "disjoint-numbers-unhandled",
+    breaks: "a hash map's `get_disjoint_mut` of numbers gives them, not handles, so what's written through them is lost (#1276)",
+    file: "src/lower/std_types/map.rs",
+    find: "                if types.get(1).is_some_and(|&value| self.handles_mut(value)) {\n                    list.push(Expr::bool(true));\n                }\n                map_ops(\"$mapGetDisjointMut\", list)\n",
+    replace: "                map_ops(\"$mapGetDisjointMut\", list)\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_map_get_disjoint_mut.rs$"],
+  },
 ];

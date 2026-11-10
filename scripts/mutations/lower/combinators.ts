@@ -358,9 +358,8 @@ export const mutations: Mutation[] = [
     name: "truncate-given-no-drop",
     breaks: "`truncate` of items with a destructor is given no drop",
     file: "src/lower/combinators.rs",
-    find: '            Comb::Truncate => helper("$truncate", self.dropping(vec![subject, next()], subject_ty, span)?),\n',
-    replace:
-      '            Comb::Truncate => helper("$truncate", vec![subject, next()]),\n',
+    find: "        Ok(Expr::call_helper(name, self.dropping(given, ty, span)?))\n",
+    replace: "        Ok(Expr::call_helper(name, given))\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
   {
@@ -850,5 +849,13 @@ export const mutations: Mutation[] = [
     find: "                    .is_none_or(|item| !self.is_object(item) && !self.mut_ref_form(item).is_cell()) =>\n",
     replace: "                    .is_none_or(|item| !self.is_object(item) && (!self.mut_ref_form(item).is_cell() || self.is_unknown(item))) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
+  },
+  {
+    name: "retain-back-truncates",
+    breaks: "a `VecDeque`'s `retain_back(len)` keeps its first `len`, as `truncate` does, where std keeps its last (#1277)",
+    file: "src/lower/combinators.rs",
+    find: "        let name = if front { \"$retainBack\" } else { \"$truncate\" };\n",
+    replace: "        let name = \"$truncate\";\n",
+    tests: ["test/corpus.test.ts", "-t", "^deque_retain_back.rs$"],
   },
 ];

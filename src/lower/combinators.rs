@@ -153,7 +153,11 @@ pub(super) enum Comb {
     Insert,
     Remove,
     Swap,
-    Truncate,
+    /// `truncate(len)`, or of `front`, a `VecDeque`'s `retain_back(len)`:
+    /// its last `len` kept, those before them dropped (#1277).
+    Truncate {
+        front: bool,
+    },
     Dedup,
     /// `dedup_by`, `dedup_by_key`, `swap_remove`, `resize`, `resize_with`
     /// and `pop_if` of a `Vec` (ADR 0315).
@@ -770,7 +774,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::Insert => self.inserted_dropping(subject, next(), next(), (subject_ty, span))?,
             Comb::Remove => helper("$removeAt", vec![subject, next()]),
             Comb::Swap => helper("$swap", self.deque_marked(vec![subject, next(), next()], subject_ty)),
-            Comb::Truncate => helper("$truncate", self.dropping(vec![subject, next()], subject_ty, span)?),
+            Comb::Truncate { front } => self.truncated(front, vec![subject, next()], (subject_ty, span))?,
             Comb::Dedup => self.dedup_call(subject, subject_ty, span)?,
             // Its closure takes `&mut` items: an object itself, or a cell of a
             // number or text, whose change is written back, as std's is.
@@ -1226,4 +1230,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// owner's own: a slice's `T`, a deque's `T` and allocator.
 fn search_key<'tcx>(generic_args: ty::GenericArgsRef<'tcx>) -> ty::Ty<'tcx> {
     (generic_args.types().rev().nth(1)).expect("`binary_search_by_key` has a key type")
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `truncate(len)`, `$truncate(v, len, drop)`, or of `front`, a
+    /// `VecDeque`'s `retain_back(len)`, `$retainBack(v, len, drop)`, its
+    /// items' drop given (#1277).
+    fn truncated(&mut self, front: bool, given: Vec<Expr>, (ty, span): (Ty<'tcx>, Span)) -> R<Expr> {
+        let name = if front { "$retainBack" } else { "$truncate" };
+        Ok(Expr::call_helper(name, self.dropping(given, ty, span)?))
+    }
 }

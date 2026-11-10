@@ -526,4 +526,20 @@ export const mutations: Mutation[] = [
     replace: "  const ne = (a, b) => !partialOrd.PartialEq().eq(a, b);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
   },
+  {
+    name: "disjoint-duplicates-unseen",
+    breaks: "a hash map's `get_disjoint_mut` of two keys that find one entry gives it twice, where std panics `duplicate keys found` (#1276)",
+    file: "src/runtime/map_ops.js",
+    find: "      throw new Error(\"duplicate keys found\");\n",
+    replace: "      void 0;\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_map_get_disjoint_mut.rs$"],
+  },
+  {
+    name: "disjoint-missing-keys-duplicate",
+    breaks: "a hash map's `get_disjoint_mut` of a key it doesn't hold, twice, panics, where std gives `None` of each (#1276)",
+    file: "src/runtime/map_ops.js",
+    find: "    if (each.there && found.slice(0, i).some((other) => other.there && other.key === each.key)) {\n",
+    replace: "    if (found.slice(0, i).some((other) => other.key === each.key)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_map_get_disjoint_mut.rs$"],
+  },
 ];

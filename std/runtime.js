@@ -9549,6 +9549,20 @@ export function $cloneIntoMap(m, from, make, drop) {
   }
 }
 
+// A hash map's `get_disjoint_mut(keys)`: each key's value, a handle on a
+// number or text (`handle`), or `None` where it isn't there; where two
+// find one entry, `duplicate keys found`, as std's does once it's found
+// them all (#1276).
+export function $mapGetDisjointMut(m, keys, handle) {
+  const found = keys.map((key) => $found(m, key));
+  found.forEach((each, i) => {
+    if (each.there && found.slice(0, i).some((other) => other.there && other.key === each.key)) {
+      throw new Error("duplicate keys found");
+    }
+  });
+  return found.map((each, i) => (!each.there ? undefined : handle ? $mutGet(m, keys[i]) : each.value));
+}
+
 // A `char`'s or a `str`'s escapes, as text, and a `char`'s UTF-8 and UTF-16
 // (ADR 0327).
 
@@ -16406,6 +16420,16 @@ export function $truncate(v, length, drop) {
     const gone = v.splice(length);
     // The rest still dropped after one panics, as std's `drop_in_place`
     // of the slice goes on (#416).
+    if (drop !== undefined) $dropItems(gone, drop);
+  }
+}
+
+// A `VecDeque`'s `retain_back(length)`: its last `length` kept, those before
+// them dropped in their order, the rest still dropped after one panics, as
+// std's `drop_in_place` of each half goes on (#1277).
+export function $retainBack(v, length, drop) {
+  if (length < v.length) {
+    const gone = v.splice(0, v.length - length);
     if (drop !== undefined) $dropItems(gone, drop);
   }
 }
