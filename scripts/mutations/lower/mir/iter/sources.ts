@@ -524,4 +524,13 @@ export const mutations: Mutation[] = [
     replace: "        } else if made_array(&value) || self.steps_an_array(ty) {\n",
     tests: ["test/iterator-forms.test.ts", "-t", "capacity_of_what_std_hints_less"],
   },
+  {
+    name: "js-iterator-of-dictionary-unasked",
+    breaks:
+      "an `eq` or a `cmp` given a `&'a I` bounded `&'a I: IntoIterator` steps the value itself, not its dictionary's `into_iter`: `\"abc\".chars().eq(word)` `false` where Rust gives `true` (#1264)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "        if let Some(items) = self.items_by_dictionary(value.clone(), ty, span)? {\n            return Ok(items);\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^into_iterator_of_a_reference_given_to_generic_code.rs$"],
+  },
 ];

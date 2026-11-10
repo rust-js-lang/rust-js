@@ -39,6 +39,9 @@ const few = [
   // an array of a const parameter's length (#813).
   "generic_flatten_of_vecs.rs",
   "std_flat_map.rs",
+  // Std's `zip` given a `&I` whose `IntoIterator` is its caller's bound,
+  // whose dictionary it's given (#1264).
+  "into_iterator_of_a_reference_given_to_generic_code.rs",
   "held_adapters_by_ref.rs",
   "adapter_drops.rs",
   "own_fold_and_nth.rs",

@@ -712,4 +712,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_collect\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "ref-into-iter-bound-taken-for-a-collections",
+    breaks:
+      "in the build of std's iterator structs, std's `zip` given a `&I` whose `IntoIterator` is a bound of its caller's asks a std collection's reference's dictionary of it, refused, where its caller's bound gives it (#1264)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            && self.evidence_for(tr).is_none()\n",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^into_iterator_of_a_reference_given_to_generic_code with"],
+  },
 ];

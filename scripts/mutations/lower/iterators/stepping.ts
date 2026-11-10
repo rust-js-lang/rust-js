@@ -429,4 +429,13 @@ export const mutations: Mutation[] = [
     replace: "            && ty == given",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_holding_a_closure_dropped_by_generic_code\\.rs$"],
   },
+  {
+    name: "ref-param-into-iter-undictionaried",
+    breaks:
+      "generic code's `zip` of a `&'a I` bounded `&'a I: IntoIterator` zips the value itself, not its dictionary's `into_iter`: `[(1, 'abc')]` where Rust gives `[(1, 'a'), (2, 'b'), (3, 'c')]` (strsim's `jaro`, #1264)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "            ty::Ref(..) => true,\n",
+    replace: "            ty::Ref(..) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iterator_of_a_reference_given_to_generic_code.rs$"],
+  },
 ];

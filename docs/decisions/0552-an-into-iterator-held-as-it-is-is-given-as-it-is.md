@@ -155,3 +155,31 @@ own function is asked as before. #1025's four library rewrites run as
 native. Pair test `library_into_iter_held_as_it_is`; mutations
 `into-iter-held-in-a-library-type-unseen` and
 `into-iter-hidden-by-a-library-unseen` (`lower/iterators.ts`).
+
+## Amendment: a reference to a type parameter given as an `IntoIterator` (#1264)
+
+Generic code given a `&'a I` bounded `&'a I: IntoIterator` holds its
+caller's own reference. No caller makes a JS iterator of it, as callers do
+of a type parameter they give, so the function is given its dictionary,
+`IRefIntoIterator`. `for` and `chain` stepped it right by chance. `zip`,
+`eq`, `cmp`, the comparisons and `extend` took the value itself.
+strsim's `jaro` zipped a newtype's text and gave 1 where native gives
+0.944. Results changed, so Rust's behavior is kept (ADR
+[0262](0262-when-rust-and-js-disagree.md)'s third case).
+
+`items_by_dictionary` now makes such a reference's items by its
+dictionary's `into_iter`, `IRefIntoIterator.intoIter(word)`, the JS iterator
+it makes. `iterable_items` asks it, as `zip`'s, `chain`'s and `extend`'s
+arguments do. `js_iterator_of` asks it too, the one maker of what `eq`,
+`cmp` and the comparisons step. Its `IntoIter` isn't held as it is, so a
+type its own `into_iter()` call makes keeps its form.
+`test/corpus/into_iterator_of_a_reference_given_to_generic_code.rs` holds
+`zip`, a zip of a zip, `std::iter::zip`, `chain`, `eq`, `ne`, `cmp`,
+`partial_cmp`, `lt`, `extend` of a `Vec`, a `VecDeque`, a `BTreeSet` and a
+`String`, `splice`, `collect` and `for` against native Rust, in both
+builds. In the build of std's iterator structs, std's `zip` asked its `U:
+IntoIterator`'s dictionary of a `&I` as of a std collection's reference;
+`ref_into_iter_of_collection` now leaves out one a bound of the function's
+gives. `Vec::from_iter` of it stays refused, as it was, and so does
+`flat_map(|_| word)` in that build, which asks a constant size of `&I` no
+caller is given.

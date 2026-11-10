@@ -18,6 +18,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     fn js_iterator_of(&mut self, value: Expr, ty: Ty<'tcx>, into: bool, span: Span) -> R<Expr> {
+        // What a type parameter's `IntoIterator` this function holds as it
+        // is makes, `&'a I`'s of a bound `&'a I: IntoIterator`: its
+        // dictionary's `into_iter`, as each consumer given it steps it,
+        // `eq`'s and `cmp`'s as `zip`'s (#1264).
+        if let Some(items) = self.items_by_dictionary(value.clone(), ty, span)? {
+            return Ok(items);
+        }
         // A `&mut` to a range, `take2(&mut it)`'s: the range, stepped where
         // it is, as its lender goes on from where it's left.
         let ranged = match ty.kind() {

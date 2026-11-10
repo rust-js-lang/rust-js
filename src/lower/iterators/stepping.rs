@@ -426,7 +426,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty: ty::Ty<'tcx>,
         span: Span,
     ) -> R<Option<Expr>> {
-        if !matches!(ty.kind(), ty::Alias(..) | ty::Param(_)) || !self.holds_into_iter(ty) {
+        // Or a reference whose `IntoIterator` is a bound of this function's,
+        // `&'a I: IntoIterator`, which no caller makes a JS iterator of, as
+        // it does of a type parameter it gives: its dictionary's
+        // `into_iter`, the JS iterator it makes, where `evidence_for` finds
+        // one (strsim's `jaro`, #1264).
+        let given = match ty.kind() {
+            ty::Alias(..) | ty::Param(_) => self.holds_into_iter(ty),
+            ty::Ref(..) => true,
+            _ => false,
+        };
+        if !given {
             return Ok(None);
         }
         let into_iterator = std_item(self.tcx, StdItem::IntoIterator);

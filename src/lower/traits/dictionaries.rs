@@ -959,14 +959,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `&C`'s or `&mut C`'s, which `ref_into_iter_dictionary` makes: not a
     /// `&mut I` of an iterator, which std's impl for every iterator takes as
     /// it is, as rustc's selection says (`iterates_as_itself`, #742), nor
-    /// one the crate implements. The one answer, of a bound's dictionary
-    /// and of a type parameter given one, `zip`'s `U`.
+    /// one the crate implements, nor one a bound of this function's gives,
+    /// `&'a I: IntoIterator`'s, its dictionary (#1264). The one answer, of a
+    /// bound's dictionary and of a type parameter given one, `zip`'s `U`.
     pub(in crate::lower) fn ref_into_iter_of_collection(&self, tr: ty::TraitRef<'tcx>) -> bool {
         let ty = tr.self_ty();
         is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator)
             && matches!(ty.kind(), ty::Ref(..))
             && !self.recognition().iterates_as_itself(ty)
             && !self.has_user_impl(tr.def_id, ty)
+            && self.evidence_for(tr).is_none()
     }
 
     /// std's `IntoIterator` of a `&C` or a `&mut C`, `tr`, as generic code
