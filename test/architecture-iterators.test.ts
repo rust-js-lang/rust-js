@@ -631,3 +631,13 @@ test("a body's impl Trait is revealed where its MIR is taken, alone", () => {
     .filter((file) => file.endsWith(".rs") && /\b(self|this|cx)\.reveal\(/.test(read(file)));
   expect(revealing).toEqual([]);
 });
+
+// Whether an adapter is cloned apart (ADR 0525) is one answer,
+// `iterators/stepping.rs`' `cloned_apart`, of what the lowering makes, of
+// what the analysis marks made knowing its back, and of what a body makes
+// in place or holds to clone: `body_queries.rs` had its own, of the same
+// `Cloned` facts, twice (#1119, #1243).
+test("whether an adapter is cloned apart is one function", () => {
+  const defining = files("src").filter((file) => file.endsWith(".rs") && /\bfn cloned_apart\b/.test(read(file)));
+  expect(defining).toEqual(["src/lower/iterators/stepping.rs"]);
+});

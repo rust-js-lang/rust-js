@@ -82,8 +82,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic function's clone of `Holder<T>` shares it, though its caller changes the `Holder<Numbers>` in place",
     file: "src/lower/copies.rs",
-    find: "        _ if recognition.is_unknown(general) || recognition.is_unknown(ty) => true,",
-    replace: "        _ if recognition.is_unknown(general) => true,",
+    find: "        _ if unknown(general) || unknown(ty) => true,",
+    replace: "        _ if unknown(general) => true,",
     tests: ["test/corpus.test.ts", "-t", "copy_mutation"],
   },
   {
@@ -218,7 +218,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a type's arguments aren't compared: a mutated `Pair<u32>` makes every `Pair<..>` copied where it's read, `Pair<bool>` too, which nothing changes",
     file: "src/lower/copies.rs",
-    find: "(Some(arg), Some(general)) => instance_of(recognition, arg, general),",
+    find: "(Some(arg), Some(general)) => instance_of_in(tcx, typing_env, arg, general),",
     replace: "(Some(_), Some(_)) => true,",
     tests: [
       "test/lowering-functions.test.ts",

@@ -498,35 +498,46 @@ pub(super) fn instance_of<'tcx>(
     ty: Ty<'tcx>,
     general: Ty<'tcx>,
 ) -> bool {
-    let tcx = recognition.tcx;
+    instance_of_in(recognition.tcx, recognition.typing_env, ty, general)
+}
+
+/// `instance_of`, of `tcx` and the body's `typing_env` alone, asked before
+/// the crate's libraries are read too (`cloned_apart`, #1243).
+pub(super) fn instance_of_in<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    ty: Ty<'tcx>,
+    general: Ty<'tcx>,
+) -> bool {
+    let unknown = |t| super::recognition::is_unknown_where(tcx, t, typing_env);
     match (ty.kind(), general.kind()) {
-        _ if recognition.is_unknown(general) || recognition.is_unknown(ty) => true,
+        _ if unknown(general) || unknown(ty) => true,
         (ty::Adt(adt, args), ty::Adt(general_adt, general_args)) => {
             adt.did() == general_adt.did()
                 && args
                     .iter()
                     .zip(general_args.iter())
                     .all(|(arg, general)| match (arg.as_type(), general.as_type()) {
-                        (Some(arg), Some(general)) => instance_of(recognition, arg, general),
+                        (Some(arg), Some(general)) => instance_of_in(tcx, typing_env, arg, general),
                         _ => true,
                     })
         }
         (ty::Ref(_, inner, _), ty::Ref(_, general, _))
         | (ty::Slice(inner), ty::Slice(general))
-        | (ty::Array(inner, _), ty::Array(general, _)) => instance_of(recognition, *inner, *general),
+        | (ty::Array(inner, _), ty::Array(general, _)) => instance_of_in(tcx, typing_env, *inner, *general),
         (ty::Tuple(parts), ty::Tuple(general)) => {
             parts.len() == general.len()
                 && parts
                     .iter()
                     .zip(general.iter())
-                    .all(|(p, g)| instance_of(recognition, p, g))
+                    .all(|(p, g)| instance_of_in(tcx, typing_env, p, g))
         }
         _ => tcx.erase_and_anonymize_regions(ty) == tcx.erase_and_anonymize_regions(general),
     }
 }
 
 /// Is `ty` one of the types `general` stands for, `general` of the body
-/// `recognition`'s typing environment is, and its type parameters what
+/// whose typing environment `typing_env` is, and its type parameters what
 /// make it `ty` only where they meet that body's bounds? `instance_of`
 /// takes a type parameter to stand for any type; but the body's where
 /// clauses say which it can be: `Map<I, F>` of a function bound by
@@ -534,21 +545,21 @@ pub(super) fn instance_of<'tcx>(
 /// whatever another function makes and clones (#955). A parameter given two
 /// types, or a bound of one not given, is one it may meet.
 pub(super) fn instance_within_bounds<'tcx>(
-    recognition: &super::recognition::Recognition<'_, 'tcx>,
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
     ty: Ty<'tcx>,
     general: Ty<'tcx>,
 ) -> bool {
     use rustc_middle::ty::{TypeFoldable, TypeVisitableExt};
     use rustc_trait_selection::infer::TyCtxtInferExt;
     use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt;
-    if !instance_of(recognition, ty, general) {
+    if !instance_of_in(tcx, typing_env, ty, general) {
         return false;
     }
     let mut given = IndexMap::default();
     if !parameters_given(ty, general, &mut given) || given.is_empty() {
         return true;
     }
-    let tcx = recognition.tcx;
     let infcx = tcx.infer_ctxt().build(ty::TypingMode::PostAnalysis);
     let mut giving = ty::BottomUpFolder {
         tcx,
@@ -559,7 +570,7 @@ pub(super) fn instance_within_bounds<'tcx>(
         lt_op: |r| r,
         ct_op: |c| c,
     };
-    recognition.typing_env.param_env.caller_bounds().iter().all(|bound| {
+    typing_env.param_env.caller_bounds().iter().all(|bound| {
         let bound = bound.fold_with(&mut giving);
         bound.has_param() || {
             let obligation = rustc_trait_selection::traits::Obligation::new(

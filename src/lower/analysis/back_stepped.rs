@@ -481,11 +481,8 @@ pub(super) fn stepped_locals<'tcx>(
     // where it's stepped so, lent or asked beneath an adapter (#1002).
     // Of the body `owner` makes it in, whose bounds say what it can be (#955).
     let cloned_chain = |owner: rustc_span::def_id::DefId, ty: Ty<'tcx>| {
-        let made_in = Recognition {
-            typing_env: ty::TypingEnv::post_analysis(tcx, owner),
-            ..recognition
-        };
-        chained_sources(tcx, ty).is_some() && crate::lower::iterators::cloned_apart(&made_in, cloned, ty, owner)
+        let made_in = (tcx, ty::TypingEnv::post_analysis(tcx, owner));
+        chained_sources(tcx, ty).is_some() && crate::lower::iterators::cloned_apart(made_in, cloned, ty, owner)
     };
     // Each temporary given whole to what asks its back, made in place,
     // whose form its step reads: not made knowing it itself, but what it

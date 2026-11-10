@@ -80,32 +80,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// its own: asked in its `typing_env`, as the caller's would find its
     /// parameters at other indexes, arrayvec's `CAP`.
     pub(in crate::lower) fn is_unknown_in(&self, ty: Ty<'tcx>, typing_env: ty::TypingEnv<'tcx>) -> bool {
-        match ty.kind() {
-            ty::Param(_) => true,
-            ty::Alias(
-                _,
-                ty::AliasTy {
-                    kind: ty::Projection { .. },
-                    ..
-                },
-            ) => self
-                .tcx
-                .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
-                .map_or(true, |known| {
-                    matches!(
-                        known.kind(),
-                        ty::Param(_)
-                            | ty::Alias(
-                                _,
-                                ty::AliasTy {
-                                    kind: ty::Projection { .. },
-                                    ..
-                                }
-                            )
-                    )
-                }),
-            _ => false,
-        }
+        is_unknown_where(self.tcx, ty, typing_env)
     }
 
     /// A trait whose `dyn` is a pair, its value and its dictionary (ADR
@@ -973,4 +948,39 @@ pub(super) fn adapted_positions(tcx: TyCtxt<'_>, adapter: DefId) -> Vec<usize> {
     }
     positions.sort_unstable();
     positions
+}
+
+/// `Recognition::is_unknown_in`, of `tcx` alone: what's asked before the
+/// crate's libraries are read, whether a body's adapter is cloned apart
+/// (`cloned_apart`, #1243).
+pub(in crate::lower) fn is_unknown_where<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    ty: Ty<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+) -> bool {
+    match ty.kind() {
+        ty::Param(_) => true,
+        ty::Alias(
+            _,
+            ty::AliasTy {
+                kind: ty::Projection { .. },
+                ..
+            },
+        ) => tcx
+            .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
+            .map_or(true, |known| {
+                matches!(
+                    known.kind(),
+                    ty::Param(_)
+                        | ty::Alias(
+                            _,
+                            ty::AliasTy {
+                                kind: ty::Projection { .. },
+                                ..
+                            }
+                        )
+                )
+            }),
+        _ => false,
+    }
 }

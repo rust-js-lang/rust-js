@@ -416,10 +416,15 @@ fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>], c
     // And each that makes an adapter the crate clones apart, `chain()`'s
     // of a `cycle()`, whose parts its maker holds (ADR 0915).
     let clones_apart = |body: &super::Body<'tcx>| {
-        body.thir
-            .exprs
-            .iter()
-            .any(|e| matches!(e.kind, ExprKind::Call { .. }) && cloned_apart(tcx, cloned, e.ty, body.def_id))
+        body.thir.exprs.iter().any(|e| {
+            matches!(e.kind, ExprKind::Call { .. })
+                && super::iterators::cloned_apart(
+                    (tcx, ty::TypingEnv::post_analysis(tcx, body.def_id)),
+                    cloned,
+                    e.ty,
+                    body.def_id,
+                )
+        })
     };
     for body in bodies.iter_mut() {
         let flat_mapped = given.contains(&body.def_id);
@@ -428,25 +433,10 @@ fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>], c
         }
         let stepped_result = flat_mapped.then_some(body.expr);
         let owner = body.def_id;
-        let cloned_apart = |ty| cloned_apart(tcx, cloned, ty, owner);
+        let made_in = (tcx, ty::TypingEnv::post_analysis(tcx, owner));
+        let cloned_apart = |ty| super::iterators::cloned_apart(made_in, cloned, ty, owner);
         body.facts.in_place_adapters = in_place_adapters(tcx, &body.thir, stepped_result, cloned_apart);
     }
-}
-
-/// Whether `ty`, made in `owner`, is an adapter of two parts the crate
-/// clones apart, its `chain()`'s or `map()`'s cloned: made by a function of
-/// its parts, which holds them (ADR 0525); of generic code, as each
-/// instance its callers give it (#1119).
-fn cloned_apart<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    cloned: &super::analysis::Cloned<'tcx>,
-    ty: ty::Ty<'tcx>,
-    owner: DefId,
-) -> bool {
-    super::recognition::cloned_parts(tcx, ty).is_some()
-        && cloned.as_any_instance(tcx, ty, owner, |ty| {
-            cloned.contains(&tcx.erase_and_anonymize_regions(ty))
-        })
 }
 
 pub(super) fn strip(thir: &Thir<'_>, mut e: ExprId) -> ExprId {

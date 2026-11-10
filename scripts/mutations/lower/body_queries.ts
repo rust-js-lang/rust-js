@@ -566,14 +566,4 @@ export const mutations: Mutation[] = [
     replace: "            ExprKind::Field { lhs, .. } | ExprKind::Index { lhs, .. } => e = lhs,\n            ExprKind::Deref { arg: lhs } if !thir[lhs].ty.is_box() => e = lhs,\n",
     tests: ["test/corpus.test.ts", "-t", "^contains_guarded_set_through_a_box.rs$"],
   },
-  {
-    name: "in-place-cloned-apart-uninstanced",
-    breaks:
-      "generic code's own `map()` it cycles, whose clone the cloned set holds as each instance its callers give it, isn't seen to be cloned apart where adapters are made in place, so it's std's struct cloned by its compiled `Clone` where the lowering makes it cloned apart (#1119)",
-    file: "src/lower/body_queries.rs",
-    find: "        && cloned.as_any_instance(tcx, ty, owner, |ty| {\n            cloned.contains(&tcx.erase_and_anonymize_regions(ty))\n        })\n",
-    replace: "        && cloned.contains(&tcx.erase_and_anonymize_regions(ty))\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_map_cloned_where_its_made.rs$"],
-    snapshots: true,
-  },
 ];

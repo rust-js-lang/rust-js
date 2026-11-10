@@ -305,3 +305,18 @@ struct as one cloned apart, `f[$cloneKey] is not a function`. That struct is
 never cloned apart, yet its parts are still cloned in turn: its compiled
 `Clone` clones its fields, a closure among them, which its library's
 contract says how (#1202).
+
+Whether an adapter is cloned apart has one owner (#1243):
+`iterators::cloned_apart`, asked of a type, the body's typing environment
+and the crate's cloned set. The lowering asks it, and so do the analysis's
+back facts and the body facts' choice of the adapters made in place. That
+choice had its own copy, which matched a cloned type exactly where the
+lowering's matched within the body's bounds. The two answered alike for
+every corpus case, so no output changed (ADR
+[0262](0262-when-rust-and-js-disagree.md)'s first case: nothing observable
+differs). Two copies could drift apart, though, and an adapter made in place
+could then be one the lowering doesn't clone apart. The checks the function
+uses, `instance_within_bounds` and `is_unknown_where`, take `tcx` and the
+typing environment, so the analysis asks them before a `Recognition`
+exists. `test/architecture-iterators.test.ts` holds that `fn cloned_apart`
+is defined in `stepping.rs` alone.

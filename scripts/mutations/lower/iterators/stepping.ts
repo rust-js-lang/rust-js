@@ -411,4 +411,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
   },
+  {
+    name: "cloned-apart-uninstanced",
+    breaks:
+      "generic code's adapter of its own type parameters is asked as any type they may be, not as each instance its callers give it: `last`'s `Chain<I, I>` stepped from its back is taken for `cycled`'s, which rustc names alike, and refused as cloned where `I` isn't `Clone` (#1119, #1243)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "    adapter(ty) && cloned.as_any_instance(tcx, ty, owner, cloned_as)\n",
+    replace: "    adapter(ty) && cloned_as(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_chains_cloned_by_their_instances.rs$"],
+    snapshots: true,
+  },
 ];

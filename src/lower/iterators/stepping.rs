@@ -596,7 +596,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// in place: a `Map` held is std's struct (ADR 0871), whose clone is
     /// its compiled `Clone` (`clone_value`'s).
     pub(in crate::lower) fn iterator_cloned_apart(&self, ty: ty::Ty<'tcx>) -> bool {
-        cloned_apart(&self.recognition(), self.krate.cloned, ty, self.frame.owner)
+        cloned_apart(
+            (self.tcx, self.recognition().typing_env),
+            self.krate.cloned,
+            ty,
+            self.frame.owner,
+        )
     }
 
     /// `value` of type `ty`, a `step_by(n)` made here, `src.filter((_, i) =>
@@ -656,23 +661,23 @@ pub(in crate::lower) fn stepped_by_parts(value: &Expr) -> Option<(Expr, Expr)> {
 }
 
 /// `iterator_cloned_apart`'s, of `ty`, revealed, made in the body whose
-/// typing environment `recognition`'s is, and the types the crate clones,
-/// `cloned`: the one answer, of what the lowering makes and of what the
-/// analysis marks made knowing its back by its maker (#1002). A cloned type
+/// typing environment `typing_env` is, and the types the crate clones,
+/// `cloned`: the one answer, of what the lowering makes, of what the
+/// analysis marks made knowing its back by its maker (#1002), and of what
+/// a body makes in place or holds to clone (`body_queries`, #1243). A cloned type
 /// that generic code's `ty` can't be, its bounds say, isn't one of it: a
 /// `Map<I, F>` of an `I: DoubleEndedIterator<Item = u32>` is none of
 /// another function's cloned `Map`s of `slice::Iter<'_, i32>` (#955). Of
 /// `owner`'s own type parameters, each instance its callers give it, where
 /// all are seen (`Cloned::instances_of`, #1119).
 pub(in crate::lower) fn cloned_apart<'tcx>(
-    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    (tcx, typing_env): (ty::TyCtxt<'tcx>, ty::TypingEnv<'tcx>),
     cloned: &crate::lower::analysis::Cloned<'tcx>,
     ty: ty::Ty<'tcx>,
     owner: rustc_span::def_id::DefId,
 ) -> bool {
     // A closure as generic code makes it, which stands for each its
     // callers' instances of it.
-    let tcx = recognition.tcx;
     let generic_closures = |ty: ty::Ty<'tcx>| {
         rustc_middle::ty::TypeFoldable::fold_with(
             ty,
@@ -692,7 +697,8 @@ pub(in crate::lower) fn cloned_apart<'tcx>(
         cloned.iter().any(|&cloned| {
             adapter(cloned)
                 && crate::lower::copies::instance_within_bounds(
-                    recognition,
+                    tcx,
+                    typing_env,
                     generic_closures(cloned),
                     generic_closures(ty),
                 )
