@@ -7,6 +7,8 @@ pub(in crate::lower) use back_stepped::{BackStepped, SteppedLocal, field_of, mad
 mod callers_decide;
 mod cell_borrows;
 mod cell_flow;
+mod chars_asked;
+mod vec_uses;
 pub(super) use cell_borrows::{
     Borrow, Cell, CellBorrows, binding_call_runs_nothing, binding_runs_nothing, borrowed, may_be_cell,
     resolve_runs_nothing, unsized_in_place,
@@ -82,7 +84,6 @@ use rc_counts::counted_rcs;
 pub(super) use rc_counts::{Counted, Head, head};
 use rustc_hir::def::DefKind;
 use rustc_hir::find_attr;
-use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::Symbol;
@@ -521,6 +522,10 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// The map and filter types the crate steps from their back, each made
     /// knowing its back (ADR 0545).
     pub back_stepped: BackStepped<'tcx>,
+    /// Whether the crate asks a string's `Chars` its rest, its `Debug`, or
+    /// makes a `dyn` of one, so each is `$chars(s)`, not JS's own string
+    /// iterator (#1186).
+    pub chars_whole: bool,
     pub changed_vecs: IndexSet<Ty<'tcx>>,
     /// The types whose objects say where they're stored (#1113).
     pub stored_places: StoredPlaces<'tcx>,
@@ -1068,6 +1073,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // items with a destructor, which its native forms don't step.
     let drop_runs = |item| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, item);
     let back_stepped = back_stepped::of_crate(tcx, recognition, all_bodies, (library, drop_runs), &cloned);
+    let chars_whole = chars_asked::asks_chars_whole(tcx, recognition, all_bodies, library);
     // What generic code compares by `eq` of two `TrustedLen` iterators
     // given it, which it can't count: refused where comparing runs code
     // (#386).
@@ -1286,7 +1292,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let paths: IndexMap<LocalModId, Vec<String>> = modules.iter().map(|&m| (m, module_path(tcx, m))).collect();
 
     let mutated = mutated_types(tcx, all_bodies);
-    let changed_vecs = changed_vecs(tcx, all_bodies);
+    let changed_vecs = vec_uses::changed_vecs(tcx, all_bodies);
     let stored_places = stored_places::stored_places(tcx, all_bodies);
     // What a caller gives generic code whose drop runs something, a value
     // of a destructor, a counted `Rc`'s or a guard's: the one answer the
@@ -1353,7 +1359,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         taken: &drop_params,
     };
     // A `Vec`'s capacity kept as std grows it where the crate, or a library it uses, asks it (ADR 0419).
-    let asks_capacity = asks_capacity(tcx, all_bodies) || recognition.extends_as_it_fills(all_bodies);
+    let asks_capacity = vec_uses::asks_capacity(tcx, all_bodies) || recognition.extends_as_it_fills(all_bodies);
     let kept = (item_drops, asks_capacity || foreign.keeps_capacity());
     let facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given, &recognition, kept);
     let (failing, writes_may_fail) = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
@@ -1408,6 +1414,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         cloned,
         explicit_adapters,
         back_stepped,
+        chars_whole,
         changed_vecs,
         stored_places,
         drop_params,
@@ -1439,39 +1446,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         held,
         module_paths,
         null_fields,
-    })
-}
-
-/// The `Vec` types something takes `&mut` of: `push`, `sort`, `v[i] = x`
-/// and every other change to one does. A clone of any other `Vec` can be
-/// the same array (ADR 0052).
-fn changed_vecs<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> IndexSet<Ty<'tcx>> {
-    let mut changed = IndexSet::default();
-    for body in all_bodies {
-        for expr in body.thir.exprs.iter() {
-            if let ExprKind::Borrow {
-                borrow_kind: BorrowKind::Mut { .. },
-                arg,
-            } = expr.kind
-                && let ty = body.thir[arg].ty
-                && matches!(ty.kind(), ty::Adt(adt, _) if super::recognition::is_vec_like_def(tcx, adt.did()))
-            {
-                changed.insert(ty);
-            }
-        }
-    }
-    changed
-}
-
-/// Whether any body asks a `Vec` its capacity, `v.capacity()` (ADR 0419).
-fn asks_capacity<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> bool {
-    bodies.iter().any(|body| {
-        body.thir.exprs.iter().any(|expr| {
-            matches!(expr.kind, rustc_middle::thir::ExprKind::ZstLiteral { .. })
-                && super::fn_def(expr.ty).is_some_and(|(id, _)| {
-                    super::recognition::capacity_op(tcx, id) == Some(super::recognition::CapacityOp::Of)
-                })
-        })
     })
 }
 

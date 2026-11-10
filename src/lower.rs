@@ -366,6 +366,9 @@ struct CrateFacts<'a, 'tcx> {
     explicit_adapters: &'a IndexSet<DefId>,
     /// The map and filter types the crate steps from their back (ADR 0545).
     back_stepped: &'a analysis::BackStepped<'tcx>,
+    /// Whether the crate asks a `Chars` its rest, its `Debug` or a `dyn` of
+    /// it (#1186).
+    chars_whole: bool,
     /// The trait constants generic code reads (ADR 0106).
     generic_consts: &'a IndexSet<DefId>,
     changed_vecs: &'a IndexSet<Ty<'tcx>>,

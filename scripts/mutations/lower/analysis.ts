@@ -410,16 +410,6 @@ export const mutations: Mutation[] = [
     tests: ["test/diagnostics.test.ts", "-t", "a type constant"],
   },
   {
-    name: "changed-vecs-without-lists",
-    breaks:
-      "a clone of a `LinkedList` changed after is the same array, as only a `Vec`'s change is seen",
-    file: "src/lower/analysis.rs",
-    find: "                && matches!(ty.kind(), ty::Adt(adt, _) if super::recognition::is_vec_like_def(tcx, adt.did()))",
-    replace:
-      "                && matches!(ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec))",
-    tests: ["test/corpus.test.ts", "-t", "^linked_list_clone.rs$"],
-  },
-  {
     name: "library-default-named-after-file",
     breaks:
       "a library's module's default is imported named after the module's file, `import version`, not its item, `import VERSION`",
@@ -679,8 +669,8 @@ export const mutations: Mutation[] = [
     name: "growing-extend-capacity-unkept",
     breaks: "a crate whose `extend` asks the crate's own hint as a `Vec` fills keeps no capacity, so `with_capacity(n)` is an empty array of none (a wrong answer, #849)",
     file: "src/lower/analysis.rs",
-    find: "    let asks_capacity = asks_capacity(tcx, all_bodies) || recognition.extends_as_it_fills(all_bodies);\n",
-    replace: "    let asks_capacity = asks_capacity(tcx, all_bodies);\n",
+    find: "    let asks_capacity = vec_uses::asks_capacity(tcx, all_bodies) || recognition.extends_as_it_fills(all_bodies);\n",
+    replace: "    let asks_capacity = vec_uses::asks_capacity(tcx, all_bodies);\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_asks_hint_capacity_unasked.rs$"],
   },
 ];

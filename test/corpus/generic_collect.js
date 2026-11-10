@@ -2,14 +2,15 @@
 
 import {
   $BTreeMap,
+  $chars,
   $cmp,
   $collectResults,
   $debugStr,
   $foldToArray,
   $intoIter,
-  $iter,
   $lazyRange,
   $parseInt,
+  $rev,
   $roomForHint,
   $sortedEntries,
 } from "@rust-js/std";
@@ -23,7 +24,7 @@ function gather(n, BFromIteratorU32) {
 }
 
 function made(text, BFromIteratorChar) {
-  return BFromIteratorChar.fromIter($iter(Array.from(text).toReversed()));
+  return BFromIteratorChar.fromIter($rev($chars(text)));
 }
 
 function bagDebug_fmt(bag) {

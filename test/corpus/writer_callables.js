@@ -2,6 +2,7 @@
 
 import {
   $charIndices,
+  $chars,
   $formatted,
   $iter,
   $next,
@@ -26,7 +27,7 @@ function lowercase(s, options) {
 
 function capitalize(s, options) {
   let f = "";
-  const chars = $iter(Array.from(s));
+  const chars = $chars(s);
   const first = $next(chars);
   if (first != null) {
     f += first.toUpperCase();
@@ -41,7 +42,7 @@ function transform(s, withWord, boundary, options) {
   let f = "";
   let firstWord = true;
   for (const word of $splitBy(s, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c))) {
-    const charIndices = iterator_peekable($iter($charIndices(word)));
+    const charIndices = iterator_peekable($charIndices(word));
     let init = 0;
     let mode = "Boundary";
     let value;

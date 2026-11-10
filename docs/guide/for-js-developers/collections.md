@@ -1617,7 +1617,17 @@ pub fn to_number(s: &str) -> Option<f64> {
 ```
 
 ```js
-import { $byteLen, $find, $parseF64, $splitOnce, $strGet, $strSlice, $trim } from "@rust-js/std";
+import {
+  $byteLen,
+  $chars,
+  $find,
+  $next,
+  $parseF64,
+  $splitOnce,
+  $strGet,
+  $strSlice,
+  $trim,
+} from "@rust-js/std";
 
 export function lengths(s) {
   return [$byteLen(s), Array.from(s).length, s.length];
@@ -1632,7 +1642,7 @@ export function tidy(s) {
 }
 
 export function firstChar(s) {
-  return Array.from(s)[0];
+  return $next($chars(s));
 }
 
 export function reversed(s) {

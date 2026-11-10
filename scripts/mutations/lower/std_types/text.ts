@@ -483,4 +483,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
   },
+  {
+    name: "chars-always-js-iterator",
+    breaks: "a `chars()` asked its hint is JS's own string iterator, whose hint is `(0, None)`, not the runtime's `$chars(s)`",
+    file: "src/lower/std_types/text.rs",
+    find: "                match self.chars_asked_whole(made.output()) {\n",
+    replace: "                match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^chars_size_hint.rs$"],
+  },
 ];

@@ -75,7 +75,7 @@ function lexErrorDisplay_fmt(lexError) {
 
 const Lexer = {
   new(src) {
-    return { chars: iterator_peekable($iter(Array.from(src))), pos: 0 };
+    return { chars: iterator_peekable(src[Symbol.iterator]()), pos: 0 };
   },
 
   bump(lexer) {

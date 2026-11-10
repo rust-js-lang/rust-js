@@ -107,7 +107,6 @@ pub(super) fn fresh(items: &Expr) -> bool {
             ]
             .contains(&name.as_str()),
             js::ExprKind::Var(name) => [
-                "$charIndices",
                 "$range",
                 "$zip",
                 "$windows",

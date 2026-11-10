@@ -129,6 +129,35 @@ impl IterValue {
     }
 }
 
+/// Whether `e` is a string's iterator made here: JS's own,
+/// `s[Symbol.iterator]()`, or the runtime's, `$chars(s)` or
+/// `$charIndices(s)`, none of which has a `return()`.
+fn made_string_iterator(e: &Expr) -> bool {
+    super::string_iterated(e).is_some()
+        || matches!(&e.kind, js::ExprKind::Call(callee, _) if matches!(callee.helper_name(), Some("$chars" | "$charIndices")))
+}
+
+/// Of the runtime's `chars()` made here, `$chars(s)` as `e` is, the
+/// string, whose JS iteration steps the same `char`s (#1186).
+pub(in crate::lower) fn chars_made_of(e: &Expr) -> Option<&Expr> {
+    match &e.kind {
+        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$chars") && args.len() == 1 => args.first(),
+        _ => None,
+    }
+}
+
+/// Of a string's iterator made here lent, `$lent(s[Symbol.iterator]())`
+/// as `e` is, the iterator: which has no `return()` a lending keeps from
+/// being called, and which nothing else holds, so it's lent as it is
+/// (#1186).
+pub(in crate::lower) fn lent_string_iterator(e: &Expr) -> Option<&Expr> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    let [it] = &args[..] else { return None };
+    (callee.helper_name() == Some("$lent") && made_string_iterator(it)).then_some(it)
+}
+
 /// Each fact `emit` marks a value's JS with.
 const VALUE_FACTS: [Known; 12] = [
     Known::IterStepped,
@@ -542,7 +571,7 @@ pub(in crate::lower) fn knows_its_back_by_form(e: &Expr) -> bool {
         return false;
     };
     match callee.helper_name() {
-        Some("$rev" | "$zipEnds" | "$trustedZipEnds" | "$flattenEnds") => true,
+        Some("$rev" | "$zipEnds" | "$trustedZipEnds" | "$flattenEnds" | "$chars" | "$charIndices") => true,
         Some(
             "$mapEnds" | "$filterEnds" | "$enumerate" | "$lent" | "$closing" | "$held" | "$taking" | "$skipping"
             | "$stepByEnds",

@@ -81,3 +81,12 @@ ADR 0262's case: an error where Rust is fine, so Rust's. Held by
 `test/corpus/adapter_size_hints.rs` and the mutations
 `map-hint-of-own-refused`, `held-map-hint-refused`, `map-hint-lost` and
 `map-source-hint-trimmed`.
+
+## Amendment: a string's `chars()` hints as std's (#1186)
+
+`size_hint()` of a `chars()` or `char_indices()` itself is std's,
+`(bytes.div_ceil(4), Some(bytes))` of the bytes it has left. It was
+refused while `chars()` was an array whose count was exact. A crate that
+asks it makes each `Chars` the runtime's `$chars(s)`, which knows it
+([1117](1117-a-strings-chars-are-lazy.md)). Corpus case
+`chars_size_hint.rs`.

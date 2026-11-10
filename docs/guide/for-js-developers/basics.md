@@ -3321,6 +3321,8 @@ pub fn is_adult(p: &Profile) -> bool {
 ```
 
 ```js
+import { $next } from "@rust-js/std";
+
 export function displayName(p) {
   return p.nickname ?? "anonymous";
 }
@@ -3334,7 +3336,7 @@ export function initial(p) {
   if (value == null) {
     return;
   }
-  return Array.from(value)[0];
+  return $next(value[Symbol.iterator]());
 }
 
 export function isAdult(p) {

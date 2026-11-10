@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $chars,
   $cleanup,
   $dropEach,
   $dropItems,
@@ -236,7 +237,7 @@ function main() {
   );
   console.log(`${items.length}`);
   try {
-    console.log(`${wrapperCounted_counted([$iter(Array.from("ab")), "counted"], { next: $next })}`);
+    console.log(`${wrapperCounted_counted([$chars("ab"), "counted"], { next: $next })}`);
     const wrapper = [$iter([[9]]), "tally"];
     console.log(
       `${wrapperTallying(

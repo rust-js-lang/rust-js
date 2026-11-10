@@ -1024,7 +1024,8 @@ pub fn whole(w: &str) -> String {
   const lib = await import(join(dir, "mir.js"));
   expect([lib.cap("hello"), lib.cap(""), lib.cap("é!")]).toEqual(["Hello", "", "É!"]);
   expect([lib.init("abc"), lib.init(""), lib.whole("abc")]).toEqual(["ab", "", "abc"]);
-  expect(js).toContain('  return Array.from(w).join("");\n');
+  // The runtime's, which knows its rest (#1186).
+  expect(js).toContain('  return $restStr($chars(w));\n');
 });
 
 // `{:?}` of a value it reads more than once, a `Result`'s tag and what it
@@ -1207,6 +1208,7 @@ pub fn pairs(s: &str) -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function units(s) {\n  return s.length;\n}");
+  // Counted as JS counts a string's code points (#1186, the user's decision).
   expect(js).toContain("export function points(s) {\n  return Array.from(s).length;\n}");
   expect(js).toContain("export function bytes(s) {\n  return $byteLen(s);\n}");
   expect(js).toContain("return !(text.length < 5 || text.length > 500);");
@@ -1379,4 +1381,28 @@ pub fn at(text: &str, index: f64) -> Option<&'static str> {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.inserted("abc", "abXc"), lib.inserted("", "hi"), lib.inserted("ab", "ab")]).toEqual(["X", "hi", ""]);
   expect([lib.at("ab", 1), lib.at("ab", 2), lib.at("ab", -1), lib.at("ab", 0.5), lib.at("😀", 0).length]).toEqual(["b", undefined, undefined, undefined, 1]);
+});
+
+// ADR 1117: a crate's `chars()` is JS's own string iterator where only its
+// front is stepped, and `$chars(s)` where any one thing more is asked of a
+// `Chars`, each alone here: JS's own would give another answer or throw.
+test("each one thing more asked of a chars() makes it the runtime's", async () => {
+  const crates: [string, string, unknown][] = [
+    ["generic code's hint", "fn hint<I: Iterator>(it: I) -> usize { it.size_hint().1.unwrap_or(99) }\npub fn f(s: &str) -> usize { hint(s.chars()) }", 6],
+    ["its rest", "pub fn f(s: &str) -> String { let mut c = s.chars(); c.next(); c.as_str().to_string() }", "éllo"],
+    ["its hint", "pub fn f(s: &str) -> usize { s.chars().size_hint().1.unwrap_or(99) }", 6],
+    ["its back", "pub fn f(s: &str) -> Option<char> { s.chars().next_back() }", "o"],
+    ["its Debug", 'pub fn f(s: &str) -> String { format!("{:?}", s.chars()) }', "Chars(['h', 'é', 'l', 'l', 'o'])"],
+    ["a dyn of it", "pub fn f(s: &str) -> Option<char> { let mut b: Box<dyn DoubleEndedIterator<Item = char>> = Box::new(s.chars()); b.next_back() }", "o"],
+    ["its clone", "pub fn f(s: &str) -> usize { let mut c = s.chars(); c.next(); let d = c.clone(); d.count() + c.count() }", 8],
+    ["a char_indices() from its back", "pub fn f(s: &str) -> Option<usize> { s.char_indices().nth_back(1).map(|(i, _)| i) }", 4],
+  ];
+  for (const [name, source, want] of crates) {
+    const dir = fixture(`chars-whole-${name.replace(/\W+/g, "-")}`);
+    writeFileSync(join(dir, "lib.rs"), `${source}\n`);
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+    const js = readFileSync(join(dir, "lib.js"), "utf8");
+    expect([name, js.includes("$chars(") || js.includes("$charIndices(")]).toEqual([name, true]);
+    expect([name, (await import(join(dir, "lib.js"))).f("héllo")]).toEqual([name, want]);
+  }
 });

@@ -26,7 +26,7 @@ function main() {
       .join(", ")}]`,
   );
   const v = [10, 20, 30];
-  const s = new $BTreeSet(Array.from("zyx"));
+  const s = new $BTreeSet("zyx"[Symbol.iterator]());
   console.log(
     `[${Array.from($lazyZip(v, $sortedKeys(s, $cmp)).map(([a, b]) => String(a) + b))
       .map((item) => $debugStr(item))

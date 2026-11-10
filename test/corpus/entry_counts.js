@@ -8,7 +8,7 @@ export function entry() {
 
 function main() {
   const counts = new Map();
-  for (const c of Array.from("banana")) {
+  for (const c of "banana") {
     const current = $orInsert(counts, c, 0);
     counts.set(c, (current + 1) >>> 0);
   }

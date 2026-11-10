@@ -700,7 +700,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn iterates_items(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         matches!(ty.kind(), ty::Adt(adt, _) if matches!(std_path(self.tcx, adt.did()),
-            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::collections::linked_list::Iter" | "std::str::CharIndices"
+            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::collections::linked_list::Iter"
             // A slice's chunks and windows, the array of them `$chunks` and
             // the like make (ADR 0335).
             | "std::slice::Chunks" | "std::slice::ChunksMut" | "std::slice::Windows"
@@ -735,8 +735,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     "std::str::SplitTerminator",
                     "std::str::MatchIndices",
                     "std::str::Matches",
-                    "std::str::Chars",
-                    "std::str::CharIndices",
                     "std::str::SplitWhitespace",
                     "std::str::Lines",
                     "std::array::IntoIter",

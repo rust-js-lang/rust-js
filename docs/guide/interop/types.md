@@ -184,14 +184,14 @@ pub fn initial(name: &str) -> Option<char> {
 ```
 
 ```js
-import { $byteLen } from "@rust-js/std";
+import { $byteLen, $next } from "@rust-js/std";
 
 export function byteLen(text) {
   return $byteLen(text);
 }
 
 export function initial(name) {
-  return Array.from(name)[0];
+  return $next(name[Symbol.iterator]());
 }
 ```
 

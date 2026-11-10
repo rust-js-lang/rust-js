@@ -25,9 +25,7 @@ export function entry() {
 function tokens(src) {
   const out = [];
   const chars = iterator_peekable(
-    Array.from(src)
-      .values()
-      .filter((c) => !/^\p{White_Space}$/u.test(c)),
+    src[Symbol.iterator]().filter((c) => !/^\p{White_Space}$/u.test(c)),
   );
   let c;
   while ((c = $next(chars)) != null) {

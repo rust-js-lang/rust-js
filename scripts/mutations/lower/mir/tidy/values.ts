@@ -489,4 +489,21 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^stored_place_made_a_mut_dyn.rs$"],
   },
+  {
+    name: "chars-collected-kept",
+    breaks: "a string's `chars()` made the runtime's and collected reads `Array.from($rev($chars(s)))`, not `Array.from(s).toReversed()`",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        if let Some(s) = crate::lower::iterators::chars_made_of(rev.unwrap_or(it)) {\n",
+    replace: "        if let Some(s) = crate::lower::iterators::chars_made_of(rev.unwrap_or(it)).filter(|_| false) {\n",
+    tests: ["test/compiler.test.ts", "-t", "iterators are array methods"],
+  },
+  {
+    name: "lent-string-iterator-kept",
+    breaks: "a lent string iterator made where it's read is `$lent(s[Symbol.iterator]())`, not itself",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "    if let Some(it) = crate::lower::iterators::lent_string_iterator(e) {\n",
+    replace: "    if let Some(it) = crate::lower::iterators::lent_string_iterator(e).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^long_text_read_char_by_char.rs$"],
+    snapshots: true,
+  },
 ];

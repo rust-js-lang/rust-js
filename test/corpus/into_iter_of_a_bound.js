@@ -81,7 +81,7 @@ function main() {
   console.log(`[${rest([]).join(", ")}]`);
   const pairs = Array.from(
     $iterator(
-      pairFrom_A__B__from([[1, 2, 3], $iter(Array.from("ab"))], vecIntoIterator, {
+      pairFrom_A__B__from([[1, 2, 3], "ab"[Symbol.iterator]()], vecIntoIterator, {
         intoIter: (items) => items,
         IntoIterIterator: () => ({ next: $next }),
       }),

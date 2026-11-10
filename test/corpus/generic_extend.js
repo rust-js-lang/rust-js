@@ -7,7 +7,6 @@ import {
   $extend,
   $extendMap,
   $extendText,
-  $iter,
   $lazyRange,
   $reserveHint,
   $sortedKeys,
@@ -40,7 +39,7 @@ function fill(c, n, CExtendU32) {
 }
 
 function shout(c, CExtendChar) {
-  CExtendChar.extend(c, $iter(Array.from("!?")));
+  CExtendChar.extend(c, "!?"[Symbol.iterator]());
 }
 
 function main() {

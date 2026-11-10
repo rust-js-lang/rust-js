@@ -199,6 +199,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_memchr_iter(ty) || self.recognition().is_vec_splice(ty) {
             return true;
         }
+        if let Some(knows) = self.text_knows_its_back(ty) {
+            return knows;
+        }
         self.double_ended_param(self.tcx.typeck_root_def_id(self.item), ty)
     }
 

@@ -48,4 +48,20 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
 
+  {
+    name: "char-indices-back-unknown",
+    breaks: "a `char_indices()` isn't asked whether it knows its back as a `chars()` is, so generic code's `nth_back` of one is refused",
+    file: "src/lower/iterators/back_facts.rs",
+    find: "        (text.is_str_chars(ty) || text.is_char_indices(ty)).then(|| self.chars_asked_whole(ty))\n",
+    replace: "        text.is_str_chars(ty).then(|| self.chars_asked_whole(ty))\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "each one thing more asked of a chars"],
+  },
+  {
+    name: "chars-cloned-unseen",
+    breaks: "a `chars()` the crate clones is JS's own string iterator, which has no `clone()`",
+    file: "src/lower/iterators/back_facts.rs",
+    find: "        self.krate.chars_whole\n            || self\n",
+    replace: "        self.krate.chars_whole\n            || false && self\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "each one thing more asked of a chars"],
+  },
 ];

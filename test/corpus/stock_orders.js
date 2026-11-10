@@ -12,6 +12,7 @@ import {
   $dedup,
   $formatted,
   $max,
+  $next,
   $pad,
   $parseInt,
   $pretty,
@@ -279,7 +280,7 @@ function main() {
     const right = key(b);
     return $cmp(left[0], right[0]) || $cmp(left[1], right[1]);
   });
-  $retain(names, (name) => $add(seen, $unwrap(Array.from(name)[0])));
+  $retain(names, (name) => $add(seen, $unwrap($next(name[Symbol.iterator]()))));
   console.log(`first letters: ${names.join(",")}`);
 
   const prices = Array.from(inventory.items.values()).map((item) => item.priceCents);

@@ -641,8 +641,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Ok(value)
             }
-            // A std hasher, a `$SipHasher`: one of its state (ADR 0463).
-            ty::Adt(..) if self.recognition().std_hasher(ty).is_some() => {
+            // What clones itself: a std hasher, a `$SipHasher`, one of its
+            // state (ADR 0463); a string's `chars()` or `char_indices()`, the
+            // runtime's `$chars` where it's cloned, one where it is (#1186).
+            ty::Adt(..)
+                if self.recognition().std_hasher(ty).is_some()
+                    || self.recognition().is_str_chars(ty)
+                    || self.recognition().is_char_indices(ty) =>
+            {
                 Ok(Expr::call(Expr::member(place, "clone"), Vec::new()))
             }
             // A C-variadic function's `VaList`, the array of what it hasn't

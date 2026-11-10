@@ -45,7 +45,7 @@ function main() {
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const value$2 = $last(
     $iterator(
-      [$iter(Array.from("abc"))],
+      ["abc"[Symbol.iterator]()],
       (iterator) => wrapIterator_next(iterator, { next: $next }),
       true,
       undefined,

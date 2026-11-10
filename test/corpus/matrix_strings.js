@@ -5,6 +5,7 @@ import {
   $byteLen,
   $charBoundary,
   $charIndices,
+  $chars,
   $cmp,
   $debugF64,
   $debugParseError,
@@ -12,9 +13,11 @@ import {
   $find,
   $lines,
   $matches,
+  $next,
   $pad,
   $parseF64,
   $parseInt,
+  $rev,
   $rfind,
   $rsplit,
   $splitN,
@@ -71,7 +74,7 @@ function main() {
   for (let i = 0; i < STRINGS.length; i++) {
     const a = STRINGS[i];
     const length = Array.from(a).length;
-    const nth = Array.from(a)[1];
+    const nth = Array.from($chars(a).drop(1).take(1))[0];
     const collect = Array.from(a).toReversed().join("");
     const uppercase = a.toUpperCase();
     const lowercase = a.toLowerCase();
@@ -95,10 +98,10 @@ function main() {
     const value$3 = Array.from($rsplit(a, " "));
     const splitOnce = $splitOnce(a, ",");
     const sum = $utf8Bytes(a).reduce((a, b) => (a + b) >>> 0, 0);
-    const value$4 = $charIndices(a);
+    const value$4 = Array.from($charIndices(a));
     const isCharBoundary = $charBoundary(a, 1) !== undefined;
     const get = $strGet(a, 0, 1);
-    const arg$2 = $charIndices(a).toReversed()[0];
+    const arg$2 = $next($rev($charIndices(a)));
     console.log(
       `${$debugStr(a)}: split [${value$1.map((item) => $debugStr(item)).join(", ")}] [${value$2.map((item) => $debugStr(item)).join(", ")}] [${value$3.map((item) => $debugStr(item)).join(", ")}] ${splitOnce == null ? "None" : `Some((${$debugStr(splitOnce[0])}, ${$debugStr(splitOnce[1])}))`} bytes ${sum} [${value$4.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${isCharBoundary} ${get == null ? "None" : `Some(${$debugStr(get)})`} ${arg$2 == null ? "None" : `Some((${arg$2[0]}, ${$debugStr(arg$2[1], "'")}))`}`,
     );
@@ -111,7 +114,7 @@ function main() {
     const parse = $parseInt(a, -2147483648, 2147483647);
     const value$6 = $parseF64(a);
     const value$7 = $utf8Lossy($utf8Bytes(a));
-    const arg$3 = Array.from(a).every((c) => /^\p{White_Space}$/u.test(c));
+    const arg$3 = $chars(a).every((c) => /^\p{White_Space}$/u.test(c));
     console.log(
       `${$debugStr(a)}: find ${find == null ? "None" : `Some(${find})`} ${rfind == null ? "None" : `Some(${rfind})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${count} replace ${$debugStr(replace)} ${$debugStr(repeat)} fmt [${$pad(a, 8, ">")}] [${$pad(a, 8, "<")}] [${$pad(a, 8, "^")}] [${Array.from(a).slice(0, 2).join("")}] parse ${parse.TAG === "Ok" ? `Ok(${parse._0})` : `Err(${$debugParseError(parse._0, "ParseIntError")})`} ${value$6.TAG === "Ok" ? `Ok(${$debugF64(value$6._0)})` : `Err(${$debugParseError(value$6._0, "ParseFloatError")})`} lossy ${$debugStr(value$7._0)} all ${arg$3}`,
     );

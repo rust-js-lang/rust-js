@@ -7,10 +7,13 @@
 
 import {
   $add,
+  $chars,
   $cmp,
   $copyOf,
   $debugF64,
   $debugStr,
+  $filterEnds,
+  $mapEnds,
   $orInsert,
   $parseF64,
   $splitBy,
@@ -163,8 +166,8 @@ export function wordFreq(text) {
 }
 
 export function caesar(s, k) {
-  return Array.from(s)
-    .map((c) => {
+  return Array.from(
+    $mapEnds($chars(s), (c) => {
       if (/^[a-z]$/.test(c)) {
         return String.fromCharCode(
           (((((((c.codePointAt(0) & 255) - 97) & 255) + k) & 255) % 26) + 97) & 255,
@@ -176,13 +179,13 @@ export function caesar(s, k) {
       } else {
         return c;
       }
-    })
-    .join("");
+    }),
+  ).join("");
 }
 
 export function firstDup(s) {
   const seen = new Set();
-  for (const [i, c] of Array.from(s).entries()) {
+  for (const [i, c] of $chars(s).map((x, i) => [i, x])) {
     if (!$add(seen, c)) {
       return [i, c];
     }
@@ -206,7 +209,7 @@ export function report() {
   const length = s.split("o").length;
   const collect = $splitBy(s, (c) => c === "l");
   const value$2 = Array.from(s).toReversed().join("");
-  out += `${length} [${collect.map((item) => $debugStr(item)).join(", ")}] ${value$2} ${Array.from(s).filter((c) => "aeiou".includes(c)).length}\n`;
+  out += `${length} [${collect.map((item) => $debugStr(item)).join(", ")}] ${value$2} ${$filterEnds($chars(s), (c) => "aeiou".includes(c)).reduce((n) => n + 1, 0)}\n`;
   return out;
 }
 

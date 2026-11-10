@@ -162,3 +162,11 @@ The corpus's `fmt_arguments_as_str.rs` prints each way's own text, against
 native Rust; `test/diagnostics.test.ts` holds the refusal. Mutations
 `fmt-as-str-of-formatted` and `fmt-as-str-of-elsewhere-taken` put each
 old answer back.
+
+## Amendment: `chars()` and `char_indices()` are lazy (#1186)
+
+`chars()` was `Array.from(s)` and `char_indices()` an array of its
+pairs, each made whole wherever one `char` was read. Both are lazy now:
+JS's own string iterator where only the front is stepped, and the
+runtime's `$chars(s)` or `$charIndices(s)` otherwise
+([1117](1117-a-strings-chars-are-lazy.md)).

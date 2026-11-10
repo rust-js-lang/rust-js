@@ -4,6 +4,7 @@ import {
   $charIndices,
   $charIndicesOffset,
   $charIndicesStr,
+  $chars,
   $debugStr,
   $encodeCharUtf16,
   $iter,
@@ -31,7 +32,7 @@ function main() {
   const arg = $parseErrorKind(c);
   console.log(`${c} ${arg} ${e === c}`);
 
-  const chars = $iter(Array.from("héllo"));
+  const chars = $chars("héllo");
   $next(chars);
   console.log(
     `Chars([${Array.from($restStr(chars))
@@ -39,18 +40,18 @@ function main() {
       .join(", ")}])`,
   );
   console.log(
-    `Chars([${Array.from(Array.from("").join(""))
+    `Chars([${Array.from($restStr($chars("")))
       .map((item) => $debugStr(item, "'"))
       .join(", ")}])`,
   );
 
-  let it = $iter($charIndices("aé😀b"));
+  let it = $charIndices("aé😀b");
   $print(String($charIndicesOffset(it)));
   while ($next(it) != null) {
     $print(` ${$charIndicesOffset(it)}`);
   }
   console.log("");
-  it = $iter($charIndices("aé😀b"));
+  it = $charIndices("aé😀b");
   $nextBack(it);
   $next(it);
   console.log(`${$charIndicesOffset(it)} ${$debugStr($charIndicesStr(it))}`);

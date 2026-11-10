@@ -87,10 +87,12 @@ function main() {
   console.log(`[${zipped.map((item) => $debugStr(item)).join(", ")}]`);
   const chunks = $chunks(units, 2).map((c) => c.reduce((a, b) => (a * b) >>> 0, 1));
   console.log(`[${chunks.join(", ")}]`);
-  const letters = items
-    .toReversed()
-    .flatMap((i) => Array.from(i).slice(0, 1))
-    .join("");
+  const letters = Array.from(
+    items
+      .toReversed()
+      .values()
+      .flatMap((i) => i[Symbol.iterator]().take(1)),
+  ).join("");
   console.log(`${letters}`);
   const regions = all.map((s) => s.region);
   regions.sort($cmp);

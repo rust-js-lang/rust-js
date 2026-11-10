@@ -2,6 +2,7 @@
 
 import {
   $charIndices,
+  $chars,
   $count,
   $debugStr,
   $foldBack,
@@ -14,6 +15,7 @@ import {
   $nth,
   $range,
   $rest,
+  $rev,
   $roomForHint,
   $unwrap,
   iterator_rev,
@@ -48,16 +50,16 @@ function backLen(it) {
 function main() {
   const intoIterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const text = "héllo";
-  const chars = $iter(Array.from(text));
+  const chars = $chars(text);
   $next(chars);
-  const later = $iter(chars.items.slice(chars.at, chars.end));
+  const later = chars.clone();
   console.log(
-    `${$debugStr(Array.from(chars).join(""))} ${$debugStr($rest(later).toReversed().join(""))}`,
+    `${$debugStr(Array.from(chars).join(""))} ${$debugStr(Array.from($rev(later)).join(""))}`,
   );
 
-  const indices = $iter($charIndices(text));
+  const indices = $charIndices(text);
   $next(indices);
-  const copy = $iter(indices.items.slice(indices.at, indices.end));
+  const copy = indices.clone();
   const nextBack = $nextBack(indices);
   console.log(
     `${nextBack == null ? "None" : `Some((${nextBack[0]}, ${$debugStr(nextBack[1], "'")}))`} [${Array.from(

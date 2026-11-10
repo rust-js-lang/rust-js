@@ -44,7 +44,7 @@ function insert(root, word) {
   let cur = $rcClone(root);
   let iter;
   try {
-    iter = $iter(Array.from(word));
+    iter = word[Symbol.iterator]();
   } catch (error) {
     $cleanup(() => {
       $rcDrop(cur, dropNode);

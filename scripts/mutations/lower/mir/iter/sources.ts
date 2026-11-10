@@ -209,19 +209,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "mir-chars-next-back-refused",
-    breaks:
-      "`next_back()` of a string's `chars()` from MIR is refused as a lazy iterator's",
-    file: "src/lower/mir/iter/sources.rs",
-    find: "            || self.recognition().is_str_chars(ty)\n",
-    replace: "",
-    tests: [
-      "test/lowering-strings.test.ts",
-      "-t",
-      "the rest of a string's chars from MIR",
-    ],
-  },
-  {
     name: "mir-iter-mut-a-js-iterator",
     breaks:
       "a slice's `iter_mut()` from MIR is `Iterator.from(v)`, its chain lazy, `$lent(Iterator.from(v)).find(f)`, not `v.find(f)`",

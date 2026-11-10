@@ -32,12 +32,12 @@ function main() {
     )}`,
   );
   console.log(
-    `${$iterCmp($lazyRange(1, 3), $lazyRange(1, 4), $cmp) < 0} ${$iterCmp($iter([2]), $iter([2]), $cmp) <= 0} ${$iterCmp($iter(Array.from("ab")), $iter(Array.from("b")), $cmp) > 0} ${$iterCmp($iter([1, NaN]), $iter([1, 2]), $partialCmp) >= 0}`,
+    `${$iterCmp($lazyRange(1, 3), $lazyRange(1, 4), $cmp) < 0} ${$iterCmp($iter([2]), $iter([2]), $cmp) <= 0} ${$iterCmp("ab"[Symbol.iterator](), "b"[Symbol.iterator](), $cmp) > 0} ${$iterCmp($iter([1, NaN]), $iter([1, 2]), $partialCmp) >= 0}`,
   );
   console.log(
     `${
       ["Less", "Equal", "Greater"][
-        $iterCmp($iter(Array.from("abc")), $iter(Array.from("abd")), $cmp) + 1
+        $iterCmp("abc"[Symbol.iterator](), "abd"[Symbol.iterator](), $cmp) + 1
       ]
     }`,
   );

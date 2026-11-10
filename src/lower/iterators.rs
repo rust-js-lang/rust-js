@@ -17,11 +17,11 @@ mod value;
 pub(in crate::lower) use self::hint_asks::{Room, Shunted, refuse_unknown_capacity_extends};
 pub(in crate::lower) use self::stepping::{cloned_apart, stepped_by_parts};
 pub(in crate::lower) use self::value::{
-    EnumeratedForm, Form, IterValue, back_source, bounds_of, bounds_read, closed, closed_parts, enumerated,
-    enumerated_knowing, enumerated_of, form_lacks_a_back, held_by_its_owner, held_of, is_knowing, is_lent,
+    EnumeratedForm, Form, IterValue, back_source, bounds_of, bounds_read, chars_made_of, closed, closed_parts,
+    enumerated, enumerated_knowing, enumerated_of, form_lacks_a_back, held_by_its_owner, held_of, is_knowing, is_lent,
     is_range_stepped, is_reversed, iterator_parts, its_facts, knows_its_back_by_form, knows_its_given_length,
-    lazily_made, made_knowing_its_back, made_knowing_its_length, repeating_n, repeating_n_parts, reversed_by,
-    reversed_of, stepped_by_ends, stepped_by_ends_parts, stepped_every, stepped_every_parts, stepped_from,
+    lazily_made, lent_string_iterator, made_knowing_its_back, made_knowing_its_length, repeating_n, repeating_n_parts,
+    reversed_by, reversed_of, stepped_by_ends, stepped_by_ends_parts, stepped_every, stepped_every_parts, stepped_from,
     stepped_range, stepped_value, steps, unlent, was_made_knowing_its_back, was_made_knowing_its_length, zip_parts,
 };
 pub(super) use self::{eager::*, in_place::*};
@@ -625,10 +625,14 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 /// set's `extract_if`, closed where it's dropped (`$mapExtractIf`, #945),
 /// a `Vec`'s `Splice`, which puts its replacement in place as it's closed
 /// (`$splice`, #1149), `char::decode_utf16`'s, stepped as it's asked
-/// (`$decodeUtf16`, #1151), and each of its generators,
+/// (`$decodeUtf16`, #1151), a string's `chars()` the crate steps from
+/// its back or asks its rest, and every `char_indices()`, `$chars` and
+/// `$charIndices` (#1186), and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 40] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 42] = [
     "$stdIterator",
+    "$chars",
+    "$charIndices",
     "$memchrIter",
     "$mapEnds",
     "$flattenEnds",
@@ -694,6 +698,33 @@ pub(super) fn is_js_iterator(e: &Expr) -> bool {
             _ => matches!(name.as_str(), "values" | "keys" | "entries"),
         },
         _ => false,
+    }
+}
+
+/// A string's `chars()` stepped only from its front, JS's own string
+/// iterator, `s[Symbol.iterator]()`, which steps its `char`s as Rust's does
+/// (#1186): a JS iterator, of what JS's own iteration of `s` steps.
+pub(in crate::lower) fn string_iterator(s: Expr) -> Expr {
+    let it = Expr::call(Expr::index(s, Expr::member(Expr::var("Symbol"), "iterator")), vec![]);
+    Expr {
+        facts: it.facts.with(js::Known::Iterator).with(js::Known::ReceiverIterated),
+        ..it
+    }
+}
+
+/// Of `string_iterator(s)`, as `e` is, `s`.
+pub(in crate::lower) fn string_iterated(e: &Expr) -> Option<&Expr> {
+    match &e.kind {
+        js::ExprKind::Call(callee, args)
+            if args.is_empty()
+                && let js::ExprKind::Index(s, key) = &callee.kind
+                && let js::ExprKind::Member(symbol, name) = &key.kind
+                && name == "iterator"
+                && matches!(&symbol.kind, js::ExprKind::Var(v) if v == "Symbol") =>
+        {
+            Some(s)
+        }
+        _ => None,
     }
 }
 

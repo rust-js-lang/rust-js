@@ -134,10 +134,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "lower-bound-of-counted-arrays-stds",
-    breaks: "a `chars()` JS counts is taken to have std's lower bound, so a `Vec` collected of it in a crate that reads a capacity compiles, its capacity another (#1180)",
+    breaks: "a `split(..)` JS counts is taken to have std's lower bound, so a `Vec` collected of it in a crate that reads a capacity compiles, its capacity another (#1180)",
     file: "src/lower/recognition/lengths.rs",
     find: "        !self.is_array_iter(ty)\n            || self\n",
     replace: "        true || !self.is_array_iter(ty)\n            || self\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of a split"],
+  },
+  {
+    name: "lower-bound-of-lazy-chars-stds",
+    breaks: "a lazy `chars()`, whose JS adapters keep no hint, is taken to have std's lower bound, so a `Vec` collected of its `skip(n)` in a crate that reads a capacity compiles, its capacity another (#1186, #1200)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "        if self.is_str_chars(ty) || self.is_char_indices(ty) {\n            return false;\n",
+    replace: "        if false {\n            return false;\n",
     tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of chars"],
   },
 ];

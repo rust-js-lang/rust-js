@@ -4,6 +4,8 @@ import {
   $byteLen,
   $charIndices,
   $debugStr,
+  $mapEnds,
+  $rev,
   $slice,
   $sliceStartsWith,
   $utf8Bytes,
@@ -14,18 +16,11 @@ export function entry() {
 }
 
 function properPrefixes(s) {
-  return $charIndices(s)
-    .toReversed()
-    .map(([idx]) => idx)
-    .filter((idx) => idx > 0);
+  return Array.from($rev($mapEnds($charIndices(s), ([idx]) => idx)).filter((idx) => idx > 0));
 }
 
 function longestBorder(needle) {
-  for (const k of $charIndices(needle)
-    .toReversed()
-    .values()
-    .map(([idx]) => idx)
-    .filter((idx) => idx > 0)) {
+  for (const k of $rev($mapEnds($charIndices(needle), ([idx]) => idx)).filter((idx) => idx > 0)) {
     if (
       $sliceStartsWith($utf8Bytes(needle), $slice($utf8Bytes(needle), ($byteLen(needle) - k) >>> 0))
     ) {
@@ -39,12 +34,14 @@ function main() {
   console.log(`[${properPrefixes("héllo").join(", ")}]`);
   console.log(`${longestBorder("abab")} ${longestBorder("aaa")} ${longestBorder("abc")}`);
   const seen = [];
-  const backwards = $charIndices("xyz")
-    .toReversed()
-    .map(([i, c]) => {
-      seen.push(i);
-      return c;
-    });
+  const backwards = Array.from(
+    $rev(
+      $mapEnds($charIndices("xyz"), ([i, c]) => {
+        seen.push(i);
+        return c;
+      }),
+    ),
+  );
   console.log(`[${backwards.map((item) => $debugStr(item, "'")).join(", ")}] [${seen.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -1,6 +1,7 @@
 //! Read-only library-operation recognition. No function lowering state or JS emission.
 
 mod calls;
+mod chars;
 mod fmt;
 mod inherent;
 mod iterators;
@@ -8,6 +9,7 @@ mod json;
 mod lengths;
 mod methods;
 mod own_steps;
+pub(in crate::lower) use chars::reaches_str_chars;
 pub(in crate::lower) use lengths::EqSide;
 pub(in crate::lower) use own_steps::{OwnStep, Reach};
 mod owners;

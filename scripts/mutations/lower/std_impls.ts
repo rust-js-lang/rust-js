@@ -1100,4 +1100,12 @@ export const mutations: Mutation[] = [
     replace: "        let same = match by_ne && item.peel_refs() == other_item.peel_refs() && self.own_ne(item) {\n",
     tests: ["test/corpus.test.ts", "-t", "^ne_between_two_item_types.rs$"],
   },
+  {
+    name: "chars-clone-refused",
+    breaks: "a clone of a `chars()` or `char_indices()`, `$chars`' own `clone()`, is refused",
+    file: "src/lower/std_impls.rs",
+    find: "                    || self.recognition().is_str_chars(ty)\n                    || self.recognition().is_char_indices(ty) =>\n",
+    replace: "                    || false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
+  },
 ];

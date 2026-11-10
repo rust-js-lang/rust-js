@@ -951,6 +951,22 @@ fn taken_part(iterable: Expr) -> Expr {
 /// What a `for…of` iterates, of `Array.from(xs)`, a string's `chars()`:
 /// `xs` itself, the same items, which nothing changes as it's iterated.
 pub(super) fn unarrayed(e: Expr) -> Expr {
+    // And of a string's own iterator, `s[Symbol.iterator]()`, the string
+    // (#1186).
+    if let Some(s) = crate::lower::iterators::string_iterated(&e) {
+        return Expr {
+            span: e.span,
+            ..s.clone()
+        };
+    }
+    // Or of the runtime's, `$chars(s)`, which a `for…of` steps from its
+    // front alone, as it steps the string.
+    if let Some(s) = crate::lower::iterators::chars_made_of(&e) {
+        return Expr {
+            span: e.span,
+            ..s.clone()
+        };
+    }
     match e.kind {
         ExprKind::Call(callee, mut args)
             if args.len() == 1

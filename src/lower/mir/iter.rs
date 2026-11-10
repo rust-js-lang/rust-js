@@ -158,7 +158,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let text = self.recognition();
             text.is_str_chars(held) || text.is_char_indices(held) || text.is_string_drain(held)
         });
-        if of_text && !self.struct_hint_known(iter_ty) {
+        // A `chars()` or `char_indices()` itself is the runtime's `$chars`
+        // where its hint is asked, which knows the bytes it has left (#1186).
+        let own = {
+            let text = self.recognition();
+            let ty = iter_ty.peel_refs();
+            text.is_str_chars(ty) || text.is_char_indices(ty)
+        };
+        if of_text && !own && !self.struct_hint_known(iter_ty) {
             return Err(self.unsupported(span, &format!("`size_hint()` of a `{iter_ty}`, of a string's `char`s")));
         }
         // Of one made here that `$sizeHint` can't ask, a JS helper's, a
@@ -209,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Or of std's adapters of those, each a `$Steps` with std's
             // hint (#733).
-            false => self.array_source(iter_ty).is_some() || self.adapted_hint_known(iter_ty),
+            false => own || self.array_source(iter_ty).is_some() || self.adapted_hint_known(iter_ty),
         };
         if !known {
             return Err(self.unsupported(span, &format!("`size_hint()` of a `{iter_ty}`, from its MIR")));
@@ -1098,6 +1105,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 given.push(drop);
             }
             return Ok(Expr::call_helper("$count", given));
+        }
+        // Of a string's `chars()` made here, the string's, `Array.from(s)
+        // .length`, as JS writes it: a count reads each `char` either way
+        // (#1186, the user's decision).
+        if body.is_empty()
+            && let Some(s) =
+                crate::lower::iterators::string_iterated(&it).or_else(|| crate::lower::iterators::chars_made_of(&it))
+        {
+            return Ok(Expr::member(Expr::collected(s.clone()), "length"));
         }
         body.push(StmtKind::Return(Some(Expr::bin(Op::Add, Expr::var(&n), Expr::int(1)))).at(js::Span::NONE));
         Ok(Expr::call(

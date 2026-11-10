@@ -2,6 +2,7 @@
 
 import {
   $BTreeMap,
+  $chars,
   $cmp,
   $debugStr,
   $iter,
@@ -91,7 +92,7 @@ function main() {
   const last = $nextBack($iter(v));
   const value$7 = last === undefined ? undefined : (last * 10) | 0;
   console.log(`${value$7 == null ? "None" : `Some(${value$7})`}`);
-  const value$8 = $nextBack($iter(Array.from("héllo")));
+  const value$8 = $nextBack($chars("héllo"));
   const value$9 = $nextBack($iter("a,b,c".split(",")));
   console.log(
     `${value$8 == null ? "None" : `Some(${$debugStr(value$8, "'")})`} ${value$9 == null ? "None" : `Some(${$debugStr(value$9)})`}`,
@@ -132,7 +133,7 @@ function main() {
     `${left == null ? "None" : `Some(${left})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
   );
 
-  const chars = $iter(Array.from("xyz"));
+  const chars = $chars("xyz");
   $nextBack(chars);
   console.log(`${$debugStr($restStr(chars))}`);
 }

@@ -68,7 +68,7 @@ function main() {
     louds(items, [[10], [20], [30]]);
     console.log(`${$index(items, 0)[0]} ${$index(items, 1)[0]}`);
     const iter = $lazyZip(
-      $iter(Array.from("ab")),
+      "ab"[Symbol.iterator](),
       $closing($iter([[41], [42], [43]]), $dropEach(loudDrop_drop)),
     );
     let tmp;

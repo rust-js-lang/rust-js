@@ -7,6 +7,34 @@ use crate::collections::{IndexMap, IndexSet};
 /// for an iterator helper alone, which nothing else steps: `xs.values()
 /// .filter(f)`, the array's own iterator.
 pub(super) fn array_values(e: &mut Expr) {
+    // A string's iterator made here, lent, `$lent(s[Symbol.iterator]())`,
+    // its variable read where it's made: itself, which has no `return()` to
+    // close, and which nothing else holds (#1186).
+    if let Some(it) = crate::lower::iterators::lent_string_iterator(e) {
+        *e = Expr {
+            span: e.span,
+            ..it.clone()
+        };
+        return;
+    }
+    // The runtime's `chars()` made here and collected, `Array.from($chars(s))`:
+    // the string's, `Array.from(s)`, the same `char`s; and from its back,
+    // `Array.from($rev($chars(s)))`, those reversed, `Array.from(s)
+    // .toReversed()` (#1186).
+    if let Some(it) = e.collected_of() {
+        let rev = crate::lower::iterators::reversed_of(it);
+        if let Some(s) = crate::lower::iterators::chars_made_of(rev.unwrap_or(it)) {
+            let collected = Expr::collected(s.clone());
+            *e = Expr {
+                span: e.span,
+                ..match rev {
+                    Some(_) => Expr::call(Expr::member(collected, "toReversed"), vec![]),
+                    None => collected,
+                }
+            };
+            return;
+        }
+    }
     // Each array of a lazy `flatMap`, `(item) => $iter(item)`, left lazy:
     // the array, which an iterator's `flatMap` steps the same.
     if let ExprKind::Call(callee, args) = &mut e.kind

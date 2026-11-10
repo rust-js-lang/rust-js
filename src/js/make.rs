@@ -480,7 +480,8 @@ impl Expr {
         let it = match it.kind {
             ExprKind::Call(callee, args) if it.facts.has(Known::ReceiverIterated) && args.is_empty() => {
                 match callee.kind {
-                    ExprKind::Member(receiver, _) => *receiver,
+                    // A string's own iterator too, `s[Symbol.iterator]()`.
+                    ExprKind::Member(receiver, _) | ExprKind::Index(receiver, _) => *receiver,
                     kind => Expr {
                         kind: ExprKind::Call(Box::new(Expr { kind, ..*callee }), args),
                         ..it

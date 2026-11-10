@@ -1255,7 +1255,7 @@ test("chars, parse and slices are plain JS with Rust's answers", async () => {
 // value `{:?}` shows by its parts gets a name first.
 test("the calculator's JS is what a person would write", async () => {
   const js = await Bun.file(join(target, "calc.js")).text();
-  expect(js).toContain("for (const [i, c] of Array.from(s).entries()) {");
+  expect(js).toContain("for (const [i, c] of $chars(s).map((x, i) => [i, x])) {");
   expect(js).toContain("const value = firstDup(\"abcdbe\");");
   expect(js).toContain("`Some((${value[0]}, ${$debugStr(value[1], \"'\")}))`");
   expect(js).toContain('$splitBy(text, (c) => !/^[\\p{Alphabetic}\\p{N}]$/u.test(c))');
@@ -1333,14 +1333,14 @@ test("the report's JS: function values, case mapping, and plain array reads", as
   expect(js).toContain("HEADERS[0]");
   expect(js).toContain("const value = $unwrapErr($parseInt(\"\", 0, 255));");
 });
-
+// ADR 0071: an iterator stepped through knows where it is: a string's `chars()`, `$chars(src)`, lazy (ADR 1117).
 // ADR 0071: an iterator stepped through is a `$iter`, which knows where it is.
 // A `Peekable` is std's own, `{ iter, peeked }` over the `$iter`, made by
 // std's `peekable` compiled into `@rust-js/std` and stepped as the JS
 // iterator it is, its `peek` and `next_if` rewritten over it (ADR 0561).
 test("the lexer's JS steps through its source with $next and $peek", async () => {
   const js = await Bun.file(join(target, "lexer.js")).text();
-  expect(js).toContain("return {\n      chars: iterator_peekable($iter(Array.from(src))),\n      line: 1,\n    };");
+  expect(js).toContain("return {\n      chars: iterator_peekable($chars(src)),\n      line: 1,\n    };");
   expect(js).toContain("while ((c = $peek(lexer.chars)) != null) {");
   expect(js).toContain('$nextIf(lexer.chars, (item) => item === "/") != null');
   expect(js).toContain('while ($nextIf(lexer.chars, (c) => c !== "\\n") != null) {}');

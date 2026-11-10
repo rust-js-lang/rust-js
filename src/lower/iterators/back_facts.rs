@@ -85,6 +85,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         made
     }
 
+    /// Whether a string's `Chars` of type `ty` is asked more than steps
+    /// from its front (#1186): cloned, its type one the crate clones; or,
+    /// of any `Chars` the crate has, stepped from its back, asked its rest,
+    /// its hint or its `Debug`, made a `dyn`, or given to code that isn't
+    /// std's (`chars_whole`). Such a one is the runtime's `$chars(s)`, which
+    /// knows its back, its rest and its hint; another JS's own string
+    /// iterator, `s[Symbol.iterator]()`.
+    pub(in crate::lower) fn chars_asked_whole(&self, ty: ty::Ty<'tcx>) -> bool {
+        self.krate.chars_whole
+            || self
+                .krate
+                .cloned
+                .contains(&self.tcx.erase_and_anonymize_regions(ty.peel_refs()))
+    }
+
+    /// Whether a string's `chars()` or `char_indices()` of type `ty` knows
+    /// its back, `None` of another type (#1186): where it's asked more than
+    /// its front's steps (`chars_asked_whole`), so that what's made of it
+    /// is made knowing its back, `$mapEnds` and the like, and otherwise
+    /// JS's own adapters.
+    pub(in crate::lower) fn text_knows_its_back(&self, ty: ty::Ty<'tcx>) -> Option<bool> {
+        let text = self.recognition();
+        (text.is_str_chars(ty) || text.is_char_indices(ty)).then(|| self.chars_asked_whole(ty))
+    }
+
     pub(in crate::lower) fn made_stepped_from_its_back(&self) -> bool {
         self.made_into
             .and_then(|(local, _)| self.local_stepped_from_its_back(local))

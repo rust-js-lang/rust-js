@@ -5,6 +5,7 @@
 // then hands the rest of (ADR 0071).
 
 import {
+  $chars,
   $debugStr,
   $iter,
   $next,
@@ -32,7 +33,7 @@ function tokDebug_fmt(tok) {
 export const Lexer = {
   new(src) {
     return {
-      chars: iterator_peekable($iter(Array.from(src))),
+      chars: iterator_peekable($chars(src)),
       line: 1,
     };
   },
@@ -115,7 +116,7 @@ export function pairs(v) {
 }
 
 export function capitalize(s) {
-  const chars = $iter(Array.from(s));
+  const chars = $chars(s);
   const c = $next(chars);
   return c != null ? c.toUpperCase() + $restStr(chars) : "";
 }

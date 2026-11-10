@@ -173,6 +173,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(held) = crate::lower::recognition::adapted_iterators(self.tcx, self.typing_env, ty) {
             return held.into_iter().all(|held| self.lower_bound_is_stds(held));
         }
+        // A string's `chars()` or `char_indices()`, lazy (#1186): JS's own
+        // string iterator knows no hint, and JS's adapters of the runtime's
+        // `$chars`, `drop(n)` and the like, keep none of its: refused, until
+        // this asks what each adapter's JS keeps (#1200).
+        if self.is_str_chars(ty) || self.is_char_indices(ty) {
+            return false;
+        }
         !self.is_array_iter(ty)
             || self
                 .exact_size_iterator()

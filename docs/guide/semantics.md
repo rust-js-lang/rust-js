@@ -126,8 +126,15 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
 - **A `String` is edited by its bytes too:** `pop`, `insert`, `remove`,
   `truncate`, `retain` and `clear` give its place the new string, and panic
   where Rust's do ([0149](../decisions/0149-string-editing.md)).
-- **`chars()` is by code point; `bytes()` and `as_bytes()` are the UTF-8
-  bytes,** lent, `$utf8Bytes(s)`, an array never written, copied where
+- **`chars()` is by code point, and lazy:** JS's own string iterator,
+  `s[Symbol.iterator]()`, a `for` over it `for (const c of s)`, where only
+  its front is stepped; the runtime's `$chars(s)`, which knows its back,
+  its rest and std's hint, where the crate steps one from its back, asks
+  its `as_str()`, `size_hint()` or `{:?}`, or gives one to code it doesn't
+  see; `char_indices()` is `$charIndices(s)`. Each reads only the `char`s
+  it steps to, so `rest[i..].chars().next()` costs what Rust's does
+  ([1117](../decisions/1117-a-strings-chars-are-lazy.md)).
+- **`bytes()` and `as_bytes()` are the UTF-8 bytes,** lent, `$utf8Bytes(s)`, an array never written, copied where
   they're owned, `to_vec()`'s; `into_bytes()` is an array of its own. A
   long text's length in bytes, its bytes and where each byte is are kept by
   its text, so a parser asking `as_bytes()`, `len()` or `&s[i..]` each step
@@ -693,7 +700,8 @@ What's refused is in [the limitations](limitations.md).
   })`. One stepped where it's made, or by a variable only `next()`, a
   `for` loop or `drop` steps, reads as a JS chain:
   `v.iter().rev().map(f).collect()` is `v.toReversed().map(f)`, and `let
-  mut cs = s.chars().enumerate()` is `Array.from(s).entries()`. One
+  mut cs = s.chars().enumerate()` is `s[Symbol.iterator]().map((x, i) => [i,
+  x])`. One
   asked its `size_hint()` is std's struct, which knows it, but a `rev()`,
   `enumerate()`, `map()` or `inspect()` made in place, sized as its source
   is; a flatten's, and a flat map's, counts what's left of its items, an

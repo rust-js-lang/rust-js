@@ -97,6 +97,7 @@ for (const [name, source, message, crate] of [
   // std grows it; and a bound's `extend` of a `Vec<T>` whose items' size is
   // a type parameter's, which its dictionary isn't given.
   ["a Vec collected of chars where a capacity is read", "pub fn f(s: &str) -> usize {\n    let v: Vec<char> = s.chars().collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
+  ["a Vec collected of a split where a capacity is read", "pub fn f(s: &str) -> usize {\n    let v: Vec<&str> = s.split(',').collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
   ["a bound's extend of a Vec of a type parameter's items where a capacity is read", "fn fill<C: Extend<T>, T>(c: &mut C, x: T) {\n    c.extend(Some(x));\n}\npub fn f<T>(x: T) -> usize {\n    let mut v = Vec::new();\n    fill(&mut v, x);\n    v.capacity()\n}", "whose items' size std grows it by, a type parameter's"],
   // #832: what may look like `None` is `may_look_like_none`'s: a `Weak`,
   // `Weak::new()`'s `null`, a `Pin` of a `()` and a `MaybeUninit` too.
@@ -235,7 +236,6 @@ for (const [name, source, message, crate] of [
   // A builder's steps are a chain's (ADR 0136): one a loop steps is no chain.
   ["a map's key looked up through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(m: &std::collections::HashMap<Name, i32>) -> Option<&i32> { m.get(\"a\") }", "`std::collections::HashMap::<K, V, S, A>::get` of a `Name` as what its own `Borrow` gives"],
   ["items joined through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(v: &[Name]) -> String { v.join(\",\") }", "`std::slice::<impl [T]>::join` of a `Name` as what its own `Borrow` gives"],
-  ["size_hint of an iterator whose hint isn't exact", "pub fn f(s: &str) -> usize { s.chars().size_hint().0 }", "`size_hint()` of a `std::str::Chars<'_>`"],
   // Of what's made of a string's `chars()`, whose hint is of its bytes, not of how many it has,
   // which its JS counted: `(5, Some(5))` where Rust gives `(2, Some(6))` (#733).
   ["size_hint of a map of a string's chars", "pub fn f(s: &str) -> (usize, Option<usize>) { s.chars().map(|c| c as u32).size_hint() }", "of a string's `char`s"],

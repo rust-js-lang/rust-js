@@ -76,11 +76,10 @@ function parseRow(line) {
 
 function capitalize(s) {
   return [
-    ...Array.from(s)
-      .values()
+    ...s[Symbol.iterator]()
       .take(1)
       .flatMap((c) => $iter(Array.from(c.toUpperCase()))),
-    ...Array.from(s).values().drop(1),
+    ...s[Symbol.iterator]().drop(1),
   ].join("");
 }
 
@@ -157,7 +156,7 @@ export function parseErrors() {
 
 export function functionValues(words) {
   const upper = words.map((w) => w.toUpperCase());
-  const spaces = Array.from("a b\tc").map((c) => /^\p{White_Space}$/u.test(c));
+  const spaces = Array.from("a b\tc"[Symbol.iterator]().map((c) => /^\p{White_Space}$/u.test(c)));
   const roots = [4, 2.25, 9].map((n) => Math.sqrt(n));
   const owned = words.slice();
   return [upper, spaces, roots, owned];

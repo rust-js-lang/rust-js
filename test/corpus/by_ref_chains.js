@@ -2,6 +2,7 @@
 
 import {
   $byteLen,
+  $chars,
   $count,
   $debugStr,
   $iter,
@@ -39,7 +40,7 @@ function main() {
   const arg$2 = $next(words);
   console.log(`${sum} ${any} ${arg$2 == null ? "None" : `Some(${$debugStr(arg$2)})`}`);
 
-  const chars = $iter(Array.from("abcdef"));
+  const chars = $chars("abcdef");
   const skipped = $next($lent(chars).drop(1));
   const pos = $position($lent(chars), (c) => c === "e");
   const arg$3 = $restStr(chars);

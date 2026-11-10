@@ -2,6 +2,7 @@
 
 import {
   $BTreeSet,
+  $chars,
   $cleanup,
   $closing,
   $cmp,
@@ -113,7 +114,7 @@ function main() {
   );
   console.log(
     `[${wrapperGather({ next: $next })
-      .gathered([$iter(Array.from("ab"))])
+      .gathered([$chars("ab")])
       .map((item) => $debugStr(item, "'"))
       .join(", ")}]`,
   );

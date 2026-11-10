@@ -3,6 +3,7 @@
 import {
   $BTreeMap,
   $BTreeSet,
+  $chars,
   $cmp,
   $debugStr,
   $entriesShown,
@@ -91,7 +92,7 @@ function main() {
     ],
     itIterator,
   );
-  texts(() => [$iter(Array.from("ab"))], itIterator);
+  texts(() => [$chars("ab")], itIterator);
   const shown = listedDebug_fmt([() => [$iter([1, 2])]], itIterator, {
     fmt: (value) => String(value),
   });

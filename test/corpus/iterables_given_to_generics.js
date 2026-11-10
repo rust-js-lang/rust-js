@@ -2,6 +2,7 @@
 
 import {
   $BTreeMap,
+  $chars,
   $cmp,
   $debugStr,
   $extend,
@@ -81,7 +82,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${firsts($iter(Array.from("héy")), { fmt: (value) => $debugStr(value, "'") })
+    `[${firsts($chars("héy"), { fmt: (value) => $debugStr(value, "'") })
       .map((item) => $debugStr(item))
       .join(", ")}] [${firsts([[1], []], { fmt: (value) => `[${value.join(", ")}]` })
       .map((item) => $debugStr(item))

@@ -917,6 +917,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         values: &mut std::vec::IntoIter<Expr>,
     ) -> R<Option<Expr>> {
         let Call {
+            def_id,
             generic_args,
             tys,
             span,
@@ -924,6 +925,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } = call;
         let mut arg = || values.next().expect("rustc checked the arguments");
         Ok(Some(match known {
+            // A string's `char`s, lazy (#1186): JS's own string iterator,
+            // which steps them as Rust's do, where only its front is
+            // stepped; else the runtime's, which knows its back and its rest.
+            Std::Chars => {
+                let made = self.tcx.instantiate_bound_regions_with_erased(
+                    self.tcx
+                        .fn_sig(def_id)
+                        .instantiate(self.tcx, generic_args)
+                        .skip_normalization(),
+                );
+                let s = arg();
+                match self.chars_asked_whole(made.output()) {
+                    true => Expr::call_helper("$chars", vec![s]),
+                    false => crate::lower::iterators::string_iterator(s),
+                }
+            }
             // A `String`'s `+`: text joined to what's added (ADR 0639, amended).
             Std::Concat => Expr::text_joined(arg(), arg()),
             Std::Method(name) => {
@@ -961,7 +978,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::helper(name), vec![arg(), arg()])
             }
             Std::StripCircumfix => Expr::call(Expr::helper("$stripCircumfix"), vec![arg(), arg(), arg()]),
-            Std::Chars => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![arg()]),
             Std::StringNew => Expr::str(""),
             Std::Trim { start, end } => self.trimmed(arg(), start, end),
             Std::AsciiCase { upper } => {

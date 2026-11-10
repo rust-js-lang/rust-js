@@ -28,7 +28,7 @@ function main() {
   });
   $orInsert(inventory, "pear", [1, 0.25]);
   const counts = new $BTreeMap();
-  for (const c of Array.from("banana")) {
+  for (const c of "banana") {
     $andModify(
       $entry(counts, c),
       (n) => {

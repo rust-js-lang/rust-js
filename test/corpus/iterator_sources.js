@@ -100,9 +100,9 @@ function main() {
   // The crate's own iterators, chained and zipped on, and stepped through.
   const chained = [10, 20, ...$iterator([0], counterIterator_next)];
   const zipped = Array.from(
-    $lazyZip($iterator([0], counterIterator_next), $iter(Array.from("ab"))),
+    $lazyZip($iterator([0], counterIterator_next), "ab"[Symbol.iterator]()),
   );
-  const labelled = Array.from($lazyZip($iter(Array.from("xyz")), $repeating(7)));
+  const labelled = Array.from($lazyZip("xyz"[Symbol.iterator](), $repeating(7)));
   console.log(
     `[${chained.join(", ")}] [${zipped.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] [${labelled.map((item) => `(${$debugStr(item[0], "'")}, ${item[1]})`).join(", ")}]`,
   );

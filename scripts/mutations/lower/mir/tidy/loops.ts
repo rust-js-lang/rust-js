@@ -748,4 +748,13 @@ export const mutations: Mutation[] = [
     replace: "        let mut stepped = vec![bound.at(js::Span::NONE)];\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "a comment above a loop body's first statement is after its item"],
   },
+  {
+    name: "for-of-string-iterator-kept",
+    breaks: "a `for` over a string's `chars()` reads `for (const c of s[Symbol.iterator]())`, not `for (const c of s)`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "    if let Some(s) = crate::lower::iterators::string_iterated(&e) {\n",
+    replace: "    if let Some(s) = crate::lower::iterators::string_iterated(&e).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^long_text_read_char_by_char.rs$"],
+    snapshots: true,
+  },
 ];

@@ -242,14 +242,12 @@ function main() {
   });
   run("chars fold", () => {
     const x = $foldDropping(
-      Array.from("abcd")
-        .values()
-        .map((c) => {
-          if (c === "c") {
-            throw new Error("c");
-          }
-          return c.codePointAt(0);
-        }),
+      "abcd"[Symbol.iterator]().map((c) => {
+        if (c === "c") {
+          throw new Error("c");
+        }
+        return c.codePointAt(0);
+      }),
       [],
       (acc, n) => {
         try {

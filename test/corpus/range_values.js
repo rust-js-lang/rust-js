@@ -7,7 +7,6 @@ import {
   $drain,
   $eq,
   $extendMap,
-  $iter,
   $iterator,
   $lazyRange,
   $lazyZip,
@@ -103,7 +102,7 @@ function main() {
   );
   let ids = Array.from($iterator({ start: 1 }, $rangeFromStep(0, 4294967295)).take(3));
   const numbered = Array.from(
-    $lazyZip($iterator({ start: 1 }, $rangeFromStep(0, 4294967295)), $iter(Array.from("abc"))),
+    $lazyZip($iterator({ start: 1 }, $rangeFromStep(0, 4294967295)), "abc"[Symbol.iterator]()),
   );
   console.log(
     `[${ids.join(", ")}] [${numbered.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${firstSquareOver(50)}`,

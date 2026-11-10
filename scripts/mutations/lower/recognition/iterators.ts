@@ -408,28 +408,18 @@ export const mutations: Mutation[] = [
     breaks:
       "a `LinkedList`'s `iter()` is a JS helper of it, which can't be cloned where it is",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::collections::linked_list::Iter" | "std::str::CharIndices"\n',
+    find: '            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::collections::linked_list::Iter"\n',
     replace:
-      '            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::str::CharIndices"\n',
-    tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
-  },
-  {
-    name: "char-indices-not-items",
-    breaks:
-      "a string's `char_indices()` is a JS helper of its pairs, which can't be cloned",
-    file: "src/lower/recognition/iterators.rs",
-    find: '            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::collections::linked_list::Iter" | "std::str::CharIndices"\n',
-    replace:
-      '            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::collections::linked_list::Iter"\n',
+      '            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter"\n',
     tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
   },
   {
     name: "option-iter-not-items",
     breaks: "an `Option`'s `iter()` can't be cloned where it is",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::collections::linked_list::Iter" | "std::str::CharIndices"\n',
+    find: '            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::collections::linked_list::Iter"\n',
     replace:
-      '            "std::result::Iter" | "std::collections::linked_list::Iter" | "std::str::CharIndices"\n',
+      '            "std::result::Iter" | "std::collections::linked_list::Iter"\n',
     tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
   },
   {

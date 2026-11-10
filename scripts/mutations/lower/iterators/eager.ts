@@ -445,16 +445,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "char-indices-not-fresh",
-    breaks:
-      "a string's `char_indices()` collected, an array made there, is copied again, `$charIndices(s).slice()`",
-    file: "src/lower/iterators/eager.rs",
-    find: '                "$charIndices",\n',
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^matrix_strings.rs$"],
-    snapshots: true,
-  },
-  {
     name: "rchunks-not-fresh",
     breaks:
       "`rchunks_exact(n)` is a JS iterator of its chunks, not their array, so its `remainder()` reads a property nothing has",

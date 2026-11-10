@@ -85,7 +85,7 @@ function main() {
   );
   console.log(`${unwrapped("é=1")} ${unwrapped("🦀🦀=x")}`);
   console.log(`${edited("héllo")}`);
-  const words = $charIndices("aé🦀");
+  const words = Array.from($charIndices("aé🦀"));
   console.log(`[${words.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

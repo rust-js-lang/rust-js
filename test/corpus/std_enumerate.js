@@ -107,7 +107,7 @@ function main() {
   console.log(`${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`);
 
   // Stepped through a variable alone.
-  const chars = Array.from("abc").entries();
+  const chars = "abc"[Symbol.iterator]().map((x, i) => [i, x]);
   while (true) {
     const value = $next(chars);
     if (value != null) {
