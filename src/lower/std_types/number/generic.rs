@@ -356,6 +356,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         };
         if !matches!(fact, TypeFact::Fused) && !decided && unknown {
+            // A trait method's `impl Trait`, whose dictionaries carry none of
+            // its facts yet (#1312).
+            if let ty::Alias(
+                _,
+                ty::AliasTy {
+                    kind: ty::Projection { def_id },
+                    ..
+                },
+            ) = of.kind()
+                && self.tcx.is_impl_trait_in_trait(*def_id)
+            {
+                let what = format!("{what} of a trait method's `{of}` (#1312), which its dictionaries don't carry");
+                return Err(self.unsupported(span, &what));
+            }
             return Err(self.unsupported(span, &format!("{what} of `{of}`, which no caller gives")));
         }
         // Whether it has the trait the fact is, a `OneShot`, whose `flatten()`

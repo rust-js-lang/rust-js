@@ -574,33 +574,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .skip_normalization()
                 .skip_binder()
                 .output();
-            let output = (self.tcx.fn_sig(method).instantiate(self.tcx, instance.args))
+            // As the impl makes it, `<Tens as Source>::Iter` its `Map`, an
+            // `impl`'s hidden type std's struct it hides (#1292), and its
+            // form, in the method's own environment in the instance's terms:
+            // the dictionary's, the impl's, holds the impl's parameters,
+            // `Tens<T>`'s `T`, not the method's own and their bounds, `fn
+            // tagged<U: Copy>`'s, whose closure copying a `U` is an `FnMut`
+            // only by it, nor `fn hidden<const M: u32>`'s `M`, which rustc's
+            // normalization panicked finding (#1304, #1308).
+            let tcx = self.tcx;
+            let bounds = (tcx.param_env(method).caller_bounds().iter()).map(|bound| {
+                ty::EarlyBinder::bind(tcx, bound)
+                    .instantiate(tcx, instance.args)
+                    .skip_normalization()
+            });
+            let method_env = ty::TypingEnv::new(
+                ty::ParamEnv::new(tcx.mk_clauses_from_iter(bounds)),
+                self.typing_env.typing_mode(),
+            );
+            let output = (tcx.fn_sig(method).instantiate(tcx, instance.args))
                 .skip_normalization()
                 .skip_binder()
                 .output();
-            // As the impl makes it, `<Tens as Source>::Iter` its `Map`, an
-            // `impl`'s hidden type std's struct it hides (#1292), in the
-            // dictionary's environment, the impl's, which holds the impl's
-            // parameters, `Tens<T>`'s `T`. Not of a method with type or const
-            // parameters of its own, `fn foo<const N: usize>(&self) ->
-            // Self::Assoc<N>`'s `N`, which it doesn't: rustc's normalization
-            // panicked finding `N` (#1304).
-            let output = match self.tcx.generics_of(method).own_requires_monomorphization() {
-                true => output,
-                false => (self.tcx)
-                    .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(output))
-                    .unwrap_or(output),
-            };
-            let env = self.tcx.param_env(item.def_id);
+            let output = tcx
+                .try_normalize_erasing_regions(method_env, ty::Unnormalized::new_wip(output))
+                .unwrap_or(output);
+            let env = tcx.param_env(item.def_id);
             let iterates = self.made_js_iterator(declared_output, env, output);
             let call = Expr::call(callee.clone(), values.clone());
             // Knowing its back and its length where the trait bounds it so.
+            let dictionary_env = std::mem::replace(&mut self.typing_env, method_env);
             let call = match (iterates, self.made_iterator_ends(declared_output, env)) {
-                (false, _) => None,
-                (true, (back, true)) => Some(self.as_exact_size(call, output, back, span)?),
-                (true, (true, false)) => Some(self.as_double_ended(call, output, span)?),
-                (true, (false, false)) => Some(self.as_js_iterator(call, output, span)?),
+                (false, _) => Ok(None),
+                (true, (back, true)) => self.as_exact_size(call, output, back, span).map(Some),
+                (true, (true, false)) => self.as_double_ended(call, output, span).map(Some),
+                (true, (false, false)) => self.as_js_iterator(call, output, span).map(Some),
             };
+            self.typing_env = dictionary_env;
+            let call = call?;
             // A `&mut` generic code has in a box by the trait's signature, `&mut
             // Self::Target` of a `Vec`, which the method gives as the object:
             // a box of it, which a write of the whole changes in place (ADR

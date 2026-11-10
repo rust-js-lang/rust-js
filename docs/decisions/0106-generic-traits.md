@@ -265,3 +265,48 @@ build of std's structs alone refuses ("its constant size of `<S as
 Source>::Iter`"), and `$iter`'s throw. Mutations
 `made-js-iterator-of-std-struct-unseen`, `entry-output-unnormalized` and
 `iter-of-what-knows-no-back-quiet`.
+
+## Amendment: in the method's own environment (#1304, #1308)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): results changed,
+so Rust's are kept.
+
+#1292's entry normalized what the method gives in the dictionary's
+environment, the impl's. That environment doesn't hold the method's own
+parameters, so rustc's normalization panicked on `fn foo<const N:
+usize>(&self) -> Self::Assoc<N>` (#1304). 818c96b14 then left out every
+method with type or const parameters of its own. So a trait method with
+generics of its own that gives an iterator that knows its back,
+`items<U: Copy>(..) -> Self::Iter` or `hidden<const M: u32>(..) -> impl
+DoubleEndedIterator`, wasn't made one. Generic code stepping it from
+its back threw `it.back is not a function`, and a flatten of it threw
+`$iter`'s TypeError, where native Rust gives `(Some(30), [20, 10, 0])`
+and `[4, 2, 0, 2, 0, 0]`. `items<U>` doesn't name `U` in its output at
+all.
+
+The entry now asks in the method's own environment in the instance's
+terms: the impl method's `param_env`, its bounds instantiated with the
+instance's arguments. That environment holds the impl's parameters and
+the method's, numbered as the instance's arguments number them. What
+the method gives is normalized there, with no exception for a method's
+own generics. The JS iterator's form is picked there too, `self.typing_env`
+swapped for it while `as_double_ended` and its siblings ask. `tagged<U:
+Copy>`'s `(0..n).map(move |x| (x, tag))` copies its `U`, so it's an
+`FnMut` only by the method's own bound, and its `Map` knows its back
+only there.
+
+`test/corpus/associated_iterator_of_a_method_with_its_own_generics.rs`
+holds `items<U>`, `hidden<const M>` (`rev()` and `rfold`) and
+`tagged<U: Copy>`, of an impl of no generics and of a const-generic
+one, against native Rust in both builds. It steps the opaque iterators
+where they're made, as holding one is refused in a library build
+(#1296). `test/lowering-generic-iterators.test.ts` holds the flatten,
+`flat_map(S::hidden::<2>)` and `flat_map(|n| S::items(n, 'a'))`, in the
+plain build. The build of std's structs refuses it: no dictionary
+carries a trait method's `impl Trait`'s facts yet. The refusal names
+#1312, "its constant size of a trait method's `impl ..` (#1312)", where
+it said "which no caller gives". Mutations:
+`entry-output-of-own-generics-unnormalized` (818c96b14's exception
+restored), `entry-form-in-the-dictionarys-env`,
+`dictionary-output-of-parameters-normalized` (refitted: normalized in
+the dictionary's environment) and `rpitit-fact-refusal-unnamed`.

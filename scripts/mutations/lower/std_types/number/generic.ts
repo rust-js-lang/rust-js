@@ -278,4 +278,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_eq_generic_of_a_fieldless_enum_refused.rs$"],
   },
+  {
+    name: "rpitit-fact-refusal-unnamed",
+    breaks: "the build of std's structs refuses a fact of a trait method's `impl Trait` as one no caller gives, not naming #1312, which no dictionary carries yet",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "                && self.tcx.is_impl_trait_in_trait(*def_id)\n",
+    replace: "                && false\n",
+    tests: ["test/lowering-generic-iterators.test.ts", "-t", "a flatten of what a trait method with its own generics gives"],
+  },
 ];

@@ -183,6 +183,61 @@ pub fn flattened() -> Vec<Vec<u32>> {
   ]);
 });
 
+// Of a trait method with generics of its own, a type's, `items<U: Copy>`,
+// or a constant's, `hidden<const M: u32>`: generic code's flatten of what
+// each gives, stepped from its back, steps each by its compiled
+// `next_back`, as the impl's dictionary makes it, where `$iter` threw that
+// it doesn't know its back; native Rust prints these lines (#1308). The
+// build of std's structs refuses the flatten's constant size of `hidden`'s
+// `impl Trait`, naming #1312, which no dictionary carries yet; so
+// test/corpus/associated_iterator_of_a_method_with_its_own_generics.rs
+// holds the rest.
+test("a flatten of what a trait method with its own generics gives steps each from its back", async () => {
+  const dir = fixture("associated-iterator-own-generics-flatten");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `trait Source {
+    type Iter: DoubleEndedIterator<Item = u32>;
+    fn items<U: Copy>(n: u32, tag: U) -> Self::Iter;
+    fn hidden<const M: u32>(n: u32) -> impl DoubleEndedIterator<Item = u32>;
+}
+
+struct Tens;
+
+impl Source for Tens {
+    type Iter = std::iter::Map<std::ops::Range<u32>, fn(u32) -> u32>;
+    fn items<U: Copy>(n: u32, _tag: U) -> Self::Iter {
+        (0..n).map(|x| x * 10)
+    }
+    fn hidden<const M: u32>(n: u32) -> impl DoubleEndedIterator<Item = u32> {
+        (0..n).map(|x| x * M)
+    }
+}
+
+fn by_name<S: Source>() -> Vec<u32> {
+    (1..4u32).flat_map(|n| S::items(n, 'a')).rev().collect()
+}
+
+fn hidden<S: Source>() -> Vec<u32> {
+    (1..4u32).flat_map(S::hidden::<2>).rev().collect()
+}
+
+pub fn flattened() -> Vec<Vec<u32>> {
+    vec![by_name::<Tens>(), hidden::<Tens>()]
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.flattened()).toEqual([
+    [20, 10, 0, 10, 0, 0],
+    [4, 2, 0, 2, 0, 0],
+  ]);
+  expect(() => run([compiler, join(dir, "lib.rs"), "-o", join(dir, "structs.js"), "--std-iterators"])).toThrow(
+    "its constant size of a trait method's `impl std::iter::DoubleEndedIterator + std::iter::Iterator<Item = u32>` (#1312)",
+  );
+});
+
 // `$iter` of what's neither an array nor an iterator that knows its back,
 // a compiler's mistake, throws, never steps it as an empty array, as
 // #1292's flatten did of std's struct; a `TypeError`, which no
