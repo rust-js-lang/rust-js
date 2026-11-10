@@ -402,3 +402,25 @@ are counted: none for the write, one where the old value is returned.
 Mutations `replace-unread-read` (`lower/std_types/cell.ts`),
 `result-unread-untold` and `result-unread-of-what-is-read`
 (`lower/mir/std_calls.ts`).
+
+## Amendment: a proxy of a Rust-made object isn't that object (2026-11-10)
+
+A JS `Proxy` of an object Rust made, Vue's `reactive()` or an Immer draft,
+is another object: a value JS made, whose fields a getter answers, as
+this ADR reads it, not the object Rust made. Its identity is its own:
+`===`, `Rc::ptr_eq` and `ptr::eq` of it and its target are `false`, and
+where an object is stored, which the runtime records by identity for an
+address asked (#1113, ADR 0562), isn't known of the proxy, so an address
+asked through one is of an allocation apart from its target's. Identity
+and addresses are one fact, treated alike (the user's decision, #1198,
+over keeping the records as symbol-keyed properties of each object, which
+a proxy would read through to its target). Case ([0262](0262-when-rust-and-js-disagree.md)):
+results change where a program gives Rust both, so it's said in the
+guide's differences: give Rust the object it made, Vue's `toRaw(state)`.
+
+The object model's net, whose membrane gives the program a proxy of each
+object its library gives and the library its own, so one object with two
+identities, runs a case whose program or library asks an address
+unproxied only (`asksAnAddress`, `test/object-model.test.ts`):
+`address_of_a_field_where_its_object_is_stored.rs` printed `passed
+4294963208` proxied, two allocations, where native Rust prints 16.

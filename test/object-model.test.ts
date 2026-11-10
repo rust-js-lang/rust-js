@@ -87,6 +87,13 @@ function membraned(js: string, libraryJs: string, dir: string, name: string): Lo
   return { run: ran, log: existsSync(logFile) ? readFileSync(logFile, "utf8") : "" };
 }
 
+/** Whether `js` asks a pointer's address (ADR 0562): `p as usize`,
+ * `offset_from`, `p < q` or `{:p}`, each a runtime helper it imports. */
+export function asksAnAddress(js: string): boolean {
+  const imported = /import \{([^}]*)\} from "@rust-js\/std"/.exec(js)?.[1] ?? "";
+  return imported.split(",").some((name) => ["$addr", "$ptrOffsetFrom", "$ptrCmp", "$ptrShown"].includes(name.trim()));
+}
+
 /** What's wrong of a case, or nothing: a variant run otherwise than
  * native, or reading what the library gave otherwise than the least. */
 function wrong(name: string, edition: string): string | undefined {
@@ -124,6 +131,14 @@ function wrong(name: string, edition: string): string | undefined {
   const firedFile = join(dir, "fired.txt");
   const built = program(["--prepare-fired", firedFile]);
   if (!("js" in built)) return void tally(name, "program refused");
+  // A crate that asks an address, of the program's or the library's, isn't
+  // run proxied: the membrane gives the program a proxy of each object the
+  // library gives and the library its own, two identities of one object,
+  // and where an object is stored is recorded by its identity, as `===`
+  // and `Rc::ptr_eq` compare it. A proxy of a Rust-made object isn't that
+  // object (ADR 1022, amended; #1198). Its JS imports the runtime's
+  // helpers of an address asked, ADR 0562's.
+  if ([built.js, libraryJs].some((js) => asksAnAddress(readFileSync(js, "utf8")))) return void tally(name, "asks an address");
   const ends = stageEnds();
   const least = program(["--tidy-until", ends[0], ...everyRewrite().flatMap((pass) => ["--prepare-without", pass])]);
   if (!("js" in least)) return `the least JS doesn't compile: ${least.error.split("\n").slice(0, 4).join("\n")}`;
@@ -212,6 +227,14 @@ test("under --js-made-all a library's struct is read as one JS may make", () => 
   const js = readFileSync(built.js, "utf8");
   expect(js.match(/\.left\b/g)?.length).toBe(1);
   expect(js.match(/\.right\b/g)?.length).toBe(1);
+});
+
+// #1198: a case whose crate asks an address isn't run proxied, as the
+// membrane gives one object two identities, by which where it's stored is
+// recorded; one that asks none is.
+test("a crate that asks an address isn't run with its library's values proxied", () => {
+  const js = (name: string) => readFileSync(join(root, "test", "corpus", `${name}.js`), "utf8");
+  expect(["address_of_a_field_where_its_object_is_stored", "pointer_offset_from", "array_map"].map((name) => asksAnAddress(js(name)))).toEqual([true, true, false]);
 });
 
 test("the known list reads its lines", () => {

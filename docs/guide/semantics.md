@@ -1820,3 +1820,11 @@ React and JSX are [their own pages](README.md#react).
     2026-11-09, #1053; [ADR 0959](../decisions/0959-ptr-eq-of-a-closure-made-with-its-rc.md),
     amended).
 
+49. A JS `Proxy` of an object Rust made, Vue's `reactive(state)` or an
+    Immer draft given back to Rust, isn't that object: `===`,
+    `Rc::ptr_eq` and `ptr::eq` of the two are `false`, and an address
+    asked of one, `&raw const o.f as usize`, is of an allocation apart
+    from the other's, as where an object is stored is recorded by its
+    identity. Give Rust the object it made, `toRaw(state)`, where it
+    compares or asks addresses ([ADR 1022](../decisions/1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md),
+    amended, the user's decision, #1198).
