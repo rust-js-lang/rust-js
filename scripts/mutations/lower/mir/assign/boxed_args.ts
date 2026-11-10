@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&mut` whose borrow a call's result holds is given the number, not a handle on its place",
     file: "src/lower/mir/assign/boxed_args.rs",
-    find: "                exprs.push(through(Expr::handle(place)));\n                continue;\n",
-    replace: "                exprs.push(through(place));\n                continue;\n",
+    find: "                exprs.push(through(self, Expr::handle(place)));\n                continue;\n",
+    replace: "                exprs.push(through(self, place));\n                continue;\n",
     tests: ["test/corpus.test.ts", "-t", "mut_number_handles"],
   },
   {
@@ -96,8 +96,8 @@ export const mutations: Mutation[] = [
     name: "held-mut-boxed-as-held",
     breaks: "a `&mut` to a local `&mut` to an object, given as a generic `&mut W`, is boxed as the local holds it, the object, where generic code reads its in-place cell (#1300)",
     file: "src/lower/mir/assign/boxed_args.rs",
-    find: "                self.form_differs(Form::Box, crossing).then_some(crossing)\n",
-    replace: "                self.form_differs(Form::Box, crossing).then_some(crossing).filter(|_| false)\n",
+    find: "                self.form_differs(Form::HeldBox, crossing).then_some(crossing)\n",
+    replace: "                self.form_differs(Form::HeldBox, crossing).then_some(crossing).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_of_a_held_mut_given_to_generic_code.rs$"],
   },
   {
@@ -107,5 +107,14 @@ export const mutations: Mutation[] = [
     find: "                    Some(crossing) => self.form_back(Form::Box, crossing, back),\n",
     replace: "                    Some(_) => back,\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_of_a_held_mut_given_to_generic_code.rs$"],
+  },
+  {
+    name: "held-mut-value-given-as-it-is",
+    breaks:
+      "a `&mut` to a `&mut` to an object held as a value, a closure's parameter, is given to generic code as its caller's box, where generic code reads its box of the object's cell (#1303)",
+    file: "src/lower/mir/assign/boxed_args.rs",
+    find: "                if !matches!(value, Value::Ref(_)) && self.form_differs(Form::HeldBox, crossing) {",
+    replace: "                if false && self.form_differs(Form::HeldBox, crossing) {",
+    tests: ["test/corpus.test.ts", "-t", "^mut_of_a_held_mut_given_back_by_generic_code.rs$"],
   },
 ];

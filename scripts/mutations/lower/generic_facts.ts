@@ -3,6 +3,24 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "held-box-given-back-as-it-is",
+    breaks:
+      "what generic code gives back of a `&mut W` whose `W` is a `&mut` to an object, its box of the object's cell, is read as the caller's box of the object: `keep(&mut by).write_all(..)` of `by: &mut Vec<u8>` throws `push is not a function` (#1303)",
+    file: "src/lower/generic_facts.rs",
+    find: '            Form::HeldBox => Expr::call_helper("$heldObjectOf", vec![value]),',
+    replace: "            Form::HeldBox => value,",
+    tests: ["test/corpus.test.ts", "-t", "^mut_of_a_held_mut_given_back_by_generic_code.rs$"],
+  },
+  {
+    name: "held-box-of-no-box",
+    breaks:
+      "a `&mut W` whose `W` is given a `&mut` to an object is taken as no box of its box, so what's given is the caller's box and what's given back is read as it (#1300, #1303)",
+    file: "src/lower/generic_facts.rs",
+    find: "                    self.form_differs(Form::Box, (def_id, declared, instantiated))\n",
+    replace: "                    false\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_of_a_held_mut_given_(to|back_by)_generic_code.rs$"],
+  },
+  {
     name: "box-form-unasked",
     breaks:
       "generic code's box of an object's `&mut` isn't a form that differs: a library's function given as an `F` reads its box as the object, and a `fn` pointer gives the instance the object",

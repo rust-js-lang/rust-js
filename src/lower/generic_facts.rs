@@ -20,7 +20,7 @@
 //! | a bound's methods, its dictionary (ADR 0049) | Given | `src/lower/traits/routes.rs evidence_for` |
 //! | a std function's `Iterator` dictionary of what it's given as it is (#1147, #1163) | Given | `src/lower/analysis/iterator_steps.rs stepped_params` |
 //! | what dropping one runs, its drop slot (ADR 0421) | Given | `src/lower/traits/drop_params.rs drop_slot` |
-//! | a raw pointer whose pointee is a type parameter, a handle (ADR 1114), and a `&mut` of one, generic code's box (ADRs 0454, 1086), `Form`'s | Form | `src/lower/generic_facts.rs form_given` |
+//! | a raw pointer whose pointee is a type parameter, a handle (ADR 1114), and a `&mut` of one, generic code's box (ADRs 0454, 1086), and of one given a `&mut`, a box of its box (#1300, #1303), `Form`'s | Form | `src/lower/generic_facts.rs form_given` |
 //! | a `Some` of it, boxed or not, by its value, `$some(x)`'s (ADR 0051) | Given | `src/lower/representation/options.rs boxed_payload` |
 //! | an iterator or a function given as it is, not boxed (#992) | Form | `src/lower/iterators.rs given_as_it_is` |
 //! | an iterator given where generic code steps a JS iterator, adapted at every route to it, a call, a `fn` pointer, a function value (ADR 0061) | Form | `src/lower/iterators/stepping.rs given_iterators` |
@@ -58,6 +58,15 @@ pub(in crate::lower) enum Form {
     /// `$cellOf(object)`, whose write changes it in place, a direct call's
     /// as a value's.
     Box,
+    /// A `&mut` of its type parameter whose caller's is a `&mut` to a
+    /// `&mut` to an object, `&mut W` of `&mut by`, `by: &mut Vec<u8>`: the
+    /// box of the type parameter's value, which its caller's `Form::Box`
+    /// is, the object's in-place cell. Given, a box whose `value` is that
+    /// cell, `$heldCellOf(cell)` (#1300); given back, a box whose `value`
+    /// is the object, `$heldObjectOf(box)` (#1303). Asked where a `&mut`
+    /// is given or given back, not by `form_of`, whose askers take the
+    /// other two.
+    HeldBox,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -89,6 +98,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && matches!(*instantiated.kind(),
                         ty::Ref(_, pointee, Mutability::Mut) if !self.mut_ref_form(pointee).is_cell())
             }
+            // Of what each `&mut` is to, the box of a `Form::Box`.
+            Form::HeldBox => match (*declared.kind(), *instantiated.kind()) {
+                (ty::Ref(_, declared, Mutability::Mut), ty::Ref(_, instantiated, Mutability::Mut)) => {
+                    self.form_differs(Form::Box, (def_id, declared, instantiated))
+                }
+                _ => false,
+            },
         }
     }
 
@@ -213,18 +229,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match form {
             Form::Handle => Expr::call_helper("$ptrTo", vec![value]),
             Form::Box => Expr::call_helper("$cellOf", vec![value]),
+            Form::HeldBox => Expr::call_helper("$heldCellOf", vec![value]),
         }
     }
 
     /// `value`, generic code's of its `declared` type, given back where
     /// its caller's type is `instantiated`: in the caller's form, a
-    /// handle's `value` (ADR 1114).
+    /// handle's `value` (ADR 1114), a held box's box of the object
+    /// (#1303).
     pub(in crate::lower) fn form_back(&self, form: Form, crossing: Crossing<'tcx>, value: Expr) -> Expr {
         if !self.form_differs(form, crossing) {
             return value;
         }
         match form {
             Form::Handle | Form::Box => Expr::held(value),
+            Form::HeldBox => Expr::call_helper("$heldObjectOf", vec![value]),
         }
     }
 }

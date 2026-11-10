@@ -82,6 +82,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     exprs.push(self.form_given(Form::Box, crossing, object));
                     continue;
                 }
+                // A `&mut` to a `&mut` to an object held as a value, a
+                // closure's parameter, given where generic code has a box of
+                // its type parameter: its box, `$heldCellOf(cell)`, as one of
+                // a place is below (#1303).
+                if !matches!(value, Value::Ref(_)) && self.form_differs(Form::HeldBox, crossing) {
+                    let held = self.value_expr(value, span)?;
+                    exprs.push(self.form_given(Form::HeldBox, crossing, held));
+                    continue;
+                }
             }
             let place = match value {
                 // A `&mut` to a function or an iterator given for a type
@@ -192,21 +201,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // copied back is the `&mut` that holds, the cell's `value`. One
             // that's a box already, a cell's, is read through,
             // `$heldCellOf(cell)`.
-            let inner = callee.and_then(|(id, args)| {
+            let held_crossing = callee.and_then(|(id, args)| {
                 let sig = (self.tcx).instantiate_bound_regions_with_erased(
                     self.tcx.fn_sig(id).instantiate_identity().skip_normalization(),
                 );
                 let declared = *sig.inputs().get(i)?;
-                let instantiated = self.instantiated(declared, args);
-                let crossing = (id, declared.builtin_deref(true)?, instantiated.builtin_deref(true)?);
-                self.form_differs(Form::Box, crossing).then_some(crossing)
+                let crossing = (id, declared, self.instantiated(declared, args));
+                self.form_differs(Form::HeldBox, crossing).then_some(crossing)
             });
-            let through = |boxed: Expr| match inner {
-                Some(_) => Expr::call_helper("$heldCellOf", vec![boxed]),
+            // What each `&mut` is to, whose box the held box is.
+            let inner = held_crossing.and_then(|(id, declared, instantiated)| {
+                Some((id, declared.builtin_deref(true)?, instantiated.builtin_deref(true)?))
+            });
+            let through = |cx: &Self, boxed: Expr| match held_crossing {
+                Some(crossing) => cx.form_given(Form::HeldBox, crossing, boxed),
                 None => boxed,
             };
             if let Some(boxed) = self.box_of_place(state, &place) {
-                exprs.push(through(boxed));
+                exprs.push(through(self, boxed));
                 continue;
             }
             // Its lifetimes, the signature's own, erased: a type with them
@@ -251,7 +263,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !fixed_place(&place) {
                     return Err(self.unsupported(span, "a `&mut` of a number given back, from its MIR"));
                 }
-                exprs.push(through(Expr::handle(place)));
+                exprs.push(through(self, Expr::handle(place)));
                 continue;
             }
             // A `dyn`'s, or a slice's, the callee can't replace whole: its box

@@ -920,11 +920,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // In the caller's form: a raw pointer of a type parameter's, a
         // handle in generic code, a slice's the array (ADR 1114); a `&mut`
-        // generic code boxes, an object's the object (ADR 0454).
+        // generic code boxes, an object's the object (ADR 0454); a `&mut`
+        // to a type parameter given a `&mut` to an object, a box of it.
         let crossing = (def_id, declared, self.instantiated(declared, generic_args));
         Ok(match self.form_of(crossing) {
             Some(form) => self.form_back(form, crossing, value),
-            None => value,
+            // A `&mut W` of a `W` given a `&mut` to an object: its box of
+            // the object's cell, given back as a box of the object (#1303).
+            None => self.form_back(Form::HeldBox, crossing, value),
         })
     }
 }

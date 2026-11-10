@@ -802,3 +802,32 @@ whole, runs against native Rust in both builds and through its
 metamorphic rewrites, whose `Option` rewrite found the cell's case.
 What generic code gives back of such a `&mut`, `keep(&mut by)`'s, is
 #1303.
+
+## Amendment: what generic code gives back of a held `&mut` is the caller's (#1303)
+
+`keep<W: Write>(w: &mut W) -> &mut W` given `&mut by`, `by: &mut Vec<u8>`,
+gave back generic code's box, `$heldCellOf(..)`, whose `value` is the
+object's in-place cell, where its caller reads a box whose `value` is the
+object: `keep(&mut by).write_all(b"k")` threw `result.push is not a
+function`, where native Rust writes. The one form is now a fact of the
+catalogue's (`generic_facts.rs`), `Form::HeldBox`: a `&mut` of its type
+parameter whose caller's is a `&mut` to a `&mut` to an object, the box of
+a `Form::Box`. Given, it's `$heldCellOf(cell)`, as #1300 made it; given
+back, `form_back`, it's `$heldObjectOf(box)` (src/runtime/cell_of.js),
+whose `value` is the object and whose write puts the object's cell in
+generic code's box, so `*keep(&mut by) = &mut other` makes `by` hold
+`other`. `form_of` doesn't ask it: its askers, a function value's
+parameters and a closure's, take a box or a handle, and none of them is
+given a held box; `boxed_args` asks it of what's given, a place's box
+and one held as a value, a closure's parameter, alike (which the
+metamorphic `closure-fn` rewrite found, given as its caller held it), and
+`generic_result_values` of what's given back. Case
+([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior. `test/corpus/mut_of_a_held_mut_given_back_by_generic_code.rs`,
+a `Vec<u8>` written through what's given back, given again and replaced
+whole, a `String` and a struct, through a function value and by a
+closure, runs
+against native Rust in both builds and through its metamorphic
+rewrites; mutations `held-box-given-back-as-it-is` and
+`held-box-of-no-box` (`lower/generic_facts.ts`) and
+`held-mut-value-given-as-it-is` (`lower/mir/assign/boxed_args.ts`).

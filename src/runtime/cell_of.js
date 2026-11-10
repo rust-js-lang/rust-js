@@ -27,3 +27,18 @@ function $heldCellOf(cell) {
     },
   };
 }
+
+// What generic code gives back of a `&mut W` whose `W` is a `&mut` to an
+// object, `box`, its box of the object's in-place cell, as its caller has
+// it: a box whose `value` is the object, and a write of it puts that
+// object's cell in generic code's box (#1303).
+function $heldObjectOf(box) {
+  return {
+    get value() {
+      return box.value.value;
+    },
+    set value(value) {
+      box.value = $cellOf(value);
+    },
+  };
+}
