@@ -315,10 +315,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // or items with a destructor, which std's would leave unrun and drop
         // as they are (ADR 0998, #386).
         let other_item = self.iterable_item(other_ty);
-        let runs_code = |ty: &Ty<'tcx>| {
-            ty.walk()
-                .any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn()))
-        };
+        let runs_code = |ty: &Ty<'tcx>| crate::lower::recognition::steps_run_code(self.tcx, self.typing_env, *ty);
         if lengths.is_none()
             && trusted
             && ([iter_ty, other_iter].iter().any(runs_code)
@@ -440,7 +437,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if whole || self.recognition().counts_where_given(iter) {
             return Ok(Expr::bool(true));
         }
-        let runs_code = (iter.walk()).any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn()));
+        let runs_code = crate::lower::recognition::steps_run_code(self.tcx, self.typing_env, iter);
         let drops = self
             .iterator_item(iter)
             .is_none_or(|item| self.drops(item) != crate::lower::drops::Drops::Nothing);

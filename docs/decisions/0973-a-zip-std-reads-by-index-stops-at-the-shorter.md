@@ -107,3 +107,24 @@ It runs against native Rust in both builds. Mutations:
 `back-stepped-range-map-length-unknown` and
 `back-stepped-range-map-length-always` (`lower/iterators/knowing.ts`),
 `range-map-made-lengthless` (`lower/mir/iter/backs.ts`).
+
+## Amended (2026-11-10, #1225): a boxed function runs code, and an `impl Trait` is what it hides
+
+`[1, 2, 0].iter().map(f).zip(vec![7, 8])` of a `f: Box<dyn FnMut>` called
+`f` three times where native Rust calls it twice. So did a map behind an
+`impl DoubleEndedIterator`, reversed or not, as its side. Std folds such a
+zip by index to the shorter side (`TrustedRandomAccess`), so it never calls
+`f` for the third item. Whether a step runs code a program sees was asked
+in five places, each walking the type for a closure or a function: the
+zip's fold here, `eq`'s lengths first (ADR 1014), generic code's callers
+(`callers_decide`), a comparison's sides and a counted collect. None saw a
+`dyn Fn*`, and none saw through an opaque type.
+
+It's one answer now, `zip_folds.rs`' `steps_run_code`: a closure's, a
+function's or a `dyn Fn*`'s step, of the types an `impl Trait` hides,
+revealed in the caller's typing environment, as native Rust's
+specialization sees them (#1142). `zip_folds_to_the_shorter` reveals its
+zip's sides first, so its `TrustedRandomAccess` and `TrustedLen` questions
+are of the hidden types too. Case C ([0262](0262-when-rust-and-js-disagree.md)):
+a call's output is seen. `test/corpus/zip_of_a_boxed_map.rs` holds both
+forms against native Rust.

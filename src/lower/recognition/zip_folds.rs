@@ -100,8 +100,13 @@ fn clone_runs_crates_code<'tcx>(
 /// both that, by `SpecFold` (ADR 0997). `None` where its fold steps as
 /// `next()` does, or what it steps runs nothing.
 pub(crate) fn zip_folds_to_the_shorter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<bool> {
-    let (a, b) = zipped_sources(tcx, ty)?;
     let typing_env = ty::TypingEnv::fully_monomorphized();
+    // Its sides as the types an `impl Trait` hides, which native Rust's
+    // specialization sees (#1225, as #1142).
+    let ty = tcx
+        .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
+        .unwrap_or(ty);
+    let (a, b) = zipped_sources(tcx, ty)?;
     let (Some(trusted_len), Some(random_access)) = (
         super::fact_trait(tcx, TypeFact::TrustedLen),
         super::fact_trait(tcx, TypeFact::RandomAccess),
@@ -121,10 +126,32 @@ pub(crate) fn zip_folds_to_the_shorter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) ->
     let clones_own = |t: Ty<'tcx>| {
         stepping_clones(tcx, typing_env, t).is_some_and(|v| clone_runs_crates_code(tcx, typing_env, v, &mut Vec::new()))
     };
-    let runs_code = a.walk().any(|part| {
-        part.as_type()
-            .is_some_and(|t| t.is_closure() || t.is_fn() || clones_own(t))
-    }) || item.needs_drop(tcx, typing_env);
+    let runs_code = steps_run_code(tcx, typing_env, a)
+        || a.walk().any(|part| part.as_type().is_some_and(clones_own))
+        || item.needs_drop(tcx, typing_env);
     let by_index = holds(a, random_access) && holds(b, random_access);
     (runs_code && (by_index || holds(a, trusted_len) && holds(b, trusted_len))).then_some(by_index)
+}
+
+/// Whether stepping an iterator of type `ty` runs code a program sees, as a
+/// function one of its parts holds does: a closure's, a function's, or a
+/// `dyn Fn*`'s, a boxed one's (#1225). The one answer of what std's
+/// shortcuts leave unrun, a zip folded by index, an `eq` of lengths first.
+/// Of the types an `impl Trait` hides, revealed in `typing_env`, as native
+/// Rust's specialization sees them (#1142).
+pub(crate) fn steps_run_code<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
+    let ty = match rustc_middle::ty::TypeVisitableExt::has_opaque_types(&ty) {
+        true => tcx
+            .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
+            .unwrap_or(ty),
+        false => ty,
+    };
+    ty.walk().any(|part| {
+        part.as_type().is_some_and(|t| {
+            t.is_closure()
+                || t.is_fn()
+                || matches!(t.kind(), ty::Dynamic(predicates, ..)
+                    if predicates.principal_def_id().is_some_and(|p| tcx.fn_trait_kind_from_def_id(p).is_some()))
+        })
+    })
 }

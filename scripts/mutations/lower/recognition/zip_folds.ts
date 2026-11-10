@@ -57,8 +57,8 @@ export const mutations: Mutation[] = [
     name: "zip-clone-runs-no-code",
     breaks: "a zip whose first side's step clones what may be the crate's own, a `repeat()`'s value, is taken to run no code, so it's made in place, folded as its `next()` steps it, cloning once more than std's `SpecFold` (#1162)",
     file: "src/lower/recognition/zip_folds.rs",
-    find: "            .is_some_and(|t| t.is_closure() || t.is_fn() || clones_own(t))\n",
-    replace: "            .is_some_and(|t| t.is_closure() || t.is_fn())\n",
+    find: "        || a.walk().any(|part| part.as_type().is_some_and(clones_own))\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_a_repeat_folds_to_the_shorter.rs$"],
   },
   {
@@ -69,5 +69,21 @@ export const mutations: Mutation[] = [
     replace: "                Some(imp) if false && tcx.is_automatically_derived(imp) => adt\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_generic.rs$"],
     snapshots: true,
+  },
+  {
+    name: "boxed-function-runs-no-code",
+    breaks: "a map of a boxed function, `Box<dyn FnMut>`, is taken to run no code as it's stepped, so its zip isn't folded by index to the shorter side and the function's called once more than native Rust calls it (#1225)",
+    file: "src/lower/recognition/zip_folds.rs",
+    find: "                || matches!(t.kind(), ty::Dynamic(predicates, ..)\n",
+    replace: "                || false && matches!(t.kind(), ty::Dynamic(predicates, ..)\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_a_boxed_map.rs$"],
+  },
+  {
+    name: "zip-of-an-impl-trait-unrevealed",
+    breaks: "a zip of what an `impl Trait` hides is decided on the opaque type, which runs no code and isn't `TrustedRandomAccess`, so it's stepped past its shorter side, where native Rust's specialization sees the type (#1225)",
+    file: "src/lower/recognition/zip_folds.rs",
+    find: "    let ty = tcx\n        .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n        .unwrap_or(ty);\n    let (a, b) = zipped_sources(tcx, ty)?;\n",
+    replace: "    let (a, b) = zipped_sources(tcx, ty)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_a_boxed_map.rs$"],
   },
 ];

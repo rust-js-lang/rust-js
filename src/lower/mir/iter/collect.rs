@@ -278,10 +278,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         made: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let iter_ty = receiver.peel_refs();
-        let runs_code = |ty: Ty<'tcx>| {
-            ty.walk()
-                .any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn()))
-        };
+        let runs_code = |ty: Ty<'tcx>| crate::lower::recognition::steps_run_code(self.tcx, self.typing_env, ty);
         use crate::lower::recognition as r;
         // A count no array bounds: not a `step_by(n)` of an array's items,
         // or a `skip`'s or a `map`'s of them, which no more than the array's

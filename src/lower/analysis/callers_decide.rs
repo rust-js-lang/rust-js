@@ -88,8 +88,7 @@ pub(super) fn refuse_what_callers_decide<'tcx>(
     }
     let trusted_len = fact_trait(tcx, TypeFact::TrustedLen);
     let runs_code = |ty: Ty<'tcx>| {
-        ty.walk()
-            .any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn()))
+        crate::lower::recognition::steps_run_code(tcx, ty::TypingEnv::fully_monomorphized(), ty)
             || recognition.iterator_item(ty).is_some_and(&drops)
     };
     let mut refused = IndexSet::default();
