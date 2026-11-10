@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     name: "insert-mut-at-end",
     breaks: "`insert_mut(i, x)`'s `&mut` is to the last item",
     file: "src/runtime/slice_ops.js",
-    find: "  $insertAt(v, i, x);\n  return handle ? $mutAt(v, i) : x;",
-    replace: "  $insertAt(v, i, x);\n  return handle ? $mutAt(v, v.length - 1) : x;",
+    find: "  $insertAt(v, i, x, drop);\n  return handle ? $mutAt(v, i) : x;",
+    replace: "  $insertAt(v, i, x, drop);\n  return handle ? $mutAt(v, v.length - 1) : x;",
     tests: ["test/corpus.test.ts", "-t", "vec_push_mut"],
   },
   {

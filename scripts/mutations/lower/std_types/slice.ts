@@ -638,8 +638,24 @@ export const mutations: Mutation[] = [
     breaks:
       "a `VecDeque`'s `insert` isn't given its item's drop, so what it took past its end is never dropped as it panics (#1171)",
     file: "src/lower/std_types/slice.rs",
-    find: "                given.extend(drop);\n",
-    replace: "",
+    find: "                given.extend(drop);\n                helper(\"$dequeInsert\", given)\n",
+    replace: "                helper(\"$dequeInsert\", given)\n",
     tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
+  },
+  {
+    name: "slice-views-of-drops-refused",
+    breaks: "a deque's `as_mut_slices` and a slice's chunks and first or last `N` items, of items with a destructor, are refused, though each is a view (#1274)",
+    file: "src/lower/std_types/slice.rs",
+    find: "                // or last `N` items, each a view of what it holds (#1274).\n                | SliceOp::DequeSlices\n",
+    replace: "                // or last `N` items, each a view of what it holds (#1274).\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_accessors_of_items_with_a_destructor.rs$"],
+  },
+  {
+    name: "insert-mut-past-its-end-keeps-its-item",
+    breaks: "`insert_mut` past the end panics without dropping the item it took, which native Rust drops (#1274)",
+    file: "src/lower/std_types/slice.rs",
+    find: "                let drop = match at && self.drops(item()) != crate::lower::drops::Drops::Nothing {\n",
+    replace: "                let drop = match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_accessors_of_items_with_a_destructor.rs$"],
   },
 ];

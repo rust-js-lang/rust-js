@@ -228,6 +228,12 @@ impl SliceOp {
                 | SliceOp::AsChunks { .. }
                 | SliceOp::Flattened { .. }
                 | SliceOp::GetDisjointMut { .. }
+                // A deque's two halves, and a slice's chunks and its first
+                // or last `N` items, each a view of what it holds (#1274).
+                | SliceOp::DequeSlices
+                | SliceOp::ChunksExact { .. }
+                | SliceOp::Rchunks { .. }
+                | SliceOp::Chunk { .. }
         )
     }
 }
@@ -1288,9 +1294,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if at {
                     given.push(arg());
                 }
-                if self.handles_mut(item()) {
-                    given.push(Expr::bool(true));
+                let handle = self.handles_mut(item());
+                // What `insert_mut` took, dropped as its index past the end
+                // panics, as `insert`'s is (#1267, #1274).
+                let drop = match at && self.drops(item()) != crate::lower::drops::Drops::Nothing {
+                    true => self.drop_function(item(), span)?,
+                    false => None,
+                };
+                if handle || drop.is_some() {
+                    given.push(Expr::bool(handle));
                 }
+                given.extend(drop);
                 helper(if at { "$insertMut" } else { "$pushMut" }, given)
             }
             SliceOp::PushFrontMut => {

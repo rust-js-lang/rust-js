@@ -125,6 +125,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             // value an equal key held, then the key given,
                             // as std's merge does (#926).
                             | MapOp::TreeAppend
+                            // A B-tree's end, lent or taken out, its range lent,
+                            // an end's entry, and an entry's `insert`, which
+                            // gives back the value it replaces (#1274).
+                            | MapOp::TreeEnd { .. }
+                            | MapOp::TreeRange { .. }
+                            | MapOp::EndEntry { .. }
+                            | MapOp::EntryInsert
                     )
                     // A cell keeps it, and gives the old one back; a `Cell` of one is
                     // refused by its type (ADR 0320).
@@ -188,7 +195,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // What a guard guards, through its `&mut` (ADR 0328).
                     | Std::GuardValue { .. }
                     // A heap's top, through its `PeekMut`, and the top it pops (ADR 0333).
-                    | Std::Heap(HeapOp::PeekTop { .. } | HeapOp::PeekPop)
+                    | Std::Heap(HeapOp::PeekTop { .. } | HeapOp::PeekPop | HeapOp::PeekMut)
                     // A raw pointer's: what it writes stays where it points,
                     // what it reads or replaces it gives back, and what it
                     // drops in place, it drops (ADR 0407).
@@ -231,6 +238,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Heap(HeapOp::Drain | HeapOp::Retain)
                     | Std::Slice(SliceOp::DequeInsert { .. })
                     | Std::DequeRemove
+                    // And what moves one in and lends it, `push_mut` and
+                    // `insert_mut`, or takes one out from an end, putting the
+                    // other end's in its place, `swap_remove_front` (#1274).
+                    | Std::Slice(
+                        SliceOp::PushMut { .. } | SliceOp::PushFrontMut | SliceOp::DequeSwapRemove { .. }
+                    )
                     // An `Option`'s that moves what it holds out, or in, its
                     // old value given back (ADR 0098).
                     | Std::OptionTake

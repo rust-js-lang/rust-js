@@ -825,4 +825,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^discriminants_past_32_bits.rs$"],
   },
+  {
+    name: "moves-of-drops-refused",
+    breaks: "`push_mut`, `insert_mut`, `push_front_mut` and `swap_remove_front` of items with a destructor are refused, though each moves an item and drops none (#1274)",
+    file: "src/lower/std_types/values.rs",
+    find: "                        SliceOp::PushMut { .. } | SliceOp::PushFrontMut | SliceOp::DequeSwapRemove { .. }\n",
+    replace: "                        SliceOp::PushFrontMut | SliceOp::DequeSwapRemove { .. }\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_accessors_of_items_with_a_destructor.rs$"],
+  },
+  {
+    name: "btree-ends-of-drops-refused",
+    breaks: "a B-tree's `pop_first`, `first_entry`, `range_mut` and an entry's `insert`, of values with a destructor, are refused (#1274)",
+    file: "src/lower/std_types/values.rs",
+    find: "                            | MapOp::TreeEnd { .. }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^mut_accessors_of_items_with_a_destructor.rs$"],
+  },
+  {
+    name: "peek-mut-of-drops-refused",
+    breaks: "a heap's `peek_mut` of items with a destructor is refused, though it lends its top (#1274)",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Heap(HeapOp::PeekTop { .. } | HeapOp::PeekPop | HeapOp::PeekMut)\n",
+    replace: "                    | Std::Heap(HeapOp::PeekTop { .. } | HeapOp::PeekPop)\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_accessors_of_items_with_a_destructor.rs$"],
+  },
 ];

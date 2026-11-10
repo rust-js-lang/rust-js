@@ -561,7 +561,9 @@ function $dequeInsert(v, i, x, handle, drop) {
   return handle ? $mutAt(v, i) : x;
 }
 
-function $insertMut(v, i, x, handle) {
-  $insertAt(v, i, x);
+// A `Vec`'s `insert_mut(i, x)`: as its `insert`, `x` dropped by `drop` as
+// an index past the end panics (#1274), and a `&mut` to what it put in.
+function $insertMut(v, i, x, handle, drop) {
+  $insertAt(v, i, x, drop);
   return handle ? $mutAt(v, i) : x;
 }

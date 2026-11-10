@@ -653,3 +653,7 @@ Its key with a hand-written `Hash` runs (#1271, ADR
 counted key` is off `refused`, and `hset of a counted item` runs a
 `HashSet`'s the same, 178 cases of 133 templates, 26 refused in both
 builds, under #1274 to #1277.
+
+#1274's 20 are off `refused` too (ADR 0098, amended), with a template of
+`insert_mut` past the end: 179 cases of 134 templates, 6 refused, under
+#1275 to #1277.

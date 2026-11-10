@@ -902,3 +902,34 @@ with its own message. The `Vec`'s is given its drop by `inserted_dropping`
 and the `VecDeque`'s by `SliceOp::DequeInsert`'s. An `insert` its body's
 ranges show in bounds is `splice` and needs none.
 `test/corpus/edits_that_panic_keep_what_std_keeps.rs` holds both.
+
+## Amendment: what lends into a collection or moves one item, of items with a destructor (#1274)
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): refusals lifted;
+what drops is native Rust's.
+
+`check_takes_drops` refused 20 of std's methods of items with a
+destructor that the std net (#1171) pinned. Each lends a `&mut` into the
+collection or moves one item in or out of it, dropping none. Their
+lowering kept Rust's drops already: the net ran each as native Rust does
+with the refusal lifted. They're decided where the rule's families are:
+- a slice op's views, `SliceOp::lends`: a deque's `as_mut_slices`, a
+  slice's `chunks_exact_mut`, `rchunks_mut` and `rchunks_exact_mut`, and
+  its `first_chunk_mut` and `last_chunk_mut`;
+- the moves that drop none: `push_mut`, `insert_mut`, `push_front_mut`,
+  `push_back_mut`, and `swap_remove_front` and `swap_remove_back`;
+- a map's: a B-tree's ends, lent or taken out (`pop_first`, `pop_last`, a
+  set's too), its `range_mut`, its `first_entry` and `last_entry`, and an
+  entry's `insert`, which gives back the value it replaces;
+- a heap's `peek_mut`, which lends its top.
+
+`insert_mut` past the end was #1267's bug again: it panicked keeping the
+item it took, where native Rust drops it. `$insertMut` is given the
+item's drop, as `insert` and a deque's `insert_mut` are. The std net's
+`vec insert_mut past its end` template holds it, and its 20 pinned
+refusals are off `refused`: 179 cases of 134 templates, 6 refused.
+`test/corpus/mut_accessors_of_items_with_a_destructor.rs` holds each
+with items that print their drops, against native Rust in both builds.
+Mutations `slice-views-of-drops-refused`, `moves-of-drops-refused`,
+`btree-ends-of-drops-refused`, `peek-mut-of-drops-refused` and
+`insert-mut-past-its-end-keeps-its-item`.
