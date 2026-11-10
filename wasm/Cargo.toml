@@ -68,6 +68,11 @@ oxc_syntax = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.
 # Standalone: not part of the rust-js package one directory up.
 [workspace]
 
+# oxc_formatter_core with #1269's fix, as ../Cargo.toml patches it, so the
+# browser's compiler lays out JS as the native one does (ADR 1121).
+[patch."https://github.com/oxc-project/oxc"]
+oxc_formatter_core = { path = "../vendor/oxc_formatter_core" }
+
 [profile.release]
 debug = false
 strip = true

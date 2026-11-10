@@ -442,7 +442,8 @@ are ([ADR 1069](decisions/1069-imports-are-statements-of-the-module.md));
 comment is attached to ([ADR 0444](decisions/0444-a-comment-is-where-its-code-is.md)),
 and where a function `prepare` made a declaration elsewhere was, whose
 comments are that declaration's (`js::Module::taken_into`, [ADR 0610](decisions/0610-a-forwarding-function-is-its-variable.md), amended);
-`src/format.rs` lays it out with oxfmt and remaps changed text. Declarations
+`src/format.rs` lays it out with oxfmt and remaps changed text; its
+`oxc_formatter_core` is `vendor/`'s, with #1269's fix (ADR 1121). Declarations
 flow from `src/lower/declarations.rs` through `src/typescript.rs` to `typescript/`.
 `src/output.rs` coordinates crate transforms, optional application Prettier,
 map adjustment and final artifact assembly.

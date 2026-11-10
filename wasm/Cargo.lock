@@ -1257,7 +1257,6 @@ dependencies = [
 [[package]]
 name = "oxc_formatter_core"
 version = "0.68.0"
-source = "git+https://github.com/oxc-project/oxc?tag=crates_v0.151.0#bec650f15b457f3bffb6d79b65bf74bfcbaecdce"
 dependencies = [
  "cow-utils",
  "oxc_allocator",

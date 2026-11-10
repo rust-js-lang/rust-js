@@ -615,6 +615,34 @@ mod tests {
         assert!(at.contains(&(0, 6)), "`b` where it is: {at:?}");
     }
 
+    /// Calls nested 32 deep, typenum's dictionary of a type 32 levels deep,
+    /// are laid out in time linear in their depth: oxc_formatter's
+    /// `will_break` walked each interned element twice, so each level
+    /// doubled the time, about 30 minutes at 32 (#1269). Given a few seconds,
+    /// in a thread, so a regression fails here and doesn't hang the suite.
+    #[test]
+    fn nested_calls_laid_out_in_linear_time() {
+        let mut call = String::from("1");
+        for level in 1..=32 {
+            call = format!("w({call}, {level})");
+        }
+        let code = format!("function w(a, b) {{\n  return a * 3 + b;\n}}\nconsole.log({call});\n");
+        let (done, laid_out) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let allocator = Allocator::default();
+            let text = format(&allocator, &code, SourceType::mjs(), options())
+                .expect("it parses")
+                .print()
+                .expect("it prints")
+                .into_code();
+            let _ = done.send(text.lines().count());
+        });
+        let lines = laid_out
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .expect("32 nested calls laid out within 5 s");
+        assert!(lines > 32, "broken over its levels' lines, {lines}");
+    }
+
     /// Every snapshot of generated JS is as oxfmt would leave it: formatting
     /// it again changes nothing.
     #[test]

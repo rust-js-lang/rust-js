@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
+import { createServer } from "node:net";
 import { chromium } from "@playwright/test";
 import { buildCompiler, compiler, fixture, KeptApp, root, seeded } from "./support";
 import { cacheDirOf } from "../tooling/build.js";
@@ -818,6 +819,20 @@ pub fn Counter() -> JSX::Element {
 // `next dev` and `next build`, as the app's scripts run them, Next.js's
 // alone; `rust-js build`, the app's Rust compiled, its own process beside
 // them (ADR 0412).
+/** A port no process listens on, the system's choice of its ephemeral ones,
+ * past each that fetch refuses as reserved (3659, 6000, ..): a random one of
+ * a range met another app's, 7265 (#1269's check). */
+function freePort(): Promise<number> {
+  return new Promise((done, failed) => {
+    const probe = createServer();
+    probe.on("error", failed);
+    probe.listen(0, () => {
+      const { port } = probe.address() as { port: number };
+      probe.close(() => done(port));
+    });
+  });
+}
+
 function command(dir: string, args: string[]) {
   return spawn(process.execPath, [join(dir, "node_modules/next/dist/bin/next"), ...args], { cwd: dir, env: { ...process.env, RUST_JS_COMPILER: compiler, NEXT_TELEMETRY_DISABLED: "1" } });
 }
@@ -990,7 +1005,7 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   expect(readFileSync(join(dir, "server.js"), "utf8")).toContain('import next from "next";');
   const custom = spawn("node", ["server.js"], {
     cwd: dir,
-    env: { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1", PORT: String(3700 + Math.floor(Math.random() * 300)) },
+    env: { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1", PORT: String(await freePort()) },
   });
   try {
     let served = "";
@@ -1065,8 +1080,7 @@ test("next dev serves Rust routes, refreshes each rust-js build in place, and re
     writeFileSync(join(dir, "app/counter.rs"), text);
     return finished(rustJs(dir, ["build"]));
   };
-  // A port fetch takes: 3200-3699 has 3659, which fetch refuses as reserved.
-  const port = 7100 + Math.floor(Math.random() * 500);
+  const port = await freePort();
   const server = command(dir, ["dev", "--port", String(port)]);
   let output = "";
   server.stdout?.on("data", (data) => (output += data));

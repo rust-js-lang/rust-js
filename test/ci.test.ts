@@ -793,3 +793,19 @@ test("a sampled table's rows are marked, and a push's commit picks one in 8 of t
   expect(Math.abs(share - 1 / sampledOneIn)).toBeLessThan(0.02);
   expect(new Set(picked).size).toBeGreaterThan(150);
 });
+
+// oxc_formatter_core is vendored with #1269's fix (ADR 1121): both
+// compilers, the native and the browser's, patch oxc's own with the one
+// copy, and the copy is of the tag every oxc crate is pinned to, so moving
+// that tag fails here until the copy is taken again or, once oxc has the
+// fix, removed with its `[patch]`.
+test("the vendored oxc_formatter_core is both compilers' and of their oxc tag", () => {
+  const manifest = (path: string) => readFileSync(join(root, path), "utf8");
+  const tags = (text: string) => new Set([...text.matchAll(/oxc-project\/oxc", tag = "([^"]+)"/g)].map((m) => m[1]));
+  const pinned = tags(manifest("Cargo.toml"));
+  expect([...pinned]).toHaveLength(1);
+  expect(tags(manifest("vendor/oxc_formatter_core/Cargo.toml"))).toEqual(pinned);
+  expect(tags(manifest("wasm/Cargo.toml"))).toEqual(pinned);
+  expect(manifest("Cargo.toml")).toContain('[patch."https://github.com/oxc-project/oxc"]\noxc_formatter_core = { path = "vendor/oxc_formatter_core" }');
+  expect(manifest("wasm/Cargo.toml")).toContain('[patch."https://github.com/oxc-project/oxc"]\noxc_formatter_core = { path = "../vendor/oxc_formatter_core" }');
+});

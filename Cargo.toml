@@ -63,3 +63,9 @@ declare_clippy_lint = { git = "https://github.com/rust-lang/rust-clippy", rev = 
 debug = false
 opt-level = 1
 lto = "off"
+
+# oxc_formatter_core with #1269's fix: each interned element's `will_break`
+# asked once, not twice, so layout is linear in how deep calls nest
+# (vendor/oxc_formatter_core/README.md, ADR 1121).
+[patch."https://github.com/oxc-project/oxc"]
+oxc_formatter_core = { path = "vendor/oxc_formatter_core" }

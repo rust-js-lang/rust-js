@@ -8,5 +8,3 @@
 # off (#1174).
 num-traits float::tests::copysign  a NaN's sign isn't kept (the guide's differences from native Rust, 4)
 num-traits float::tests::total_cmp  a NaN's payload isn't kept (the guide's differences from native Rust, 4)
-typenum uint::fmt_tests::binary  cut: #1269 laying out a `Binary` dictionary of a type 32 deep takes rust-js about 30 minutes
-getrandom tests/mod.rs::test_diff_u64  #1279 a `MaybeUninit<u64>` written through a byte view throws converting `undefined` to a BigInt
