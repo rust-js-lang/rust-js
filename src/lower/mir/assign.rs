@@ -1204,9 +1204,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // an object here: one taking generic code's box of it, which
                 // it gives the object, `(x) => f(x.value)` (ADR 0454).
                 value => {
-                    let f = self.value_expr(value, span)?;
+                    let mut f = self.value_expr(value, span)?;
                     let given = arg_tys.get(i).copied();
                     let unboxed = callee.and_then(|(id, args)| self.unboxed_by_function(id, i, args, given));
+                    // A boxed `dyn Fn*` that drops, held where it's read
+                    // twice, by the arrow and by its drop (#1220).
+                    let boxed_drop = match given.is_some_and(|ty| {
+                        unboxed.is_some()
+                            && ty
+                                .boxed_ty()
+                                .is_some_and(|inner| matches!(inner.kind(), ty::Dynamic(..)))
+                            && self.drops(ty) != crate::lower::drops::Drops::Nothing
+                    }) {
+                        true => {
+                            if !f.reads_same() {
+                                f = self.spill("f", f, out);
+                            }
+                            Some(f.clone())
+                        }
+                        false => None,
+                    };
                     exprs.push(match unboxed {
                         Some((unboxed, wrapped)) => {
                             let params: Vec<String> =
@@ -1223,7 +1240,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 false => called,
                             };
                             let body = vec![StmtKind::Return(Some(called)).at(js::Span::NONE)];
-                            Expr::arrow(params.into_iter().map(Into::into).collect(), body)
+                            let arrow = Expr::arrow(params.into_iter().map(Into::into).collect(), body);
+                            // Of a boxed function that drops, what disposes
+                            // it disposes the box, as what's given it, std's
+                            // `Scan`, drops its `F` by `$dispose` (#1220).
+                            match boxed_drop {
+                                Some(f) => Expr::call_helper(
+                                    "$dropping",
+                                    vec![
+                                        arrow,
+                                        Expr::arrow(
+                                            Vec::new(),
+                                            vec![
+                                                StmtKind::Expr(Expr::call_helper("$dispose", vec![f]))
+                                                    .at(js::Span::NONE),
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                                None => arrow,
+                            }
                         }
                         None => f,
                     });

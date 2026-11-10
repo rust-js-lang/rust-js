@@ -380,3 +380,14 @@ dropped after the call. Case C ([0262](0262-when-rust-and-js-disagree.md)):
 a destructor's output is seen.
 `test/corpus/boxed_fn_given_to_consumers_drops.rs` holds each consumer
 and a panic unwinding through `any`, against native Rust.
+
+Reopened the same day by #1204's context rewrite, `at_0(Box::new(f)) as
+Box<dyn ..>`, two more of the same root. `or_insert_with` of a key that's
+there leaves its function unrun and drops it there (ADR 0469), which
+`drops_unrun` asked of the given type's kind alone; a box, local or made
+through a call, now counts as one its taker calls once. And std's compiled
+`Scan` holds its function through an arrow that gives it the state's box,
+`(x0, x1) => f(x0.value, x1)` (ADR 0454), and drops it by `$dispose`, which
+the arrow carried nothing for; the arrow of a boxed `dyn Fn` that drops
+carries the box's drop now, `$dropping(arrow, () => $dispose(f))`.
+`test/corpus/boxed_fn_through_a_call_drops.rs` holds both, in both builds.

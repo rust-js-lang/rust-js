@@ -166,9 +166,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a function of type `ty`, called by `FnOnce` alone, which a
     /// std call that writes a place or a map's entry may leave unrun, is
     /// dropped there, as `get_or_insert_with`'s is (ADR 0469).
+    /// Or a boxed one's, `Box<dyn FnOnce()>`'s, whose kind its type doesn't
+    /// say, which such a call takes as an `F: FnOnce` (#1220).
     pub(in crate::lower) fn drops_unrun(&self, ty: Ty<'tcx>) -> bool {
-        crate::lower::recognition::function_kind(self.tcx, self.frame.owner, ty) == Some(ty::ClosureKind::FnOnce)
-            && self.drops_function(ty)
+        let boxed = ty.boxed_ty().is_some_and(|inner| {
+            inner.is_closure()
+                || matches!(inner.kind(), ty::Dynamic(predicates, ..)
+                    if predicates.principal_def_id().is_some_and(|p| self.tcx.fn_trait_kind_from_def_id(p).is_some()))
+        });
+        let kind = crate::lower::recognition::function_kind(self.tcx, self.frame.owner, ty);
+        (kind == Some(ty::ClosureKind::FnOnce) || kind.is_none() && boxed) && self.drops_function(ty)
     }
 
     /// Whether a function, or a value, of type `ty` std is given is dropped

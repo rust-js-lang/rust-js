@@ -198,4 +198,12 @@ export const mutations: Mutation[] = [
     replace: "        let kind = crate::lower::recognition::function_kind(self.tcx, self.frame.owner, ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_fn_given_to_consumers_drops.rs$"],
   },
+  {
+    name: "boxed-function-unrun-undropped",
+    breaks: "a boxed `FnOnce` that `or_insert_with` leaves unrun, its key there, is never dropped, its kind, which its type doesn't say, not taken as its taker's (#1220)",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "        (kind == Some(ty::ClosureKind::FnOnce) || kind.is_none() && boxed) && self.drops_function(ty)\n",
+    replace: "        kind == Some(ty::ClosureKind::FnOnce) && self.drops_function(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_fn_through_a_call_drops.rs$"],
+  },
 ];

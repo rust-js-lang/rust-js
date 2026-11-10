@@ -198,7 +198,7 @@ function main() {
     }, error);
     throw error;
   }
-  $orInsertWith(entry._0[0], entry._0[1], k);
+  $orInsertWith(entry._0[0], entry._0[1], k, undefined, $dispose);
   console.log(`entry ${$mutGet(entry._0[0], entry._0[1]).value}`);
   const l$6 = 7;
   const u = $dropping(

@@ -62,6 +62,9 @@ const few = [
   // array, of a crate that reads a capacity: a B-tree's `range(..)`'s, none,
   // and a heap's `iter()`'s, its length (#1215).
   "capacity_of_what_std_hints_less.rs",
+  // A boxed function a compiled `Scan` holds through an arrow that gives it
+  // the state's box, dropped with it (#1220).
+  "boxed_fn_through_a_call_drops.rs",
   "drop_order_through_take_adapters.rs",
   "skip_of_short_take_drops.rs",
   "cow_texts_joined.rs",

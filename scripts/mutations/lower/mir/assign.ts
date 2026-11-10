@@ -1051,4 +1051,12 @@ export const mutations: Mutation[] = [
     replace: "                if false && one_value && !fixed_place(&place) {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_of_one_value_kept.rs$"],
   },
+  {
+    name: "boxed-function-arrow-carries-no-drop",
+    breaks: "a boxed function std's compiled `Scan` holds through an arrow that gives it the state's box is never dropped, the arrow given `$dispose` as its drop carrying none (#1220)",
+    file: "src/lower/mir/assign.rs",
+    find: "                            match boxed_drop {\n",
+    replace: "                            match None::<Expr> {\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "boxed_fn_through_a_call_drops"],
+  },
 ];
