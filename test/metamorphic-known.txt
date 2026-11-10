@@ -95,6 +95,3 @@ plain generic-instances size_hint.rs
 plain generic-instances size_hints_made_in_place.rs
 plain generic-instances take_and_filter_of_a_type_parameter_hint_as_std.rs
 plain generic-instances zip_size_hints.rs
-
-#1242 P0 (library): a library's adapter returned behind impl Clone: whether it's cloned apart or std's compiled struct isn't in its contract, so the consumer's clone guesses (f[$cloneKey])
-plain library clone_of_an_adapter_over_a_returned_impl.rs

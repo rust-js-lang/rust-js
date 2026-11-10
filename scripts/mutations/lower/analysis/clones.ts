@@ -88,8 +88,16 @@ export const mutations: Mutation[] = [
     name: "compiled-behind-an-impl-cloned-apart",
     breaks: "std's struct a function makes behind an `impl Iterator + Clone` is taken for an adapter the crate clones apart, so a clone of a filter over it clones it as one, `f[$cloneKey] is not a function` (#1241)",
     file: "src/lower/analysis/clones.rs",
-    find: "        if !compiled.contains(&ty) && cloned.types.insert(ty) {\n",
-    replace: "        if cloned.types.insert(ty) {\n",
+    find: "            true => compiled_seen.insert(ty),\n            false => cloned.types.insert(ty),\n",
+    replace: "            _ => cloned.types.insert(ty),\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_of_an_adapter_over_a_returned_impl.rs$"],
+  },
+  {
+    name: "compiled-struct-parts-unseen",
+    breaks: "std's struct a library's function gives behind an `impl .. + Clone` is left out of what the crate clones with its parts, so its consumer's clone of it, by its compiled `Clone`, finds its closure never seen cloned and is refused (#1242)",
+    file: "src/lower/analysis/clones.rs",
+    find: "            true => compiled_seen.insert(ty),\n",
+    replace: "            true => false,\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
   },
 ];

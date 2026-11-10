@@ -678,7 +678,8 @@ pub(crate) fn is_held_compiled(tcx: TyCtxt<'_>, ty: ty::Ty<'_>) -> bool {
 /// value's, as a named type's is: never a type the crate's makers make
 /// knowing its back (`back_stepped`), nor one it clones apart (`clones`),
 /// whose question is of every value of it (#1226, the user's decision (A);
-/// #1241).
+/// #1241). A library's alike: it makes what it gives behind an `impl` where
+/// it's held as the crate does, by this one rule (#1242).
 pub(crate) fn compiled_behind_an_impl<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
@@ -697,11 +698,6 @@ pub(crate) fn compiled_behind_an_impl<'tcx>(
         else {
             continue;
         };
-        // A library's, whose form its library decides and its contract
-        // says, cloned apart where it gives one out (#1032, #1202).
-        if !def_id.is_local() {
-            continue;
-        }
         let hidden = tcx.type_of(def_id).instantiate_identity().skip_normalization();
         for inner in hidden.walk().filter_map(|inner| inner.as_type()) {
             if is_held_compiled(tcx, inner) {

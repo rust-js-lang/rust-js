@@ -100,9 +100,16 @@ pub(super) fn cloned_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], 
     if library {
         todo.extend(given_out_clone(tcx, all_bodies));
     }
+    // Each std's struct a function makes, never cloned apart, its parts
+    // cloned in turn by its compiled `Clone` all the same (#1242).
+    let mut compiled_seen: IndexSet<Ty<'tcx>> = IndexSet::default();
     while let Some(ty) = todo.pop() {
         let ty = tcx.erase_and_anonymize_regions(ty);
-        if !compiled.contains(&ty) && cloned.types.insert(ty) {
+        let new = match compiled.contains(&ty) {
+            true => compiled_seen.insert(ty),
+            false => cloned.types.insert(ty),
+        };
+        if new {
             todo.extend(clones_in_turn(tcx, ty));
         }
     }

@@ -296,3 +296,12 @@ gives one out, as its contract says (#1032, #1202). Case C
 ([0262](0262-when-rust-and-js-disagree.md)): a program threw where Rust
 runs. `test/corpus/clone_of_an_adapter_over_a_returned_impl.rs` holds a
 filter's, a map's and a chain's clone of it, in both builds.
+
+And a library's alike (#1242): it makes what it gives behind an `impl`,
+where it's held, std's compiled struct, by the same rule the crate does
+(`compiled_behind_an_impl`, for any crate's opaque type). A consumer's clone
+of a filter over a library's `impl Iterator + Clone` cloned the library's
+struct as one cloned apart, `f[$cloneKey] is not a function`. That struct is
+never cloned apart, yet its parts are still cloned in turn: its compiled
+`Clone` clones its fields, a closure among them, which its library's
+contract says how (#1202).
