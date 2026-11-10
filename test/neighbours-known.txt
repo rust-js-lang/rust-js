@@ -28,6 +28,7 @@ plain std once_cell_fields.rs beside drop_unit_guard.rs user_fmt_traits.rs
 plain std iter_next_back.rs beside address_of_a_tuple_field.rs
 plain std own_fold_through_adapters.rs beside pointer_addresses.rs
 plain std option_result_methods.rs beside bytes_through_pointers.rs
+plain std adapter_of_a_borrowed_iterator_where_addresses_are_asked.rs beside collect_fallible.rs consumer_closure_dropped_first.rs
 plain std generic_mut_lent_by_std.rs beside address_of_an_item_std_lends.rs
 
 #1294 P2 (neighbours): a println! of a Vec or String local is refused in a crate that asks an address
@@ -38,3 +39,17 @@ plain std text_edits.rs beside address_of_an_item_moved_in_its_vec.rs
 
 #1295 P2 (neighbours): a borrow in generic code of an associated type's value is refused in any crate that asks an address
 plain std blanket_iterator_trait.rs beside map_extend_unwinds_what_is_left.rs text_bytes_pointer_within.rs
+
+#1316 P2 (neighbours): a Vec grown by a Take of Successors or of Cycle is refused in a crate that reads a Vec's capacity
+plain std iterator_sources.rs beside adapter_size_hints.rs
+plain std std_map.rs beside collection_capacity.rs
+
+#1317 P2 (neighbours): a Take of IntoValues, or a Map of a Skip of a vec's IntoIter, is refused as an ExactSizeIterator beside a case that counts one
+plain collection_taken_drops_what_is_left.rs beside map_of_own_size_hint.rs
+plain held_beneath_adapters_from_its_back.rs beside capacity_of_what_std_hints_less.rs
+
+#1318 P2 (neighbours): cloning a lent Map of an fn item (Option::Some) is refused beside generic_map_cloned_beside_another_bound
+plain generic_collect_closes_its_source.rs beside generic_map_cloned_beside_another_bound.rs
+
+#1319 P2 (neighbours): in the std build, a value of an associated type `impl DoubleEndedIterator` is refused beside compiled_adapters_closed_as_a_collect_unwinds
+std associated_iterator_of_stds_struct_from_its_back.rs beside compiled_adapters_closed_as_a_collect_unwinds.rs
