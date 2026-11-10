@@ -350,8 +350,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let given = args.type_at(param.index as usize);
         // The crate's own, `$iterator`'s, or a type parameter's, `$given`'s
         // (#766).
+        // Of the same type, its regions apart: a closure's in it is erased
+        // in one and not the other (#1239).
         (self.is_user_iterator(given) || matches!(given.kind(), ty::Param(_)))
-            && ty == given
+            && self.tcx.erase_and_anonymize_regions(ty) == self.tcx.erase_and_anonymize_regions(given)
             && self.given_as_iterator(callee, ty::Ty::new_param(self.tcx, param.index, param.name), given)
     }
 

@@ -421,4 +421,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_chains_cloned_by_their_instances.rs$"],
     snapshots: true,
   },
+  {
+    name: "iterated-slot-told-apart-by-a-region",
+    breaks: "the crate's own iterator holding a closure's adapter, given to generic code as `$iterator(value, next)`, is given the value's own drop, `own[0].return()`, which reads the JS iterator as the struct: `Cannot read properties of undefined (reading 'return')` (#1239)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "            && self.tcx.erase_and_anonymize_regions(ty) == self.tcx.erase_and_anonymize_regions(given)",
+    replace: "            && ty == given",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_holding_a_closure_dropped_by_generic_code\\.rs$"],
+  },
 ];

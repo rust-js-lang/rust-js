@@ -178,3 +178,18 @@ its body names them. The dead `TypeDrops::unsupported`, which nothing
 filled, is gone. `test/architecture-traits.test.ts` holds the numbering
 to `drop_params.rs` and `u32::MAX` out of the drops' and traits' code. The
 corpus is unchanged.
+
+## Amendment: the type given is told by its regions apart (2026-11-10, #1239)
+
+Whether a drop slot's value was made a JS iterator by its caller,
+`$iterator(value, next)`, so it's given the drop of the value it was made
+of, its `of`, compared the slot's type with what the caller gives for its
+type parameter as they were. One had its regions erased and the other
+didn't, a closure's in an adapter the crate's own iterator holds, so the
+same type was told apart, and the caller gave the value's own drop,
+`own[0].return()`, which read the JS iterator as the struct: `Cannot read
+properties of undefined (reading 'return')` where native Rust drops each
+item (`iterated_slot`). They're compared with their regions erased. Held by
+`own_iterator_holding_a_closure_dropped_by_generic_code.rs` and the
+mutation `iterated-slot-told-apart-by-a-region`; three of #1239's
+`generic-instances` rows run as Rust does.
