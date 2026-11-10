@@ -358,3 +358,17 @@ test("a fact's neighbour is never run, and a case with nothing for it to name is
   // No type of the case's own to clone.
   expect(context("fact-clones")).toBeUndefined();
 });
+
+test("generic-instances calls each consumer and adapter of an iterator the case makes in generic code, given another instance", () => {
+  const program = context("generic-instances") ?? "";
+  // A held `Peekable`'s isn't one: it's a variable, used again.
+  expect(program).toContain("let mut peeked = v . iter () . peekable ()");
+  // `rev()` in generic code, given the case's own `map`; `count()` given a
+  // `filter` that keeps each item.
+  expect(program).toContain("let total : u32 = metamorph_generic :: at_0 ((v . iter () . map (add))) . sum ()");
+  expect(program).toContain('let n = metamorph_generic :: at_1 (("ab" . chars ()) . filter (| _ | true))');
+  expect(program).toContain(
+    "pub fn at_0 < I : :: std :: iter :: Iterator + :: std :: iter :: DoubleEndedIterator + :: std :: iter :: ExactSizeIterator + :: std :: iter :: FusedIterator > (it : I) -> impl :: std :: iter :: Iterator < Item = I :: Item > + :: std :: iter :: DoubleEndedIterator + :: std :: iter :: ExactSizeIterator + :: std :: iter :: FusedIterator { it . rev () }",
+  );
+  expect(program).toContain("pub fn at_1 < I : :: std :: iter :: Iterator > (it : I) -> usize { it . count () }");
+});

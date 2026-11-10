@@ -26,3 +26,72 @@ plain std dyn-fn consumed_iterator_dropped_as_its_function_panics.rs
 #1238 P0 (iterators): in a crate that asks a capacity, mem::replace of a reversed range's or a Vec's iterator gives back a value its reader can't read
 plain std fact-capacity iterator_values_meet.rs
 plain std fact-capacity iterator_values_meet_drops.rs
+
+#1239 P0 (iterators): generic code's collect() into a B: FromIterator isn't std's Vec collect: no hint asked, another capacity, in-place and unwind drops
+plain std generic-instances adapters_over_own_next_that_panics.rs
+plain std generic-instances adapters_own_work_that_panics.rs
+plain std generic-instances asked_length_overflow.rs
+plain std generic-instances back_knowing_adapters_hint_and_try_fold.rs
+plain std generic-instances boxed_fn_given_to_consumers_drops.rs
+plain std generic-instances boxed_fn_through_a_call_drops.rs
+plain generic-instances by_ref_lends.rs
+plain std generic-instances capacity_of_text_patterns.rs
+plain std generic-instances capacity_of_what_std_hints_less.rs
+plain std generic-instances chain_stepped_from_its_back_elsewhere.rs
+plain std generic-instances chain_under_a_held_map_from_its_back.rs
+plain std generic-instances closure_stages_that_never_unwind.rs
+plain std generic-instances closure_stages_that_never_unwind_past_adapters.rs
+plain std generic-instances collect_as_vec_asks_hint.rs
+plain std generic-instances collect_asks_hint_as_it_grows.rs
+plain std generic-instances collect_close_panics.rs
+plain std generic-instances collect_closes_what_its_hint_panics.rs
+plain std generic-instances collect_endless_once_stepped.rs
+plain std generic-instances collect_fallible.rs
+plain std generic-instances collect_into_results_asks_hint.rs
+plain std generic-instances collect_panic_drops_collected.rs
+plain std generic-instances collected_counts_ask_room.rs
+plain std generic-instances collected_in_place_dropped_as_the_rest_panics.rs
+plain std generic-instances collected_in_place_leaked_past_a_filters_drop.rs
+plain std generic-instances collected_in_place_zipped_leaked_past_a_maps_drop.rs
+plain std generic-instances compiled_adapters_closed_as_a_collect_unwinds.rs
+plain std generic-instances consumer_drops_what_is_left.rs
+plain std generic-instances drops_of_consumed_iterators.rs
+plain std generic-instances filter_map_of_given_from_its_back.rs
+plain std generic-instances fold_drops_moved_function_first.rs
+plain std generic-instances from_iter_impl_of_dropping.rs
+plain std generic-instances generic_collect_closes_its_source.rs
+plain std generic-instances generic_collect_drops_rest_first.rs
+plain std generic-instances generic_collect_grows_by_its_items_size.rs
+plain std generic-instances held_adapters_stepped_to_their_end.rs
+plain std generic-instances in_place_collect_leaks_what_a_discard_strands.rs
+plain std generic-instances in_place_collect_of_a_built_type.rs
+plain std generic-instances map_ends_size_hint.rs
+plain std generic-instances own_fold_and_nth.rs
+plain std generic-instances own_nth_through_adapters.rs
+plain std generic-instances own_steps_behind_adapters_unwind.rs
+plain std generic-instances panic_mid_iteration_drops.rs
+plain std generic-instances panic_part_way_drops.rs
+plain std generic-instances passed_item_drops_that_panic.rs
+plain generic-instances range_inclusive_exhausted.rs
+plain std generic-instances scan_dropped_once.rs
+plain std generic-instances shunt_steps_by_try_fold.rs
+plain std generic-instances size_hint_of_adapters.rs
+plain std generic-instances step_by_of_own_nth_that_never_unwinds.rs
+plain std generic-instances vec_capacity_grown.rs
+plain std generic-instances zip_of_a_boxed_map.rs
+plain std generic-instances zip_of_a_repeat_folds_to_the_shorter.rs
+plain std generic-instances zip_second_side_panics.rs
+plain std generic-instances zip_sides_dropped_with_it.rs
+
+#1240 P0 (iterators): size_hint, count, last and nth in generic code answer otherwise than std of some instances
+plain generic-instances flatten_count_takes_each_inner_count.rs
+plain generic-instances flatten_last_takes_each_inner_last.rs
+plain generic-instances lengths_and_backs_given_on.rs
+plain generic-instances own_count_through_adapters.rs
+plain std generic-instances range_own_steps.rs
+plain std generic-instances range_reversed_skipped_beside_its_back_stepped.rs
+plain std generic-instances repeat_count_panics.rs
+plain generic-instances size_hint.rs
+plain generic-instances size_hints_made_in_place.rs
+plain generic-instances take_and_filter_of_a_type_parameter_hint_as_std.rs
+plain generic-instances zip_size_hints.rs

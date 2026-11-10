@@ -370,3 +370,34 @@ A case with a binding, `rust_js::link_name`, isn't rewritten by `dyn-fn`:
 the boxed closure it hands JS is one Rust never drops (ADR 0873, the
 guide's decided difference 12), which the case's native stub drops, so
 its run differs by that decision, not by a fault.
+
+## Amendment: generic code given other instances (#1237)
+
+Most of what generic code decides is about every instance its callers
+give it. The corpus mostly calls each consumer and adapter on the one
+concrete iterator it makes, so a decision made of the generic type alone
+was asked of only one instance. #1236 was found by hand, by giving
+generic code many instances. `generic-instances` (`instances.rs`) does
+this for every case: each `size_hint`, `count`, `last`, `nth`, `len`,
+`max`, `min`, `collect`, `sum`, `product`, `take`, `skip`, `step_by` and
+`rev` the case calls on an iterator it makes is called in generic code,
+`metamorph_generic::at_k(..)`, `fn at_k<I: Iterator ..>(it: I) -> ..`. An
+adapter gives an `impl Iterator` that promises what its instance keeps.
+Each call is given one instance of the iterator: the case's own, a
+`filter` that keeps every item, a `chain` of nothing, a `map` of each item
+to itself, a `fuse`, or the net's own iterator that forwards `next`,
+`next_back` and `size_hint`. Which instance a place gets turns with the
+place and the case's length, so the corpus covers every instance of every
+method. A place rustc rejects gets the case's own instance, then is left
+as it was (`narrow.rs`). An iterator held in a variable isn't moved into
+the call, because the variable may be used again. Value instances (a
+copy, a clone, `Some`, a drop) are left for later.
+
+Its first run covered every case in both builds in 118 s, in 12 parts on
+the 12-core M6 (2026-11-10). It made 639 programs, and 65 cases failed.
+54 are #1239: generic code's `collect()` into a `B: FromIterator` is not
+std's `Vec` collect. It never asks the hint, the capacity differs, and
+the in-place and unwinding drops differ. Native monomorphizes
+`B = Vec<T>`, while rust-js goes through the dictionary. The other 11
+are #1240: `size_hint`, `count`, `last` and `nth` in generic code of
+some instances. All are listed under their issues.

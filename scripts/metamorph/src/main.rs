@@ -51,6 +51,10 @@
 //!   (`opaque.rs`, #1204); `dyn-fn`, each closure called through a
 //!   `Box<dyn Fn>` (`dyn_fn.rs`); each narrowed to the places rustc
 //!   accepts (`narrow.rs`).
+//! - `generic-instances`: each consumer or adapter the case calls on an
+//!   iterator it makes called in generic code, given another instance of
+//!   the iterator, a `filter`, a `chain`, a `map`, the net's own
+//!   (`instances.rs`, #1237).
 //! - `fact-<fact>`: the case given a neighbour, never run, that turns on
 //!   one of the facts rust-js decides for the whole crate, an address
 //!   asked, a capacity, a function's identity (`facts.rs`, #1204).
@@ -72,6 +76,7 @@ mod dyn_fn;
 mod emi;
 mod facts;
 mod generic;
+mod instances;
 mod library;
 mod loops;
 mod loud;
@@ -91,7 +96,7 @@ use syn::{Block, FnArg, Item, Pat, Stmt, Type};
 
 use wrap::Wrap;
 
-const REWRITES: &str = "outline|boxed|option|rc-refcell|field|dyn-ref|impl-ref|impl-owned|generic|closure-fn|library|array|tuple|for-each|for-loop|if-let|method-fn|fn-method|default-copy|tuple-struct|loud|opaque|dyn-fn|fact-<fact>|emi-probe|emi-prune|emi-insert";
+const REWRITES: &str = "outline|boxed|option|rc-refcell|field|dyn-ref|impl-ref|impl-owned|generic|closure-fn|library|array|tuple|for-each|for-loop|if-let|method-fn|fn-method|default-copy|tuple-struct|loud|opaque|dyn-fn|generic-instances|fact-<fact>|emi-probe|emi-prune|emi-insert";
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -153,6 +158,7 @@ fn main() {
         "tuple-struct" => tuples::tuple_struct(&mut ast, &mut budget),
         "loud" => loud::loud(&mut ast, &mut budget),
         "opaque" => opaque::opaque(&mut ast, &mut budget),
+        "generic-instances" => instances::generic_instances(&mut ast, &source, &mut budget),
         "dyn-fn" => dyn_fn::dyn_fn(&mut ast, file, &source, &mut budget),
         fact if facts::FACTS.contains(&fact) => facts::fact(&mut ast, fact),
         "emi-probe" => emi::probe(&mut ast),

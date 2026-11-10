@@ -45,6 +45,9 @@ export const rewrites = [
   // Contexts (#1204): each iterator an `impl Iterator`, each closure a
   // `Box<dyn Fn>`, and a neighbour that turns on each crate-wide fact.
   "opaque", "dyn-fn",
+  // Generic code given instances (#1237): each consumer and adapter of an
+  // iterator the case makes called in generic code, given another instance.
+  "generic-instances",
   "fact-addresses", "fact-slices", "fact-stored", "fact-capacity", "fact-fn-identity", "fact-chars", "fact-write-fails", "fact-rc-counts", "fact-clones",
 ] as const;
 export type Rewrite = (typeof rewrites)[number];

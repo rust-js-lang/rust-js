@@ -17,7 +17,7 @@ use syn::visit_mut::{self, VisitMut};
 use crate::narrow;
 
 /// The methods whose result is an iterator, of std's types and traits.
-const MAKERS: &[&str] = &[
+pub(crate) const MAKERS: &[&str] = &[
     "iter",
     "iter_mut",
     "into_iter",
