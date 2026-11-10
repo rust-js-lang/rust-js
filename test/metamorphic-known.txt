@@ -70,11 +70,6 @@ plain opaque try_folds_of_stages_unwind.rs
 plain opaque vec_last_takes_its_back.rs
 plain opaque zip_reversed_stepped_from_its_back.rs
 
-#1229 P1 (compile crash): Recognition::eq_sides panics "expected a projection" when an eq/ne side is an opaque impl Iterator
-plain std opaque adapter_drops.rs
-plain std opaque eq_of_unequal_lengths.rs
-plain std opaque into_iterator_named_by_another_bound.rs
-
 #1230 P0 (impl Trait): into_iter() of something already an iterator, given on as impl Iterator, yields nothing or zeros
 plain std opaque generic_chain_of_into.rs
 plain std opaque into_iter_of_items.rs

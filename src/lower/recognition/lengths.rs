@@ -365,17 +365,29 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn eq_sides(&self, this: Ty<'tcx>, other: Ty<'tcx>) -> Option<[EqSide<'tcx>; 2]> {
         let trusted = super::fact_trait(self.tcx, TypeFact::TrustedLen)?;
         let into_iterator = super::std_item(self.tcx, StdItem::IntoIterator);
-        let side = |ty: Ty<'tcx>| match *ty.kind() {
-            ty::Param(_) => Some(EqSide::Given(ty)),
-            ty::Alias(_, alias)
-                if alias.trait_def_id(self.tcx) == into_iterator && matches!(alias.self_ty().kind(), ty::Param(_)) =>
-            {
-                Some(EqSide::Given(alias.self_ty()))
-            }
-            _ if ty.has_param() => Some(EqSide::Built),
-            _ => {
-                let iter = super::iterator_type_of(self.tcx, self.typing_env, ty);
-                self.implements_trait(iter, trusted).then_some(EqSide::Known)
+        // Of what an `impl Iterator` hides, revealed first as a body's MIR
+        // is (`mir::revealed`, #1142), in any typing environment, as std's
+        // specialization sees it: an opaque type is no projection, and the
+        // type it hides is the side, a type parameter of the caller's or
+        // one known here (#1229).
+        let side = |ty: Ty<'tcx>| {
+            let ty = crate::lower::mir::revealed(self.tcx, ty);
+            match *ty.kind() {
+                ty::Param(_) => Some(EqSide::Given(ty)),
+                // A projection's alone: an opaque one left unrevealed has
+                // no trait.
+                ty::Alias(_, alias)
+                    if matches!(alias.kind, ty::Projection { .. })
+                        && alias.trait_def_id(self.tcx) == into_iterator
+                        && matches!(alias.self_ty().kind(), ty::Param(_)) =>
+                {
+                    Some(EqSide::Given(alias.self_ty()))
+                }
+                _ if ty.has_param() => Some(EqSide::Built),
+                _ => {
+                    let iter = super::iterator_type_of(self.tcx, self.typing_env, ty);
+                    self.implements_trait(iter, trusted).then_some(EqSide::Known)
+                }
             }
         };
         Some([side(this)?, side(other)?])

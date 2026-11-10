@@ -1,6 +1,6 @@
 # 1014. Generic code's `eq` of `TrustedLen` iterators is refused at its caller
 
-Status: Accepted. Extends [0998](0998-eq-of-uncounted-trusted-len-iterators-is-refused.md). Amended: a zip folded or stepped too, and the guide's difference 15 gone.
+Status: Accepted. Extends [0998](0998-eq-of-uncounted-trusted-len-iterators-is-refused.md). Amended: a zip folded or stepped too, and the guide's difference 15 gone; a side an `impl Iterator` hides, revealed (#1229).
 Part of #386.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): Rust's behavior can't be
@@ -154,3 +154,17 @@ zip's needs it (#1162). `adapter_drops.rs` and
 `into_iterator_named_by_another_bound.rs` give their generic `eq`
 `ILengthFirst` and `JLengthFirst`.
 
+
+## Amended (2026-11-10, #1229): a side an `impl Iterator` hides is the type it hides
+
+`eq_sides` matched a side's type as it's written, and an opaque one,
+`impl Iterator`, a THIR's or a caller's instance of a signature's, isn't a
+type parameter, a projection or a known type: asked its trait as a
+projection's, rust-js crashed (found by #1204's `opaque` rewrite). Each
+side is revealed first, by `mir::revealed`, the rule a body's MIR is
+revealed by (#1142), in any typing environment, as std's specialization
+sees the type it hides: a type parameter of the caller's it hides is
+`Given`, its `LengthFirst` asked of the caller; a known one, `Known` as
+any other. Generic code's `eq` of an `impl Iterator` made of its type
+parameter is answered, not refused. Corpus case `eq_of_opaque_iterators`,
+both builds; mutation `eq-side-of-an-opaque-type-unrevealed`.

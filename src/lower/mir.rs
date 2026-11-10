@@ -43,6 +43,7 @@ mod positions;
 mod queries;
 mod revealed;
 pub(in crate::lower) use queries::{referred_constant, referred_key};
+pub(in crate::lower) use revealed::revealed;
 mod rvalues;
 mod scopes;
 mod std_calls;

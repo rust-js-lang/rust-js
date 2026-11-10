@@ -223,7 +223,9 @@ makes each `impl Trait` in it the type it hides, as rustc's codegen reads
 it (#1142): every rule of a body's lowering asks of the type its value is,
 and none of `mir/`, `iterators/` or `combinators/` reveals a type itself
 (`test/architecture-iterators.test.ts`). `Recognition::reveal` is for
-types read elsewhere, a THIR's or a signature's.
+types read elsewhere, a THIR's or a signature's, in a typing environment
+that reveals; `eq_sides`, asked in one that may not, of a caller's THIR,
+reveals by `mir::revealed` itself (#1229).
 
 MIR determines execution order. `mir/cfg.rs` structures blocks;
 `mir/temporaries.rs` folds temporary reads only when intervening effects allow
