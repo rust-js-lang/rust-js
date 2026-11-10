@@ -68,7 +68,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             parts.push(match *piece {
                 Piece::Text(ref text) => (Expr::str(text), false),
                 Piece::Argument(i, spec) => {
-                    let bad = || self.unsupported(span, "this format argument, from its MIR");
+                    let bad = || self.unsupported(span, "this format argument, from its MIR (#1294)");
                     let item = |i: usize| match items.get(i) {
                         Some(Value::Fmt(kind, ty, value)) => Some((*kind, *ty, value.clone())),
                         _ => None,

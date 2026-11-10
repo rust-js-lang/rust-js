@@ -75,21 +75,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of a value of `ty` in the body being lowered, where in it the object
     /// its JS is sits (`object_within`); of a type parameter's, where in
     /// each of the crate's instances of it, which must agree, as generic
-    /// code has one JS for them all. Refused, naming #1114, where they
-    /// don't, or where an untagged enum's variants hold theirs at different
-    /// offsets; `what` is what's made of it. Of instances the crate can't
-    /// all see, a `pub` function's, 0. `None`, held elsewhere.
+    /// code has one JS for them all. Refused where they don't, or where an
+    /// untagged enum's variants hold theirs at different offsets (#1295);
+    /// `what` is what's made of it. Of instances the crate can't all see, a
+    /// `pub` function's, 0. `None`, held elsewhere.
     pub(in crate::lower) fn known_within(&self, ty: Ty<'tcx>, span: Span, what: &str) -> R<Option<u64>> {
         let refused = |why: String| Err(refuse(self.tcx, span, Refused::Because(what, &why)));
+        // An untagged enum's variants at different offsets, #1295's.
         let varies = |ty: Ty<'tcx>| {
-            format!(
-                "`{ty}`'s variants hold their values at different offsets in it, which its JS, the value itself, doesn't say (#1114)"
-            )
+            let why = format!(
+                "`{ty}`'s variants hold their values at different offsets in it, which its JS, the value itself, doesn't say"
+            );
+            Err(refuse(
+                self.tcx,
+                span,
+                Refused::Because(&format!("{what} (#1295)"), &why),
+            ))
         };
         match self.object_within(ty) {
             Within::At(at) => return Ok(Some(at)),
             Within::Elsewhere => return Ok(None),
-            Within::Unknown if !ty.has_non_region_param() => return refused(varies(ty)),
+            Within::Unknown if !ty.has_non_region_param() => return varies(ty),
             Within::Unknown => {}
         }
         let owner = self.tcx.typeck_root_def_id(self.item);
@@ -100,7 +106,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for instance in instances {
             let at = self.object_within(instance);
             if at == Within::Unknown {
-                return refused(varies(instance));
+                return varies(instance);
             }
             match found {
                 Some((other, before)) if before != at => {
@@ -221,10 +227,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(lent) = lent.into_iter().find(|&lent| stored.addressable(tcx, lent)) else {
             return Ok(());
         };
-        let what = format!("`{}` in a crate that asks an address", tcx.def_path_str(def_id));
+        let what = format!("`{}` in a crate that asks an address (#1293)", tcx.def_path_str(def_id));
         let why = format!(
             "it lends `{lent}` from inside its `{receiver}`, whose storage JS keeps apart from it, so its address \
-             wouldn't be in the `{receiver}`'s (#1114); take what it holds out by value, keep it where rust-js \
+             wouldn't be in the `{receiver}`'s; take what it holds out by value, keep it where rust-js \
              knows where it's stored, a `RefCell`, an `Option` or a struct's field, or reach it by a pattern, \
              `if let Ok(x) = &value`"
         );

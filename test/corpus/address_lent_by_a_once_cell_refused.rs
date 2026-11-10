@@ -1,4 +1,4 @@
-//@ compile-fail: `std::cell::OnceCell::<T>::get` in a crate that asks an address yet: it lends `P` from inside its `std::cell::OnceCell<P>`
+//@ compile-fail: `std::cell::OnceCell::<T>::get` in a crate that asks an address (#1293) yet: it lends `P` from inside its `std::cell::OnceCell<P>`
 // std's function that lends a reference into its receiver's own storage,
 // whose place there rust-js doesn't know, a `OnceCell`'s `get`, a
 // `Result`'s `as_ref`, a `Peekable`'s `peek`, in a crate that asks an
