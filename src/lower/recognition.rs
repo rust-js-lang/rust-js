@@ -4,8 +4,11 @@ mod adapter_types;
 mod c_strs;
 mod calls;
 mod chars;
+mod compiled_std;
 mod fmt;
 mod inherent;
+mod io;
+pub(crate) use io::{ByteSource, IoOp, of_io_reading};
 mod iterators;
 mod js_items;
 mod json;
@@ -32,9 +35,9 @@ mod wrappers;
 mod zip_folds;
 
 pub(super) use self::{
-    adapter_types::*, c_strs::*, calls::*, fmt::*, iterators::*, js_items::*, json::*, open_calls::*, serde::*,
-    sorts::*, specialization::*, std_crates::*, std_items::*, traits::*, type_facts::*, types::*, wrappers::*,
-    zip_folds::*,
+    adapter_types::*, c_strs::*, calls::*, compiled_std::*, fmt::*, iterators::*, js_items::*, json::*, open_calls::*,
+    serde::*, sorts::*, specialization::*, std_crates::*, std_items::*, traits::*, type_facts::*, types::*,
+    wrappers::*, zip_folds::*,
 };
 
 use super::combinators::{Comb, IterComb, IterSource, StepOp};
@@ -225,6 +228,9 @@ pub(super) enum Std {
     FmtTo(WriteCall),
     /// An `io::Error`'s: made, or its kind asked (ADR 0462).
     IoError(IoErrorOp),
+    /// std's byte sources' (#1156): a method their dictionary holds, a
+    /// `Cursor`'s own, or what `read_line` adds to a `String` by.
+    Io(IoOp),
     /// Hashing's (ADR 0463): a std hasher made, or its own method called, or
     /// a std type's `Hash`.
     Hash(HashOp),
@@ -565,6 +571,20 @@ pub(super) enum StreamOp {
 }
 
 impl Std {
+    /// Is it written as std's own wherever it's called, never through the
+    /// generic trait call a trait's method otherwise is: std's that's the
+    /// same JS value, a `Box`'s `as_ref()` (ADR 0331); a `dyn Any`'s; a
+    /// `fmt` method on a held `Formatter` (ADR 0461); a std type's `hash`,
+    /// the writes std's impl makes, whatever references optimized MIR has
+    /// (ADR 0463); and a byte source's own method, its dictionary's, given
+    /// the source in a box as generic code gives it (#1156).
+    pub(in crate::lower) fn never_through_a_trait_call(self) -> bool {
+        matches!(
+            self,
+            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_) | Std::Io(_)
+        )
+    }
+
     /// Does it give back what a place held, as it was held there: the old
     /// value of `mem::replace` and `mem::take`, whatever form its type's is,
     /// std's iterator struct or a `$iter`, never one std made of an array,

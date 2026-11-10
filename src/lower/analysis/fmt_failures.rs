@@ -11,7 +11,8 @@ use crate::collections::IndexSet;
 use crate::lower::Body;
 use crate::lower::library::Foreign;
 use crate::lower::recognition::{
-    StdItem, fmt_trait_called, formatted_parts, is_err_variant, is_generic_fmt_result, is_std_def, is_write_result_type,
+    StdItem, fmt_trait_called, formatted_parts, is_err_variant, is_generic_fmt_result, is_std_def,
+    is_write_result_type, of_io_reading,
 };
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt};
@@ -126,6 +127,14 @@ pub(super) fn failing_fns<'tcx>(
                 && !tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitFromResidual)
                 && receiver.is_some_and(|from| !is_write_result_type(tcx, from) && of_write_error(tcx, from))
             {
+                failing.insert(caller);
+                continue;
+            }
+            // A byte source's, `read_exact` or `rewind`, of `io::Read`,
+            // `BufRead` or `Seek`, its impl's or what the trait provides,
+            // of a type that's known or a dictionary's: std's sources'
+            // fail, `read_exact` past their end (#1156).
+            if is_write_result_type(tcx, output) && of_io_reading(tcx, callee) {
                 failing.insert(caller);
                 continue;
             }

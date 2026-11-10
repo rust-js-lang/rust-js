@@ -20,17 +20,27 @@ use std::path::{Path, PathBuf};
 const BUILTINS: &str = "#![no_std]\n#![feature(compiler_builtins)]\n#![compiler_builtins]\n";
 
 /// What each crate's session is set to beside its arguments: each body's
-/// MIR kept in its metadata, which `--std-bodies` reads, and MIR inlined,
-/// as std's own build has it.
+/// MIR kept in its metadata, which `--std-bodies` reads, and whether MIR is
+/// inlined.
 #[derive(Hash)]
 struct Settings {
     always_encode_mir: bool,
     inline_mir: bool,
 }
 
-const SETTINGS: Settings = Settings {
+/// `core`'s: MIR inlined, as std's own build has it.
+const CORE: Settings = Settings {
     always_encode_mir: true,
     inline_mir: true,
+};
+
+/// `alloc`'s: MIR not inlined, so each body of it `@rust-js/std` compiles
+/// calls what its source calls, `Vec::extend_from_slice` or `memchr`,
+/// which a recognizer answers, where inlined each would reach memory
+/// (#1156, ADR 1123).
+const ALLOC: Settings = Settings {
+    always_encode_mir: true,
+    inline_mir: false,
 };
 
 /// The sysroot whose `core` and `alloc`, for `target`, are built to
@@ -63,7 +73,7 @@ pub fn sysroot(toolchain: &Path, target: &str) -> Result<PathBuf, String> {
         ]
     };
     let mut key = std::hash::DefaultHasher::new();
-    std::hash::Hash::hash(&(toolchain, BUILTINS, &SETTINGS, args(Path::new(""))), &mut key);
+    std::hash::Hash::hash(&(toolchain, BUILTINS, [&CORE, &ALLOC], args(Path::new(""))), &mut key);
     let name = format!("{target}-{:016x}", std::hash::Hasher::finish(&key));
     let made = home.join(&name);
     if made.join("done").exists() {
@@ -74,9 +84,9 @@ pub fn sysroot(toolchain: &Path, target: &str) -> Result<PathBuf, String> {
     let lib = building.join("lib/rustlib").join(target).join("lib");
     std::fs::create_dir_all(&lib).map_err(|error| format!("cannot make the unwinding std's sysroot: {error}"))?;
     let [core_args, builtins_args, alloc_args] = args(&building);
-    build(core_args, None)?;
-    build(builtins_args, Some(BUILTINS))?;
-    build(alloc_args, None)?;
+    build(core_args, None, &CORE)?;
+    build(builtins_args, Some(BUILTINS), &CORE)?;
+    build(alloc_args, None, &ALLOC)?;
     std::fs::write(building.join("done"), "").map_err(|error| format!("cannot finish the unwinding std: {error}"))?;
     // Another build's that finished first is as good.
     if std::fs::rename(&building, &made).is_err() {
@@ -107,9 +117,10 @@ fn crate_args(name: &str, input: &str, building: &Path, lib: &Path, target: &str
     ]
 }
 
-/// rustc run on `args`, its input `source` where it's given one.
-fn build(args: Vec<String>, source: Option<&'static str>) -> Result<(), String> {
-    let mut crate_build = Crate(source);
+/// rustc run on `args`, its input `source` where it's given one, set to
+/// `settings`.
+fn build(args: Vec<String>, source: Option<&'static str>, settings: &'static Settings) -> Result<(), String> {
+    let mut crate_build = Crate(source, settings);
     let exit = rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&args, &mut crate_build));
     match exit == std::process::ExitCode::SUCCESS {
         true => Ok(()),
@@ -120,8 +131,9 @@ fn build(args: Vec<String>, source: Option<&'static str>) -> Result<(), String> 
     }
 }
 
-/// rustc, allowed std's unstable features, of its source where it has one.
-struct Crate(Option<&'static str>);
+/// rustc, allowed std's unstable features, of its source where it has one,
+/// set to its settings.
+struct Crate(Option<&'static str>, &'static Settings);
 
 impl Callbacks for Crate {
     fn config(&mut self, config: &mut rustc_interface::interface::Config) {
@@ -132,7 +144,7 @@ impl Callbacks for Crate {
             };
         }
         config.opts.unstable_features = rustc_feature::UnstableFeatures::Allow;
-        config.opts.unstable_opts.always_encode_mir = SETTINGS.always_encode_mir;
-        config.opts.unstable_opts.inline_mir = Some(SETTINGS.inline_mir);
+        config.opts.unstable_opts.always_encode_mir = self.1.always_encode_mir;
+        config.opts.unstable_opts.inline_mir = Some(self.1.inline_mir);
     }
 }

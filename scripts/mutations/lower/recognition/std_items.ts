@@ -3,15 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "zip-clone-uncompiled",
-    breaks:
-      "a held zip's `clone()` isn't std's compiled `Zip::clone`: the std package isn't what its catalog makes, and with std's structs alone it's refused (ADR 0975)",
-    file: "src/lower/recognition/std_items.rs",
-    find: '    ("Zip", Some("Clone"), "clone"),\n',
-    replace: "",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
     name: "zip-by-index-pure",
     breaks:
       "a zip by index ignores whether its first side runs code, so a slice's plain zip, which no one can tell apart, is `$trustedZip` too, noisier (ADR 0973)",
@@ -20,72 +11,6 @@ export const mutations: Mutation[] = [
     replace: "    is_random_access(a) && is_random_access(b)\n",
     tests: ["test/corpus.test.ts", "-t", "^(zip_by_index|lazy_chains).rs$"],
     snapshots: true,
-  },
-  {
-    name: "copied-back-uncompiled",
-    breaks:
-      "std's `Copied`'s `next_back` isn't compiled: the build of std's structs alone refuses a `copied()` stepped from its back, `the DoubleEndedIterator of a Copied<slice::Iter>` (ADR 0938)",
-    file: "src/lower/recognition/std_items.rs",
-    find: '    ("Copied", Some("DoubleEndedIterator"), "next_back"),\n',
-    replace: "",
-    tests: [
-      "test/iterator-forms.test.ts",
-      "-t",
-      "^(copied_structs_apart|associated_double_ended) with",
-    ],
-  },
-  {
-    name: "cloned-reader-uncompiled",
-    breaks:
-      "std's `Cloned`'s `__iterator_get_unchecked` isn't compiled: the build of std's structs alone refuses a `cloned()` std's zip reads by index, `reading a Cloned<slice::Iter<D>> by its index` (#727, ADR 0938)",
-    file: "src/lower/recognition/std_items.rs",
-    find: '    ("Cloned", Some("Iterator"), "__iterator_get_unchecked"),\n',
-    replace: "",
-    tests: [
-      "test/iterator-forms.test.ts",
-      "-t",
-      "^adapters_own_work_that_panics with",
-    ],
-  },
-  {
-    name: "cloned-compiled-everywhere",
-    breaks:
-      "std's `Cloned` isn't `MEANING_ONLY`, so the normal build makes a held `cloned()` std's struct, not the JS iterator the recognizers make of it: the normal build's JS changes (#727, ADR 0938)",
-    file: "src/lower/recognition/std_items.rs",
-    find: '    "Copied",\n    "Cloned",\n];\n',
-    replace: '    "Copied",\n];\n',
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^cloned_items_from_both_ends.rs$"],
-  },
-  {
-    name: "meaning-only-made-everywhere",
-    breaks:
-      "a `MEANING_ONLY` adapter, `Filter`, is std's struct in the normal build too, so `v.into_iter().filter(p).collect()` isn't the JS chain the recognizers make (ADR 0932)",
-    file: "src/lower/recognition/std_items.rs",
-    find: "    !MEANING_ONLY.contains(&type_name) || crate::lower::session::caches(tcx).meaning.get()\n",
-    replace:
-      "    true || !MEANING_ONLY.contains(&type_name) || crate::lower::session::caches(tcx).meaning.get()\n",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^(collect_drops|filter_ends).rs$"],
-  },
-  {
-    name: "meaning-only-library-items-seen",
-    breaks:
-      "the std manifest's `Filter` impls and methods are taken for the normal build's to call though it doesn't compile `Filter`: `filter(..).collect()` is refused, `this implementation` (ADR 0932)",
-    file: "src/lower/recognition/std_items.rs",
-    find: "    if crate::lower::session::caches(tcx).meaning.get() || id.is_local() {\n        return false;\n    }\n",
-    replace:
-      "    if true || crate::lower::session::caches(tcx).meaning.get() || id.is_local() {\n        return false;\n    }\n",
-    tests: ["test/corpus.test.ts", "-t", "^(collect_drops|filter_ends).rs$"],
-  },
-  {
-    name: "filter-meaning-unmade",
-    breaks:
-      "std's `Filter` isn't made as its meaning: the build of std's structs alone steps a `rev()` through the recognizers' `filter`, `it.back is not a function` (ADR 0932)",
-    file: "src/lower/recognition/std_items.rs",
-    find: '    ("Iterator", "filter"),\n',
-    replace: "",
-    tests: ["test/iterator-forms.test.ts", "-t", "^rev_of_lazy_chains with"],
   },
   {
     name: "std-questions-impure",
@@ -237,16 +162,6 @@ export const mutations: Mutation[] = [
     tests: ["test/shipped-crates.test.ts", "-t", "memchr's searches run"],
   },
   {
-    name: "private-callee-not-compiled",
-    breaks:
-      "a function std keeps private that a compiled body calls, `Fuse`'s `and_then_or_clear`, isn't compiled with it, and the call is refused",
-    file: "src/lower/recognition/std_items.rs",
-    find: "                    && ((!tcx.visibility(called).is_public()\n",
-    replace:
-      "                    && ((!tcx.visibility(called).is_public()\n                        && false\n",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
     name: "concat-macro-unknown",
     breaks:
       "what std's `concat!` made isn't known as its, and so is one string, not its pieces",
@@ -283,55 +198,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "flatten-sized-in-place",
-    breaks:
-      "`size_hint()` of a flatten made in place is the recognizers', `(0, None)` of arrays' items",
-    file: "src/lower/recognition/std_items.rs",
-    find: '    ("Flatten", "flatten", false),\n',
-    replace: '    ("Flatten", "flatten", true),\n',
-    tests: ["test/corpus.test.ts", "-t", "^std_flatten.rs$"],
-  },
-  {
-    name: "flat-map-not-held",
-    breaks:
-      "a `flat_map()` a variable holds is the recognizers' JS iterator, sized `(0, None)` where std's counts",
-    file: "src/lower/recognition/std_items.rs",
-    find: '    ("FlatMap", "flat_map", false),\n',
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^std_flat_map.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "take-not-held",
-    breaks:
-      "a held `take()` is the recognizers' JS iterator, not std's `Take`, which knows its `size_hint`",
-    file: "src/lower/recognition/std_items.rs",
-    find: '    ("Take", "take", true),\n',
-    replace: "",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
-  },
-  {
-    name: "step-by-not-held",
-    breaks:
-      "a held `step_by()` is the recognizers' JS iterator, not std's `StepBy`",
-    file: "src/lower/recognition/std_items.rs",
-    find: '    ("StepBy", "step_by", false),\n',
-    replace: "",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
-  },
-  {
-    name: "chain-not-held",
-    breaks:
-      "a held `chain()` is the recognizers' JS iterator, not std's `Chain`",
-    file: "src/lower/recognition/std_items.rs",
-    find: '    ("Chain", "chain", false),\n',
-    replace: "",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
-  },
-  {
     name: "bound-eq-own-ne-trusted",
     breaks:
       "a binding crate's `PartialEq` whose `eq` is bound to `===` and whose `ne` is its own, which no binding names, is `===` and `!==`, its `ne` never asked (ADR 1016)",
@@ -349,15 +215,6 @@ export const mutations: Mutation[] = [
     replace:
       "                    super::super::bindings::is_binding(tcx, eq)\n                        || matches!(",
     tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
-  },
-  {
-    name: "zip-sized-in-place",
-    breaks:
-      "a zip whose `size_hint()` is asked is made in place, `$lazyZip`, whose sides, JS's own, count nothing: `(0, Some(5))` of `v.iter().zip(v.iter().skip(2))` (#400)",
-    file: "src/lower/recognition/std_items.rs",
-    find: '    ("Zip", "zip", false),\n',
-    replace: '    ("Zip", "zip", true),\n',
-    tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
   },
   {
     name: "libtest-by-name",
@@ -396,18 +253,10 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^in_place_cell_moved_out.rs$"],
   },
   {
-    name: "named-private-fns-uncompiled",
-    breaks: "a function std keeps private that a compiled body names as a value, `FlattenCompat::last`'s own `last`, isn't compiled with it, so `Flatten::last` isn't (#645)",
+    name: "std-memchr-unanswered",
+    breaks: "core's own `memchr`, which `read_until` calls, is no recognizer's, and std's body is refused",
     file: "src/lower/recognition/std_items.rs",
-    find: "        for value in named_fns(tcx, body) {\n",
-    replace: "        for value in Vec::<DefId>::new() {\n",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
-    name: "flatten-count-uncompiled",
-    breaks: "std's `Flatten::count` isn't compiled, so a held one, and every one in the build of std's structs, is counted by std's default, each inner iterator stepped by `next`, not by its own `count` (#736)",
-    file: "src/lower/recognition/std_items.rs",
-    find: "    (\"FlatMap\", Some(\"Iterator\"), \"count\"),\n",
+    find: "                \"std::slice::memchr::memchr\" => Some(MemchrOp::Find { back: false }),\n",
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },

@@ -420,7 +420,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if bindings::reads_rest_value(self.tcx, trait_id, tr.self_ty()) {
             return Ok(values.into_iter().next());
         }
-        if matches!(tr.self_ty().kind(), ty::Dynamic(..)) && operational(self.tcx, self.krate.foreign, trait_id) {
+        // A std trait's provided method compiled into `@rust-js/std` is
+        // that function of a `dyn` too, given the `dyn`'s own dictionary,
+        // `read_line` of a `dyn BufRead` (#1156).
+        let compiled_provided = crate::lower::recognition::is_compiled_std(self.tcx, id);
+        let of_dyn = matches!(tr.self_ty().kind(), ty::Dynamic(..));
+        if of_dyn && !compiled_provided && operational(self.tcx, self.krate.foreign, trait_id) {
             // A std trait's dictionary has only what it's given: `Error`'s, its
             // `source` (ADR 0141), and none of the methods std provides.
             if !self.krate.foreign.compiled_by_rust_js(trait_id)
@@ -488,9 +493,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `Iterator::peekable`'s, called on a type parameter: the library's
         // function over `Self`, given its dictionary and drops (ADR 0185,
         // ADR 0561).
-        if crate::lower::recognition::is_compiled_std(self.tcx, id)
-            && self.resolve_self_instance(id, generic_args)?.is_none()
-        {
+        if compiled_provided && (of_dyn || self.resolve_self_instance(id, generic_args)?.is_none()) {
             let mut values = values;
             let given = self
                 .tcx

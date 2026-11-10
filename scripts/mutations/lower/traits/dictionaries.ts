@@ -721,4 +721,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^into_iterator_of_a_reference_given_to_generic_code with"],
   },
+  {
+    name: "mut-reader-as-its-reader",
+    breaks: "a `&mut` to a reader taken by value, `R = &mut c`, gets the reader's own dictionary, which reads the box it's in as the reader",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            return Ok(Expr::call_helper(\"$mutReader\", vec![reader]));\n",
+    replace: "            return Ok(reader);\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_buf_read.rs$"],
+  },
+
 ];

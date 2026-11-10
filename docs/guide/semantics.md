@@ -965,6 +965,83 @@ Differences:
   they run on in JS where Rust panics past `isize::MAX` bytes
   ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md)).
 
+### Reading bytes: `io::Read`, `BufRead` and `Seek`
+
+- **A `&[u8]` and a `Cursor<T>` are readers, as std's are:** `read`,
+  `read_exact`, `read_to_end`, `read_to_string`, `fill_buf`, `consume`,
+  `seek` and `stream_position` are std's impl's, each a method of the
+  runtime's dictionary of the source, `$sliceReader` or `$cursorReader`,
+  given the source in a box, whether its type is known or generic code's;
+  a `dyn Read` is the pair, and a `&mut` to a reader or a `Box` of one reads
+  through to it ([0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md#amendment-stds-byte-sources-are-read-1156)).
+- **What the traits provide is std's own body,** compiled into
+  `@rust-js/std`: `read_line`, `read_until`, `skip_until`, `lines`,
+  `split`, `rewind` and `seek_relative`.
+- **A `Cursor<T>` is std's struct, `{ inner, pos }`,** its `pos` a `u64`;
+  `Cursor::new`, `position`, `set_position`, `get_ref` and `into_inner` are
+  read in place, and its `Clone`, `Debug`, `PartialEq` and `Default` are
+  std's.
+- **Errors are std's, word for word:** a `read_exact` past the end is
+  `UnexpectedEof`, "failed to fill whole buffer", thrown as an
+  `io::Result<()>`'s error is ([0462](../decisions/0462-io-error-values.md));
+  text that isn't UTF-8 is `InvalidData`, "stream did not contain valid
+  UTF-8", and a `read_to_string` or `read_line` of it adds nothing.
+
+```rust
+use std::io::{self, BufRead, Cursor, Read};
+
+pub fn magic(bytes: &[u8]) -> io::Result<[u8; 4]> {
+    let mut src = bytes;
+    let mut magic = [0u8; 4];
+    src.read_exact(&mut magic)?;
+    Ok(magic)
+}
+
+pub fn line_count(text: &str) -> usize {
+    Cursor::new(text).lines().count()
+}
+```
+
+```js
+import {
+  $cursorReader,
+  $iterator,
+  $sliceReader,
+  $utf8Bytes,
+  $writeCaught,
+  bufRead_lines,
+  linesIterator_next,
+} from "@rust-js/std";
+
+export function magic(bytes) {
+  try {
+    let src = bytes;
+    const magic = [0, 0, 0, 0];
+    $sliceReader.readExact(
+      {
+        get value() {
+          return src;
+        },
+        set value(value) {
+          src = value;
+        },
+      },
+      magic,
+    );
+    return { TAG: "Ok", _0: magic.slice() };
+  } catch (error) {
+    return { TAG: "Err", _0: $writeCaught(error) };
+  }
+}
+
+export function lineCount(text) {
+  const bufRead = $cursorReader({ asRef: (value) => $utf8Bytes(value) });
+  return $iterator(bufRead_lines({ inner: text, pos: 0n }, bufRead, bufRead), (iterator) =>
+    linesIterator_next(iterator, bufRead),
+  ).reduce((n) => n + 1, 0);
+}
+```
+
 What's refused of collections and iterators is in
 [the limitations](limitations.md#iterators-and-collections).
 

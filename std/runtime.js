@@ -1075,6 +1075,187 @@ export function $memchrIter(haystack, needles, at = 0, end = haystack.length) {
   return it;
 }
 
+// `io::Read`'s, `io::BufRead`'s and `io::Seek`'s dictionaries of std's
+// byte sources (#1156): each method one its impl in std writes itself,
+// std's body over the source, given in a box as a generic `&mut` is,
+// `{ value }`. What the traits provide, `read_line` or `rewind`, is std's
+// own body, compiled into `@rust-js/std`'s `io.js` and given the dictionary.
+// An `io::Result<()>`'s `Err` is thrown (ADR 0462), another's a value.
+
+// std's `Error::READ_EXACT_EOF` and `Error::INVALID_UTF8`, word for word.
+export function $readExactEof() {
+  return new $IoError("UnexpectedEof", undefined, "failed to fill whole buffer");
+}
+export function $invalidUtf8() {
+  return new $IoError("InvalidData", undefined, "stream did not contain valid UTF-8");
+}
+
+// `buf[..n].copy_from_slice(&from[..n])`.
+export function $readInto(buf, from, n) {
+  for (let i = 0; i < n; i++) buf[i] = from[i];
+}
+
+// `impl Read for &[u8]` and `impl BufRead for &[u8]`: what's read is taken
+// from the slice's front, `*self = rest`.
+export const $sliceReader = {
+  // Its `BufRead`'s supertrait's, `Read`'s: itself.
+  Read: () => $sliceReader,
+  read(r, buf) {
+    const amt = Math.min(buf.length, r.value.length);
+    $readInto(buf, r.value, amt);
+    r.value = $part(r.value, amt);
+    return { TAG: "Ok", _0: amt };
+  },
+  // One that can't fill `buf` empties the slice first, and fills nothing.
+  readExact(r, buf) {
+    if (buf.length > r.value.length) {
+      r.value = $part(r.value, r.value.length);
+      throw $readExactEof();
+    }
+    $readInto(buf, r.value, buf.length);
+    r.value = $part(r.value, buf.length);
+  },
+  readToEnd(r, v) {
+    const all = r.value;
+    for (let i = 0; i < all.length; i++) v.push(all[i]);
+    r.value = $part(all, all.length);
+    return { TAG: "Ok", _0: all.length };
+  },
+  // All of what's left is checked first: text that isn't UTF-8 takes nothing.
+  readToString(r, s) {
+    const all = r.value;
+    if ($utf8Check(all) !== undefined) return { TAG: "Err", _0: $invalidUtf8() };
+    s.value += $utf8Decode(all);
+    r.value = $part(all, all.length);
+    return { TAG: "Ok", _0: all.length };
+  },
+  fillBuf: (r) => ({ TAG: "Ok", _0: r.value }),
+  // `*self = &self[amt..]`, which panics past its end.
+  consume(r, amt) {
+    r.value = $slice(r.value, amt);
+  },
+};
+
+// `impl Read for Cursor<T>`, `impl BufRead` and `impl Seek`, of `T`'s
+// `AsRef<[u8]>`: read at its position, `pos`, a `u64`, of its inner value's
+// bytes, `TAsRef.asRef(inner)`; what's past its end is nothing. Its
+// position moves as std's does, wrapping as std's build does.
+export function $cursorReader(TAsRef) {
+  const bytes = (c) => TAsRef.asRef(c.inner);
+  // `Cursor::split(self).1`: what's from its position, none past its end.
+  const rest = (c) => {
+    const all = bytes(c);
+    return $part(all, c.pos < BigInt(all.length) ? Number(c.pos) : all.length);
+  };
+  const moved = (c, n) => {
+    c.pos = BigInt.asUintN(64, c.pos + BigInt(n));
+  };
+  const reader = {
+    Read: () => reader,
+    read(r, buf) {
+      const from = rest(r.value);
+      const n = Math.min(buf.length, from.length);
+      $readInto(buf, from, n);
+      moved(r.value, n);
+      return { TAG: "Ok", _0: n };
+    },
+    // One that can't fill `buf` puts the cursor at its end.
+    readExact(r, buf) {
+      const from = rest(r.value);
+      if (buf.length > from.length) {
+        r.value.pos = BigInt(bytes(r.value).length);
+        throw $readExactEof();
+      }
+      $readInto(buf, from, buf.length);
+      moved(r.value, buf.length);
+    },
+    readToEnd(r, v) {
+      const from = rest(r.value);
+      for (let i = 0; i < from.length; i++) v.push(from[i]);
+      moved(r.value, from.length);
+      return { TAG: "Ok", _0: from.length };
+    },
+    readToString(r, s) {
+      const from = rest(r.value);
+      if ($utf8Check(from) !== undefined) return { TAG: "Err", _0: $invalidUtf8() };
+      s.value += $utf8Decode(from);
+      moved(r.value, from.length);
+      return { TAG: "Ok", _0: from.length };
+    },
+    fillBuf: (r) => ({ TAG: "Ok", _0: rest(r.value) }),
+    consume(r, amt) {
+      moved(r.value, amt);
+    },
+    // `SeekFrom::Start(n)` is `n`; `End(n)` and `Current(n)` are from its
+    // length or its position, an error where that's below 0 or past `u64`.
+    seek(r, style) {
+      if (style.TAG === "Start") {
+        r.value.pos = style._0;
+        return { TAG: "Ok", _0: style._0 };
+      }
+      const base = style.TAG === "End" ? BigInt(bytes(r.value).length) : r.value.pos;
+      const n = base + style._0;
+      if (n < 0n || n > 0xffffffffffffffffn) {
+        return {
+          TAG: "Err",
+          _0: new $IoError("InvalidInput", undefined, "invalid seek to a negative or overflowing position"),
+        };
+      }
+      r.value.pos = n;
+      return { TAG: "Ok", _0: n };
+    },
+    streamPosition: (r) => ({ TAG: "Ok", _0: r.value.pos }),
+  };
+  return reader;
+}
+
+// A reader's dictionary through the box generic code is given a `&mut`
+// to it in, `R = &mut c`, which std's `impl Read for &mut R` reads through:
+// the reader's own, of what's in the box, as `$mutWriter`'s.
+export function $mutReader(reader) {
+  const through = {
+    Read: () => through,
+    read: (r, buf) => reader.read(r.value, buf),
+    readExact: (r, buf) => reader.readExact(r.value, buf),
+    readToEnd: (r, v) => reader.readToEnd(r.value, v),
+    readToString: (r, s) => reader.readToString(r.value, s),
+    fillBuf: (r) => reader.fillBuf(r.value),
+    consume: (r, amt) => reader.consume(r.value, amt),
+    seek: (r, style) => reader.seek(r.value, style),
+    streamPosition: (r) => reader.streamPosition(r.value),
+  };
+  return through;
+}
+
+// A `dyn Read`'s, `dyn BufRead`'s or `dyn Seek`'s, and a `Box` of one's,
+// given the pair, `{ value, impl }`, in the box generic code is given:
+// its impl's own, given the pair, whose `value` a box's is, as `read_line`
+// of a `dyn BufRead` asks it (#1156).
+export const $dynReader = {
+  Read: () => $dynReader,
+  read: (r, buf) => r.value.impl.read(r.value, buf),
+  readExact: (r, buf) => r.value.impl.readExact(r.value, buf),
+  readToEnd: (r, v) => r.value.impl.readToEnd(r.value, v),
+  readToString: (r, s) => r.value.impl.readToString(r.value, s),
+  fillBuf: (r) => r.value.impl.fillBuf(r.value),
+  consume: (r, amt) => r.value.impl.consume(r.value, amt),
+  seek: (r, style) => r.value.impl.seek(r.value, style),
+  streamPosition: (r) => r.value.impl.streamPosition(r.value),
+};
+
+// alloc's `append_to_string(buf, f)`, what `read_line` adds to a `String`
+// by: `f` given an array to add bytes to, and what it added kept where
+// it's UTF-8; else nothing is, and `Err(INVALID_UTF8)` where `f` gave `Ok`.
+export function $appendToString(buf, f) {
+  const bytes = [];
+  const read = f(bytes);
+  if ($utf8Check(bytes) !== undefined) {
+    return read.TAG === "Err" ? read : { TAG: "Err", _0: $invalidUtf8() };
+  }
+  buf.value += $utf8Decode(bytes);
+  return read;
+}
+
 // `it.reduce(f)`: its first item, folded with each after it by `f`, or
 // `None` of none, where JS's `reduce` throws, closed, as std's `next()?`
 // drops it (#242); boxed where it may look like `None` (ADRs 0051, 0479).

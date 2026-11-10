@@ -9,7 +9,7 @@
     "version": 26,
     "name": "rust_js_std",
     "crate_id": "4241c159ba5c0393",
-    "crate_hash": "495c2cfca9b01c1e",
+    "crate_hash": "1a9c275e0e982057",
     "items": [
       {
         "key": "core::iter::adapters::filter::{impl#9}::assume_count_le_upper_bound",
@@ -76,6 +76,148 @@
             ]
           }
         ]
+      },
+      {
+        "key": "alloc::io::util::{impl#10}::next",
+        "rust_path": "rust_js_std::<alloc::io::Lines<B> as core::iter::Iterator>::next",
+        "module": [
+          "io"
+        ],
+        "export": "linesIterator_next",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::{impl#9}::next",
+        "rust_path": "rust_js_std::<alloc::io::Split<B> as core::iter::Iterator>::next",
+        "module": [
+          "io"
+        ],
+        "export": "splitIterator_next",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::io::cursor::{impl#3}",
+        "rust_path": "rust_js_std::<core::io::Cursor<T> as core::clone::Clone>",
+        "module": [
+          "io"
+        ],
+        "export": "cursorClone",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::io::cursor::{impl#3}::clone",
+        "rust_path": "rust_js_std::<core::io::Cursor<T> as core::clone::Clone>::clone",
+        "module": [
+          "io"
+        ],
+        "export": "cursorClone_clone",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::io::cursor::{impl#3}::clone_from",
+        "rust_path": "rust_js_std::<core::io::Cursor<T> as core::clone::Clone>::clone_from",
+        "module": [
+          "io"
+        ],
+        "export": "cursorClone_cloneFrom",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::io::cursor::{impl#12}",
+        "rust_path": "rust_js_std::<core::io::Cursor<T> as core::cmp::PartialEq>",
+        "module": [
+          "io"
+        ],
+        "export": "cursorPartialEq",
+        "member": null
+      },
+      {
+        "key": "core::io::cursor::{impl#12}::eq",
+        "rust_path": "rust_js_std::<core::io::Cursor<T> as core::cmp::PartialEq>::eq",
+        "module": [
+          "io"
+        ],
+        "export": "cursorPartialEq_eq",
+        "member": null
+      },
+      {
+        "key": "core::io::cursor::{impl#9}",
+        "rust_path": "rust_js_std::<core::io::Cursor<T> as core::default::Default>",
+        "module": [
+          "io"
+        ],
+        "export": "cursorDefault",
+        "member": null
+      },
+      {
+        "key": "core::io::cursor::{impl#9}::default",
+        "rust_path": "rust_js_std::<core::io::Cursor<T> as core::default::Default>::default",
+        "module": [
+          "io"
+        ],
+        "export": "cursorDefault_default",
+        "member": null
+      },
+      {
+        "key": "core::io::cursor::{impl#8}",
+        "rust_path": "rust_js_std::<core::io::Cursor<T> as core::fmt::Debug>",
+        "module": [
+          "io"
+        ],
+        "export": "cursorDebug",
+        "member": null
+      },
+      {
+        "key": "core::io::cursor::{impl#8}::fmt",
+        "rust_path": "rust_js_std::<core::io::Cursor<T> as core::fmt::Debug>::fmt",
+        "module": [
+          "io"
+        ],
+        "export": "cursorDebug_fmt",
+        "member": null
       },
       {
         "key": "core::iter::adapters::chain::{impl#6}",
@@ -11404,6 +11546,193 @@
         ]
       },
       {
+        "key": "alloc::io::buf_read::BufRead::lines",
+        "rust_path": "rust_js_std::alloc::io::BufRead::lines",
+        "module": [
+          "io"
+        ],
+        "export": "bufRead_lines",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::buf_read::BufRead::read_line",
+        "rust_path": "rust_js_std::alloc::io::BufRead::read_line",
+        "module": [
+          "io"
+        ],
+        "export": "bufRead_readLine",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::buf_read::BufRead::read_until",
+        "rust_path": "rust_js_std::alloc::io::BufRead::read_until",
+        "module": [
+          "io"
+        ],
+        "export": "bufRead_readUntil",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::buf_read::BufRead::skip_until",
+        "rust_path": "rust_js_std::alloc::io::BufRead::skip_until",
+        "module": [
+          "io"
+        ],
+        "export": "bufRead_skipUntil",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::buf_read::BufRead::split",
+        "rust_path": "rust_js_std::alloc::io::BufRead::split",
+        "module": [
+          "io"
+        ],
+        "export": "bufRead_split",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::buf_read::default_read_until",
+        "rust_path": "rust_js_std::alloc::io::buf_read::default_read_until",
+        "module": [
+          "io"
+        ],
+        "export": "defaultReadUntil",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::buf_read::default_skip_until",
+        "rust_path": "rust_js_std::alloc::io::buf_read::default_skip_until",
+        "module": [
+          "io"
+        ],
+        "export": "defaultSkipUntil",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::lines",
+        "rust_path": "rust_js_std::alloc::io::util::lines",
+        "module": [
+          "io"
+        ],
+        "export": "lines",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "alloc::io::util::split",
+        "rust_path": "rust_js_std::alloc::io::util::split",
+        "module": [
+          "io"
+        ],
+        "export": "split",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::io::seek::Seek::rewind",
+        "rust_path": "rust_js_std::core::io::Seek::rewind",
+        "module": [
+          "io"
+        ],
+        "export": "seek_rewind",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::io::seek::Seek::seek_relative",
+        "rust_path": "rust_js_std::core::io::Seek::seek_relative",
+        "module": [
+          "io"
+        ],
+        "export": "seek_seekRelative",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::inspect::{impl#2}::do_inspect",
         "rust_path": "rust_js_std::core::iter::Inspect::<I, F>::do_inspect",
         "module": [
@@ -12640,6 +12969,12 @@
       }
     ],
     "impls": [
+      "alloc::io::util::{impl#10}",
+      "alloc::io::util::{impl#9}",
+      "core::io::cursor::{impl#12}",
+      "core::io::cursor::{impl#3}",
+      "core::io::cursor::{impl#8}",
+      "core::io::cursor::{impl#9}",
       "core::iter::adapters::chain::{impl#1}",
       "core::iter::adapters::chain::{impl#2}",
       "core::iter::adapters::chain::{impl#6}",
@@ -12746,7 +13081,7 @@
     "inputs": [
       {
         "file": "lib.rs",
-        "hash": "ef031a38fef51e7b"
+        "hash": "45db80831bd0cc06"
       }
     ],
     "keeps_capacity": false,
@@ -13145,6 +13480,48 @@
         }
       ],
       "type_links": []
+    },
+    {
+      "module": [
+        "io"
+      ],
+      "file": "io.js",
+      "map": "io.js.map",
+      "source": "lib.rs",
+      "in_source": "io.js",
+      "imports": [],
+      "exports": [
+        "linesIterator_next",
+        "splitIterator_next",
+        "cursorClone_clone",
+        "cursorClone_cloneFrom",
+        "cursorDebug_fmt",
+        "cursorPartialEq_eq",
+        "cursorDefault_default",
+        "bufRead_readUntil",
+        "bufRead_skipUntil",
+        "bufRead_readLine",
+        "bufRead_split",
+        "bufRead_lines",
+        "seek_rewind",
+        "seek_seekRelative",
+        "defaultReadUntil",
+        "defaultSkipUntil",
+        "split",
+        "lines",
+        "cursorClone",
+        "cursorDebug",
+        "cursorPartialEq",
+        "cursorDefault"
+      ],
+      "links": [
+        {
+          "start": 231,
+          "end": 243,
+          "file": "runtime.js"
+        }
+      ],
+      "type_links": []
     }
   ],
   "artifacts": [
@@ -13154,7 +13531,15 @@
     },
     {
       "file": "iter.js.map",
-      "hash": "74eed5c1593360e9"
+      "hash": "fdf156a6a1c2d862"
+    },
+    {
+      "file": "io.js",
+      "hash": "057a996fba7575ad"
+    },
+    {
+      "file": "io.js.map",
+      "hash": "add409fd39f93d90"
     }
   ]
 }

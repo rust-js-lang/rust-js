@@ -510,6 +510,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.io_error_call(known, call, &mut values)? {
             return Ok(js);
         }
+        if let Some(js) = self.io_call(known, call, &mut values)? {
+            return Ok(js);
+        }
         if let Some(js) = self.hash_call(known, call, &mut values, out)? {
             return Ok(js);
         }
@@ -727,6 +730,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::CStr(_) => unreachable!("lowered by c_str_call"),
             Std::Future(_) => unreachable!("lowered by future_call"),
             Std::IoError(_) => unreachable!("lowered by io_error_call"),
+            Std::Io(_) => unreachable!("lowered by io_call"),
             Std::Hash(_) => unreachable!("lowered by hash_call"),
             Std::Alloc(_) => unreachable!("lowered by alloc_call"),
             Std::Capacity(_) => unreachable!("lowered by vec_call"),

@@ -43,10 +43,16 @@ test("the committed @rust-js/std is std's bodies as the compiler compiles them",
   for (const { file } of manifest.modules) {
     expect(body(join(dir, "std", file)), file).toBe(body(join(stdDir, file)));
   }
-  // Each item is std's: keyed as rustc keys it, in a module of the package.
+  // Each item is std's: keyed as rustc keys it, in a module of the package,
+  // `iter`'s or `io`'s, `core`'s or `alloc`'s (#1156).
   expect(committed.library.items.length).toBeGreaterThan(4);
-  expect(committed.library.items.every((item: { rust_path: string }) => item.rust_path.includes("core::iter"))).toBe(true);
+  const stds = ["core::iter", "core::io", "alloc::io"];
+  expect(committed.library.items.filter((item: { rust_path: string }) => !stds.some((std) => item.rust_path.includes(std)))).toEqual([]);
   const pkg = JSON.parse(readFileSync(join(stdDir, "package.json"), "utf8"));
+  // Each module the package's entry re-exports is a file it ships, and its
+  // map: a browser is served those alone (browser/rust-tests.spec.ts).
+  const shipped = manifest.modules.flatMap((m: { file: string }) => [m.file, `${m.file}.map`]);
+  expect(shipped.filter((file: string) => !pkg.files.includes(file))).toEqual([]);
   const version = readFileSync(join(root, "Cargo.toml"), "utf8").match(/^version = "([^"]+)"/m)![1];
   expect([pkg.name, pkg.version]).toEqual(["@rust-js/std", version]);
   // A compile of std's bodies, 6.2 s alone since std's iterator adapters

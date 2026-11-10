@@ -1073,11 +1073,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let gives_ref = values.iter().any(|v| matches!(v, Value::Ref(_)));
         // Not a binding's, a default method's `get ruleId` called through a
         // generic's bound, or a `Duplex`'s `as_ref()` (`is_binding_of`): below.
-        // Nor `BinaryHeap::from(items)`, which std's own lowering heaps; nor std's that's the same JS value, a
-        // `Box`'s `as_ref()` (ADR 0331); nor std's `clone_from`, `*dest = source.clone()` written in place, where
-        // the crate's impl isn't known to have its own; nor a `fmt` method on a held `Formatter` (ADR 0461); nor
-        // a std type's `hash`, the writes std's impl makes, whatever references optimized MIR has (ADR 0463).
-        if !matches!(known, Some(Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_)))
+        // Nor `BinaryHeap::from(items)`, which std's own lowering heaps; nor std's own written in place
+        // (`Std::never_through_a_trait_call`); nor std's `clone_from`, `*dest = source.clone()` written in place,
+        // where the crate's impl isn't known to have its own.
+        if !known.is_some_and(Std::never_through_a_trait_call)
             && (rust_impl || known != Some(Std::CloneFrom))
             && !self.is_binding_of(def_id, generic_args)
             && let Some(trait_id) = tcx.trait_of_assoc(def_id)

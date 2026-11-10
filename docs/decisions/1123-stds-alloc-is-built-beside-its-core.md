@@ -62,3 +62,17 @@ changes: the twin net and the corpus in both builds pass as before.
   the copies to the sources' own methods, where std's bodies reach memory.
 - **Build `std` itself.** It needs a target's `sys` layer and a panic
   runtime, and nothing #1156 compiles is `std`'s own.
+
+## Amendment: `alloc`'s MIR isn't inlined (#1156's phase 1)
+
+Built as `core` is, with MIR inlined, `alloc`'s `default_read_until`
+called no `Vec::extend_from_slice`: inlined, it was `SpecExtend`'s
+private `spec_extend` over raw pointers, which the catalog then compiled
+as a private callee and the lowering refused, memory. `alloc` is built
+with MIR inlining off (`ALLOC`, beside `core`'s `CORE`), so each body of
+it `@rust-js/std` compiles calls what its source calls, each answered by
+a recognizer as a crate's own call is: `extend_from_slice`, `memchr`,
+`Error::is_interrupted`. `core` stays inlined, as its compiled iterators
+were proved. The settings are in the sysroot's key, so the sysroot is
+made again once. `bun scripts/std.ts` with the sysroot made: 5.5 s, as
+before.

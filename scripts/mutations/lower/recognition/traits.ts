@@ -417,8 +417,8 @@ export const mutations: Mutation[] = [
     name: "dyn-fmt-write-refused",
     breaks: "a `&mut dyn fmt::Write` is refused, a function of any writer",
     file: "src/lower/recognition/traits.rs",
-    find: "            StdItem::IoWrite,\n            StdItem::FmtWrite,\n        ]\n",
-    replace: "            StdItem::IoWrite,\n        ]\n",
+    find: "            StdItem::IoWrite,\n            StdItem::FmtWrite,\n            StdItem::IoRead,\n",
+    replace: "            StdItem::IoWrite,\n            StdItem::IoRead,\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_write_function.rs$"],
   },
   {

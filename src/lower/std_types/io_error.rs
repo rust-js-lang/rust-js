@@ -18,6 +18,9 @@ pub(in crate::lower) enum IoErrorOp {
     FromKind,
     /// `e.kind()`.
     Kind,
+    /// `e.is_interrupted()`, which std's bodies ask, `read_until`'s:
+    /// `e.kind === "Interrupted"` (#1156).
+    IsInterrupted,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -48,6 +51,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             IoErrorOp::FromKind => made(values.next().expect("a kind"), None),
             IoErrorOp::Kind => Expr::member(values.next().expect("an error"), "kind"),
+            IoErrorOp::IsInterrupted => Expr::bin(
+                crate::js::Op::Eq,
+                Expr::member(values.next().expect("an error"), "kind"),
+                Expr::str("Interrupted"),
+            ),
         }))
     }
 

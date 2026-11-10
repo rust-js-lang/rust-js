@@ -404,27 +404,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
   {
-    name: "mir-std-hash-dispatched",
-    breaks:
-      "a std type's `hash` in a body of optimized MIR, a library's its consumer compiles, is called through an inline dictionary, `({ hash(value, state, H) { .. } }).hash(digit[0] % 10, state, HHasher)`, not written in place as its library's is (ADRs 0463, 0914)",
-    file: "src/lower/mir/dispatch.rs",
-    find: "        if !matches!(known, Some(Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_)))\n",
-    replace:
-      "        if !matches!(known, Some(Std::Any(_) | Std::Same | Std::FmtTo(_)))\n",
-    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
-  },
-  {
-    name: "mir-same-trait-dispatched",
-    breaks:
-      "MIR's `b.as_ref()` of a `Box<dyn Any>` asks for `AsRef`'s evidence, not the same JS value",
-    file: "src/lower/mir/dispatch.rs",
-    find: "        if !matches!(known, Some(Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_)))\n",
-    replace:
-      "        if !matches!(known, Some(Std::Any(_) | Std::FmtTo(_) | Std::Hash(_)))\n",
-    tests: ["test/corpus.test.ts", "-t", "dyn_any"],
-    snapshots: true,
-  },
-  {
     name: "mir-call-takes-unchecked",
     breaks:
       "MIR's `m.get(\"a\")` through the crate's `Borrow`, and `v.extend(bag)` of its `IntoIterator`, compile, wrong",

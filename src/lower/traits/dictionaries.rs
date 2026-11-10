@@ -84,6 +84,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(made)
     }
 
+    /// `io::Read`'s, `BufRead`'s or `Seek`'s of one of std's byte sources
+    /// (#1156).
+    fn byte_source_dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
+        use crate::lower::recognition::ByteSource;
+        // A `&mut` to a reader taken by value, `R = &mut c`, std's `impl
+        // Read for &mut R`, given in a box as a `&mut` writer is (ADR 0454):
+        // its own dictionary, through the box, as `$mutWriter`'s.
+        if let ty::Ref(_, inner, ty::Mutability::Mut) = *tr.self_ty().kind() {
+            let reader = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [inner]), span)?;
+            return Ok(Expr::call_helper("$mutReader", vec![reader]));
+        }
+        // A `dyn`'s, given the pair: through the pair's own, `$dynReader`.
+        if matches!(tr.self_ty().kind(), ty::Dynamic(..)) {
+            return Ok(Expr::helper("$dynReader"));
+        }
+        // std's `impl Read for Box<R>`, through it: what it holds is a
+        // `Box`'s JS, so its reader's own, a `dyn`'s too.
+        if let Some(inner) = tr.self_ty().boxed_ty() {
+            return self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [inner]), span);
+        }
+        match self.recognition().byte_source(tr.self_ty()) {
+            Some(ByteSource::Slice) => Ok(Expr::helper("$sliceReader")),
+            Some(ByteSource::Cursor(inner)) => {
+                let as_ref = crate::lower::recognition::std_item(self.tcx, StdItem::AsRef);
+                let bytes = ty::Ty::new_slice(self.tcx, self.tcx.types.u8);
+                let of = self.dictionary(ty::TraitRef::new(self.tcx, as_ref, [inner, bytes]), span)?;
+                Ok(Expr::call_helper("$cursorReader", vec![of]))
+            }
+            None => Err(self.unsupported(
+                span,
+                &format!(
+                    "`{}` as an `io::{}`, a reader of the crate's own (#1297)",
+                    tr.self_ty(),
+                    self.tcx.item_name(tr.def_id)
+                ),
+            )),
+        }
+    }
+
     /// Of `made`, a body's dictionaries and their names, each that `body`
     /// writes twice or more: named there, and declared, for its top, each
     /// before what names it (ADR 0979).
@@ -148,6 +187,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if let Some(found) = self.evidence_for(tr) {
             return Ok(found);
+        }
+        // std's byte sources' `io::Read`, `BufRead` and `Seek` (#1156): the
+        // runtime's dictionary of each, a `Cursor<T>`'s made of `T`'s
+        // `AsRef<[u8]>`. A reader of the crate's own is never lowered (ADR
+        // 0425, #1297).
+        if crate::lower::recognition::is_io_reading(self.tcx, tr.def_id) {
+            return self.byte_source_dictionary(tr, span);
         }
         // One of std's errors' `Error`, as its `dyn`'s is.
         if is_std_def(self.tcx, tr.def_id, StdItem::Error)

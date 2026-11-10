@@ -18,6 +18,8 @@
     "runtime.js",
     "iter.js",
     "iter.js.map",
+    "io.js",
+    "io.js.map",
     "manifest.json"
   ],
   "sideEffects": false

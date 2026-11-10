@@ -138,4 +138,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_writer_fails_in_main\\.rs$"],
   },
+  {
+    name: "io-read-exact-never-fails",
+    breaks: "a function that calls a byte source's `read_exact` and gives back its `io::Result<()>` isn't one that may fail",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "            if is_write_result_type(tcx, output) && of_io_reading(tcx, callee) {\n",
+    replace: "            if is_write_result_type(tcx, output) && of_io_reading(tcx, callee) && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_read_generic.rs$"],
+  },
 ];

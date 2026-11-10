@@ -6,9 +6,15 @@
 //! compiler reads.
 #![no_std]
 
+extern crate alloc;
+
 /// `core::iter`'s: the adapters and `Iterator`'s provided methods.
 pub mod iter {}
 
 /// `core::ops`'s: what a compiled body of `iter`'s calls of it, `try_fold`'s
 /// `NeverShortCircuit` (ADR 0913).
 pub mod ops {}
+
+/// `alloc::io`'s and `core::io`'s: `io::Read`'s, `BufRead`'s and `Seek`'s
+/// provided methods (#1156).
+pub mod io {}

@@ -746,6 +746,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         })
         .filter(|&id| serde_impl(tcx, id).is_none())
         .filter(|&id| !is_js_object_deref(tcx, id))
+        // Nor a reader of the crate's own, never lowered (ADR 0425, #1297).
+        .filter(|&id| !is_unlowered_impl(tcx, id))
         // A class's `Display`, its prototype's `toString` (#358).
         .filter(|&id| super::classes::displayed_class(tcx, id).is_none())
         .collect();

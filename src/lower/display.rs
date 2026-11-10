@@ -113,6 +113,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !self.krate.any_failing {
             return false;
         }
+        // A byte source's `read_exact` past its end (#1156).
+        if super::recognition::of_io_reading(self.tcx, def_id) {
+            return true;
+        }
         match self.resolve_instance(def_id, args) {
             Ok(Some(instance)) if matches!(instance.def, ty::InstanceKind::Virtual(..)) => true,
             Ok(Some(instance)) => {

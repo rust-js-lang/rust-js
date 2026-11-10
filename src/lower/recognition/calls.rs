@@ -238,6 +238,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(op) = self.io_error_op(def_id, args) {
             return Some(Some(Std::IoError(op)));
         }
+        if let Some(op) = self.io_op(def_id, args) {
+            return Some(Some(Std::Io(op)));
+        }
         if let Some(op) = self.hash_op(def_id, args) {
             return Some(Some(Std::Hash(op)));
         }
@@ -1065,6 +1068,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 "new" => Some(IoErrorOp::New),
                 "other" => Some(IoErrorOp::Other),
                 "kind" => Some(IoErrorOp::Kind),
+                "is_interrupted" => Some(IoErrorOp::IsInterrupted),
                 _ => None,
             };
         }

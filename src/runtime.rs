@@ -57,6 +57,7 @@ helpers! {
     Dropping,
     Cloning,
     Memchr,
+    Readers,
     Reduce,
     IntoIter,
     Remove,
@@ -848,6 +849,9 @@ impl Helper {
             Helper::Dropping => include_str!("runtime/dropping.js"),
             Helper::Cloning => include_str!("runtime/cloning.js"),
             Helper::Memchr => include_str!("runtime/memchr.js"),
+            // `io::Read`'s, `BufRead`'s and `Seek`'s dictionaries of std's byte
+            // sources, and `append_to_string` (#1156).
+            Helper::Readers => include_str!("runtime/readers.js"),
             Helper::Reduce => include_str!("runtime/reduce.js"),
             Helper::IntoIter => include_str!("runtime/into_iter.js"),
             // A map's `remove` for its value: the one it took out, or `None`.

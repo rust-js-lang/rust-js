@@ -4,7 +4,9 @@ Status: Accepted. Extends [0168](0168-user-hash.md), whose `Hash` impls
 are allowed and never lowered, and [0029](0029-async-await.md), whose
 futures are JS promises. Amended by
 [0463](0463-hashing-is-stds.md): `Hash` is lowered now, and no longer
-`unlowered_trait`'s; these four still are.
+`unlowered_trait`'s; these four still are. Amended (#1156): std's byte
+sources' `Read`, `BufRead` and `Seek` are lowered, a crate's own still
+isn't (#1297).
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)): an impl nothing
 calls is no JS a program can see; what would call one, or await one as a
@@ -103,3 +105,66 @@ function only an unlowered impl's methods call, or only functions found
 so, is never lowered either (`reached_only_unlowered`): it's no JS, as
 the impl is. One a consumer may call, or that nothing calls, is lowered
 as it was. `test/corpus/unlowered_helpers.rs` holds it.
+
+## Amendment: std's byte sources are read (#1156)
+
+A read of std's own byte sources was refused as a crate's reader's was:
+`src.read(&mut buf)` of a `&[u8]`, a `Cursor`'s `read_exact`, its
+`lines()`. byteorder's tests read a `Cursor` throughout. `io::Read`,
+`io::BufRead` and `io::Seek` are lowered now, by the coordinator's
+decisions for the user (2026-11-11), case C of ADR 0262: what's read is
+the program's data, so it's Rust's.
+
+- **Each source's own methods are a runtime dictionary**, as `$vecWriter`
+  is (ADR 0392): `$sliceReader` of a `&[u8]`, `$cursorReader(TAsRef)` of a
+  `Cursor<T>`, made of `T`'s `AsRef<[u8]>` dictionary. They hold what each
+  impl writes itself: `read`, `read_exact`, `read_to_end`,
+  `read_to_string`, `fill_buf`, `consume`, `seek` and `stream_position`
+  (`recognition::io`'s `DICTIONARY_METHODS`). std's bodies of these reach
+  memory once inlined, `copy_from_slice` and `split_at`, so each is the
+  runtime's, std's word for word: `read_exact` past the end empties a
+  slice, or puts a cursor at its end, then fails `UnexpectedEof`, "failed
+  to fill whole buffer"; `read_to_string` checks all that's left first,
+  `InvalidData`, "stream did not contain valid UTF-8", and takes nothing
+  of what isn't UTF-8; `consume` past a slice's end panics as slicing
+  does; a cursor's position wraps as std's build does, and a `seek` below
+  0 or past `u64` is `InvalidInput`.
+- **One form for a known source and generic code's** (decision 1, A): the
+  dictionary's method, given the source in a box as generic code's `&mut`
+  is, `$sliceReader.read(src$1, buf)`, `cursorRead.readExact({ value: c },
+  b)`. A dictionary made of what's fixed is named once at the top of the
+  function that asks it, as any dictionary is (ADR 0979).
+- **What the traits provide is std's own body**, compiled into
+  `@rust-js/std`'s `io.js` (decision 5) and given the source's dictionary:
+  `BufRead`'s `read_until`, `read_line`, `skip_until`, `lines` and `split`,
+  the iterators `Lines` and `Split`, and `Seek`'s `rewind` and
+  `seek_relative`. Where std's body reaches memory its callee is a
+  recognizer: alloc's `append_to_string`, `$appendToString`, and core's
+  `memchr`, the runtime's `$memchr`. ADR 1123's `alloc` is built for it.
+- **`Cursor<T>` is std's struct, `{ inner, pos }`** (decisions 2 and 3):
+  `new`, `position`, `set_position`, `get_ref`, `get_mut` and `into_inner`
+  in place, `pos` a `u64`'s `BigInt`; its `Clone`, `Debug`, `PartialEq`
+  and `Default` are std's bodies, compiled.
+- **A generic `R: Read` is given the dictionary, a `dyn Read` is the
+  pair**, and std's forwarding impls are dictionaries too: `&mut R`'s,
+  `$mutReader`, as `$mutWriter` (ADR 0454), a `Box<R>`'s its `R`'s, and a
+  `dyn`'s, `$dynReader`, given the pair in the box generic code is given.
+  A provided method of a `dyn BufRead`, its `read_line`, is std's
+  compiled body given `$dynReader`.
+- **`read_exact` and what the traits provide of an `io::Result<()>` may
+  fail**, as a crate's own writer may (ADR 0462): its error is thrown,
+  caught where the result is a value.
+- **A reader of the crate's own is still never lowered**, nor its impl
+  given a dictionary, until #1297, which a refusal names: a call of its
+  method, "calling `std::io::Read::read` (#1297)", and it given to generic
+  code, "`S` as an `io::Read`, a reader of the crate's own (#1297)". Its
+  provided methods, `read_to_end`'s `BorrowedBuf` among them, are #1297's.
+- **A bound `R: Read` is a dictionary now**, so a function bounded by it
+  takes one, `Counting::new(inner, RRead)` of `unlowered_helpers.rs`,
+  even where its body asks nothing of it, as any bound's does.
+
+Held by the corpus cases `io_read_slice.rs`, `io_cursor.rs`,
+`io_buf_read.rs` and `io_read_generic.rs`, against native Rust in both
+builds, their metamorphic rewrites, and `diagnostics.test.ts`'s two
+refusals of a crate's reader. `VecDeque<u8>`, `io::empty`, `io::repeat`,
+`chain`, `take`, `bytes` and `BufReader` are phase 2; `File` comes last.

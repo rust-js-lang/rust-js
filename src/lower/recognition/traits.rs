@@ -113,6 +113,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             StdItem::Error,
             StdItem::IoWrite,
             StdItem::FmtWrite,
+            StdItem::IoRead,
+            StdItem::IoBufRead,
+            StdItem::IoSeek,
         ]
         .into_iter()
         .any(|item| is_std_def(self.tcx, id, item))
@@ -370,6 +373,10 @@ pub(in crate::lower) fn operational(
         // io::Write`: its dictionary's `write`, `write_all`, `write_fmt` and
         // `flush` (ADR 0392).
         || is_std_def(tcx, id, StdItem::IoWrite)
+        // Generic code, or a `dyn`, that reads bytes from any source, an `R:
+        // io::Read`, `io::BufRead` or `io::Seek`: its dictionary's methods,
+        // std's own bodies' provided ones too (#1156).
+        || is_io_reading(tcx, id)
         // `range.start_bound()` of an `R: RangeBounds<usize>`, arrayvec's
         // `drain`: its dictionary's, a range's bounds as `Bound`s.
         || is_std_def(tcx, id, StdItem::RangeBounds)
@@ -472,6 +479,14 @@ pub(crate) fn unlowered_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
             std_path(tcx, id),
             "std::io::Read" | "std::io::BufRead" | "std::io::Seek"
         )
+}
+
+/// `io::Read`, `io::BufRead` or `io::Seek`, which std's byte sources
+/// implement, each a runtime dictionary (#1156).
+pub(crate) fn is_io_reading(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    [StdItem::IoRead, StdItem::IoBufRead, StdItem::IoSeek]
+        .into_iter()
+        .any(|item| is_std_def(tcx, id, item))
 }
 
 /// An impl of one of `unlowered_trait`'s, derived or the crate's own.
@@ -916,6 +931,8 @@ pub(crate) fn in_std_dictionary(tcx: TyCtxt<'_>, id: DefId) -> bool {
         // `hash_slice`, `$hashSlice`'s (ADR 0463).
         || tcx.trait_of_assoc(id).is_some_and(|tr| is_hasher(tcx, tr))
         || is_std_method(tcx, id, StdItem::Hash, "hash_slice")
+        // A byte source's `read_exact` and the others it writes (#1156).
+        || super::io::in_io_dictionary(tcx, id)
 }
 
 /// Which of std's adapter `adapter`'s type arguments are iterators it

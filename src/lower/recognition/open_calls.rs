@@ -16,6 +16,9 @@ pub(crate) enum OpenCall {
     /// What a thread's building blocks call: a thread-local's `try_with`,
     /// `thread::panicking` and `hint::spin_loop` (#1285).
     ThreadBlock,
+    /// A method of `io::Read`, `BufRead` or `Seek` std's byte sources don't
+    /// answer: a reader's of the crate's own (#1297, ADR 0425).
+    OwnReader,
 }
 
 /// The open issue's family `id`, a refused call, is of, if one is.
@@ -29,6 +32,12 @@ pub(crate) fn open_call(tcx: TyCtxt<'_>, id: DefId) -> Option<OpenCall> {
         .any(of_trait)
     {
         return Some(OpenCall::Conversion);
+    }
+    if [StdItem::IoRead, StdItem::IoBufRead, StdItem::IoSeek]
+        .into_iter()
+        .any(of_trait)
+    {
+        return Some(OpenCall::OwnReader);
     }
     let try_with = tcx.inherent_impl_of_assoc(id).is_some_and(|imp| {
         let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();

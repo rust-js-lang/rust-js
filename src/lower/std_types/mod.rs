@@ -28,6 +28,7 @@
 //! | `SystemTime`, `Instant` | its nanoseconds, a `BigInt` | `clock` |
 //! | `CStr`, `CString` | its bytes with its nul, an `Array` | `c_str` |
 //! | `io::Error` | a `$IoError`, its kind and what it holds | `io_error` |
+//! | `io::Cursor`; `&[u8]` and it as readers | `{ inner, pos }`; `$sliceReader`, `$cursorReader(TAsRef)` | `io` |
 //! | `DefaultHasher`, `SipHasher`, std's `Hash` | a `$SipHasher`; the writes std's impls make | `hash` |
 //!
 //! Which std type each is, and how much of each is known, is
@@ -45,6 +46,7 @@ pub(super) mod cow;
 pub(super) mod future;
 pub(super) mod hash;
 pub(super) mod heap;
+pub(super) mod io;
 pub(super) mod io_error;
 pub(super) mod lazy;
 pub(super) mod location;

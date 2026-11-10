@@ -691,4 +691,12 @@ export const mutations: Mutation[] = [
     replace: "                (all_bodies, &self_handles, &clones::cloned_types(tcx, &[], library)),\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq_of_a_closure_cloned_in_generic_code.rs$"],
   },
+  {
+    name: "own-reader-given-a-dictionary",
+    breaks: "a reader of the crate's own, never lowered, is given a dictionary of its impl, whose methods aren't there (ADR 0425)",
+    file: "src/lower/analysis.rs",
+    find: "        .filter(|&id| !is_unlowered_impl(tcx, id))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^unlowered_helpers.rs$"],
+  },
 ];

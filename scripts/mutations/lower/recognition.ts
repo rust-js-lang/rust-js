@@ -125,4 +125,31 @@ export const mutations: Mutation[] = [
     replace: "        matches!(self, Std::MemTake)\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_replaced_where_capacities_are_kept.rs$"],
   },
+  {
+    name: "mir-std-hash-dispatched",
+    breaks:
+      "a std type's `hash` in a body of optimized MIR, a library's its consumer compiles, is called through an inline dictionary, `({ hash(value, state, H) { .. } }).hash(digit[0] % 10, state, HHasher)`, not written in place as its library's is (ADRs 0463, 0914)",
+    file: "src/lower/recognition.rs",
+    find: "            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_) | Std::Io(_)\n",
+    replace: "            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Io(_)\n",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
+  },
+  {
+    name: "mir-same-trait-dispatched",
+    breaks:
+      "MIR's `b.as_ref()` of a `Box<dyn Any>` asks for `AsRef`'s evidence, not the same JS value",
+    file: "src/lower/recognition.rs",
+    find: "            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_) | Std::Io(_)\n",
+    replace: "            Std::Any(_) | Std::FmtTo(_) | Std::Hash(_) | Std::Io(_)\n",
+    tests: ["test/corpus.test.ts", "-t", "dyn_any"],
+    snapshots: true,
+  },
+  {
+    name: "known-source-through-trait-call",
+    breaks: "a known source's own method goes through the generic trait call, which gives a `Cursor` as the object, not in its box",
+    file: "src/lower/recognition.rs",
+    find: "            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_) | Std::Io(_)\n",
+    replace: "            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_)\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_cursor.rs$"],
+  },
 ];

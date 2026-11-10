@@ -556,4 +556,12 @@ export const mutations: Mutation[] = [
     replace: "            .find(|_| false)\n",
     tests: ["test/diagnostics.test.ts", "-t", "Borrow gives"],
   },
+  {
+    name: "dyn-provided-refused",
+    breaks: "a std trait's compiled provided method of a `dyn`, `read_line` of a `dyn BufRead`, is refused",
+    file: "src/lower/traits/calls.rs",
+    find: "        let compiled_provided = crate::lower::recognition::is_compiled_std(self.tcx, id);\n",
+    replace: "        let compiled_provided = crate::lower::recognition::is_compiled_std(self.tcx, id) && !matches!(tr.self_ty().kind(), ty::Dynamic(..));\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_buf_read.rs$"],
+  },
 ];
