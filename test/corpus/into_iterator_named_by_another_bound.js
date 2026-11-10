@@ -9,6 +9,7 @@ import {
   $dropEach,
   $eq,
   $extend,
+  $filterDropping,
   $foldOf,
   $given,
   $givenDrop,
@@ -133,6 +134,32 @@ function fill(c, items, CExtendU32, IIntoIterator, IsI, IIntoIterInPlace) {
     $given(IIntoIterator.intoIter(items), IIntoIterator.IntoIterIterator()),
     IIntoIterInPlace,
   );
+}
+
+function firstId(items, IIntoIterator, IsI, dropIIntoIter) {
+  items = IsI.is(items);
+  const map = $held(
+    $closing(
+      $given(IIntoIterator.intoIter(items), IIntoIterator.IntoIterIterator()),
+      $givenDrop(dropIIntoIter),
+      false,
+    ).map((l) => {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    }),
+  );
+  let result;
+  try {
+    result = $next(map);
+  } catch (error) {
+    $cleanup(() => {
+      map.return();
+    });
+    throw error;
+  }
+  map.return();
+  return result;
 }
 
 function equal(
@@ -267,11 +294,52 @@ function main() {
   fill(c$1, [9, 8], vecExtend, intoIterator$1, u32ArrayIs_u32__2_);
   $assign(out, c$1.value);
   console.log(`[${out.join(", ")}]`);
+  // A map of an `IntoIter` held as it is, closed where it's dropped: what
+  // it has left dropped by its caller's drop.
+  const value = firstId([[4], [5]], vecIntoIterator, VecIsVec, $dropEach(loudDrop_drop));
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  // Of a filter, which isn't `TrustedLen`, so std compares it item by
+  // item too (#1182).
+  const value$2 = [[1], [2]];
+  const value$1 = [[1], [3]];
+  let tmp;
+  try {
+    tmp = $filterDropping(
+      $closing($iter(value$1), $dropEach(loudDrop_drop)),
+      () => true,
+      loudDrop_drop,
+    );
+  } catch (error) {
+    for (const item of value$2) {
+      loudDrop_drop(item);
+    }
+    throw error;
+  }
   console.log(
-    `${equal([[1], [2]], [[1], [3]], vecIntoIterator, vecIntoIterator, $partialEq({ eq: $eq }), VecIsVec, VecIsVec, $dropEach(loudDrop_drop), $dropEach(loudDrop_drop), $dropEach(loudDrop_drop), loudDrop_drop, $dropEach(loudDrop_drop), loudDrop_drop)}`,
+    `${equal(
+      value$2,
+      tmp,
+      vecIntoIterator,
+      { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+      $partialEq({ eq: $eq }),
+      VecIsVec,
+      tIsT((filter) => {
+        filter.return();
+      }),
+      $dropEach(loudDrop_drop),
+      (filter) => {
+        filter.return();
+      },
+      (filter) => {
+        filter.return();
+      },
+      loudDrop_drop,
+      $dropEach(loudDrop_drop),
+      loudDrop_drop,
+    )}`,
   );
   const fragile = [[1], [2], [3]];
-  const value = second(
+  const value$3 = second(
     $iter(fragile),
     {
       intoIter: (items) => items,
@@ -280,6 +348,6 @@ function main() {
     tIsT($dropEach(fragileDrop_drop)),
     $dropEach(fragileDrop_drop),
   );
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
 }
 //# sourceMappingURL=case.js.map

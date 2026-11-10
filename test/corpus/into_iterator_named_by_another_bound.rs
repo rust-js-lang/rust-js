@@ -78,6 +78,11 @@ fn fill<C: Extend<u32>, I: IntoIterator<Item = u32>>(c: &mut C, items: impl Is<I
     c.extend(items);
 }
 
+fn first_id<I: IntoIterator<Item = Loud>>(items: impl Is<I>) -> Option<u32> {
+    let items: I = items.is();
+    items.into_iter().map(|l| l.0).next()
+}
+
 fn equal<I: IntoIterator, J: IntoIterator>(a: impl Is<I>, b: impl Is<J>) -> bool
 where
     I::Item: PartialEq<J::Item>,
@@ -98,7 +103,12 @@ fn main() {
     fill(&mut out, Quiet(3));
     fill(&mut out, [9, 8]);
     println!("{out:?}");
-    println!("{}", equal(vec![Loud(1), Loud(2)], vec![Loud(1), Loud(3)]));
+    // A map of an `IntoIter` held as it is, closed where it's dropped: what
+    // it has left dropped by its caller's drop.
+    println!("{:?}", first_id(vec![Loud(4), Loud(5)]));
+    // Of a filter, which isn't `TrustedLen`, so std compares it item by
+    // item too (#1182).
+    println!("{}", equal(vec![Loud(1), Loud(2)], vec![Loud(1), Loud(3)].into_iter().filter(|_| true)));
     let fragile = vec![Fragile(1), Fragile(2), Fragile(3)];
     println!("{:?}", second(fragile.into_iter()));
 }

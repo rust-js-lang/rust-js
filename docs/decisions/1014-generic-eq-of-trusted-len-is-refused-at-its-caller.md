@@ -74,3 +74,32 @@ Both only where a step of the first side runs code.
 - `test/diagnostics.test.ts`' "a zip of a map collected in generic code"
   and "a zip of a map stepped in generic code" check it. The mutations are
   `generic-zip-fold-allowed` and `generic-zip-step-allowed`.
+
+## Amendment: what's compared is normalized where the caller's types are made (#1182)
+
+`callers_decide` made each ask of the caller's types without normalizing
+them, so generic code's `a.into_iter().eq(b)` of `I: IntoIterator`, its
+receiver `<I as IntoIterator>::IntoIter`, stayed a projection of a `Vec`
+whose `TrustedLen` wasn't seen: `equal(vec![L(1), L(2)], vec![L(3), L(4),
+L(5)])` wasn't refused, and its JS compared them item by item, dropping
+`L(1)` and `L(3)` first, where std's `SpecIterEq` compares their lengths,
+steps neither, and drops `b`'s, then `a`'s. A zip's asks were normalized
+for #1162; **each ask is normalized now**, `eq`'s too, so such a call is
+refused. `adapter_drops.rs` and `into_iterator_named_by_another_bound.rs`
+gave generic code two `Vec`s of equal length, whose answer was std's by
+luck: each gives a filter for one side now, which isn't `TrustedLen`, so
+std compares item by item too; `test/diagnostics.test.ts` holds the
+refusal, and `held-into-iter-drop-of-its-of`, which only that call
+reached, is held by a generic `map` of an `IntoIter` held as it is,
+dropped part-way. Mutation `callers-eq-unnormalized`.
+
+Supporting std's comparison in generic code, where its callers are
+seen, would take each side's length from its caller before either is
+stepped, which no type fact gives: a JS iterator a caller makes, a `map`
+made in place, knows no hint. And a library's generic `eq`, whose callers
+it doesn't see, compares item by item whatever its consumers give it.
+
+The readability baseline is blessed: the JS these cases no longer have,
+and the filters and the `map` they have now, moved `$iter`'s share from
+92.4 to 92.5 and a renamed `x$1`'s from 510.8 to 511 in 10,000 lines, no
+construct of them new.

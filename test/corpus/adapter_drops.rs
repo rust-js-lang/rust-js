@@ -132,6 +132,8 @@ fn main() {
 
     println!("eq {}", louds(190, 3).into_iter().eq(louds(200, 3)));
     println!("eq {}", louds(190, 3).into_iter().eq(vec![Loud(210), Loud(5), Loud(212)]));
-    println!("equal {}", equal(louds(220, 2), louds(230, 2)));
+    // Of a filter, which isn't `TrustedLen`: std compares it item by item
+    // too, never its length first (#1182).
+    println!("equal {}", equal(louds(220, 2), louds(230, 2).into_iter().filter(|_| true)));
     println!("end");
 }

@@ -1575,6 +1575,8 @@ function main() {
     throw error;
   }
   console.log(`eq ${tmp$13}`);
+  // Of a filter, which isn't `TrustedLen`: std compares it item by item
+  // too, never its length first (#1182).
   let tmp$14;
   try {
     tmp$14 = louds(220, 2);
@@ -1610,7 +1612,11 @@ function main() {
   }
   let tmp$15;
   try {
-    tmp$15 = louds(230, 2);
+    tmp$15 = $filterDropping(
+      $closing($iter(louds(230, 2)), $dropEach(loudDrop_drop)),
+      () => true,
+      loudDrop_drop,
+    );
   } catch (error) {
     for (const item of tmp$14) {
       loudDrop_drop(item);
@@ -1650,7 +1656,9 @@ function main() {
       tmp$14,
       tmp$15,
       loudPartialEq,
-      $dropEach(loudDrop_drop),
+      (filter) => {
+        filter.return();
+      },
       loudDrop_drop,
       $dropEach(loudDrop_drop),
       loudDrop_drop,
