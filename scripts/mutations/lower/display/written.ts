@@ -320,4 +320,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^debug_entries_drop_as_std.rs$"],
   },
+  {
+    name: "c-str-error-message-unknown",
+    breaks: "`{}` of a C string's error is refused",
+    file: "src/lower/display/written.rs",
+    find: "        if let Some(error) = crate::lower::recognition::c_str_error(self.tcx, ty) {\n",
+    replace: "        if let (false, Some(error)) = (true, crate::lower::recognition::c_str_error(self.tcx, ty)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
+  },
 ];

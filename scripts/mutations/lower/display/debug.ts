@@ -543,4 +543,12 @@ export const mutations: Mutation[] = [
     replace: "        let evaluated = None;\n        let shown = self.debug_shown(value, ty, span, pretty)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^text_of_a_value_made_by_a_call.rs$"],
   },
+  {
+    name: "debug-c-str-as-bytes",
+    breaks: "`{:?}` of a C string isn't std's `\"hi\"`",
+    file: "src/lower/display/debug.rs",
+    find: "        if is_c_str(self.tcx, ty) || is_c_string(self.tcx, ty) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
+  },
 ];

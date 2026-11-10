@@ -1,6 +1,7 @@
 //! Read-only library-operation recognition. No function lowering state or JS emission.
 
 mod adapter_types;
+mod c_strs;
 mod calls;
 mod chars;
 mod fmt;
@@ -28,8 +29,8 @@ mod wrappers;
 mod zip_folds;
 
 pub(super) use self::{
-    adapter_types::*, calls::*, fmt::*, iterators::*, json::*, serde::*, sorts::*, specialization::*, std_crates::*,
-    std_items::*, traits::*, types::*, wrappers::*, zip_folds::*,
+    adapter_types::*, c_strs::*, calls::*, fmt::*, iterators::*, json::*, serde::*, sorts::*, specialization::*,
+    std_crates::*, std_items::*, traits::*, types::*, wrappers::*, zip_folds::*,
 };
 
 use super::combinators::{Comb, IterComb, IterSource, StepOp};
@@ -211,6 +212,8 @@ pub(super) enum Std {
     Location(super::std_types::location::LocationOp),
     /// A `Backtrace`'s (ADR 0568).
     Backtrace(super::std_types::backtrace::BacktraceOp),
+    /// A `CStr`'s or a `CString`'s (#1157).
+    CStr(super::std_types::c_str::CStrOp),
     /// `std::future`'s: a future is a JS promise (ADR 0029).
     Future(super::std_types::future::FutureOp),
     /// A `fmt` trait's method called as a function on a `Formatter` held

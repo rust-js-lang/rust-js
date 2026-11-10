@@ -49,12 +49,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// What a wrapper of std's that's what it holds holds: `ManuallyDrop`'s
-    /// and `MaybeDangling`'s, whose `==` and clone are its value's, as it is
-    /// in JS (`transparent`).
+    /// and `MaybeDangling`'s, and a C string's bytes (#1157), whose `==` and
+    /// clone are its value's, as it is in JS (`transparent`).
     pub(in crate::lower) fn std_wrapped(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-        (self.is_lang_adt(ty, LangItem::ManuallyDrop) || self.is_lang_adt(ty, LangItem::MaybeDangling))
-            .then(|| self.transparent(ty))
-            .flatten()
+        (self.is_lang_adt(ty, LangItem::ManuallyDrop)
+            || self.is_lang_adt(ty, LangItem::MaybeDangling)
+            || is_c_string_like(self.tcx, ty))
+        .then(|| self.transparent(ty))
+        .flatten()
     }
 
     /// A type that's the value it holds in JS, whose field is it: a
@@ -83,6 +85,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // A `NeverShortCircuit`, what std's `fold` folds into through
             // its `try_fold`, what it holds (ADR 0913).
             || try_kind(self.tcx, ty) == Some(TryKind::NeverShortCircuit)
+            // A `CStr` and a `CString`, their bytes with the nul (#1157).
+            || is_c_str(self.tcx, ty)
+            || is_c_string(self.tcx, ty)
             || std_path(self.tcx, adt.did()).starts_with("std::num::niche_types::");
         // A `MaybeUninit` is a union of it and `()`.
         let mut held = adt.all_fields().map(|field| self.field_ty(field, args));
@@ -281,7 +286,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn views_as_itself(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> bool {
         let from = from.peel_refs();
         let sequence = from.is_array() || from.is_slice() || self.is_vec_like(from);
-        (self.is_string_like(from) && to.is_str()) || (sequence && to.is_slice())
+        (self.is_string_like(from) && to.is_str())
+            || (sequence && to.is_slice())
+            // A C string's bytes as a `CStr` (#1157).
+            || (is_c_string_like(self.tcx, from) && is_c_str(self.tcx, to))
     }
 
     /// Whether `method` of std's `trait_`, of a `ty` as a `to`, is the value

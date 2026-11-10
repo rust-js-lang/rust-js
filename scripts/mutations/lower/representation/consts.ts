@@ -221,4 +221,12 @@ export const mutations: Mutation[] = [
     replace: "                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did))\n",
     tests: ["test/corpus.test.ts", "-t", "^held_fields_of_a_constant.rs$"],
   },
+  {
+    name: "c-literal-unknown",
+    breaks: "`c\"hi\"` is refused as a constant rust-js can't say",
+    file: "src/lower/representation/consts.rs",
+    find: "ty::Ref(_, inner, _) if crate::lower::recognition::is_c_str(tcx, *inner) => {",
+    replace: "ty::Ref(_, inner, _) if false && inner.is_unit() => {",
+    tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
+  },
 ];

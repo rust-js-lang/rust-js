@@ -277,9 +277,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.compares_by_value(args.type_at(0), seen)
             }
             // Of std's, one whose `PartialEq` is derived, a path's `Component`,
-            // of what its values are made of.
+            // or a C string's, its bytes (#1157), of what its values are made of.
             ty::Adt(adt, args) => {
-                (self.krate.foreign.compiled_by_rust_js(adt.did()) || self.std_enum_derives_eq(ty))
+                (self.krate.foreign.compiled_by_rust_js(adt.did())
+                    || self.std_enum_derives_eq(ty)
+                    || crate::lower::recognition::is_c_string_like(self.tcx, ty))
                     && self.recognition().derives(self.partial_eq_trait(), ty)
                     && adt
                         .variants()

@@ -175,6 +175,13 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
         ty::Ref(_, inner, _) if inner.is_str() => {
             Some(Expr::str(std::str::from_utf8(value.try_to_raw_bytes(tcx)?).ok()?))
         }
+        // A `c"hi"`'s bytes with its nul, `[104, 105, 0]` (#1157).
+        ty::Ref(_, inner, _) if crate::lower::recognition::is_c_str(tcx, *inner) => {
+            let byte = |b: &ty::Value<'tcx>| Some(Expr::int(b.try_to_leaf()?.to_u8().into()));
+            Some(Expr::literal_array(
+                children()?.iter().map(byte).collect::<Option<_>>()?,
+            ))
+        }
         ty::Ref(_, inner, _) => const_js_by(
             tcx,
             ty::Value {

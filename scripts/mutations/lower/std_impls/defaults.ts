@@ -184,4 +184,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(adt, _) if self.is_std(adt.did()) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^range_defaults.rs$"],
   },
+  {
+    name: "c-string-default-unknown",
+    breaks: "`CString::default()` is refused",
+    file: "src/lower/std_impls/defaults.rs",
+    find: "            _ if crate::lower::recognition::is_c_string_like(self.tcx, ty.peel_refs()) => {\n",
+    replace: "            _ if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
+  },
 ];

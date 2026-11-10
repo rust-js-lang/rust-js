@@ -768,4 +768,12 @@ export const mutations: Mutation[] = [
     replace: "        \"push_back\" | \"push_front\" | \"insert\" | \"append\" | \"extend_from_slice\" | \"extend_from_within\"\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
   },
+  {
+    name: "c-string-deref-unknown",
+    breaks: "`s.to_str()` of a `CString`, through its `Deref`, is refused",
+    file: "src/lower/recognition/calls.rs",
+    find: "                || is_c_string(tcx, ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
+  },
 ];

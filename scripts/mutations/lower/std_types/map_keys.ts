@@ -99,8 +99,8 @@ export const mutations: Mutation[] = [
     name: "std-enum-key-refused",
     breaks: "a set of std's `Component`s, compared by value, is refused",
     file: "src/lower/std_types/map_keys.rs",
-    find: "(self.krate.foreign.compiled_by_rust_js(adt.did()) || self.std_enum_derives_eq(ty))",
-    replace: "self.krate.foreign.compiled_by_rust_js(adt.did())",
+    find: "                    || self.std_enum_derives_eq(ty)\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
   },
   {
@@ -210,5 +210,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
     snapshots: true,
+  },
+  {
+    name: "c-string-key-not-by-value",
+    breaks: "a map of `CString` keys is refused",
+    file: "src/lower/std_types/map_keys.rs",
+    find: "                    || crate::lower::recognition::is_c_string_like(self.tcx, ty))",
+    replace: ")",
+    tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
   },
 ];

@@ -222,6 +222,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(op) = crate::lower::std_types::backtrace::backtrace_op(path) {
             return Some(Some(Std::Backtrace(op)));
         }
+        // A C string's, its bytes with its nul (#1157).
+        if let Some(known) = c_str_op(path) {
+            return Some(Some(known));
+        }
         // A future already done, a promise (ADR 0029).
         if let Some(op) = crate::lower::std_types::future::future_op(path) {
             return Some(Some(Std::Future(op)));
@@ -508,6 +512,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 || self.is_js_object(ty)
                 || self.is_rc(ty)
                 || self.is_vec_like(ty)
+                // A `CString`'s, its bytes with the nul, its `CStr`'s (#1157).
+                || is_c_string(tcx, ty)
                 || boxed;
             // A `PeekMut`'s heap's top (ADR 0333).
             if self.peek_mut_of(ty).is_some() {
@@ -955,6 +961,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // slice, its items cloned, or of a deque; `BinaryHeap::from(v)` puts
         // one in heap order.
         let vec = self.is_std_type(to_ty, StdItem::Vec);
+        if let Some(known) = c_str_conversion(tcx, from_ty, to_ty, vec) {
+            return Some(known);
+        }
         let items =
             from_ty.is_array() || from_ty.peel_refs().is_slice() || self.is_std_type(from_ty, StdItem::VecDeque);
         if self.is_std_type(to_ty, StdItem::VecDeque) || self.is_std_type(to_ty, StdItem::LinkedList) || (vec && items)

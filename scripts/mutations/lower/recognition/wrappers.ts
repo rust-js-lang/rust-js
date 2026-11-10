@@ -213,8 +213,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `AsRef<[T]>` and `AsMut<[T]>` of a `Vec` aren't the same JS value, and refused",
     file: "src/lower/recognition/wrappers.rs",
-    find: "        (self.is_string_like(from) && to.is_str()) || (sequence && to.is_slice())\n",
-    replace: "        self.is_string_like(from) && to.is_str()\n",
+    find: "        (self.is_string_like(from) && to.is_str())\n            || (sequence && to.is_slice())\n",
+    replace: "        (self.is_string_like(from) && to.is_str())\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -494,5 +494,29 @@ export const mutations: Mutation[] = [
     find: "                && tcx.item_name(method).as_str() == \"borrow_mut\"\n",
     replace: "                && tcx.item_name(method).as_str() == \"borrow_mut\"\n                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^(borrow_mut_of_a_vec_as_a_slice|borrow_mut_supertrait).rs$"],
+  },
+  {
+    name: "c-str-not-its-bytes",
+    breaks: "a `CStr` isn't its bytes to the compiler, so a value of one is refused",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "            || is_c_str(self.tcx, ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
+  },
+  {
+    name: "c-string-clone-unwrapped",
+    breaks: "a `CString`'s clone is refused",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "            || is_c_string_like(self.tcx, ty))",
+    replace: ")",
+    tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
+  },
+  {
+    name: "c-string-as-ref-unviewed",
+    breaks: "`s.as_ref()` of a `CString` as a `&CStr` is refused",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "            || (is_c_string_like(self.tcx, from) && is_c_str(self.tcx, to))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
   },
 ];

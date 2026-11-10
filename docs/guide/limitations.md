@@ -172,8 +172,8 @@ depends on what the program does:
 
 ## Numbers and text
 
-- A C string, a `c"..."` literal: `let c = c"hi"; println!("{:?}", c);`
-- `CString` and `CStr`: `let c = std::ffi::CString::new("hi").unwrap(); println!("{:?}", c);`
+- A C string's pointer, its `as_ptr()`, `CStr::from_ptr`, `into_raw` and `from_raw`, which read memory by where it is ([1119](../decisions/1119-a-c-string-is-its-bytes-with-its-nul.md)): `let c = c"hi"; println!("{:?}", c.as_ptr());`
+- A C string hashed through a `Hasher`; a set's or a map's key compiles: `use std::hash::{Hash, Hasher}; let mut h = std::hash::DefaultHasher::new(); c"hi".hash(&mut h); println!("{}", h.finish());`
 
 ## Formatting
 

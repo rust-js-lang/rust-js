@@ -2,6 +2,7 @@
 //! and the items of a collection.
 
 use super::*;
+use crate::lower::recognition::{c_str_error, is_c_str, is_c_string};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `{:?}` of a `ty` value (ADR 0060), as Rust shows it: `Some(1)`,
@@ -251,6 +252,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 list.push(pretty.options());
             }
             return Ok(Expr::call_helper("$ioErrorDebug", list));
+        }
+        // A C string's, std's `ByteStr`'s of its bytes, which no option
+        // changes (#1157).
+        if is_c_str(self.tcx, ty) || is_c_string(self.tcx, ty) {
+            return Ok(Expr::call_helper("$debugCStr", vec![value]));
+        }
+        if let Some(error) = c_str_error(self.tcx, ty) {
+            let mut list = vec![value, Expr::str(error.kind())];
+            if !matches!(pretty, Pretty::Plain) {
+                list.push(pretty.options());
+            }
+            return Ok(Expr::call_helper("$debugCStrError", list));
         }
         // Their derived `Debug`s (ADR 0172).
         // Pretty as it's asked, `{:#?}`'s, and its numbers padded as the

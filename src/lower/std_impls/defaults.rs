@@ -132,6 +132,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Str => Expr::str(""),
             ty::Slice(_) => Expr::array(Vec::new()),
             _ if self.is_lang_adt(ty, LangItem::PhantomData) => Expr::undefined(),
+            // A C string's, its nul alone, a `&CStr`'s `c""` (#1157).
+            _ if crate::lower::recognition::is_c_string_like(self.tcx, ty.peel_refs()) => {
+                Expr::literal_array(vec![Expr::int(0)])
+            }
             ty::Array(item, len) => {
                 let len = len
                     .try_to_target_usize(self.tcx)

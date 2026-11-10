@@ -208,6 +208,13 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   `Utf8Error` says where the first bad sequence starts and how long it is,
   and `from_utf8_lossy` gives a U+FFFD for each
   ([0172](../decisions/0172-utf8-decoding.md)).
+- **A C string is its bytes with its nul,** a `CStr` as a `[u8]` is, a
+  JS array of numbers, `c"hi"` `[104, 105, 0]`; a `CString` its `Vec<u8>`
+  with the nul. `to_bytes()` is a part without the nul, `to_str()` checks
+  UTF-8 as `str::from_utf8` does, and `from_bytes_with_nul`,
+  `from_bytes_until_nul` and `CString::new` check for their nul as std's
+  do, their errors std's; `{:?}` escapes what isn't ASCII as std's does,
+  `"\xffA"` ([1119](../decisions/1119-a-c-string-is-its-bytes-with-its-nul.md)).
 
 Differences:
 

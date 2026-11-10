@@ -26,6 +26,7 @@
 //! | `panic::Location`, `#[track_caller]` | `{ file, line, column }` | `location` |
 //! | the allocator, `Layout` | an array of slots; `{ size, align }` | `alloc` |
 //! | `SystemTime`, `Instant` | its nanoseconds, a `BigInt` | `clock` |
+//! | `CStr`, `CString` | its bytes with its nul, an `Array` | `c_str` |
 //! | `io::Error` | a `$IoError`, its kind and what it holds | `io_error` |
 //! | `DefaultHasher`, `SipHasher`, std's `Hash` | a `$SipHasher`; the writes std's impls make | `hash` |
 //!
@@ -36,6 +37,7 @@ pub(super) mod alloc;
 pub(super) mod any;
 pub(super) mod backtrace;
 mod btree;
+pub(in crate::lower) mod c_str;
 pub(super) mod cell;
 pub(super) mod channel;
 pub(super) mod clock;

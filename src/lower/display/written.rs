@@ -457,6 +457,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_path_like(ty) {
             return Ok(value);
         }
+        // A C string's error's message (#1157).
+        if let Some(error) = crate::lower::recognition::c_str_error(self.tcx, ty) {
+            return Ok(Expr::call_helper(
+                "$cstrErrorMessage",
+                vec![value, Expr::str(error.kind())],
+            ));
+        }
         if crate::lower::recognition::is_try_from_slice_error(self.tcx, ty) {
             return Ok(Expr::str("could not convert slice to array"));
         }
