@@ -1399,6 +1399,13 @@ moves its end. No corpus snapshot changed. Corpus case
 run's 10 s limit); the two pairs are off `test/neighbours-known.txt`.
 Mutation `range-nth-back-unasked` (`runtime/iterator.ts`).
 
+Since the case's `rev().skip(..)` became a range stepped by its back,
+`$iterator(range, $rangeNextBack)`, no `$rev` of it asked the range's
+`nth_back`, and the mutation survived (#1109). The case gives a `rev()`
+to generic code that steps it from its back and then asks its `nth` and a
+`skip` of it, `$rev` of a range made knowing its back, whose `nth` is the
+range's `nth_back`: without it, 4e9 steps past the run's time.
+
 
 ## Amendment: each path that asks the hint is a row (#820)
 
