@@ -170,3 +170,20 @@ them only if they differ, didn't compile: rustc's
 its address shown is rust-js's error where it's shown, as a raw pointer's
 is, and `assert_eq!` of two compiles and runs. A runtime test shows one
 and compares two.
+
+## Amendment: a part's pointer as an array's is a view of those items (2026-11-10, #1218)
+
+`$ptrWhole(p, n)` took only an array's first item's pointer, of an array
+of `n` items, as the whole array's. A pointer into a slice's part,
+`fst.as_ptr() as *const [T; N]` of rustc's `issue-70507.rs`, was one too
+while a part's pointer was on the part, `$ptr(part, 0)`; since #1185
+placed a part's pointer on the array it's of, `$ptr(items, at)`, that
+test was refused at run time (the nightly of 2026-11-10). An item's
+pointer, of `n` items from it within its array, is a pointer to those
+items, `$ptrTo($view(items, at, at + n))`: read and written where they
+are, a `&mut [T; N]`'s writes the array's, placed where they are as a
+`&mut v[a..b]` is (ADR 0335). The first item's of the whole array is the
+array's handle, as before. One past the array's end stays refused, as
+reading memory by where it is. Corpus case
+`pointer_to_part_of_an_array_as_an_array`, against native Rust; rustc's
+`const-generics/type-dependent/issue-70507.rs` passes again.

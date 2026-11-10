@@ -490,4 +490,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
   },
+  {
+    name: "part-as-an-array-the-whole",
+    breaks:
+      "a pointer to an item partway through an array, as one to an array of the items from it, is the whole array's handle: `fst.as_ptr() as *const [T; N]` of a slice's part reads the array's first items (#1218)",
+    file: "src/runtime/pointers.js",
+    find: "    return $ptrTo($view(pointer.of, pointer.at, pointer.at + length));\n",
+    replace: "    return $ptrTo(pointer.of);\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_to_part_of_an_array_as_an_array.rs$"],
+  },
 ];

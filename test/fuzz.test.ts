@@ -28,8 +28,7 @@ import { partSetting } from "./part-settings";
 /** A setting that's a whole number, at least `least`, or none, and then
  * `otherwise`: anything else fails the run before a seed does, not as a
  * run of none. */
-function whole(name: string, otherwise: number, least: number, most = Number.MAX_SAFE_INTEGER): number {
-  const value = partSetting(name);
+function whole(name: string, otherwise: number, least: number, most = Number.MAX_SAFE_INTEGER, value = partSetting(name)): number {
   if (value === undefined) return otherwise;
   if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)) || Number(value) < least || Number(value) > most) {
     throw new Error(`${name}=${value}: a whole number, from ${least} to ${most}, is a setting`);
@@ -50,7 +49,9 @@ if (start + seeds > seedLimit) {
 const exploring = partSetting("FUZZ_START") !== undefined || partSetting("FUZZ_SEEDS") !== undefined;
 
 // A reduction stops after this long, with the smallest program so far.
-const reduceBudget = whole("FUZZ_REDUCE_BUDGET", 300_000, 1);
+// No part's setting, the seeds a part runs: read as it is (bbb2dc8c9's
+// `partSetting` refused it, #1218).
+const reduceBudget = whole("FUZZ_REDUCE_BUDGET", 300_000, 1, Number.MAX_SAFE_INTEGER, process.env.FUZZ_REDUCE_BUDGET);
 
 beforeAll(buildCompiler);
 

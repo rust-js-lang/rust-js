@@ -42,7 +42,7 @@ test(`installed packages compile using ${runtime} without the other runtime`, ()
     expect(distribution.compiler).toEqual(JSON.parse(run([compiler, "--version-json"])));
     // The packages, and the crates an app's Cargo builds with.
     expect(distribution.artifacts.map(({ file }: { file: string }) => file).sort()).toEqual(
-      ["build.tgz", "native.tgz", "runtime.tgz", "std.tgz", "typescript.tgz", ...crates.map(({ dir }) => `${dir}.tgz`)].sort(),
+      ["build.tgz", "native.tgz", "std.tgz", "typescript.tgz", ...crates.map(({ dir }) => `${dir}.tgz`)].sort(),
     );
     run(["shasum", "-a", "256", "-c", "SHA256SUMS"], bundle);
     const previousDistribution = readFileSync(join(bundle, "distribution.json"), "utf8");
@@ -102,7 +102,7 @@ pub fn App() -> JSX::Element { jsx! { <main><span>{"Packaged"}</span></main> } }
     const jsx = readFileSync(join(root, "src", "App.jsx"), "utf8");
     expect(jsx).toContain("<main>");
     expect(jsx).toContain("<span>Packaged</span>");
-    writeFileSync(join(bundle, "runtime.tgz"), "damaged archive");
+    writeFileSync(join(bundle, "std.tgz"), "damaged archive");
     expect(() => run(["shasum", "-a", "256", "-c", "SHA256SUMS"], bundle)).toThrow();
     writeFileSync(join(root, "src", "App.rs"), "pub fn broken(");
     expect(build).toThrow("unclosed delimiter");

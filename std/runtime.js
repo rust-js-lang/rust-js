@@ -7238,12 +7238,17 @@ export function $ptrItems(pointer, count) {
   throw $unsupported("rust-js does not support a slice of items that aren't an array's, which reads memory by where it is");
 }
 
-// A pointer to an array's first item, as one to the whole of it, of
-// `length` items: arrayvec's `ptr::read(p as *const [T; CAP])`. Of another
-// item, or of fewer, it would be memory by where it is.
+// A pointer to an array's item, as one to an array of `length` items from
+// it: arrayvec's `ptr::read(p as *const [T; CAP])` of the whole, and a
+// slice's part, `fst.as_ptr() as *const [T; N]`, a view of those items,
+// placed where they are (#1218). Past the array's end, it would be memory
+// by where it is.
 export function $ptrWhole(pointer, length) {
-  if (Array.isArray(pointer.of) && pointer.at === 0 && pointer.of.length === length) return $ptrTo(pointer.of);
-  throw $unsupported("rust-js does not support a pointer to part of an array as one to an array, which reads memory by where it is");
+  if (Array.isArray(pointer.of) && typeof pointer.at === "number" && pointer.at + length <= pointer.of.length) {
+    if (pointer.at === 0 && pointer.of.length === length) return $ptrTo(pointer.of);
+    return $ptrTo($view(pointer.of, pointer.at, pointer.at + length));
+  }
+  throw $unsupported("rust-js does not support a pointer to part of an array as one to an array past its end, which reads memory by where it is");
 }
 
 // A pointer as one to another type, in generic code where whether JS has it

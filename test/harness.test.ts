@@ -65,7 +65,7 @@ test("a failing generated program is kept before it's reduced, and a reduction c
   expect(run.output).toContain("differs, reduced for 0.001s, not to the end,");
   const evidence = JSON.parse(readFileSync(join(out, "seed-3.json"), "utf8"));
   expect(evidence).toMatchObject({ seed: 3, kind: "differs", compiler: expect.stringContaining("rust-js") });
-  expect(evidence.signature).toBe(JSON.stringify([["node", false, true, true]]));
+  expect(evidence.signature).toBe(JSON.stringify([["plain", "node", false, true, true]]));
   expect(evidence.detail).toContain("only unbundled");
   expect(existsSync(join(out, "seed-3.original.rs"))).toBe(true);
   expect(existsSync(join(out, "seed-3.rs"))).toBe(true);
