@@ -112,7 +112,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some((key, by)) = self.hashed_key_borrowed(def_id, generic_args) {
             let path = self.tcx.def_path_str(def_id);
             let what = format!(
-                "`{path}` of a `{key}` key by a `{by}`, what its `Borrow` gives, where the map finds its keys by their own `Hash` and `Eq`"
+                "`{path}` of a `{key}` key by a `{by}`, what its `Borrow` gives, where the map finds its keys by their own `Hash` and `Eq` (#1288)"
             );
             return Err(self.unsupported(span, &what));
         }

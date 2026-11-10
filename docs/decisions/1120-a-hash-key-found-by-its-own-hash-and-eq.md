@@ -116,12 +116,13 @@ place std's table fixes.
   both builds.
 - **Refused**: a lookup of such a map by what its key's `Borrow` gives,
   another type, `HashSet<Rc<u32>>::contains(&1)`, which std finds by that
-  type's `Hash` and `Eq` (`hashed_key_borrowed`, `traits/calls.rs`); a
+  type's `Hash` and `Eq` (`hashed_key_borrowed`, `traits/calls.rs`;
+  #1288); a
   crate's own `Borrow` stays refused as before (ADR 0167). And a key of
   std's that rust-js doesn't hash, whose own `Hash` reaches a crate's,
   `HashSet<Reverse<Version>>`: "values of type .. as a hash map's keys,
-  whose `Hash` rust-js doesn't write". It was a `$KeySet` that never
-  called `hash`.
+  whose `Hash` rust-js doesn't write (#1289)". It was a `$KeySet` that
+  never called `hash`, a wrong answer where it panics or prints (#1287).
 - Mutations: `hashed-key-by-identity`, `hashed-key-own-hash-unseen`,
   `hashed-key-given-back`, `hash-runs-code-of-derived-unwalked`,
   `hash-runs-code-of-any-bound`, `hashed-key-refused`,

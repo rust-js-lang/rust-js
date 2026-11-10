@@ -375,8 +375,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let hash = self
                     .dictionary(ty::TraitRef::new(self.tcx, hash, [key]), span)
                     .map_err(|_| {
-                        let what =
-                            format!("values of type `{key}` as a hash map's keys, whose `Hash` rust-js doesn't write");
+                        let what = format!(
+                            "values of type `{key}` as a hash map's keys, whose `Hash` rust-js doesn't write (#1289)"
+                        );
                         self.unsupported(span, &what)
                     })?;
                 let eq = self.eq_fn(key, span)?;
