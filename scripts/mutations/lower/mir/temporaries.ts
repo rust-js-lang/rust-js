@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "kept-mut-ref-of-unit-nothing",
+    breaks:
+      "a `&mut ()` a struct keeps, `Wrapper(&mut unit)`, is `undefined`, so generic code's `*x` of `&*held.0`, which reads its `value` as of any `&mut ()`, throws (#1247)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            Value::Ref(place) if matches!(place.kind, js::ExprKind::Undefined) => crate::lower::mut_refs::boxed(place),\n",
+    replace: "            Value::Ref(place) if matches!(place.kind, js::ExprKind::Undefined) => place,\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_unit_kept.rs$"],
+  },
+  {
     name: "held-handle-given-on-as-a-handle-on-it",
     breaks: "a `&mut` to a nullable field kept in a struct, `Held(&mut fiber.0.owner)`, is a handle on its handle's `value`, which stores `undefined` for `None` (#1018)",
     file: "src/lower/mir/temporaries.rs",
@@ -305,9 +314,9 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unit-mut-ref-refused",
-    breaks: "a `&mut ()` kept is refused, not nothing",
+    breaks: "a `&mut ()` kept is refused, not a box of it, `{}` (#1247)",
     file: "src/lower/mir/temporaries.rs",
-    find: "            Value::Ref(place) if matches!(place.kind, js::ExprKind::Undefined) => place,\n",
+    find: "            Value::Ref(place) if matches!(place.kind, js::ExprKind::Undefined) => crate::lower::mut_refs::boxed(place),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_deref.rs$"],
   },

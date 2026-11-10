@@ -97,3 +97,24 @@ push_one([8], { Deref: () => ({ deref: (x) => x }), deref_mut: (cell) => cell })
 - The `generic_deref_mut` corpus case pushes to and bumps through a
   crate's `DerefMut`, a `Box`, a `&mut`, a guard and an either-like
   enum of two, against native Rust.
+
+## Amendment: a kept `&mut ()` is a box of it (2026-11-10, #1247)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. "A `&mut ()` is nothing" made one a struct, a
+tuple, an `Option` or a `Vec` keeps `undefined`, `Wrapper(&mut unit)`'s
+`[undefined]`, while what reads a `&mut ()` reads its `value`, as of any
+`&mut` of its form, a box: `copied(&*held.0)` of a `T: Copy`, and a write
+through it, `reset(held.0)` of a `T: Default`, threw `TypeError: Cannot
+read properties of undefined`, where native Rust runs. A kept `&mut ()` is
+now what a given one has been since [ADR 0454](0454-a-mut-given-as-a-type-parameter.md)'s
+amendment for #1061, a box of the `()`, `{}`, which no write changes:
+`const held = [{}]`, read `held[0].value`. The decision above's
+"nothing" is withdrawn; a `&mut ()` has one form wherever it goes.
+
+- **Why not read a `()` without its `value`**: generic code, compiled once,
+  can't know its `T` is `()`, and writes `x.value` of a `&mut T`.
+- **Tested** by the corpus case `mut_ref_of_unit_kept.rs`, a `&mut ()` a
+  struct, a tuple, an `Option` and a `Vec` keep, read and written in
+  generic code, in both builds against native Rust, and the `generic-instances`
+  rewrite of `generic_deref.rs`; mutation `kept-mut-ref-of-unit-nothing`.

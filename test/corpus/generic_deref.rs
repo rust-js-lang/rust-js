@@ -1,7 +1,7 @@
 // A `P: Deref` in generic code is given a dictionary of its `deref` (ADR
 // 0394): std's, the value itself of a reference, a `Box`, an `Rc` or text,
-// as each is its value; the crate's own, its impl's. A `&mut ()` is
-// nothing, as writing a `()` is.
+// as each is its value; the crate's own, its impl's. A `&mut ()` kept is
+// a box of it, `{}` (ADR 0394, amended).
 use std::ops::Deref;
 use std::rc::Rc;
 

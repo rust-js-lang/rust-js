@@ -836,8 +836,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let on = self.value_expr(Value::Ref(option.clone()), span)?;
                 Expr::call_helper("$someMut", vec![on])
             }
-            // Of a `()`, which has no place: nothing, as writing one is.
-            Value::Ref(place) if matches!(place.kind, js::ExprKind::Undefined) => place,
+            // Of a `()`, which has no place: a box of it, `{}`, which no
+            // write changes, as a call's argument is (#1061), so what keeps
+            // it, a field, reads it through its `value` as any `&mut ()` is
+            // read (#1247).
+            Value::Ref(place) if matches!(place.kind, js::ExprKind::Undefined) => crate::lower::mut_refs::boxed(place),
             Value::Ref(_) => return Err(self.unsupported(span, "a `&mut` of a number kept or given, from its MIR")),
         })
     }
