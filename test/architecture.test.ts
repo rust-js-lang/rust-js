@@ -521,7 +521,8 @@ test("each group of a function's state is read and written by its owner", () => 
 // there: any module reads them, none changes them (the review's P3).
 const mirState: Record<string, string[]> = {
   "src/lower/mir/bounds.rs": ["at", "body"],
-  "src/lower/mir/assign.rs": ["binding_var", "body", "branches", "builders", "commented", "copy_backs", "cuts", "in_place", "iter_locals", "locals", "named", "parts", "pending", "places", "refs", "writer"],
+  "src/lower/mir/assign.rs": ["binding_var", "body", "branches", "builders", "commented", "cuts", "in_place", "iter_locals", "locals", "named", "parts", "pending", "places", "refs", "writer"],
+  "src/lower/mir/assign/boxed_args.rs": ["copy_backs"],
   "src/lower/mir/calls.rs": ["at", "body", "flattened"],
   "src/lower/mir/closures.rs": ["at", "body", "in_place", "locals"],
   "src/lower/mir/dispatch.rs": ["at", "body", "defaults", "flattened", "iter_locals", "locals"],
@@ -638,7 +639,7 @@ const shapeTests: Record<string, [number, string]> = {
   "src/lower/mir/entries.rs read_once_tried": [3, "whether the JS reads the same again: a property's read may be a getter's"],
   "src/lower/mir/writer.rs text_place": [2, "JS's assignment: text written back, a formatter's or a string's, needs a target JS can assign"],
   "src/lower/mir/assign.rs mir_store": [4, "`place_reference` decides `*r = v`'s place (#466); and a fact's to ask: a temporary `&mut` kept as the JS place it was read from"],
-  "src/lower/mir/assign.rs boxed_args": [2, "JS's evaluation: a property place's object named once, so the place a call writes back is fixed (ADR 0099)"],
+  "src/lower/mir/assign/boxed_args.rs boxed_args": [2, "JS's evaluation: a property place's object named once, so the place a call writes back is fixed (ADR 0099)"],
   "src/lower/mir/temporaries.rs flush": [2, "JS's evaluation: a property place's object named before a later argument changes it (#280)"],
   "src/lower/mir/temporaries.rs reads_same_anywhere": [2, "whether the JS reads the same anywhere: a property's read may be a getter's"],
   "src/lower/mir/temporaries.rs reached_where_made": [1, "JS's evaluation: what a kept place is reached through, named where it's made (#968, #988)"],

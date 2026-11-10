@@ -15,4 +15,12 @@ export const mutations: Mutation[] = [
       "^(generic_mut_written_whole|mut_method_pointer_replaced|generic_mut_moved_out|evidence_paths)\\.rs$",
     ],
   },
+  {
+    name: "held-cell-of-the-cell",
+    breaks: "a cell of a `&mut` to an object, given as a generic `&mut W`, holds the object, not its in-place cell (#1300)",
+    file: "src/runtime/cell_of.js",
+    find: "      return $cellOf(cell.value);\n",
+    replace: "      return cell.value;\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_of_a_held_mut_given_to_generic_code.rs$"],
+  },
 ];

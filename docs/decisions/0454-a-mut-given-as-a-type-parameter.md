@@ -773,3 +773,32 @@ of an `F: FnMut()` isn't boxed) and `cell-of-write-rebinds`
 `mir-object-copied-back-rebound`, `outliving-object-handle`,
 `object-box-never-copied-back` and `entry-box-copied-back`, whose code is
 gone.
+
+## Amendment: a `&mut` to a held `&mut` to an object is given in generic code's form (#1300)
+
+A `W = &mut v` given by value is an in-place cell of the object,
+`$cellOf(v)`, which `$mutWriter` (and #1156's `$mutReader`) read through.
+But a `&mut` to a local holding that `&mut`, `let mut by = &mut v;
+put(&mut by)` of `put<W: Write>(w: &mut W)`, boxed the local as it held
+it, `{ value: by }`, the array: `$mutWriter`'s `w.value.value` read
+nothing and the program threw, "Cannot read properties of undefined
+(reading 'push')", where native Rust writes. One value, a `&mut` to an
+object, had two forms where generic code took it.
+
+- **The box holds generic code's form** wherever the callee's parameter is
+  a `&mut` of its type parameter and the caller's is a `&mut` to a `&mut`
+  to an object (`Form::Box` of the pointees, `form_differs`): `{ value:
+  $cellOf(by) }`, and what's copied back is the `&mut` that holds,
+  `form_back`'s `.value`, `by = w.value.value`, so generic code's `*w =
+  other` puts `other`'s object in `by`.
+- **One that's a box already**, a cell's place or a handle,
+  `by.as_mut().unwrap()`'s, is read through: `$heldCellOf(cell)`, whose
+  `value` is the in-place cell of what it holds, and whose write puts
+  what's written's object in it.
+
+`test/corpus/mut_of_a_held_mut_given_to_generic_code.rs`, a writer, a
+reader, a struct's field, an array's item and one generic code replaces
+whole, runs against native Rust in both builds and through its
+metamorphic rewrites, whose `Option` rewrite found the cell's case.
+What generic code gives back of such a `&mut`, `keep(&mut by)`'s, is
+#1303.

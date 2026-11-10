@@ -178,13 +178,19 @@ pub(in crate::lower) fn in_place_cell(object: Expr) -> Expr {
     Expr::call_helper("$cellOf", vec![object])
 }
 
+/// A box a call is given for a `&mut` to a place, copied back once the call
+/// returns (ADR 0074): the place, and what's copied back to it, the box's
+/// `value`, or what that holds in the caller's form, the `&mut` an in-place
+/// cell of generic code's holds (#1300).
+pub(super) type CopyBack = (Expr, Expr);
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What a box of a number, `boxed`, the call it was given to returned,
     /// writes back to its `place`, `place = box.value` (ADR 0074). An
     /// object's `&mut` given where generic code has its box is an in-place
     /// cell, never copied back (ADR 1115).
-    pub(super) fn copied_back(&mut self, place: Expr, boxed: &str, at: js::Span) -> Stmt {
-        StmtKind::Assign(place, Expr::held(Expr::var(boxed))).at(at)
+    pub(super) fn copied_back(&mut self, place: Expr, back: Expr, at: js::Span) -> Stmt {
+        StmtKind::Assign(place, back).at(at)
     }
 
     /// `p` of `&mut p`, a reborrow's `&mut *&mut v[0]` too: `v[0]`.
