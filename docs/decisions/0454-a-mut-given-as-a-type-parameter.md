@@ -1,6 +1,6 @@
 # 0454. A `&mut` given as a type parameter's value is a box
 
-Status: Accepted; amended by [0566](0566-fuse-is-stds.md), which lifts the
+Status: Accepted; amended by [1115](1115-what-generic-code-needs-of-its-type-parameters-has-one-catalogue.md), 2026-11-10: the box is `Form::Handle`, adapted where a generic function is a function pointer too, and by [0566](0566-fuse-is-stds.md), which lifts the
 refusal of a closure's parameter below: a function given for an `F:
 Fn(&mut T)` takes generic code's box apart; and (2026-11-03) what's moved
 out of an in-place cell is a copy apart (#527), and a `&mut` of an object

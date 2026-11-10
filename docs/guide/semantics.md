@@ -307,6 +307,16 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   `v`, `$assign(result._0, v)`, while a `Vec`'s item written whole is its
   place, `v[$at(v, i)] = p`
   ([0099](../decisions/0099-mut-references.md), amended).
+- **A function whose signature has a raw pointer in its result or another
+  parameter is given, for each `&mut` of a number, the pointer to its
+  place,** never a box of a copy: `ptr_from_mut(&mut n)` is
+  `ptrFromMut($ptr(n, "value", 0))`, so the pointer it lets out writes `n`
+  after the call, and `ptr::eq` of it and `&raw mut n` is `true`. In
+  generic code a raw pointer of a type parameter is a handle whose `value`
+  is the referent; where the caller's is the value itself, a slice's, it's
+  given as `$ptrTo(array)` and read back as `.value`, at a call and where a
+  generic function is a value ([1114](../decisions/1114-a-reference-a-pointer-may-leave-with-is-its-places-pointer.md),
+  [1115](../decisions/1115-what-generic-code-needs-of-its-type-parameters-has-one-catalogue.md)).
 - **`Rc::clone` shares the one object,** as Rust's does. Where the crate
   reads an `Rc`'s counts, `Rc::strong_count` is `rc.strong`, counted where
   it's made, cloned and dropped, and the last drop runs what it points at's

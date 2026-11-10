@@ -3,6 +3,58 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "reified-trait-method-refused",
+    breaks: "a trait's provided method as a `fn` pointer, `Tally::bump`, is refused as a generic function's instance, though its value is its impl's copy",
+    file: "src/lower/mut_refs.rs",
+    find: "        if self.tcx.trait_of_assoc(def_id).is_some() {\n            return false;\n        }\n        let sig",
+    replace: "        let sig",
+    tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer\\.rs$"],
+  },
+  {
+    name: "pointer-by-value-lets-out",
+    breaks: "a raw pointer given by value counts as one a call may store, and `ptr::hash(p, state)`'s hasher, a box this function was given, is refused",
+    file: "src/lower/mut_refs.rs",
+    find: "            && (raw(output) || (inputs.iter().enumerate()).any(|(j, &ty)| j != i && stores(ty)))",
+    replace: "            && (raw(output) || (inputs.iter().enumerate()).any(|(j, &ty)| j != i && raw(ty)))",
+    tests: ["test/corpus.test.ts", "-t", "^reference_given_as_its_pointer\\.rs$"],
+  },
+  {
+    name: "given-its-pointer-never",
+    breaks:
+      "a function that may let a reference out as a raw pointer is given a box of a copy, `ptr_from_mut(&mut n)`'s, and a write through the pointer after the call is lost",
+    file: "src/lower/mut_refs.rs",
+    find: "        self.lets_pointers_out(fn_id, i) && self.param_is_box(fn_id, i)",
+    replace: "        false && self.lets_pointers_out(fn_id, i) && self.param_is_box(fn_id, i)",
+    tests: ["test/corpus.test.ts", "-t", "^reference_given_as_its_pointer\\.rs$"],
+  },
+  {
+    name: "lets-pointers-out-of-the-result-alone",
+    breaks:
+      "a pointer let out through another parameter, `store_in(&mut t, &mut out)`'s, is of a box of a copy",
+    file: "src/lower/mut_refs.rs",
+    find: "            && (raw(output) || (inputs.iter().enumerate()).any(|(j, &ty)| j != i && stores(ty)))",
+    replace: "            && raw(output)",
+    tests: ["test/corpus.test.ts", "-t", "^reference_given_as_its_pointer\\.rs$"],
+  },
+  {
+    name: "closure-param-not-given-its-pointer",
+    breaks:
+      "a closure that lets its `&mut u32` out, `|r: &mut u32| -> *mut u32 { r }`, refuses the pointer its callers give",
+    file: "src/lower/mut_refs.rs",
+    find: "                true => self.sig_given_its_pointer((&inputs, output), index - first),",
+    replace: "                true => false,",
+    tests: ["test/corpus.test.ts", "-t", "^reference_given_as_its_pointer\\.rs$"],
+  },
+  {
+    name: "raw-pointer-result-not-given-back",
+    breaks:
+      "a slice's pointer generic code gives back is its handle, not the array, and `same(p)[0] = 40` writes the handle",
+    file: "src/lower/mut_refs.rs",
+    find: "            Some(_) => self.form_back(\n                crate::lower::generic_facts::Form::Handle,\n                (declared, instantiated),\n                value,\n            ),",
+    replace: "            Some(_) => value,",
+    tests: ["test/corpus.test.ts", "-t", "^reference_given_as_its_pointer\\.rs$"],
+  },
+  {
     name: "given-function-box-unboxed",
     breaks:
       "a function given for an `F: FnMut(&mut T)` that takes generic code's box itself, `bumped::<Counter>`, is given the object out of it: `undefined` (#975)",

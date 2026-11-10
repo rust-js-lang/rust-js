@@ -23,6 +23,7 @@ use crate::js::{self, Expr, Op, Stmt, StmtKind};
 
 mod catalog;
 mod into_copies;
+mod lending;
 pub(in crate::lower) use catalog::address_facts;
 pub(super) use catalog::pointer_op;
 
@@ -226,6 +227,10 @@ pub(super) struct Pointed {
     /// refers to reads the same, as Rust's aliasing rules let nothing
     /// change it till the pointer's last read.
     pub(super) read_only: IndexSet<Local>,
+    /// Each reference made once and given to a call that's given the
+    /// pointer to its place for it (`given_its_pointer`), made as that
+    /// pointer, `&raw mut` of its place (ADR 1114).
+    pub(super) lent_as_pointers: IndexSet<Local>,
 }
 
 /// `lent_copies`, each reference a call gives that's a copy in JS, `s.as_bytes()`'s.
@@ -345,6 +350,7 @@ fn pointed_locals(body: &mir::Body<'_>, lent_copies: IndexSet<Local>) -> Pointed
         copies,
         lent_copies,
         read_only: IndexSet::default(),
+        lent_as_pointers: IndexSet::default(),
     }
 }
 
@@ -358,6 +364,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             !self.is_object(ty) || self.mut_ref_form(ty).is_cell()
         });
         pointed.read_only = self.read_only_refs(body);
+        self.lent_as_pointers(body, &mut pointed);
         pointed
     }
 

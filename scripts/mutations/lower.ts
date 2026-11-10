@@ -3,6 +3,24 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "fn-value-forms-unadapted",
+    breaks:
+      "a generic function as a function pointer of a slice's instance gives generic code the array where its `&mut T` is a handle, and `r.value` is read of the array",
+    file: "src/lower.rs",
+    find: "                    .map(|(name, &given)| cx.form_given(form, given, Expr::var(name)))",
+    replace: "                    .map(|(name, _)| Expr::var(name))",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fn_value_adapts_pointer_forms\\.rs$"],
+  },
+  {
+    name: "fn-value-of-no-dictionary-unwrapped",
+    breaks:
+      "a generic function with no dictionaries, as a function pointer of a slice's instance, is the function itself, given the array where it takes a handle",
+    file: "src/lower.rs",
+    find: "            let adapts = (inputs.iter().chain([&output])).any(|&(of, at)| self.form_differs(form, of, at));",
+    replace: "            let adapts = false && (inputs.iter().chain([&output])).any(|&(of, at)| self.form_differs(form, of, at));",
+    tests: ["test/webapi-objects.test.ts", "-t", "is adapted"],
+  },
+  {
     name: "instance-value-made-at-each-use",
     breaks:
       "a generic function's instance taken as a value is a new arrow at each use, so `f == table[0]` of `double::<i32>` taken twice is false (#974)",
@@ -271,8 +289,8 @@ export const mutations: Mutation[] = [
     name: "pointer-shim-given-location",
     breaks: "a tracked function as a value taken inside another that tracks its caller is given that one's location, not its own definition's",
     file: "src/lower.rs",
-    find: "            let location = self.location_at(self.tcx.def_span(def_id));\n            if self\n",
-    replace: "            let location = self.caller_location(self.tcx.def_span(def_id));\n            if self\n",
+    find: "            let location = self.location_at(self.tcx.def_span(def_id));\n            // Each parameter",
+    replace: "            let location = self.caller_location(self.tcx.def_span(def_id));\n            // Each parameter",
     tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
   },
   {

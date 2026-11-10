@@ -1047,3 +1047,25 @@ pub fn kind(of: &Node) -> &'static str {
     (globalThis as Record<string, unknown>).Node = saved;
   }
 });
+
+// A generic function of no dictionary, as a `fn` pointer of a JS object's
+// instance: its pointer is the object, generic code's a handle on it, so
+// the value adapts it, `$ptrTo(arg0)` and `.value` (ADR 1114).
+test("a generic function's pointer of a JS object, as a fn, is adapted", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-generic-fn-pointer");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::Blob;
+fn read<T: ?Sized>(p: *const T) -> &'static T {
+    unsafe { &*p }
+}
+pub fn roundtrip(blob: &'static Blob) -> &'static Blob {
+    let f: fn(*const Blob) -> &'static Blob = read::<Blob>;
+    f(blob)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("(arg0) => read($ptrTo(arg0))");
+  const lib = await import(join(dir, "lib.js"));
+  const blob = new Blob(["b"]);
+  expect(lib.roundtrip(blob)).toBe(blob);
+});

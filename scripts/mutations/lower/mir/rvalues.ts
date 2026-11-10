@@ -3,6 +3,23 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "reified-instance-taking-a-box-allowed",
+    breaks: "a generic function's instance whose `&mut T` is an object's, as a `fn` pointer, compiles, and its caller's object is read as generic code's box, a `TypeError`",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                            && self.reified_takes_a_box(def_id, args)",
+    replace: "                            && self.reified_takes_a_box(def_id, args)\n                            && false",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fn_pointer_of_an_objects_mut_refused\\.rs$"],
+  },
+  {
+    name: "parameter-given-its-pointer-boxed",
+    breaks:
+      "`&raw mut *r` of a parameter its callers give the pointer to its place for is refused as a box of a copy",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    if base.projection.is_empty() && self.given_its_pointer_here(state.body, base.local) {",
+    replace: "                    if false && self.given_its_pointer_here(state.body, base.local) {",
+    tests: ["test/corpus.test.ts", "-t", "^reference_given_as_its_pointer\\.rs$"],
+  },
+  {
     name: "stored-at-reference-unrecorded",
     breaks: "a reference made to an object's place, `&(other.0).0`, doesn't record where it's stored, so a field's address through it is its own allocation's, `4294963208` where native Rust's is `8` (#1113)",
     file: "src/lower/mir/rvalues.rs",

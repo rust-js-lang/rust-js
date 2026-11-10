@@ -448,6 +448,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
+    /// Whether a generic function's instance `def_id` given `args`, as a
+    /// `fn` pointer, would be given the object where its value takes
+    /// generic code's box: a `&mut` of its own type parameter, which its
+    /// instance makes an object's or a slice's, not a cell's (#1187). Not
+    /// a trait's method, whose value is its impl's or its copied default's,
+    /// of the instance's own types.
+    pub(in crate::lower) fn reified_takes_a_box(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+        if self.tcx.trait_of_assoc(def_id).is_some() {
+            return false;
+        }
+        let sig = self
+            .tcx
+            .fn_sig(def_id)
+            .instantiate_identity()
+            .skip_normalization()
+            .skip_binder();
+        let param_env = self.tcx.param_env(def_id);
+        sig.inputs().iter().any(|&input| {
+            matches!(*input.kind(), ty::Ref(_, pointee, Mutability::Mut)
+                if self.mut_ref_form_in(pointee, param_env).is_generic_box()
+                    && !self.mut_ref_form(self.instantiated(pointee, args)).is_cell())
+        })
+    }
+
     /// The methods of `trait_id`, a trait of the crate's, that generic code
     /// calls through its dictionary: each of no type or const parameters of
     /// its own, whose entry takes their evidence as well, and not a binding.
@@ -702,6 +726,100 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// parameter given the borrow, `into_iter(self)`'s `Self` of `&mut C`,
     /// another parameter or the result that names that type parameter,
     /// `Self::IntoIter`, which may hold it (#973).
+    /// Whether a function of parameters `inputs` and result `output` may let
+    /// the reference its parameter `i` is given leave as a raw pointer,
+    /// which has no lifetime to say so: a raw pointer in its result, or in
+    /// another parameter behind a reference or a pointer, where the callee
+    /// may store one, `out: &mut *mut T`; not a raw pointer given by value,
+    /// `ptr::hash(p, state)`'s `p`, which takes nothing out (ADR 1114). Of
+    /// its signature alone, so each call of it, direct, a dictionary's, a
+    /// function pointer's, a closure's or a library's, agrees.
+    fn lets_pointers_out_of((inputs, output): (&[Ty<'tcx>], Ty<'tcx>), i: usize) -> bool {
+        let raw = |ty: Ty<'tcx>| ty.walk().any(|part| part.as_type().is_some_and(|t| t.is_raw_ptr()));
+        let stores = |ty: Ty<'tcx>| {
+            ty.walk().any(|part| {
+                part.as_type()
+                    .and_then(|t| (t.is_ref() || t.is_raw_ptr()).then(|| t.builtin_deref(true)).flatten())
+                    .is_some_and(raw)
+            })
+        };
+        inputs.get(i).is_some_and(|input| input.is_ref())
+            && (raw(output) || (inputs.iter().enumerate()).any(|(j, &ty)| j != i && stores(ty)))
+    }
+
+    /// `lets_pointers_out_of` of the function `fn_id`.
+    pub(in crate::lower) fn lets_pointers_out(&self, fn_id: DefId, i: usize) -> bool {
+        let (inputs, output) = self.signature_of(fn_id);
+        Self::lets_pointers_out_of((&inputs, output), i)
+    }
+
+    /// Whether a call of `fn_id` is given, for its parameter `i`, the
+    /// pointer to the place a reference refers to, not a box of a copy:
+    /// where it may let it out as a raw pointer (`lets_pointers_out`) and
+    /// the parameter is a box, a number's or generic code's (ADR 1114). A
+    /// parameter that's the object is given the object, whose pointer,
+    /// `$ptrTo(object)`, is one for the object.
+    pub(in crate::lower) fn given_its_pointer(&self, fn_id: DefId, i: usize) -> bool {
+        self.lets_pointers_out(fn_id, i) && self.param_is_box(fn_id, i)
+    }
+
+    /// `given_its_pointer` of a function value of signature `sig`, a
+    /// function pointer's or a closure's, whose parameters are its types'.
+    pub(in crate::lower) fn sig_given_its_pointer(&self, (inputs, output): (&[Ty<'tcx>], Ty<'tcx>), i: usize) -> bool {
+        Self::lets_pointers_out_of((inputs, output), i)
+            && matches!(*inputs[i].kind(), ty::Ref(_, pointee, Mutability::Mut) if self.mut_ref_form(pointee).is_cell())
+    }
+
+    /// The parameters and result of `fn_id`, a closure's its own, untupled.
+    pub(in crate::lower) fn signature_of(&self, fn_id: DefId) -> (Vec<Ty<'tcx>>, Ty<'tcx>) {
+        if self.tcx.is_closure_like(fn_id)
+            && let ty::Closure(_, args) = *self
+                .tcx
+                .type_of(fn_id)
+                .instantiate_identity()
+                .skip_normalization()
+                .kind()
+        {
+            let sig = args.as_closure().sig().skip_binder();
+            let params = match sig.inputs().first().map(|t| *t.kind()) {
+                Some(ty::Tuple(params)) => params.to_vec(),
+                _ => sig.inputs().to_vec(),
+            };
+            return (params, sig.output());
+        }
+        // A coroutine's, an `async` block's, which takes nothing it can let out.
+        if self.tcx.is_closure_like(fn_id) {
+            return (Vec::new(), self.tcx.types.unit);
+        }
+        let sig = self
+            .tcx
+            .fn_sig(fn_id)
+            .instantiate_identity()
+            .skip_normalization()
+            .skip_binder();
+        (sig.inputs().to_vec(), sig.output())
+    }
+
+    /// Whether `local` is a parameter of the function or closure `body`
+    /// is, given the pointer to its place (`given_its_pointer`); a closure's
+    /// parameters numbered after what it captures.
+    pub(in crate::lower) fn given_its_pointer_here(
+        &self,
+        body: &rustc_middle::mir::Body<'tcx>,
+        local: rustc_middle::mir::Local,
+    ) -> bool {
+        let fn_id = body.source.def_id();
+        let closure = self.tcx.is_closure_like(fn_id);
+        let first = if closure { 2 } else { 1 };
+        let index = local.as_usize();
+        let (inputs, output) = self.signature_of(fn_id);
+        (first..first + inputs.len()).contains(&index)
+            && match closure {
+                true => self.sig_given_its_pointer((&inputs, output), index - first),
+                false => self.given_its_pointer(fn_id, index - first),
+            }
+    }
+
     pub(super) fn borrow_outlives_call(&self, fn_id: DefId, i: usize) -> bool {
         let sig = self
             .tcx
@@ -800,6 +918,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.generic_fmt_result(declared, generic_args) {
             return Ok(Expr::call_helper("$writeOf", vec![value]));
         }
+        // A raw pointer of a type parameter, a handle in generic code: the
+        // caller's, a slice's the array (ADR 1114). A `&mut`'s is
+        // `boxed_in_call`'s, below.
+        let instantiated = self.instantiated(declared, generic_args);
+        let value = match super::pointers::raw_pointee(self.tcx, declared) {
+            Some(_) => self.form_back(
+                crate::lower::generic_facts::Form::Handle,
+                (declared, instantiated),
+                value,
+            ),
+            None => value,
+        };
         Ok(match self.boxed_in_call(def_id, declared, generic_args) {
             Some(_) => Expr::held(value),
             None => value,

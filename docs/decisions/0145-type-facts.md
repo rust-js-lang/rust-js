@@ -1,7 +1,7 @@
 # 0145. A generic function is given the size and name of a type parameter it asks for
 
 Status: Accepted. Extends [0049](0049-traits-and-generics.md), [0090](0090-wasm32-front-end.md)
-and [0098](0098-destructors.md). Amended:
+and [0098](0098-destructors.md). Extended by [1115](1115-what-generic-code-needs-of-its-type-parameters-has-one-catalogue.md): its facts are the generic facts' catalogue's given ones. Amended:
 `mem::needs_drop` is a fact too (below); and a trait impl's method asks
 its impl what it asks of the impl's type parameters: the impl's
 dictionary is made of them, `wrapFootprint(TSize)`, one for each set,

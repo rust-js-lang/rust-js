@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "lent-reference-made-as-a-reference",
+    breaks:
+      "a reference given to a call that's given its place's pointer is made as a reference, a box of a copy",
+    file: "src/lower/mir/assign.rs",
+    find: "                if place.projection.is_empty() && state.facts.pointed().lent_as_pointers.contains(&place.local) =>",
+    replace: "                if false && state.facts.pointed().lent_as_pointers.contains(&place.local) =>",
+    tests: ["test/corpus.test.ts", "-t", "^reference_given_as_its_pointer\\.rs$"],
+  },
+  {
     name: "nested-field-set-boxed",
     breaks: "a nested field set, `changed.sdp_mid = Some(None)`, holds the box (#470)",
     file: "src/lower/mir/assign.rs",

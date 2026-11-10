@@ -1,6 +1,6 @@
 # 0099. A `&mut` held in a variable names its place; one kept elsewhere is a handle
 
-Status: Accepted in part (amended 2026-11-02: a `&mut` read from where one's kept is the object's, not its slot, #466; and a box a function was given is given on as it is, reborrowed or not, #472): a `&mut` in a variable, the index loop, a
+Status: Accepted in part (amended by [1114](1114-a-reference-a-pointer-may-leave-with-is-its-places-pointer.md), 2026-11-10: a `&mut` of a number given to a function that may let it out as a raw pointer is its place's pointer, not a box of a copy; amended 2026-11-02: a `&mut` read from where one's kept is the object's, not its slot, #466; and a box a function was given is given on as it is, reborrowed or not, #472): a `&mut` in a variable, the index loop, a
 generic `&mut T`, a `&mut` to a closure, a `&mut dyn Trait` of the
 crate's, and handles of a `&mut` to a value JS can't change in place, and
 to a temporary. A generic `&mut T` to

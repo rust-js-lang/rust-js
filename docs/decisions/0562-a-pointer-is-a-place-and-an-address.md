@@ -1,6 +1,6 @@
 # 0562. A pointer is a place and an address; bytes are plain data's
 
-Status: Accepted, delivered in stages: each stage below names the tests
+Status: Accepted, amended by [1114](1114-a-reference-a-pointer-may-leave-with-is-its-places-pointer.md) (2026-11-10: a raw pointer of a type parameter is a handle in generic code, adapted at the boundary), delivered in stages: each stage below names the tests
 that hold it, and a stage not yet landed is listed under Consequences as
 still refused. Amends [0390](0390-addressable-memory-is-refused-as-such.md),
 [0407](0407-a-raw-pointer-is-a-handle-on-its-place.md),

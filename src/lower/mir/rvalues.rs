@@ -602,6 +602,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         {
                             return Ok(Value::Expr(function));
                         }
+                        // A generic function's instance that takes generic
+                        // code's box where its `fn`'s callers give an object,
+                        // an object's or a slice's `&mut T` (#1187).
+                        if matches!(coercion, PointerCoercion::ReifyFnPointer(_))
+                            && let Some((def_id, args)) = crate::lower::fn_def(operand.ty(decls, tcx))
+                            && self.is_rust_fn(def_id)
+                            && self.reified_takes_a_box(def_id, args)
+                        {
+                            return Err(self.unsupported(
+                                span,
+                                "a generic function as a `fn` pointer whose `&mut T` is an object's or a slice's, which its value takes in generic code's box: call it, or give it to generic code as it is (#1187)",
+                            ));
+                        }
                         let value = self.mir_operand(state, operand, out)?;
                         // A closure that only calls a function of the crate's
                         // with what it's given, or none of it, is that
@@ -778,12 +791,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         projection: tcx.mk_place_elems(base.projection),
                     };
                     let reference = self.mir_place(state, base, span, out)?;
+                    // A parameter its callers give the pointer to its place
+                    // for, a function's that may let it out: that pointer,
+                    // the polyfill's `r` (ADR 1114).
+                    if base.projection.is_empty() && self.given_its_pointer_here(state.body, base.local) {
+                        return Ok(Value::Expr(reference));
+                    }
                     if js::same_path(&target, &Expr::held(reference)) {
                         return Err(refuse(
                             tcx,
                             span,
                             Refused::Memory(
-                                "a raw pointer to what a `&mut` refers to, which JS holds in a box of a copy: `ptr::from_mut`'s polyfill, `fn(r: &mut T) -> *mut T { r }`, is #1140",
+                                "a raw pointer to what a `&mut` refers to, which JS holds in a box of a copy: a function whose signature has a raw pointer in its result or another parameter is given its place's pointer (ADR 1114)",
                             ),
                         ));
                     }

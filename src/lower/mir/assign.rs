@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::lower::aggregates::Given;
+use crate::lower::generic_facts::Form;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn mir_assign(
@@ -245,6 +246,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             state.binding_var = false;
             return Ok(());
         }
+        // A reference given to a call that's given the pointer to its place
+        // for it: made as that pointer, `&raw mut` of the place (ADR 1114).
+        let as_pointer;
+        let rvalue = match rvalue {
+            Rvalue::Ref(_, _, of)
+                if place.projection.is_empty() && state.facts.pointed().lent_as_pointers.contains(&place.local) =>
+            {
+                as_pointer = Rvalue::RawPtr(mir::RawPtrKind::Mut, *of);
+                &as_pointer
+            }
+            _ => rvalue,
+        };
         let value = self.mir_rvalue(state, rvalue, span, out);
         state.binding_var = false;
         let value = match rvalue {
@@ -1056,14 +1069,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.held_cell(place)
     }
 
-    pub(super) fn boxed_args(
-        &mut self,
-        state: &mut State<'_, 'tcx>,
-        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
-        (values, arg_tys): (Vec<Value<'tcx>>, &[Ty<'tcx>]),
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Vec<Expr>> {
+    /// What a call of `def_id` given `generic_args` calls, whose parameters
+    /// say what it's given: a trait's method resolved to its impl's, or the
+    /// crate's trait's own, a dictionary's; `None` of a `dyn`'s, whose pair
+    /// is its `&mut`, and of std's (`boxed_args`). Each question of what a
+    /// call is given asks it, `lent_as_pointers` too (ADR 1114).
+    pub(in crate::lower) fn call_callee(
+        &self,
+        def_id: rustc_span::def_id::DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+    ) -> R<Option<(rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>)>> {
         // What's called: a trait's method resolved to its impl's, whose
         // parameters say which are boxes, or the crate's trait's own, a
         // dictionary's, and `Hash`'s of a type only a caller knows, whose
@@ -1072,7 +1087,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `IntoIterator` too (ADR 0478); not a `dyn`'s, whose pair is its
         // `&mut`, nor std's, but a provided method std's body is compiled
         // of, `scan`'s, whose function it gives its state's box (ADR 0933).
-        let callee = match self.tcx.trait_of_assoc(def_id) {
+        Ok(match self.tcx.trait_of_assoc(def_id) {
             None => Some((def_id, generic_args)),
             Some(_) if crate::lower::recognition::is_compiled_std(self.tcx, def_id) => Some((def_id, generic_args)),
             Some(trait_id) => match self.impl_method(def_id, generic_args)? {
@@ -1087,7 +1102,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 None => None,
             },
-        };
+        })
+    }
+
+    pub(super) fn boxed_args(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        (values, arg_tys): (Vec<Value<'tcx>>, &[Ty<'tcx>]),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Vec<Expr>> {
+        let callee = self.call_callee(def_id, generic_args)?;
         let fn_id = callee.map(|(id, _)| id);
         // Generic code's box of what its caller has as an object, a `D` given
         // `&mut v` too (ADR 0454).
@@ -1103,6 +1129,59 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut exprs: Vec<Expr> = Vec::new();
         for (i, value) in values.into_iter().enumerate() {
+            // A reference given as the pointer to its place, made so where
+            // it's made (`Pointed::lent_as_pointers`), and in generic
+            // code's form, a slice's `$ptrTo(array)` (ADR 1114).
+            if let Some((id, args)) = callee
+                && self.given_its_pointer(id, i)
+            {
+                let pointer = self.value_expr(value, span)?;
+                let declared = (self
+                    .tcx
+                    .fn_sig(id)
+                    .instantiate_identity()
+                    .skip_normalization()
+                    .skip_binder())
+                .inputs()[i];
+                // Made as the caller's raw pointer to the place, so given as
+                // one is: an object's a handle already, a slice's the array.
+                let raw = |ty: Ty<'tcx>| Ty::new_mut_ptr(self.tcx, ty.builtin_deref(true).expect("a reference"));
+                let instantiated = self.instantiated(declared, args);
+                exprs.push(self.form_given(Form::Handle, (raw(declared), raw(instantiated)), pointer));
+                continue;
+            }
+            // Not a C-variadic function's arguments past its parameters.
+            if let Some((id, args)) = callee
+                && let Some(&declared) = (self
+                    .tcx
+                    .fn_sig(id)
+                    .instantiate_identity()
+                    .skip_normalization()
+                    .skip_binder())
+                .inputs()
+                .get(i)
+            {
+                // A raw pointer given where generic code's goes: in its form,
+                // a slice's `$ptrTo(array)` (ADR 1114).
+                if crate::lower::pointers::raw_pointee(self.tcx, declared).is_some() {
+                    let pointer = self.value_expr(value, span)?;
+                    let instantiated = self.instantiated(declared, args);
+                    exprs.push(self.form_given(Form::Handle, (declared, instantiated), pointer));
+                    continue;
+                }
+                // A shared reference to what JS holds as itself, a number,
+                // given to generic code that may let it out as a raw pointer:
+                // its pointer would be of a copy (ADR 1114). Not generic
+                // code's own `&T`, of a type only its callers know.
+                if self.lets_pointers_out(id, i)
+                    && let Some(referent) = self.copied_referent(declared, self.instantiated(declared, args))
+                {
+                    return Err(self.unsupported(
+                        span,
+                        &format!("a `&{referent}` given to generic code that may let it out as a raw pointer, which would be of a copy (ADR 1114)"),
+                    ));
+                }
+            }
             // A `&mut` to what's a cell, held as a value, the box it is, given
             // on as it is: one this function was given, `items(copy _1)` of a
             // library's MIR, optimized, where the MIR built of the crate's own

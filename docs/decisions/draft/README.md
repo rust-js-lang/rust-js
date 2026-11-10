@@ -26,9 +26,6 @@ Estimated difficulty, hardest first; this is not implementation order:
    compiled, `Peekable`'s first.
 3. [A library rust-js can't compile whole is compiled item by item](per-item-library-refusal.md):
    amends ADR 0415; what keeps aho-corasick, so regex, from compiling.
-4. [A raw pointer of a type parameter is a handle on its place](generic-raw-pointers.md):
-   amends ADRs 0454 and 0562; `ptr::from_mut`'s polyfill, what keeps
-   getrandom 0.3 types alone (#1140).
 
 
 Suggested order: iterators, then shipped crates one at a time (memchr's is accepted in

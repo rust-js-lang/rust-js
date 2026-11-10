@@ -48,6 +48,7 @@ mod drops;
 mod field_keys;
 mod format_args;
 mod format_spec;
+mod generic_facts;
 mod instances;
 mod items;
 mod iterators;
@@ -981,17 +982,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // One given its caller's location is called where it's defined,
             // as rustc's shim of it calls it (ADR 0427).
             let location = self.location_at(self.tcx.def_span(def_id));
-            if self
-                .evidence_args_with(def_id, args, location.clone(), span)?
-                .is_empty()
+            // Each parameter and its result, generic code's and this
+            // instance's: where a form differs, a slice's pointer, adapted at
+            // the value's call as at a call (ADRs 1114, 1115).
+            let declared = self
+                .tcx
+                .fn_sig(def_id)
+                .instantiate_identity()
+                .skip_normalization()
+                .skip_binder();
+            let form = generic_facts::Form::Handle;
+            let inputs: Vec<(Ty<'tcx>, Ty<'tcx>)> = (declared.inputs().iter())
+                .map(|&input| (input, self.instantiated(input, args)))
+                .collect();
+            let output = (declared.output(), self.instantiated(declared.output(), args));
+            let adapts = (inputs.iter().chain([&output])).any(|&(of, at)| self.form_differs(form, of, at));
+            if !adapts
+                && self
+                    .evidence_args_with(def_id, args, location.clone(), span)?
+                    .is_empty()
             {
                 return Ok(Some(callee));
             }
-            let count = (self.tcx.fn_sig(def_id).instantiate(self.tcx, args))
-                .skip_normalization()
-                .skip_binder()
-                .inputs()
-                .len();
+            let count = inputs.len();
             let name = match &callee.kind {
                 js::ExprKind::Var(name) => name.clone(),
                 _ => camel_case(self.tcx.item_name(def_id).as_str()),
@@ -999,10 +1012,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let made = move |cx: &mut Self| {
                 let evidence = cx.evidence_args_with(def_id, args, location, span)?;
                 let params: Vec<String> = (0..count).map(|i| format!("arg{i}")).collect();
-                let values = params.iter().map(|name| Expr::var(name)).chain(evidence).collect();
+                let values = (params.iter().zip(&inputs))
+                    .map(|(name, &given)| cx.form_given(form, given, Expr::var(name)))
+                    .chain(evidence)
+                    .collect();
+                let called = cx.form_back(form, output, Expr::call(callee, values));
                 Ok(Expr::arrow(
                     params.into_iter().map(Into::into).collect(),
-                    vec![StmtKind::Return(Some(Expr::call(callee, values))).at(js_span)],
+                    vec![StmtKind::Return(Some(called)).at(js_span)],
                 ))
             };
             // Of an instance its module knows whole, its module's `const`,
