@@ -2,7 +2,7 @@
 
 import {
   $SipHasher,
-  $assign,
+  $cellOf,
   $debugStr,
   $hashSlice,
   $hasher,
@@ -70,17 +70,13 @@ function entryHash_hash(entry, state, HHasher) {
 
 function written(value, THash) {
   const tally = [[]];
-  const state = { value: tally };
-  THash.hash(value, state, tallyHasher);
-  $assign(tally, state.value);
+  THash.hash(value, $cellOf(tally), tallyHasher);
   return tally[0];
 }
 
 function fnv(value, THash) {
   const hasher = fnvDefault_default();
-  const state = { value: hasher };
-  THash.hash(value, state, fnvHasher);
-  $assign(hasher, state.value);
+  THash.hash(value, $cellOf(hasher), fnvHasher);
   return fnvHasher_finish(hasher);
 }
 
@@ -207,9 +203,7 @@ function main() {
   );
 
   const tally = [[]];
-  const hasher$1 = { value: tally };
-  writeTwice(hasher$1, 1, tallyHasher);
-  $assign(tally, hasher$1.value);
+  writeTwice($cellOf(tally), 1, tallyHasher);
   tallyHasher.writeI64({ value: tally }, -1n);
   tallyHasher.writeUsize({ value: tally }, 5);
   console.log(
@@ -217,9 +211,7 @@ function main() {
   );
 
   const hasher = new $SipHasher(1, 3);
-  const hasher$2 = { value: hasher };
-  writeTwice(hasher$2, 7, $sipHasher);
-  $assign(hasher, hasher$2.value);
+  writeTwice($cellOf(hasher), 7, $sipHasher);
   throughDyn({ value: hasher, impl: $sipHasher }, 9);
   console.log(`${hasher.finish()}`);
   const fnv$1 = fnvDefault_default();
@@ -228,9 +220,7 @@ function main() {
 
   const keyed = new $SipHasher(2, 4, 3n, 4n);
   const plain = new $SipHasher(2, 4);
-  const state = { value: keyed };
-  entryHash_hash({ key: "k", rank: 1 }, state, $sipHasher);
-  $assign(keyed, state.value);
+  entryHash_hash({ key: "k", rank: 1 }, $cellOf(keyed), $sipHasher);
   plain.write([97, 98, 99, 100, 101, 102, 103, 104, 105, 106]);
   console.log(`${keyed.finish()} ${plain.finish()}`);
 }

@@ -326,61 +326,37 @@ function main() {
   const clone = { clone: (value) => ({ ...value }) };
   const a = { n: 1 };
   const b = { n: 2 };
-  const p = { value: a };
-  const q = { value: b };
-  const value = go(p, q, clicksPick, clone, clicksDebug);
-  $assign(a, p.value);
-  $assign(b, q.value);
-  console.log(`${value}`);
+  console.log(`${go($cellOf(a), $cellOf(b), clicksPick, clone, clicksDebug)}`);
   console.log(`${clicksDebug_fmt(a)} ${clicksDebug_fmt(b)}`);
   let x = 5;
   let y = 7;
-  const p$1 = { value: x };
-  const q$1 = { value: y };
-  const value$1 = go(p$1, q$1, u32Pick, { clone: (value) => value }, u32Debug);
-  x = p$1.value;
-  y = q$1.value;
-  console.log(`${value$1}`);
+  const p = { value: x };
+  const q = { value: y };
+  const value = go(p, q, u32Pick, { clone: (value) => value }, u32Debug);
+  x = p.value;
+  y = q.value;
+  console.log(`${value}`);
   console.log(`${x} ${y}`);
   let h = { t: { n: 3 } };
   let k = { t: { n: 4 } };
-  const p$2 = { value: h };
-  const q$2 = { value: k };
-  const value$2 = go(
-    p$2,
-    q$2,
-    holderPick(clicksPick),
-    { clone: (value) => ({ ...value, t: { ...value.t } }) },
-    holderDebug(clicksDebug),
+  console.log(
+    `${go(
+      $cellOf(h),
+      $cellOf(k),
+      holderPick(clicksPick),
+      { clone: (value) => ({ ...value, t: { ...value.t } }) },
+      holderDebug(clicksDebug),
+    )}`,
   );
-  $assign(h, p$2.value);
-  $assign(k, q$2.value);
-  console.log(`${value$2}`);
   console.log(`${holderDebug_fmt(h, clicksDebug)} ${holderDebug_fmt(k, clicksDebug)}`);
   h = { t: 3 };
   k = { t: 4 };
-  const p$3 = { value: h };
-  const q$3 = { value: k };
-  const value$3 = go(p$3, q$3, holderPick(u32Pick), clone, holderDebug(u32Debug));
-  $assign(h, p$3.value);
-  $assign(k, q$3.value);
-  console.log(`${value$3}`);
+  console.log(`${go($cellOf(h), $cellOf(k), holderPick(u32Pick), clone, holderDebug(u32Debug))}`);
   console.log(`${holderDebug_fmt(h, u32Debug)} ${holderDebug_fmt(k, u32Debug)}`);
   const c = { n: 1 };
   const d = { n: 0 };
-  const p$4 = { value: c };
-  const q$4 = { value: d };
-  const value$4 = picked(p$4, q$4, clicksPick);
-  $assign(c, p$4.value);
-  $assign(d, q$4.value);
-  const q$5 = { value: d };
-  const value$5 = bothOf(c, q$5, clicksPick);
-  $assign(d, q$5.value);
-  const p$5 = { value: c };
-  const q$6 = { value: d };
-  const value$6 = firstOf(p$5, q$6, false, clicksPick);
-  $assign(c, p$5.value);
-  $assign(d, q$6.value);
-  console.log(`${value$4} ${value$5} ${value$6} ${clicksDebug_fmt(c)} ${clicksDebug_fmt(d)}`);
+  console.log(
+    `${picked($cellOf(c), $cellOf(d), clicksPick)} ${bothOf(c, $cellOf(d), clicksPick)} ${firstOf($cellOf(c), $cellOf(d), false, clicksPick)} ${clicksDebug_fmt(c)} ${clicksDebug_fmt(d)}`,
+  );
 }
 //# sourceMappingURL=case.js.map

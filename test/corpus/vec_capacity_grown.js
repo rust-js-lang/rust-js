@@ -2,8 +2,8 @@
 
 import {
   $append,
-  $assign,
   $capacity,
+  $cellOf,
   $collectOptions,
   $collectResults,
   $debugParseError,
@@ -201,22 +201,16 @@ function main() {
   $print(`${grown(g, 3, 3, 2)} `);
   console.log(`${grown(g, 3, 9, 2)}`);
   const b = $withCapacity(3);
-  const c = { value: b };
   fill(
-    c,
+    $cellOf(b),
     $lazyRange(0, 5).filter(() => true),
     vecExtend,
   );
-  $assign(b, c.value);
   $print(`${$capacity(b, 4)} `);
-  const c$1 = { value: b };
-  fill(c$1, [1, 2, 3, 4], vecExtend);
-  $assign(b, c$1.value);
+  fill($cellOf(b), [1, 2, 3, 4], vecExtend);
   $print(`${$capacity(b, 4)} `);
   const z = [];
-  const c$2 = { value: z };
-  fill(c$2, new Array(9).fill(1), vecExtend);
-  $assign(z, c$2.value);
+  fill($cellOf(z), new Array(9).fill(1), vecExtend);
   console.log(`${$capacity(z, 4)}`);
   console.log(
     `${$capacity(

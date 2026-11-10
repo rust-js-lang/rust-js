@@ -82,12 +82,15 @@ Migrations, each its own step with its tests, listed on #1170:
 
 1. The `&mut` box's adaptations, `boxed_in_call`, `given_as_the_value`,
    `unboxed_by_function` and `generic_result_values`, onto `form_given`
-   and `form_back`. Begun (2026-11-10): `Form::Box` is the box's form, a
-   generic function's `fn` pointer adapts through both forms (#1187), a
-   library's function's value takes both, and a function given to generic
-   code is adapted for both (`unboxed_by_function`,
-   `takes_generic_form_itself`); a direct call's copy-back box
-   (`boxed_in_call`) is still its own.
+   and `form_back`. Done (2026-11-10): `Form::Box` is the box's form and
+   its one rule, `boxed_in_call`'s cases too, through shared references
+   and a type parameter given a `&mut` (`declares_box`); a generic
+   function's `fn` pointer adapts through both forms (#1187), a library's
+   function's value takes both, a function given to generic code is
+   adapted for both (`unboxed_by_function`, `takes_generic_form_itself`),
+   and a direct call gives an object's `&mut` as the in-place cell every
+   other boundary gives, `$cellOf(p)`, not a box copied back (ADR 0454,
+   amended): a box is copied back only of a number's place.
 2. A `Some`'s payload: `boxed_payload`'s callers at a call's boundary
    onto the API; its hundred readers inside a body keep asking
    `boxed_payload`, the form's owner.

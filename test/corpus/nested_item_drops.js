@@ -2,7 +2,7 @@
 
 import {
   $advanceSlice,
-  $assign,
+  $cellOf,
   $cleanup,
   $dropEach,
   $dropItems,
@@ -158,23 +158,14 @@ function concat(
     result = $reduce(
       iter$1,
       (a, b) => {
-        const self = { value: a };
         try {
-          try {
-            IItemExtendIItemItem.extend(
-              self,
-              $given(IItemIntoIterator.intoIter(b), IItemIntoIterator.IntoIterIterator(), true),
-              IItemIntoIterInPlace,
-              dropIItem,
-              dropIItemIntoIter,
-            );
-          } catch (error) {
-            $cleanup(() => {
-              $assign(a, self.value);
-            });
-            throw error;
-          }
-          $assign(a, self.value);
+          IItemExtendIItemItem.extend(
+            $cellOf(a),
+            $given(IItemIntoIterator.intoIter(b), IItemIntoIterator.IntoIterIterator(), true),
+            IItemIntoIterInPlace,
+            dropIItem,
+            dropIItemIntoIter,
+          );
         } catch (error) {
           $cleanup(() => {
             dropIItem?.(a);

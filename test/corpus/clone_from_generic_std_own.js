@@ -2,8 +2,8 @@
 
 import {
   $apart,
-  $assign,
   $catchUnwind,
+  $cellOf,
   $cleanup,
   $cloneFromSlice,
   $cloneIntoDeque,
@@ -164,36 +164,21 @@ function main() {
     run("T", boom, () => {
       const w = [[7]];
       const value = [[3], [1]];
-      const dest = { value: w };
       try {
         try {
-          try {
-            assign(
-              dest,
-              value,
-              {
-                clone(value) {
-                  return $madeEach(value, (item) => dClone_clone(item), dDrop_drop);
-                },
-                cloneFrom(to, from) {
-                  $cloneIntoVec(
-                    to.value,
-                    from,
-                    (item) => dClone_clone(item),
-                    undefined,
-                    dDrop_drop,
-                  );
-                },
+          assign(
+            $cellOf(w),
+            value,
+            {
+              clone(value) {
+                return $madeEach(value, (item) => dClone_clone(item), dDrop_drop);
               },
-              $dropEach(dDrop_drop),
-            );
-          } catch (error) {
-            $cleanup(() => {
-              $assign(w, dest.value);
-            });
-            throw error;
-          }
-          $assign(w, dest.value);
+              cloneFrom(to, from) {
+                $cloneIntoVec(to.value, from, (item) => dClone_clone(item), undefined, dDrop_drop);
+              },
+            },
+            $dropEach(dDrop_drop),
+          );
         } finally {
           for (const item of value) {
             dDrop_drop(item);
@@ -210,29 +195,20 @@ function main() {
       const w = [[7], [8]].slice();
       try {
         const value = [[3], [1]].slice();
-        const dest$1 = { value: w };
         try {
-          try {
-            assign(
-              dest$1,
-              value,
-              {
-                clone(value) {
-                  return $madeEach(value, (item) => dClone_clone(item), dDrop_drop);
-                },
-                cloneFrom(to, from) {
-                  $cloneIntoDeque(to.value, from, (item) => dClone_clone(item), dDrop_drop);
-                },
+          assign(
+            $cellOf(w),
+            value,
+            {
+              clone(value) {
+                return $madeEach(value, (item) => dClone_clone(item), dDrop_drop);
               },
-              $dropEach(dDrop_drop),
-            );
-          } catch (error) {
-            $cleanup(() => {
-              $assign(w, dest$1.value);
-            });
-            throw error;
-          }
-          $assign(w, dest$1.value);
+              cloneFrom(to, from) {
+                $cloneIntoDeque(to.value, from, (item) => dClone_clone(item), dDrop_drop);
+              },
+            },
+            $dropEach(dDrop_drop),
+          );
         } finally {
           for (const item of value) {
             dDrop_drop(item);
@@ -256,13 +232,13 @@ function main() {
       };
       let w = [[7]];
       const value = [[3], [1]];
-      const dest$2 = { value: w };
+      const dest = { value: w };
       try {
         try {
           try {
-            assignOption(dest$2, value, vecClone, $dropEach(dDrop_drop));
+            assignOption(dest, value, vecClone, $dropEach(dDrop_drop));
           } finally {
-            w = dest$2.value;
+            w = dest.value;
           }
         } finally {
           if (value != null) {
@@ -276,13 +252,13 @@ function main() {
         );
         let none;
         const value$1 = [[5]];
-        const dest$3 = { value: none };
+        const dest$1 = { value: none };
         try {
           try {
             try {
-              assignOption(dest$3, value$1, vecClone, $dropEach(dDrop_drop));
+              assignOption(dest$1, value$1, vecClone, $dropEach(dDrop_drop));
             } finally {
-              none = dest$3.value;
+              none = dest$1.value;
             }
           } finally {
             if (value$1 != null) {
@@ -295,12 +271,12 @@ function main() {
             `${none == null ? "None" : `Some([${none.map((item) => dDebug_fmt(item)).join(", ")}])`}`,
           );
           let some = [[6]];
-          const dest = { value: some };
+          const dest$2 = { value: some };
           try {
             try {
-              assignOption(dest, undefined, vecClone, $dropEach(dDrop_drop));
+              assignOption(dest$2, undefined, vecClone, $dropEach(dDrop_drop));
             } finally {
-              some = dest.value;
+              some = dest$2.value;
             }
             console.log(
               `${some == null ? "None" : `Some([${some.map((item) => dDebug_fmt(item)).join(", ")}])`}`,
@@ -475,17 +451,15 @@ function main() {
     });
   }
   const c = [1];
-  const dest = { value: c };
-  assign(dest, [2], countedClone);
-  $assign(c, dest.value);
+  assign($cellOf(c), [2], countedClone);
   let o = [3];
-  const dest$1 = { value: o };
-  assignOption(dest$1, [4], countedClone);
-  o = dest$1.value;
+  const dest = { value: o };
+  assignOption(dest, [4], countedClone);
+  o = dest.value;
   let b = [5];
-  const dest$2 = { value: b };
-  assignBox(dest$2, [6], countedClone);
-  b = dest$2.value;
+  const dest$1 = { value: b };
+  assignBox(dest$1, [6], countedClone);
+  b = dest$1.value;
   const items = [[7]];
   assignItems(items, [[8]], countedClone);
   assignLocal([9], [10], countedClone, countedDebug);
@@ -537,9 +511,9 @@ function main() {
     `${countedDebug_fmt(c)} ${o == null ? "None" : `Some(${countedDebug_fmt(o)})`} ${countedDebug_fmt(b)} [${items.map((item) => (item == null ? "None" : `Some(${countedDebug_fmt(item)})`)).join(", ")}]`,
   );
   let n = 1;
-  const dest$3 = { value: n };
-  assignOption(dest$3, 2, i32Clone);
-  n = dest$3.value;
+  const dest$2 = { value: n };
+  assignOption(dest$2, 2, i32Clone);
+  n = dest$2.value;
   // Of a `T` whose `clone_from` is std's provided: a clone written over.
   const numbers = [3, undefined];
   assignItems(numbers, [4, 5], i32Clone);

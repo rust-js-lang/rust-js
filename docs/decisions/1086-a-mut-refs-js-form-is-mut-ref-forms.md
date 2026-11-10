@@ -35,7 +35,7 @@ sites in 30 files chose among them:
 | predicate | answer | callers |
 |---|---|---|
 | `is_boxable(ty)` | a concrete value JS can't change in place | 21: std types' `get_mut`, `as_mut`, `Pin`, `Rc`, `OnceCell`, `LazyCell`, `MaybeUninit`, `Any`, `Result` combinators, drop glue |
-| `is_generic_boxed(ty, env)` | a type parameter, not bound by `Fn` or `Iterator` | 10: generic calls' boxes (`boxed_in_call`, `unboxed_by_function`, `nested_mut_object`) and a call's argument |
+| `is_generic_boxed(ty, env)` | a type parameter, not bound by `Fn` or `Iterator` | 10: generic calls' boxes (`boxed_in_call`, since `generic_facts.rs`' `Form::Box`, ADR 1115; `unboxed_by_function`, `nested_mut_object`) and a call's argument |
 | `is_cell_pointee(ty)` | either of those | 43: whole writes, reborrows, captures, `Cell::from_mut`/`get_mut`, raw pointers, `.d.ts` |
 | `written_in_place(ty)` | not a cell, not a guard, an object or a value given as it is | 6: `*r = v`, `mem::replace`/`take`/`swap`, `moved_out`, wrapping ops |
 | `handles_mut(ty)` | `is_boxable` or any type only a caller knows | 17: slice and map std calls that give a closure a `&mut` |
@@ -48,7 +48,7 @@ And the operations that consume the choice, with what each asked:
 | field write `r.f = v` | `mir/places.rs`, `representation.rs` `project` | `is_cell_pointee` on the deref; a flattened field's `Storage::InPlace` handle |
 | move out (`replace`/`take`/`swap`, `Cell::replace`) | `mut_refs.rs` `moved_out`, `mir/entries.rs`, `std_types/cell.rs` | `is_unknown || written_in_place`, gated by `is_unknown` in one site and not another |
 | copy-back after a call, on return and on unwind | `mir/assign.rs` `boxed_args`, `mut_refs.rs` `copied_back`, `mir/structure.rs` | the `Value` variant given (`Ref` or not), not the type |
-| reborrow, a held box given on | `mir/rvalues.rs`, `mir/assign.rs` `boxed_args` | `is_cell`, `param_is_box` (callee's environment), `is_cell_pointee` (caller's), `boxed_in_call`, `borrow_outlives_call`, and the JS shapes `Member(_, value)`, `held_cell`, `naming.boxes()` |
+| reborrow, a held box given on | `mir/rvalues.rs`, `mir/assign.rs` `boxed_args` | `is_cell`, `param_is_box` (callee's environment), `is_cell_pointee` (caller's), `boxed_in_call` (since `Form::Box`, ADR 1115), `borrow_outlives_call`, and the JS shapes `Member(_, value)`, `held_cell`, `naming.boxes()` |
 | closure capture | `mir/closures.rs`, `mir/operands.rs` `captured_place`, `mir.rs` | `is_cell_pointee` of the capture's pointee |
 | `Cell::from_mut`, `get_mut` | `std_types/cell.rs` | `is_cell_pointee` (since 73f5056ec, #614) |
 | a std call's handle on an item | `std_types/slice.rs`, `map.rs` | `handles_mut`; a guard's deref, `cell.rs`, `mut_ref_form` (#1016) |

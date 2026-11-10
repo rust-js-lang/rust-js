@@ -302,6 +302,12 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   reads back; kept elsewhere, a handle with a getter and a setter
   ([0074](../decisions/0074-mut-boxes.md),
   [0099](../decisions/0099-mut-references.md)).
+- **Generic code's `&mut T` is a box `{ value }`, whatever `T` is,** as `T`
+  may be a number: a `&mut` of an object given to it is an in-place cell
+  of the object, `reset($cellOf(p))`, whose write changes `p` in place, at
+  a call, a `fn` pointer and a function value alike
+  ([0454](../decisions/0454-a-mut-given-as-a-type-parameter.md), amended;
+  [1115](../decisions/1115-what-generic-code-needs-of-its-type-parameters-has-one-catalogue.md)).
 - **`*r = v` replaces the value whole, as Rust's does:** an object `r` is
   becomes `v` in place, `$assign(r, v)`, so every name for it sees `v`;
   `mem::replace`, `mem::swap` and `mem::take` the same. An enum with a
@@ -1138,8 +1144,7 @@ pub fn assign_items(into: &mut Vec<Loud>, from: &Vec<Loud>) {
 ```js
 import {
   $apart,
-  $assign,
-  $cleanup,
+  $cellOf,
   $cloneIntoDeque,
   $cloneIntoVec,
   $cmp,
@@ -1199,28 +1204,19 @@ function assign(dest, source, TClone, dropT) {
 }
 
 export function assignItems(into, from) {
-  const dest = { value: into };
-  try {
-    assign(
-      dest,
-      from,
-      {
-        clone(value) {
-          return value.map((item) => loudClone_clone(item));
-        },
-        cloneFrom(to, from) {
-          $cloneIntoVec(to.value, from, (item) => loudClone_clone(item), undefined, loudDrop_drop);
-        },
+  assign(
+    $cellOf(into),
+    from,
+    {
+      clone(value) {
+        return value.map((item) => loudClone_clone(item));
       },
-      $dropEach(loudDrop_drop),
-    );
-  } catch (error) {
-    $cleanup(() => {
-      $assign(into, dest.value);
-    });
-    throw error;
-  }
-  $assign(into, dest.value);
+      cloneFrom(to, from) {
+        $cloneIntoVec(to.value, from, (item) => loudClone_clone(item), undefined, loudDrop_drop);
+      },
+    },
+    $dropEach(loudDrop_drop),
+  );
 }
 ```
 

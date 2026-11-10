@@ -508,7 +508,7 @@ export const mutations: Mutation[] = [
     breaks: "a `&mut` to an object made a `&mut dyn` of a generic impl, `impl<T: Default> Reset for T`, is `{ value: c, impl }`, whose `*self = T::default()` leaves `c` as it was (#968)",
     file: "src/lower/traits/dyns.rs",
     find: "                .any(|item| self.param_is_box(item.def_id, 0) && self.entry_gives_box(item.def_id, tr.args, 0))\n",
-    replace: "                .any(|item| self.param_is_box(item.def_id, 0) && self.entry_takes_box_apart(item.def_id, tr.args, 0))\n",
+    replace: "                .any(|item| self.param_is_box(item.def_id, 0) && !self.entry_gives_box(item.def_id, tr.args, 0))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
   },
   {

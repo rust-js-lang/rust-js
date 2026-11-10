@@ -739,39 +739,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok((function, made))
     }
 
-    /// Whether a call of `item`, a trait's method, with `args`, through the
-    /// dictionary of the impl its `Self` selects, takes its parameter `i`'s
-    /// box apart where it's called: the entry reads the box's `value` once
-    /// and gives the method, the impl's or a default copied into it, the
-    /// object it holds, which it changes in place, so nothing writes the
-    /// box whole, and a copy back would copy the object onto itself (#831,
-    /// `entry_forms`'s `unboxed`). Not of a `Self` no impl is selected for
-    /// here, generic code's, nor of a blanket impl's generic `Self`, whose
-    /// method writes the box; nor of another crate's impl, whose entry is
-    /// its own, nor of a default the dictionary doesn't copy into the impl,
-    /// a library's, compiled once over a generic `Self` (ADR 0100), or
-    /// std's.
-    pub(in crate::lower) fn entry_takes_box_apart(
-        &self,
-        item: DefId,
-        args: ty::GenericArgsRef<'tcx>,
-        i: usize,
-    ) -> bool {
-        self.entry_unboxes(item, args, i) == Some(true)
-    }
-
     /// Whether the crate's entry of `item` gives its parameter `i`'s box to
     /// its method as it is, a blanket impl's generic `Self`'s, whose method
-    /// may write the box whole, `*self = v` (#968): the impl's own method
-    /// or a default copied into it, of an impl `entry_takes_box_apart`
-    /// says doesn't take it apart. Not where the crate has no entry of it.
+    /// may write the box whole, `*self = v` (#968), where another's entry
+    /// takes the box apart, reading its `value` once and giving the method
+    /// the object it holds (#831, `entry_forms`'s `unboxed`). Not where the
+    /// crate has no entry of it: of a `Self` no impl is selected for here,
+    /// another crate's impl, or a default the dictionary doesn't copy into
+    /// the impl, a library's (ADR 0100), or std's.
     pub(in crate::lower) fn entry_gives_box(&self, item: DefId, args: ty::GenericArgsRef<'tcx>, i: usize) -> bool {
         self.entry_unboxes(item, args, i) == Some(false)
     }
 
     /// Whether the crate's entry of `item` takes its parameter `i`'s box
-    /// apart, `entry_takes_box_apart`'s and `entry_gives_box`'s one answer;
-    /// `None` where the crate has no entry of it.
+    /// apart, `entry_gives_box`'s answer; `None` where the crate has no
+    /// entry of it.
     fn entry_unboxes(&self, item: DefId, args: ty::GenericArgsRef<'tcx>, i: usize) -> Option<bool> {
         let tr = ty::TraitRef::from_assoc(self.tcx, self.tcx.parent(item), args);
         // The crate's, or a library's, whose entry its library made of the
@@ -877,7 +859,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect();
         // A `&mut` generic code has in a box by the trait's signature, `&mut
         // Self::Target` of a `Vec`, which the method gives as the object.
-        let result_cell = self.boxed_in_call(item, declared_sig.output(), args).is_some();
+        let output = declared_sig.output();
+        let result_cell = self.declares_box(item, output)
+            && self.form_differs(
+                crate::lower::generic_facts::Form::Box,
+                (item, output, self.instantiated(output, args)),
+            );
         EntryForms {
             unboxed,
             within: within_params,

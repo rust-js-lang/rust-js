@@ -1115,18 +1115,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Vec<Expr>> {
         let callee = self.call_callee(def_id, generic_args)?;
         let fn_id = callee.map(|(id, _)| id);
-        // Generic code's box of what its caller has as an object, a `D` given
-        // `&mut v` too (ADR 0454).
-        let given_box = |cx: &Self, i: usize| {
-            callee.is_some_and(|(id, args)| {
-                let sig = cx.tcx.instantiate_bound_regions_with_erased(
-                    cx.tcx.fn_sig(id).instantiate_identity().skip_normalization(),
-                );
-                sig.inputs()
-                    .get(i)
-                    .is_some_and(|&input| cx.boxed_in_call(id, input, args).is_some())
-            })
-        };
         let mut exprs: Vec<Expr> = Vec::new();
         for (i, value) in values.into_iter().enumerate() {
             // A reference given as the pointer to its place, made so where
@@ -1147,7 +1135,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // one is: an object's a handle already, a slice's the array.
                 let raw = |ty: Ty<'tcx>| Ty::new_mut_ptr(self.tcx, ty.builtin_deref(true).expect("a reference"));
                 let instantiated = self.instantiated(declared, args);
-                exprs.push(self.form_given(Form::Handle, (raw(declared), raw(instantiated)), pointer));
+                exprs.push(self.form_given(Form::Handle, (id, raw(declared), raw(instantiated)), pointer));
                 continue;
             }
             // Not a C-variadic function's arguments past its parameters.
@@ -1166,7 +1154,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if crate::lower::pointers::raw_pointee(self.tcx, declared).is_some() {
                     let pointer = self.value_expr(value, span)?;
                     let instantiated = self.instantiated(declared, args);
-                    exprs.push(self.form_given(Form::Handle, (declared, instantiated), pointer));
+                    exprs.push(self.form_given(Form::Handle, (id, declared, instantiated), pointer));
                     continue;
                 }
                 // A shared reference to what JS holds as itself, a number,
@@ -1180,6 +1168,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         span,
                         &format!("a `&{referent}` given to generic code that may let it out as a raw pointer, which would be of a copy (ADR 1114)"),
                     ));
+                }
+                // A `&mut` to an object given where generic code has its box,
+                // a `D` given `&mut v` and through shared references too: in
+                // its form, an in-place cell of the object, whose write
+                // changes it in place, as a value's boundary gives it (ADRs
+                // 0454, 1115).
+                let crossing = (id, declared, self.instantiated(declared, args));
+                if self.form_differs(Form::Box, crossing) {
+                    let object = self.value_expr(value, span)?;
+                    exprs.push(self.form_given(Form::Box, crossing, object));
+                    continue;
                 }
             }
             // A `&mut` to what's a cell, held as a value, the box it is, given
@@ -1198,15 +1197,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Value::Expr(boxed) if held_box(self) => Value::Ref(Expr::held(boxed)),
                 value => value,
             };
-            let object = !matches!(value, Value::Ref(_));
             let place = match value {
-                // A shared reference to what generic code has in a box, an
-                // impl's for `&mut T`'s `&self`: a box of it, which nothing
-                // writes through, so nothing's copied back (ADR 0454).
-                Value::Place(object) if given_box(self, i) => {
-                    exprs.push(crate::lower::mut_refs::boxed(object));
-                    continue;
-                }
                 // A `&mut` to a function or an iterator given for a type
                 // parameter read as one that's called or stepped, `P: Is<F>`:
                 // the function or the iterator itself (#992).
@@ -1217,18 +1208,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         );
                         sig.inputs()
                             .get(i)
-                            .is_some_and(|&input| self.given_as_the_value(id, input, args))
+                            .is_some_and(|&input| self.given_as_the_value(id, input, self.instantiated(input, args)))
                     }) =>
                 {
                     exprs.push(place);
                     continue;
                 }
                 Value::Ref(place) => place,
-                // An object given where a box goes, a generic `&mut T`'s: boxed,
-                // and copied back where it's a place.
-                Value::Expr(object) if fn_id.is_some_and(|fn_id| self.param_is_box(fn_id, i)) || given_box(self, i) => {
-                    object
-                }
                 // A function given for an `F: FnOnce(&mut T)` of a `T` that's
                 // an object here: one taking generic code's box of it, which
                 // it gives the object, `(x) => f(x.value)` (ADR 0454).
@@ -1312,15 +1298,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // What it returns, or another parameter, can hold the borrow: a
             // box would be copied back before it's used.
-            // Of an object, an in-place cell of it, whose write of the whole
-            // changes the object, as `*r = v` of its `&mut` does: the caller's,
-            // a parameter's or a field's too, not the variable that names it
-            // here (#528, ADR 0454, amended).
             if self.borrow_outlives_call(def_id, i) {
-                if object {
-                    exprs.push(crate::lower::mut_refs::in_place_cell(place));
-                    continue;
-                }
                 // Of a type of one value, `()`'s: a box of it, which no write
                 // changes, whatever keeps it (#1061).
                 if one_value && !fixed_place(&place) {
@@ -1357,20 +1335,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .flatten()
                 .map_or("value".to_string(), |i| i.name.to_string());
             let name = self.fresh(&crate::lower::camel_case(&base));
-            // An object's box holds the object itself: what the callee moves
-            // out of the box, `mem::replace`'s old value, is a copy apart,
-            // the callee's (`mut_refs::moved_out`), so the object, written
-            // back after in place, is the new value (ADR 0454, amended).
             let boxed = crate::lower::mut_refs::boxed(place.clone());
             out.push(StmtKind::Const(name.clone(), boxed).at(self.js_span(span)));
-            // Not an object's box the impl's entry takes apart, whose `value`
-            // is the same object once the call returns (#831).
-            let taken_apart = object
-                && callee.is_some_and(|(id, args)| {
-                    self.tcx.trait_of_assoc(id).is_some() && self.entry_takes_box_apart(id, args, i)
-                });
-            if fixed_place(&place) && !taken_apart {
-                state.copy_backs.push((place, name.clone(), object));
+            if fixed_place(&place) {
+                state.copy_backs.push((place, name.clone()));
             }
             exprs.push(Expr::var(&name));
         }

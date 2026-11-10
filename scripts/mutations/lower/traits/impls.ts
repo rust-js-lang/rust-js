@@ -423,8 +423,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl's `&mut Vec` given where the trait's signature says a generic `&mut Self::Out`, a box, is the array, and its caller's `.value` of it `undefined`",
     file: "src/lower/traits/impls.rs",
-    find: "        let result_cell = self.boxed_in_call(item, declared_sig.output(), args).is_some();\n",
-    replace: "        let result_cell = false;\n",
+    find: "        let result_cell = self.declares_box(item, output)\n",
+    replace: "        let result_cell = false && self.declares_box(item, output)\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_assoc_through_dictionary.rs$"],
   },
   {

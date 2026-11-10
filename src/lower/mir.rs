@@ -736,9 +736,8 @@ struct State<'m, 'tcx> {
     /// same, `COUNT.value`: the place, named where it's used.
     refs: IndexMap<Local, Expr>,
     /// The boxes a call is given for its `&mut`s to numbers, each copied
-    /// back to its place once the call returns (ADR 0074); an object's, in
-    /// place, which each name for it sees (ADR 0147).
-    copy_backs: Vec<(Expr, String, bool)>,
+    /// back to its place once the call returns (ADR 0074).
+    copy_backs: Vec<(Expr, String)>,
     /// What `.flatten()` reads as it is, and of the call being lowered, a
     /// namespace's method's, what decides it (`Flattened`).
     flattened: Flattened,

@@ -56,4 +56,31 @@ export const mutations: Mutation[] = [
     replace: "                pointee(declared).is_some()\n                    && pointee(instantiated).is_some_and(|p| self.pointee_is_itself(p)",
     tests: ["test/corpus.test.ts", "-t", "^reference_given_as_its_pointer\\.rs$"],
   },
+  {
+    name: "param-given-mut-raw",
+    breaks:
+      "a `&mut` to an object given as a type parameter's value is the object, which an impl for `&mut T` reads as a box, and JS throws",
+    file: "src/lower/generic_facts.rs",
+    find: "            ty::Param(_) => self.mut_ref_form_in(declared, param_env).is_generic_box(),\n",
+    replace: "            ty::Param(_) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
+  },
+  {
+    name: "boxed-through-shared-unpeeled",
+    breaks:
+      "an impl for `&mut T`'s `&self`, called where its type is known, is given the object, not a box of it",
+    file: "src/lower/generic_facts.rs",
+    find: "                    (declared, instantiated) = (d, i);\n",
+    replace: "                    let _ = (d, i);\n                    break;\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
+  },
+  {
+    name: "fn-bound-mut-boxed",
+    breaks:
+      "a `&mut F` of an `F: FnMut()` is generic code's box too, so a closure given for it is `$cellOf(f)`, which generic code calls",
+    file: "src/lower/generic_facts.rs",
+    find: "            ty::Ref(..) => self.is_generic_box_in(declared, param_env),\n",
+    replace: "            ty::Ref(_, pointee, _) => matches!(pointee.kind(), ty::Param(_)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_mut_ref\\.rs$"],
+  },
 ];

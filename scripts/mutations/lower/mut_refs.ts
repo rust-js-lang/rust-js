@@ -16,8 +16,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure given to generic code as an `F: Fn(*mut T)` is given generic code's handle of a slice's pointer where it takes the array",
     file: "src/lower/mut_refs.rs",
-    find: "                (boxed || self.form_differs(handle, passed, self.instantiated(passed, generic_args)))",
-    replace: "                boxed",
+    find: "                    .is_some()\n                    && !given.is_some_and(|given| self.takes_generic_form_itself(given, Some(at)))",
+    replace: "                    .is_some_and(|form| form == Form::Box)\n                    && !given.is_some_and(|given| self.takes_generic_form_itself(given, Some(at)))",
     tests: ["test/corpus.test.ts", "-t", "^generic_fn_item_takes_generic_forms\\.rs$"],
   },
   {
@@ -33,8 +33,8 @@ export const mutations: Mutation[] = [
     name: "reified-slice-pointer-as-its-value",
     breaks: "a generic function's instance whose raw pointer is a slice's, as a `fn` pointer, is its value, given the array where it takes generic code's handle",
     file: "src/lower/mut_refs.rs",
-    find: "            boxed || self.form_differs(handle, declared, self.instantiated(declared, args))",
-    replace: "            boxed || (false && self.form_differs(handle, declared, self.instantiated(declared, args)))",
+    find: "            self.form_of((def_id, declared, self.instantiated(declared, args)))\n                .is_some()\n",
+    replace: "            self.form_of((def_id, declared, self.instantiated(declared, args)))\n                .is_some_and(|form| form == Form::Box)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_fn_pointer_takes_its_types_forms\\.rs$"],
   },
   {
@@ -85,8 +85,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a slice's pointer generic code gives back is its handle, not the array, and `same(p)[0] = 40` writes the handle",
     file: "src/lower/mut_refs.rs",
-    find: "            Some(_) => self.form_back(\n                crate::lower::generic_facts::Form::Handle,\n                (declared, instantiated),\n                value,\n            ),",
-    replace: "            Some(_) => value,",
+    find: "            Some(form) => self.form_back(form, crossing, value),\n",
+    replace: "            Some(Form::Handle) => value,\n            Some(form) => self.form_back(form, crossing, value),\n",
     tests: ["test/corpus.test.ts", "-t", "^reference_given_as_its_pointer\\.rs$"],
   },
   {
@@ -237,8 +237,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`pick(true, &mut c, &mut d).n += 5` of an object `T` writes `n` on the handle, not on `c`",
     file: "src/lower/mut_refs.rs",
-    find: "            Some(_) => Expr::held(value),\n",
-    replace: "            Some(_) => value,\n",
+    find: "            Some(form) => self.form_back(form, crossing, value),\n",
+    replace: "            Some(Form::Box) => value,\n            Some(form) => self.form_back(form, crossing, value),\n",
     tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
   },
   {
@@ -285,8 +285,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a box given for a `&mut` number isn't copied back, so the caller never sees what the call wrote",
     file: "src/lower/mut_refs.rs",
-    find: "            false => StmtKind::Assign(place, back).at(at),\n",
-    replace: "            false => StmtKind::Expr(Expr::undefined()).at(at),\n",
+    find: "        StmtKind::Assign(place, Expr::held(Expr::var(boxed))).at(at)\n",
+    replace: "        let _ = (place, boxed);\n        StmtKind::Expr(Expr::undefined()).at(at)\n",
     tests: ["test/corpus.test.ts", "-t", "mut_number_args"],
   },
   {
@@ -309,31 +309,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "param-given-mut-raw",
-    breaks:
-      "a `&mut` to an object given as a type parameter's value is the object, which an impl for `&mut T` reads as a box, and JS throws",
-    file: "src/lower/mut_refs.rs",
-    find: "            ty::Param(_) if self.mut_ref_form_in(ty, param_env).is_generic_box() => {\n",
-    replace: "            ty::Param(_) if false => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
-  },
-  {
-    name: "boxed-through-shared-unpeeled",
-    breaks:
-      "an impl for `&mut T`'s `&self`, called where its type is known, is given the object, not a box of it",
-    file: "src/lower/mut_refs.rs",
-    find: "        while let ty::Ref(_, inner, Mutability::Not) = *ty.kind() {\n            ty = inner;\n        }\n        let pointee",
-    replace: "        let pointee",
-    tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
-  },
-  {
     name: "nested-param-mut-allowed",
     breaks:
       "a `&mut` to an object given for a type parameter inside an `Option` generic code takes is allowed, though it has a box there and its caller the object",
     file: "src/lower/mut_refs.rs",
-    find: "                if let ty::Param(_) = part.kind()\n                    && let Some(here) = self.boxed_in_call(def_id, part, generic_args)\n",
-    replace:
-      "                if let ty::Param(_) = part.kind()\n                    && false\n                    && let Some(here) = self.boxed_in_call(def_id, part, generic_args)\n",
+    find: "                if matches!(part.kind(), ty::Param(_) | ty::Ref(_, _, Mutability::Mut)) {\n",
+    replace: "                if matches!(part.kind(), ty::Ref(_, _, Mutability::Mut)) {\n",
     tests: [
       "test/limitations.test.ts",
       "-t",

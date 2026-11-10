@@ -2,7 +2,7 @@
 
 import {
   $advanceSlice,
-  $assign,
+  $cellOf,
   $checked,
   $cleanup,
   $closing,
@@ -260,13 +260,11 @@ function main() {
   console.log(
     `${total(v, intoIterator, u32ArrayIs_u32__2_)} ${total([4, 5], intoIterator, u32ArrayIs_u32__2_)}`,
   );
-  const items = { value: v };
   bump(
-    items,
+    $cellOf(v),
     { intoIter: (cell) => $iter($mutItems(cell.value)), IntoIterIterator: () => ({ next: $next }) },
     u32ArrayIs_u32__2_,
   );
-  $assign(v, items.value);
   bump(
     iterator_skip($iter($mutItems(v)), 1),
     {
@@ -291,12 +289,8 @@ function main() {
     )} ${count(["a", "b"], intoIterator$1, u32ArrayIs_u32__2_)}`,
   );
   const out = [];
-  const c = { value: out };
-  fill(c, [3], vecExtend, quietIntoIterator, u32ArrayIs_u32__2_);
-  $assign(out, c.value);
-  const c$1 = { value: out };
-  fill(c$1, [9, 8], vecExtend, intoIterator$1, u32ArrayIs_u32__2_);
-  $assign(out, c$1.value);
+  fill($cellOf(out), [3], vecExtend, quietIntoIterator, u32ArrayIs_u32__2_);
+  fill($cellOf(out), [9, 8], vecExtend, intoIterator$1, u32ArrayIs_u32__2_);
   console.log(`[${out.join(", ")}]`);
   // A map of an `IntoIter` held as it is, closed where it's dropped: what
   // it has left dropped by its caller's drop.

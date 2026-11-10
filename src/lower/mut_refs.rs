@@ -8,6 +8,7 @@ use super::{FnCx, R, Std};
 use crate::collections::IndexSet;
 use crate::js::{self, Expr, Prop, Stmt, StmtKind};
 use crate::lower::MutRefForm;
+use crate::lower::generic_facts::Form;
 use rustc_ast::Mutability;
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
@@ -178,15 +179,12 @@ pub(in crate::lower) fn in_place_cell(object: Expr) -> Expr {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// What a box, `boxed`, the call it was given to returned, writes back to
-    /// its `place`: an object's changed in place, `$assign(place, box.value)`,
-    /// another's assigned (ADR 0074).
-    pub(super) fn copied_back(&mut self, place: Expr, boxed: &str, object: bool, at: js::Span) -> Stmt {
-        let back = Expr::held(Expr::var(boxed));
-        match object {
-            true => StmtKind::Expr(Expr::call(Expr::helper("$assign"), vec![place, back])).at(at),
-            false => StmtKind::Assign(place, back).at(at),
-        }
+    /// What a box of a number, `boxed`, the call it was given to returned,
+    /// writes back to its `place`, `place = box.value` (ADR 0074). An
+    /// object's `&mut` given where generic code has its box is an in-place
+    /// cell, never copied back (ADR 1115).
+    pub(super) fn copied_back(&mut self, place: Expr, boxed: &str, at: js::Span) -> Stmt {
+        StmtKind::Assign(place, Expr::held(Expr::var(boxed))).at(at)
     }
 
     /// `p` of `&mut p`, a reborrow's `&mut *&mut v[0]` too: `v[0]`.
@@ -302,43 +300,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(Expr::call_helper(name, values)))
     }
 
-    /// Of `declared`, a type in `def_id`'s signature as it's written, in a
-    /// call of it, `generic_args`: the `&mut` to an object generic code has
-    /// as a box where its caller has the object (ADRs 0099, 0454). Through
-    /// shared references, a `&mut` to its type parameter, `&mut T` of `&mut
-    /// v`, or its type parameter given one, `D` of `&mut v`, an impl's for
-    /// `&mut T` too. `None` of any other, and of a `&mut` to a number or
-    /// text, which its caller has as a cell already.
-    pub(super) fn boxed_in_call(
-        &self,
-        def_id: DefId,
-        declared: Ty<'tcx>,
-        generic_args: ty::GenericArgsRef<'tcx>,
-    ) -> Option<Ty<'tcx>> {
-        let param_env = self.tcx.param_env(def_id);
-        let mut ty = declared;
-        while let ty::Ref(_, inner, Mutability::Not) = *ty.kind() {
-            ty = inner;
-        }
-        let pointee = match *ty.kind() {
-            ty::Ref(_, pointee, Mutability::Mut) if self.mut_ref_form_in(pointee, param_env).is_generic_box() => {
-                self.instantiated(pointee, generic_args)
-            }
-            ty::Param(_) if self.mut_ref_form_in(ty, param_env).is_generic_box() => {
-                match *self.instantiated(ty, generic_args).kind() {
-                    _ if self.given_as_the_value(def_id, ty, generic_args) => return None,
-                    ty::Ref(_, pointee, Mutability::Mut) => pointee,
-                    _ => return None,
-                }
-            }
-            _ => return None,
-        };
-        (!self.mut_ref_form(pointee).is_cell())
-            .then(|| Ty::new_mut_ref(self.tcx, self.tcx.lifetimes.re_erased, pointee))
-    }
-
     /// Whether `declared`, a type parameter of `def_id`'s, given a `&mut` to
-    /// a function or an iterator in a call of it, `generic_args`, takes it
+    /// a function or an iterator, `instantiated` its caller's type, takes it
     /// as it is, not in generic code's box: where its value is read as
     /// another type parameter its bound names that's called or stepped,
     /// `P: Is<F>` of `F: FnMut()`, `I: Iterator` or `I: IntoIterator`, as
@@ -349,10 +312,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         def_id: DefId,
         declared: Ty<'tcx>,
-        generic_args: ty::GenericArgsRef<'tcx>,
+        instantiated: Ty<'tcx>,
     ) -> bool {
         matches!(declared.kind(), ty::Param(_))
-            && matches!(*self.instantiated(declared, generic_args).kind(),
+            && matches!(*instantiated.kind(),
                 ty::Ref(_, pointee, Mutability::Mut) if self.is_callable(pointee) || self.implements_iterator(pointee))
             && self.read_as_stepped(self.tcx.param_env(def_id), declared)
     }
@@ -413,11 +376,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return None;
         };
         let given_as = sig.inputs()[i];
-        let param_env = self.tcx.param_env(def_id);
         let clauses: Vec<_> = (self.tcx.clauses_of(def_id).instantiate_identity(self.tcx).into_iter())
             .map(|(clause, _)| clause.skip_normalization())
             .collect();
-        let handle = crate::lower::generic_facts::Form::Handle;
         let fn_bound = |f: Ty<'tcx>| {
             (clauses.iter())
                 .filter_map(|clause| clause.as_trait_clause())
@@ -442,10 +403,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .iter()
             .enumerate()
             .map(|(at, passed)| {
-                let boxed = matches!(*passed.kind(), ty::Ref(_, pointee, Mutability::Mut)
-                    if self.mut_ref_form_in(pointee, param_env).is_generic_box()
-                        && !self.mut_ref_form(self.instantiated(pointee, generic_args)).is_cell());
-                (boxed || self.form_differs(handle, passed, self.instantiated(passed, generic_args)))
+                self.form_of((def_id, passed, self.instantiated(passed, generic_args)))
+                    .is_some()
                     && !given.is_some_and(|given| self.takes_generic_form_itself(given, Some(at)))
             })
             .collect();
@@ -462,7 +421,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .and_then(|projection| projection.term.as_type());
         let wrapped = output.is_some_and(|out| {
-            self.form_differs(handle, out, self.instantiated(out, generic_args))
+            (self.form_of((def_id, out, self.instantiated(out, generic_args)))).is_some_and(|form| form == Form::Handle)
                 && !given.is_some_and(|given| self.takes_generic_form_itself(given, None))
         });
         (unboxed.iter().any(|&unboxed| unboxed) || wrapped).then_some((unboxed, wrapped))
@@ -488,11 +447,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(at) => sig.inputs().get(at).copied(),
             None => Some(sig.output()),
         };
-        declared.is_some_and(|input| {
-            matches!(*input.kind(), ty::Ref(_, pointee, Mutability::Mut)
-                if self.mut_ref_form_in(pointee, self.tcx.param_env(id)).is_generic_box())
-                || self.is_generic_handle(input)
-        })
+        declared
+            .is_some_and(|input| self.is_generic_box_in(input, self.tcx.param_env(id)) || self.is_generic_handle(input))
     }
     /// Whether a generic function's instance `def_id` given `args`, as a
     /// `fn` pointer, would be given its callers' forms where its value takes
@@ -513,13 +469,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .instantiate_identity()
             .skip_normalization()
             .skip_binder();
-        let param_env = self.tcx.param_env(def_id);
-        let handle = crate::lower::generic_facts::Form::Handle;
         (sig.inputs().iter().chain([&sig.output()])).any(|&declared| {
-            let boxed = matches!(*declared.kind(), ty::Ref(_, pointee, Mutability::Mut)
-                if self.mut_ref_form_in(pointee, param_env).is_generic_box()
-                    && !self.mut_ref_form(self.instantiated(pointee, args)).is_cell());
-            boxed || self.form_differs(handle, declared, self.instantiated(declared, args))
+            self.form_of((def_id, declared, self.instantiated(declared, args)))
+                .is_some()
         })
     }
 
@@ -547,7 +499,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             at = inner;
         }
         match *at.kind() {
-            ty::Ref(_, pointee, Mutability::Mut) if self.mut_ref_form_in(pointee, param_env).is_generic_box() => None,
+            ty::Ref(..) if self.is_generic_box_in(at, param_env) => None,
             ty::Param(_) if self.mut_ref_form_in(at, param_env).is_generic_box() => None,
             _ => Some(ty),
         }
@@ -564,10 +516,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         env: ty::ParamEnv<'tcx>,
         actual: Ty<'tcx>,
     ) -> Within<'tcx> {
-        let leaf = |ty: Ty<'tcx>| {
-            matches!(*ty.kind(), ty::Ref(_, pointee, Mutability::Mut)
-                if self.mut_ref_form_in(pointee, env).is_generic_box())
-        };
+        let leaf = |ty: Ty<'tcx>| self.is_generic_box_in(ty, env);
         let form = |given: Ty<'tcx>| self.mut_ref_form(given);
         within_shape(self.tcx, (declared, actual), (&leaf, &form), &|payload| {
             !self.boxed_payload(payload)
@@ -711,7 +660,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         generic_args: ty::GenericArgsRef<'tcx>,
         mut todo: Vec<Ty<'tcx>>,
     ) -> Option<Ty<'tcx>> {
-        let param_env = self.tcx.param_env(def_id);
         // Each field's type in `def_id`'s own terms, as its signature is: in
         // the caller's, `I::Item` could be the caller's `A`.
         let own_env = ty::TypingEnv::non_body_analysis(self.tcx, def_id);
@@ -743,20 +691,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A type parameter given a `&mut` to an object, past a
                 // parameter or the result: generic code has a box, and the
                 // caller the object (ADR 0454).
-                if let ty::Param(_) = part.kind()
-                    && let Some(here) = self.boxed_in_call(def_id, part, generic_args)
-                {
-                    return Some(here);
-                }
-                if let ty::Ref(_, pointee, Mutability::Mut) = *part.kind()
-                    && self.mut_ref_form_in(pointee, param_env).is_generic_box()
-                    && !self.mut_ref_form(self.instantiated(pointee, generic_args)).is_cell()
-                {
-                    return Some(Ty::new_mut_ref(
-                        self.tcx,
-                        self.tcx.lifetimes.re_erased,
-                        self.instantiated(pointee, generic_args),
-                    ));
+                if matches!(part.kind(), ty::Param(_) | ty::Ref(_, _, Mutability::Mut)) {
+                    let here = self.instantiated(part, generic_args);
+                    // Named as its caller has it, its lifetime erased:
+                    // `&mut C`.
+                    if self.form_differs(Form::Box, (def_id, part, here))
+                        && let ty::Ref(_, pointee, Mutability::Mut) = *here.kind()
+                    {
+                        return Some(Ty::new_mut_ref(self.tcx, self.tcx.lifetimes.re_erased, pointee));
+                    }
                 }
                 if let ty::Adt(adt, args) = *part.kind()
                     && !self.is_std(adt.did())
@@ -969,20 +912,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.generic_fmt_result(declared, generic_args) {
             return Ok(Expr::call_helper("$writeOf", vec![value]));
         }
-        // A raw pointer of a type parameter, a handle in generic code: the
-        // caller's, a slice's the array (ADR 1114). A `&mut`'s is
-        // `boxed_in_call`'s, below.
-        let instantiated = self.instantiated(declared, generic_args);
-        let value = match super::pointers::raw_pointee(self.tcx, declared) {
-            Some(_) => self.form_back(
-                crate::lower::generic_facts::Form::Handle,
-                (declared, instantiated),
-                value,
-            ),
-            None => value,
-        };
-        Ok(match self.boxed_in_call(def_id, declared, generic_args) {
-            Some(_) => Expr::held(value),
+        // In the caller's form: a raw pointer of a type parameter's, a
+        // handle in generic code, a slice's the array (ADR 1114); a `&mut`
+        // generic code boxes, an object's the object (ADR 0454).
+        let crossing = (def_id, declared, self.instantiated(declared, generic_args));
+        Ok(match self.form_of(crossing) {
+            Some(form) => self.form_back(form, crossing, value),
             None => value,
         })
     }

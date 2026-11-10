@@ -80,7 +80,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `&mut` of a `&mut` of an object for a type parameter of the
         // crate's: generic code's each `&mut` is a box (ADR 0454), where
         // the caller's `&mut` of an object is the object, adapted one level
-        // only, `given_box`'s, so it would be a box short (#167).
+        // only, `Form::Box`'s, so it would be a box short (#167).
         let crate_call = self.is_rust_fn(def_id)
             || self
                 .tcx

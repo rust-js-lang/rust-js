@@ -739,3 +739,37 @@ back: it's given as a box of it, `{}`, kept or not, as a `&mut` of one is
 where the call can't keep it. Held by the corpus case
 `mut_of_one_value_kept` and the mutation `one-value-kept-mut-refused`; the
 rustc test runs as native.
+
+## Amended (2026-11-10, #1170): an object's box at a call is its in-place cell
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): no difference. A call
+gave an object's `&mut` where generic code has its box as a box of its own,
+`const t = { value: p }`, copied back once the call returned, `$assign(p,
+t.value)`, in a `try` whose `catch` copied it back on a panic too; where the
+call could keep the borrow, as an in-place cell, `$cellOf(p)` (#528), and an
+entry that took the box apart wasn't copied back (#831). Every other
+boundary, a `fn` pointer's, a function value's, a function given to generic
+code (ADR 1115), gave the in-place cell. Two forms of one value, decided by
+two rules: this decision's `boxed_in_call`, and `Form::Box`'s.
+
+A call gives the in-place cell too: `reset($cellOf(p))`, whose write
+changes `p` in place as it's made, as `*t = v` of the `&mut` does, so a
+panic after it leaves `p` written, as Rust's does, with no copy back to
+make or skip. What the callee moves out of the box is a copy apart already
+(`mut_refs::moved_out`), as the box held the object itself. One rule says
+where: `generic_facts.rs`' `Form::Box`, through shared references and a type
+parameter given a `&mut` (`declares_box`), which `boxed_in_call`'s callers,
+a call's argument, its result, a dictionary's entry's result and a
+generic `&mut` nested in what's given, now ask. A box is copied back only of
+a number's place (ADR 0074); #831's question of an entry that takes the box
+apart, and the copy back's object flag, are gone with what asked them.
+
+Held by the 54 corpus cases whose snapshots this changed (896 lines to 396,
+each against native Rust), and the mutations `mir-object-unboxed`
+(retargeted), `param-given-mut-raw` and `boxed-through-shared-unpeeled`
+(moved to `lower/generic_facts.ts`), `fn-bound-mut-boxed` (new: a `&mut F`
+of an `F: FnMut()` isn't boxed) and `cell-of-write-rebinds`
+(`runtime/cell_of.ts`, new: the cell's write is in place), which replace
+`mir-object-copied-back-rebound`, `outliving-object-handle`,
+`object-box-never-copied-back` and `entry-box-copied-back`, whose code is
+gone.

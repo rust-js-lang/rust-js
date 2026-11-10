@@ -2,10 +2,8 @@
 
 import {
   $apart,
-  $assign,
   $cellOf,
   $cellSwap,
-  $cleanup,
   $debugStr,
   $displayF64,
   $index,
@@ -66,58 +64,41 @@ function swappedFirst(items, v) {
 function main() {
   const pointCopy = { copy: (value) => ({ ...value }) };
   let v = [1];
-  const value = [2];
-  const r = { value: v };
-  let old;
-  try {
-    old = replaced(r, value);
-  } catch (error) {
-    $cleanup(() => {
-      $assign(v, r.value);
-    });
-    throw error;
-  }
-  $assign(v, r.value);
+  let old = replaced($cellOf(v), [2]);
   v.push(3);
   console.log(`[${v.join(", ")}] [${old.join(", ")}]`);
 
   let p = { x: 1 };
-  const r$1 = { value: p };
-  old = replaced(r$1, { x: 2 });
-  $assign(p, r$1.value);
+  old = replaced($cellOf(p), { x: 2 });
   p.x = (p.x + 10) | 0;
   console.log(`${pointDebug_fmt(p)} ${pointDebug_fmt(old)}`);
 
   let n = 5;
-  const r$2 = { value: n };
-  old = replaced(r$2, 6);
-  n = r$2.value;
+  const r = { value: n };
+  old = replaced(r, 6);
+  n = r.value;
   n = (n + 1) >>> 0;
   console.log(`${n} ${old}`);
 
   let s = "a";
-  const r$3 = { value: s };
-  old = replaced(r$3, "b");
-  s = r$3.value;
+  const r$1 = { value: s };
+  old = replaced(r$1, "b");
+  s = r$1.value;
   s += "!";
   console.log(`${s} ${old}`);
 
   p = { x: 3 };
-  const r$4 = { value: p };
-  old = setThenGet(r$4, { x: 4 }, pointCopy);
-  $assign(p, r$4.value);
+  old = setThenGet($cellOf(p), { x: 4 }, pointCopy);
   console.log(`${pointDebug_fmt(p)} ${pointDebug_fmt(old)}`);
 
   n = 7n;
-  const r$5 = { value: n };
-  old = setThenGet(r$5, 8n);
-  n = r$5.value;
+  const r$2 = { value: n };
+  old = setThenGet(r$2, 8n);
+  n = r$2.value;
   console.log(`${n} ${old}`);
 
   v = [4, 5];
-  const r$6 = { value: v };
-  old = taken(r$6, { default: () => [] });
-  $assign(v, r$6.value);
+  old = taken($cellOf(v), { default: () => [] });
   v.push(6);
   console.log(`[${v.join(", ")}] [${old.join(", ")}]`);
 
@@ -131,9 +112,9 @@ function main() {
 
   // Concrete: the same calls, not through generic code.
   v = [1, 2];
-  const value$1 = $cellOf(v);
-  old = $apart(value$1.value);
-  value$1.value = [3];
+  const value = $cellOf(v);
+  old = $apart(value.value);
+  value.value = [3];
   v.push(4);
   console.log(`[${v.join(", ")}] [${old.join(", ")}]`);
 

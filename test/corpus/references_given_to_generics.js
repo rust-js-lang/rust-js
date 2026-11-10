@@ -2,8 +2,8 @@
 
 import {
   $SipHasher,
-  $assign,
   $byteLen,
+  $cellOf,
   $cmp,
   $debugStr,
   $eq,
@@ -65,9 +65,7 @@ function biggest(v, TOrd) {
 }
 function hashed(t, THash) {
   const h = new $SipHasher(1, 3);
-  const state = { value: h };
-  THash.hash(t, state, $sipHasher);
-  $assign(h, state.value);
+  THash.hash(t, $cellOf(h), $sipHasher);
   return h.finish();
 }
 function take2(it) {

@@ -105,8 +105,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an object given where a generic `&mut T` goes isn't boxed, so the callee reads `value` of it",
     file: "src/lower/mir/assign.rs",
-    find: "                Value::Expr(object) if fn_id.is_some_and(|fn_id| self.param_is_box(fn_id, i)) || given_box(self, i) => {\n",
-    replace: "                Value::Expr(object) if false => {\n",
+    find: "                if self.form_differs(Form::Box, crossing) {\n",
+    replace: "                if false && self.form_differs(Form::Box, crossing) {\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -134,16 +134,6 @@ export const mutations: Mutation[] = [
       "-t",
       "^(mut_ref_as_generic|option_as_mut_generic).rs$",
     ],
-  },
-  {
-    name: "mir-object-copied-back-rebound",
-    breaks:
-      "an object given in a box for a generic `&mut T` is copied back by assigning its variable, a `const`",
-    file: "src/lower/mir/assign.rs",
-    find: "            let object = !matches!(value, Value::Ref(_));\n",
-    replace:
-      "            let object = false && !matches!(value, Value::Ref(_));\n",
-    tests: ["test/corpus.test.ts", "-t", "evidence_paths"],
   },
   {
     name: "mir-param-part-moved-again",
@@ -565,15 +555,6 @@ export const mutations: Mutation[] = [
     replace: "",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^if_let_mut_else_assign.rs$"],
-  },
-  {
-    name: "shared-box-unmade",
-    breaks:
-      "an impl for `&mut T`'s `&self`, called where its type is known, is given the object, which it reads as a box",
-    file: "src/lower/mir/assign.rs",
-    find: "                Value::Place(object) if given_box(self, i) => {\n",
-    replace: "                Value::Place(object) if false => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
   },
   {
     name: "writer-last-call-unchecked",
@@ -1047,15 +1028,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-items.test.ts", "-t", "a comment after a view argument"],
   },
   {
-    name: "outliving-object-handle",
-    breaks:
-      "`set_get(&mut v, vec![3, 4])` of a generic `fn set_get<'a, T>(a: &'a mut T, v: T) -> &'a mut T`, whose borrow outlives the call, rebinds the variable that names `v`, `v = value`, a `const`'s, or a parameter's copy the caller never sees, not the object in place (#528)",
-    file: "src/lower/mir/assign.rs",
-    find: "                if object {\n                    exprs.push(crate::lower::mut_refs::in_place_cell(place));\n",
-    replace: "                if false {\n                    exprs.push(crate::lower::mut_refs::in_place_cell(place));\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_mut_written_whole.rs$"],
-  },
-  {
     name: "variant-field-reference-held",
     breaks: "a pattern's binding of a variant's field whose cell is the property it holds is a `const` of a handle on it, `const cleanup = { get value() { return kind.cleanup; }, .. }` (#503)",
     file: "src/lower/mir/assign.rs",
@@ -1090,23 +1062,6 @@ export const mutations: Mutation[] = [
     find: "            && (crate::lower::iterators::is_items_map(&expr) || of_held_items())\n",
     replace: "            && crate::lower::iterators::is_items_map(&expr)\n",
     tests: ["test/corpus.test.ts", "-t", "^move_closure_adapter_from_its_back.rs$"],
-  },
-  {
-    name: "object-box-never-copied-back",
-    breaks: "an object's box given any `&mut self` method isn't copied back, so a blanket impl's generic `Self`, `*self = other`, which writes the box's `value`, leaves the caller's object as it was (a wrong answer, #831)",
-    file: "src/lower/mir/assign.rs",
-    find: "            let taken_apart = object\n",
-    replace: "            let taken_apart = true || object\n",
-    tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer_replaced.rs$"],
-  },
-  {
-    name: "entry-box-copied-back",
-    breaks: "an object's box an impl's entry takes apart is copied back, `$assign(a, self.value)`, the same object onto itself (#831)",
-    file: "src/lower/mir/assign.rs",
-    find: "            let taken_apart = object\n",
-    replace: "            let taken_apart = false && object\n",
-    tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer.rs$"],
-    snapshots: true,
   },
   {
     name: "one-value-kept-mut-refused",

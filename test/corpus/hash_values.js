@@ -2,7 +2,7 @@
 
 import {
   $SipHasher,
-  $assign,
+  $cellOf,
   $cmp,
   $hashSlice,
   $sipHasher,
@@ -96,9 +96,7 @@ function mix(hasher, n) {
 
 function digest(value, THash) {
   const hasher = new $SipHasher(1, 3);
-  const state = { value: hasher };
-  THash.hash(value, state, $sipHasher);
-  $assign(hasher, state.value);
+  THash.hash(value, $cellOf(hasher), $sipHasher);
   return hasher.finish();
 }
 

@@ -2,8 +2,8 @@
 
 import {
   $BTreeMap,
-  $assign,
   $byteLen,
+  $cellOf,
   $cmp,
   $count,
   $debugStr,
@@ -79,25 +79,21 @@ function main() {
     IntoIterIterator: () => ({ next: $next }),
   };
   const v = [1, 2, 3];
-  const c = { value: v };
-  doubleAll(c, intoIterator);
-  $assign(v, c.value);
+  doubleAll($cellOf(v), intoIterator);
   const a = [4, 5];
-  const c$1 = { value: a };
-  doubleAll(c$1, intoIterator);
-  $assign(a, c$1.value);
+  doubleAll($cellOf(a), intoIterator);
   const value = total(v, intoIterator$1);
   const arg = total(a, intoIterator$1);
   console.log(`[${v.join(", ")}] [${a.join(", ")}] ${value} ${arg}`);
 
   let some = 7;
-  const c$2 = { value: some };
-  doubleAll(c$2, optionIntoIterator);
-  some = c$2.value;
+  const c = { value: some };
+  doubleAll(c, optionIntoIterator);
+  some = c.value;
   let none;
-  const c$3 = { value: none };
-  doubleAll(c$3, optionIntoIterator);
-  none = c$3.value;
+  const c$1 = { value: none };
+  doubleAll(c$1, optionIntoIterator);
+  none = c$1.value;
   const arg$1 = total(some, {
     intoIter: (x) => $iter(x == null ? [] : [x]),
     IntoIterIterator: () => ({ next: $next }),
@@ -107,28 +103,25 @@ function main() {
   );
 
   const bag = { items: [1, 10] };
-  const c$4 = { value: bag };
-  const value$1 = doubleThenTotal(c$4, refBagIntoIterator, refMutBagIntoIterator);
-  $assign(bag, c$4.value);
-  console.log(`${value$1} [${bag.items.join(", ")}]`);
+  console.log(
+    `${doubleThenTotal($cellOf(bag), refBagIntoIterator, refMutBagIntoIterator)} [${bag.items.join(", ")}]`,
+  );
 
   const m = new $BTreeMap([
     ["ab", 1],
     ["c", 2],
   ]);
-  const m$1 = { value: m };
-  bumpValues(m$1, {
+  bumpValues($cellOf(m), {
     intoIter: (cell) => $iter($mutEntries(cell.value, $sortedEntries(cell.value, $cmp))),
     IntoIterIterator: () => ({ next: $next }),
   });
-  $assign(m, m$1.value);
   console.log(
     `{${Array.from($sortedEntries(m, $cmp))
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(", ")}}`,
   );
 
-  const value$2 = sumPastThree($iter([1, 2, 3, 4, 5]));
-  console.log(`(${value$2[0]}, ${value$2[1]})`);
+  const value$1 = sumPastThree($iter([1, 2, 3, 4, 5]));
+  console.log(`(${value$1[0]}, ${value$1[1]})`);
 }
 //# sourceMappingURL=case.js.map

@@ -2,7 +2,7 @@
 
 import {
   $BTreeSet,
-  $assign,
+  $cellOf,
   $cmp,
   $eq,
   $heapExtend,
@@ -35,13 +35,11 @@ function main() {
   console.log(`${heap[0] == null ? "None" : `Some(${heap[0]})`} [${heap.join(", ")}]`);
   $heapExtend(heap, $heapFrom([50, 3], $partiallyOrdered), $partiallyOrdered);
   $heapExtend(heap, $sortedKeys(new $BTreeSet([60]), $cmp), $partiallyOrdered);
-  const e = { value: heap };
-  add(e, {
+  add($cellOf(heap), {
     extend(collection, items) {
       $heapExtend(collection.value, items, $partiallyOrdered);
     },
   });
-  $assign(heap, e.value);
   console.log(`[${$heapSorted(heap.slice(), $partiallyOrdered).join(", ")}]`);
 
   const low = [];

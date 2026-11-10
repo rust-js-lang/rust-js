@@ -887,9 +887,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             // The call's own statement, last: what's made before
                             // it writes nothing to the box.
                             let throws = called.last().is_some_and(|s| !s.cannot_throw());
-                            for (place, boxed, object) in std::mem::take(&mut state.copy_backs) {
+                            for (place, boxed) in std::mem::take(&mut state.copy_backs) {
                                 let js_span = self.js_span(span);
-                                let back = self.copied_back(place.clone(), &boxed, object, js_span);
+                                let back = self.copied_back(place.clone(), &boxed, js_span);
                                 if throws {
                                     let place = self.handled_place(place.clone());
                                     on_unwind.push((back.clone(), outlives(state, &place, |ty| self.is_guard(ty))));

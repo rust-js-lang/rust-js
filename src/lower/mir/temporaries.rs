@@ -94,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         state: &mut State<'_, 'tcx>,
         lower: impl FnOnce(&mut Self, &mut State<'_, 'tcx>) -> T,
-    ) -> (T, Vec<(Expr, String, bool)>) {
+    ) -> (T, Vec<(Expr, String)>) {
         let pending = std::mem::take(&mut state.pending);
         let unwind = state.unwind.take();
         let copy_backs = std::mem::take(&mut state.copy_backs);

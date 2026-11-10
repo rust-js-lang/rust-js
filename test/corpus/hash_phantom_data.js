@@ -5,8 +5,8 @@ import {
   $KeySet,
   $SipHasher,
   $add,
-  $assign,
   $btreeSet,
+  $cellOf,
   $cmp,
   $cmpItems,
   $hashSlice,
@@ -47,9 +47,7 @@ function unitHash_hash(unit, state, HHasher) {}
 
 function digest(value, THash) {
   const hasher = new $SipHasher(1, 3);
-  const state = { value: hasher };
-  THash.hash(value, state, $sipHasher);
-  $assign(hasher, state.value);
+  THash.hash(value, $cellOf(hasher), $sipHasher);
   return hasher.finish();
 }
 

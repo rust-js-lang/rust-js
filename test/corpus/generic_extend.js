@@ -2,7 +2,7 @@
 
 import {
   $BTreeSet,
-  $assign,
+  $cellOf,
   $cmp,
   $extend,
   $extendMap,
@@ -58,24 +58,19 @@ function main() {
   const b = { TAG: "Right", _0: new $BTreeSet() };
   eitherExtendA_extend(b, [5, 4, 5], vecExtend, bTreeSetExtend, [4, 4]);
   let s = "x";
-  const value = [];
-  const c = { value };
-  fill(c, 2, vecExtend);
-  $assign(value, c.value);
+  fill($cellOf([]), 2, vecExtend);
   const v = [7];
-  const c$1 = { value: v };
-  fill(c$1, 3, vecExtend);
-  $assign(v, c$1.value);
+  fill($cellOf(v), 3, vecExtend);
   s += ["y", "z"].join("");
-  const c$2 = { value: s };
-  shout(c$2, {
+  const c = { value: s };
+  shout(c, {
     extend(collection, items) {
       $extendText($reserveHint(items, 1, undefined, collection.value), (piece) => {
         collection.value += piece;
       });
     },
   });
-  s = c$2.value;
+  s = c.value;
   if (a.TAG === "Left") {
     console.log(`[${a._0.join(", ")}]`);
   }

@@ -2,8 +2,8 @@
 
 import {
   $apart,
-  $assign,
   $byteLen,
+  $cellOf,
   $cmp,
   $debugF64,
   $debugStr,
@@ -66,9 +66,7 @@ function main() {
   console.log(`${old.start}..${old.end} ${range.start}..${range.end}`);
   // Given where `T: Default` goes.
   const other = { start: 5, end: 9 };
-  const r$1 = { value: other };
-  const value = reset(r$1, rangeDefault);
-  $assign(other, r$1.value);
+  const value = reset($cellOf(other), rangeDefault);
   console.log(`${value.start}..${value.end} ${other.start}..${other.end}`);
   // Taken part way through its steps: what's left, and an empty one.
   let stepped = { start: 10, end: 15 };

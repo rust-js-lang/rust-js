@@ -407,7 +407,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(i, p)| {
                 let given = (declared.inputs().get(i))
                     .filter(|_| generic_forms)
-                    .map(|&of| (of, self.instantiated(of, args)));
+                    .map(|&of| (def_id, of, self.instantiated(of, args)));
                 Value::Expr(
                     match given.and_then(|given| self.form_of(given).map(|form| (form, given))) {
                         Some((form, given)) => self.form_back(form, given, Expr::var(p)),
@@ -444,14 +444,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut value = value?;
         if !copy_backs.is_empty() {
             value = self.spill("value", value, &mut body);
-            for (place, boxed, object) in copy_backs {
+            for (place, boxed) in copy_backs {
                 let js_span = self.js_span(span);
-                body.push(self.copied_back(place, &boxed, object, js_span));
+                body.push(self.copied_back(place, &boxed, js_span));
             }
         }
         // What it gives back in generic code's form too, a slice's raw
         // pointer `$ptrTo(r)`.
-        let output = (declared.output(), self.instantiated(declared.output(), args));
+        let output = (def_id, declared.output(), self.instantiated(declared.output(), args));
         // What it gives back in generic code's form too, an object's `&mut`
         // `$cellOf(r)`.
         let value = match self.form_of(output).filter(|_| generic_forms) {
