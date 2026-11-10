@@ -166,3 +166,13 @@ of its own, `crate-corpus`, about 95 s of a runner beside the suite; and
 plain `check:fast` of such a change runs it too, 22–33 s at half the
 cores. It has no kept verdicts: each crate's graph compiles again with
 the compiler of the push, whose every change may change any of them.
+
+And React's port at its pin (`scripts/react-in-rust.ts regen`), the
+nightly's `port`, runs per push whose change is what compiles it, the
+compiler, its runtime, std's crate, the tooling or the bindings React's
+crates use (`portPaths`, the same file's list), in a job of its own,
+`react-in-rust-port`, about 100 s of a runner, a file that differs from
+what the pin committed failing it: ba69090b3's port diff went unseen till
+the nightly (#1189). `check:fast` leaves it to CI (`leftToCi`), as it
+fetches the port and builds its crates; `bun scripts/react-in-rust.ts
+regen` runs it here.

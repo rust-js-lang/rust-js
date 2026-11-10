@@ -75,6 +75,7 @@ jobs:
       consumers: ${{ steps.plan.outputs.consumers }}
       cases: ${{ steps.plan.outputs.cases }}
       crates: ${{ steps.plan.outputs.crates }}
+      port: ${{ steps.plan.outputs.port }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -400,6 +401,42 @@ jobs:
         env:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun scripts/crate-corpus.ts --check
+
+  # React's port at its pin (scripts/react-in-rust.ts), of a check whose
+  # change is what compiles it, as `plan` says (`portPaths`): its crates
+  # compiled to JS by this compiler, a file that differs from what the pin
+  # committed failing it, as the nightly's `port` does; ba69090b3's diff
+  # went unseen until the nightly (#1188). The nightly runs its own.
+  react-in-rust-port:
+    name: react-in-rust port
+    needs: plan
+    if: ${{ !inputs.nightly && needs.plan.outputs.port == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Compile the port's crates and compare their JS
+        env:
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: bun scripts/react-in-rust.ts regen
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: react-in-rust-diff
+          path: target/react-in-rust.diff
+          if-no-files-found: ignore
+          retention-days: 14
 
   lint:
     runs-on: ubuntu-latest

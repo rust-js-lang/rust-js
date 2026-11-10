@@ -86,6 +86,10 @@ export const leftToCi: { run: string; why: string }[] = [
   { run: "BLESS=1", why: "a red run's bless patch: here a `BLESS=1` writes it in place" },
   { run: "bun run wasm", why: "the WASM compiler, a build of rustc's frontend to wasm32 of about half an hour" },
   {
+    run: "bun scripts/react-in-rust.ts regen",
+    why: "React's port at its pin, fetched and its crates built, about 100 s of a runner: here `bun scripts/react-in-rust.ts regen` by hand, as a port's change is one's own (#1188)",
+  },
+  {
     run: "bun test test/snapshots.test.ts test/playground.test.ts",
     why: "the snapshots and the playground with the WASM compiler (`RUST_JS_REQUIRE_WASM`), which only CI builds; check:fast runs both with the native one",
   },

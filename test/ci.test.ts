@@ -26,7 +26,7 @@ import {
   unitTestsModule,
 } from "../scripts/mutations";
 import { jobs, leftToCi, readabilityPaths, touchesReadability } from "../scripts/checkFast";
-import { changedCases, runs, touchesCrates } from "../scripts/iteratorSlice";
+import { changedCases, runs, touchesCrates, touchesPort } from "../scripts/iteratorSlice";
 import { loadScale } from "../scripts/timing";
 import { jobs as localNightly } from "../scripts/nightly";
 import { caseParts, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, pooledParts, shard } from "../scripts/shard";
@@ -149,6 +149,11 @@ test("the crate corpus runs where its paths say, of plain check:fast too", () =>
   expect(touchesCrates(["std/lib.rs"])).toBe(true);
   expect(touchesCrates(["tooling/build.js"])).toBe(false);
   expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("needs.plan.outputs.crates == 'true'");
+  // And React's port, of a change to what compiles it (#1188).
+  expect(touchesPort(["tooling/build.js"])).toBe(true);
+  expect(touchesPort(["src/lower/copies.rs"])).toBe(true);
+  expect(touchesPort(["docs/guide/README.md", "test/corpus/a.rs"])).toBe(false);
+  expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("needs.plan.outputs.port == 'true'");
 });
 
 test("each command a push's check runs is check:fast --all's, or left to CI by name", () => {
@@ -253,7 +258,7 @@ test("the nightly, here, has each job the nightly has", () => {
     const text = readFileSync(join(root, ".github/workflows", file), "utf8");
     return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
   };
-  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators", "iterator-conformance", "iterator-forms", "format-grid", "number-grid", "declarations", "async-points", "consumer-net", "metamorphic-cases", "crate-corpus"].includes(id));
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators", "iterator-conformance", "iterator-forms", "format-grid", "number-grid", "declarations", "async-points", "consumer-net", "metamorphic-cases", "crate-corpus", "react-in-rust-port"].includes(id));
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 

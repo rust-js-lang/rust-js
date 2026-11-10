@@ -187,6 +187,21 @@ export function touchesCrates(files: string[]): boolean {
   return files.some((file) => crateGlobs.some((glob) => glob.match(file)));
 }
 
+/** What compiles React's port, as globs of the repository's paths: the
+ * compiler, its runtime, std's crate, the tooling that builds an app and
+ * the bindings its crates use. A change to any of them regenerates the
+ * port at its pin in each push's check (check.yml's `react-in-rust-port`),
+ * failing on any file that differs: ba69090b3's port diff went unseen
+ * until the nightly (#1188, #1189). */
+export const portPaths = ["src/**", "std/**", "tooling/**", "builtins/**", "react/**", "webapi/**", "Cargo.lock", "ports/react-in-rust.pin", "scripts/react-in-rust.ts"];
+
+const portGlobs = portPaths.map((path) => new Bun.Glob(path));
+
+/** Whether a change of `files` touches what compiles React's port. */
+export function touchesPort(files: string[]): boolean {
+  return files.some((file) => portGlobs.some((glob) => glob.match(file)));
+}
+
 /** The corpus cases among a change's `files`, `test/corpus/<case>.rs`, by
  * name, those it adds or edits: each of their metamorphic rewrites runs,
  * as a case that runs as Rust does may not rewritten, #1115's moved into
