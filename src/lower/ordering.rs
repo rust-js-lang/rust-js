@@ -382,7 +382,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn is_total(&self, ty: Ty<'tcx>) -> bool {
         let tr = ty::TraitRef::new(self.tcx, self.ord_trait(), [self.tcx.erase_and_anonymize_regions(ty)]);
         matches!(
-            self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)),
+            crate::lower::traits::select(self.tcx, self.typing_env, tr),
             Ok(ImplSource::UserDefined(_) | ImplSource::Param(_) | ImplSource::Builtin(..))
         )
     }

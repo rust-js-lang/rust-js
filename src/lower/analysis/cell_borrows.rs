@@ -472,7 +472,7 @@ impl<'tcx> CellBorrows<'tcx> {
             };
             let tr = ty::TraitRef::new(tcx, trait_id, of);
             !matches!(
-                tcx.codegen_select_candidate(recognition.typing_env.as_query_input(tr)),
+                crate::lower::traits::select(tcx, recognition.typing_env, tr),
                 Err(rustc_middle::traits::CodegenObligationError::Unimplemented)
             )
         };

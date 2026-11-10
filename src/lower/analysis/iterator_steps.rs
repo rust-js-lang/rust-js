@@ -636,8 +636,7 @@ fn impl_asks<'tcx>(
     adapter: ty::Ty<'tcx>,
 ) -> Option<Vec<(u32, DefId)>> {
     let tr = ty::TraitRef::new(tcx, by, [adapter]);
-    let Ok(rustc_middle::traits::ImplSource::UserDefined(imp)) =
-        tcx.codegen_select_candidate(typing_env.as_query_input(tr))
+    let Ok(rustc_middle::traits::ImplSource::UserDefined(imp)) = crate::lower::traits::select(tcx, typing_env, tr)
     else {
         return None;
     };

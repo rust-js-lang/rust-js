@@ -211,7 +211,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Destructors and their facts | `drops.rs`, `drops/`; `mir/drops.rs` follows rustc's drop elaboration; `drops/glue.rs` lowers a struct's, an enum's and a tuple's drop glue from rustc's own `drop_glue` shim, the one call of `build_drop_shim` (#887) |
 | std types and calls | `std_types/`, `std_types/number/`; `std_types/values.rs` dispatches to each type's module |
 | Iterators and combinators | `iterators.rs`, `iterators/`, `combinators.rs`, `combinators/` |
-| Item references, traits, dictionaries and standard impls; a recursive type's `==`, clone and order, one function for each module | `items.rs`, `traits.rs`, `traits/`, `std_impls.rs`, `std_impls/defaults.rs`, `std_impls/in_turn.rs`, `std_impls/not_equal.rs`, `ordering.rs`, `recursive_fns.rs` |
+| Item references, traits, dictionaries and standard impls; a recursive type's `==`, clone and order, one function for each module; the one way rustc's trait selection is asked, `traits::select`, a binder's regions erased (#1224) | `items.rs`, `traits.rs`, `traits/`, `std_impls.rs`, `std_impls/defaults.rs`, `std_impls/in_turn.rs`, `std_impls/not_equal.rs`, `ordering.rs`, `recursive_fns.rs` |
 | Formatting | `display.rs`, `display/`, `format_args.rs`, `format_spec.rs`; a `format_args!`'s parts as MIR gives them, `mir/std_calls/fmt_parts.rs` |
 | Serde and supported external crate APIs | `serde.rs`, `serde/`, `shipped.rs` |
 | JSX, JS bindings, untagged values and JS-visible uses | `jsx.rs`, `jsx_api.rs`, `bindings.rs`, `bindings/`, `binding_calls.rs`, `untagged.rs`, `liveness.rs` |

@@ -45,10 +45,6 @@ plain std dyn-fn max_by_key_of_a_dropping_key_over_its_iterator.rs
 plain std dyn-fn panic_mid_fold_drops.rs
 plain std dyn-fn panic_part_way_drops.rs
 
-#1224 P1 (compile crash): escaping bound vars in cell_borrows::std_given → bound_runs → traits::evidence_impl (#1111's class)
-plain std dyn-fn generic_collect.rs
-plain std dyn-fn generic_from_str.rs
-
 #1226 P0 (impl Trait): a std adapter returned as impl Trait is compiled from std's bodies, but the code using it reads it as rust-js's JS-iterator form
 plain opaque back_predicate_unwinds.rs
 plain opaque back_steps.rs

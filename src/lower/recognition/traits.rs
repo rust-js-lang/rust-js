@@ -58,7 +58,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// The impl of the crate's, or a dependency's, that `tr` selects.
     pub(in crate::lower) fn user_impl(&self, tr: ty::TraitRef<'tcx>) -> Option<DefId> {
         let tr = self.tcx.erase_and_anonymize_regions(tr);
-        match self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)) {
+        match crate::lower::traits::select(self.tcx, self.typing_env, tr) {
             Ok(ImplSource::UserDefined(imp))
                 if self.trait_impls.contains(&imp.impl_def_id) || self.foreign.has_impl(imp.impl_def_id) =>
             {
@@ -168,7 +168,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn own_clone_from(&self, ty: Ty<'tcx>) -> bool {
         let clone = self.tcx.require_lang_item(LangItem::Clone, rustc_span::DUMMY_SP);
         let tr = ty::TraitRef::new(self.tcx, clone, [self.tcx.erase_and_anonymize_regions(ty)]);
-        matches!(self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)),
+        matches!(crate::lower::traits::select(self.tcx, self.typing_env, tr),
             Ok(ImplSource::UserDefined(imp)) if !self.is_std(imp.impl_def_id) && self.has_clone_from(imp.impl_def_id))
     }
 
@@ -198,7 +198,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn is_derived_impl(&self, trait_id: DefId, ty: Ty<'tcx>) -> bool {
         let tr = ty::TraitRef::new_from_args(self.tcx, trait_id, self.args_of(trait_id, ty));
         let tr = self.tcx.erase_and_anonymize_regions(tr);
-        matches!(self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)),
+        matches!(crate::lower::traits::select(self.tcx, self.typing_env, tr),
             Ok(ImplSource::UserDefined(imp)) if self.trait_impls.contains(&imp.impl_def_id)
                 && known_derive(self.tcx, imp.impl_def_id))
     }
@@ -214,7 +214,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn derived_impl(&self, trait_id: DefId, ty: Ty<'tcx>) -> Option<DefId> {
         let tr = ty::TraitRef::new_from_args(self.tcx, trait_id, self.args_of(trait_id, ty));
         let tr = self.tcx.erase_and_anonymize_regions(tr);
-        match self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)) {
+        match crate::lower::traits::select(self.tcx, self.typing_env, tr) {
             Ok(ImplSource::UserDefined(imp)) if known_derive(self.tcx, imp.impl_def_id) => Some(imp.impl_def_id),
             _ => None,
         }

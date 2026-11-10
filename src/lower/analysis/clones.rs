@@ -193,7 +193,7 @@ fn clones_in_turn<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<Ty<'tcx>> {
             };
             let typing_env = ty::TypingEnv::fully_monomorphized();
             let tr = ty::TraitRef::new(tcx, clone, [ty]);
-            let Ok(ImplSource::UserDefined(imp)) = tcx.codegen_select_candidate(typing_env.as_query_input(tr)) else {
+            let Ok(ImplSource::UserDefined(imp)) = crate::lower::traits::select(tcx, typing_env, tr) else {
                 return Vec::new();
             };
             (tcx.clauses_of(imp.impl_def_id).instantiate(tcx, imp.args).into_iter())

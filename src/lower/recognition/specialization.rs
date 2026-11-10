@@ -49,7 +49,7 @@ pub(crate) fn fact_specialization<'tcx>(
     let trait_id = tcx.trait_of_assoc(callee)?;
     let tr = ty::TraitRef::from_assoc(tcx, trait_id, args);
     let tr = tcx.erase_and_anonymize_regions(tr);
-    let Ok(ImplSource::UserDefined(selected)) = tcx.codegen_select_candidate(typing_env.as_query_input(tr)) else {
+    let Ok(ImplSource::UserDefined(selected)) = crate::lower::traits::select(tcx, typing_env, tr) else {
         return None;
     };
     let (impl_id, impl_args) = (selected.impl_def_id, selected.args);
@@ -602,7 +602,7 @@ pub(crate) fn optimized_default<'tcx>(
     let trait_id = tcx.trait_of_assoc(callee)?;
     let tr = ty::TraitRef::from_assoc(tcx, trait_id, args);
     let tr = tcx.erase_and_anonymize_regions(tr);
-    let Ok(ImplSource::UserDefined(selected)) = tcx.codegen_select_candidate(typing_env.as_query_input(tr)) else {
+    let Ok(ImplSource::UserDefined(selected)) = crate::lower::traits::select(tcx, typing_env, tr) else {
         return None;
     };
     let impl_id = selected.impl_def_id;
@@ -674,7 +674,7 @@ pub(crate) fn trait_holds_in<'tcx>(
     trait_id: DefId,
 ) -> Option<bool> {
     let tr = tcx.erase_and_anonymize_regions(ty::TraitRef::new(tcx, trait_id, [ty]));
-    match tcx.codegen_select_candidate(typing_env.as_query_input(tr)) {
+    match crate::lower::traits::select(tcx, typing_env, tr) {
         Ok(_) => Some(true),
         Err(rustc_middle::traits::CodegenObligationError::Unimplemented)
             if !rustc_middle::ty::TypeVisitableExt::has_param(&ty) || !has_impl_for_head(tcx, ty, trait_id) =>

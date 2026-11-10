@@ -1123,9 +1123,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         };
         matches!(self_ty.kind(), ty::Adt(..))
             && matches!(
-                tcx.codegen_select_candidate(
-                    self.typing_env
-                        .as_query_input(tcx.erase_and_anonymize_regions(ty::TraitRef::new(tcx, tr, [self_ty]))),
+                crate::lower::traits::select(
+                    tcx,
+                    self.typing_env,
+                    tcx.erase_and_anonymize_regions(ty::TraitRef::new(tcx, tr, [self_ty])),
                 ),
                 Ok(ImplSource::UserDefined(imp))
                     if !tcx.impl_item_implementor_ids(imp.impl_def_id).contains_key(&def_id)

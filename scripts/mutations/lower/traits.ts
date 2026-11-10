@@ -369,4 +369,12 @@ export const mutations: Mutation[] = [
     replace: "            (given.iter().flat_map(|ty| ty.walk()).filter_map(|arg| arg.as_type())).any(|_| false)\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "a trait of `&mut self` methods"],
   },
+  {
+    name: "selection-of-a-bound-region",
+    breaks: "trait selection is asked of a part of a type inside a binder as it is, `<(&u32,) as Iterator>` of a `Box<dyn FnMut(&u32) -> bool>` given `filter` in generic code, and rustc panics: escaping bound vars (#1224)",
+    file: "src/lower/traits.rs",
+    find: "    let tr = match tr.has_escaping_bound_vars() {\n",
+    replace: "    let tr = match false && tr.has_escaping_bound_vars() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_reference_given_to_adapters_in_generic_code\\.rs$"],
+  },
 ];

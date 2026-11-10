@@ -540,7 +540,7 @@ pub(crate) fn not_compiled_for_build(tcx: TyCtxt<'_>, id: DefId) -> bool {
 pub(crate) fn is_trusted_len<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
     super::fact_trait(tcx, TypeFact::TrustedLen).is_some_and(|trusted| {
         let tr = ty::TraitRef::new(tcx, trusted, [ty]);
-        tcx.codegen_select_candidate(typing_env.as_query_input(tr)).is_ok()
+        crate::lower::traits::select(tcx, typing_env, tr).is_ok()
     })
 }
 
@@ -564,7 +564,7 @@ pub(crate) fn zips_by_index<'tcx>(
     };
     let is_random_access = |ty: Ty<'tcx>| {
         let tr = tcx.erase_and_anonymize_regions(ty::TraitRef::new(tcx, random_access, [ty]));
-        tcx.codegen_select_candidate(typing_env.as_query_input(tr)).is_ok()
+        crate::lower::traits::select(tcx, typing_env, tr).is_ok()
     };
     is_random_access(a) && is_random_access(b) && steps_code(tcx, typing_env, a)
 }

@@ -150,6 +150,34 @@ pub(super) struct Given<'a> {
     pub js_given: &'a super::analysis::JsGiven,
 }
 
+/// The impl codegen selects of `tr` in `typing_env`: the one way the
+/// lowering asks rustc's trait selection (#1224). A part of a type inside a
+/// binder, a `dyn Fn(&u32)`'s or a `fn(&u32)`'s arguments, `(&u32,)`, holds
+/// a region its binder binds, which selection can't take (#1111); erased,
+/// as codegen's are, it selects what the type's impl is, as a lifetime
+/// decides no impl codegen selects. One bound by a binder of types or
+/// consts, never one the crate writes, is an internal error, loud, never a
+/// quiet "no impl".
+pub(in crate::lower) fn select<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    tr: ty::TraitRef<'tcx>,
+) -> Result<&'tcx rustc_middle::traits::ImplSource<'tcx, ()>, rustc_middle::traits::CodegenObligationError> {
+    use rustc_middle::ty::TypeVisitableExt;
+    let tr = match tr.has_escaping_bound_vars() {
+        true => rustc_middle::ty::fold_regions(tcx, tr, |region, depth| match region.kind() {
+            ty::ReBound(ty::BoundVarIndexKind::Bound(debruijn), _) if debruijn >= depth => tcx.lifetimes.re_erased,
+            _ => region,
+        }),
+        false => tr,
+    };
+    assert!(
+        !tr.has_escaping_bound_vars(),
+        "rust-js asked trait selection of `{tr:?}`, which a binder of types or consts binds: an internal error (#1224)"
+    );
+    tcx.codegen_select_candidate(typing_env.as_query_input(tr))
+}
+
 /// The impl whose dictionary is the evidence of `tr`, and its arguments: a
 /// user's, the crate's or another's, as `codegen_select_candidate` selects
 /// it, where `tr` isn't a built-in one, a `dyn`'s.
@@ -158,7 +186,7 @@ pub(super) fn evidence_impl<'tcx>(
     typing_env: ty::TypingEnv<'tcx>,
     tr: ty::TraitRef<'tcx>,
 ) -> Option<(DefId, ty::GenericArgsRef<'tcx>)> {
-    match tcx.codegen_select_candidate(typing_env.as_query_input(tr)) {
+    match select(tcx, typing_env, tr) {
         Ok(ImplSource::UserDefined(imp)) => Some((imp.impl_def_id, imp.args)),
         _ => None,
     }

@@ -355,7 +355,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             users(tr).or_else(|| {
                 // Of std's impl, whose JS is std's: the crate's is given its
                 // `Borrow`'s dictionary.
-                match self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)) {
+                match crate::lower::traits::select(self.tcx, self.typing_env, tr) {
                     Ok(ImplSource::UserDefined(imp))
                         if !self.trait_impls.contains(&imp.impl_def_id) && !self.foreign.has_impl(imp.impl_def_id) =>
                     {

@@ -13,7 +13,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             _ => ty.into(),
         });
         let tr = ty::TraitRef::new_from_args(self.tcx, visitor, args);
-        match self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)) {
+        match crate::lower::traits::select(self.tcx, self.typing_env, tr) {
             Ok(ImplSource::UserDefined(imp)) if self.trait_impls.contains(&imp.impl_def_id) => Some(imp.impl_def_id),
             _ => None,
         }

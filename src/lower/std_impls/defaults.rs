@@ -19,8 +19,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// has no fields: the constructor the derived body names, `Mode::Off`.
     fn default_variant(&self, default: DefId, ty: Ty<'tcx>) -> Option<DefId> {
         let tr = ty::TraitRef::new(self.tcx, default, [self.tcx.erase_and_anonymize_regions(ty)]);
-        let Ok(ImplSource::UserDefined(imp)) = self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr))
-        else {
+        let Ok(ImplSource::UserDefined(imp)) = crate::lower::traits::select(self.tcx, self.typing_env, tr) else {
             return None;
         };
         let method = self.tcx.associated_item_def_ids(imp.impl_def_id)[0].as_local()?;

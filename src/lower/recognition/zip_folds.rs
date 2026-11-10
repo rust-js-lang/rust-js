@@ -115,7 +115,7 @@ pub(crate) fn zip_folds_to_the_shorter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) ->
     };
     let holds = |ty: Ty<'tcx>, tr: DefId| {
         let tr = tcx.erase_and_anonymize_regions(ty::TraitRef::new(tcx, tr, [ty]));
-        tcx.codegen_select_candidate(typing_env.as_query_input(tr)).is_ok()
+        crate::lower::traits::select(tcx, typing_env, tr).is_ok()
     };
     let iterator = std_item(tcx, StdItem::Iterator);
     let item = Ty::new_projection(tcx, ty::IsRigid::No, trait_method(tcx, iterator, "Item"), [a]);

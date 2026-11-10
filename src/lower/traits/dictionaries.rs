@@ -880,7 +880,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             });
         }
         // A trait object's: Rust's built-in `impl Trait for dyn Trait`.
-        let selected = self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr));
+        let selected = crate::lower::traits::select(self.tcx, self.typing_env, tr);
         if let Ok(ImplSource::Builtin(BuiltinImplSource::Object(_), _)) = selected {
             return self.object_dictionary(tr, span);
         }

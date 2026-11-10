@@ -1089,10 +1089,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its back read a length it didn't have (#706).
     pub(in crate::lower) fn default_len(&self, ty: ty::Ty<'tcx>, exact_size: DefId) -> Option<Expr> {
         let tr = (self.tcx).erase_and_anonymize_regions(ty::TraitRef::new(self.tcx, exact_size, [ty]));
-        let exact = self
-            .tcx
-            .codegen_select_candidate(self.typing_env.as_query_input(tr))
-            .is_ok();
+        let exact = crate::lower::traits::select(self.tcx, self.typing_env, tr).is_ok();
         (exact && self.hinted_by_its_struct(ty)).then(|| {
             let hint = Expr::call_helper("$sizeHint", vec![Expr::var("iterator")]);
             Expr::arrow(
@@ -1118,22 +1115,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let tr = self
             .tcx
             .erase_and_anonymize_regions(ty::TraitRef::new(self.tcx, trait_id, [ty]));
-        self.tcx
-            .codegen_select_candidate(self.typing_env.as_query_input(tr))
-            .is_ok()
-            && {
-                // The trait's arguments, and a method's own parameters,
-                // `rfold`'s `B` and `F`, themselves: they pick no impl.
-                let method = trait_method(self.tcx, trait_id, method);
-                let of = self.args_of(trait_id, ty);
-                let args = ty::GenericArgs::for_item(self.tcx, method, |param, _| match of.get(param.index as usize) {
-                    Some(&arg) => arg,
-                    None => self.tcx.mk_param_from_def(param),
-                });
-                self.resolve_instance(method, args).is_ok_and(|instance| {
-                    instance.is_some_and(|i| crate::lower::recognition::is_compiled_std(self.tcx, i.def_id()))
-                })
-            }
+        crate::lower::traits::select(self.tcx, self.typing_env, tr).is_ok() && {
+            // The trait's arguments, and a method's own parameters,
+            // `rfold`'s `B` and `F`, themselves: they pick no impl.
+            let method = trait_method(self.tcx, trait_id, method);
+            let of = self.args_of(trait_id, ty);
+            let args = ty::GenericArgs::for_item(self.tcx, method, |param, _| match of.get(param.index as usize) {
+                Some(&arg) => arg,
+                None => self.tcx.mk_param_from_def(param),
+            });
+            self.resolve_instance(method, args).is_ok_and(|instance| {
+                instance.is_some_and(|i| crate::lower::recognition::is_compiled_std(self.tcx, i.def_id()))
+            })
+        }
     }
 
     /// The function that steps the crate's iterator of type `ty`, its impl's

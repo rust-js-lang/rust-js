@@ -258,9 +258,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let tr = self
             .tcx
             .erase_and_anonymize_regions(ty::TraitRef::new(self.tcx, fused, [ty]));
-        self.tcx
-            .codegen_select_candidate(self.typing_env.as_query_input(tr))
-            .is_ok()
+        crate::lower::traits::select(self.tcx, self.typing_env, tr).is_ok()
     }
 
     /// The function a lazy adapter of std's holds, `map(f)`'s `F` of a
@@ -793,7 +791,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn iterates_as_itself(&self, ty: Ty<'tcx>) -> bool {
         let into_iterator = std_item(self.tcx, StdItem::IntoIterator);
         let tr = ty::TraitRef::new(self.tcx, into_iterator, [self.tcx.erase_and_anonymize_regions(ty)]);
-        matches!(self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)),
+        matches!(crate::lower::traits::select(self.tcx, self.typing_env, tr),
             Ok(ImplSource::UserDefined(imp)) if self.is_std(imp.impl_def_id)
                 && matches!(self.tcx.type_of(imp.impl_def_id).instantiate_identity().skip_normalization().kind(), ty::Param(_)))
     }
@@ -1254,7 +1252,7 @@ pub(crate) fn is_from_fn(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 pub(crate) fn std_struct_steps_in<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
     let iterator = std_item(tcx, StdItem::Iterator);
     let tr = tcx.erase_and_anonymize_regions(ty::TraitRef::new(tcx, iterator, [ty]));
-    tcx.codegen_select_candidate(typing_env.as_query_input(tr)).is_ok()
+    crate::lower::traits::select(tcx, typing_env, tr).is_ok()
 }
 
 /// Whether `callee`, a compiled std function, gives back std's struct it

@@ -1466,3 +1466,15 @@ test("no thread-local or static holds rustc's ids but the lowering session's cac
   expect(session.match(/\.take\(\)/g)?.length).toBe(1);
   expect(session).toContain("impl Drop for Session");
 });
+
+// Trait selection is asked one way, `traits.rs`' `select`, which takes a
+// part of a type inside a binder, a `dyn Fn(&u32)`'s `(&u32,)`, as
+// codegen's regions are, erased: each of the lowering's 25 own calls of
+// rustc's selection was a place a bound region could reach it (#1111,
+// #1224).
+test("trait selection is asked through `traits::select` alone", () => {
+  const callers = [...files("src/lower"), "src/lower.rs"].filter(
+    (file) => file !== "src/lower/traits.rs" && /\.codegen_select_candidate\(/.test(read(file)),
+  );
+  expect(callers).toEqual([]);
+});
