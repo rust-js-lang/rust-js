@@ -27,6 +27,7 @@ import { agree, compileJs, compileJsAsync, jsLimit, runJs, runNative, runtimes, 
 import { reduce, size } from "./reduce";
 import { buildCompiler, caseShard, compiler, contentDirectory, fixture, run, target, writeWhole } from "./support";
 import { record, runKey, shared, verified } from "./verified-runs";
+import { partSetting } from "./part-settings";
 
 beforeAll(() => {
   buildCompiler();
@@ -62,7 +63,7 @@ const few = [
   // guards its cleanups wherever it stops (#847).
   "unwinding_drop_aborts_locals.rs",
 ];
-const which = process.env.TIDY_STAGES;
+const which = partSetting("TIDY_STAGES");
 if (which !== undefined && which !== "corpus" && which !== "programs") {
   throw new Error(`TIDY_STAGES=${which}: \`corpus\`, \`programs\`, or unset for a few cases`);
 }

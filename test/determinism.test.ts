@@ -18,6 +18,7 @@ import { join } from "node:path";
 import { cases, corpus, directives } from "./corpus-cases";
 import { compileJsAsync } from "./programs";
 import { buildCompiler, caseShard, fixture } from "./support";
+import { partSetting } from "./part-settings";
 
 beforeAll(() => {
   buildCompiler();
@@ -27,7 +28,7 @@ beforeAll(() => {
 // the next, each compiled so often that two forms, each half the time,
 // show: ranges' fixpoint walked its callees in a `HashSet`'s order (#866).
 const few = ["iterator_closes_of_quiet_items.rs", "ranges_told_by_many_callers.rs"];
-const which = process.env.DETERMINISM;
+const which = partSetting("DETERMINISM");
 if (which !== undefined && which !== "corpus") throw new Error(`DETERMINISM=${which}: \`corpus\`, or unset for a few cases`);
 const chosen = which === "corpus" ? caseShard(cases) : few;
 const times = which === "corpus" ? 2 : 8;

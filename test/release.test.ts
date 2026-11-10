@@ -8,10 +8,11 @@ import { expect, test } from "bun:test";
 import { cpSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildCompiler, compiler, fixture, root, run } from "./support";
+import { partSetting } from "./part-settings";
 
 // A distribution qualification gives (ADR 0094), its compiler an installed
 // launcher, which isn't packed; else one is packed here.
-const supplied = process.env.RUST_JS_DISTRIBUTION;
+const supplied = partSetting("RUST_JS_DISTRIBUTION");
 const version = (Bun.TOML.parse(readFileSync(join(root, "Cargo.toml"), "utf8")) as { package: { version: string } }).package.version;
 
 test("each package a release publishes is publishable, at the compiler's version", () => {

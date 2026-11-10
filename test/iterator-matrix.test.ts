@@ -37,6 +37,7 @@ import { same, type Outcome } from "./oracle";
 import { aborted, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, fixture } from "./support";
 import { shard } from "../scripts/shard";
+import { partSetting } from "./part-settings";
 
 // What rustc's told of a crate of rust-js's bindings the table's programs
 // use, which its `prepare` builds (#942).
@@ -46,7 +47,7 @@ beforeAll(() => {
   rustc = of.prepare?.() ?? [];
 }, 900_000);
 
-const which = process.env.ITERATOR_MATRIX;
+const which = partSetting("ITERATOR_MATRIX");
 const issue = /^#(\d+)$/.exec(which ?? "")?.[1];
 const picking = /^(pairs(?::(\d+))?)?(?:\/(.+)\/)?$/.exec(which ?? "");
 const paired = picking?.[1] === undefined ? undefined : Number(picking[2] ?? (table === "matrix" ? 60 : 10));

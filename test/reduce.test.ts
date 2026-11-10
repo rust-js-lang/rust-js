@@ -12,6 +12,7 @@ import { buildCompiler, fixture } from "./support";
 import { underLoad } from "../scripts/timing";
 import { failure, reduce, size } from "../scripts/reduce";
 import { installMiri, miriInstalled } from "./miri";
+import { partSetting } from "./part-settings";
 
 beforeAll(() => {
   buildCompiler();
@@ -80,7 +81,7 @@ test("each of the rewriter's reductions is smaller, and past the last there's no
 
 // Miri, where it's installed, and where `RUST_JS_REQUIRE_MIRI=1` says it
 // is, the nightly's Miri job's (#1104).
-const miri = process.env.RUST_JS_REQUIRE_MIRI === "1" || miriInstalled();
+const miri = partSetting("RUST_JS_REQUIRE_MIRI") === "1" || miriInstalled();
 
 /** Bytes of an allocation of `alloc`'s, each written before it's read:
  * semver's identifiers' (#1099), which rust-js's JS of fails as it was

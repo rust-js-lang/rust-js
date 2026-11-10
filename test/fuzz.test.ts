@@ -23,12 +23,13 @@ import { same } from "./oracle";
 import { agree, compileJs, jsLimit, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, compiler, contentDirectory, fixture, root, target, writeWhole } from "./support";
 import { undefinedBehaviour } from "./miri";
+import { partSetting } from "./part-settings";
 
 /** A setting that's a whole number, at least `least`, or none, and then
  * `otherwise`: anything else fails the run before a seed does, not as a
  * run of none. */
 function whole(name: string, otherwise: number, least: number, most = Number.MAX_SAFE_INTEGER): number {
-  const value = process.env[name];
+  const value = partSetting(name);
   if (value === undefined) return otherwise;
   if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)) || Number(value) < least || Number(value) > most) {
     throw new Error(`${name}=${value}: a whole number, from ${least} to ${most}, is a setting`);
@@ -46,7 +47,7 @@ if (start + seeds > seedLimit) {
 }
 // The seeds `bun test` runs are known to compile, so one rust-js rejects is
 // a regression; exploring others, a program it doesn't support is skipped.
-const exploring = process.env.FUZZ_START !== undefined || process.env.FUZZ_SEEDS !== undefined;
+const exploring = partSetting("FUZZ_START") !== undefined || partSetting("FUZZ_SEEDS") !== undefined;
 
 // A reduction stops after this long, with the smallest program so far.
 const reduceBudget = whole("FUZZ_REDUCE_BUDGET", 300_000, 1);
@@ -70,7 +71,7 @@ const builds: [Build, string[]][] = [
 ];
 
 /** Miri, where `FUZZ_MIRI=1` asks for it (test/miri.ts). */
-const miri = process.env.FUZZ_MIRI === "1";
+const miri = partSetting("FUZZ_MIRI") === "1";
 
 /** What happens to a program, natively and as JS in each build, the
  * first that goes otherwise than native Rust's. */

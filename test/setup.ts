@@ -4,6 +4,7 @@ import { afterAll, setDefaultTimeout } from "bun:test";
 
 import { underLoad } from "../scripts/timing";
 import { asNode } from "./node-surface";
+import { unreadMessage, unreadSettings } from "./part-settings";
 import { buildCompiler, releaseFixtures } from "./support";
 
 // The code rust-js writes runs in Node and browsers, not Bun: Bun's own
@@ -36,3 +37,12 @@ buildCompiler();
 // runner never emits `exit`, where a script's process removes its own, and
 // each run left all of its fixtures, 7.6 GB a `check:fast --all` (#914).
 afterAll(releaseFixtures);
+
+// A run that set what selects a part of a test file, `METAMORPHIC=all`, and
+// ran no file that reads it, fails: it ran nothing it selects, and passing
+// would say it had (#1210). Of a run one after another, every file's reads;
+// of `--parallel`, each file's own.
+afterAll(() => {
+  const message = unreadMessage(unreadSettings());
+  if (message !== undefined) throw new Error(message);
+});

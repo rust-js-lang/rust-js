@@ -18,12 +18,13 @@ import { programs, sample } from "./mut-ref-matrix";
 import { agree, compileJs, runJs, runNative, runtimes, show } from "./programs";
 import { buildCompiler, fixture } from "./support";
 import { shard } from "../scripts/shard";
+import { partSetting } from "./part-settings";
 
 beforeAll(() => {
   buildCompiler();
 });
 
-const which = process.env.MUT_REF_MATRIX;
+const which = partSetting("MUT_REF_MATRIX");
 if (which !== undefined && which !== "all") throw new Error(`MUT_REF_MATRIX=${which}: \`all\`, or unset for the sample`);
 const all = programs();
 const [part, parts] = (process.env.RUST_JS_CASES ?? "1/1").split("/").map(Number);

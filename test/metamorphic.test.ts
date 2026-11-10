@@ -22,13 +22,14 @@ import { agree, compileJs, compileJsLibrary, nativeFlags, runJs, runNative, runt
 import { buildCompiler, caseShard, fixture, root } from "./support";
 import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
 import { shard } from "../scripts/shard";
+import { partSetting } from "./part-settings";
 
 beforeAll(() => {
   buildCompiler();
   buildRewriter();
 }, 900_000);
 
-const which = process.env.METAMORPHIC;
+const which = partSetting("METAMORPHIC");
 // `METAMORPHIC_REWRITES=emi-prune,emi-insert`: those rewrites alone, of a
 // round of new ones; every one unless it's given.
 const named = process.env.METAMORPHIC_REWRITES?.split(",").filter((name) => name !== "");

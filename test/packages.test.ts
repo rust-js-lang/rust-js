@@ -4,11 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { crates } from "../tooling/crates.js";
 import { buildCompiler, compiler, root as repository } from "./support";
+import { partSetting } from "./part-settings";
 
 const node = Bun.which("node");
 // A distribution to test as it is, as qualification gives one (ADR 0094);
 // else one is packed here.
-const supplied = process.env.RUST_JS_DISTRIBUTION;
+const supplied = partSetting("RUST_JS_DISTRIBUTION");
 if (!node) throw new Error("Node.js is required for distribution runtime compatibility tests");
 
 // Node, the runtime rust-js targets (ADR 0095), with Bun out of reach.

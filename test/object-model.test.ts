@@ -26,13 +26,14 @@ import { buildRewriter, libraryCrate, rewritable, rewritten, sampled } from "./m
 import { agree, compileJs, compileJsLibrary, execute, nativeFlags, node, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, compiler, fixture, root, run } from "./support";
 import { shard } from "../scripts/shard";
+import { partSetting } from "./part-settings";
 
 beforeAll(() => {
   buildCompiler();
   buildRewriter();
 }, 900_000);
 
-const which = process.env.OBJECT_MODEL;
+const which = partSetting("OBJECT_MODEL");
 if (which !== undefined && which !== "all") throw new Error(`OBJECT_MODEL=${which}: \`all\`, or unset for a push's sample`);
 
 /** What runs otherwise than it should, under its issue: `<issue> <case>`

@@ -18,10 +18,11 @@ import { programs, sample } from "./none-matrix";
 import { agree, compileJs, runJs, runNative, runtimes, show } from "./programs";
 import { buildCompiler, fixture } from "./support";
 import { shard } from "../scripts/shard";
+import { partSetting } from "./part-settings";
 
 beforeAll(buildCompiler);
 
-const which = process.env.NONE_MATRIX;
+const which = partSetting("NONE_MATRIX");
 if (which !== undefined && which !== "all") throw new Error(`NONE_MATRIX=${which}: \`all\`, or unset for the sample`);
 const all = programs();
 const [part, parts] = (process.env.RUST_JS_CASES ?? "1/1").split("/").map(Number);

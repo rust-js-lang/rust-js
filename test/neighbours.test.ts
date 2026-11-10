@@ -19,11 +19,12 @@ import { reducedRepro } from "./reduced";
 import { agree, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, fixture } from "./support";
 import { shard } from "../scripts/shard";
+import { partSetting } from "./part-settings";
 
 beforeAll(buildCompiler);
 
 const seed = Number(process.env.NEIGHBOURS_SEED ?? "0");
-const many = process.env.NEIGHBOURS ?? "2";
+const many = partSetting("NEIGHBOURS") ?? "2";
 if (!Number.isInteger(seed) || seed < 0 || !/^(all|\d+)$/.test(many)) {
   throw new Error(`NEIGHBOURS=${many} NEIGHBOURS_SEED=${process.env.NEIGHBOURS_SEED}: \`all\` or how many groups, of a seed from 0`);
 }

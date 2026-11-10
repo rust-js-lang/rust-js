@@ -34,6 +34,7 @@ import { formatCases, formatProgram, formatStrata, type FormatCase } from "./for
 import { numberCases, numberProgram, numberStrata, type NumberCase } from "./number-grid";
 import { unwindCases, unwindProgram, unwindStrata, type UnwindCase } from "./unwind-points";
 import { buildReact, root, target } from "./support";
+import { partSetting } from "./part-settings";
 
 /** The builds each case is compiled in: the recognizers' rewrites, and
  * std's iterator structs alone (ADR 0908). */
@@ -53,7 +54,7 @@ export const builds: [name: string, flags: string[]][] = [
 export type Table = "matrix" | "conformance" | "points" | "unwind" | "format" | "numbers" | "async" | "consumers";
 export const tables: Table[] = ["matrix", "conformance", "points", "unwind", "format", "numbers", "async", "consumers"];
 export const table: Table = (() => {
-  const which = process.env.ITERATOR_TABLE ?? "matrix";
+  const which = partSetting("ITERATOR_TABLE") ?? "matrix";
   if (!(tables as string[]).includes(which)) throw new Error(`ITERATOR_TABLE=${which}: ${tables.map((t) => `\`${t}\``).join(", ")}`);
   return which as Table;
 })();

@@ -19,6 +19,7 @@ import { cases, corpus, directives } from "./corpus-cases";
 import { agree, compileJs, runJs, runNative, runtimes, show } from "./programs";
 import { buildCompiler, caseShard, fixture } from "./support";
 import { record, runKey, shared, verified } from "./verified-runs";
+import { partSetting } from "./part-settings";
 
 beforeAll(() => {
   buildCompiler();
@@ -187,7 +188,7 @@ const few = [
   // cleanup guarded where it's made: a second panic aborts (#938).
   "collected_adapters_dropped_after_a_predicates_panic_abort.rs",
 ];
-const which = process.env.ITERATOR_FORMS;
+const which = partSetting("ITERATOR_FORMS");
 if (which !== undefined && which !== "corpus")
   throw new Error(
     `ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`,
