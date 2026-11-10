@@ -4,6 +4,7 @@
 
 mod back_facts;
 mod clones;
+mod compiled_steps;
 mod dictionaries;
 mod eager;
 mod ends;
