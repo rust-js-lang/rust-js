@@ -59,8 +59,7 @@ adapted at a call by one boundary API.**
   doesn't, and back. Its first form is `Form::Handle`: a raw pointer whose
   pointee is a type parameter, a handle whose `value` is the referent, as
   ADR 0454's box is, given as `$ptrTo(x)` where the caller's is the value
-  itself and read back as `.value`, at a call and where a generic function
-  is a value.
+  itself and read back as `.value`, at a call.
 - **An architecture test** holds the sites that decide from a type
   parameter alone to the audited list, by file: a new one fails, naming
   `generic_facts.rs`, and a migrated one lowers its file's count.

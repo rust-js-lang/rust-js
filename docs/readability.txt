@@ -764,7 +764,7 @@ test/corpus/generic_extend.js	96	0	0	0	1	0	0	6
 test/corpus/generic_extend_of_own_hints.js	125	0	0	0	0	0	2	15
 test/corpus/generic_flatten_of_vecs.js	87	0	0	0	6	0	0	4
 test/corpus/generic_fmt_traits.js	57	0	0	0	0	0	0	0
-test/corpus/generic_fn_value_adapts_pointer_forms.js	72	0	0	0	0	0	0	0
+test/corpus/generic_fn_item_takes_generic_forms.js	72	0	0	0	0	0	0	0
 test/corpus/generic_fn_value_is_one_function.js	52	0	0	0	0	0	0	0
 test/corpus/generic_folds_unwind.js	593	0	0	1	10	1	0	2
 test/corpus/generic_for_over_own_iterator.js	255	0	0	4	4	0	0	0

@@ -1237,7 +1237,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let given = arg_tys.get(i).copied();
                     let unboxed = callee.and_then(|(id, args)| self.unboxed_by_function(id, i, args, given));
                     exprs.push(match unboxed {
-                        Some(unboxed) => {
+                        Some((unboxed, wrapped)) => {
                             let params: Vec<String> =
                                 (0..unboxed.len()).map(|at| self.fresh(&format!("x{at}"))).collect();
                             let given = (params.iter().zip(&unboxed))
@@ -1246,7 +1246,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                     false => Expr::var(param),
                                 })
                                 .collect();
-                            let body = vec![StmtKind::Return(Some(Expr::call(f, given))).at(js::Span::NONE)];
+                            let called = Expr::call(f, given);
+                            let called = match wrapped {
+                                true => Expr::call_helper("$ptrTo", vec![called]),
+                                false => called,
+                            };
+                            let body = vec![StmtKind::Return(Some(called)).at(js::Span::NONE)];
                             Expr::arrow(params.into_iter().map(Into::into).collect(), body)
                         }
                         None => f,

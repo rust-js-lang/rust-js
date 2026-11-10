@@ -603,16 +603,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             return Ok(Value::Expr(function));
                         }
                         // A generic function's instance that takes generic
-                        // code's box where its `fn`'s callers give an object,
-                        // an object's or a slice's `&mut T` (#1187).
+                        // code's forms where its `fn`'s callers give theirs,
+                        // an object's or a slice's `&mut T`, a slice's raw
+                        // pointer (#1187).
                         if matches!(coercion, PointerCoercion::ReifyFnPointer(_))
                             && let Some((def_id, args)) = crate::lower::fn_def(operand.ty(decls, tcx))
-                            && self.is_rust_fn(def_id)
-                            && self.reified_takes_a_box(def_id, args)
+                            && (self.is_rust_fn(def_id) || self.krate.foreign.item(def_id).is_some())
+                            && self.reified_takes_generic_forms(def_id, args)
                         {
                             return Err(self.unsupported(
                                 span,
-                                "a generic function as a `fn` pointer whose `&mut T` is an object's or a slice's, which its value takes in generic code's box: call it, or give it to generic code as it is (#1187)",
+                                "a generic function as a `fn` pointer whose `&mut T` is an object's or a slice's, or whose raw pointer is a slice's, which its value takes in generic code's form: call it, or give it to generic code as it is (#1187)",
                             ));
                         }
                         let value = self.mir_operand(state, operand, out)?;

@@ -3,6 +3,41 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "closure-through-is-unadapted",
+    breaks:
+      "a closure given to generic code through a type parameter read as another, `f: impl Is<F>` of `F: Fn(*mut T)`, is given generic code's handle where it takes the array",
+    file: "src/lower/mut_refs.rs",
+    find: "            .find(|&f| fn_bound(f).is_some())?;",
+    replace: "            .take(1)\n            .find(|&f| fn_bound(f).is_some())?;",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fn_item_takes_generic_forms\\.rs$"],
+  },
+  {
+    name: "closure-given-handle-unadapted",
+    breaks:
+      "a closure given to generic code as an `F: Fn(*mut T)` is given generic code's handle of a slice's pointer where it takes the array",
+    file: "src/lower/mut_refs.rs",
+    find: "                (boxed || self.form_differs(handle, passed, self.instantiated(passed, generic_args)))",
+    replace: "                boxed",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fn_item_takes_generic_forms\\.rs$"],
+  },
+  {
+    name: "closure-result-handle-unadapted",
+    breaks:
+      "a closure given to generic code gives back a slice's pointer as the array where generic code reads its handle",
+    file: "src/lower/mut_refs.rs",
+    find: "        let wrapped = output.is_some_and(|out| {",
+    replace: "        let wrapped = false && output.is_some_and(|out| {",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fn_item_takes_generic_forms\\.rs$"],
+  },
+  {
+    name: "reified-slice-pointer-allowed",
+    breaks: "a generic function's instance whose raw pointer is a slice's, as a `fn` pointer, compiles, given the array where its value takes generic code's handle",
+    file: "src/lower/mut_refs.rs",
+    find: "            boxed || self.form_differs(handle, declared, self.instantiated(declared, args))",
+    replace: "            boxed || (false && self.form_differs(handle, declared, self.instantiated(declared, args)))",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fn_pointer_of_a_slices_pointer_refused\\.rs$"],
+  },
+  {
     name: "reified-trait-method-refused",
     breaks: "a trait's provided method as a `fn` pointer, `Tally::bump`, is refused as a generic function's instance, though its value is its impl's copy",
     file: "src/lower/mut_refs.rs",
@@ -59,7 +94,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a function given for an `F: FnMut(&mut T)` that takes generic code's box itself, `bumped::<Counter>`, is given the object out of it: `undefined` (#975)",
     file: "src/lower/mut_refs.rs",
-    find: "                    && !given.is_some_and(|given| self.takes_box_itself(given, at))\n",
+    find: "                    && !given.is_some_and(|given| self.takes_generic_form_itself(given, Some(at)))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_fn_value_is_one_function.rs$"],
   },

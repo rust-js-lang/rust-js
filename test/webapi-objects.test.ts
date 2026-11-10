@@ -5,6 +5,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { runSync } from "./child";
 import { node } from "./programs";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 
@@ -1048,10 +1049,10 @@ pub fn kind(of: &Node) -> &'static str {
   }
 });
 
-// A generic function of no dictionary, as a `fn` pointer of a JS object's
-// instance: its pointer is the object, generic code's a handle on it, so
-// the value adapts it, `$ptrTo(arg0)` and `.value` (ADR 1114).
-test("a generic function's pointer of a JS object, as a fn, is adapted", async () => {
+// A generic function's instance whose raw pointer is a JS object's, as a
+// `fn` pointer: its value takes generic code's handle, which a caller of
+// the `fn`, giving the object, doesn't give: refused (#1187, ADR 1114).
+test("a generic function's pointer of a JS object, as a fn, is refused", () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("webapi-generic-fn-pointer");
   writeFileSync(join(dir, "lib.rs"), `use webapi::Blob;
@@ -1063,9 +1064,7 @@ pub fn roundtrip(blob: &'static Blob) -> &'static Blob {
     f(blob)
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("(arg0) => read($ptrTo(arg0))");
-  const lib = await import(join(dir, "lib.js"));
-  const blob = new Blob(["b"]);
-  expect(lib.roundtrip(blob)).toBe(blob);
+  const made = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb], root, 120_000);
+  expect(made.code).not.toBe(0);
+  expect(made.stdout + made.stderr).toContain("whose raw pointer is a slice's, which its value takes in generic code's form");
 });

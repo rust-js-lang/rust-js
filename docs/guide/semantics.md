@@ -314,8 +314,7 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   after the call, and `ptr::eq` of it and `&raw mut n` is `true`. In
   generic code a raw pointer of a type parameter is a handle whose `value`
   is the referent; where the caller's is the value itself, a slice's, it's
-  given as `$ptrTo(array)` and read back as `.value`, at a call and where a
-  generic function is a value ([1114](../decisions/1114-a-reference-a-pointer-may-leave-with-is-its-places-pointer.md),
+  given as `$ptrTo(array)` and read back as `.value` at a call ([1114](../decisions/1114-a-reference-a-pointer-may-leave-with-is-its-places-pointer.md),
   [1115](../decisions/1115-what-generic-code-needs-of-its-type-parameters-has-one-catalogue.md)).
 - **`Rc::clone` shares the one object,** as Rust's does. Where the crate
   reads an `Rc`'s counts, `Rc::strong_count` is `rc.strong`, counted where

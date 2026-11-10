@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "library-fn-value-takes-callers-forms",
+    breaks:
+      "a library's generic function as a value, given to generic code as an `F`, takes its callers' forms, and generic code's handle of a slice's pointer is wrapped again, `measured(p)` reading `undefined`",
+    file: "src/lower/mir/dispatch.rs",
+    find: "                    Some(given) => self.form_back(form, given, Expr::var(p)),",
+    replace: "                    Some(_) => Expr::var(p),",
+    tests: ["test/crates.test.ts", "-t", "library_generic_fn_item_forms"],
+  },
+  {
     name: "held-function-write-error-uncaught",
     breaks: "a function a variable holds, `let held = named; held()`, that gives back a write's error isn't caught, so `{:?}` of it throws (#1042)",
     file: "src/lower/mir/dispatch.rs",

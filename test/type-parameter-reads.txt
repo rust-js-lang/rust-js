@@ -43,7 +43,7 @@ src/lower/drops/uses.rs	1
 src/lower/instances.rs	11
 src/lower/iterators.rs	11
 src/lower/iterators/clones.rs	3
-src/lower/iterators/hint_asks.rs	8
+src/lower/iterators/hint_asks.rs	9
 src/lower/iterators/knowing.rs	7
 src/lower/iterators/stepping.rs	9
 src/lower/lent.rs	1

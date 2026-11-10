@@ -58,6 +58,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether `ty`, a type of generic code's, is a raw pointer of its type
+    /// parameter, `*mut T`: a handle on its place, whatever `T` is
+    /// (`Form::Handle`).
+    pub(in crate::lower) fn is_generic_handle(&self, ty: Ty<'tcx>) -> bool {
+        super::pointers::raw_pointee(self.tcx, ty).is_some_and(|(pointee, _)| matches!(pointee.kind(), ty::Param(_)))
+    }
+
     /// The referent of a shared reference given where generic code's
     /// `declared` `&T` goes, `instantiated` the caller's type for it, where
     /// JS holds it as itself, a number, so a pointer generic code made of it

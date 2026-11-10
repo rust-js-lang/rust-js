@@ -387,10 +387,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of a function value given for `def_id`'s parameter `i`, an `F:
     /// FnOnce(&mut T)` of `and_then_or_clear`'s, in a call of it,
     /// `generic_args`: which of the function's parameters generic code gives
-    /// a box of what the caller has as an object, `&mut T` of a `T` that's
-    /// one here (ADR 0454). `None` where none is. Not where the function
-    /// given, `given`'s, a function of the crate's, takes a box there
-    /// itself, a `&mut` of its own type parameter's, `bump(c: &mut impl
+    /// in its own form where the caller has another, a box of what the
+    /// caller has as an object, `&mut T` of a `T` that's one here (ADR 0454),
+    /// or a handle of a raw pointer the caller has as the value, a slice's
+    /// (ADR 1114), each given the function as `x.value`; and whether what it
+    /// gives back is such a raw pointer, given generic code as `$ptrTo(r)`.
+    /// `None` where none is. Not where the function given, `given`'s, a
+    /// function of the crate's, takes or gives generic code's form there
+    /// itself, of its own type parameter's, `bump(c: &mut impl
     /// GetMut<Counter>)` (#975).
     pub(super) fn unboxed_by_function(
         &self,
@@ -398,7 +402,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         i: usize,
         generic_args: ty::GenericArgsRef<'tcx>,
         given: Option<Ty<'tcx>>,
-    ) -> Option<Vec<bool>> {
+    ) -> Option<(Vec<bool>, bool)> {
         let sig = self
             .tcx
             .fn_sig(def_id)
@@ -408,31 +412,69 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty::Param(_) = sig.inputs().get(i)?.kind() else {
             return None;
         };
+        let given_as = sig.inputs()[i];
         let param_env = self.tcx.param_env(def_id);
-        let unboxed: Vec<bool> = (self.tcx.clauses_of(def_id).instantiate_identity(self.tcx).into_iter())
-            .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
-            .map(|bound| bound.skip_binder().trait_ref)
-            .find(|tr| tr.self_ty() == sig.inputs()[i] && self.tcx.fn_trait_kind_from_def_id(tr.def_id).is_some())?
+        let clauses: Vec<_> = (self.tcx.clauses_of(def_id).instantiate_identity(self.tcx).into_iter())
+            .map(|(clause, _)| clause.skip_normalization())
+            .collect();
+        let handle = crate::lower::generic_facts::Form::Handle;
+        let fn_bound = |f: Ty<'tcx>| {
+            (clauses.iter())
+                .filter_map(|clause| clause.as_trait_clause())
+                .map(|bound| bound.skip_binder().trait_ref)
+                .find(|tr| tr.self_ty() == f && self.tcx.fn_trait_kind_from_def_id(tr.def_id).is_some())
+        };
+        // Its own bound, or one of a type parameter its bound names that its
+        // value is read as, `P: Is<F>` of `F: Fn(*mut T)` (#992).
+        let f = std::iter::once(given_as)
+            .chain(
+                (clauses.iter())
+                    .filter_map(|clause| clause.as_trait_clause())
+                    .map(|bound| bound.skip_binder().trait_ref)
+                    .filter(|tr| tr.self_ty() == given_as)
+                    .flat_map(|tr| tr.args.types().skip(1).collect::<Vec<_>>()),
+            )
+            .find(|&f| fn_bound(f).is_some())?;
+        let unboxed: Vec<bool> = fn_bound(f)?
             .args
             .type_at(1)
             .tuple_fields()
             .iter()
             .enumerate()
             .map(|(at, passed)| {
-                matches!(*passed.kind(), ty::Ref(_, pointee, Mutability::Mut)
+                let boxed = matches!(*passed.kind(), ty::Ref(_, pointee, Mutability::Mut)
                     if self.mut_ref_form_in(pointee, param_env).is_generic_box()
-                        && !self.mut_ref_form(self.instantiated(pointee, generic_args)).is_cell())
-                    && !given.is_some_and(|given| self.takes_box_itself(given, at))
+                        && !self.mut_ref_form(self.instantiated(pointee, generic_args)).is_cell());
+                (boxed || self.form_differs(handle, passed, self.instantiated(passed, generic_args)))
+                    && !given.is_some_and(|given| self.takes_generic_form_itself(given, Some(at)))
             })
             .collect();
-        unboxed.iter().any(|&unboxed| unboxed).then_some(unboxed)
+        // What it gives back, its bound's `Output`.
+        let output = (clauses.iter())
+            .filter_map(|clause| clause.as_projection_clause())
+            .map(|projection| projection.skip_binder())
+            .find(|projection| {
+                projection.projection_term.self_ty() == f
+                    && self.tcx.is_lang_item(
+                        projection.def_id(),
+                        rustc_hir::attrs::lang_items::LangItem::FnOnceOutput,
+                    )
+            })
+            .and_then(|projection| projection.term.as_type());
+        let wrapped = output.is_some_and(|out| {
+            self.form_differs(handle, out, self.instantiated(out, generic_args))
+                && !given.is_some_and(|given| self.takes_generic_form_itself(given, None))
+        });
+        (unboxed.iter().any(|&unboxed| unboxed) || wrapped).then_some((unboxed, wrapped))
     }
 
     /// Whether `given`, the type of a function of the crate's given as a
-    /// value, takes a box at its parameter `at` by its own declaration: a
-    /// `&mut` of its own type parameter's, which its body reads as generic
-    /// code's box (ADR 0099), whatever its instance is (#975).
-    fn takes_box_itself(&self, given: Ty<'tcx>, at: usize) -> bool {
+    /// value, takes at its parameter `at`, or gives back where `at` is
+    /// `None`, generic code's form by its own declaration: a `&mut` of its
+    /// own type parameter's, which its body reads as generic code's box
+    /// (ADR 0099), or a raw pointer of one, its handle (ADR 1114), whatever
+    /// its instance is (#975).
+    fn takes_generic_form_itself(&self, given: Ty<'tcx>, at: Option<usize>) -> bool {
         let Some((id, _)) = crate::lower::fn_def(given) else {
             return false;
         };
@@ -442,19 +484,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .instantiate_identity()
             .skip_normalization()
             .skip_binder();
-        sig.inputs().get(at).is_some_and(|&input| {
+        let declared = match at {
+            Some(at) => sig.inputs().get(at).copied(),
+            None => Some(sig.output()),
+        };
+        declared.is_some_and(|input| {
             matches!(*input.kind(), ty::Ref(_, pointee, Mutability::Mut)
                 if self.mut_ref_form_in(pointee, self.tcx.param_env(id)).is_generic_box())
+                || self.is_generic_handle(input)
         })
     }
-
     /// Whether a generic function's instance `def_id` given `args`, as a
-    /// `fn` pointer, would be given the object where its value takes
-    /// generic code's box: a `&mut` of its own type parameter, which its
-    /// instance makes an object's or a slice's, not a cell's (#1187). Not
-    /// a trait's method, whose value is its impl's or its copied default's,
-    /// of the instance's own types.
-    pub(in crate::lower) fn reified_takes_a_box(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    /// `fn` pointer, would be given its callers' forms where its value takes
+    /// generic code's, as generic code that calls it as an `F` gives them
+    /// (#1187): a `&mut` of its own type parameter, generic code's box,
+    /// which its instance makes an object's or a slice's, not a cell's; or a
+    /// raw pointer of one, generic code's handle, which its instance makes a
+    /// slice's, a pair `dyn`'s or a JS object's, the value itself (ADR 1114).
+    /// Not a trait's method, whose value is its impl's or its copied
+    /// default's, of the instance's own types.
+    pub(in crate::lower) fn reified_takes_generic_forms(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
         if self.tcx.trait_of_assoc(def_id).is_some() {
             return false;
         }
@@ -465,10 +514,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .skip_normalization()
             .skip_binder();
         let param_env = self.tcx.param_env(def_id);
-        sig.inputs().iter().any(|&input| {
-            matches!(*input.kind(), ty::Ref(_, pointee, Mutability::Mut)
+        let handle = crate::lower::generic_facts::Form::Handle;
+        (sig.inputs().iter().chain([&sig.output()])).any(|&declared| {
+            let boxed = matches!(*declared.kind(), ty::Ref(_, pointee, Mutability::Mut)
                 if self.mut_ref_form_in(pointee, param_env).is_generic_box()
-                    && !self.mut_ref_form(self.instantiated(pointee, args)).is_cell())
+                    && !self.mut_ref_form(self.instantiated(pointee, args)).is_cell());
+            boxed || self.form_differs(handle, declared, self.instantiated(declared, args))
         })
     }
 

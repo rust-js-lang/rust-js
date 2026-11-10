@@ -93,12 +93,13 @@ compiles is given so, the crate's function or a compiled trait's method:
 std's, which their own lowering reads, `MaybeUninit::as_mut_ptr(&mut m)`,
 are given what they were.
 
-A generic function's instance as a value adapts a raw pointer of its type
-parameter the same way, `(arg0) => same($ptrTo(arg0)).value` of a slice's.
-Its `&mut T` it takes as generic code's box, as ADR 0454's
-`takes_box_itself` gives it (#975); so as a `fn` pointer of an object's or
-a slice's instance, whose concrete callers give the object, it's refused
-(#1187), where it threw before.
+A generic function's instance as a value takes generic code's own forms,
+a raw pointer's handle as a `&mut T`'s box, as ADR 0454's
+`takes_box_itself` gives it (#975): generic code that calls it as an `F`
+gives them. So as a `fn` pointer of an instance whose forms differ, an
+object's or a slice's `&mut T`, a slice's or a JS object's raw pointer,
+whose concrete callers give their own, it's refused (#1187), where it
+threw before.
 
 ### Why this form
 
@@ -131,8 +132,9 @@ a slice's instance, whose concrete callers give the object, it's refused
   slice, the caller's own type parameter), with mutations of each
   adaptation, given in and given back, and the whole net.
 - A generic function's instance whose `&mut T` is an object's or a slice's,
-  as a `fn` pointer: refused, until its pointer is a value of its own that
-  takes its type's form (#1187).
+  or whose raw pointer is a slice's or a JS object's, as a `fn` pointer:
+  refused, until its pointer is a value of its own that takes its type's
+  forms and generic code adapts it as it does a closure (#1187).
 - A struct of generic code holding a `*mut T`, a field, crossing the
   boundary, of a slice's instance: not adapted, as a result's is.
 - A pointer of a reference that escapes another way, into a `static`:
@@ -151,9 +153,8 @@ makes a cell; such a reference made as `&raw mut` of its place
 (`mir/assign.rs`); `&raw mut *r` of a parameter given its pointer, the
 parameter (`given_its_pointer_here`); the generic form adapted at a call's
 arguments and result and where a generic function is a function pointer
-(`generic_facts.rs`, `lower.rs`); and an instance whose `&mut T` is an
-object's or a slice's refused as a `fn` pointer (`reified_takes_a_box`,
-#1187): `view::<Vec<u8>>` as a `fn(&mut Vec<u8>) -> &Vec<u8>` read
+(`generic_facts.rs`); and an instance whose forms differ refused as a
+`fn` pointer (`reified_takes_generic_forms`, #1187): `view::<Vec<u8>>` as a `fn(&mut Vec<u8>) -> &Vec<u8>` read
 `r.value` of the vector, a `TypeError`.
 
 Held by `reference_given_as_its_pointer.rs`, each instantiation (a number,
@@ -162,10 +163,11 @@ and call shape (direct, a dictionary's, an impl's own, a `dyn`'s, a
 function pointer's, a closure's, an `F: FnMut`'s, through another
 parameter, a pointer given by value), each pointer `ptr::eq` to `&raw mut`
 of its place;
-`generic_fn_value_adapts_pointer_forms.rs`; the crate pair
+`generic_fn_item_takes_generic_forms.rs`; the crate pair
 `library_lets_a_pointer_out`; `shared_number_given_to_let_a_pointer_out_refused.rs`;
-`generic_fn_pointer_of_an_objects_mut_refused.rs`; `test/webapi-objects.test.ts`'
-JS object's instance as a `fn`; all against native Rust and with
+`generic_fn_pointer_of_an_objects_mut_refused.rs`,
+`generic_fn_pointer_of_a_slices_pointer_refused.rs`; `test/webapi-objects.test.ts`'
+JS object's instance as a `fn`, refused; all against native Rust and with
 `METAMORPHIC=all`; and twenty
 mutations, `lower/mut_refs.ts`, `lower/pointers.ts`, `lower/mir/assign.ts`,
 `lower/mir/rvalues.ts`, `lower/generic_facts.ts` and `lower.ts`.
@@ -184,4 +186,19 @@ one given otherwise, a parameter's `r` as it is, as `FromRef`.** Held by
 `reference_given_as_its_pointer.rs`, std's in generic code and of a local,
 a shared number's read and `ptr::eq`, and the mutations
 `from-place-lent-reread` and `std-from-place-not-lent`.
+
+## Amendment: a generic function's value takes generic code's forms (2026-11-10)
+
+Step 1 adapted a raw pointer of a type parameter where a generic function
+was a value, `(arg0) => measured($ptrTo(arg0), u8SliceLen).value`, as its
+concrete callers give the array. But generic code given the function as
+an `F: Fn(*mut T) -> *mut T` gives it its handle, which the value wrapped
+again: `apply_ptr(p, measured::<[u8]>)` showed `undefined` where native
+Rust shows `3`, a wrong answer, a fn item's and a `fn` pointer's alike.
+**A generic function's value takes generic code's forms, as it takes its
+`&mut T`'s box (#975); a `fn` pointer of an instance whose forms differ is
+refused (`reified_takes_generic_forms`, #1187).** Held by
+`generic_fn_item_takes_generic_forms.rs` against native Rust,
+`generic_fn_pointer_of_a_slices_pointer_refused.rs`, and the mutation
+`reified-slice-pointer-allowed`.
 

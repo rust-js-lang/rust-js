@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "reified-instance-taking-a-box-allowed",
     breaks: "a generic function's instance whose `&mut T` is an object's, as a `fn` pointer, compiles, and its caller's object is read as generic code's box, a `TypeError`",
     file: "src/lower/mir/rvalues.rs",
-    find: "                            && self.reified_takes_a_box(def_id, args)",
-    replace: "                            && self.reified_takes_a_box(def_id, args)\n                            && false",
+    find: "                            && self.reified_takes_generic_forms(def_id, args)",
+    replace: "                            && self.reified_takes_generic_forms(def_id, args)\n                            && false",
     tests: ["test/corpus.test.ts", "-t", "^generic_fn_pointer_of_an_objects_mut_refused\\.rs$"],
   },
   {

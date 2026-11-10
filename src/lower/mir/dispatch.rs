@@ -391,7 +391,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|i| self.fresh(["a", "b", "c", "d", "e", "f"].get(i).copied().unwrap_or("arg")))
                 .collect(),
         };
-        let mut values: Vec<Value> = params.iter().map(|p| Value::Expr(Expr::var(p))).collect();
+        // Given in generic code's forms, as generic code that calls it as an
+        // `F` gives them: a raw pointer of its type parameter its handle,
+        // read back as the call takes it, `x.value` of a slice's (ADR 1114).
+        let form = crate::lower::generic_facts::Form::Handle;
+        let declared = tcx
+            .fn_sig(def_id)
+            .instantiate_identity()
+            .skip_normalization()
+            .skip_binder();
+        let mut values: Vec<Value> = (params.iter().enumerate())
+            .map(|(i, p)| {
+                let given = declared.inputs().get(i).map(|&of| (of, self.instantiated(of, args)));
+                Value::Expr(match given {
+                    Some(given) => self.form_back(form, given, Expr::var(p)),
+                    None => Expr::var(p),
+                })
+            })
+            .collect();
         // A C-variadic one's, given on what it's given past the rest, `(a,
         // ...args) => f(a, ...args)` (ADR 0428): C's numbers and pointers,
         // passed as they are.
@@ -425,6 +442,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 body.push(self.copied_back(place, &boxed, object, js_span));
             }
         }
+        // What it gives back in generic code's form too, a slice's raw
+        // pointer `$ptrTo(r)`.
+        let output = (declared.output(), self.instantiated(declared.output(), args));
+        let value = self.form_given(form, output, value);
         body.push(StmtKind::Return(Some(value)).at(self.js_span(span)));
         let mut patterns: Vec<js::Pattern> = params.into_iter().map(Into::into).collect();
         patterns.extend(variadic.map(js::Pattern::Rest));
