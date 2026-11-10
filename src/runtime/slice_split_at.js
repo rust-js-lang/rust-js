@@ -6,5 +6,5 @@ function $sliceSplitAt(items, mid, checked = false) {
     if (checked) return undefined;
     throw new Error("mid > len");
   }
-  return [items.slice(0, mid), items.slice(mid)];
+  return [$part(items, 0, mid), $part(items, mid)];
 }

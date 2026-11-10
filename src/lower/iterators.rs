@@ -518,6 +518,23 @@ pub(in crate::lower) fn compares_never_nan(test: &Expr) -> bool {
             if matches!(e.kind, js::ExprKind::Binary(Op::Eq, ..)) && e.facts.has(js::Known::NeverNaN)))
 }
 
+/// `items` owned, an array of its own: itself, where it's one made here
+/// (`made_array`); a range of a slice, `$slice(v, a, b)` or `$part(v, a,
+/// b)`, a part that says where it is in `v`, copied once, `$copyOf(v, a,
+/// b)`, which no record places there, so a pointer into it is its own
+/// (#1185); else a copy, `items.slice()`.
+pub(in crate::lower) fn owned_items(items: Expr) -> Expr {
+    if made_array(&items) {
+        return items;
+    }
+    match &items.kind {
+        js::ExprKind::Call(callee, args) if matches!(callee.helper_name(), Some("$slice" | "$part")) => {
+            Expr::call(Expr::helper("$copyOf"), args.clone())
+        }
+        _ => Expr::call(Expr::member(items, "slice"), vec![]),
+    }
+}
+
 /// Whether `e` is an array as it's made: `[a, b]`, `Array.from(x)`, a
 /// string's `split` or a helper's, and through an array's methods that make one,
 /// `.filter(f)`, not an iterator's of the same names, `$iter(xs).filter(f)`.

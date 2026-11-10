@@ -4,12 +4,14 @@
 // longer or shorter, so it stays over the same items.
 function $view(items, start, end = items.length) {
   if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);
+  const target = $partPlaced([], items, start);
   return $proxy(
     end - start,
     (i) => items[start + i],
     (i, item) => {
       items[start + i] = item;
     },
+    target,
   );
 }
 
@@ -26,13 +28,13 @@ function $reverseRange(items, start, end = items.length) {
 
 // An array of `length` items to JS's own methods, each read by `read(i)`
 // and written by `write(i, item)`.
-function $proxy(length, read, write) {
+function $proxy(length, read, write, target = []) {
   const at = (key) => {
     if (typeof key !== "string") return -1;
     const i = Number(key);
     return Number.isInteger(i) && i >= 0 && i < length && String(i) === key ? i : -1;
   };
-  return new Proxy([], {
+  return new Proxy(target, {
     get(target, key) {
       if (key === "length") return length;
       const i = at(key);

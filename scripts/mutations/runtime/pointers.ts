@@ -466,4 +466,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^address_of_what_a_cell_lends.rs$"],
   },
+  {
+    name: "pointer-into-a-part-its-own",
+    breaks: "a pointer into a part of a slice is one into the part's array, not the array it's of (#1185)",
+    file: "src/runtime/pointers.js",
+    find: "  if (part !== undefined) return $ptr(part.of, part.start + key, offset, root, at);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
+  },
+  {
+    name: "slice-ptr-eq-lengths-unasked",
+    breaks: "`ptr::eq` of two slices starting at one item and of different lengths is `true`, where Rust compares their lengths too",
+    file: "src/runtime/pointers.js",
+    find: "a !== null && b !== null && a.length === b.length && $ptrEq",
+    replace: "a !== null && b !== null && $ptrEq",
+    tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
+  },
+  {
+    name: "slice-ptr-eq-of-a-handle",
+    breaks: "a slice's pointer read out of where it's held, a handle on it, is compared as though it were the slice, never equal",
+    file: "src/runtime/pointers.js",
+    find: "  [a, b] = [items(a), items(b)];\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
+  },
 ];

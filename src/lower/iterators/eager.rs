@@ -117,7 +117,6 @@ pub(super) fn fresh(items: &Expr) -> bool {
                 "$rchunksMut",
                 "$splitBy",
                 "$lines",
-                "$slice",
                 "$rest",
                 "$drain",
                 "$splitOff",
@@ -181,7 +180,7 @@ pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
             let eager = match chained(chain) {
                 Some(parts) => Some(Expr::array(parts.into_iter().map(Expr::spread).collect())),
                 None => match eager_items(chain, true, None) {
-                    Some((items, 0)) if !fresh(&items) => Some(Expr::call(Expr::member(items, "slice"), vec![])),
+                    Some((items, 0)) if !fresh(&items) => Some(super::owned_items(items)),
                     Some((items, _)) => Some(items),
                     None => None,
                 },

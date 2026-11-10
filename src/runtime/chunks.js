@@ -1,6 +1,6 @@
 // `chunks(size)`: each `size` items, the last fewer, as `cut` cuts them:
 // copies, or views of `chunks_mut`'s (ADR 0335).
-function $chunks(v, size, cut = (items, start, end) => items.slice(start, end)) {
+function $chunks(v, size, cut = $part) {
   if (size === 0) {
     throw new Error("chunk size must be non-zero");
   }

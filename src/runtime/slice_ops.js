@@ -259,14 +259,32 @@ function $chunkSize(n) {
   if (n === 0) throw new Error("chunk size must be non-zero");
 }
 
-// What a slice's chunks and splits are cut as: copies, or views of the
-// `_mut` ones' (ADR 0335).
-function $copyOf(items, start, end) {
-  return items.slice(start, end);
+// What a slice's parts, its ranges, chunks and splits, are cut as: copies,
+// or views of the `_mut` ones' (ADR 0335). Each part says where it is,
+// `$partPlaced`: in the array its items are, from which item (#1185), so a
+// pointer into it is one into that array, as Rust's is.
+function $part(items, start, end) {
+  // From the end where it's less than 0, `last_chunk`'s, as JS's `slice`.
+  const from = start < 0 ? Math.max(items.length + start, 0) : Math.min(start, items.length);
+  return $partPlaced(items.slice(start, end), items, from);
+}
+
+// A part's record of where it is, `{ of, start }`, of the array that holds
+// its items itself, under a symbol: a property `$ptr` reads, which JS's own
+// reads of an array, its items, its length, `for .. of` and `JSON`, never
+// see (#1185, the user's decision: always kept, at 1.2–1.3 times a slice's
+// cost to make).
+const $placeOfPart = Symbol("rust-js part");
+
+// `part`, made of `items` from its item `start`, recorded so.
+function $partPlaced(part, items, start) {
+  const outer = items[$placeOfPart];
+  part[$placeOfPart] = outer === undefined ? { of: items, start } : { of: outer.of, start: outer.start + start };
+  return part;
 }
 
 // `chunks_exact(n)`: each whole chunk, and what's left, its `remainder()`.
-function $chunksExact(v, n, cut = $copyOf) {
+function $chunksExact(v, n, cut = $part) {
   $chunkSize(n);
   const whole = v.length - (v.length % n);
   const chunks = [];
@@ -277,7 +295,7 @@ function $chunksExact(v, n, cut = $copyOf) {
 
 // `rchunks(n)`, and `rchunks_exact(n)`: chunks from the end; the exact ones
 // leave what's left at the start, their `remainder()`.
-function $rchunks(v, n, exact, cut = $copyOf) {
+function $rchunks(v, n, exact, cut = $part) {
   $chunkSize(n);
   const chunks = [];
   let end = v.length;
@@ -289,7 +307,7 @@ function $rchunks(v, n, exact, cut = $copyOf) {
 
 // `split(p)` of a slice: the pieces between the items `p` holds of, at most
 // `n`, each with its item where `inclusive`, and from the end where `back`.
-function $sliceSplitBy(v, p, n = Infinity, inclusive = false, back = false, cut = $copyOf) {
+function $sliceSplitBy(v, p, n = Infinity, inclusive = false, back = false, cut = $part) {
   if (n === 0) return [];
   const parts = [];
   if (back) {
@@ -317,14 +335,14 @@ function $sliceSplitBy(v, p, n = Infinity, inclusive = false, back = false, cut 
 // `s.split_off(..n)`, or `split_off(n..)` (`back`): what's left of `s` and
 // what's taken off it, or `s` and `undefined`, `None`, where `n` is past
 // its end (ADR 0338).
-function $sliceSplitOff(v, n, back = false, cut = $copyOf) {
+function $sliceSplitOff(v, n, back = false, cut = $part) {
   if (n > v.length) return [v, undefined];
   return back ? [cut(v, 0, n), cut(v, n, v.length)] : [cut(v, n, v.length), cut(v, 0, n)];
 }
 
 // `split_off_first()`, or `split_off_last()` (`last`): what's left and the
 // item taken off, or `s` and `undefined` of an empty one.
-function $sliceSplitOffEnd(v, last, cut = $copyOf, item = (items, i) => items[i]) {
+function $sliceSplitOffEnd(v, last, cut = $part, item = (items, i) => items[i]) {
   if (v.length === 0) return [v, undefined];
   return last ? [cut(v, 0, v.length - 1), item(v, v.length - 1)] : [cut(v, 1, v.length), item(v, 0)];
 }
@@ -335,12 +353,12 @@ function $asChunks(v, n, back = false) {
   $chunkSize(n);
   const rest = v.length % n;
   const start = back ? rest : 0;
-  const chunks = Array.from({ length: (v.length - rest) / n }, (_, i) => v.slice(start + i * n, start + i * n + n));
-  return back ? [v.slice(0, rest), chunks] : [chunks, v.slice(v.length - rest)];
+  const chunks = Array.from({ length: (v.length - rest) / n }, (_, i) => $part(v, start + i * n, start + i * n + n));
+  return back ? [$part(v, 0, rest), chunks] : [chunks, $part(v, v.length - rest)];
 }
 
 // `chunk_by(p)`: the runs of items `p` holds of each two in a row of.
-function $chunkBy(v, p, cut = $copyOf) {
+function $chunkBy(v, p, cut = $part) {
   const runs = [];
   let start = 0;
   for (let i = 1; i <= v.length; i++) {
@@ -354,7 +372,7 @@ function $chunkBy(v, p, cut = $copyOf) {
 
 // `split_first_chunk::<N>()`, or `split_last_chunk` (`last`): its first
 // `n`, or its last, and the rest; `undefined` where it has fewer.
-function $splitChunk(v, n, last, cut = $copyOf) {
+function $splitChunk(v, n, last, cut = $part) {
   if (v.length < n) return undefined;
   const at = last ? v.length - n : n;
   return [cut(v, 0, at), cut(v, at, v.length)];
@@ -395,14 +413,14 @@ function $trimAsciiBytes(v, start, end) {
   let to = v.length;
   while (start && from < to && space(v[from])) from++;
   while (end && to > from && space(v[to - 1])) to--;
-  return v.slice(from, to);
+  return $part(v, from, to);
 }
 
 // `v.strip_prefix(p)`, or `strip_suffix` (`end`): the rest, or `None`, of
 // items `==` compares by value.
 function $sliceStrip(v, p, end, eq) {
   if (!$sliceStartsWith(v, p, end, eq)) return undefined;
-  return end ? v.slice(0, v.length - p.length) : v.slice(p.length);
+  return end ? $part(v, 0, v.length - p.length) : $part(v, p.length);
 }
 
 // `strip_circumfix(prefix, suffix)`: `strip_prefix`'s, then `strip_suffix`'s

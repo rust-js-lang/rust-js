@@ -8,11 +8,11 @@
 import {
   $add,
   $cmp,
+  $copyOf,
   $debugF64,
   $debugStr,
   $orInsert,
   $parseF64,
-  $slice,
   $splitBy,
   $unwrap,
 } from "@rust-js/std";
@@ -32,7 +32,7 @@ export function tokenize(src) {
       while (i < chars.length && (/^[0-9]$/.test(chars[i]) || chars[i] === ".")) {
         i++;
       }
-      const text = $slice(chars, start, i).join("");
+      const text = $copyOf(chars, start, i).join("");
       const result = $parseF64(text);
       const result$1 = result.TAG === "Err" ? { TAG: "Err", _0: `bad number ${text}` } : result;
       if (result$1.TAG === "Err") {

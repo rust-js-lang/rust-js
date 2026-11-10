@@ -158,8 +158,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 items => match self.slice_item(tys[0]) {
                     Some(item) if tys[0].is_ref() => self.clone_items(items, item, span)?,
                     // Moved, an array's `into()`: one made here is itself.
-                    _ if crate::lower::iterators::made_array(&items) => items,
-                    _ => Expr::call(Expr::member(items, "slice"), vec![]),
+                    _ => crate::lower::iterators::owned_items(items),
                 },
             },
             // Where its comparator's calls can be seen, std's own (#925).

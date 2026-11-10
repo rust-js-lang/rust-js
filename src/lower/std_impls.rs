@@ -739,10 +739,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn clone_items(&mut self, items: Expr, item: Ty<'tcx>, span: Span) -> R<Expr> {
         if !self.needs_clone(item) {
             // An array made here, which nothing else holds: itself.
-            if super::iterators::made_array(&items) {
-                return Ok(items);
-            }
-            return Ok(Expr::call(Expr::member(items, "slice"), Vec::new()));
+            return Ok(super::iterators::owned_items(items));
         }
         let clone = self.clone_fn("item", item, span)?;
         let may_panic = self.clone_may_panic(item);

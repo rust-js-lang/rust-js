@@ -251,8 +251,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A slice pattern's rest, `xs.slice(1, xs.length - 1)`: a copy, as
             // `&v[a..b]` is (ADR 0063); a `&mut` to it is a view (`rest_view`).
             PlaceElem::Subslice { from, to, from_end } if base.reads_same() => {
-                let range = self.subslice_range(&base, ty.ty, (from, to, from_end));
-                Expr::call(Expr::member(base, "slice"), range)
+                let mut range = self.subslice_range(&base, ty.ty, (from, to, from_end)).into_iter();
+                let start = range.next().expect("a start");
+                self.slice_part(base, start, range.next())
             }
             // Of an array made here, `let [_, x @ .., _] = [a, b, c, d]`: it held
             // first, then read so.

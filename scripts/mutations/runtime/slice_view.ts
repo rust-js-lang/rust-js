@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "view-unchecked",
     breaks: "`&mut v[a..b]` past the end is made, and panics only when it's used",
     file: "src/runtime/slice_view.js",
-    find: "  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);\n  return $proxy(",
-    replace: "  return $proxy(",
+    find: "  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);\n  const target = $partPlaced(",
+    replace: "  const target = $partPlaced(",
     tests: ["test/corpus.test.ts","-t","slice_view_past_len"],
   },
   {
@@ -169,5 +169,13 @@ export const mutations: Mutation[] = [
     find: "right = end - 1; left < right;",
     replace: "right = end - 2; left < right;",
     tests: ["test/corpus.test.ts", "-t", "^slice_range_reverse.rs$"],
+  },
+  {
+    name: "slice-view-unplaced",
+    breaks: "a `&mut` view of part of a slice says nothing of where it is, so its `as_mut_ptr()` is another array's",
+    file: "src/runtime/slice_view.js",
+    find: "  const target = $partPlaced([], items, start);\n",
+    replace: "  const target = [];\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
   },
 ];

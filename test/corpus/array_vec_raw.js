@@ -4,6 +4,7 @@ import {
   $addr,
   $cleanup,
   $debugStr,
+  $part,
   $ptr,
   $ptrAdd,
   $ptrAt,
@@ -171,7 +172,7 @@ function main() {
   console.log(`${Stack.remove(numbers, 0, 8)}`);
   Stack.asMutSlice(numbers, 8).sort((a, b) => a - b);
   const more = [20, 30, 40];
-  Stack.extendFromSlice(numbers, more.slice(1), 8);
+  Stack.extendFromSlice(numbers, $part(more, 1), 8);
   console.log(`[${Stack.asSlice(numbers, 8).join(", ")}] ${numbers.len}`);
   const words = Stack.new(4);
   Stack.push(words, "b", 4, 12);

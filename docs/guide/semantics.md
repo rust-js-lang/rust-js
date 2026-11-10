@@ -674,6 +674,12 @@ What's refused is in [the limitations](limitations.md).
   array's ([0335](../decisions/0335-slice-views.md)); a part reversed,
   `v[a..b].reverse()`, is reversed where it is, `$reverseRange(v, a, b)`,
   no view made ([1073](../decisions/1073-a-part-of-a-slice-reversed-is-reversed-in-place.md)).
+  **Each part says where it is in its array,** so its `as_ptr()` and
+  `ptr::eq`, by where it starts and its length, are Rust's; in a crate
+  that takes a slice's address, an in-bounds part is `$part(v, a, b)`, not
+  `v.slice(a, b)`. An owned copy of a range, `v[a..b].to_vec()`, is
+  `$copyOf(v, a, b)`, an array of its own
+  ([1116](../decisions/1116-a-part-of-a-slice-says-where-it-is.md)).
 - **`starts_with` and `ends_with` of a slice compare items as `==` does,**
   by `===` of numbers, strings and `bool`s, and by the items' own
   `PartialEq` of the rest ([0336](../decisions/0336-slice-prefixes-by-eq.md)).

@@ -1157,10 +1157,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let length = Expr::member(items.clone(), "length");
                 let chunk = match (last, mutable) {
-                    (false, false) => {
-                        Expr::call(Expr::member(items, "slice"), vec![Expr::int(0), Expr::int(n as i128)])
-                    }
-                    (true, false) => Expr::call(Expr::member(items, "slice"), vec![Expr::int(-(n as i128))]),
+                    (false, false) => self.slice_part(items, Expr::int(0), Some(Expr::int(n as i128))),
+                    (true, false) => self.slice_part(items, Expr::int(-(n as i128)), None),
                     (false, true) => self.view_call("$view", vec![items, Expr::int(0), Expr::int(n as i128)]),
                     (true, true) => {
                         let start = Expr::bin(Op::Sub, length.clone(), Expr::int(n as i128));

@@ -67,8 +67,8 @@ export const mutations: Mutation[] = [
     name: "mir-subslice-whole",
     breaks: "`[first, rest @ ..]`'s rest is the whole slice",
     file: "src/lower/mir/places.rs",
-    find: '                Expr::call(Expr::member(base, "slice"), range)\n',
-    replace: "                { let _ = range; base }\n",
+    find: "                self.slice_part(base, start, range.next())\n",
+    replace: "                { let _ = (start, range); base }\n",
     tests: ["test/corpus.test.ts", "-t", "slice_patterns"],
   },
   {

@@ -14,6 +14,10 @@ const $items = new WeakMap();
 // the object its projections start from, and the place's byte offset in it,
 // where its address is (#1089).
 function $ptr(object, key, offset, root, at) {
+  // An item of a part of a slice, `&v[1..3]`'s: the item of the array it's
+  // of, where Rust's is (#1185).
+  const part = typeof key === "number" ? object[$placeOfPart] : undefined;
+  if (part !== undefined) return $ptr(part.of, part.start + key, offset, root, at);
   // What a cell field that's the property it holds lends, through a
   // handle on it, or its one cell, `$fieldCell(x, "f")` (#1114).
   const field = key === "value" ? $cellFields.get(object) : undefined;
@@ -583,6 +587,18 @@ function $ptrEq(p, q, size) {
   if (range === undefined && $itemOf($allocationOf(handle)) !== undefined) return $addr(handle, size, true) === addr;
   if (range === undefined) return Array.isArray(handle.of) && handle.of.length === 0 && $addr(handle, size) === addr;
   return range.base + $offsetIn(handle, range) === addr;
+}
+
+// `ptr::eq(a, b)` of two slices, `==` of two `*const [T]`: the same length,
+// and the same place for their first item, a part's in the array it's of
+// (#1185), as Rust compares their addresses and lengths. An empty one's is
+// where it is, `v[2..2]` at `v`'s third.
+function $slicePtrEq(a, b, size) {
+  // A slice's pointer is the slice, or a handle on it, `$ptrTo(items)`, of
+  // one read out of where it's held.
+  const items = (p) => (p !== null && !Array.isArray(p) && p.at === undefined && Array.isArray(p.of) ? p.of : p);
+  [a, b] = [items(a), items(b)];
+  return a === b || (a !== null && b !== null && a.length === b.length && $ptrEq($ptr(a, 0), $ptr(b, 0), size));
 }
 
 // `p < q`, `p.cmp(&q)`: by address.

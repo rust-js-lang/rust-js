@@ -28,4 +28,12 @@ export const mutations: Mutation[] = [
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_where_its_object_is_stored.rs$"],
   },
+  {
+    name: "slice-addresses-never-taken",
+    breaks: "no crate is taken to take a slice's address, so its in-bounds parts are JS's own and say nothing of where they are",
+    file: "src/lower/analysis/stored_places.rs",
+    find: "    let slices = bodies.iter().any(|body| takes_slice_addresses(tcx, body));\n",
+    replace: "    let slices = false;\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "a part of a slice is"],
+  },
 ];

@@ -965,7 +965,7 @@ test("a slice to a computed end from MIR reads the end where it's used", async (
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("$slice(segments, 0, Math.max(segments.length - 1, 0))");
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("$copyOf(segments, 0, Math.max(segments.length - 1, 0))");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.crumbs(["a", "b", "c"]), lib.crumbs([])]).toEqual([["a", "b"], []]);
 });

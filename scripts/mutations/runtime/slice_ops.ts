@@ -394,4 +394,28 @@ export const mutations: Mutation[] = [
     replace: "      () => {},\n    );\n  } finally {\n    ends?.();\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic.rs$"],
   },
+  {
+    name: "slice-part-unplaced",
+    breaks: "a part of a slice, `&v[1..3]`, says nothing of where it is, so its `as_ptr()` and `ptr::eq` are another array's, `false` where Rust's are `true` (#1185)",
+    file: "src/runtime/slice_ops.js",
+    find: "  return $partPlaced(items.slice(start, end), items, from);\n",
+    replace: "  return items.slice(start, end);\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
+  },
+  {
+    name: "slice-part-of-a-part-at-its-start",
+    breaks: "a part of a part is taken to start where the outer part does in the array, not past it",
+    file: "src/runtime/slice_ops.js",
+    find: "{ of: outer.of, start: outer.start + start }",
+    replace: "{ of: outer.of, start: outer.start }",
+    tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
+  },
+  {
+    name: "slice-part-from-the-end-at-0",
+    breaks: "a part taken from the end, `last_chunk()`'s, is taken to start at the array's first item",
+    file: "src/runtime/slice_ops.js",
+    find: "  const from = start < 0 ? Math.max(items.length + start, 0) : Math.min(start, items.length);\n",
+    replace: "  const from = start < 0 ? 0 : Math.min(start, items.length);\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
+  },
 ];

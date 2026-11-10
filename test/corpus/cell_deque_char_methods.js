@@ -5,6 +5,7 @@ import {
   $borrow,
   $byteLen,
   $cellSwap,
+  $copyOf,
   $debugStr,
   $decodeUtf16,
   $dequeSwapRemove,
@@ -21,7 +22,6 @@ import {
   $refCellSwap,
   $restStr,
   $retainDeque,
-  $slice,
   $unwrap,
 } from "@rust-js/std";
 
@@ -60,7 +60,7 @@ function main() {
   value$1.value = (value$1.value + 1) | 0;
   const value$2 = $unwrap($mutAt(deque, -1));
   value$2.value = (value$2.value * 10) | 0;
-  const arg = $slice(deque, 1, 3);
+  const arg = $copyOf(deque, 1, 3);
   console.log(`[${deque.join(", ")}] [${arg.join(", ")}]`);
   const swapRemoveBack = $dequeSwapRemove(deque, 1, false);
   const value$3 = $dequeSwapRemove(deque, 3, true);

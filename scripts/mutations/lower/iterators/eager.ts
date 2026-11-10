@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "    match &items.kind {\n        js::ExprKind::Array(_) => true,\n",
     replace: "    match &items.kind {\n",
-    tests: ["test/corpus.test.ts", "-t", "iterator_sources"],
+    tests: ["test/corpus.test.ts"],
     snapshots: true,
   },
   {
@@ -104,9 +104,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`Array.from($iter(xs))` is `xs`, which changes with it, not a copy",
     file: "src/lower/iterators/eager.rs",
-    find: '                Some((items, 0)) if !fresh(&items) => Some(Expr::call(Expr::member(items, "slice"), vec![])),\n',
+    find: "                    Some((items, 0)) if !fresh(&items) => Some(super::owned_items(items)),\n",
     replace:
-      "                Some((items, 0)) if !fresh(&items) => Some(items),\n",
+      "                    Some((items, 0)) if !fresh(&items) => Some(items),\n",
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",
@@ -119,7 +119,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "                Some((items, 0)) if !fresh(&items) =>",
     replace: "                Some((items, 0)) if true =>",
-    tests: ["test/lowering-iterators.test.ts", "-t", "string's parts from MIR"],
+    tests: ["test/corpus.test.ts"],
+    snapshots: true,
   },
   {
     name: "iter-eager-take-after-doing",

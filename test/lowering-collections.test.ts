@@ -24,6 +24,41 @@ test("an entry's and_modify then or_insert reads its map and key", () => {
   expect(js).not.toContain("$mutGet(counts, c);");
 });
 
+// A part of a slice, `&v[1..3]`, is JS's own `v.slice(1, 3)` where it's in
+// bounds, of a crate that takes no slice's address, as before #1185; of
+// one that does, `$part(v, 1, 3)`, which records where it is in `v`, so a
+// pointer into it is one into `v`, and `ptr::eq` of two parts compares where
+// they start and their lengths. An owned copy of a range, `to_vec()`, is
+// `$copyOf(v, a, b)`, one copy that no record places in `v`, in either.
+test("a part of a slice is JS's slice where no slice's address is taken, else a part that says where it is", async () => {
+  const dir = fixture("slice-parts");
+  const source = (taken: boolean) => `pub fn middle(v: &[u8]) -> u8 {
+    if v.len() < 4 {
+        return 0;
+    }
+    let part = &v[1..3];
+    part[0] + part[1]
+}
+pub fn owned(v: &[u8], n: usize) -> Vec<u8> {
+    v[..n].to_vec()
+}
+${taken ? "pub fn same(v: &[u8]) -> bool {\n    std::ptr::eq(&v[1..3], &v[1..3])\n}\n" : ""}`;
+  for (const taken of [false, true]) {
+    writeFileSync(join(dir, "lib.rs"), source(taken));
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, `lib-${taken}.js`)]);
+  }
+  const plain = readFileSync(join(dir, "lib-false.js"), "utf8");
+  const taken = readFileSync(join(dir, "lib-true.js"), "utf8");
+  expect(plain).toContain("const part = v.slice(1, 3);");
+  expect(plain).not.toContain("$part");
+  expect(plain).toContain("return $copyOf(v, 0, n);");
+  expect(taken).toContain("const part = $part(v, 1, 3);");
+  expect(taken).toContain("return $copyOf(v, 0, n);");
+  expect(taken).toContain("$slicePtrEq($slice(v, 1, 3), $slice(v, 1, 3), 1)");
+  const lib = await import(join(dir, "lib-true.js"));
+  expect([lib.middle([1, 2, 3, 4]), lib.same([1, 2, 3, 4]), lib.owned([5, 6, 7], 2)]).toEqual([5, true, [5, 6]]);
+});
+
 // An insert at the front, which no length refuses, is `unshift`, as
 // react.dev's prepareMDX puts its Overview first: where the body's ranges
 // show it in bounds, as there, and where they don't, `front`'s, each the

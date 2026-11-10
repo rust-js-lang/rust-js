@@ -6559,6 +6559,10 @@ export const $items = new WeakMap();
 // the object its projections start from, and the place's byte offset in it,
 // where its address is (#1089).
 export function $ptr(object, key, offset, root, at) {
+  // An item of a part of a slice, `&v[1..3]`'s: the item of the array it's
+  // of, where Rust's is (#1185).
+  const part = typeof key === "number" ? object[$placeOfPart] : undefined;
+  if (part !== undefined) return $ptr(part.of, part.start + key, offset, root, at);
   // What a cell field that's the property it holds lends, through a
   // handle on it, or its one cell, `$fieldCell(x, "f")` (#1114).
   const field = key === "value" ? $cellFields.get(object) : undefined;
@@ -7128,6 +7132,18 @@ export function $ptrEq(p, q, size) {
   if (range === undefined && $itemOf($allocationOf(handle)) !== undefined) return $addr(handle, size, true) === addr;
   if (range === undefined) return Array.isArray(handle.of) && handle.of.length === 0 && $addr(handle, size) === addr;
   return range.base + $offsetIn(handle, range) === addr;
+}
+
+// `ptr::eq(a, b)` of two slices, `==` of two `*const [T]`: the same length,
+// and the same place for their first item, a part's in the array it's of
+// (#1185), as Rust compares their addresses and lengths. An empty one's is
+// where it is, `v[2..2]` at `v`'s third.
+export function $slicePtrEq(a, b, size) {
+  // A slice's pointer is the slice, or a handle on it, `$ptrTo(items)`, of
+  // one read out of where it's held.
+  const items = (p) => (p !== null && !Array.isArray(p) && p.at === undefined && Array.isArray(p.of) ? p.of : p);
+  [a, b] = [items(a), items(b)];
+  return a === b || (a !== null && b !== null && a.length === b.length && $ptrEq($ptr(a, 0), $ptr(b, 0), size));
 }
 
 // `p < q`, `p.cmp(&q)`: by address.
@@ -7938,14 +7954,32 @@ export function $chunkSize(n) {
   if (n === 0) throw new Error("chunk size must be non-zero");
 }
 
-// What a slice's chunks and splits are cut as: copies, or views of the
-// `_mut` ones' (ADR 0335).
-export function $copyOf(items, start, end) {
-  return items.slice(start, end);
+// What a slice's parts, its ranges, chunks and splits, are cut as: copies,
+// or views of the `_mut` ones' (ADR 0335). Each part says where it is,
+// `$partPlaced`: in the array its items are, from which item (#1185), so a
+// pointer into it is one into that array, as Rust's is.
+export function $part(items, start, end) {
+  // From the end where it's less than 0, `last_chunk`'s, as JS's `slice`.
+  const from = start < 0 ? Math.max(items.length + start, 0) : Math.min(start, items.length);
+  return $partPlaced(items.slice(start, end), items, from);
+}
+
+// A part's record of where it is, `{ of, start }`, of the array that holds
+// its items itself, under a symbol: a property `$ptr` reads, which JS's own
+// reads of an array, its items, its length, `for .. of` and `JSON`, never
+// see (#1185, the user's decision: always kept, at 1.2–1.3 times a slice's
+// cost to make).
+export const $placeOfPart = Symbol("rust-js part");
+
+// `part`, made of `items` from its item `start`, recorded so.
+export function $partPlaced(part, items, start) {
+  const outer = items[$placeOfPart];
+  part[$placeOfPart] = outer === undefined ? { of: items, start } : { of: outer.of, start: outer.start + start };
+  return part;
 }
 
 // `chunks_exact(n)`: each whole chunk, and what's left, its `remainder()`.
-export function $chunksExact(v, n, cut = $copyOf) {
+export function $chunksExact(v, n, cut = $part) {
   $chunkSize(n);
   const whole = v.length - (v.length % n);
   const chunks = [];
@@ -7956,7 +7990,7 @@ export function $chunksExact(v, n, cut = $copyOf) {
 
 // `rchunks(n)`, and `rchunks_exact(n)`: chunks from the end; the exact ones
 // leave what's left at the start, their `remainder()`.
-export function $rchunks(v, n, exact, cut = $copyOf) {
+export function $rchunks(v, n, exact, cut = $part) {
   $chunkSize(n);
   const chunks = [];
   let end = v.length;
@@ -7968,7 +8002,7 @@ export function $rchunks(v, n, exact, cut = $copyOf) {
 
 // `split(p)` of a slice: the pieces between the items `p` holds of, at most
 // `n`, each with its item where `inclusive`, and from the end where `back`.
-export function $sliceSplitBy(v, p, n = Infinity, inclusive = false, back = false, cut = $copyOf) {
+export function $sliceSplitBy(v, p, n = Infinity, inclusive = false, back = false, cut = $part) {
   if (n === 0) return [];
   const parts = [];
   if (back) {
@@ -7996,14 +8030,14 @@ export function $sliceSplitBy(v, p, n = Infinity, inclusive = false, back = fals
 // `s.split_off(..n)`, or `split_off(n..)` (`back`): what's left of `s` and
 // what's taken off it, or `s` and `undefined`, `None`, where `n` is past
 // its end (ADR 0338).
-export function $sliceSplitOff(v, n, back = false, cut = $copyOf) {
+export function $sliceSplitOff(v, n, back = false, cut = $part) {
   if (n > v.length) return [v, undefined];
   return back ? [cut(v, 0, n), cut(v, n, v.length)] : [cut(v, n, v.length), cut(v, 0, n)];
 }
 
 // `split_off_first()`, or `split_off_last()` (`last`): what's left and the
 // item taken off, or `s` and `undefined` of an empty one.
-export function $sliceSplitOffEnd(v, last, cut = $copyOf, item = (items, i) => items[i]) {
+export function $sliceSplitOffEnd(v, last, cut = $part, item = (items, i) => items[i]) {
   if (v.length === 0) return [v, undefined];
   return last ? [cut(v, 0, v.length - 1), item(v, v.length - 1)] : [cut(v, 1, v.length), item(v, 0)];
 }
@@ -8014,12 +8048,12 @@ export function $asChunks(v, n, back = false) {
   $chunkSize(n);
   const rest = v.length % n;
   const start = back ? rest : 0;
-  const chunks = Array.from({ length: (v.length - rest) / n }, (_, i) => v.slice(start + i * n, start + i * n + n));
-  return back ? [v.slice(0, rest), chunks] : [chunks, v.slice(v.length - rest)];
+  const chunks = Array.from({ length: (v.length - rest) / n }, (_, i) => $part(v, start + i * n, start + i * n + n));
+  return back ? [$part(v, 0, rest), chunks] : [chunks, $part(v, v.length - rest)];
 }
 
 // `chunk_by(p)`: the runs of items `p` holds of each two in a row of.
-export function $chunkBy(v, p, cut = $copyOf) {
+export function $chunkBy(v, p, cut = $part) {
   const runs = [];
   let start = 0;
   for (let i = 1; i <= v.length; i++) {
@@ -8033,7 +8067,7 @@ export function $chunkBy(v, p, cut = $copyOf) {
 
 // `split_first_chunk::<N>()`, or `split_last_chunk` (`last`): its first
 // `n`, or its last, and the rest; `undefined` where it has fewer.
-export function $splitChunk(v, n, last, cut = $copyOf) {
+export function $splitChunk(v, n, last, cut = $part) {
   if (v.length < n) return undefined;
   const at = last ? v.length - n : n;
   return [cut(v, 0, at), cut(v, at, v.length)];
@@ -8074,14 +8108,14 @@ export function $trimAsciiBytes(v, start, end) {
   let to = v.length;
   while (start && from < to && space(v[from])) from++;
   while (end && to > from && space(v[to - 1])) to--;
-  return v.slice(from, to);
+  return $part(v, from, to);
 }
 
 // `v.strip_prefix(p)`, or `strip_suffix` (`end`): the rest, or `None`, of
 // items `==` compares by value.
 export function $sliceStrip(v, p, end, eq) {
   if (!$sliceStartsWith(v, p, end, eq)) return undefined;
-  return end ? v.slice(0, v.length - p.length) : v.slice(p.length);
+  return end ? $part(v, 0, v.length - p.length) : $part(v, p.length);
 }
 
 // `strip_circumfix(prefix, suffix)`: `strip_prefix`'s, then `strip_suffix`'s
@@ -10534,12 +10568,14 @@ export function $mergeRuns(v, start, end, mid, isLess, scratch) {
 // longer or shorter, so it stays over the same items.
 export function $view(items, start, end = items.length) {
   if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);
+  const target = $partPlaced([], items, start);
   return $proxy(
     end - start,
     (i) => items[start + i],
     (i, item) => {
       items[start + i] = item;
     },
+    target,
   );
 }
 
@@ -10556,13 +10592,13 @@ export function $reverseRange(items, start, end = items.length) {
 
 // An array of `length` items to JS's own methods, each read by `read(i)`
 // and written by `write(i, item)`.
-export function $proxy(length, read, write) {
+export function $proxy(length, read, write, target = []) {
   const at = (key) => {
     if (typeof key !== "string") return -1;
     const i = Number(key);
     return Number.isInteger(i) && i >= 0 && i < length && String(i) === key ? i : -1;
   };
-  return new Proxy([], {
+  return new Proxy(target, {
     get(target, key) {
       if (key === "length") return length;
       const i = at(key);
@@ -14398,7 +14434,17 @@ export function $parseChar(s) {
   return { TAG: "Err", _0: chars.length === 0 ? "cannot parse char from empty string" : "too many characters in string" };
 }
 
+// `&v[a..b]`: those items, a part of `v` that says where it is in it
+// (#1185), with Rust's panic out of bounds.
 export function $slice(items, start, end = items.length) {
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);
+  return $part(items, start, end);
+}
+
+// `v[a..b].to_vec()`, `into()`, a `collect()` of its items copied: a copy
+// of those items, owned, an allocation of its own, which no record places
+// in `v`, with `&v[a..b]`'s panic out of bounds (#1185).
+export function $copyOf(items, start, end = items.length) {
   if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);
   return items.slice(start, end);
 }
@@ -14413,7 +14459,7 @@ export function $copyRange(items, start, end = items.length) {
 // `v.get(start..end)` of a slice: a copy of the items between, as `&v[..]`
 // is, or `undefined`, `None`, where that would panic.
 export function $sliceGet(items, start = 0, end = items.length) {
-  return start > end || end > items.length ? undefined : items.slice(start, end);
+  return start > end || end > items.length ? undefined : $part(items, start, end);
 }
 
 // `v.split_at(mid)` of a slice: copies of the items before `mid` and from
@@ -14424,7 +14470,7 @@ export function $sliceSplitAt(items, mid, checked = false) {
     if (checked) return undefined;
     throw new Error("mid > len");
   }
-  return [items.slice(0, mid), items.slice(mid)];
+  return [$part(items, 0, mid), $part(items, mid)];
 }
 
 // `v.starts_with(prefix)`, or `ends_with` (`end`): each item `eq` to the
@@ -15657,12 +15703,12 @@ export function $windows(v, size) {
   if (size === 0) {
     throw new Error("window size must be non-zero");
   }
-  return Array.from({ length: Math.max(0, v.length - size + 1) }, (_, i) => v.slice(i, i + size));
+  return Array.from({ length: Math.max(0, v.length - size + 1) }, (_, i) => $part(v, i, i + size));
 }
 
 // `chunks(size)`: each `size` items, the last fewer, as `cut` cuts them:
 // copies, or views of `chunks_mut`'s (ADR 0335).
-export function $chunks(v, size, cut = (items, start, end) => items.slice(start, end)) {
+export function $chunks(v, size, cut = $part) {
   if (size === 0) {
     throw new Error("chunk size must be non-zero");
   }

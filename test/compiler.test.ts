@@ -1248,7 +1248,7 @@ test("chars, parse and slices are plain JS with Rust's answers", async () => {
   // `map_err(|e| e.to_string())` of a fresh `Result`: the message already is one.
   expect(js).toContain("const n = $parseInt(s, 0, 4294967295);");
   expect(js).toContain('text.split(/\\p{White_Space}+/u).filter((word) => word !== "")');
-  expect(js).toContain("$slice(v, 1, 3)");
+  expect(js).toContain("$copyOf(v, 1, 3)");
 });
 
 // A program that reads text: loops take tuples apart as JS does, and a

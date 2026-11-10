@@ -17,6 +17,7 @@ use super::super::refusal::{Refused, refuse};
 use super::super::std_types::text::TextOp;
 use super::super::{FnCx, R};
 use super::{COPIED, PointerOp};
+use crate::js::Expr;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Each reference a call gives that's a copy in JS, its place not
@@ -226,6 +227,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         uses.visit_body(body);
         uses.kept
+    }
+
+    /// A part of a slice the crate's own code makes in place, `items` from
+    /// `from` to `to` or their end, each in bounds: JS's own
+    /// `items.slice(from, to)`; or, of a crate that takes a slice's address,
+    /// `$part(items, from, to)`, which records where the part is in what
+    /// it's of, as the runtime's parts are, so a pointer into it is one
+    /// into that (#1185). Neither is an array made here alone, which a
+    /// part with its record isn't: one that's owned is copied.
+    pub(in crate::lower) fn slice_part(&self, items: Expr, from: Expr, to: Option<Expr>) -> Expr {
+        let range = std::iter::once(from).chain(to).collect();
+        if self.krate.stored_places.takes_slice_addresses() {
+            return Expr::call(Expr::helper("$part"), std::iter::once(items).chain(range).collect());
+        }
+        let sliced = Expr::call(Expr::member(items, "slice"), range);
+        Expr {
+            facts: crate::js::Facts::of(crate::js::Known::Sliced),
+            ..sliced
+        }
     }
 
     /// What std function `func` is, of those rust-js knows.

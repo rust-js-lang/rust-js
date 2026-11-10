@@ -516,15 +516,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^unknown_option_equality.rs$"],
   },
   {
-    name: "clone-items-made-copied",
-    breaks: "a clone of an array made here, `$slice(v, 0, n)`, copies it again",
-    file: "src/lower/std_impls.rs",
-    find: "            if super::iterators::made_array(&items) {\n                return Ok(items);\n            }\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(slice_to_owned|clone_from).rs$"],
-    snapshots: true,
-  },
-  {
     name: "map-eq-refused",
     breaks: "`==` of two maps is refused",
     file: "src/lower/std_impls.rs",

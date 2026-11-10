@@ -38,7 +38,7 @@ function uses(s) {
   e[$at(e, 4)] = 5;
   const slice = $slice($utf8Bytes(s), 0, 6);
   const f = $unwrapOk(
-    slice.length === 6 ? { TAG: "Ok", _0: slice } : { TAG: "Err" },
+    slice.length === 6 ? { TAG: "Ok", _0: slice.slice() } : { TAG: "Err" },
     undefined,
     (e) => "TryFromSliceError(())",
   );

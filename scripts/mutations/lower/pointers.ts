@@ -672,8 +672,8 @@ export const mutations: Mutation[] = [
     breaks:
       "two `*const dyn` pointers to one value are compared as the two pair objects JS made, so `==` is false",
     file: "src/lower/pointers.rs",
-    find: "            || raw_pointee(self.tcx, ty).is_some_and(|(pointee, _)| self.is_pair_dyn_pointee(pointee))\n",
-    replace: "            || false\n",
+    find: ".is_some_and(|(pointee, _)| self.is_pair_dyn_pointee(pointee) || pointee.is_slice())",
+    replace: ".is_some_and(|(pointee, _)| pointee.is_slice())",
     tests: ["test/corpus.test.ts", "-t", "^dyn_pointers.rs$"],
   },
   {
@@ -781,5 +781,21 @@ export const mutations: Mutation[] = [
     find: "                Rvalue::Use(mir::Operand::Copy(of) | mir::Operand::Move(of), _) => lent_copies.contains(&of.local),\n",
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "text's bytes' pointers compared"],
+  },
+  {
+    name: "slice-pointers-compared-as-objects",
+    breaks: "`ptr::eq` of two slices compares which arrays JS holds them as, `false` of two parts of one range (#1185)",
+    file: "src/lower/pointers.rs",
+    find: ".is_some_and(|(pointee, _)| self.is_pair_dyn_pointee(pointee) || pointee.is_slice())",
+    replace: ".is_some_and(|(pointee, _)| self.is_pair_dyn_pointee(pointee))",
+    tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
+  },
+  {
+    name: "slice-pointers-equal-as-items",
+    breaks: "two slices' pointers are compared as the pointers to their first items, so two parts of one start and different lengths are equal",
+    file: "src/lower/pointers.rs",
+    find: "            return Ok(Expr::call(Expr::helper(\"$slicePtrEq\"), vec![a, b, size]));\n",
+    replace: "            return Ok(Expr::call(Expr::helper(\"$ptrEq\"), vec![Expr::call(Expr::helper(\"$ptr\"), vec![a, Expr::int(0)]), Expr::call(Expr::helper(\"$ptr\"), vec![b, Expr::int(0)]), size]));\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
   },
 ];

@@ -6,6 +6,7 @@
 // expression of the Unicode property Rust uses.
 
 import {
+  $copyOf,
   $debugF64,
   $debugStr,
   $lines,
@@ -13,7 +14,6 @@ import {
   $parseChar,
   $parseF64,
   $parseInt,
-  $slice,
   $splitBy,
   $toDigit,
 } from "@rust-js/std";
@@ -90,11 +90,11 @@ export function words(text) {
 export function slices(v) {
   const a = [10, 20, 30];
   const tail = a.slice(1).reduce((a, b) => (a + b) >>> 0, 0);
-  return [$slice(v, 1, 3), $slice(v, 2), $slice(v, 0, 1), v.slice(), tail];
+  return [$copyOf(v, 1, 3), $copyOf(v, 2), $copyOf(v, 0, 1), v.slice(), tail];
 }
 export function slicePanics(start, end) {
   const v = [1, 2, 3];
-  return $slice(v, start, end);
+  return $copyOf(v, start, end);
 }
 export function escapes() {
   return `${$debugStr('a"b\\c\n\t\r\x00\x1b\x7fé\u3000\xa0\u200b\u2028\ue000́x\u{10ffff}')} ${$debugStr("a", "'")} ${$debugStr("'", "'")} ${$debugStr('"', "'")} ${$debugStr("it's")}`;

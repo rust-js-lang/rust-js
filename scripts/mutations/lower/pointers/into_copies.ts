@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^text_bytes_lent_and_owned.rs$"],
   },
+  {
+    name: "slice-part-js-slice-where-addresses-are-taken",
+    breaks: "a crate that takes a slice's address makes its in-bounds parts with JS's `slice`, which says nothing of where each is",
+    file: "src/lower/pointers/into_copies.rs",
+    find: "        if self.krate.stored_places.takes_slice_addresses() {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
+  },
 ];

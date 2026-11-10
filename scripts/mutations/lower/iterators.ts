@@ -350,4 +350,21 @@ export const mutations: Mutation[] = [
     replace: "            )) if def_id.is_local() => holds(tcx.type_of(def_id).instantiate(tcx, args).skip_normalization()),\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_into_iter_held_as_it_is"],
   },
+  {
+    name: "owned-range-copied-twice",
+    breaks: "an owned copy of a range, `v[..n].to_vec()`, is the part copied again, `$slice(v, 0, n).slice()`, two copies where one is",
+    file: "src/lower/iterators.rs",
+    find: "        js::ExprKind::Call(callee, args) if matches!(callee.helper_name(), Some(\"$slice\" | \"$part\")) => {\n            Expr::call(Expr::helper(\"$copyOf\"), args.clone())\n        }\n",
+    replace: "",
+    tests: ["test/lowering-collections.test.ts", "-t", "a part of a slice is"],
+  },
+  {
+    name: "clone-items-made-copied",
+    breaks: "an owned copy of an array made here, a `map`'s, copies it again",
+    file: "src/lower/iterators.rs",
+    find: "    if made_array(&items) {\n        return items;\n    }\n    match &items.kind {\n",
+    replace: "    match &items.kind {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(slice_to_owned|clone_from).rs$"],
+    snapshots: true,
+  },
 ];

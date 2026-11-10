@@ -21,6 +21,9 @@ pub(in crate::lower) struct StoredPlaces<'tcx> {
     recorded: IndexSet<DefId>,
     /// Whether the crate asks an address (`asks_addresses`).
     asks: bool,
+    /// Whether the crate takes a slice's address in any form
+    /// (`takes_slice_addresses`), or asks an address.
+    slices: bool,
     /// What each raw pointer the crate has points at, whose address it may
     /// ask: a number's, an object's.
     pointees: IndexSet<Ty<'tcx>>,
@@ -35,6 +38,15 @@ impl<'tcx> StoredPlaces<'tcx> {
     /// (#1114).
     pub(in crate::lower) fn asks(&self) -> bool {
         self.asks
+    }
+
+    /// Whether the crate takes a slice's address in any form, or asks an
+    /// address: its own parts of a slice, `&v[a..b]` that JS's
+    /// `v.slice(a, b)` would make where it's in bounds, are made by the
+    /// runtime's `$part`, which records where each is, as every other
+    /// part is recorded (#1185). Of a crate that doesn't, they're JS's own.
+    pub(in crate::lower) fn takes_slice_addresses(&self) -> bool {
+        self.slices
     }
 
     /// Whether an address of a `ty` may be asked: one of a recorded type,
@@ -128,6 +140,37 @@ fn asks_addresses<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> bool {
     })
 }
 
+/// Whether `body` takes a slice's address in any form (#1185): a raw
+/// pointer to a slice or an array, `s as *const [T]`, `ptr::eq(a, b)`'s of
+/// two slices; a slice's, an array's or a `Vec`'s `as_ptr()`,
+/// `as_mut_ptr()`, or their ranges; or a pointer to an item of one, `&v[1]
+/// as *const T`.
+fn takes_slice_addresses<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> bool {
+    let thir = &body.thir;
+    let of_items = |ty: Ty<'tcx>| {
+        let ty = ty.peel_refs();
+        ty.is_slice()
+            || ty.is_array()
+            || matches!(ty.kind(), ty::Adt(adt, _) if crate::lower::recognition::is_std_def(tcx, adt.did(), crate::lower::recognition::StdItem::Vec))
+    };
+    thir.exprs.iter().any(|expr| match expr.kind {
+        _ if crate::lower::pointers::raw_pointee(tcx, expr.ty).is_some_and(|(pointee, _)| of_items(pointee)) => true,
+        ExprKind::Call { fun, ref args, .. } => {
+            crate::lower::fn_def(thir[fun].ty).is_some_and(|(id, _)| {
+                matches!(tcx.item_name(id).as_str(), "as_ptr" | "as_mut_ptr" | "as_ptr_range" | "as_mut_ptr_range")
+                    && args.first().is_some_and(|&arg| of_items(thir[arg].ty))
+            })
+        }
+        ExprKind::RawBorrow { arg, .. } | ExprKind::Borrow { arg, .. } if expr.ty.is_raw_ptr() || matches!(expr.kind, ExprKind::RawBorrow { .. }) => {
+            matches!(thir[arg].kind, ExprKind::Index { lhs, .. } if of_items(thir[lhs].ty))
+        }
+        ExprKind::PointerCoercion { source, .. } | ExprKind::Cast { source } if expr.ty.is_raw_ptr() => {
+            matches!(thir[source].kind, ExprKind::Borrow { arg, .. } if matches!(thir[arg].kind, ExprKind::Index { lhs, .. } if of_items(thir[lhs].ty)))
+        }
+        _ => false,
+    })
+}
+
 /// The crate's recorded types: of each raw pointer made of a place, `&raw
 /// const o.inner.b`, `&x as *const T`, the type of each object its place
 /// passes through and of what it points at; then each struct, enum or
@@ -137,8 +180,12 @@ pub(in crate::lower) fn stored_places<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'
     // A crate that asks no address, whose pointers are only compared, read
     // and written, `ptr::eq`'s, records nothing: where an object is stored
     // says nothing it asks.
+    let slices = bodies.iter().any(|body| takes_slice_addresses(tcx, body));
     if !bodies.iter().any(|body| asks_addresses(tcx, body)) {
-        return StoredPlaces::default();
+        return StoredPlaces {
+            slices,
+            ..StoredPlaces::default()
+        };
     }
     let callers = callers_of(tcx, bodies);
     let mut pointees: IndexSet<Ty<'tcx>> = IndexSet::default();
@@ -198,6 +245,7 @@ pub(in crate::lower) fn stored_places<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'
         return StoredPlaces {
             recorded,
             asks: true,
+            slices: true,
             pointees,
             callers,
         };
@@ -249,6 +297,7 @@ pub(in crate::lower) fn stored_places<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'
     StoredPlaces {
         recorded,
         asks: true,
+        slices: true,
         pointees,
         callers,
     }

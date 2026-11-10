@@ -71,8 +71,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an array made here and moved, `[..].map(f).into()`, is copied again",
     file: "src/lower/std_types/vec.rs",
-    find: "                    _ if crate::lower::iterators::made_array(&items) => items,\n",
-    replace: "",
+    find: "                    _ => crate::lower::iterators::owned_items(items),\n",
+    replace: "                    _ => Expr::call(Expr::member(items, \"slice\"), vec![]),\n",
     tests: ["test/corpus.test.ts", "-t", "^deque_range_mut.rs$"],
     snapshots: true,
   },

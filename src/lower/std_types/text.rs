@@ -832,14 +832,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return items;
         }
         if name == "$slice" && in_bounds {
-            let sliced = Expr::call(
-                Expr::member(items, "slice"),
-                std::iter::once(start).chain(end).collect(),
-            );
-            return Expr {
-                facts: js::Facts::of(js::Known::Sliced),
-                ..sliced
-            };
+            return self.slice_part(items, start, end);
         }
         // `v.drain(a..b)` the body's ranges show in bounds, which can't
         // panic: JS's own, `v.splice(a, b - a)`, what it takes out (ADR

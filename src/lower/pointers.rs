@@ -664,6 +664,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// an empty array's address is of; of two `dyn`'s pairs, the same value,
     /// `$dynPtrEq`, as `ptr::addr_eq` asks too. The one place it's written.
     pub(super) fn pointers_equal(&mut self, a: Expr, b: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
+        // Two slices' pointers, which are the slices: where each starts and
+        // how long each is, not which array JS holds it as (#1185), a part's
+        // never the same object as another of the same items.
+        if let ty::Slice(item) = pointee.kind() {
+            let size = self.pointee_size(*item, span)?;
+            return Ok(Expr::call(Expr::helper("$slicePtrEq"), vec![a, b, size]));
+        }
         // An item's place is the object it holds only where the pointee is an
         // object, never a type parameter's, which may be a number.
         let items = self.mut_ref_form(pointee).is_the_object();
@@ -678,11 +685,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether a value of type `ty` is a raw pointer `==` compares by place
-    /// or address (ADR 0562): a handle on its place, or a `dyn`'s pair. The
+    /// or address (ADR 0562): a handle on its place, a `dyn`'s pair, or a
+    /// slice's, by where it starts and its length (#1185). The
     /// one answer both `==`s ask, MIR's and a derived `PartialEq`'s.
     pub(super) fn compared_by_address(&self, ty: Ty<'tcx>) -> bool {
         self.is_handle_pointer(ty)
-            || raw_pointee(self.tcx, ty).is_some_and(|(pointee, _)| self.is_pair_dyn_pointee(pointee))
+            || raw_pointee(self.tcx, ty)
+                .is_some_and(|(pointee, _)| self.is_pair_dyn_pointee(pointee) || pointee.is_slice())
     }
 
     /// Whether a `pointee` is a `dyn` whose pointer is its pair.
