@@ -375,3 +375,22 @@ test("a change to a file a test reads as text picks the test", () => {
   const reads = readsOf(relative(root, reader), false);
   expect([...reads]).toEqual(["scripts/crate-corpus.ts"]);
 });
+
+// What a test globs is read too: readability's ratchet reads every corpus
+// case's and snapshot's JS by `new Bun.Glob("test/corpus/*.js")`, and its
+// baseline, so a change that blesses a snapshot, or the baseline, picks it,
+// with the test map or without; main went red three times in a day where
+// one didn't. A fixture's glob, `"*.rs"` of a folder it names, isn't read.
+test("a change to a corpus case's or a snapshot's JS, or readability's baseline, picks readability's ratchet", () => {
+  const files = readdirSync(join(root, "test"))
+    .filter((name) => name.endsWith(".test.ts"))
+    .map((name) => `test/${name}`);
+  for (const changed of ["test/corpus/vec_edits.js", "test/snapshots/std/iterators.js", "docs/readability.txt"]) {
+    expect([changed, readersOf([changed], files).has("test/readability.test.ts")]).toEqual([changed, true]);
+  }
+  expect(readersOf(["test/corpus/vec_edits.rs"], files).has("test/readability.test.ts")).toBe(false);
+  const dir = fixture("test-map-globs");
+  const reader = join(dir, "reader.test.ts");
+  writeFileSync(reader, `const js = [...new Bun.Glob("test/corpus/*.js").scanSync(root)];\nconst own = [...new Bun.Glob("*.rs").scanSync(dir)];\n`);
+  expect([...readsOf(relative(root, reader), false)]).toEqual(["test/corpus/*.js"]);
+});

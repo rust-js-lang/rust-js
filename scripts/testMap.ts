@@ -170,6 +170,16 @@ export function readsOf(file: string, followed = true, seen = new Set<string>())
     if (literal.startsWith("../")) there(join(dirname(relative(root, path)), literal), false);
     else if (tops.has(literal.split("/")[0])) there(literal, false);
   }
+  // A glob of the checkout's files, `new Bun.Glob("test/corpus/*.js")`, its
+  // first part the root's, said as the glob, which `readersOf` matches:
+  // readability's ratchet reads the corpus's JS so, which a case's bless
+  // changes (#1188's follow-up: main went red three times in a day where a
+  // change blessed snapshots and plain check:fast didn't run it). Not one
+  // of a fixture's, `"*.rs"`, whose first part is a pattern.
+  for (const [, glob] of text.matchAll(/\bGlob\(\s*["'`]([\w.*/-]+)["'`]\s*\)/g)) {
+    const first = glob.split("/")[0];
+    if (glob.includes("/") && !first.includes("*") && tops.has(first)) reads.add(glob);
+  }
   // What each module of the checkout's it imports reads.
   if (followed) for (const [, spec] of text.matchAll(/\b(?:from|import)\s*\(?\s*["'](\.{1,2}\/[^"']+)["']/g)) {
     const base = resolve(dirname(path), spec);
@@ -196,7 +206,7 @@ export function readersOf(changed: string[], testFiles: string[]): Map<string, s
   const readers = new Map<string, string>();
   for (const test of testFiles) {
     const reads = readsOf(test, false);
-    const read = changed.find((file) => file !== test && [...reads].some((r) => file === r || file.startsWith(`${r}/`)));
+    const read = changed.find((file) => file !== test && [...reads].some((r) => file === r || file.startsWith(`${r}/`) || (r.includes("*") && new Bun.Glob(r).match(file))));
     if (read !== undefined) readers.set(test, read);
   }
   return readers;
