@@ -23,7 +23,7 @@ import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, sta
 import { availableParallelism, cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
-import { changedCases, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesNumbers } from "./iteratorSlice";
+import { changedCases, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers } from "./iteratorSlice";
 import { mappedFiles, pickChange, readersOf } from "./testMap";
 import { browsers, caseParts, compilerBuilds, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
 import { said, strays } from "./strays";
@@ -162,6 +162,8 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
   const formatting = touchesFormatting([...changed, ...branch]);
   // And to the numbers' code, the numbers grid's slice (#940).
   const numbers = touchesNumbers([...changed, ...branch]);
+  // And to the pointers' code, the memory net's slice (#1172).
+  const memory = touchesMemory([...changed, ...branch]);
   // And to what a `None` is at the JS boundary, the declarations'
   // TypeScript callers, in one part (#822).
   const declarations = touchesDeclarations([...changed, ...branch]);
@@ -315,6 +317,15 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
               timeout: 600,
               weight: parts,
               ci: "bun scripts/iteratorSlice.ts run numbers",
+            }),
+          ]
+        : []),
+      ...(memory
+        ? [
+            job(runs.memory[0].name, ["bun", "scripts/iteratorSlice.ts", "run", "memory", String(parts)], {
+              timeout: 600,
+              weight: parts,
+              ci: "bun scripts/iteratorSlice.ts run memory",
             }),
           ]
         : []),

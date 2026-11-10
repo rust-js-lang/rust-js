@@ -313,3 +313,27 @@ more, each under Miri. `test/generate.test.ts`'s "a seed's swarm leaves
 families out, and each place's statement is made" holds that each family
 is in some seeds and out of others, and each of a `Pl`'s statements is
 made.
+
+## Amendment: the memory net, unsafe code over plain data (#1172)
+
+The generated programs keep to safe code, whose behaviour rustc keeps
+defined. The pointer model's bugs (#1110 to #1137) were found by hand or
+by accident, so a second generator, `test/memory-net.ts`, writes unsafe
+code over plain data, as hashbrown, smallvec, bytes and memchr do: a few
+integer arrays, `Vec`s and boxed slices, changed and read through raw
+pointers, by a swarm of 9 families of operation. Each operation is a
+block of its own, its pointers made there of the place they point into,
+and each stays within its allocation, so the program is never undefined
+behaviour; Miri proves it of each, where it's installed, and one it
+finds undefined fails the run, as the generator's bug. Floats are made
+of finite numbers or of integers whose exponent isn't all ones, never a
+NaN, whose payload JS doesn't keep (the guide's differences). Native
+Rust runs on `wasm32-wasip1`, whose `usize` and layout are rust-js's
+(ADR 0090). What rust-js refuses, at compile time or where it runs, is
+no failure but counted by its reason, each part's ranking in
+`target/memory-net/`, so the model's next pieces are chosen by need. A
+push of the pointers' code (`memoryPaths`) runs the slice, seeds 1 to
+24, which compile and run as Rust does but those
+`test/memory-net-known.txt` lists under their issues; the nightly runs
+400 from the day's under Miri. Its first run found #1253, #1254 and
+#1255.

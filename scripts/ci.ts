@@ -13,7 +13,7 @@
 import { mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
-import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesNumbers, touchesPort } from "./iteratorSlice";
+import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesPort } from "./iteratorSlice";
 import { changedSince } from "./mutations";
 import { shardTimings } from "./shard";
 import { timed, timings } from "./timing";
@@ -195,6 +195,7 @@ async function plan(given?: string) {
   console.log(`cases=${changedCases(changed).length > 0}`);
   console.log(`crates=${touchesCrates(changed)}`);
   console.log(`port=${touchesPort(changed)}`);
+  console.log(`memory=${touchesMemory(changed)}`);
 }
 
 /** An artifact a run uploaded, as GitHub lists them, the newest first. */

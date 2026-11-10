@@ -70,6 +70,7 @@ jobs:
       iterators: ${{ steps.plan.outputs.iterators }}
       formatting: ${{ steps.plan.outputs.formatting }}
       numbers: ${{ steps.plan.outputs.numbers }}
+      memory: ${{ steps.plan.outputs.memory }}
       declarations: ${{ steps.plan.outputs.declarations }}
       async: ${{ steps.plan.outputs.async }}
       consumers: ${{ steps.plan.outputs.consumers }}
@@ -246,6 +247,40 @@ jobs:
         with:
           name: number-grid-slice
           path: target/iterator-matrix
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # The memory net's slice (test/memory-net.ts, #1172), of a check whose
+  # change is the pointers' code, as `plan` says (scripts/iteratorSlice.ts's
+  # `memoryPaths`): its 24 seeds, each a program of unsafe Rust over plain
+  # data, in both builds against native wasm32. The nightly's `memory` runs
+  # 400 seeds from the day's, each under Miri.
+  memory-net:
+    name: memory net slice
+    needs: plan
+    if: ${{ !inputs.nightly && needs.plan.outputs.memory == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run the slice
+        env:
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: bun scripts/iteratorSlice.ts run memory
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: memory-net-slice
+          path: target/memory-net
           if-no-files-found: ignore
           retention-days: 14
 

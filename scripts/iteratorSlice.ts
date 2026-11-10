@@ -17,6 +17,7 @@
 //   bun scripts/iteratorSlice.ts run async [parts]         the async table (#942), of a change to how a future awaits and drops
 //   bun scripts/iteratorSlice.ts run consumers [parts]     the consumer net, of a change to the iterators' code or the drops'
 //   bun scripts/iteratorSlice.ts run metamorphic [parts [since]]  each metamorphic rewrite of each corpus case the change adds or edits (#1165)
+//   bun scripts/iteratorSlice.ts run memory [parts]        the memory net's slice (#1172), of a change to the pointers' code
 //
 // And a change to the formatting code, `formatPaths`, runs the formatting
 // grid's slice (test/format-grid.ts, #941), each push's check's
@@ -145,6 +146,32 @@ export function touchesDeclarations(files: string[]): boolean {
   return files.some((file) => declarationGlobs.some((glob) => glob.match(file)));
 }
 
+/** The pointers' code, as globs of the repository's paths: raw pointers,
+ * their arithmetic and std's functions of them, what a `&mut` and a place
+ * lent as a pointer are, plain data's bytes, unions, what's held inline
+ * where std lends from, and the runtime's helpers that address memory,
+ * read and write bytes and views; and the memory net that tests them
+ * (#1172). */
+export const memoryPaths = [
+  "src/lower/pointers.rs",
+  "src/lower/pointers/**",
+  "src/lower/mut_refs.rs",
+  "src/lower/plain.rs",
+  "src/lower/unions.rs",
+  "src/lower/lent.rs",
+  "src/runtime/{pointers,unions,bytes,from_bytes,to_bytes,slice_view}.js",
+  "test/memory-net.ts",
+  "test/memory-net.test.ts",
+  "test/memory-net-known.txt",
+];
+
+const memoryGlobs = memoryPaths.map((path) => new Bun.Glob(path));
+
+/** Whether a change of `files` touches the pointers' code. */
+export function touchesMemory(files: string[]): boolean {
+  return files.some((file) => memoryGlobs.some((glob) => glob.match(file)));
+}
+
 /** What drops, and what drops as a panic unwinds, as globs of the
  * repository's paths: the drops and their unwinding's owners. */
 const dropPaths = ["src/lower/drops/**", "src/lower/analysis/unwinding.rs"];
@@ -242,6 +269,9 @@ export const runs = {
   // Each rewrite of each case the change adds or edits, the list `run`
   // writes (#1165).
   metamorphic: [{ name: "the metamorphic rewrites of the change's cases", file: "test/metamorphic.test.ts", env: {} }],
+  // The slice's seeds, each a program of unsafe Rust over plain data, Miri
+  // where it's installed: some 30 s in 8 parts.
+  memory: [{ name: "the memory net's slice", file: "test/memory-net.test.ts", env: {} }],
 } as const;
 
 /** `of`, in `parts` processes at once, each its share of the cases
@@ -325,7 +355,7 @@ function changeRows(parts: number): Run[] {
 
 if (import.meta.main) {
   const [command, of, count, list] = process.argv.slice(2);
-  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|declarations|async|consumers|rows [parts [cases]] | metamorphic [parts [since]]");
+  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|declarations|async|consumers|memory|rows [parts [cases]] | metamorphic [parts [since]]");
   const parts = count === undefined ? caseParts(availableParallelism() * 2) : Number(count);
   process.exit((await run(of as keyof typeof runs | "rows", parts, list)) ? 0 : 1);
 }

@@ -113,6 +113,14 @@ export const jobs: Record<string, Part[]> = {
     cores: 1,
     timeout: 30 * minutes,
   })),
+  // The memory net's 400 seeds from the day's, each under Miri (#1172).
+  memory: parts("memory", 4, (i) => ({
+    cmd: ["bun", "test", "--timeout=1800000", "test/memory-net.test.ts"],
+    env: { ...compiler, MEMORY_NET: "all", MEMORY_NET_START: String(fuzzStart), RUST_JS_CASES: `${i}/4` },
+    after: ["build"],
+    cores: 1,
+    timeout: 30 * minutes,
+  })),
   // Each `&mut` form through each operation, all 210 programs (ADR 1086).
   "mut-refs": [{
     id: "mut-refs",
