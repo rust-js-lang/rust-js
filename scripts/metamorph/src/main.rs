@@ -46,6 +46,14 @@
 //!   struct's and enum's drops and clones, each closure's calls and each
 //!   `for` loop's steps a numbered line, `~loud <n> <what>`; with
 //!   `METAMORPH_PANIC_AT=<n>`, a panic at the n-th (`loud.rs`, #1203).
+//! - `opaque`: each iterator the case makes given on as an `impl Iterator`,
+//!   promising what the iterator is of `DoubleEndedIterator`, `Clone`, ..
+//!   (`opaque.rs`, #1204); `dyn-fn`, each closure called through a
+//!   `Box<dyn Fn>` (`dyn_fn.rs`); each narrowed to the places rustc
+//!   accepts (`narrow.rs`).
+//! - `fact-<fact>`: the case given a neighbour, never run, that turns on
+//!   one of the facts rust-js decides for the whole crate, an address
+//!   asked, a capacity, a function's identity (`facts.rs`, #1204).
 //!
 //! - `emi-probe`, `emi-prune` and `emi-insert`: code a case's run never
 //!   reaches, found by the probe's native run, deleted, made
@@ -60,13 +68,17 @@
 
 mod closures;
 mod defaults;
+mod dyn_fn;
 mod emi;
+mod facts;
 mod generic;
 mod library;
 mod loops;
 mod loud;
 mod matches;
 mod methods;
+mod narrow;
+mod opaque;
 mod reduce;
 mod tuples;
 mod wrap;
@@ -79,7 +91,7 @@ use syn::{Block, FnArg, Item, Pat, Stmt, Type};
 
 use wrap::Wrap;
 
-const REWRITES: &str = "outline|boxed|option|rc-refcell|field|dyn-ref|impl-ref|impl-owned|generic|closure-fn|library|array|tuple|for-each|for-loop|if-let|method-fn|fn-method|default-copy|tuple-struct|loud|emi-probe|emi-prune|emi-insert";
+const REWRITES: &str = "outline|boxed|option|rc-refcell|field|dyn-ref|impl-ref|impl-owned|generic|closure-fn|library|array|tuple|for-each|for-loop|if-let|method-fn|fn-method|default-copy|tuple-struct|loud|opaque|dyn-fn|fact-<fact>|emi-probe|emi-prune|emi-insert";
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -140,6 +152,9 @@ fn main() {
         "default-copy" => defaults::default_copy(&mut ast, &mut budget),
         "tuple-struct" => tuples::tuple_struct(&mut ast, &mut budget),
         "loud" => loud::loud(&mut ast, &mut budget),
+        "opaque" => opaque::opaque(&mut ast, &mut budget),
+        "dyn-fn" => dyn_fn::dyn_fn(&mut ast, file, &source, &mut budget),
+        fact if facts::FACTS.contains(&fact) => facts::fact(&mut ast, fact),
         "emi-probe" => emi::probe(&mut ast),
         "emi-prune" => match emi::hits_given() {
             Some(hits) => emi::prune(&mut ast, &hits, &mut budget),

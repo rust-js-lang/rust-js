@@ -164,3 +164,4 @@ Also in use, with no single before and after:
 
 | Experiment | Status | Where |
 |---|---|---|
+| The metamorphic net's 16 rewrites of #1203 and #1204, timed on their first run (ldAC, 2026-11-10) | Measured, not yet sped up. On the 12-core M6, every case in both builds: the five loud rewrites 6.5 min in 12 parts (one part 15 min with #1214's hang, since fixed); the eleven contexts 47 min in 11 parts, most of it `test/reduced.ts` reducing each of their 68 failures, up to 300 s each, one after another in its part, the same program's plain and std failures reduced apart. A listed failure isn't reduced, so once the 68 are in `test/metamorphic-known.txt` the nightly pays their runs, not their reductions. The fix is DEVELOPMENT.md's slow spot: reduce each failure once, after the part's runs, in a pool of the free cores | `test/reduced.ts`, `test/metamorphic.test.ts` |

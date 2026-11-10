@@ -307,3 +307,66 @@ innermost doubling type took two minutes to compile (#1214, ADR 0098
 amended, fixed before this landed). And the rewriter's own: a closure's
 body `unsafe { .. } as u32` written after the call's line read as a
 statement; a body not a block is now in parentheses.
+
+## Amendment: the case in other contexts (#1204)
+
+The corpus writes each value in the context it was written for: a
+closure literal where it's called, the concrete iterator a chain makes,
+a crate that asks nothing of addresses, capacities or counts. The
+lowering's rules decide on those contexts, and a user's code puts the
+same values in others. Eleven rewrites give each case another:
+
+- `opaque` (`opaque.rs`): each iterator the case makes, `v.iter()`,
+  `it.map(f)`, given on through `metamorph_opaque::at_k(..)`, a function
+  that returns it as an `impl Iterator` promising what it is of
+  `DoubleEndedIterator`, `ExactSizeIterator`, `FusedIterator`, `Clone`
+  and `Debug`. An opaque type is one rustc reveals only after analysis
+  (#1142).
+- `dyn-fn` (`dyn_fn.rs`): each closure called through a `Box<dyn Fn>`,
+  `FnMut` or `FnOnce` as rustc's MIR says it's called (`closures.rs`'
+  `Signature.kind`), given on through `metamorph_dyn::at_k(..)`.
+- `fact-addresses`, `fact-slices`, `fact-stored`, `fact-capacity`,
+  `fact-fn-identity`, `fact-chars`, `fact-write-fails`, `fact-rc-counts`
+  and `fact-clones` (`facts.rs`): the case given a neighbour, never run or
+  never called, that turns on one of the facts `AnalyzedCrate` decides for
+  the whole crate, so what the case prints is its own.
+
+A place rustc rejects, a `Peekable`'s `peek` through an opaque type, a
+closure whose own type is needed, is left as it was: rustc's JSON errors of
+the rewrite (`narrow.rs`) are mapped by their byte spans to the `at_k`
+they're in, which is taken off, or for `opaque` given fewer promises (an
+`E0277` naming one), and the program checked again.
+
+Its first run, every case of each in both builds, 47 min on the 12-core
+M6 in 11 parts, most of it reducing failures (DEVELOPMENT.md's slow
+spots): `dyn-fn` made 788 programs, `opaque` 491, each fact about 2,000
+(`fact-clones` 236). 68 failed, every one still wrong on main's compiler,
+in eight families: `dyn-fn` 57, `opaque` 7, `fact-rc-counts` 4; every
+other fact ran as native: a `Box<dyn Fn>` given to a std consumer never
+dropped (#1220); one made a `dyn Fn` again, dropping twice or overflowing
+the stack (#1221); a `&mut Box<dyn FnMut>` given as a `&mut dyn FnMut` a
+place, not a function (#1222); `max_by_key` of a boxed key and a boxed
+`filter` in generic code crashing rustc (#1223, #1224); `zip` calling a
+boxed or hidden `map`'s function once more than std (#1225); a std
+adapter behind `impl Trait` compiled from std's bodies and read as
+rust-js's own iterator (#1226); and a counted `Rc` called through as one
+not counted (#1227).
+
+Two faults of the narrowing itself had left most of `opaque`'s cases
+unrewritten, found as its harness test failed: an error where a value a
+place made is used later, `let mut p = at_k(..).peekable(); p.peek()`,
+mapped to no place, and the case was given up; and rustc says one unmet
+bound twice, once of the call and once of its argument, so the second took
+the whole place off where the first had taken its promise. An error that's
+in no place and follows none is now the place made last before it's
+written, and a promise is taken off however often it's named. `opaque`
+then made 817 programs and `dyn-fn` 847 (135 s in 12 parts, without the
+facts), and 56 failures more were listed: 44 more of #1226's, one more
+of #1223's, an `eq` of an opaque iterator crashing rustc (#1229), and
+`into_iter()` of what's already an iterator, given on as an `impl
+Iterator`, giving nothing (#1230).
+
+A case with a binding, `rust_js::link_name`, isn't rewritten by `dyn-fn`:
+the boxed closure it hands JS is one Rust never drops (ADR 0873, the
+guide's decided difference 12), which the case's native stub drops, so
+its run differs by that decision, not by a fault.

@@ -307,3 +307,54 @@ test("loud-call panics at the middle call, and what's held is dropped as it unwi
   expect(ran.outcome).toEqual({ panic: "~loud panic at 5" });
   expect(ran.stdout.split("\n").filter((line) => line.startsWith("~loud ")).slice(-3)).toEqual(["~loud 5 call 1", "~loud 6 drop Token(1)", "~loud 7 drop Token(1)"]);
 });
+
+// The context rewrites (#1204): an iterator given on as an `impl Iterator`,
+// a closure called through a `Box<dyn Fn>`, and a neighbour that turns on a
+// fact rust-js decides for the whole crate.
+const contextCase = `fn main() {
+    let v = vec![3u32, 1, 2];
+    let mut peeked = v.iter().peekable();
+    let first = peeked.peek().copied();
+    let add = |x: &u32| x + 1;
+    let total: u32 = v.iter().map(add).rev().sum();
+    let n = "ab".chars().count();
+    println!("{first:?} {total} {n}");
+}
+`;
+
+/** `rewrite` of `contextCase`, its tokens' spaces made one. */
+function context(rewrite: Rewrite): string | undefined {
+  const dir = fixture(`metamorphic-${rewrite}-harness`);
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, "case.rs");
+  writeFileSync(file, contextCase);
+  return rewritten(rewrite, file, "2024")?.program.replaceAll(/\s+/g, " ");
+}
+
+test("opaque gives each iterator on as an `impl Iterator`, promising what it is, and leaves one whose use needs more", () => {
+  const program = context("opaque") ?? "";
+  // `peekable()`'s `peek` is a `Peekable`'s own, its error where the
+  // variable that holds it is used: left as it was. And an `Option`'s
+  // `copied()` is no iterator.
+  expect(program).toContain("let mut peeked = metamorph_opaque :: at_0 (v . iter ()) . peekable ()");
+  expect(program).toContain("let first = peeked . peek () . copied ()");
+  expect(program).toContain("metamorph_opaque :: at_5 (metamorph_opaque :: at_4 (metamorph_opaque :: at_3 (v . iter ()) . map (add)) . rev ())");
+  // `Chars` is double-ended, but not exact-sized.
+  expect(program).toContain(
+    "pub fn at_6 < I : :: std :: iter :: Iterator + :: std :: iter :: DoubleEndedIterator + :: std :: iter :: FusedIterator + :: std :: clone :: Clone + :: std :: fmt :: Debug >",
+  );
+});
+
+test("dyn-fn calls each closure through a `Box<dyn Fn>` of rustc's types", () => {
+  expect(context("dyn-fn")).toContain(
+    "(metamorph_dyn :: at_0 (:: std :: boxed :: Box :: new (| x : & u32 | x + 1)) as :: std :: boxed :: Box < dyn Fn (& u32) -> u32 + '_ >)",
+  );
+});
+
+test("a fact's neighbour is never run, and a case with nothing for it to name is no variant", () => {
+  const program = context("fact-capacity") ?? "";
+  expect(program).toContain("fn main () { if :: std :: hint :: black_box (false) { metamorph_fact () ; }");
+  expect(program).toContain('println ! ("{}" , v . capacity ())');
+  // No type of the case's own to clone.
+  expect(context("fact-clones")).toBeUndefined();
+});

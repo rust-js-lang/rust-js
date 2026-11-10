@@ -39,14 +39,17 @@ pub fn closure_fn(ast: &mut syn::File, file: &str, source: &str, budget: &mut us
 /// A closure's signature, as rustc's MIR prints it: its parameters' types
 /// and what it returns.
 #[derive(Debug, PartialEq)]
-struct Signature {
-    inputs: Vec<String>,
-    output: String,
+pub struct Signature {
+    pub inputs: Vec<String>,
+    pub output: String,
+    /// What it's called as, `Fn`, `FnMut` or `FnOnce`: what its MIR takes
+    /// itself as, `&`, `&mut` or by value.
+    pub kind: &'static str,
 }
 
 /// Each closure's signature in rustc's MIR of `file`, by where it begins,
 /// its line and its column (1-based). Empty where rustc can't say.
-fn signatures(file: &str) -> BTreeMap<(usize, usize), Signature> {
+pub fn signatures(file: &str) -> BTreeMap<(usize, usize), Signature> {
     let edition = std::env::var("METAMORPH_EDITION").unwrap_or_else(|_| String::from("2024"));
     let out = Command::new("rustc")
         .args([
@@ -119,7 +122,15 @@ fn parse_mir(mir: &str) -> BTreeMap<(usize, usize), Signature> {
             .iter()
             .map(|p| p.split_once(": ").map(|(_, t)| t.to_string()).unwrap_or_default())
             .collect();
-        found.insert((line, column), Signature { inputs, output });
+        let own = env.split_once(": ").map_or("", |(_, t)| t);
+        let kind = if own.starts_with("&mut ") {
+            "FnMut"
+        } else if own.starts_with('&') {
+            "Fn"
+        } else {
+            "FnOnce"
+        };
+        found.insert((line, column), Signature { inputs, output, kind });
     }
     found
 }
@@ -127,7 +138,7 @@ fn parse_mir(mir: &str) -> BTreeMap<(usize, usize), Signature> {
 /// Whether `ty`, a type MIR printed, can be written in a function's
 /// signature: no closure's, opaque or inferred type, and none of the
 /// enclosing function's type parameters or `Self`.
-fn writable(ty: &str, generics: &BTreeSet<String>) -> bool {
+pub fn writable(ty: &str, generics: &BTreeSet<String>) -> bool {
     if ty.is_empty() || ty.contains('{') || ty.contains("impl ") || ty.contains("'?") || ty.contains("dyn ") {
         return false;
     }
@@ -507,14 +518,16 @@ mod tests {
             found[&(9, 36)],
             Signature {
                 inputs: vec!["&i64".into()],
-                output: "i64".into()
+                output: "i64".into(),
+                kind: "FnMut",
             }
         );
         assert_eq!(
             found[&(11, 13)],
             Signature {
                 inputs: vec!["m::P".into(), "&Q<'_>".into()],
-                output: "(m::P, usize)".into()
+                output: "(m::P, usize)".into(),
+                kind: "Fn",
             }
         );
     }

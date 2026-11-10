@@ -15,3 +15,93 @@ plain std library refcell_borrow_while_mut.rs
 
 #1132 P2 (pointers): a pointer to an Option of an object that holds None, made of a reference or a box, is refused where it runs
 plain std boxed address_of_an_option_payload.rs
+
+#1220 P0 (drops): a Box<dyn Fn*> given by value to a std consumer is never dropped (all/any/fold/for_each/scan/or_insert_with/catch_unwind)
+plain std dyn-fn catch_unwind_assert_drops.rs
+std dyn-fn scan_drops_its_function_and_state.rs
+plain std dyn-fn trie_of_counted_rcs.rs
+plain std dyn-fn unrun_function_drops.rs
+
+#1221 P0 (closures): a Box<dyn Fn*> made a dyn Fn* again reuses the same JS function, so its drop overflows the stack or runs twice
+plain std dyn-fn closure_holding_part_of_a_value.rs
+plain std dyn-fn dyn_fn_generic_drops.rs
+plain std dyn-fn dyn_fn_generic_owned_drops.rs
+plain std dyn-fn dyn_fn_once_drops_itself.rs
+plain std dyn-fn fn_boxed_once_drops.rs
+
+#1222 P0 (references): &mut Box<dyn FnMut> coerced to &mut dyn FnMut passes a place cell, not the function (f is not a function)
+plain std dyn-fn back_predicate_unwinds.rs
+plain std dyn-fn clone_of_a_borrowed_parameter.rs
+plain std dyn-fn rc_fn_made_of_a_counted_rc.rs
+
+#1223 P1 (compile crash): max_by_key/min_by_key given a Box<dyn FnMut> panics: Ty::fn_sig() called on non-fn type
+plain std dyn-fn boxed_option_unwraps.rs
+plain std dyn-fn consumed_iterator_dropped_as_its_function_panics.rs
+plain std dyn-fn consumers_step_each.rs
+plain std dyn-fn fold_drops_moved_function_first.rs
+plain std dyn-fn keys_with_a_destructor_drop_where_std_drops_them.rs
+plain std dyn-fn max_by_drops_its_function_first.rs
+plain std dyn-fn max_by_key_of_a_dropping_key_over_its_iterator.rs
+plain std dyn-fn panic_mid_fold_drops.rs
+plain std dyn-fn panic_part_way_drops.rs
+
+#1224 P1 (compile crash): escaping bound vars in cell_borrows::std_given → bound_runs → traits::evidence_impl (#1111's class)
+plain std dyn-fn generic_collect.rs
+plain std dyn-fn generic_from_str.rs
+
+#1226 P0 (impl Trait): a std adapter returned as impl Trait is compiled from std's bodies, but the code using it reads it as rust-js's JS-iterator form
+plain opaque back_predicate_unwinds.rs
+plain opaque back_steps.rs
+plain opaque chain_made_here_stepped_from_its_back.rs
+plain opaque chain_of_adapters_stepped_from_its_back.rs
+plain opaque chain_stepped_from_its_back_elsewhere.rs
+plain opaque chain_under_a_held_map_from_its_back.rs
+plain opaque enumerate_made_in_place_from_back.rs
+plain opaque enumerate_made_knowing_read_again.rs
+plain opaque enumerate_of_a_fuse_from_back.rs
+plain opaque enumerate_of_a_reversible_source.rs
+plain opaque enumerate_of_droppers_from_back.rs
+plain opaque enumerate_of_known_length.rs
+plain opaque enumerate_of_own_iterator_folded_from_its_back.rs
+plain opaque enumerate_of_take_from_back.rs
+plain opaque exact_size_len.rs
+plain opaque flatten_closed_part_way_drops_source_first.rs
+plain opaque flatten_fold_closure_panics.rs
+plain opaque flatten_folds_reach_its_sources_own.rs
+plain opaque flatten_from_both_ends_drops_its_inners.rs
+plain opaque flatten_last_takes_each_inner_last.rs
+plain opaque generic_map_beside_a_cloned_map.rs
+plain opaque held_chain_mapped_from_its_back.rs
+plain opaque impl_trait_hides_std_adapters.rs
+plain opaque iterators_held_in_a_generic_structs_field.rs
+plain opaque map_ends_size_hint.rs
+plain opaque own_iterator_flattened_from_its_back.rs
+plain opaque owned_items_through_fuse.rs
+plain opaque parts_close_past_a_panic.rs
+plain opaque range_mapped_by_a_function.rs
+plain opaque rev_of_a_type_parameter_held_as_it_is.rs
+plain opaque rev_of_rev_folds_its_source.rs
+plain opaque rev_range_counted_beside_its_rfold.rs
+plain opaque skip_of_a_peekable_from_back.rs
+plain opaque skip_of_own_from_its_back_asks_len_once.rs
+plain opaque skip_rfold_closes_as_it_unwinds.rs
+plain opaque skip_take_of_droppers_from_back.rs
+plain opaque step_by_folded_from_its_back_as_std.rs
+plain opaque step_by_source_dropped_at_its_folds_end.rs
+plain opaque step_by_stepped_from_its_back.rs
+plain opaque take_from_its_back_drops_as_std.rs
+plain opaque take_of_own_nth_where_known_back.rs
+plain opaque take_rev_trims_from_the_back_in_each_holder.rs
+plain opaque try_folds_of_stages_unwind.rs
+plain opaque vec_last_takes_its_back.rs
+plain opaque zip_reversed_stepped_from_its_back.rs
+
+#1229 P1 (compile crash): Recognition::eq_sides panics "expected a projection" when an eq/ne side is an opaque impl Iterator
+plain std opaque adapter_drops.rs
+plain std opaque eq_of_unequal_lengths.rs
+plain std opaque into_iterator_named_by_another_bound.rs
+
+#1230 P0 (impl Trait): into_iter() of something already an iterator, given on as impl Iterator, yields nothing or zeros
+plain std opaque generic_chain_of_into.rs
+plain std opaque into_iter_of_items.rs
+plain std opaque user_into_iter.rs

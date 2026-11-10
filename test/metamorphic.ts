@@ -28,9 +28,11 @@ import { compileJs, runJs, runNative, runtimes } from "./programs";
  * `for_each` a `for` loop; a `match` of two arms an `if let` or a `let
  * else`; a method's body a free function's, and a free function's a
  * method's; a trait's default written out in each impl; a struct of named
- * fields a tuple struct; and the case made loud, its types' drops and
+ * fields a tuple struct; the case made loud, its types' drops and
  * clones, its closures' calls and its loops' steps each a line, and each
- * kind's middle event made a panic (#1203). */
+ * kind's middle event made a panic (#1203); and each iterator given on as
+ * an `impl Iterator`, each closure called through a `Box<dyn Fn>`, and a
+ * neighbour that turns on one crate-wide fact, never run (#1204). */
 export const rewrites = [
   "outline", "boxed", "dyn-ref", "impl-ref", "impl-owned", "generic", "option", "rc-refcell", "field", "closure-fn", "library",
   "array", "tuple", "for-each", "for-loop", "if-let", "method-fn", "fn-method", "default-copy", "tuple-struct",
@@ -40,6 +42,10 @@ export const rewrites = [
   // The case made loud (#1203): what std does with its values a line each,
   // and a panic at the middle event of each kind.
   "loud", "loud-drop", "loud-clone", "loud-call", "loud-step",
+  // Contexts (#1204): each iterator an `impl Iterator`, each closure a
+  // `Box<dyn Fn>`, and a neighbour that turns on each crate-wide fact.
+  "opaque", "dyn-fn",
+  "fact-addresses", "fact-slices", "fact-stored", "fact-capacity", "fact-fn-identity", "fact-chars", "fact-write-fails", "fact-rc-counts", "fact-clones",
 ] as const;
 export type Rewrite = (typeof rewrites)[number];
 
