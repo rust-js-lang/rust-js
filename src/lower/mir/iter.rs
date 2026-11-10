@@ -107,6 +107,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.mir_iter_call(collect, &[given], values, output, span, made);
         }
         let stepped = crate::lower::recognition::iterator_type_of(tcx, self.typing_env, given);
+        // A reference whose `IntoIterator` is a bound of this function's,
+        // `&'a I: IntoIterator`, stepped by its dictionary's `into_iter`, as
+        // `items.into_iter()` of it is (#1264, #1272).
+        if given.is_ref()
+            && let Some(it) = self.items_by_dictionary(values[0].clone(), given, span)?
+        {
+            return self.mir_iter_call(collect, &[stepped], vec![it], output, span, made);
+        }
         let Some(it) = self.mir_iter_call(into_iter, &[given], values, stepped, span, made)? else {
             return Ok(None);
         };

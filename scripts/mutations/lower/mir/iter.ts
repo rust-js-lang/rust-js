@@ -847,4 +847,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^boxed_function_panics_drop_the_consumed_iterator.rs$"],
   },
+  {
+    name: "from-iter-of-a-bound-reference-refused",
+    breaks: "`Vec::from_iter(r)` or `String::from_iter(r)` of a reference whose `IntoIterator` is a bound of its function's, `&'a I: IntoIterator`, is refused where `r.into_iter().collect()` compiles (#1272)",
+    file: "src/lower/mir/iter.rs",
+    find: "        if given.is_ref()\n            && let Some(it) = self.items_by_dictionary(values[0].clone(), given, span)?\n",
+    replace: "        if given.is_ref()\n            && let Some(it) = None::<Expr>\n",
+    tests: ["test/corpus.test.ts", "-t", "^from_iter_of_a_bound_reference.rs$"],
+  },
 ];

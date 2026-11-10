@@ -183,3 +183,22 @@ IntoIterator`'s dictionary of a `&I` as of a std collection's reference;
 gives. `Vec::from_iter` of it stays refused, as it was, and so does
 `flat_map(|_| word)` in that build, which asks a constant size of `&I` no
 caller is given.
+
+## Amendment: `from_iter` of such a reference (#1272)
+
+`Vec::from_iter(r)` and `String::from_iter(r)` of a `&'a I` bounded
+`&'a I: IntoIterator` were refused ("calling
+`std::iter::FromIterator::from_iter`"), where `r.into_iter().collect()`
+compiled. `collected_from_iter` asked for `into_iter` of `&I` as of a
+std type, and no caller makes a JS iterator of a bound's reference.
+Rust compiles it, so refusing it wrongly rejects valid Rust (a compiler
+gap, not a Rust/JS difference: ADR [0262](0262-when-rust-and-js-disagree.md)
+doesn't apply). `collected_from_iter` now steps such a reference by its
+dictionary's `into_iter`, through `items_by_dictionary`, as `zip` and
+`extend` of it do above. It then collects the way `collect()` of that
+iterator does:
+`Array.from($roomForHint(IRefIntoIterator.intoIter(r), 4, false))`, and a
+`String`'s `.join("")`. `test/corpus/from_iter_of_a_bound_reference.rs`
+holds both, of a newtype's `&Word` and of a `&Vec`, against native Rust
+in both builds. `flat_map(|_| r)` in the std-structs build stays refused
+(#1273).
