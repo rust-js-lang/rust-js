@@ -771,6 +771,8 @@ export function merged(shards: Shard[]): Map<string, Verdict> | { problem: strin
  * and with `check`, a wrong answer no line lists or a listed one that runs
  * as native fails it. */
 function reported(chosen: Crate[], verdicts: Map<string, Verdict>, decided: Map<string, string>, check: boolean) {
+  // `target/` is a merge's to make: the nightly's report job builds nothing.
+  mkdirSync(join(root, "target"), { recursive: true });
   writeFileSync(
     join(root, "target", "crater.json"),
     JSON.stringify(Object.fromEntries(verdicts), null, 2),

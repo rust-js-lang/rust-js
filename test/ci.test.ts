@@ -6,6 +6,7 @@ import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, sta
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
+import { readersOf } from "./part-settings";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
 import {
   batches,
@@ -255,6 +256,52 @@ test("each part of a test file a setting selects runs where `parts` says", () =>
     expect(sets.test(text(part.by)), `${part.by} sets ${part.setting}=${part.value}`).toBe(true);
     if (part.runs === "push") expect(onPush(part.by), `${part.by} runs per push`).toBe(true);
     else expect(part.why, `why ${part.setting}=${part.value} is the nightly's`).toBeTruthy();
+  }
+});
+
+// A workflow sets a part's setting only on a step that runs a test file
+// reading it (#1210's guard, test/part-settings.ts): nightly 42884008739
+// set `FUZZ_START` where its file read it past `partSetting`, and
+// `RUST_JS_REQUIRE_MIRI` where its file skipped the read, and each job
+// failed as it ended. Each step that sets one names the files it runs, and
+// one of them reads it, by `partSetting`, each time it loads, or a module
+// of test/ it imports does.
+test("a workflow sets a part's setting only where a test file it runs reads it", () => {
+  const settings = new Set(parts.map((part) => part.setting));
+  // A test file and each module of test/ it imports, and theirs.
+  const loads = (file: string, seen = new Set<string>()): Set<string> => {
+    if (seen.has(file) || !existsSync(join(root, file))) return seen;
+    seen.add(file);
+    for (const m of readFileSync(join(root, file), "utf8").matchAll(/from "\.\/([\w.-]+?)(\.tsx?)?"/g)) loads(`test/${m[1]}.ts`, seen);
+    return seen;
+  };
+  const strays: string[] = [];
+  for (const file of readdirSync(join(root, ".github/workflows")).filter((name) => name.endsWith(".yml"))) {
+    const workflow = Bun.YAML.parse(readFileSync(join(root, ".github/workflows", file), "utf8")) as {
+      jobs?: Record<string, { env?: Record<string, unknown>; steps?: { env?: Record<string, unknown>; run?: string }[] }>;
+    };
+    for (const [id, job] of Object.entries(workflow.jobs ?? {})) {
+      for (const step of job.steps ?? []) {
+        const run = step.run ?? "";
+        const inline = [...run.matchAll(/\b([A-Z][A-Z0-9_]*)=/g)].map((m) => m[1]);
+        const set = [...new Set([...Object.keys({ ...job.env, ...step.env }), ...inline])].filter((name) => settings.has(name));
+        const files = [...run.matchAll(/\btest\/[\w-]+\.test\.ts\b/g)].map((m) => m[0]);
+        for (const name of set) {
+          const readers = readersOf(name);
+          if (!files.some((test) => [...loads(test)].some((loaded) => readers.includes(loaded)))) strays.push(`${file} ${id}: ${name}, of ${readers.join(" or ")}, where it runs ${files.join(", ") || "no test file"}`);
+        }
+      }
+    }
+  }
+  expect(strays).toEqual([]);
+  // And each reader reads it as it loads, not past a condition: a read in a
+  // `&&` or a `?:`'s branch may never run.
+  for (const name of settings) {
+    for (const reader of readersOf(name)) {
+      const text = readFileSync(join(root, reader), "utf8");
+      const guarded = new RegExp(`(&&|\\?)\\s*partSetting\\(["']${name}["']\\)`);
+      expect(guarded.test(text), `${reader} reads ${name} past a condition`).toBe(false);
+    }
   }
 });
 

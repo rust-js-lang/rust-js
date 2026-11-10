@@ -92,8 +92,11 @@ const builds: [string, string[]][] = [
 
 // Miri judges each program where it's installed; the nightly's job installs
 // it, and a run that asks for it, `RUST_JS_REQUIRE_MIRI=1`, fails without.
+// Read whether Miri is there or not, so a run that set it knows it was read
+// (#1210): the nightly's has Miri, where the read was skipped.
 const miri = miriInstalled();
-if (!miri && partSetting("RUST_JS_REQUIRE_MIRI") === "1") throw new Error(`Miri isn't installed: ${installMiri}`);
+const requireMiri = partSetting("RUST_JS_REQUIRE_MIRI") === "1";
+if (!miri && requireMiri) throw new Error(`Miri isn't installed: ${installMiri}`);
 
 /** Each refusal's reason, its spans and numbers taken out, and how many
  * programs it refused, of each build. */

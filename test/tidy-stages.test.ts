@@ -68,9 +68,10 @@ if (which !== undefined && which !== "corpus" && which !== "programs") {
   throw new Error(`TIDY_STAGES=${which}: \`corpus\`, \`programs\`, or unset for a few cases`);
 }
 
-/** A setting that's a whole number, or `otherwise`. */
+/** A setting that's a whole number, or `otherwise`: a part's, read as one
+ * (test/part-settings.ts), so a run that sets it knows it was read. */
 function whole(name: string, otherwise: number): number {
-  const value = process.env[name];
+  const value = partSetting(name);
   if (value === undefined) return otherwise;
   if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value))) throw new Error(`${name}=${value}: a whole number is a setting`);
   return Number(value);

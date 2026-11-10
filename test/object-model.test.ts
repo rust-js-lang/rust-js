@@ -18,7 +18,7 @@
 //   OBJECT_MODEL=all RUST_JS_CASES=1/12 bun test test/object-model.test.ts  # every case, a twelfth
 
 import { beforeAll, expect, test } from "bun:test";
-import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { runSync } from "./child";
@@ -138,8 +138,13 @@ function wrong(name: string, edition: string): string | undefined {
   // and where an object is stored is recorded by its identity, as `===`
   // and `Rc::ptr_eq` compare it. A proxy of a Rust-made object isn't that
   // object (ADR 1022, amended; #1198). Its JS imports the runtime's
-  // helpers of an address asked, ADR 0562's.
-  if ([built.js, libraryJs].some((js) => asksAnAddress(readFileSync(js, "utf8")))) return void tally(name, "asks an address");
+  // helpers of an address asked, ADR 0562's. Each of the library's modules:
+  // one whose root holds only modules, `mod support; mod plugin;`, has no
+  // `lib.js` of its own (nightly 42884008739).
+  const libraryModules = (readdirSync(join(dir, libraryCrate), { recursive: true }) as string[])
+    .filter((file) => file.endsWith(".js"))
+    .map((file) => join(dir, libraryCrate, file));
+  if ([built.js, ...libraryModules].some((js) => asksAnAddress(readFileSync(js, "utf8")))) return void tally(name, "asks an address");
   const ends = stageEnds();
   const least = program(["--tidy-until", ends[0], ...everyRewrite().flatMap((pass) => ["--prepare-without", pass])]);
   if (!("js" in least)) return `the least JS doesn't compile: ${least.error.split("\n").slice(0, 4).join("\n")}`;
