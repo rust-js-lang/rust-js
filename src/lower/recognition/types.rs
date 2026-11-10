@@ -76,6 +76,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             ty::Slice(item) | ty::Array(item, _) => Hashed::Slice(item),
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => Hashed::Pointer(args.type_at(0)),
             ty::Adt(_, args) if self.is_std_type(ty, StdItem::Vec) => Hashed::Slice(args.type_at(0)),
+            // A C string is its bytes with the nul (ADR 1119), and its
+            // derived `Hash` is `[c_char]`'s, a `CString`'s `Box<[u8]>`'s:
+            // its length, then its bytes in one write, the same bytes
+            // whether `c_char` is signed or not.
+            ty::Adt(..) if is_c_string_like(self.tcx, ty) => Hashed::Slice(self.tcx.types.u8),
             ty::Adt(_, args) if self.is_std_type(ty, StdItem::VecDeque) => Hashed::Items(args.type_at(0)),
             ty::Adt(_, args) if self.option_of(ty).is_some() => Hashed::Option(args.type_at(0)),
             ty::Adt(_, args) if self.is_std_type(ty, StdItem::Result) && !self.is_write_result(ty) => {

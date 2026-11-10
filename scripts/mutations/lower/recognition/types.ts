@@ -377,4 +377,22 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cycle_size_hint.rs$"],
   },
+  {
+    name: "c-string-unhashed",
+    breaks:
+      "hashing a `CStr` or a `CString` through a `Hasher` is refused, its `Hash` not `[c_char]`'s (#1157)",
+    file: "src/lower/recognition/types.rs",
+    find: "            ty::Adt(..) if is_c_string_like(self.tcx, ty) => Hashed::Slice(self.tcx.types.u8),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^c_strings_hashed_and_their_errors_cloned.rs$"],
+  },
+  {
+    name: "c-string-hashed-without-its-nul",
+    breaks:
+      "a `CStr`'s hash is of its bytes without the nul, where std's `[c_char]` holds it (#1157)",
+    file: "src/lower/recognition/types.rs",
+    find: "            ty::Adt(..) if is_c_string_like(self.tcx, ty) => Hashed::Slice(self.tcx.types.u8),\n",
+    replace: "            ty::Adt(..) if is_c_string_like(self.tcx, ty) => Hashed::Text,\n",
+    tests: ["test/corpus.test.ts", "-t", "^c_strings_hashed_and_their_errors_cloned.rs$"],
+  },
 ];

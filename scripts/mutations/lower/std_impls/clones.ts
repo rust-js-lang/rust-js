@@ -442,4 +442,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^clone_changed_as_a_vec_or_a_boxed_slice.rs$"],
   },
+  {
+    name: "known-std-not-cloned-by-shape",
+    breaks:
+      "a clone of a C string's error that's a struct, `NulError`, is refused, std's types never cloned by their shape (#1157)",
+    file: "src/lower/std_impls/clones.rs",
+    find: "        !matches!(ty.kind(), ty::Adt(adt, _) if self.is_std(adt.did()) && !self.is_known_std(ty))\n",
+    replace: "        !matches!(ty.kind(), ty::Adt(adt, _) if self.is_std(adt.did()))\n",
+    tests: ["test/corpus.test.ts", "-t", "^c_strings_hashed_and_their_errors_cloned.rs$"],
+  },
 ];

@@ -96,7 +96,9 @@ fn identity<'tcx>(
         )
 }
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// std enums whose fields are what JS has: `Option`, `Result`, `Ordering`.
+    /// std types whose fields are what JS has, whose derived `Clone` and
+    /// `PartialEq` are their fields': the enums `Option`, `Result`,
+    /// `Ordering`, and a C string's errors (ADR 1119).
     fn is_known_std(&self, ty: Ty<'tcx>) -> bool {
         self.is_lang_adt(ty, LangItem::Option)
             || self.is_std_type(ty, StdItem::Result)
@@ -106,6 +108,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.is_reverse(ty)
             // Its `PartialEq`, `Clone` and order are its number's (ADR 0175).
             || self.recognition().wrapping_of(ty).is_some()
+            // Each is made in its fields' shape, `NulError(position,
+            // bytes)`'s array, `IntoStringError { inner, error }`'s object.
+            || super::recognition::is_c_str_error_part(self.tcx, ty)
     }
 
     /// Another of std's enums whose `PartialEq` is derived, `Bound`'s and a

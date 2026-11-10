@@ -213,8 +213,10 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   with the nul. `to_bytes()` is a part without the nul, `to_str()` checks
   UTF-8 as `str::from_utf8` does, and `from_bytes_with_nul`,
   `from_bytes_until_nul` and `CString::new` check for their nul as std's
-  do, their errors std's; `{:?}` escapes what isn't ASCII as std's does,
-  `"\xffA"` ([1119](../decisions/1119-a-c-string-is-its-bytes-with-its-nul.md)).
+  do, their errors std's, cloned and compared as std's derive them; `{:?}`
+  escapes what isn't ASCII as std's does, `"\xffA"`; hashed, it writes its
+  length and its bytes with the nul, as std's `[c_char]` does
+  ([1119](../decisions/1119-a-c-string-is-its-bytes-with-its-nul.md), amended).
 
 Differences:
 

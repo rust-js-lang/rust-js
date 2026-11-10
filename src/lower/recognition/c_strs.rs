@@ -70,6 +70,17 @@ pub(in crate::lower) fn c_str_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<CStrE
     })
 }
 
+/// Whether `ty` is one of a C string's errors, or the kind one holds,
+/// `FromVecWithNulError`'s private `FromBytesWithNulErrorKind`: std's types
+/// made in their fields' shape, whose derived `Clone` and `PartialEq` are
+/// their fields'.
+pub(in crate::lower) fn is_c_str_error_part(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    c_str_error(tcx, ty).is_some()
+        || matches!(ty.kind(), ty::Adt(adt, _)
+            if of_std_crate(tcx, adt.did(), StdCrate::Alloc)
+                && tcx.item_name(adt.did()).as_str() == "FromBytesWithNulErrorKind")
+}
+
 /// Which of a C string's functions `path` is, as std names it: one of
 /// `CStrOp`'s, or one that's what it's given, its bytes with the nul.
 pub(super) fn c_str_op(path: &str) -> Option<Std> {

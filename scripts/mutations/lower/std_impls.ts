@@ -711,4 +711,13 @@ export const mutations: Mutation[] = [
     replace: "        let same = match by_ne && item.peel_refs() == other_item.peel_refs() && self.own_ne(item) {\n",
     tests: ["test/corpus.test.ts", "-t", "^ne_between_two_item_types.rs$"],
   },
+  {
+    name: "c-string-errors-not-known",
+    breaks:
+      "cloning or comparing a C string's error is refused, as another std type's (#1157)",
+    file: "src/lower/std_impls.rs",
+    find: "            || super::recognition::is_c_str_error_part(self.tcx, ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^c_strings_hashed_and_their_errors_cloned.rs$"],
+  },
 ];

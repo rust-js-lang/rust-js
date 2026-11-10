@@ -34,4 +34,13 @@ export const mutations: Mutation[] = [
     replace: "(vec && is_c_string(tcx, from)).then_some(Std::Same)",
     tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
   },
+  {
+    name: "c-string-error-kind-not-known",
+    breaks:
+      "a clone or `==` of a `FromVecWithNulError` is refused, the kind it holds not known as a C string's error's part (#1157)",
+    file: "src/lower/recognition/c_strs.rs",
+    find: "                && tcx.item_name(adt.did()).as_str() == \"FromBytesWithNulErrorKind\")\n",
+    replace: "                && tcx.item_name(adt.did()).as_str() == \"FromBytesWithNulError\")\n",
+    tests: ["test/corpus.test.ts", "-t", "^c_strings_hashed_and_their_errors_cloned.rs$"],
+  },
 ];

@@ -579,7 +579,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let left = self.stepped_left(place, ty, owns, span)?;
                 Ok(self.stepped_items_of(left, ty))
             }
-            _ if !matches!(ty.kind(), ty::Adt(adt, _) if self.is_std(adt.did())) => match self.shape(ty) {
+            _ if self.cloned_by_shape(ty) => match self.shape(ty) {
                 Shape::Object(fields) => self.clone_fields(place, (ty, None), Self::named_fields(fields), span, out),
                 // Each part's clone in turn, those made before one that
                 // unwinds dropped (`held_in_turn`).
@@ -596,6 +596,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             _ => Err(self.unsupported(span, &format!("cloning `{ty}`"))),
         }
+    }
+
+    /// Whether a clone of `ty` is its parts', by its shape: of a type of the
+    /// crate's, or of one of std's whose fields are what JS has, a C
+    /// string's error (ADR 1119).
+    fn cloned_by_shape(&self, ty: Ty<'tcx>) -> bool {
+        !matches!(ty.kind(), ty::Adt(adt, _) if self.is_std(adt.did()) && !self.is_known_std(ty))
     }
 
     /// `{ ...place, v: <clone of place.v> }`: a new object, with a clone of
