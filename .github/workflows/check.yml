@@ -375,6 +375,9 @@ jobs:
       - name: Run each rewrite of the change's cases
         env:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+          # Each failure says how to reduce it, which the nightly's run
+          # does: a reduction here, 5 min a failure, outran the job.
+          NET_REDUCE: '0'
         run: bun scripts/iteratorSlice.ts run metamorphic 4 ${{ needs.plan.outputs.since }}
 
   # The consumer net (test/consumer-net.ts), of a check whose change is the

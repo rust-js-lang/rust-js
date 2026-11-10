@@ -135,7 +135,23 @@ fn main() {
   const built = nativeBinary(source, contentDirectory(source), [...nativeFlags(edition), ...rustc], compileTimeout);
   if ("error" in built) return built.error;
   const outcomeFile = join(dir, "native.json");
-  return ranOnce(built, execute([built.binary, outcomeFile], outcomeFile, built.built ? firstRunTimeout : timeout));
+  return ranOnce(built, execute(nativeCommand(built.binary, outcomeFile), outcomeFile, built.built ? firstRunTimeout : timeout));
+}
+
+/** The memory a native run may write on Linux, CI's, `RLIMIT_DATA`: 4
+ * GiB. A program that allocates without end, a reducer's variant whose
+ * loop no longer ends among them, aborts at it, where it took the
+ * machine's memory, 8 GiB of it, and the runner killed the job, a
+ * metamorphic run's, with no line said (dev-loop). Not its address space,
+ * which each thread's allocator reserves more of than it writes. macOS
+ * keeps no such limit, so there none. */
+export const nativeDataKiB = 4 * 1024 * 1024;
+
+/** How a native program is run: of `binary`, its outcome to
+ * `outcomeFile`, within `nativeDataKiB` on Linux. */
+export function nativeCommand(binary: string, outcomeFile: string): string[] {
+  if (process.platform !== "linux") return [binary, outcomeFile];
+  return ["sh", "-c", `ulimit -d ${nativeDataKiB} 2>/dev/null; exec "$0" "$@"`, binary, outcomeFile];
 }
 
 /** `run`, a native program's, its binary gone where it isn't kept, below

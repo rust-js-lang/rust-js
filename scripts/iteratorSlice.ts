@@ -330,6 +330,10 @@ export const runs = {
   })),
 } as const;
 
+/** The most corpus cases a run of the change's metamorphic rewrites takes,
+ * some 6 a part, about 2 min a part on CI's machine. */
+export const metamorphicMost = 24;
+
 /** `of`, in `parts` processes at once, each its share of the cases
  * (`RUST_JS_CASES`), or of those `list` names, a line each, as plain
  * `check:fast` picks the corpus's by the test map (#876), their logs
@@ -339,11 +343,17 @@ export async function run(of: keyof typeof runs | "rows", parts: number, list?: 
   // since `list`, a revision, CI's `since`, or since it left `main`, the
   // working tree's too, a line each in a list of its own: none, no run.
   if (of === "metamorphic") {
-    const cases = changedCases(changedSince(list));
-    if (cases.length === 0) {
+    const changed = changedCases(changedSince(list));
+    if (changed.length === 0) {
       console.log("the change adds or edits no corpus case: no metamorphic rewrite to run");
       return true;
     }
+    // At most `metamorphicMost` of them, those a hash of their name picks,
+    // the same each run: a `since` long ago, of checks cancelled or red,
+    // named some 100, whose rewrites outran the job (dev-loop). The
+    // nightly's runs every case's.
+    const cases = changed.length <= metamorphicMost ? changed : [...changed].sort((a, b) => Bun.hash(a).toString().localeCompare(Bun.hash(b).toString())).slice(0, metamorphicMost).sort();
+    if (cases.length < changed.length) console.log(`${cases.length} of the ${changed.length} cases the change adds or edits, by a hash of their names; the nightly's run has the rest`);
     list = join(root, "target", "metamorphic-cases.txt");
     mkdirSync(dirname(list), { recursive: true });
     writeFileSync(list, `${cases.join("\n")}\n`);
@@ -363,9 +373,12 @@ export async function run(of: keyof typeof runs | "rows", parts: number, list?: 
         stdout: "pipe",
         stderr: "pipe",
       });
-      const [out, err] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()]);
+      // Each line as it comes, its part's name before it, so a run that's
+      // killed shows what it had done (dev-loop).
+      const said = (stream: ReadableStream<Uint8Array>) => lines(stream, (line) => console.log(`[${name}, part ${i + 1}/${parts}] ${line}`));
+      await Promise.all([said(p.stdout), said(p.stderr)]);
       const code = await p.exited;
-      console.log(`── ${name}, part ${i + 1}/${parts} ──\n${out}${err}`);
+      console.log(`── ${name}, part ${i + 1}/${parts} ${code === 0 ? "passed" : "failed"} ──`);
       return code === 0;
     });
     const ok = (await Promise.all(parted)).every(Boolean);
@@ -384,6 +397,19 @@ export async function run(of: keyof typeof runs | "rows", parts: number, list?: 
     passed &&= problems.length === 0;
   }
   return passed;
+}
+
+/** Each line of `stream`, given `each` as it ends. */
+async function lines(stream: ReadableStream<Uint8Array>, each: (line: string) => void): Promise<void> {
+  const decoder = new TextDecoder();
+  let rest = "";
+  for await (const chunk of stream) {
+    rest += decoder.decode(chunk, { stream: true });
+    const parts = rest.split("\n");
+    rest = parts.pop() ?? "";
+    for (const line of parts) each(line);
+  }
+  if (rest !== "") each(rest);
 }
 
 /** The runs of the rows the change names, the working tree's since it left
