@@ -32,9 +32,11 @@ and reported by `bun run disk`:
    `~/.cache/rust-js`: inside the project now, where it's seen. Each
    machine's old one is moved there once, by the first prune of the
    stores, every `check:fast`'s and `bun run test`'s (`test/kept.ts`'
-   `adoptRetiredStores`): a store the main checkout already has wins, the
-   old one's removed, and so is `~/.cache/rust-js`, so no machine keeps an
-   orphan.
+   `adoptRetiredStores`), merged with what the main checkout keeps
+   already: a directory's entries each in turn, a task's append-only
+   `.jsonl` its old lines first and then the new ones, so a task started
+   before the move keeps its start (ldAC's), any other file the newer; and
+   `~/.cache/rust-js` removed, so no machine keeps an orphan.
 2. **Each worktree's `target/`**: its build, and its stores, each with a
    cap. The crate corpus's projects get one, 2 GiB, the least recently
    measured crate first (a crate rebuilt about every third build of the

@@ -6,8 +6,8 @@
 // what's unused for a week, then the least recently used past each one's
 // cap, and below the disk's floor until it's back (test/bounded.ts).
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { floorBytes, machineStore, retiredMachineStore } from "./bounded";
@@ -101,26 +101,41 @@ export function pruneKept(
 export const retiredStores = [join(checkoutTarget, "native-cache"), join(checkoutTarget, "corpus-cache")];
 
 /** Each of the machine's stores where it was, `retired`, moved to where it
- * is, `current`, once (#1213): a store the main checkout has already
- * removed, as it's the one kept; then `retired` itself, left empty. The
- * same disk, so a move is a rename, and a store a test is reading goes on
- * being read from where it's moved to. */
+ * is, `current`, once (#1213), merged with what's there already: a
+ * directory's entries each in turn; an append-only log, a task's `.jsonl`,
+ * its old lines first and then the new ones it hasn't, so a task started
+ * before the move keeps its start (#1213, ldAC's); any other file, the
+ * newer. Then `retired` itself, left empty. The same disk, so a move is a
+ * rename, and a store a test is reading goes on being read from where it's
+ * moved to. */
 export function adoptRetiredStores(retired = retiredMachineStore, current = machineStore) {
   if (!existsSync(retired)) return;
-  mkdirSync(current, { recursive: true });
-  for (const name of readdirSync(retired)) {
-    const from = join(retired, name);
-    const to = join(current, name);
-    if (existsSync(to)) rmSync(from, { recursive: true, force: true });
-    else {
-      try {
-        renameSync(from, to);
-      } catch {
-        rmSync(from, { recursive: true, force: true });
-      }
-    }
-  }
+  mergeInto(retired, current);
   rmSync(retired, { recursive: true, force: true });
+}
+
+/** `from` merged into `to`, as `adoptRetiredStores` merges a store. */
+function mergeInto(from: string, to: string) {
+  if (!existsSync(to)) {
+    mkdirSync(dirname(to), { recursive: true });
+    try {
+      renameSync(from, to);
+      return;
+    } catch {}
+  }
+  if (statSync(from).isDirectory() && statSync(to).isDirectory()) {
+    for (const name of readdirSync(from)) mergeInto(join(from, name), join(to, name));
+    return;
+  }
+  if (from.endsWith(".jsonl")) {
+    const had = readFileSync(to, "utf8").split("\n").filter(Boolean);
+    const old = readFileSync(from, "utf8").split("\n").filter(Boolean);
+    const merged = [...old, ...had.filter((line) => !old.includes(line))];
+    writeFileSync(to, `${merged.join("\n")}\n`);
+  } else if (statSync(from).mtimeMs > statSync(to).mtimeMs) {
+    rmSync(to, { recursive: true, force: true });
+    renameSync(from, to);
+  }
 }
 
 /** Each store of `keptStores` pruned, each to its cap and, where `free`

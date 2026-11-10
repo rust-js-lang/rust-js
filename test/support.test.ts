@@ -493,8 +493,9 @@ test("a store's entries are held to its cap and the floor", () => {
 });
 
 // The machine's stores were `~/.cache/rust-js`'s: each moved to the main
-// checkout's `.cache/` once, one it has already kept there, and the old
-// place removed, so no machine keeps an orphan (#1213).
+// checkout's `.cache/` once, merged with what's kept there already, and the
+// old place removed, so no machine keeps an orphan (#1213); a task's log in
+// both keeps its start, written before the move (ldAC's).
 test("the machine's stores where they were are moved where they are, once", () => {
   const dir = fixture("retired-stores");
   const retired = join(dir, "home-cache");
@@ -505,10 +506,15 @@ test("the machine's stores where they were are moved where they are, once", () =
   writeFileSync(join(retired, "test-maps", "m.json"), "{}");
   mkdirSync(join(current, "test-maps"), { recursive: true });
   writeFileSync(join(current, "test-maps", "kept.json"), "{}");
+  mkdirSync(join(retired, "tasks"), { recursive: true });
+  writeFileSync(join(retired, "tasks", "main.jsonl"), '{"kind":"start","at":1}\n');
+  mkdirSync(join(current, "tasks"), { recursive: true });
+  writeFileSync(join(current, "tasks", "main.jsonl"), '{"kind":"run","at":2}\n');
   adoptRetiredStores(retired, current);
   expect(existsSync(retired)).toBe(false);
   expect(readFileSync(join(current, "native-cache", "p", "build"), "utf8")).toBe("old");
-  expect(readdirSync(join(current, "test-maps"))).toEqual(["kept.json"]);
+  expect(readdirSync(join(current, "test-maps")).sort()).toEqual(["kept.json", "m.json"]);
+  expect(readFileSync(join(current, "tasks", "main.jsonl"), "utf8")).toBe('{"kind":"start","at":1}\n{"kind":"run","at":2}\n');
   adoptRetiredStores(retired, current);
-  expect(readdirSync(current).sort()).toEqual(["native-cache", "test-maps"]);
+  expect(readdirSync(current).sort()).toEqual(["native-cache", "tasks", "test-maps"]);
 });
