@@ -960,12 +960,15 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // Each closure's handle on itself or on what owns them, whose upgrades
     // ask no count (ADRs 0843, 0317, amended), a library's owner by contract.
     let mut self_handles = SelfHandles::new(tcx, all_bodies, &|id, index| foreign.owned_by_return(id, index));
+    // The types the crate clones (ADRs 0522, 0525), in place or in generic
+    // code: which closures an `Rc<dyn Fn>` may be made of twice too (#1249).
+    let cloned = clones::cloned_types(tcx, all_bodies, library);
     let counted_with = |closure_facts: &ClosureFacts<'tcx>| {
         let mut given: IndexSet<(DefId, u32)> = IndexSet::default();
         loop {
             let counted = counted_rcs(
                 tcx,
-                (all_bodies, &self_handles),
+                (all_bodies, &self_handles, &cloned),
                 (params_may_drop, &reached.counted_rcs, &|owner, index, pointee| {
                     library && !foreign.counts_no_rc_of_its_type(pointee) || given.contains(&(owner, index))
                 }),
@@ -986,8 +989,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // Fn`, which then drops it (ADR 0521): a library's may be. A captured
     // `Rc` counted may make one, and a `dyn Fn` that drops may count an
     // `Rc`; both only grow, so a second pass settles them.
-    // The types the crate clones (ADRs 0522, 0525).
-    let cloned = clones::cloned_types(tcx, all_bodies, library);
     // The kinds of adapters explicit wherever the crate makes one: those its
     // types hold (ADR 0542). Not one std's struct is where it's held,
     // `Enumerate`, `Take` or `Skip`, compiled (ADRs 0871, 0913): its own

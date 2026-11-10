@@ -194,7 +194,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc<dyn Fn>` made of a closure a `let` holds, neither `Copy` nor cloned, is counted where one is compared by `ptr_eq`, so React's Hooks, giving one to JS, is refused (ts7, ADR 0959, amended)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "                    || !copied.contains(&from) && !cloned.contains(&from))\n",
+    find: "                    || !copied.contains(&from) && !is_cloned(from))\n",
     replace: "                    || false)\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq_of_moved.rs$"],
     snapshots: true,
@@ -204,8 +204,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc<dyn Fn>` made of a cloned closure, `Rc::new(read.clone())` beside `Rc::new(read)`, is the function, one JS function twice, so `ptr_eq` of the two is `true` (a wrong answer, ADR 0959, amended)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "                    cloned.insert(erased(of));\n",
-    replace: "                    let _ = of;\n",
+    find: "    let is_cloned = |from: Ty<'tcx>| cloned.with_compiled_here().any(|clone| may_be(tcx, clone, from));\n",
+    replace: "    let is_cloned = |_: Ty<'tcx>| false;\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq_of_cloned.rs$"],
   },
   {
@@ -386,18 +386,18 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure a library's function boxes as it's made, compiled by a consumer that reads a `dyn Fn`'s address, is made a function of its own again, `const f = (previous) => ..; return { compute: (arg0) => f(arg0) }` (#1053)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "        |from: Ty<'tcx>| made_with_it(from) || from.is_closure() && !copied.contains(&from) && !cloned.contains(&from);\n",
+    find: "        |from: Ty<'tcx>| made_with_it(from) || from.is_closure() && !copied.contains(&from) && !is_cloned(from);\n",
     replace: "        |from: Ty<'tcx>| made_with_it(from);\n",
     tests: ["test/crates.test.ts", "-t", "merge what its consumer compares"],
   },
   {
-    name: "library-closure-clones-unseen",
+    name: "rc-counts-clones-as-generic-code-names-them",
     breaks:
-      "a library's closure boxed cloned and as it is, compiled by a consumer that reads a `dyn Fn`'s address, is taken to be made with each box, so the two are one function, `addr_eq` `true` (#1053)",
+      "a closure generic code makes and clones, `shown::<u8>`'s, is asked as generic code names it of the clones' owner, which holds its callers' instances, so it's taken to be made with each `Rc::new`, the two `Rc`s one function, `ptr_eq` `true` (#1249)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "            cloned.extend(clones_of(tcx, &mir.body).into_iter().map(erased));\n",
-    replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_allocations_of_one_function"],
+    find: "    let is_cloned = |from: Ty<'tcx>| cloned.with_compiled_here().any(|clone| may_be(tcx, clone, from));\n",
+    replace: "    let is_cloned = |from: Ty<'tcx>| cloned.with_compiled_here().any(|clone| clone == from);\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq_of_a_closure_cloned_in_generic_code.rs$"],
   },
   {
     name: "library-closure-copies-unseen",
@@ -452,8 +452,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc` of a `fn` pointer cloned before it's unsized is made two functions of its own, `ptr::addr_eq` `false` where Rust's is `true`, not refused (#1053)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "                && (cloned.iter().any(|&clone| may_be(tcx, clone, owner))\n",
-    replace: "                && (cloned.iter().any(|&clone| false && may_be(tcx, clone, owner))\n",
+    find: "                && (cloned.with_compiled_here().any(|clone| may_be(tcx, clone, owner))\n",
+    replace: "                && (cloned.with_compiled_here().any(|clone| false && may_be(tcx, clone, owner))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_of_a_shared_rc_refused.rs$"],
   },
   {

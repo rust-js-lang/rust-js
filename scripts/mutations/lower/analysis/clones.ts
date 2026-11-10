@@ -91,4 +91,13 @@ export const mutations: Mutation[] = [
     replace: "            true => false,\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
   },
+  {
+    name: "library-closure-clones-unseen",
+    breaks:
+      "a library's closure boxed cloned and as it is, compiled by a consumer that reads a `dyn Fn`'s address, of MIR alone, isn't among what the crate clones, so it's taken to be made with each box, the two one function, `addr_eq` `true` (#1053)",
+    file: "src/lower/analysis/clones.rs",
+    find: "            .flat_map(|body| mir_called_clones(tcx, body))\n",
+    replace: "            .flat_map(|_| Vec::<Ty<'tcx>>::new())\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_allocations_of_one_function"],
+  },
 ];

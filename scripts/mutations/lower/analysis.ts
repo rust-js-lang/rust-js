@@ -682,4 +682,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
   },
+  {
+    name: "generic-clones-unseen-by-rc-counts",
+    breaks:
+      "an `Rc<dyn Fn>` made of a closure cloned in generic code, `Rc::new(dup(&read))`, isn't counted, so it and `Rc::new(read)` are one JS function, `Rc::ptr_eq` `true` (#1249)",
+    file: "src/lower/analysis.rs",
+    find: "                (all_bodies, &self_handles, &cloned),\n",
+    replace: "                (all_bodies, &self_handles, &clones::cloned_types(tcx, &[], library)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq_of_a_closure_cloned_in_generic_code.rs$"],
+  },
 ];

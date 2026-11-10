@@ -265,7 +265,7 @@ pub(super) type DropGiven<'a, 'tcx> = dyn Fn(DefId, u32, Ty<'tcx>) -> bool + 'a;
 /// `dyn Fn`s may drop, and its consumer counts what it hands (ADR 0959).
 pub(super) fn counted_rcs<'tcx>(
     tcx: TyCtxt<'tcx>,
-    (all_bodies, self_handles): (&[&Body<'tcx>], &super::SelfHandles<'tcx>),
+    (all_bodies, self_handles, cloned): (&[&Body<'tcx>], &super::SelfHandles<'tcx>, &super::clones::Cloned<'tcx>),
     (params_may_drop, handed, drop_given): (bool, &[Ty<'tcx>], &DropGiven<'_, 'tcx>),
     runs: impl Fn(&Counted<'tcx>, Ty<'tcx>) -> bool,
 ) -> Counted<'tcx> {
@@ -310,9 +310,10 @@ pub(super) fn counted_rcs<'tcx>(
     // copy or a variable (ADR 0959).
     let mut asked: IndexSet<Ty<'tcx>> = IndexSet::default();
     let (mut made_with, mut made_apart) = (IndexSet::default(), IndexSet::default());
-    // The closures made an `Rc<dyn Fn>` that are `Copy`, and those a body
-    // clones: what else may be one JS function given it twice.
-    let (mut copied, mut cloned): (IndexSet<Ty<'tcx>>, IndexSet<Ty<'tcx>>) = (IndexSet::default(), IndexSet::default());
+    // The closures made an `Rc<dyn Fn>` that are `Copy`; and those the crate
+    // clones, in place or in generic code, `cloned`, the clones' owner's:
+    // what else may be one JS function given it twice (#1249).
+    let mut copied: IndexSet<Ty<'tcx>> = IndexSet::default();
     let mut points_at_functions = false;
     // The closures a reference to which is made a `&dyn Fn`, and whether a
     // type parameter's value's is (#1090).
@@ -371,8 +372,6 @@ pub(super) fn counted_rcs<'tcx>(
                     allocated_by.push((owner, erased(from)));
                 }
             }
-            // And each value it clones, a closure given twice.
-            cloned.extend(clones_of(tcx, &mir.body).into_iter().map(erased));
         }
         for (id, expr) in body.thir.exprs.iter_enumerated() {
             found(expr.ty, Some(owner), true, &mut seen);
@@ -444,11 +443,6 @@ pub(super) fn counted_rcs<'tcx>(
             // A count read by a call, or by the function given as a value,
             // `.map(Rc::strong_count)`: either is an expression of its type.
             if let Some((def_id, args)) = fn_def(expr.ty) {
-                if tcx.is_lang_item(def_id, rustc_hir::attrs::lang_items::LangItem::CloneFn)
-                    && let Some(of) = args.types().next()
-                {
-                    cloned.insert(erased(of));
-                }
                 // A closure's upgrade of the handle on itself always gives
                 // its `Rc`, and asks no count (ADR 0843, amended).
                 if reads_rc_count(tcx, def_id, args.types().next())
@@ -515,6 +509,9 @@ pub(super) fn counted_rcs<'tcx>(
     // each is made of a function made with it, `Rc::from(function::bind(..))`,
     // which no other is; one made of a reference given it may share it
     // with another (rd231).
+    // Of the types the crate clones, its callers' instances of generic
+    // code's, one `from` may be (#1249).
+    let is_cloned = |from: Ty<'tcx>| cloned.with_compiled_here().any(|clone| may_be(tcx, clone, from));
     let made_with_it = |from: Ty<'tcx>| match *from.kind() {
         ty::Ref(_, function, _) if matches!(function.kind(), ty::Dynamic(predicates, ..) if is_fn_dyn(tcx, predicates)) => {
             made_with.contains(&from) && !made_apart.contains(&from)
@@ -522,7 +519,7 @@ pub(super) fn counted_rcs<'tcx>(
         ty::Closure(id, _) => {
             id.is_local()
                 && (made_with.contains(&from) && !made_apart.contains(&from)
-                    || !copied.contains(&from) && !cloned.contains(&from))
+                    || !copied.contains(&from) && !is_cloned(from))
         }
         ty::Dynamic(predicates, ..) => is_fn_dyn(tcx, predicates),
         _ => false,
@@ -530,7 +527,7 @@ pub(super) fn counted_rcs<'tcx>(
     // Of an allocation's address, a closure of another crate's too, which a
     // body of MIR alone makes, its copies and clones read there (#1053).
     let its_own =
-        |from: Ty<'tcx>| made_with_it(from) || from.is_closure() && !copied.contains(&from) && !cloned.contains(&from);
+        |from: Ty<'tcx>| made_with_it(from) || from.is_closure() && !copied.contains(&from) && !is_cloned(from);
     for &pointee in &asked {
         if (made_others.iter()).any(|&(from, to)| !made_with_it(from) && may_be(tcx, to, pointee)) {
             counted.insert(pointee);
@@ -566,7 +563,7 @@ pub(super) fn counted_rcs<'tcx>(
         .filter(|&&&(owner, from)| {
             !owner.is_box()
                 && unsized_later.contains(&owner)
-                && (cloned.iter().any(|&clone| may_be(tcx, clone, owner))
+                && (cloned.with_compiled_here().any(|clone| may_be(tcx, clone, owner))
                     || weaks.iter().any(|&weak| may_be(tcx, weak, from)))
         })
         .map(|&&(owner, _)| owner)
@@ -675,19 +672,6 @@ pub(super) fn counted_rcs<'tcx>(
         .map(|&(owner, _)| owner)
         .collect();
     counted
-}
-
-/// What a body of MIR alone clones, `Clone::clone`'s `Self`.
-fn clones_of<'tcx>(tcx: TyCtxt<'tcx>, body: &rustc_middle::mir::Body<'tcx>) -> Vec<Ty<'tcx>> {
-    use rustc_middle::mir::TerminatorKind;
-    (body.basic_blocks.iter())
-        .filter_map(|block| match &block.terminator().kind {
-            TerminatorKind::Call { func, .. } => fn_def(func.ty(&body.local_decls, tcx)),
-            _ => None,
-        })
-        .filter(|&(id, _)| tcx.is_lang_item(id, rustc_hir::attrs::lang_items::LangItem::CloneFn))
-        .filter_map(|(_, args)| args.types().next())
-        .collect()
 }
 
 /// Each `Box` or `Rc` a body of MIR alone makes another's, `Rc<{closure}>`

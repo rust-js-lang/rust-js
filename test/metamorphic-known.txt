@@ -97,7 +97,3 @@ plain std generic-instances generic_deref.rs
 
 #1248 P0 (nullability): a nullable parameter given a variable a generic function's Some was assigned to takes its None for a Some
 plain std generic-instances nulled_returns_given_on.rs
-
-#1249 P0 (functions-calls): a closure cloned in generic code is the same function, so Rc::ptr_eq of an Rc<dyn Fn> of each is true
-plain std generic-instances rc_fn_ptr_eq_of_cloned.rs
-plain std generic-instances rc_of_an_impls_parameter_counted_as_any.rs

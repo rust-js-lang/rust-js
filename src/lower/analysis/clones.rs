@@ -15,6 +15,11 @@ use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 /// callers' instances (`instances_of`, #1119).
 pub(in crate::lower) struct Cloned<'tcx> {
     types: IndexSet<Ty<'tcx>>,
+    /// What a library's functions the crate compiles itself, of MIR alone
+    /// (ADR 0914), clone: the library's own closures, whose clones its
+    /// contract decides (#1202), so apart from `types`, which the crate's
+    /// own decisions are of (`with_compiled_here`).
+    compiled_here: IndexSet<Ty<'tcx>>,
     callers: crate::lower::instances::Callers<'tcx>,
 }
 
@@ -27,6 +32,13 @@ impl<'tcx> std::ops::Deref for Cloned<'tcx> {
 }
 
 impl<'tcx> Cloned<'tcx> {
+    /// Each type the crate clones, and what a library's function it
+    /// compiles of MIR alone clones too: what an `Rc<dyn Fn>` may be made
+    /// of twice, a closure cloned (ADR 0959, #1053, #1249).
+    pub(in crate::lower) fn with_compiled_here(&self) -> impl Iterator<Item = Ty<'tcx>> + '_ {
+        self.types.iter().chain(&self.compiled_here).copied()
+    }
+
     /// What `ty`, made in `owner`, of its type parameters, may be: each type
     /// its callers give them, where every one is seen; `None` of another,
     /// any type they may be.
@@ -67,6 +79,10 @@ impl<'tcx> Cloned<'tcx> {
 pub(super) fn cloned_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], library: bool) -> Cloned<'tcx> {
     let mut cloned = Cloned {
         types: IndexSet::default(),
+        compiled_here: (all_bodies.iter())
+            .flat_map(|body| mir_called_clones(tcx, body))
+            .map(|ty| tcx.erase_and_anonymize_regions(ty))
+            .collect(),
         callers: crate::lower::instances::callers_of(tcx, all_bodies),
     };
     // A clone in generic code of a type of its own parameters, `Chain<J,
@@ -186,6 +202,35 @@ fn called_clones<'a, 'tcx>(tcx: TyCtxt<'tcx>, thir: &'a Thir<'tcx>) -> impl Iter
             .map(|p| p.self_ty().skip_binder())
             .collect()
     })
+}
+
+/// The types a library's function the crate compiles itself, of MIR alone
+/// (ADR 0914), clones, as `called_clones` reads them of its calls: a
+/// closure of another crate's given twice (#1053).
+fn mir_called_clones<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<Ty<'tcx>> {
+    use rustc_middle::mir::TerminatorKind;
+    let Some(mir) = (body.mir.as_ref())
+        .filter(|_| body.root().is_none() && !crate::lower::recognition::is_std_crate(tcx, body.def_id))
+    else {
+        return Vec::new();
+    };
+    let mir = &mir.body;
+    (mir.basic_blocks.iter())
+        .filter_map(|block| match &block.terminator().kind {
+            TerminatorKind::Call { func, .. } => Some(func.ty(&mir.local_decls, tcx)),
+            _ => None,
+        })
+        .flat_map(|callee| {
+            let ty::FnDef(id, args) = *callee.kind() else {
+                return Vec::new();
+            };
+            (tcx.clauses_of(id).instantiate(tcx, args.skip_binder()).into_iter())
+                .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+                .filter(|p| is_clone(tcx, p.def_id()))
+                .map(|p| p.self_ty().skip_binder())
+                .collect()
+        })
+        .collect()
 }
 
 /// What a clone of `ty` clones: its `Clone` impl's bounds' types, or of

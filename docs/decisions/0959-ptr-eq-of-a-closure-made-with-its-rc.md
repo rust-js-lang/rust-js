@@ -288,3 +288,36 @@ Held by the corpus cases `copied_closures_compared` and
 function of its own only where a dyn Fn's address is read", both forms;
 mutations `copied-closure-shared` (`lower/copies.ts`), `lent-closure-unseen`,
 `lent-param-unseen` and `lent-of-a-box` (`lower/analysis/rc_counts.ts`).
+
+## Amendment: a closure cloned in generic code is cloned too, the clones' one owner says (#1249)
+
+Which closures may be one JS function given `Rc::new` twice asked what
+the crate clones of a list of its own: each `Clone::clone` called on the
+closure's type, in a body or in a library's function compiled of MIR
+alone. A closure given to generic code that clones it, `dup<T:
+Clone>(&read)`, was missing from it. The clone is the closure itself where
+nothing tells them apart (ADR 0522), so `Rc::new(dup(&read))` and
+`Rc::new(read)` were made one function, uncounted, and `Rc::ptr_eq` of the
+two was `true` where Rust's two allocations are apart. A silent wrong
+answer, ADR 0262's "results change" case: Rust's behavior is kept.
+
+What the crate clones has one owner, `clones::cloned_types` (ADRs 0522,
+0525). It holds each type a `Clone` bound of a called function is given,
+generic code's by its callers' instances; and now, apart, what a library's
+function the crate compiles of MIR alone clones (`compiled_here`), the
+library's closures, whose clones its contract decides (#1202), so the
+crate's own `ClosureFacts` don't take them (taken in, a consumer's
+library rewrite aborted). The `Rc` counts ask both,
+`Cloned::with_compiled_here`, through `may_be`, as each closure generic
+code makes is each of its callers' instances there. The list of its own
+is gone.
+
+- `test/corpus/rc_fn_ptr_eq_of_a_closure_cloned_in_generic_code.rs`: a
+  closure cloned by a `T: Clone`'s `clone`, one cloned by a function that
+  gives two of it, and one generic code makes and clones, each made an
+  `Rc<dyn Fn>` beside the original, both builds against native Rust, and
+  through `METAMORPHIC=all`.
+- The mutations are `rc-counts-clones-as-generic-code-names-them`
+  (`analysis/rc_counts.rs`), `generic-clones-unseen-by-rc-counts`
+  (`analysis.rs`), and `library-closure-clones-unseen`, moved to its owner
+  (`analysis/clones.rs`).
