@@ -40,15 +40,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
   },
   {
-    name: "given-out-clone-bound-regions",
-    breaks:
-      "a library's `impl Iterator + Clone + '_` is read with its function's lifetimes bound, so asking whether `Split<'_, char>` is `Clone` crashes rustc on its escaping bound variable (#1201)",
-    file: "src/lower/analysis/clones.rs",
-    find: "            .instantiate_bound_regions_with_erased(tcx.fn_sig(id).instantiate_identity().skip_normalization())\n",
-    replace: "            .fn_sig(id).instantiate_identity().skip_normalization().skip_binder()\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_opaque_clone_of_a_borrow"],
-  },
-  {
     name: "generic-clone-uninstanced",
     breaks:
       "a clone in generic code of its own parameters' `Chain<J, J>` stays as rustc names it, though its callers are all seen, so another generic function's `Chain<I, I>` of `vec::IntoIter`s, whose bounds agree, is taken for it and its `next_back()` refused (#1119)",

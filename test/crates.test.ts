@@ -239,6 +239,15 @@ test("a consumer that grows a library's boxed tree calls the library's method", 
   expect(app).toContain("Dep.potSize(planter)");
 }, 300_000);
 
+// #1026: a library's writer given as a value, `quoted` to a `fn(&u32, &mut
+// Formatter)`, is its import, as the crate's own is its name, not the arrow
+// of its call as MIR's.
+test("a library's writer given as a value is its import", () => {
+  const out = chain(pairs, "library_writers_given_options", ["dep", "app"]);
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("  return Joined.format(joined, quoted, options);\n");
+}, 300_000);
+
 // ADR 0693, amended: a library's function, which nothing assigns, returned
 // past a guard's drop is returned after its `finally`, as the crate's own is.
 test("a library's function returned past a guard's drop is returned after its finally", () => {

@@ -666,6 +666,14 @@ pub fn padding_written() -> u32 {
     unsafe { s.padded.0 = 1 };
     unsafe { s.whole }
 }
+
+pub fn caught() -> bool {
+    std::panic::catch_unwind(|| {
+        let n = Number { int: 1 };
+        unsafe { n.name.len() }
+    })
+    .is_err()
+}
 `);
   const out = join(dir, "lib.js");
   run([compiler, join(dir, "lib.rs"), "-o", out]);
@@ -679,6 +687,9 @@ pub fn padding_written() -> u32 {
   // without losing bytes: written into, rust-js's error, not a lost write.
   expect(call("partWritten")).toBe("rust-js does not support reading a union's `small` while it holds `whole`, which reads its bytes as another type's\n");
   expect(call("paddingWritten")).toBe("rust-js does not support reading a union's `padded` while it holds `whole`, which reads its bytes as another type's\n");
+  // A refusal where it runs, which ends the program: no `catch_unwind`
+  // takes it for a panic and goes on (#1218).
+  expect(call("caught")).toBe("rust-js does not support reading a union's `name` while it holds `int`, which reads its bytes as another type's\n");
 });
 
 // A tuple's field's pointer is at the field's byte offset, rustc's layout,

@@ -90,7 +90,11 @@ test("a failure is rejected, crashed or wrong, and one listed as rejected may no
   expect(failureKind("error: internal compiler error: ~/.rustup/x.rs:1:2: oops")).toBe("crashed");
   expect(failureKind("thread 'rustc' panicked at /rustc-dev/x.rs:1:2:")).toBe("crashed");
   expect(failureKind('bun: ended {"panic":"x"}')).toBe("wrong");
-  expect(failureKind('node: ended {"panic":"rust-js does not support reading a union\'s `b` while it holds `a`"}')).toBe("rejected");
+  // rust-js's refusal where it runs is `$unsupported`'s error, no panic
+  // (#1193, #1218): a panic or another error of those words is wrong.
+  expect(failureKind('node: ended {"error":"Error: rust-js does not support reading a union\'s `b` while it holds `a`"}')).toBe("rejected");
+  expect(failureKind('node: ended {"panic":"rust-js does not support reading a union\'s `b` while it holds `a`"}')).toBe("wrong");
+  expect(failureKind('node: ended {"error":"TypeError: rust-js does not support"}')).toBe("wrong");
   expect(failureKind('node: ended {"panic":"assertion failed: rust-js does not support"}')).toBe("wrong");
   expect(failureKind("node: different stdout")).toBe("wrong");
   const listed = new Map([
@@ -98,15 +102,17 @@ test("a failure is rejected, crashed or wrong, and one listed as rejected may no
     ["b.rs", "error: rust-js does not support statics yet"],
     ["c.rs", "error: rust-js does not support statics yet"],
     ["d.rs", "node: different stdout"],
+    ["e.rs", "error: rust-js does not support statics yet"],
   ]);
   const now: Result[] = [
     { test: "a.rs", status: "fail", reason: "error: rust-js does not support unions yet" },
     { test: "b.rs", status: "fail", reason: "thread 'rustc' panicked at x.rs:1:2:" },
     { test: "c.rs", status: "fail", reason: "node: different stdout" },
     { test: "d.rs", status: "fail", reason: "error: rust-js does not support statics yet" },
+    { test: "e.rs", status: "fail", reason: 'node: ended {"error":"Error: rust-js does not support the address of a value"}' },
   ];
-  // Another rejection is no worse; a crash or a wrong answer is; a wrong
-  // answer turned into a rejection is better.
+  // Another rejection is no worse, where it runs too; a crash or a wrong
+  // answer is; a wrong answer turned into a rejection is better.
   expect(ratchet(now, listed).worse.map((r) => r.test)).toEqual(["b.rs", "c.rs"]);
 });
 

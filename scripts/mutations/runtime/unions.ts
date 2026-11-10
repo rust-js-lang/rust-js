@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^union_bytes.rs$"],
   },
+  {
+    name: "union-refusal-a-panic",
+    breaks: "a union's field whose bytes JS has none of is a panic, which `catch_unwind` takes and the program goes on past (#1218)",
+    file: "src/runtime/unions.js",
+    find: "  throw $unsupported(\n    `rust-js does not support reading a union's",
+    replace: "  throw new Error(\n    `rust-js does not support reading a union's",
+    tests: ["test/runtime-package.test.ts", "-t", "union's field it doesn't hold"],
+  },
 ];

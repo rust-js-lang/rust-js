@@ -387,15 +387,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "library_constructor_value"],
   },
   {
-    name: "library-writer-value-a-call-arrow",
-    breaks:
-      "a library's writer given as a value, `quoted` to a `fn(&u32, &mut Formatter)`, is the arrow of its call as MIR's, which takes the `Formatter` for a `&mut` cell, `b.value` of the options it's given (#1026)",
-    file: "src/lower.rs",
-    find: "        if self.krate.foreign.item(def_id).is_some() && !args.has_non_region_param() {\n",
-    replace: "        if false && self.krate.foreign.item(def_id).is_some() && !args.has_non_region_param() {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_writers_given_options"],
-  },
-  {
     name: "library-located-fn-value-a-call-arrow",
     breaks:
       "a library's `#[track_caller]` function as a `fn` pointer is the arrow of its call, given where it's made a value, not where it's defined, as rustc's shim gives it (#1032)",

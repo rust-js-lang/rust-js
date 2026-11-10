@@ -572,8 +572,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment right above the `if let Ok(true) = r` a flag's `try` folds is above the `try`, not in its `catch`, upstream's `} catch (x) { // Fall through to reveal. }` (rd634)",
     file: "src/prepare/catches.rs",
-    find: "    let caught = vec![StmtKind::Comments.at(tested.span)];\n",
-    replace: "    let caught = Vec::new();\n",
+    find: "    let (binding, caught) = catchable(js::Caught::Unwound, None, Vec::new(), tested.span);\n",
+    replace: "    let (binding, caught) = catchable(js::Caught::Unwound, None, Vec::new(), made.span);\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "flagged catch_unwind"],
   },
   {

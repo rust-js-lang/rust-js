@@ -186,3 +186,13 @@ ADR 0262's case: results change, so Rust's. Held by
 `copied_closure_bound.rs`, now run, and `copied_closure_in_a_holder.rs`
 and `copied_closure_in_a_struct.rs` (refused), against native Rust, the
 crate pair `library_closures_cloned_in_a_holder`, and their mutations.
+
+## Amendment: `given-out-clone-bound-regions` retired (#1218)
+
+Since #1202 (87f78a3b9) what a library's `impl .. + Clone` hides is read
+part by part, each instantiated from its opaque type and its regions erased
+before its `Clone` is asked, so the output read with its lifetimes left
+bound no longer reaches a question that holds them:
+`library_opaque_clone_of_a_borrow` and every other crate pair pass with
+it. The mutation survived main's check and is removed; the erasure stays,
+as what the function's signature says.

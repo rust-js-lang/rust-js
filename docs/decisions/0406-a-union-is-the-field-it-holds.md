@@ -79,3 +79,12 @@ if (N !== value)` where it's now `if (N !== count)`
 (`copied_default_own_params`). Its mutation, `temporary-part-patterned`,
 which no test caught (#194), is removed with it; rustc's union tests pass
 as listed.
+
+## Amendment: the refusal of a read is `$unsupported`'s (#1218)
+
+A field read whose bytes JS has none of threw a plain `Error`, which
+`catch_unwind` took for a panic and the program went on past, the one
+refusal where a program runs that #1193 left out of `$unsupported`'s one
+form. It's `$unsupported`'s now, which ends the program: the runtime
+package's union test catches it in a `catch_unwind`; the mutation is
+`union-refusal-a-panic`.

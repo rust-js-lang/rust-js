@@ -1339,3 +1339,17 @@ clone, a `Some(())` and a drop given such a method by the same caller, were
 already right (`library_traits_generic_method_facts_through_its_caller`).
 Held by the crate pair `library_rc_counted_through_a_traits_generic_method`
 and the mutation `mir-bodys-calls-unreached`.
+
+## Amendment: a library's writer as a value is its import by the one rule (#1218)
+
+A library's writer given as a value, `quoted` as a `fn(&u32, &mut
+Formatter)`, had a rule of its own, its import where its inputs are a
+`Formatter` and no other `&mut`. Since d836650e4 (#1187) a library's
+function's value takes generic code's forms, so the arrow of its call
+passes on what it's given as it's given it, and `passed_on` makes it the
+import itself (ADR 0538): `Joined.format(joined, quoted, options)` either
+way, and `library-writer-value-a-call-arrow` survived main's check. The
+writer's own rule is gone, one way to make the value; the test `a
+library's writer given as a value is its import` (`test/crates.test.ts`)
+holds the form, `library_writers_given_options` its output against
+native Rust.

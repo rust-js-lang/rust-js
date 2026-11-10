@@ -178,9 +178,9 @@ fn flagged_try(made: &Stmt, tested: &Stmt) -> Option<Stmt> {
     // a comment in it is in the `try` (rd634); and a comment right above
     // the `if` it folds, `// Fall through ..\n if let Ok(true) = r`, whose
     // only arm returns, is the `catch`'s, that test's other way, where the
-    // closure threw: `} catch { // Fall through .. }`.
-    let caught = vec![StmtKind::Comments.at(tested.span)];
-    let (binding, caught) = catchable(js::Caught::Unwound, None, caught, tested.span);
+    // closure threw: `} catch { // Fall through .. }`, above its
+    // `$catchable(error)`, placed where the `if` was.
+    let (binding, caught) = catchable(js::Caught::Unwound, None, Vec::new(), tested.span);
     Some(StmtKind::TryCatch(tried, binding, caught).at(made.span))
 }
 

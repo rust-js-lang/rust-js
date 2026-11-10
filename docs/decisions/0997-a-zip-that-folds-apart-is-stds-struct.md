@@ -177,3 +177,14 @@ of a `repeat()`, refused. Mutations `zip-clone-runs-no-code`, `derived-clone-run
 `callers-zip-unnormalized` new; `cloned-clones-nothing`,
 `cycle-clones-nothing` and `repeat-clones-nothing` moved to
 `stepping_clones` (`lower/recognition/std_items.ts`).
+
+## Amendment: a zip's type is normalized by the one that decides it (#1218)
+
+`zip_folds_to_the_shorter` normalizes the zip it's asked of since #1225,
+what an `impl Trait` hides and a side `<Vec<T> as IntoIterator>::IntoIter`
+alike, so the callers' analysis (`callers_decide.rs`) normalizing a zip
+before asking it was a second normalization, and its mutation
+`callers-zip-unnormalized` survived main's check. The analysis gives the
+zip as its caller makes it; `eq`'s two sides, which it asks of itself, it
+still normalizes. `zip-of-an-impl-trait-unrevealed` is caught by the
+diagnostics test of a zip of a repeat of the crate's clones too.

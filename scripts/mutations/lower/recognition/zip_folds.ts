@@ -84,6 +84,13 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/zip_folds.rs",
     find: "    let ty = tcx\n        .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n        .unwrap_or(ty);\n    let (a, b) = zipped_sources(tcx, ty)?;\n",
     replace: "    let (a, b) = zipped_sources(tcx, ty)?;\n",
-    tests: ["test/corpus.test.ts", "-t", "^zip_of_a_boxed_map.rs$"],
+    // And a zip generic code folds, made of its caller's types, whose side
+    // `<Vec<T> as IntoIterator>::IntoIter` it normalizes (#1162).
+    tests: [
+      "test/corpus.test.ts",
+      "test/diagnostics.test.ts",
+      "-t",
+      "^zip_of_a_boxed_map.rs$|a zip of a repeat of the crate's clones collected in generic code",
+    ],
   },
 ];

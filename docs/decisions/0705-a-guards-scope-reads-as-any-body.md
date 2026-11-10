@@ -365,3 +365,14 @@ either path. Held by corpus `guard_scope_loop_in_an_if.rs` (from the
 back, from the front, and in a `catch_unwind`'s `Err` arm of a boxed
 closure) against native Rust, and the mutation
 `scoped-loops-left-to-their-steps`.
+
+## Amendment: the `finally`'s reads, past a scope that may abort (#1218)
+
+Since #1193 (05309cac4) a scope whose drops a program sees has its body
+thrown on through `$unwindsOn`, `try { try { .. } catch (error) { throw
+$unwindsOn(error); } } finally { if ($live()) { .. } }`, before guards are
+taken apart, and `unread_writes` leaves what's in a `catch`'s `try` as it
+is: no write there goes, whatever the `finally` reads. So
+`field-write-read-in-finally-dropped`, which judged the body's writes
+without the `finally`'s reads, survived main's check, and is removed; the
+rule stays for a `finally` of drops no program sees.

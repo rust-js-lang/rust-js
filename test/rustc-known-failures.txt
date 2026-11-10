@@ -13,7 +13,7 @@ binding/zero_sized_subslice_match.rs	error: rust-js does not support addressable
 binop/augmented-assignment.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&mut [i32]` as `&mut Slice`, which aren't numbers alone
 borrowck/borrowck-borrow-from-expr-block.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 borrowck/borrowck-unsafe-static-mutable-borrows.rs	error: rust-js does not support `&mut` references to a `static mut` yet
-cast/cast-rfc0401-vtable-kinds.rs	node: ended {"panic":"rust-js does not support a pointer read as another type's, which reads memory by where it is"}
+cast/cast-rfc0401-vtable-kinds.rs	node: ended {"error":"Error: rust-js does not support a pointer read as another type's, which reads memory by where it is"}
 cast/cast-rfc0401.rs	error: rust-js does not support addressable memory yet: values of type `*const u16`
 cast/cast.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 closures/2229_closure_analysis/match/match-edge-cases_1.rs	error: rust-js does not support this constant, from its MIR yet
@@ -29,7 +29,7 @@ consts/const-eval/ptr_fragments.rs	error: rust-js does not support statics of ty
 consts/const-region-ptrs-noncopy.rs	error: rust-js does not support addressable memory yet: a pointer into what JS may hold a copy of
 consts/issue-21721.rs	error: rust-js does not support addressable memory yet: a raw pointer to this place
 consts/issue-33537.rs	node: ended {"panic":"assertion `left == right` failed\n  left: 0x10000\n right: 0x11000"}
-consts/load-preserves-partial-init.rs	node: ended {"panic":"rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type"}
+consts/load-preserves-partial-init.rs	node: ended {"error":"Error: rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type"}
 consts/oncecell-const-init-57781.rs	error: rust-js does not support calling `std::cell::UnsafeCell::<T>::new` yet
 consts/zst_no_llvm_alloc.rs	node: ended {"panic":"assertion `left == right` failed\n  left: 0x10000\n right: 0x11000"}
 derives/debug/derive-debug.rs	error: rust-js does not support `{:?}` of a `*const dyn std::marker::Send` yet
@@ -62,11 +62,11 @@ statics/static-lazy-init-with-arena-set.rs	error: rust-js does not support addre
 statics/static-recursive.rs	error: rust-js does not support addressable memory yet: statics of type `*const u8`
 stdlib-unit-tests/raw-fat-ptr.rs	error: rust-js does not support `==` on `*const [u8]` yet
 structs-enums/align-struct.rs	node: ended {"panic":"assertion failed: is_aligned_to(&*large, 0x10000)"}
-structs-enums/enum-alignment.rs	node: ended {"panic":"rust-js does not support the address of a value JS holds as itself, a copy, which reads memory by where it is"}
+structs-enums/enum-alignment.rs	node: ended {"error":"Error: rust-js does not support the address of a value JS holds as itself, a copy, which reads memory by where it is"}
 structs-enums/enum-non-c-like-repr-c-and-int.rs	error: rust-js does not support a zeroed `MyEnum`, which may be no value of it yet
 structs-enums/enum-non-c-like-repr-c.rs	error: rust-js does not support a zeroed `MyEnum`, which may be no value of it yet
 structs-enums/enum-non-c-like-repr-int.rs	error: rust-js does not support a zeroed `MyEnum`, which may be no value of it yet
-structs-enums/tag-align-dyn-variants.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&A` as `usize`, which aren't numbers alone
+structs-enums/tag-align-dyn-variants.rs	node: ended {"error":"Error: rust-js does not support the address of a value JS holds as itself, a copy, which reads memory by where it is"}
 traits/dyn-drop-principal.rs	error: rust-js does not support calling `std::alloc::Layout::for_value` yet
 traits/encoder-trait-bounds-regression.rs	error: rust-js does not support calling `std::io::Write::write_fmt` yet
 traits/object/ambiguity-vtable-segfault.rs	error: rust-js does not support trait method `Q::q` yet
@@ -75,6 +75,6 @@ try-trait/try-operator-various-contexts.rs	error: rust-js does not support calli
 typeck/typeck_type_placeholder_1.rs	error: rust-js does not support addressable memory yet: statics of type `TestStruct`
 typeck/unify-return-ty.rs	error: rust-js does not support addressable memory yet: a `transmute` of `usize` as `*const T`, which aren't numbers alone
 union/union-drop-assign.rs	error: rust-js does not support a `&mut` to a union's field yet
-union/union-generic-rpass.rs	node: ended {"panic":"rust-js does not support reading a union's `b` while it holds `a`, which reads its bytes as another type's"}
+union/union-generic-rpass.rs	node: ended {"error":"Error: rust-js does not support reading a union's `b` while it holds `a`, which reads its bytes as another type's"}
 union/union-nonzero.rs	error: rust-js does not support addressable memory yet: a `transmute` of `*const u8` as `U2<&u8, ()>`, which aren't numbers alone
 unsized/issue-23649-1.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&[u8]` as `&X`, which aren't numbers alone

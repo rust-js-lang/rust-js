@@ -129,15 +129,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-drop-guards.test.ts", "-t", "takes its field"],
   },
   {
-    name: "field-write-read-in-finally-dropped",
-    breaks:
-      "a write of a guard's field in its scope, which its drop in the `finally` reads, goes: `guard.0 = None` before the drop prints `Some(true)` (ADR 0705, amended)",
-    file: "src/lower/drops/inlined.rs",
-    find: "                unread_writes(block, guard, read_finally);\n",
-    replace: "                unread_writes(block, guard, read_after.clone());\n",
-    tests: ["test/lowering-drop-guards.test.ts", "-t", "takes its field"],
-  },
-  {
     name: "field-write-in-loop-kept",
     breaks:
       "a guard made in a loop's body, fresh each time round, whose `Drop` takes its field, keeps its write and stays an array (ADR 0705, amended)",

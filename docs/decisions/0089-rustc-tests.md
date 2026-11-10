@@ -195,3 +195,16 @@ and stderr, and return, under Node (and Bun, until ADR 0095).
   a two-entry `HashMap`'s order gives, are the same three runs in four, and
   such a run looked like native Rust answered: `issue-3559.rs` did, and the
   ratchet said so.
+
+## Amendment: a refusal where the program runs is `$unsupported`'s error (#1218)
+
+Since #1193 (05309cac4) rust-js's refusal where a program runs is one
+form, `$unsupported(..)`'s error, which no `catch_unwind` takes for a
+panic: the harness records it as `{"error":"Error: rust-js does not
+support .."}`, where it recorded a panic. The ratchet's `failureKind` took
+only the panic for a rejection, so four tests listed as refused at run
+time, `cast-rfc0401-vtable-kinds`, `load-preserves-partial-init`,
+`enum-alignment` and `tag-align-dyn-variants`, were counted "failing
+worse", wrong answers they aren't. A rejection where it runs is that
+error, and only it: a panic of those words is the program's own, wrong.
+Their listed reasons say so. `test/rustc-suite.test.ts` holds both.

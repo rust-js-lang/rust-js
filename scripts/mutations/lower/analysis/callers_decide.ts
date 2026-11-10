@@ -37,12 +37,4 @@ export const mutations: Mutation[] = [
     replace: "                            if true {\n",
     tests: ["test/diagnostics.test.ts", "-t", "eq in generic code of maps it builds"],
   },
-  {
-    name: "callers-zip-unnormalized",
-    breaks: "a zip generic code folds, made of its caller's types, keeps a side `<Vec<T> as IntoIterator>::IntoIter` unnormalized, whose `TrustedLen` isn't seen, so the call isn't refused and the zip is folded as its `next()` steps it (#1162)",
-    file: "src/lower/analysis/callers_decide.rs",
-    find: "                        Asked::ZipFold(zip) => Asked::ZipFold(normalized(zip)),\n",
-    replace: "                        Asked::ZipFold(zip) => Asked::ZipFold(made(zip)),\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a zip of a repeat of the crate's clones collected in generic code"],
-  },
 ];

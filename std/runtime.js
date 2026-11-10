@@ -6532,7 +6532,8 @@ export class $CowSet extends $KeySet {
 // of `alike`, its fields of the same type, whose bytes are the same; or,
 // of a field of another plain type, its bytes read as `key`'s, by that
 // field's decoder (ADR 0562). A field it doesn't hold that isn't plain
-// data, whose bytes JS has none of, is rust-js's error.
+// data, whose bytes JS has none of, is rust-js's refusal where it runs,
+// `$unsupported`'s, which no `catch_unwind` takes for a panic (#1218).
 export function $unionField(union, key, alike = [], decoders = {}) {
   for (const field of [key].concat(alike)) if (Object.hasOwn(union, field)) return union[field];
   const held = Object.keys(union)[0];
@@ -6544,7 +6545,7 @@ export function $unionField(union, key, alike = [], decoders = {}) {
     if (typeof decoded === "object" && decoded !== null) $unionSet(union, key, decoded);
     return decoded;
   }
-  throw new Error(
+  throw $unsupported(
     `rust-js does not support reading a union's \`${key}\` while it holds \`${held}\`, which reads its bytes as another type's`,
   );
 }
