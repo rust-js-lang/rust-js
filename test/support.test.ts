@@ -8,10 +8,12 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, sym
 import { basename, dirname, join, relative } from "node:path";
 
 import { bytesOf } from "../tooling/bounded.js";
-import { floorBytes } from "./bounded";
+import { floorBytes, mainCheckoutOf } from "./bounded";
+import { boundEntries, pinnedToolchains, unpinnedToolchains } from "../scripts/disk";
 import { keptAppsCap, keptStores, mayKeep, nativeCache, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
+import { boundCrateProjects } from "../scripts/crate-corpus";
 import { runSync } from "./child";
 import { cargoApp, contentDirectory, fixture, nativeBinary, nativeCrates, once, portable, root, run, seeded } from "./support";
 
@@ -427,4 +429,65 @@ test("React's port's directories are bounded: a gone checkout's removed, then th
   // Below the floor, each one not in use goes, and never the run's own.
   expect(bound({ dir, own, free: () => floorBytes - 1 })).toEqual([older]);
   expect([busy, own].map(existsSync)).toEqual([true, true]);
+});
+
+// The crate corpus's projects are a store (#1213): each build of the
+// compiler adds a copy of every crate's dependencies, so they're held to a
+// cap, the least recently measured crate first, and to the disk's floor.
+test("the crate corpus's projects keep the most recently measured under their cap and above the floor", () => {
+  const dir = fixture("crate-projects");
+  const made = (name: string, age: number) => {
+    mkdirSync(join(dir, name, "target"), { recursive: true });
+    writeFileSync(join(dir, name, "target", "lib.rlib"), Buffer.alloc(64 * 1024));
+    writeFileSync(join(dir, name, "used"), "");
+    const when = Date.now() / 1000 - age;
+    utimesSync(join(dir, name, "used"), when, when);
+  };
+  made("oldest", 300);
+  made("older", 200);
+  made("newest", 100);
+  const each = (statSync(join(dir, "newest", "target", "lib.rlib")).blocks ?? 128) * 512;
+  // Room for two of the three: the least recently measured goes.
+  boundCrateProjects({ dir, cap: 2.5 * each, free: () => floorBytes });
+  expect(readdirSync(dir).sort()).toEqual(["newest", "older"]);
+  // Below the floor, another goes, whatever the cap.
+  boundCrateProjects({ dir, cap: Number.POSITIVE_INFINITY, free: () => (existsSync(join(dir, "older")) ? floorBytes - 1 : floorBytes) });
+  expect(readdirSync(dir)).toEqual(["newest"]);
+});
+
+// One root of what development keeps (#1213): a worktree finds the main
+// checkout's `.cache/` through its `.git` file and the common dir's
+// `commondir`, as `git rev-parse --git-common-dir` does.
+test("a worktree's stores are the main checkout's", () => {
+  const dir = fixture("main-checkout");
+  mkdirSync(join(dir, "main", ".git", "worktrees", "w"), { recursive: true });
+  writeFileSync(join(dir, "main", ".git", "worktrees", "w", "commondir"), "../..\n");
+  mkdirSync(join(dir, "w"));
+  writeFileSync(join(dir, "w", ".git"), `gitdir: ${join(dir, "main", ".git", "worktrees", "w")}\n`);
+  expect(mainCheckoutOf(join(dir, "w"))).toBe(join(dir, "main"));
+  expect(mainCheckoutOf(join(dir, "main"))).toBe(join(dir, "main"));
+});
+
+// Rust's toolchains development installed and nothing pins now go; a
+// floating channel's are the user's own (#1213).
+test("an old pin's toolchain is one to remove, a floating channel's never", () => {
+  const listed = ["stable-aarch64-apple-darwin (default)", "nightly-aarch64-apple-darwin", "1.98.1-aarch64-apple-darwin", "1.99.0-aarch64-apple-darwin (active)", "nightly-2026-03-25-x86_64-unknown-linux-gnu"];
+  expect(unpinnedToolchains(listed, new Set(["1.99.0"]))).toEqual(["1.98.1-aarch64-apple-darwin", "nightly-2026-03-25-x86_64-unknown-linux-gnu"]);
+  expect(pinnedToolchains().has("1.99.0")).toBe(true);
+});
+
+// A store with no bound of its own, the temp root's, is held by its
+// entries, the least recently changed first, and to the disk's floor.
+test("a store's entries are held to its cap and the floor", () => {
+  const dir = fixture("entries");
+  for (const [name, age] of [["old", 300], ["new", 100]] as const) {
+    writeFileSync(join(dir, name), Buffer.alloc(64 * 1024));
+    const when = Date.now() / 1000 - age;
+    utimesSync(join(dir, name), when, when);
+  }
+  const each = (statSync(join(dir, "new")).blocks ?? 128) * 512;
+  boundEntries(dir, 1.5 * each, () => floorBytes);
+  expect(readdirSync(dir)).toEqual(["new"]);
+  boundEntries(dir, Number.POSITIVE_INFINITY, () => floorBytes - 1);
+  expect(readdirSync(dir)).toEqual([]);
 });

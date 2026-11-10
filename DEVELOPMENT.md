@@ -252,16 +252,42 @@ that holds it, and its cap here. `test/bounded.ts` is the loop's floor, and
 `tooling/bounded.js` the one way a store is held to its cap, an app's
 cache's too (#1057); each store says what its things are, and its floor.
 
+Everything development writes has one known place (#1213, ADR 1118):
+
+- **`.cache/`** in the main checkout, gitignored, which every worktree
+  finds through the git common dir: the machine's stores below.
+- **Each worktree's `target/`**: its build and its stores below.
+- **The temp root**, `$TMPDIR/rust-js-dev/`: every test process's
+  `TMPDIR` (`test/setup.ts`), so what a test or a tool it runs leaves there,
+  Vitest's module cache of each run, is held too. Outside the checkout, as
+  a fixture made there is an app outside any checkout of rust-js.
+- **The tools' own**, outside: rustup's toolchains, Cargo's downloads,
+  Bun's install cache, Playwright's browsers. Each tool's home is set by
+  the tool, `CARGO_HOME` and `RUSTUP_HOME` from the environment alone, so
+  a plain `cargo` in the checkout would use `~` whatever the repo set;
+  they're held by their own commands instead.
+
+`bun run disk` lists every store, its size, cap and oldest entry, and the
+total inside the checkouts against its 40 GiB budget; `bun run disk
+--prune` holds each to its cap, the tools' by `rustup toolchain uninstall`
+of an old pin, Cargo's GC and `bun pm cache rm`. `check:fast` prunes the
+stores inside the checkouts as it starts and warns past 90% of the budget.
+`scripts/disk.ts` is their catalogue, and `test/disk-owners.test.ts` holds
+that no other script makes a path in the user's home.
+
 | What | Where | Bound | Held by |
 |---|---|---|---|
 | The tests' compiles to JS (above) | `target/compile-cache/` | 2 GB; another build's dropped as a run starts; nothing written below the floor | `test/compiles.test.ts` |
-| Native programs' builds | `~/.cache/rust-js/native-cache/`, the machine's, every worktree's and whatever `RUST_JS_TARGET` a mutant's or the test map's tests run in (#875, #1047), keyed by what they're built from said from the checkout's root | 10 GB, the corpus's and the metamorphic net's about 8 GB, and a week unused; nothing kept below the floor, a build there used from a fixture; pruned as each `check:fast` (while the compiler builds) and `bun run test` starts, and below the floor until it's back | `test/support.test.ts` |
+| Native programs' builds | `.cache/native-cache/`, the machine's, every worktree's and whatever `RUST_JS_TARGET` a mutant's or the test map's tests run in (#875, #1047), keyed by what they're built from said from the checkout's root | 10 GB, the corpus's and the metamorphic net's about 8 GB, and a week unused; nothing kept below the floor, a build there used from a fixture; pruned as each `check:fast` (while the compiler builds) and `bun run test` starts, and below the floor until it's back | `test/support.test.ts` |
 | Native programs' wrappers | `target/native-sources/`, the checkout's likewise | 64 MB, and a week unused, the same way: about 8 MB | `test/support.test.ts` |
-| A corpus case's and a metamorphic rewrite's verified runs (ADR 0567) | `~/.cache/rust-js/verified-runs/`, the machine's (#1047); a mutant's tests', their target's `corpus-cache/` | 512 MB, a week unused, the same way: about 8 MB a build of the compiler of the corpus, 100 MB of the net | `test/support.test.ts` |
-| A test's fixtures | `target/fixtures/`, `$TMPDIR/rust-js-fixtures/` | Removed as its file's tests end (`test/setup.ts`'s `afterAll`; Bun's test runner never emits `exit`) or a script exits; one a killed process left, by the next process's first claim. `RUST_JS_KEEP_FIXTURES=1` keeps a run's to look at | `test/support.test.ts` |
+| A corpus case's and a metamorphic rewrite's verified runs (ADR 0567) | `.cache/verified-runs/`, the machine's (#1047); a mutant's tests', their target's `corpus-cache/` | 512 MB, a week unused, the same way: about 8 MB a build of the compiler of the corpus, 100 MB of the net | `test/support.test.ts` |
+| A test's fixtures | `target/fixtures/`, `$TMPDIR/rust-js-dev/rust-js-fixtures/` | Removed as its file's tests end (`test/setup.ts`'s `afterAll`; Bun's test runner never emits `exit`) or a script exits; one a killed process left, by the next process's first claim. `RUST_JS_KEEP_FIXTURES=1` keeps a run's to look at | `test/support.test.ts` |
 | The apps' Cargo targets' seed, the binding crates checked (#1005) | `target/check-fast/<pid>/apps-seed/`, `check:fast`'s run's; else a fixture of the file that asks | One a run, about 330 MB, 260 of it rustc's incremental state, which the targets made of it don't take; gone as `check:fast` exits, or with the file's fixtures; one a killed run left, by the next `check:fast` | `test/support.test.ts` |
+| The crate corpus's Cargo projects (#1213) | `target/crate-corpus/<crate>/` | 2 GiB, the least recently measured crate first: 600 MB from nothing, each build of the compiler adding a copy of every crate's dependencies (25 GB before) | `test/support.test.ts` |
+| The mutations' worktree and builds | `target/mutants/` | 4 GiB, its entries the least recently changed first | `test/support.test.ts` (`boundEntries`) |
+| The temp root (#1213) | `$TMPDIR/rust-js-dev/` | 2 GiB, its entries the least recently changed first: Vitest's `<id>/ssr/` of each run, which it never removes (740 of them, 1.5 GB, before), tests' `mkdtemp`s | `test/support.test.ts` (`boundEntries`) |
 | The guide's examples, `bun run docs` | `target/docs/` | Each removed once its output's read, as each run makes it anew; an app's Cargo build there is 290 MB | |
-| The test map's maps (ADR 1101) | `~/.cache/rust-js/test-maps/`, the machine's, which every worktree reads (#932) | 3, about 12 MB each, the least recently used going first, each touched as a check reads it; one of another toolchain or layout removed as a recording ends; none kept below the floor | `test/test-map.test.ts` |
+| The test map's maps (ADR 1101) | `.cache/test-maps/`, the machine's, which every worktree reads (#932) | 3, about 12 MB each, the least recently used going first, each touched as a check reads it; one of another toolchain or layout removed as a recording ends; none kept below the floor | `test/test-map.test.ts` |
 | React's port, `bun scripts/react-in-rust.ts` | `$TMPDIR/react-in-rust-<checkout's hash>/` | 4 GB together; one whose checkout is gone removed as any run starts; then, of those no run used in the last hour, the least recently used past the cap or below the floor, never the run's own. Its build is of one build of the compiler, another's removed, and without rustc's incremental cache: about 215 MB after a regen | `test/support.test.ts` |
 | An app's cache, `rust-js build`'s, the examples' and every user's (#1057) | `<app>/node_modules/.cache/rust-js/`: a Cargo target for each of `target`, `editor`, `clippy` and `test` | 2 GB together, the least recently used target first, never the one in use, and none but it kept below 5 GB free; a target another build of the compiler made emptied as a build starts, but what its builds wrote in source (`holdTarget`); about 500 MB the Vite example's. `CARGO_TARGET_DIR`'s, the user's, isn't held | `test/in-source.test.ts` |
 
@@ -388,7 +414,7 @@ What keeps them there:
   crate's compile answers each question once: on the 12-core M6, 75 s
   after a change to `src/`, not 504 s, the reconciler 23 s.
 - **A corpus case's runs are kept by what they ran** (ADR 0567), in
-  the machine's `~/.cache/rust-js/verified-runs`, as the metamorphic net's
+  the machine's `.cache/verified-runs`, as the metamorphic net's
   are (#1047): the same JS, native output, runtime modules and
   harness again, its four runs aren't run again; its two compiles always
   are, and its snapshot is always checked. A `check:fast` whose change
@@ -456,7 +482,7 @@ loop's speed-ups are worth what they save agents, so each task reports it:
 port's regen, a matrix run); and `bun run task report` at the end, before
 `cargo clean`. The report's wall time, check time and its share go in the
 hand-back, and on the task's issue. The log is per branch in
-`~/.cache/rust-js/tasks/`, so `cargo clean` keeps it.
+`.cache/tasks/`, so `cargo clean` keeps it.
 
 **Look for speed-ups as you go; it's part of every task.** Issues about the loop carry the `dev-loop` label (`gh issue list --label dev-loop --state all`): it's the list of what was tried, what worked and what didn't, with numbers. Each one
 speeds up every agent on every machine from then on. If a step makes you
@@ -469,7 +495,7 @@ The ledger of every speed-up tried, with its numbers, its status (active, droppe
 
 - **Record the test map when a task starts**: `bun run test-map` after
   `git reset --hard origin/main`. The maps are the machine's, kept in
-  `~/.cache/rust-js/test-maps/` for every worktree (#932): where any
+  `.cache/test-maps/` for every worktree (#932): where any
   worktree recorded the commit's, it ends at once; otherwise about 150 s on
   the 12-core M6 (gate it as a heavy step), and each other worktree of that
   commit, or of one after it, reads it. Plain `check:fast` then runs only the suites' files and

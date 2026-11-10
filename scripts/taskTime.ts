@@ -1,7 +1,7 @@
 // How long a task took, and how much of it went to running checks and
 // tests: the return on what the loop's speed-ups cost (DEVELOPMENT.md,
 // "Keeping the loop fast"). A task's log is kept per branch in
-// ~/.cache/rust-js/tasks/, outside `target/`, so `cargo clean` keeps it.
+// the main checkout's .cache/tasks/, outside `target/`, so `cargo clean` keeps it.
 //
 //   bun run task start <name>        the task starts now
 //   bun run task run <label> -- cmd  runs cmd, timed as a check (its exit kept)

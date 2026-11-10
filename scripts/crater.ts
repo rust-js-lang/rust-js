@@ -27,7 +27,8 @@
 
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { availableParallelism, homedir } from "node:os";
+import { availableParallelism } from "node:os";
+import { cargoHome } from "./disk";
 import {
   cpSync,
   existsSync,
@@ -485,11 +486,7 @@ function spawned(
 
 /** Where Cargo unpacked `crate`'s source, fetching it first where it hasn't. */
 async function source(crate: Crate): Promise<string | { problem: string }> {
-  const registry = join(
-    process.env.CARGO_HOME ?? join(homedir(), ".cargo"),
-    "registry",
-    "src",
-  );
+  const registry = join(cargoHome, "registry", "src");
   const find = () =>
     existsSync(registry)
       ? readdirSync(registry)

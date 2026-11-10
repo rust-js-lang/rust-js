@@ -24,10 +24,45 @@
 
 import { spawn, spawnSync } from "node:child_process";
 import { availableParallelism } from "node:os";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { cargoBuild, cargoEnv } from "../tooling/cargo.js";
+import { floorBytes } from "../test/bounded";
 import { run as runChild, stopped, type Exit } from "../test/child";
+
+/** Where each crate's Cargo project and targets are kept between runs,
+ * `<crate>/`, so a run builds only what changed. */
+export const crateProjects = join(resolve(import.meta.dir, ".."), "target/crate-corpus");
+
+/** The most the crates' projects keep together. From nothing they're about
+ * 600 MB, built in 43 s on the M1 (2026-11-10, 23 crates); each build of
+ * the compiler adds about a copy of every crate's dependencies, which no run
+ * removes, so they'd grown to 25 GB, `url`'s 190 copies of each, 5.8 GB
+ * (#1213). At 2 GiB a crate's rebuilt about every third build of the
+ * compiler, two seconds of it. */
+export const crateProjectsCap = 2 * 2 ** 30;
+
+/** The crates' projects in `dir` held to `cap`, the least recently measured
+ * first, and nothing kept below the disk's floor, `free` its free bytes
+ * (tooling/bounded.js's `evict`). How many it removed, and the size of
+ * what's left. */
+export function boundCrateProjects({ dir = crateProjects, cap = crateProjectsCap, free = () => freeBytes(dir) }: { dir?: string; cap?: number; free?: () => number } = {}): { removed: number; size: number } {
+  let names: string[];
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return { removed: 0, size: 0 };
+  }
+  const kept: Kept[] = names
+    .map((name) => join(dir, name))
+    .filter((path) => statSync(path).isDirectory())
+    .map((path) => {
+      const marked = join(path, "used");
+      return { path, bytes: bytesOf(path), used: statSync(existsSync(marked) ? marked : path).mtimeMs };
+    });
+  return evict(kept, { cap, free, floor: floorBytes });
+}
 
 type Verdict = "runs" | "compiles" | "refused" | "blocked";
 
@@ -177,8 +212,10 @@ async function main() {
   // several at once: one at a time, a graph's one big crate held one core
   // while the rest sat idle. Each is printed in the table's order.
   const measure = async (crate: Crate): Promise<Result> => {
-    const dir = join(root, "target/crate-corpus", crate.name);
+    const dir = join(crateProjects, crate.name);
     mkdirSync(dir, { recursive: true });
+    // Measured now: what `boundCrateProjects` keeps longest.
+    writeFileSync(join(dir, "used"), "");
     const probe = join(import.meta.dir, "crate-corpus", `${crate.name}.rs`);
     // Each file of the project written only where it differs: a file
     // written again is a new date, which Cargo takes for a change, so the
@@ -316,6 +353,7 @@ async function main() {
   }
 
   writeFileSync(join(root, "target/crate-corpus.json"), JSON.stringify(results, null, 2));
+  boundCrateProjects();
 
   // `--check`, the nightly's: what docs/crate-corpus.md records of each
   // crate is the bar, a crate doing worse failing the run, as chrono and

@@ -43,7 +43,9 @@ const pinned = readFileSync(join(root, "ports/react-in-rust.pin"), "utf8")
   .find((line) => line && !line.startsWith("#"));
 if (!pinned || !/^[0-9a-f]{40}$/.test(pinned)) throw new Error("ports/react-in-rust.pin names no commit: a full SHA on a line of its own");
 const pin: string = pinned;
-const ports = process.env.RUNNER_TEMP ?? tmpdir();
+/** Where the port's checkouts are, each `react-in-rust-<checkout>/`: the
+ * system's temp directory, outside any checkout of rust-js. */
+export const ports = process.env.RUNNER_TEMP ?? process.env.RUST_JS_SYSTEM_TMPDIR ?? tmpdir();
 const home = join(ports, `react-in-rust-${createHash("sha256").update(root).digest("hex").slice(0, 8)}`);
 const port = join(home, "react-in-rust");
 const compiler = resolve(process.env.RUST_JS_COMPILER ?? join(root, "target/debug/rust-js"));

@@ -2,10 +2,22 @@
 // once before all of them one after another.
 import { afterAll, setDefaultTimeout } from "bun:test";
 
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
+
 import { underLoad } from "../scripts/timing";
+import { tempRoot } from "./bounded";
 import { asNode } from "./node-surface";
 import { unreadMessage, unreadSettings } from "./part-settings";
 import { buildCompiler, releaseFixtures } from "./support";
+
+// What a test and the tools it runs make in the system's temp directory
+// and leave, Vitest's module cache of each run, goes to the loop's temp
+// root, bounded (#1213); its children find the system's from it, so their
+// temp root is the same one.
+process.env.RUST_JS_SYSTEM_TMPDIR ??= dirname(tempRoot);
+mkdirSync(tempRoot, { recursive: true });
+process.env.TMPDIR = tempRoot;
 
 // The code rust-js writes runs in Node and browsers, not Bun: Bun's own
 // built-ins, an iterator's `join` say, taken away (`node-surface.ts`).

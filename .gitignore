@@ -24,3 +24,6 @@ node_modules/
 # A binding crate checked on its own, `cargo check` in next/ say.
 /*/target
 .DS_Store
+# What development keeps for every worktree of the machine (#1213):
+# test/bounded.ts's machineStore, reported by `bun run disk`.
+/.cache

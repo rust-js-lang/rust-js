@@ -642,7 +642,9 @@ if (import.meta.main) {
   // the compiler builds, so it takes none of the run's time: 0.1 s of a
   // store of 2,000 programs, a few seconds where it removes many.
   const pruning = Date.now();
-  const prunedKept = Bun.spawn(["bun", "-e", "import { pruneKeptStores } from './test/kept.ts'; pruneKeptStores();"], { cwd: root, stdout: "inherit", stderr: "inherit" }).exited.then((code) => ({ code, at: Date.now() }));
+  // Every store inside the checkouts, the crate corpus's projects and the
+  // temp root too, and a warning where they're near their budget (#1213).
+  const prunedKept = Bun.spawn(["bun", "scripts/disk.ts", "--prune", "--inside", "--quiet"], { cwd: root, stdout: "inherit", stderr: "inherit" }).exited.then((code) => ({ code, at: Date.now() }));
 
   // Each step's time is kept, and said against its usual (scripts/timing.ts).
   const building = Date.now();

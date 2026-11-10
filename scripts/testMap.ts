@@ -27,7 +27,7 @@
 // the compiler's sources itself (`readsSources`).
 //
 // Kept by the commit it's of and the toolchain's, for every worktree of the
-// machine, in `~/.cache/rust-js/test-maps/` (#932): a map is the same in
+// machine, in the main checkout's `.cache/test-maps/` (#932): a map is the same in
 // any checkout of its commit, so a new worktree reads one another recorded,
 // and `bun run test-map` of a commit one's recorded for ends at once. The
 // three most recently used, about 12 MB each. The counting build is the

@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { cpSync, existsSync, linkSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 
+import { tempRoot } from "./bounded";
 import { runSync, stopped } from "./child";
 import { keptApps, markUsed, mayKeep, nativeCache } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
@@ -398,7 +398,7 @@ export function installStd(app: string) {
 // Removing a directory removes the links in it, not what they link to.
 export const fixtures = join(target, "fixtures");
 /** Where fixtures outside the checkout are claimed (`outsideFixture`). */
-const outsideFixtures = join(tmpdir(), "rust-js-fixtures");
+const outsideFixtures = join(tempRoot, "rust-js-fixtures");
 // Named by its file's hash, a letter first: what a test looks for in the
 // JS, a block's `bb5` or a word of its name, never in the path its header
 // names, as `-bb6e90b4` was (`\bbb\d+`), and `strict-switches` would be.

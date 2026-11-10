@@ -263,7 +263,8 @@ export const parts: Part[] = [
 
 /** The settings test files read that select no part: the harness's own,
  * what a test sets for a child it runs, the printer of declarations its
- * compiles name (test/setup.ts), Miri's sysroot, which a run asks for once
+ * compiles name (test/setup.ts), the temp root it gives every test process
+ * (test/bounded.ts), Miri's sysroot, which a run asks for once
  * (test/miri.ts), and a report's. */
 export const harness = [
   "BLESS",
@@ -290,7 +291,9 @@ export const harness = [
   "RUST_JS_LIBRARIES",
   "RUST_JS_MUTANT",
   "RUST_JS_SNAPSHOTS",
+  "RUST_JS_SYSTEM_TMPDIR",
   "RUST_JS_TARGET",
   "RUST_JS_TEST_VALUE",
   "RUST_JS_TYPESCRIPT",
+  "TMPDIR",
 ];
