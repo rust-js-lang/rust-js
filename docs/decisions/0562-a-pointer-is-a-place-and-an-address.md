@@ -1210,3 +1210,31 @@ list loses #1257's line. Mutations
 `item-of-a-byte-slice-unplaced`, `part-of-a-byte-slice-unplaced`,
 `byte-array-read-written-to-its-copy`, `byte-array-read-live` and
 `byte-array-read-unplaced`.
+
+## Amendment: an unwritten place's bytes, and a slice of one place (#1279, #1280)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is preserved.
+
+#1257 let a mutable slice of a `MaybeUninit<u64>`'s bytes write them, as
+getrandom's `inner_u64` fills one. Its first write encoded the place's
+`undefined` and threw "Cannot convert undefined to a BigInt" (#1279, a P1
+found by the Crater). Before #1257 it had been refused where it ran.
+**A byte view of a place not yet written starts from zeroed bytes**
+(`$encoded`). Nothing can read those zeros: reading uninitialized bytes is
+undefined behaviour. This covers every codec width, signed and unsigned,
+`u8` to `u128`, and the floats.
+
+Its `MaybeUninit<u8>` case also showed that a mutable slice of one place
+that isn't an array's item, `slice::from_raw_parts_mut(&raw mut x, 1)`,
+was `$ptrItems`' copy, so a write through it was lost (#1280, a P0 found
+by audit). **It is a view of that place, written through its handle.**
+Where it is goes under #1185's record as `{ first: pointer }`, the record
+#1257's byte slices now share, renamed from `{ bytes }`. A pointer into it
+is that pointer: `p.add(0)` of any pointer is the pointer itself.
+
+Corpus case `uninit_bytes_written_one_by_one.rs`, `//@ native: wasm32`,
+both builds, through `METAMORPHIC=all`. The memory net's seeds 1 to 400
+and 5000 to 5399 still run as Rust does. Mutations
+`uninit-place-bytes-encoded`, `slice-of-one-place-a-copy` and
+`slice-of-one-place-unplaced`.

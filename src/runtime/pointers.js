@@ -15,10 +15,10 @@ const $items = new WeakMap();
 // where its address is (#1089).
 function $ptr(object, key, offset, root, at) {
   // An item of a part of a slice, `&v[1..3]`'s: the item of the array it's
-  // of, where Rust's is (#1185); of a view of another type's bytes, the
-  // view stepped to it (#1257).
+  // of, where Rust's is (#1185); of a view of another type's bytes, or of
+  // one place, its first item's pointer stepped to it (#1257, #1280).
   const part = typeof key === "number" ? object[$placeOfPart] : undefined;
-  if (part?.bytes !== undefined) return $ptrAdd(part.bytes, key);
+  if (part?.first !== undefined) return $ptrAdd(part.first, key);
   if (part !== undefined) return $ptr(part.of, part.start + key, offset, root, at);
   // What a cell field that's the property it holds lends, through a
   // handle on it, or its one cell, `$fieldCell(x, "f")` (#1114).
@@ -120,6 +120,8 @@ function $ptrAdd(pointer, count) {
     return $byteView({ ...pointer, at: pointer.at + count * pointer.width });
   }
   if (pointer === null || !Array.isArray(pointer.of) || pointer.addr !== undefined || pointer.offset !== undefined) {
+    // Not stepped, where it is (#1280).
+    if (pointer !== null && count === 0) return pointer;
     throw $unsupported("rust-js does not support stepping a pointer that isn't into an array, which reads memory by where it is");
   }
   return $ptr(pointer.of, pointer.at + count);
@@ -698,12 +700,26 @@ function $ptrSliceMut(pointer, count) {
     // that writes through (#1257); a pointer into it is the view stepped to
     // that item.
     const target = [];
-    target[$placeOfPart] = { bytes: pointer };
+    target[$placeOfPart] = { first: pointer };
     return $proxy(
       count,
       (i) => $ptrAdd(pointer, i).value,
       (i, item) => {
         $ptrAdd(pointer, i).value = item;
+      },
+      target,
+    );
+  }
+  // One place that isn't an array's item, a local's or a field's: a view
+  // of it, written through its handle (#1280).
+  if (count === 1 && !Array.isArray(pointer.of)) {
+    const target = [];
+    target[$placeOfPart] = { first: pointer };
+    return $proxy(
+      1,
+      () => pointer.value,
+      (_, item) => {
+        pointer.value = item;
       },
       target,
     );
@@ -804,7 +820,7 @@ function $byteView(view) {
 function $bytesRead(view) {
   const bytes = Array.from({ length: view.width }, (_, i) => $byteAt(view, i));
   const target = [];
-  target[$placeOfPart] = { bytes: $ptrRetyped(view, 1, false) };
+  target[$placeOfPart] = { first: $ptrRetyped(view, 1, false) };
   return $proxy(
     view.width,
     (i) => bytes[i],
@@ -862,21 +878,28 @@ function $allocUsed(view, use) {
   }
 }
 
+// The bytes of `value`, an item a view's bytes are of, through its codec;
+// of one not yet written, a `MaybeUninit`'s, `undefined`, zeros, which no
+// read sees before they're written, as reading them is undefined (#1279).
+function $encoded(view, value) {
+  return value === undefined ? new Array(view.stride).fill(0) : view.encode(value);
+}
+
 // The byte `i` past where `view` is.
 function $byteAt(view, i) {
   $allocUsed(view, "bytes");
   const at = view.at + i;
-  if (view.plain !== undefined) return view.encode(view.plain.value)[at];
+  if (view.plain !== undefined) return $encoded(view, view.plain.value)[at];
   if ($itemsAreBytes(view)) return $slot(view.of, at);
   const item = Math.floor(at / view.stride);
-  return view.encode($slot(view.of, item))[at % view.stride];
+  return $encoded(view, $slot(view.of, item))[at % view.stride];
 }
 
 function $byteSet(view, i, byte) {
   $allocUsed(view, "bytes");
   const at = view.at + i;
   if (view.plain !== undefined) {
-    const bytes = view.encode(view.plain.value);
+    const bytes = $encoded(view, view.plain.value);
     bytes[at] = byte;
     view.plain.value = view.decode(bytes);
     return;
@@ -886,7 +909,7 @@ function $byteSet(view, i, byte) {
     return;
   }
   const item = Math.floor(at / view.stride);
-  const bytes = view.encode($slot(view.of, item));
+  const bytes = $encoded(view, $slot(view.of, item));
   bytes[at % view.stride] = byte;
   view.of[item] = view.decode(bytes);
 }
