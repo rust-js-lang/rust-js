@@ -215,3 +215,21 @@ names them. ADR 0262's case: none, the same values. Corpus case
 through, one each impl steps, and an impl of such a bound; rustc's
 `bench/issue-32062.rs` off the known failures; mutations
 `impl-bounds-unwalked` and `impl-bounds-walked-with-bound-lifetimes`.
+
+## Amendment: a dictionary's `clone` keeps its parameter's name to itself (#1246)
+
+A `Clone` dictionary's `clone` is an arrow of one parameter, `value`, whose
+body is made as the function's own statements are, its bindings named by
+the function's fresh names. Of an `Option<Option<T>>` whose `Some` is
+boxed (ADR 0051), that body binds what the outer `Some` holds, and where
+`value` was still free in the function, as in the first of several such
+dictionaries, it was named `value` too: `clone(value) { const value =
+$someValue(value); .. }`, a module that doesn't parse. The arrow's
+parameter is taken while its body is made, for its scope alone
+(`clone_fn`): `const value$1 = $someValue(value)`. No other corpus JS
+changed. ADR 0262's "results change" case (the program didn't load).
+
+- `test/corpus/clone_dictionary_of_a_nested_option.rs`: four generic
+  functions' clones of an `Option<Option<T>>` and a `Result<Option<T>, _>`,
+  both builds against native Rust, through `METAMORPHIC=all`.
+- The mutation is `clone-fn-parameter-free-to-its-body`.

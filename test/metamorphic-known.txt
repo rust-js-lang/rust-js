@@ -88,10 +88,6 @@ plain std generic-instances range_reversed_skipped_beside_its_back_stepped.rs
 plain std generic-instances repeat_count_panics.rs
 plain generic-instances take_and_filter_of_a_type_parameter_hint_as_std.rs
 
-#1246 P0 (functions-calls): generic code's Clone dictionary of an Option<Option<T>> declares its parameter's name again, a SyntaxError
-plain std generic-instances boxed_option_unwraps.rs
-plain std generic-instances refcell_clone_through_rc.rs
-
 #1247 P0 (mut-refs): a () copied in generic code through a &mut () a struct holds reads .value of undefined
 plain std generic-instances generic_deref.rs
 

@@ -1124,4 +1124,13 @@ export const mutations: Mutation[] = [
     replace: "                Ok(self.stepped_items(left))\n",
     tests: ["test/iterator-forms.test.ts", "-t", "capacity_of_what_std_hints_less"],
   },
+  {
+    name: "clone-fn-parameter-free-to-its-body",
+    breaks:
+      "a `Clone` dictionary's `clone(value)` of an `Option<Option<T>>` binds what its `Some` holds as `const value`, its own parameter's name again, so the module doesn't parse (#1246)",
+    file: "src/lower/std_impls.rs",
+    find: "        let taken = self.names.insert(name.to_string());\n",
+    replace: "        let taken = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_dictionary_of_a_nested_option.rs$"],
+  },
 ];
