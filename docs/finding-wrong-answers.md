@@ -10,6 +10,13 @@ found. This page is about **how bugs are found**.
 When a new technique finds a wrong answer, or a wrong answer is found that
 none of these would have, add it here in the same commit as the fix.
 
+Each P0 carries the net that found it, a `found-by:` label
+([bug-kinds.md](bug-kinds.md#found-by)); `bun scripts/found-by.ts` counts
+them by net and week. Of the 357 P0s of 2026-11-01 to 2026-11-10, 144
+were found by an audit beside another fix, 76 by the tables, 57 by the
+metamorphic net, 23 by the ports, 11 by the consumer net, and 30 don't
+say.
+
 ## The techniques
 
 | Technique | Where | What it found | Why it works |

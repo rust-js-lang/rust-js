@@ -34,7 +34,8 @@ the JS should be.
    feature):
 4. **How it was found**: port (rd number), generated program (run and
    seed), mutation (name), corpus or CI test (name), probe or matrix
-   (which), review, or external:
+   (which), review, or external; of a P0, its `found-by:` label
+   (docs/bug-kinds.md, "Found by"):
 5. **The ADR 0262 case**, whether native comparison can see it, and if it
    can't, the JS-side test that holds it:
 6. **The kind**, and one line answering its question:

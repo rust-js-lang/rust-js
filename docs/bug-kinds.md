@@ -79,6 +79,35 @@ first bad commit, broke it: bisected, or stated by the issue or the fix. A
 bug that never worked since its feature landed (`born:<SHA>`) or whose
 origin isn't known (`old`) has no `regression` label.
 
+## Found by
+
+Every `P0: wrong answer` also carries one `found-by: …`, the net or method
+that found it (#1206), so which nets pay off is a count, not a reading of
+prose. The filer sets it from how the issue says it was found (Filing's
+item 4); a coordinator filing an agent's report sets it from the report,
+which always says what found it.
+
+| Label | When |
+|---|---|
+| `found-by: corpus` | A corpus case, or a test of the suite, failing on main or CI: `test/corpus/`, `ITERATOR_FORMS=corpus`, a `test/*.test.ts` |
+| `found-by: metamorphic` | The metamorphic net: a corpus case rewritten in a meaning-preserving way, its EMI rewrites too (`METAMORPHIC=all`, ADR 0939's net) |
+| `found-by: consumer-net` | The consumer net: each iterator given to each consumer, generic callers' forms too (`ITERATOR_TABLE=consumers`) |
+| `found-by: neighbour` | The neighbour net: two cases that pass alone, compiled into one crate (`test/neighbours.ts`) |
+| `found-by: object-model` | The object-model net: a library's values behind a proxy, `--js-made-all` |
+| `found-by: tables` | A standing matrix or table: the iterator matrix and conformance table, the points, unwind and async tables, the `&mut` and `None` matrices, the boundary matrices and numbers grid, a pre-landing matrix slice |
+| `found-by: fuzz` | A generated program: the Nightly's fuzz shards or program stages, by run and seed |
+| `found-by: crater` | Crater: a crate's own tests run as JS |
+| `found-by: crate-corpus` | The crate corpus (`docs/crate-corpus.md`) |
+| `found-by: port` | A port: react-in-rust, alien-signals, its names and bindings runs, an app built with rust-js |
+| `found-by: audit` | Found while fixing or probing a sibling: a probe, a hand-written grid, a case written for another fix, an agent's audit of an area |
+| `found-by: review` | A person's report, or a review of the code |
+
+A net that found it while someone fixed another issue is that net's, not
+an audit's: "found by the metamorphic net's `library` rewrite while fixing
+#1110" is `metamorphic`. `bun scripts/found-by.ts` counts the P0s each net
+found, by week; `--backfill` reads each unlabelled P0's sentence of how
+it was found and lists those it can't classify.
+
 ## Filing
 
 Record these in the issue, so its kind can be checked
@@ -95,7 +124,8 @@ Record these in the issue, so its kind can be checked
    first bad commit was: readability, a correctness fix (#N) or a feature.
 4. **How it was found**: port (rd number), generated program (run and
    seed), mutation (name), corpus or CI test (name), probe or matrix
-   (which), review, or external.
+   (which), review, or external; and, of a P0, its `found-by:` label
+   ([Found by](#found-by)).
 5. **The ADR 0262 case**, and whether native comparison can see it. If it
    can't, name the JS-side test that holds it.
 6. **The kind**, with one line answering its question.
