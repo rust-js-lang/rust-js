@@ -30,8 +30,8 @@ parameter's index. The rest decide a per-type fact in one of four ways:
 
 | Route | How it's answered | Facts | Owner today |
 |---|---|---|---|
-| **Given** | at run time, a parameter or a dictionary the caller passes | `TypeFact`'s 19 (size, align, name, id, needs_drop, a map's class, sorts, `Fused`, `TrustedLen`, ...), a bound's dictionary, std functions' `Iterator` dictionaries, drop slots | `type_fact_params`, `given_type_fact` (ADR 0145); `traits/dictionaries.rs`; `stepped_params` (#1147, #1163); `traits/drop_params.rs` (ADR 0421) |
-| **Form** | one form in generic code, which a caller, knowing `T`, adapts at the call | a `Some`'s payload boxed or not; a `&mut`, generic code's box; a raw pointer, a handle on its place; an iterator given as it is | `boxed_payload` (ADR 0051), asked at about a hundred sites; `mut_ref_form`'s `GenericBox` and `mut_refs.rs`' `boxed_in_call`, `given_as_the_value`, `generic_result_values` (ADRs 0454, 1086); none (#1143); `iterators/knowing.rs`, `stepping.rs`, `mir/iter/sources.rs`, `closing.rs`' `slicing` (#992, #703) |
+| **Given** | at run time, a parameter or a dictionary the caller passes, or the value itself | a `Some`'s payload boxed or not (by its value, `$some(x)`; amended below); `TypeFact`'s 19 (size, align, name, id, needs_drop, a map's class, sorts, `Fused`, `TrustedLen`, ...), a bound's dictionary, std functions' `Iterator` dictionaries, drop slots | `type_fact_params`, `given_type_fact` (ADR 0145); `traits/dictionaries.rs`; `stepped_params` (#1147, #1163); `traits/drop_params.rs` (ADR 0421) |
+| **Form** | one form in generic code, which a caller, knowing `T`, adapts at the call | a `&mut`, generic code's box; a raw pointer, a handle on its place; an iterator given as it is | `mut_ref_form`'s `GenericBox` and `mut_refs.rs`' `boxed_in_call`, `given_as_the_value`, `generic_result_values` (ADRs 0454, 1086); none (#1143); `iterators/knowing.rs`, `stepping.rs`, `mir/iter/sources.rs`, `closing.rs`' `slicing` (#992, #703) |
 | **Instances** | at compile time, of every caller's instance, carried through generic callers; refused, or compiled apart, where they disagree | an `Rc` counted; a clone apart; where an object is stored; a `Some` unboxed by every caller; what JS gives; `eq` and zips std decides by `TrustedLen`; a function's copy apart | `instances.rs`' `instances_of`, shared by `rc_counts` (#1009), `clones` (#1119) and `stored_places` (#1114); `mutation.rs`' `unboxed_params`; `js_given.rs`; `callers_decide.rs` (ADR 1014); `copies.rs` |
 | **Alone** | of the generic type, as one answer right for every instance | a dictionary call where `T` is unknown, `$ptrRecast`, a conservative drop or panic | each site |
 
@@ -93,7 +93,9 @@ Migrations, each its own step with its tests, listed on #1170:
    amended): a box is copied back only of a number's place.
 2. A `Some`'s payload: `boxed_payload`'s callers at a call's boundary
    onto the API; its hundred readers inside a body keep asking
-   `boxed_payload`, the form's owner.
+   `boxed_payload`, the form's owner. Done (2026-11-10) otherwise: it's
+   **Given**, by the value, not a **Form**, so there's nothing to adapt
+   (amended below).
 3. The iterator given as it is: `given_as_it_is`, `given_as_iterator`,
    `given_iterable` and `slicing`.
 4. The `Instances` analyses onto one carrier of callers' instances,
@@ -111,3 +113,36 @@ Migrations, each its own step with its tests, listed on #1170:
   catalogue names an owner that's there".
 - Each fact's own tests, as before; 1114's corpus cases per call shape for
   the raw pointer.
+
+## Amended (2026-11-10, #1170): a `Some`'s payload is given by its value
+
+The audit filed a `Some`'s payload, boxed or not (ADR 0051), as a **Form**,
+one form in generic code its callers adapt. It isn't one: `$some(x)` boxes
+by the value at run time, only what looks like `None`, `undefined`, `null`
+or such a box, so generic code's `Some(t)` of a `5` is `5`, as a caller's
+`Some(5)` is, and its `Some(())` the box a caller's `Some(())` is, as a
+`()`'s `Option` is boxed wherever it's held (`boxed_payload`, of a type that
+can be nullish). The value tells generic code and its caller alike: a
+**Given** fact, as a dictionary is, with nothing to adapt at the boundary.
+Migration 2, moving `boxed_payload`'s callers at a call's boundary onto
+`form_given`, would give an adapter to a fact that needs none.
+
+What picks a form by its type keeps to where it's held, checked against
+native Rust in `some_given_to_generic_code_by_its_value.rs` (both builds,
+`METAMORPHIC=all`):
+
+- A local `Option<Option<T>>` made and read where it's held is its payload
+  (ADR 1017); given to a function, `back(n)` or `peek(&n)`, it's held
+  boxed, `$some(undefined)`, as the choice is made only where nothing else
+  reads it.
+- An `Option` of an untagged enum whose variant is `null`, a map's `get`,
+  crosses boxed, `$someGet`'s, as `untagged_null_option_held.rs` holds of
+  one given to a function.
+- Generic code that skips `$some` where no instance can look like `None`
+  (`unboxed_params`, an **Instances** fact, which stays one) counts its
+  callers through a `fn` pointer, a `dyn Fn`, a generic caller, a closure's
+  bound, a trait's generic method and a `map`: each function given a
+  number directly and a `()` or an `Option` one other way boxes.
+
+The catalogue files it under **Given**, its owner `boxed_payload` still,
+the representation's.

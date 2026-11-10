@@ -3,7 +3,9 @@
 //! so wherever JS's form of a value, or what std does with it, depends on
 //! `T`, the one body learns it by one of three routes:
 //!
-//! - **Given**: at run time, a parameter or a dictionary its caller passes.
+//! - **Given**: at run time, a parameter or a dictionary its caller passes,
+//!   or the value itself, which tells generic code and its caller alike:
+//!   `$some(x)` boxes only what looks like `None`.
 //! - **Form**: one form in generic code, which its caller, knowing `T`,
 //!   adapts at the call, `form_given` and `form_back`, here alone.
 //! - **Instances**: at compile time, of every caller's instance, carried
@@ -19,7 +21,7 @@
 //! | a std function's `Iterator` dictionary of what it's given as it is (#1147, #1163) | Given | `src/lower/analysis/iterator_steps.rs stepped_params` |
 //! | what dropping one runs, its drop slot (ADR 0421) | Given | `src/lower/traits/drop_params.rs drop_slot` |
 //! | a raw pointer whose pointee is a type parameter, a handle (ADR 1114), and a `&mut` of one, generic code's box (ADRs 0454, 1086), `Form`'s | Form | `src/lower/generic_facts.rs form_given` |
-//! | a `Some` of it, boxed or not (ADR 0051) | Form | `src/lower/representation/options.rs boxed_payload` |
+//! | a `Some` of it, boxed or not, by its value, `$some(x)`'s (ADR 0051) | Given | `src/lower/representation/options.rs boxed_payload` |
 //! | an iterator or a function given as it is, not boxed (#992) | Form | `src/lower/iterators.rs given_as_it_is` |
 //! | whether an `Rc` of it is counted (#1009) | Instances | `src/lower/analysis/rc_counts.rs counted_rcs` |
 //! | whether a clone of it is a copy apart (#1119) | Instances | `src/lower/analysis/clones.rs instances_of` |
