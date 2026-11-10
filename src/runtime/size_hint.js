@@ -16,7 +16,30 @@ function $sizeHint(it, iterator) {
   // it is (ADR 0411).
   if (typeof it.of?.next === "function") return $sizeHint(it.of);
   const left = Array.isArray(it.items) ? it.end - it.at : undefined;
-  return left === undefined ? [0, undefined] : [left, left];
+  if (left !== undefined) return [left, left];
+  // Of a form of rust-js's own, `$Steps`, std's default, none known; of
+  // JS's own iterator, a string's or an array's `drop(n)`, which knows no
+  // hint, the same, but recorded, so a `Vec` std grows by it is known not
+  // to be grown as std's is (`$hintAsked`, #1251).
+  if (!(it instanceof $Steps)) $hintUnknown = true;
+  return [0, undefined];
+}
+
+// Whether a hint asked met JS's own iterator, which knows none
+// (`$sizeHint`), since `$hintAsked` began asking.
+let $hintUnknown = false;
+
+// `$sizeHint(it)`, and whether what it asked knew its hint, each form of
+// rust-js's own, `$Steps`, not JS's own iterator, whose hint is none
+// whatever std's is (#1251). What an outer ask had met is its own again
+// after; one that throws, a panic, leaves it, which the next ask resets.
+function $hintAsked(it) {
+  const outer = $hintUnknown;
+  $hintUnknown = false;
+  const hint = $sizeHint(it);
+  const known = !$hintUnknown;
+  $hintUnknown = outer;
+  return [hint, known];
 }
 
 // Std's hint of an adapter that may give fewer than its source, none at

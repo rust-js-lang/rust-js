@@ -305,8 +305,10 @@ function $shuntGrowth(it, size) {
 // hint asked never, its capacity left unknown; where the hint is the
 // crate's own, `own`, whose asking is seen, an error naming #1180. Of
 // generic code whose callers may give an iterator whose JS hint isn't
-// std's, `lost`, its capacity unknown once it grows (#1180's (3)).
-function $grownBy(v, items, size, deque = false, drop, own = false, lost = false) {
+// std's, `lost`, its capacity unknown once it grows (#1180's (3)); of one
+// whose callers aren't all seen, `byValue`, so where what it's given is
+// JS's own iterator, whose hint is none (#1251).
+function $grownBy(v, items, size, deque = false, drop, own = false, lost = false, byValue = false) {
   // An array given whole, generic code's, as its `IntoIter`, whose hint is
   // exact (#1180).
   const it = Array.isArray(items) ? $iter(items) : items[Symbol.iterator]();
@@ -318,8 +320,12 @@ function $grownBy(v, items, size, deque = false, drop, own = false, lost = false
   // it grows as its JS hint says, so a hint that's the crate's own is asked
   // as std asks it (#1180's (3)).
   let asked = false;
+  // Of generic code whose callers aren't all seen, a library's `pub`
+  // function's, `byValue`: lost where a hint it asks meets JS's own
+  // iterator, which knows none (`$hintAsked`, #1251).
+  let unkept = lost;
   const ended = () => {
-    if (lost && asked) $untracked(v);
+    if (unkept && asked) $untracked(v);
   };
   const steps = new $Steps(
     () => {
@@ -338,7 +344,8 @@ function $grownBy(v, items, size, deque = false, drop, own = false, lost = false
         asked = true;
         $unwinds(
           () => {
-            const [lower] = $sizeHint(it);
+            const [[lower], known] = byValue ? $hintAsked(it) : [$sizeHint(it), true];
+            unkept ||= !known;
             const additional = Math.min(lower + 1, max);
             if (capacity - v.length < additional) {
               if (v.length + additional > max) throw new Error("capacity overflow");

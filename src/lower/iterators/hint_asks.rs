@@ -435,11 +435,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let known_own = own && !(iterable.has_param() || iterable.has_aliases());
         // Of generic code, by an iterator whose JS hint, of what one of its
         // callers gives, isn't std's: its capacity unknown once it grows
-        // (`Hinted::lost`, #1180's (3)).
-        let lost = (self.krate.hinted.lost).contains(&(
+        // (`Hinted::lost`, #1180's (3)); of one whose callers aren't all
+        // seen, by each value it's given (`Hinted::by_value`, #1251).
+        let site = (
             self.tcx.typeck_root_def_id(self.frame.owner),
             self.tcx.erase_and_anonymize_regions(iter_ty),
-        ));
+        );
+        let lost = (
+            self.krate.hinted.lost.contains(&site),
+            self.krate.hinted.by_value.contains(&site),
+        );
         self.grown_by(collection, items, (into, item, (own, known_own), lost), span, out)
     }
 
@@ -470,7 +475,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Of an iterator its caller gives, which may be the crate's own.
         Ok(self
-            .grown_by(collection, items, (into, item, (true, false), false), span, out)?
+            .grown_by(
+                collection,
+                items,
+                (into, item, (true, false), (false, false)),
+                span,
+                out,
+            )?
             .1)
     }
 
@@ -488,12 +499,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `$grownBy(collection, items, size, deque, drop, own, lost)`: of
-    /// `into`'s items' size, of `item`s' drop, as the iterator gives them,
-    /// whether its hint may be the crate's own, `own`, which a `Vec` whose
-    /// capacity isn't known can't ask as std's does (#1180), and whether
-    /// its JS hint may not be std's, `lost`, its capacity then unknown
-    /// once it grows (#1180's (3)). Of items whose
+    /// `$grownBy(collection, items, size, deque, drop, own, lost,
+    /// byValue)`: of `into`'s items' size, of `item`s' drop, as the
+    /// iterator gives them, whether its hint may be the crate's own, `own`,
+    /// which a `Vec` whose capacity isn't known can't ask as std's does
+    /// (#1180), whether its JS hint may not be std's, `lost`, its capacity
+    /// then unknown once it grows (#1180's (3)), and whether that's asked of
+    /// each value it's given, `byValue` (#1251). Of items whose
     /// size no caller gives, as it is, its growth not kept; refused where
     /// its hint is the crate's own, its type known here, `known_own`, whose
     /// asking would be seen.
@@ -501,7 +513,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         collection: Expr,
         items: Expr,
-        (into, item, (own, known_own), lost): (Ty<'tcx>, Ty<'tcx>, (bool, bool), bool),
+        (into, item, (own, known_own), (lost, by_value)): (Ty<'tcx>, Ty<'tcx>, (bool, bool), (bool, bool)),
         span: Span,
         out: &mut Vec<crate::js::Stmt>,
     ) -> R<(Expr, Expr)> {
@@ -524,16 +536,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok((collection, items));
         };
         let mut args = vec![collection.clone(), items, size];
-        if deque || drop.is_some() || own || lost {
+        let lost_or_asked = lost || by_value;
+        if deque || drop.is_some() || own || lost_or_asked {
             args.push(Expr::bool(deque));
         }
-        if drop.is_some() || own || lost {
+        if drop.is_some() || own || lost_or_asked {
             args.push(drop.unwrap_or_else(Expr::undefined));
         }
-        if own || lost {
+        if own || lost_or_asked {
             args.push(Expr::bool(own));
         }
-        if lost {
+        if lost_or_asked {
+            args.push(Expr::bool(lost));
+        }
+        if by_value {
             args.push(Expr::bool(true));
         }
         Ok((collection, Expr::call_helper("$grownBy", args)))

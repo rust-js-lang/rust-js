@@ -311,8 +311,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Vec` generic code grew by a hint JS lost is unknown though it never asked it: one with room enough, or never given an item, throws at `capacity()` where std's is 100 or 1 (#1180's (3))",
     file: "src/runtime/capacity.js",
-    find: "    if (lost && asked) $untracked(v);\n",
-    replace: "    if (lost) $untracked(v);\n",
+    find: "    if (unkept && asked) $untracked(v);\n",
+    replace: "    if (unkept) $untracked(v);\n",
     tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
   },
   {
@@ -320,7 +320,16 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Vec` generic code grew by a hint JS lost keeps the capacity JS's hint grew it to: `chars().skip(5)`'s 64 where std's is 60, silently (#1180's (3))",
     file: "src/runtime/capacity.js",
-    find: "    if (lost && asked) $untracked(v);\n",
+    find: "    if (unkept && asked) $untracked(v);\n",
+    replace: "",
+    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+  },
+  {
+    name: "grown-by-value-unasked",
+    breaks:
+      "a library's `pub` generic `extend` never asks whether what it's given knows its hint: of `chars().skip(5)`, a capacity of 64 where std's is 44, silently (#1251)",
+    file: "src/runtime/capacity.js",
+    find: "            unkept ||= !known;\n",
     replace: "",
     tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
   },

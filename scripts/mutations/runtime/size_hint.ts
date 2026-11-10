@@ -74,4 +74,22 @@ export const mutations: Mutation[] = [
     replace: "$hintSum(none, ",
     tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
   },
+  {
+    name: "hint-of-js-iterator-known",
+    breaks:
+      "a hint that meets JS's own iterator, a string's `chars().skip(n)`'s `drop(n)`, is taken for known: a library's `pub` generic `extend` by it keeps a capacity of 64 where std's is 44, silently (#1251)",
+    file: "src/runtime/size_hint.js",
+    find: "  if (!(it instanceof $Steps)) $hintUnknown = true;\n",
+    replace: "",
+    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+  },
+  {
+    name: "hint-of-own-steps-unknown",
+    breaks:
+      "a hint of rust-js's own form, `$Steps`, std's default, is taken for unknown: a library's `pub` generic `extend` by the crate's own iterator throws at `capacity()` where std's is 32 (#1251)",
+    file: "src/runtime/size_hint.js",
+    find: "  if (!(it instanceof $Steps)) $hintUnknown = true;\n",
+    replace: "  $hintUnknown = true;\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+  },
 ];

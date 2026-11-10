@@ -285,8 +285,8 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's `extend` of a `Vec` the analysis found lost keeps its capacity: of `chars().skip(5)` given it, 64 where std's is 60, silently (#1180's (3))",
     file: "src/lower/iterators/hint_asks.rs",
-    find: "        let lost = (self.krate.hinted.lost).contains(&(\n",
-    replace: "        let lost = false && (self.krate.hinted.lost).contains(&(\n",
+    find: "self.krate.hinted.lost.contains(&site)",
+    replace: "false",
     tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
   },
   {
@@ -296,6 +296,15 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/hint_asks.rs",
     find: "        self.given_hint_is_stds(instance) || self.hint_reaches_own(instance)\n",
     replace: "        self.given_hint_is_stds(instance)\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+  },
+  {
+    name: "generic-growth-by-value-unread",
+    breaks:
+      "generic code's `extend` the analysis asks by value isn't: of `chars().skip(5)` given a library's `pub` function, a capacity of 64 where std's is 44, silently (#1251)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "self.krate.hinted.by_value.contains(&site)",
+    replace: "false",
     tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
   },
 ];

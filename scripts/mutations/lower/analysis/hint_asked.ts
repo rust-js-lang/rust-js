@@ -39,8 +39,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `pub` generic function's `extend` of a `Vec`, whose callers the crate can't see, is lost: its `capacity()` throws where std's is 32 (#1180's (3))",
     file: "src/lower/analysis/hint_asked.rs",
-    find: "                None => false,\n",
-    replace: "                None => true,\n",
+    find: "                None => _ = asked.hinted.by_value.insert((owner, iter_ty)),\n",
+    replace: "                None => _ = asked.hinted.lost.insert((owner, iter_ty)),\n",
     tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
   },
   {
@@ -48,8 +48,17 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's `extend` of a `Vec` by what its callers give is never lost: of `chars().skip(5)` given it, its capacity 64 where std's is 60, silently (#1180's (3))",
     file: "src/lower/analysis/hint_asked.rs",
-    find: "(instances.into_iter()).any(|instance| !recognition.given_growth_kept(instance)),",
-    replace: "(instances.into_iter()).any(|instance| false && !recognition.given_growth_kept(instance)),",
+    find: "if (instances.into_iter()).any(|instance| !recognition.given_growth_kept(instance)) {",
+    replace: "if false && (instances.into_iter()).any(|instance| !recognition.given_growth_kept(instance)) {",
+    tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
+  },
+  {
+    name: "generic-growth-unseen-not-by-value",
+    breaks:
+      "a `pub` generic function's `extend` of a `Vec`, whose callers the crate can't see, isn't asked of each value it's given: of `chars().skip(5)`, a capacity of 64 where std's is 44, silently (#1251)",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: "                None => _ = asked.hinted.by_value.insert((owner, iter_ty)),\n",
+    replace: "                None => {}\n",
     tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
   },
 ];

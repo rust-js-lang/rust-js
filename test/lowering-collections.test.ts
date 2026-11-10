@@ -1290,7 +1290,9 @@ pub fn known() -> usize {
 // whose every caller's hint is std's, a range's or a filter's, keeps std's,
 // as does one it never grew. One JS function is every caller's, so where
 // one caller's hint isn't std's, each caller's growth there is unknown. A
-// `pub` one's, whose callers aren't all seen, grows as before.
+// `pub` one's, whose callers aren't all seen, is asked of each value it's
+// given: unknown where its hint meets JS's own iterator, which knows none,
+// a string's `chars().skip(n)`'s `drop(n)`, kept of rust-js's own (#1251).
 test("capacity() of a Vec generic code grew by a hint JS lost throws, naming #1180", async () => {
   const dir = fixture("capacity-generic-hint-lost");
   writeFileSync(
@@ -1347,6 +1349,29 @@ pub fn grow_any<I: Iterator<Item = char>>(v: &mut Vec<char>, it: I) {
 
 const TEXT: &str = "the quick brown fox jumps over the lazy dog";
 
+struct Odds(u32);
+
+impl Iterator for Odds {
+    type Item = char;
+
+    fn next(&mut self) -> Option<char> {
+        self.0 += 2;
+        (self.0 < 40).then_some('o')
+    }
+}
+
+pub fn any_own() -> usize {
+    let mut v = Vec::new();
+    grow_any(&mut v, Odds(0));
+    v.capacity()
+}
+
+pub fn any_skipped() -> usize {
+    let mut v = Vec::new();
+    grow_any(&mut v, TEXT.chars().skip(5));
+    v.capacity()
+}
+
 pub fn any_counted() -> usize {
     let mut v = Vec::new();
     grow_any(&mut v, ('a'..='z').filter(|c| *c != 'q'));
@@ -1398,8 +1423,8 @@ pub fn never_grown() -> usize {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const lib = await import(join(dir, "lib.js"));
-  for (const f of [lib.charsSkipped, lib.skippedHere, lib.vecSkipped]) {
+  for (const f of [lib.charsSkipped, lib.skippedHere, lib.vecSkipped, lib.anySkipped]) {
     expect(() => f()).toThrow("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep");
   }
-  expect([lib.range(), lib.filtered(), lib.roomy(), lib.neverGrown(), lib.anyCounted(), lib.ownMapped()]).toEqual([40, 16, 100, 1, 32, 5]);
+  expect([lib.range(), lib.filtered(), lib.roomy(), lib.neverGrown(), lib.anyCounted(), lib.ownMapped(), lib.anyOwn()]).toEqual([40, 16, 100, 1, 32, 5, 32]);
 });

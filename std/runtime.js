@@ -11419,8 +11419,10 @@ export function $shuntGrowth(it, size) {
 // hint asked never, its capacity left unknown; where the hint is the
 // crate's own, `own`, whose asking is seen, an error naming #1180. Of
 // generic code whose callers may give an iterator whose JS hint isn't
-// std's, `lost`, its capacity unknown once it grows (#1180's (3)).
-export function $grownBy(v, items, size, deque = false, drop, own = false, lost = false) {
+// std's, `lost`, its capacity unknown once it grows (#1180's (3)); of one
+// whose callers aren't all seen, `byValue`, so where what it's given is
+// JS's own iterator, whose hint is none (#1251).
+export function $grownBy(v, items, size, deque = false, drop, own = false, lost = false, byValue = false) {
   // An array given whole, generic code's, as its `IntoIter`, whose hint is
   // exact (#1180).
   const it = Array.isArray(items) ? $iter(items) : items[Symbol.iterator]();
@@ -11432,8 +11434,12 @@ export function $grownBy(v, items, size, deque = false, drop, own = false, lost 
   // it grows as its JS hint says, so a hint that's the crate's own is asked
   // as std asks it (#1180's (3)).
   let asked = false;
+  // Of generic code whose callers aren't all seen, a library's `pub`
+  // function's, `byValue`: lost where a hint it asks meets JS's own
+  // iterator, which knows none (`$hintAsked`, #1251).
+  let unkept = lost;
   const ended = () => {
-    if (lost && asked) $untracked(v);
+    if (unkept && asked) $untracked(v);
   };
   const steps = new $Steps(
     () => {
@@ -11452,7 +11458,8 @@ export function $grownBy(v, items, size, deque = false, drop, own = false, lost 
         asked = true;
         $unwinds(
           () => {
-            const [lower] = $sizeHint(it);
+            const [[lower], known] = byValue ? $hintAsked(it) : [$sizeHint(it), true];
+            unkept ||= !known;
             const additional = Math.min(lower + 1, max);
             if (capacity - v.length < additional) {
               if (v.length + additional > max) throw new Error("capacity overflow");
@@ -14662,7 +14669,30 @@ export function $sizeHint(it, iterator) {
   // it is (ADR 0411).
   if (typeof it.of?.next === "function") return $sizeHint(it.of);
   const left = Array.isArray(it.items) ? it.end - it.at : undefined;
-  return left === undefined ? [0, undefined] : [left, left];
+  if (left !== undefined) return [left, left];
+  // Of a form of rust-js's own, `$Steps`, std's default, none known; of
+  // JS's own iterator, a string's or an array's `drop(n)`, which knows no
+  // hint, the same, but recorded, so a `Vec` std grows by it is known not
+  // to be grown as std's is (`$hintAsked`, #1251).
+  if (!(it instanceof $Steps)) $hintUnknown = true;
+  return [0, undefined];
+}
+
+// Whether a hint asked met JS's own iterator, which knows none
+// (`$sizeHint`), since `$hintAsked` began asking.
+export let $hintUnknown = false;
+
+// `$sizeHint(it)`, and whether what it asked knew its hint, each form of
+// rust-js's own, `$Steps`, not JS's own iterator, whose hint is none
+// whatever std's is (#1251). What an outer ask had met is its own again
+// after; one that throws, a panic, leaves it, which the next ask resets.
+export function $hintAsked(it) {
+  const outer = $hintUnknown;
+  $hintUnknown = false;
+  const hint = $sizeHint(it);
+  const known = !$hintUnknown;
+  $hintUnknown = outer;
+  return [hint, known];
 }
 
 // Std's hint of an adapter that may give fewer than its source, none at

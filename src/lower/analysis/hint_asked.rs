@@ -45,6 +45,11 @@ pub(in crate::lower) struct Hinted<'tcx> {
     /// it grows, which `capacity()` refuses (#1180's (3)). Where the type
     /// is known, the extend is refused at compile time instead.
     pub(in crate::lower) lost: IndexSet<(DefId, Ty<'tcx>)>,
+    /// Of those whose callers can't all be seen, a library's `pub`
+    /// function's, those asked of each value it's given as it grows: lost
+    /// where its hint meets JS's own iterator, which knows none
+    /// (`$hintAsked`, #1251).
+    pub(in crate::lower) by_value: IndexSet<(DefId, Ty<'tcx>)>,
 }
 
 /// What `all_bodies` ask the hint of, through generic code and libraries.
@@ -108,18 +113,20 @@ pub(super) fn of_crate<'tcx>(
     let callers =
         (!of_params.is_empty() || !grown.is_empty()).then(|| crate::lower::instances::callers_of(tcx, all_bodies));
     // Each `Vec` generic code grows by what one of its callers gives whose
-    // JS hint's lower bound isn't std's (#1180's (3)). Not where callers
-    // can't be seen, a library's `pub` function's, whose consumers' values
-    // grow it as before: lost, every one of its `extend`s would be, and
-    // what's then extended again by the crate's own hint would throw.
+    // JS hint's lower bound isn't std's (#1180's (3)). Where callers can't
+    // be seen, a library's `pub` function's, asked of each value its
+    // consumers give, as it grows (#1251): lost by its type, every one of
+    // its `extend`s would be, and what's then extended again by the
+    // crate's own hint would throw.
     if let Some(callers) = &callers {
         for (owner, iter_ty) in grown {
-            let lost = match crate::lower::instances::instances_of(tcx, callers, iter_ty, owner) {
-                Some(instances) => (instances.into_iter()).any(|instance| !recognition.given_growth_kept(instance)),
-                None => false,
-            };
-            if lost {
-                asked.hinted.lost.insert((owner, iter_ty));
+            match crate::lower::instances::instances_of(tcx, callers, iter_ty, owner) {
+                Some(instances) => {
+                    if (instances.into_iter()).any(|instance| !recognition.given_growth_kept(instance)) {
+                        asked.hinted.lost.insert((owner, iter_ty));
+                    }
+                }
+                None => _ = asked.hinted.by_value.insert((owner, iter_ty)),
             }
         }
     }

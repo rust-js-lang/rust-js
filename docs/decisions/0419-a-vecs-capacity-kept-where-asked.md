@@ -311,8 +311,21 @@ changed, so where JS can't keep std's capacity, `capacity()` refuses.
 against native Rust's numbers.
 
 Where callers can't be seen, as a library's `pub` function's can't, the
-site grows as before. If every such site were lost, each library's generic
-`extend` would be, and a `Vec` then extended again by the crate's own hint
-would throw at the `extend`, where native runs. So what a consumer gives a
-library's generic `extend`, `chars().skip(n)`, stays silent. #1180 lists it
-beside (5), a `Vec` a library that keeps no capacities grew.
+site isn't lost by its type. Each library's generic `extend` would be, and
+a `Vec` then extended again by the crate's own hint would throw at the
+`extend`, where native runs.
+
+Instead such a site is asked of each value it's given (#1251,
+`Hinted::by_value`), as it grows: `$grownBy(.., byValue)` asks its hint
+through `$hintAsked`. That records whether the hint met JS's own iterator,
+which knows none: a string's or an array's `drop(n)`, or a slice's `split`
+given as JS's array iterator. Every form of rust-js's own is a `$Steps`
+whose hint is std's, its default `(0, None)` where it keeps none. Where
+the hint met JS's own, the `Vec` is lost as above. So a consumer's
+`chars().skip(5)` given to a library's `pub fn grow_any<I>(..)` throws at
+`capacity()`, while the crate's own iterator, a range, a filter or a bare
+`chars()` keep std's. The evidence is the value's own, with no flow and
+no second owner of what a hint is.
+
+Still silent of #1180: (5), a `Vec` a library that keeps no capacities
+grew.
