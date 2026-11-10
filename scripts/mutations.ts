@@ -346,8 +346,9 @@ async function since(base: string): Promise<{ from: string; files: string[]; cha
 // the crate, remade for each mutation, and one target, so only rust-js is
 // built again.
 const work = join(root, "target", "mutants");
-// And `std/`, whose manifest the compiler builds in (ADR 0561).
-const crateFiles = ["Cargo.toml", "Cargo.lock", "build.rs", "rust-toolchain.toml", "src", "std"];
+// And `std/`, whose manifest the compiler builds in (ADR 0561), and
+// `vendor/`, the crates Cargo.toml patches in by path (ADR 1121).
+const crateFiles = ["Cargo.toml", "Cargo.lock", "build.rs", "rust-toolchain.toml", "src", "std", "vendor"];
 const buildTimeout = 20 * 60_000;
 const testTimeout = 20 * 60_000;
 
