@@ -120,13 +120,15 @@ export const browsers = ["browser", "next", "playground", "pilot", "vite", "weba
  * push's (ADR 1030): what the nightly runs in full anyway, tidy's stages,
  * the iterator forms, the corpus compiled again (#866), generated programs
  * and the declarations' generated callers (ADR 1091); the release's
- * packaging, which
- * qualification runs too; and the ratchets, React's releases and the
+ * packaging, which qualification runs too; and React's releases and the
  * harness's own checks. Each is CPU a push's corpus waits on, guards no
  * mutation or a few, and failed none of the 80 red checks before it was
- * moved: a mutation that names one still runs it. And the iterator
- * matrix, whose slice a check whose change is the iterators' code runs
- * on its own (check.yml's `iterators`, scripts/iteratorSlice.ts, ADR 1090). */
+ * moved: a mutation that names one still runs it. Never what a change can
+ * leave untrue unseen, as the guide's limitations and the bindings'
+ * coverage ratchets, which plain `check:fast` and each push run (ADR 1030,
+ * amended). And the iterator matrix, whose slice a check whose change is
+ * the iterators' code runs on its own (check.yml's `iterators`,
+ * scripts/iteratorSlice.ts, ADR 1090). */
 export const nightly = [
   "tidy-stages",
   "getter-reads",
@@ -148,14 +150,9 @@ export const nightly = [
   "registry-crates",
   "compat-versions",
   "react-versions",
-  "next-coverage",
-  "react-coverage",
-  "webapi-coverage",
-  "node-coverage",
   "editor-check",
   "harness",
   "history",
-  "limitations",
 ].map((name) => `test/${name}.test.ts`);
 
 /** The suites plain `check:fast` runs of a change, each file a job of its
@@ -181,8 +178,16 @@ export const plainSuites: { name: string; starts: string[]; when?: "shared" | "j
     name: "bindings",
     starts: ["bindings.test.ts", "bindings-require.test.ts", "js-builtins.test.ts", "js-errors.test.ts", "node-bindings.test.ts", "webapi-bindings.test.ts"],
   },
+  // The bindings crates' coverage ratchets, which a binding added or taken
+  // out changes: when only the nightly ran them, a change that did was
+  // found up to a day later (ADR 1030, amended). About 15 s of CPU.
+  { name: "bindings' coverage", starts: ["next-coverage", "react-coverage", "webapi-coverage", "node-coverage"] },
   { name: "JSX", starts: ["jsx"], when: "jsx" },
-  { name: "guide, packages, readability", starts: ["docs.test.ts", "std-package.test.ts", "runtime-package.test.ts", "readability.test.ts"], when: "shared" },
+  // The guide's limitations, each compiled to see it's still refused: a
+  // lowering that lifts one, or a limitation whose example doesn't compile,
+  // left main red a day unseen when only the nightly ran it (5096475be's,
+  // ADR 1030, amended). About 7 s of CPU.
+  { name: "guide, packages, readability", starts: ["docs.test.ts", "limitations.test.ts", "std-package.test.ts", "runtime-package.test.ts", "readability.test.ts"], when: "shared" },
   { name: "React's ports", starts: ["port-"], when: "shared" },
   { name: "snapshots", starts: ["snapshots.test.ts"], when: "shared" },
   { name: "diagnostics", starts: ["diagnostics.test.ts"], when: "shared" },

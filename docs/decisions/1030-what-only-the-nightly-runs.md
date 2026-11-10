@@ -52,3 +52,30 @@ which `check.yml` runs when the nightly calls it, puts them back in.
 - A file belongs on the list only if its whole run is the nightly's
   already, or it guards few mutations and has not failed a check. A file
   that starts catching pushes' regressions comes off it.
+
+## Amendment: what a change can leave untrue unseen (2026-11-10)
+
+Of the list's files, two kinds keep a record that a change makes untrue
+without failing anything the change runs: `test/limitations.test.ts`,
+each of the guide's refusals compiled to see it's still refused, which a
+lowering that lifts one, or a new limitation whose example doesn't
+compile, makes red; and the bindings' coverage ratchets, `next-`,
+`react-`, `webapi-` and `node-coverage`, which a binding added or taken
+out makes red until blessed. On the list, such a change was found by the
+next nightly: 5096475be's limitation, whose example used a `groups` it
+never declared, was red until then.
+
+They're off the list. Each push's suite runs them, and plain
+`check:fast` runs `limitations` where the compiler or std changes, about
+7 s of CPU, and the ratchets on every change, about 15 s. The rule
+above is narrowed: **a file whose record a change can leave untrue isn't
+on the list**, however rarely it has failed. The 23 left are nets the
+nightly runs in full (tidy's stages, the read cases, the iterator forms
+and matrix, determinism, the `&mut` and `None` matrices, the object
+model, the declarations' callers, fuzz's seeds, match trees), what
+qualification runs again (the release's packaging, `create`, the npm and
+registry crates, `stable`, `crates-io`, `compat-versions`), React's
+releases, and the tooling's own checks (`editor-check`, `harness`,
+`history`): a failure of the first is a wrong answer the net finds, which
+the nightly's whole run is for, and the rest check what a lowering or a
+binding doesn't change.

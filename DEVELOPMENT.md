@@ -75,7 +75,7 @@ branch's one running, and no branch's run touches another's.
 | Reading the generated JS and snapshot diffs | yes | the bless patch, read before it's committed | |
 | `bun run typecheck`, `fmt:check`, clippy, `cargo test` | in `check:fast --all` | **lint** job | |
 | `bun run test`, the whole suite but the nightly's files | in `check:fast --all`, the browsers' files after the rest | **test** job, or shards | with them, `--nightly` |
-| The files only the nightly runs, `nightly` in `scripts/shard.ts` (ADR 1030): the release's packaging, the coverage ratchets, React's releases, the editor's check, the harness's own, build history | `bun test test/<file>.test.ts` when a change touches what one checks | | in the suite |
+| The files only the nightly runs, `nightly` in `scripts/shard.ts` (ADR 1030): the release's packaging, React's releases, the editor's check, the harness's own, build history | `bun test test/<file>.test.ts` when a change touches what one checks | | in the suite |
 | WASM compiler parity | | **wasm** job | |
 | rustc's test suite and its lists | | **rustc** jobs, 6 shards | |
 | The Vite example's build | in `check:fast --all` | **examples** job | |

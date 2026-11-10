@@ -29,7 +29,7 @@ import { jobs, leftToCi, readabilityPaths, touchesReadability } from "../scripts
 import { changedCases, runs, touchesCrates, touchesPort } from "../scripts/iteratorSlice";
 import { loadScale } from "../scripts/timing";
 import { jobs as localNightly } from "../scripts/nightly";
-import { caseParts, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, pooledParts, shard } from "../scripts/shard";
+import { caseParts, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, plainSuiteFiles, pooledParts, shard } from "../scripts/shard";
 import { fixture, root } from "./support";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
@@ -107,6 +107,21 @@ test("the files only the nightly runs are test files, which its check runs", () 
   const suites = check.split("\n").filter((line) => /bun (run test|scripts\/test\.ts) --shard=/.test(line));
   expect(suites).toHaveLength(2);
   for (const line of suites) expect(line).toContain("${{ inputs.nightly && ' --nightly' || '' }}");
+});
+
+// What a change can leave untrue unseen runs where the change is made, not
+// a night later (ADR 1030, amended): the guide's limitations, which a
+// lowering that lifts one or an example that doesn't compile makes red
+// (5096475be's), of a change to the compiler or std; the bindings'
+// coverage ratchets, which a binding added makes red, of every change.
+test("the guide's limitations and the coverage ratchets run each push and in plain check:fast", () => {
+  const recorded: Record<string, "shared" | undefined> = { "test/limitations.test.ts": "shared", "test/next-coverage.test.ts": undefined, "test/react-coverage.test.ts": undefined, "test/webapi-coverage.test.ts": undefined, "test/node-coverage.test.ts": undefined };
+  const tests = readdirSync(join(root, "test")).map((file) => `test/${file}`);
+  const suites = plainSuiteFiles(tests);
+  for (const [file, when] of Object.entries(recorded)) {
+    expect(nightly).not.toContain(file);
+    expect(suites.filter((suite) => suite.files.includes(file)).map((suite) => suite.when)).toEqual([when]);
+  }
 });
 
 // `check:fast --all`, the check before a push, runs what a push's check
