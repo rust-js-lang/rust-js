@@ -766,9 +766,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Expr::call_helper("$filterEnds", [vec![source_value], given].concat()));
             }
         }
+        let why = self.back_refused_because(ty);
         Err(self.unsupported(
             span,
-            &format!("a `{ty}` as a `DoubleEndedIterator`, which rust-js can't step from its back"),
+            &format!("a `{ty}` as a `DoubleEndedIterator`, which rust-js can't step from its back{why}"),
         ))
     }
 

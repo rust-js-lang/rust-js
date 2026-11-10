@@ -111,8 +111,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a filter or a map a type holds, asked to be double-ended by the call that asks it of that type, isn't made knowing its back",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                        let made = back_stepped_adapter(tcx, recognition, held, given, &drops);\n",
-    replace: "                        let made = back_stepped_adapter(tcx, recognition, held, given, &drops).filter(|_| false);\n",
+    find: "                            .filter(|&made| !holds_compiled(tcx, made, &compiled));\n",
+    replace: "                            .filter(|_| false);\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -404,8 +404,8 @@ export const mutations: Mutation[] = [
     name: "library-impl-backs-unmade",
     breaks: "a library's public function that gives a filter behind an `impl DoubleEndedIterator` makes JS's own `.filter`, and its consumer's `next_back` throws `it.back is not a function` (#1024)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                if asked {\n                    typed.extend(given_behind_an_impl(\n",
-    replace: "                if false {\n                    typed.extend(given_behind_an_impl(\n",
+    find: "                if asked {\n                    typed.extend(given_behind_an_impl(tcx, recognition, hidden, &drops));\n",
+    replace: "                if false {\n                    typed.extend(given_behind_an_impl(tcx, recognition, hidden, &drops));\n",
     tests: ["test/crates.test.ts", "-t", "two crates: iterators_stepped_from_their_back_across_crates"],
   },
   {
@@ -499,5 +499,13 @@ export const mutations: Mutation[] = [
     find: "    if !given && chained_sources(tcx, adapter).is_some() {\n",
     replace: "    if false && !given && chained_sources(tcx, adapter).is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_made_here_stepped_from_its_back.rs$"],
+  },
+  {
+    name: "compiled-behind-an-impl-made-knowing",
+    breaks: "std's struct of an adapter a function gives behind an `impl`, `(0..n).rev()`, is taken for a type made knowing its back wherever it's made, so `(1..6).rev()` in `main` is made so too and its `last()` reads what isn't there (#1226, the user's decision (A))",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "        .filter(|&made| !holds_compiled(tcx, made, &compiled))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^impl_trait_adapter_is_its_value.rs$"],
   },
 ];

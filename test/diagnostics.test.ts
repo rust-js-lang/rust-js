@@ -103,6 +103,10 @@ for (const [name, source, message, crate] of [
   ["a Vec collected of a slice's split where a capacity is read", "pub fn f(v: &[u32]) -> usize {\n    let w: Vec<&[u32]> = v.split(|x| *x == 0).collect();\n    w.capacity()\n}", "whose lower bound JS's doesn't have"],
   // A chain's exact-sized part made of JS's own adapters, which know no hint (#1200).
   ["a Vec collected of a chain of a skip where a capacity is read", "pub fn f(a: &[u32]) -> usize {\n    let v: Vec<&u32> = a.iter().skip(1).chain(a.iter().filter(|x| **x > 9)).collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
+  // Std's struct of a map a function gives behind an `impl`, flattened and
+  // stepped from its back: its value's form, as a named type's, refused till
+  // std's compiled `next_back` steps it (#1226, the user's decision (A); #1235).
+  ["a flatten of a function's impl stepped from its back", "fn doubled(g: &Vec<i32>) -> impl DoubleEndedIterator<Item = i32> + '_ {\n    g.iter().map(|x| x * 2)\n}\npub fn f(groups: &[Vec<i32>]) -> Vec<i32> {\n    groups.iter().flat_map(doubled).rev().collect()\n}", "which holds std's struct of an adapter a function gives (#1235)"],
   // A set's merge, whose hint's lower bound its state gives as it's stepped (#1215).
   ["a Vec collected of a set's difference where a capacity is read", "use std::collections::BTreeSet;\npub fn f(a: &BTreeSet<u32>, b: &BTreeSet<u32>) -> usize {\n    let v: Vec<&u32> = a.difference(b).collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
   ["a bound's extend of a Vec of a type parameter's items where a capacity is read", "fn fill<C: Extend<T>, T>(c: &mut C, x: T) {\n    c.extend(Some(x));\n}\npub fn f<T>(x: T) -> usize {\n    let mut v = Vec::new();\n    fill(&mut v, x);\n    v.capacity()\n}", "whose items' size std grows it by, a type parameter's"],

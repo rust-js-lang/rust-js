@@ -64,4 +64,12 @@ export const mutations: Mutation[] = [
     replace: "        self.krate.chars_whole\n            || false && self\n",
     tests: ["test/lowering-strings.test.ts", "-t", "each one thing more asked of a chars"],
   },
+  {
+    name: "back-refusal-names-no-follow-up",
+    breaks: "a refusal to step from its back what holds std's struct of an adapter a function gives doesn't say so, nor its follow-up (#1235)",
+    file: "src/lower/iterators/back_facts.rs",
+    find: "            true => \", which holds std's struct of an adapter a function gives (#1235)\",\n",
+    replace: "            true => \"\",\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a flatten of a function's impl stepped from its back"],
+  },
 ];

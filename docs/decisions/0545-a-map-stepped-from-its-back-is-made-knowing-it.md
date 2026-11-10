@@ -1607,3 +1607,34 @@ without it. With #1118's rule taken out too (`chain-made-here-backless`),
 the latter: #1118's is the one answer, and the `unread` test is removed
 with its mutation. `cloned_chain` stays, as a chain cloned apart that's
 asked beneath an adapter is still its own.
+
+## Amended (2026-11-10, #1226): what an `impl` hides is its value's form, the user's decision (A)
+
+A function that gives a std adapter behind an `impl DoubleEndedIterator`,
+`fn doubled(g) -> impl DoubleEndedIterator { g.iter().map(|x| x * 2) }`,
+makes it std's compiled struct, as one held is (ADR 0871). Yet the type it
+hid went into the crate's types made knowing their back (`back_stepped`'s
+`typed`), and each of its callers' code read every value of it as the
+knowing JS form. `groups.iter().flat_map(doubled).rev()` threw `it.back is
+not a function`. `down(4).rfold(..)` of `fn down(n) -> impl
+DoubleEndedIterator { (0..n).rev() }` made the unrelated `(1..6u32).rev()`
+in `main` the knowing form, whose `last()` then read what wasn't there.
+
+**User decision (A): value-owned, compiled wins.** Case C
+([0262](0262-when-rust-and-js-disagree.md)): results changed.
+
+- **Std's compiled struct a function makes behind an `impl` isn't a type
+  made knowing its back** (`compiled_behind_an_impl`): `HELD_COMPILED`'s of
+  this build, of what the `impl` hides in the function's own terms, so not
+  its type parameters' values, which its callers make. Nor is an adapter
+  made elsewhere that holds one (`holds_compiled`). Its form is its value's,
+  as a named type's is. What steps such a value from its back is refused
+  where a named one is, naming #1235, which lifts it through std's compiled
+  `next_back`. An adapter the crate's makers do make knowing, `Filter` in
+  the default build, or a `map` made in place of an `impl FnMut`, is as
+  before.
+- What a generic function gives back of its own type parameter behind an
+  `impl` is the value its caller gave it, 23c0ebf42's (#1230).
+
+`test/corpus/impl_trait_adapter_is_its_value.rs` holds it against native
+Rust in both builds. `test/diagnostics.test.ts` holds the refusal.
