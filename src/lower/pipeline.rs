@@ -1471,6 +1471,7 @@ pub fn lower_crate<'tcx>(
                         gives_argument: &gives_argument,
                         displays_value: &displays_value,
                         built: cell_borrows.pointers().built().collect(),
+                        cloned_closures: closure_facts.clones(),
                         owned_by_return: self_handles.owned_by_return(),
                         nulled_params: &nulled_params.found(),
                     },

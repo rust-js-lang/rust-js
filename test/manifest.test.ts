@@ -82,6 +82,7 @@ test("library manifests validate their items and remap fingerprinted inputs", ()
     ref_cells: { counted: [{ of: "ab12", args: [{}] }], unchecked: [{}] },
     fields: [{ key: "gh78", facts: ["quiet"] }, { key: "ij90", facts: ["rust_functions"] }],
     built: ["kl12"], associated: [{ key: "mn34", facts: ["Size"] }],
+    cloned_closures: [{ key: "op56", apart: true }, { key: "qr78", apart: false }],
   };
   const value = { ...manifest, library };
   expect(parseManifest(JSON.stringify(value))).toEqual(value);
@@ -96,7 +97,8 @@ test("library manifests validate their items and remap fingerprinted inputs", ()
     { ...library, ref_cells: [] }, { ...library, ref_cells: { handed: {} } }, { ...library, ref_cells: { boxed: [{ of: 1 }] } },
     { ...library, fields: {} }, { ...library, fields: [{ key: 1 }] }, { ...library, fields: [{ key: "gh78", facts: ["loud"] }] }, { ...library, built: "kl12" }, { ...library, built: [1] },
     { ...library, items: [{ ...item, nulled_params: ["0"] }] }, { ...library, items: [{ ...item, nulled_params: 0 }] },
-    { ...library, associated: {} }, { ...library, associated: [{ key: "mn34", facts: "Size" }] }]) {
+    { ...library, associated: {} }, { ...library, associated: [{ key: "mn34", facts: "Size" }] },
+    { ...library, cloned_closures: {} }, { ...library, cloned_closures: [{ key: "op56" }] }, { ...library, cloned_closures: [{ key: 1, apart: true }] }]) {
     expect(() => parseManifest(JSON.stringify({ ...manifest, library: invalid }))).toThrow("library contract");
   }
 });

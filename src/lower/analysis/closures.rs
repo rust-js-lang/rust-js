@@ -150,6 +150,23 @@ impl<'tcx> ClosureFacts<'tcx> {
         self.cloned.iter().copied().filter(|&id| !shares(id)).collect()
     }
 
+    /// Whether a clone of the closure `closure` is the closure itself, as
+    /// the crate decided of each it clones (`cloned`, ADR 0522): `None` of
+    /// one it doesn't, whose clone it can't make.
+    pub(in crate::lower) fn clone_is_itself(&self, closure: DefId) -> Option<bool> {
+        (self.cloned.contains(&closure)).then(|| !self.cloned_apart.contains(&closure))
+    }
+
+    /// Each closure the crate clones, or, a library, gives a consumer to
+    /// clone behind an `impl .. + Clone`, with whether it's cloned apart:
+    /// of its own, what its library's contract says, which its consumers'
+    /// clones of each ask (`Foreign::closure_cloned_apart`, #1202).
+    pub(in crate::lower) fn clones(&self) -> Vec<(DefId, bool)> {
+        (self.cloned.iter())
+            .map(|&id| (id, self.cloned_apart.contains(&id)))
+            .collect()
+    }
+
     /// Whether the closure `closure` carries its own drop, `$dropping`'s:
     /// one its maker gives back, the type its `impl Fn` hides (ADR 0484),
     /// one made a `dyn Fn` (ADR 0521), or one cloned apart (ADR 0522),

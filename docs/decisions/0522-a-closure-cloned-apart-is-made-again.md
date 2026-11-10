@@ -117,3 +117,41 @@ is. This is a crash, not a choice between Rust's and JS's behavior, so
 ADR 0262's table doesn't apply. Held by the crate pair
 `library_opaque_clone_of_a_borrow` and the mutation
 `given-out-clone-bound-regions`.
+
+## Amendment: a library's closure is cloned as its library made it (#1202)
+
+A consumer's clone of a library's `impl Iterator + Clone`,
+`v.into_iter().map(|s| s.len())`, threw `f[$cloneKey] is not a function`.
+The two crates decided the one closure apart. The library sees what its
+closure captures, nothing, and made it a plain function, its own clone.
+The consumer can't see another crate's captures, so `clone_shares` took
+a closure of another crate's as writing unless rustc infers it `Fn`;
+rustc infers this one `FnMut`, the bound `map` gives it. It cloned it
+apart, `$clone(f)`, of a function made with no clone.
+
+The crate that makes a closure decides how it's cloned, and its consumers
+ask it: a library's contract lists each closure it clones, or gives a
+consumer to clone, with whether it's cloned apart, `cloned_closures`
+(library ABI 26), and a consumer's `ClosureFacts` takes that answer for a
+closure its library decided. One its library didn't decide, a closure
+the consumer makes itself from std's or a library's MIR (ADR 0914), is
+decided as before. `clone_value` takes the crate's decision of each
+closure it clones, `ClosureFacts::clone_is_itself`, and no longer asks
+`clone_shares` again, which of a library's closure answers otherwise; it
+asks it only of one the analysis didn't see cloned, and refuses where a
+clone could tell.
+
+`given_out_clone` now reveals what a library's `impl .. + Clone` hides
+through each `impl Trait` it holds in turn. A public function that
+returns a private one's `impl Iterator + Clone` left that one's closure
+undecided, a plain function its consumer then cloned apart.
+
+A library's contract is read in one place, `Exports::read`, for a
+manifest and for `@rust-js/std` alike, with each of its fields named, so
+a fact one reading takes the other takes too.
+
+ADR 0262's case: results change (a throw), so Rust's: a clone of the
+closure behaves as native Rust's. Held by the crate pair
+`library_closures_cloned_as_made`, of a closure its library made plain
+and three it cloned apart, one hidden behind a private function's
+`impl Iterator + Clone`, against native Rust, and by its mutations.

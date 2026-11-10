@@ -75,4 +75,13 @@ export const mutations: Mutation[] = [
     replace: "            None => false,\n",
     tests: ["test/diagnostics.test.ts", "-t", "pub generic chain stepped from its back"],
   },
+  {
+    name: "given-out-clone-unrevealed-in-turn",
+    breaks:
+      "what a library's `impl Iterator + Clone` hides is left as another function's `impl Iterator + Clone`, so the closure that one hides is never decided, made a plain function, and its consumer's clone throws (#1202)",
+    file: "src/lower/analysis/clones.rs",
+    find: "                    (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(hidden)))\n                        .unwrap_or(hidden),\n",
+    replace: "                    hidden,\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+  },
 ];

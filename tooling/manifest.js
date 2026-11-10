@@ -3,7 +3,7 @@
 // The library ABI a contract is of: `src/library.rs`' `VERSION`, its
 // authority, mirrored here across the compiler's boundary; every library
 // a test builds and reads holds the two equal.
-export const LIBRARY_ABI = 25;
+export const LIBRARY_ABI = 26;
 
 function validCompiler(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -108,7 +108,12 @@ export function parseManifest(text) {
           && library.associated.every(associated => object(associated)
             && typeof associated.key === "string" && strings(associated.facts)))
         // The structs its code makes values of, by key (ADR 1022, amended).
-        || !(library.built === undefined || strings(library.built))) {
+        || !(library.built === undefined || strings(library.built))
+        // Each closure it clones, or gives to clone, by key, and whether
+        // it's cloned apart (ADR 0522, amended; #1202).
+        || !(library.cloned_closures === undefined || Array.isArray(library.cloned_closures)
+          && library.cloned_closures.every(closure => object(closure)
+            && typeof closure.key === "string" && typeof closure.apart === "boolean"))) {
       throw new Error(`Invalid rust-js library contract; expected library ABI ${LIBRARY_ABI}`);
     }
   }

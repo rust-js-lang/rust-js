@@ -273,4 +273,20 @@ export const mutations: Mutation[] = [
     replace: "        return Vec::new();\n",
     tests: ["test/rust-js-test-programs.test.ts", "-t", "boxes as one that drops nothing"],
   },
+  {
+    name: "closure-clone-decided-itself",
+    breaks: "every closure the crate clones is taken to be its own clone, so a clone of a library's `running` iterator's closure shares the total it writes (#1202)",
+    file: "src/lower/analysis/closures.rs",
+    find: "        (self.cloned.contains(&closure)).then(|| !self.cloned_apart.contains(&closure))\n",
+    replace: "        (self.cloned.contains(&closure)).then_some(true)\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+  },
+  {
+    name: "library-closures-said-shared",
+    breaks: "a library's contract says each closure it clones, or gives to clone, is its own clone, so its consumer's clone of `counter()` shares its count (#1202)",
+    file: "src/lower/analysis/closures.rs",
+    find: "            .map(|&id| (id, self.cloned_apart.contains(&id)))\n",
+    replace: "            .map(|&id| (id, false))\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+  },
 ];

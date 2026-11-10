@@ -128,6 +128,10 @@ fn given_out_clone<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Vec<T
         let output = tcx
             .instantiate_bound_regions_with_erased(tcx.fn_sig(id).instantiate_identity().skip_normalization())
             .output();
+        // What it hides revealed through each `impl Trait` it holds in turn,
+        // a private function's `impl Iterator + Clone`, whose closure a
+        // clone clones too (#1202).
+        let typing_env = ty::TypingEnv::post_analysis(tcx, id);
         for part in output.walk().filter_map(|part| part.as_type()) {
             if let ty::Alias(_, alias) = *part.kind()
                 && let ty::Opaque { def_id: opaque } = alias.kind
@@ -139,7 +143,11 @@ fn given_out_clone<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Vec<T
                 .filter_map(|clause| clause.as_trait_clause())
                 .any(|p| is_clone(tcx, p.def_id()))
             {
-                given.push(tcx.type_of(opaque).instantiate(tcx, alias.args).skip_normalization());
+                let hidden = tcx.type_of(opaque).instantiate(tcx, alias.args).skip_normalization();
+                given.push(
+                    (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(hidden)))
+                        .unwrap_or(hidden),
+                );
             }
         }
     }

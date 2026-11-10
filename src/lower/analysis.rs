@@ -1081,8 +1081,14 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         super::drops::drop_runs(recognition, (library, &closure_facts), &counted, item)
     });
     // A closure cloned apart, made by a function of what it holds, where a
-    // clone of it isn't the closure itself (ADR 0522).
+    // clone of it isn't the closure itself (ADR 0522). Of a library's, as
+    // its library decided, which made it so, where it did (#1202): its
+    // captures are its own compile's to see, and rustc infers one `FnMut`
+    // by the bound it's given to, `map(|s| s.len())`.
     let cloned_apart = closure_facts.find_cloned_apart(|id| {
+        if let Some(apart) = foreign.closure_cloned_apart(id) {
+            return !apart;
+        }
         let ty = tcx.type_of(id).instantiate_identity().skip_normalization();
         let typing_env = ty::TypingEnv::post_analysis(tcx, id);
         closures::clone_shares(tcx, typing_env, ty, |t| {

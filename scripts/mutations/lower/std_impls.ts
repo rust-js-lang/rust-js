@@ -555,8 +555,8 @@ export const mutations: Mutation[] = [
     name: "cloned-apart-is-itself",
     breaks: "a clone of a closure cloned apart is the closure itself",
     file: "src/lower/std_impls.rs",
-    find: '                return Ok(Expr::call_helper("$clone", vec![place]));\n',
-    replace: "                return Ok(place);\n",
+    find: '                Some(false) => return Ok(Expr::call_helper("$clone", vec![place])),\n',
+    replace: "                Some(false) => return Ok(place),\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone.rs$"],
   },
   {
@@ -1107,5 +1107,22 @@ export const mutations: Mutation[] = [
     find: "                    || self.recognition().is_str_chars(ty)\n                    || self.recognition().is_char_indices(ty) =>\n",
     replace: "                    || false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
+  },
+  {
+    name: "closure-clone-itself-reasked",
+    breaks:
+      "a clone of a closure the crate decided is itself is asked again of what the crate can see of it, so a library's `map(|s| s.len())`, which rustc infers `FnMut`, is refused (#1202)",
+    file: "src/lower/std_impls.rs",
+    find: "                Some(true) => return Ok(place),\n",
+    replace: "                Some(true) => {}\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+  },
+  {
+    name: "closure-clone-apart-unmade",
+    breaks: "a clone of a closure cloned apart is asked again, so a library's `counter()`, which writes what it took, is refused, or is the closure itself (ADR 0522)",
+    file: "src/lower/std_impls.rs",
+    find: "                Some(false) => return Ok(Expr::call_helper(\"$clone\", vec![place])),\n",
+    replace: "                Some(false) => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_clone.rs$"],
   },
 ];

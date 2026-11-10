@@ -673,4 +673,13 @@ export const mutations: Mutation[] = [
     replace: "    let asks_capacity = vec_uses::asks_capacity(tcx, all_bodies);\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_asks_hint_capacity_unasked.rs$"],
   },
+  {
+    name: "library-closure-clone-undecided",
+    breaks:
+      "a consumer decides of a library's closure itself, not as its library's contract says: `map(|s| s.len())`'s, which rustc infers `FnMut` by `map`'s bound and its library made a plain function, is cloned apart, `$clone(f)`, which throws (#1202)",
+    file: "src/lower/analysis.rs",
+    find: "        if let Some(apart) = foreign.closure_cloned_apart(id) {\n            return !apart;\n        }\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+  },
 ];

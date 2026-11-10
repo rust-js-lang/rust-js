@@ -789,4 +789,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a comment above a binding and a type of no JS"],
   },
+  {
+    name: "library-closure-clones-unsaid",
+    breaks: "a library's contract lists none of its closures, so its consumer decides of each itself, and its `$clone(f)` of one its library made a plain function throws (#1202)",
+    file: "src/lower/pipeline.rs",
+    find: "                        cloned_closures: closure_facts.clones(),\n",
+    replace: "                        cloned_closures: Vec::new(),\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+  },
 ];

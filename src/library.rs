@@ -63,8 +63,12 @@ use std::path::Path;
 /// impls of its trait carry of a std supertrait's associated type of their
 /// `Self`, an `associated` entry's `carrier`, `IteratorItemSize` of
 /// `<Self as Iterator>::Item`, which its defaults compiled over `Self` read
-/// (#990).
-pub const VERSION: u32 = 25;
+/// (#990). 25: a library is known by its crate's name and identity,
+/// `crate_id` (#1130). 26: whether each closure it clones, or gives a
+/// consumer to clone, is cloned apart, `cloned_closures`, which a
+/// consumer's clone of one asks, as its own compile can't see what one
+/// captures (#1202).
+pub const VERSION: u32 = 26;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -458,6 +462,12 @@ pub struct Library {
     /// JS gives of its type.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub built: Vec<String>,
+    /// Each of its closures it clones, or gives a consumer to clone behind
+    /// an `impl .. + Clone`, and whether it's cloned apart, as it made it
+    /// (ADR 0522, amended): a consumer's clone of one is as it made it
+    /// (#1202).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub cloned_closures: Vec<ClonedClosure>,
     /// Each of its structs' fields its consumers read a fact of, by key,
     /// and its facts (ADRs 0863, amended, 0906).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -533,6 +543,16 @@ fn carried_super(associated: &[Associated]) -> IndexMap<String, IndexMap<String,
         }
     }
     by_carrier
+}
+
+/// One of a library's closures it clones, or gives its consumers to clone
+/// behind an `impl .. + Clone`, by rustc's key for it, and whether it's
+/// cloned apart, made by a function of what it holds, `$cloning`'s, or its
+/// clone is itself (ADR 0522, amended; #1202).
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct ClonedClosure {
+    pub key: String,
+    pub apart: bool,
 }
 
 /// One of a library's structs' fields, by rustc's key for it, and what
@@ -691,6 +711,9 @@ pub struct Exports {
     /// The structs its code makes values of, by their keys (ADR 1022,
     /// amended).
     pub built: IndexSet<String>,
+    /// Whether each closure it clones, or gives to clone, is cloned apart,
+    /// by key (ADR 0522, amended; #1202).
+    pub cloned_closures: IndexMap<String, bool>,
     /// What it says of each of its structs' fields, by key (ADR 0906).
     pub fields: IndexMap<String, BTreeSet<FieldFact>>,
     /// The facts its traits' dictionaries carry of each associated type, by
@@ -718,6 +741,109 @@ pub struct Exports {
     /// manifest says, by the specifier a consumer imports it by: what a
     /// glob of the module is `export * from` of (#629).
     pub files: IndexMap<String, std::collections::BTreeSet<String>>,
+}
+
+/// What a library's contract says that its loader reads where each is
+/// imported from: its items, declared types, held bindings, re-exports
+/// and package.
+struct Unread {
+    items: Vec<Item>,
+    types: Vec<DeclaredType>,
+    held: Vec<Held>,
+    reexported: Vec<Reexported>,
+    package: Option<crate::packages::Package>,
+}
+
+impl Exports {
+    /// What `library`'s contract says of it, as its consumers know it: the
+    /// one reading of each of its facts, a manifest's and `@rust-js/std`'s,
+    /// `builtin`, alike, so a fact one reads the other does (#1202); and
+    /// what's left for its loader, `Unread`. Each field of the contract is
+    /// named here, read or left.
+    fn read(library: Library, builtin: Option<&str>) -> (Exports, Unread) {
+        let Library {
+            // Checked by its loader before.
+            version: _,
+            crate_id: _,
+            libraries: _,
+            inputs: _,
+            name,
+            crate_hash,
+            items,
+            impls,
+            keeps_capacity,
+            writes_may_fail,
+            writers_take_options,
+            debug_hex,
+            reads_formatter_options,
+            merges_identities,
+            makes_dropping_anys,
+            makes_dropping_fn_dyns,
+            dictionary_consts,
+            dyns_drop_nothing,
+            held,
+            reexported,
+            counted_rcs,
+            with_this_arguments,
+            changed,
+            ref_cells,
+            identities,
+            keyed,
+            eq_by_address,
+            gives_argument,
+            displays_value,
+            partial_cmp_is_cmp,
+            built,
+            cloned_closures,
+            fields,
+            associated,
+            types,
+            package,
+        } = library;
+        let exports = Exports {
+            name: builtin.map_or(name, str::to_string),
+            crate_hash,
+            builtin: builtin.is_some(),
+            keeps_capacity,
+            writes_may_fail,
+            writers_take_options,
+            debug_hex,
+            reads_formatter_options: reads_formatter_options.into_iter().collect(),
+            merges_identities: merges_identities.into_iter().collect(),
+            makes_dropping_anys,
+            makes_dropping_fn_dyns,
+            dictionary_consts: dictionary_consts.map(|keys| keys.into_iter().collect()),
+            dyns_drop_nothing: dyns_drop_nothing.into_iter().collect(),
+            counted_rcs,
+            with_this_arguments,
+            changed,
+            ref_cells,
+            identities: identities.into_iter().collect(),
+            keyed: keyed.into_iter().collect(),
+            eq_by_address: eq_by_address.into_iter().collect(),
+            gives_argument: gives_argument.into_iter().collect(),
+            displays_value: displays_value.into_iter().collect(),
+            partial_cmp_is_cmp: partial_cmp_is_cmp.into_iter().collect(),
+            built: built.into_iter().collect(),
+            cloned_closures: (cloned_closures.into_iter()).map(|c| (c.key, c.apart)).collect(),
+            fields: fields.into_iter().map(|field| (field.key, field.facts)).collect(),
+            associated: (associated.iter())
+                .filter(|associated| associated.carrier.is_none())
+                .map(|associated| (associated.key.clone(), associated.facts.clone()))
+                .collect(),
+            carried_super: carried_super(&associated),
+            impls: impls.into_iter().collect(),
+            ..Exports::default()
+        };
+        let unread = Unread {
+            items,
+            types,
+            held,
+            reexported,
+            package,
+        };
+        (exports, unread)
+    }
 }
 
 #[derive(Default)]
@@ -768,48 +894,21 @@ impl Dependencies {
                     return Err(format!("dependency artifact changed: {}", artifact.file.display()));
                 }
             }
-            let mut exports = Exports {
-                name: library.name.clone(),
-                crate_hash: library.crate_hash,
-                keeps_capacity: library.keeps_capacity,
-                makes_dropping_anys: library.makes_dropping_anys,
-                makes_dropping_fn_dyns: library.makes_dropping_fn_dyns,
-                dictionary_consts: library.dictionary_consts.map(|keys| keys.into_iter().collect()),
-                dyns_drop_nothing: library.dyns_drop_nothing.into_iter().collect(),
-                writes_may_fail: library.writes_may_fail,
-                writers_take_options: library.writers_take_options,
-                debug_hex: library.debug_hex,
-                reads_formatter_options: library.reads_formatter_options.into_iter().collect(),
-                merges_identities: library.merges_identities.into_iter().collect(),
-                identities: library.identities.into_iter().collect(),
-                keyed: library.keyed.into_iter().collect(),
-                eq_by_address: library.eq_by_address.into_iter().collect(),
-                gives_argument: library.gives_argument.into_iter().collect(),
-                displays_value: library.displays_value.into_iter().collect(),
-                partial_cmp_is_cmp: library.partial_cmp_is_cmp.into_iter().collect(),
-                built: library.built.into_iter().collect(),
-                fields: library
-                    .fields
-                    .into_iter()
-                    .map(|field| (field.key, field.facts))
-                    .collect(),
-                associated: (library.associated.iter())
-                    .filter(|associated| associated.carrier.is_none())
-                    .map(|associated| (associated.key.clone(), associated.facts.clone()))
-                    .collect(),
-                carried_super: carried_super(&library.associated),
-                changed: library.changed,
-                with_this_arguments: library.with_this_arguments,
-                counted_rcs: library.counted_rcs,
-                ref_cells: library.ref_cells,
-                impls: library.impls.into_iter().collect(),
-                ..Exports::default()
-            };
+            let (
+                mut exports,
+                Unread {
+                    items,
+                    types,
+                    held,
+                    reexported,
+                    package,
+                },
+            ) = Exports::read(library, None);
             // Where a module's JS is, from the consumer's: by its package's
             // subpath, where Node finds the package from the crate's JS and
             // its `exports` resolve one to that file (ADR 0770, amended),
             // else its file's path.
-            let package = (library.package.as_ref())
+            let package = (package.as_ref())
                 .filter(|package| crate::packages::installed(dir, &package.name).as_ref() == Some(&package.dir));
             let specifier = |path: &Vec<String>| -> Result<String, String> {
                 let module = (manifest.modules.iter())
@@ -858,7 +957,7 @@ impl Dependencies {
                     exports.files.insert(from, names);
                 }
             }
-            for item in library.items {
+            for item in items {
                 let export = item.exported_as();
                 let rooted = rooted_of(&item.module, &export);
                 let mut imported = Imported {
@@ -878,7 +977,7 @@ impl Dependencies {
                 }
             }
             // A type, where its module's declarations are written.
-            for declared in library.types {
+            for declared in types {
                 let declared_here = (manifest.modules.iter()).any(|m| m.module == declared.module && m.types.is_some());
                 if declared_here {
                     let export = if declared.default {
@@ -893,7 +992,7 @@ impl Dependencies {
                     }
                 }
             }
-            for held in library.held {
+            for held in held {
                 let (from, export) = imported_from(&held.module, held.export)?;
                 let imported = HeldImport {
                     binding: held.binding,
@@ -905,7 +1004,7 @@ impl Dependencies {
                     return Err("duplicate dependency export".into());
                 }
             }
-            for reexported in library.reexported {
+            for reexported in reexported {
                 let imported = (reexported.item, imported_from(&reexported.module, reexported.export)?);
                 if exports
                     .reexported
@@ -947,45 +1046,8 @@ impl Dependencies {
                 library.version
             ));
         }
-        let mut exports = Exports {
-            name: crate::runtime::PACKAGE.to_string(),
-            crate_hash: library.crate_hash,
-            builtin: true,
-            keeps_capacity: library.keeps_capacity,
-            makes_dropping_anys: library.makes_dropping_anys,
-            makes_dropping_fn_dyns: library.makes_dropping_fn_dyns,
-            dictionary_consts: library.dictionary_consts.map(|keys| keys.into_iter().collect()),
-            dyns_drop_nothing: library.dyns_drop_nothing.into_iter().collect(),
-            writes_may_fail: library.writes_may_fail,
-            writers_take_options: library.writers_take_options,
-            debug_hex: library.debug_hex,
-            reads_formatter_options: library.reads_formatter_options.into_iter().collect(),
-            merges_identities: library.merges_identities.into_iter().collect(),
-            identities: library.identities.into_iter().collect(),
-            keyed: library.keyed.into_iter().collect(),
-            eq_by_address: library.eq_by_address.into_iter().collect(),
-            gives_argument: library.gives_argument.into_iter().collect(),
-            displays_value: library.displays_value.into_iter().collect(),
-            partial_cmp_is_cmp: library.partial_cmp_is_cmp.into_iter().collect(),
-            built: library.built.into_iter().collect(),
-            fields: library
-                .fields
-                .into_iter()
-                .map(|field| (field.key, field.facts))
-                .collect(),
-            associated: (library.associated.iter())
-                .filter(|associated| associated.carrier.is_none())
-                .map(|associated| (associated.key.clone(), associated.facts.clone()))
-                .collect(),
-            carried_super: carried_super(&library.associated),
-            changed: library.changed,
-            counted_rcs: library.counted_rcs,
-            with_this_arguments: library.with_this_arguments,
-            ref_cells: library.ref_cells,
-            impls: library.impls.into_iter().collect(),
-            ..Exports::default()
-        };
-        for item in library.items {
+        let (mut exports, Unread { items, .. }) = Exports::read(library, Some(crate::runtime::PACKAGE));
+        for item in items {
             let imported = Imported {
                 from: crate::runtime::PACKAGE.to_string(),
                 export: item.exported_as(),

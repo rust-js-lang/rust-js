@@ -235,9 +235,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A closure is its JS function, which shares what it captured: a
         // clone is the same function where nothing could tell (ADR 0522);
         // one cloned apart makes itself again, of a clone of what it took.
+        // As the crate decided of each it clones, a library's as its library
+        // did (#1202).
         if let ty::Closure(id, _) = *ty.kind() {
-            if self.krate.closure_facts.clones_apart(id) {
-                return Ok(Expr::call_helper("$clone", vec![place]));
+            match self.krate.closure_facts.clone_is_itself(id) {
+                Some(true) => return Ok(place),
+                Some(false) => return Ok(Expr::call_helper("$clone", vec![place])),
+                None => {}
             }
             let drops = |t| self.drops(t) != super::drops::Drops::Nothing;
             return match super::analysis::clone_shares(self.tcx, self.typing_env, ty, drops) {

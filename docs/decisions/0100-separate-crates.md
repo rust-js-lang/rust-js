@@ -374,3 +374,14 @@ graph, under renamed dependencies, each called. Also by the mutations
 `library-keyed-by-name` and `library-check-every-crate-of-its-name`, both
 caught. `test/crates.test.ts` still refuses another build's metadata beside
 a manifest, and names a missing library by its crate.
+
+## Amendment: a library's closures' clones, and one reading of a contract (2026-11-10, #1202)
+
+A library's contract says of each closure it clones, or gives a consumer
+to clone behind an `impl .. + Clone`, whether it's cloned apart,
+`cloned_closures`, as only its own compile sees what one captures
+([0522](0522-a-closure-cloned-apart-is-made-again.md), amended): the
+library ABI is 26, `tooling/manifest.js`'s validator too. A contract is
+read in one place, `Exports::read`, a manifest's and `@rust-js/std`'s
+alike, where two lists of its facts had to agree; it names each field of
+the contract, read or left to its loader, so a new one is read by both.

@@ -143,6 +143,9 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) displays_value: &'a [DefId],
     /// The structs its code makes values of (ADR 1022, amended).
     pub(super) built: Vec<DefId>,
+    /// The closures it clones, or gives to clone, and whether each is
+    /// cloned apart (ADR 0522, amended; #1202).
+    pub(super) cloned_closures: Vec<(DefId, bool)>,
     /// What each function's return alone owns of what it's given (ADR
     /// 0317, amended).
     pub(super) owned_by_return: &'a super::analysis::owned_by_return::OwnedByReturn,
@@ -333,6 +336,7 @@ pub(super) fn exports<'tcx>(
         gives_argument,
         displays_value,
         built,
+        cloned_closures,
         owned_by_return,
         nulled_params,
     } = contracts;
@@ -587,6 +591,19 @@ pub(super) fn exports<'tcx>(
             let mut keys: Vec<String> = built.iter().map(|&id| key(tcx, id)).collect();
             keys.sort();
             keys
+        },
+        // Another library's among them, which its consumers ask that one's
+        // contract of, as each closure is asked of its own crate's, are
+        // never read.
+        cloned_closures: {
+            let mut closures: Vec<crate::library::ClonedClosure> = (cloned_closures.iter())
+                .map(|&(id, apart)| crate::library::ClonedClosure {
+                    key: key(tcx, id),
+                    apart,
+                })
+                .collect();
+            closures.sort();
+            closures
         },
         types: declared_types(tcx),
         // Its package, which artifact planning reads (ADR 1008).
@@ -1244,6 +1261,14 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             && self
                 .library(id.krate)
                 .is_some_and(|library| library.identities.contains(&key(self.tcx, id)))
+    }
+
+    /// Is the closure `id`, a library's, cloned apart, as its contract says
+    /// its library made it (ADR 0522, amended; #1202)? `None` of one it
+    /// neither clones nor gives to clone, or of the crate's own, which no
+    /// library's contract says.
+    pub(super) fn closure_cloned_apart(&self, id: DefId) -> Option<bool> {
+        (self.library(id.krate)?.cloned_closures.get(&key(self.tcx, id))).copied()
     }
 
     /// Is `==` of `id`, a library's type, its address's, as its contract

@@ -746,4 +746,20 @@ export const mutations: Mutation[] = [
     replace: ".any(|_| false)",
     tests: ["test/crates.test.ts", "-t", "two crates: library_io_writer_fails"],
   },
+  {
+    name: "library-closure-clone-said-inverted",
+    breaks: "a library's contract says each closure it clones apart is its own clone, and the other way round (#1202)",
+    file: "src/lower/library.rs",
+    find: "                    key: key(tcx, id),\n                    apart,\n",
+    replace: "                    key: key(tcx, id),\n                    apart: !apart,\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+  },
+  {
+    name: "library-closure-clone-unasked",
+    breaks: "a consumer asks no library's contract of its closures, so it decides of each itself, and its `$clone(f)` of a plain function throws (#1202)",
+    file: "src/lower/library.rs",
+    find: "        (self.library(id.krate)?.cloned_closures.get(&key(self.tcx, id))).copied()\n",
+    replace: "        (self.library(id.krate)?.cloned_closures.get(&key(self.tcx, id))).and(None)\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+  },
 ];
