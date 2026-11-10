@@ -729,10 +729,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dictionary-output-of-parameters-normalized",
-    breaks: "what an impl's method gives is normalized though it names a type or const parameter, which the dictionary's environment may not hold, and `fn foo<const N: usize>(&self) -> Self::Assoc<N>` crashes rustc: \"cannot find `N/#1` in param-env\" (#1304)",
+    breaks: "what an impl's method gives is normalized though it names the method's own type or const parameters, which the dictionary's environment doesn't hold, and `fn foo<const N: usize>(&self) -> Self::Assoc<N>` crashes rustc: \"cannot find `N/#1` in param-env\" (#1304)",
     file: "src/lower/traits/impls.rs",
-    find: "            let output = match ty::TypeVisitableExt::has_non_region_param(&output) {\n                true => output,\n",
-    replace: "            let output = match false {\n                true => output,\n",
+    find: "            let output = match self.tcx.generics_of(method).own_requires_monomorphization() {\n",
+    replace: "            let output = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^const_generic_assoc_type_of_a_dictionary.rs$"],
   },
 ];
