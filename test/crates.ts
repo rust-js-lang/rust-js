@@ -33,7 +33,7 @@ export const triples = join(root, "test", "crates", "triples");
  * alone, as another's `std` is std's (ADR 1054). Where `refused` is given,
  * the app's compile is refused instead, saying each of them: what the
  * native program prints. */
-export function chain(cases: string, name: string, files: string[], refused?: string[]): string {
+export function chain(cases: string, name: string, files: string[], refused?: string[], throws?: string): string {
   const dir = fixture(`${files.length === 2 ? "pair" : "triple"}-${name}`);
   const out = join(dir, "js");
   const source = (file: string) => join(cases, name, `${file}.rs`);
@@ -74,6 +74,13 @@ export function chain(cases: string, name: string, files: string[], refused?: st
     return run([program]);
   }
   crates.forEach(compile);
+  // Where `throws` is given, the app's JS ends by an error saying it, as
+  // rust-js refuses at run time what it can't run as Rust does: what the
+  // native program prints.
+  if (throws !== undefined) {
+    expect(() => printed(join(out, app, "lib.js"))).toThrow(throws);
+    return run([program]);
+  }
   expect(printed(join(out, app, "lib.js"))).toBe(run([program]));
   return out;
 }

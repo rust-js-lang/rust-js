@@ -517,18 +517,33 @@ fn compiled_because(foreign: &crate::lower::library::Foreign<'_, '_>, root: DefI
     match foreign.writes_more(root) {
         Some(more) => format!("a writer given {more}, which its library's JS doesn't take"),
         None if foreign.merges_identities(root) => "one whose JS may give one function where Rust makes two, which this crate compares".to_string(),
-        None if foreign.keeps_more(root) => "one whose library keeps no `Vec`'s capacity, which this crate reads".to_string(),
         None => "one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place".to_string(),
     }
 }
 
-/// Refuses an instance's read of its library's private state: a static or
-/// a thread-local its library doesn't export, which a function compiled in
-/// another crate can't reach, as its library's own code has the one there
-/// is; and its call of a binding its library names by a path relative to
-/// its own file (ADR 0914).
-fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Body<'tcx>) {
-    let tcx = calls.tcx;
+/// What a copy of a library's function, compiled in another crate, can't
+/// reach of what `body`, its MIR, reads or calls (ADR 0914): a static or a
+/// thread-local its library doesn't export, as its library's own code has
+/// the one there is; a thread-local its library makes its module's
+/// variable, `export let last` (ADR 0270, amended), which it sets; and a
+/// binding its library names by a path relative to its own file.
+pub(in crate::lower) enum OutOfReach {
+    /// Its library's private state, read.
+    Private(DefId),
+    /// Its library's module variable, set.
+    ModuleVariable(DefId),
+    /// A binding to a module by a path relative to its library's file,
+    /// read, of a static, or called.
+    RelativeBinding(DefId, String),
+}
+
+/// `OutOfReach`'s, of `body`, a function's MIR of `foreign`'s libraries.
+pub(in crate::lower) fn out_of_reach<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    body: &mir::Body<'tcx>,
+) -> Vec<OutOfReach> {
+    let mut out = Vec::new();
     struct Read<'tcx> {
         tcx: TyCtxt<'tcx>,
         read: Vec<DefId>,
@@ -559,22 +574,16 @@ fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Bo
         // crate's JS reads as its library's does, but of a module its
         // library names by a path relative to its own file, which is below.
         let binding = tcx.is_foreign_item(def);
-        if state && !binding && !def.is_local() && calls.foreign.item(def).is_none() {
-            let root = tcx.typeck_root_def_id(id);
-            tcx.dcx().err(format!(
-                "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: {}; but it reads `{}`, private to its library, which only that library's code can reach (ADR 0914): make it `pub`",
-                tcx.def_path_str(root),
-                compiled_because(calls.foreign, root),
-                tcx.def_path_str(def),
-            ));
+        if state && !binding && !def.is_local() && foreign.item(def).is_none() {
+            out.push(OutOfReach::Private(def));
         }
     }
-    // A thread-local its library makes its module's variable, `export let
-    // last` (ADR 0270, amended), which only that module's JS can set: an
-    // import can't be assigned. Set, by `set`, `take`, `replace`,
-    // `with_borrow_mut` or its cell lent by `with`, of the type it holds.
+    // A thread-local its library makes its module's variable, which only
+    // that module's JS can set: an import can't be assigned. Set, by `set`,
+    // `take`, `replace`, `with_borrow_mut` or its cell lent by `with`, of
+    // the type it holds.
     let variable =
-        |def: DefId| (calls.foreign.item(def)).is_some_and(|item| item.calling.has(crate::library::ItemFact::Variable));
+        |def: DefId| (foreign.item(def)).is_some_and(|item| item.calling.has(crate::library::ItemFact::Variable));
     let keys: Vec<DefId> = (read.read.iter().copied())
         .filter(|&def| !def.is_local() && variable(def))
         .collect();
@@ -592,13 +601,7 @@ fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Bo
             }
         });
         if sets && let Some(&key) = keys.iter().find(|&&key| held(key).is_some() && held(key) == of) {
-            let root = tcx.typeck_root_def_id(id);
-            tcx.dcx().err(format!(
-                "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: {}; but it sets `{}`, its library's module variable, which JS lets only that module set (ADR 0270, amended): set it in a `pub fn` of that library that takes nothing to copy or drop, and call that",
-                tcx.def_path_str(root),
-                compiled_because(calls.foreign, root),
-                tcx.def_path_str(key),
-            ));
+            out.push(OutOfReach::ModuleVariable(key));
         }
     }
     // A binding of its library's to a module by a path relative to that
@@ -617,14 +620,68 @@ fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Bo
             && let Some(((from, _), _)) = path.as_deref().and_then(crate::lower::bindings::js_import)
             && crate::program::is_relative_specifier(&from)
         {
-            let root = tcx.typeck_root_def_id(id);
-            tcx.dcx().err(format!(
+            out.push(OutOfReach::RelativeBinding(binding, from));
+        }
+    }
+    out
+}
+
+/// Whether a copy of `id`, a library's function, and of each of its
+/// library's functions it calls in turn, which are copied with it, can
+/// reach all they read and call (`out_of_reach`): one that can't stays its
+/// library's (#1180's (5)).
+pub(in crate::lower) fn copy_reaches<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    id: DefId,
+) -> bool {
+    let mut seen: IndexSet<DefId> = IndexSet::default();
+    let mut todo = vec![id];
+    while let Some(id) = todo.pop() {
+        if !seen.insert(id) || id.is_local() || id.krate != seen[0].krate || !tcx.is_mir_available(id) {
+            continue;
+        }
+        let body = tcx.optimized_mir(id);
+        if !out_of_reach(tcx, foreign, body).is_empty() {
+            return false;
+        }
+        todo.extend(called(body).into_iter().map(|(callee, _)| callee));
+    }
+    true
+}
+
+/// Refuses an instance's read of its library's private state, its set of
+/// its library's module variable and its call of a binding its library
+/// names by a path relative to its own file (`out_of_reach`, ADR 0914).
+fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Body<'tcx>) {
+    let tcx = calls.tcx;
+    let root = tcx.typeck_root_def_id(id);
+    for reach in out_of_reach(tcx, calls.foreign, body) {
+        let message = match reach {
+            OutOfReach::Private(def) => format!(
+                "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: {}; but it reads `{}`, private to its library, which only that library's code can reach (ADR 0914): make it `pub`",
+                tcx.def_path_str(root),
+                compiled_because(calls.foreign, root),
+                tcx.def_path_str(def),
+            ),
+            OutOfReach::ModuleVariable(key) => format!(
+                "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: {}; but it sets `{}`, its library's module variable, which JS lets only that module set (ADR 0270, amended): set it in a `pub fn` of that library that takes nothing to copy or drop, and call that",
+                tcx.def_path_str(root),
+                compiled_because(calls.foreign, root),
+                tcx.def_path_str(key),
+            ),
+            OutOfReach::RelativeBinding(binding, from) => format!(
                 "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: {}; but it {} `{}`, which its library binds to `{from}`, a module by a path relative to that library's own file, not this crate's (ADR 0914): have its library bind it by a package's path, which this crate can import too",
                 tcx.def_path_str(root),
                 compiled_because(calls.foreign, root),
-                if tcx.is_foreign_item(binding) && matches!(tcx.def_kind(binding), DefKind::Static { .. }) { "reads" } else { "calls" },
+                if tcx.is_foreign_item(binding) && matches!(tcx.def_kind(binding), DefKind::Static { .. }) {
+                    "reads"
+                } else {
+                    "calls"
+                },
                 tcx.def_path_str(binding),
-            ));
-        }
+            ),
+        };
+        tcx.dcx().err(message);
     }
 }

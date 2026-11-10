@@ -1379,8 +1379,18 @@ JS is 2,204 bytes where it was 1,220, its six functions' copies beside the
 library's 1,534. A crate that reads no capacity, and every crate of the
 React port, which reads none, compiles nothing more.
 
-A copy that reads its library's private state is refused, as any copy is,
-saying why it's compiled here:
-`test/crates/refused/capacity_kept_reads_private_state`. That program
-compiled before and printed its length as its capacity; it's refused now,
-which is loud where it had been wrong.
+A function whose copy can't reach all it reads and calls isn't copied for
+this: one that reads its library's private state, sets its module
+variable, or calls a binding by a path relative to its library's file,
+itself or through any of its library's functions it calls
+(`instances::out_of_reach`, `copy_reaches`). Refusing it would stop a
+program compiling that compiled before. It's called as before, and what it
+may grow is marked instead (`Foreign::leaves_capacity_unknown`). Each
+argument it may change, a `&mut` or one with a cell, is `$untrackedIn` before
+the call, and what it gives back after. `$untrackedIn` marks each array the
+value reaches, through plain objects, `Map`s and `Set`s, so `capacity()` of
+such a `Vec` throws #1180's error, never another number. That's the user's
+decision on #1180: loud where it had been wrong, and it still compiles.
+`test/crates/thrown/capacity_unknown_of_what_a_library_gives_back` (a
+struct's `Vec`, the state read through a private function) and
+`capacity_unknown_of_what_a_library_is_lent` hold it.

@@ -281,13 +281,14 @@ test("a library's function its consumer compiles is refused where it reads its l
 
 // A consumer that reads a `Vec`'s capacity compiles its own of each function
 // it reaches of a library that keeps none, so what they grow has std's
-// capacity (#1180's (5)); one that reads its library's private state, which
-// a copy can't reach, is refused, saying why it's compiled here.
+// capacity (#1180's (5)); of one that reads its library's private state,
+// which a copy can't reach, it calls the library's own, and each `Vec` given
+// back or lent has no known capacity: `capacity()` of it throws, naming
+// #1180, and the program still compiles.
 test("a library that keeps no capacity has its functions compiled by a consumer that reads one", () => {
   const out = chain(pairs, "library_vecs_grown_where_no_capacity_is_kept", ["dep", "app"]);
   expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain("function squaresTwice(n) {");
-  const native = chain(join(root, "test", "crates", "refused"), "capacity_kept_reads_private_state", ["dep", "app"], [
-    "this crate compiles `dep::made` itself, as its library's JS has none it can call: one whose library keeps no `Vec`'s capacity, which this crate reads; but it reads `dep::MADE`",
-  ]);
-  expect(native).toBe("5 8\n");
+  const thrown = join(root, "test", "crates", "thrown");
+  expect(chain(thrown, "capacity_unknown_of_what_a_library_gives_back", ["dep", "app"], undefined, "(#1180)")).toBe("5\n8\n");
+  expect(chain(thrown, "capacity_unknown_of_what_a_library_is_lent", ["dep", "app"], undefined, "(#1180)")).toBe("6\n8\n");
 }, 300_000);

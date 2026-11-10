@@ -333,4 +333,22 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-collections.test.ts", "-t", "hint JS lost"],
   },
+  {
+    name: "untracked-in-arrays-unmarked",
+    breaks:
+      "what a library that keeps no capacity gives back or is lent, where its consumer can't compile it, keeps its `Vec`s' capacities: their lengths, silently (#1180's (5))",
+    file: "src/runtime/capacity.js",
+    find: "    if (Array.isArray(v)) {\n      $untracked(v);\n",
+    replace: "    if (Array.isArray(v)) {\n",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
+  },
+  {
+    name: "untracked-in-objects-unwalked",
+    breaks:
+      "a `Vec` a struct holds, given back by a library that keeps no capacity, where its consumer can't compile it, keeps its capacity: its length, 5 where std's is 8, silently (#1180's (5))",
+    file: "src/runtime/capacity.js",
+    find: "    } else if (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null) {\n",
+    replace: "    } else if (false) {\n",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
+  },
 ];

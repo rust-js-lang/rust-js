@@ -145,4 +145,13 @@ export const mutations: Mutation[] = [
     replace: "|| false)",
     tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
   },
+  {
+    name: "capacity-unknown-where-copied",
+    breaks:
+      "a call of a library's function whose library keeps no capacity, which the crate can't compile itself, isn't seen to leave its `Vec`s' capacities unknown: their lengths, silently (#1180's (5))",
+    file: "src/lower/library/compiled_here.rs",
+    find: "        self.unkept_by(id) && !self.copy_reaches(id)\n",
+    replace: "        self.unkept_by(id) && self.copy_reaches(id)\n",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
+  },
 ];

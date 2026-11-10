@@ -852,7 +852,8 @@ What's refused is in [the limitations](limitations.md).
   its caller's `TSize`. A crate that reads no capacity prints none of
   this; one that does compiles its own copy of each function it reaches
   of a library that keeps none, so what that library grows has std's
-  capacity too. Of a `Vec` whose growth isn't kept, a `collect()` std may make in
+  capacity too, but of one that reads its library's private state, which
+  a copy can't reach, whose `Vec`s' capacities are unknown. Of a `Vec` whose growth isn't kept, a `collect()` std may make in
   place, a string's `into_bytes()`, or one generic code grew by an
   iterator whose JS hint isn't std's, `chars().skip(n)` given to it,
   `capacity()` throws an error naming #1180, never another number.

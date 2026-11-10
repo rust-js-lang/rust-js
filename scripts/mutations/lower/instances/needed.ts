@@ -262,11 +262,20 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "two crates: closure_made_by_an_inlined_function"],
   },
   {
-    name: "capacity-copy-reason-unsaid",
+    name: "copy-reaches-private-state",
     breaks:
-      "a function a consumer compiles itself to keep a capacity, refused as it reads its library's private state, gives another reason than its library keeping no capacity (#1180's (5))",
+      "a copy of a library's function that reads its library's private state is taken to reach it: compiled here to keep a capacity, it's refused, where the library's own would run (#1180's (5))",
     file: "src/lower/instances/needed.rs",
-    find: "        None if foreign.keeps_more(root) => \"one whose library keeps no `Vec`'s capacity, which this crate reads\".to_string(),\n",
+    find: "        if !out_of_reach(tcx, foreign, body).is_empty() {\n            return false;\n        }\n",
+    replace: "",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
+  },
+  {
+    name: "copy-reaches-callees-unasked",
+    breaks:
+      "a copy of a library's function is asked only of its own body, not of the private function it calls, which reads its library's private state: compiled here, it's refused (#1180's (5))",
+    file: "src/lower/instances/needed.rs",
+    find: "        todo.extend(called(body).into_iter().map(|(callee, _)| callee));\n",
     replace: "",
     tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
   },

@@ -746,4 +746,22 @@ export const mutations: Mutation[] = [
     replace: "        if false\n",
     tests: ["test/this.test.ts"],
   },
+  {
+    name: "unkept-lent-vec-tracked",
+    breaks:
+      "a `Vec` a consumer lends a library's function whose library keeps no capacity, and which it can't compile itself, keeps the capacity it had: its `capacity()` its length, 6, where std's is 8, silently (#1180's (5))",
+    file: "src/lower/mir/calls.rs",
+    find: "                if ty.is_mutable_ptr() || !ty.is_freeze(self.tcx, self.typing_env) {\n",
+    replace: "                if false {\n",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
+  },
+  {
+    name: "unkept-result-tracked",
+    breaks:
+      "what a library's function whose library keeps no capacity, which the crate can't compile itself, gives back is taken as its `Vec`s' capacities known: their lengths, 5 where std's is 8, silently (#1180's (5))",
+    file: "src/lower/mir/calls.rs",
+    find: "        let called = match unkept && !output.is_scalar() && !output.is_unit() {\n",
+    replace: "        let called = match false {\n",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
+  },
 ];

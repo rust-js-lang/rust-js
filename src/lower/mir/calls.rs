@@ -609,6 +609,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 flattened.is_some_and(|(local, _)| state.flattened.locals.contains(&local)),
             )
         });
+        // Of a library's function whose library keeps no capacity, which
+        // the crate can't compile itself (`leaves_capacity_unknown`): each
+        // `Vec` it may change of what it's given, through a `&mut` or a
+        // cell, and each it gives back, of unknown capacity (#1180's (5)).
+        let unkept = self.krate.foreign.leaves_capacity_unknown(def_id);
+        if unkept {
+            for (expr, &ty) in exprs.iter_mut().zip(arg_tys) {
+                if ty.is_mutable_ptr() || !ty.is_freeze(self.tcx, self.typing_env) {
+                    *expr = Expr::call_helper("$untrackedIn", vec![std::mem::replace(expr, Expr::undefined())]);
+                }
+            }
+        }
         let called = match self.krate.scopes.of_method(def_id) {
             Some(_) => self.scope_called(def_id, copy, exprs, span)?,
             None => self.crate_called_copy((def_id, copy, Some(span)), named, exprs),
@@ -627,6 +639,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A generic `&mut T`'s box, of an object `T` here: what's in it.
         let called = self.generic_result_values((def_id, generic_args), called, span)?;
         let called = self.fmt_result_value(def_id, generic_args, called);
+        let output = self
+            .tcx
+            .fn_sig(def_id)
+            .instantiate(self.tcx, generic_args)
+            .skip_binder()
+            .output();
+        let called = match unkept && !output.is_scalar() && !output.is_unit() {
+            true => Expr::call_helper("$untrackedIn", vec![called]),
+            false => called,
+        };
         // A throwing function's call is a throwing call (ADR 0644).
         Ok(Value::Expr(self.catching(def_id, generic_args, called)))
     }

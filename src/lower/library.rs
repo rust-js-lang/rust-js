@@ -459,6 +459,9 @@ pub(super) struct Foreign<'a, 'tcx> {
     reads_fn_identity: bool,
     /// Whether the crate reads a `Vec`'s capacity (`keeps_more`).
     asks_capacity: bool,
+    /// Whether a copy of each library function asked can reach all it
+    /// reads and calls (`instances::copy_reaches`), found once.
+    copies_reach: std::cell::RefCell<IndexMap<DefId, bool>>,
 }
 
 impl<'a, 'tcx> Foreign<'a, 'tcx> {
@@ -476,6 +479,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             writes,
             reads_fn_identity,
             asks_capacity: false,
+            copies_reach: Default::default(),
         }
     }
 

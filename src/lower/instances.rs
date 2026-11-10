@@ -16,7 +16,7 @@ use rustc_span::def_id::{DefId, LocalModId};
 use super::Body;
 
 mod needed;
-pub(super) use needed::{Analyzed, needed};
+pub(super) use needed::{Analyzed, copy_reaches, needed};
 
 /// The library functions the crate compiles itself, each placed in the
 /// module of the crate's that first calls it (ADR 0914). Decided by the

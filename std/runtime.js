@@ -11185,6 +11185,36 @@ export function $untracked(v) {
   return v;
 }
 
+// `value`, given or given back by a library's function whose library keeps
+// no capacity and which the crate can't compile itself, as it reads its
+// library's private state: each `Vec` it reaches, through arrays, plain
+// objects, a `Map`'s keys and values and a `Set`'s items, `$untracked`, so
+// its `capacity()` is the error naming #1180, never another number
+// (#1180's (5)). An array that's no `Vec`, whose capacity nothing reads,
+// marked too.
+export function $untrackedIn(value) {
+  const seen = new Set();
+  const walk = (v) => {
+    if (v === null || typeof v !== "object" || seen.has(v)) return;
+    seen.add(v);
+    if (Array.isArray(v)) {
+      $untracked(v);
+      for (const item of v) walk(item);
+    } else if (v instanceof Map) {
+      for (const [key, item] of v) {
+        walk(key);
+        walk(item);
+      }
+    } else if (v instanceof Set) {
+      for (const item of v) walk(item);
+    } else if (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null) {
+      for (const item of Object.values(v)) walk(item);
+    }
+  };
+  walk(value);
+  return value;
+}
+
 // `Vec::with_capacity(n)`: none yet, room for `n`.
 export function $withCapacity(n) {
   const v = [];

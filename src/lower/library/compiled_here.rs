@@ -100,18 +100,45 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     }
 
     /// Whether `id`, a library's function or impl, is compiled here to keep
-    /// a `Vec`'s capacity (#1180's (5), the user's decision): the crate
-    /// keeps capacities, as it or a library it uses reads one (ADR 0419),
-    /// and `id`'s library, not `@rust-js/std`, keeps none, so its JS grows
-    /// a `Vec` as a JS array does, which no `capacity()` of the crate's can
-    /// tell from std's. Its copy here grows each as std does, and so does
-    /// each of its library's functions it reaches, compiled here in turn.
+    /// a `Vec`'s capacity (#1180's (5), the user's decision): its capacity
+    /// isn't kept by its library (`unkept_by`), and a copy of it can reach
+    /// all it reads and calls. Its copy here grows each `Vec` as std does,
+    /// and so does each of its library's functions it reaches, compiled
+    /// here in turn.
     pub(in crate::lower) fn keeps_more(&self, id: DefId) -> bool {
+        self.unkept_by(id) && self.copy_reaches(id)
+    }
+
+    /// Whether a call of `id`, a library's function, leaves the capacity of
+    /// each `Vec` it gives back or is lent unknown, which `capacity()`
+    /// refuses (#1180's (5), the user's decision): its library keeps none
+    /// (`unkept_by`), and a copy of it can't reach what it reads or calls,
+    /// its library's private state (`instances::out_of_reach`), so it's its
+    /// library's, called as before.
+    pub(in crate::lower) fn leaves_capacity_unknown(&self, id: DefId) -> bool {
+        self.unkept_by(id) && !self.copy_reaches(id)
+    }
+
+    /// Whether `id`, a library's, grows a `Vec` as a JS array does, where
+    /// the crate keeps capacities, as it or a library it uses reads one
+    /// (ADR 0419): its library, not `@rust-js/std`, keeps none, so no
+    /// `capacity()` of the crate's can tell its growth from std's.
+    fn unkept_by(&self, id: DefId) -> bool {
         if id.is_local() || !self.is_library(id.krate) || !(self.asks_capacity || self.keeps_capacity()) {
             return false;
         }
         self.library(id.krate)
             .is_some_and(|library| !library.builtin && !library.keeps_capacity)
+    }
+
+    /// `instances::copy_reaches` of `id`, found once.
+    fn copy_reaches(&self, id: DefId) -> bool {
+        if let Some(&reaches) = self.copies_reach.borrow().get(&id) {
+            return reaches;
+        }
+        let reaches = crate::lower::instances::copy_reaches(self.tcx, self, id);
+        self.copies_reach.borrow_mut().insert(id, reaches);
+        reaches
     }
 
     /// Whether a call of `id`, a library's function, given `args`, calls
