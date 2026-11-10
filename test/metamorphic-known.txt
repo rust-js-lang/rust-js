@@ -22,3 +22,7 @@ plain opaque take_rev_trims_from_the_back_in_each_holder.rs
 
 #1232 P0 (drops): an iterator a std consumer takes by value isn't dropped as its boxed function panics
 plain std dyn-fn consumed_iterator_dropped_as_its_function_panics.rs
+
+#1238 P0 (iterators): in a crate that asks a capacity, mem::replace of a reversed range's or a Vec's iterator gives back a value its reader can't read
+plain std fact-capacity iterator_values_meet.rs
+plain std fact-capacity iterator_values_meet_drops.rs
