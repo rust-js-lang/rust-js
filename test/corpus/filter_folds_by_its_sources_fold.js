@@ -13,6 +13,7 @@ import {
   $iter,
   $iterator,
   $knowing,
+  $live,
   $next,
   $nextBack,
   $range,
@@ -21,6 +22,7 @@ import {
   $rangeNextBack,
   $rangeNthBack,
   $sizeHint,
+  $unwindsOn,
   iterator_zip,
   zipDoubleEndedIterator_nextBack,
 } from "@rust-js/std";
@@ -62,7 +64,7 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
         acc$live = true;
@@ -79,7 +81,7 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       break;
@@ -87,8 +89,12 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
     acc$live = false;
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log("drop own");
+    if ($live()) {
+      console.log("drop own");
+    }
   }
   return result;
 }

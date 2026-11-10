@@ -15,6 +15,7 @@ import {
   $iterator,
   $knowing,
   $last,
+  $live,
   $next,
   $nextBack,
   $nth,
@@ -23,6 +24,7 @@ import {
   $slicing,
   $took,
   $tryOf,
+  $unwindsOn,
   iterator_fuse,
   iterator_map,
   iterator_peekable,
@@ -62,7 +64,7 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       if (next != null) {
@@ -74,7 +76,7 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
         acc$live = true;
@@ -91,7 +93,7 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       break;
@@ -99,8 +101,12 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
     acc$live = false;
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log("drop folds");
+    if ($live()) {
+      console.log("drop folds");
+    }
   }
   return result;
 }
@@ -128,7 +134,7 @@ function foldsDoubleEndedIterator_rfold(folds, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       if (nextBack != null) {
@@ -140,7 +146,7 @@ function foldsDoubleEndedIterator_rfold(folds, init, f, dropB, dropF) {
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
         acc$live = true;
@@ -157,7 +163,7 @@ function foldsDoubleEndedIterator_rfold(folds, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       break;
@@ -165,8 +171,12 @@ function foldsDoubleEndedIterator_rfold(folds, init, f, dropB, dropF) {
     acc$live = false;
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log("drop folds");
+    if ($live()) {
+      console.log("drop folds");
+    }
   }
   return result;
 }
@@ -223,7 +233,7 @@ function mappedFused(it, IFused, dropI) {
   } catch (error) {
     $cleanup(() => {
       iter.return();
-    });
+    }, error);
     throw error;
   }
   iter.return();
@@ -245,7 +255,7 @@ function peekedReversed(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       it.return();
-    });
+    }, error);
     throw error;
   }
   const value = peek?.[0];
@@ -357,7 +367,7 @@ const Holder = {
         if (!$took(IIterator.fold, iter)) {
           dropI?.(iter);
         }
-      });
+      }, error);
       throw error;
     }
     if (!$took(IIterator.fold, iter)) {
@@ -406,7 +416,7 @@ function totalOf(it, dropI) {
       if (!iter.ownFold) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownFold) {
@@ -479,7 +489,9 @@ function main() {
   try {
     peek = $peek(it);
   } catch (error) {
-    it.return();
+    $cleanup(() => {
+      it.return();
+    }, error);
     throw error;
   }
   const value = peek?.[0];
@@ -540,7 +552,9 @@ function main() {
     try {
       peek = $peek(it);
     } catch (error) {
-      it.return();
+      $cleanup(() => {
+        it.return();
+      }, error);
       throw error;
     }
     const value = peek?.[0];

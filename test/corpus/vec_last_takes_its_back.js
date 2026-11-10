@@ -62,7 +62,7 @@ function lastOf(it, dropI) {
       if (!iter.ownFold && !iter.ownLast) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownFold && !iter.ownLast) {
@@ -151,7 +151,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         iter.return();
-      });
+      }, error);
       throw error;
     }
     iter.return();
@@ -177,7 +177,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     const value = peek != null ? peek[0] + 0 : undefined;
@@ -223,7 +223,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     console.log(`left ${v.length}`);
@@ -282,7 +282,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -291,7 +291,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     const last = $lastDropping(it, dDrop_drop);
@@ -323,7 +323,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -332,7 +332,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     const last = $lastDropping(it, dDrop_drop);
@@ -365,7 +365,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -374,7 +374,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     const last = $lastDropping(it, dDrop_drop);
@@ -403,7 +403,7 @@ function main() {
                 } catch (error) {
                   $cleanup(() => {
                     $dropItems(v, dDrop_drop);
-                  });
+                  }, error);
                   throw error;
                 }
                 if (tmp) {
@@ -412,7 +412,7 @@ function main() {
                   } catch (error) {
                     $cleanup(() => {
                       $dropItems(v, dDrop_drop);
-                    });
+                    }, error);
                     throw error;
                   }
                 }
@@ -486,7 +486,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(value, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     let result;
@@ -495,7 +495,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(value, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     $dropItems(value, dDrop_drop);

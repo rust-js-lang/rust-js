@@ -18,7 +18,7 @@ function length(items, DDeref, dropD) {
   } catch (error) {
     $cleanup(() => {
       dropD?.(items);
-    });
+    }, error);
     throw error;
   }
   const result = tmp.length;
@@ -33,7 +33,7 @@ function shown(items, DDeref, dropD) {
   } catch (error) {
     $cleanup(() => {
       dropD?.(items);
-    });
+    }, error);
     throw error;
   }
   console.log(`${tmp.length} items`);
@@ -47,7 +47,7 @@ function firstOr(items, or, DDeref, dropD) {
   } catch (error) {
     $cleanup(() => {
       dropD?.(items);
-    });
+    }, error);
     throw error;
   }
   const result = first ?? or;

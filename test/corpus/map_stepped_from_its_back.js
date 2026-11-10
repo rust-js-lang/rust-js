@@ -5,6 +5,7 @@ import {
   $given,
   $iter,
   $iterator,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
@@ -12,6 +13,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
+  $unwindsOn,
   fuseDoubleEndedIterator_rfold,
   fuseExactSizeIterator_len,
   iterator_fuse,
@@ -66,38 +68,48 @@ function lastSquare(n) {
 
 function main() {
   const intoIterExactSizeIterator = { len: (iterator) => iterator.len() };
-  const pad = {
-    iter: iterator_fuse($iter([1, 2]), { next: $next }, true),
-    min: 4,
-    filler: (i) => (i * 10) >>> 0,
-  };
-  console.log(
-    `[${PadUsing.rfold(
-      pad,
-      [],
-      (all, x) => {
-        all.push(x);
-        return all;
-      },
-      { next: $next },
-      { next_back: $nextBack },
-      intoIterExactSizeIterator,
-    ).join(", ")}]`,
-  );
-  const value = lastSquare(5);
-  const value$1 = lastSquare(1);
-  console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
-  );
-  console.log(
-    `${Counted.doubledLen({ inner: $iter([1, 2, 3]) }, { next: $next }, intoIterExactSizeIterator, {
-      clone: (value) => $iter(value.items.slice(value.at, value.end)),
-    })} ${Counted.doubledLen(
-      { inner: { start: 2, end: 7 } },
-      { next: $rangeNext },
-      { len: $rangeLen },
-      { clone: (value) => ({ start: value.start, end: value.end }) },
-    )}`,
-  );
+  try {
+    const pad = {
+      iter: iterator_fuse($iter([1, 2]), { next: $next }, true),
+      min: 4,
+      filler: (i) => (i * 10) >>> 0,
+    };
+    console.log(
+      `[${PadUsing.rfold(
+        pad,
+        [],
+        (all, x) => {
+          all.push(x);
+          return all;
+        },
+        { next: $next },
+        { next_back: $nextBack },
+        intoIterExactSizeIterator,
+      ).join(", ")}]`,
+    );
+    const value = lastSquare(5);
+    const value$1 = lastSquare(1);
+    console.log(
+      `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    );
+    console.log(
+      `${Counted.doubledLen(
+        { inner: $iter([1, 2, 3]) },
+        { next: $next },
+        intoIterExactSizeIterator,
+        { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
+      )} ${Counted.doubledLen(
+        { inner: { start: 2, end: 7 } },
+        { next: $rangeNext },
+        { len: $rangeLen },
+        { clone: (value) => ({ start: value.start, end: value.end }) },
+      )}`,
+    );
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+    }
+  }
 }
 //# sourceMappingURL=case.js.map

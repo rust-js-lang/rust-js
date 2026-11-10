@@ -7,6 +7,7 @@ import {
   $iter,
   $iterator,
   $lazyZip,
+  $live,
   $max,
   $ord,
   $partialEq,
@@ -170,8 +171,10 @@ function sorts(len, halves, boom) {
     );
     return [tagsCalls, celledCalls, calls];
   } finally {
-    for (const item of loud) {
-      loudDrop_drop(item);
+    if ($live()) {
+      for (const item of loud) {
+        loudDrop_drop(item);
+      }
     }
   }
 }

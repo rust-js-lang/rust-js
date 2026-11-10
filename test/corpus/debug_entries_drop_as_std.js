@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $catchable,
   $closing,
   $dropEach,
   $entriesShown,
@@ -117,7 +118,8 @@ function shown(value, Debug) {
   try {
     const text = Debug.fmt(value);
     console.log(`${text}`);
-  } catch {
+  } catch (error) {
+    $catchable(error);
     console.log("panicked");
   }
 }

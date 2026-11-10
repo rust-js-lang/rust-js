@@ -8,8 +8,10 @@ import {
   $dropItems,
   $dropping,
   $index,
+  $live,
   $rcClone,
   $rcDrop,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -40,7 +42,7 @@ function pair(f, FClone, dropF) {
       if (f$live) {
         dropF?.(f);
       }
-    });
+    }, error);
     throw error;
   }
   return [tmp, f];
@@ -52,7 +54,9 @@ function main() {
   try {
     shared$1 = $rcClone(shared);
   } catch (error) {
-    $rcDrop(shared, noisyDrop_drop);
+    $cleanup(() => {
+      $rcDrop(shared, noisyDrop_drop);
+    }, error);
     throw error;
   }
   const make = (shared) =>
@@ -73,7 +77,7 @@ function main() {
     $cleanup(() => {
       $dispose(read);
       $rcDrop(shared, noisyDrop_drop);
-    });
+    }, error);
     throw error;
   }
   let tmp;
@@ -84,7 +88,7 @@ function main() {
       $dispose(read2);
       $dispose(read);
       $rcDrop(shared, noisyDrop_drop);
-    });
+    }, error);
     throw error;
   }
   let tmp$1;
@@ -95,7 +99,7 @@ function main() {
       $dispose(read2);
       $dispose(read);
       $rcDrop(shared, noisyDrop_drop);
-    });
+    }, error);
     throw error;
   }
   console.log(`${tmp} ${tmp$1} count ${shared.strong}`);
@@ -105,7 +109,7 @@ function main() {
     $cleanup(() => {
       $dispose(read2);
       $rcDrop(shared, noisyDrop_drop);
-    });
+    }, error);
     throw error;
   }
   console.log(`count ${shared.strong}`);
@@ -128,7 +132,7 @@ function main() {
     $cleanup(() => {
       $dispose(read2);
       $rcDrop(shared, noisyDrop_drop);
-    });
+    }, error);
     throw error;
   }
   console.log(`${step()} ${step()} ${step2()}`);
@@ -140,7 +144,7 @@ function main() {
     $cleanup(() => {
       $dispose(read2);
       $rcDrop(shared, noisyDrop_drop);
-    });
+    }, error);
     throw error;
   }
   const make$2 = (shared) =>
@@ -161,7 +165,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dispose(read2);
-      });
+      }, error);
       throw error;
     }
     const a = tmp[0];
@@ -174,7 +178,7 @@ function main() {
         $dispose(b);
         $dispose(a);
         $dispose(read2);
-      });
+      }, error);
       throw error;
     }
     console.log(`${tmp$1} count ${shared.strong}`);
@@ -185,14 +189,14 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dispose(value[1]);
-        });
+        }, error);
         throw error;
       }
       $dispose(value[1]);
     } catch (error) {
       $cleanup(() => {
         $dispose(read2);
-      });
+      }, error);
       throw error;
     }
     let holder$live = true;
@@ -207,7 +211,7 @@ function main() {
         if (holder$live) {
           $dispose(holder.f);
         }
-      });
+      }, error);
       throw error;
     }
     const held = [{ ...props, f }, holder];
@@ -219,7 +223,7 @@ function main() {
         $dropItems(held, (item) => {
           $dispose(item.f);
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`${tmp$2} count ${shared.strong}`);
@@ -227,8 +231,12 @@ function main() {
       $dispose(item.f);
     });
     console.log(`count ${shared.strong}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    $rcDrop(shared, noisyDrop_drop);
+    if ($live()) {
+      $rcDrop(shared, noisyDrop_drop);
+    }
   }
 
   const tag = [1];
@@ -252,7 +260,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(show);
-    });
+    }, error);
     throw error;
   }
   console.log(`tags ${show()} ${show2()}`);
@@ -261,7 +269,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(show2);
-    });
+    }, error);
     throw error;
   }
   console.log("end");

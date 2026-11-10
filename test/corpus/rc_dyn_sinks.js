@@ -69,7 +69,7 @@ function main() {
             value.impl.$drop?.(value.value);
           });
         });
-      });
+      }, error);
       throw error;
     }
     while (true) {
@@ -83,7 +83,7 @@ function main() {
               value.impl.$drop?.(value.value);
             });
           });
-        });
+        }, error);
         throw error;
       }
       if (sink == null) {
@@ -99,7 +99,7 @@ function main() {
               value.impl.$drop?.(value.value);
             });
           });
-        });
+        }, error);
         throw error;
       }
       try {
@@ -112,7 +112,7 @@ function main() {
               value.impl.$drop?.(value.value);
             });
           });
-        });
+        }, error);
         throw error;
       }
       $unborrow(borrowMut);
@@ -127,7 +127,7 @@ function main() {
             value.impl.$drop?.(value.value);
           });
         });
-      });
+      }, error);
       throw error;
     }
     let total;
@@ -141,7 +141,7 @@ function main() {
             value.impl.$drop?.(value.value);
           });
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -154,7 +154,7 @@ function main() {
             value.impl.$drop?.(value.value);
           });
         });
-      });
+      }, error);
       throw error;
     }
     $unborrow(borrow);

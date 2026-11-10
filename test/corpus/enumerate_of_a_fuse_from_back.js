@@ -9,6 +9,7 @@ import {
   $iter,
   $knowing,
   $lent,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
@@ -20,6 +21,7 @@ import {
   $rev,
   $roomFor,
   $tryOf,
+  $unwindsOn,
   fuseDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nthBack,
   fuseDoubleEndedIterator_rfold,
@@ -126,8 +128,12 @@ function main() {
       return result;
     }
     e = nth != null ? map(nth) : undefined;
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    rev.return();
+    if ($live()) {
+      rev.return();
+    }
   }
   console.log(`${e == null ? "None" : `Some((${e[0]}, ${e[1]}))`}`);
   const back = $collectDropping(

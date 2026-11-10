@@ -11,6 +11,7 @@ import {
   $iter,
   $knowing,
   $lent,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
@@ -19,6 +20,7 @@ import {
   $roomFor,
   $slicing,
   $tryOf,
+  $unwindsOn,
   fuseDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nthBack,
   fuseDoubleEndedIterator_rfold,
@@ -57,7 +59,7 @@ function firsts(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       map.return();
-    });
+    }, error);
     throw error;
   }
   map.return();
@@ -77,7 +79,7 @@ function backs(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       map.return();
-    });
+    }, error);
     throw error;
   }
   map.return();
@@ -110,8 +112,12 @@ function main() {
     }
     const value$1 = nth != null ? map$1(nth) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    f.return();
+    if ($live()) {
+      f.return();
+    }
   }
   const value = $held(
     $rev(
@@ -185,8 +191,12 @@ function main() {
   let r;
   try {
     r = $next(value);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value.return();
+    if ($live()) {
+      value.return();
+    }
   }
   console.log(`${r == null ? "None" : `Some(${r})`}`);
   const value$1 = $held(
@@ -205,8 +215,12 @@ function main() {
   let c;
   try {
     c = $next(value$1);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$1.return();
+    if ($live()) {
+      value$1.return();
+    }
   }
   console.log(`${c == null ? "None" : `Some(${c})`}`);
   const value$2 = firsts($iter(louds(3)), $dropEach(loudDrop_drop));
@@ -295,8 +309,12 @@ function main() {
     }
     const value$1 = nextBack != null ? map$1(nextBack) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    held.return();
+    if ($live()) {
+      held.return();
+    }
   }
 }
 //# sourceMappingURL=case.js.map

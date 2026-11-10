@@ -37,7 +37,7 @@ function main() {
         if (g$live) {
           dDrop_drop(g);
         }
-      });
+      }, error);
       throw error;
     }
     const f = (d) => d[0] !== 2;

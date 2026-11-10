@@ -9,6 +9,7 @@ import {
   $held,
   $iter,
   $last,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
@@ -16,6 +17,7 @@ import {
   $rev,
   $sizeHint,
   $slicing,
+  $unwindsOn,
   iterator_map,
 } from "@rust-js/std";
 
@@ -34,7 +36,7 @@ function ends(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   let b;
@@ -43,7 +45,7 @@ function ends(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -52,7 +54,7 @@ function ends(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   dropI?.(it);
@@ -86,7 +88,7 @@ function hinted(src, dropI) {
   } catch (error) {
     $cleanup(() => {
       it.return();
-    });
+    }, error);
     throw error;
   }
   it.return();
@@ -115,8 +117,12 @@ function main() {
   );
   try {
     console.log(`${value$1.len()}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$1.return();
+    if ($live()) {
+      value$1.return();
+    }
   }
   const value$2 = hinted($slicing($iter([[11], [12]]), loudDrop_drop), $dropEach(loudDrop_drop));
   console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);

@@ -14,11 +14,13 @@ import {
   $held,
   $intoIter,
   $iter,
+  $live,
   $next,
   $nextSome,
   $roomForHint,
   $someValue,
   $traitImpl,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -62,7 +64,7 @@ function tExt(
         } catch (error) {
           $cleanup(() => {
             dropT?.(self);
-          });
+          }, error);
           throw error;
         }
         dropT?.(self);
@@ -83,7 +85,7 @@ function tExt(
               $dropItems(out, (item) => {
                 dropTItemItem?.(item);
               });
-            });
+            }, error);
             throw error;
           }
           if (tmp == null) {
@@ -94,7 +96,7 @@ function tExt(
                 $dropItems(out, (item) => {
                   dropTItemItem?.(item);
                 });
-              });
+              }, error);
               throw error;
             }
             break;
@@ -108,7 +110,7 @@ function tExt(
               $dropItems(out, (item) => {
                 dropTItemItem?.(item);
               });
-            });
+            }, error);
             throw error;
           }
           while (true) {
@@ -121,7 +123,7 @@ function tExt(
                 $dropItems(out, (item) => {
                   dropTItemItem?.(item);
                 });
-              });
+              }, error);
               throw error;
             }
             if (tmp$1 == null) {
@@ -133,7 +135,7 @@ function tExt(
                   $dropItems(out, (item) => {
                     dropTItemItem?.(item);
                   });
-                });
+                }, error);
                 throw error;
               }
               break;
@@ -148,7 +150,7 @@ function tExt(
                 $dropItems(out, (item) => {
                   dropTItemItem?.(item);
                 });
-              });
+              }, error);
               throw error;
             }
           }
@@ -165,7 +167,7 @@ function tExt(
             } catch (error) {
               $cleanup(() => {
                 dropTItemIntoIter?.(value);
-              });
+              }, error);
               throw error;
             }
             dropTItemIntoIter?.(value);
@@ -185,7 +187,7 @@ function tExt(
         } catch (error) {
           $cleanup(() => {
             iter.return();
-          });
+          }, error);
           throw error;
         }
         iter.return();
@@ -216,9 +218,13 @@ function main() {
   try {
     const value = first?.[0];
     console.log(`first ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (first != null) {
-      dDrop_drop(first);
+    if ($live()) {
+      if (first != null) {
+        dDrop_drop(first);
+      }
     }
   }
   const flat = tExt(
@@ -239,9 +245,13 @@ function main() {
   ).flat($iter([[[4]], [[5], [6]]]), intoIterator);
   try {
     console.log(`flat [${flat.map((d) => d[0]).join(", ")}]`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of flat) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of flat) {
+        dDrop_drop(item);
+      }
     }
   }
   const firsts = tExt(
@@ -262,9 +272,13 @@ function main() {
   ).firsts($iter([[[7], [8]], [], [[9]]]), intoIterator);
   try {
     console.log(`firsts [${firsts.map((d) => d[0]).join(", ")}]`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of firsts) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of firsts) {
+        dDrop_drop(item);
+      }
     }
   }
 }

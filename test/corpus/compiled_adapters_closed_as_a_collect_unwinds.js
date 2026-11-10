@@ -3,6 +3,7 @@
 import {
   $advanceSlice,
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $debugStr,
@@ -13,11 +14,13 @@ import {
   $iter,
   $last,
   $lazyChain,
+  $live,
   $mapFrom,
   $next,
   $range,
   $skipping,
   $stepBy,
+  $unwindsOn,
   iterator_fuse,
   iterator_map,
   iterator_peekable,
@@ -58,8 +61,12 @@ function main() {
             throw new Error("map");
           }
           return String.fromCharCode((97 + (d[0] & 255)) & 255);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       }),
     ).join("");
@@ -80,8 +87,12 @@ function main() {
             throw new Error("map");
           }
           return d[0];
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       }),
       true,
@@ -95,9 +106,11 @@ function main() {
     try {
       tmp = ds(30);
     } catch (error) {
-      for (const item of value) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of value) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     const chain = $lazyChain(
@@ -112,8 +125,12 @@ function main() {
             throw new Error("map");
           }
           return [d[0], d[0]];
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       }),
       false,
@@ -127,9 +144,11 @@ function main() {
     try {
       tmp = ds(50);
     } catch (error) {
-      for (const item of value) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of value) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     const iter = iterator_map(
@@ -161,11 +180,19 @@ function main() {
               throw new Error("map");
             }
             result = String.fromCharCode((97 + ((((a[0] + b[0]) >>> 0) & 255) % 26)) & 255);
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            dDrop_drop(b);
+            if ($live()) {
+              dDrop_drop(b);
+            }
           }
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(a);
+          if ($live()) {
+            dDrop_drop(a);
+          }
         }
         return result;
       },
@@ -183,8 +210,12 @@ function main() {
     let result;
     try {
       result = $foldToArray(iter).join("");
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      iter.return();
+      if ($live()) {
+        iter.return();
+      }
     }
     const s = result;
     return s;
@@ -204,8 +235,12 @@ function main() {
             throw new Error("map");
           }
           return d[0];
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       })
       .reduce((n) => n + 1, 0),
@@ -224,8 +259,12 @@ function main() {
             throw new Error("map");
           }
           return d[0];
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       }),
     ),
@@ -243,8 +282,12 @@ function main() {
       ).map((d) => {
         try {
           return String.fromCharCode((97 + ((d[0] & 255) % 26)) & 255);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       }),
     ).join("");

@@ -63,7 +63,7 @@ function lastTwo(v, w) {
       if (w$live) {
         $dropItems(w, dDrop_drop);
       }
-    });
+    }, error);
     throw error;
   }
   const chain = $held(
@@ -80,7 +80,7 @@ function lastTwo(v, w) {
   } catch (error) {
     $cleanup(() => {
       chain.return();
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -89,7 +89,7 @@ function lastTwo(v, w) {
   } catch (error) {
     $cleanup(() => {
       chain.return();
-    });
+    }, error);
     throw error;
   }
   chain.return();
@@ -107,7 +107,7 @@ function chained(v, w) {
       if (w$live) {
         $dropItems(w, dDrop_drop);
       }
-    });
+    }, error);
     throw error;
   }
   return iterator_chain(
@@ -139,7 +139,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -149,7 +149,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     it.return();
@@ -168,7 +168,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -178,7 +178,7 @@ function main() {
         } catch (error) {
           $cleanup(() => {
             dDrop_drop(next[1]);
-          });
+          }, error);
           throw error;
         }
         dDrop_drop(next[1]);
@@ -186,7 +186,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     it.return();
@@ -220,7 +220,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -230,7 +230,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     let nextBack;
@@ -255,7 +255,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -265,7 +265,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     it.return();
@@ -280,7 +280,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -290,7 +290,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     it.return();
@@ -310,7 +310,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -320,7 +320,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     it.return();
@@ -348,7 +348,7 @@ function main() {
           if (other$live) {
             other.return();
           }
-        });
+        }, error);
         throw error;
       }
       console.log(`${["Less", "Equal", "Greater"][$iterCmp(map, other, $cmp) + 1]}`);
@@ -373,7 +373,7 @@ function main() {
           if (other$1$live) {
             other.return();
           }
-        });
+        }, error);
         throw error;
       }
       console.log(`${$iterEq(filter, other, $eq, dDrop_drop, dDrop_drop)}`);
@@ -393,7 +393,7 @@ function main() {
         if (h$live) {
           dDrop_drop(h);
         }
-      });
+      }, error);
       throw error;
     }
     function f(x) {
@@ -416,7 +416,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -426,7 +426,7 @@ function main() {
         if (first != null) {
           dDrop_drop(first);
         }
-      });
+      }, error);
       throw error;
     }
     if (first != null) {

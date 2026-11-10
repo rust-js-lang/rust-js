@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $dropEach,
   $enumerate,
@@ -11,6 +12,7 @@ import {
   $lastDropping,
   $lazyTakeWhile,
   $lent,
+  $live,
   $next,
   $nextBack,
   $nthDropping,
@@ -19,6 +21,7 @@ import {
   $skipping,
   $step,
   $stepBy,
+  $unwindsOn,
   iterator_fuse,
   iterator_peekable,
   iterator_rev,
@@ -60,7 +63,9 @@ function main() {
   try {
     tmp = id(1);
   } catch (error) {
-    value.return();
+    $cleanup(() => {
+      value.return();
+    }, error);
     throw error;
   }
   const step = $step(tmp);
@@ -68,8 +73,12 @@ function main() {
   let nth;
   try {
     nth = $nthDropping($lent(stepBy), id(3), loudDrop_drop, false);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    stepBy.return();
+    if ($live()) {
+      stepBy.return();
+    }
   }
   function map(loud) {
     const result = loud[0];
@@ -96,7 +105,9 @@ function main() {
   try {
     tmp$1 = id(1);
   } catch (error) {
-    value$2.return();
+    $cleanup(() => {
+      value$2.return();
+    }, error);
     throw error;
   }
   const fuse = $held(
@@ -120,8 +131,12 @@ function main() {
   );
   try {
     nth = $nthDropping($lent(fuse), id(3), loudDrop_drop, false);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    fuse.return();
+    if ($live()) {
+      fuse.return();
+    }
   }
   function map$1(loud) {
     const result = loud[0];
@@ -149,15 +164,21 @@ function main() {
   try {
     tmp$2 = id(3);
   } catch (error) {
-    value$4.return();
+    $cleanup(() => {
+      value$4.return();
+    }, error);
     throw error;
   }
   const step$1 = $step(tmp$2);
   const value$5 = $held($stepBy(value$4, step$1, loudDrop_drop));
   try {
     nth = $nthDropping($lent(value$5), id(1), loudDrop_drop, false);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$5.return();
+    if ($live()) {
+      value$5.return();
+    }
   }
   function map$2(loud) {
     const result = loud[0];
@@ -172,7 +193,9 @@ function main() {
   try {
     tmp$3 = id(3);
   } catch (error) {
-    enumerate.return();
+    $cleanup(() => {
+      enumerate.return();
+    }, error);
     throw error;
   }
   const step$2 = $step(tmp$3);
@@ -190,8 +213,12 @@ function main() {
       },
       false,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$7.return();
+    if ($live()) {
+      value$7.return();
+    }
   }
   function map$3([at, loud]) {
     const result = [at, loud[0]];
@@ -207,7 +234,9 @@ function main() {
   try {
     tmp$4 = id(2);
   } catch (error) {
-    value$9.return();
+    $cleanup(() => {
+      value$9.return();
+    }, error);
     throw error;
   }
   const step$3 = $step(tmp$4);
@@ -216,7 +245,9 @@ function main() {
   try {
     tmp$5 = id(2);
   } catch (error) {
-    value$10.return();
+    $cleanup(() => {
+      value$10.return();
+    }, error);
     throw error;
   }
   const take = value$10.take(tmp$5);
@@ -224,7 +255,9 @@ function main() {
   try {
     tmp$6 = id(3);
   } catch (error) {
-    take.return();
+    $cleanup(() => {
+      take.return();
+    }, error);
     throw error;
   }
   const step$4 = $step(tmp$6);
@@ -243,7 +276,9 @@ function main() {
   try {
     tmp$7 = id(2);
   } catch (error) {
-    value$11.return();
+    $cleanup(() => {
+      value$11.return();
+    }, error);
     throw error;
   }
   function inspect(loud) {
@@ -257,7 +292,9 @@ function main() {
   try {
     tmp$8 = id(2);
   } catch (error) {
-    value$12.return();
+    $cleanup(() => {
+      value$12.return();
+    }, error);
     throw error;
   }
   const step$5 = $step(tmp$8);
@@ -273,7 +310,9 @@ function main() {
   try {
     tmp$9 = id(1);
   } catch (error) {
-    value$13.return();
+    $cleanup(() => {
+      value$13.return();
+    }, error);
     throw error;
   }
   const takeWhile = $lazyTakeWhile(
@@ -285,7 +324,9 @@ function main() {
   try {
     tmp$10 = id(2);
   } catch (error) {
-    takeWhile.return();
+    $cleanup(() => {
+      takeWhile.return();
+    }, error);
     throw error;
   }
   sum = $skipping(takeWhile, tmp$10, loudDrop_drop)
@@ -303,7 +344,9 @@ function main() {
   try {
     tmp$11 = id(2);
   } catch (error) {
-    value$14.return();
+    $cleanup(() => {
+      value$14.return();
+    }, error);
     throw error;
   }
   const value$15 = $lazyTakeWhile(
@@ -315,7 +358,9 @@ function main() {
   try {
     tmp$12 = id(2);
   } catch (error) {
-    value$15.return();
+    $cleanup(() => {
+      value$15.return();
+    }, error);
     throw error;
   }
   const short = $skipping(value$15, tmp$12, loudDrop_drop)
@@ -333,7 +378,9 @@ function main() {
   try {
     tmp$13 = id(2);
   } catch (error) {
-    value$16.return();
+    $cleanup(() => {
+      value$16.return();
+    }, error);
     throw error;
   }
   const last = $lastDropping(
@@ -358,7 +405,9 @@ function main() {
   try {
     tmp$14 = id(2);
   } catch (error) {
-    value$18.return();
+    $cleanup(() => {
+      value$18.return();
+    }, error);
     throw error;
   }
   function inspect$1(loud) {
@@ -372,8 +421,12 @@ function main() {
   );
   try {
     nth = $nthDropping($lent(value$19), id(3), loudDrop_drop, false);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$19.return();
+    if ($live()) {
+      value$19.return();
+    }
   }
   function map$5(loud) {
     const result = loud[0];

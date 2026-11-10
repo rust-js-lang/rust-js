@@ -8,8 +8,10 @@ import {
   $held,
   $iter,
   $iterator,
+  $live,
   $next,
   $rangeNext,
+  $unwindsOn,
   iterator_fuse,
   iterator_inspect,
   iterator_peekable,
@@ -62,8 +64,12 @@ function main() {
         console.log(`saw ${d[0]}`);
         dDrop_drop(d);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      iter.return();
+      if ($live()) {
+        iter.return();
+      }
     }
   });
   run("peekable next", () => {
@@ -93,13 +99,21 @@ function main() {
         if (b != null) {
           dDrop_drop(b);
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        if (a != null) {
-          dDrop_drop(a);
+        if ($live()) {
+          if (a != null) {
+            dDrop_drop(a);
+          }
         }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      p.return();
+      if ($live()) {
+        p.return();
+      }
     }
   });
 }

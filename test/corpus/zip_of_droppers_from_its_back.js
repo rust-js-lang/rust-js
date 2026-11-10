@@ -11,11 +11,13 @@ import {
   $held,
   $index,
   $iter,
+  $live,
   $mapEnds,
   $next,
   $print,
   $range,
   $rev,
+  $unwindsOn,
   $zipEnds,
 } from "@rust-js/std";
 
@@ -54,7 +56,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(value, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   const sum = $foldBack(
@@ -75,7 +77,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           dDrop_drop(x);
-        });
+        }, error);
         throw error;
       }
       dDrop_drop(x);
@@ -90,7 +92,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(value$1, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   const value$2 = $held(
@@ -109,7 +111,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           dDrop_drop(x);
-        });
+        }, error);
         throw error;
       }
       dDrop_drop(x);
@@ -122,7 +124,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       value$2.return();
-    });
+    }, error);
     throw error;
   }
   value$2.return();
@@ -134,7 +136,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(value$3, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   const zip = $held(
@@ -154,7 +156,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         dDrop_drop(x);
-      });
+      }, error);
       throw error;
     }
     dDrop_drop(x);
@@ -172,7 +174,7 @@ function main() {
         } catch (error) {
           $cleanup(() => {
             dDrop_drop(value[1]);
-          });
+          }, error);
           throw error;
         }
         dDrop_drop(value[1]);
@@ -182,7 +184,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       zip.return();
-    });
+    }, error);
     throw error;
   }
   zip.return();
@@ -216,7 +218,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(sides, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     const value = $iter(sides);
@@ -226,7 +228,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(value, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     const rfold = $foldBack(
@@ -248,12 +250,16 @@ function main() {
           } catch (error) {
             $cleanup(() => {
               dDrop_drop(x);
-            });
+            }, error);
             throw error;
           }
           dDrop_drop(x);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          accDrop_drop(acc);
+          if ($live()) {
+            accDrop_drop(acc);
+          }
         }
         return result;
       },

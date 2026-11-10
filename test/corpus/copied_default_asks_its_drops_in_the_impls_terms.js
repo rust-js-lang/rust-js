@@ -14,11 +14,13 @@ import {
   $intsOrdered,
   $iter,
   $iterator,
+  $live,
   $next,
   $ordered,
   $roomForHint,
   $sortUnstable,
   $traitImpl,
+  $unwindsOn,
   iterator_map,
   mapIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
@@ -57,7 +59,7 @@ function tExt(TIterator, TInPlace, TItemSize, TItemAlign, dropT, dropTItem) {
       } catch (error) {
         $cleanup(() => {
           dropFn?.(key);
-        });
+        }, error);
         throw error;
       }
       const key$1 = (item) => key(item);
@@ -69,7 +71,7 @@ function tExt(TIterator, TInPlace, TItemSize, TItemAlign, dropT, dropTItem) {
             dropTItem?.(item);
           });
           dropFn?.(key);
-        });
+        }, error);
         throw error;
       }
       let result;
@@ -78,7 +80,7 @@ function tExt(TIterator, TInPlace, TItemSize, TItemAlign, dropT, dropTItem) {
       } catch (error) {
         $cleanup(() => {
           dropFn?.(key);
-        });
+        }, error);
         throw error;
       }
       dropFn?.(key);
@@ -105,7 +107,7 @@ function tExt(TIterator, TInPlace, TItemSize, TItemAlign, dropT, dropTItem) {
           $dropItems(v, (item) => {
             dropTItem?.(item);
           });
-        });
+        }, error);
         throw error;
       }
       return $iter(v);
@@ -144,7 +146,7 @@ function wrapperReversed(IIterator, dropI, dropIItem) {
           $dropItems(v, (item) => {
             dropIItem?.(item);
           });
-        });
+        }, error);
         throw error;
       }
       return v;
@@ -174,9 +176,13 @@ function main() {
       console.log(`first ${first[0]}`);
       noisyDrop_drop(first);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of sorted) {
-      noisyDrop_drop(item);
+    if ($live()) {
+      for (const item of sorted) {
+        noisyDrop_drop(item);
+      }
     }
   }
   const words = Array.from(

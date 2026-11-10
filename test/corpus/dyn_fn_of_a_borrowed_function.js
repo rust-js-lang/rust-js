@@ -46,7 +46,7 @@ function main() {
     $cleanup(() => {
       $rcDrop(shared, $dispose);
       $dispose(greet);
-    });
+    }, error);
     throw error;
   }
   let tmp;
@@ -57,7 +57,7 @@ function main() {
       $rcDrop(again, $dispose);
       $rcDrop(shared, $dispose);
       $dispose(greet);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -67,7 +67,7 @@ function main() {
       $rcDrop(again, $dispose);
       $rcDrop(shared, $dispose);
       $dispose(greet);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -76,7 +76,7 @@ function main() {
     $cleanup(() => {
       $rcDrop(shared, $dispose);
       $dispose(greet);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -84,7 +84,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(greet);
-    });
+    }, error);
     throw error;
   }
   console.log("shared dropped");
@@ -95,7 +95,7 @@ function main() {
     $cleanup(() => {
       $rcDrop(ofBox, $dispose);
       $dispose(greet);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -103,7 +103,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(greet);
-    });
+    }, error);
     throw error;
   }
   console.log("borrowed box dropped");
@@ -113,7 +113,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(greet);
-    });
+    }, error);
     throw error;
   }
   console.log("once dropped");
@@ -125,7 +125,7 @@ function main() {
     $cleanup(() => {
       $dispose(count);
       $dispose(greet);
-    });
+    }, error);
     throw error;
   }
   console.log(`borrowed closure dropped, ${count()}`);
@@ -136,7 +136,7 @@ function main() {
     $cleanup(() => {
       $dispose(count);
       $dispose(greet);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -146,7 +146,7 @@ function main() {
       $dispose(twice);
       $dispose(count);
       $dispose(greet);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -155,7 +155,7 @@ function main() {
     $cleanup(() => {
       $dispose(count);
       $dispose(greet);
-    });
+    }, error);
     throw error;
   }
   console.log("twice dropped");
@@ -165,7 +165,7 @@ function main() {
     $cleanup(() => {
       $dispose(count);
       $dispose(greet);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -173,7 +173,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(greet);
-    });
+    }, error);
     throw error;
   }
   $dispose(greet);

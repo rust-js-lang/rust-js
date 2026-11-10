@@ -68,7 +68,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(v, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   $dropItems(v, dDrop_drop);

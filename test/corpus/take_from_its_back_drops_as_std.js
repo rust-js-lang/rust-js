@@ -13,6 +13,7 @@ import {
   $held,
   $iter,
   $lazyChain,
+  $live,
   $mapEnds,
   $nthBack,
   $range,
@@ -20,6 +21,7 @@ import {
   $roomForHint,
   $slicing,
   $taking,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -48,16 +50,20 @@ function collected(src, ITrustedLen, dropI) {
   } catch (error) {
     $cleanup(() => {
       iter.return();
-    });
+    }, error);
     throw error;
   }
   iter.return();
   const v = result;
   try {
     return v.map((d) => d[0]);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of v) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of v) {
+        dDrop_drop(item);
+      }
     }
   }
 }
@@ -74,8 +80,12 @@ function main() {
               throw new Error("map");
             }
             return [(d[0] + 100) >>> 0];
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            dDrop_drop(d);
+            if ($live()) {
+              dDrop_drop(d);
+            }
           }
         }),
         3,
@@ -100,9 +110,13 @@ function main() {
   );
   try {
     console.log(`collected [${v.map((d) => d[0]).join(", ")}]`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of v) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of v) {
+        dDrop_drop(item);
+      }
     }
   }
   console.log(
@@ -146,8 +160,12 @@ function main() {
       return result;
     }
     third = nthBack != null ? map(nthBack) : undefined;
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    rev.return();
+    if ($live()) {
+      rev.return();
+    }
   }
   console.log(`third ${third == null ? "None" : `Some(${third})`}`);
 }

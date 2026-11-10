@@ -6,11 +6,13 @@ import {
   $foldToArray,
   $held,
   $iter,
+  $live,
   $next,
   $peekCell,
   $rangeNext,
   $repeatingN,
   $roomForHint,
+  $unwindsOn,
   iterator_map,
   iterator_peekable,
   mapIterator___iteratorGetUnchecked,
@@ -44,16 +46,24 @@ function repeated() {
       first = $next(some);
       const value = first?.[0];
       console.log(`first ${value == null ? "None" : `Some(${value})`}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      some.return();
+      if ($live()) {
+        some.return();
+      }
     }
     console.log("dropped");
     if (first != null) {
       loudDrop_drop(first);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of all) {
-      loudDrop_drop(item);
+    if ($live()) {
+      for (const item of all) {
+        loudDrop_drop(item);
+      }
     }
   }
 }

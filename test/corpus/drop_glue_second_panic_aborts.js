@@ -33,7 +33,7 @@ function main() {
           throw new Error(`part ${_four.d[0]} panics`);
         }
         console.log(`drop ${_four.d[0]}`);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -51,7 +51,7 @@ function main() {
           throw new Error(`part ${_four.d[0]} panics`);
         }
         console.log(`drop ${_four.d[0]}`);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -65,7 +65,7 @@ function main() {
           throw new Error(`part ${_four.d[0]} panics`);
         }
         console.log(`drop ${_four.d[0]}`);
-      });
+      }, error);
       throw error;
     }
     if (_four.d[0] === 2 || _four.d[0] === 3) {

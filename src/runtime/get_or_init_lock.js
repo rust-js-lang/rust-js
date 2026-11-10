@@ -3,7 +3,7 @@
 function $getOrInitLock(cell, f) {
   if (cell.value === undefined) {
     const value = f();
-    if (cell.value !== undefined) throw new Error("rust-js does not support a `OnceLock` whose init sets it, which deadlocks in Rust");
+    if (cell.value !== undefined) throw $unsupported("rust-js does not support a `OnceLock` whose init sets it, which deadlocks in Rust");
     cell.value = $some(value);
   }
   return $someValue(cell.value);

@@ -2,6 +2,8 @@
 
 import {
   $borrow,
+  $catchable,
+  $cleanup,
   $lazyRange,
   $lazyRangeBack,
   $lazyZip,
@@ -39,6 +41,7 @@ function check(what, f, TDebug) {
   try {
     v = f();
   } catch (thrown) {
+    $catchable(thrown);
     const payload = $unwound(thrown);
     const arg = message(payload);
     console.log(`${what}: ${arg}`);
@@ -154,7 +157,9 @@ function main() {
         try {
           borrow = $borrow(cell, true);
         } catch (error) {
-          droppedDrop_drop(dropped);
+          $cleanup(() => {
+            droppedDrop_drop(dropped);
+          }, error);
           throw error;
         }
         let collect;

@@ -31,7 +31,7 @@ function runWith(name, wrap, callback) {
         const old = _restore[0];
         _restore[0] = undefined;
         setCurrent(old);
-      });
+      }, error);
       throw error;
     }
     const old = _restore[0];
@@ -46,7 +46,7 @@ function runWith(name, wrap, callback) {
       const old = _restore[0];
       _restore[0] = undefined;
       setCurrent(old);
-    });
+    }, error);
     throw error;
   }
   const old = _restore[0];

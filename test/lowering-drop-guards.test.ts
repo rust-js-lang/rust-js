@@ -114,8 +114,12 @@ const depthReturns = `  const previousDepth = DEPTH;
       return callback();
     }
     return callback();
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    setDepth(previousDepth);
+    if ($live()) {
+      setDepth(previousDepth);
+    }
   }
 }
 `;
@@ -149,7 +153,7 @@ const guardedReturns = `  let result;
     } catch (error) {
       $cleanup(() => {
         setCurrentFiber(previousFiber);
-      });
+      }, error);
       throw error;
     }
     setCurrentFiber(previousFiber);
@@ -160,7 +164,7 @@ const guardedReturns = `  let result;
   } catch (error) {
     $cleanup(() => {
       setCurrentFiber(previousFiber);
-    });
+    }, error);
     throw error;
   }
   setCurrentFiber(previousFiber);
@@ -261,7 +265,7 @@ test("a guard's drop that takes its field reads the variable it was made of", as
         const old = _restore[0];
         _restore[0] = undefined;
         setCurrentFiber(old);
-      });
+      }, error);
       throw error;
     }
     const old = _restore[0];
@@ -276,7 +280,7 @@ test("a guard's drop that takes its field reads the variable it was made of", as
       const old = _restore[0];
       _restore[0] = undefined;
       setCurrentFiber(old);
-    });
+    }, error);
     throw error;
   }
   const old = _restore[0];
@@ -394,7 +398,7 @@ pub fn counted(work: fn()) {
   } finally {
     console.log = log;
   }
-  expect(again.js).toContain("  try {\n    work();\n    guard[0] = 2;\n    work();\n  } finally {\n");
+  expect(again.js).toContain("  try {\n    work();\n    guard[0] = 2;\n    work();\n  } catch (error) {\n    throw $unwindsOn(error);\n  } finally {\n    if ($live()) {\n");
   expect(logged).toEqual(['Some("a") None', 'Some("n") None', "more None", "", "more Some(true)", "b", "more Some(false)", "count 2"]);
 });
 
@@ -519,8 +523,12 @@ pub fn rendering() -> bool {
     setIsRendering(true);
     try {
       return f();
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      setIsRendering(wasRendering);
+      if ($live()) {
+        setIsRendering(wasRendering);
+      }
     }
   },
 };
@@ -530,8 +538,12 @@ pub fn rendering() -> bool {
   setIsRendering(true);
   try {
     return f();
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    setIsRendering(wasRendering);
+    if ($live()) {
+      setIsRendering(wasRendering);
+    }
   }
 };
 `);
@@ -612,8 +624,12 @@ pub fn memo(create: &dyn Fn() -> u32) -> Option<u32> {
         setH(7);
         try {
           return create();
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          setH(prevDispatcher);
+          if ($live()) {
+            setH(prevDispatcher);
+          }
         }
       },`);
   expect(js).not.toContain("_drop");
@@ -693,8 +709,12 @@ pub fn memo(create: &dyn Fn() -> u32) -> Option<u32> {
       setH(7);
       try {
         return create();
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        setH(prevDispatcher);
+        if ($live()) {
+          setH(prevDispatcher);
+        }
       }
     },`);
   expect(js).not.toContain("_drop");
@@ -846,8 +866,12 @@ pub fn described() -> f64 {
       total += globalThis.work(2);
     }
     return total + globalThis.work(3);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    REENTRY = false;
+    if ($live()) {
+      REENTRY = false;
+    }
   }`);
   // Its call read where the loop steps it, as nothing between them needs
   // a cleanup of its own (#723).
@@ -857,8 +881,12 @@ pub fn described() -> f64 {
       total += globalThis.work(kind) + size;
     }
     return total;
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    REENTRY = false;
+    if ($live()) {
+      REENTRY = false;
+    }
   }`);
   const lib = await import(join(dir, "lib.js"));
   const global = globalThis as Record<string, unknown>;
@@ -966,7 +994,7 @@ pub fn depth_seen(fail: bool) -> u32 {
   } catch (error) {
     $cleanup(() => {
       restore();
-    });
+    }, error);
     throw error;
   }
   restore();
@@ -1016,8 +1044,12 @@ pub fn zeroed(depth: &Cell<u32>, fail: bool) -> u32 {
   );
   // `Finally`'s drop, given a closure that can't panic, never unwinds
   // (#861), so it's the `finally`'s.
-  expect(js).toContain(`  } finally {
-    depth.value = 0; // zeroed
+  expect(js).toContain(`  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      depth.value = 0; // zeroed
+    }
   }
 }
 `);
@@ -1306,7 +1338,7 @@ pub fn props_twice(prototype: u32) -> u32 {
     $cleanup(() => {
       reentry = false;
       globalThis.restored(previous, dispatcher);
-    });
+    }, error);
     throw error;
   }
   for (let s = 0; s < lines.length; s++) {
@@ -1335,11 +1367,15 @@ pub fn props_twice(prototype: u32) -> u32 {
         return frame;
       }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    reentry = false;
-    RESTORED = previous;
-    if (dispatcher != null) {
-      RESTORED = dispatcher;
+    if ($live()) {
+      reentry = false;
+      RESTORED = previous;
+      if (dispatcher != null) {
+        RESTORED = dispatcher;
+      }
     }
   }`);
   // A variable set once the guard's made isn't what the guard holds.

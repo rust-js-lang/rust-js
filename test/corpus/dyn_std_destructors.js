@@ -39,7 +39,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       a.impl.$drop?.(a.value);
-    });
+    }, error);
     throw error;
   }
   a.impl.$drop?.(a.value);
@@ -49,7 +49,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       shown.impl.$drop?.(shown.value);
-    });
+    }, error);
     throw error;
   }
   const items = [
@@ -66,7 +66,7 @@ function main() {
         item.impl.$drop?.(item.value);
       });
       shown.impl.$drop?.(shown.value);
-    });
+    }, error);
     throw error;
   }
   let tmp$0$live = true;
@@ -82,7 +82,7 @@ function main() {
           item.impl.$drop?.(item.value);
         });
         shown.impl.$drop?.(shown.value);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -93,7 +93,7 @@ function main() {
           item.impl.$drop?.(item.value);
         });
         shown.impl.$drop?.(shown.value);
-      });
+      }, error);
       throw error;
     }
   } else {
@@ -112,7 +112,7 @@ function main() {
         item.impl.$drop?.(item.value);
       });
       shown.impl.$drop?.(shown.value);
-    });
+    }, error);
     throw error;
   }
   tmp$0$live = false;
@@ -124,7 +124,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       shown.impl.$drop?.(shown.value);
-    });
+    }, error);
     throw error;
   }
   shown.impl.$drop?.(shown.value);

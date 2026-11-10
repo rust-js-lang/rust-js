@@ -11,9 +11,11 @@ import {
   $iterator,
   $last,
   $lazyScan,
+  $live,
   $next,
   $range,
   $rev,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -133,8 +135,12 @@ function held() {
   try {
     const value = $next(held);
     console.log(`next ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    held.return();
+    if ($live()) {
+      held.return();
+    }
   }
   console.log("dropped");
   // Of a `Vec`'s items, dropped unstepped, and after a step.
@@ -153,8 +159,12 @@ function held() {
     }
     const value = next != null ? map(next) : undefined;
     console.log(`first ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    stepped.return();
+    if ($live()) {
+      stepped.return();
+    }
   }
   console.log("stepped");
 }

@@ -65,7 +65,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       value.return();
-    });
+    }, error);
     throw error;
   }
   try {
@@ -75,7 +75,7 @@ function main() {
       if (last != null) {
         dDrop_drop(last);
       }
-    });
+    }, error);
     throw error;
   }
   const value$1 = last?.[0];
@@ -99,7 +99,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         flatten.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -109,7 +109,7 @@ function main() {
         if (last != null) {
           dDrop_drop(last);
         }
-      });
+      }, error);
       throw error;
     }
     function map(d) {
@@ -139,7 +139,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       value$2.return();
-    });
+    }, error);
     throw error;
   }
   try {
@@ -149,7 +149,7 @@ function main() {
       if (last != null) {
         dDrop_drop(last);
       }
-    });
+    }, error);
     throw error;
   }
   function map(d) {

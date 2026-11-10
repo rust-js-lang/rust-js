@@ -6,12 +6,14 @@ import {
   $foldBack,
   $iter,
   $knowing,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
   $sizeHint,
   $stepByEnds,
   $tryOf,
+  $unwindsOn,
   fuseDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nthBack,
   fuseDoubleEndedIterator_tryRfold,
@@ -128,9 +130,13 @@ function main() {
     console.log(`copied ${copied}`);
     const found = $findBack($stepByEnds($iter(numbers), 2), (n) => n % 3 === 0);
     console.log(`${found == null ? "None" : `Some(${found})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of items) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of items) {
+        dDrop_drop(item);
+      }
     }
   }
 }

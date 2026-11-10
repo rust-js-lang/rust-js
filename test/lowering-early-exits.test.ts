@@ -1065,7 +1065,7 @@ pub fn last_seen(xs: &[u32]) -> u32 {
 }
 `);
   expect(js).toContain(
-    "    try {\n      let hasMoreWork;\n      do {\n        hasMoreWork = cb(true, time);\n      } while (hasMoreWork);\n      if (!hasMoreWork) {\n        scheduled = undefined;\n      }\n    } finally {\n      FLUSHING = false;\n    }\n    return true;\n",
+    "    try {\n      let hasMoreWork;\n      do {\n        hasMoreWork = cb(true, time);\n      } while (hasMoreWork);\n      if (!hasMoreWork) {\n        scheduled = undefined;\n      }\n    } catch (error) {\n      throw $unwindsOn(error);\n    } finally {\n      if ($live()) {\n        FLUSHING = false;\n      }\n    }\n    return true;\n",
   );
   expect(js).not.toContain("if (!hasMoreWork) {\n          if (!hasMoreWork)");
   expect(js).toContain("    seen.push(() => x);\n");

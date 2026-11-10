@@ -26,7 +26,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       onceDrop_drop(_a);
-    });
+    }, error);
     throw error;
   }
   onceDrop_drop(_a);

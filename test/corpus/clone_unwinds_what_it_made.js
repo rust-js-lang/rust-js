@@ -7,11 +7,13 @@ import {
   $eq,
   $extendMap,
   $intsOrdered,
+  $live,
   $madeEach,
   $madeInTurn,
   $ordTreeMap,
   $sortedEntries,
   $treeFromSorted,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -57,23 +59,47 @@ function main() {
             try {
               try {
                 console.log(`${dDebug_fmt(q.a)}`);
+              } catch (error) {
+                throw $unwindsOn(error);
               } finally {
-                dDrop_drop(q.a);
+                if ($live()) {
+                  dDrop_drop(q.a);
+                }
               }
+            } catch (error) {
+              throw $unwindsOn(error);
             } finally {
-              dDrop_drop(q.b);
+              if ($live()) {
+                dDrop_drop(q.b);
+              }
             }
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            dDrop_drop(q.c);
+            if ($live()) {
+              dDrop_drop(q.c);
+            }
           }
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(p.a);
+          if ($live()) {
+            dDrop_drop(p.a);
+          }
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(p.b);
+        if ($live()) {
+          dDrop_drop(p.b);
+        }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      dDrop_drop(p.c);
+      if ($live()) {
+        dDrop_drop(p.c);
+      }
     }
   });
   run("variant", () => {
@@ -92,10 +118,14 @@ function main() {
         dDrop_drop(t.from);
         dDrop_drop(t.to);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      if (s.TAG === "Line") {
-        dDrop_drop(s.from);
-        dDrop_drop(s.to);
+      if ($live()) {
+        if (s.TAG === "Line") {
+          dDrop_drop(s.from);
+          dDrop_drop(s.to);
+        }
       }
     }
   });
@@ -126,11 +156,15 @@ function main() {
         dDrop_drop(item.b);
         dDrop_drop(item.c);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of v) {
-        dDrop_drop(item.a);
-        dDrop_drop(item.b);
-        dDrop_drop(item.c);
+      if ($live()) {
+        for (const item of v) {
+          dDrop_drop(item.a);
+          dDrop_drop(item.b);
+          dDrop_drop(item.c);
+        }
       }
     }
   });
@@ -148,14 +182,26 @@ function main() {
           dDrop_drop(u[0]);
           dDrop_drop(u[1]);
           dDrop_drop(u[2]);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(t[0]);
+          if ($live()) {
+            dDrop_drop(t[0]);
+          }
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(t[1]);
+        if ($live()) {
+          dDrop_drop(t[1]);
+        }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      dDrop_drop(t[2]);
+      if ($live()) {
+        dDrop_drop(t[2]);
+      }
     }
   });
   run("vec", () => {
@@ -166,9 +212,13 @@ function main() {
       for (const item of w) {
         dDrop_drop(item);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of v) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of v) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -180,9 +230,13 @@ function main() {
       for (const item of w) {
         dDrop_drop(item);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of v) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of v) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -194,9 +248,13 @@ function main() {
       for (const item of b) {
         dDrop_drop(item);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of a) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of a) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -208,9 +266,13 @@ function main() {
       for (const item of r) {
         dDrop_drop(item);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of q) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of q) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -246,7 +308,7 @@ function main() {
         for (const [, value] of $sortedEntries(m, $cmp)) {
           dDrop_drop(value);
         }
-      });
+      }, error);
       throw error;
     }
     console.log(`${n.size}`);
@@ -259,7 +321,7 @@ function main() {
         for (const [, value] of $sortedEntries(m, $cmp)) {
           dDrop_drop(value);
         }
-      });
+      }, error);
       throw error;
     }
     for (const [, value] of $sortedEntries(m, $cmp)) {
@@ -295,7 +357,7 @@ function main() {
           dDrop_drop(item[0]);
           dDrop_drop(item[1]);
         }
-      });
+      }, error);
       throw error;
     }
     console.log(`${n.size}`);
@@ -310,7 +372,7 @@ function main() {
           dDrop_drop(item[0]);
           dDrop_drop(item[1]);
         }
-      });
+      }, error);
       throw error;
     }
     for (const item of m.values()) {

@@ -18,6 +18,7 @@ import {
   $heapRetain,
   $insert,
   $iter,
+  $live,
   $next,
   $nthBack,
   $partiallyOrdered,
@@ -28,6 +29,7 @@ import {
   $slicing,
   $sortedEntries,
   $truncate,
+  $unwindsOn,
   $unwrapOk,
 } from "@rust-js/std";
 
@@ -68,8 +70,12 @@ function main() {
     console.log(`pair ${pair.first[0]} ${pair.second[0]}`);
     try {
       boomDrop_drop(pair.first);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      loudDrop_drop(pair.second);
+      if ($live()) {
+        loudDrop_drop(pair.second);
+      }
     }
   });
   caught("tuple", () => {
@@ -77,8 +83,12 @@ function main() {
     loudDrop_drop(_t[0]);
     try {
       boomDrop_drop(_t[1]);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      loudDrop_drop(_t[2]);
+      if ($live()) {
+        loudDrop_drop(_t[2]);
+      }
     }
   });
   caught("variant", () => {
@@ -105,7 +115,7 @@ function main() {
             loudDrop_drop(s._2);
           }
         }
-      });
+      }, error);
       throw error;
     }
     while (true) {
@@ -130,7 +140,7 @@ function main() {
               loudDrop_drop(s._2);
             }
           }
-        });
+        }, error);
         throw error;
       }
       if (shape == null) {
@@ -145,8 +155,12 @@ function main() {
         loudDrop_drop(e._0);
         try {
           boomDrop_drop(e._1);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          loudDrop_drop(e._2);
+          if ($live()) {
+            loudDrop_drop(e._2);
+          }
         }
       }
     } catch (error) {
@@ -159,15 +173,19 @@ function main() {
             loudDrop_drop(s._2);
           }
         }
-      });
+      }, error);
       throw error;
     }
     if (s.TAG === "Three") {
       loudDrop_drop(s._0);
       try {
         boomDrop_drop(s._1);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        loudDrop_drop(s._2);
+        if ($live()) {
+          loudDrop_drop(s._2);
+        }
       }
     }
   });
@@ -189,7 +207,7 @@ function main() {
             boomDrop_drop(item._0);
           }
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems(a, (item) => {
@@ -232,7 +250,7 @@ function main() {
             boomDrop_drop(value._0);
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -254,7 +272,7 @@ function main() {
             boomDrop_drop(value._0);
           }
         });
-      });
+      }, error);
       throw error;
     }
     let item;
@@ -270,7 +288,7 @@ function main() {
             boomDrop_drop(value._0);
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -292,7 +310,7 @@ function main() {
             boomDrop_drop(value._0);
           }
         });
-      });
+      }, error);
       throw error;
     }
     let tmp;
@@ -308,7 +326,7 @@ function main() {
             boomDrop_drop(value._0);
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -330,7 +348,7 @@ function main() {
             boomDrop_drop(value._0);
           }
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems($sortedEntries(m, $cmp), ([, value]) => {
@@ -370,7 +388,7 @@ function main() {
             boomDrop_drop(item._0);
           }
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, (item) => {
@@ -406,7 +424,7 @@ function main() {
             boomDrop_drop(item._0);
           }
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, (item) => {
@@ -433,7 +451,7 @@ function main() {
           }
         });
         $dropSender(send);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -449,7 +467,7 @@ function main() {
           }
         });
         $dropSender(send);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -464,7 +482,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropSender(send);
-      });
+      }, error);
       throw error;
     }
     $dropSender(send);
@@ -527,7 +545,7 @@ function main() {
           if (item.TAG === "Loud") {
             boomDrop_drop(item._0);
           }
-        });
+        }, error);
         throw error;
       }
       if (item.TAG === "Quiet") {
@@ -569,7 +587,7 @@ function main() {
             boomDrop_drop(item._0);
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -584,7 +602,7 @@ function main() {
             boomDrop_drop(item._0);
           }
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems(it, (item) => {
@@ -628,7 +646,7 @@ function main() {
             boomDrop_drop(item._0);
           }
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, (item) => {
@@ -669,7 +687,7 @@ function main() {
             boomDrop_drop(item._0);
           }
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, (item) => {
@@ -695,9 +713,13 @@ function main() {
         },
         loudDrop_drop,
       );
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of v) {
-        loudDrop_drop(item);
+      if ($live()) {
+        for (const item of v) {
+          loudDrop_drop(item);
+        }
       }
     }
   });
@@ -730,7 +752,7 @@ function main() {
             boomDrop_drop(item._0);
           }
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, (item) => {
@@ -759,7 +781,7 @@ function main() {
             }
           },
         );
-      });
+      }, error);
       throw error;
     }
     try {
@@ -778,7 +800,7 @@ function main() {
             }
           },
         );
-      });
+      }, error);
       throw error;
     }
     let loud;
@@ -796,7 +818,7 @@ function main() {
             }
           },
         );
-      });
+      }, error);
       throw error;
     }
     try {
@@ -815,7 +837,7 @@ function main() {
             }
           },
         );
-      });
+      }, error);
       throw error;
     }
     let tmp;
@@ -833,7 +855,7 @@ function main() {
             }
           },
         );
-      });
+      }, error);
       throw error;
     }
     try {
@@ -852,7 +874,7 @@ function main() {
             }
           },
         );
-      });
+      }, error);
       throw error;
     }
     try {
@@ -876,7 +898,7 @@ function main() {
             }
           },
         );
-      });
+      }, error);
       throw error;
     }
     console.log(`map ${m.size}`);
@@ -917,8 +939,12 @@ function main() {
     try {
       console.log("panics");
       throw new Error("own drop");
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      loudDrop_drop(inner);
+      if ($live()) {
+        loudDrop_drop(inner);
+      }
     }
   });
   console.log("done");

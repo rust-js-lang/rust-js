@@ -10,12 +10,14 @@ import {
   $held,
   $iter,
   $lent,
+  $live,
   $next,
   $rangeNext,
   $roomForHint,
   $someValue,
   $took,
   $traitImpl,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -63,7 +65,7 @@ function tSkipping(TIterator, dropT, dropTItem) {
       } catch (error) {
         $cleanup(() => {
           dropT?.(self);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -73,7 +75,7 @@ function tSkipping(TIterator, dropT, dropTItem) {
       } catch (error) {
         $cleanup(() => {
           dropT?.(self);
-        });
+        }, error);
         throw error;
       }
       let result;
@@ -82,7 +84,7 @@ function tSkipping(TIterator, dropT, dropTItem) {
       } catch (error) {
         $cleanup(() => {
           dropT?.(self);
-        });
+        }, error);
         throw error;
       }
       dropT?.(self);
@@ -106,7 +108,7 @@ function tTotals(TIterator, dropT) {
           if (!$took(TIterator.fold, iter)) {
             dropT?.(iter);
           }
-        });
+        }, error);
         throw error;
       }
       if (!$took(TIterator.fold, iter)) {
@@ -130,7 +132,7 @@ function tTotals(TIterator, dropT) {
         } catch (error) {
           $cleanup(() => {
             dropT?.(iter);
-          });
+          }, error);
           throw error;
         }
         if (x == null) {
@@ -208,8 +210,12 @@ function loopedGen(it) {
     while ((x = loudGenIterator_next(iter)) != null) {
       n = added(n, x);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log(`drop gen ${iter[0]}`);
+    if ($live()) {
+      console.log(`drop gen ${iter[0]}`);
+    }
   }
   return n;
 }

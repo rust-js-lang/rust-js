@@ -37,7 +37,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(registry.callbacks, $dispose);
-      });
+      }, error);
       throw error;
     }
   }
@@ -46,7 +46,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(registry.callbacks, $dispose);
-    });
+    }, error);
     throw error;
   }
   let sum;
@@ -55,7 +55,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(registry.callbacks, $dispose);
-    });
+    }, error);
     throw error;
   }
   console.log(`sum ${sum}`);
@@ -64,7 +64,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(registry.callbacks, $dispose);
-    });
+    }, error);
     throw error;
   }
   console.log("truncated");

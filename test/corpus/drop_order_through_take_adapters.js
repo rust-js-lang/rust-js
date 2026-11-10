@@ -12,10 +12,12 @@ import {
   $iterator,
   $lastDropping,
   $lent,
+  $live,
   $next,
   $nextBack,
   $nthDropping,
   $skipping,
+  $unwindsOn,
   iterator_fuse,
   iterator_rev,
 } from "@rust-js/std";
@@ -103,8 +105,12 @@ function main() {
   let nth;
   try {
     nth = $nthDropping($lent(value), 2, dDrop_drop, false);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value.return();
+    if ($live()) {
+      value.return();
+    }
   }
   function map(d) {
     const result = d[0];

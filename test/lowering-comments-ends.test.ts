@@ -554,7 +554,7 @@ impl Drop for Restore {
 }
 `);
   expect(js).toContain(
-    "  } finally {\n    // Put the level back.\n    LEVEL = reset;\n    if (reset > 2) {\n      // Nothing more here.\n    } else {\n      LEVEL = (reset + 1) >>> 0;\n    }\n    // Restored.\n  }\n}\n",
+    "  } finally {\n    if ($live()) {\n      // Put the level back.\n      LEVEL = reset;\n      if (reset > 2) {\n        // Nothing more here.\n      } else {\n        LEVEL = (reset + 1) >>> 0;\n      }\n      // Restored.\n    }\n  }\n}\n",
   );
   expect(js).toContain(
     "function handleAbortError(error) {\n  // Abort errors are an implementation detail. We don't expose the\n  // TaskController, so no way for the user to handle them.\n}\n",

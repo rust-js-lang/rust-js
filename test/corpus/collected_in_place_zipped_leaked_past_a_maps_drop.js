@@ -55,7 +55,7 @@ function main() {
         if (h$live) {
           dDrop_drop(h);
         }
-      });
+      }, error);
       throw error;
     }
     const iter = iterator_map(
@@ -83,7 +83,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         iter.return();
-      });
+      }, error);
       throw error;
     }
     iter.return();

@@ -51,7 +51,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $peekMutDrop(top);
-      });
+      }, error);
       throw error;
     }
     $peekMutDrop(top);
@@ -64,7 +64,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $peekMutDrop(top);
-    });
+    }, error);
     throw error;
   }
   tmp.value = (tmp.value - 10) | 0;
@@ -91,7 +91,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $peekMutDrop(top);
-      });
+      }, error);
       throw error;
     }
     $peekMutDrop(top);
@@ -104,7 +104,7 @@ function main() {
       if (peekMut != null) {
         $peekMutDrop(peekMut);
       }
-    });
+    }, error);
     throw error;
   }
   if (peekMut != null) {

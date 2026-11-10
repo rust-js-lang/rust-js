@@ -47,7 +47,7 @@ const Held = {
     } catch (error) {
       $cleanup(() => {
         map.return();
-      });
+      }, error);
       throw error;
     }
     map.return();

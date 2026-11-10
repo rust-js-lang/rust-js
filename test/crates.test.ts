@@ -244,9 +244,9 @@ test("a consumer that grows a library's boxed tree calls the library's method", 
 test("a library's function returned past a guard's drop is returned after its finally", () => {
   const out = chain(pairs, "returned_item", ["dep", "app"]);
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
-  expect(app).toContain("    depth = previous;\n  }\n  return Dep.noop;\n}");
+  expect(app).toContain("      depth = previous;\n    }\n  }\n  return Dep.noop;\n}");
   // One its `use` names, by that name.
-  expect(app).toContain("    depth = previous;\n  }\n  return idle;\n}");
+  expect(app).toContain("      depth = previous;\n    }\n  }\n  return idle;\n}");
 }, 300_000);
 
 // ADR 0844: a library that reads no count of its `Rc`s counts none, and its
@@ -1053,7 +1053,7 @@ test("a consumer refuses a library's generic code it can't compile yet, and neve
   // Each item dropped, the rest too after one that panics (a1a886ee4).
   expect(copied).toContain("  const result = v.length;\n  $dropItems(v, (item) => {\n    dropT?.(item);\n  });\n  return result;\n}");
   // A caller's drop may throw: after the \`try\`, and \`$cleanup\`'s as a panic unwinds (#847).
-  expect(copied).toContain("  if (keep) {\n    return held;\n  }\n  try {\n    check();\n  } catch (error) {\n    $cleanup(() => {\n      dropT?.(held);\n    });\n    throw error;\n  }\n  const result = undefined;\n  dropT?.(held);\n  return result;\n}");
+  expect(copied).toContain("  if (keep) {\n    return held;\n  }\n  try {\n    check();\n  } catch (error) {\n    $cleanup(() => {\n      dropT?.(held);\n    }, error);\n    throw error;\n  }\n  const result = undefined;\n  dropT?.(held);\n  return result;\n}");
   const dir = fixture("library-boxed-refused");
   writeFileSync(join(dir, "dep.rs"), "pub fn unboxed<T>(t: T) -> T {\n    let boxed = Box::new(t);\n    *boxed\n}\n");
   const lib = join(dir, "dep");

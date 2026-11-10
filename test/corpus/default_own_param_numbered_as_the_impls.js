@@ -36,14 +36,14 @@ function pairedCounting(dropI, dropU, dropIItem) {
         } catch (error) {
           $cleanup(() => {
             dropU?.(paired[1]);
-          });
+          }, error);
           throw error;
         }
         dropU?.(paired[1]);
       } catch (error) {
         $cleanup(() => {
           dropU$1?.(extra);
-        });
+        }, error);
         throw error;
       }
       const iter = $intoIter(extra);
@@ -56,7 +56,7 @@ function pairedCounting(dropI, dropU, dropIItem) {
       } catch (error) {
         $cleanup(() => {
           dropUIntoIter?.(iter);
-        });
+        }, error);
         throw error;
       }
       dropUIntoIter?.(iter);
@@ -72,11 +72,11 @@ function pairedCounting(dropI, dropU, dropIItem) {
           } catch (error) {
             $cleanup(() => {
               dropU?.(paired[1]);
-            });
+            }, error);
             throw error;
           }
           dropU?.(paired[1]);
-        });
+        }, error);
         throw error;
       }
       console.log("dropped extra");
@@ -85,7 +85,7 @@ function pairedCounting(dropI, dropU, dropIItem) {
       } catch (error) {
         $cleanup(() => {
           dropU?.(paired[1]);
-        });
+        }, error);
         throw error;
       }
       dropU?.(paired[1]);
@@ -102,11 +102,11 @@ function pairedCounting(dropI, dropU, dropIItem) {
           } catch (error) {
             $cleanup(() => {
               dropU?.(paired[1]);
-            });
+            }, error);
             throw error;
           }
           dropU?.(paired[1]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -114,7 +114,7 @@ function pairedCounting(dropI, dropU, dropIItem) {
       } catch (error) {
         $cleanup(() => {
           dropU?.(paired[1]);
-        });
+        }, error);
         throw error;
       }
       dropU?.(paired[1]);
@@ -127,7 +127,7 @@ function pairedCounting(dropI, dropU, dropIItem) {
         } catch (error) {
           $cleanup(() => {
             dropU?.(paired[1]);
-          });
+          }, error);
           throw error;
         }
         dropU?.(paired[1]);
@@ -136,7 +136,7 @@ function pairedCounting(dropI, dropU, dropIItem) {
           $dropItems(extra, (item) => {
             dropU$1?.(item);
           });
-        });
+        }, error);
         throw error;
       }
       const iter = $closing($iter(extra), (intoIter) => {
@@ -162,7 +162,7 @@ function pairedCounting(dropI, dropU, dropIItem) {
       } catch (error) {
         $cleanup(() => {
           iter.return();
-        });
+        }, error);
         throw error;
       }
       iter.return();
@@ -180,7 +180,7 @@ function pairedCounting(dropI, dropU, dropIItem) {
       } catch (error) {
         $cleanup(() => {
           dropU?.(paired[1]);
-        });
+        }, error);
         throw error;
       }
       dropU?.(paired[1]);

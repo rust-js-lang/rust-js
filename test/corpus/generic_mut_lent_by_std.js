@@ -12,6 +12,7 @@ import {
   $intsOrdered,
   $iter,
   $last,
+  $live,
   $mutItems,
   $next,
   $nth,
@@ -24,6 +25,7 @@ import {
   $rcDrop,
   $roomForHint,
   $strictlyEqual,
+  $unwindsOn,
   $view,
   iterator_peekable,
 } from "@rust-js/std";
@@ -137,7 +139,7 @@ function heapPeekMut(h, v, TOrd) {
     } catch (error) {
       $cleanup(() => {
         $peekMutDrop(x);
-      });
+      }, error);
       throw error;
     }
     tmp.value = v;
@@ -176,8 +178,12 @@ function main() {
   try {
     try {
       rcGetMut(r$1, 7);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      rc = r$1.value;
+      if ($live()) {
+        rc = r$1.value;
+      }
     }
     console.log(`${rc.value}`);
     const c = { value: 1 };
@@ -202,8 +208,12 @@ function main() {
     const o = { value: s };
     try {
       optionAsMut(o, "b");
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      s = o.value;
+      if ($live()) {
+        s = o.value;
+      }
     }
     console.log(`${s == null ? "None" : `Some(${$debugStr(s)})`}`);
     let words = { value: [1], strong: 1, weak: 0 };
@@ -212,8 +222,12 @@ function main() {
     try {
       try {
         rcGetMut(r, value$1);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        words = r.value;
+        if ($live()) {
+          words = r.value;
+        }
       }
       console.log(`[${words.value.join(", ")}]`);
       const lists = { TAG: "Ok", _0: [1] };

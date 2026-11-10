@@ -92,7 +92,7 @@ function length(it, IExactSizeIterator, IsI, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   dropI?.(it);
@@ -118,7 +118,7 @@ function lastCounted(it, IIterator, IDoubleEndedIterator, IExactSizeIterator, Is
   } catch (error) {
     $cleanup(() => {
       rev.return();
-    });
+    }, error);
     throw error;
   }
   rev.return();
@@ -133,7 +133,7 @@ function firstBack(given, IDoubleEndedIterator, PIntoI, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   dropI?.(it);
@@ -158,7 +158,7 @@ function secondBack(it, IIterator, IDoubleEndedIterator, IsI, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -167,7 +167,7 @@ function secondBack(it, IIterator, IDoubleEndedIterator, IsI, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   dropI?.(it);
@@ -184,7 +184,7 @@ function made(make, IIterator, dropI) {
       if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter)) {

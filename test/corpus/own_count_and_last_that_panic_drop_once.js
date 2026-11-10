@@ -2,13 +2,16 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $count,
   $enumerate,
   $iterator,
   $lastDropping,
   $lazyChain,
+  $live,
   $skipping,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -33,9 +36,13 @@ function countsIterator_count(counts) {
       throw new Error("count panics");
     }
     return counts[0].length;
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of counts[0]) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of counts[0]) {
+        dDrop_drop(item);
+      }
     }
   }
 }
@@ -51,9 +58,13 @@ function countsIterator_last(counts) {
   const items = counts[0];
   try {
     return items.pop();
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of items) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of items) {
+        dDrop_drop(item);
+      }
     }
   }
 }
@@ -69,9 +80,11 @@ function main() {
     try {
       tmp = counts(3, false);
     } catch (error) {
-      for (const item of value[0]) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of value[0]) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     return $count(
@@ -131,9 +144,11 @@ function main() {
     try {
       tmp = counts(7, true);
     } catch (error) {
-      for (const item of value[0]) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of value[0]) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     return $count(
@@ -257,9 +272,11 @@ function main() {
     try {
       tmp = counts(23, false);
     } catch (error) {
-      for (const item of value[0]) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of value[0]) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     const d = $lastDropping(
@@ -325,9 +342,11 @@ function main() {
     try {
       tmp = counts(27, true);
     } catch (error) {
-      for (const item of value[0]) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of value[0]) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     const d = $lastDropping(
@@ -430,9 +449,11 @@ function main() {
   try {
     tmp = counts(43, false);
   } catch (error) {
-    for (const item of value[0]) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of value[0]) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   console.log(
@@ -491,9 +512,11 @@ function main() {
   try {
     tmp$1 = counts(47, false);
   } catch (error) {
-    for (const item of value$1[0]) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of value$1[0]) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   const d = $lastDropping(

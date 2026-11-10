@@ -32,7 +32,7 @@ function smallest(items, cmp, dropF) {
   } catch (error) {
     $cleanup(() => {
       dropF?.(cmp);
-    });
+    }, error);
     throw error;
   }
   while (true) {
@@ -42,7 +42,7 @@ function smallest(items, cmp, dropF) {
     } catch (error) {
       $cleanup(() => {
         dropF?.(cmp);
-      });
+      }, error);
       throw error;
     }
     if (item == null) {
@@ -54,7 +54,7 @@ function smallest(items, cmp, dropF) {
     } catch (error) {
       $cleanup(() => {
         dropF?.(cmp);
-      });
+      }, error);
       throw error;
     }
     if (isNoneOr) {
@@ -96,7 +96,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(f);
-    });
+    }, error);
     throw error;
   }
   $dispose(f);

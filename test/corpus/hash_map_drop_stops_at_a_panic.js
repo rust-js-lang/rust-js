@@ -9,8 +9,10 @@ import {
   $cmp,
   $dropItems,
   $extendMap,
+  $live,
   $sortedEntries,
   $treeFrom,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -94,8 +96,12 @@ function main() {
           for (const item of m.values()) {
             dDrop_drop(item);
           }
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          m.clear();
+          if ($live()) {
+            m.clear();
+          }
         }
       });
     } catch (error) {
@@ -103,7 +109,7 @@ function main() {
         for (const item of m.values()) {
           dDrop_drop(item);
         }
-      });
+      }, error);
       throw error;
     }
     console.log(`${m.size}`);
@@ -129,7 +135,7 @@ function main() {
         for (const item of m.values()) {
           dDrop_drop(item);
         }
-      });
+      }, error);
       throw error;
     }
     for (const item of m.values()) {

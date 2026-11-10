@@ -3,8 +3,10 @@
 import {
   $borrow,
   $borrowMut,
+  $live,
   $newCyclic,
   $rcDrop,
+  $unwindsOn,
   $upgrade,
   $weakClone,
   $weakDrop,
@@ -28,10 +30,14 @@ function nodeClone_clone(node) {
     try {
       const borrowMut = $borrowMut(me.value);
       borrowMut.visits = (borrowMut.visits + 1) >>> 0;
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      $rcDrop(me, (value) => {
-        $weakDrop(value.me);
-      });
+      if ($live()) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
     }
   }
   return {
@@ -52,10 +58,14 @@ function main() {
     } finally {
       $weakDrop(copy.me);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    $rcDrop(node, (value) => {
-      $weakDrop(value.me);
-    });
+    if ($live()) {
+      $rcDrop(node, (value) => {
+        $weakDrop(value.me);
+      });
+    }
   }
 }
 //# sourceMappingURL=case.js.map

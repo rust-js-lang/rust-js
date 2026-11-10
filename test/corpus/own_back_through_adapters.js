@@ -14,6 +14,7 @@ import {
   $knowing,
   $lazyChain,
   $lent,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
@@ -24,6 +25,7 @@ import {
   $skipping,
   $taking,
   $tryOf,
+  $unwindsOn,
   fuseDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nthBack,
   fuseDoubleEndedIterator_rfold,
@@ -76,7 +78,7 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
     } catch (error) {
       $cleanup(() => {
         dropF?.(f);
-      });
+      }, error);
       throw error;
     }
     acc = tmp;
@@ -122,7 +124,7 @@ function loudDoubleEndedIterator_rfold(loud, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       if (x == null) {
@@ -135,7 +137,7 @@ function loudDoubleEndedIterator_rfold(loud, init, f, dropB, dropF) {
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       acc$live = true;
@@ -144,8 +146,12 @@ function loudDoubleEndedIterator_rfold(loud, init, f, dropB, dropF) {
     acc$live = false;
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(loud);
+    if ($live()) {
+      loudDrop_drop(loud);
+    }
   }
   return result;
 }
@@ -169,8 +175,12 @@ function labelledRsum(count, label) {
       acc = added(acc, x);
     }
     return acc;
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log(`drop label ${label[0]}`);
+    if ($live()) {
+      console.log(`drop label ${label[0]}`);
+    }
   }
 }
 

@@ -15,11 +15,13 @@ import {
   $lazySkipWhile,
   $lazyTakeWhile,
   $lent,
+  $live,
   $next,
   $nth,
   $position,
   $tryFoldOk,
   $tryFoldSome,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -59,7 +61,7 @@ function anyAbove(it, n, dropI) {
   } catch (error) {
     $cleanup(() => {
       map.return();
-    });
+    }, error);
     throw error;
   }
   map.return();
@@ -418,8 +420,12 @@ function main() {
   );
   try {
     console.log(`held ${$lent(map).some((x) => x > 5)}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    map.return();
+    if ($live()) {
+      map.return();
+    }
   }
   const chain = $held(
     $lazyChain(
@@ -443,8 +449,12 @@ function main() {
   );
   try {
     console.log(`held ${$lent(chain).every((x) => x < 30)}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    chain.return();
+    if ($live()) {
+      chain.return();
+    }
   }
   const value$9 = $tryFoldOk(
     $iterator(

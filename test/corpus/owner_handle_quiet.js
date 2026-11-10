@@ -68,7 +68,7 @@ function createClosingRequest(name, onAllReady, held) {
     $cleanup(() => {
       const close = held.closer.close;
       close();
-    });
+    }, error);
     throw error;
   }
   try {
@@ -77,7 +77,7 @@ function createClosingRequest(name, onAllReady, held) {
     $cleanup(() => {
       const close = held.closer.close;
       close();
-    });
+    }, error);
     throw error;
   }
   const close = held.closer.close;
@@ -101,7 +101,7 @@ function exactMatcher(TPartialEq, dropT) {
       } catch (error) {
         $cleanup(() => {
           dropT?.(exact[1]);
-        });
+        }, error);
         throw error;
       }
       dropT?.(exact[1]);

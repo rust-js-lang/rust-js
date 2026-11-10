@@ -63,7 +63,7 @@ function main() {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
           dDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -75,7 +75,7 @@ function main() {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
           dDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -94,7 +94,7 @@ function main() {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
           dDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`${m.size}`);
@@ -112,7 +112,7 @@ function main() {
         for (const item of m.values()) {
           dDrop_drop(item);
         }
-      });
+      }, error);
       throw error;
     }
     try {
@@ -124,7 +124,7 @@ function main() {
         for (const item of m.values()) {
           dDrop_drop(item);
         }
-      });
+      }, error);
       throw error;
     }
     try {
@@ -143,7 +143,7 @@ function main() {
         for (const item of m.values()) {
           dDrop_drop(item);
         }
-      });
+      }, error);
       throw error;
     }
     console.log(`${m.size}`);
@@ -161,7 +161,7 @@ function main() {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
           dDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -173,7 +173,7 @@ function main() {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
           dDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -191,7 +191,7 @@ function main() {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
           dDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`${m.size}`);
@@ -212,12 +212,12 @@ function main() {
           } catch (error) {
             $cleanup(() => {
               dDrop_drop(value);
-            });
+            }, error);
             throw error;
           }
           dDrop_drop(value);
         }
-      });
+      }, error);
       throw error;
     }
     try {
@@ -232,12 +232,12 @@ function main() {
           } catch (error) {
             $cleanup(() => {
               dDrop_drop(value);
-            });
+            }, error);
             throw error;
           }
           dDrop_drop(value);
         }
-      });
+      }, error);
       throw error;
     }
     try {
@@ -259,12 +259,12 @@ function main() {
           } catch (error) {
             $cleanup(() => {
               dDrop_drop(value);
-            });
+            }, error);
             throw error;
           }
           dDrop_drop(value);
         }
-      });
+      }, error);
       throw error;
     }
     console.log(`${m.size}`);
@@ -274,7 +274,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           dDrop_drop(value);
-        });
+        }, error);
         throw error;
       }
       dDrop_drop(value);
@@ -290,7 +290,7 @@ function main() {
           $sortedKeys(s, (a, b) => $cmp(a[0], b[0])),
           kDrop_drop,
         );
-      });
+      }, error);
       throw error;
     }
     try {
@@ -301,7 +301,7 @@ function main() {
           $sortedKeys(s, (a, b) => $cmp(a[0], b[0])),
           kDrop_drop,
         );
-      });
+      }, error);
       throw error;
     }
     console.log(`${s.size}`);
@@ -319,7 +319,7 @@ function main() {
         for (const item of s) {
           kDrop_drop(item);
         }
-      });
+      }, error);
       throw error;
     }
     try {
@@ -329,7 +329,7 @@ function main() {
         for (const item of s) {
           kDrop_drop(item);
         }
-      });
+      }, error);
       throw error;
     }
     console.log(`${s.size}`);
@@ -347,7 +347,7 @@ function main() {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
           dDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -359,7 +359,7 @@ function main() {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
           dDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -377,7 +377,7 @@ function main() {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
           dDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`${m.size}`);

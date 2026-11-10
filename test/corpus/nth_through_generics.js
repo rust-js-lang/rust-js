@@ -7,8 +7,10 @@ import {
   $iter,
   $iterator,
   $lent,
+  $live,
   $nth,
   $nthDropping,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -32,7 +34,7 @@ function second(items, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(items);
-    });
+    }, error);
     throw error;
   }
   dropI?.(items);
@@ -46,7 +48,7 @@ function secondOf(items, dropI, dropIItem) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(items);
-    });
+    }, error);
     throw error;
   }
   dropI?.(items);
@@ -66,9 +68,13 @@ function main() {
   try {
     const value = got?.[0];
     console.log(`got ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (got != null) {
-      loudDrop_drop(got);
+    if ($live()) {
+      if (got != null) {
+        loudDrop_drop(got);
+      }
     }
   }
   const p = ["b", 0];
@@ -78,8 +84,12 @@ function main() {
     const value$1 = plainIterator_next(p);
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     console.log("end");
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log(`drop ${p[0]}`);
+    if ($live()) {
+      console.log(`drop ${p[0]}`);
+    }
   }
 }
 //# sourceMappingURL=case.js.map

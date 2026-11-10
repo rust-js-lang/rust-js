@@ -26,7 +26,7 @@ function step(next) {
       if (next != null) {
         dropTask(next);
       }
-    });
+    }, error);
     throw error;
   }
   return {
@@ -56,7 +56,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       dropTask(first);
-    });
+    }, error);
     throw error;
   }
   let held;
@@ -68,7 +68,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       dropTask(first);
-    });
+    }, error);
     throw error;
   }
   console.log(`${first.step.tags.size} ${held.seen.size} ${held.next != null}`);
@@ -77,7 +77,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       dropTask(first);
-    });
+    }, error);
     throw error;
   }
   console.log("held dropped");

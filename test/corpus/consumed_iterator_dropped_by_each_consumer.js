@@ -9,11 +9,13 @@ import {
   $iter,
   $iterator,
   $last,
+  $live,
   $mapFrom,
   $max,
   $next,
   $sortedEntries,
   $sortedKeys,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -41,8 +43,12 @@ function built(it, CFromIteratorU32) {
       loudDrop_drop,
       loudDrop_drop,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter);
+    if ($live()) {
+      loudDrop_drop(iter);
+    }
   }
 }
 
@@ -55,8 +61,12 @@ function main() {
       $iterator(iter, (iterator) => loudIterator_next(iterator, { next: $next }), true),
       false,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter);
+    if ($live()) {
+      loudDrop_drop(iter);
+    }
   }
   const m = result;
   console.log(`${m.size}`);
@@ -68,8 +78,12 @@ function main() {
         $iterator(iter$1, (iterator) => loudIterator_next(iterator, { next: $next }), true),
       ),
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$1);
+    if ($live()) {
+      loudDrop_drop(iter$1);
+    }
   }
   const b = result$1;
   console.log(
@@ -85,8 +99,12 @@ function main() {
       $iterator(iter$2, (iterator) => loudIterator_next(iterator, { next: $next }), true),
       true,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$2);
+    if ($live()) {
+      loudDrop_drop(iter$2);
+    }
   }
   const s = result$2;
   console.log(`${s.size}`);
@@ -98,8 +116,12 @@ function main() {
         $iterator(iter$3, (iterator) => loudIterator_next(iterator, { next: $next }), true),
       ),
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$3);
+    if ($live()) {
+      loudDrop_drop(iter$3);
+    }
   }
   const t = result$3;
   console.log(`{${Array.from($sortedKeys(t, $cmp)).join(", ")}}`);
@@ -109,8 +131,12 @@ function main() {
     result$4 = $foldToArray(
       $iterator(iter$4, (iterator) => loudIterator_next(iterator, { next: $next }), true),
     ).join("");
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$4);
+    if ($live()) {
+      loudDrop_drop(iter$4);
+    }
   }
   const text = result$4;
   console.log(`${text}`);
@@ -120,8 +146,12 @@ function main() {
     result$5 = $collectDropping(
       $iterator(iter$5, (iterator) => loudIterator_next(iterator, { next: $next }), true),
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$5);
+    if ($live()) {
+      loudDrop_drop(iter$5);
+    }
   }
   const d = result$5;
   console.log(`[${d.join(", ")}]`);
@@ -131,8 +161,12 @@ function main() {
     result$6 = $collectDropping(
       $iterator(iter$6, (iterator) => loudIterator_next(iterator, { next: $next }), true),
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$6);
+    if ($live()) {
+      loudDrop_drop(iter$6);
+    }
   }
   const bx = result$6;
   console.log(`[${bx.join(", ")}]`);
@@ -144,8 +178,12 @@ function main() {
         $iterator(iter$7, (iterator) => loudIterator_next(iterator, { next: $next }), true),
       ),
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$7);
+    if ($live()) {
+      loudDrop_drop(iter$7);
+    }
   }
   const c = result$7;
   console.log(`{${Array.from($sortedKeys(c, $cmp)).join(", ")}}`);
@@ -161,8 +199,12 @@ function main() {
       (iterator) => loudIterator_next(iterator, { next: $next }),
       true,
     ).reduce((a, b) => (a + b) >>> 0, 0);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$8);
+    if ($live()) {
+      loudDrop_drop(iter$8);
+    }
   }
   console.log(`${result$8}`);
   const iter$9 = loud([2, 3], "product");
@@ -173,8 +215,12 @@ function main() {
       (iterator) => loudIterator_next(iterator, { next: $next }),
       true,
     ).reduce((a, b) => (a * b) >>> 0, 1);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$9);
+    if ($live()) {
+      loudDrop_drop(iter$9);
+    }
   }
   console.log(`${result$9}`);
   const iter$10 = loud([4], "max");
@@ -183,8 +229,12 @@ function main() {
     result$10 = $max(
       $iterator(iter$10, (iterator) => loudIterator_next(iterator, { next: $next }), true),
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$10);
+    if ($live()) {
+      loudDrop_drop(iter$10);
+    }
   }
   console.log(`${result$10 == null ? "None" : `Some(${result$10})`}`);
   const iter$11 = loud([4], "count");
@@ -195,8 +245,12 @@ function main() {
       (iterator) => loudIterator_next(iterator, { next: $next }),
       true,
     ).reduce((n) => n + 1, 0);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$11);
+    if ($live()) {
+      loudDrop_drop(iter$11);
+    }
   }
   console.log(`${result$11}`);
   const iter$12 = loud([4, 5], "last");
@@ -205,8 +259,12 @@ function main() {
     result$12 = $last(
       $iterator(iter$12, (iterator) => loudIterator_next(iterator, { next: $next }), true),
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$12);
+    if ($live()) {
+      loudDrop_drop(iter$12);
+    }
   }
   console.log(`${result$12 == null ? "None" : `Some(${result$12})`}`);
 }

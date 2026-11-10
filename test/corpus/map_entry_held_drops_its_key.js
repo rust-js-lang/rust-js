@@ -19,7 +19,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   let there;
@@ -30,7 +30,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   console.log("held");
@@ -44,7 +44,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   orInsert.value = (orInsert.value + 1) | 0;
@@ -56,7 +56,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   console.log("held new");
@@ -70,7 +70,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   tmp.value = (tmp.value + 1) | 0;
@@ -88,7 +88,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -103,7 +103,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   keyDrop_drop(tmp$2);
@@ -117,7 +117,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   keyDrop_drop(value);

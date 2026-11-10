@@ -2,9 +2,12 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $debugStr,
   $index,
+  $live,
   $reverseRange,
+  $unwindsOn,
   $unwrap,
   $view,
   $viewGet,
@@ -81,37 +84,43 @@ function main() {
   try {
     flipFrom(0);
   } catch (error) {
-    for (const item of items) {
-      if (item != null) {
-        if (item.x === 9) {
-          console.log("dropped");
+    $cleanup(() => {
+      for (const item of items) {
+        if (item != null) {
+          if (item.x === 9) {
+            console.log("dropped");
+          }
         }
       }
-    }
+    }, error);
     throw error;
   }
   try {
     $index(items, 0);
   } catch (error) {
-    for (const item of items) {
-      if (item != null) {
-        if (item.x === 9) {
-          console.log("dropped");
+    $cleanup(() => {
+      for (const item of items) {
+        if (item != null) {
+          if (item.x === 9) {
+            console.log("dropped");
+          }
         }
       }
-    }
+    }, error);
     throw error;
   }
   try {
     $unwrap(items[0]).x = 30;
   } catch (error) {
-    for (const item of items) {
-      if (item != null) {
-        if (item.x === 9) {
-          console.log("dropped");
+    $cleanup(() => {
+      for (const item of items) {
+        if (item != null) {
+          if (item.x === 9) {
+            console.log("dropped");
+          }
         }
       }
-    }
+    }, error);
     throw error;
   }
   try {
@@ -119,38 +128,44 @@ function main() {
       `[${items.map((item) => (item == null ? "None" : `Some(${pointDebug_fmt(item)})`)).join(", ")}]`,
     );
   } catch (error) {
-    for (const item of items) {
-      if (item != null) {
-        if (item.x === 9) {
-          console.log("dropped");
+    $cleanup(() => {
+      for (const item of items) {
+        if (item != null) {
+          if (item.x === 9) {
+            console.log("dropped");
+          }
         }
       }
-    }
+    }, error);
     throw error;
   }
   let part;
   try {
     part = $view(v, 2);
   } catch (error) {
-    for (const item of items) {
-      if (item != null) {
-        if (item.x === 9) {
-          console.log("dropped");
+    $cleanup(() => {
+      for (const item of items) {
+        if (item != null) {
+          if (item.x === 9) {
+            console.log("dropped");
+          }
         }
       }
-    }
+    }, error);
     throw error;
   }
   try {
     part.reverse();
   } catch (error) {
-    for (const item of items) {
-      if (item != null) {
-        if (item.x === 9) {
-          console.log("dropped");
+    $cleanup(() => {
+      for (const item of items) {
+        if (item != null) {
+          if (item.x === 9) {
+            console.log("dropped");
+          }
         }
       }
-    }
+    }, error);
     throw error;
   }
   const length = part.length;
@@ -192,9 +207,13 @@ function main() {
         const by = counted(calls);
         bump(value, (by + counted(calls)) | 0);
         return v;
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        if (x === 9) {
-          console.log("dropped");
+        if ($live()) {
+          if (x === 9) {
+            console.log("dropped");
+          }
         }
       }
     });
@@ -205,9 +224,13 @@ function main() {
       const point = { x: 9 };
       try {
         bump(value, point.x);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        if (point.x === 9) {
-          console.log("dropped");
+        if ($live()) {
+          if (point.x === 9) {
+            console.log("dropped");
+          }
         }
       }
       return v;
@@ -223,11 +246,15 @@ function main() {
     const start = v$1.length;
     $reverseRange(v$1, start, 2);
     console.log(`[${v$1.join(", ")}]`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of items) {
-      if (item != null) {
-        if (item.x === 9) {
-          console.log("dropped");
+    if ($live()) {
+      for (const item of items) {
+        if (item != null) {
+          if (item.x === 9) {
+            console.log("dropped");
+          }
         }
       }
     }

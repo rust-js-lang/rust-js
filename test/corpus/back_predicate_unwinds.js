@@ -18,6 +18,7 @@ import {
   $knowing,
   $lazyChain,
   $lent,
+  $live,
   $next,
   $nextBack,
   $position,
@@ -26,6 +27,7 @@ import {
   $sizeHint,
   $slicing,
   $tryOf,
+  $unwindsOn,
   enumerateDoubleEndedIterator_nextBack,
   iterator_enumerate,
   iterator_skip,
@@ -111,7 +113,7 @@ function generic(it, p, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   dropI?.(it);
@@ -128,9 +130,13 @@ function main() {
       if (rfind != null) {
         dDrop_drop(rfind);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of value) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of value) {
+          dDrop_drop(item);
+        }
       }
     }
     return result;
@@ -148,8 +154,12 @@ function main() {
       if (rfind != null) {
         dDrop_drop(rfind);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      flatMap.return();
+      if ($live()) {
+        flatMap.return();
+      }
     }
     return result;
   });
@@ -163,9 +173,13 @@ function main() {
         dDrop_drop(rfind);
       }
       console.log(`left ${it.end - it.at}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of it) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of it) {
+          dDrop_drop(item);
+        }
       }
     }
     return found;
@@ -184,8 +198,12 @@ function main() {
       if (rfind != null) {
         dDrop_drop(rfind);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      chain.return();
+      if ($live()) {
+        chain.return();
+      }
     }
     return result;
   });
@@ -241,13 +259,21 @@ function main() {
       return $rposition(value, (d) => {
         try {
           return p(d);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       });
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of value) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of value) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -258,13 +284,21 @@ function main() {
         .map((d) => {
           try {
             return p(d) ? d[0] : undefined;
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            dDrop_drop(d);
+            if ($live()) {
+              dDrop_drop(d);
+            }
           }
         })
         .find((item) => item != null);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      rev.return();
+      if ($live()) {
+        rev.return();
+      }
     }
   });
   second("rev find", (p) => {
@@ -276,8 +310,12 @@ function main() {
       if (find != null) {
         dDrop_drop(find);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      rev.return();
+      if ($live()) {
+        rev.return();
+      }
     }
     return result;
   });
@@ -287,12 +325,20 @@ function main() {
       return $position($lent(rev), (d) => {
         try {
           return p(d);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       });
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      rev.return();
+      if ($live()) {
+        rev.return();
+      }
     }
   });
   second("rev any", (p) => {
@@ -301,12 +347,20 @@ function main() {
       return $lent(rev).some((d) => {
         try {
           return p(d);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       });
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      rev.return();
+      if ($live()) {
+        rev.return();
+      }
     }
   });
   second("rev all", (p) => {
@@ -315,12 +369,20 @@ function main() {
       return $lent(rev).every((d) => {
         try {
           return !p(d);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       });
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      rev.return();
+      if ($live()) {
+        rev.return();
+      }
     }
   });
   second("own rev find", (p) => {
@@ -356,8 +418,12 @@ function main() {
       if (nextBack != null) {
         dDrop_drop(nextBack);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      filter.return();
+      if ($live()) {
+        filter.return();
+      }
     }
     return result;
   });
@@ -610,8 +676,12 @@ function main() {
     }
     const value$2 = next$1 != null ? map$2(next$1) : undefined;
     console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    kept.return();
+    if ($live()) {
+      kept.return();
+    }
   }
 }
 //# sourceMappingURL=case.js.map

@@ -45,7 +45,7 @@ function render(names) {
           $weakDrop(value.value);
         }
       });
-    });
+    }, error);
     throw error;
   }
   let request;
@@ -65,7 +65,7 @@ function render(names) {
             $weakDrop(value.value);
           }
         });
-      });
+      }, error);
       throw error;
     }
     if (name == null) {
@@ -86,7 +86,7 @@ function render(names) {
             $weakDrop(value.value);
           }
         });
-      });
+      }, error);
       throw error;
     }
     const onReady = {
@@ -136,7 +136,7 @@ function render(names) {
             $weakDrop(value.value);
           }
         });
-      });
+      }, error);
       throw error;
     }
     let value;
@@ -164,7 +164,7 @@ function render(names) {
             $weakDrop(value.value);
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -186,7 +186,7 @@ function render(names) {
             $weakDrop(value.value);
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -203,7 +203,7 @@ function render(names) {
             $weakDrop(value.value);
           }
         });
-      });
+      }, error);
       throw error;
     }
   }
@@ -228,7 +228,7 @@ function main() {
           $rcDrop(value.onReady, $dispose);
         });
       });
-    });
+    }, error);
     throw error;
   }
   while (true) {
@@ -242,7 +242,7 @@ function main() {
             $rcDrop(value.onReady, $dispose);
           });
         });
-      });
+      }, error);
       throw error;
     }
     if (request == null) {
@@ -257,7 +257,7 @@ function main() {
             $rcDrop(value.onReady, $dispose);
           });
         });
-      });
+      }, error);
       throw error;
     }
   }

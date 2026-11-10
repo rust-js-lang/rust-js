@@ -7,10 +7,12 @@ import {
   $held,
   $iterator,
   $lazyChain,
+  $live,
   $mapEnds,
   $next,
   $rev,
   $tryOf,
+  $unwindsOn,
   chainDoubleEndedIterator_nextBack,
   chainDoubleEndedIterator_nthBack,
   chainDoubleEndedIterator_rfold,
@@ -122,8 +124,12 @@ function main() {
     console.log(
       `${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
   const c = $lazyChain(
     $lazyChain(

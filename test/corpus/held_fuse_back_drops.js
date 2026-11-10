@@ -4,6 +4,7 @@ import {
   $exactLen,
   $iter,
   $iterator,
+  $live,
   $next,
   $nextBack,
   $nextSome,
@@ -11,6 +12,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
+  $unwindsOn,
   fuseDoubleEndedIterator_nextBack,
   fuseExactSizeIterator_len,
   iterator_fuse,
@@ -117,8 +119,12 @@ function main() {
     console.log(
       `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.iter.return();
+    if ($live()) {
+      it.iter.return();
+    }
   }
   const ranged = Array.from(
     $iterator(

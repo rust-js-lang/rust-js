@@ -9,9 +9,11 @@ import {
   $last,
   $lastDropping,
   $lazyChain,
+  $live,
   $maxBy,
   $peek,
   $skipping,
+  $unwindsOn,
   iterator_fuse,
   iterator_peekable,
 } from "@rust-js/std";
@@ -35,9 +37,13 @@ function lastsIterator_last(lasts) {
   console.log("own last");
   try {
     return lasts[0].pop();
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of lasts[0]) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of lasts[0]) {
+        dDrop_drop(item);
+      }
     }
   }
 }
@@ -72,7 +78,7 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       if (x == null) {
@@ -85,7 +91,7 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       acc$live = true;
@@ -94,8 +100,12 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
     acc$live = false;
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    foldsDrop_drop(folds);
+    if ($live()) {
+      foldsDrop_drop(folds);
+    }
   }
   return result;
 }
@@ -142,7 +152,7 @@ function end(it, dropI, dropIItem) {
       if (!iter.ownFold && !iter.ownLast) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownFold && !iter.ownLast) {
@@ -161,7 +171,7 @@ function top(it, IItemOrd, dropI, dropIItem) {
       if (!iter.ownFold) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownFold) {
@@ -180,7 +190,7 @@ function total(it, dropI) {
       if (!iter.ownFold) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownFold) {
@@ -200,7 +210,7 @@ function each(it, dropI) {
       if (!iter.ownFold) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownFold) {
@@ -251,8 +261,12 @@ function main() {
   let result;
   try {
     result = $lastDropping(iter, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter.return();
+    if ($live()) {
+      iter.return();
+    }
   }
   show("fuse", result);
   const iter$1 = iterator_peekable(
@@ -268,8 +282,12 @@ function main() {
   let result$1;
   try {
     result$1 = $lastDropping(iter$1, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter$1.return();
+    if ($live()) {
+      iter$1.return();
+    }
   }
   show("peekable", result$1);
   const peeked = $held(
@@ -287,15 +305,21 @@ function main() {
   try {
     $peek(peeked);
   } catch (error) {
-    peeked.return();
+    $cleanup(() => {
+      peeked.return();
+    }, error);
     throw error;
   }
   const iter$2 = peeked;
   let result$2;
   try {
     result$2 = $lastDropping(iter$2, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter$2.return();
+    if ($live()) {
+      iter$2.return();
+    }
   }
   show("peeked", result$2);
   show(
@@ -485,8 +509,12 @@ function main() {
   let result$3;
   try {
     result$3 = $lastDropping(iter$3, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter$3.return();
+    if ($live()) {
+      iter$3.return();
+    }
   }
   show("fuse held", result$3);
   const iter$4 = iterator_peekable(
@@ -503,8 +531,12 @@ function main() {
   let result$4;
   try {
     result$4 = $lastDropping(iter$4, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter$4.return();
+    if ($live()) {
+      iter$4.return();
+    }
   }
   show("peekable held", result$4);
   const value = $last(

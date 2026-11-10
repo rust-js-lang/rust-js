@@ -2,6 +2,8 @@
 
 import {
   $byteLen,
+  $catchable,
+  $cleanup,
   $panicMessage,
   $repeat,
   $repeatItems,
@@ -43,6 +45,7 @@ function check(what, f) {
     f();
     console.log(`${what}: room`);
   } catch (thrown) {
+    $catchable(thrown);
     const payload = $unwound(thrown);
     const arg = message(payload);
     console.log(`${what}: ${arg}`);
@@ -141,7 +144,9 @@ function main() {
     try {
       tmp = pastHalf();
     } catch (error) {
-      noisyDrop_drop(noisy);
+      $cleanup(() => {
+        noisyDrop_drop(noisy);
+      }, error);
       throw error;
     }
     const value = $repeat(noisy, tmp, 8, (item) => noisyClone_clone(item), noisyDrop_drop);

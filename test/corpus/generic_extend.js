@@ -8,8 +8,10 @@ import {
   $extendMap,
   $extendText,
   $lazyRange,
+  $live,
   $reserveHint,
   $sortedKeys,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -21,15 +23,23 @@ function eitherExtendA_extend(either, iter, LExtendA, RExtendA, TIntoIterInPlace
     const self = { value: either._0 };
     try {
       LExtendA.extend(self, iter, TIntoIterInPlace);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      either._0 = self.value;
+      if ($live()) {
+        either._0 = self.value;
+      }
     }
   } else {
     const self = { value: either._0 };
     try {
       RExtendA.extend(self, iter, TIntoIterInPlace);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      either._0 = self.value;
+      if ($live()) {
+        either._0 = self.value;
+      }
     }
   }
 }

@@ -111,6 +111,11 @@ pub enum Known {
     /// reads a place, which can't panic: a getter's throw is none Rust
     /// sees, so a scope's `finally` runs past it (rd227, rd228).
     NeverThrows,
+    /// A drop that runs nothing a program sees: a guard's `$unborrow`, a
+    /// count's `$weakDrop`, an `Rc`'s `$rcDrop` of nothing that drops. Of
+    /// a scope whose drops are each one, a stack overflow, which Rust
+    /// aborts on with no drop run, needs no guard (#1193).
+    Unseen,
     /// A binding's call that runs no code but its own, none of the
     /// program's, so it sets none of its variables: a weak set's `has(key)`,
     /// `#[rust_js::runs_nothing]`'s, or one that runs only what it's given,

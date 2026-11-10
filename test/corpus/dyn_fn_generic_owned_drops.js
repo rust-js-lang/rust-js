@@ -35,7 +35,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(count);
-    });
+    }, error);
     throw error;
   }
   $dispose(count);
@@ -46,7 +46,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(numbers);
-    });
+    }, error);
     throw error;
   }
   $dispose(numbers);

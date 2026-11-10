@@ -76,7 +76,7 @@ function two(iter, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
   } catch (error) {
     $cleanup(() => {
       iter$1.return();
-    });
+    }, error);
     throw error;
   }
   iter$1.return();

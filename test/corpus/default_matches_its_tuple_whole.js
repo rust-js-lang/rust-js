@@ -12,11 +12,13 @@ import {
   $givenDrop,
   $held,
   $iter,
+  $live,
   $next,
   $nextSome,
   $roomForHint,
   $someValue,
   $traitImpl,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -40,7 +42,7 @@ function _A__A_Tuple(dropA) {
       } catch (error) {
         $cleanup(() => {
           dropA?.(value[1]);
-        });
+        }, error);
         throw error;
       }
       dropA?.(value[1]);
@@ -59,7 +61,7 @@ function _A__A_Tuple_taken(it, dropA, dropI) {
     } catch (error) {
       $cleanup(() => {
         dropA?.(value$2);
-      });
+      }, error);
       throw error;
     }
     if (value$1 != null) {
@@ -111,7 +113,7 @@ function iExt(IIterator, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
       } catch (error) {
         $cleanup(() => {
           dropI?.(self);
-        });
+        }, error);
         throw error;
       }
       let nextTuple$live = true;
@@ -129,7 +131,7 @@ function iExt(IIterator, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
               dropT?.($someValue(elt));
             }
             dropI?.(self);
-          });
+          }, error);
           throw error;
         }
         if (next != null) {
@@ -150,7 +152,7 @@ function iExt(IIterator, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
               }
             }
             dropI?.(self);
-          });
+          }, error);
           throw error;
         }
         try {
@@ -162,7 +164,7 @@ function iExt(IIterator, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
         } catch (error) {
           $cleanup(() => {
             dropI?.(self);
-          });
+          }, error);
           throw error;
         }
         elt$live = false;
@@ -178,7 +180,7 @@ function iExt(IIterator, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
       } catch (error) {
         $cleanup(() => {
           dropI?.(self);
-        });
+        }, error);
         throw error;
       }
       nextTuple$live = false;
@@ -227,16 +229,24 @@ function main() {
       for (const item of listed) {
         dDrop_drop(item);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      if (none != null) {
-        dDrop_drop(none[0]);
-        dDrop_drop(none[1]);
+      if ($live()) {
+        if (none != null) {
+          dDrop_drop(none[0]);
+          dDrop_drop(none[1]);
+        }
       }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (pair != null) {
-      dDrop_drop(pair[0]);
-      dDrop_drop(pair[1]);
+    if ($live()) {
+      if (pair != null) {
+        dDrop_drop(pair[0]);
+        dDrop_drop(pair[1]);
+      }
     }
   }
 }

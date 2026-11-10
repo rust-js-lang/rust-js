@@ -58,7 +58,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       console.log(`dropped ${b.bytes.length}`);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -69,7 +69,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       console.log(`dropped ${b.bytes.length}`);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -77,7 +77,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       console.log(`dropped ${b.bytes.length}`);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -85,7 +85,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       console.log(`dropped ${b.bytes.length}`);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -95,7 +95,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       console.log(`dropped ${b.bytes.length}`);
-    });
+    }, error);
     throw error;
   }
   console.log(`dropped ${b.bytes.length}`);

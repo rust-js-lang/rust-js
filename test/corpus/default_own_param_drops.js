@@ -29,7 +29,7 @@ function tJoining(TIterator, dropT, dropTItem) {
       } catch (error) {
         $cleanup(() => {
           dropT?.(self);
-        });
+        }, error);
         throw error;
       }
       const iter = self;
@@ -41,7 +41,7 @@ function tJoining(TIterator, dropT, dropTItem) {
           if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
             dropT?.(iter);
           }
-        });
+        }, error);
         throw error;
       }
       if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
@@ -60,7 +60,7 @@ function tJoining(TIterator, dropT, dropTItem) {
             if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
               dropT?.(iter);
             }
-          });
+          }, error);
           throw error;
         }
         if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
@@ -69,7 +69,7 @@ function tJoining(TIterator, dropT, dropTItem) {
       } catch (error) {
         $cleanup(() => {
           dropU?.(extra);
-        });
+        }, error);
         throw error;
       }
       const iter$1 = $intoIter(extra);
@@ -82,7 +82,7 @@ function tJoining(TIterator, dropT, dropTItem) {
       } catch (error) {
         $cleanup(() => {
           dropUIntoIter?.(iter$1);
-        });
+        }, error);
         throw error;
       }
       dropUIntoIter?.(iter$1);
@@ -95,7 +95,7 @@ function tJoining(TIterator, dropT, dropTItem) {
       } catch (error) {
         $cleanup(() => {
           dropT?.(self);
-        });
+        }, error);
         throw error;
       }
       const iter = self;
@@ -109,7 +109,7 @@ function tJoining(TIterator, dropT, dropTItem) {
             if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
               dropT?.(iter);
             }
-          });
+          }, error);
           throw error;
         }
         if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
@@ -120,7 +120,7 @@ function tJoining(TIterator, dropT, dropTItem) {
         $cleanup(() => {
           console.log("drop held");
           dropUIntoIter?.(held.iter);
-        });
+        }, error);
         throw error;
       }
       console.log("drop held");
@@ -138,7 +138,7 @@ function tJoining(TIterator, dropT, dropTItem) {
             if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
               dropT?.(iter);
             }
-          });
+          }, error);
           throw error;
         }
         if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
@@ -147,7 +147,7 @@ function tJoining(TIterator, dropT, dropTItem) {
       } catch (error) {
         $cleanup(() => {
           dropU?.(extra);
-        });
+        }, error);
         throw error;
       }
       return [result, extra];

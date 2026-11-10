@@ -115,7 +115,7 @@ pub fn loud(m: &mut BTreeMap<u32, Loud>) {
   );
   expect(body(flat, "quiet")).not.toContain("finally");
   expect(body(flat, "quiet")).toContain("} m.clear(); }");
-  expect(body(flat, "loud")).toMatch(/try \{ \$dropItems\(.*\} finally \{ m\.clear\(\); \}/);
+  expect(body(flat, "loud")).toMatch(/try \{ \$dropItems\(.*\} catch \(error\) \{ throw \$unwindsOn\(error\); \} finally \{ if \(\$live\(\)\) \{ m\.clear\(\); \} \}/);
 });
 
 test("Option::insert writes its value as the old one's drop unwinds, where it may", () => {
@@ -133,7 +133,7 @@ pub fn loud(o: &mut Option<Loud>, l: Loud) -> u32 {
   );
   expect(body(flat, "quiet")).not.toContain("finally");
   expect(body(flat, "quiet")).toContain("o.value = q;");
-  expect(body(flat, "loud")).toMatch(/try \{ if \(o\.value != null\) \{ loudDrop_drop\(o\.value\); \} \} finally \{ o\.value = l; \}/);
+  expect(body(flat, "loud")).toMatch(/try \{ if \(o\.value != null\) \{ loudDrop_drop\(o\.value\); \} \} catch \(error\) \{ throw \$unwindsOn\(error\); \} finally \{ if \(\$live\(\)\) \{ o\.value = l; \} \}/);
 });
 
 test("dedup_by gives a closure each item as a `&mut` to it is, dropping each duplicate it finds", () => {

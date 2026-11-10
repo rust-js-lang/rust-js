@@ -8,6 +8,7 @@ import {
   $held,
   $iter,
   $iterator,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
@@ -17,6 +18,7 @@ import {
   $rev,
   $roomForHint,
   $sizeHint,
+  $unwindsOn,
   iterator_rev,
   revClone_clone,
   revDebug_fmt,
@@ -130,8 +132,12 @@ function main() {
     }
     const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    held.return();
+    if ($live()) {
+      held.return();
+    }
   }
 
   const inPlace = Array.from(

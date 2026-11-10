@@ -10,6 +10,7 @@ import {
   $iter,
   $iterator,
   $lent,
+  $live,
   $mapEnds,
   $next,
   $nthBack,
@@ -22,6 +23,7 @@ import {
   $sizeHint,
   $skipping,
   $slicing,
+  $unwindsOn,
   iterator_rev,
 } from "@rust-js/std";
 
@@ -60,7 +62,7 @@ function totalSumD_sum(iter, dropI) {
       if (!iter.ownFold) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownFold) {
@@ -97,7 +99,7 @@ function everyIterator_fold(every, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       if (next != null) {
@@ -109,7 +111,7 @@ function everyIterator_fold(every, init, f, dropB, dropF) {
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
         acc$live = true;
@@ -126,7 +128,7 @@ function everyIterator_fold(every, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       break;
@@ -134,8 +136,12 @@ function everyIterator_fold(every, init, f, dropB, dropF) {
     acc$live = false;
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log("drop every");
+    if ($live()) {
+      console.log("drop every");
+    }
   }
   return result;
 }
@@ -163,7 +169,7 @@ function everyDoubleEndedIterator_rfold(every, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       if (nextBack != null) {
@@ -175,7 +181,7 @@ function everyDoubleEndedIterator_rfold(every, init, f, dropB, dropF) {
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
         acc$live = true;
@@ -192,7 +198,7 @@ function everyDoubleEndedIterator_rfold(every, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       break;
@@ -200,8 +206,12 @@ function everyDoubleEndedIterator_rfold(every, init, f, dropB, dropF) {
     acc$live = false;
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log("drop every");
+    if ($live()) {
+      console.log("drop every");
+    }
   }
   return result;
 }
@@ -222,7 +232,7 @@ function lentOf(src, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(held);
-    });
+    }, error);
     throw error;
   }
   console.log(`hint (${n}, ${n == null ? "None" : `Some(${n})`})`);
@@ -232,7 +242,7 @@ function lentOf(src, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(held);
-    });
+    }, error);
     throw error;
   }
   console.log(`sum ${total[0]}`);
@@ -253,7 +263,7 @@ function lentOf(src, dropI) {
     $cleanup(() => {
       totalDrop_drop(total);
       dropI?.(held);
-    });
+    }, error);
     throw error;
   }
   console.log(`rfold ${acc[0]}`);
@@ -280,7 +290,7 @@ function mapped(src, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(held);
-    });
+    }, error);
     throw error;
   }
   let arg;
@@ -289,7 +299,7 @@ function mapped(src, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(held);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -297,7 +307,7 @@ function mapped(src, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(held);
-    });
+    }, error);
     throw error;
   }
   let all;
@@ -316,7 +326,7 @@ function mapped(src, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(held);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -324,7 +334,7 @@ function mapped(src, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(held);
-    });
+    }, error);
     throw error;
   }
   dropI?.(held);
@@ -338,7 +348,7 @@ function summed(src, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(held);
-    });
+    }, error);
     throw error;
   }
   console.log(`sum ${total[0]}`);
@@ -552,54 +562,102 @@ function main() {
                           );
                           lentOf($slicing($iter(ds()), dDrop_drop), $dropEach(dDrop_drop));
                           mapped($slicing($iter(ds()), dDrop_drop), $dropEach(dDrop_drop));
+                        } catch (error) {
+                          throw $unwindsOn(error);
                         } finally {
-                          accDrop_drop(acc);
+                          if ($live()) {
+                            accDrop_drop(acc);
+                          }
                         }
+                      } catch (error) {
+                        throw $unwindsOn(error);
                       } finally {
-                        console.log("drop every");
+                        if ($live()) {
+                          console.log("drop every");
+                        }
                       }
+                    } catch (error) {
+                      throw $unwindsOn(error);
                     } finally {
-                      accDrop_drop(fromBack);
+                      if ($live()) {
+                        accDrop_drop(fromBack);
+                      }
                     }
+                  } catch (error) {
+                    throw $unwindsOn(error);
                   } finally {
+                    if ($live()) {
+                      console.log("drop every");
+                    }
+                  }
+                } catch (error) {
+                  throw $unwindsOn(error);
+                } finally {
+                  if ($live()) {
                     console.log("drop every");
                   }
-                } finally {
-                  console.log("drop every");
                 }
+              } catch (error) {
+                throw $unwindsOn(error);
               } finally {
-                for (const item of measured) {
+                if ($live()) {
+                  for (const item of measured) {
+                    dDrop_drop(item);
+                  }
+                }
+              }
+            } catch (error) {
+              throw $unwindsOn(error);
+            } finally {
+              if ($live()) {
+                for (const item of skipped) {
                   dDrop_drop(item);
                 }
               }
-            } finally {
-              for (const item of skipped) {
+            }
+          } catch (error) {
+            throw $unwindsOn(error);
+          } finally {
+            if ($live()) {
+              for (const item of generic) {
                 dDrop_drop(item);
               }
             }
-          } finally {
-            for (const item of generic) {
+          }
+        } catch (error) {
+          throw $unwindsOn(error);
+        } finally {
+          if ($live()) {
+            for (const item of nthOf) {
               dDrop_drop(item);
             }
           }
-        } finally {
-          for (const item of nthOf) {
+        }
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          for (const item of foundIn) {
             dDrop_drop(item);
           }
         }
-      } finally {
-        for (const item of foundIn) {
+      }
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        for (const item of firsts) {
           dDrop_drop(item);
         }
       }
-    } finally {
-      for (const item of firsts) {
+    }
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      for (const item of lender) {
         dDrop_drop(item);
       }
-    }
-  } finally {
-    for (const item of lender) {
-      dDrop_drop(item);
     }
   }
 }

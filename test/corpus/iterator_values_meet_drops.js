@@ -7,9 +7,11 @@ import {
   $dropEach,
   $held,
   $iter,
+  $live,
   $next,
   $nextBack,
   $take,
+  $unwindsOn,
   iterator_map,
   iterator_rev,
   iterator_take,
@@ -39,7 +41,7 @@ function put(it, next, dropI) {
   } catch (error) {
     $cleanup(() => {
       $assign(it, next);
-    });
+    }, error);
     throw error;
   }
   $assign(it, next);
@@ -91,9 +93,13 @@ function main() {
       console.log("replaced");
       old.return();
       console.log("old dropped");
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      if (first != null) {
-        loudDrop_drop(first);
+      if ($live()) {
+        if (first != null) {
+          loudDrop_drop(first);
+        }
       }
     }
     const next = $next(it);
@@ -137,8 +143,12 @@ function main() {
         console.log(
           `${revExactSizeIterator_len(back, { len: (iterator) => iterator.len() }, $dropEach(loudDrop_drop), loudDrop_drop)}`,
         );
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        old.return();
+        if ($live()) {
+          old.return();
+        }
       }
       console.log("old dropped");
       const next$1 = $next(back);
@@ -149,8 +159,12 @@ function main() {
       }
       const value$1 = next$1 != null ? map$1(next$1) : undefined;
       console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      back.return();
+      if ($live()) {
+        back.return();
+      }
     }
 
     back = $held(
@@ -271,20 +285,40 @@ function main() {
             const value = next != null ? map(next) : undefined;
             console.log(`${value == null ? "None" : `Some(${value})`}`);
             console.log("end");
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            other.return();
+            if ($live()) {
+              other.return();
+            }
           }
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          taken.return();
+          if ($live()) {
+            taken.return();
+          }
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        mapped.return();
+        if ($live()) {
+          mapped.return();
+        }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      back.return();
+      if ($live()) {
+        back.return();
+      }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
 }
 //# sourceMappingURL=case.js.map

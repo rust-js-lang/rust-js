@@ -9,9 +9,11 @@ import {
   $filterEnds,
   $foldDropping,
   $iterator,
+  $live,
   $mapEnds,
   $rev,
   $stepBy,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -53,7 +55,7 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
           dropB?.(acc);
         }
         dropF?.(f);
-      });
+      }, error);
       throw error;
     }
     if (nextBack != null) {
@@ -65,7 +67,7 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       acc$live = true;
@@ -82,7 +84,7 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
           dropB?.(acc);
         }
         dropF?.(f);
-      });
+      }, error);
       throw error;
     }
     break;
@@ -106,9 +108,11 @@ function push(acc, d) {
   try {
     acc.push(d);
   } catch (error) {
-    for (const item of acc) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of acc) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   return acc;
@@ -134,8 +138,12 @@ function main() {
             try {
               boom(d, 1);
               return [(d[0] + 100) >>> 0];
+            } catch (error) {
+              throw $unwindsOn(error);
             } finally {
-              dDrop_drop(d);
+              if ($live()) {
+                dDrop_drop(d);
+              }
             }
           },
         ),
@@ -200,7 +208,9 @@ function main() {
         try {
           boom(d, 21);
         } catch (error) {
-          dDrop_drop(d);
+          $cleanup(() => {
+            dDrop_drop(d);
+          }, error);
           throw error;
         }
         return d;
@@ -235,7 +245,9 @@ function main() {
           try {
             inspect(item);
           } catch (error) {
-            dDrop_drop(item);
+            $cleanup(() => {
+              dDrop_drop(item);
+            }, error);
             throw error;
           }
           return item;
@@ -275,7 +287,9 @@ function main() {
             try {
               inspect(item);
             } catch (error) {
-              dDrop_drop(item);
+              $cleanup(() => {
+                dDrop_drop(item);
+              }, error);
               throw error;
             }
             return item;
@@ -312,7 +326,9 @@ function main() {
           try {
             inspect(item);
           } catch (error) {
-            dDrop_drop(item);
+            $cleanup(() => {
+              dDrop_drop(item);
+            }, error);
             throw error;
           }
           return item;
@@ -324,9 +340,11 @@ function main() {
         try {
           acc.push(d);
         } catch (error) {
-          for (const item of acc) {
-            dDrop_drop(item);
-          }
+          $cleanup(() => {
+            for (const item of acc) {
+              dDrop_drop(item);
+            }
+          }, error);
           throw error;
         }
         return acc;

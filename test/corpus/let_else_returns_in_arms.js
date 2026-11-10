@@ -3,6 +3,7 @@
 import {
   $byteLen,
   $catchUnwind,
+  $catchable,
   $debugStr,
   $drain,
   $roomFor,
@@ -28,6 +29,7 @@ function renderNode(out, segment, n, aborted) {
       render(n);
       return;
     } catch (thrown$1) {
+      $catchable(thrown$1);
       out.push("replay");
       const thrownValue = $unwound(thrown$1);
       thrown = thrownValue;
@@ -49,6 +51,7 @@ function renderNode(out, segment, n, aborted) {
       render((n + segment) >>> 0);
       return;
     } catch (thrown$1) {
+      $catchable(thrown$1);
       out.push("render");
       const thrownValue = $unwound(thrown$1);
       thrown = thrownValue;

@@ -7,9 +7,11 @@ import {
   $dispose,
   $downgrade,
   $dropping,
+  $live,
   $rcClone,
   $rcDrop,
   $unborrow,
+  $unwindsOn,
   $unwrap,
   $upgrade,
   $weakDrop,
@@ -26,11 +28,13 @@ function counted(step) {
   try {
     this$$1 = $rcClone(this$);
   } catch (error) {
-    $rcDrop(this$, (value) => {
-      if (value.value != null) {
-        $weakDrop(value.value);
-      }
-    });
+    $cleanup(() => {
+      $rcDrop(this$, (value) => {
+        if (value.value != null) {
+          $weakDrop(value.value);
+        }
+      });
+    }, error);
     throw error;
   }
   const countdown = {
@@ -50,7 +54,7 @@ function counted(step) {
           } catch (error) {
             $cleanup(() => {
               $rcDrop(countdown, $dispose);
-            });
+            }, error);
             throw error;
           }
           $rcDrop(countdown, $dispose);
@@ -61,7 +65,7 @@ function counted(step) {
         } catch (error) {
           $cleanup(() => {
             $rcDrop(countdown, $dispose);
-          });
+          }, error);
           throw error;
         }
         $rcDrop(countdown, $dispose);
@@ -85,7 +89,7 @@ function counted(step) {
     } catch (error) {
       $cleanup(() => {
         $rcDrop(countdown, $dispose);
-      });
+      }, error);
       throw error;
     }
     let borrowMut;
@@ -97,7 +101,7 @@ function counted(step) {
           $weakDrop(tmp);
         }
         $rcDrop(countdown, $dispose);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -109,19 +113,23 @@ function counted(step) {
         borrowMut.value = tmp;
         $unborrow(borrowMut);
         $rcDrop(countdown, $dispose);
-      });
+      }, error);
       throw error;
     }
     borrowMut.value = tmp;
     $unborrow(borrowMut);
     const strong = countdown.strong;
     return [countdown, strong];
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    $rcDrop(this$, (value) => {
-      if (value.value != null) {
-        $weakDrop(value.value);
-      }
-    });
+    if ($live()) {
+      $rcDrop(this$, (value) => {
+        if (value.value != null) {
+          $weakDrop(value.value);
+        }
+      });
+    }
   }
 }
 
@@ -132,11 +140,13 @@ function readApart() {
   try {
     this$$1 = $rcClone(this$);
   } catch (error) {
-    $rcDrop(this$, (value) => {
-      if (value.value != null) {
-        $weakDrop(value.value);
-      }
-    });
+    $cleanup(() => {
+      $rcDrop(this$, (value) => {
+        if (value.value != null) {
+          $weakDrop(value.value);
+        }
+      });
+    }, error);
     throw error;
   }
   const probe = {
@@ -173,7 +183,7 @@ function readApart() {
     } catch (error) {
       $cleanup(() => {
         $rcDrop(probe, $dispose);
-      });
+      }, error);
       throw error;
     }
     const before = tmp.value != null;
@@ -183,7 +193,7 @@ function readApart() {
     } catch (error) {
       $cleanup(() => {
         $rcDrop(probe, $dispose);
-      });
+      }, error);
       throw error;
     }
     let borrowMut;
@@ -195,7 +205,7 @@ function readApart() {
           $weakDrop(tmp$1);
         }
         $rcDrop(probe, $dispose);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -207,18 +217,22 @@ function readApart() {
         borrowMut.value = tmp$1;
         $unborrow(borrowMut);
         $rcDrop(probe, $dispose);
-      });
+      }, error);
       throw error;
     }
     borrowMut.value = tmp$1;
     $unborrow(borrowMut);
     return [probe, before];
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    $rcDrop(this$, (value) => {
-      if (value.value != null) {
-        $weakDrop(value.value);
-      }
-    });
+    if ($live()) {
+      $rcDrop(this$, (value) => {
+        if (value.value != null) {
+          $weakDrop(value.value);
+        }
+      });
+    }
   }
 }
 
@@ -230,7 +244,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(counted$1, $dispose);
-    });
+    }, error);
     throw error;
   }
   let tmp;
@@ -239,7 +253,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(counted$1, $dispose);
-    });
+    }, error);
     throw error;
   }
   const probe = tmp[0];
@@ -250,7 +264,7 @@ function main() {
     $cleanup(() => {
       $rcDrop(probe, $dispose);
       $rcDrop(counted$1, $dispose);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -258,7 +272,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(counted$1, $dispose);
-    });
+    }, error);
     throw error;
   }
   $rcDrop(counted$1, $dispose);

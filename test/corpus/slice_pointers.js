@@ -2,6 +2,7 @@
 
 import {
   $at,
+  $cleanup,
   $drain,
   $iter,
   $iterator,
@@ -68,9 +69,11 @@ function droppedTail() {
   try {
     tail = $ptrSliceMut($ptrAdd($ptr(items, 0), 1), 2);
   } catch (error) {
-    for (const item of items) {
-      console.log(`drop ${item[0]}`);
-    }
+    $cleanup(() => {
+      for (const item of items) {
+        console.log(`drop ${item[0]}`);
+      }
+    }, error);
     throw error;
   }
   try {
@@ -78,18 +81,22 @@ function droppedTail() {
       console.log(`drop ${item[0]}`);
     }
   } catch (error) {
-    for (const item of items) {
-      console.log(`drop ${item[0]}`);
-    }
+    $cleanup(() => {
+      for (const item of items) {
+        console.log(`drop ${item[0]}`);
+      }
+    }, error);
     throw error;
   }
   let first;
   try {
     first = items[$at(items, 0)];
   } catch (error) {
-    for (const item of items) {
-      console.log(`drop ${item[0]}`);
-    }
+    $cleanup(() => {
+      for (const item of items) {
+        console.log(`drop ${item[0]}`);
+      }
+    }, error);
     throw error;
   }
   console.log(`${first[0]}`);

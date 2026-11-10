@@ -7,6 +7,7 @@ import {
   $collectDropping,
   $dropEach,
   $iter,
+  $live,
   $ord,
   $partialEq,
   $partialOrd,
@@ -76,8 +77,10 @@ function sorted(name, len, boom$1, sort) {
     const arg = shown(v);
     console.log(`${name} ${len} ${boom$1} ${isOk}: ${arg}`);
   } finally {
-    for (const item of v) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of v) {
+        dDrop_drop(item);
+      }
     }
   }
 }
@@ -146,13 +149,17 @@ function main() {
         const arg = shown.join(" ");
         console.log(`celled ${boom$1} ${value}: ${arg}`);
       } finally {
-        for (const item of w) {
-          dDrop_drop(item.d);
+        if ($live()) {
+          for (const item of w) {
+            dDrop_drop(item.d);
+          }
         }
       }
     } finally {
-      for (const item of v) {
-        dDrop_drop(item.d);
+      if ($live()) {
+        for (const item of v) {
+          dDrop_drop(item.d);
+        }
       }
     }
   }

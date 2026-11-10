@@ -7,8 +7,10 @@ import {
   $foldBack,
   $iter,
   $lent,
+  $live,
   $nthBack,
   $slicing,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -35,9 +37,13 @@ function main() {
     const value = nthBack != null ? map(nthBack) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
     console.log(`left ${it.end - it.at}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of it) {
-      noisyDrop_drop(item);
+    if ($live()) {
+      for (const item of it) {
+        noisyDrop_drop(item);
+      }
     }
   }
   it = $iter(noisy([4, 5, 6]));
@@ -67,14 +73,22 @@ function main() {
         })
         .find((item) => item != null);
       console.log(`${value == null ? "None" : `Some(${value})`}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of value$1) {
-        noisyDrop_drop(item);
+      if ($live()) {
+        for (const item of value$1) {
+          noisyDrop_drop(item);
+        }
       }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of it) {
-      noisyDrop_drop(item);
+    if ($live()) {
+      for (const item of it) {
+        noisyDrop_drop(item);
+      }
     }
   }
 }

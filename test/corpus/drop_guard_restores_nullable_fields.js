@@ -34,7 +34,7 @@ function initialize(chunk, tracked, run) {
         _restore.prevChunk = undefined;
         initializingChunk = old ?? null;
       }
-    });
+    }, error);
     throw error;
   }
   const old = _restore.prevHandler;

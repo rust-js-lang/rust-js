@@ -7,7 +7,9 @@ import {
   $held,
   $holding,
   $iter,
+  $live,
   $next,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -22,9 +24,11 @@ function scaled(v) {
     tmp = $iter(v);
     factor$live = false;
   } catch (error) {
-    if (factor$live) {
-      console.log(`drop ${factor[0]}`);
-    }
+    $cleanup(() => {
+      if (factor$live) {
+        console.log(`drop ${factor[0]}`);
+      }
+    }, error);
     throw error;
   }
   function f(x) {
@@ -40,8 +44,12 @@ function scaled(v) {
   );
   try {
     return $foldToArray(iter);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter.return();
+    if ($live()) {
+      iter.return();
+    }
   }
 }
 
@@ -56,7 +64,7 @@ function kept(f, v, dropF) {
       if (f$live) {
         dropF?.(f);
       }
-    });
+    }, error);
     throw error;
   }
   const f$1 = (x) => f(x);
@@ -84,7 +92,7 @@ function countBy(it, f, dropF) {
   } catch (error) {
     $cleanup(() => {
       iter.return();
-    });
+    }, error);
     throw error;
   }
   iter.return();
@@ -101,9 +109,11 @@ function main() {
     tmp = $iter([1, 2]);
     shared$live = false;
   } catch (error) {
-    if (shared$live) {
-      console.log(`drop ${shared[0]}`);
-    }
+    $cleanup(() => {
+      if (shared$live) {
+        console.log(`drop ${shared[0]}`);
+      }
+    }, error);
     throw error;
   }
   function f(x) {
@@ -120,8 +130,12 @@ function main() {
   let result;
   try {
     result = iter.reduce((a, b) => (a + b) >>> 0, 0);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter.return();
+    if ($live()) {
+      iter.return();
+    }
   }
   const total = result;
   console.log(`total ${total}`);
@@ -145,9 +159,11 @@ function main() {
     tmp$1 = $iter([1, 2, 3, 4]);
     tag$live = false;
   } catch (error) {
-    if (tag$live) {
-      console.log(`drop ${tag[0]}`);
-    }
+    $cleanup(() => {
+      if (tag$live) {
+        console.log(`drop ${tag[0]}`);
+      }
+    }, error);
     throw error;
   }
   function f$1(x) {
@@ -166,8 +182,12 @@ function main() {
   try {
     const value = $next(filtered);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    filtered.return();
+    if ($live()) {
+      filtered.return();
+    }
   }
   let label$live = true;
   const label = [9];
@@ -176,9 +196,11 @@ function main() {
     tmp$2 = $iter([1, 2, 3]);
     label$live = false;
   } catch (error) {
-    if (label$live) {
-      console.log(`drop ${label[0]}`);
-    }
+    $cleanup(() => {
+      if (label$live) {
+        console.log(`drop ${label[0]}`);
+      }
+    }, error);
     throw error;
   }
   console.log(

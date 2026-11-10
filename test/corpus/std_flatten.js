@@ -9,6 +9,7 @@ import {
   $held,
   $iter,
   $knowing,
+  $live,
   $next,
   $nextBack,
   $nextBackSome,
@@ -17,6 +18,7 @@ import {
   $roomForHint,
   $sizeHint,
   $tryOf,
+  $unwindsOn,
   flattenDoubleEndedIterator_nextBack,
   flattenDoubleEndedIterator_rfold,
   flattenDoubleEndedIterator_tryRfold,
@@ -269,8 +271,12 @@ function main() {
     if (first != null) {
       loudDrop_drop(first);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loud.return();
+    if ($live()) {
+      loud.return();
+    }
   }
 
   // Held in a struct, made by generic code.

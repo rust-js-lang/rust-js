@@ -17,7 +17,7 @@ function main() {
     $cleanup(() => {
       $borrowMut(p[0]).push(0);
       $borrowMut(q[0]).push(0);
-    });
+    }, error);
     throw error;
   }
   console.log(`${v.length}`);
@@ -28,7 +28,7 @@ function main() {
       p = q;
       $unborrow(v);
       $borrowMut(p[0]).push(0);
-    });
+    }, error);
     throw error;
   }
   p = q;
@@ -39,7 +39,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $borrowMut(p[0]).push(0);
-    });
+    }, error);
     throw error;
   }
   let tmp;
@@ -48,7 +48,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $borrowMut(p[0]).push(0);
-    });
+    }, error);
     throw error;
   }
   console.log(`${borrow.length} ${tmp.length}`);

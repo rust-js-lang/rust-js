@@ -7,10 +7,12 @@ import {
   $dropEach,
   $dropItems,
   $iter,
+  $live,
   $next,
   $rangeNext,
   $someValue,
   $traitImpl,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -37,8 +39,12 @@ function looped(w, IIterator) {
       }
       n = (n + 1) >>> 0;
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log(`drop ${iter[1]}`);
+    if ($live()) {
+      console.log(`drop ${iter[1]}`);
+    }
   }
   return n;
 }
@@ -57,8 +63,12 @@ function dropping(w, IIterator) {
       sum = (sum + d[0]) >>> 0;
       dDrop_drop(d);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log(`drop ${iter[1]}`);
+    if ($live()) {
+      console.log(`drop ${iter[1]}`);
+    }
   }
   return sum;
 }
@@ -77,7 +87,7 @@ function ofItems(w, IIterator, dropT, dropI) {
         $dropItems(all, (item) => {
           dropT?.(item);
         });
-      });
+      }, error);
       throw error;
     }
     if (tmp == null) {
@@ -89,7 +99,7 @@ function ofItems(w, IIterator, dropT, dropI) {
           $dropItems(all, (item) => {
             dropT?.(item);
           });
-        });
+        }, error);
         throw error;
       }
       break;
@@ -104,7 +114,7 @@ function ofItems(w, IIterator, dropT, dropI) {
         $dropItems(all, (item) => {
           dropT?.(item);
         });
-      });
+      }, error);
       throw error;
     }
   }
@@ -135,7 +145,7 @@ function wrapperCounted_counted(wrapper, IIterator, dropI, dropIItem) {
       $cleanup(() => {
         console.log(`drop ${iter[1]}`);
         dropI?.(iter[0]);
-      });
+      }, error);
       throw error;
     }
     if (tmp == null) {
@@ -147,7 +157,7 @@ function wrapperCounted_counted(wrapper, IIterator, dropI, dropIItem) {
         $cleanup(() => {
           console.log(`drop ${iter[1]}`);
           dropI?.(iter[0]);
-        });
+        }, error);
         throw error;
       }
       console.log(`drop ${iter[1]}`);
@@ -163,7 +173,7 @@ function wrapperCounted_counted(wrapper, IIterator, dropI, dropIItem) {
       $cleanup(() => {
         console.log(`drop ${iter[1]}`);
         dropI?.(iter[0]);
-      });
+      }, error);
       throw error;
     }
   }
@@ -185,7 +195,7 @@ function wrapperTallying(IIterator, dropI, dropIItem) {
           $cleanup(() => {
             console.log(`drop ${iter[1]}`);
             dropI?.(iter[0]);
-          });
+          }, error);
           throw error;
         }
         if (tmp == null) {
@@ -197,7 +207,7 @@ function wrapperTallying(IIterator, dropI, dropIItem) {
             $cleanup(() => {
               console.log(`drop ${iter[1]}`);
               dropI?.(iter[0]);
-            });
+            }, error);
             throw error;
           }
           console.log(`drop ${iter[1]}`);
@@ -213,7 +223,7 @@ function wrapperTallying(IIterator, dropI, dropIItem) {
           $cleanup(() => {
             console.log(`drop ${iter[1]}`);
             dropI?.(iter[0]);
-          });
+          }, error);
           throw error;
         }
       }
@@ -246,9 +256,13 @@ function main() {
         dDrop_drop,
       ).tally(wrapper)}`,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of items) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of items) {
+        dDrop_drop(item);
+      }
     }
   }
 }

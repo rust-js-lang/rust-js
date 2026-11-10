@@ -10,9 +10,11 @@ import {
   $iter,
   $iterator,
   $last,
+  $live,
   $next,
   $nth,
   $peek,
+  $unwindsOn,
   iterator_peekable,
 } from "@rust-js/std";
 
@@ -47,7 +49,7 @@ function consumed(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       iter.return();
-    });
+    }, error);
     throw error;
   }
   iter.return();
@@ -86,8 +88,12 @@ function main() {
     }
     console.log(`${(next != null ? map(next) : undefined) ?? 0}`);
     console.log("end");
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    p.return();
+    if ($live()) {
+      p.return();
+    }
   }
 }
 //# sourceMappingURL=case.js.map

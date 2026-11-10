@@ -13,12 +13,14 @@ import {
   $iter,
   $iterator,
   $lazyTakeWhile,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
   $rangeNext,
   $rev,
   $tryFoldInto,
+  $unwindsOn,
   iterator_map,
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
@@ -59,9 +61,11 @@ function backwards(items, dropI) {
         try {
           acc.push(d);
         } catch (error) {
-          for (const item of acc) {
-            dDrop_drop(item);
-          }
+          $cleanup(() => {
+            for (const item of acc) {
+              dDrop_drop(item);
+            }
+          }, error);
           throw error;
         }
         return acc;
@@ -73,7 +77,7 @@ function backwards(items, dropI) {
       if (!iter.ownRfold) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownRfold) {
@@ -93,9 +97,11 @@ function triedBack(items, dropI) {
         try {
           acc.push(d);
         } catch (error) {
-          for (const item of acc) {
-            dDrop_drop(item);
-          }
+          $cleanup(() => {
+            for (const item of acc) {
+              dDrop_drop(item);
+            }
+          }, error);
           throw error;
         }
         return { TAG: "Continue", _0: acc };
@@ -106,7 +112,7 @@ function triedBack(items, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(items);
-    });
+    }, error);
     throw error;
   }
   dropI?.(items);
@@ -142,7 +148,7 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
           dropB?.(acc);
         }
         dropF?.(f);
-      });
+      }, error);
       throw error;
     }
     if (nextBack != null) {
@@ -154,7 +160,7 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       acc$live = true;
@@ -171,7 +177,7 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
           dropB?.(acc);
         }
         dropF?.(f);
-      });
+      }, error);
       throw error;
     }
     break;
@@ -193,9 +199,11 @@ function tried(items, dropI) {
         try {
           acc.push(d);
         } catch (error) {
-          for (const item of acc) {
-            dDrop_drop(item);
-          }
+          $cleanup(() => {
+            for (const item of acc) {
+              dDrop_drop(item);
+            }
+          }, error);
           throw error;
         }
         return { TAG: "Continue", _0: acc };
@@ -206,7 +214,7 @@ function tried(items, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(items);
-    });
+    }, error);
     throw error;
   }
   dropI?.(items);
@@ -217,9 +225,11 @@ function push(acc, d) {
   try {
     acc.push(d);
   } catch (error) {
-    for (const item of acc) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of acc) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   return acc;
@@ -233,7 +243,9 @@ function main() {
         try {
           inspect(item);
         } catch (error) {
-          dDrop_drop(item);
+          $cleanup(() => {
+            dDrop_drop(item);
+          }, error);
           throw error;
         }
         return item;
@@ -254,7 +266,9 @@ function main() {
         try {
           inspect(item);
         } catch (error) {
-          dDrop_drop(item);
+          $cleanup(() => {
+            dDrop_drop(item);
+          }, error);
           throw error;
         }
         return item;
@@ -282,7 +296,9 @@ function main() {
         try {
           inspect$1(item);
         } catch (error) {
-          dDrop_drop(item);
+          $cleanup(() => {
+            dDrop_drop(item);
+          }, error);
           throw error;
         }
         return item;
@@ -297,9 +313,11 @@ function main() {
           try {
             acc.push(d);
           } catch (error) {
-            for (const item of acc) {
-              dDrop_drop(item);
-            }
+            $cleanup(() => {
+              for (const item of acc) {
+                dDrop_drop(item);
+              }
+            }, error);
             throw error;
           }
           return { TAG: "Continue", _0: acc };
@@ -307,8 +325,12 @@ function main() {
         $controlFlowTry,
         $dropEach(dDrop_drop),
       );
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      inspect.return();
+      if ($live()) {
+        inspect.return();
+      }
     }
     console.log(`${x.TAG === "Continue"}`);
     if (x.TAG === "Continue") {
@@ -328,7 +350,9 @@ function main() {
         try {
           boom(d, 31);
         } catch (error) {
-          dDrop_drop(d);
+          $cleanup(() => {
+            dDrop_drop(d);
+          }, error);
           throw error;
         }
         return d;
@@ -338,9 +362,11 @@ function main() {
         try {
           acc.push(d);
         } catch (error) {
-          for (const item of acc) {
-            dDrop_drop(item);
-          }
+          $cleanup(() => {
+            for (const item of acc) {
+              dDrop_drop(item);
+            }
+          }, error);
           throw error;
         }
         return acc;
@@ -360,7 +386,9 @@ function main() {
             try {
               boom(d, 41);
             } catch (error) {
-              dDrop_drop(d);
+              $cleanup(() => {
+                dDrop_drop(d);
+              }, error);
               throw error;
             }
             return d;
@@ -385,7 +413,9 @@ function main() {
         try {
           boom(d, 51);
         } catch (error) {
-          dDrop_drop(d);
+          $cleanup(() => {
+            dDrop_drop(d);
+          }, error);
           throw error;
         }
         return d;
@@ -404,7 +434,9 @@ function main() {
         try {
           boom(d, 61);
         } catch (error) {
-          dDrop_drop(d);
+          $cleanup(() => {
+            dDrop_drop(d);
+          }, error);
           throw error;
         }
         return d;
@@ -428,7 +460,9 @@ function main() {
         try {
           boom(d, 71);
         } catch (error) {
-          dDrop_drop(d);
+          $cleanup(() => {
+            dDrop_drop(d);
+          }, error);
           throw error;
         }
         return d;
@@ -465,7 +499,9 @@ function main() {
           try {
             boom(d, 81);
           } catch (error) {
-            dDrop_drop(d);
+            $cleanup(() => {
+              dDrop_drop(d);
+            }, error);
             throw error;
           }
           return d;
@@ -485,9 +521,11 @@ function main() {
           try {
             acc.push(d);
           } catch (error) {
-            for (const item of acc) {
-              dDrop_drop(item);
-            }
+            $cleanup(() => {
+              for (const item of acc) {
+                dDrop_drop(item);
+              }
+            }, error);
             throw error;
           }
           return { TAG: "Continue", _0: acc };
@@ -525,8 +563,12 @@ function main() {
           dDrop_drop(item);
         }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      held.return();
+      if ($live()) {
+        held.return();
+      }
     }
   });
   run("generic try_rfold", () => {
@@ -536,7 +578,9 @@ function main() {
         try {
           inspect(item);
         } catch (error) {
-          dDrop_drop(item);
+          $cleanup(() => {
+            dDrop_drop(item);
+          }, error);
           throw error;
         }
         return item;
@@ -576,7 +620,9 @@ function main() {
           try {
             boom(d, 102);
           } catch (error) {
-            dDrop_drop(d);
+            $cleanup(() => {
+              dDrop_drop(d);
+            }, error);
             throw error;
           }
           return d;

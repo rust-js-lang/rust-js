@@ -18,11 +18,13 @@ import {
   $lazySkipWhile,
   $lazyTakeWhile,
   $lent,
+  $live,
   $next,
   $rangeNext,
   $reserveHint,
   $rev,
   $sizeHint,
+  $unwindsOn,
   iterator_chain,
   iterator_flatMap,
   iterator_zip,
@@ -62,7 +64,7 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
   } catch (error) {
     $cleanup(() => {
       dropF?.(f);
-    });
+    }, error);
     throw error;
   }
   dropF?.(f);
@@ -257,8 +259,12 @@ function main() {
   );
   try {
     show("rev filter", $sizeHint(filter));
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    filter.return();
+    if ($live()) {
+      filter.return();
+    }
   }
   inGeneric("tag", { fmt: (value) => $debugStr(value) });
   const s = Array.from(

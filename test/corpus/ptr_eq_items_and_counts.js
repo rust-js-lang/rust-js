@@ -3,6 +3,7 @@
 import {
   $byteLen,
   $catchUnwind,
+  $catchable,
   $debugStr,
   $index,
   $panicMessage,
@@ -93,6 +94,7 @@ function main() {
     const first = isFirst(empty, $index(items, 0));
     console.log(`no panic: ${first}`);
   } catch (thrown) {
+    $catchable(thrown);
     const payload = $unwound(thrown);
     const value =
       payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage

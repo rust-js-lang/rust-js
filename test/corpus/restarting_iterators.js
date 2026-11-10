@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $cleanup,
   $collectDropping,
   $dropEach,
   $fromFn,
@@ -222,13 +223,17 @@ function main() {
       }),
     );
   } catch (error) {
-    zipped.return();
+    $cleanup(() => {
+      zipped.return();
+    }, error);
     throw error;
   }
   try {
     console.log(`zip first [${first.join(", ")}]`);
   } catch (error) {
-    zipped.return();
+    $cleanup(() => {
+      zipped.return();
+    }, error);
     throw error;
   }
   const second = $collectDropping(

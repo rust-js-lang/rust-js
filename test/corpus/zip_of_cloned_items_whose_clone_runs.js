@@ -2,6 +2,7 @@
 
 import {
   $iter,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
@@ -9,6 +10,7 @@ import {
   $rev,
   $trustedZip,
   $trustedZipEnds,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -82,14 +84,22 @@ function main() {
         }),
       );
       console.log(`| rev [${r.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of b) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of b) {
+          dDrop_drop(item);
+        }
       }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of a) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of a) {
+        dDrop_drop(item);
+      }
     }
   }
 }

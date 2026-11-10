@@ -2,12 +2,14 @@
 
 import {
   $borrow,
+  $live,
   $newCyclic,
   $partialEq,
   $rcDrop,
   $showBorrowed,
   $tryBorrow,
   $unborrow,
+  $unwindsOn,
   $upgrade,
   $weakClone,
   $weakDrop,
@@ -53,10 +55,14 @@ const Node = {
         if (tryBorrowMut.TAG === "Ok") {
           $unborrow(tryBorrowMut._0);
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
+        if ($live()) {
+          $rcDrop(me, (value) => {
+            $weakDrop(value.me);
+          });
+        }
       }
     } else {
       result = false;
@@ -191,10 +197,14 @@ function main() {
     } finally {
       $weakDrop(copy.me);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    $rcDrop(node, (value) => {
-      $weakDrop(value.me);
-    });
+    if ($live()) {
+      $rcDrop(node, (value) => {
+        $weakDrop(value.me);
+      });
+    }
   }
 }
 //# sourceMappingURL=case.js.map

@@ -11,10 +11,12 @@ import {
   $foldToArray,
   $folded,
   $iter,
+  $live,
   $mapFrom,
   $range,
   $rev,
   $stepBy,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -143,8 +145,12 @@ function main() {
               throw new Error("collect");
             }
             return String.fromCharCode((97 + ((d[0] & 255) % 26)) & 255);
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            dDrop_drop(d);
+            if ($live()) {
+              dDrop_drop(d);
+            }
           }
         }),
       ),
@@ -174,8 +180,12 @@ function main() {
               throw new Error("set");
             }
             return d[0];
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            dDrop_drop(d);
+            if ($live()) {
+              dDrop_drop(d);
+            }
           }
         }),
       ),

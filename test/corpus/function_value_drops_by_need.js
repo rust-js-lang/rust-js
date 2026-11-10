@@ -7,7 +7,9 @@ import {
   $dropItems,
   $foldToArray,
   $iter,
+  $live,
   $next,
+  $unwindsOn,
 } from "@rust-js/std";
 
 const firstLoud = (arg0) => first(arg0, loudDrop_drop);
@@ -34,7 +36,7 @@ function first(items, dropT) {
       $dropItems(value, (item) => {
         dropT?.(item);
       });
-    });
+    }, error);
     throw error;
   }
   $dropItems(value, (item) => {
@@ -70,9 +72,13 @@ function main() {
         loudDrop_drop(item);
       }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of kept) {
-      loudDrop_drop(item);
+    if ($live()) {
+      for (const item of kept) {
+        loudDrop_drop(item);
+      }
     }
   }
 }

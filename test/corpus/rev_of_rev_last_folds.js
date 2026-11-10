@@ -100,7 +100,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         rev.return();
-      });
+      }, error);
       throw error;
     }
     let result;
@@ -109,7 +109,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         rev.return();
-      });
+      }, error);
       throw error;
     }
     rev.return();

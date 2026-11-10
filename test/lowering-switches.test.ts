@@ -266,7 +266,8 @@ pub fn named(value: &Unknown) -> String {
       default:
         return "";
     }
-  } catch {
+  } catch (error) {
+    $catchable(error);
     return "";
   }
 }`);
@@ -910,11 +911,12 @@ pub fn get_io_description(value: Option<&Unknown>) -> String {
         // Not useful descriptors.
         return "";
     }
-  } catch {
+  } catch (error) {
+    $catchable(error);
     return "";
   }
 }`);
-  expect(js).not.toMatch(/^import /m);
+  expect(js.match(/^import .*$/gm)).toEqual(['import { $catchable } from "@rust-js/std";']);
   writeFileSync(join(dir, "run.mjs"), `import { getIoDescription } from "./lib.js";
 const throwing = { get url() { throw new TypeError("no url"); } };
 const reads = [];

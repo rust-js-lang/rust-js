@@ -20,7 +20,7 @@ function sharedTwice(value, dropT) {
       $rcDrop(first, (value) => {
         dropT?.(value);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -32,7 +32,7 @@ function sharedTwice(value, dropT) {
       $rcDrop(second, (value) => {
         dropT?.(value);
       });
-    });
+    }, error);
     throw error;
   }
   console.log("one left");

@@ -5,8 +5,10 @@ import {
   $dispose,
   $downgrade,
   $dropping,
+  $live,
   $rcClone,
   $rcDrop,
+  $unwindsOn,
   $upgrade,
   $weakDrop,
 } from "@rust-js/std";
@@ -30,11 +32,13 @@ function render(name, other) {
   try {
     cell = $rcClone(requestCell);
   } catch (error) {
-    $rcDrop(requestCell, (value) => {
-      if (value.value != null) {
-        $weakDrop(value.value);
-      }
-    });
+    $cleanup(() => {
+      $rcDrop(requestCell, (value) => {
+        if (value.value != null) {
+          $weakDrop(value.value);
+        }
+      });
+    }, error);
     throw error;
   }
   const onReady = {
@@ -88,7 +92,7 @@ function render(name, other) {
         $rcDrop(request, (value) => {
           $rcDrop(value.onReady, $dispose);
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -100,7 +104,7 @@ function render(name, other) {
         $rcDrop(request, (value) => {
           $rcDrop(value.onReady, $dispose);
         });
-      });
+      }, error);
       throw error;
     }
     let value$1;
@@ -118,19 +122,23 @@ function render(name, other) {
         $rcDrop(request, (value) => {
           $rcDrop(value.onReady, $dispose);
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`set again: ${second.TAG === "Err"}`);
     if (second.TAG === "Err") {
       $weakDrop(second._0);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    $rcDrop(requestCell, (value) => {
-      if (value.value != null) {
-        $weakDrop(value.value);
-      }
-    });
+    if ($live()) {
+      $rcDrop(requestCell, (value) => {
+        if (value.value != null) {
+          $weakDrop(value.value);
+        }
+      });
+    }
   }
   return request;
 }
@@ -151,7 +159,7 @@ function main() {
       $rcDrop(other, (value) => {
         $rcDrop(value.onReady, $dispose);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -164,7 +172,7 @@ function main() {
       $rcDrop(other, (value) => {
         $rcDrop(value.onReady, $dispose);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -177,7 +185,7 @@ function main() {
       $rcDrop(other, (value) => {
         $rcDrop(value.onReady, $dispose);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -189,7 +197,7 @@ function main() {
       $rcDrop(other, (value) => {
         $rcDrop(value.onReady, $dispose);
       });
-    });
+    }, error);
     throw error;
   }
   $rcDrop(other, (value) => {

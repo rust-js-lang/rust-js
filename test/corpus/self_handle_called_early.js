@@ -8,9 +8,11 @@ import {
   $dispose,
   $downgrade,
   $dropping,
+  $live,
   $rcClone,
   $rcDrop,
   $unborrow,
+  $unwindsOn,
   $unwrap,
   $upgrade,
   $weakDrop,
@@ -26,11 +28,13 @@ function steps() {
   try {
     this$$1 = $rcClone(this$);
   } catch (error) {
-    $rcDrop(this$, (value) => {
-      if (value.value != null) {
-        $weakDrop(value.value);
-      }
-    });
+    $cleanup(() => {
+      $rcDrop(this$, (value) => {
+        if (value.value != null) {
+          $weakDrop(value.value);
+        }
+      });
+    }, error);
     throw error;
   }
   const steps = {
@@ -52,7 +56,7 @@ function steps() {
         } catch (error) {
           $cleanup(() => {
             $rcDrop(steps, $dispose);
-          });
+          }, error);
           throw error;
         }
         $rcDrop(steps, $dispose);
@@ -77,7 +81,7 @@ function steps() {
     } catch (error) {
       $cleanup(() => {
         $rcDrop(steps, $dispose);
-      });
+      }, error);
       throw error;
     }
     let borrowMut;
@@ -89,7 +93,7 @@ function steps() {
           $weakDrop(tmp);
         }
         $rcDrop(steps, $dispose);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -101,18 +105,22 @@ function steps() {
         borrowMut.value = tmp;
         $unborrow(borrowMut);
         $rcDrop(steps, $dispose);
-      });
+      }, error);
       throw error;
     }
     borrowMut.value = tmp;
     $unborrow(borrowMut);
     return [steps, early];
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    $rcDrop(this$, (value) => {
-      if (value.value != null) {
-        $weakDrop(value.value);
-      }
-    });
+    if ($live()) {
+      $rcDrop(this$, (value) => {
+        if (value.value != null) {
+          $weakDrop(value.value);
+        }
+      });
+    }
   }
 }
 
@@ -124,7 +132,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(steps$1, $dispose);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -132,7 +140,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(steps$1, $dispose);
-    });
+    }, error);
     throw error;
   }
   $rcDrop(steps$1, $dispose);

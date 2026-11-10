@@ -24,7 +24,7 @@ function main() {
         } finally {
           $rcDrop(watch);
         }
-      });
+      }, error);
       throw error;
     }
     try {

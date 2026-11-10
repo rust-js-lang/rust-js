@@ -6,10 +6,12 @@ import {
   $foldOf,
   $foldToArray,
   $iter,
+  $live,
   $next,
   $nextBack,
   $rangeNext,
   $roomForHint,
+  $unwindsOn,
   iterator_enumerate,
   iterator_map,
   iterator_rev,
@@ -75,8 +77,12 @@ function main() {
   let result;
   try {
     result = $foldToArray($roomForHint(iter, 4, true));
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter.return();
+    if ($live()) {
+      iter.return();
+    }
   }
   let v = result;
   console.log(`[${v.join(", ")}]`);
@@ -114,8 +120,12 @@ function main() {
   let result$1;
   try {
     result$1 = $foldToArray($roomForHint(iter$1, 4, true));
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter$1.return();
+    if ($live()) {
+      iter$1.return();
+    }
   }
   v = result$1;
   console.log(`[${v.join(", ")}]`);
@@ -170,8 +180,12 @@ function main() {
   let result$2;
   try {
     result$2 = $foldToArray($roomForHint(iter$2, 8, true));
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter$2.return();
+    if ($live()) {
+      iter$2.return();
+    }
   }
   v = result$2;
   console.log(`[${v.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
@@ -247,9 +261,13 @@ function main() {
         return result;
       }, 0);
     console.log(`${n} ${seen$1}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of v) {
-      dDrop_drop(item[0]);
+    if ($live()) {
+      for (const item of v) {
+        dDrop_drop(item[0]);
+      }
     }
   }
 }

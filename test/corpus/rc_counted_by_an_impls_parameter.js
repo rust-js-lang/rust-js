@@ -22,7 +22,7 @@ function keeperPair_both(keeper, value, mine, UDebug, TDebug, dropU, dropT) {
   } catch (error) {
     $cleanup(() => {
       dropT?.(value);
-    });
+    }, error);
     throw error;
   }
   const result = mine.strong;

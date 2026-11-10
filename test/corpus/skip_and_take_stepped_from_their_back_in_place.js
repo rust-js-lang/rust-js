@@ -9,6 +9,7 @@ import {
   $iter,
   $iterator,
   $knowing,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
@@ -21,6 +22,7 @@ import {
   $skipping,
   $taking,
   $tryOf,
+  $unwindsOn,
   iterator_skip,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
@@ -89,8 +91,12 @@ function main() {
     }
     const value = rfind != null ? map(rfind) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    take.return();
+    if ($live()) {
+      take.return();
+    }
   }
   const skip = $held($skipping($closing($iter(ls(5)), $dropEach(lDrop_drop)), 1, lDrop_drop));
   try {
@@ -102,8 +108,12 @@ function main() {
     }
     const value = rfind != null ? map(rfind) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    skip.return();
+    if ($live()) {
+      skip.return();
+    }
   }
   const value$11 = $held($taking($closing($iter(ls(6)), $dropEach(lDrop_drop)), 4, lDrop_drop));
   try {
@@ -115,8 +125,12 @@ function main() {
     }
     const value = nthBack != null ? map(nthBack) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$11.return();
+    if ($live()) {
+      value$11.return();
+    }
   }
   const value$12 = $held($skipping($closing($iter(ls(6)), $dropEach(lDrop_drop)), 2, lDrop_drop));
   try {
@@ -128,8 +142,12 @@ function main() {
     }
     const value = nextBack != null ? map(nextBack) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$12.return();
+    if ($live()) {
+      value$12.return();
+    }
   }
   const value$13 = $held(
     $taking($skipping($closing($iter(ls(7)), $dropEach(lDrop_drop)), 1, lDrop_drop), 4, lDrop_drop),
@@ -143,8 +161,12 @@ function main() {
     }
     const value = nthBack != null ? map(nthBack) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$13.return();
+    if ($live()) {
+      value$13.return();
+    }
   }
   // Held in a variable, std's struct, beside them.
   const it = iterator_skip($iter(v), 1);

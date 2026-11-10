@@ -9,6 +9,7 @@ import {
   $held,
   $iter,
   $iterator,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
@@ -18,6 +19,7 @@ import {
   $rev,
   $skipping,
   $taking,
+  $unwindsOn,
   enumerateDoubleEndedIterator_nextBack,
   iterator_enumerate,
 } from "@rust-js/std";
@@ -86,8 +88,12 @@ function main() {
       }),
     );
     console.log(`[${r.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
 }
 //# sourceMappingURL=case.js.map

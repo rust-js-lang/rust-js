@@ -99,7 +99,7 @@ const Stack = {
         if (value$live) {
           dropT?.(value);
         }
-      });
+      }, error);
       throw error;
     }
     tmp.value = value;

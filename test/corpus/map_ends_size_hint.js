@@ -11,9 +11,11 @@ import {
   $iter,
   $iterator,
   $lazyChain,
+  $live,
   $next,
   $nextBack,
   $reserveHint,
+  $unwindsOn,
   chainDoubleEndedIterator_nextBack,
   iterator_chain,
 } from "@rust-js/std";
@@ -94,8 +96,12 @@ function main() {
           ).map((d) => {
             try {
               return String.fromCharCode((97 + (d[0] & 255)) & 255);
+            } catch (error) {
+              throw $unwindsOn(error);
             } finally {
-              dDrop_drop(d);
+              if ($live()) {
+                dDrop_drop(d);
+              }
             }
           }),
           1,
@@ -121,8 +127,12 @@ function main() {
           ).map((d) => {
             try {
               return String.fromCharCode((97 + (d[0] & 255)) & 255);
+            } catch (error) {
+              throw $unwindsOn(error);
             } finally {
-              dDrop_drop(d);
+              if ($live()) {
+                dDrop_drop(d);
+              }
             }
           }),
           1,
@@ -149,13 +159,21 @@ function main() {
           dDrop_drop,
         )}`,
       );
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      if (back != null) {
-        dDrop_drop(back);
+      if ($live()) {
+        if (back != null) {
+          dDrop_drop(back);
+        }
       }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
 }
 //# sourceMappingURL=case.js.map

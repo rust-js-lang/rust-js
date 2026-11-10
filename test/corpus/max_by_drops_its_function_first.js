@@ -2,17 +2,20 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $cmp,
   $dropEach,
   $iter,
   $iterator,
   $lazyRange,
+  $live,
   $maxBy,
   $maxByKey,
   $minBy,
   $minByKey,
   $print,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -64,8 +67,12 @@ function closures() {
     result = $maxBy($iterator(iter, itIterator_next), f, false, undefined, () => {
       dDrop_drop(g);
     });
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    dDrop_drop(iter._held);
+    if ($live()) {
+      dDrop_drop(iter._held);
+    }
   }
   let m = result;
   console.log(`| max_by ${m == null ? "None" : `Some(${m})`}`);
@@ -77,8 +84,12 @@ function closures() {
     result$1 = $minBy($iterator(iter$1, itIterator_next), f$1, false, undefined, () => {
       dDrop_drop(g$1);
     });
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    dDrop_drop(iter$1._held);
+    if ($live()) {
+      dDrop_drop(iter$1._held);
+    }
   }
   m = result$1;
   console.log(`| min_by ${m == null ? "None" : `Some(${m})`}`);
@@ -89,8 +100,12 @@ function plain() {
   let result;
   try {
     result = $maxBy($iterator(iter, itIterator_next), (a, b) => $cmp(a, b));
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    dDrop_drop(iter._held);
+    if ($live()) {
+      dDrop_drop(iter._held);
+    }
   }
   let m = result;
   console.log(`| max_by it ${m == null ? "None" : `Some(${m})`}`);
@@ -98,8 +113,12 @@ function plain() {
   let result$1;
   try {
     result$1 = $minByKey($iterator(iter$1, itIterator_next), (a) => a, $cmp);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    dDrop_drop(iter$1._held);
+    if ($live()) {
+      dDrop_drop(iter$1._held);
+    }
   }
   m = result$1;
   console.log(`| min_by_key it ${m == null ? "None" : `Some(${m})`}`);
@@ -108,8 +127,12 @@ function plain() {
   let value;
   try {
     value = $maxBy($lazyRange(0, 3), f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    dDrop_drop(g);
+    if ($live()) {
+      dDrop_drop(g);
+    }
   }
   m = value;
   console.log(`| max_by f ${m == null ? "None" : `Some(${m})`}`);
@@ -118,8 +141,12 @@ function plain() {
   let value$1;
   try {
     value$1 = $maxByKey($lazyRange(0, 3), f$1, $cmp);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    dDrop_drop(g$1);
+    if ($live()) {
+      dDrop_drop(g$1);
+    }
   }
   m = value$1;
   console.log(`| max_by_key f ${m == null ? "None" : `Some(${m})`}`);
@@ -134,8 +161,12 @@ function edges() {
     result = $maxBy($iterator(iter, itIterator_next), f, false, undefined, () => {
       dDrop_drop(g);
     });
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    dDrop_drop(iter._held);
+    if ($live()) {
+      dDrop_drop(iter._held);
+    }
   }
   const value = result;
   let m = value;
@@ -144,8 +175,12 @@ function edges() {
   let result$1;
   try {
     result$1 = $minByKey($iterator(iter$1, itIterator_next), (a) => a, $cmp);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    dDrop_drop(iter$1._held);
+    if ($live()) {
+      dDrop_drop(iter$1._held);
+    }
   }
   m = result$1;
   console.log(`| empty key ${m == null ? "None" : `Some(${m})`}`);
@@ -243,9 +278,11 @@ function edges() {
     tmp = $iter(value$2);
     g$3$live = false;
   } catch (error) {
-    if (g$3$live) {
-      dDrop_drop(g$3);
-    }
+    $cleanup(() => {
+      if (g$3$live) {
+        dDrop_drop(g$3);
+      }
+    }, error);
     throw error;
   }
   const f$2 = (a) => (a[0] + zero(g$3)) >>> 0;
@@ -273,9 +310,11 @@ function edges() {
     tmp$1 = $iter([]);
     g$4$live = false;
   } catch (error) {
-    if (g$4$live) {
-      dDrop_drop(g$4);
-    }
+    $cleanup(() => {
+      if (g$4$live) {
+        dDrop_drop(g$4);
+      }
+    }, error);
     throw error;
   }
   const f$3 = (a) => (a[0] + zero(g$4)) >>> 0;
@@ -307,7 +346,9 @@ function edges() {
           try {
             throw new Error("first");
           } catch (error) {
-            iDrop_drop(i);
+            $cleanup(() => {
+              iDrop_drop(i);
+            }, error);
             throw error;
           }
         }
@@ -315,9 +356,11 @@ function edges() {
       });
       g$16$0$live = false;
     } catch (error) {
-      if (g$16$0$live) {
-        dDrop_drop(g$5);
-      }
+      $cleanup(() => {
+        if (g$16$0$live) {
+          dDrop_drop(g$5);
+        }
+      }, error);
       throw error;
     }
     const f = (a) => (a[0] + zero(g$5)) >>> 0;

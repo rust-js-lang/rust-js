@@ -3,6 +3,7 @@
 import {
   $advanceSlice,
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -11,12 +12,14 @@ import {
   $held,
   $iter,
   $lazyChain,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
   $range,
   $rev,
   $tryOf,
+  $unwindsOn,
   chainDoubleEndedIterator_nthBack,
   chainDoubleEndedIterator_rfold,
   inspectDoubleEndedIterator_nextBack,
@@ -52,7 +55,9 @@ function main() {
   try {
     tmp = ds(4);
   } catch (error) {
-    value.return();
+    $cleanup(() => {
+      value.return();
+    }, error);
     throw error;
   }
   let c = $lazyChain(value, $closing($iter(tmp), $dropEach(dDrop_drop)));
@@ -63,8 +68,12 @@ function main() {
       console.log(`for ${d[0]}`);
       dDrop_drop(d);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter.return();
+    if ($live()) {
+      iter.return();
+    }
   }
 
   const value$1 = $mapEnds($closing($iter(ds(1)), $dropEach(dDrop_drop)), (d) => {
@@ -76,7 +85,9 @@ function main() {
   try {
     tmp$1 = ds(4);
   } catch (error) {
-    value$1.return();
+    $cleanup(() => {
+      value$1.return();
+    }, error);
     throw error;
   }
   c = $lazyChain(value$1, $closing($iter(tmp$1), $dropEach(dDrop_drop)));
@@ -98,8 +109,12 @@ function main() {
     }
     const value$1 = next$1 != null ? map$1(next$1) : undefined;
     console.log(`next ${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    r.return();
+    if ($live()) {
+      r.return();
+    }
   }
 
   const value$2 = $filterEnds(
@@ -111,7 +126,9 @@ function main() {
   try {
     tmp$2 = ds(4);
   } catch (error) {
-    value$2.return();
+    $cleanup(() => {
+      value$2.return();
+    }, error);
     throw error;
   }
   let n = $rev($lazyChain(value$2, $closing($iter(tmp$2), $dropEach(dDrop_drop))))
@@ -132,7 +149,9 @@ function main() {
   try {
     tmp$3 = ds(4);
   } catch (error) {
-    value$3.return();
+    $cleanup(() => {
+      value$3.return();
+    }, error);
     throw error;
   }
   c = iterator_chain(
@@ -198,7 +217,9 @@ function main() {
       dDrop_drop,
     );
   } catch (error) {
-    value$4.return();
+    $cleanup(() => {
+      value$4.return();
+    }, error);
     throw error;
   }
   c = $held(
@@ -327,8 +348,12 @@ function main() {
     }
     const value$1 = next != null ? map$1(next) : undefined;
     console.log(`next ${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    c.return();
+    if ($live()) {
+      c.return();
+    }
   }
 
   const filterMap = $filterEnds(
@@ -343,7 +368,9 @@ function main() {
   try {
     tmp$5 = ds(4);
   } catch (error) {
-    filterMap.return();
+    $cleanup(() => {
+      filterMap.return();
+    }, error);
     throw error;
   }
   c = $lazyChain(filterMap, $closing($iter(tmp$5), $dropEach(dDrop_drop)));
@@ -371,7 +398,9 @@ function main() {
     try {
       tmp = ds(4);
     } catch (error) {
-      c.return();
+      $cleanup(() => {
+        c.return();
+      }, error);
       throw error;
     }
     c = $lazyChain(c, $closing($iter(tmp), $dropEach(dDrop_drop)));
@@ -382,8 +411,12 @@ function main() {
         console.log(`for ${d[0]}`);
         dDrop_drop(d);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      iter.return();
+      if ($live()) {
+        iter.return();
+      }
     }
   });
   console.log(`panicked ${caught.TAG === "Err"}`);

@@ -10,6 +10,7 @@ import {
   $f64Max,
   $index,
   $iter,
+  $live,
   $next,
   $orInsertWith,
   $partialCmp,
@@ -17,6 +18,7 @@ import {
   $rcClone,
   $rcDrop,
   $sortStable,
+  $unwindsOn,
   $unwrap,
 } from "@rust-js/std";
 
@@ -80,9 +82,11 @@ function main() {
   try {
     sorted = shapes.map((item) => $rcClone(item));
   } catch (error) {
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+    $cleanup(() => {
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    }, error);
     throw error;
   }
   try {
@@ -93,12 +97,14 @@ function main() {
       8,
     );
   } catch (error) {
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+    $cleanup(() => {
+      for (const item$1 of sorted) {
+        $rcDrop(item$1);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    }, error);
     throw error;
   }
   try {
@@ -109,47 +115,55 @@ function main() {
         .join(", ")}]`,
     );
   } catch (error) {
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+    $cleanup(() => {
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    }, error);
     throw error;
   }
   let scaled;
   try {
     scaled = shapes.map((s) => s.impl.scale(s.value, 2));
   } catch (error) {
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+    $cleanup(() => {
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    }, error);
     throw error;
   }
   try {
     console.log(`[${scaled.map((item) => item.impl.Debug().fmt(item.value)).join(", ")}]`);
   } catch (error) {
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+    $cleanup(() => {
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    }, error);
     throw error;
   }
   let refs;
   try {
     refs = scaled.slice();
   } catch (error) {
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+    $cleanup(() => {
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    }, error);
     throw error;
   }
   try {
@@ -164,59 +178,69 @@ function main() {
       )}`,
     );
   } catch (error) {
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+    $cleanup(() => {
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    }, error);
     throw error;
   }
   let twice;
   try {
     twice = sqShape.twice([3]);
   } catch (error) {
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+    $cleanup(() => {
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    }, error);
     throw error;
   }
   let shown;
   try {
     shown = $index(shapes, 1);
   } catch (error) {
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+    $cleanup(() => {
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    }, error);
     throw error;
   }
   try {
     console.log(`${$displayF64(twice)} ${show(shown.impl.Debug().fmt(shown.value))}`);
   } catch (error) {
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+    $cleanup(() => {
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    }, error);
     throw error;
   }
   let byKind;
   try {
     byKind = new Map();
   } catch (error) {
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
+    $cleanup(() => {
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+    }, error);
     throw error;
   }
   let iter;
@@ -235,7 +259,7 @@ function main() {
       for (const item of shapes) {
         $rcDrop(item);
       }
-    });
+    }, error);
     throw error;
   }
   while (true) {
@@ -255,7 +279,7 @@ function main() {
         for (const item of shapes) {
           $rcDrop(item);
         }
-      });
+      }, error);
       throw error;
     }
     if (s == null) {
@@ -277,7 +301,7 @@ function main() {
         for (const item of shapes) {
           $rcDrop(item);
         }
-      });
+      }, error);
       throw error;
     }
     let tmp;
@@ -296,7 +320,7 @@ function main() {
         for (const item of shapes) {
           $rcDrop(item);
         }
-      });
+      }, error);
       throw error;
     }
     let tmp$1;
@@ -315,7 +339,7 @@ function main() {
         for (const item of shapes) {
           $rcDrop(item);
         }
-      });
+      }, error);
       throw error;
     }
     try {
@@ -333,7 +357,7 @@ function main() {
         for (const item of shapes) {
           $rcDrop(item);
         }
-      });
+      }, error);
       throw error;
     }
   }
@@ -353,7 +377,7 @@ function main() {
       for (const item of shapes) {
         $rcDrop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -371,7 +395,7 @@ function main() {
       for (const item of shapes) {
         $rcDrop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -391,7 +415,7 @@ function main() {
       for (const item of shapes) {
         $rcDrop(item);
       }
-    });
+    }, error);
     throw error;
   }
   const value$1 = [
@@ -414,7 +438,7 @@ function main() {
       for (const item of shapes) {
         $rcDrop(item);
       }
-    });
+    }, error);
     throw error;
   }
   let names;
@@ -433,7 +457,7 @@ function main() {
       for (const item of shapes) {
         $rcDrop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -451,7 +475,7 @@ function main() {
       for (const item of shapes) {
         $rcDrop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -474,7 +498,7 @@ function main() {
       for (const item of shapes) {
         $rcDrop(item);
       }
-    });
+    }, error);
     throw error;
   }
   const d = `[${shapes.map((item) => item.impl.Debug().fmt(item.value)).join(", ")}]`;
@@ -490,7 +514,7 @@ function main() {
               $rcDrop(item$1);
             }
           }
-        });
+        }, error);
         throw error;
       }
       console.log(`${$byteLen(tmp)}`);
@@ -499,14 +523,22 @@ function main() {
           $rcDrop(item$1);
         }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of sorted) {
-        $rcDrop(item);
+      if ($live()) {
+        for (const item of sorted) {
+          $rcDrop(item);
+        }
       }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of shapes) {
-      $rcDrop(item);
+    if ($live()) {
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
     }
   }
 }

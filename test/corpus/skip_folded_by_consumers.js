@@ -14,10 +14,12 @@ import {
   $lastDropping,
   $lazyChain,
   $lazyTakeWhile,
+  $live,
   $mapFrom,
   $next,
   $rev,
   $skipping,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -55,7 +57,7 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       if (next != null) {
@@ -67,7 +69,7 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
         acc$live = true;
@@ -84,7 +86,7 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       break;
@@ -92,9 +94,13 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
     acc$live = false;
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of folds[0]) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of folds[0]) {
+        dDrop_drop(item);
+      }
     }
   }
   return result;
@@ -130,9 +136,13 @@ function lastsIterator_last(lasts) {
   console.log("own last");
   try {
     return lasts[0].pop();
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of lasts[0]) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of lasts[0]) {
+        dDrop_drop(item);
+      }
     }
   }
 }
@@ -268,7 +278,7 @@ function main() {
       for (const item of m.values()) {
         dDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   for (const item of m.values()) {
@@ -295,7 +305,7 @@ function main() {
       for (const item of m.values()) {
         dDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   for (const item of m.values()) {
@@ -431,8 +441,12 @@ function main() {
     }
     const value = next != null ? map(next) : undefined;
     console.log(`next ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
 }
 //# sourceMappingURL=case.js.map

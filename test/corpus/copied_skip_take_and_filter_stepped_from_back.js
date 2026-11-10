@@ -8,12 +8,14 @@ import {
   $held,
   $iter,
   $lent,
+  $live,
   $next,
   $nextBack,
   $nthDropping,
   $rev,
   $skipping,
   $taking,
+  $unwindsOn,
   iterator_rev,
   revDoubleEndedIterator_nextBack,
 } from "@rust-js/std";
@@ -49,8 +51,12 @@ function main() {
     a = $nthDropping($lent(it), 1, dDrop_drop, false);
     const value = a?.[0];
     console.log(`nth ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
   const w = [[6], [7], [8], [9], [10]];
   try {
@@ -93,12 +99,20 @@ function main() {
       }
       const value$1 = nextBack != null ? map$1(nextBack) : undefined;
       console.log(`back ${value$1 == null ? "None" : `Some(${value$1})`}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      it.return();
+      if ($live()) {
+        it.return();
+      }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (a != null) {
-      dDrop_drop(a);
+    if ($live()) {
+      if (a != null) {
+        dDrop_drop(a);
+      }
     }
   }
 }

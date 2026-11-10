@@ -9,8 +9,10 @@ import {
   $iterator,
   $lazyChain,
   $lazyZip,
+  $live,
   $next,
   $rangeFromStep,
+  $unwindsOn,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -42,7 +44,7 @@ function consume(it, dropIterator) {
     } catch (error) {
       $cleanup(() => {
         dropIterator?.(it);
-      });
+      }, error);
       throw error;
     }
     if (next == null) {
@@ -66,7 +68,7 @@ function sumFromIterator_u32__u32__fromIter(items, dropI, dropIIntoIter) {
     } catch (error) {
       $cleanup(() => {
         dropIIntoIter?.(it);
-      });
+      }, error);
       throw error;
     }
     if (next == null) {
@@ -103,8 +105,12 @@ function summed(name) {
     }
     console.log(`summed ${sum}`);
     return sum;
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(it._loud);
+    if ($live()) {
+      loudDrop_drop(it._loud);
+    }
   }
 }
 
@@ -124,9 +130,11 @@ function main() {
     try {
       next = $next(zipped);
     } catch (error) {
-      if (zipped$live) {
-        zipped.return();
-      }
+      $cleanup(() => {
+        if (zipped$live) {
+          zipped.return();
+        }
+      }, error);
       throw error;
     }
     if (next == null) {
@@ -153,8 +161,12 @@ function main() {
       console.log(`${x}`);
     }
     console.log("chain done");
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    chained.return();
+    if ($live()) {
+      chained.return();
+    }
   }
   const mapped = $held(
     $closing($iterator(count("map"), countIterator_next), (it) => {
@@ -168,8 +180,12 @@ function main() {
     }
     const value = $next(mapped);
     console.log(`map done ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    mapped.return();
+    if ($live()) {
+      mapped.return();
+    }
   }
 
   const taken = $held(
@@ -219,7 +235,9 @@ function main() {
       const value = $next(stepped);
       console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
     } catch (error) {
-      stepped.return();
+      $cleanup(() => {
+        stepped.return();
+      }, error);
       throw error;
     }
     consume(stepped, (zip) => {
@@ -237,7 +255,9 @@ function main() {
       const value = $next(collected);
       console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
     } catch (error) {
-      collected.return();
+      $cleanup(() => {
+        collected.return();
+      }, error);
       throw error;
     }
     console.log(
@@ -260,8 +280,12 @@ function main() {
       },
     );
     console.log(`sum ${sum}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    taken.return();
+    if ($live()) {
+      taken.return();
+    }
   }
 }
 //# sourceMappingURL=case.js.map

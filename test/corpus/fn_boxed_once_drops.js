@@ -108,7 +108,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(shared);
-    });
+    }, error);
     throw error;
   }
   const f$3 = shared;

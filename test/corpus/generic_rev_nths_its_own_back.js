@@ -67,7 +67,7 @@ function skippedLast(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       iter.return();
-    });
+    }, error);
     throw error;
   }
   iter.return();
@@ -99,7 +99,7 @@ function steppedCount(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       iter.return();
-    });
+    }, error);
     throw error;
   }
   iter.return();

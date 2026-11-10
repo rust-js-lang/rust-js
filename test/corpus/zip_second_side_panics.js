@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -10,8 +11,10 @@ import {
   $iterator,
   $lastDropping,
   $lazyZip,
+  $live,
   $next,
   $rangeNext,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -28,9 +31,11 @@ function panickyIterator_next(panicky) {
     try {
       throw new Error("boom");
     } catch (error) {
-      if (next != null) {
-        dDrop_drop(next);
-      }
+      $cleanup(() => {
+        if (next != null) {
+          dDrop_drop(next);
+        }
+      }, error);
       throw error;
     }
   }
@@ -60,9 +65,11 @@ function main() {
     try {
       tmp = panicky({ start: 40, end: 45 }, 43);
     } catch (error) {
-      for (const item of value) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of value) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     const x = $lastDropping(
@@ -92,9 +99,11 @@ function main() {
     try {
       tmp = panicky({ start: 60, end: 64 }, 62);
     } catch (error) {
-      for (const item of value) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of value) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     const x = $collectDropping(
@@ -125,9 +134,11 @@ function main() {
     try {
       tmp = panicky({ start: 80, end: 84 }, 81);
     } catch (error) {
-      for (const item of value) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of value) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     const n = $lazyZip(
@@ -152,9 +163,11 @@ function main() {
     try {
       tmp = panicky({ start: 100, end: 103 }, 100);
     } catch (error) {
-      for (const item of value) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of value) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     const zipped = $held(
@@ -175,8 +188,12 @@ function main() {
         dDrop_drop(next[0]);
         dDrop_drop(next[1]);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      zipped.return();
+      if ($live()) {
+        zipped.return();
+      }
     }
   });
 }

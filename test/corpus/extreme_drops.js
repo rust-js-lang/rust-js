@@ -11,6 +11,7 @@ import {
   $intoIter,
   $iterator,
   $lastDropping,
+  $live,
   $maxBy,
   $maxByKey,
   $minBy,
@@ -19,6 +20,7 @@ import {
   $partialEq,
   $partialOrd,
   $someValue,
+  $unwindsOn,
 } from "@rust-js/std";
 
 const loudPartialOrd = $partialOrd({
@@ -91,7 +93,7 @@ function greatest(items, IItemOrd, dropIItem, dropIIntoIter) {
   } catch (error) {
     $cleanup(() => {
       dropIIntoIter?.(iter);
-    });
+    }, error);
     throw error;
   }
   dropIIntoIter?.(iter);
@@ -106,7 +108,7 @@ function finalOne(items, dropIItem, dropIIntoIter) {
   } catch (error) {
     $cleanup(() => {
       dropIIntoIter?.(iter);
-    });
+    }, error);
     throw error;
   }
   dropIIntoIter?.(iter);
@@ -124,7 +126,7 @@ function howMany(items, dropI, dropIItem) {
       if (!iter.ownFold && !iter.ownCount) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownFold && !iter.ownCount) {
@@ -146,65 +148,97 @@ function main() {
   const max = $maxBy(loud(), (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), false, loudDrop_drop);
   try {
     console.log(`${max == null ? "None" : `Some(${loudDebug_fmt(max)})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (max != null) {
-      loudDrop_drop(max);
+    if ($live()) {
+      if (max != null) {
+        loudDrop_drop(max);
+      }
     }
   }
   const min = $minBy(loud(), (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), false, loudDrop_drop);
   try {
     console.log(`${min == null ? "None" : `Some(${loudDebug_fmt(min)})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (min != null) {
-      loudDrop_drop(min);
+    if ($live()) {
+      if (min != null) {
+        loudDrop_drop(min);
+      }
     }
   }
   const maxBy = $maxBy(loud(), byName, false, loudDrop_drop);
   try {
     console.log(`${maxBy == null ? "None" : `Some(${loudDebug_fmt(maxBy)})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (maxBy != null) {
-      loudDrop_drop(maxBy);
+    if ($live()) {
+      if (maxBy != null) {
+        loudDrop_drop(maxBy);
+      }
     }
   }
   const minBy = $minBy(loud(), byName, false, loudDrop_drop);
   try {
     console.log(`${minBy == null ? "None" : `Some(${loudDebug_fmt(minBy)})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (minBy != null) {
-      loudDrop_drop(minBy);
+    if ($live()) {
+      if (minBy != null) {
+        loudDrop_drop(minBy);
+      }
     }
   }
   const maxByKey = $maxByKey(loud(), (l) => l[0], $cmp, false, loudDrop_drop);
   try {
     console.log(`${maxByKey == null ? "None" : `Some(${loudDebug_fmt(maxByKey)})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (maxByKey != null) {
-      loudDrop_drop(maxByKey);
+    if ($live()) {
+      if (maxByKey != null) {
+        loudDrop_drop(maxByKey);
+      }
     }
   }
   const minByKey = $minByKey(loud(), rank, $cmp, false, loudDrop_drop);
   try {
     console.log(`${minByKey == null ? "None" : `Some(${loudDebug_fmt(minByKey)})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (minByKey != null) {
-      loudDrop_drop(minByKey);
+    if ($live()) {
+      if (minByKey != null) {
+        loudDrop_drop(minByKey);
+      }
     }
   }
   const value = $maxBy([], (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), false, loudDrop_drop);
   try {
     console.log(`${value == null ? "None" : `Some(${loudDebug_fmt(value)})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (value != null) {
-      loudDrop_drop(value);
+    if ($live()) {
+      if (value != null) {
+        loudDrop_drop(value);
+      }
     }
   }
   const value$1 = greatest(loud(), loudOrd, loudDrop_drop, $dropEach(loudDrop_drop));
   try {
     console.log(`${value$1 == null ? "None" : `Some(${loudDebug_fmt(value$1)})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (value$1 != null) {
-      loudDrop_drop(value$1);
+    if ($live()) {
+      if (value$1 != null) {
+        loudDrop_drop(value$1);
+      }
     }
   }
   const value$2 = greatest([3, undefined, 1], optionOrd);
@@ -218,9 +252,13 @@ function main() {
   const value$4 = finalOne(loud(), loudDrop_drop, $dropEach(loudDrop_drop));
   try {
     console.log(`${value$4 == null ? "None" : `Some(${loudDebug_fmt(value$4)})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (value$4 != null) {
-      loudDrop_drop(value$4);
+    if ($live()) {
+      if (value$4 != null) {
+        loudDrop_drop(value$4);
+      }
     }
   }
   const value$5 = finalOne(
@@ -232,9 +270,13 @@ function main() {
   );
   try {
     console.log(`${value$5 == null ? "None" : `Some(${loudDebug_fmt(value$5)})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (value$5 != null) {
-      loudDrop_drop(value$5);
+    if ($live()) {
+      if (value$5 != null) {
+        loudDrop_drop(value$5);
+      }
     }
   }
   console.log(

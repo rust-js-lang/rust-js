@@ -154,7 +154,7 @@ pub(super) fn tested_unwraps(stmts: &mut Vec<Stmt>) -> bool {
         };
         let last = handler.pop().expect("tested");
         // The drops run as the panic unwinds, guarded as any cleanup is (#847).
-        let mut handler = crate::lower::drops::cleanup(handler, last.span);
+        let mut handler = crate::lower::drops::cleanup(handler, None, last.span);
         handler.push(StmtKind::Throw(panic).at(last.span));
         out.push(StmtKind::If(test, handler, None).at(stmt.span));
         match &mut body[0].kind {
@@ -503,6 +503,9 @@ fn finally_holds(drop: &Stmt) -> bool {
 /// `drops::cleanup`). Run last, once no pass reads a cleanup's drops.
 pub(super) fn guarded_cleanups(stmts: &mut [Stmt]) {
     for stmt in stmts.iter_mut() {
+        // A scope's `finally` of what a program sees, aborted before as a
+        // stack overflow unwinds (#1193).
+        crate::lower::drops::aborting_finally(stmt);
         let span = stmt.span;
         let StmtKind::TryCatch(_, Some(error), handler) = &mut stmt.kind else {
             continue;
@@ -515,7 +518,7 @@ pub(super) fn guarded_cleanups(stmts: &mut [Stmt]) {
         }
         let last = handler.pop().expect("rethrown");
         let drops = std::mem::take(handler);
-        *handler = crate::lower::drops::cleanup(drops, span);
+        *handler = crate::lower::drops::cleanup(drops, Some(error.as_str()), span);
         handler.push(last);
     }
 }

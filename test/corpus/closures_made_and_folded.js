@@ -33,7 +33,7 @@ function joined(f, g, dropFnMut, dropFnMut$1) {
       } catch (error) {
         $cleanup(() => {
           dropFnMut?.(f);
-        });
+        }, error);
         throw error;
       }
       dropFnMut?.(f);
@@ -49,7 +49,7 @@ function foldWith(it, f, init, g, dropF, dropG) {
   } catch (error) {
     $cleanup(() => {
       $dispose(f$1);
-    });
+    }, error);
     throw error;
   }
   $dispose(f$1);
@@ -65,7 +65,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(f);
-    });
+    }, error);
     throw error;
   }
   $dispose(f);

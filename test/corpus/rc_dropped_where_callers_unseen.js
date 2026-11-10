@@ -17,7 +17,7 @@ function keeperKeep_keep(keeper, value, TDebug, dropT) {
       $rcDrop(first, (value) => {
         dropT?.(value);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -29,7 +29,7 @@ function keeperKeep_keep(keeper, value, TDebug, dropT) {
       $rcDrop(other, (value) => {
         dropT?.(value);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -39,7 +39,7 @@ function keeperKeep_keep(keeper, value, TDebug, dropT) {
       $rcDrop(other, (value) => {
         dropT?.(value);
       });
-    });
+    }, error);
     throw error;
   }
   $rcDrop(other, (value) => {

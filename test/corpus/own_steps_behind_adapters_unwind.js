@@ -63,7 +63,7 @@ function numsIterator_fold(nums, init, f, dropB, dropF) {
           dropB?.(acc);
         }
         dropF?.(f);
-      });
+      }, error);
       throw error;
     }
     if (n == null) {
@@ -76,7 +76,7 @@ function numsIterator_fold(nums, init, f, dropB, dropF) {
     } catch (error) {
       $cleanup(() => {
         dropF?.(f);
-      });
+      }, error);
       throw error;
     }
     acc$live = true;
@@ -111,9 +111,11 @@ function push(acc, n) {
   try {
     acc.push([n]);
   } catch (error) {
-    for (const item of acc) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of acc) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   return acc;

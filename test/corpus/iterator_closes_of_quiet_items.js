@@ -7,8 +7,10 @@ import {
   $dropEach,
   $held,
   $iter,
+  $live,
   $next,
   $peek,
+  $unwindsOn,
   iterator_peekable,
 } from "@rust-js/std";
 
@@ -48,8 +50,12 @@ function peekedQuiet(n) {
   try {
     const first = $peek(it)?.[0] ?? 0;
     return (work(n) + first) >>> 0;
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
 }
 
@@ -68,7 +74,7 @@ function peekedLoud(n) {
   } catch (error) {
     $cleanup(() => {
       it.return();
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -77,7 +83,7 @@ function peekedLoud(n) {
   } catch (error) {
     $cleanup(() => {
       it.return();
-    });
+    }, error);
     throw error;
   }
   it.return();
@@ -99,7 +105,7 @@ function mappedPeekedLoud(n) {
   } catch (error) {
     $cleanup(() => {
       inner.return();
-    });
+    }, error);
     throw error;
   }
   const it = $held(
@@ -115,7 +121,7 @@ function mappedPeekedLoud(n) {
   } catch (error) {
     $cleanup(() => {
       it.return();
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -124,7 +130,7 @@ function mappedPeekedLoud(n) {
   } catch (error) {
     $cleanup(() => {
       it.return();
-    });
+    }, error);
     throw error;
   }
   it.return();
@@ -144,7 +150,7 @@ function peekedOwn(n) {
   } catch (error) {
     $cleanup(() => {
       it.return();
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -153,7 +159,7 @@ function peekedOwn(n) {
   } catch (error) {
     $cleanup(() => {
       it.return();
-    });
+    }, error);
     throw error;
   }
   it.return();
@@ -174,7 +180,7 @@ function mappedOwn(n) {
   } catch (error) {
     $cleanup(() => {
       inner.return();
-    });
+    }, error);
     throw error;
   }
   const it = $held(
@@ -190,7 +196,7 @@ function mappedOwn(n) {
   } catch (error) {
     $cleanup(() => {
       it.return();
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -199,7 +205,7 @@ function mappedOwn(n) {
   } catch (error) {
     $cleanup(() => {
       it.return();
-    });
+    }, error);
     throw error;
   }
   it.return();

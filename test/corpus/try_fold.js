@@ -61,7 +61,7 @@ function sumBelow(it, limit, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   console.log("stopped");

@@ -7,10 +7,12 @@ import {
   $filterEnds,
   $held,
   $iter,
+  $live,
   $mapEnds,
   $next,
   $rev,
   $roomFor,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -56,8 +58,12 @@ function main() {
   try {
     lastOdd = $next(back);
     console.log(`last odd ${lastOdd?.[0] ?? 0}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    back.return();
+    if ($live()) {
+      back.return();
+    }
   }
   if (lastOdd != null) {
     loudDrop_drop(lastOdd);
@@ -67,8 +73,12 @@ function main() {
   let first;
   try {
     first = $next(twice);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    twice.return();
+    if ($live()) {
+      twice.return();
+    }
   }
   function map(l) {
     const result = l[0];

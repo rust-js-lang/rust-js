@@ -21,7 +21,7 @@ import {
   NormalPriority,
   UserBlockingPriority,
 } from "../SchedulerPriorities.js";
-import { $cleanup } from "@rust-js/std";
+import { $cleanup, $live, $unwindsOn } from "@rust-js/std";
 
 let getCurrentTime;
 if (typeof performance !== "undefined" && typeof performance.now !== "undefined") {
@@ -114,7 +114,7 @@ function flushWork(initialTime) {
       currentTask = undefined;
       currentPriorityLevel = previousPriorityLevel;
       isPerformingWork = false;
-    });
+    }, error);
     throw error;
   }
   currentTask = undefined;
@@ -197,8 +197,12 @@ export function unstable_runWithPriority(priorityLevel, eventHandler) {
 
   try {
     return eventHandler();
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    currentPriorityLevel = restore;
+    if ($live()) {
+      currentPriorityLevel = restore;
+    }
   }
 }
 
@@ -223,8 +227,12 @@ export function unstable_next(eventHandler) {
 
   try {
     return eventHandler();
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    currentPriorityLevel = restore;
+    if ($live()) {
+      currentPriorityLevel = restore;
+    }
   }
 }
 
@@ -237,8 +245,12 @@ export function unstable_wrapCallback(callback) {
 
     try {
       return callback(argument);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      currentPriorityLevel = restore;
+      if ($live()) {
+        currentPriorityLevel = restore;
+      }
     }
   };
 }
@@ -393,7 +405,7 @@ function performWorkUntilDeadline() {
         } else {
           isMessageLoopRunning = false;
         }
-      });
+      }, error);
       throw error;
     }
     if (hasMoreWork) {

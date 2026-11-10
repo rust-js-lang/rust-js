@@ -102,7 +102,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -112,7 +112,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   const range$1 = { start: [10] };
@@ -143,7 +143,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   let next;
@@ -160,7 +160,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -172,7 +172,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   it.return();
@@ -206,7 +206,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`count ${n}`);
@@ -225,7 +225,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   const range$3 = { start: [1], end: [3] };
@@ -264,7 +264,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   const size = s.size;
@@ -278,7 +278,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   let seen;
@@ -300,7 +300,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   console.log("made");
@@ -348,7 +348,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   const value = seen.size;
@@ -365,7 +365,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   let h;
@@ -382,7 +382,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   const held$1 = "hashed";
@@ -405,7 +405,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -421,7 +421,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   const value$1 = h.size;
@@ -438,7 +438,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   const held$2 = "early";
@@ -458,7 +458,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   it.return();
@@ -475,7 +475,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -487,7 +487,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {
         kDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   for (const [key, ,] of $sortedEntries(m, (a, b) => $cmp(a[0], b[0]))) {

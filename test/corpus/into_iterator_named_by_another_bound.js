@@ -111,7 +111,7 @@ function second(items, IIntoIterator, IsI, dropIIntoIter) {
   } catch (error) {
     $cleanup(() => {
       dropIIntoIter?.(value);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -120,7 +120,7 @@ function second(items, IIntoIterator, IsI, dropIIntoIter) {
   } catch (error) {
     $cleanup(() => {
       dropIIntoIter?.(value);
-    });
+    }, error);
     throw error;
   }
   dropIIntoIter?.(value);
@@ -155,7 +155,7 @@ function firstId(items, IIntoIterator, IsI, dropIIntoIter) {
   } catch (error) {
     $cleanup(() => {
       map.return();
-    });
+    }, error);
     throw error;
   }
   map.return();
@@ -185,7 +185,7 @@ function equal(
   } catch (error) {
     $cleanup(() => {
       dropIs?.(b);
-    });
+    }, error);
     throw error;
   }
   let b$1;
@@ -194,7 +194,7 @@ function equal(
   } catch (error) {
     $cleanup(() => {
       dropI?.(a$1);
-    });
+    }, error);
     throw error;
   }
   let b$1$live = true;
@@ -207,7 +207,7 @@ function equal(
       if (b$1$live) {
         dropJ?.(b$1);
       }
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -228,7 +228,7 @@ function equal(
   } catch (error) {
     $cleanup(() => {
       dropIIntoIter?.(iter);
-    });
+    }, error);
     throw error;
   }
   dropIIntoIter?.(iter);
@@ -308,9 +308,11 @@ function main() {
       loudDrop_drop,
     );
   } catch (error) {
-    for (const item of value$2) {
-      loudDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of value$2) {
+        loudDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   console.log(

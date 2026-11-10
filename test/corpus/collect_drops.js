@@ -10,6 +10,8 @@ import {
   $foldToArray,
   $iter,
   $lazySkipWhile,
+  $live,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -85,24 +87,40 @@ function main() {
           for (const item of checked) {
             noisyDrop_drop(item);
           }
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          for (const item of none) {
+          if ($live()) {
+            for (const item of none) {
+              noisyDrop_drop(item);
+            }
+          }
+        }
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          for (const item of fragments) {
             noisyDrop_drop(item);
           }
         }
-      } finally {
-        for (const item of fragments) {
+      }
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        for (const item of rest) {
           noisyDrop_drop(item);
         }
       }
-    } finally {
-      for (const item of rest) {
+    }
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      for (const item of long) {
         noisyDrop_drop(item);
       }
-    }
-  } finally {
-    for (const item of long) {
-      noisyDrop_drop(item);
     }
   }
 }

@@ -92,7 +92,7 @@ function foldedBack(it, dropI) {
       if (!iter.ownRfold) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownRfold) {
@@ -114,7 +114,7 @@ function secondBack(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -123,7 +123,7 @@ function secondBack(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   dropI?.(it);

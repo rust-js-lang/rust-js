@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $consume,
   $dropEach,
@@ -13,9 +14,11 @@ import {
   $lazySkipWhile,
   $lazyZip,
   $lent,
+  $live,
   $print,
   $rev,
   $stepBy,
+  $unwindsOn,
   iterator_fuse,
   iterator_peekable,
 } from "@rust-js/std";
@@ -65,8 +68,12 @@ function main() {
       return $consume($iterator(iter, itIterator_next), "fold", 0, f, undefined, () => {
         dDrop_drop(g);
       });
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      dDrop_drop(iter._held);
+      if ($live()) {
+        dDrop_drop(iter._held);
+      }
     }
   });
   case$("for_each", (g) => {
@@ -89,8 +96,12 @@ function main() {
           dDrop_drop(g);
         },
       );
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      dDrop_drop(iter._held);
+      if ($live()) {
+        dDrop_drop(iter._held);
+      }
     }
     return 0;
   });
@@ -108,8 +119,12 @@ function main() {
           dDrop_drop(g);
         },
       );
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      dDrop_drop(iter._held);
+      if ($live()) {
+        dDrop_drop(iter._held);
+      }
     }
   });
   case$("reduce", (g) => {
@@ -120,8 +135,12 @@ function main() {
       result = $consume($iterator(iter, itIterator_next), "reduce", false, f, undefined, () => {
         dDrop_drop(g);
       });
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      dDrop_drop(iter._held);
+      if ($live()) {
+        dDrop_drop(iter._held);
+      }
     }
     const value = result;
     return value ?? 0;
@@ -135,9 +154,11 @@ function main() {
       }).drop(1);
       g$4$live = false;
     } catch (error) {
-      if (g$4$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$4$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
@@ -154,9 +175,11 @@ function main() {
       }).map((x) => (x * 2) >>> 0);
       g$5$live = false;
     } catch (error) {
-      if (g$5$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$5$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
@@ -173,9 +196,11 @@ function main() {
       }).take(2);
       g$6$live = false;
     } catch (error) {
-      if (g$6$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$6$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
@@ -197,7 +222,9 @@ function main() {
         }),
       );
     } catch (error) {
-      dDrop_drop(g);
+      $cleanup(() => {
+        dDrop_drop(g);
+      }, error);
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
@@ -214,9 +241,11 @@ function main() {
       }).take(5);
       g$8$live = false;
     } catch (error) {
-      if (g$8$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$8$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
@@ -233,9 +262,11 @@ function main() {
       });
       g$9$live = false;
     } catch (error) {
-      if (g$9$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$9$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
@@ -243,8 +274,12 @@ function main() {
       return $consume(iter, "fold", 0, f, undefined, () => {
         dDrop_drop(g);
       });
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      iter.return();
+      if ($live()) {
+        iter.return();
+      }
     }
   });
   case$("enumerate", (g) => {
@@ -256,9 +291,11 @@ function main() {
       }).map((x, i) => [i, x]);
       g$10$live = false;
     } catch (error) {
-      if (g$10$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$10$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     const f = (a, [i, x]) => (((((a + i) >>> 0) + x) >>> 0) + zero(g)) >>> 0;
@@ -278,9 +315,11 @@ function main() {
       );
       g$11$live = false;
     } catch (error) {
-      if (g$11$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$11$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
@@ -297,9 +336,11 @@ function main() {
       });
       g$12$live = false;
     } catch (error) {
-      if (g$12$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$12$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
@@ -307,8 +348,12 @@ function main() {
       return $consume(iter, "fold", 0, f, undefined, () => {
         dDrop_drop(g);
       });
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      iter.return();
+      if ($live()) {
+        iter.return();
+      }
     }
   });
   case$("filter", (g) => {
@@ -320,9 +365,11 @@ function main() {
       }).filter((x) => x > 0);
       g$13$live = false;
     } catch (error) {
-      if (g$13$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$13$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
@@ -342,9 +389,11 @@ function main() {
       );
       g$14$live = false;
     } catch (error) {
-      if (g$14$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$14$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     const f = (a, [x, y]) => (((((a + x) >>> 0) + y) >>> 0) + zero(g)) >>> 0;
@@ -361,9 +410,11 @@ function main() {
       });
       g$15$live = false;
     } catch (error) {
-      if (g$15$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$15$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
@@ -383,9 +434,11 @@ function main() {
       );
       g$16$live = false;
     } catch (error) {
-      if (g$16$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$16$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
@@ -411,9 +464,11 @@ function main() {
       );
       g$17$live = false;
     } catch (error) {
-      if (g$17$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$17$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
@@ -429,9 +484,11 @@ function main() {
       take = $closing($iter(value), $dropEach(dDrop_drop)).take(1);
       g$18$live = false;
     } catch (error) {
-      if (g$18$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$18$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     function f(a, _3) {
@@ -451,10 +508,12 @@ function main() {
       take = $lent($iterator(it, itIterator_next)).take(2);
       g$19$live = false;
     } catch (error) {
-      dDrop_drop(it._held);
-      if (g$19$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        dDrop_drop(it._held);
+        if (g$19$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
@@ -463,13 +522,21 @@ function main() {
       let value;
       try {
         value = take.reduce(f, 0);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(g);
+        if ($live()) {
+          dDrop_drop(g);
+        }
       }
       n = value;
       $print("| ");
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      dDrop_drop(it._held);
+      if ($live()) {
+        dDrop_drop(it._held);
+      }
     }
     return n;
   });
@@ -485,8 +552,12 @@ function main() {
       return $consume($iterator(iter, itIterator_next), "fold", 0, f, undefined, () => {
         dDrop_drop(g);
       });
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      dDrop_drop(iter._held);
+      if ($live()) {
+        dDrop_drop(iter._held);
+      }
     }
   });
   case$("a panic in a reversed rfold", (g) => {
@@ -497,9 +568,11 @@ function main() {
       rev = $rev($closing($iter(value), $dropEach(dDrop_drop)));
       g$21$live = false;
     } catch (error) {
-      if (g$21$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$21$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     function f(a, d) {
@@ -508,8 +581,12 @@ function main() {
           throw new Error("y");
         }
         return (((a + 1) >>> 0) + zero(g)) >>> 0;
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(d);
+        if ($live()) {
+          dDrop_drop(d);
+        }
       }
     }
     return $consume(rev, "rfold", 0, f, undefined, () => {
@@ -529,8 +606,12 @@ function main() {
       result = $consume($iterator(iter, itIterator_next), "reduce", false, f, undefined, () => {
         dDrop_drop(g);
       });
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      dDrop_drop(iter._held);
+      if ($live()) {
+        dDrop_drop(iter._held);
+      }
     }
     const value = result;
     return value ?? 0;

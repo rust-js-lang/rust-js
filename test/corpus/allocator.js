@@ -81,7 +81,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       bufDrop_drop(b, 12, 4);
-    });
+    }, error);
     throw error;
   }
   while (true) {
@@ -93,7 +93,7 @@ function main() {
         if (b$live) {
           bufDrop_drop(b, 12, 4);
         }
-      });
+      }, error);
       throw error;
     }
     if (w == null) {
@@ -106,7 +106,7 @@ function main() {
         if (b$live) {
           bufDrop_drop(b, 12, 4);
         }
-      });
+      }, error);
       throw error;
     }
   }
@@ -118,7 +118,7 @@ function main() {
       if (b$live) {
         bufDrop_drop(b, 12, 4);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`${b.len} ${b.cap} ${last == null ? "None" : `Some(${$debugStr(last)})`}`);
@@ -131,7 +131,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       bufDrop_drop(n, 4, 4);
-    });
+    }, error);
     throw error;
   }
   bufDrop_drop(n, 4, 4);

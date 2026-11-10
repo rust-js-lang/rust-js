@@ -89,14 +89,16 @@ pub fn get_url(value: Option<&Unknown>) -> String {
       return "";
     }`);
   expect(js).toContain(`        const text = "" + value;`);
-  expect(js).toContain(`  } catch {
+  expect(js).toContain(`  } catch (error) {
+    $catchable(error);
     return "";
   }
 }`);
   expect(js).toContain(`export function getUrl(value) {
   try {
     return describe(value);
-  } catch {
+  } catch (error) {
+    $catchable(error);
     return "";
   }
 }`);
@@ -179,7 +181,8 @@ pub fn owner_stack(info: &Info) -> String {
   expect(js).not.toContain("kept");
   expect(js).toContain(`export function describe(value) {
   try {`);
-  expect(js).toContain(`  } catch {
+  expect(js).toContain(`  } catch (error) {
+    $catchable(error);
     return "";
   }
 }`);
@@ -188,6 +191,7 @@ pub fn owner_stack(info: &Info) -> String {
     let stack = "";`);
   expect(js).toContain(`    return stack;
   } catch (x) {
+    $catchable(x);
     return \`\\nError generating stack: \${x.message}\`;
   }`);
   const lib = await import(join(dir, "lib.js"));
@@ -287,10 +291,11 @@ pub fn rethrown(value: Option<&Unknown>) -> String {
     const v = work(n);
     return String(v);
   } catch (thrown) {
+    $catchable(thrown);
     const payload = $unwound(thrown);`);
   // Where the `Err` arm reads a `thrown` of its own, the `catch`'s is
   // given apart from it (rd551).
-  expect(js).toContain("  } catch (thrown$1) {\n    const payload = $unwound(thrown$1);\n    return `${");
+  expect(js).toContain("  } catch (thrown$1) {\n    $catchable(thrown$1);\n    const payload = $unwound(thrown$1);\n    return `${");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.named(3, 7), lib.named(1, 7)]).toEqual(["3", "one 7"]);
   // A closure's `switch` each of whose cases returns is its body's end.
@@ -464,6 +469,7 @@ pub fn counted(n: u32) -> u32 {
 }
 `);
   expect(js).toContain(`  } catch (payload) {
+    $catchable(payload);
     throw payload;
   }`);
   // An `AssertUnwindSafe` is what it holds: its closure's body is the `try`'s.
@@ -473,7 +479,8 @@ pub fn counted(n: u32) -> u32 {
     if (n > 3) {
       throw new Error("no");
     }
-  } catch {
+  } catch (error) {
+    $catchable(error);
     count = (count + 10) >>> 0;
   }
   return count;`);
@@ -542,7 +549,7 @@ pub fn lazy(kind: u32, payload: u32) -> String {
     String::new()
 }
 `);
-  expect(js).toContain('  if (kind === 3) {\n    try {\n      return `<${init(payload)}>`;\n    } catch {}\n  }\n  return "";');
+  expect(js).toContain('  if (kind === 3) {\n    try {\n      return `<${init(payload)}>`;\n    } catch (error) {\n      $catchable(error);\n    }\n  }\n  return "";');
   expect(js).not.toContain("TAG");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.lazy(3, 2), lib.lazy(3, 0), lib.lazy(1, 2)]).toEqual(["<2>", "", ""]);
@@ -596,7 +603,7 @@ pub fn finish(scope: impl FnOnce() -> Option<f64>) -> f64 {
   },
 };
 `);
-  expect(js).toContain("  let v;\n  try {\n    v = scope();\n  } catch {\n    return 0;\n  }\n  INTERNALS.T = v;\n");
+  expect(js).toContain("  let v;\n  try {\n    v = scope();\n  } catch (error) {\n    $catchable(error);\n    return 0;\n  }\n  INTERNALS.T = v;\n");
   expect(js).toContain("  try {\n    const done = scope();\n    if (done != null) {\n      return done;\n");
   expect(js).not.toContain("TAG");
   const lib = await import(join(dir, "lib.js"));
@@ -701,11 +708,16 @@ pub fn restored_last() -> u32 {
 }
 `);
   const quiet = js.slice(js.indexOf("export function quietGuarded"));
-  expect(quiet).not.toContain("catch (error)");
+  // One `catch`, which aborts on a stack overflow before the drops a
+  // program sees (#1193), and one `finally`.
+  expect(quiet.match(/catch \(error\)/g)?.length).toBe(1);
+  expect(quiet).toContain("  } catch (error) {\n    throw $unwindsOn(error);\n");
   expect(quiet.match(/finally/g)?.length).toBe(1);
   expect(quiet).toContain(`  } finally {
-    reentry = false;
-    RESTORED = previous;
+    if ($live()) {
+      reentry = false;
+      RESTORED = previous;
+    }
   }
   return "none";`);
   // Its drop calls a binding, which may throw, and one that throws as a panic
@@ -806,11 +818,13 @@ pub fn of_any() -> Option<String> {
   try {
     throw new Error();
   } catch (x) {
+    $catchable(x);
     const control = x;
     return control?.stack;
   }
 }`);
   expect(js).toContain(`  } catch (x) {
+    $catchable(x);
     const control = x;
     if (control != null && n > 1) {
       const error = control;
@@ -822,13 +836,14 @@ pub fn of_any() -> Option<String> {
   expect(js).toContain(`  try {
     return globalThis.render();
   } catch (payload) {
+    $catchable(payload);
     throw payload;
   }`);
   // Read otherwise, the payload is kept, and thrown again as it was.
   expect(js).toContain("    throw thrown;\n");
   // What a call throws may be any value: its downcast is what was thrown,
   // and `map` gives it to its closure (ADR 0710, amended).
-  expect(js).toContain("  } catch (payload) {\n    return payload.message;\n  }");
+  expect(js).toContain("  } catch (payload) {\n    $catchable(payload);\n    return payload.message;\n  }");
   const lib = await import(join(dir, "lib.js"));
   const g = globalThis as Record<string, unknown>;
   expect(lib.control()).toContain("Error");
@@ -1025,9 +1040,11 @@ pub fn of_any_boxed(own: bool) -> String {
 `);
   // The `catch` is of what was thrown: no `$unwound`, no test, no `None`.
   expect(js).toContain(`  } catch (x) {
+    $catchable(x);
     return \`\\nError generating stack: \${x.message}\\n\${x.stack ?? ""}\`;
   }`);
   expect(js).toContain(`  } catch (x) {
+    $catchable(x);
     control = x;
   }`);
   expect(js).not.toContain("not thrown");
@@ -1160,12 +1177,13 @@ pub fn named(name: &str) -> bool {
 }
 `);
   expect(js).toContain(`  } catch (x) {
+    $catchable(x);
     const stack = x.stack ?? "";
     return $trim(stack);
   }`);
-  expect(js).toContain("  } catch (x) {\n    return x;\n  }");
-  expect(js).toContain("  } catch (payload) {\n    return payload.message;\n  }");
-  expect(js).toContain("  } catch (payload) {\n    return payload.message === name;\n  }");
+  expect(js).toContain("  } catch (x) {\n    $catchable(x);\n    return x;\n  }");
+  expect(js).toContain("  } catch (payload) {\n    $catchable(payload);\n    return payload.message;\n  }");
+  expect(js).toContain("  } catch (payload) {\n    $catchable(payload);\n    return payload.message === name;\n  }");
   expect(js).not.toContain("?.");
   const lib = await import(join(dir, "lib.js"));
   const g = globalThis as Record<string, unknown>;
@@ -1223,6 +1241,7 @@ pub fn describe_built_in_component_frame(name: &str) -> String {
     try {
       throw new Error();
     } catch (x) {
+      $catchable(x);
       const stack = x.stack ?? "";
       const match = /\\n( *(at )?)/.exec(stack.trim());
       prefix = match?.[1] ?? "";
@@ -1296,6 +1315,7 @@ pub fn counted(limit: u32) -> u32 {
 }
 `);
   expect(js).toContain(`  } catch (sample) {
+    $catchable(sample);
     // This is inlined manually because closure doesn't do it for us.
     if (control != null) {
       const sampleStack = sample.stack;
@@ -1311,13 +1331,15 @@ pub fn counted(limit: u32) -> u32 {
   expect(js).toContain(`      try {
         throw new Error();
       } catch (x) {
+        $catchable(x);
         control = x;
       }
       globalThis.render();
 `);
   expect(js).toContain(`  try {
     globalThis.render();
-  } catch {
+  } catch (error) {
+    $catchable(error);
     if (wanted) {
       return "caught";
     }
@@ -1326,7 +1348,8 @@ pub fn counted(limit: u32) -> u32 {
   expect(js).toContain(`  try {
     seen = (seen + 1) >>> 0;
     globalThis.render();
-  } catch {
+  } catch (error) {
+    $catchable(error);
     if (seen <= limit) {`);
   expect(js).not.toContain("$catchUnwind");
   const lib = await import(join(dir, "lib.js"));

@@ -2,6 +2,7 @@
 
 import {
   $chunksMut,
+  $cleanup,
   $cloneFromSlice,
   $copyRange,
   $dedupBy,
@@ -9,10 +10,12 @@ import {
   $exchange,
   $extend,
   $fill,
+  $live,
   $resize,
   $splitAtMut,
   $splitEndMut,
   $take,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -79,14 +82,22 @@ function fill() {
         );
       });
       console.log(`[${modes.join(", ")}]`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of none) {
-        loudDrop_drop(item);
+      if ($live()) {
+        for (const item of none) {
+          loudDrop_drop(item);
+        }
       }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of v) {
-      loudDrop_drop(item);
+    if ($live()) {
+      for (const item of v) {
+        loudDrop_drop(item);
+      }
     }
   }
 }
@@ -100,15 +111,23 @@ function resize() {
     const value = [[8], [9], [10]];
     try {
       $cloneFromSlice(v, value, (value) => [value[0]], undefined, loudDrop_drop);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of value) {
-        loudDrop_drop(item);
+      if ($live()) {
+        for (const item of value) {
+          loudDrop_drop(item);
+        }
       }
     }
     console.log(`cloned [${ids(v).join(", ")}]`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of v) {
-      loudDrop_drop(item);
+    if ($live()) {
+      for (const item of v) {
+        loudDrop_drop(item);
+      }
     }
   }
 }
@@ -124,9 +143,13 @@ function dedup() {
     ];
     $dedupBy(p, $eq);
     console.log(`[${p.map((item) => pointDebug_fmt(item)).join(", ")}]`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of d) {
-      loudDrop_drop(item);
+    if ($live()) {
+      for (const item of d) {
+        loudDrop_drop(item);
+      }
     }
   }
 }
@@ -138,17 +161,21 @@ function lend() {
       $copyRange(d, 1).map((value) => [value[0]]),
     );
   } catch (error) {
-    for (const item of d) {
-      loudDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of d) {
+        loudDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   try {
     console.log(`extended [${ids(d).join(", ")}]`);
   } catch (error) {
-    for (const item of d) {
-      loudDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of d) {
+        loudDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   const first = d[0];
@@ -161,9 +188,11 @@ function lend() {
     try {
       old = $take(last, [21]);
     } catch (error) {
-      for (const item of d) {
-        loudDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of d) {
+          loudDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     console.log(`replaced ${old[0]}`);
@@ -173,9 +202,11 @@ function lend() {
   try {
     splitAtMut = $splitAtMut(d, 1);
   } catch (error) {
-    for (const item of d) {
-      loudDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of d) {
+        loudDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   const a = splitAtMut[0];
@@ -206,9 +237,13 @@ function lend() {
       chunk.reverse();
     }
     console.log(`edited [${ids(d).join(", ")}]`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of d) {
-      loudDrop_drop(item);
+    if ($live()) {
+      for (const item of d) {
+        loudDrop_drop(item);
+      }
     }
   }
 }

@@ -805,6 +805,8 @@ pub fn work(fail: bool) -> u32 {
 ```
 
 ```js
+import { $live, $unwindsOn } from "@rust-js/std";
+
 export function work(fail) {
   const _outer = { name: "outer" };
   const name = "inner";
@@ -813,11 +815,19 @@ export function work(fail) {
       if (fail) {
         throw new Error("failed");
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      console.log(`closing ${name}`);
+      if ($live()) {
+        console.log(`closing ${name}`);
+      }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log(`closing ${_outer.name}`);
+    if ($live()) {
+      console.log(`closing ${_outer.name}`);
+    }
   }
   return 1;
 }
@@ -894,6 +904,8 @@ pub fn nested(work: impl FnOnce() -> u32) -> u32 {
 ```
 
 ```js
+import { $live, $unwindsOn } from "@rust-js/std";
+
 let depth = 0;
 
 export function nested(work) {
@@ -901,8 +913,12 @@ export function nested(work) {
   depth = (previous + 1) >>> 0;
   try {
     return work();
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    depth = previous;
+    if ($live()) {
+      depth = previous;
+    }
   }
 }
 ```

@@ -8,9 +8,11 @@ import {
   $dispose,
   $downgrade,
   $dropping,
+  $live,
   $rcClone,
   $rcDrop,
   $unborrow,
+  $unwindsOn,
   $unwrap,
   $upgrade,
   $weakDrop,
@@ -26,11 +28,13 @@ function hook() {
   try {
     this$$1 = $rcClone(this$);
   } catch (error) {
-    $rcDrop(this$, (value) => {
-      if (value.value != null) {
-        $weakDrop(value.value);
-      }
-    });
+    $cleanup(() => {
+      $rcDrop(this$, (value) => {
+        if (value.value != null) {
+          $weakDrop(value.value);
+        }
+      });
+    }, error);
     throw error;
   }
   const hook = {
@@ -54,7 +58,7 @@ function hook() {
           } catch (error) {
             $cleanup(() => {
               $rcDrop(hook, $dispose);
-            });
+            }, error);
             throw error;
           }
           $rcDrop(hook, $dispose);
@@ -81,7 +85,7 @@ function hook() {
     } catch (error) {
       $cleanup(() => {
         $rcDrop(hook, $dispose);
-      });
+      }, error);
       throw error;
     }
     let borrowMut;
@@ -93,7 +97,7 @@ function hook() {
           $weakDrop(tmp);
         }
         $rcDrop(hook, $dispose);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -105,17 +109,21 @@ function hook() {
         borrowMut.value = tmp;
         $unborrow(borrowMut);
         $rcDrop(hook, $dispose);
-      });
+      }, error);
       throw error;
     }
     borrowMut.value = tmp;
     $unborrow(borrowMut);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    $rcDrop(this$, (value) => {
-      if (value.value != null) {
-        $weakDrop(value.value);
-      }
-    });
+    if ($live()) {
+      $rcDrop(this$, (value) => {
+        if (value.value != null) {
+          $weakDrop(value.value);
+        }
+      });
+    }
   }
   return hook;
 }
@@ -127,7 +135,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(hook$1, $dispose);
-    });
+    }, error);
     throw error;
   }
   console.log(`${$catchUnwind(() => hook$1.value(1)).TAG === "Err"}`);

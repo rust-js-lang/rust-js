@@ -58,7 +58,7 @@ function first(source, SSource) {
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);
-    });
+    }, error);
     throw error;
   }
   SSource.$dropIter?.(items);
@@ -73,7 +73,7 @@ function last(source, SSource) {
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);
-    });
+    }, error);
     throw error;
   }
   SSource.$dropIter?.(items);
@@ -88,7 +88,7 @@ function all(source, SSource) {
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(iter);
-    });
+    }, error);
     throw error;
   }
   SSource.$dropIter?.(iter);
@@ -107,7 +107,7 @@ function put(it, other, dropI) {
   } catch (error) {
     $cleanup(() => {
       $assign(it, other);
-    });
+    }, error);
     throw error;
   }
   $assign(it, other);
@@ -120,7 +120,7 @@ function replaced(source, other, SSource) {
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -129,7 +129,7 @@ function replaced(source, other, SSource) {
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);
-    });
+    }, error);
     throw error;
   }
   SSource.$dropIter?.(items);

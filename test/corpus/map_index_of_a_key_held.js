@@ -2,6 +2,7 @@
 
 import {
   $BTreeMap,
+  $catchable,
   $cleanup,
   $panicMessage,
   $someGet,
@@ -34,6 +35,7 @@ function check(what, f, TDebug) {
   try {
     value = f();
   } catch (thrown) {
+    $catchable(thrown);
     const payload = $unwound(thrown);
     const arg = message(payload);
     console.log(`${what}: ${arg}`);
@@ -130,7 +132,7 @@ function droppedBetween(errors, id, clearer) {
   } catch (error) {
     $cleanup(() => {
       clearer[0].clear();
-    });
+    }, error);
     throw error;
   }
   if (containsKey) {

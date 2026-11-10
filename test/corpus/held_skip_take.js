@@ -7,11 +7,13 @@ import {
   $iterator,
   $last,
   $lent,
+  $live,
   $next,
   $nth,
   $repeating,
   $sizeHint,
   $tryFoldSome,
+  $unwindsOn,
   iterator_skip,
   iterator_take,
 } from "@rust-js/std";
@@ -130,9 +132,13 @@ function main() {
     $extend(v, repeated);
     repeated.return();
     console.log(`extended ${v.length}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of v) {
-      loudDrop_drop(item);
+    if ($live()) {
+      for (const item of v) {
+        loudDrop_drop(item);
+      }
     }
   }
   console.log("end");

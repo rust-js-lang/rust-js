@@ -90,7 +90,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       dropList(_list);
-    });
+    }, error);
     throw error;
   }
   console.log("end");

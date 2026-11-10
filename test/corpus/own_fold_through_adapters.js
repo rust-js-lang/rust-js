@@ -10,10 +10,12 @@ import {
   $held,
   $iter,
   $iterator,
+  $live,
   $next,
   $nth,
   $peek,
   $took,
+  $unwindsOn,
   iterator_flatMap,
   iterator_fuse,
   iterator_inspect,
@@ -50,14 +52,18 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
     }
     result = folded;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    ownDrop_drop(own);
+    if ($live()) {
+      ownDrop_drop(own);
+    }
   }
   return result;
 }
@@ -90,7 +96,7 @@ const Holder = {
         if (!$took(IIterator.fold, iter)) {
           dropI?.(iter);
         }
-      });
+      }, error);
       throw error;
     }
     if (!$took(IIterator.fold, iter)) {
@@ -121,7 +127,9 @@ function main() {
     const value = $peek(peeked);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
-    peeked.return();
+    $cleanup(() => {
+      peeked.return();
+    }, error);
     throw error;
   }
   console.log(`${peeked.reduce((a, b) => (a + b) >>> 0, 0)}`);
@@ -192,7 +200,9 @@ function main() {
   try {
     $peek(peeked);
   } catch (error) {
-    peeked.return();
+    $cleanup(() => {
+      peeked.return();
+    }, error);
     throw error;
   }
   console.log(`[${$collectDropping(peeked.map((x) => (x * 2) >>> 0)).join(", ")}]`);
@@ -239,7 +249,9 @@ function main() {
   try {
     $peek(stepped);
   } catch (error) {
-    stepped.return();
+    $cleanup(() => {
+      stepped.return();
+    }, error);
     throw error;
   }
   console.log(`[${Array.from(stepped.map((x) => (x * 2) >>> 0)).join(", ")}]`);

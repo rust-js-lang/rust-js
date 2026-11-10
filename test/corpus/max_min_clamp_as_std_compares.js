@@ -5,11 +5,13 @@ import {
   $clampBy,
   $cmp,
   $eq,
+  $live,
   $maxOf,
   $minOf,
   $ord,
   $partialEq,
   $partialOrd,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -95,64 +97,96 @@ function main() {
       const d = $maxOf([1], [2], dPartialOrd, dDrop_drop);
       try {
         console.log(`${dDebug_fmt(d)}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(d);
+        if ($live()) {
+          dDrop_drop(d);
+        }
       }
     });
     run("max of equals", boom, () => {
       const d = $maxOf([2], [2], dPartialOrd, dDrop_drop);
       try {
         console.log(`${dDebug_fmt(d)}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(d);
+        if ($live()) {
+          dDrop_drop(d);
+        }
       }
     });
     run("min", boom, () => {
       const d = $minOf([1], [2], dPartialOrd, dDrop_drop);
       try {
         console.log(`${dDebug_fmt(d)}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(d);
+        if ($live()) {
+          dDrop_drop(d);
+        }
       }
     });
     run("Ord::max", boom, () => {
       const max = $maxOf([3], [1], dPartialOrd, dDrop_drop);
       try {
         console.log(`${dDebug_fmt(max)}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(max);
+        if ($live()) {
+          dDrop_drop(max);
+        }
       }
     });
     run("Ord::min", boom, () => {
       const min = $minOf([3], [1], dPartialOrd, dDrop_drop);
       try {
         console.log(`${dDebug_fmt(min)}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(min);
+        if ($live()) {
+          dDrop_drop(min);
+        }
       }
     });
     run("clamp", boom, () => {
       const clamp = $clampBy([4], [3], [5], dPartialOrd, undefined, dDrop_drop);
       try {
         console.log(`${dDebug_fmt(clamp)}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(clamp);
+        if ($live()) {
+          dDrop_drop(clamp);
+        }
       }
     });
     run("clamp below", boom, () => {
       const clamp = $clampBy([1], [3], [5], dPartialOrd, undefined, dDrop_drop);
       try {
         console.log(`${dDebug_fmt(clamp)}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(clamp);
+        if ($live()) {
+          dDrop_drop(clamp);
+        }
       }
     });
     run("clamp above", boom, () => {
       const clamp = $clampBy([9], [3], [5], dPartialOrd, undefined, dDrop_drop);
       try {
         console.log(`${dDebug_fmt(clamp)}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(clamp);
+        if ($live()) {
+          dDrop_drop(clamp);
+        }
       }
     });
     run("max of a struct", boom, () => {
@@ -161,8 +195,12 @@ function main() {
       });
       try {
         console.log(`${pDebug_fmt(value)}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(value.a);
+        if ($live()) {
+          dDrop_drop(value.a);
+        }
       }
     });
     run("clamp of a struct", boom, () => {
@@ -178,8 +216,12 @@ function main() {
       );
       try {
         console.log(`${pDebug_fmt(p)}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(p.a);
+        if ($live()) {
+          dDrop_drop(p.a);
+        }
       }
     });
   }

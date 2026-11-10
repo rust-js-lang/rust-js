@@ -12,11 +12,13 @@ import {
   $givenDrop,
   $iter,
   $iterator,
+  $live,
   $next,
   $nextBack,
   $rangeNext,
   $repeatingN,
   $splicing,
+  $unwindsOn,
   iterator_map,
 } from "@rust-js/std";
 
@@ -79,9 +81,13 @@ function main() {
       console.log(
         `[${removed.map((item) => dDebug_fmt(item)).join(", ")}] [${v.map((item) => dDebug_fmt(item)).join(", ")}]`,
       );
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of removed) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of removed) {
+          dDrop_drop(item);
+        }
       }
     }
     // Held: what it hasn't given dropped where it's dropped, then filled.
@@ -92,7 +98,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         s.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -103,7 +109,7 @@ function main() {
           dDrop_drop(next);
         }
         s.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -113,7 +119,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         s.return();
-      });
+      }, error);
       throw error;
     }
     console.log("held");
@@ -126,7 +132,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         s.return();
-      });
+      }, error);
       throw error;
     }
     let tmp;
@@ -138,7 +144,7 @@ function main() {
           dDrop_drop(nextBack);
         }
         s.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -149,7 +155,7 @@ function main() {
           dDrop_drop(nextBack);
         }
         s.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -159,7 +165,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         s.return();
-      });
+      }, error);
       throw error;
     }
     let d;
@@ -168,7 +174,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         s.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -179,7 +185,7 @@ function main() {
           dDrop_drop(d);
         }
         s.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -189,7 +195,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         s.return();
-      });
+      }, error);
       throw error;
     }
     console.log("between");
@@ -244,7 +250,9 @@ function main() {
             try {
               throw new Error("at 6");
             } catch (error) {
-              dDrop_drop(d);
+              $cleanup(() => {
+                dDrop_drop(d);
+              }, error);
               throw error;
             }
           }
@@ -293,7 +301,9 @@ function main() {
                     try {
                       throw new Error("at 9");
                     } catch (error) {
-                      dDrop_drop(d);
+                      $cleanup(() => {
+                        dDrop_drop(d);
+                      }, error);
                       throw error;
                     }
                   }
@@ -351,9 +361,13 @@ function main() {
       },
     );
     console.log(`[${v.map((item) => dDebug_fmt(item)).join(", ")}]`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of v) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of v) {
+        dDrop_drop(item);
+      }
     }
   }
 }

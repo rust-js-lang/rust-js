@@ -3,6 +3,7 @@
 import {
   $advanceSlice,
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $count,
@@ -11,6 +12,7 @@ import {
   $held,
   $iter,
   $iterator,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
@@ -25,6 +27,7 @@ import {
   $skipping,
   $slice,
   $taking,
+  $unwindsOn,
   iterator_peekable,
 } from "@rust-js/std";
 
@@ -128,8 +131,12 @@ function besideALiveDrop() {
         .map((item) => `(${item[0]}, ${item[1]})`)
         .join(", ")}]`,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    dDrop_drop(_g);
+    if ($live()) {
+      dDrop_drop(_g);
+    }
   }
 }
 
@@ -145,7 +152,9 @@ function afterAPeekedCount() {
   try {
     $peek(it);
   } catch (error) {
-    it.return();
+    $cleanup(() => {
+      it.return();
+    }, error);
     throw error;
   }
   console.log(
@@ -191,8 +200,12 @@ function main() {
         ),
       );
       console.log(`[${v.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      dDrop_drop(_g);
+      if ($live()) {
+        dDrop_drop(_g);
+      }
     }
   });
   console.log(`panicked ${r.TAG === "Err"}`);

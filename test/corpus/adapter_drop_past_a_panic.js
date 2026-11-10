@@ -39,7 +39,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     const value = peek?.[0];

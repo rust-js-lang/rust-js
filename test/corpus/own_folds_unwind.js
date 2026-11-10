@@ -8,11 +8,13 @@ import {
   $dropItems,
   $foldDropping,
   $iterator,
+  $live,
   $mapEnds,
   $pop,
   $rev,
   $some,
   $someValue,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -54,13 +56,13 @@ function wrapIterator_fold(wrap, init, f, dropT, dropB, dropF) {
             if (wrap.extra != null) {
               dropT?.($someValue(wrap.extra));
             }
-          });
+          }, error);
           throw error;
         }
         if (wrap.extra != null) {
           dropT?.($someValue(wrap.extra));
         }
-      });
+      }, error);
       throw error;
     }
     if (next != null) {
@@ -81,13 +83,13 @@ function wrapIterator_fold(wrap, init, f, dropT, dropB, dropF) {
               if (wrap.extra != null) {
                 dropT?.($someValue(wrap.extra));
               }
-            });
+            }, error);
             throw error;
           }
           if (wrap.extra != null) {
             dropT?.($someValue(wrap.extra));
           }
-        });
+        }, error);
         throw error;
       }
       acc$live = true;
@@ -113,13 +115,13 @@ function wrapIterator_fold(wrap, init, f, dropT, dropB, dropF) {
             if (wrap.extra != null) {
               dropT?.($someValue(wrap.extra));
             }
-          });
+          }, error);
           throw error;
         }
         if (wrap.extra != null) {
           dropT?.($someValue(wrap.extra));
         }
-      });
+      }, error);
       throw error;
     }
     break;
@@ -139,13 +141,13 @@ function wrapIterator_fold(wrap, init, f, dropT, dropB, dropF) {
           if (wrap.extra != null) {
             dropT?.($someValue(wrap.extra));
           }
-        });
+        }, error);
         throw error;
       }
       if (wrap.extra != null) {
         dropT?.($someValue(wrap.extra));
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -157,7 +159,7 @@ function wrapIterator_fold(wrap, init, f, dropT, dropB, dropF) {
       if (wrap.extra != null) {
         dropT?.($someValue(wrap.extra));
       }
-    });
+    }, error);
     throw error;
   }
   if (wrap.extra != null) {
@@ -191,13 +193,13 @@ function wrapDoubleEndedIterator_rfold(wrap, init, f, dropT, dropB, dropF) {
             if (wrap.extra != null) {
               dropT?.($someValue(wrap.extra));
             }
-          });
+          }, error);
           throw error;
         }
         if (wrap.extra != null) {
           dropT?.($someValue(wrap.extra));
         }
-      });
+      }, error);
       throw error;
     }
     if (nextBack != null) {
@@ -218,13 +220,13 @@ function wrapDoubleEndedIterator_rfold(wrap, init, f, dropT, dropB, dropF) {
               if (wrap.extra != null) {
                 dropT?.($someValue(wrap.extra));
               }
-            });
+            }, error);
             throw error;
           }
           if (wrap.extra != null) {
             dropT?.($someValue(wrap.extra));
           }
-        });
+        }, error);
         throw error;
       }
       acc$live = true;
@@ -250,13 +252,13 @@ function wrapDoubleEndedIterator_rfold(wrap, init, f, dropT, dropB, dropF) {
             if (wrap.extra != null) {
               dropT?.($someValue(wrap.extra));
             }
-          });
+          }, error);
           throw error;
         }
         if (wrap.extra != null) {
           dropT?.($someValue(wrap.extra));
         }
-      });
+      }, error);
       throw error;
     }
     break;
@@ -276,13 +278,13 @@ function wrapDoubleEndedIterator_rfold(wrap, init, f, dropT, dropB, dropF) {
           if (wrap.extra != null) {
             dropT?.($someValue(wrap.extra));
           }
-        });
+        }, error);
         throw error;
       }
       if (wrap.extra != null) {
         dropT?.($someValue(wrap.extra));
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -294,7 +296,7 @@ function wrapDoubleEndedIterator_rfold(wrap, init, f, dropT, dropB, dropF) {
       if (wrap.extra != null) {
         dropT?.($someValue(wrap.extra));
       }
-    });
+    }, error);
     throw error;
   }
   if (wrap.extra != null) {
@@ -321,7 +323,7 @@ function ownedIterator_fold(owned, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       if (next != null) {
@@ -333,7 +335,7 @@ function ownedIterator_fold(owned, init, f, dropB, dropF) {
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
         acc$live = true;
@@ -350,7 +352,7 @@ function ownedIterator_fold(owned, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       break;
@@ -358,9 +360,13 @@ function ownedIterator_fold(owned, init, f, dropB, dropF) {
     acc$live = false;
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of owned.items) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of owned.items) {
+        dDrop_drop(item);
+      }
     }
   }
   return result;
@@ -373,9 +379,11 @@ function push(acc, d) {
   try {
     acc.push(d);
   } catch (error) {
-    for (const item of acc) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of acc) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   return acc;
@@ -415,7 +423,9 @@ function main() {
           try {
             throw new Error("2");
           } catch (error) {
-            dDrop_drop(d);
+            $cleanup(() => {
+              dDrop_drop(d);
+            }, error);
             throw error;
           }
         }
@@ -467,7 +477,9 @@ function main() {
               try {
                 throw new Error("2");
               } catch (error) {
-                dDrop_drop(d);
+                $cleanup(() => {
+                  dDrop_drop(d);
+                }, error);
                 throw error;
               }
             }
@@ -519,7 +531,9 @@ function main() {
         try {
           inspect(item);
         } catch (error) {
-          dDrop_drop(item);
+          $cleanup(() => {
+            dDrop_drop(item);
+          }, error);
           throw error;
         }
         return item;
@@ -556,7 +570,9 @@ function main() {
           try {
             throw new Error("8");
           } catch (error) {
-            dDrop_drop(d);
+            $cleanup(() => {
+              dDrop_drop(d);
+            }, error);
             throw error;
           }
         }

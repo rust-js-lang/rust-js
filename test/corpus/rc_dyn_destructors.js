@@ -29,7 +29,7 @@ function main() {
       $rcDrop(a, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   let area;
@@ -43,7 +43,7 @@ function main() {
       $rcDrop(a, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   console.log(`${area} ${a.strong}`);
@@ -56,7 +56,7 @@ function main() {
       $rcDrop(b, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   console.log("one left");
@@ -72,7 +72,7 @@ function main() {
       $rcDrop(value, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   const shapes = [value, tmp];
@@ -86,7 +86,7 @@ function main() {
           value.impl.$drop?.(value.value);
         });
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -100,7 +100,7 @@ function main() {
       $rcDrop(first, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -110,7 +110,7 @@ function main() {
       $rcDrop(first, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   console.log("end");

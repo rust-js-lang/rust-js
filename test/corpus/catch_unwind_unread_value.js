@@ -4,6 +4,7 @@ import {
   $borrow,
   $borrowMut,
   $byteLen,
+  $catchable,
   $div,
   $index,
   $strSlice,
@@ -26,7 +27,8 @@ function called(n) {
   try {
     check(n);
     return false;
-  } catch {
+  } catch (error) {
+    $catchable(error);
     return true;
   }
 }
@@ -35,7 +37,8 @@ function indexed(items, i) {
   try {
     $index(items, i);
     return false;
-  } catch {
+  } catch (error) {
+    $catchable(error);
     return true;
   }
 }
@@ -44,7 +47,8 @@ function divided(a, b) {
   try {
     $div(a, b) >>> 0;
     return false;
-  } catch {
+  } catch (error) {
+    $catchable(error);
     return true;
   }
 }
@@ -53,7 +57,8 @@ function unwrapped(found) {
   try {
     $unwrap(found);
     return true;
-  } catch {
+  } catch (error) {
+    $catchable(error);
     return false;
   }
 }
@@ -63,7 +68,8 @@ function borrowed(cell, held) {
   try {
     $borrowMut(cell).value;
     return false;
-  } catch {
+  } catch (error) {
+    $catchable(error);
     return true;
   } finally {
     if (_guard != null) {
@@ -76,7 +82,8 @@ function cut(text, at) {
   try {
     $byteLen($strSlice(text, 0, at));
     return false;
-  } catch {
+  } catch (error) {
+    $catchable(error);
     return true;
   }
 }

@@ -8,11 +8,13 @@ import {
   $extendMap,
   $extractIf,
   $iter,
+  $live,
   $mapExtractIf,
   $next,
   $sortedEntries,
   $treeFrom,
   $treeRange,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -35,14 +37,22 @@ function collected() {
     );
     try {
       console.log(`odd [${ids(odd).join(", ")}] kept [${ids(v).join(", ")}]`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of odd) {
-        loudDrop_drop(item);
+      if ($live()) {
+        for (const item of odd) {
+          loudDrop_drop(item);
+        }
       }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of v) {
-      loudDrop_drop(item);
+    if ($live()) {
+      for (const item of v) {
+        loudDrop_drop(item);
+      }
     }
   }
 }
@@ -57,9 +67,13 @@ function stoppedEarly() {
       return result;
     }
     console.log(`first ${first != null ? map(first) : 0} left [${ids(w).join(", ")}]`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of w) {
-      loudDrop_drop(item);
+    if ($live()) {
+      for (const item of w) {
+        loudDrop_drop(item);
+      }
     }
   }
 }
@@ -74,9 +88,13 @@ function counted() {
       0,
     );
     console.log(`counted ${n} left ${list.length}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of list) {
-      loudDrop_drop(item);
+    if ($live()) {
+      for (const item of list) {
+        loudDrop_drop(item);
+      }
     }
   }
 }
@@ -105,7 +123,7 @@ function fromMaps() {
       for (const [, value] of $sortedEntries(m, $cmp)) {
         loudDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   let tmp;
@@ -117,7 +135,7 @@ function fromMaps() {
         for (const [, value] of $sortedEntries(m, $cmp)) {
           loudDrop_drop(value);
         }
-      });
+      }, error);
       throw error;
     }
     if (tmp == null) {
@@ -136,7 +154,7 @@ function fromMaps() {
       for (const [, value] of $sortedEntries(m, $cmp)) {
         loudDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   let gone;
@@ -153,7 +171,7 @@ function fromMaps() {
       for (const [, value] of $sortedEntries(m, $cmp)) {
         loudDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`hash ${gone} ${h.size} ${m.size}`);
@@ -166,7 +184,7 @@ function fromMaps() {
       for (const [, value] of $sortedEntries(m, $cmp)) {
         loudDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   for (const [, value] of $sortedEntries(m, $cmp)) {

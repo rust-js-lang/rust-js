@@ -3,12 +3,14 @@
 import {
   $at,
   $debugStr,
+  $live,
   $position,
   $print,
   $sliceSplitOff,
   $sliceSplitOffEnd,
   $sliceSplitOffEndMut,
   $sliceSplitOffMut,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -70,8 +72,12 @@ function main() {
     let word;
     try {
       word = takeWord(input);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      text = input.value;
+      if ($live()) {
+        text = input.value;
+      }
     }
     if (word == null) {
       break;

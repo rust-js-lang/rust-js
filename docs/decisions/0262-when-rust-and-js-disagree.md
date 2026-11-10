@@ -380,6 +380,9 @@ no translation of a direct call gives JS a deeper stack, and how deep a
 call goes is its input's, so no compile error can say where. It's the
 fourth case's, as near as it gets: listed among the guide's differences
 (`semantics.md`, 16), with what to write instead, an explicit stack.
+Amended (#1193): what it does then is Rust's abort, exit 134, no drop run,
+as where both overflow, not a panic `catch_unwind` takes
+([0692](0692-a-thrown-error-is-a-panic-and-what-js-threw.md), amended).
 
 ## Amendment: the crate's iterator's own `fold` and `nth`
 

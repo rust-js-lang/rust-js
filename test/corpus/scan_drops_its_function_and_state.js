@@ -8,7 +8,9 @@ import {
   $iterator,
   $lazyRange,
   $lazyScan,
+  $live,
   $next,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -102,8 +104,12 @@ function main() {
   try {
     const value = $next(held);
     console.log(`next ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    held.return();
+    if ($live()) {
+      held.return();
+    }
   }
   console.log("dropped");
   n = $lazyScan(
@@ -175,8 +181,12 @@ function main() {
           if (s.value != null) {
             dDrop_drop(s.value);
           }
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          s.value = undefined;
+          if ($live()) {
+            s.value = undefined;
+          }
         }
       }
       return x;

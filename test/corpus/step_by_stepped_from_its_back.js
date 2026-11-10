@@ -10,12 +10,14 @@ import {
   $foldBack,
   $held,
   $iter,
+  $live,
   $next,
   $nextBack,
   $nthBack,
   $range,
   $rev,
   $stepByEnds,
+  $unwindsOn,
   iterator_stepBy,
   stepByDoubleEndedIterator_nextBack,
 } from "@rust-js/std";
@@ -70,8 +72,12 @@ function main() {
     }
     const value = nthBack != null ? map(nthBack) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    stepBy.return();
+    if ($live()) {
+      stepBy.return();
+    }
   }
   const value = $held($stepByEnds($closing($iter(ls(8)), $dropEach(lDrop_drop)), 3, lDrop_drop));
   try {
@@ -83,8 +89,12 @@ function main() {
     }
     const value$1 = nextBack != null ? map(nextBack) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value.return();
+    if ($live()) {
+      value.return();
+    }
   }
   const value$1 = $held($stepByEnds($closing($iter(ls(10)), $dropEach(lDrop_drop)), 4, lDrop_drop));
   try {
@@ -96,8 +106,12 @@ function main() {
     }
     const value = rfind != null ? map(rfind) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$1.return();
+    if ($live()) {
+      value$1.return();
+    }
   }
   const folded = $foldBack(
     $enumerate($stepByEnds($closing($iter(ls(9)), $dropEach(lDrop_drop)), 3, lDrop_drop)),
@@ -168,8 +182,12 @@ function main() {
         .join(", ")}]`,
     );
     console.log("end");
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
 }
 //# sourceMappingURL=case.js.map

@@ -465,8 +465,8 @@ pub fn tried(f: fn(u32) -> u32) -> u32 {
     SEEN.get()
 }
 `);
-  expect(js).toContain("  new Set([frozen]);\n  /* eslint-enable no-new */\n} catch (_e) {\n  BAD = true;\n  // Nothing else to do.\n}\n");
-  expect(js).toContain("    seen = f(seen);\n    // Both ran.\n  } catch (_e) {\n    seen = (seen + 100) >>> 0;\n    // It threw.\n  }\n  return seen;");
+  expect(js).toContain("  new Set([frozen]);\n  /* eslint-enable no-new */\n} catch (_e) {\n  $catchable(_e);\n  BAD = true;\n  // Nothing else to do.\n}\n");
+  expect(js).toContain("    seen = f(seen);\n    // Both ran.\n  } catch (_e) {\n    $catchable(_e);\n    seen = (seen + 100) >>> 0;\n    // It threw.\n  }\n  return seen;");
   expect(lib.bad()).toBe(false);
   expect(lib.tried(((n: number) => n + 1) as never)).toBe(3);
   expect(

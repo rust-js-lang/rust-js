@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $catchable,
   $cleanup,
   $closing,
   $dropEach,
@@ -68,7 +69,7 @@ function sumOdd(items, dropI) {
   } catch (error) {
     $cleanup(() => {
       iter.return();
-    });
+    }, error);
     throw error;
   }
   iter.return();
@@ -83,7 +84,8 @@ function run(name, boom$1, case$) {
   try {
     const n = case$();
     console.log(`ended ${n}`);
-  } catch {
+  } catch (error) {
+    $catchable(error);
     console.log("panicked");
   }
 }
@@ -121,15 +123,17 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         filter.return();
-      });
+      }, error);
       throw error;
     }
     try {
       filter.return();
     } catch (error) {
-      if (r.TAG === "Ok") {
-        accDrop_drop(r._0);
-      }
+      $cleanup(() => {
+        if (r.TAG === "Ok") {
+          accDrop_drop(r._0);
+        }
+      }, error);
       throw error;
     }
     function map(acc) {
@@ -169,15 +173,17 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         filter.return();
-      });
+      }, error);
       throw error;
     }
     try {
       filter.return();
     } catch (error) {
-      if (r.TAG === "Ok") {
-        accDrop_drop(r._0);
-      }
+      $cleanup(() => {
+        if (r.TAG === "Ok") {
+          accDrop_drop(r._0);
+        }
+      }, error);
       throw error;
     }
     function map(acc) {
@@ -227,15 +233,17 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         takeWhile.return();
-      });
+      }, error);
       throw error;
     }
     try {
       takeWhile.return();
     } catch (error) {
-      if (r.TAG === "Ok") {
-        accDrop_drop(r._0);
-      }
+      $cleanup(() => {
+        if (r.TAG === "Ok") {
+          accDrop_drop(r._0);
+        }
+      }, error);
       throw error;
     }
     function map(acc) {
@@ -281,15 +289,17 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         skipWhile.return();
-      });
+      }, error);
       throw error;
     }
     try {
       skipWhile.return();
     } catch (error) {
-      if (r.TAG === "Ok") {
-        accDrop_drop(r._0);
-      }
+      $cleanup(() => {
+        if (r.TAG === "Ok") {
+          accDrop_drop(r._0);
+        }
+      }, error);
       throw error;
     }
     function map(acc) {

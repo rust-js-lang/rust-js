@@ -224,9 +224,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 // Of no `drop`, or one that never throws, it never throws: a
                 // count, one less, then that drop where it's the last (#847).
+                let unseen = args.len() == 1;
                 let mut call = Expr::call(Expr::helper("$rcDrop"), args);
                 if quiet {
                     call.facts = call.facts.with(js::Known::NeverThrows);
+                }
+                // Of nothing that drops, a count, one less (#1193).
+                if unseen {
+                    call.facts = call.facts.with(js::Known::Unseen);
                 }
                 out.push(StmtKind::Expr(call).at(js_span));
             }
@@ -236,12 +241,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A guard: `$unborrow(cell)` (ADR 0328).
             ty::Adt(..) if self.is_guard(ty) => {
-                out.push(StmtKind::Expr(Expr::call(Expr::helper("$unborrow"), vec![value])).at(js_span));
+                let mut call = Expr::call(Expr::helper("$unborrow"), vec![value]);
+                call.facts = call.facts.with(js::Known::Unseen);
+                out.push(StmtKind::Expr(call).at(js_span));
             }
             // A count, one less, which never throws.
             ty::Adt(..) if self.counted_weak(ty).is_some() => {
                 let mut call = Expr::call(Expr::helper("$weakDrop"), vec![value]);
-                call.facts = call.facts.with(js::Known::NeverThrows);
+                call.facts = call.facts.with(js::Known::NeverThrows).with(js::Known::Unseen);
                 out.push(StmtKind::Expr(call).at(js_span));
             }
             // One that carries its drop, its own, which its clones don't share
@@ -473,10 +480,11 @@ pub(super) fn dropped_after_unwinding(
     (unwinding, dropped): (Vec<Stmt>, Vec<Stmt>),
     js_span: js::Span,
 ) -> Vec<Stmt> {
-    after(body, (cleanup(unwinding, js_span), dropped), js_span)
+    after(body, (cleanup(unwinding, Some("error"), js_span), dropped), js_span)
 }
 
-/// `try { body } finally { dropped }` where `dropped` can't throw; else
+/// `try { body } finally { dropped }` where `dropped` can't throw (its
+/// body thrown on through `$unwindsOn` later, `aborting_finally`); else
 /// `try { body } catch (error) { unwinding; throw error; } dropped`.
 fn after(body: Vec<Stmt>, (unwinding, dropped): (Vec<Stmt>, Vec<Stmt>), js_span: js::Span) -> Vec<Stmt> {
     if !may_throw(&dropped) {
@@ -496,7 +504,7 @@ pub(in crate::lower) fn dropped_unwinding(body: Vec<Stmt>, dropped: Vec<Stmt>, j
     if dropped.is_empty() {
         return body;
     }
-    let mut handler = cleanup(dropped, js_span);
+    let mut handler = cleanup(dropped, Some("error"), js_span);
     handler.push(StmtKind::Throw(Expr::var("error")).at(js_span));
     vec![StmtKind::TryCatch(body, Some("error".into()), handler).at(js_span)]
 }
@@ -508,21 +516,102 @@ pub(in crate::lower) fn dropped_unwinding(body: Vec<Stmt>, dropped: Vec<Stmt>, j
 /// runs as a panic unwinds, as `$dropsUnwinding` is the runtime's; so a
 /// `finally`, which runs on either path and can't tell them apart, holds
 /// only what can't throw.
-pub(in crate::lower) fn cleanup(cleanup: Vec<Stmt>, js_span: js::Span) -> Vec<Stmt> {
-    if !may_throw(&cleanup) {
+/// Of what unwinds, `error`, where it's caught, `catch (error) { .. throw
+/// error; }`, which may be a stack overflow, Rust's abort with no drop run
+/// (#1193): `$cleanup(() => { .. }, error)` too where its drops run what a
+/// program sees (`unseen`), which `$cleanup` aborts before.
+pub(in crate::lower) fn cleanup(cleanup: Vec<Stmt>, error: Option<&str>, js_span: js::Span) -> Vec<Stmt> {
+    let seen = error.is_some() && !unseen(&cleanup);
+    if !may_throw(&cleanup) && !seen {
         return cleanup;
     }
-    vec![StmtKind::Expr(Expr::call_helper("$cleanup", vec![Expr::arrow(vec![], cleanup)])).at(js_span)]
+    let mut args = vec![Expr::arrow(vec![], cleanup)];
+    args.extend(error.map(Expr::var));
+    vec![StmtKind::Expr(Expr::call_helper("$cleanup", args)).at(js_span)]
 }
 
-/// Whether `stmts` are a cleanup as `cleanup` leaves it: what can't throw,
-/// or one `$cleanup(..)`.
+/// Of `stmt`, a scope's `try { body } finally { dropped }` whose drops run
+/// what a program sees (`unseen`), its body thrown on through `$unwindsOn`,
+/// `try { body } catch (error) { throw $unwindsOn(error); } finally {
+/// if ($live()) { dropped } }`, so a stack overflow, which Rust aborts on
+/// with no drop run, aborts before them, and none runs as the abort
+/// unwinds (#1193): the last of what's done to a body, as
+/// `guarded_cleanups` is, once no pass reads a scope's `try`. A `try` whose
+/// body is one such `try`/`catch` is printed as one `try`/`catch`/`finally`.
+pub(in crate::lower) fn aborting_finally(stmt: &mut Stmt) {
+    let StmtKind::Try(body, dropped) = &mut stmt.kind else {
+        return;
+    };
+    if unseen(dropped) || dropped.is_empty() || is_aborting(body) || live_guarded(dropped) {
+        return;
+    }
+    let span = stmt.span;
+    // Of a body that's a `catch_unwind` first, whose own catch aborts on an
+    // overflow, `$catchable`'s, no other: preparation writes it as the
+    // `try`'s own `catch` (ADR 0660).
+    if !catches_unwind(body) {
+        let rethrown = Expr::call_helper("$unwindsOn", vec![Expr::var("error")]);
+        let caught = StmtKind::TryCatch(
+            std::mem::take(body),
+            Some("error".into()),
+            vec![StmtKind::Throw(rethrown).at(span)],
+        );
+        *body = vec![caught.at(span)];
+    }
+    // Its drops run only where the program goes on, not as an abort
+    // unwinds, where the host can't end it, a browser's, or the stack had no
+    // room to end it yet (`$live`).
+    let mut live = Expr::call_helper("$live", vec![]);
+    live.facts = live.facts.with(js::Known::NeverThrows);
+    *dropped = vec![StmtKind::If(live, std::mem::take(dropped), None).at(span)];
+}
+
+/// Whether `body` begins with a `catch_unwind`, `$catchUnwind(f)` or what's
+/// made of it, whose catch aborts on a stack overflow (`$catchable`).
+pub(in crate::lower) fn catches_unwind(body: &[Stmt]) -> bool {
+    let unwinds =
+        |e: &Expr| matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$catchUnwind"));
+    matches!(body.first().map(|s| &s.kind),
+        Some(StmtKind::Expr(e) | StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Assign(_, e)) if unwinds(e))
+}
+
+/// Whether `dropped` is `if ($live()) { .. }` (`aborting_finally`'s).
+pub(in crate::lower) fn live_guarded(dropped: &[Stmt]) -> bool {
+    matches!(dropped, [Stmt { kind: StmtKind::If(test, _, None), .. }]
+        if matches!(&test.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$live")))
+}
+
+/// Whether `body` is one `try { .. } catch (error) { throw
+/// $unwindsOn(error); }` (`aborting_finally`'s), whose `finally` is `if
+/// ($live()) { .. }`.
+pub(in crate::lower) fn is_aborting(body: &[Stmt]) -> bool {
+    matches!(body, [Stmt { kind: StmtKind::TryCatch(_, Some(error), handler), .. }]
+        if matches!(handler.as_slice(), [Stmt { kind: StmtKind::Throw(Expr { kind: js::ExprKind::Call(callee, given), .. }), .. }]
+            if callee.helper_name() == Some("$unwindsOn")
+                && matches!(given.as_slice(), [Expr { kind: js::ExprKind::Var(v), .. }] if v == error)))
+}
+
+/// Whether `stmts`, drops, run nothing a program sees (`Known::Unseen`):
+/// each a call so marked, or under a drop flag's `if`. What a stack
+/// overflow, which Rust aborts on with no drop run, may run past unguarded
+/// (#1193).
+pub(in crate::lower) fn unseen(stmts: &[Stmt]) -> bool {
+    stmts.iter().all(|stmt| match &stmt.kind {
+        StmtKind::Expr(e) => e.facts.has(js::Known::Unseen),
+        StmtKind::If(_, then, otherwise) => unseen(then) && otherwise.as_deref().is_none_or(unseen),
+        _ => false,
+    })
+}
+
+/// Whether `stmts` are a cleanup as `cleanup` leaves it, of what's caught
+/// and thrown on: what can't throw and runs nothing a program sees, or one
+/// `$cleanup(..)`.
 pub(in crate::lower) fn is_cleanup(stmts: &[Stmt]) -> bool {
     let guarded = |stmt: &Stmt| {
         matches!(&stmt.kind, StmtKind::Expr(call)
             if matches!(&call.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$cleanup")))
     };
-    matches!(stmts, [stmt] if guarded(stmt)) || !may_throw(stmts)
+    matches!(stmts, [stmt] if guarded(stmt)) || !may_throw(stmts) && unseen(stmts)
 }
 
 /// Each of `items` dropped by `body`, binding it to `pattern`: `for (const

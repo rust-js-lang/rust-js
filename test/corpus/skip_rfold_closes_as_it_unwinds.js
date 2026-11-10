@@ -7,9 +7,11 @@ import {
   $enumerate,
   $foldBack,
   $iter,
+  $live,
   $range,
   $rev,
   $skipping,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -32,8 +34,12 @@ function main() {
             throw new Error("fold");
           }
           return (((n + i) >>> 0) + d[0]) >>> 0;
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       },
     );

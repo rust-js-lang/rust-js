@@ -27,7 +27,7 @@ function main() {
       if (tryBorrowMut.TAG === "Ok") {
         $unborrow(tryBorrowMut._0);
       }
-    });
+    }, error);
     throw error;
   }
   const tryBorrowMut = $tryBorrow(log, true);

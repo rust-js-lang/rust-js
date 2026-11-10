@@ -32,7 +32,7 @@ function main() {
             throw new Error(`drop ${a[0]}`);
           }
         }
-      });
+      }, error);
       throw error;
     }
     const f = (x) => (x + 1) >>> 0;
@@ -50,7 +50,7 @@ function main() {
             if (b[0] >= 80) {
               throw new Error(`drop ${b[0]}`);
             }
-          });
+          }, error);
           throw error;
         }
         console.log(`drop ${b[0]}`);

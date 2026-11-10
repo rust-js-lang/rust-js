@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $catchable,
   $debugParseError,
   $div,
   $index,
@@ -124,7 +125,8 @@ function main() {
   const nested = $catchUnwind(() => {
     try {
       throw new Error("deep");
-    } catch {
+    } catch (error) {
+      $catchable(error);
       return 9;
     }
   });
@@ -147,6 +149,7 @@ function main() {
     throw new Error("owned 2");
     owned = "";
   } catch (thrown) {
+    $catchable(thrown);
     const payload = $unwound(thrown);
     const downcast =
       payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage

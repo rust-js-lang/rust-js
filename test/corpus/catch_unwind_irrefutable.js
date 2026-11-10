@@ -3,12 +3,15 @@
 import {
   $byteLen,
   $catchUnwind,
+  $catchable,
   $debugStr,
   $lines,
+  $live,
   $panicMessage,
   $parseInt,
   $strSlice,
   $trimMatches,
+  $unwindsOn,
   $unwound,
 } from "@rust-js/std";
 
@@ -29,6 +32,7 @@ function describe(name) {
     try {
       throw new Error("Error\n    at one\n    at two");
     } catch (thrown) {
+      $catchable(thrown);
       const x = $unwound(thrown);
       const stack = (x.impl.typeId() === "&str" ? x.value : undefined) ?? "";
       const line = $lines(stack)[1] ?? "";
@@ -50,6 +54,7 @@ function root(n) {
     try {
       throw new Error("control");
     } catch (thrown) {
+      $catchable(thrown);
       const x = $unwound(thrown);
       control = x.impl.typeId() === "&str" ? x.value : undefined;
     }
@@ -58,6 +63,7 @@ function root(n) {
       throw new Error("sample");
     }
   } catch (thrown) {
+    $catchable(thrown);
     let sample = $unwound(thrown);
     sample = sample.impl.typeId() === "&str" ? sample.value : undefined;
     if (sample != null && control != null) {
@@ -74,6 +80,7 @@ function chain(k) {
   try {
     throw new Error("abcdef");
   } catch (thrown) {
+    $catchable(thrown);
     const x = $unwound(thrown);
     const text = (x.impl.typeId() === "&str" ? x.value : undefined) ?? "";
     console.log("between");
@@ -95,6 +102,7 @@ function renamed(k) {
   try {
     throw new Error("abc");
   } catch (thrown) {
+    $catchable(thrown);
     let x = $unwound(thrown);
     const text = (x.impl.typeId() === "&str" ? x.value : undefined) ?? "";
     let n = ($byteLen(text) + k) >>> 0;
@@ -127,6 +135,7 @@ function parsed(text) {
   try {
     throw new Error(text);
   } catch (thrown) {
+    $catchable(thrown);
     const x = $unwound(thrown);
     const message =
       x.impl.typeId() === "alloc::string::String" || x.impl === $panicMessage ? x.value : undefined;
@@ -149,24 +158,35 @@ function dropped(early) {
   const outer = "outer";
   let result;
   try {
-    throw new Error("dropped");
-  } catch (thrown) {
-    const guard = "guard";
-    const x = $unwound(thrown);
     try {
-      const downcastRef = x.impl.typeId() === "&str" ? x.value : undefined;
-      const len = downcastRef != null ? $byteLen(downcastRef) : 0;
-      console.log(`len ${len}`);
-      if (early) {
-        return 0;
+      throw new Error("dropped");
+    } catch (thrown) {
+      $catchable(thrown);
+      const guard = "guard";
+      const x = $unwound(thrown);
+      try {
+        const downcastRef = x.impl.typeId() === "&str" ? x.value : undefined;
+        const len = downcastRef != null ? $byteLen(downcastRef) : 0;
+        console.log(`len ${len}`);
+        if (early) {
+          return 0;
+        }
+        console.log("late");
+        result = len;
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          console.log(`drop ${guard}`);
+        }
       }
-      console.log("late");
-      result = len;
-    } finally {
-      console.log(`drop ${guard}`);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log(`drop ${outer}`);
+    if ($live()) {
+      console.log(`drop ${outer}`);
+    }
   }
   return result;
 }
@@ -178,6 +198,7 @@ function looped() {
     try {
       throw new Error("loop");
     } catch (thrown) {
+      $catchable(thrown);
       if (i === 1) {
         continue;
       }
@@ -198,6 +219,7 @@ function tail() {
   try {
     throw new Error("tail");
   } catch (thrown) {
+    $catchable(thrown);
     const x = $unwound(thrown);
     const message = x.impl.typeId() === "&str" ? x.value : undefined;
     return message != null ? $byteLen(message) : 0;
@@ -220,6 +242,7 @@ function maybe(n) {
   try {
     fake(n);
   } catch (thrown) {
+    $catchable(thrown);
     const x = $unwound(thrown);
     seen =
       (x.impl.typeId() === "alloc::string::String" || x.impl === $panicMessage

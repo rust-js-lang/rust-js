@@ -40,7 +40,7 @@ function main() {
           dDrop_drop(g);
         }
         dDrop_drop(h);
-      });
+      }, error);
       throw error;
     }
     const f = (d) => d[0] !== 2;
@@ -59,7 +59,7 @@ function main() {
         if (h$live) {
           dDrop_drop(h);
         }
-      });
+      }, error);
       throw error;
     }
     function f$1(d) {
@@ -80,7 +80,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         iter.return();
-      });
+      }, error);
       throw error;
     }
     iter.return();

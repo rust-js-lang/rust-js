@@ -1596,12 +1596,15 @@ pub fn checked(f: fn(u32) -> u32) -> u32 {
 ```
 
 ```js
+import { $catchable } from "@rust-js/std";
+
 export function checked(f) {
   try {
     f(1);
     f(2);
     // Called twice.
   } catch (_e) {
+    $catchable(_e);
     console.log("threw");
     // Nothing else to do.
   }
@@ -1640,6 +1643,8 @@ pub fn render(reason: u8, work: fn(u8)) -> u8 {
 ```
 
 ```js
+import { $catchable } from "@rust-js/std";
+
 export function render(reason, work) {
   let status = 0;
   outer: while (true) {
@@ -1655,7 +1660,9 @@ export function render(reason, work) {
       }
       status = 1;
       break;
-    } catch {}
+    } catch (error) {
+      $catchable(error);
+    }
     status = 9;
   }
   return status;

@@ -28,7 +28,7 @@ function main() {
       $rcDrop(shared, (value) => {
         value.impl.$drop?.(value.label);
       });
-    });
+    }, error);
     throw error;
   }
   let tmp;
@@ -42,7 +42,7 @@ function main() {
       $rcDrop(shared, (value) => {
         value.impl.$drop?.(value.label);
       });
-    });
+    }, error);
     throw error;
   }
   console.log(`${tmp} ${again.strong}`);
@@ -64,7 +64,7 @@ function main() {
       $rcDrop(shared, (value) => {
         value.impl.$drop?.(value.label);
       });
-    });
+    }, error);
     throw error;
   }
   const rc$2 = { value: { id: 3, label: "c" }, strong: 1, weak: 0 };
@@ -87,7 +87,7 @@ function main() {
       $rcDrop(shared, (value) => {
         value.impl.$drop?.(value.label);
       });
-    });
+    }, error);
     throw error;
   }
   const weighed = $dynCell({ id: 4, label: 2 }, i32Weight);
@@ -107,7 +107,7 @@ function main() {
       $rcDrop(shared, (value) => {
         value.impl.$drop?.(value.label);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -125,7 +125,7 @@ function main() {
       $rcDrop(shared, (value) => {
         value.impl.$drop?.(value.label);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -140,7 +140,7 @@ function main() {
       $rcDrop(shared, (value) => {
         value.impl.$drop?.(value.label);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -152,7 +152,7 @@ function main() {
       $rcDrop(shared, (value) => {
         value.impl.$drop?.(value.label);
       });
-    });
+    }, error);
     throw error;
   }
   $rcDrop(shared, (value) => {

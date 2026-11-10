@@ -467,7 +467,7 @@ pub fn href(s: &str, fallback: &str) -> String {
     href + "!"
 }
 `);
-  expect(js).toContain("  let href;\n  try {\n    // $FlowFixMe[incompatible-type]\n    href = parse(s);\n  } catch {\n");
+  expect(js).toContain("  let href;\n  try {\n    // $FlowFixMe[incompatible-type]\n    href = parse(s);\n  } catch (error) {\n    $catchable(error);\n");
   const href = lib.href as (s: string, fallback: string) => unknown;
   expect([href("a", "f"), href("", "f")]).toEqual(["A!", "f!"]);
 });
@@ -564,7 +564,7 @@ pub fn evaluated(code: &str) -> bool {
 }
 `);
   expect(js).toContain(
-    "  let href;\n  try {\n    // The parsed value.\n    href = parse(s);\n  } catch {\n    // The fallback.\n    href = fallback;\n  }\n",
+    "  let href;\n  try {\n    // The parsed value.\n    href = parse(s);\n  } catch (error) {\n    $catchable(error);\n    // The fallback.\n    href = fallback;\n  }\n",
   );
   expect(js).toContain(
     "  let value;\n  try {\n    // eslint-disable-next-line no-eval\n    value = (0, eval)(code);\n  } catch {\n    value = undefined;\n  }\n",
@@ -701,7 +701,7 @@ pub fn left(n: u32) -> u32 {
   expect(js).toContain("  log.push(0);\n  // Above the try.\n  try {\n    if (n >= 5) {\n");
   expect(js).toContain("  // Above the try too.\n  try {\n    // First in the try.\n    log.push(2);\n");
   expect(js).toContain("  // Above an is_ok.\n  try {\n    $unwrap(");
-  expect(js).toContain("  try {\n    // Of the named call.\n    step();\n  } catch {\n    log.push(6);\n  }\n");
+  expect(js).toContain("  try {\n    // Of the named call.\n    step();\n  } catch (error) {\n    $catchable(error);\n    log.push(6);\n  }\n");
   expect(js).toContain("  // Above the let.\n  try {\n    if (n >= 5) {\n");
   expect(js.match(/Above the let/g)).toHaveLength(1);
   expect([lib.left(1 as never), lib.left(7 as never)]).toEqual([2, 0]);
@@ -984,7 +984,8 @@ pub fn inside(xs: &[u32], log: &mut Vec<u32>) {
       }
       log.push(x);
       // Next.
-    } catch {
+    } catch (error) {
+      $catchable(error);
       log.push(9);
     }`;
   expect(js).toContain(`export function turns(xs, log) {

@@ -8,9 +8,11 @@ import {
   $intoIter,
   $iter,
   $iterator,
+  $live,
   $next,
   $nextSome,
   $someValue,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -34,7 +36,7 @@ function first(items, dropIIntoIter) {
   } catch (error) {
     $cleanup(() => {
       dropIIntoIter?.(it);
-    });
+    }, error);
     throw error;
   }
   dropIIntoIter?.(it);
@@ -56,7 +58,7 @@ function skipOne(it, IIterator, dropI, dropIItem) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -66,7 +68,7 @@ function skipOne(it, IIterator, dropI, dropIItem) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   return it;
@@ -80,7 +82,7 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
   } catch (error) {
     $cleanup(() => {
       dropIIntoIter?.(it);
-    });
+    }, error);
     throw error;
   }
   if (next != null) {
@@ -90,7 +92,7 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
     } catch (error) {
       $cleanup(() => {
         dropIIntoIter?.(it);
-      });
+      }, error);
       throw error;
     }
   } else {
@@ -101,7 +103,7 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
     } catch (error) {
       $cleanup(() => {
         dropIIntoIter?.(it);
-      });
+      }, error);
       throw error;
     }
   }
@@ -117,7 +119,7 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
         if (it$live) {
           dropIIntoIter?.(it);
         }
-      });
+      }, error);
       throw error;
     }
     if (loud == null) {
@@ -128,7 +130,7 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
           if (it$live) {
             dropIIntoIter?.(it);
           }
-        });
+        }, error);
         throw error;
       }
       it$live = false;
@@ -144,7 +146,7 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
           if (it$live) {
             dropIIntoIter?.(it);
           }
-        });
+        }, error);
         throw error;
       }
       it$live = false;
@@ -158,7 +160,7 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
         if (it$live) {
           dropIIntoIter?.(it);
         }
-      });
+      }, error);
       throw error;
     }
   }
@@ -224,19 +226,31 @@ function main() {
           $dropEach(loudDrop_drop),
         );
         console.log(`bag ${bag[0].length}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of bag[0]) {
-          loudDrop_drop(item);
+        if ($live()) {
+          for (const item of bag[0]) {
+            loudDrop_drop(item);
+          }
         }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
+      if ($live()) {
+        if (found != null) {
+          loudDrop_drop(found);
+        }
+      }
+    }
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
       if (found != null) {
         loudDrop_drop(found);
       }
-    }
-  } finally {
-    if (found != null) {
-      loudDrop_drop(found);
     }
   }
 }

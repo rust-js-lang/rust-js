@@ -24,7 +24,7 @@ function produce(tx) {
     } catch (error) {
       $cleanup(() => {
         $dropSender(tx);
-      });
+      }, error);
       throw error;
     }
   }
@@ -49,7 +49,7 @@ function main() {
     $cleanup(() => {
       $dropReceiver(rx);
       $dropSender(tx);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -58,7 +58,7 @@ function main() {
     $cleanup(() => {
       $dropSender(tx2);
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -67,7 +67,7 @@ function main() {
     $cleanup(() => {
       $dropSender(tx2);
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   let tryRecv;
@@ -77,7 +77,7 @@ function main() {
     $cleanup(() => {
       $dropSender(tx2);
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   if (tryRecv.TAG === "Ok") {
@@ -88,7 +88,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -100,7 +100,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   let tmp;
@@ -109,7 +109,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   console.log(`${tmp.TAG === "Err" && tmp._0 === "Disconnected"}`);
@@ -120,7 +120,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   tx = tmp$1[0];
@@ -131,7 +131,7 @@ function main() {
     $cleanup(() => {
       $dropSender(tx);
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   let send;
@@ -141,7 +141,7 @@ function main() {
     $cleanup(() => {
       $dropSender(tx);
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   console.log(`${send.TAG === "Err"}`);
@@ -153,7 +153,7 @@ function main() {
     $cleanup(() => {
       $dropSender(tx);
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   const tx$1 = tmp$2[0];
@@ -169,7 +169,7 @@ function main() {
       $dropReceiver(rx$1);
       $dropSender(tx);
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -181,7 +181,7 @@ function main() {
       $dropReceiver(rx$1);
       $dropSender(tx);
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   let tmp$3;
@@ -193,7 +193,7 @@ function main() {
       $dropReceiver(rx$1);
       $dropSender(tx);
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   console.log(`${tmp$3.TAG === "Err" && tmp$3._0 === "Empty"}`);
@@ -204,7 +204,7 @@ function main() {
       $dropReceiver(rx$1);
       $dropSender(tx);
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   let recv;
@@ -215,7 +215,7 @@ function main() {
       $dropReceiver(rx$1);
       $dropSender(tx);
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   console.log(`${recv.TAG === "Err"}`);
@@ -225,7 +225,7 @@ function main() {
     $cleanup(() => {
       $dropSender(tx);
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -233,7 +233,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropReceiver(rx);
-    });
+    }, error);
     throw error;
   }
   $dropReceiver(rx);

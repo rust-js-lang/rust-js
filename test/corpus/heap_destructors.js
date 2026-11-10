@@ -10,8 +10,10 @@ import {
   $heapRetain,
   $heapSorted,
   $iter,
+  $live,
   $partialEq,
   $partialOrd,
+  $unwindsOn,
 } from "@rust-js/std";
 
 const oPartialOrd = $partialOrd({
@@ -36,9 +38,13 @@ function main() {
     try {
       const value = top?.[0];
       console.log(`top ${value == null ? "None" : `Some(${value})`}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      if (top != null) {
-        oDrop_drop(top);
+      if ($live()) {
+        if (top != null) {
+          oDrop_drop(top);
+        }
       }
     }
     const other = $heapFrom([[1], [7]], oPartialOrd);
@@ -67,9 +73,13 @@ function main() {
           const o = r[0];
           const value = o?.[0];
           console.log(`retained ${value == null ? "None" : `Some(${value})`}`);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          for (const item of r) {
-            oDrop_drop(item);
+          if ($live()) {
+            for (const item of r) {
+              oDrop_drop(item);
+            }
           }
         }
         const k = $heapFrom([[11], [12]], oPartialOrd);
@@ -78,24 +88,40 @@ function main() {
             oDrop_drop(item);
           }
           console.log(`end ${k.length}`);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          for (const item of k) {
+          if ($live()) {
+            for (const item of k) {
+              oDrop_drop(item);
+            }
+          }
+        }
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          for (const item of sorted) {
             oDrop_drop(item);
           }
         }
-      } finally {
-        for (const item of sorted) {
+      }
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        for (const item of other) {
           oDrop_drop(item);
         }
       }
-    } finally {
-      for (const item of other) {
+    }
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      for (const item of h) {
         oDrop_drop(item);
       }
-    }
-  } finally {
-    for (const item of h) {
-      oDrop_drop(item);
     }
   }
 }

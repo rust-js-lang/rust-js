@@ -39,7 +39,7 @@ const CALL = (f) => {
   } catch (error) {
     $cleanup(() => {
       setIsRendering(wasRendering);
-    });
+    }, error);
     throw error;
   }
   setIsRendering(wasRendering);
@@ -55,7 +55,7 @@ const Calls = {
     } catch (error) {
       $cleanup(() => {
         depth.value = (depth.value - 1) >>> 0;
-      });
+      }, error);
       throw error;
     }
     depth.value = (depth.value - 1) >>> 0;
@@ -79,7 +79,7 @@ const LABELED = (label, depth) => {
   } catch (error) {
     $cleanup(() => {
       labeledDrop_drop(_labeled);
-    });
+    }, error);
     throw error;
   }
   labeledDrop_drop(_labeled);

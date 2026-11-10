@@ -51,7 +51,7 @@ function show(s, h) {
   } catch (error) {
     $cleanup(() => {
       s.value += $fmtPartial(error);
-    });
+    }, error);
     throw error;
   }
   s.value += ".";

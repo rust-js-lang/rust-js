@@ -96,16 +96,17 @@ fn ignored_tries(body: &mut [Stmt]) {
     // f(); } catch {}`: the call, what it threw dropped.
     for stmt in body.iter_mut() {
         if let StmtKind::Expr(e) = &stmt.kind
-            && let Some((call, _)) = e.caught()
+            && let Some((call, caught)) = e.caught()
         {
             let tried = vec![StmtKind::Expr(call).at(stmt.span)];
-            stmt.kind = StmtKind::TryCatch(js::applied_tried(tried), None, Vec::new());
+            let (binding, handler) = catchable(caught, None, Vec::new(), stmt.span);
+            stmt.kind = StmtKind::TryCatch(js::applied_tried(tried), binding, handler);
         }
         // Whether it threw, returned, `match f() { Ok(_) => false, Err(_)
         // => true }` or `f().is_err()`, is `try { f(); return false; }
         // catch { return true; }` (ADR 0639).
         if let StmtKind::Return(Some(e)) = &stmt.kind
-            && let Some((call, of_throw)) = threw(e)
+            && let Some((call, of_throw, kind)) = threw(e)
         {
             let span = stmt.span;
             let tried = vec![
@@ -113,7 +114,8 @@ fn ignored_tries(body: &mut [Stmt]) {
                 StmtKind::Return(Some(Expr::bool(!of_throw))).at(span),
             ];
             let caught = vec![StmtKind::Return(Some(Expr::bool(of_throw))).at(span)];
-            stmt.kind = StmtKind::TryCatch(js::applied_tried(tried), None, caught);
+            let (binding, caught) = catchable(kind, None, caught, span);
+            stmt.kind = StmtKind::TryCatch(js::applied_tried(tried), binding, caught);
         }
     }
 }
@@ -178,7 +180,8 @@ fn flagged_try(made: &Stmt, tested: &Stmt) -> Option<Stmt> {
     // only arm returns, is the `catch`'s, that test's other way, where the
     // closure threw: `} catch { // Fall through .. }`.
     let caught = vec![StmtKind::Comments.at(tested.span)];
-    Some(StmtKind::TryCatch(tried, None, caught).at(made.span))
+    let (binding, caught) = catchable(js::Caught::Unwound, None, caught, tested.span);
+    Some(StmtKind::TryCatch(tried, binding, caught).at(made.span))
 }
 
 /// `body`, a `catch_unwind` closure's, each `return v;` of a literal what
@@ -778,6 +781,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
         tried.splice(0..0, call_said.iter().cloned());
         let (binding, mut handler) = read_as_thrown(binding.clone(), in_catch.clone());
         handler.splice(0..0, said.clone());
+        let (binding, handler) = catchable(caught, binding, handler, span);
         StmtKind::TryCatch(tried, binding, handler).at(span)
     };
     let alone = StmtKind::Expr(call.clone()).at(call_at);
@@ -1030,6 +1034,7 @@ fn unwound_let(before: &[Stmt], stmt: &Stmt, rest: &[Stmt]) -> Option<(Stmt, usi
     handler.extend(rest[..caught].iter().cloned());
     let tried = js::applied_tried(vec![StmtKind::Expr(call).at(stmt.span)]);
     let (binding, handler) = read_as_thrown(Some(thrown), handler);
+    let (binding, handler) = catchable(js::Caught::Unwound, binding, handler, stmt.span);
     Some((
         StmtKind::TryCatch(tried, binding, handler).at(stmt.span),
         skipped + caught,
@@ -1072,6 +1077,35 @@ fn caught_run(payload: &str, rest: &[Stmt]) -> Option<usize> {
 /// shadow sets to what was thrown first, `let x = $unwound(thrown); x =
 /// x.error;`, `catch (x)`. Else the payload is made where it's first read
 /// (`unwound_where_read`, rd550).
+/// Of a `catch` of what unwound, `catch_unwind`'s (`Caught::Unwound`),
+/// `binding` and `handler`: what no `catch_unwind` catches thrown on first,
+/// `$catchable(error)`, an abort, the runtime's own bug, what rust-js
+/// doesn't support as it runs, and a stack overflow, Rust's abort (#1193,
+/// ADR 0660's limit, gone); its binding one the handler doesn't name
+/// where it had none. Of a JS call's throw, `$try`'s, as it is.
+fn catchable(
+    caught: js::Caught,
+    binding: Option<String>,
+    mut handler: Vec<Stmt>,
+    span: js::Span,
+) -> (Option<String>, Vec<Stmt>) {
+    if caught != js::Caught::Unwound {
+        return (binding, handler);
+    }
+    let name = binding.unwrap_or_else(|| {
+        let mut name = "error".to_string();
+        while js::mentions_in(&handler, &name) > 0 {
+            name.push('_');
+        }
+        name
+    });
+    handler.insert(
+        0,
+        StmtKind::Expr(Expr::call_helper("$catchable", vec![Expr::var(&name)])).at(span),
+    );
+    (Some(name), handler)
+}
+
 fn read_as_thrown(binding: Option<String>, handler: Vec<Stmt>) -> (Option<String>, Vec<Stmt>) {
     let Some(thrown) = binding else {
         return (binding, handler);
@@ -1166,7 +1200,8 @@ fn unwound_where_read(made: Stmt, payload: &str, mut rest: Vec<Stmt>) -> Vec<Stm
 /// threw, a `match` of its `Result` that gives `true` of the one and
 /// `false` of the other, or its `is_err()`, `is_ok()`. The call, and the
 /// test's value where it threw (ADR 0639).
-fn threw(e: &Expr) -> Option<(Expr, bool)> {
+fn threw(e: &Expr) -> Option<(Expr, bool, js::Caught)> {
     let (of, ok, eq) = js::result::tested(e)?;
-    Some((of.caught()?.0, eq != ok))
+    let (call, caught) = of.caught()?;
+    Some((call, eq != ok, caught))
 }

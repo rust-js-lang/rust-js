@@ -6,11 +6,13 @@ import {
   $dropEach,
   $held,
   $iter,
+  $live,
   $next,
   $range,
   $some,
   $someValue,
   $traitImpl,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -33,7 +35,7 @@ function iPicks(IIterator, dropI, dropIItem) {
       } catch (error) {
         $cleanup(() => {
           dropI?.(self);
-        });
+        }, error);
         throw error;
       }
       let result;
@@ -50,7 +52,7 @@ function iPicks(IIterator, dropI, dropIItem) {
         $cleanup(() => {
           dropIItem?.(value$2);
           dropI?.(self);
-        });
+        }, error);
         throw error;
       }
       if (value$1 != null) {
@@ -62,7 +64,7 @@ function iPicks(IIterator, dropI, dropIItem) {
         } catch (error) {
           $cleanup(() => {
             dropI?.(self);
-          });
+          }, error);
           throw error;
         }
         dropI?.(self);
@@ -74,7 +76,7 @@ function iPicks(IIterator, dropI, dropIItem) {
       } catch (error) {
         $cleanup(() => {
           dropI?.(self);
-        });
+        }, error);
         throw error;
       }
       dropI?.(self);
@@ -89,7 +91,7 @@ function iPicks(IIterator, dropI, dropIItem) {
       } catch (error) {
         $cleanup(() => {
           dropI?.(self);
-        });
+        }, error);
         throw error;
       }
       let result;
@@ -107,7 +109,7 @@ function iPicks(IIterator, dropI, dropIItem) {
         $cleanup(() => {
           dropIItem?.(value$3);
           dropI?.(self);
-        });
+        }, error);
         throw error;
       }
       if (value$1 == null) {
@@ -117,7 +119,7 @@ function iPicks(IIterator, dropI, dropIItem) {
         } catch (error) {
           $cleanup(() => {
             dropI?.(self);
-          });
+          }, error);
           throw error;
         }
         value$live = false;
@@ -133,7 +135,7 @@ function iPicks(IIterator, dropI, dropIItem) {
           dropIItem?.(value$4);
           dropIItem?.(value$3);
           dropI?.(self);
-        });
+        }, error);
         throw error;
       }
       if (value$2 != null) {
@@ -146,7 +148,7 @@ function iPicks(IIterator, dropI, dropIItem) {
         } catch (error) {
           $cleanup(() => {
             dropI?.(self);
-          });
+          }, error);
           throw error;
         }
         dropI?.(self);
@@ -161,7 +163,7 @@ function iPicks(IIterator, dropI, dropIItem) {
             dropIItem?.(value$3);
           }
           dropI?.(self);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -169,7 +171,7 @@ function iPicks(IIterator, dropI, dropIItem) {
       } catch (error) {
         $cleanup(() => {
           dropI?.(self);
-        });
+        }, error);
         throw error;
       }
       value$live = false;
@@ -199,7 +201,7 @@ function iLabeledLoud(IIterator, dropI, dropIItem) {
             }
           }
           dropI?.(self);
-        });
+        }, error);
         throw error;
       }
       const pair = [next, labels];
@@ -227,7 +229,7 @@ function iLabeledLoud(IIterator, dropI, dropIItem) {
           }
           loudDrop_drop(labels.rest[0]);
           dropI?.(self);
-        });
+        }, error);
         throw error;
       }
       const result = [next, last];
@@ -311,11 +313,13 @@ function main() {
       tmp = $iter(louds(12));
       labels$live = false;
     } catch (error) {
-      if (labels$live) {
-        for (const item of labels.rest) {
-          loudDrop_drop(item);
+      $cleanup(() => {
+        if (labels$live) {
+          for (const item of labels.rest) {
+            loudDrop_drop(item);
+          }
         }
-      }
+      }, error);
       throw error;
     }
     const [first$1, last] = IntoIterLabeledLoud.labeledLast(tmp, labels);
@@ -330,11 +334,19 @@ function main() {
       console.log(`${firstOrWhole([[30], [31]])}`);
       console.log(`${firstOrWhole()}`);
       console.log("end");
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      loudDrop_drop(last);
+      if ($live()) {
+        loudDrop_drop(last);
+      }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(label);
+    if ($live()) {
+      loudDrop_drop(label);
+    }
   }
 }
 //# sourceMappingURL=case.js.map

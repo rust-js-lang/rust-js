@@ -15,7 +15,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $borrowMut(p[0]).push(0);
-    });
+    }, error);
     throw error;
   }
   console.log(`${v.length}`);

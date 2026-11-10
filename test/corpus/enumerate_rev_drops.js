@@ -6,8 +6,10 @@ import {
   $dropEach,
   $enumerate,
   $iter,
+  $live,
   $mapEnds,
   $rev,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -38,9 +40,13 @@ function main() {
   );
   try {
     console.log(`${kept.map((l) => String(l[0])).join(",")}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of kept) {
-      loudDrop_drop(item);
+    if ($live()) {
+      for (const item of kept) {
+        loudDrop_drop(item);
+      }
     }
   }
 

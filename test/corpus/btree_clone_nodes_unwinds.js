@@ -111,12 +111,12 @@ function main() {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
             });
-          });
+          }, error);
           throw error;
         }
         try {
@@ -131,12 +131,12 @@ function main() {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
             });
-          });
+          }, error);
           throw error;
         }
         continue;
@@ -148,7 +148,7 @@ function main() {
           } catch (error) {
             $cleanup(() => {
               valDrop_drop(value);
-            });
+            }, error);
             throw error;
           }
           valDrop_drop(value);
@@ -166,12 +166,12 @@ function main() {
           } catch (error) {
             $cleanup(() => {
               valDrop_drop(value);
-            });
+            }, error);
             throw error;
           }
           valDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     while (true) {
@@ -186,12 +186,12 @@ function main() {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
           });
-        });
+        }, error);
         throw error;
       }
       if (tmp == null) {
@@ -215,7 +215,7 @@ function main() {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value[1]);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value[1]);
@@ -247,7 +247,7 @@ function main() {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
@@ -258,12 +258,12 @@ function main() {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
             });
-          });
+          }, error);
           throw error;
         }
         try {
@@ -278,7 +278,7 @@ function main() {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
@@ -289,12 +289,12 @@ function main() {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
             });
-          });
+          }, error);
           throw error;
         }
         const value = [(n / 3) >>> 0];
@@ -310,7 +310,7 @@ function main() {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
@@ -321,12 +321,12 @@ function main() {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
             });
-          });
+          }, error);
           throw error;
         }
         try {
@@ -342,7 +342,7 @@ function main() {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
@@ -353,12 +353,12 @@ function main() {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
             });
-          });
+          }, error);
           throw error;
         }
         try {
@@ -371,7 +371,7 @@ function main() {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
@@ -382,12 +382,12 @@ function main() {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
             });
-          });
+          }, error);
           throw error;
         }
         console.log(`${calls} calls`);
@@ -398,7 +398,7 @@ function main() {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
@@ -411,12 +411,12 @@ function main() {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
             });
-          });
+          }, error);
           throw error;
         }
         LOG = "";
@@ -429,7 +429,7 @@ function main() {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
@@ -443,12 +443,12 @@ function main() {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
           });
-        });
+        }, error);
         throw error;
       }
       copy$0$live = false;
@@ -477,12 +477,12 @@ function main() {
           } catch (error) {
             $cleanup(() => {
               valDrop_drop(value);
-            });
+            }, error);
             throw error;
           }
           valDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -496,12 +496,12 @@ function main() {
           } catch (error) {
             $cleanup(() => {
               valDrop_drop(value);
-            });
+            }, error);
             throw error;
           }
           valDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     while (true) {
@@ -517,12 +517,12 @@ function main() {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
           });
-        });
+        }, error);
         throw error;
       }
       if (tmp == null) {
@@ -555,12 +555,12 @@ function main() {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
           });
-        });
+        }, error);
         throw error;
       }
       LOG = "";
@@ -575,12 +575,12 @@ function main() {
           } catch (error) {
             $cleanup(() => {
               valDrop_drop(value);
-            });
+            }, error);
             throw error;
           }
           valDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems($sortedEntries(m, keyOrd_cmp), ([key, value]) => {
@@ -589,7 +589,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           valDrop_drop(value);
-        });
+        }, error);
         throw error;
       }
       valDrop_drop(value);

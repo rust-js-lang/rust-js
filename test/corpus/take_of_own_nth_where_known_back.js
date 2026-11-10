@@ -10,11 +10,13 @@ import {
   $iterator,
   $lazyChain,
   $lent,
+  $live,
   $next,
   $nthBack,
   $nthDropping,
   $rev,
   $taking,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -112,18 +114,26 @@ function main() {
   try {
     const value = second != null ? [second[0], second[1][0]] : undefined;
     console.log(`nth ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (second != null) {
-      dDrop_drop(second[1]);
+    if ($live()) {
+      if (second != null) {
+        dDrop_drop(second[1]);
+      }
     }
   }
   const next = $next(it);
   try {
     const value = next != null ? [next[0], next[1][0]] : undefined;
     console.log(`then ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (next != null) {
-      dDrop_drop(next[1]);
+    if ($live()) {
+      if (next != null) {
+        dDrop_drop(next[1]);
+      }
     }
   }
   const past = $iterator(

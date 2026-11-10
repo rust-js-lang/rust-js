@@ -46,7 +46,7 @@ function nthOf(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -55,7 +55,7 @@ function nthOf(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   dropI?.(it);
@@ -77,7 +77,7 @@ function chainedNth(a, b, dropI) {
   } catch (error) {
     $cleanup(() => {
       chain.return();
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -86,7 +86,7 @@ function chainedNth(a, b, dropI) {
   } catch (error) {
     $cleanup(() => {
       chain.return();
-    });
+    }, error);
     throw error;
   }
   chain.return();
@@ -113,7 +113,9 @@ function main() {
   try {
     tmp = $rev($closing($iter(noisy(2)), $dropEach(noisyDrop_drop)));
   } catch (error) {
-    value$1.return();
+    $cleanup(() => {
+      value$1.return();
+    }, error);
     throw error;
   }
   const value$2 = chainedNth(value$1, tmp, (rev) => {

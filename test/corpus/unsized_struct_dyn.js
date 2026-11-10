@@ -31,7 +31,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       fat.impl.$drop?.(fat.inner);
-    });
+    }, error);
     throw error;
   }
   const noisy = $dynCell({ size: 2, inner: [20] }, noisyShow);
@@ -42,7 +42,7 @@ function main() {
     $cleanup(() => {
       noisy.impl.$drop?.(noisy.inner);
       fat.impl.$drop?.(fat.inner);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -50,7 +50,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       fat.impl.$drop?.(fat.inner);
-    });
+    }, error);
     throw error;
   }
   const shown = $dynCell({ size: 6, inner: 7 }, { fmt: String });
@@ -60,7 +60,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       fat.impl.$drop?.(fat.inner);
-    });
+    }, error);
     throw error;
   }
   const sent = $dynCell({ size: 3, inner: [30] }, { $drop: noisyDrop_drop });
@@ -89,7 +89,7 @@ function main() {
       plain.impl.$drop?.(plain.inner);
       sent.impl.$drop?.(sent.inner);
       fat.impl.$drop?.(fat.inner);
-    });
+    }, error);
     throw error;
   }
   console.log(`${x}`);
@@ -116,7 +116,7 @@ function main() {
       plain.impl.$drop?.(plain.inner);
       sent.impl.$drop?.(sent.inner);
       fat.impl.$drop?.(fat.inner);
-    });
+    }, error);
     throw error;
   }
   console.log(`end ${x}`);
@@ -126,7 +126,7 @@ function main() {
     $cleanup(() => {
       sent.impl.$drop?.(sent.inner);
       fat.impl.$drop?.(fat.inner);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -134,7 +134,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       fat.impl.$drop?.(fat.inner);
-    });
+    }, error);
     throw error;
   }
   fat.impl.$drop?.(fat.inner);

@@ -114,13 +114,13 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
             });
           }
-        });
+        }, error);
         throw error;
       }
       try {
@@ -136,13 +136,13 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
             });
           }
-        });
+        }, error);
         throw error;
       }
     }
@@ -157,13 +157,13 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
           });
         }
-      });
+      }, error);
       throw error;
     }
     try {
@@ -176,7 +176,7 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
           } catch (error) {
             $cleanup(() => {
               valDrop_drop(value);
-            });
+            }, error);
             throw error;
           }
           valDrop_drop(value);
@@ -188,13 +188,13 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
           });
         }
-      });
+      }, error);
       throw error;
     }
     while (true) {
@@ -209,7 +209,7 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
@@ -221,13 +221,13 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
             });
           }
-        });
+        }, error);
         throw error;
       }
       if (i == null) {
@@ -244,7 +244,7 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
@@ -256,13 +256,13 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
             });
           }
-        });
+        }, error);
         throw error;
       }
       try {
@@ -277,7 +277,7 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
@@ -289,13 +289,13 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
             });
           }
-        });
+        }, error);
         throw error;
       }
     }
@@ -314,7 +314,7 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
           } catch (error) {
             $cleanup(() => {
               valDrop_drop(value);
-            });
+            }, error);
             throw error;
           }
           valDrop_drop(value);
@@ -326,13 +326,13 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
           });
         }
-      });
+      }, error);
       throw error;
     }
     try {
@@ -345,7 +345,7 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
           } catch (error) {
             $cleanup(() => {
               valDrop_drop(value);
-            });
+            }, error);
             throw error;
           }
           valDrop_drop(value);
@@ -357,13 +357,13 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
           });
         }
-      });
+      }, error);
       throw error;
     }
     m$live = false;
@@ -373,7 +373,7 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
       } catch (error) {
         $cleanup(() => {
           valDrop_drop(value);
-        });
+        }, error);
         throw error;
       }
       valDrop_drop(value);
@@ -419,7 +419,7 @@ function ended() {
       for (const [key, ,] of $sortedEntries(m, quietOrd_cmp)) {
         quietDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   while (true) {
@@ -431,7 +431,7 @@ function ended() {
         for (const [key, ,] of $sortedEntries(m, quietOrd_cmp)) {
           quietDrop_drop(key);
         }
-      });
+      }, error);
       throw error;
     }
     if (i == null) {
@@ -444,7 +444,7 @@ function ended() {
         for (const [key, ,] of $sortedEntries(m, quietOrd_cmp)) {
           quietDrop_drop(key);
         }
-      });
+      }, error);
       throw error;
     }
   }
@@ -456,7 +456,7 @@ function ended() {
       for (const [key, ,] of $sortedEntries(m, quietOrd_cmp)) {
         quietDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   const value = lastKeyValue != null ? [lastKeyValue[0][0], lastKeyValue[1]] : undefined;
@@ -475,7 +475,7 @@ function ended() {
       for (const [key, ,] of $sortedEntries(m, quietOrd_cmp)) {
         quietDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   let firstKeyValue;
@@ -486,7 +486,7 @@ function ended() {
       for (const [key, ,] of $sortedEntries(m, quietOrd_cmp)) {
         quietDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   const value$1 = firstKeyValue != null ? [firstKeyValue[0][0], firstKeyValue[1]] : undefined;
@@ -503,7 +503,7 @@ function ended() {
       for (const [key, ,] of $sortedEntries(m, quietOrd_cmp)) {
         quietDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   let s;
@@ -514,7 +514,7 @@ function ended() {
       for (const [key, ,] of $sortedEntries(m, quietOrd_cmp)) {
         quietDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -527,7 +527,7 @@ function ended() {
       for (const [key, ,] of $sortedEntries(m, quietOrd_cmp)) {
         quietDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   let replace;
@@ -548,7 +548,7 @@ function ended() {
       for (const [key, ,] of $sortedEntries(m, quietOrd_cmp)) {
         quietDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   let arg;
@@ -562,7 +562,7 @@ function ended() {
       for (const [key, ,] of $sortedEntries(m, quietOrd_cmp)) {
         quietDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -577,7 +577,7 @@ function ended() {
       for (const [key, ,] of $sortedEntries(m, quietOrd_cmp)) {
         quietDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -589,7 +589,7 @@ function ended() {
       for (const [key, ,] of $sortedEntries(m, quietOrd_cmp)) {
         quietDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   for (const [key, ,] of $sortedEntries(m, quietOrd_cmp)) {

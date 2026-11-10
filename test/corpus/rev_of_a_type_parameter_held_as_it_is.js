@@ -76,7 +76,7 @@ const HeldD = {
     } catch (error) {
       $cleanup(() => {
         rev.return();
-      });
+      }, error);
       throw error;
     }
     let result;
@@ -85,7 +85,7 @@ const HeldD = {
     } catch (error) {
       $cleanup(() => {
         rev.return();
-      });
+      }, error);
       throw error;
     }
     rev.return();

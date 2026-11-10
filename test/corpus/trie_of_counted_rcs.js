@@ -48,7 +48,7 @@ function insert(root, word) {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(cur, dropNode);
-    });
+    }, error);
     throw error;
   }
   let next;
@@ -59,7 +59,7 @@ function insert(root, word) {
     } catch (error) {
       $cleanup(() => {
         $rcDrop(cur, dropNode);
-      });
+      }, error);
       throw error;
     }
     if (c == null) {
@@ -71,7 +71,7 @@ function insert(root, word) {
     } catch (error) {
       $cleanup(() => {
         $rcDrop(cur, dropNode);
-      });
+      }, error);
       throw error;
     }
     label$live = true;
@@ -83,7 +83,7 @@ function insert(root, word) {
       $cleanup(() => {
         console.log(`drop ${$debugStr(label[0])}`);
         $rcDrop(cur, dropNode);
-      });
+      }, error);
       throw error;
     }
     let entry;
@@ -99,7 +99,7 @@ function insert(root, word) {
           console.log(`drop ${$debugStr(label[0])}`);
         }
         $rcDrop(cur, dropNode);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -111,7 +111,9 @@ function insert(root, word) {
           try {
             tmp = new $BTreeMap();
           } catch (error) {
-            console.log(`drop ${$debugStr(label[0])}`);
+            $cleanup(() => {
+              console.log(`drop ${$debugStr(label[0])}`);
+            }, error);
             throw error;
           }
           let parent;
@@ -123,7 +125,7 @@ function insert(root, word) {
                 $rcDrop(value, dropNode);
               });
               console.log(`drop ${$debugStr(label[0])}`);
-            });
+            }, error);
             throw error;
           }
           return {
@@ -145,7 +147,7 @@ function insert(root, word) {
       $cleanup(() => {
         $unborrow(borrowMut);
         $rcDrop(cur, dropNode);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -154,7 +156,7 @@ function insert(root, word) {
       $cleanup(() => {
         $unborrow(borrowMut);
         $rcDrop(cur, dropNode);
-      });
+      }, error);
       throw error;
     }
     $unborrow(borrowMut);
@@ -164,7 +166,7 @@ function insert(root, word) {
       $cleanup(() => {
         cur = next;
         $rcDrop(cur, dropNode);
-      });
+      }, error);
       throw error;
     }
     cur = next;
@@ -193,7 +195,7 @@ function depth(node) {
     } catch (error) {
       $cleanup(() => {
         $rcDrop(cur, dropNode);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -201,7 +203,7 @@ function depth(node) {
     } catch (error) {
       $cleanup(() => {
         $rcDrop(cur, dropNode);
-      });
+      }, error);
       throw error;
     }
     if (parent != null) {
@@ -211,7 +213,7 @@ function depth(node) {
         $cleanup(() => {
           cur = parent;
           $rcDrop(cur, dropNode);
-        });
+        }, error);
         throw error;
       }
       cur = parent;
@@ -225,7 +227,7 @@ function depth(node) {
     } catch (error) {
       $cleanup(() => {
         $rcDrop(cur, dropNode);
-      });
+      }, error);
       throw error;
     }
     break;
@@ -251,7 +253,9 @@ function main() {
   try {
     tmp = new $BTreeMap();
   } catch (error) {
-    console.log(`drop ${$debugStr(label[0])}`);
+    $cleanup(() => {
+      console.log(`drop ${$debugStr(label[0])}`);
+    }, error);
     throw error;
   }
   const root = {
@@ -270,7 +274,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(root, dropNode);
-    });
+    }, error);
     throw error;
   }
   while (true) {
@@ -282,7 +286,7 @@ function main() {
         if (root$live) {
           $rcDrop(root, dropNode);
         }
-      });
+      }, error);
       throw error;
     }
     if (word == null) {
@@ -295,7 +299,7 @@ function main() {
         if (root$live) {
           $rcDrop(root, dropNode);
         }
-      });
+      }, error);
       throw error;
     }
   }
@@ -307,7 +311,7 @@ function main() {
       if (root$live) {
         $rcDrop(root, dropNode);
       }
-    });
+    }, error);
     throw error;
   }
   let a;
@@ -318,7 +322,7 @@ function main() {
       if (root$live) {
         $rcDrop(root, dropNode);
       }
-    });
+    }, error);
     throw error;
   }
   let tmp$1;
@@ -330,7 +334,7 @@ function main() {
       if (root$live) {
         $rcDrop(root, dropNode);
       }
-    });
+    }, error);
     throw error;
   }
   let ab;
@@ -342,7 +346,7 @@ function main() {
       if (root$live) {
         $rcDrop(root, dropNode);
       }
-    });
+    }, error);
     throw error;
   }
   let tmp$2;
@@ -355,7 +359,7 @@ function main() {
       if (root$live) {
         $rcDrop(root, dropNode);
       }
-    });
+    }, error);
     throw error;
   }
   let tmp$3;
@@ -368,7 +372,7 @@ function main() {
       if (root$live) {
         $rcDrop(root, dropNode);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -380,7 +384,7 @@ function main() {
       if (root$live) {
         $rcDrop(root, dropNode);
       }
-    });
+    }, error);
     throw error;
   }
   let borrowMut;
@@ -393,7 +397,7 @@ function main() {
       if (root$live) {
         $rcDrop(root, dropNode);
       }
-    });
+    }, error);
     throw error;
   }
   let taken;
@@ -407,7 +411,7 @@ function main() {
       if (root$live) {
         $rcDrop(root, dropNode);
       }
-    });
+    }, error);
     throw error;
   }
   $unborrow(borrowMut);
@@ -423,7 +427,7 @@ function main() {
       if (root$live) {
         $rcDrop(root, dropNode);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -434,7 +438,7 @@ function main() {
       if (root$live) {
         $rcDrop(root, dropNode);
       }
-    });
+    }, error);
     throw error;
   }
   console.log("root dropped next");
@@ -444,7 +448,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(ab, dropNode);
-    });
+    }, error);
     throw error;
   }
   let tmp$4;
@@ -453,7 +457,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(ab, dropNode);
-    });
+    }, error);
     throw error;
   }
   let upgrade;
@@ -463,7 +467,7 @@ function main() {
     $cleanup(() => {
       $unborrow(tmp$4);
       $rcDrop(ab, dropNode);
-    });
+    }, error);
     throw error;
   }
   console.log(`ab's parent is gone: ${upgrade == null}`);
@@ -475,7 +479,7 @@ function main() {
     $cleanup(() => {
       $unborrow(tmp$4);
       $rcDrop(ab, dropNode);
-    });
+    }, error);
     throw error;
   }
   $unborrow(tmp$4);

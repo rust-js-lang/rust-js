@@ -95,9 +95,11 @@ function main() {
         try {
           repeat = $repeating([7], undefined, lDrop_drop);
         } catch (error) {
-          for (const item of value) {
-            lDrop_drop(item);
-          }
+          $cleanup(() => {
+            for (const item of value) {
+              lDrop_drop(item);
+            }
+          }, error);
           throw error;
         }
         return $count($lazyChain($closing(value, $dropEach(lDrop_drop)), repeat), lDrop_drop);
@@ -113,7 +115,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         iter.return();
-      });
+      }, error);
       throw error;
     }
     iter.return();

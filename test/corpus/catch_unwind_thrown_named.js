@@ -3,8 +3,10 @@
 import {
   $byteLen,
   $catchUnwind,
+  $catchable,
   $cleanup,
   $debugStr,
+  $live,
   $panicMessage,
   $unwinding,
   $unwound,
@@ -45,6 +47,7 @@ function renderNode(n, log, segment) {
       log.value = fails(n);
       return;
     } catch (thrown$1) {
+      $catchable(thrown$1);
       log.value = (previous + 2) >>> 0;
       const thrownValue = $unwound(thrown$1);
       thrown = thrownValue;
@@ -57,6 +60,7 @@ function renderNode(n, log, segment) {
       _inner[0].value = (((_inner[0].value * 10) >>> 0) + _inner[1]) >>> 0;
       return;
     } catch (thrown$1) {
+      $catchable(thrown$1);
       let tmp;
       const thrownValue = $unwound(thrown$1);
       try {
@@ -64,7 +68,7 @@ function renderNode(n, log, segment) {
       } catch (error) {
         $cleanup(() => {
           _inner[0].value = (((_inner[0].value * 10) >>> 0) + _inner[1]) >>> 0;
-        });
+        }, error);
         throw error;
       }
       if ($byteLen(tmp) > 5) {
@@ -85,6 +89,7 @@ function given(n, thrown) {
     const v = fails(n);
     return String(v);
   } catch (thrown$1) {
+    $catchable(thrown$1);
     const payload = $unwound(thrown$1);
     return `${messageOf(payload)} ${thrown}`;
   }
@@ -97,6 +102,7 @@ function called(n) {
     const v = fails(n);
     return String(v);
   } catch (thrown$1) {
+    $catchable(thrown$1);
     const error = $unwound(thrown$1);
     return thrown(error);
   }
@@ -108,6 +114,7 @@ function payloadNamed(n) {
     const v = fails(n);
     return String(v);
   } catch (thrown$1) {
+    $catchable(thrown$1);
     const thrown = $unwound(thrown$1);
     return messageOf(thrown);
   }
@@ -118,6 +125,7 @@ function ended(n, log, thrown) {
   try {
     fails(n);
   } catch (x) {
+    $catchable(x);
     log.value = (log.value + thrown) >>> 0;
     throw x;
   }
@@ -139,6 +147,7 @@ function kept(n, log) {
     _restore[0].value = (((_restore[0].value * 10) >>> 0) + _restore[1]) >>> 0;
     return (result + 100) >>> 0;
   } catch (thrown$1) {
+    $catchable(thrown$1);
     let message;
     const thrown = $unwound(thrown$1);
     try {
@@ -146,7 +155,7 @@ function kept(n, log) {
     } catch (error) {
       $cleanup(() => {
         _restore[0].value = (((_restore[0].value * 10) >>> 0) + _restore[1]) >>> 0;
-      });
+      }, error);
       throw error;
     }
     result = $byteLen(message);
@@ -165,11 +174,14 @@ function keptSaid(n, log) {
     // Twice what it found.
     result = (first * 2) >>> 0;
   } catch (thrown$1) {
+    $catchable(thrown$1);
     const thrown = $unwound(thrown$1);
     const message = messageOf(thrown);
     result = $byteLen(message);
   } finally {
-    console.log(`said ${said}`);
+    if ($live()) {
+      console.log(`said ${said}`);
+    }
   }
   return (result + 100) >>> 0;
 }

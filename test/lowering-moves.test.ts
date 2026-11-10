@@ -359,7 +359,7 @@ pub fn guarded(channel: &Unknown, callback: &'static dyn Fn()) {
 }
 `,
   );
-  expect(js).toContain("  try {\n    channel.port1.onmessage = () => {\n      callback();\n    };\n  } finally {\n");
+  expect(js).toContain("  try {\n    channel.port1.onmessage = () => {\n      callback();\n    };\n  } catch (error) {\n    throw $unwindsOn(error);\n  } finally {\n");
   expect(js).not.toMatch(/function value|const (value|_\d+)/);
   // The getter runs, then the closure is given, then the guard drops, as
   // Rust runs them.

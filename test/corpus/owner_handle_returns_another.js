@@ -8,9 +8,11 @@ import {
   $downgrade,
   $dropItems,
   $dropping,
+  $live,
   $rcClone,
   $rcDrop,
   $unborrow,
+  $unwindsOn,
   $upgrade,
   $weakDrop,
 } from "@rust-js/std";
@@ -31,7 +33,7 @@ function createRequest(name, onReady, kept) {
       $rcDrop(made, (value) => {
         $rcDrop(value.onReady, $dispose);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -42,7 +44,7 @@ function createRequest(name, onReady, kept) {
       $rcDrop(made, (value) => {
         $rcDrop(value.onReady, $dispose);
       });
-    });
+    }, error);
     throw error;
   }
   $unborrow(borrowMut);
@@ -70,11 +72,13 @@ function render(name, kept) {
   try {
     cell = $rcClone(requestCell);
   } catch (error) {
-    $rcDrop(requestCell, (value) => {
-      if (value.value != null) {
-        $weakDrop(value.value);
-      }
-    });
+    $cleanup(() => {
+      $rcDrop(requestCell, (value) => {
+        if (value.value != null) {
+          $weakDrop(value.value);
+        }
+      });
+    }, error);
     throw error;
   }
   const onReady = {
@@ -128,7 +132,7 @@ function render(name, kept) {
         $rcDrop(request, (value) => {
           $rcDrop(value.onReady, $dispose);
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -140,15 +144,19 @@ function render(name, kept) {
         $rcDrop(request, (value) => {
           $rcDrop(value.onReady, $dispose);
         });
-      });
+      }, error);
       throw error;
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    $rcDrop(requestCell, (value) => {
-      if (value.value != null) {
-        $weakDrop(value.value);
-      }
-    });
+    if ($live()) {
+      $rcDrop(requestCell, (value) => {
+        if (value.value != null) {
+          $weakDrop(value.value);
+        }
+      });
+    }
   }
   return request;
 }
@@ -165,7 +173,7 @@ function main() {
           $rcDrop(value.onReady, $dispose);
         });
       });
-    });
+    }, error);
     throw error;
   }
   let borrow;
@@ -181,7 +189,7 @@ function main() {
           $rcDrop(value.onReady, $dispose);
         });
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -197,7 +205,7 @@ function main() {
           $rcDrop(value.onReady, $dispose);
         });
       });
-    });
+    }, error);
     throw error;
   }
   $unborrow(borrow);
@@ -212,7 +220,7 @@ function main() {
           $rcDrop(value.onReady, $dispose);
         });
       });
-    });
+    }, error);
     throw error;
   }
   let tmp;
@@ -225,7 +233,7 @@ function main() {
           $rcDrop(value.onReady, $dispose);
         });
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -238,7 +246,7 @@ function main() {
           $rcDrop(value.onReady, $dispose);
         });
       });
-    });
+    }, error);
     throw error;
   }
   $unborrow(tmp);

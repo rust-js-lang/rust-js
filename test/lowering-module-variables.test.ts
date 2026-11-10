@@ -445,6 +445,7 @@ if (__DEV__) {
     new Set([frozenObject]);
     /* eslint-enable no-new */
   } catch (_e) {
+    $catchable(_e);
     // TODO: Consider warning about bad polyfills
     hasBadMapPolyfill = true;
   }

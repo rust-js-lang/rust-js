@@ -6,9 +6,11 @@ import {
   $dropEach,
   $held,
   $iter,
+  $live,
   $mapEnds,
   $next,
   $rev,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -29,8 +31,12 @@ function main() {
     if (last != null) {
       loudDrop_drop(last);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    same.return();
+    if ($live()) {
+      same.return();
+    }
   }
   console.log("--");
 
@@ -59,8 +65,12 @@ function main() {
       }),
     );
     console.log(`[${kept.join(", ")}]`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    scaled.return();
+    if ($live()) {
+      scaled.return();
+    }
   }
 }
 //# sourceMappingURL=case.js.map

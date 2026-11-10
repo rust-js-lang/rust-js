@@ -9,10 +9,12 @@ import {
   $foldBack,
   $held,
   $iter,
+  $live,
   $mapEnds,
   $nextBack,
   $nthBack,
   $range,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -45,8 +47,12 @@ function main() {
   let found;
   try {
     found = $nthBack(value$1, k - 2);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$1.return();
+    if ($live()) {
+      value$1.return();
+    }
   }
   console.log(`${found == null ? "None" : `Some(${found})`}`);
   const value$2 = $mapEnds($iter([1, 2, 3, 4]), (x) => (x + 1) >>> 0);
@@ -67,8 +73,12 @@ function main() {
   let odd;
   try {
     odd = $nthBack(value$3, k - 2);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$3.return();
+    if ($live()) {
+      value$3.return();
+    }
   }
   console.log(`${odd == null ? "None" : `Some(${odd})`}`);
   const enumerate = $enumerate($iter([7, 8, 9]));

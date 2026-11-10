@@ -2,6 +2,7 @@
 
 import {
   $append,
+  $cleanup,
   $closing,
   $cmp,
   $dedupBy,
@@ -10,6 +11,7 @@ import {
   $insertAt,
   $iter,
   $lastDropping,
+  $live,
   $range,
   $removeAt,
   $removeOpt,
@@ -21,6 +23,7 @@ import {
   $splitOff,
   $swapRemove,
   $truncate,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -43,8 +46,12 @@ function main() {
     const removed = $removeAt(v, 0);
     try {
       console.log(`removed ${removed[0]} [${ids(v).join(", ")}]`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      noisyDrop_drop(removed);
+      if ($live()) {
+        noisyDrop_drop(removed);
+      }
     }
     const swapped = $swapRemove(v, 0);
     let more;
@@ -69,29 +76,35 @@ function main() {
       try {
         tmp = ids(v);
       } catch (error) {
-        for (const item of tail) {
-          noisyDrop_drop(item);
-        }
+        $cleanup(() => {
+          for (const item of tail) {
+            noisyDrop_drop(item);
+          }
+        }, error);
         throw error;
       }
       try {
         console.log(`[${tmp.join(", ")}] [${ids(tail).join(", ")}]`);
       } catch (error) {
-        for (const item of tail) {
-          noisyDrop_drop(item);
-        }
+        $cleanup(() => {
+          for (const item of tail) {
+            noisyDrop_drop(item);
+          }
+        }, error);
         throw error;
       }
       more = [[9]];
       try {
         $append(v, more);
       } catch (error) {
-        for (const item of more) {
-          noisyDrop_drop(item);
-        }
-        for (const item of tail) {
-          noisyDrop_drop(item);
-        }
+        $cleanup(() => {
+          for (const item of more) {
+            noisyDrop_drop(item);
+          }
+          for (const item of tail) {
+            noisyDrop_drop(item);
+          }
+        }, error);
         throw error;
       }
       let tmp$1;
@@ -100,23 +113,27 @@ function main() {
         tmp$1 = ids(v);
         tmp$2 = more;
       } catch (error) {
-        for (const item of more) {
-          noisyDrop_drop(item);
-        }
-        for (const item of tail) {
-          noisyDrop_drop(item);
-        }
+        $cleanup(() => {
+          for (const item of more) {
+            noisyDrop_drop(item);
+          }
+          for (const item of tail) {
+            noisyDrop_drop(item);
+          }
+        }, error);
         throw error;
       }
       try {
         console.log(`[${tmp$1.join(", ")}] ${tmp$2.length}`);
       } catch (error) {
-        for (const item of more) {
-          noisyDrop_drop(item);
-        }
-        for (const item of tail) {
-          noisyDrop_drop(item);
-        }
+        $cleanup(() => {
+          for (const item of more) {
+            noisyDrop_drop(item);
+          }
+          for (const item of tail) {
+            noisyDrop_drop(item);
+          }
+        }, error);
         throw error;
       }
       try {
@@ -124,9 +141,11 @@ function main() {
           noisyDrop_drop(item);
         }
       } catch (error) {
-        for (const item of more) {
-          noisyDrop_drop(item);
-        }
+        $cleanup(() => {
+          for (const item of more) {
+            noisyDrop_drop(item);
+          }
+        }, error);
         throw error;
       }
       taken = v;
@@ -137,27 +156,35 @@ function main() {
         tmp$3 = ids(taken);
         tmp$4 = v;
       } catch (error) {
-        for (const item of taken) {
-          noisyDrop_drop(item);
-        }
-        for (const item of more) {
-          noisyDrop_drop(item);
-        }
+        $cleanup(() => {
+          for (const item of taken) {
+            noisyDrop_drop(item);
+          }
+          for (const item of more) {
+            noisyDrop_drop(item);
+          }
+        }, error);
         throw error;
       }
       try {
         console.log(`taken [${tmp$3.join(", ")}] left ${tmp$4.length}`);
       } catch (error) {
-        for (const item of taken) {
-          noisyDrop_drop(item);
-        }
-        for (const item of more) {
-          noisyDrop_drop(item);
-        }
+        $cleanup(() => {
+          for (const item of taken) {
+            noisyDrop_drop(item);
+          }
+          for (const item of more) {
+            noisyDrop_drop(item);
+          }
+        }, error);
         throw error;
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      noisyDrop_drop(swapped);
+      if ($live()) {
+        noisyDrop_drop(swapped);
+      }
     }
 
     try {
@@ -199,9 +226,11 @@ function main() {
             try {
               second = $removeOpt(deque, 1);
             } catch (error) {
-              if (front != null) {
-                noisyDrop_drop(front);
-              }
+              $cleanup(() => {
+                if (front != null) {
+                  noisyDrop_drop(front);
+                }
+              }, error);
               throw error;
             }
             const map = front?.[0];
@@ -230,40 +259,68 @@ function main() {
               try {
                 const value = last?.[0];
                 console.log(`last ${value == null ? "None" : `Some(${value})`}`);
+              } catch (error) {
+                throw $unwindsOn(error);
               } finally {
-                if (last != null) {
-                  noisyDrop_drop(last);
+                if ($live()) {
+                  if (last != null) {
+                    noisyDrop_drop(last);
+                  }
                 }
               }
               console.log("end");
+            } catch (error) {
+              throw $unwindsOn(error);
             } finally {
-              if (second != null) {
-                noisyDrop_drop(second);
+              if ($live()) {
+                if (second != null) {
+                  noisyDrop_drop(second);
+                }
               }
             }
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            for (const item of deque) {
+            if ($live()) {
+              for (const item of deque) {
+                noisyDrop_drop(item);
+              }
+            }
+          }
+        } catch (error) {
+          throw $unwindsOn(error);
+        } finally {
+          if ($live()) {
+            for (const item of w) {
               noisyDrop_drop(item);
             }
           }
-        } finally {
-          for (const item of w) {
+        }
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          for (const item of taken) {
             noisyDrop_drop(item);
           }
         }
-      } finally {
-        for (const item of taken) {
+      }
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        for (const item of more) {
           noisyDrop_drop(item);
         }
       }
-    } finally {
-      for (const item of more) {
+    }
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      for (const item of v) {
         noisyDrop_drop(item);
       }
-    }
-  } finally {
-    for (const item of v) {
-      noisyDrop_drop(item);
     }
   }
 }

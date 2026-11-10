@@ -39,7 +39,7 @@ function total(items, DStableDeref, dropD) {
   } catch (error) {
     $cleanup(() => {
       dropD?.(items);
-    });
+    }, error);
     throw error;
   }
   dropD?.(items);
@@ -67,7 +67,7 @@ function cloned(count) {
   } catch (error) {
     $cleanup(() => {
       $dispose(read);
-    });
+    }, error);
     throw error;
   }
   return [tmp, { value: read, strong: 1, weak: 0 }];
@@ -85,7 +85,7 @@ function main() {
       $cleanup(() => {
         $rcDrop(second, $dispose);
         $rcDrop(first, $dispose);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -94,7 +94,7 @@ function main() {
       $cleanup(() => {
         $rcDrop(second, $dispose);
         $rcDrop(first, $dispose);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -102,7 +102,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $rcDrop(first, $dispose);
-      });
+      }, error);
       throw error;
     }
     $rcDrop(first, $dispose);

@@ -26,7 +26,7 @@ function main() {
       for (const [, value] of $sortedEntries(sorted, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -38,7 +38,7 @@ function main() {
       for (const [, value] of $sortedEntries(sorted, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   let noisy;
@@ -49,7 +49,7 @@ function main() {
       for (const [, value] of $sortedEntries(sorted, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -61,7 +61,7 @@ function main() {
       for (const [, value] of $sortedEntries(sorted, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   let tmp;
@@ -72,7 +72,7 @@ function main() {
       for (const [, value] of $sortedEntries(sorted, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -84,7 +84,7 @@ function main() {
       for (const [, value] of $sortedEntries(sorted, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   let old;
@@ -95,7 +95,7 @@ function main() {
       for (const [, value] of $sortedEntries(sorted, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   function map(n) {
@@ -110,7 +110,7 @@ function main() {
       for (const [, value] of $sortedEntries(sorted, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   let taken;
@@ -121,7 +121,7 @@ function main() {
       for (const [, value] of $sortedEntries(sorted, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`took ${taken != null} ${sorted.size}`);
@@ -134,7 +134,7 @@ function main() {
       for (const [, value] of $sortedEntries(sorted, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   let n;
@@ -145,7 +145,7 @@ function main() {
       for (const [, value] of $sortedEntries(sorted, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   if (n != null) {
@@ -165,7 +165,7 @@ function main() {
       for (const item of byName.values()) {
         console.log(`drop ${item[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -177,7 +177,7 @@ function main() {
       for (const item of byName.values()) {
         console.log(`drop ${item[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -187,7 +187,7 @@ function main() {
       for (const item of byName.values()) {
         console.log(`drop ${item[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -197,7 +197,7 @@ function main() {
       for (const item of byName.values()) {
         console.log(`drop ${item[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   let x;
@@ -208,7 +208,7 @@ function main() {
       for (const item of byName.values()) {
         console.log(`drop ${item[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`${x != null}`);
@@ -226,7 +226,7 @@ function main() {
       for (const item of byName.values()) {
         console.log(`drop ${item[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   let tmp$2;
@@ -244,7 +244,7 @@ function main() {
       for (const item of byName.values()) {
         console.log(`drop ${item[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -263,7 +263,7 @@ function main() {
       for (const item of byName.values()) {
         console.log(`drop ${item[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   let tmp$3;
@@ -281,7 +281,7 @@ function main() {
       for (const item of byName.values()) {
         console.log(`drop ${item[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -300,7 +300,7 @@ function main() {
       for (const item of byName.values()) {
         console.log(`drop ${item[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`${shared.strong}`);
@@ -319,7 +319,7 @@ function main() {
       for (const item of byName.values()) {
         console.log(`drop ${item[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -338,7 +338,7 @@ function main() {
       for (const item of byName.values()) {
         console.log(`drop ${item[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`${shared.strong}`);
@@ -355,7 +355,7 @@ function main() {
       for (const item of byName.values()) {
         console.log(`drop ${item[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`${shared.strong}`);
@@ -369,7 +369,7 @@ function main() {
       for (const item of byName.values()) {
         console.log(`drop ${item[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   for (const item of byName.values()) {

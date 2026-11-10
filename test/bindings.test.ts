@@ -759,7 +759,7 @@ pub fn call<A: 'static>(value: A, given: Option<&'static dyn Fn(A) -> u32>) -> u
   // `first`'s `unwrap_unchecked` can't panic either: what its consumer
   // compiles of it drops nothing where it would.
   expect(app).toContain("function first(value, given) {\n  const n = given;\n  return [n, value];\n}");
-  expect(app).toContain("function countUnmarked(value, dropT) {\n  let n;\n  try {\n    n = globalThis.calls;\n  } catch (error) {\n    $cleanup(() => {\n      dropT?.(value);\n    });\n    throw error;\n  }\n");
+  expect(app).toContain("function countUnmarked(value, dropT) {\n  let n;\n  try {\n    n = globalThis.calls;\n  } catch (error) {\n    $cleanup(() => {\n      dropT?.(value);\n    }, error);\n    throw error;\n  }\n");
 });
 
 // ADR 0304: `js::import!(item)` loads the module that has it when it's asked

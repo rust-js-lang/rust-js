@@ -7,12 +7,14 @@ import {
   $grownBy,
   $heapExtend,
   $iterator,
+  $live,
   $partiallyOrdered,
   $print,
   $range,
   $reserve,
   $reserveExact,
   $roomFor,
+  $unwindsOn,
   $withCapacity,
 } from "@rust-js/std";
 
@@ -201,9 +203,13 @@ function main() {
         ),
       );
       return v.length;
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of v) {
-        noisyDrop_drop(item);
+      if ($live()) {
+        for (const item of v) {
+          noisyDrop_drop(item);
+        }
       }
     }
   });

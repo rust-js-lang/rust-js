@@ -25,7 +25,7 @@ function holderDrop_drop(holder, TDefault, dropT) {
   } catch (error) {
     $cleanup(() => {
       dropT?.(old);
-    });
+    }, error);
     throw error;
   }
   dropT?.(old);
@@ -47,11 +47,11 @@ function hold(name) {
       } catch (error) {
         $cleanup(() => {
           loudDrop_drop(_held[0]);
-        });
+        }, error);
         throw error;
       }
       loudDrop_drop(_held[0]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -59,7 +59,7 @@ function hold(name) {
   } catch (error) {
     $cleanup(() => {
       loudDrop_drop(_held[0]);
-    });
+    }, error);
     throw error;
   }
   loudDrop_drop(_held[0]);
@@ -98,7 +98,7 @@ function oper(node) {
   } catch (error) {
     $cleanup(() => {
       restore();
-    });
+    }, error);
     throw error;
   }
   restore();
@@ -132,7 +132,7 @@ function run(active$1, early, fail) {
     } catch (error) {
       $cleanup(() => {
         restore();
-      });
+      }, error);
       throw error;
     }
   }
@@ -157,7 +157,7 @@ function nested(n) {
       } catch (error) {
         $cleanup(() => {
           onDrop();
-        });
+        }, error);
         throw error;
       }
       onDrop();
@@ -170,7 +170,7 @@ function nested(n) {
   } catch (error) {
     $cleanup(() => {
       onDrop();
-    });
+    }, error);
     throw error;
   }
   onDrop();
@@ -187,7 +187,7 @@ function owning(name) {
     $cleanup(() => {
       guard();
       loudDrop_drop(loud);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -195,7 +195,7 @@ function owning(name) {
   } catch (error) {
     $cleanup(() => {
       loudDrop_drop(loud);
-    });
+    }, error);
     throw error;
   }
   loudDrop_drop(loud);
@@ -221,7 +221,7 @@ function throwingClosure(fail) {
   } catch (error) {
     $cleanup(() => {
       guard();
-    });
+    }, error);
     throw error;
   }
   guard();

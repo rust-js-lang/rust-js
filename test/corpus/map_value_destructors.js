@@ -47,7 +47,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -61,7 +61,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -79,7 +79,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -94,7 +94,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   let got;
@@ -105,7 +105,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`got ${got[0]}`);
@@ -117,7 +117,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`new ${new$[0]}`);
@@ -131,7 +131,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`cleared ${tree.size}`);
@@ -143,7 +143,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   let insert;
@@ -157,7 +157,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -172,7 +172,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -185,7 +185,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -198,7 +198,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -211,7 +211,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`hash ${hash.size}`);
@@ -226,7 +226,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -241,7 +241,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -257,7 +257,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   let drained;
@@ -273,7 +273,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   let tmp;
@@ -290,7 +290,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -308,7 +308,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   let taken;
@@ -325,7 +325,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`taken ${taken.length} left ${drained.size}`);
@@ -344,7 +344,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   let tmp$1;
@@ -361,7 +361,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -379,7 +379,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   let drain;
@@ -396,7 +396,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -414,7 +414,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   console.log("end");
@@ -430,7 +430,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -442,7 +442,7 @@ function main() {
       for (const [, value] of $sortedEntries(tree, $cmp)) {
         noisyDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   for (const [, value] of $sortedEntries(tree, $cmp)) {

@@ -22,7 +22,7 @@ function main() {
         if (other[1]) {
           throw new Error(`boom ${other[0]}`);
         }
-      });
+      }, error);
       throw error;
     }
     console.log(`drop ${other[0]}`);
@@ -48,7 +48,7 @@ function main() {
           if (other$1[1]) {
             throw new Error(`boom ${other$1[0]}`);
           }
-        });
+        }, error);
         throw error;
       }
       console.log(`drop ${other$1[0]}`);
@@ -65,7 +65,7 @@ function main() {
           throw new Error(`boom ${calm[0]}`);
         }
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`unreached ${x == null}`);
@@ -84,7 +84,7 @@ function main() {
           throw new Error(`boom ${calm[0]}`);
         }
       }
-    });
+    }, error);
     throw error;
   }
   if (calm != null) {

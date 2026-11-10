@@ -40,7 +40,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     console.log(`${v.length}`);
@@ -53,7 +53,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     console.log(`${v.length}`);
@@ -66,7 +66,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     console.log(`${v.length}`);
@@ -79,7 +79,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     console.log(`${v.length}`);
@@ -97,7 +97,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(q, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -105,7 +105,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(q, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     console.log(`${q.length}`);

@@ -32,7 +32,7 @@ function main() {
           } catch (error) {
             $cleanup(() => {
               bombDrop_drop(b);
-            });
+            }, error);
             throw error;
           }
         }

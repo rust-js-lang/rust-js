@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -14,6 +15,7 @@ import {
   $lazyChain,
   $lazyRange,
   $lent,
+  $live,
   $next,
   $nextBack,
   $nthDropping,
@@ -22,6 +24,7 @@ import {
   $skipping,
   $taking,
   $tryOf,
+  $unwindsOn,
   iterator_rev,
   iterator_skip,
   iterator_take,
@@ -109,8 +112,12 @@ function inPlace() {
     }
     const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    rev.return();
+    if ($live()) {
+      rev.return();
+    }
   }
   const value = $held(
     $rev(
@@ -130,8 +137,12 @@ function inPlace() {
     }
     const value$1 = nth != null ? map(nth) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value.return();
+    if ($live()) {
+      value.return();
+    }
   }
 }
 
@@ -147,11 +158,13 @@ function chainSides() {
     );
     w$live = false;
   } catch (error) {
-    if (w$live) {
-      for (const item of w) {
-        cDrop_drop(item);
+    $cleanup(() => {
+      if (w$live) {
+        for (const item of w) {
+          cDrop_drop(item);
+        }
       }
-    }
+    }, error);
     throw error;
   }
   console.log(
@@ -174,11 +187,13 @@ function chainSides() {
     );
     w$1$live = false;
   } catch (error) {
-    if (w$1$live) {
-      for (const item of w) {
-        cDrop_drop(item);
+    $cleanup(() => {
+      if (w$1$live) {
+        for (const item of w) {
+          cDrop_drop(item);
+        }
       }
-    }
+    }, error);
     throw error;
   }
   console.log(
@@ -201,19 +216,25 @@ function chainSides() {
     );
     w$2$live = false;
   } catch (error) {
-    if (w$2$live) {
-      for (const item of w) {
-        cDrop_drop(item);
+    $cleanup(() => {
+      if (w$2$live) {
+        for (const item of w) {
+          cDrop_drop(item);
+        }
       }
-    }
+    }, error);
     throw error;
   }
   const rev = $held($rev($lazyChain(tmp, $closing($iter(w), $dropEach(cDrop_drop)))));
   let taken;
   try {
     taken = $nthDropping($lent(rev), 2, cDrop_drop, false);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    rev.return();
+    if ($live()) {
+      rev.return();
+    }
   }
   function map(d) {
     const result = d[0];
@@ -233,11 +254,13 @@ function chainSides() {
     );
     w$3$live = false;
   } catch (error) {
-    if (w$3$live) {
-      for (const item of w) {
-        cDrop_drop(item);
+    $cleanup(() => {
+      if (w$3$live) {
+        for (const item of w) {
+          cDrop_drop(item);
+        }
       }
-    }
+    }, error);
     throw error;
   }
   const c = $lazyChain(tmp$1, $closing($iter(w), $dropEach(cDrop_drop)));
@@ -306,14 +329,18 @@ function held() {
       dDrop_drop,
     );
   } catch (error) {
-    it.return();
+    $cleanup(() => {
+      it.return();
+    }, error);
     throw error;
   }
   try {
     const value = nextBack != null ? map(nextBack) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
-    it.return();
+    $cleanup(() => {
+      it.return();
+    }, error);
     throw error;
   }
   let next;
@@ -325,14 +352,18 @@ function held() {
   try {
     next = $next(it);
   } catch (error) {
-    it.return();
+    $cleanup(() => {
+      it.return();
+    }, error);
     throw error;
   }
   try {
     const value = next != null ? map$1(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
-    it.return();
+    $cleanup(() => {
+      it.return();
+    }, error);
     throw error;
   }
   console.log(
@@ -441,8 +472,12 @@ function held() {
     }
     const value$1 = rfind != null ? map$1(rfind) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
   held = $taking(
     $closing($iter(ds((value) => [value], dDrop_drop)), $dropEach(dDrop_drop)),
@@ -459,8 +494,12 @@ function held() {
     }
     const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    rev.return();
+    if ($live()) {
+      rev.return();
+    }
   }
   held = $skipping(
     $closing($iter(ds((value) => [value], dDrop_drop)), $dropEach(dDrop_drop)),
@@ -470,8 +509,12 @@ function held() {
   const value = $held($rev(held));
   try {
     console.log(`${value.len()}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value.return();
+    if ($live()) {
+      value.return();
+    }
   }
   let r = $held(
     iterator_rev(
@@ -562,8 +605,12 @@ function held() {
     }
     const value$1 = nextBack != null ? map$1(nextBack) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    r.return();
+    if ($live()) {
+      r.return();
+    }
   }
   r = $held(
     iterator_rev(
@@ -650,8 +697,12 @@ function held() {
     }
     const value$1 = nextBack != null ? map$1(nextBack) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    r.return();
+    if ($live()) {
+      r.return();
+    }
   }
   const v = [1, 2, 3, 4, 5];
   held = $taking($iter(v), 3);

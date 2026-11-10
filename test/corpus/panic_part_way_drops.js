@@ -6,6 +6,7 @@ import {
   $advanceSlice,
   $btreeSet,
   $catchUnwind,
+  $cleanup,
   $closing,
   $cmp,
   $collectDropping,
@@ -30,6 +31,7 @@ import {
   $lazyTakeWhile,
   $lazyZip,
   $lent,
+  $live,
   $mapFrom,
   $maxBy,
   $maxByKey,
@@ -46,6 +48,7 @@ import {
   $sortedEntries,
   $sortedKeys,
   $treeFrom,
+  $unwindsOn,
   iterator_map,
   iterator_zip,
 } from "@rust-js/std";
@@ -98,9 +101,11 @@ function main() {
     try {
       x = $findDropping($lent(value), (d) => boom(d, 2), dDrop_drop, false);
     } catch (error) {
-      for (const item of value) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of value) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     try {
@@ -108,9 +113,13 @@ function main() {
         dDrop_drop(item);
       }
       console.log(`${x != null}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      if (x != null) {
-        dDrop_drop(x);
+      if ($live()) {
+        if (x != null) {
+          dDrop_drop(x);
+        }
       }
     }
   });
@@ -121,13 +130,21 @@ function main() {
       x = $position($lent(value), (d) => {
         try {
           return boom(d, 12);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       });
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of value) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of value) {
+          dDrop_drop(item);
+        }
       }
     }
     console.log(`${x == null ? "None" : `Some(${x})`}`);
@@ -139,13 +156,21 @@ function main() {
       x = $lent(value).some((d) => {
         try {
           return boom(d, 22);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       });
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of value) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of value) {
+          dDrop_drop(item);
+        }
       }
     }
     console.log(`${x}`);
@@ -157,14 +182,22 @@ function main() {
       x = $lent(value).every((d) => {
         try {
           const value = boom(d, 32);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
         return true;
       });
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of value) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of value) {
+          dDrop_drop(item);
+        }
       }
     }
     console.log(`${x}`);
@@ -204,9 +237,13 @@ function main() {
       for (const item of b) {
         dDrop_drop(item);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of a) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of a) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -219,7 +256,9 @@ function main() {
         try {
           inspect(item);
         } catch (error) {
-          dDrop_drop(item);
+          $cleanup(() => {
+            dDrop_drop(item);
+          }, error);
           throw error;
         }
         return item;
@@ -304,7 +343,9 @@ function main() {
         try {
           inspect(item);
         } catch (error) {
-          dDrop_drop(item);
+          $cleanup(() => {
+            dDrop_drop(item);
+          }, error);
           throw error;
         }
         return item;
@@ -324,7 +365,9 @@ function main() {
           try {
             boom(d, 112);
           } catch (error) {
-            dDrop_drop(d);
+            $cleanup(() => {
+              dDrop_drop(d);
+            }, error);
             throw error;
           }
           return [d[0], d];
@@ -350,7 +393,9 @@ function main() {
         try {
           boom(d, 121);
         } catch (error) {
-          dDrop_drop(d);
+          $cleanup(() => {
+            dDrop_drop(d);
+          }, error);
           throw error;
         }
         return [d[0], d];
@@ -369,7 +414,9 @@ function main() {
         try {
           boom(d, 132);
         } catch (error) {
-          dDrop_drop(d);
+          $cleanup(() => {
+            dDrop_drop(d);
+          }, error);
           throw error;
         }
         return { TAG: "Ok", _0: d };
@@ -390,7 +437,9 @@ function main() {
         try {
           boom(d, 142);
         } catch (error) {
-          dDrop_drop(d);
+          $cleanup(() => {
+            dDrop_drop(d);
+          }, error);
           throw error;
         }
         return d;
@@ -423,8 +472,12 @@ function main() {
         try {
           boom(d, 172);
           return d[0];
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       })
       .reduce((a, b) => (a + b) >>> 0, 0);
@@ -437,9 +490,11 @@ function main() {
       try {
         d = $next(iter);
       } catch (error) {
-        for (const item of iter) {
-          dDrop_drop(item);
-        }
+        $cleanup(() => {
+          for (const item of iter) {
+            dDrop_drop(item);
+          }
+        }, error);
         throw error;
       }
       if (d == null) {
@@ -448,16 +503,19 @@ function main() {
         }
         return;
       }
+      const d$1 = d;
       try {
-        boom(d, 182);
+        boom(d$1, 182);
       } catch (error) {
-        dDrop_drop(d);
-        for (const item of iter) {
-          dDrop_drop(item);
-        }
+        $cleanup(() => {
+          dDrop_drop(d$1);
+          for (const item of iter) {
+            dDrop_drop(item);
+          }
+        }, error);
         throw error;
       }
-      dDrop_drop(d);
+      dDrop_drop(d$1);
     }
   });
   run("chain", () => {
@@ -466,9 +524,11 @@ function main() {
     try {
       tmp = ds({ start: 193, end: 195 });
     } catch (error) {
-      for (const item of value) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of value) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     function inspect(d) {
@@ -482,7 +542,9 @@ function main() {
         try {
           inspect(item);
         } catch (error) {
-          dDrop_drop(item);
+          $cleanup(() => {
+            dDrop_drop(item);
+          }, error);
           throw error;
         }
         return item;
@@ -504,7 +566,9 @@ function main() {
         try {
           inspect(item);
         } catch (error) {
-          dDrop_drop(item);
+          $cleanup(() => {
+            dDrop_drop(item);
+          }, error);
           throw error;
         }
         return item;
@@ -525,7 +589,9 @@ function main() {
           try {
             boom(d, 212);
           } catch (error) {
-            dDrop_drop(d);
+            $cleanup(() => {
+              dDrop_drop(d);
+            }, error);
             throw error;
           }
           return [i, d];
@@ -547,8 +613,12 @@ function main() {
           boom(d, 222);
           s.value = (s.value + d[0]) >>> 0;
           return s.value;
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       }),
     );
@@ -562,7 +632,9 @@ function main() {
           try {
             boom(d, 232);
           } catch (error) {
-            dDrop_drop(d);
+            $cleanup(() => {
+              dDrop_drop(d);
+            }, error);
             throw error;
           }
           return d;
@@ -599,8 +671,12 @@ function main() {
         try {
           boom(d, 2);
           return [(d[0] + 100) >>> 0];
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       },
       { next: $next, advanceBy: $advanceSlice },
@@ -613,7 +689,9 @@ function main() {
     try {
       tmp = ds({ start: 10, end: 14 });
     } catch (error) {
-      value.return();
+      $cleanup(() => {
+        value.return();
+      }, error);
       throw error;
     }
     const iter = iterator_zip(
@@ -648,8 +726,12 @@ function main() {
         },
         true,
       );
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      iter.return();
+      if ($live()) {
+        iter.return();
+      }
     }
     const x = result;
     console.log(`${x.length}`);
@@ -667,7 +749,9 @@ function main() {
         try {
           inspect$1(item);
         } catch (error) {
-          dDrop_drop(item);
+          $cleanup(() => {
+            dDrop_drop(item);
+          }, error);
           throw error;
         }
         return item;
@@ -677,7 +761,9 @@ function main() {
     try {
       tmp = ds({ start: 230, end: 234 });
     } catch (error) {
-      inspect.return();
+      $cleanup(() => {
+        inspect.return();
+      }, error);
       throw error;
     }
     const x = $collectDropping(
@@ -705,7 +791,9 @@ function main() {
           try {
             inspect(item);
           } catch (error) {
-            dDrop_drop(item);
+            $cleanup(() => {
+              dDrop_drop(item);
+            }, error);
             throw error;
           }
           return item;
@@ -732,7 +820,9 @@ function main() {
           try {
             inspect(item);
           } catch (error) {
-            dDrop_drop(item);
+            $cleanup(() => {
+              dDrop_drop(item);
+            }, error);
             throw error;
           }
           return item;
@@ -755,7 +845,9 @@ function main() {
         try {
           inspect(item);
         } catch (error) {
-          dDrop_drop(item);
+          $cleanup(() => {
+            dDrop_drop(item);
+          }, error);
           throw error;
         }
         return item;
@@ -778,7 +870,9 @@ function main() {
         try {
           inspect(item);
         } catch (error) {
-          dDrop_drop(item);
+          $cleanup(() => {
+            dDrop_drop(item);
+          }, error);
           throw error;
         }
         return item;
@@ -798,7 +892,9 @@ function main() {
         try {
           boom(d, 62);
         } catch (error) {
-          dDrop_drop(d);
+          $cleanup(() => {
+            dDrop_drop(d);
+          }, error);
           throw error;
         }
         return { TAG: "Ok", _0: [1, d] };
@@ -824,7 +920,9 @@ function main() {
           try {
             boom(d, 72);
           } catch (error) {
-            dDrop_drop(d);
+            $cleanup(() => {
+              dDrop_drop(d);
+            }, error);
             throw error;
           }
           let result;
@@ -862,16 +960,22 @@ function main() {
           try {
             inspect(item);
           } catch (error) {
-            dDrop_drop(item);
+            $cleanup(() => {
+              dDrop_drop(item);
+            }, error);
             throw error;
           }
           return item;
         }),
       );
       console.log(`${v.length}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of v) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of v) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -880,8 +984,12 @@ function main() {
       $closing($iter(ds({ start: 90, end: 94 })), $dropEach(dDrop_drop)).map((d) => {
         try {
           boom(d, 92);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
         return "x";
       }),
@@ -894,8 +1002,12 @@ function main() {
         try {
           boom(d, 112);
           return d[0];
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       })
       .reduce((a, b) => (a + b) >>> 0, 0);
@@ -906,8 +1018,12 @@ function main() {
       try {
         boom(d, 132);
         console.log(`saw ${d[0]}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(d);
+        if ($live()) {
+          dDrop_drop(d);
+        }
       }
     });
   });
@@ -920,7 +1036,9 @@ function main() {
         try {
           inspect(item);
         } catch (error) {
-          dDrop_drop(item);
+          $cleanup(() => {
+            dDrop_drop(item);
+          }, error);
           throw error;
         }
         return item;
@@ -941,8 +1059,12 @@ function main() {
             throw new Error("1");
           }
           return [d[0], d[0]];
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       }),
     );
@@ -957,8 +1079,12 @@ function main() {
             throw new Error("11");
           }
           return d[0];
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       },
       { next: $next, advanceBy: $advanceSlice },
@@ -983,7 +1109,9 @@ function main() {
         dDrop_drop,
       );
     } catch (error) {
-      value.return();
+      $cleanup(() => {
+        value.return();
+      }, error);
       throw error;
     }
     const iter = iterator_zip(
@@ -1012,8 +1140,12 @@ function main() {
     let result;
     try {
       result = $foldToArray($roomForHint(iter, 8, true));
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      iter.return();
+      if ($live()) {
+        iter.return();
+      }
     }
     const out = result;
     console.log(`[${out.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
@@ -1026,8 +1158,12 @@ function main() {
             throw new Error("32");
           }
           return String.fromCharCode((97 + (d[0] % 26)) & 255);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       }),
     ).join("");
@@ -1082,9 +1218,11 @@ function main() {
     try {
       next = $next(it);
     } catch (error) {
-      for (const item of it) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of it) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     try {
@@ -1092,9 +1230,11 @@ function main() {
         dDrop_drop(next);
       }
     } catch (error) {
-      for (const item of it) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of it) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     const x = $maxByKey(
@@ -1118,9 +1258,11 @@ function main() {
     try {
       next = $next(it);
     } catch (error) {
-      for (const item of it) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of it) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     try {
@@ -1128,9 +1270,11 @@ function main() {
         dDrop_drop(next);
       }
     } catch (error) {
-      for (const item of it) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of it) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     const [a, b] = $partition($closing(it, $dropEach(dDrop_drop)), (d) => boom(d, 912), dDrop_drop);
@@ -1139,9 +1283,13 @@ function main() {
       for (const item of b) {
         dDrop_drop(item);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of a) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of a) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -1151,9 +1299,11 @@ function main() {
     try {
       next = $next(it);
     } catch (error) {
-      for (const item of it) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of it) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     try {
@@ -1161,9 +1311,11 @@ function main() {
         dDrop_drop(next);
       }
     } catch (error) {
-      for (const item of it) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of it) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     const x = $minBy(
@@ -1197,9 +1349,13 @@ function main() {
       if (x != null) {
         dDrop_drop(x);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of it) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of it) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -1239,16 +1395,24 @@ function main() {
         for (const item of b) {
           cDrop_drop(item);
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of a) {
-          cDrop_drop(item);
+        if ($live()) {
+          for (const item of a) {
+            cDrop_drop(item);
+          }
         }
       }
     });
     console.log(`${cs.length}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of cs) {
-      cDrop_drop(item);
+    if ($live()) {
+      for (const item of cs) {
+        cDrop_drop(item);
+      }
     }
   }
 }

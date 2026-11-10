@@ -6198,7 +6198,7 @@ export function $force(lazy) {
 export function $forceLock(lazy) {
   const init = lazy.init;
   if (init !== undefined) {
-    if (init === null) throw new Error("rust-js does not support a `LazyLock` whose init uses it, which deadlocks in Rust");
+    if (init === null) throw $unsupported("rust-js does not support a `LazyLock` whose init uses it, which deadlocks in Rust");
     lazy.init = null;
     lazy.value = init();
     lazy.init = undefined;
@@ -6634,7 +6634,7 @@ export const $objects = new WeakMap();
 
 export function $ptrTo(object) {
   if (object === null || (typeof object !== "object" && typeof object !== "function")) {
-    throw new Error("rust-js does not support a pointer to a value JS holds as itself, a copy, which reads memory by where it is");
+    throw $unsupported("rust-js does not support a pointer to a value JS holds as itself, a copy, which reads memory by where it is");
   }
   let handle = $objects.get(object);
   if (handle === undefined) {
@@ -6663,7 +6663,7 @@ export function $ptrAdd(pointer, count) {
     return $byteView({ ...pointer, at: pointer.at + count * pointer.width });
   }
   if (pointer === null || !Array.isArray(pointer.of) || pointer.addr !== undefined || pointer.offset !== undefined) {
-    throw new Error("rust-js does not support stepping a pointer that isn't into an array, which reads memory by where it is");
+    throw $unsupported("rust-js does not support stepping a pointer that isn't into an array, which reads memory by where it is");
   }
   return $ptr(pointer.of, pointer.at + count);
 }
@@ -6676,7 +6676,7 @@ export function $ptrOffsetFrom(p, q) {
     return (p.at - q.at) / p.width;
   }
   if (p.of !== q.of || !Array.isArray(p.of) || p.offset !== undefined || q.offset !== undefined) {
-    throw new Error("rust-js does not support the distance between pointers to two places, which reads memory by where it is");
+    throw $unsupported("rust-js does not support the distance between pointers to two places, which reads memory by where it is");
   }
   return p.at - q.at;
 }
@@ -6811,7 +6811,7 @@ export const $outers = new WeakMap();
 
 export function $ptrOuter(object, within) {
   if (object === null || typeof object !== "object") {
-    throw new Error("rust-js does not support a pointer to an `Option` that holds nothing, reached by a reference or a box, which JS holds as `undefined`, no place (#1132): point at it where it's stored, `&raw const o` of the variable or field");
+    throw $unsupported("rust-js does not support a pointer to an `Option` that holds nothing, reached by a reference or a box, which JS holds as `undefined`, no place (#1132): point at it where it's stored, `&raw const o` of the variable or field");
   }
   if (within === 0) return $ptrTo(object);
   let handles = $outers.get(object);
@@ -6898,7 +6898,7 @@ export function $addresses(allocation, bytes) {
   if (range === undefined) {
     const length = Math.max(4096, Math.ceil((bytes + $outerRoom) / 4096) * 4096);
     if ($nextBase + length > 0x1_0000_0000) {
-      throw new Error("rust-js does not support more addresses than wasm32 has: the address space is used up");
+      throw $unsupported("rust-js does not support more addresses than wasm32 has: the address space is used up");
     }
     range = { base: $nextBase, end: $nextBase + length, of: allocation, stride: undefined };
     $nextBase += length;
@@ -6933,7 +6933,7 @@ export function $offsetIn(pointer, range) {
   if (offset === undefined && Array.isArray(pointer.of) && typeof pointer.at === "number") {
     return (pointer.at === 0 ? 0 : pointer.at * range.stride) + (pointer.within ?? 0);
   }
-  throw new Error("rust-js does not support the address of a field of a type its caller lays out, which reads memory by where it is");
+  throw $unsupported("rust-js does not support the address of a field of a type its caller lays out, which reads memory by where it is");
 }
 
 // `inner`: asked on the way to another place's, a container's or a root's,
@@ -6942,7 +6942,7 @@ export function $offsetIn(pointer, range) {
 export function $addr(pointer, size, inner) {
   if (pointer === null) return 0;
   if (typeof pointer !== "object" && typeof pointer !== "function") {
-    throw new Error("rust-js does not support the address of a value JS holds as itself, a copy, which reads memory by where it is");
+    throw $unsupported("rust-js does not support the address of a value JS holds as itself, a copy, which reads memory by where it is");
   }
   if (pointer.addr !== undefined) return pointer.addr;
   if (pointer.bytes !== undefined && pointer.opaque) return $addr(pointer.typed, size, inner);
@@ -6952,7 +6952,7 @@ export function $addr(pointer, size, inner) {
   // allocation's base that `$addresses` keeps (#1114).
   if (pointer.outer !== undefined) {
     if (pointer.outer > $outerRoom) {
-      throw new Error("rust-js does not support the address of what holds an object this far before it, which reads memory by where it is");
+      throw $unsupported("rust-js does not support the address of what holds an object this far before it, which reads memory by where it is");
     }
     const addr = $addr($ptrTo(pointer.of), 0, true) - pointer.outer;
     if (!inner) $exposedPlaces.set(addr, pointer);
@@ -7026,11 +7026,11 @@ export function $ptrNone(addr, provenance, size, zero) {
     provenance,
     get value() {
       if (size === 0) return zero;
-      throw new Error(`rust-js does not support reading through a pointer to no place, at 0x${addr.toString(16)}, which reads memory by where it is`);
+      throw $unsupported(`rust-js does not support reading through a pointer to no place, at 0x${addr.toString(16)}, which reads memory by where it is`);
     },
     set value(value) {
       if (size === 0) return;
-      throw new Error(`rust-js does not support writing through a pointer to no place, at 0x${addr.toString(16)}, which reads memory by where it is`);
+      throw $unsupported(`rust-js does not support writing through a pointer to no place, at 0x${addr.toString(16)}, which reads memory by where it is`);
     },
   };
 }
@@ -7168,7 +7168,7 @@ export function $ptrCopy(src, dst, count, copy) {
     return;
   }
   if (!Array.isArray(src.of) || !Array.isArray(dst.of)) {
-    throw new Error("rust-js does not support copying items but between arrays, which reads memory by where it is");
+    throw $unsupported("rust-js does not support copying items but between arrays, which reads memory by where it is");
   }
   if (src.of === dst.of && copy === undefined && Math.max(src.at, dst.at) + count <= src.of.length) {
     src.of.copyWithin(dst.at, src.at, src.at + count);
@@ -7208,11 +7208,11 @@ export function $ptrSliceMut(pointer, count) {
       $allocUsed(pointer, "bytes");
       return $view(pointer.of, pointer.at, pointer.at + count);
     }
-    throw new Error("rust-js does not support a mutable slice of another type's bytes, which reads memory by where it is");
+    throw $unsupported("rust-js does not support a mutable slice of another type's bytes, which reads memory by where it is");
   }
   const [items, start] = $ptrItems(pointer, count);
   if (start + count > items.length && $spares.has(items)) {
-    throw new Error("rust-js does not support a mutable slice past a vector's length, over what's left there, which reads memory by where it is");
+    throw $unsupported("rust-js does not support a mutable slice past a vector's length, over what's left there, which reads memory by where it is");
   }
   return start === 0 && count === items.length ? items : $view(items, start, start + count);
 }
@@ -7223,7 +7223,7 @@ export function $ptrItems(pointer, count) {
   if (Array.isArray(pointer.of)) return [pointer.of, pointer.at];
   if (count === 0 && pointer.addr !== undefined) return [$emptyAt(pointer.addr), 0];
   if (count <= 1) return [count === 0 ? [] : [pointer.value], 0];
-  throw new Error("rust-js does not support a slice of items that aren't an array's, which reads memory by where it is");
+  throw $unsupported("rust-js does not support a slice of items that aren't an array's, which reads memory by where it is");
 }
 
 // A pointer to an array's first item, as one to the whole of it, of
@@ -7231,13 +7231,13 @@ export function $ptrItems(pointer, count) {
 // item, or of fewer, it would be memory by where it is.
 export function $ptrWhole(pointer, length) {
   if (Array.isArray(pointer.of) && pointer.at === 0 && pointer.of.length === length) return $ptrTo(pointer.of);
-  throw new Error("rust-js does not support a pointer to part of an array as one to an array, which reads memory by where it is");
+  throw $unsupported("rust-js does not support a pointer to part of an array as one to an array, which reads memory by where it is");
 }
 
 // A pointer as one to another type, in generic code where whether JS has it
 // at the same place depends on the type, which reads memory by where it is.
 export function $ptrRecast(pointer) {
-  throw new Error("rust-js does not support a pointer read as another type's, which reads memory by where it is");
+  throw $unsupported("rust-js does not support a pointer read as another type's, which reads memory by where it is");
 }
 
 // A whole array's pointer as one to its first item, of a type parameter's
@@ -7274,14 +7274,14 @@ export function $byteView(view) {
   return Object.defineProperty(view, "value", {
     get() {
       if (this.opaque) {
-        throw new Error("rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type");
+        throw $unsupported("rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type");
       }
       if (this.signed === "bytes") return Array.from({ length: this.width }, (_, i) => $byteAt(this, i));
       return $readInt(this, this.width, this.signed);
     },
     set(value) {
       if (this.opaque) {
-        throw new Error("rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type");
+        throw $unsupported("rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type");
       }
       if (this.signed === "bytes") {
         for (let i = 0; i < this.width; i++) $byteSet(this, i, value[i]);
@@ -7323,7 +7323,7 @@ export function $allocUsed(view, use) {
   const used = $allocUses.get(view.of);
   if (used === undefined) $allocUses.set(view.of, use);
   else if (used !== use) {
-    throw new Error("rust-js does not support an allocation's bytes and its items of another type both, which reads memory by where it is");
+    throw $unsupported("rust-js does not support an allocation's bytes and its items of another type both, which reads memory by where it is");
   }
 }
 
@@ -7383,7 +7383,7 @@ export function $ptrTyped(view) {
   // item that is its type's size says, which JS hasn't here.
   if (view.allocated !== undefined) {
     if (view.at !== 0) {
-      throw new Error("rust-js does not support a pointer into an allocation's bytes as one to another type, which reads memory by where it is");
+      throw $unsupported("rust-js does not support a pointer into an allocation's bytes as one to another type, which reads memory by where it is");
     }
     $allocUsed(view, "items");
     return view.typed;
@@ -7391,7 +7391,7 @@ export function $ptrTyped(view) {
   if (view.typed !== undefined && view.at === view.typed.at * view.stride) return view.typed;
   if (view.plain !== undefined && view.at === 0) return view.plain;
   if (view.of !== undefined && view.at % view.stride === 0) return $ptr(view.of, view.at / view.stride);
-  throw new Error("rust-js does not support bytes read as another type's, which reads memory by where it is");
+  throw $unsupported("rust-js does not support bytes read as another type's, which reads memory by where it is");
 }
 
 // A counted `Rc` or `Arc` (ADR 0320): `{ value, strong, weak }`, which each
@@ -9094,7 +9094,7 @@ export function $showLocked(cell, show, name, exclusive) {
 }
 
 export function $deadlock() {
-  throw new Error("rust-js does not support locking a lock its thread holds, which deadlocks in Rust");
+  throw $unsupported("rust-js does not support locking a lock its thread holds, which deadlocks in Rust");
 }
 
 // A `RefCell<C>` as a `RefCell<dyn T>` (ADR 0397): the same cell, given the
@@ -9112,7 +9112,7 @@ export function $dynCell(cell, impl) {
 // error where it's shown, as only an assertion that fails may show one
 // (ADR 0331).
 export function $typeIdShown() {
-  throw new Error("rust-js does not support showing a `TypeId`'s hash, which it doesn't keep");
+  throw $unsupported("rust-js does not support showing a `TypeId`'s hash, which it doesn't keep");
 }
 
 // `Cell::from_mut` of a `&mut` to an object, an array's or a struct's: a
@@ -9134,7 +9134,7 @@ export function $cellOf(object) {
 export function $getOrInitLock(cell, f) {
   if (cell.value === undefined) {
     const value = f();
-    if (cell.value !== undefined) throw new Error("rust-js does not support a `OnceLock` whose init sets it, which deadlocks in Rust");
+    if (cell.value !== undefined) throw $unsupported("rust-js does not support a `OnceLock` whose init sets it, which deadlocks in Rust");
     cell.value = $some(value);
   }
   return $someValue(cell.value);
@@ -11029,11 +11029,11 @@ export function $debugLayout(layout) {
 export function $vecFromRaw(pointer, length) {
   // Of bytes, a `Vec<u8>`'s alone, whose items are the bytes' slots.
   if (pointer?.bytes !== undefined && (pointer.width !== 1 || pointer.signed !== false || pointer.stride !== 1)) {
-    throw new Error("rust-js does not support a `Vec` of what isn't an array's first item, which reads memory by where it is");
+    throw $unsupported("rust-js does not support a `Vec` of what isn't an array's first item, which reads memory by where it is");
   }
   if (pointer?.bytes !== undefined) $allocUsed(pointer, "bytes");
   if (pointer === null || !Array.isArray(pointer.of) || pointer.at !== 0) {
-    throw new Error("rust-js does not support a `Vec` of what isn't an array's first item, which reads memory by where it is");
+    throw $unsupported("rust-js does not support a `Vec` of what isn't an array's first item, which reads memory by where it is");
   }
   $setLen(pointer.of, length);
   return pointer.of;
@@ -11075,14 +11075,14 @@ export const $unknownCapacity = -1;
 
 // `v.capacity()` of items of `size` bytes: of items of no size, std's
 // `usize::MAX`, as many as fit, whatever it was given; of one whose growth
-// wasn't kept, an error naming #1180, never another number, and no panic,
-// which no `catch_unwind` takes for the program's (`$InternalError`, the
+// wasn't kept, a refusal naming #1180, never another number, and no panic,
+// which no `catch_unwind` takes for the program's (`$unsupported`, the
 // user's decision, #1180).
 export function $capacity(v, size) {
   if (size === 0) return 2 ** 32 - 1;
   const kept = $capacities.get(v);
   if (kept === $unknownCapacity) {
-    throw new $InternalError("this `Vec`'s capacity isn't known to rust-js: std's growth of it wasn't kept (#1180)");
+    throw $unsupported("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep: a collect std may make in place, a string's bytes, or items whose size no caller gives (#1180)");
   }
   return Math.max(v.length, kept ?? 0);
 }
@@ -11380,7 +11380,7 @@ export function $grownBy(v, items, size, deque = false, drop, own = false) {
       const step = it.next();
       if (step.done) return step;
       if ($capacityUnknown(v)) {
-        if (own) throw new $InternalError("this `Vec`'s capacity, by which its `extend` asks its hint, isn't known to rust-js: std's growth of it wasn't kept (#1180)");
+        if (own) throw $unsupported("rust-js does not support an `extend` that asks the crate's own hint as a `Vec` fills, of a `Vec` whose growth it didn't keep (#1180)");
         first = false;
         return step;
       }
@@ -17000,15 +17000,51 @@ export function $unwinding(payload) {
 }
 
 // `catch_unwind(f)`: `Ok` of what `f()` gives, or `Err` of what unwound;
-// never of an abort, which no `catch_unwind` catches (#847), nor of the
-// runtime's own bug, which no Rust program's panic is (#870).
+// never of what `$catchable` throws on (#847, #870, #1193).
 export function $catchUnwind(f) {
   try {
     return { TAG: "Ok", _0: f() };
   } catch (e) {
-    if (e instanceof $Abort || e instanceof $InternalError) throw e;
+    $catchable(e);
     return { TAG: "Err", _0: $unwound(e) };
   }
+}
+
+// What no `catch_unwind` catches, thrown on, `$catchUnwind`'s and the
+// inline one's `catch (error) { $catchable(error); .. }`: an abort (#847),
+// the runtime's own bug (#870), what rust-js doesn't support as it runs
+// (`$Unsupported`); and a stack overflow, which Rust aborts the process of
+// (`$overflowed`, #1193).
+export function $catchable(e) {
+  if (e instanceof RangeError || e?.name === "InternalError") $suspect = e;
+  if (e instanceof $Abort) $abortEnds();
+  if ($endsTheProgram(e)) throw e;
+  if ($isStackOverflow(e)) throw $overflowed(e);
+}
+
+// Whether `e`, thrown, ends the program, never unwound as a panic: an
+// abort, the runtime's own bug, or what rust-js doesn't support as it runs.
+export function $endsTheProgram(e) {
+  return e instanceof $Abort || e instanceof $InternalError || e instanceof $Unsupported;
+}
+
+// `e`, thrown on through a scope whose drops run the crate's code, `try {
+// .. } catch (error) { throw $unwindsOn(error); } finally { drops }`: of a
+// stack overflow, Rust's abort first, so no drop runs, as Rust's runs none
+// (#1193).
+//
+// It's the first call a stack overflow's deepest frame makes, where there's
+// little room: so first, before it calls anything, what may be one is
+// kept, `$suspect`, which that frame's `finally` reads (`$live`), as small
+// a call, where this one had no room to say more.
+export let $suspect;
+export function $unwindsOn(e) {
+  if (e instanceof RangeError || e?.name === "InternalError") $suspect = e;
+  return $unwindsOnTold(e);
+}
+export function $unwindsOnTold(e) {
+  if (e instanceof $Abort) $abortEnds();
+  return $isStackOverflow(e) ? $overflowed(e) : e;
 }
 
 // What a panic runs as it unwinds, Rust's cleanup: the drops of what the
@@ -17016,15 +17052,56 @@ export function $catchUnwind(f) {
 // another panic unwinds, aborts the process, as Rust's does (#847, ADR 0660
 // amended): the one place it's decided, which the lowering's cleanups and
 // the runtime's (`$dropsUnwinding`) both call. Once aborted, as in a
-// browser, which `$abort` can't end, nothing more runs as it unwinds.
-export function $cleanup(run) {
-  if ($aborted) return;
+// browser, which `$abort` can't end, nothing more runs as it unwinds. Of
+// what unwinds, `e`, where it's given: none of it of what ends the program
+// (`$endsTheProgram`), and of a stack overflow, Rust's abort first (#1193).
+export function $cleanup(run, e) {
+  if (!$live()) return;
+  if (e !== undefined) {
+    if ($endsTheProgram(e)) return;
+    if ($isStackOverflow(e)) throw $overflowed(e);
+  }
   try {
     run();
   } catch (second) {
-    if (second instanceof $InternalError) throw second;
+    if (second instanceof $InternalError || second instanceof $Unsupported) throw second;
     throw $abort(second);
   }
+}
+
+// What rust-js doesn't support as the program runs, where Rust's runs on:
+// `$unsupported("rust-js does not support ..")`'s, the one form of a
+// refusal at run time, which no `catch_unwind` takes for a panic and no
+// cleanup runs drops past, as it ends the program (#1132, #1180).
+export class $Unsupported extends Error {}
+export function $unsupported(message) {
+  return new $Unsupported(message);
+}
+
+// Whether `e`, thrown, is the engine's stack overflow, which Rust's would
+// be an abort of (#1193): what it threw of its own when the runtime once
+// overflowed its stack on purpose, of the same constructor and message,
+// asked first of a `RangeError`, V8's and JavaScriptCore's, or an
+// `InternalError`, SpiderMonkey's, never of a panic; another `RangeError`,
+// an array's length, is another message.
+export let $overflowSeen;
+export function $isStackOverflow(e) {
+  if (!(e instanceof RangeError || e?.name === "InternalError")) return false;
+  if ($overflowSeen === undefined) {
+    const deep = () => deep() + 1;
+    try {
+      deep();
+    } catch (overflow) {
+      $overflowSeen = { constructor: overflow?.constructor, message: overflow?.message };
+    }
+  }
+  return e.constructor === $overflowSeen?.constructor && e.message === $overflowSeen?.message;
+}
+
+// The process ended by Rust's abort of a stack overflow, `cause`: std's
+// lines to stderr, then exit 134, as a shell gives a SIGABRT (#1193).
+export function $overflowed(cause) {
+  return $abort(cause, "\nthread 'main' has overflowed its stack\nfatal runtime error: stack overflow, aborting\n", "stack overflow");
 }
 
 // The process ended by Rust's abort, of `cause`, a drop's panic while
@@ -17032,14 +17109,67 @@ export function $cleanup(run) {
 // SIGABRT, where the host has a process. A browser has none, so what's
 // thrown is a `$Abort`, which `$catchUnwind` and the runtime throw on, but a
 // `catch_unwind` lowered to JS's own `try` catches (ADR 0660's limit).
+// What it says, then the exit, are tried again as it unwinds, by each
+// guard it passes (`$abortEnds`), where the stack had no room for them
+// where it began, a stack overflow's deepest frame (#1193).
 export let $aborted = false;
+export let $abortSaid;
 export class $Abort extends Error {}
-export function $abort(cause) {
-  if (cause instanceof $Abort) return cause;
+export function $abort(cause, said = "thread caused non-unwinding panic. aborting.\n", why = "panic in a destructor during cleanup") {
+  if (cause instanceof $Abort) {
+    $abortEnds();
+    return cause;
+  }
+  // One abort's: another as it unwinds only ends it.
+  if ($aborted) {
+    $abortEnds();
+    return new $Abort(why, { cause });
+  }
   $aborted = true;
-  $eprint("thread caused non-unwinding panic. aborting.\n");
-  $abortExit(134);
-  return new $Abort("panic in a destructor during cleanup", { cause });
+  $abortSaid = said;
+  $abortEnds();
+  return new $Abort(why, { cause });
+}
+
+// An abort's line said, once, then the exit: where the stack has no room
+// for them yet, as it unwinds, a guard further out tries again.
+export function $abortEnds() {
+  if ($abortSaid === undefined) return;
+  try {
+    if ($abortSaid !== "") {
+      $eprint($abortSaid);
+      $abortSaid = "";
+    }
+    $abortExit(134);
+    // A host with no process to end, a browser's: ended as far as it goes.
+    $abortSaid = undefined;
+  } catch {
+    // No room yet: a frame further out ends it.
+  }
+}
+
+// Whether the program goes on, not aborted: a scope's drops a program sees
+// run only so, in a `finally` that runs as an abort unwinds, where the
+// host has no process to end, a browser, or the stack had no room to end
+// it yet (#1193).
+//
+// Of a stack overflow that `$unwindsOn` kept, `$suspect`, where it had no
+// room to abort, the abort, here or further out (#1193).
+export function $live() {
+  if (!$aborted && $suspect === undefined) return true;
+  return $liveTold();
+}
+export function $liveTold() {
+  if ($suspect !== undefined) {
+    const suspect = $suspect;
+    if (!$isStackOverflow(suspect)) {
+      $suspect = undefined;
+      return !$aborted;
+    }
+    $overflowed(suspect);
+  }
+  $abortEnds();
+  return false;
 }
 
 // The runtime's own bug, which no Rust program makes: thrown as it is, never

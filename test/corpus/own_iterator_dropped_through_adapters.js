@@ -14,6 +14,7 @@ import {
   $knowing,
   $last,
   $lent,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
@@ -25,6 +26,7 @@ import {
   $stepBy,
   $taking,
   $tryOf,
+  $unwindsOn,
   fuseDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nthBack,
   fuseDoubleEndedIterator_rfold,
@@ -78,15 +80,19 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       acc = tmp;
     }
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    countDrop_drop(count);
+    if ($live()) {
+      countDrop_drop(count);
+    }
   }
   return result;
 }
@@ -365,8 +371,12 @@ function main() {
   let odd;
   try {
     odd = $nextBack(filter);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    filter.return();
+    if ($live()) {
+      filter.return();
+    }
   }
   const value = $held(
     $filterEnds(
@@ -441,8 +451,12 @@ function main() {
   let fusedOdd;
   try {
     fusedOdd = $nextBack(value);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value.return();
+    if ($live()) {
+      value.return();
+    }
   }
   console.log(
     `${odd == null ? "None" : `Some(${odd})`} ${fusedOdd == null ? "None" : `Some(${fusedOdd})`}`,
@@ -624,8 +638,12 @@ function main() {
   let second;
   try {
     second = $nth($lent(rev), 1);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    rev.return();
+    if ($live()) {
+      rev.return();
+    }
   }
   const value$1 = $held(
     $enumerate(
@@ -640,8 +658,12 @@ function main() {
   let indexed;
   try {
     indexed = Array.from($lent(value$1).drop(1).take(1))[0];
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$1.return();
+    if ($live()) {
+      value$1.return();
+    }
   }
   console.log(
     `${second == null ? "None" : `Some(${second})`} ${indexed == null ? "None" : `Some(${indexed})`}`,
@@ -719,8 +741,12 @@ function main() {
         return result;
       }
       second = nth != null ? map(nth) : undefined;
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      value.return();
+      if ($live()) {
+        value.return();
+      }
     }
     const twice = Array.from(
       $closing($iterator({ at: 0 }, twiceIterator_next), (it) => {
@@ -736,15 +762,21 @@ function main() {
     try {
       head = $next(stepped);
     } catch (error) {
-      stepped.return();
+      $cleanup(() => {
+        stepped.return();
+      }, error);
       throw error;
     }
     const tail = Array.from(stepped);
     console.log(
       `${second == null ? "None" : `Some(${second})`} [${twice.join(", ")}] ${head == null ? "None" : `Some(${head})`} [${tail.join(", ")}] end`,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    countDrop_drop(held);
+    if ($live()) {
+      countDrop_drop(held);
+    }
   }
 }
 //# sourceMappingURL=case.js.map

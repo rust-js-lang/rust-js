@@ -7,6 +7,7 @@ import {
   $dropEach,
   $dropItems,
   $iter,
+  $live,
   $next,
   $nextSome,
   $rcClone,
@@ -15,6 +16,7 @@ import {
   $some,
   $someValue,
   $unborrow,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -51,12 +53,12 @@ function tee(iter, dropI, dropIItem) {
         } catch (error) {
           $cleanup(() => {
             dropI?.(value.iter);
-          });
+          }, error);
           throw error;
         }
         dropI?.(value.iter);
       });
-    });
+    }, error);
     throw error;
   }
   return [t1, t2];
@@ -111,7 +113,7 @@ function teeIterator_next(tee, IIterator, IItemClone, dropI, dropIItem) {
       $cleanup(() => {
         dropIItem?.(elt);
         $unborrow(buffer);
-      });
+      }, error);
       throw error;
     }
     buffer.owner = !tee.id;
@@ -149,15 +151,19 @@ function main() {
           }
           const value = next != null ? map(next) : undefined;
           console.log(`${value == null ? "None" : `Some(${value})`}`);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          $rcDrop(d.rcbuffer, (value) => {
-            for (const item of value.backlog) {
-              loudDrop_drop(item);
-            }
-            for (const item of value.iter) {
-              loudDrop_drop(item);
-            }
-          });
+          if ($live()) {
+            $rcDrop(d.rcbuffer, (value) => {
+              for (const item of value.backlog) {
+                loudDrop_drop(item);
+              }
+              for (const item of value.iter) {
+                loudDrop_drop(item);
+              }
+            });
+          }
         }
         console.log("d dropped");
         const next = teeIterator_next(
@@ -174,15 +180,19 @@ function main() {
         }
         const value = next != null ? map(next) : undefined;
         console.log(`${value == null ? "None" : `Some(${value})`}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        $rcDrop(c.rcbuffer, (value) => {
-          for (const item of value.backlog) {
-            loudDrop_drop(item);
-          }
-          for (const item of value.iter) {
-            loudDrop_drop(item);
-          }
-        });
+        if ($live()) {
+          $rcDrop(c.rcbuffer, (value) => {
+            for (const item of value.backlog) {
+              loudDrop_drop(item);
+            }
+            for (const item of value.iter) {
+              loudDrop_drop(item);
+            }
+          });
+        }
       }
       const [e, f] = tee($iter([undefined, 1]));
       try {

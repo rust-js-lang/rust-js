@@ -6,9 +6,11 @@ import {
   $cmp,
   $debugStr,
   $entry,
+  $live,
   $mutGet,
   $orInsertWithKey,
   $sortedEntries,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -26,8 +28,12 @@ function main() {
       $orInsertWithKey(entry._0[0], entry._0[1], (k) => `${k[1]}-${w}-${i}`);
       const v = $mutGet(entry._0[0], entry._0[1]);
       v.value += "!";
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      console.log(`drop ${w}`);
+      if ($live()) {
+        console.log(`drop ${w}`);
+      }
     }
   }
   const keys = Array.from(m);

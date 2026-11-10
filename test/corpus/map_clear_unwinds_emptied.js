@@ -10,8 +10,10 @@ import {
   $cmp,
   $dropItems,
   $insert,
+  $live,
   $sortedEntries,
   $sortedKeys,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -45,7 +47,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -63,7 +65,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     let d;
@@ -77,7 +79,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -95,7 +97,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     let tmp;
@@ -109,7 +111,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -127,7 +129,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -138,8 +140,12 @@ function main() {
             throw new Error("drop");
           }
         });
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        m.clear();
+        if ($live()) {
+          m.clear();
+        }
       }
     } catch (error) {
       $cleanup(() => {
@@ -149,7 +155,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`${m.size}`);
@@ -170,7 +176,7 @@ function main() {
           $sortedKeys(s, (a, b) => $cmp(a[0], b[0])),
           kDrop_drop,
         );
-      });
+      }, error);
       throw error;
     }
     try {
@@ -181,7 +187,7 @@ function main() {
           $sortedKeys(s, (a, b) => $cmp(a[0], b[0])),
           kDrop_drop,
         );
-      });
+      }, error);
       throw error;
     }
     try {
@@ -192,7 +198,7 @@ function main() {
           $sortedKeys(s, (a, b) => $cmp(a[0], b[0])),
           kDrop_drop,
         );
-      });
+      }, error);
       throw error;
     }
     try {
@@ -201,8 +207,12 @@ function main() {
           $sortedKeys(s, (a, b) => $cmp(a[0], b[0])),
           kDrop_drop,
         );
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        s.clear();
+        if ($live()) {
+          s.clear();
+        }
       }
     } catch (error) {
       $cleanup(() => {
@@ -210,7 +220,7 @@ function main() {
           $sortedKeys(s, (a, b) => $cmp(a[0], b[0])),
           kDrop_drop,
         );
-      });
+      }, error);
       throw error;
     }
     console.log(`${s.size}`);
@@ -232,7 +242,7 @@ function main() {
             throw new Error("drop");
           }
         }
-      });
+      }, error);
       throw error;
     }
     try {
@@ -250,7 +260,7 @@ function main() {
             throw new Error("drop");
           }
         }
-      });
+      }, error);
       throw error;
     }
     try {
@@ -261,8 +271,12 @@ function main() {
             throw new Error("drop");
           }
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        m.clear();
+        if ($live()) {
+          m.clear();
+        }
       }
     } catch (error) {
       $cleanup(() => {
@@ -272,7 +286,7 @@ function main() {
             throw new Error("drop");
           }
         }
-      });
+      }, error);
       throw error;
     }
     console.log(`${m.size}`);
@@ -296,7 +310,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -314,7 +328,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     let d;
@@ -328,7 +342,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -346,7 +360,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     const r = $catchUnwind(() => {
@@ -357,8 +371,12 @@ function main() {
             throw new Error("drop");
           }
         });
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        m.clear();
+        if ($live()) {
+          m.clear();
+        }
       }
     });
     console.log(`${r.TAG === "Ok"} ${m.size}`);
@@ -373,7 +391,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -391,7 +409,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`${m.size}`);
@@ -415,7 +433,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -433,7 +451,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     let d;
@@ -447,7 +465,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -465,7 +483,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -476,8 +494,12 @@ function main() {
             throw new Error("drop");
           }
         });
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        m.clear();
+        if ($live()) {
+          m.clear();
+        }
       }
     } catch (error) {
       $cleanup(() => {
@@ -487,7 +509,7 @@ function main() {
             throw new Error("drop");
           }
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`${m.size}`);

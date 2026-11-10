@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $cmp,
   $heapAppend,
   $heapExtend,
@@ -10,10 +11,12 @@ import {
   $heapPush,
   $heapSorted,
   $iter,
+  $live,
   $next,
   $ord,
   $partialEq,
   $partialOrd,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -70,9 +73,11 @@ function heap(items) {
   try {
     iter = $iter(items);
   } catch (error) {
-    for (const item of h) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of h) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   while (true) {
@@ -80,9 +85,11 @@ function heap(items) {
     try {
       n = $next(iter);
     } catch (error) {
-      for (const item of h) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of h) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     if (n == null) {
@@ -91,9 +98,11 @@ function heap(items) {
     try {
       $heapPush(h, [n], dPartialOrd);
     } catch (error) {
-      for (const item of h) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of h) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
   }
@@ -116,9 +125,13 @@ function main() {
       try {
         $heapPush(h, [9], dPartialOrd);
         console.log(`${h.length}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of h) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of h) {
+            dDrop_drop(item);
+          }
         }
       }
     });
@@ -128,14 +141,22 @@ function main() {
         const top = $heapPop(h, dPartialOrd, false, dDrop_drop);
         try {
           console.log(`${top == null ? "None" : `Some(${dDebug_fmt(top)})`} ${h.length}`);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          if (top != null) {
-            dDrop_drop(top);
+          if ($live()) {
+            if (top != null) {
+              dDrop_drop(top);
+            }
           }
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of h) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of h) {
+            dDrop_drop(item);
+          }
         }
       }
     });
@@ -145,14 +166,22 @@ function main() {
         const top = $heapPop(h, dPartialOrd, false, dDrop_drop);
         try {
           console.log(`${top == null ? "None" : `Some(${dDebug_fmt(top)})`} ${h.length}`);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          if (top != null) {
-            dDrop_drop(top);
+          if ($live()) {
+            if (top != null) {
+              dDrop_drop(top);
+            }
           }
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of h) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of h) {
+            dDrop_drop(item);
+          }
         }
       }
     });
@@ -163,14 +192,22 @@ function main() {
         try {
           $heapAppend(h, o, dPartialOrd);
           console.log(`${h.length} ${o.length}`);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          for (const item of o) {
-            dDrop_drop(item);
+          if ($live()) {
+            for (const item of o) {
+              dDrop_drop(item);
+            }
           }
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of h) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of h) {
+            dDrop_drop(item);
+          }
         }
       }
     });
@@ -179,9 +216,13 @@ function main() {
       try {
         $heapExtend(h, [[2], [5]], dPartialOrd);
         console.log(`${h.length}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of h) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of h) {
+            dDrop_drop(item);
+          }
         }
       }
     });
@@ -190,9 +231,13 @@ function main() {
       const v = $heapSorted(h, dPartialOrd, dDrop_drop);
       try {
         console.log(`[${v.map((item) => dDebug_fmt(item)).join(", ")}]`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of v) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of v) {
+            dDrop_drop(item);
+          }
         }
       }
     });
@@ -218,9 +263,13 @@ function main() {
         }
         const value = top != null ? map(top) : undefined;
         console.log(`${value == null ? "None" : `Some(${value})`} ${h.length}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of h) {
-          dDrop_drop(item.a);
+        if ($live()) {
+          for (const item of h) {
+            dDrop_drop(item.a);
+          }
         }
       }
     });

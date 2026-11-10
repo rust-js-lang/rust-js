@@ -7,6 +7,7 @@ import {
   $eq,
   $intsOrdered,
   $iter,
+  $live,
   $maxBy,
   $ord,
   $ordTreeMap,
@@ -20,6 +21,7 @@ import {
   $sortedEntries,
   $sortedKeys,
   $treeFromSorted,
+  $unwindsOn,
 } from "@rust-js/std";
 
 const noisyPartialOrd = $partialOrd({
@@ -378,29 +380,45 @@ function main() {
   const noisy = biggest([1], [2], noisyOrd, noisyDrop_drop);
   try {
     console.log(`${noisyDebug_fmt(noisy)}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    noisyDrop_drop(noisy);
+    if ($live()) {
+      noisyDrop_drop(noisy);
+    }
   }
   console.log("generic min of a destructor");
   const value$8 = least([3], [3], noisyOrd, noisyDrop_drop);
   try {
     console.log(`${noisyDebug_fmt(value$8)}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    noisyDrop_drop(value$8);
+    if ($live()) {
+      noisyDrop_drop(value$8);
+    }
   }
   console.log("generic clamp of a destructor");
   const value$9 = clamped([9], [4], [6], noisyOrd, noisyDrop_drop);
   try {
     console.log(`${noisyDebug_fmt(value$9)}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    noisyDrop_drop(value$9);
+    if ($live()) {
+      noisyDrop_drop(value$9);
+    }
   }
   console.log("generic own max of a destructor");
   const keeper = biggest([1], [2], keeperOrd, keeperDrop_drop);
   try {
     console.log(`${keeperDebug_fmt(keeper)}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    keeperDrop_drop(keeper);
+    if ($live()) {
+      keeperDrop_drop(keeper);
+    }
   }
   console.log("generic clamp of a char");
   console.log(`${$debugStr(clamped("z", "a", "c", $charsOrdered), "'")}`);

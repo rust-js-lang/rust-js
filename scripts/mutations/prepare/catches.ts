@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     "name": "ignored-try-kept",
     "breaks": "an ignored `$try(() => f())`, `let _ = f();`, stays the helper, not `try { f(); } catch {}`",
     "file": "src/prepare/catches.rs",
-    "find": "            && let Some((call, _)) = e.caught()\n",
-    "replace": "            && let Some((call, _)) = e.caught().filter(|_| false)\n",
+    "find": "            && let Some((call, caught)) = e.caught()\n",
+    "replace": "            && let Some((call, caught)) = e.caught().filter(|_| false)\n",
     "tests": ["test/lowering-bindings.test.ts", "-t", "ignored result of a call"]
   },
   {
@@ -22,16 +22,16 @@ export const mutations: Mutation[] = [
     name: "threw-kept-as-helper",
     breaks: "whether a JS call threw, returned, is `return $try(() => f()).TAG !== \"Ok\";`, not `try { f(); return false; } catch { return true; }`",
     file: "src/prepare/catches.rs",
-    find: "            && let Some((call, of_throw)) = threw(e)\n",
-    replace: "            && let Some((call, of_throw)) = threw(e).filter(|_| false)\n",
+    find: "            && let Some((call, of_throw, kind)) = threw(e)\n",
+    replace: "            && let Some((call, of_throw, kind)) = threw(e).filter(|_| false)\n",
     tests: ["test/bindings.test.ts", "-t", "concat_text of any value"],
   },
   {
     name: "threw-the-other-way",
     breaks: "`is_err()` is `try { f(); return true; } catch { return false; }`, true where it didn't throw",
     file: "src/prepare/catches.rs",
-    find: "    Some((of.caught()?.0, eq != ok))\n",
-    replace: "    Some((of.caught()?.0, eq == ok))\n",
+    find: "    Some((call, eq != ok, caught))\n",
+    replace: "    Some((call, eq == ok, caught))\n",
     tests: ["test/bindings.test.ts", "-t", "concat_text of any value"],
   },
   {
@@ -581,8 +581,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a flag's `try` is placed where the `if` it folds is, after its body, so a comment in the closure before its `false` is above the `try`, not at its end (rd634)",
     file: "src/prepare/catches.rs",
-    find: "    Some(StmtKind::TryCatch(tried, None, caught).at(made.span))\n",
-    replace: "    Some(StmtKind::TryCatch(tried, None, caught).at(tested.span))\n",
+    find: "    Some(StmtKind::TryCatch(tried, binding, caught).at(made.span))\n",
+    replace: "    Some(StmtKind::TryCatch(tried, binding, caught).at(tested.span))\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "flagged catch_unwind"],
   },
   {
@@ -726,5 +726,13 @@ export const mutations: Mutation[] = [
     find: "        (true, Some(binding)) if !closure_said && !binding.span.is_none() && binding.span.lo < tested_at.lo => {\n",
     replace: "        (true, Some(binding)) if !binding.span.is_none() && binding.span.lo < tested_at.lo => {\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "closure's catch_unwind"],
+  },
+  {
+    name: "inline-catch-unwind-catches-all",
+    breaks: "the inline `catch_unwind`'s `catch` takes an abort, what rust-js doesn't support and a stack overflow for a panic (ADR 0660's limit, #1193)",
+    file: "src/prepare/catches.rs",
+    find: "    if caught != js::Caught::Unwound {\n        return (binding, handler);\n",
+    replace: "    if true {\n        return (binding, handler);\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
   },
 ];

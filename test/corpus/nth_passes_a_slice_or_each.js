@@ -68,7 +68,7 @@ function nthOf(it, k, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -77,7 +77,7 @@ function nthOf(it, k, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   dropI?.(it);
@@ -97,7 +97,7 @@ function nthBackOf(it, k, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -106,7 +106,7 @@ function nthBackOf(it, k, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   dropI?.(it);
@@ -126,7 +126,7 @@ function revNthOf(it, k, dropI) {
   } catch (error) {
     $cleanup(() => {
       rev.return();
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -135,7 +135,7 @@ function revNthOf(it, k, dropI) {
   } catch (error) {
     $cleanup(() => {
       rev.return();
-    });
+    }, error);
     throw error;
   }
   rev.return();
@@ -187,7 +187,7 @@ function nthAndLen(it, k, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -196,7 +196,7 @@ function nthAndLen(it, k, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   dropI?.(it);
@@ -230,7 +230,7 @@ function held(name, boom$1, it, f, IExactSizeIterator, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   console.log(`${name} ${value == null ? "None" : `Some(${value})`}, ${arg} left`);
@@ -355,7 +355,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   console.log(`holder ${h.it.end - h.it.at} left`);
@@ -365,7 +365,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -381,7 +381,7 @@ function main() {
     $cleanup(() => {
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   console.log(`holder ${h$1.it.end - h$1.it.at} left`);
@@ -392,7 +392,7 @@ function main() {
     $cleanup(() => {
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -409,7 +409,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   console.log(`holder ${h$2.it.end - h$2.it.at} left`);
@@ -421,7 +421,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   let h$3;
@@ -433,7 +433,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -451,7 +451,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   console.log(`holder ${h$3.it.end - h$3.it.at} left`);
@@ -463,7 +463,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   let it;
@@ -475,7 +475,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   boom = 2;
@@ -499,7 +499,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   let v$1;
@@ -511,7 +511,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -538,7 +538,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   let v$2;
@@ -551,7 +551,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -579,7 +579,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   let v$3;
@@ -593,7 +593,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -622,7 +622,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -640,7 +640,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(value, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       let result;
@@ -649,7 +649,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(value, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       $dropItems(value, dDrop_drop);
@@ -664,7 +664,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -676,7 +676,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(it, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       let next;
@@ -692,7 +692,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(it, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       const result = (d + (it.end - it.at)) >>> 0;
@@ -708,7 +708,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -724,7 +724,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -740,7 +740,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -756,7 +756,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -772,7 +772,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -789,7 +789,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(value, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       let result;
@@ -798,7 +798,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(value, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       $dropItems(value, dDrop_drop);
@@ -813,7 +813,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -829,7 +829,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -845,7 +845,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -858,7 +858,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(v, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       let nth;
@@ -875,7 +875,7 @@ function main() {
         $cleanup(() => {
           $dropItems(drain, dDrop_drop);
           $dropItems(v, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -883,7 +883,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(v, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       const result = (d + v.length) >>> 0;
@@ -899,7 +899,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -911,7 +911,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(v, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       let nthBack;
@@ -928,7 +928,7 @@ function main() {
         $cleanup(() => {
           $dropItems(drain, dDrop_drop);
           $dropItems(v, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -936,7 +936,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(v, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       const result = (d + v.length) >>> 0;
@@ -952,7 +952,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -964,7 +964,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(v, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       let nth;
@@ -981,7 +981,7 @@ function main() {
         $cleanup(() => {
           rev.return();
           $dropItems(v, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -989,7 +989,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(v, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       const result = (d + v.length) >>> 0;
@@ -1005,7 +1005,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -1017,7 +1017,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(v, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       const result = (d + v.length) >>> 0;
@@ -1033,7 +1033,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -1045,7 +1045,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(v, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       const result = (d + v.length) >>> 0;
@@ -1061,7 +1061,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   const set = () =>
@@ -1087,7 +1087,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(value, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       let result;
@@ -1096,7 +1096,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(value, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       $dropItems(value, dDrop_drop);
@@ -1111,7 +1111,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -1128,7 +1128,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(value, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       let result;
@@ -1137,7 +1137,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems(value, dDrop_drop);
-        });
+        }, error);
         throw error;
       }
       $dropItems(value, dDrop_drop);
@@ -1152,7 +1152,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -1177,7 +1177,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           rev.return();
-        });
+        }, error);
         throw error;
       }
       let result;
@@ -1186,7 +1186,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           rev.return();
-        });
+        }, error);
         throw error;
       }
       rev.return();
@@ -1201,7 +1201,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -1217,7 +1217,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -1233,7 +1233,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -1249,7 +1249,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -1270,7 +1270,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -1283,7 +1283,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -1295,7 +1295,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -1306,7 +1306,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -1316,7 +1316,7 @@ function main() {
       $dropItems(h$2.it, dDrop_drop);
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -1325,7 +1325,7 @@ function main() {
     $cleanup(() => {
       $dropItems(h$1.it, dDrop_drop);
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -1333,7 +1333,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(h.it, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   $dropItems(h.it, dDrop_drop);

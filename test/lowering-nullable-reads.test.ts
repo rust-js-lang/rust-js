@@ -1198,8 +1198,8 @@ pub fn or_else_maybe() -> Option<&'static Unknown> {
   writeFileSync(join(dir, "found.js"), "export const found = () => null;\nexport const maybe = () => undefined;\nexport const keep = () => {};\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  try {\n    return found() ?? found();\n  } catch {\n");
-  expect(js).toContain("  try {\n    return f();\n  } catch {\n");
+  expect(js).toContain("  try {\n    return found() ?? found();\n  } catch (error) {\n    $catchable(error);\n");
+  expect(js).toContain("  try {\n    return f();\n  } catch (error) {\n    $catchable(error);\n");
   expect(js).toContain("  return option ?? fallback;\n}");
   expect(js).toContain("  return option ?? fallback ?? null;\n}");
   expect(js).toContain("  return found() ?? maybe() ?? null;\n}");

@@ -79,7 +79,7 @@ function main() {
         $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
           loudDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -91,7 +91,7 @@ function main() {
         $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
           loudDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
   }
@@ -133,7 +133,7 @@ function main() {
       $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
         loudDrop_drop(value);
       });
-    });
+    }, error);
     throw error;
   }
   const r$1 = $catchUnwind(() =>
@@ -173,7 +173,7 @@ function main() {
       $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
         loudDrop_drop(value);
       });
-    });
+    }, error);
     throw error;
   }
   let iter;
@@ -200,7 +200,7 @@ function main() {
       $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
         loudDrop_drop(value);
       });
-    });
+    }, error);
     throw error;
   }
   while (true) {
@@ -228,7 +228,7 @@ function main() {
         $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
           loudDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     if (k == null) {
@@ -258,7 +258,7 @@ function main() {
         $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
           loudDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -286,7 +286,7 @@ function main() {
         $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
           loudDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
   }
@@ -345,7 +345,7 @@ function main() {
       $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
         loudDrop_drop(value);
       });
-    });
+    }, error);
     throw error;
   }
   at = 25;
@@ -394,7 +394,7 @@ function main() {
       $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
         loudDrop_drop(value);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -428,7 +428,7 @@ function main() {
       $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
         loudDrop_drop(value);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -458,7 +458,7 @@ function main() {
       $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
         loudDrop_drop(value);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -483,7 +483,7 @@ function main() {
       $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
         loudDrop_drop(value);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -505,7 +505,7 @@ function main() {
       $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
         loudDrop_drop(value);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -522,7 +522,7 @@ function main() {
       $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
         loudDrop_drop(value);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -536,7 +536,7 @@ function main() {
       $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {
         loudDrop_drop(value);
       });
-    });
+    }, error);
     throw error;
   }
   $dropItems($sortedEntries(map, keyOrd_cmp), ([, value]) => {

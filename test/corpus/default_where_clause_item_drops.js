@@ -15,6 +15,7 @@ import {
   $iter,
   $iterator,
   $lastSome,
+  $live,
   $next,
   $nextSome,
   $nthSome,
@@ -23,6 +24,7 @@ import {
   $someValue,
   $took,
   $traitImpl,
+  $unwindsOn,
   iterator_map,
 } from "@rust-js/std";
 
@@ -59,7 +61,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
                 heldDrop_drop(item, dropTItemIntoIter);
                 dropTItemIntoIter?.(item.iter);
               });
-            });
+            }, error);
             throw error;
           }
           if (tmp == null) {
@@ -71,7 +73,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
                   heldDrop_drop(item, dropTItemIntoIter);
                   dropTItemIntoIter?.(item.iter);
                 });
-              });
+              }, error);
               throw error;
             }
             break;
@@ -87,7 +89,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
                 heldDrop_drop(item, dropTItemIntoIter);
                 dropTItemIntoIter?.(item.iter);
               });
-            });
+            }, error);
             throw error;
           }
           try {
@@ -99,7 +101,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
                 heldDrop_drop(item, dropTItemIntoIter);
                 dropTItemIntoIter?.(item.iter);
               });
-            });
+            }, error);
             throw error;
           }
         }
@@ -118,7 +120,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
         } catch (error) {
           $cleanup(() => {
             dropT?.(self);
-          });
+          }, error);
           throw error;
         }
         let result;
@@ -128,7 +130,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
         } catch (error) {
           $cleanup(() => {
             dropT?.(self);
-          });
+          }, error);
           throw error;
         }
         dropT?.(self);
@@ -144,7 +146,7 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
             if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
               dropT?.(iter);
             }
-          });
+          }, error);
           throw error;
         }
         if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
@@ -182,7 +184,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
               if (extra$live) {
                 dropU?.(extra);
               }
-            });
+            }, error);
             throw error;
           }
           if (tmp == null) {
@@ -197,7 +199,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
                 if (extra$live) {
                   dropU?.(extra);
                 }
-              });
+              }, error);
               throw error;
             }
             break;
@@ -216,7 +218,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
               if (extra$live) {
                 dropU?.(extra);
               }
-            });
+            }, error);
             throw error;
           }
           try {
@@ -231,7 +233,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
               if (extra$live) {
                 dropU?.(extra);
               }
-            });
+            }, error);
             throw error;
           }
         }
@@ -249,7 +251,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
           } catch (error) {
             $cleanup(() => {
               dropUIntoIter?.(iter$1);
-            });
+            }, error);
             throw error;
           }
           dropUIntoIter?.(iter$1);
@@ -259,7 +261,7 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
               heldDrop_drop(item, dropTItemIntoIter);
               dropTItemIntoIter?.(item.iter);
             });
-          });
+          }, error);
           throw error;
         }
         const result = (length + result$1) >>> 0;
@@ -279,9 +281,11 @@ function wide(w) {
     try {
       throw new Error("wide");
     } catch (error) {
-      if (w != null) {
-        dDrop_drop(w);
-      }
+      $cleanup(() => {
+        if (w != null) {
+          dDrop_drop(w);
+        }
+      }, error);
       throw error;
     }
   }
@@ -402,9 +406,13 @@ function main() {
         const value = $iter(v);
         try {
           return $next(value);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          for (const item of value) {
-            dDrop_drop(item);
+          if ($live()) {
+            for (const item of value) {
+              dDrop_drop(item);
+            }
           }
         }
       }),
@@ -465,9 +473,13 @@ function main() {
   if (first != null) {
     try {
       heldDrop_drop(first, $dropEach(dDrop_drop));
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of first.iter) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of first.iter) {
+          dDrop_drop(item);
+        }
       }
     }
   }

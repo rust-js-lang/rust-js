@@ -244,7 +244,8 @@ pub fn mount(n: i32, out: &mut Vec<i32>) {
       // In the try.
       risky(n);
       return;
-    } catch {
+    } catch (error) {
+      $catchable(error);
       // It threw: fall through to the normal
       // path.
     }
@@ -257,8 +258,8 @@ pub fn mount(n: i32, out: &mut Vec<i32>) {
 });
 
 // React's Fizz replayElement pops its replay first in its catch, `catch (x)
-// { task.replay = replay; .. throw x; }`, which must run where the stack is
-// spent, rendering very deep trees: a `catch`'s payload is made where it's
+// { task.replay = replay; .. throw x; }`, rendering very deep trees (where
+// the stack is spent it's Rust's abort, #1193): a `catch`'s payload is made where it's
 // first read, after what its arm does first, and one resumed as it was
 // given, nothing written through it, is what was thrown, `throw thrown`,
 // with no call before it (rd550).
@@ -296,6 +297,7 @@ fn name_of(payload: &(dyn Any + Send)) -> String {
 /// those that read a \`RangeError\` after.
 pub fn deep(d: u32, entered: &Cell<u32>, wrote: &Cell<u32>, ranges: &Cell<u32>) {
     if d == 0 {
+        render();
         return;
     }
     entered.set(entered.get() + 1);
@@ -350,12 +352,14 @@ pub fn changed(n: u32) -> u32 {
     }
 }
 `);
-  // What the arm does first runs first: no call before it.
+  // What the arm does first runs first, after `$catchable`: no other call before it.
   expect(js).toContain(`  } catch (e) {
+    $catchable(e);
     s.value = d;
     throw e;
   }`);
   expect(js).toContain(`  } catch (thrown) {
+    $catchable(thrown);
     wrote.value = (wrote.value + 1) >>> 0;
     const e = $unwound(thrown);
     if (nameOf(e) === "RangeError") {
@@ -364,6 +368,7 @@ pub fn changed(n: u32) -> u32 {
     throw thrown;
   }`);
   expect(js).toContain(`  } catch (thrown) {
+    $catchable(thrown);
     seen.value = (seen.value + 1) >>> 0;
     const e = $unwound(thrown);
     const name = nameOf(e);
@@ -374,8 +379,10 @@ pub fn changed(n: u32) -> u32 {
   }`);
   // Changed, it's resumed as what it is now, `$unwinding`'s.
   expect(js).toContain("    throw $unwinding(e);\n");
+  // A \`RangeError\` of its own, as an overflow of the stack is Rust's abort
+  // (#1193).
   writeFileSync(join(dir, "host.js"), `export function overflow() {
-  overflow();
+  throw new RangeError("too deep");
 }
 export function render() {
   throw globalThis.toThrow;
@@ -393,9 +400,10 @@ const outcome = (f) => {
 const s = cell();
 const [how, error] = outcome(() => lib.f(3, s));
 console.log("f", how, error.constructor.name, s.value);
+globalThis.toThrow = new RangeError("deep");
 for (let i = 0; i < 3; i++) {
   const [entered, wrote, ranges] = [cell(), cell(), cell()];
-  const [how, error] = outcome(() => lib.deep(1e6, entered, wrote, ranges));
+  const [how, error] = outcome(() => lib.deep(1200, entered, wrote, ranges));
   console.log("deep", how, error.constructor.name, entered.value > 1000, entered.value === wrote.value, ranges.value > 0);
 }
 const seen = cell();
@@ -441,6 +449,9 @@ use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 /// that writes first, then keeps what it caught in the function's \`thrown\`.
 pub fn render_node(d: u32, entered: &Cell<u32>, wrote: &Cell<u32>, segment: Option<u32>) {
     if d == 0 {
+        if entered.get() > 1000 {
+            panic!("bottom");
+        }
         return;
     }
     entered.set(entered.get() + 1);
@@ -469,6 +480,9 @@ pub fn render_node(d: u32, entered: &Cell<u32>, wrote: &Cell<u32>, segment: Opti
 /// it's given.
 pub fn restored(d: u32, entered: &Cell<u32>, wrote: &Cell<u32>, thrown: u32) {
     if d == 0 {
+        if entered.get() > 1000 {
+            panic!("bottom");
+        }
         return;
     }
     entered.set(entered.get() + 1);
@@ -485,6 +499,9 @@ pub fn restored(d: u32, entered: &Cell<u32>, wrote: &Cell<u32>, thrown: u32) {
 /// A \`let Err(..) else\` at a function's top whose arm reads \`thrown\`.
 pub fn guarded(d: u32, entered: &Cell<u32>, wrote: &Cell<u32>, thrown: u32) {
     if d == 0 {
+        if entered.get() > 1000 {
+            panic!("bottom");
+        }
         return;
     }
     entered.set(entered.get() + 1);
@@ -517,6 +534,7 @@ pub fn named(n: u32) -> String {
       renderNode(d - 1, entered, wrote);
       return;
     } catch (thrown$1) {
+      $catchable(thrown$1);
       wrote.value = (wrote.value + 1) >>> 0;
       const thrownValue = $unwound(thrown$1);
       thrown = thrownValue;
@@ -525,12 +543,14 @@ pub fn named(n: u32) -> String {
   expect(js).toContain(`  try {
     restored(d - 1, entered, wrote, thrown);
   } catch (x) {
+    $catchable(x);
     wrote.value = (wrote.value + thrown) >>> 0;
     throw x;
   }`);
   expect(js).toContain(`  try {
     guarded(d - 1, entered, wrote, thrown);
   } catch (x) {
+    $catchable(x);
     wrote.value = (wrote.value + thrown) >>> 0;
     throw x;
   }`);
@@ -538,6 +558,7 @@ pub fn named(n: u32) -> String {
     const v = big(n);
     return String(v);
   } catch (thrown$1) {
+    $catchable(thrown$1);
     const thrown = $unwound(thrown$1);
 `);
   writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
@@ -550,10 +571,10 @@ const outcome = (f) => {
   }
 };
 for (const [name, run] of [
-  ["renderNode", (e, w) => lib.renderNode(1e6, e, w, undefined)],
-  ["renderNode", (e, w) => lib.renderNode(1e6, e, w, 1)],
-  ["restored", (e, w) => lib.restored(1e6, e, w, 1)],
-  ["guarded", (e, w) => lib.guarded(1e6, e, w, 1)],
+  ["renderNode", (e, w) => lib.renderNode(1200, e, w, undefined)],
+  ["renderNode", (e, w) => lib.renderNode(1200, e, w, 1)],
+  ["restored", (e, w) => lib.restored(1200, e, w, 1)],
+  ["guarded", (e, w) => lib.guarded(1200, e, w, 1)],
 ]) {
   const [entered, wrote] = [cell(), cell()];
   const [how, error] = outcome(() => run(entered, wrote));
@@ -567,10 +588,10 @@ console.log("named", lib.named(1), lib.named(5));
   expect(ran.stderr).toBe("");
   // Every level that entered its \`try\` wrote in its \`catch\`, where the
   // helper's left some unwritten.
-  expect(ran.stdout).toBe(`renderNode threw RangeError true true
-renderNode threw RangeError true true
-restored threw RangeError true true
-guarded threw RangeError true true
+  expect(ran.stdout).toBe(`renderNode threw Error true true
+renderNode threw Error true true
+restored threw Error true true
+guarded threw Error true true
 shallow ["returned",null] 3 0
 named 1 big 5
 `);
@@ -802,7 +823,7 @@ export function step(n) { log.push("step " + n); if (n > 7) throw new Error("big
 `,
   );
   expect(js).toContain(
-    "    let found;\n    try {\n      if (n === 0) {\n        found = 0;\n      } else {\n        const a = step(n);\n        found = (a * 2) >>> 0;\n      }\n    } catch {\n      return 3;\n    }\n    return step(found);\n",
+    "    let found;\n    try {\n      if (n === 0) {\n        found = 0;\n      } else {\n        const a = step(n);\n        found = (a * 2) >>> 0;\n      }\n    } catch (error) {\n      $catchable(error);\n      return 3;\n    }\n    return step(found);\n",
   );
   expect(js).not.toContain("(() =>");
   writeFileSync(
@@ -989,7 +1010,7 @@ pub fn of_text(s: &str) -> u32 {
     `export function work(n) { if (n > 2) throw new Error("big " + n); return n; }
 `,
   );
-  expect(js).toContain('export function caught(m) {\n  try {\n    "default" in m;\n    return false;\n  } catch {\n');
+  expect(js).toContain('export function caught(m) {\n  try {\n    "default" in m;\n    return false;\n  } catch (error) {\n    $catchable(error);\n');
   expect(js).toContain("export function loose(m) {\n  try {\n    m == 1;\n    return false;\n");
   expect(js).toContain("export function unequal(m) {\n  try {\n    m != 1;\n    return false;\n");
   expect(js).toContain("export function instance(m, c) {\n  try {\n    m instanceof c;\n    return false;\n");

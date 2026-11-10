@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $catchable,
   $cleanup,
   $closing,
   $collectDropping,
@@ -119,7 +120,8 @@ function run(name, [boom, clones$1], case$) {
   try {
     const n = case$();
     console.log(`ended ${n}`);
-  } catch {
+  } catch (error) {
+    $catchable(error);
     console.log("panicked");
   }
 }
@@ -153,7 +155,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         iter.return();
-      });
+      }, error);
       throw error;
     }
     iter.return();
@@ -179,7 +181,7 @@ function main() {
         } catch (error) {
           $cleanup(() => {
             dDrop_drop(value[1]);
-          });
+          }, error);
           throw error;
         }
         dDrop_drop(value[1]);
@@ -192,7 +194,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           dDrop_drop(item[1]);
-        });
+        }, error);
         throw error;
       }
       dDrop_drop(item[1]);
@@ -205,9 +207,11 @@ function main() {
     try {
       tmp = ds();
     } catch (error) {
-      for (const item of value) {
-        quietDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of value) {
+          quietDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     const collect = $collectDropping(
@@ -244,7 +248,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -252,7 +256,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, dDrop_drop);
@@ -275,7 +279,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -285,7 +289,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, dDrop_drop);
@@ -308,7 +312,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, dDrop_drop);
@@ -322,7 +326,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(value, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     const v = tmp[0];
@@ -334,7 +338,7 @@ function main() {
       $cleanup(() => {
         $dropItems(w, dDrop_drop);
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     let result;
@@ -347,7 +351,7 @@ function main() {
       $cleanup(() => {
         $dropItems(w, dDrop_drop);
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -355,7 +359,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, dDrop_drop);
@@ -482,7 +486,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     const value$1 = once(8);
@@ -499,7 +503,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     let zipped;
@@ -511,7 +515,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     let collect;
@@ -524,7 +528,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     const repeated = collect.length;
@@ -533,7 +537,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     const value = (zipped + repeated) >>> 0;
@@ -557,7 +561,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, dDrop_drop);

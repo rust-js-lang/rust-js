@@ -29,7 +29,7 @@ function ends(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   dropI?.(it);
@@ -44,7 +44,7 @@ function lens(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   dropI?.(it);
@@ -60,9 +60,11 @@ function main() {
     copied = $iter(v);
     m$live = false;
   } catch (error) {
-    if (m$live) {
-      console.log(`drop ${m[0]}`);
-    }
+    $cleanup(() => {
+      if (m$live) {
+        console.log(`drop ${m[0]}`);
+      }
+    }, error);
     throw error;
   }
   function f(x) {
@@ -91,9 +93,11 @@ function main() {
     tmp = $iter(v);
     n$live = false;
   } catch (error) {
-    if (n$live) {
-      console.log(`drop ${n[0]}`);
-    }
+    $cleanup(() => {
+      if (n$live) {
+        console.log(`drop ${n[0]}`);
+      }
+    }, error);
     throw error;
   }
   function f$1(x) {
@@ -121,9 +125,11 @@ function main() {
     fuse = iterator_fuse($iter(v), { next: $next }, true);
     o$live = false;
   } catch (error) {
-    if (o$live) {
-      console.log(`drop ${o[0]}`);
-    }
+    $cleanup(() => {
+      if (o$live) {
+        console.log(`drop ${o[0]}`);
+      }
+    }, error);
     throw error;
   }
   function f$2(x) {

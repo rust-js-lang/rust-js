@@ -4,6 +4,7 @@ import {
   $foldToArray,
   $iter,
   $lazyRange,
+  $live,
   $next,
   $nextBack,
   $range,
@@ -13,6 +14,7 @@ import {
   $roomFor,
   $roomForHint,
   $sizeHint,
+  $unwindsOn,
   flatMapDoubleEndedIterator_nextBack,
   flatMapDoubleEndedIterator_rfold,
   iterator_flatMap,
@@ -147,8 +149,12 @@ function main() {
       })
       .reduce((a, b) => (a + b) >>> 0, 0);
     console.log(`${total}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log(`drop ${tag}`);
+    if ($live()) {
+      console.log(`drop ${tag}`);
+    }
   }
 }
 //# sourceMappingURL=case.js.map

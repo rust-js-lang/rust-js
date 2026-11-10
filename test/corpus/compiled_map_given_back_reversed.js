@@ -7,10 +7,12 @@ import {
   $held,
   $iter,
   $knowing,
+  $live,
   $next,
   $nextBack,
   $rev,
   $tryOf,
+  $unwindsOn,
   iterator_map,
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
@@ -172,8 +174,12 @@ function main() {
   let first;
   try {
     first = $next(rev);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    rev.return();
+    if ($live()) {
+      rev.return();
+    }
   }
   function map(l) {
     const result = l[0];

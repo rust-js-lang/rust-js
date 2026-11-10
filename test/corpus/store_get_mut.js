@@ -31,7 +31,7 @@ export function vecStoreMutKV(dropK, dropV) {
         } catch (error) {
           $cleanup(() => {
             dropV?.(item[1]);
-          });
+          }, error);
           throw error;
         }
         dropV?.(item[1]);

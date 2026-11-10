@@ -94,7 +94,7 @@ function lastOne(iter, dropIItem) {
         if (last != null) {
           dropIItem?.($someValue(last));
         }
-      });
+      }, error);
       throw error;
     }
     if (tmp != null) {
@@ -110,7 +110,7 @@ function lastOne(iter, dropIItem) {
           if (last != null) {
             dropIItem?.($someValue(last));
           }
-        });
+        }, error);
         throw error;
       }
       last = value;
@@ -125,7 +125,7 @@ function lastOne(iter, dropIItem) {
         if (last != null) {
           dropIItem?.($someValue(last));
         }
-      });
+      }, error);
       throw error;
     }
     break;

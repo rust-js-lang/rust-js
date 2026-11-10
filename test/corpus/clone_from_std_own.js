@@ -13,9 +13,11 @@ import {
   $eq,
   $extendMap,
   $heapFrom,
+  $live,
   $madeEach,
   $partialEq,
   $partialOrd,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -85,14 +87,22 @@ function main() {
         try {
           $cloneIntoDeque(w, v, (item) => dClone_clone(item), dDrop_drop);
           console.log(`${w.length}`);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          for (const item of w) {
-            dDrop_drop(item);
+          if ($live()) {
+            for (const item of w) {
+              dDrop_drop(item);
+            }
           }
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of v) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of v) {
+            dDrop_drop(item);
+          }
         }
       }
     });
@@ -143,31 +153,47 @@ function main() {
               console.log(
                 `${some == null ? "None" : `Some([${some.map((item) => dDebug_fmt(item)).join(", ")}])`}`,
               );
+            } catch (error) {
+              throw $unwindsOn(error);
             } finally {
-              if (some != null) {
-                for (const item of some) {
+              if ($live()) {
+                if (some != null) {
+                  for (const item of some) {
+                    dDrop_drop(item);
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            throw $unwindsOn(error);
+          } finally {
+            if ($live()) {
+              if (none != null) {
+                for (const item of none) {
                   dDrop_drop(item);
                 }
               }
             }
-          } finally {
-            if (none != null) {
-              for (const item of none) {
+          }
+        } catch (error) {
+          throw $unwindsOn(error);
+        } finally {
+          if ($live()) {
+            if (w != null) {
+              for (const item of w) {
                 dDrop_drop(item);
               }
             }
           }
-        } finally {
-          if (w != null) {
-            for (const item of w) {
+        }
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          if (v != null) {
+            for (const item of v) {
               dDrop_drop(item);
             }
-          }
-        }
-      } finally {
-        if (v != null) {
-          for (const item of v) {
-            dDrop_drop(item);
           }
         }
       }
@@ -179,14 +205,22 @@ function main() {
         try {
           $cloneIntoVec(w, v, (item) => dClone_clone(item), undefined, dDrop_drop);
           console.log(`${w.length}`);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          for (const item of w) {
-            dDrop_drop(item);
+          if ($live()) {
+            for (const item of w) {
+              dDrop_drop(item);
+            }
           }
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of v) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of v) {
+            dDrop_drop(item);
+          }
         }
       }
     });
@@ -197,14 +231,22 @@ function main() {
         try {
           $cloneIntoDeque(w, v, (item) => dClone_clone(item), dDrop_drop);
           console.log(`${w.length}`);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          for (const item of w) {
-            dDrop_drop(item);
+          if ($live()) {
+            for (const item of w) {
+              dDrop_drop(item);
+            }
           }
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of v) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of v) {
+            dDrop_drop(item);
+          }
         }
       }
     });
@@ -215,14 +257,22 @@ function main() {
         try {
           $cloneFromSlice(w, v, (value) => dClone_clone(value), undefined, dDrop_drop);
           console.log(`[${w.map((item) => dDebug_fmt(item)).join(", ")}]`);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          for (const item of w) {
-            dDrop_drop(item);
+          if ($live()) {
+            for (const item of w) {
+              dDrop_drop(item);
+            }
           }
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of v) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of v) {
+            dDrop_drop(item);
+          }
         }
       }
     });
@@ -236,19 +286,31 @@ function main() {
           try {
             $cloneIntoList(x, v, (item) => dClone_clone(item), undefined, dDrop_drop);
             console.log(`${w.length} ${x.length}`);
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            for (const item of x) {
+            if ($live()) {
+              for (const item of x) {
+                dDrop_drop(item);
+              }
+            }
+          }
+        } catch (error) {
+          throw $unwindsOn(error);
+        } finally {
+          if ($live()) {
+            for (const item of w) {
               dDrop_drop(item);
             }
           }
-        } finally {
-          for (const item of w) {
+        }
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          for (const item of v) {
             dDrop_drop(item);
           }
-        }
-      } finally {
-        for (const item of v) {
-          dDrop_drop(item);
         }
       }
     });
@@ -286,20 +348,28 @@ function main() {
           console.log(
             `[${w.map((item) => (item == null ? "None" : `Some([${item.map((item) => dDebug_fmt(item)).join(", ")}])`)).join(", ")}]`,
           );
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          for (const item of w) {
-            if (item != null) {
-              for (const item$1 of item) {
-                dDrop_drop(item$1);
+          if ($live()) {
+            for (const item of w) {
+              if (item != null) {
+                for (const item$1 of item) {
+                  dDrop_drop(item$1);
+                }
               }
             }
           }
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of v) {
-          if (item != null) {
-            for (const item$1 of item) {
-              dDrop_drop(item$1);
+        if ($live()) {
+          for (const item of v) {
+            if (item != null) {
+              for (const item$1 of item) {
+                dDrop_drop(item$1);
+              }
             }
           }
         }
@@ -312,14 +382,22 @@ function main() {
         try {
           $cloneIntoVec(w, v, (item) => dClone_clone(item), undefined, dDrop_drop);
           console.log(`${w.length}`);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          for (const item of w) {
-            dDrop_drop(item);
+          if ($live()) {
+            for (const item of w) {
+              dDrop_drop(item);
+            }
           }
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of v) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of v) {
+            dDrop_drop(item);
+          }
         }
       }
     });
@@ -343,7 +421,7 @@ function main() {
           for (const item of v.values()) {
             dDrop_drop(item);
           }
-        });
+        }, error);
         throw error;
       }
       try {
@@ -363,7 +441,7 @@ function main() {
           for (const item of v.values()) {
             dDrop_drop(item);
           }
-        });
+        }, error);
         throw error;
       }
       console.log(`${w.size}`);
@@ -376,7 +454,7 @@ function main() {
           for (const item of v.values()) {
             dDrop_drop(item);
           }
-        });
+        }, error);
         throw error;
       }
       for (const item of v.values()) {
@@ -414,14 +492,22 @@ function main() {
         try {
           $cloneIntoMap(w, v, (item) => dClone_clone(item), dDrop_drop);
           console.log(`${w.size}`);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          for (const item of w) {
-            dDrop_drop(item);
+          if ($live()) {
+            for (const item of w) {
+              dDrop_drop(item);
+            }
           }
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of v) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of v) {
+            dDrop_drop(item);
+          }
         }
       }
     });

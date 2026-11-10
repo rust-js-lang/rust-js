@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "allocation-items-past-start",
     breaks: "a pointer 24 bytes into an allocation cast to `*mut String` is its first slot (#1099)",
     file: "src/runtime/pointers.js",
-    find: "    if (view.at !== 0) {\n      throw new Error(\"rust-js does not support a pointer into an allocation's bytes as one to another type",
-    replace: "    if (false) {\n      throw new Error(\"rust-js does not support a pointer into an allocation's bytes as one to another type",
+    find: "    if (view.at !== 0) {\n      throw $unsupported(\"rust-js does not support a pointer into an allocation's bytes as one to another type",
+    replace: "    if (false) {\n      throw $unsupported(\"rust-js does not support a pointer into an allocation's bytes as one to another type",
     tests: ["test/runtime-package.test.ts", "-t", "allocation's bytes and its items"],
   },
   {

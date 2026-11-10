@@ -81,7 +81,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -106,7 +106,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -130,7 +130,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -153,7 +153,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -175,7 +175,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -196,7 +196,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -216,7 +216,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -235,7 +235,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -253,7 +253,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -270,7 +270,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -286,7 +286,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -301,7 +301,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -315,7 +315,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -328,7 +328,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -340,7 +340,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -351,7 +351,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -361,7 +361,7 @@ function held(parts, last, TSize, dropT) {
           dropT?.(_parts[17]);
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -370,7 +370,7 @@ function held(parts, last, TSize, dropT) {
         $cleanup(() => {
           dropT?.(_parts[18]);
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -378,11 +378,11 @@ function held(parts, last, TSize, dropT) {
       } catch (error) {
         $cleanup(() => {
           dropT?.(_parts[19]);
-        });
+        }, error);
         throw error;
       }
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -408,7 +408,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -433,7 +433,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -457,7 +457,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -480,7 +480,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -502,7 +502,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -523,7 +523,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -543,7 +543,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -562,7 +562,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -580,7 +580,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -597,7 +597,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -613,7 +613,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -628,7 +628,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -642,7 +642,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -655,7 +655,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -667,7 +667,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -678,7 +678,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -688,7 +688,7 @@ function held(parts, last, TSize, dropT) {
       dropT?.(_parts[17]);
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -697,7 +697,7 @@ function held(parts, last, TSize, dropT) {
     $cleanup(() => {
       dropT?.(_parts[18]);
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -705,7 +705,7 @@ function held(parts, last, TSize, dropT) {
   } catch (error) {
     $cleanup(() => {
       dropT?.(_parts[19]);
-    });
+    }, error);
     throw error;
   }
   dropT?.(_parts[19]);
@@ -724,7 +724,7 @@ function main() {
           partDrop_drop(_tuple[1]);
           partDrop_drop(_tuple[2]);
           partDrop_drop(_tuple[3]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -733,7 +733,7 @@ function main() {
         $cleanup(() => {
           partDrop_drop(_tuple[2]);
           partDrop_drop(_tuple[3]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -741,7 +741,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           partDrop_drop(_tuple[3]);
-        });
+        }, error);
         throw error;
       }
       partDrop_drop(_tuple[3]);
@@ -756,7 +756,7 @@ function main() {
           partDrop_drop(value.b);
           partDrop_drop(value.c);
           partDrop_drop(value.d);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -765,7 +765,7 @@ function main() {
         $cleanup(() => {
           partDrop_drop(value.c);
           partDrop_drop(value.d);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -773,7 +773,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           partDrop_drop(value.d);
-        });
+        }, error);
         throw error;
       }
       partDrop_drop(value.d);
@@ -807,7 +807,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -832,7 +832,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -856,7 +856,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -879,7 +879,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -901,7 +901,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -922,7 +922,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -942,7 +942,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -961,7 +961,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -979,7 +979,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -996,7 +996,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -1012,7 +1012,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -1027,7 +1027,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -1041,7 +1041,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -1054,7 +1054,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -1066,7 +1066,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -1077,7 +1077,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -1087,7 +1087,7 @@ function main() {
           partDrop_drop(value[17]);
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -1096,7 +1096,7 @@ function main() {
         $cleanup(() => {
           partDrop_drop(value[18]);
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -1104,7 +1104,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           partDrop_drop(value[19]);
-        });
+        }, error);
         throw error;
       }
       partDrop_drop(value[19]);

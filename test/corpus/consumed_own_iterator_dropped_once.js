@@ -10,10 +10,12 @@ import {
   $iterator,
   $lastDropping,
   $lent,
+  $live,
   $position,
   $range,
   $tryFoldOk,
   $tryFoldSome,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -66,8 +68,12 @@ function main() {
             throw new Error("1");
           }
           return (n + d[0]) >>> 0;
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       }, 0)}`,
     );
@@ -157,12 +163,20 @@ function main() {
             return result;
           })}`,
         );
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        console.log("drop it");
+        if ($live()) {
+          console.log("drop it");
+        }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of value.items) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of value.items) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -177,12 +191,20 @@ function main() {
             return result;
           })}`,
         );
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        console.log("drop it");
+        if ($live()) {
+          console.log("drop it");
+        }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of value.items) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of value.items) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -203,12 +225,20 @@ function main() {
         }
         const value$1 = find != null ? map(find) : undefined;
         console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        console.log("drop it");
+        if ($live()) {
+          console.log("drop it");
+        }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of value.items) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of value.items) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -222,12 +252,20 @@ function main() {
           return result;
         });
         console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        console.log("drop it");
+        if ($live()) {
+          console.log("drop it");
+        }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of value.items) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of value.items) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -250,12 +288,20 @@ function main() {
           },
         );
         console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        console.log("drop it");
+        if ($live()) {
+          console.log("drop it");
+        }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of value.items) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of value.items) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -278,12 +324,20 @@ function main() {
           },
         );
         console.log(`${value$1.TAG === "Ok" ? "Ok(())" : `Err(${value$1._0})`}`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        console.log("drop it");
+        if ($live()) {
+          console.log("drop it");
+        }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of value.items) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of value.items) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -323,7 +377,7 @@ function generic(i, dropI) {
       if (!iter.ownFold) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownFold) {
@@ -370,10 +424,12 @@ function more() {
           }, 0)}`,
       );
     } catch (error) {
-      console.log("drop it");
-      for (const item of i.items) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        console.log("drop it");
+        for (const item of i.items) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     console.log(
@@ -400,8 +456,12 @@ function more() {
         if (d[0] === 161) {
           throw new Error("161");
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(d);
+        if ($live()) {
+          dDrop_drop(d);
+        }
       }
     });
   });

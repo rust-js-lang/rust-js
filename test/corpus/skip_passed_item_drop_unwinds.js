@@ -12,8 +12,10 @@ import {
   $held,
   $iter,
   $lastDropping,
+  $live,
   $skipping,
   $tryFoldOk,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -50,7 +52,7 @@ function main() {
         if (g$live) {
           dDrop_drop(g);
         }
-      });
+      }, error);
       throw error;
     }
     function f(a, x) {
@@ -85,9 +87,13 @@ function main() {
           }
           try {
             dDrop_drop(x);
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            if (a$1$live) {
-              accDrop_drop(a);
+            if ($live()) {
+              if (a$1$live) {
+                accDrop_drop(a);
+              }
             }
           }
           return result;
@@ -97,7 +103,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     console.log(`try_fold ${t.TAG === "Ok"}`);
@@ -108,7 +114,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     it.return();
@@ -152,7 +158,7 @@ function main() {
           } catch (error) {
             $cleanup(() => {
               dDrop_drop(x);
-            });
+            }, error);
             throw error;
           }
           dDrop_drop(x);

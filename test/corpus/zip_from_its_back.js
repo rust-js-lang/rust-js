@@ -3,6 +3,7 @@
 import {
   $advanceSlice,
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -11,6 +12,7 @@ import {
   $held,
   $iter,
   $iterator,
+  $live,
   $next,
   $nextBack,
   $nthBack,
@@ -22,6 +24,7 @@ import {
   $rev,
   $sizeHint,
   $trustedZipEnds,
+  $unwindsOn,
   $zipEnds,
   iterator_zip,
   zipDoubleEndedIterator_nextBack,
@@ -95,33 +98,39 @@ function main() {
   try {
     b = ds(4, 6);
   } catch (error) {
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let tmp;
   try {
     tmp = $iter(a);
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let n;
   try {
     n = $trustedZipEnds(tmp, $iter(b), dDrop_drop, dDrop_drop).len();
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   console.log(`| len ${n}`);
@@ -129,24 +138,28 @@ function main() {
   try {
     tmp$1 = $iter(a);
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let tmp$2;
   try {
     tmp$2 = $trustedZipEnds(tmp$1, $iter(b), dDrop_drop, dDrop_drop);
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let nextBack;
@@ -161,12 +174,14 @@ function main() {
     nextBack = $nextBack(tmp$2);
     last = nextBack != null ? map(nextBack) : undefined;
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   console.log(`| next_back ${last == null ? "None" : `Some((${last[0]}, ${last[1]}))`}`);
@@ -174,24 +189,28 @@ function main() {
   try {
     tmp$3 = $iter(b);
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let tmp$4;
   try {
     tmp$4 = $trustedZipEnds(tmp$3, $iter(a), dDrop_drop, dDrop_drop);
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let nextBack$1;
@@ -205,12 +224,14 @@ function main() {
     nextBack$1 = $nextBack(tmp$4);
     last = nextBack$1 != null ? map$1(nextBack$1) : undefined;
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   console.log(
@@ -220,12 +241,14 @@ function main() {
   try {
     tmp$5 = $iter(v);
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   const shorter = Math.min(tmp$5.end - tmp$5.at, Math.max(w.length - 1, 0));
@@ -234,27 +257,31 @@ function main() {
   try {
     tmp$6 = $iter(ds(1, 4));
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let tmp$7;
   try {
     tmp$7 = ds(4, 5);
   } catch (error) {
-    for (const item of tmp$6) {
-      dDrop_drop(item);
-    }
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of tmp$6) {
+        dDrop_drop(item);
+      }
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let tmp$8;
@@ -267,12 +294,14 @@ function main() {
       true,
     );
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let pairs;
@@ -286,50 +315,58 @@ function main() {
       }),
     );
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   try {
     console.log(`| longer first [${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let tmp$9;
   try {
     tmp$9 = $iter(ds(1, 2));
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let tmp$10;
   try {
     tmp$10 = ds(4, 7);
   } catch (error) {
-    for (const item of tmp$9) {
-      dDrop_drop(item);
-    }
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of tmp$9) {
+        dDrop_drop(item);
+      }
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let tmp$11;
@@ -342,12 +379,14 @@ function main() {
       true,
     );
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   try {
@@ -360,50 +399,58 @@ function main() {
       }),
     );
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   try {
     console.log(`| longer second [${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let tmp$12;
   try {
     tmp$12 = $iter(ds(1, 5));
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let tmp$13;
   try {
     tmp$13 = ds(5, 8);
   } catch (error) {
-    for (const item of tmp$12) {
-      dDrop_drop(item);
-    }
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of tmp$12) {
+        dDrop_drop(item);
+      }
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let it;
@@ -431,12 +478,14 @@ function main() {
       ),
     );
   } catch (error) {
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let nextBack$2;
@@ -467,13 +516,15 @@ function main() {
     );
     back = nextBack$2 != null ? map$2(nextBack$2) : undefined;
   } catch (error) {
-    it.return();
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      it.return();
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let next;
@@ -488,26 +539,30 @@ function main() {
     next = $next(it);
     front = next != null ? map$3(next) : undefined;
   } catch (error) {
-    it.return();
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      it.return();
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let arg;
   try {
     arg = $exactLen($sizeHint(it));
   } catch (error) {
-    it.return();
-    for (const item of b) {
-      dDrop_drop(item);
-    }
-    for (const item of a) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      it.return();
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   console.log(
@@ -538,8 +593,12 @@ function main() {
         return result;
       }
       return nextBack != null ? map(nextBack) : undefined;
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      zip.return();
+      if ($live()) {
+        zip.return();
+      }
     }
   });
   console.log(`| panics ${r.TAG === "Err"}`);
@@ -570,9 +629,13 @@ function main() {
     for (const item of a) {
       dDrop_drop(item);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of b) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
     }
   }
   console.log("| end");

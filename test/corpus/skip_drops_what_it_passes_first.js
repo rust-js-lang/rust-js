@@ -6,10 +6,12 @@ import {
   $dropEach,
   $held,
   $iter,
+  $live,
   $next,
   $range,
   $rev,
   $skipping,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -33,7 +35,7 @@ function second(items, dropI) {
   } catch (error) {
     $cleanup(() => {
       skip.return();
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -42,7 +44,7 @@ function second(items, dropI) {
   } catch (error) {
     $cleanup(() => {
       skip.return();
-    });
+    }, error);
     throw error;
   }
   skip.return();
@@ -64,8 +66,12 @@ function main() {
     }
     const value = next != null ? map(next) : undefined;
     console.log(`rev ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
   const nums = [1, 2, 3, 4];
   const made = $skipping(

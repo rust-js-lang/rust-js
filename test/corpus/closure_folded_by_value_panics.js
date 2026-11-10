@@ -2,15 +2,18 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $dropEach,
   $holding,
   $iter,
+  $live,
   $position,
   $print,
   $range,
   $retain,
   $sortStable,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -42,9 +45,11 @@ function main() {
       take = $closing($iter($range(1, 6).map((value) => [value])), $dropEach(dDrop_drop)).take(3);
       g$live = false;
     } catch (error) {
-      if (g$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     function f(d) {
@@ -53,8 +58,12 @@ function main() {
           throw new Error("two");
         }
         return (d[0] + zero(g)) >>> 0;
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(d);
+        if ($live()) {
+          dDrop_drop(d);
+        }
       }
     }
     const iter = $holding(
@@ -67,8 +76,12 @@ function main() {
     let result;
     try {
       result = iter.reduce((a, b) => (a + b) >>> 0, 0);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      iter.return();
+      if ($live()) {
+        iter.return();
+      }
     }
     const n = result;
     $print(`${n} `);
@@ -81,9 +94,11 @@ function main() {
       tmp = $iter(value$1);
       g$1$live = false;
     } catch (error) {
-      if (g$1$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$1$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     function f(x) {
@@ -93,8 +108,12 @@ function main() {
     }
     try {
       const value = tmp.forEach(f);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      dDrop_drop(g);
+      if ($live()) {
+        dDrop_drop(g);
+      }
     }
   });
   case$("fold", (g) => {
@@ -105,9 +124,11 @@ function main() {
       tmp = $iter(value);
       g$2$live = false;
     } catch (error) {
-      if (g$2$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$2$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     function f(a, x) {
@@ -119,8 +140,12 @@ function main() {
     let value$1;
     try {
       value$1 = tmp.reduce(f, 0);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      dDrop_drop(g);
+      if ($live()) {
+        dDrop_drop(g);
+      }
     }
     const n = value$1;
     $print(`${n} `);
@@ -136,8 +161,12 @@ function main() {
         return (x + zero(g)) >>> 0 === 9;
       }
       value$1 = value.some(f);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      dDrop_drop(g);
+      if ($live()) {
+        dDrop_drop(g);
+      }
     }
     const n = value$1;
     $print(`${n} `);
@@ -153,13 +182,21 @@ function main() {
     try {
       try {
         const value = $retain(v, f, dDrop_drop);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(g);
+        if ($live()) {
+          dDrop_drop(g);
+        }
       }
       $print(`${v.length} `);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of v) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of v) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -173,8 +210,12 @@ function main() {
     }
     try {
       const value = $sortStable(v, (a, b) => f(a) < f(b), "general8", 4);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      dDrop_drop(g);
+      if ($live()) {
+        dDrop_drop(g);
+      }
     }
     $print(`[${v.join(", ")}] `);
   });
@@ -188,8 +229,12 @@ function main() {
         return (x + zero(g)) >>> 0 === 9;
       }
       value = $position([1, 2, 3], f);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      dDrop_drop(g);
+      if ($live()) {
+        dDrop_drop(g);
+      }
     }
     const p = value;
     $print(`${p == null ? "None" : `Some(${p})`} `);
@@ -202,17 +247,23 @@ function main() {
       tmp = $iter(value);
       g$7$live = false;
     } catch (error) {
-      if (g$7$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$7$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
     let value$1;
     try {
       value$1 = tmp.reduce(f, 0);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      dDrop_drop(g);
+      if ($live()) {
+        dDrop_drop(g);
+      }
     }
     const n = value$1;
     $print(`${n} `);

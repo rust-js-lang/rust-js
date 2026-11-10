@@ -10,6 +10,7 @@ import {
   $iter,
   $iterator,
   $knowing,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
@@ -17,6 +18,7 @@ import {
   $sizeHint,
   $skipping,
   $tryOf,
+  $unwindsOn,
   fuseDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nthBack,
   fuseDoubleEndedIterator_tryRfold,
@@ -108,7 +110,7 @@ function givesDoubleEndedIterator_rfold(gives, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       if (nextBack != null) {
@@ -120,7 +122,7 @@ function givesDoubleEndedIterator_rfold(gives, init, f, dropB, dropF) {
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
         acc$live = true;
@@ -137,7 +139,7 @@ function givesDoubleEndedIterator_rfold(gives, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       break;
@@ -145,8 +147,12 @@ function givesDoubleEndedIterator_rfold(gives, init, f, dropB, dropF) {
     acc$live = false;
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log("drop gives");
+    if ($live()) {
+      console.log("drop gives");
+    }
   }
   return result;
 }
@@ -365,36 +371,76 @@ function main() {
                     );
                     try {
                       console.log(`${accDebug_fmt(acc)}`);
+                    } catch (error) {
+                      throw $unwindsOn(error);
                     } finally {
-                      accDrop_drop(acc);
+                      if ($live()) {
+                        accDrop_drop(acc);
+                      }
                     }
+                  } catch (error) {
+                    throw $unwindsOn(error);
                   } finally {
-                    accDrop_drop(acc$1);
+                    if ($live()) {
+                      accDrop_drop(acc$1);
+                    }
                   }
+                } catch (error) {
+                  throw $unwindsOn(error);
                 } finally {
-                  accDrop_drop(acc);
+                  if ($live()) {
+                    accDrop_drop(acc);
+                  }
                 }
+              } catch (error) {
+                throw $unwindsOn(error);
               } finally {
-                accDrop_drop(acc$1);
+                if ($live()) {
+                  accDrop_drop(acc$1);
+                }
               }
+            } catch (error) {
+              throw $unwindsOn(error);
             } finally {
-              accDrop_drop(acc);
+              if ($live()) {
+                accDrop_drop(acc);
+              }
             }
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            accDrop_drop(acc$1);
+            if ($live()) {
+              accDrop_drop(acc$1);
+            }
           }
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          accDrop_drop(acc);
+          if ($live()) {
+            accDrop_drop(acc);
+          }
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        accDrop_drop(acc$1);
+        if ($live()) {
+          accDrop_drop(acc$1);
+        }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      accDrop_drop(acc);
+      if ($live()) {
+        accDrop_drop(acc);
+      }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of cs) {
-      cDrop_drop(item);
+    if ($live()) {
+      for (const item of cs) {
+        cDrop_drop(item);
+      }
     }
   }
 }

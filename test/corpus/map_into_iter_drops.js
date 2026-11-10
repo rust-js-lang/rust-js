@@ -10,10 +10,12 @@ import {
   $insert,
   $iter,
   $lent,
+  $live,
   $next,
   $sortedEntries,
   $sortedKeys,
   $treeFrom,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -39,9 +41,13 @@ function firstOver(map, limit) {
       loudDrop_drop(value);
       return result;
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of iter) {
-      loudDrop_drop(item[1]);
+    if ($live()) {
+      for (const item of iter) {
+        loudDrop_drop(item[1]);
+      }
     }
   }
 }
@@ -60,7 +66,7 @@ function main() {
             loudDrop_drop(value$1);
           }
         }
-      });
+      }, error);
       throw error;
     }
     try {
@@ -74,7 +80,7 @@ function main() {
             loudDrop_drop(value);
           }
         }
-      });
+      }, error);
       throw error;
     }
   }
@@ -99,9 +105,13 @@ function main() {
       return result;
     }
     found = find != null ? map(find) : undefined;
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of value$1) {
-      loudDrop_drop(item);
+    if ($live()) {
+      for (const item of value$1) {
+        loudDrop_drop(item);
+      }
     }
   }
   console.log(`${found == null ? "None" : `Some(${found})`}`);
@@ -114,7 +124,7 @@ function main() {
       for (const [, value] of $sortedEntries(all, $cmp)) {
         loudDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -126,7 +136,7 @@ function main() {
       for (const [, value] of $sortedEntries(all, $cmp)) {
         loudDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   let tmp;
@@ -137,7 +147,7 @@ function main() {
       for (const [, value] of $sortedEntries(all, $cmp)) {
         loudDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -149,7 +159,7 @@ function main() {
       for (const [, value] of $sortedEntries(all, $cmp)) {
         loudDrop_drop(value);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(

@@ -173,7 +173,7 @@ function $showLocked(cell, show, name, exclusive) {
 }
 
 function $deadlock() {
-  throw new Error("rust-js does not support locking a lock its thread holds, which deadlocks in Rust");
+  throw $unsupported("rust-js does not support locking a lock its thread holds, which deadlocks in Rust");
 }
 
 // A `RefCell<C>` as a `RefCell<dyn T>` (ADR 0397): the same cell, given the

@@ -17,12 +17,14 @@ import {
   $iterEq,
   $iterator,
   $lent,
+  $live,
   $next,
   $partition,
   $rangeInclusiveNext,
   $reserveHint,
   $sortedEntries,
   $sortedKeys,
+  $unwindsOn,
   $unzip,
 } from "@rust-js/std";
 
@@ -58,8 +60,12 @@ function main() {
       v,
       $iterator(iter, (iterator) => loudIterator_next(iterator, { next: $next }), true),
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter);
+    if ($live()) {
+      loudDrop_drop(iter);
+    }
   }
   console.log(`[${v.join(", ")}]`);
   let s = "a";
@@ -71,8 +77,12 @@ function main() {
         s += piece;
       },
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$1);
+    if ($live()) {
+      loudDrop_drop(iter$1);
+    }
   }
   console.log(`${s}`);
   const d = [0];
@@ -82,8 +92,12 @@ function main() {
       d,
       $iterator(iter$2, (iterator) => loudIterator_next(iterator, { next: $next }), true),
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$2);
+    if ($live()) {
+      loudDrop_drop(iter$2);
+    }
   }
   console.log(`[${d.join(", ")}]`);
   const m = new $BTreeMap([[1, 1]]);
@@ -100,8 +114,12 @@ function main() {
       $iterator(iter$3, (iterator) => loudIterator_next(iterator, { next: $next }), true),
       false,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$3);
+    if ($live()) {
+      loudDrop_drop(iter$3);
+    }
   }
   console.log(
     `{${Array.from($sortedEntries(m, $cmp))
@@ -116,8 +134,12 @@ function main() {
       $iterator(iter$4, (iterator) => loudIterator_next(iterator, { next: $next }), true),
       true,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$4);
+    if ($live()) {
+      loudDrop_drop(iter$4);
+    }
   }
   console.log(`{${Array.from($sortedKeys(t, $cmp)).join(", ")}}`);
   const h = new Map();
@@ -128,8 +150,12 @@ function main() {
       $iterator(iter$5, (iterator) => loudIterator_next(iterator, { next: $next }), true),
       false,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$5);
+    if ($live()) {
+      loudDrop_drop(iter$5);
+    }
   }
   console.log(`${h.size}`);
   const hs = new Set();
@@ -140,8 +166,12 @@ function main() {
       $iterator(iter$6, (iterator) => loudIterator_next(iterator, { next: $next }), true),
       true,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$6);
+    if ($live()) {
+      loudDrop_drop(iter$6);
+    }
   }
   console.log(`${hs.size}`);
 
@@ -157,8 +187,12 @@ function main() {
     result = $unzip(
       $iterator(iter$7, (iterator) => loudIterator_next(iterator, { next: $next }), true),
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$7);
+    if ($live()) {
+      loudDrop_drop(iter$7);
+    }
   }
   const [a, b] = result;
   console.log(`[${a.join(", ")}] [${b.map((item) => $debugStr(item, "'")).join(", ")}]`);
@@ -169,8 +203,12 @@ function main() {
       $iterator(iter$8, (iterator) => loudIterator_next(iterator, { next: $next }), true),
       (n) => n % 2 === 0,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$8);
+    if ($live()) {
+      loudDrop_drop(iter$8);
+    }
   }
   const [even, odd] = result$1;
   console.log(`[${even.join(", ")}] [${odd.join(", ")}]`);
@@ -182,8 +220,12 @@ function main() {
       $iterator(iter$9, (iterator) => loudIterator_next(iterator, { next: $next }), true),
       value,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$9);
+    if ($live()) {
+      loudDrop_drop(iter$9);
+    }
   }
   console.log(`${result$2}`);
   const iter$10 = loud([1, 2], "ne");
@@ -193,8 +235,12 @@ function main() {
       $iterator(iter$10, (iterator) => loudIterator_next(iterator, { next: $next }), true),
       [1, 3],
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    loudDrop_drop(iter$10);
+    if ($live()) {
+      loudDrop_drop(iter$10);
+    }
   }
   console.log(`${result$3}`);
 
@@ -225,14 +271,18 @@ function main() {
             dDrop_drop(item);
           }
         }
-      });
+      }, error);
       throw error;
     }
     try {
       loudDrop_drop(iter, $dropEach(dDrop_drop));
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of iter[0]) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of iter[0]) {
+          dDrop_drop(item);
+        }
       }
     }
     console.log(`${ds.length}`);
@@ -415,8 +465,12 @@ function main() {
                           },
                         },
                       );
+                    } catch (error) {
+                      throw $unwindsOn(error);
                     } finally {
-                      text = into.value;
+                      if ($live()) {
+                        text = into.value;
+                      }
                     }
                   });
                   console.log(`${caught.TAG === "Err"} ${$debugStr(text)}`);
@@ -436,53 +490,87 @@ function main() {
                         );
                       },
                     });
+                  } catch (error) {
+                    throw $unwindsOn(error);
                   } finally {
-                    text = into.value;
+                    if ($live()) {
+                      text = into.value;
+                    }
                   }
                   console.log(`${text}`);
                 } finally {
-                  if (caught.TAG === "Ok") {
-                    for (const item of caught._0[0]) {
-                      dDrop_drop(item);
-                    }
-                    for (const item of caught._0[1]) {
-                      dDrop_drop(item);
+                  if ($live()) {
+                    if (caught.TAG === "Ok") {
+                      for (const item of caught._0[0]) {
+                        dDrop_drop(item);
+                      }
+                      for (const item of caught._0[1]) {
+                        dDrop_drop(item);
+                      }
                     }
                   }
                 }
+              } catch (error) {
+                throw $unwindsOn(error);
               } finally {
-                for (const item of ds) {
+                if ($live()) {
+                  for (const item of ds) {
+                    dDrop_drop(item);
+                  }
+                }
+              }
+            } catch (error) {
+              throw $unwindsOn(error);
+            } finally {
+              if ($live()) {
+                for (const item of low) {
                   dDrop_drop(item);
                 }
               }
-            } finally {
-              for (const item of low) {
+            }
+          } catch (error) {
+            throw $unwindsOn(error);
+          } finally {
+            if ($live()) {
+              for (const item of high) {
                 dDrop_drop(item);
               }
             }
-          } finally {
-            for (const item of high) {
+          }
+        } catch (error) {
+          throw $unwindsOn(error);
+        } finally {
+          if ($live()) {
+            for (const item of lent) {
               dDrop_drop(item);
             }
           }
-        } finally {
-          for (const item of lent) {
+        }
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          for (const item of small) {
             dDrop_drop(item);
           }
         }
-      } finally {
-        for (const item of small) {
+      }
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        for (const item of big) {
           dDrop_drop(item);
         }
       }
-    } finally {
-      for (const item of big) {
+    }
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      for (const item of ds) {
         dDrop_drop(item);
       }
-    }
-  } finally {
-    for (const item of ds) {
-      dDrop_drop(item);
     }
   }
 }

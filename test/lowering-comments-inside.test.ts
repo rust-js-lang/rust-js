@@ -73,7 +73,8 @@ pub fn is_text_href(frame: Option<&'static Unknown>) -> bool {
   expect(js).toContain(`  try {
     // Reading a cross-origin frame's href throws.
     return typeof frame.location.href === "string";
-  } catch {
+  } catch (error) {
+    $catchable(error);
     return false;
   }`);
   expect([lib.isTextHref({ location: { href: "a" } } as never), lib.isTextHref(undefined as never)]).toEqual([true, false]);
@@ -111,8 +112,9 @@ pub fn reveal(on: bool, log: &mut Vec<u32>) {
       return;
     }
     // Fall through to reveal.
-  } catch {
+  } catch (error) {
     // Fall through, as it threw.
+    $catchable(error);
   }
   log.push(2);`);
   const log: number[] = [];
@@ -218,10 +220,12 @@ pub fn ignored(on: bool, log: &mut Vec<u32>) {
     log.push(2);
 }
 `);
-  expect(js).toContain(`  } catch {
+  expect(js).toContain(`  } catch (error) {
+    $catchable(error);
     return 0;
   }`);
-  expect(js).toContain(`  } catch {
+  expect(js).toContain(`  } catch (error) {
+    $catchable(error);
     // What threw is logged.
     log.push(9);
     log.push(10);
@@ -229,20 +233,24 @@ pub fn ignored(on: bool, log: &mut Vec<u32>) {
   log.push(2);`);
   // Of an `if` the program wrote, the arm it runs, though its test,
   // `started.TAG !== "Ok"`, names the `Ok`.
-  expect(js).toContain(`  } catch {
+  expect(js).toContain(`  } catch (error) {
+    $catchable(error);
     // What threw is noted.
     log.push(7);
   }`);
   expect(js).toContain(`  } catch (thrown) {
+    $catchable(thrown);
     // What threw is measured.
     const e = $unwound(thrown);`);
-  expect(js).toContain(`  } catch {
+  expect(js).toContain(`  } catch (error) {
+    $catchable(error);
     // What threw.
     return 3;
   }
   // The value.
   log.push(n);`);
-  expect(js).toContain(`  } catch {
+  expect(js).toContain(`  } catch (error) {
+    $catchable(error);
     log.push(3);
   }`);
   const log: number[] = [];
@@ -370,14 +378,17 @@ pub fn turns(xs: &[u32], log: &mut Vec<u32>) {
         continue;
       }
       log.push(x);
-    } catch {`);
+    } catch (error) {
+      $catchable(error);`);
   expect(js).toContain(`    }
     // Of the Ok arm.
     return 5;
-  } catch {
+  } catch (error) {
+    $catchable(error);
     return 0;
   }`);
-  expect(js).toContain(`  } catch {
+  expect(js).toContain(`  } catch (error) {
+    $catchable(error);
     return 0;
   }
   // Logged where it is made.
@@ -391,10 +402,12 @@ pub fn turns(xs: &[u32], log: &mut Vec<u32>) {
   expect(js).toContain(`    }
     // Set where it is made.
     n = 5;
-  } catch {`);
+  } catch (error) {
+    $catchable(error);`);
   expect(js).toContain(`    log.push(1);
     // Fine.
-  } catch {
+  } catch (error) {
+    $catchable(error);
     log.push(3);
   }`);
   expect([lib.returned(false as never), lib.returned(true as never)]).toEqual([5, 0]);

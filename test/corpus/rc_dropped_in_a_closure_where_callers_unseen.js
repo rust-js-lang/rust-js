@@ -27,7 +27,7 @@ function keeperKeep_keepInClosure(keeper, value, TDebug, dropT) {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(first, $dispose);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -35,7 +35,7 @@ function keeperKeep_keepInClosure(keeper, value, TDebug, dropT) {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(other, $dispose);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -43,7 +43,7 @@ function keeperKeep_keepInClosure(keeper, value, TDebug, dropT) {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(other, $dispose);
-    });
+    }, error);
     throw error;
   }
   $rcDrop(other, $dispose);

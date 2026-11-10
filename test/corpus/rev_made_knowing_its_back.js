@@ -83,7 +83,7 @@ function nthBack(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       rev.return();
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -92,7 +92,7 @@ function nthBack(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       rev.return();
-    });
+    }, error);
     throw error;
   }
   rev.return();
@@ -127,7 +127,7 @@ function ends(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       r.return();
-    });
+    }, error);
     throw error;
   }
   let next;
@@ -143,7 +143,7 @@ function ends(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       r.return();
-    });
+    }, error);
     throw error;
   }
   const option = a != null && b != null ? [a, b] : undefined;
@@ -164,7 +164,7 @@ function rfold(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       iter.return();
-    });
+    }, error);
     throw error;
   }
   iter.return();
@@ -184,7 +184,7 @@ function rfind(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       rev.return();
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -193,7 +193,7 @@ function rfind(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       rev.return();
-    });
+    }, error);
     throw error;
   }
   rev.return();
@@ -397,7 +397,7 @@ function main() {
           } catch (error) {
             $cleanup(() => {
               dDrop_drop(d);
-            });
+            }, error);
             throw error;
           }
         }

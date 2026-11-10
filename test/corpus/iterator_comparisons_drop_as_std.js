@@ -2,6 +2,8 @@
 
 import {
   $advanceSlice,
+  $catchable,
+  $cleanup,
   $closing,
   $cmp,
   $collectOptions,
@@ -12,8 +14,10 @@ import {
   $iterEq,
   $iterator,
   $lazyRange,
+  $live,
   $next,
   $nextSome,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -48,7 +52,8 @@ function caught(f) {
   try {
     f();
     console.log("ended");
-  } catch {
+  } catch (error) {
+    $catchable(error);
     console.log("panicked");
   }
 }
@@ -123,9 +128,11 @@ function main() {
   try {
     tmp = it($iter(value$1), "b", 0);
   } catch (error) {
-    for (const item of value) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of value) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   console.log(
@@ -167,9 +174,11 @@ function main() {
     try {
       tmp = it($iter(value), "b", 2);
     } catch (error) {
-      for (const item of value$1) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of value$1) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     console.log(
@@ -234,8 +243,12 @@ function main() {
       value$3,
       $cmp,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    itDrop_drop(iter);
+    if ($live()) {
+      itDrop_drop(iter);
+    }
   }
   console.log(`${result == null ? "None" : `Some(${["Less", "Equal", "Greater"][result + 1]})`}`);
   console.log(
@@ -322,10 +335,14 @@ function main() {
     console.log(
       `${all == null ? "None" : `Some([${all.map((item) => dDebug_fmt(item)).join(", ")}])`}`,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (all != null) {
-      for (const item of all) {
-        dDrop_drop(item);
+    if ($live()) {
+      if (all != null) {
+        for (const item of all) {
+          dDrop_drop(item);
+        }
       }
     }
   }
@@ -376,10 +393,14 @@ function main() {
     console.log(
       `${none == null ? "None" : `Some([${none.map((item) => dDebug_fmt(item)).join(", ")}])`}`,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (none != null) {
-      for (const item of none) {
-        dDrop_drop(item);
+    if ($live()) {
+      if (none != null) {
+        for (const item of none) {
+          dDrop_drop(item);
+        }
       }
     }
   }

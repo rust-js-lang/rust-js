@@ -17,11 +17,13 @@ import {
   $iter,
   $iterator,
   $lazyChain,
+  $live,
   $mapEnds,
   $rangeNext,
   $rangeNextBack,
   $rev,
   $stepBy,
+  $unwindsOn,
   iterator_fuse,
   iterator_peekable,
 } from "@rust-js/std";
@@ -58,7 +60,7 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       if (x == null) {
@@ -71,7 +73,7 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       acc$live = true;
@@ -80,8 +82,12 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
     acc$live = false;
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    dDrop_drop(own._held);
+    if ($live()) {
+      dDrop_drop(own._held);
+    }
   }
   return result;
 }
@@ -155,9 +161,11 @@ function reachingItsOwnFold() {
     ).take(3);
     g$live = false;
   } catch (error) {
-    if (g$live) {
-      dDrop_drop(g);
-    }
+    $cleanup(() => {
+      if (g$live) {
+        dDrop_drop(g);
+      }
+    }, error);
     throw error;
   }
   const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
@@ -186,9 +194,11 @@ function reachingItsOwnFold() {
     ).drop(1);
     g$1$live = false;
   } catch (error) {
-    if (g$1$live) {
-      dDrop_drop(g$1);
-    }
+    $cleanup(() => {
+      if (g$1$live) {
+        dDrop_drop(g$1);
+      }
+    }, error);
     throw error;
   }
   const f$1 = (a, x) => (((a + x) >>> 0) + zero(g$1)) >>> 0;
@@ -209,9 +219,11 @@ function reachingItsOwnFold() {
     );
     g$2$live = false;
   } catch (error) {
-    if (g$2$live) {
-      dDrop_drop(g$2);
-    }
+    $cleanup(() => {
+      if (g$2$live) {
+        dDrop_drop(g$2);
+      }
+    }, error);
     throw error;
   }
   const f$2 = (a, x) => (((a + x) >>> 0) + zero(g$2)) >>> 0;
@@ -233,9 +245,11 @@ function reachingItsOwnFold() {
     );
     g$3$live = false;
   } catch (error) {
-    if (g$3$live) {
-      dDrop_drop(g$3);
-    }
+    $cleanup(() => {
+      if (g$3$live) {
+        dDrop_drop(g$3);
+      }
+    }, error);
     throw error;
   }
   const f$3 = (a, x) => (((a + x) >>> 0) + zero(g$3)) >>> 0;
@@ -266,9 +280,11 @@ function reachingItsOwnFold() {
     );
     g$4$live = false;
   } catch (error) {
-    if (g$4$live) {
-      dDrop_drop(g$4);
-    }
+    $cleanup(() => {
+      if (g$4$live) {
+        dDrop_drop(g$4);
+      }
+    }, error);
     throw error;
   }
   function f$4([i, x]) {
@@ -324,7 +340,9 @@ function reachingItsOwnFold() {
       ),
     );
   } catch (error) {
-    dDrop_drop(g$5);
+    $cleanup(() => {
+      dDrop_drop(g$5);
+    }, error);
     throw error;
   }
   const f$5 = (a, x) => (((a + x) >>> 0) + zero(g$5)) >>> 0;
@@ -359,9 +377,11 @@ function steppedToItsEnd() {
     );
     g$live = false;
   } catch (error) {
-    if (g$live) {
-      dDrop_drop(g);
-    }
+    $cleanup(() => {
+      if (g$live) {
+        dDrop_drop(g);
+      }
+    }, error);
     throw error;
   }
   const f = (x) => (x + zero(g)) >>> 0;
@@ -375,8 +395,12 @@ function steppedToItsEnd() {
   let result;
   try {
     result = iter.reduce((a, x) => (a + x) >>> 0, 0);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter.return();
+    if ($live()) {
+      iter.return();
+    }
   }
   const n = result;
   console.log(`step_by fold ${n}`);
@@ -404,9 +428,11 @@ function steppedToItsEnd() {
     );
     g$1$live = false;
   } catch (error) {
-    if (g$1$live) {
-      dDrop_drop(g$1);
-    }
+    $cleanup(() => {
+      if (g$1$live) {
+        dDrop_drop(g$1);
+      }
+    }, error);
     throw error;
   }
   const f$1 = (x) => String.fromCharCode((97 + (((x + zero(g$1)) >>> 0) & 255)) & 255);
@@ -420,8 +446,12 @@ function steppedToItsEnd() {
   let result$1;
   try {
     result$1 = $foldToArray($folded(iter$1)).join("");
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter$1.return();
+    if ($live()) {
+      iter$1.return();
+    }
   }
   const s = result$1;
   console.log(`step_by string ${s}`);
@@ -438,10 +468,12 @@ function foldedFromTheBack() {
     tmp = $iter(value);
     g$live = false;
   } catch (error) {
-    dDrop_drop(h);
-    if (g$live) {
-      dDrop_drop(g);
-    }
+    $cleanup(() => {
+      dDrop_drop(h);
+      if (g$live) {
+        dDrop_drop(g);
+      }
+    }, error);
     throw error;
   }
   function f(d) {
@@ -460,9 +492,11 @@ function foldedFromTheBack() {
     );
     h$live = false;
   } catch (error) {
-    if (h$live) {
-      dDrop_drop(h);
-    }
+    $cleanup(() => {
+      if (h$live) {
+        dDrop_drop(h);
+      }
+    }, error);
     throw error;
   }
   const f$1 = (a, x) => (((a + x) >>> 0) + zero(h)) >>> 0;
@@ -472,8 +506,12 @@ function foldedFromTheBack() {
     result = $consume(iter, "rfold", 0, f$1, undefined, () => {
       dDrop_drop(h);
     });
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter.return();
+    if ($live()) {
+      iter.return();
+    }
   }
   let n = result;
   console.log(`map rfold ${n}`);
@@ -510,9 +548,11 @@ function foldedFromTheBack() {
     );
     h$1$live = false;
   } catch (error) {
-    if (h$1$live) {
-      dDrop_drop(h$1);
-    }
+    $cleanup(() => {
+      if (h$1$live) {
+        dDrop_drop(h$1);
+      }
+    }, error);
     throw error;
   }
   const f$3 = (a, x) => (((a + x) >>> 0) + zero(h$1)) >>> 0;
@@ -522,8 +562,12 @@ function foldedFromTheBack() {
     result$1 = $consume(iter$1, "rfold", 0, f$3, undefined, () => {
       dDrop_drop(h$1);
     });
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter$1.return();
+    if ($live()) {
+      iter$1.return();
+    }
   }
   n = result$1;
   console.log(`filter rfold ${n}`);
@@ -541,10 +585,12 @@ function foldedFromTheBackAsItPanics() {
       tmp = $iter(value);
       g$0$live = false;
     } catch (error) {
-      if (g$0$live) {
-        dDrop_drop(g);
-      }
-      dDrop_drop(h);
+      $cleanup(() => {
+        if (g$0$live) {
+          dDrop_drop(g);
+        }
+        dDrop_drop(h);
+      }, error);
       throw error;
     }
     function f(d) {
@@ -563,9 +609,11 @@ function foldedFromTheBackAsItPanics() {
       );
       h$1$live = false;
     } catch (error) {
-      if (h$1$live) {
-        dDrop_drop(h);
-      }
+      $cleanup(() => {
+        if (h$1$live) {
+          dDrop_drop(h);
+        }
+      }, error);
       throw error;
     }
     function f$1(a, x) {
@@ -578,8 +626,12 @@ function foldedFromTheBackAsItPanics() {
       return $consume(iter, "rfold", 0, f$1, undefined, () => {
         dDrop_drop(h);
       });
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      iter.return();
+      if ($live()) {
+        iter.return();
+      }
     }
   });
   console.log(`map rfold panicked ${r.TAG === "Err"}`);
@@ -594,9 +646,11 @@ function ofAVecReversed() {
     enumerate = $enumerate($rev($closing($iter(value), $dropEach(dDrop_drop))));
     g$live = false;
   } catch (error) {
-    if (g$live) {
-      dDrop_drop(g);
-    }
+    $cleanup(() => {
+      if (g$live) {
+        dDrop_drop(g);
+      }
+    }, error);
     throw error;
   }
   function f([i, d]) {
@@ -627,9 +681,11 @@ function ofAVecReversed() {
     });
     g$1$live = false;
   } catch (error) {
-    if (g$1$live) {
-      dDrop_drop(g$1);
-    }
+    $cleanup(() => {
+      if (g$1$live) {
+        dDrop_drop(g$1);
+      }
+    }, error);
     throw error;
   }
   const f$1 = (a, x) => (((a + x) >>> 0) + zero(g$1)) >>> 0;
@@ -645,9 +701,11 @@ function ofAVecReversed() {
     rev = $rev($closing($iter(value$2), $dropEach(dDrop_drop)));
     g$2$live = false;
   } catch (error) {
-    if (g$2$live) {
-      dDrop_drop(g$2);
-    }
+    $cleanup(() => {
+      if (g$2$live) {
+        dDrop_drop(g$2);
+      }
+    }, error);
     throw error;
   }
   function f$2(a, d) {
@@ -669,17 +727,23 @@ function reversedWithoutAPanic() {
     rev = $rev($iterator({ start: 1, end: 6 }, $rangeNext, false, $rangeNextBack));
     g$live = false;
   } catch (error) {
-    if (g$live) {
-      dDrop_drop(g);
-    }
+    $cleanup(() => {
+      if (g$live) {
+        dDrop_drop(g);
+      }
+    }, error);
     throw error;
   }
   const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
   let value;
   try {
     value = $foldBack(rev, 0, f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    dDrop_drop(g);
+    if ($live()) {
+      dDrop_drop(g);
+    }
   }
   let n = value;
   console.log(`range rev rfold ${n}`);
@@ -694,17 +758,23 @@ function reversedWithoutAPanic() {
     });
     g$1$live = false;
   } catch (error) {
-    if (g$1$live) {
-      dDrop_drop(g$1);
-    }
+    $cleanup(() => {
+      if (g$1$live) {
+        dDrop_drop(g$1);
+      }
+    }, error);
     throw error;
   }
   const f$1 = (a, x) => (((a + x) >>> 0) + zero(g$1)) >>> 0;
   let value$1;
   try {
     value$1 = $foldBack(tmp, 0, f$1);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    dDrop_drop(g$1);
+    if ($live()) {
+      dDrop_drop(g$1);
+    }
   }
   n = value$1;
   console.log(`inspect rfold ${n}`);
@@ -718,17 +788,23 @@ function reversedWithoutAPanic() {
     );
     g$2$live = false;
   } catch (error) {
-    if (g$2$live) {
-      dDrop_drop(g$2);
-    }
+    $cleanup(() => {
+      if (g$2$live) {
+        dDrop_drop(g$2);
+      }
+    }, error);
     throw error;
   }
   const f$2 = (a, x) => (((a + x) >>> 0) + zero(g$2)) >>> 0;
   let value$2;
   try {
     value$2 = $foldBack(flatMap, 0, f$2);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    dDrop_drop(g$2);
+    if ($live()) {
+      dDrop_drop(g$2);
+    }
   }
   n = value$2;
   console.log(`flat_map rfold ${n}`);
@@ -740,17 +816,23 @@ function reversedWithoutAPanic() {
     flatten = $flattenEnds($iter(value$4), (item) => $iter(item));
     g$3$live = false;
   } catch (error) {
-    if (g$3$live) {
-      dDrop_drop(g$3);
-    }
+    $cleanup(() => {
+      if (g$3$live) {
+        dDrop_drop(g$3);
+      }
+    }, error);
     throw error;
   }
   const f$3 = (a, x) => (((a + x) >>> 0) + zero(g$3)) >>> 0;
   let value$3;
   try {
     value$3 = $foldBack(flatten, 0, f$3);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    dDrop_drop(g$3);
+    if ($live()) {
+      dDrop_drop(g$3);
+    }
   }
   n = value$3;
   console.log(`flatten rfold ${n}`);
@@ -771,7 +853,9 @@ function chainedUnderAMap() {
       }),
     );
   } catch (error) {
-    dDrop_drop(g);
+    $cleanup(() => {
+      dDrop_drop(g);
+    }, error);
     throw error;
   }
   const f = (x) => (x + zero(g)) >>> 0;
@@ -785,8 +869,12 @@ function chainedUnderAMap() {
   let result;
   try {
     result = iter.reduce((a, x) => (a + x) >>> 0, 0);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter.return();
+    if ($live()) {
+      iter.return();
+    }
   }
   let n = result;
   console.log(`chain map fold ${n}`);
@@ -800,7 +888,9 @@ function chainedUnderAMap() {
       1,
     );
   } catch (error) {
-    dDrop_drop(g$1);
+    $cleanup(() => {
+      dDrop_drop(g$1);
+    }, error);
     throw error;
   }
   const value$2 = plain(1, "b");
@@ -813,7 +903,9 @@ function chainedUnderAMap() {
       }),
     );
   } catch (error) {
-    dDrop_drop(g$1);
+    $cleanup(() => {
+      dDrop_drop(g$1);
+    }, error);
     throw error;
   }
   const f$1 = () => zero(g$1) === 0;
@@ -827,8 +919,12 @@ function chainedUnderAMap() {
   let result$1;
   try {
     result$1 = iter$1.reduce((a, x) => (a + x) >>> 0, 0);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter$1.return();
+    if ($live()) {
+      iter$1.return();
+    }
   }
   n = result$1;
   console.log(`chain filter fold ${n}`);
@@ -848,7 +944,9 @@ function chainedFromEitherEnd() {
       value$1,
     );
   } catch (error) {
-    dDrop_drop(g);
+    $cleanup(() => {
+      dDrop_drop(g);
+    }, error);
     throw error;
   }
   const f = (x) => String.fromCharCode((97 + (((x + zero(g)) >>> 0) & 255)) & 255);
@@ -862,8 +960,12 @@ function chainedFromEitherEnd() {
   let result;
   try {
     result = $foldToArray(iter).join("");
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter.return();
+    if ($live()) {
+      iter.return();
+    }
   }
   const s = result;
   console.log(`chain string ${s}`);

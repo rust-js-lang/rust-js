@@ -17,11 +17,13 @@ import {
   $held,
   $iter,
   $iterator,
+  $live,
   $mapEnds,
   $reserveHint,
   $roomForHint,
   $slicing,
   $tryFoldOk,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -132,7 +134,7 @@ function folded(src, dropI) {
           $cleanup(() => {
             dDrop_drop(x);
             accDrop_drop(a);
-          });
+          }, error);
           throw error;
         }
         seen = (seen + 1) | 0;
@@ -146,9 +148,13 @@ function folded(src, dropI) {
         }
         try {
           dDrop_drop(x);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          if (a$1$live) {
-            accDrop_drop(a);
+          if ($live()) {
+            if (a$1$live) {
+              accDrop_drop(a);
+            }
           }
         }
         return result;
@@ -158,7 +164,7 @@ function folded(src, dropI) {
   } catch (error) {
     $cleanup(() => {
       filter.return();
-    });
+    }, error);
     throw error;
   }
   try {
@@ -168,9 +174,13 @@ function folded(src, dropI) {
     } else {
       console.log(`err ${r._0}`);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (r.TAG === "Ok") {
-      accDrop_drop(r._0);
+    if ($live()) {
+      if (r.TAG === "Ok") {
+        accDrop_drop(r._0);
+      }
     }
   }
 }
@@ -191,7 +201,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(odd, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   $dropItems(odd, dDrop_drop);
@@ -218,7 +228,7 @@ function main() {
           } catch (error) {
             $cleanup(() => {
               dDrop_drop(d);
-            });
+            }, error);
             throw error;
           }
           dDrop_drop(d);

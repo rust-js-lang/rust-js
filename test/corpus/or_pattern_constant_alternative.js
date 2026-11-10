@@ -16,7 +16,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       x[0].push(x[1]);
-    });
+    }, error);
     throw error;
   }
   x[0].push(x[1]);
@@ -31,7 +31,7 @@ function main() {
       if (y$1$live) {
         y[0].push(y[1]);
       }
-    });
+    }, error);
     throw error;
   }
   y$1$live = false;

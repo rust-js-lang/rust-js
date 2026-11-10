@@ -186,8 +186,8 @@ pub fn written(lines: &[&str]) -> usize {
   expect(js).toContain('  while (s < lines.length) {\n    let tmp;\n    try {\n      tmp = isRoot(lines[s]);\n    } catch (error) {\n');
   expect(js).toContain('    if (tmp) {\n      break;\n    }\n    s++;\n  }\n  const result = s;\n  DROPS = (DROPS + 1) >>> 0;\n  return result;\n}\n');
   // A drop that can't throw is the scope's one \`finally\`, each \`while\` its test.
-  expect(js).toContain('    while (s < lines.length && !isRoot(lines[s])) {\n      s++;\n    }\n    return s;\n  } finally {\n');
-  expect(js).toContain('    while (s < lines.length) {\n      if (isRoot(lines[s])) {\n        break;\n      }\n      s++;\n    }\n    return s;\n  } finally {\n');
+  expect(js).toContain('    while (s < lines.length && !isRoot(lines[s])) {\n      s++;\n    }\n    return s;\n  } catch (error) {\n    throw $unwindsOn(error);\n  } finally {\n');
+  expect(js).toContain('    while (s < lines.length) {\n      if (isRoot(lines[s])) {\n        break;\n      }\n      s++;\n    }\n    return s;\n  } catch (error) {\n    throw $unwindsOn(error);\n  } finally {\n');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.root(["a", "Root"]), lib.root(["a"]), lib.root([])]).toEqual([1, 1, 0]);
   expect([lib.written(["a", "Root"]), lib.written(["a"]), lib.written([])]).toEqual([1, 1, 0]);

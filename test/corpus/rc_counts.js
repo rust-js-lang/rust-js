@@ -186,7 +186,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $rcDrop(leaf, dropNode);
-      });
+      }, error);
       throw error;
     }
     let upgrade;
@@ -201,7 +201,7 @@ function main() {
       $cleanup(() => {
         $unborrow(borrow);
         $rcDrop(leaf, dropNode);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -211,7 +211,7 @@ function main() {
       $cleanup(() => {
         $unborrow(borrow);
         $rcDrop(leaf, dropNode);
-      });
+      }, error);
       throw error;
     }
     $unborrow(borrow);
@@ -222,7 +222,7 @@ function main() {
       $cleanup(() => {
         $weakDrop($weakNone);
         $rcDrop(leaf, dropNode);
-      });
+      }, error);
       throw error;
     }
     const branch = {
@@ -241,7 +241,7 @@ function main() {
       $cleanup(() => {
         $rcDrop(branch, dropNode);
         $rcDrop(leaf, dropNode);
-      });
+      }, error);
       throw error;
     }
     let borrowMut;
@@ -252,7 +252,7 @@ function main() {
         $weakDrop(tmp$1);
         $rcDrop(branch, dropNode);
         $rcDrop(leaf, dropNode);
-      });
+      }, error);
       throw error;
     }
     $weakDrop(borrowMut.value);
@@ -265,7 +265,7 @@ function main() {
       $cleanup(() => {
         $rcDrop(branch, dropNode);
         $rcDrop(leaf, dropNode);
-      });
+      }, error);
       throw error;
     }
     let upgrade$1;
@@ -281,7 +281,7 @@ function main() {
         $unborrow(tmp$2);
         $rcDrop(branch, dropNode);
         $rcDrop(leaf, dropNode);
-      });
+      }, error);
       throw error;
     }
     let tmp$4;
@@ -292,7 +292,7 @@ function main() {
         $unborrow(tmp$2);
         $rcDrop(branch, dropNode);
         $rcDrop(leaf, dropNode);
-      });
+      }, error);
       throw error;
     }
     console.log(
@@ -305,7 +305,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $rcDrop(leaf, dropNode);
-      });
+      }, error);
       throw error;
     }
     let tmp$5;
@@ -314,7 +314,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $rcDrop(leaf, dropNode);
-      });
+      }, error);
       throw error;
     }
     let upgrade$2;
@@ -329,7 +329,7 @@ function main() {
       $cleanup(() => {
         $unborrow(tmp$5);
         $rcDrop(leaf, dropNode);
-      });
+      }, error);
       throw error;
     }
     let tmp$6;
@@ -339,7 +339,7 @@ function main() {
       $cleanup(() => {
         $unborrow(tmp$5);
         $rcDrop(leaf, dropNode);
-      });
+      }, error);
       throw error;
     }
     console.log(`${tmp$6 == null ? "None" : `Some(${$debugStr(tmp$6)})`} ${leaf.strong}`);
@@ -353,7 +353,7 @@ function main() {
       $cleanup(() => {
         $rcDrop(text);
         $rcDrop(leaf, dropNode);
-      });
+      }, error);
       throw error;
     }
     let tmp$7;
@@ -363,7 +363,7 @@ function main() {
       $cleanup(() => {
         $rcDrop(other);
         $rcDrop(leaf, dropNode);
-      });
+      }, error);
       throw error;
     }
     console.log(`${tmp$7} ${other.strong}`);
@@ -378,7 +378,7 @@ function main() {
         $rcDrop(seven);
         $rcDrop(other);
         $rcDrop(leaf, dropNode);
-      });
+      }, error);
       throw error;
     }
     text = String(seven.value);

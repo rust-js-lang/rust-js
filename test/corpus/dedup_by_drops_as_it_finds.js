@@ -6,8 +6,10 @@ import {
   $dedupByCells,
   $dropItems,
   $index,
+  $live,
   $popIfCell,
   $rcDrop,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -39,7 +41,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     console.log(`${v.length}`);
@@ -68,7 +70,7 @@ function main() {
         $dropItems(v, (item) => {
           $rcDrop(item, dDrop_drop);
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`${v.length}`);
@@ -96,7 +98,7 @@ function main() {
         $dropItems(v, (item) => {
           $rcDrop(item, dDrop_drop);
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`${v.length}`);
@@ -114,8 +116,12 @@ function main() {
             const d = [7];
             try {
               dDrop_drop(a.value);
+            } catch (error) {
+              throw $unwindsOn(error);
             } finally {
-              a.value = d;
+              if ($live()) {
+                a.value = d;
+              }
             }
             throw new Error("by");
           }
@@ -129,7 +135,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, dDrop_drop);
@@ -150,7 +156,7 @@ function main() {
         $dropItems(v, (item) => {
           $rcDrop(item, dDrop_drop);
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`${popped != null} ${v.length}`);
@@ -163,7 +169,7 @@ function main() {
         $dropItems(v, (item) => {
           $rcDrop(item, dDrop_drop);
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, (item) => {
@@ -177,8 +183,12 @@ function main() {
         const d = [6];
         try {
           dDrop_drop(x.value);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          x.value = d;
+          if ($live()) {
+            x.value = d;
+          }
         }
         throw new Error("pop_if");
       }),
@@ -193,7 +203,7 @@ function main() {
           }
         }
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -205,7 +215,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, dDrop_drop);

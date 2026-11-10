@@ -77,7 +77,7 @@ const Component = {
         } finally {
           $weakDrop(first.bus);
         }
-      });
+      }, error);
       throw error;
     }
     return {
@@ -118,7 +118,7 @@ function main() {
             $weakDrop(item.bus);
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -155,7 +155,7 @@ function main() {
             $weakDrop(item.bus);
           }
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`${b.name} has ${b.subs.length}`);
@@ -192,7 +192,7 @@ function main() {
             $weakDrop(item.bus);
           }
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -214,7 +214,7 @@ function main() {
             $weakDrop(item.bus);
           }
         });
-      });
+      }, error);
       throw error;
     }
     const comps = [a];
@@ -259,7 +259,7 @@ function main() {
             }
           });
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -283,7 +283,7 @@ function main() {
             }
           });
         });
-      });
+      }, error);
       throw error;
     }
     let borrow;
@@ -308,7 +308,7 @@ function main() {
             }
           });
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`left ${borrow.handlers.size}`);

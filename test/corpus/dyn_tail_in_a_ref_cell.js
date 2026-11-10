@@ -8,9 +8,11 @@ import {
   $dropItems,
   $dynCell,
   $index,
+  $live,
   $rcClone,
   $rcDrop,
   $unborrow,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -110,7 +112,7 @@ function main() {
         $rcDrop(shape, (value) => {
           value.impl.$drop?.(value.shape);
         });
-      });
+      }, error);
       throw error;
     }
     const receiver = {
@@ -130,7 +132,7 @@ function main() {
         $rcDrop(shape, (value) => {
           value.impl.$drop?.(value.shape);
         });
-      });
+      }, error);
       throw error;
     }
     $unborrow(borrowMut);
@@ -142,7 +144,7 @@ function main() {
         $rcDrop(shape, (value) => {
           value.impl.$drop?.(value.shape);
         });
-      });
+      }, error);
       throw error;
     }
     let tmp;
@@ -153,7 +155,7 @@ function main() {
         $rcDrop(shape, (value) => {
           value.impl.$drop?.(value.shape);
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`${$displayF64(borrow.shape.r + tmp.label)}`);
@@ -176,7 +178,7 @@ function main() {
           $rcDrop(shape, (value) => {
             value.impl.$drop?.(value.shape);
           });
-        });
+        }, error);
         throw error;
       }
       shapes = [shape, rc];
@@ -190,7 +192,7 @@ function main() {
               value.impl.$drop?.(value.shape);
             });
           });
-        });
+        }, error);
         throw error;
       }
       const receiver = {
@@ -212,7 +214,7 @@ function main() {
               value.impl.$drop?.(value.shape);
             });
           });
-        });
+        }, error);
         throw error;
       }
       $unborrow(tmp);
@@ -226,7 +228,7 @@ function main() {
               value.impl.$drop?.(value.shape);
             });
           });
-        });
+        }, error);
         throw error;
       }
       tmp$1.label = (tmp$1.label + 1) >>> 0;
@@ -240,7 +242,7 @@ function main() {
               value.impl.$drop?.(value.shape);
             });
           });
-        });
+        }, error);
         throw error;
       }
       let tmp$3;
@@ -253,14 +255,18 @@ function main() {
               value.impl.$drop?.(value.shape);
             });
           });
-        });
+        }, error);
         throw error;
       }
       console.log(`${$displayF64(tmp$2)} ${tmp$3.label}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      $rcDrop(square, (value) => {
-        squareDrop_drop(value.shape);
-      });
+      if ($live()) {
+        $rcDrop(square, (value) => {
+          squareDrop_drop(value.shape);
+        });
+      }
     }
     $dropItems(shapes, (item) => {
       $rcDrop(item, (value) => {

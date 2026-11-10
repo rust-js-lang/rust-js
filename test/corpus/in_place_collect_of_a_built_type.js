@@ -55,7 +55,7 @@ function held(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, dr
   } catch (error) {
     $cleanup(() => {
       iter.return();
-    });
+    }, error);
     throw error;
   }
   iter.return();
@@ -71,9 +71,11 @@ function wide(w) {
     try {
       throw new Error("wide");
     } catch (error) {
-      if (w != null) {
-        dDrop_drop(w);
-      }
+      $cleanup(() => {
+        if (w != null) {
+          dDrop_drop(w);
+        }
+      }, error);
       throw error;
     }
   }
@@ -89,18 +91,22 @@ function narrow(v) {
   try {
     tmp = $index(v, 0)[0] === 3n;
   } catch (error) {
-    for (const item of v) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of v) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   if (tmp) {
     try {
       throw new Error("narrow");
     } catch (error) {
-      for (const item of v) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of v) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
   }
@@ -149,7 +155,7 @@ function main() {
             }
           }
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems(value, (item) => {
@@ -231,7 +237,7 @@ function main() {
             }
           }
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems(value, (item) => {

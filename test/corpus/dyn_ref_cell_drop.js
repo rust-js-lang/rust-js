@@ -30,7 +30,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       named.impl.$drop?.(named.value);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -39,7 +39,7 @@ function main() {
     $cleanup(() => {
       $unborrow(borrowMut);
       named.impl.$drop?.(named.value);
-    });
+    }, error);
     throw error;
   }
   $unborrow(borrowMut);
@@ -49,7 +49,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       named.impl.$drop?.(named.value);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -58,7 +58,7 @@ function main() {
     $cleanup(() => {
       $unborrow(borrow);
       named.impl.$drop?.(named.value);
-    });
+    }, error);
     throw error;
   }
   $unborrow(borrow);
@@ -70,7 +70,7 @@ function main() {
     $cleanup(() => {
       inner.impl.$drop?.(inner.value);
       named.impl.$drop?.(named.value);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -80,7 +80,7 @@ function main() {
       $unborrow(tmp);
       inner.impl.$drop?.(inner.value);
       named.impl.$drop?.(named.value);
-    });
+    }, error);
     throw error;
   }
   $unborrow(tmp);
@@ -89,7 +89,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       named.impl.$drop?.(named.value);
-    });
+    }, error);
     throw error;
   }
   console.log("end");

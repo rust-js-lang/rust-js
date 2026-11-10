@@ -23,7 +23,7 @@ function deltaSum_sum(iter, dropI) {
       if (!iter.ownFold) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownFold) {

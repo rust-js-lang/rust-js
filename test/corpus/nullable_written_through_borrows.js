@@ -5,8 +5,10 @@ import {
   $borrowMut,
   $cellReplace,
   $index,
+  $live,
   $nullableCell,
   $unborrow,
+  $unwindsOn,
   $withBorrow,
   $withBorrowMut,
 } from "@rust-js/std";
@@ -222,8 +224,12 @@ function main() {
       const other = { value: other$2 };
       try {
         swapWith(t, other);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        other$2 = other.value;
+        if ($live()) {
+          other$2 = other.value;
+        }
       }
     },
     true,

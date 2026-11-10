@@ -9,10 +9,12 @@ import {
   $dynCell,
   $fieldCell,
   $index,
+  $live,
   $next,
   $rcClone,
   $rcDrop,
   $unborrow,
+  $unwindsOn,
   $upgrade,
   $weakDrop,
   $weakNone,
@@ -103,25 +105,29 @@ function main() {
   try {
     tmp = $downgrade(root);
   } catch (error) {
-    $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent);
-    });
-    $rcDrop(root, (value) => {
-      $weakDrop(value.parent);
-    });
+    $cleanup(() => {
+      $rcDrop(leaf, (value) => {
+        $weakDrop(value.parent);
+      });
+      $rcDrop(root, (value) => {
+        $weakDrop(value.parent);
+      });
+    }, error);
     throw error;
   }
   let borrowMut;
   try {
     borrowMut = $borrowMut($fieldCell(leaf.value, "parent"), true);
   } catch (error) {
-    $weakDrop(tmp);
-    $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent);
-    });
-    $rcDrop(root, (value) => {
-      $weakDrop(value.parent);
-    });
+    $cleanup(() => {
+      $weakDrop(tmp);
+      $rcDrop(leaf, (value) => {
+        $weakDrop(value.parent);
+      });
+      $rcDrop(root, (value) => {
+        $weakDrop(value.parent);
+      });
+    }, error);
     throw error;
   }
   $weakDrop(borrowMut.value);
@@ -131,12 +137,14 @@ function main() {
   try {
     tmp$1 = $borrow($fieldCell(leaf.value, "parent"), true);
   } catch (error) {
-    $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent);
-    });
-    $rcDrop(root, (value) => {
-      $weakDrop(value.parent);
-    });
+    $cleanup(() => {
+      $rcDrop(leaf, (value) => {
+        $weakDrop(value.parent);
+      });
+      $rcDrop(root, (value) => {
+        $weakDrop(value.parent);
+      });
+    }, error);
     throw error;
   }
   let upgrade;
@@ -150,25 +158,29 @@ function main() {
   try {
     upgrade = $upgrade(tmp$1.value);
   } catch (error) {
-    $unborrow(tmp$1);
-    $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent);
-    });
-    $rcDrop(root, (value) => {
-      $weakDrop(value.parent);
-    });
+    $cleanup(() => {
+      $unborrow(tmp$1);
+      $rcDrop(leaf, (value) => {
+        $weakDrop(value.parent);
+      });
+      $rcDrop(root, (value) => {
+        $weakDrop(value.parent);
+      });
+    }, error);
     throw error;
   }
   try {
     console.log(`${leaf.value.name} of ${(upgrade != null ? map(upgrade) : undefined) ?? ""}`);
   } catch (error) {
-    $unborrow(tmp$1);
-    $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent);
-    });
-    $rcDrop(root, (value) => {
-      $weakDrop(value.parent);
-    });
+    $cleanup(() => {
+      $unborrow(tmp$1);
+      $rcDrop(leaf, (value) => {
+        $weakDrop(value.parent);
+      });
+      $rcDrop(root, (value) => {
+        $weakDrop(value.parent);
+      });
+    }, error);
     throw error;
   }
   $unborrow(tmp$1);
@@ -179,13 +191,15 @@ function main() {
     tmp$2 = $rcClone(counter);
     $dynCell(tmp$2.value, counterSink);
   } catch (error) {
-    $rcDrop(counter);
-    $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent);
-    });
-    $rcDrop(root, (value) => {
-      $weakDrop(value.parent);
-    });
+    $cleanup(() => {
+      $rcDrop(counter);
+      $rcDrop(leaf, (value) => {
+        $weakDrop(value.parent);
+      });
+      $rcDrop(root, (value) => {
+        $weakDrop(value.parent);
+      });
+    }, error);
     throw error;
   }
   const rc = { value: { value: { name: "loud" } }, strong: 1, weak: 0 };
@@ -204,7 +218,7 @@ function main() {
                 value.impl.$drop?.(value.value);
               });
             });
-          });
+          }, error);
           throw error;
         }
         while (true) {
@@ -218,7 +232,7 @@ function main() {
                   value.impl.$drop?.(value.value);
                 });
               });
-            });
+            }, error);
             throw error;
           }
           if (tmp == null) {
@@ -236,7 +250,7 @@ function main() {
                   value.impl.$drop?.(value.value);
                 });
               });
-            });
+            }, error);
             throw error;
           }
           try {
@@ -249,7 +263,7 @@ function main() {
                   value.impl.$drop?.(value.value);
                 });
               });
-            });
+            }, error);
             throw error;
           }
           $unborrow(tmp$1);
@@ -264,7 +278,7 @@ function main() {
                 value.impl.$drop?.(value.value);
               });
             });
-          });
+          }, error);
           throw error;
         }
         let total;
@@ -278,7 +292,7 @@ function main() {
                 value.impl.$drop?.(value.value);
               });
             });
-          });
+          }, error);
           throw error;
         }
         let tmp$1;
@@ -292,7 +306,7 @@ function main() {
                 value.impl.$drop?.(value.value);
               });
             });
-          });
+          }, error);
           throw error;
         }
         console.log(`${total} ${tmp$1} ${counter.strong}`);
@@ -306,15 +320,23 @@ function main() {
       } finally {
         $rcDrop(counter);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      $rcDrop(leaf, (value) => {
+      if ($live()) {
+        $rcDrop(leaf, (value) => {
+          $weakDrop(value.parent);
+        });
+      }
+    }
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      $rcDrop(root, (value) => {
         $weakDrop(value.parent);
       });
     }
-  } finally {
-    $rcDrop(root, (value) => {
-      $weakDrop(value.parent);
-    });
   }
 }
 //# sourceMappingURL=case.js.map

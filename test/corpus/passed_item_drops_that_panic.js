@@ -64,7 +64,7 @@ function main() {
             throw new Error("boom");
           }
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, (item) => {

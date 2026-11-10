@@ -9,12 +9,14 @@ import {
   $held,
   $iter,
   $iterator,
+  $live,
   $next,
   $nextBack,
   $roomForHint,
   $some,
   $someValue,
   $traitImpl,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -103,7 +105,7 @@ function advance(it, replacement, IIterator, dropI, dropIItem) {
     } catch (error) {
       $cleanup(() => {
         $assign(it, other);
-      });
+      }, error);
       throw error;
     }
     $assign(it, other);
@@ -116,7 +118,7 @@ function advance(it, replacement, IIterator, dropI, dropIItem) {
         if (replacement != null) {
           dropI?.($someValue(replacement));
         }
-      });
+      }, error);
       throw error;
     }
     try {
@@ -128,7 +130,7 @@ function advance(it, replacement, IIterator, dropI, dropIItem) {
         if (replacement != null) {
           dropI?.($someValue(replacement));
         }
-      });
+      }, error);
       throw error;
     }
   }
@@ -149,7 +151,7 @@ function fromTheBack(it, replacement, IDoubleEndedIterator, dropI) {
     } catch (error) {
       $cleanup(() => {
         $assign(it, other);
-      });
+      }, error);
       throw error;
     }
     $assign(it, other);
@@ -164,7 +166,7 @@ function fromTheBack(it, replacement, IDoubleEndedIterator, dropI) {
           dropI?.($someValue(replacement));
         }
       }
-    });
+    }, error);
     throw error;
   }
   if (replacement != null) {
@@ -182,7 +184,7 @@ function second(source, SSource) {
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -191,7 +193,7 @@ function second(source, SSource) {
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);
-    });
+    }, error);
     throw error;
   }
   SSource.$dropIter?.(items);
@@ -206,7 +208,7 @@ function swapped(source, other, SSource) {
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -214,7 +216,7 @@ function swapped(source, other, SSource) {
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);
-    });
+    }, error);
     throw error;
   }
   const iter = items;
@@ -224,7 +226,7 @@ function swapped(source, other, SSource) {
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(iter);
-    });
+    }, error);
     throw error;
   }
   SSource.$dropIter?.(iter);
@@ -239,7 +241,7 @@ function last(source, SSource) {
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);
-    });
+    }, error);
     throw error;
   }
   SSource.$dropIter?.(items);
@@ -253,7 +255,7 @@ function secondBorrowed(container, CContainer) {
   } catch (error) {
     $cleanup(() => {
       CContainer.$dropIter?.(items);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -262,7 +264,7 @@ function secondBorrowed(container, CContainer) {
   } catch (error) {
     $cleanup(() => {
       CContainer.$dropIter?.(items);
-    });
+    }, error);
     throw error;
   }
   CContainer.$dropIter?.(items);
@@ -292,15 +294,23 @@ function main() {
   try {
     const value = second(value$5, KeptSource);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    countdownDrop_drop(value$5[0]);
+    if ($live()) {
+      countdownDrop_drop(value$5[0]);
+    }
   }
   const value$6 = [[2, "kept"]];
   try {
     const value = last(value$6, KeptSource);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    countdownDrop_drop(value$6[0]);
+    if ($live()) {
+      countdownDrop_drop(value$6[0]);
+    }
   }
 }
 //# sourceMappingURL=case.js.map

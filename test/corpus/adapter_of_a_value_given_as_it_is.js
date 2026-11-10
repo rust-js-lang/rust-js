@@ -40,7 +40,7 @@ function found(items, IIterator, IClone, dropI) {
   } catch (error) {
     $cleanup(() => {
       map.return();
-    });
+    }, error);
     throw error;
   }
   map.return();

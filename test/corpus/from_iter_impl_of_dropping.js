@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $collectsInPlace,
@@ -10,7 +11,9 @@ import {
   $intoIter,
   $iter,
   $lazyRange,
+  $live,
   $roomForHint,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -81,9 +84,13 @@ function main() {
   const generic = collected(3, reqFromIteratorD);
   try {
     console.log(`generic ${generic.cs.map((d) => d[0]).reduce((a, b) => (a + b) | 0, 0)}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of generic.cs) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of generic.cs) {
+        dDrop_drop(item);
+      }
     }
   }
   const fromVec = collectedVec([[4], [5]], reqFromIteratorD);
@@ -118,7 +125,9 @@ function main() {
             try {
               throw new Error("at 10");
             } catch (error) {
-              dDrop_drop(d);
+              $cleanup(() => {
+                dDrop_drop(d);
+              }, error);
               throw error;
             }
           }

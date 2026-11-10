@@ -118,3 +118,53 @@ payload is `{ value: e.message, impl: $panicMessage, error: e }`, and
   (`runtime/unwind.js`), `js-error-downcast-of-panic-unseen`,
   `js-error-is-of-panic-unseen`, `js-error-box-downcast-of-panic-unseen`
   (`std_types/any.rs`).
+
+## Amended (2026-11-10, #1193): a stack overflow is Rust's abort; a runtime refusal is no panic
+
+A stack overflow, where Rust's overflows too, prints `thread 'main' has
+overflowed its stack`, aborts with exit 134 and runs no destructor, and no
+`catch_unwind` catches it. The engine's `RangeError: Maximum call stack
+size exceeded` (V8, JavaScriptCore), or `InternalError: too much
+recursion` (SpiderMonkey), was taken for a panic: `catch_unwind` caught
+it, destructors ran, and the program went on, exit 0.
+
+**One owner tells it apart, `$isStackOverflow(e)`**: of a `RangeError`,
+or an error named `InternalError`, the first time one is asked, the
+runtime overflows its own stack once and keeps that error's constructor
+and message; an overflow is one of the same. No engine's text is listed,
+and another `RangeError`, an array's length, is another message. (Detection
+B, the user's decision, over a table of engines' messages.)
+
+**Each place a throw is caught takes it for Rust's abort** (`$overflowed`,
+std's lines, exit 134): `$catchUnwind` and the inline `catch_unwind`'s
+`catch (error) { $catchable(error); .. }` (ADR 0660's limit gone);
+`$cleanup(() => { .. }, error)`, which runs no drop past it; and a scope
+whose drops a program sees, `try { .. } catch (error) { throw
+$unwindsOn(error); } finally { if ($live()) { .. } }` (the user's
+decision: full fidelity). Which drops a program sees is a fact the drops
+owner gives where it writes them, `Known::Unseen` of a guard's
+`$unborrow`, a count's `$weakDrop` and an `Rc`'s `$rcDrop` of nothing that
+drops: a scope of only those is as it was (`drops::unseen`,
+`aborting_finally`, the `UNWINDING_GUARDED` contract).
+
+**At the deepest frame there's little room**: what it says and the exit
+are tried again by each guard further out (`$abortEnds`), and the frame's
+`catch` keeps what may be an overflow first, `$suspect`, which its
+`finally`'s `$live()`, as small a call, reads, so no drop runs where the
+abort had no room to begin.
+
+**A runtime refusal, `rust-js does not support ..`, is `$Unsupported`**,
+`$unsupported(..)`'s, the one form (#1132's pointer, #1180's capacity and
+the runtime's other 26): no `catch_unwind` takes it for a panic and no
+cleanup runs past it, as for the runtime's own bug.
+
+A library's export a JS host calls gives the host the engine's error as
+it is, where nothing of the crate's catches it: the host decides. (A
+binary's `main` wrapped so an overflow there aborts is the next change,
+the user's decision.) The harness compares native Rust's stderr without
+its thread's OS id, `thread 'main' (174910222)`, which no JS has, and
+takes an exit 134 whose handler had no room to write as the abort.
+`stack_overflow_aborts.rs` and `stack_overflow_uncaught_aborts.rs` hold it
+against native Rust; 564 snapshots take the new forms; React's port moves
+its pin.
+

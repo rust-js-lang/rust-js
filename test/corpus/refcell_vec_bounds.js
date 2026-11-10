@@ -4,11 +4,14 @@ import {
   $at,
   $borrow,
   $borrowMut,
+  $catchable,
   $cleanup,
   $dropItems,
   $index,
+  $live,
   $panicMessage,
   $unborrow,
+  $unwindsOn,
   $unwound,
 } from "@rust-js/std";
 
@@ -40,6 +43,7 @@ function check(what, f, TDebug) {
   try {
     value = f();
   } catch (thrown) {
+    $catchable(thrown);
     const payload = $unwound(thrown);
     const arg = message(payload);
     console.log(`${what}: ${arg}`);
@@ -127,7 +131,7 @@ function replacedBetween(queue, slots, other) {
     } catch (error) {
       $cleanup(() => {
         clearerDrop_drop(other);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -136,13 +140,17 @@ function replacedBetween(queue, slots, other) {
       } catch (error) {
         $cleanup(() => {
           clearerDrop_drop(other);
-        });
+        }, error);
         throw error;
       }
       try {
         clearerDrop_drop(borrowMut[0]);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        borrowMut[0] = other;
+        if ($live()) {
+          borrowMut[0] = other;
+        }
       }
     } finally {
       $unborrow(borrowMut);
@@ -210,7 +218,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(slots, clearerDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -218,7 +226,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(slots, clearerDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -226,7 +234,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(slots, clearerDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -234,7 +242,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(slots, clearerDrop_drop);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -249,7 +257,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(slots, clearerDrop_drop);
-    });
+    }, error);
     throw error;
   }
   $dropItems(slots, clearerDrop_drop);

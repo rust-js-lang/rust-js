@@ -6,10 +6,12 @@ import {
   $cleanup,
   $cmp,
   $insert,
+  $live,
   $some,
   $someValue,
   $sortedEntries,
   $take,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -77,8 +79,12 @@ function assignSome(slot) {
     if (slot.value != null) {
       noisyDrop_drop(slot.value);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    slot.value = noisy;
+    if ($live()) {
+      slot.value = noisy;
+    }
   }
 }
 
@@ -135,8 +141,12 @@ function main() {
     let tmp;
     try {
       tmp = insert(slot$1);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      slot = slot$1.value;
+      if ($live()) {
+        slot = slot$1.value;
+      }
     }
     console.log(`insert ${tmp}`);
     let boxed = [18];
@@ -145,16 +155,24 @@ function main() {
       let tmp;
       try {
         tmp = insertBoxed(slot$2);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        boxed = slot$2.value;
+        if ($live()) {
+          boxed = slot$2.value;
+        }
       }
       console.log(`insert boxed ${tmp}`);
       const slot$1 = { value: slot };
       let tmp$1;
       try {
         tmp$1 = replace(slot$1);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        slot = slot$1.value;
+        if ($live()) {
+          slot = slot$1.value;
+        }
       }
       console.log(`replace ${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
       const n = [2];
@@ -165,8 +183,12 @@ function main() {
         const slot$1 = { value: slot };
         try {
           assignSome(slot$1);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          slot = slot$1.value;
+          if ($live()) {
+            slot = slot$1.value;
+          }
         }
         const m = new Map();
         let noisy;
@@ -177,7 +199,7 @@ function main() {
             for (const item of m.values()) {
               noisyDrop_drop(item);
             }
-          });
+          }, error);
           throw error;
         }
         try {
@@ -189,7 +211,7 @@ function main() {
             for (const item of m.values()) {
               noisyDrop_drop(item);
             }
-          });
+          }, error);
           throw error;
         }
         try {
@@ -200,7 +222,7 @@ function main() {
             for (const item of m.values()) {
               noisyDrop_drop(item);
             }
-          });
+          }, error);
           throw error;
         }
         let t;
@@ -211,7 +233,7 @@ function main() {
             for (const item of m.values()) {
               noisyDrop_drop(item);
             }
-          });
+          }, error);
           throw error;
         }
         let tmp;
@@ -225,7 +247,7 @@ function main() {
             for (const item of m.values()) {
               noisyDrop_drop(item);
             }
-          });
+          }, error);
           throw error;
         }
         try {
@@ -240,7 +262,7 @@ function main() {
             for (const item of m.values()) {
               noisyDrop_drop(item);
             }
-          });
+          }, error);
           throw error;
         }
         try {
@@ -254,7 +276,7 @@ function main() {
             for (const item of m.values()) {
               noisyDrop_drop(item);
             }
-          });
+          }, error);
           throw error;
         }
         const v = [[15]];
@@ -271,7 +293,7 @@ function main() {
             for (const item of m.values()) {
               noisyDrop_drop(item);
             }
-          });
+          }, error);
           throw error;
         }
         const slot$2 = { value: slot };
@@ -279,8 +301,12 @@ function main() {
         try {
           try {
             tmp$1 = getOrInsert(slot$2);
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            slot = slot$2.value;
+            if ($live()) {
+              slot = slot$2.value;
+            }
           }
         } catch (error) {
           $cleanup(() => {
@@ -293,7 +319,7 @@ function main() {
             for (const item of m.values()) {
               noisyDrop_drop(item);
             }
-          });
+          }, error);
           throw error;
         }
         console.log(`get_or_insert ${tmp$1}`);
@@ -312,7 +338,7 @@ function main() {
             for (const item of m.values()) {
               noisyDrop_drop(item);
             }
-          });
+          }, error);
           throw error;
         }
         console.log("end");
@@ -329,7 +355,7 @@ function main() {
             for (const item of m.values()) {
               noisyDrop_drop(item);
             }
-          });
+          }, error);
           throw error;
         }
         try {
@@ -341,25 +367,37 @@ function main() {
             for (const item of m.values()) {
               noisyDrop_drop(item);
             }
-          });
+          }, error);
           throw error;
         }
         for (const item of m.values()) {
           noisyDrop_drop(item);
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        noisyDrop_drop(n);
+        if ($live()) {
+          noisyDrop_drop(n);
+        }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      if (boxed != null) {
-        if ($someValue(boxed) != null) {
-          noisyDrop_drop($someValue(boxed));
+      if ($live()) {
+        if (boxed != null) {
+          if ($someValue(boxed) != null) {
+            noisyDrop_drop($someValue(boxed));
+          }
         }
       }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (slot != null) {
-      noisyDrop_drop(slot);
+    if ($live()) {
+      if (slot != null) {
+        noisyDrop_drop(slot);
+      }
     }
   }
 }

@@ -9,10 +9,12 @@ import {
   $held,
   $iter,
   $knowing,
+  $live,
   $next,
   $nextBack,
   $rev,
   $tryOf,
+  $unwindsOn,
   enumerateDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nthBack,
@@ -251,8 +253,12 @@ function main() {
       }),
     );
     console.log(`[${r.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
 }
 //# sourceMappingURL=case.js.map

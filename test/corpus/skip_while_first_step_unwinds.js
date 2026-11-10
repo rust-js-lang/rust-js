@@ -3,6 +3,7 @@
 import {
   $byteLen,
   $catchUnwind,
+  $cleanup,
   $closing,
   $consume,
   $dropEach,
@@ -12,10 +13,12 @@ import {
   $lazyRange,
   $lazySkipWhile,
   $lent,
+  $live,
   $skipping,
   $stepBy,
   $tryFoldOk,
   $tryFoldSome,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -61,16 +64,22 @@ function main() {
         const calls$1 = { value: calls };
         try {
           return skipping(x, calls$1);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          calls = calls$1.value;
+          if ($live()) {
+            calls = calls$1.value;
+          }
         }
       });
       d = ["acc"];
       g$1$live = false;
     } catch (error) {
-      if (g$1$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$1$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     const f = (a) => a;
@@ -90,12 +99,18 @@ function main() {
         const calls$1 = { value: calls };
         try {
           return skipping(x, calls$1);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          calls = calls$1.value;
+          if ($live()) {
+            calls = calls$1.value;
+          }
         }
       });
     } catch (error) {
-      dDrop_drop(g);
+      $cleanup(() => {
+        dDrop_drop(g);
+      }, error);
       throw error;
     }
     const f = (a) => a;
@@ -129,8 +144,12 @@ function main() {
           const calls$1 = { value: calls };
           try {
             return skipping($byteLen(x[0]), calls$1);
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            calls = calls$1.value;
+            if ($live()) {
+              calls = calls$1.value;
+            }
           }
         },
         dDrop_drop,
@@ -138,9 +157,11 @@ function main() {
       d = ["acc"];
       g$3$live = false;
     } catch (error) {
-      if (g$3$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$3$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     function f(a, _3) {
@@ -161,7 +182,9 @@ function main() {
     try {
       it = $iter(value);
     } catch (error) {
-      dDrop_drop(g);
+      $cleanup(() => {
+        dDrop_drop(g);
+      }, error);
       throw error;
     }
     let calls = 0;
@@ -173,17 +196,23 @@ function main() {
           const calls$1 = { value: calls };
           try {
             return skipping($byteLen(x[0]), calls$1);
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            calls = calls$1.value;
+            if ($live()) {
+              calls = calls$1.value;
+            }
           }
         },
         dDrop_drop,
       );
     } catch (error) {
-      for (const item of it) {
-        dDrop_drop(item);
-      }
-      dDrop_drop(g);
+      $cleanup(() => {
+        for (const item of it) {
+          dDrop_drop(item);
+        }
+        dDrop_drop(g);
+      }, error);
       throw error;
     }
     const d = ["acc"];
@@ -204,9 +233,13 @@ function main() {
       if (value.TAG === "Ok") {
         dDrop_drop(value._0);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of it) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of it) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -227,7 +260,9 @@ function main() {
             try {
               throw new Error("skip");
             } catch (error) {
-              dDrop_drop(x);
+              $cleanup(() => {
+                dDrop_drop(x);
+              }, error);
               throw error;
             }
           }
@@ -239,9 +274,11 @@ function main() {
       d = ["acc"];
       g$5$live = false;
     } catch (error) {
-      if (g$5$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$5$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     function f(a, _3) {
@@ -266,7 +303,9 @@ function main() {
               try {
                 throw new Error("skip");
               } catch (error) {
-                dDrop_drop(x);
+                $cleanup(() => {
+                  dDrop_drop(x);
+                }, error);
                 throw error;
               }
             }
@@ -277,7 +316,9 @@ function main() {
         ),
       );
     } catch (error) {
-      dDrop_drop(g);
+      $cleanup(() => {
+        dDrop_drop(g);
+      }, error);
       throw error;
     }
     const d = ["acc"];
@@ -298,8 +339,12 @@ function main() {
       if (value != null) {
         dDrop_drop(value);
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      skip.return();
+      if ($live()) {
+        skip.return();
+      }
     }
   });
   console.log(`skip try_fold panicked ${r.TAG === "Err"}`);
@@ -313,9 +358,11 @@ function main() {
       d = ["acc"];
       g$7$live = false;
     } catch (error) {
-      if (g$7$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$7$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     function f(a, _3) {
@@ -334,7 +381,9 @@ function main() {
     try {
       stepBy = $stepBy($iterator([0], ownIterator_next), 2, dDrop_drop);
     } catch (error) {
-      dDrop_drop(g);
+      $cleanup(() => {
+        dDrop_drop(g);
+      }, error);
       throw error;
     }
     function f(a, _3) {
@@ -370,7 +419,9 @@ function main() {
             try {
               throw new Error("first");
             } catch (error) {
-              dDrop_drop(x);
+              $cleanup(() => {
+                dDrop_drop(x);
+              }, error);
               throw error;
             }
           }
@@ -382,9 +433,11 @@ function main() {
       d = ["acc"];
       g$9$live = false;
     } catch (error) {
-      if (g$9$live) {
-        dDrop_drop(g);
-      }
+      $cleanup(() => {
+        if (g$9$live) {
+          dDrop_drop(g);
+        }
+      }, error);
       throw error;
     }
     function f(a, _3) {
@@ -411,7 +464,9 @@ function main() {
         return x;
       });
     } catch (error) {
-      dDrop_drop(g);
+      $cleanup(() => {
+        dDrop_drop(g);
+      }, error);
       throw error;
     }
     const f = (a) => a;
@@ -441,12 +496,18 @@ function main() {
         const calls$1 = { value: calls };
         try {
           return skipping(x, calls$1);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          calls = calls$1.value;
+          if ($live()) {
+            calls = calls$1.value;
+          }
         }
       }).drop(0);
     } catch (error) {
-      dDrop_drop(g);
+      $cleanup(() => {
+        dDrop_drop(g);
+      }, error);
       throw error;
     }
     const f = (a) => a;
@@ -476,12 +537,18 @@ function main() {
       const calls$1 = { value: calls };
       try {
         return skipping(x, calls$1);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        calls = calls$1.value;
+        if ($live()) {
+          calls = calls$1.value;
+        }
       }
     });
   } catch (error) {
-    dDrop_drop(g);
+    $cleanup(() => {
+      dDrop_drop(g);
+    }, error);
     throw error;
   }
   function f(a, x) {

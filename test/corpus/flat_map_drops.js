@@ -8,7 +8,9 @@ import {
   $held,
   $iter,
   $lazyRange,
+  $live,
   $next,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -38,9 +40,13 @@ function innerLeft() {
     for (const item of made) {
       loudDrop_drop(item);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of first) {
-      loudDrop_drop(item);
+    if ($live()) {
+      for (const item of first) {
+        loudDrop_drop(item);
+      }
     }
   }
 }
@@ -89,8 +95,12 @@ function bothLeft() {
       return result;
     }
     console.log(`one ${one != null ? map(one) : 0}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
   const nested = [[[50], [51]], [[52]]];
   const one = Array.from(
@@ -132,9 +142,13 @@ function options() {
   );
   try {
     console.log(`[${big.join(", ")}] ${opts.length}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of opts) {
-      loudDrop_drop(item);
+    if ($live()) {
+      for (const item of opts) {
+        loudDrop_drop(item);
+      }
     }
   }
 }

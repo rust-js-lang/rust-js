@@ -8,8 +8,10 @@ import {
   $held,
   $iter,
   $lent,
+  $live,
   $nthDropping,
   $partition,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -28,7 +30,7 @@ function third(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   dropI?.(it);
@@ -43,7 +45,7 @@ function named(it, name, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
-    });
+    }, error);
     throw error;
   }
   dropI?.(it);
@@ -70,9 +72,11 @@ function main() {
         try {
           f = $findDropping($lent(value), (n) => n[0] === "f", noisyDrop_drop, false);
         } catch (error) {
-          for (const item of value) {
-            noisyDrop_drop(item);
-          }
+          $cleanup(() => {
+            for (const item of value) {
+              noisyDrop_drop(item);
+            }
+          }, error);
           throw error;
         }
         try {
@@ -94,34 +98,58 @@ function main() {
               for (const item of rest) {
                 noisyDrop_drop(item);
               }
+            } catch (error) {
+              throw $unwindsOn(error);
             } finally {
-              for (const item of kept) {
-                noisyDrop_drop(item);
+              if ($live()) {
+                for (const item of kept) {
+                  noisyDrop_drop(item);
+                }
               }
             }
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            if (g != null) {
-              noisyDrop_drop(g);
+            if ($live()) {
+              if (g != null) {
+                noisyDrop_drop(g);
+              }
             }
           }
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          if (f != null) {
-            noisyDrop_drop(f);
+          if ($live()) {
+            if (f != null) {
+              noisyDrop_drop(f);
+            }
           }
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        if (z != null) {
-          noisyDrop_drop(z);
+        if ($live()) {
+          if (z != null) {
+            noisyDrop_drop(z);
+          }
         }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      if (y != null) {
-        noisyDrop_drop(y);
+      if ($live()) {
+        if (y != null) {
+          noisyDrop_drop(y);
+        }
       }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of it) {
-      noisyDrop_drop(item);
+    if ($live()) {
+      for (const item of it) {
+        noisyDrop_drop(item);
+      }
     }
   }
 }

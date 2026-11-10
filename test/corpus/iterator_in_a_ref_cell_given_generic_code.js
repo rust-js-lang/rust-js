@@ -71,7 +71,7 @@ function first(it, dropI) {
       $rcDrop(items, (value) => {
         dropI?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -83,7 +83,7 @@ function first(it, dropI) {
       $rcDrop(items, (value) => {
         dropI?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   $unborrow(borrowMut);
@@ -101,7 +101,7 @@ function second(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       dropI?.(items.value);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -110,7 +110,7 @@ function second(it, dropI) {
     $cleanup(() => {
       $unborrow(held);
       dropI?.(items.value);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -120,7 +120,7 @@ function second(it, dropI) {
     $cleanup(() => {
       $unborrow(held);
       dropI?.(items.value);
-    });
+    }, error);
     throw error;
   }
   $unborrow(held);
@@ -148,7 +148,7 @@ function last(source, SSource) {
       $rcDrop(items, (value) => {
         SSource.$dropIter?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -160,7 +160,7 @@ function last(source, SSource) {
       $rcDrop(items, (value) => {
         SSource.$dropIter?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   $unborrow(borrowMut);
@@ -180,7 +180,7 @@ function secondOf(source, SSource) {
       $rcDrop(items, (value) => {
         SSource.$dropIter?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -191,7 +191,7 @@ function secondOf(source, SSource) {
       $rcDrop(items, (value) => {
         SSource.$dropIter?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   $unborrow(borrowMut);
@@ -203,7 +203,7 @@ function secondOf(source, SSource) {
       $rcDrop(items, (value) => {
         SSource.$dropIter?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -215,7 +215,7 @@ function secondOf(source, SSource) {
       $rcDrop(items, (value) => {
         SSource.$dropIter?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   $unborrow(tmp);

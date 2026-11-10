@@ -49,7 +49,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(held);
-    });
+    }, error);
     throw error;
   }
   $dispose(held);
@@ -60,7 +60,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(guarded$1);
-    });
+    }, error);
     throw error;
   }
   $dispose(guarded$1);
@@ -71,7 +71,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(plain);
-    });
+    }, error);
     throw error;
   }
   $dispose(plain);

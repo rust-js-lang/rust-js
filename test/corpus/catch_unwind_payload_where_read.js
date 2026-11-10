@@ -3,6 +3,7 @@
 import {
   $byteLen,
   $catchUnwind,
+  $catchable,
   $cleanup,
   $debugStr,
   $panicMessage,
@@ -52,6 +53,7 @@ function noted(n, seen, read) {
   try {
     return fails(n);
   } catch (thrown) {
+    $catchable(thrown);
     seen.value = (seen.value + 1) >>> 0;
     const e = $unwound(thrown);
     read.value = $byteLen(messageOf(e));
@@ -64,6 +66,7 @@ function changed(n) {
   try {
     return fails(n);
   } catch (thrown) {
+    $catchable(thrown);
     const e = $unwound(thrown);
     change(e);
     throw $unwinding(e);
@@ -75,6 +78,7 @@ function moved(n) {
   try {
     return fails(n);
   } catch (thrown) {
+    $catchable(thrown);
     const e = $unwound(thrown);
     const message =
       e.impl.typeId() === "alloc::string::String" || e.impl === $panicMessage ? e : undefined;
@@ -96,6 +100,7 @@ function captured(n) {
   try {
     return fails(n);
   } catch (thrown) {
+    $catchable(thrown);
     const e = $unwound(thrown);
     change(e);
     return apply(() => {
@@ -112,6 +117,7 @@ function taken(n) {
   try {
     return fails(n);
   } catch (e) {
+    $catchable(e);
     return apply(() => {
       throw e;
     });
@@ -126,6 +132,7 @@ function shadowed(n, seen) {
   try {
     return fails(n);
   } catch (thrown) {
+    $catchable(thrown);
     const e = $unwound(thrown);
     seen.value = $byteLen(messageOf(e));
     const other = { value: "other", impl: { typeId: () => "alloc::string::String" } };
@@ -150,11 +157,12 @@ function guarded(log) {
     } catch (error) {
       $cleanup(() => {
         _a[0].value = (((_a[0].value * 10) >>> 0) + _a[1]) >>> 0;
-      });
+      }, error);
       throw error;
     }
     _a[0].value = (((_a[0].value * 10) >>> 0) + _a[1]) >>> 0;
   } catch (e) {
+    $catchable(e);
     const _b = [log, 2];
     log.value = (((log.value * 10) >>> 0) + 3) >>> 0;
     try {
@@ -162,7 +170,7 @@ function guarded(log) {
     } catch (error) {
       $cleanup(() => {
         _b[0].value = (((_b[0].value * 10) >>> 0) + _b[1]) >>> 0;
-      });
+      }, error);
       throw error;
     }
   }
@@ -173,6 +181,7 @@ function typed(n, seen) {
   try {
     throw $unwinding({ value: n, impl: { typeId: () => "i32" } });
   } catch (thrown) {
+    $catchable(thrown);
     seen.value = (seen.value + 1) >>> 0;
     const e = $unwound(thrown);
     const v = (e.impl.typeId() === "i32" ? e.value : undefined) ?? 0;
@@ -191,10 +200,12 @@ function nested(log) {
       fails((log.value + 3) >>> 0);
       return "";
     } catch (e) {
+      $catchable(e);
       log.value = (log.value + 1) >>> 0;
       throw e;
     }
   } catch (thrown) {
+    $catchable(thrown);
     log.value = (log.value + 10) >>> 0;
     const e = $unwound(thrown);
     return messageOf(e);

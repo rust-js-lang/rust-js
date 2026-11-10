@@ -2,12 +2,14 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $exactLen,
   $foldOf,
   $held,
   $holding,
   $iter,
   $iterator,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
@@ -17,6 +19,7 @@ import {
   $sizeHint,
   $trustedZip,
   $tryOf,
+  $unwindsOn,
   iterator_map,
   iterator_zip,
   mapDoubleEndedIterator_nextBack,
@@ -48,10 +51,12 @@ function main() {
     tmp = $iter(v);
     ga$live = false;
   } catch (error) {
-    console.log(`drop ${gb[0]}`);
-    if (ga$live) {
-      console.log(`drop ${ga[0]}`);
-    }
+    $cleanup(() => {
+      console.log(`drop ${gb[0]}`);
+      if (ga$live) {
+        console.log(`drop ${ga[0]}`);
+      }
+    }, error);
     throw error;
   }
   let a;
@@ -60,7 +65,9 @@ function main() {
       console.log(`drop ${ga[0]}`);
     });
   } catch (error) {
-    console.log(`drop ${gb[0]}`);
+    $cleanup(() => {
+      console.log(`drop ${gb[0]}`);
+    }, error);
     throw error;
   }
   let tmp$1;
@@ -68,10 +75,12 @@ function main() {
     tmp$1 = $iter(w);
     gb$live = false;
   } catch (error) {
-    a.return();
-    if (gb$live) {
-      console.log(`drop ${gb[0]}`);
-    }
+    $cleanup(() => {
+      a.return();
+      if (gb$live) {
+        console.log(`drop ${gb[0]}`);
+      }
+    }, error);
     throw error;
   }
   let b;
@@ -80,7 +89,9 @@ function main() {
       console.log(`drop ${gb[0]}`);
     });
   } catch (error) {
-    a.return();
+    $cleanup(() => {
+      a.return();
+    }, error);
     throw error;
   }
   const it = $held(
@@ -297,8 +308,12 @@ function main() {
       },
     );
     console.log(`back ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
 
   let ga$1$live = true;
@@ -309,10 +324,12 @@ function main() {
     tmp$2 = $iter(v);
     ga$1$live = false;
   } catch (error) {
-    console.log(`drop ${gb$1[0]}`);
-    if (ga$1$live) {
-      console.log(`drop ${ga$1[0]}`);
-    }
+    $cleanup(() => {
+      console.log(`drop ${gb$1[0]}`);
+      if (ga$1$live) {
+        console.log(`drop ${ga$1[0]}`);
+      }
+    }, error);
     throw error;
   }
   const f = plus.bind(null, ga$1);
@@ -325,7 +342,9 @@ function main() {
       "after",
     );
   } catch (error) {
-    console.log(`drop ${gb$1[0]}`);
+    $cleanup(() => {
+      console.log(`drop ${gb$1[0]}`);
+    }, error);
     throw error;
   }
   const f$1 = plus.bind(null, gb$1);
@@ -338,7 +357,9 @@ function main() {
       "after",
     );
   } catch (error) {
-    a.return();
+    $cleanup(() => {
+      a.return();
+    }, error);
     throw error;
   }
   const sum = $trustedZip(a, b).reduce((s, [x, y]) => (s + (Math.imul(x, y) >>> 0)) >>> 0, 0);
@@ -353,10 +374,12 @@ function main() {
     tmp$3 = $iter(w);
     ga$2$live = false;
   } catch (error) {
-    console.log(`drop ${gb$2[0]}`);
-    if (ga$2$live) {
-      console.log(`drop ${ga$2[0]}`);
-    }
+    $cleanup(() => {
+      console.log(`drop ${gb$2[0]}`);
+      if (ga$2$live) {
+        console.log(`drop ${ga$2[0]}`);
+      }
+    }, error);
     throw error;
   }
   const f$2 = plus.bind(null, ga$2);
@@ -369,7 +392,9 @@ function main() {
       "after",
     );
   } catch (error) {
-    console.log(`drop ${gb$2[0]}`);
+    $cleanup(() => {
+      console.log(`drop ${gb$2[0]}`);
+    }, error);
     throw error;
   }
   let tmp$4;
@@ -377,10 +402,12 @@ function main() {
     tmp$4 = $iter(v);
     gb$2$live = false;
   } catch (error) {
-    a.return();
-    if (gb$2$live) {
-      console.log(`drop ${gb$2[0]}`);
-    }
+    $cleanup(() => {
+      a.return();
+      if (gb$2$live) {
+        console.log(`drop ${gb$2[0]}`);
+      }
+    }, error);
     throw error;
   }
   const f$3 = plus.bind(null, gb$2);
@@ -393,7 +420,9 @@ function main() {
       "after",
     );
   } catch (error) {
-    a.return();
+    $cleanup(() => {
+      a.return();
+    }, error);
     throw error;
   }
   let pairs = Array.from($trustedZip(a, b));
@@ -421,10 +450,12 @@ function main() {
       tmp = $iter(v);
       ga$3$live = false;
     } catch (error) {
-      console.log(`drop ${gb[0]}`);
-      if (ga$3$live) {
-        console.log(`drop ${ga[0]}`);
-      }
+      $cleanup(() => {
+        console.log(`drop ${gb[0]}`);
+        if (ga$3$live) {
+          console.log(`drop ${ga[0]}`);
+        }
+      }, error);
       throw error;
     }
     const f = plus.bind(null, ga);
@@ -438,7 +469,9 @@ function main() {
         "after",
       );
     } catch (error) {
-      console.log(`drop ${gb[0]}`);
+      $cleanup(() => {
+        console.log(`drop ${gb[0]}`);
+      }, error);
       throw error;
     }
     let tmp$1;
@@ -446,10 +479,12 @@ function main() {
       tmp$1 = $iter(w);
       gb$3$live = false;
     } catch (error) {
-      a.return();
-      if (gb$3$live) {
-        console.log(`drop ${gb[0]}`);
-      }
+      $cleanup(() => {
+        a.return();
+        if (gb$3$live) {
+          console.log(`drop ${gb[0]}`);
+        }
+      }, error);
       throw error;
     }
     function f$1(x) {
@@ -468,7 +503,9 @@ function main() {
         "after",
       );
     } catch (error) {
-      a.return();
+      $cleanup(() => {
+        a.return();
+      }, error);
       throw error;
     }
     let a$3$live = false;
@@ -478,13 +515,15 @@ function main() {
       try {
         tmp$2 = $next(iter);
       } catch (error) {
-        iter.return();
-        if (a$3$live) {
-          a.return();
-        }
-        if (gb$3$live) {
-          console.log(`drop ${gb[0]}`);
-        }
+        $cleanup(() => {
+          iter.return();
+          if (a$3$live) {
+            a.return();
+          }
+          if (gb$3$live) {
+            console.log(`drop ${gb[0]}`);
+          }
+        }, error);
         throw error;
       }
       if (tmp$2 == null) {

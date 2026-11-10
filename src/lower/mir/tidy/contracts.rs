@@ -237,14 +237,22 @@ fn twice_declared(body: &[Stmt]) -> Option<String> {
 /// `finally` holds what may throw, which it can't tell from what the
 /// normal path runs, and each `catch` that throws on what it caught runs
 /// what may throw before in `$cleanup`, where a throw aborts, as Rust's
-/// does where a drop panics as a panic unwinds.
+/// does where a drop panics as a panic unwinds. And where what's caught
+/// may be a stack overflow, Rust's abort with no drop run (#1193), what a
+/// program sees is guarded too: a `finally` of it is of a body thrown on
+/// through `$unwindsOn` (`aborting_finally`), and a `catch`'s is in
+/// `$cleanup(.., error)`.
 pub(super) const UNWINDING_GUARDED: Contract = Contract {
     name: "what unwinds is guarded",
     broken: |body| {
         let mut found = None;
         crate::js::each_list(body, &mut |stmts| {
             let unguarded = stmts.iter().any(|stmt| match &stmt.kind {
-                StmtKind::Try(_, finally) => crate::lower::drops::may_throw(finally),
+                StmtKind::Try(body, finally) => {
+                    use crate::lower::drops::{catches_unwind, is_aborting, live_guarded, may_throw, unseen};
+                    may_throw(finally)
+                        || !unseen(finally) && !(live_guarded(finally) && (is_aborting(body) || catches_unwind(body)))
+                }
                 StmtKind::TryCatch(_, Some(error), handler) => match handler.split_last() {
                     Some((last, drops)) => {
                         matches!(&last.kind, StmtKind::Throw(thrown)
@@ -294,6 +302,18 @@ mod tests {
             &[stmt(StmtKind::Try(vec![call("f")], vec![call("drop")]))]
         ));
         assert!(holds(&UNWINDING_GUARDED, &[caught(vec![guarded, rethrow()])]));
+        // A `finally` of what a program sees, which never throws: of a body
+        // thrown on through `$unwindsOn`, as a stack overflow aborts (#1193).
+        let seen = || {
+            let mut call = Expr::call(Expr::var("console.log"), vec![]);
+            call.facts = call.facts.with(crate::js::Known::NeverThrows);
+            stmt(StmtKind::Expr(call))
+        };
+        let scope = |body| stmt(StmtKind::Try(body, vec![seen()]));
+        assert!(!holds(&UNWINDING_GUARDED, &[scope(vec![call("f")])]));
+        let mut aborting = scope(vec![call("f")]);
+        crate::lower::drops::aborting_finally(&mut aborting);
+        assert!(holds(&UNWINDING_GUARDED, &[aborting]));
         assert!(!holds(&UNWINDING_GUARDED, &[caught(vec![call("drop"), rethrow()])]));
         // A `catch` that handles what it caught isn't a cleanup.
         assert!(holds(&UNWINDING_GUARDED, &[caught(vec![call("report")])]));

@@ -77,7 +77,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(p, $dispose);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -85,7 +85,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(q, $dispose);
-    });
+    }, error);
     throw error;
   }
   console.log(`plain ${q.value(1)}`);
@@ -98,7 +98,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(h, $dispose);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -106,7 +106,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(k, $dispose);
-    });
+    }, error);
     throw error;
   }
   console.log(`hold ${k.value(1)}`);
@@ -118,7 +118,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(b);
-    });
+    }, error);
     throw error;
   }
   $dispose(b);
@@ -130,7 +130,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(d, $dispose);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -138,7 +138,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(e, $dispose);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -146,7 +146,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(e, $dispose);
-    });
+    }, error);
     throw error;
   }
   $rcDrop(e, $dispose);
@@ -172,7 +172,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(local, $dispose);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -180,7 +180,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $rcDrop(again, $dispose);
-    });
+    }, error);
     throw error;
   }
   console.log(`local ${again.value(1)}`);

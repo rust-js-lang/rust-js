@@ -9,6 +9,7 @@ import {
   $held,
   $iter,
   $iterator,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
@@ -19,6 +20,7 @@ import {
   $rev,
   $skipping,
   $tryOf,
+  $unwindsOn,
   enumerateDoubleEndedIterator_nextBack,
   enumerateExactSizeIterator_len,
   iterator_enumerate,
@@ -107,8 +109,12 @@ function main() {
   try {
     const value = $nextBack(enumerate);
     console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    enumerate.return();
+    if ($live()) {
+      enumerate.return();
+    }
   }
   const it = $held(
     iterator_enumerate(
@@ -161,8 +167,12 @@ function main() {
         },
       )}`,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
   console.log(`${[1, 2, 3].toReversed().length}`);
   const e = Array.from(

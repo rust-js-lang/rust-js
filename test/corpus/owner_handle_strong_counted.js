@@ -36,7 +36,7 @@ function counted(name) {
           });
         }
       });
-    });
+    }, error);
     throw error;
   }
   const onCommit = {
@@ -74,7 +74,7 @@ function counted(name) {
           });
         }
       });
-    });
+    }, error);
     throw error;
   }
   let value;
@@ -99,7 +99,7 @@ function counted(name) {
           });
         }
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -120,7 +120,7 @@ function counted(name) {
           });
         }
       });
-    });
+    }, error);
     throw error;
   }
   console.log(`${root.value.name} is held ${root.strong} times`);
@@ -143,7 +143,7 @@ function main() {
       $rcDrop(root, (value) => {
         $rcDrop(value.onCommit, $dispose);
       });
-    });
+    }, error);
     throw error;
   }
   $rcDrop(root, (value) => {

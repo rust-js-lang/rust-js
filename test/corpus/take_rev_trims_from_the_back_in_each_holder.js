@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -13,6 +14,7 @@ import {
   $knowing,
   $lastDropping,
   $lazyChain,
+  $live,
   $next,
   $nextBack,
   $range,
@@ -20,6 +22,7 @@ import {
   $sizeHint,
   $taking,
   $tryOf,
+  $unwindsOn,
   iterator_take,
   takeIDoubleEndedIterator_nextBack,
   takeIDoubleEndedIterator_nthBack,
@@ -129,9 +132,11 @@ function main() {
   try {
     take = $taking($closing($iter(ds()), $dropEach(dDrop_drop)), 3, dDrop_drop);
   } catch (error) {
-    for (const item of value) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of value) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   const c2 = $foldToArray(
@@ -208,8 +213,12 @@ function main() {
     }
     const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
 }
 //# sourceMappingURL=case.js.map

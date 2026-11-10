@@ -11,7 +11,9 @@ import {
   $iterator,
   $lazyChain,
   $lent,
+  $live,
   $rev,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -48,7 +50,7 @@ function any(it, dropI) {
   } catch (error) {
     $cleanup(() => {
       chain.return();
-    });
+    }, error);
     throw error;
   }
   chain.return();
@@ -63,8 +65,12 @@ function main() {
           throw new Error("f");
         }
         return (a + d[0]) >>> 0;
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(d);
+        if ($live()) {
+          dDrop_drop(d);
+        }
       }
     }),
   );
@@ -88,8 +94,12 @@ function main() {
             throw new Error("f");
           }
           return (a + d[0]) >>> 0;
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       },
     ),

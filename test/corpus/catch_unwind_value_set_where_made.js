@@ -4,6 +4,7 @@ import {
   $borrow,
   $borrowMut,
   $catchUnwind,
+  $catchable,
   $debugStr,
   $panicMessage,
   $unborrow,
@@ -61,6 +62,7 @@ function unwind(n, returnFiber) {
     }
     // What it found.
   } catch (error) {
+    $catchable(error);
     if (returnFiber != null) {
       work = returnFiber;
       throw error;
@@ -84,7 +86,8 @@ function fallback(n) {
     if (n > 2) {
       throw new Error(`big ${n}`);
     }
-  } catch {
+  } catch (error) {
+    $catchable(error);
     note(7);
     value = 100;
   }
@@ -103,7 +106,8 @@ function kept(n) {
       throw new Error(`big ${n}`);
     }
     done = found;
-  } catch {
+  } catch (error) {
+    $catchable(error);
     done += 10;
   }
   return done;
@@ -121,7 +125,8 @@ function keptAfter(n) {
       throw new Error(`big ${n}`);
     }
     done = found;
-  } catch {
+  } catch (error) {
+    $catchable(error);
     note(6);
   }
   return done;
@@ -137,7 +142,8 @@ function returned(n) {
     }
     done = found;
     return done;
-  } catch {
+  } catch (error) {
+    $catchable(error);
     return done + 20;
   }
 }
@@ -151,7 +157,8 @@ function readThenSet(n) {
       throw new Error(`big ${n}`);
     }
     done = found;
-  } catch {
+  } catch (error) {
+    $catchable(error);
     note(done);
     done = 30;
   }
@@ -172,7 +179,8 @@ function inLoop(n) {
         throw new Error(`two ${i}`);
       }
       done = found;
-    } catch {
+    } catch (error) {
+      $catchable(error);
       break;
     }
   }
@@ -190,7 +198,8 @@ function captured(n) {
     const next = (n * 2) >>> 0;
     $borrowMut(stored).value = () => next;
     total = next;
-  } catch {
+  } catch (error) {
+    $catchable(error);
     return 0;
   }
   total = (total + 1) >>> 0;
@@ -210,7 +219,8 @@ function readBefore(n) {
     const next = (n * 2) >>> 0;
     before = total;
     total = next;
-  } catch {
+  } catch (error) {
+    $catchable(error);
     total = 0;
   }
   return (total + before) >>> 0;

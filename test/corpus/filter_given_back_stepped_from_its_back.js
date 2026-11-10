@@ -10,10 +10,12 @@ import {
   $iter,
   $iterator,
   $lastDropping,
+  $live,
   $nextBack,
   $rangeNext,
   $rangeNextBack,
   $roomFor,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -47,8 +49,12 @@ function main() {
       return result;
     }
     last = nextBack != null ? map(nextBack) : undefined;
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value.return();
+    if ($live()) {
+      value.return();
+    }
   }
   console.log(`last ${last == null ? "None" : `Some(${last})`}`);
   console.log(

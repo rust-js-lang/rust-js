@@ -50,7 +50,7 @@ function main() {
           }
           console.log(`drop ${a[0]}`);
         }
-      });
+      }, error);
       throw error;
     }
     const f = (sum, x) =>
@@ -79,7 +79,7 @@ function main() {
               throw new Error(`part ${d[0]} panics`);
             }
             console.log(`drop ${d[0]}`);
-          });
+          }, error);
           throw error;
         }
         try {
@@ -97,7 +97,7 @@ function main() {
               throw new Error(`part ${d[0]} panics`);
             }
             console.log(`drop ${d[0]}`);
-          });
+          }, error);
           throw error;
         }
         try {
@@ -111,14 +111,14 @@ function main() {
               throw new Error(`part ${d[0]} panics`);
             }
             console.log(`drop ${d[0]}`);
-          });
+          }, error);
           throw error;
         }
         if (d[0] === 2 || d[0] === 3) {
           throw new Error(`part ${d[0]} panics`);
         }
         console.log(`drop ${d[0]}`);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -140,7 +140,7 @@ function main() {
           throw new Error(`part ${d[0]} panics`);
         }
         console.log(`drop ${d[0]}`);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -158,7 +158,7 @@ function main() {
           throw new Error(`part ${d[0]} panics`);
         }
         console.log(`drop ${d[0]}`);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -172,7 +172,7 @@ function main() {
           throw new Error(`part ${d[0]} panics`);
         }
         console.log(`drop ${d[0]}`);
-      });
+      }, error);
       throw error;
     }
     if (d[0] === 2 || d[0] === 3) {

@@ -34,7 +34,7 @@ function main() {
       $rcDrop(r, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   console.log(`${area} ${r.strong}`);
@@ -46,7 +46,7 @@ function main() {
       $rcDrop(r, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   let again;
@@ -60,7 +60,7 @@ function main() {
       $rcDrop(r, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   let tmp;
@@ -77,7 +77,7 @@ function main() {
       $rcDrop(r, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   console.log(`${tmp} ${into.strong}`);
@@ -95,7 +95,7 @@ function main() {
       $rcDrop(r, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   let tmp$1;
@@ -115,7 +115,7 @@ function main() {
       $rcDrop(r, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   console.log(`${tmp$1} ${shared.strong}`);
@@ -141,7 +141,7 @@ function main() {
       $rcDrop(r, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   let tmp$2;
@@ -167,7 +167,7 @@ function main() {
       $rcDrop(r, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   console.log(`${tmp$2} ${loud.strong}`);
@@ -192,7 +192,7 @@ function main() {
       $rcDrop(r, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   console.log("one left");
@@ -214,7 +214,7 @@ function main() {
       $rcDrop(r, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   console.log("done");
@@ -233,7 +233,7 @@ function main() {
       $rcDrop(r, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -248,7 +248,7 @@ function main() {
       $rcDrop(r, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -260,7 +260,7 @@ function main() {
       $rcDrop(r, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   $rcDrop(r, (value) => {

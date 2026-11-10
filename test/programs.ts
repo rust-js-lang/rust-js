@@ -47,19 +47,31 @@ const compileTimeout = Number(process.env.RUST_JS_COMPILE_TIMEOUT ?? 120_000);
  * a run counts only if it exits 0, and only by the outcome it wrote itself;
  * or if it aborted, as Rust does where a drop panics while a panic unwinds
  * (#847): natively killed by SIGABRT, and as JS, `$abort`'s exit, 134, the
- * code a shell gives SIGABRT, which `corpus-run.ts` writes as it exits.
- * Either is `{ exit: 134 }`. */
+ * code a shell gives SIGABRT, which `corpus-run.ts` writes as it exits,
+ * or, where its exit handler had no room to, a stack overflow's (#1193),
+ * the abort's line on stderr. Either is `{ exit: 134 }`. */
 export function execute(cmd: string[], outcomeFile: string, limit = timeout): Run {
   rmSync(outcomeFile, { force: true });
   const started = performance.now();
   const p = runSync(cmd, root, limit);
-  const { stdout, stderr, bytes } = p;
+  const { stdout } = p;
+  // A thread's OS id, which native Rust names it by in a stack overflow's
+  // abort, `thread 'main' (174910222) has overflowed its stack`, and no JS
+  // has, left out of what's compared (#1193).
+  const unnamed = (text: string) => text.replace(/(thread '[^']*') \(\d+\)/g, "$1");
+  const stderr = unnamed(p.stderr);
+  const bytes = { ...p.bytes, stderr: Buffer.from(unnamed(p.bytes.stderr.toString("latin1")), "latin1") };
   const ms = performance.now() - started;
   const ran = (outcome: Outcome | string): Run => ({ stdout, stderr, bytes, outcome, ms });
   if (p.signal === "SIGABRT" && !p.timedOut) return ran(aborted);
   const why = stopped(p, limit);
   if (why) return ran(why);
-  if (!existsSync(outcomeFile)) return ran(`exited ${p.code} without an outcome`);
+  // An abort from a stack overflow's deepest frame, whose `exit` handler
+  // had no room to write the outcome: `$abort`'s exit and its line (#1193).
+  if (!existsSync(outcomeFile)) {
+    if (p.code === abortCode && /aborting\.?\n/.test(stderr)) return ran(aborted);
+    return ran(`exited ${p.code} without an outcome`);
+  }
   const outcome = readFileSync(outcomeFile, "utf8");
   if (p.code === abortCode && same(JSON.parse(outcome), aborted)) return ran(aborted);
   if (p.code !== 0) return ran(`exited ${p.code} after it ended ${outcome}`);

@@ -16,6 +16,7 @@ import {
   $iterator,
   $lazyChain,
   $lazyZip,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
@@ -26,6 +27,7 @@ import {
   $stepBy,
   $tryFoldOk,
   $tryFoldSome,
+  $unwindsOn,
   iterator_fuse,
   iterator_peekable,
 } from "@rust-js/std";
@@ -44,9 +46,11 @@ function ownIterator_next(own) {
     try {
       throw new Error("boom");
     } catch (error) {
-      if (next != null) {
-        dDrop_drop(next);
-      }
+      $cleanup(() => {
+        if (next != null) {
+          dDrop_drop(next);
+        }
+      }, error);
       throw error;
     }
   }
@@ -76,7 +80,7 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
           dropB?.(acc);
         }
         dropF?.(f);
-      });
+      }, error);
       throw error;
     }
     if (tmp == null) {
@@ -91,7 +95,7 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       break;
@@ -108,7 +112,7 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
           dDrop_drop(item);
         }
         dropF?.(f);
-      });
+      }, error);
       throw error;
     }
     acc$live = true;
@@ -126,9 +130,11 @@ function ownDoubleEndedIterator_nextBack(own) {
     try {
       throw new Error("boom back");
     } catch (error) {
-      if (next != null) {
-        dDrop_drop(next);
-      }
+      $cleanup(() => {
+        if (next != null) {
+          dDrop_drop(next);
+        }
+      }, error);
       throw error;
     }
   }
@@ -152,7 +158,7 @@ function ownDoubleEndedIterator_rfold(own, init, f, dropB, dropF) {
               dropB?.(acc);
             }
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
         if (nextBack != null) {
@@ -164,7 +170,7 @@ function ownDoubleEndedIterator_rfold(own, init, f, dropB, dropF) {
           } catch (error) {
             $cleanup(() => {
               dropF?.(f);
-            });
+            }, error);
             throw error;
           }
           acc$live = true;
@@ -181,7 +187,7 @@ function ownDoubleEndedIterator_rfold(own, init, f, dropB, dropF) {
               dropB?.(acc);
             }
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
         break;
@@ -189,12 +195,20 @@ function ownDoubleEndedIterator_rfold(own, init, f, dropB, dropF) {
       acc$live = false;
       result = acc;
       dropF?.(f);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      console.log("drop own");
+      if ($live()) {
+        console.log("drop own");
+      }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of own.items) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of own.items) {
+        dDrop_drop(item);
+      }
     }
   }
   return result;
@@ -211,9 +225,11 @@ function push(acc, d) {
   try {
     acc.push(d);
   } catch (error) {
-    for (const item of acc) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of acc) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   return acc;
@@ -230,7 +246,7 @@ function foldAny(it, dropI) {
       if (!iter.ownFold) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownFold) {
@@ -253,7 +269,7 @@ function foldExact(it, dropI) {
       if (!iter.ownFold) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownFold) {
@@ -597,10 +613,12 @@ function main() {
     try {
       tmp = own({ start: 83, end: 86 }, 84);
     } catch (error) {
-      console.log("drop own");
-      for (const item of value.items) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        console.log("drop own");
+        for (const item of value.items) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     const fold = $foldDropping(
@@ -661,10 +679,12 @@ function main() {
     try {
       tmp = own({ start: 100, end: 104 }, 99);
     } catch (error) {
-      console.log("drop own");
-      for (const item of value.items) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        console.log("drop own");
+        for (const item of value.items) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     const fold = $foldDropping(
@@ -719,9 +739,11 @@ function main() {
           tmp = push(acc, a);
           b$live = false;
         } catch (error) {
-          if (b$live) {
-            dDrop_drop(b);
-          }
+          $cleanup(() => {
+            if (b$live) {
+              dDrop_drop(b);
+            }
+          }, error);
           throw error;
         }
         return push(tmp, b);
@@ -840,8 +862,12 @@ function main() {
         return v.length;
       }
       return tryFold != null ? map(tryFold) : 0;
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      fuse.return();
+      if ($live()) {
+        fuse.return();
+      }
     }
   });
   run("try_fold result", () => {
@@ -867,8 +893,12 @@ function main() {
         (acc, d) => ({ TAG: "Ok", _0: push(acc, d) }),
         $dropEach(dDrop_drop),
       );
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      fuse.return();
+      if ($live()) {
+        fuse.return();
+      }
     }
     function map(v) {
       for (const item of v) {
@@ -924,10 +954,12 @@ function main() {
     try {
       tmp = own({ start: 173, end: 176 }, 174);
     } catch (error) {
-      console.log("drop own");
-      for (const item of value.items) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        console.log("drop own");
+        for (const item of value.items) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
     const collect = $collectDropping(

@@ -10,14 +10,14 @@ const $unknownCapacity = -1;
 
 // `v.capacity()` of items of `size` bytes: of items of no size, std's
 // `usize::MAX`, as many as fit, whatever it was given; of one whose growth
-// wasn't kept, an error naming #1180, never another number, and no panic,
-// which no `catch_unwind` takes for the program's (`$InternalError`, the
+// wasn't kept, a refusal naming #1180, never another number, and no panic,
+// which no `catch_unwind` takes for the program's (`$unsupported`, the
 // user's decision, #1180).
 function $capacity(v, size) {
   if (size === 0) return 2 ** 32 - 1;
   const kept = $capacities.get(v);
   if (kept === $unknownCapacity) {
-    throw new $InternalError("this `Vec`'s capacity isn't known to rust-js: std's growth of it wasn't kept (#1180)");
+    throw $unsupported("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep: a collect std may make in place, a string's bytes, or items whose size no caller gives (#1180)");
   }
   return Math.max(v.length, kept ?? 0);
 }
@@ -315,7 +315,7 @@ function $grownBy(v, items, size, deque = false, drop, own = false) {
       const step = it.next();
       if (step.done) return step;
       if ($capacityUnknown(v)) {
-        if (own) throw new $InternalError("this `Vec`'s capacity, by which its `extend` asks its hint, isn't known to rust-js: std's growth of it wasn't kept (#1180)");
+        if (own) throw $unsupported("rust-js does not support an `extend` that asks the crate's own hint as a `Vec` fills, of a `Vec` whose growth it didn't keep (#1180)");
         first = false;
         return step;
       }

@@ -9,9 +9,11 @@ import {
   $held,
   $iterator,
   $lent,
+  $live,
   $mapEnds,
   $nth,
   $rev,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -56,15 +58,19 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       acc = tmp;
     }
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log(`drop ${count.at} ${count.end}`);
+    if ($live()) {
+      console.log(`drop ${count.at} ${count.end}`);
+    }
   }
   return result;
 }
@@ -146,8 +152,12 @@ function main() {
   let third;
   try {
     third = $nth($lent(rev), 2);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    rev.return();
+    if ($live()) {
+      rev.return();
+    }
   }
   console.log(`${third == null ? "None" : `Some(${third})`}`);
   const value = $held(
@@ -177,8 +187,12 @@ function main() {
   let pair;
   try {
     pair = $nth($lent(value), 2);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value.return();
+    if ($live()) {
+      value.return();
+    }
   }
   console.log(`${pair == null ? "None" : `Some((${pair[0]}, ${pair[1]}))`}`);
   const it = count();
@@ -209,8 +223,12 @@ function main() {
       countDoubleEndedIterator_nthBack,
     ).reduce((a, b) => (a + b) | 0, 0);
     console.log(`${lent == null ? "None" : `Some(${lent})`} ${rest} after`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log(`drop ${it.at} ${it.end}`);
+    if ($live()) {
+      console.log(`drop ${it.at} ${it.end}`);
+    }
   }
 }
 //# sourceMappingURL=case.js.map

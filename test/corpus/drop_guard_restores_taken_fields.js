@@ -5,7 +5,9 @@ import {
   $cleanup,
   $debugParseError,
   $debugStr,
+  $live,
   $parseInt,
+  $unwindsOn,
   $unwrapOk,
 } from "@rust-js/std";
 
@@ -44,7 +46,7 @@ function initializeModelChunk(chunk) {
         prevChunk = undefined;
         initializingChunk = old$1;
       }
-    });
+    }, error);
     throw error;
   }
   const handler = initializingHandler;
@@ -75,8 +77,12 @@ function parseAtDepth(chunk, handler) {
     } else if (handler.deps > 0) {
       // TODO: Block the resolution of the error until all the debug info has loaded.
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    depth = restore;
+    if ($live()) {
+      depth = restore;
+    }
   }
   return value;
 }

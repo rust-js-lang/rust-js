@@ -36,7 +36,7 @@ function main() {
       $rcDrop(plain, (value) => {
         $dispose(value.getter);
       });
-    });
+    }, error);
     throw error;
   }
   const guard = [2];
@@ -53,7 +53,7 @@ function main() {
       $rcDrop(plain, (value) => {
         $dispose(value.getter);
       });
-    });
+    }, error);
     throw error;
   }
   let shared;
@@ -67,7 +67,7 @@ function main() {
       $rcDrop(plain, (value) => {
         $dispose(value.getter);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -83,7 +83,7 @@ function main() {
       $rcDrop(plain, (value) => {
         $dispose(value.getter);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -98,7 +98,7 @@ function main() {
       $rcDrop(plain, (value) => {
         $dispose(value.getter);
       });
-    });
+    }, error);
     throw error;
   }
   console.log("one left");
@@ -112,7 +112,7 @@ function main() {
       $rcDrop(plain, (value) => {
         $dispose(value.getter);
       });
-    });
+    }, error);
     throw error;
   }
   try {
@@ -124,7 +124,7 @@ function main() {
       $rcDrop(plain, (value) => {
         $dispose(value.getter);
       });
-    });
+    }, error);
     throw error;
   }
   console.log("none left");

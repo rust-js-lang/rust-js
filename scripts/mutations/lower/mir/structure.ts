@@ -729,7 +729,7 @@ export const mutations: Mutation[] = [
     name: "assert-drops-unguarded",
     breaks: "a failed check's panic runs its drops unguarded, so a drop's panic there replaces it where Rust aborts (#847)",
     file: "src/lower/mir/structure.rs",
-    find: "                let mut panic = crate::lower::drops::cleanup(unwound, js_span);\n",
+    find: "                let mut panic = crate::lower::drops::cleanup(unwound, None, js_span);\n",
     replace: "                let mut panic = unwound;\n",
     tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_assert.rs$"],
   },

@@ -9,8 +9,10 @@ import {
   $cloneIntoDeque,
   $cloneIntoVec,
   $dropEach,
+  $live,
   $madeEach,
   $ptr,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -120,7 +122,7 @@ function assignLocal(start, source, TClone, TDebug, dropT) {
   } catch (error) {
     $cleanup(() => {
       dropT?.(local);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -128,7 +130,7 @@ function assignLocal(start, source, TClone, TDebug, dropT) {
   } catch (error) {
     $cleanup(() => {
       dropT?.(local);
-    });
+    }, error);
     throw error;
   }
   dropT?.(local);
@@ -179,15 +181,23 @@ function main() {
             },
             $dropEach(dDrop_drop),
           );
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          for (const item of value) {
-            dDrop_drop(item);
+          if ($live()) {
+            for (const item of value) {
+              dDrop_drop(item);
+            }
           }
         }
         console.log(`[${w.map((item) => dDebug_fmt(item)).join(", ")}]`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of w) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of w) {
+            dDrop_drop(item);
+          }
         }
       }
     });
@@ -209,15 +219,23 @@ function main() {
             },
             $dropEach(dDrop_drop),
           );
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          for (const item of value) {
-            dDrop_drop(item);
+          if ($live()) {
+            for (const item of value) {
+              dDrop_drop(item);
+            }
           }
         }
         console.log(`[${w.map((item) => dDebug_fmt(item)).join(", ")}]`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of w) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of w) {
+            dDrop_drop(item);
+          }
         }
       }
     });
@@ -237,13 +255,21 @@ function main() {
         try {
           try {
             assignOption(dest, value, vecClone, $dropEach(dDrop_drop));
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            w = dest.value;
+            if ($live()) {
+              w = dest.value;
+            }
           }
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          if (value != null) {
-            for (const item of value) {
-              dDrop_drop(item);
+          if ($live()) {
+            if (value != null) {
+              for (const item of value) {
+                dDrop_drop(item);
+              }
             }
           }
         }
@@ -257,13 +283,21 @@ function main() {
           try {
             try {
               assignOption(dest$1, value$1, vecClone, $dropEach(dDrop_drop));
+            } catch (error) {
+              throw $unwindsOn(error);
             } finally {
-              none = dest$1.value;
+              if ($live()) {
+                none = dest$1.value;
+              }
             }
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            if (value$1 != null) {
-              for (const item of value$1) {
-                dDrop_drop(item);
+            if ($live()) {
+              if (value$1 != null) {
+                for (const item of value$1) {
+                  dDrop_drop(item);
+                }
               }
             }
           }
@@ -275,30 +309,46 @@ function main() {
           try {
             try {
               assignOption(dest$2, undefined, vecClone, $dropEach(dDrop_drop));
+            } catch (error) {
+              throw $unwindsOn(error);
             } finally {
-              some = dest$2.value;
+              if ($live()) {
+                some = dest$2.value;
+              }
             }
             console.log(
               `${some == null ? "None" : `Some([${some.map((item) => dDebug_fmt(item)).join(", ")}])`}`,
             );
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            if (some != null) {
-              for (const item of some) {
+            if ($live()) {
+              if (some != null) {
+                for (const item of some) {
+                  dDrop_drop(item);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          throw $unwindsOn(error);
+        } finally {
+          if ($live()) {
+            if (none != null) {
+              for (const item of none) {
                 dDrop_drop(item);
               }
             }
           }
-        } finally {
-          if (none != null) {
-            for (const item of none) {
+        }
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          if (w != null) {
+            for (const item of w) {
               dDrop_drop(item);
             }
-          }
-        }
-      } finally {
-        if (w != null) {
-          for (const item of w) {
-            dDrop_drop(item);
           }
         }
       }
@@ -323,23 +373,35 @@ function main() {
               },
               $dropEach(dDrop_drop),
             );
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            w = dest.value;
+            if ($live()) {
+              w = dest.value;
+            }
           }
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          if (value != null) {
-            for (const item of value) {
-              dDrop_drop(item);
+          if ($live()) {
+            if (value != null) {
+              for (const item of value) {
+                dDrop_drop(item);
+              }
             }
           }
         }
         console.log(
           `${w == null ? "None" : `Some([${w.map((item) => dDebug_fmt(item)).join(", ")}])`}`,
         );
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        if (w != null) {
-          for (const item of w) {
-            dDrop_drop(item);
+        if ($live()) {
+          if (w != null) {
+            for (const item of w) {
+              dDrop_drop(item);
+            }
           }
         }
       }
@@ -370,18 +432,30 @@ function main() {
               },
               $dropEach(dDrop_drop),
             );
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            w = dest.value;
+            if ($live()) {
+              w = dest.value;
+            }
           }
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          for (const item of value) {
-            dDrop_drop(item);
+          if ($live()) {
+            for (const item of value) {
+              dDrop_drop(item);
+            }
           }
         }
         console.log(`[${w.map((item) => dDebug_fmt(item)).join(", ")}]`);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of w) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of w) {
+            dDrop_drop(item);
+          }
         }
       }
     });
@@ -403,11 +477,15 @@ function main() {
             },
             $dropEach(dDrop_drop),
           );
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          for (const item of value) {
-            if (item != null) {
-              for (const item$1 of item) {
-                dDrop_drop(item$1);
+          if ($live()) {
+            for (const item of value) {
+              if (item != null) {
+                for (const item$1 of item) {
+                  dDrop_drop(item$1);
+                }
               }
             }
           }
@@ -415,11 +493,15 @@ function main() {
         console.log(
           `[${w.map((item) => (item == null ? "None" : `Some([${item.map((item) => dDebug_fmt(item)).join(", ")}])`)).join(", ")}]`,
         );
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of w) {
-          if (item != null) {
-            for (const item$1 of item) {
-              dDrop_drop(item$1);
+        if ($live()) {
+          for (const item of w) {
+            if (item != null) {
+              for (const item$1 of item) {
+                dDrop_drop(item$1);
+              }
             }
           }
         }
@@ -443,9 +525,13 @@ function main() {
           { fmt: (value) => `[${value.map((item) => dDebug_fmt(item)).join(", ")}]` },
           $dropEach(dDrop_drop),
         );
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of value$1) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of value$1) {
+            dDrop_drop(item);
+          }
         }
       }
     });
@@ -500,10 +586,14 @@ function main() {
         }
       },
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (value != null) {
-      for (const item of value) {
-        dDrop_drop(item);
+    if ($live()) {
+      if (value != null) {
+        for (const item of value) {
+          dDrop_drop(item);
+        }
       }
     }
   }

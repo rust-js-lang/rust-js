@@ -5,12 +5,14 @@ import {
   $foldBack,
   $given,
   $iter,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
+  $unwindsOn,
   iterator_map,
   mapDoubleEndedIterator_nextBack,
 } from "@rust-js/std";
@@ -70,8 +72,12 @@ function main() {
       { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     );
     console.log(`${value$1 == null ? "None" : `Some(${tagDebug_fmt(value$1, i32Debug)})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log(`drop ${loud}`);
+    if ($live()) {
+      console.log(`drop ${loud}`);
+    }
   }
 }
 //# sourceMappingURL=case.js.map

@@ -34,11 +34,11 @@ function $debugLayout(layout) {
 function $vecFromRaw(pointer, length) {
   // Of bytes, a `Vec<u8>`'s alone, whose items are the bytes' slots.
   if (pointer?.bytes !== undefined && (pointer.width !== 1 || pointer.signed !== false || pointer.stride !== 1)) {
-    throw new Error("rust-js does not support a `Vec` of what isn't an array's first item, which reads memory by where it is");
+    throw $unsupported("rust-js does not support a `Vec` of what isn't an array's first item, which reads memory by where it is");
   }
   if (pointer?.bytes !== undefined) $allocUsed(pointer, "bytes");
   if (pointer === null || !Array.isArray(pointer.of) || pointer.at !== 0) {
-    throw new Error("rust-js does not support a `Vec` of what isn't an array's first item, which reads memory by where it is");
+    throw $unsupported("rust-js does not support a `Vec` of what isn't an array's first item, which reads memory by where it is");
   }
   $setLen(pointer.of, length);
   return pointer.of;

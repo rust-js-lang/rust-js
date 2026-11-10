@@ -11,6 +11,7 @@ import {
   $isSortedByKey,
   $iter,
   $iterator,
+  $live,
   $maxBy,
   $maxByKey,
   $minBy,
@@ -18,6 +19,7 @@ import {
   $ord,
   $partialEq,
   $partialOrd,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -139,9 +141,13 @@ function main() {
   );
   try {
     console.log(`${maxByKey == null ? "None" : `Some(${dDebug_fmt(maxByKey)})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (maxByKey != null) {
-      dDrop_drop(maxByKey);
+    if ($live()) {
+      if (maxByKey != null) {
+        dDrop_drop(maxByKey);
+      }
     }
   }
   const minByKey = $minByKey(
@@ -155,9 +161,13 @@ function main() {
   );
   try {
     console.log(`${minByKey == null ? "None" : `Some(${dDebug_fmt(minByKey)})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (minByKey != null) {
-      dDrop_drop(minByKey);
+    if ($live()) {
+      if (minByKey != null) {
+        dDrop_drop(minByKey);
+      }
     }
   }
 
@@ -264,9 +274,13 @@ function main() {
     );
     try {
       console.log(`${best == null ? "None" : `Some(${dDebug_fmt(best)})`}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      if (best != null) {
-        dDrop_drop(best);
+      if ($live()) {
+        if (best != null) {
+          dDrop_drop(best);
+        }
       }
     }
   });
@@ -282,9 +296,13 @@ function main() {
     );
     try {
       console.log(`${best == null ? "None" : `Some(${dDebug_fmt(best)})`}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      if (best != null) {
-        dDrop_drop(best);
+      if ($live()) {
+        if (best != null) {
+          dDrop_drop(best);
+        }
       }
     }
   });
@@ -336,7 +354,7 @@ function main() {
         if (least != null) {
           kDrop_drop(least);
         }
-      });
+      }, error);
       throw error;
     }
     if (least != null) {
@@ -352,7 +370,7 @@ function main() {
         if (most != null) {
           kDrop_drop(most);
         }
-      });
+      }, error);
       throw error;
     }
     if (most != null) {

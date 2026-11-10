@@ -164,7 +164,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(items, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     let result;
@@ -173,7 +173,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(items, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     $dropItems(items, dDrop_drop);

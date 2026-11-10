@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $cmp,
   $collectDropping,
@@ -19,6 +20,7 @@ import {
   $lazyTakeWhile,
   $lazyZip,
   $lent,
+  $live,
   $mapFrom,
   $max,
   $next,
@@ -28,6 +30,7 @@ import {
   $skipping,
   $stepBy,
   $stepByEnds,
+  $unwindsOn,
   iterator_peekable,
   iterator_take,
 } from "@rust-js/std";
@@ -103,7 +106,9 @@ function consume(n) {
       loudDrop_drop,
     );
   } catch (error) {
-    value.return();
+    $cleanup(() => {
+      value.return();
+    }, error);
     throw error;
   }
   const value$2 = $lastDropping($lazyZip(value, skipWhile, loudDrop_drop), (value) => {
@@ -221,8 +226,12 @@ function consume(n) {
         return true;
       })}`,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    peekable.return();
+    if ($live()) {
+      peekable.return();
+    }
   }
   const value$5 = $iter(three());
   const value$6 = limit();
@@ -232,7 +241,9 @@ function consume(n) {
   try {
     tmp = $closing($iter(value$8), $dropEach(loudDrop_drop)).take(0);
   } catch (error) {
-    value$7.return();
+    $cleanup(() => {
+      value$7.return();
+    }, error);
     throw error;
   }
   const chain = $held($lazyChain(value$7, tmp));
@@ -243,8 +254,12 @@ function consume(n) {
         return true;
       })}`,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    chain.return();
+    if ($live()) {
+      chain.return();
+    }
   }
   const back = $rev(
     $stepByEnds(
@@ -298,7 +313,9 @@ function consume(n) {
   try {
     tmp$1 = $closing($iter(value$10), $dropEach(loudDrop_drop)).take(0);
   } catch (error) {
-    value$9.return();
+    $cleanup(() => {
+      value$9.return();
+    }, error);
     throw error;
   }
   const stepped = $held($lazyChain(value$9, tmp$1));
@@ -367,8 +384,12 @@ function consume(n) {
       ).join(", ")}]`,
     );
     held(n);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    stepped.return();
+    if ($live()) {
+      stepped.return();
+    }
   }
 }
 
@@ -521,48 +542,80 @@ function held(n) {
                   }
                   console.log("stepped done");
                   console.log("held end");
+                } catch (error) {
+                  throw $unwindsOn(error);
                 } finally {
-                  stepped.return();
+                  if ($live()) {
+                    stepped.return();
+                  }
                 }
+              } catch (error) {
+                throw $unwindsOn(error);
               } finally {
-                if (taken$5$live) {
-                  taken.return();
+                if ($live()) {
+                  if (taken$5$live) {
+                    taken.return();
+                  }
                 }
               }
               taken$5$live = false;
+            } catch (error) {
+              throw $unwindsOn(error);
             } finally {
-              if (stepped$live) {
-                stepped.return();
+              if ($live()) {
+                if (stepped$live) {
+                  stepped.return();
+                }
               }
             }
             stepped$live = false;
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            if (taken$4$live) {
-              taken.return();
+            if ($live()) {
+              if (taken$4$live) {
+                taken.return();
+              }
             }
           }
           taken$4$live = false;
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          if (taken$3$live) {
-            taken.return();
+          if ($live()) {
+            if (taken$3$live) {
+              taken.return();
+            }
           }
         }
         taken$3$live = false;
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        if (taken$2$live) {
-          taken.return();
+        if ($live()) {
+          if (taken$2$live) {
+            taken.return();
+          }
         }
       }
       taken$2$live = false;
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      if (taken$1$live) {
-        taken.return();
+      if ($live()) {
+        if (taken$1$live) {
+          taken.return();
+        }
       }
     }
     taken$1$live = false;
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (taken$live) {
-      taken.return();
+    if ($live()) {
+      if (taken$live) {
+        taken.return();
+      }
     }
   }
 }

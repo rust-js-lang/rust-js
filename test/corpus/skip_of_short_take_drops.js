@@ -10,10 +10,12 @@ import {
   $iter,
   $lastDropping,
   $lent,
+  $live,
   $next,
   $nextBack,
   $nthDropping,
   $skipping,
+  $unwindsOn,
   iterator_fuse,
   iterator_rev,
 } from "@rust-js/std";
@@ -53,8 +55,12 @@ function main() {
     }
     const value = nth != null ? map(nth) : undefined;
     console.log(`nth ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    skip.return();
+    if ($live()) {
+      skip.return();
+    }
   }
   console.log(
     `count ${$count(
@@ -131,8 +137,12 @@ function main() {
         return result;
       })}`,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$1.return();
+    if ($live()) {
+      value$1.return();
+    }
   }
   const enumerate = $held(
     $enumerate(
@@ -169,8 +179,12 @@ function main() {
     }
     const value = nth != null ? map(nth) : undefined;
     console.log(`enumerate ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    enumerate.return();
+    if ($live()) {
+      enumerate.return();
+    }
   }
   const value$2 = $held(
     $skipping(
@@ -194,8 +208,12 @@ function main() {
     }
     const value = nth != null ? map(nth) : undefined;
     console.log(`within ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$2.return();
+    if ($live()) {
+      value$2.return();
+    }
   }
 }
 //# sourceMappingURL=case.js.map

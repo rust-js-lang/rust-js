@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $dropEach,
   $flatMap,
@@ -101,7 +102,9 @@ function main() {
   try {
     first = $next(it);
   } catch (error) {
-    it.return();
+    $cleanup(() => {
+      it.return();
+    }, error);
     throw error;
   }
   console.log(`first ${first?.[0] ?? 0}`);
@@ -111,7 +114,9 @@ function main() {
       dDrop_drop(first);
     }
   } catch (error) {
-    it.return();
+    $cleanup(() => {
+      it.return();
+    }, error);
     throw error;
   }
   let it$live = false;
@@ -182,7 +187,9 @@ function main() {
   try {
     iter = $lent(it$1);
   } catch (error) {
-    it$1.return();
+    $cleanup(() => {
+      it$1.return();
+    }, error);
     throw error;
   }
   let tmp;
@@ -190,6 +197,63 @@ function main() {
     try {
       tmp = $next(iter);
     } catch (error) {
+      $cleanup(() => {
+        if (it$1$live) {
+          it$1.return();
+        }
+        if (last$5$live) {
+          if (last$4 != null) {
+            dDrop_drop(last$4);
+          }
+        }
+        if (last$4$live) {
+          if (last$3 != null) {
+            dDrop_drop(last$3);
+          }
+        }
+        if (last$3$live) {
+          if (last$2 != null) {
+            dDrop_drop(last$2);
+          }
+        }
+        if (first$live) {
+          if (first != null) {
+            dDrop_drop(first);
+          }
+        }
+        if (it$live) {
+          it.return();
+        }
+        if (last$2$live) {
+          if (last$1 != null) {
+            dDrop_drop(last$1);
+          }
+        }
+        if (last$1$live) {
+          if (last != null) {
+            dDrop_drop(last);
+          }
+        }
+      }, error);
+      throw error;
+    }
+    if (tmp == null) {
+      break;
+    }
+    const d = tmp;
+    console.log(`got ${d[0]}`);
+    dDrop_drop(d);
+  }
+  let next;
+  function map(d) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
+  }
+  try {
+    next = $next(it$1);
+  } catch (error) {
+    $cleanup(() => {
       if (it$1$live) {
         it$1.return();
       }
@@ -226,101 +290,50 @@ function main() {
           dDrop_drop(last);
         }
       }
-      throw error;
-    }
-    if (tmp == null) {
-      break;
-    }
-    const d = tmp;
-    console.log(`got ${d[0]}`);
-    dDrop_drop(d);
-  }
-  let next;
-  function map(d) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
-  try {
-    next = $next(it$1);
-  } catch (error) {
-    if (it$1$live) {
-      it$1.return();
-    }
-    if (last$5$live) {
-      if (last$4 != null) {
-        dDrop_drop(last$4);
-      }
-    }
-    if (last$4$live) {
-      if (last$3 != null) {
-        dDrop_drop(last$3);
-      }
-    }
-    if (last$3$live) {
-      if (last$2 != null) {
-        dDrop_drop(last$2);
-      }
-    }
-    if (first$live) {
-      if (first != null) {
-        dDrop_drop(first);
-      }
-    }
-    if (it$live) {
-      it.return();
-    }
-    if (last$2$live) {
-      if (last$1 != null) {
-        dDrop_drop(last$1);
-      }
-    }
-    if (last$1$live) {
-      if (last != null) {
-        dDrop_drop(last);
-      }
-    }
+    }, error);
     throw error;
   }
   try {
     console.log(`after ${next != null ? map(next) : 0}`);
   } catch (error) {
-    if (it$1$live) {
-      it$1.return();
-    }
-    if (last$5$live) {
-      if (last$4 != null) {
-        dDrop_drop(last$4);
+    $cleanup(() => {
+      if (it$1$live) {
+        it$1.return();
       }
-    }
-    if (last$4$live) {
-      if (last$3 != null) {
-        dDrop_drop(last$3);
+      if (last$5$live) {
+        if (last$4 != null) {
+          dDrop_drop(last$4);
+        }
       }
-    }
-    if (last$3$live) {
-      if (last$2 != null) {
-        dDrop_drop(last$2);
+      if (last$4$live) {
+        if (last$3 != null) {
+          dDrop_drop(last$3);
+        }
       }
-    }
-    if (first$live) {
-      if (first != null) {
-        dDrop_drop(first);
+      if (last$3$live) {
+        if (last$2 != null) {
+          dDrop_drop(last$2);
+        }
       }
-    }
-    if (it$live) {
-      it.return();
-    }
-    if (last$2$live) {
-      if (last$1 != null) {
-        dDrop_drop(last$1);
+      if (first$live) {
+        if (first != null) {
+          dDrop_drop(first);
+        }
       }
-    }
-    if (last$1$live) {
-      if (last != null) {
-        dDrop_drop(last);
+      if (it$live) {
+        it.return();
       }
-    }
+      if (last$2$live) {
+        if (last$1 != null) {
+          dDrop_drop(last$1);
+        }
+      }
+      if (last$1$live) {
+        if (last != null) {
+          dDrop_drop(last);
+        }
+      }
+    }, error);
     throw error;
   }
   it$1$live = false;
@@ -333,77 +346,81 @@ function main() {
   try {
     option = $lastDropping(it$1, dDrop_drop);
   } catch (error) {
-    if (last$5$live) {
-      if (last$4 != null) {
-        dDrop_drop(last$4);
+    $cleanup(() => {
+      if (last$5$live) {
+        if (last$4 != null) {
+          dDrop_drop(last$4);
+        }
       }
-    }
-    if (last$4$live) {
-      if (last$3 != null) {
-        dDrop_drop(last$3);
+      if (last$4$live) {
+        if (last$3 != null) {
+          dDrop_drop(last$3);
+        }
       }
-    }
-    if (last$3$live) {
-      if (last$2 != null) {
-        dDrop_drop(last$2);
+      if (last$3$live) {
+        if (last$2 != null) {
+          dDrop_drop(last$2);
+        }
       }
-    }
-    if (first$live) {
-      if (first != null) {
-        dDrop_drop(first);
+      if (first$live) {
+        if (first != null) {
+          dDrop_drop(first);
+        }
       }
-    }
-    if (it$live) {
-      it.return();
-    }
-    if (last$2$live) {
-      if (last$1 != null) {
-        dDrop_drop(last$1);
+      if (it$live) {
+        it.return();
       }
-    }
-    if (last$1$live) {
-      if (last != null) {
-        dDrop_drop(last);
+      if (last$2$live) {
+        if (last$1 != null) {
+          dDrop_drop(last$1);
+        }
       }
-    }
+      if (last$1$live) {
+        if (last != null) {
+          dDrop_drop(last);
+        }
+      }
+    }, error);
     throw error;
   }
   try {
     console.log(`last ${option != null ? map$1(option) : 0}`);
   } catch (error) {
-    if (last$5$live) {
-      if (last$4 != null) {
-        dDrop_drop(last$4);
+    $cleanup(() => {
+      if (last$5$live) {
+        if (last$4 != null) {
+          dDrop_drop(last$4);
+        }
       }
-    }
-    if (last$4$live) {
-      if (last$3 != null) {
-        dDrop_drop(last$3);
+      if (last$4$live) {
+        if (last$3 != null) {
+          dDrop_drop(last$3);
+        }
       }
-    }
-    if (last$3$live) {
-      if (last$2 != null) {
-        dDrop_drop(last$2);
+      if (last$3$live) {
+        if (last$2 != null) {
+          dDrop_drop(last$2);
+        }
       }
-    }
-    if (first$live) {
-      if (first != null) {
-        dDrop_drop(first);
+      if (first$live) {
+        if (first != null) {
+          dDrop_drop(first);
+        }
       }
-    }
-    if (it$live) {
-      it.return();
-    }
-    if (last$2$live) {
-      if (last$1 != null) {
-        dDrop_drop(last$1);
+      if (it$live) {
+        it.return();
       }
-    }
-    if (last$1$live) {
-      if (last != null) {
-        dDrop_drop(last);
+      if (last$2$live) {
+        if (last$1 != null) {
+          dDrop_drop(last$1);
+        }
       }
-    }
+      if (last$1$live) {
+        if (last != null) {
+          dDrop_drop(last);
+        }
+      }
+    }, error);
     throw error;
   }
   console.log("end");

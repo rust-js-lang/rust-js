@@ -38,7 +38,7 @@ function last(it, dropI) {
       if (!iter.ownFold && !iter.ownLast) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownFold && !iter.ownLast) {
@@ -84,7 +84,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         iter.return();
-      });
+      }, error);
       throw error;
     }
     iter.return();
@@ -115,7 +115,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, dDrop_drop);

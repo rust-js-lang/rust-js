@@ -3,10 +3,12 @@
 import {
   $borrow,
   $borrowMut,
+  $live,
   $madeEach,
   $newCyclic,
   $rcDrop,
   $unborrow,
+  $unwindsOn,
   $upgrade,
   $weakClone,
   $weakDrop,
@@ -29,12 +31,16 @@ function nodeClone_clone(node) {
   if (list != null) {
     try {
       flip(list.value);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      $rcDrop(list, (value) => {
-        for (const item of value) {
-          $weakDrop(item.list);
-        }
-      });
+      if ($live()) {
+        $rcDrop(list, (value) => {
+          for (const item of value) {
+            $weakDrop(item.list);
+          }
+        });
+      }
     }
   }
   return { list: $weakNone };
@@ -68,17 +74,25 @@ function main() {
     );
     try {
       console.log(`${$borrow(copy).length}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of copy) {
-        $weakDrop(item.list);
+      if ($live()) {
+        for (const item of copy) {
+          $weakDrop(item.list);
+        }
       }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    $rcDrop(list, (value) => {
-      for (const item of value) {
-        $weakDrop(item.list);
-      }
-    });
+    if ($live()) {
+      $rcDrop(list, (value) => {
+        for (const item of value) {
+          $weakDrop(item.list);
+        }
+      });
+    }
   }
 }
 //# sourceMappingURL=case.js.map

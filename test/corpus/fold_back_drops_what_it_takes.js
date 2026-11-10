@@ -6,8 +6,10 @@ import {
   $exactLen,
   $foldBack,
   $iterator,
+  $live,
   $mapEnds,
   $skipping,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -55,15 +57,19 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       acc = tmp;
     }
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log(`drop ${count.at} ${count.end}`);
+    if ($live()) {
+      console.log(`drop ${count.at} ${count.end}`);
+    }
   }
   return result;
 }

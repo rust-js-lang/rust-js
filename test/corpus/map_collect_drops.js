@@ -56,7 +56,7 @@ function main() {
       for (const item of h.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -74,7 +74,7 @@ function main() {
       for (const item of h.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   let c;
@@ -103,7 +103,7 @@ function main() {
       for (const item of h.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`c ${c.size}`);
@@ -131,7 +131,7 @@ function main() {
       for (const item of h.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   let hs;
@@ -160,7 +160,7 @@ function main() {
       for (const item of h.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   let km;
@@ -192,7 +192,7 @@ function main() {
       for (const item of h.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`${s.size} ${hs.size} ${km.size}`);
@@ -218,7 +218,7 @@ function main() {
       for (const item of h.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -239,7 +239,7 @@ function main() {
       for (const item of h.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -257,7 +257,7 @@ function main() {
       for (const item of h.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -272,7 +272,7 @@ function main() {
       for (const item of h.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -284,7 +284,7 @@ function main() {
       for (const item of h.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   for (const item of h.values()) {

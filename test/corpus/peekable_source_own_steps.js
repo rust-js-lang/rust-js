@@ -2,16 +2,19 @@
 
 import {
   $advanceSlice,
+  $cleanup,
   $dropEach,
   $foldOf,
   $held,
   $iter,
   $lastDropping,
   $lent,
+  $live,
   $next,
   $nextBack,
   $nthDropping,
   $range,
+  $unwindsOn,
   iterator_chain,
   iterator_fuse,
   iterator_peekable,
@@ -41,9 +44,11 @@ function main() {
   try {
     tmp = louds(20, 2);
   } catch (error) {
-    for (const item of value) {
-      loudDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of value) {
+        loudDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   const iter = iterator_peekable(
@@ -95,8 +100,12 @@ function main() {
   let nth;
   try {
     nth = $nthDropping($lent(peekable), id(3), loudDrop_drop, false);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    peekable.return();
+    if ($live()) {
+      peekable.return();
+    }
   }
   function map$1(loud) {
     const result = loud[0];
@@ -131,8 +140,12 @@ function main() {
   );
   try {
     nth = $nthDropping($lent(value$3), id(2), loudDrop_drop, false);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$3.return();
+    if ($live()) {
+      value$3.return();
+    }
   }
   function map$2(loud) {
     const result = loud[0];

@@ -29,7 +29,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -41,7 +41,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -51,7 +51,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`boxes ${boxes.size}`);
@@ -63,7 +63,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   let tmp;
@@ -77,7 +77,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -92,7 +92,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -113,7 +113,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`shared ${shared.size}`);
@@ -128,7 +128,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   let tmp$1;
@@ -147,7 +147,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -169,7 +169,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -197,7 +197,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`options ${options.size}`);
@@ -218,7 +218,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   let tmp$2;
@@ -240,7 +240,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -263,7 +263,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   let tmp$3;
@@ -285,7 +285,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -308,7 +308,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -340,7 +340,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   console.log(`sorted ${sorted.size}`);
@@ -361,7 +361,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -378,7 +378,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -390,7 +390,7 @@ function main() {
       for (const item of boxes.values()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   for (const item of boxes.values()) {

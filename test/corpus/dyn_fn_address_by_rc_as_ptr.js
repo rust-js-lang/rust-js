@@ -148,7 +148,7 @@ function main() {
       $rcDrop(again);
       $rcDrop(second);
       $rcDrop(first);
-    });
+    }, error);
     throw error;
   }
   let value;
@@ -168,7 +168,7 @@ function main() {
       $rcDrop(again);
       $rcDrop(second);
       $rcDrop(first);
-    });
+    }, error);
     throw error;
   }
   let two;
@@ -190,7 +190,7 @@ function main() {
       $rcDrop(again);
       $rcDrop(second);
       $rcDrop(first);
-    });
+    }, error);
     throw error;
   }
   let oneAt;
@@ -204,7 +204,7 @@ function main() {
       $rcDrop(again);
       $rcDrop(second);
       $rcDrop(first);
-    });
+    }, error);
     throw error;
   }
   let twoAt;
@@ -218,7 +218,7 @@ function main() {
       $rcDrop(again);
       $rcDrop(second);
       $rcDrop(first);
-    });
+    }, error);
     throw error;
   }
   const value$4 = $ptrEq(oneAt, twoAt, 0);
@@ -233,7 +233,7 @@ function main() {
             $cleanup(() => {
               $rcDrop(two, $dispose);
               $rcDrop(one, $dispose);
-            });
+            }, error);
             throw error;
           }
           try {
@@ -242,7 +242,7 @@ function main() {
             $cleanup(() => {
               $rcDrop(two, $dispose);
               $rcDrop(one, $dispose);
-            });
+            }, error);
             throw error;
           }
           try {
@@ -250,7 +250,7 @@ function main() {
           } catch (error) {
             $cleanup(() => {
               $rcDrop(two, $dispose);
-            });
+            }, error);
             throw error;
           }
           console.log("one gone");

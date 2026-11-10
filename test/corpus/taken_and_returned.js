@@ -96,7 +96,7 @@ function guarded(chunks) {
   } catch (error) {
     $cleanup(() => {
       console.log(`dropped with ${$debugStr(result$1.value)}`);
-    });
+    }, error);
     throw error;
   }
   while (true) {
@@ -106,7 +106,7 @@ function guarded(chunks) {
     } catch (error) {
       $cleanup(() => {
         console.log(`dropped with ${$debugStr(result$1.value)}`);
-      });
+      }, error);
       throw error;
     }
     if (chunk == null) {

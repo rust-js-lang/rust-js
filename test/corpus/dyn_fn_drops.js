@@ -32,7 +32,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(f);
-    });
+    }, error);
     throw error;
   }
   $dispose(f);
@@ -44,7 +44,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(value$1);
-    });
+    }, error);
     throw error;
   }
   const handlers = [value$1, tmp];
@@ -54,7 +54,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(handlers, $dispose);
-    });
+    }, error);
     throw error;
   }
   let total;
@@ -63,7 +63,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(handlers, $dispose);
-    });
+    }, error);
     throw error;
   }
   console.log(`total ${total}`);
@@ -73,7 +73,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(handlers, $dispose);
-    });
+    }, error);
     throw error;
   }
   console.log(`popped ${popped != null}`);
@@ -84,7 +84,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(handlers, $dispose);
-    });
+    }, error);
     throw error;
   }
   let named;
@@ -93,7 +93,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(handlers, $dispose);
-    });
+    }, error);
     throw error;
   }
   let tmp$1;
@@ -105,7 +105,7 @@ function main() {
         $dispose(item);
       }
       $dropItems(handlers, $dispose);
-    });
+    }, error);
     throw error;
   }
   let insert;
@@ -117,7 +117,7 @@ function main() {
         $dispose(item);
       }
       $dropItems(handlers, $dispose);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -130,7 +130,7 @@ function main() {
         $dispose(item);
       }
       $dropItems(handlers, $dispose);
-    });
+    }, error);
     throw error;
   }
   let tmp$2;
@@ -142,7 +142,7 @@ function main() {
         $dispose(item);
       }
       $dropItems(handlers, $dispose);
-    });
+    }, error);
     throw error;
   }
   let tmp$3;
@@ -154,7 +154,7 @@ function main() {
         $dispose(item);
       }
       $dropItems(handlers, $dispose);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -167,7 +167,7 @@ function main() {
         $dispose(item);
       }
       $dropItems(handlers, $dispose);
-    });
+    }, error);
     throw error;
   }
   console.log("replaced");
@@ -181,7 +181,7 @@ function main() {
         $dispose(item);
       }
       $dropItems(handlers, $dispose);
-    });
+    }, error);
     throw error;
   }
   console.log("end");
@@ -192,7 +192,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropItems(handlers, $dispose);
-    });
+    }, error);
     throw error;
   }
   $dropItems(handlers, $dispose);

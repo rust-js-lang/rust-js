@@ -23,7 +23,7 @@ function main() {
         if (h[0] === 90) {
           throw new Error("drop");
         }
-      });
+      }, error);
       throw error;
     }
     console.log(`drop ${h[0]}`);
@@ -48,7 +48,7 @@ function main() {
         if (h[0] === 90) {
           throw new Error("drop");
         }
-      });
+      }, error);
       throw error;
     }
     console.log(`drop ${h[0]}`);
@@ -79,7 +79,7 @@ function main() {
             throw new Error("drop");
           }
         }
-      });
+      }, error);
       throw error;
     }
     const f = (x) => (x + 1) >>> 0;
@@ -104,7 +104,7 @@ function main() {
             throw new Error("drop");
           }
         }
-      });
+      }, error);
       throw error;
     }
     const f$1 = (a, x) => (a + x) >>> 0;

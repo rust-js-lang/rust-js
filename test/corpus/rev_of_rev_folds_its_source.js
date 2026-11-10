@@ -10,8 +10,10 @@ import {
   $iter,
   $iterator,
   $lastDropping,
+  $live,
   $range,
   $rev,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -51,7 +53,7 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
         acc$live = true;
@@ -68,7 +70,7 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       break;
@@ -76,8 +78,12 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
     acc$live = false;
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log("drop own");
+    if ($live()) {
+      console.log("drop own");
+    }
   }
   return result;
 }
@@ -94,10 +100,12 @@ function ownIterator_last(own) {
             dDrop_drop(last);
           }
         } catch (error) {
-          last = d;
-          if (last != null) {
-            dDrop_drop(last);
-          }
+          $cleanup(() => {
+            last = d;
+            if (last != null) {
+              dDrop_drop(last);
+            }
+          }, error);
           throw error;
         }
         last = d;
@@ -108,16 +116,22 @@ function ownIterator_last(own) {
           dDrop_drop(d);
         }
       } catch (error) {
-        if (last != null) {
-          dDrop_drop(last);
-        }
+        $cleanup(() => {
+          if (last != null) {
+            dDrop_drop(last);
+          }
+        }, error);
         throw error;
       }
       break;
     }
     return last;
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log("drop own");
+    if ($live()) {
+      console.log("drop own");
+    }
   }
 }
 
@@ -131,8 +145,12 @@ function ownIterator_count(own) {
       n = (n + 1) >>> 0;
     }
     return n;
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log("drop own");
+    if ($live()) {
+      console.log("drop own");
+    }
   }
 }
 

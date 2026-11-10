@@ -6,12 +6,14 @@ import {
   $held,
   $lastDropping,
   $lent,
+  $live,
   $next,
   $nthDropping,
   $repeating,
   $repeatingN,
   $skipping,
   $stepBy,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -35,7 +37,7 @@ function counted(x, n, TClone, dropT) {
   } catch (error) {
     $cleanup(() => {
       iter.return();
-    });
+    }, error);
     throw error;
   }
   iter.return();
@@ -54,7 +56,7 @@ function skipped(x, TClone, dropT) {
   } catch (error) {
     $cleanup(() => {
       iter.return();
-    });
+    }, error);
     throw error;
   }
   iter.return();
@@ -75,8 +77,12 @@ function main() {
     }
     const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    take.return();
+    if ($live()) {
+      take.return();
+    }
   }
   const skip = $held(
     $skipping(
@@ -94,8 +100,12 @@ function main() {
     }
     const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    skip.return();
+    if ($live()) {
+      skip.return();
+    }
   }
   const repeat = $held($repeating([30], (value) => lClone_clone(value), lDrop_drop));
   try {
@@ -107,8 +117,12 @@ function main() {
     }
     const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    repeat.return();
+    if ($live()) {
+      repeat.return();
+    }
   }
   console.log(
     `${$stepBy(
@@ -139,8 +153,12 @@ function main() {
     }
     const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    repeatN.return();
+    if ($live()) {
+      repeatN.return();
+    }
   }
   const value = $held($repeatingN([80], 3, (value) => lClone_clone(value), lDrop_drop));
   try {
@@ -152,8 +170,12 @@ function main() {
     }
     const value$1 = nth != null ? map(nth) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value.return();
+    if ($live()) {
+      value.return();
+    }
   }
   const last = $lastDropping(
     $repeatingN([90], 3, (value) => lClone_clone(value), lDrop_drop),
@@ -182,8 +204,12 @@ function main() {
     }
     const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$2.return();
+    if ($live()) {
+      value$2.return();
+    }
   }
   console.log(
     `${$count(
@@ -196,7 +222,9 @@ function main() {
   try {
     tmp = $nthDropping($lent(held), 1, lDrop_drop, false);
   } catch (error) {
-    held.return();
+    $cleanup(() => {
+      held.return();
+    }, error);
     throw error;
   }
   try {
@@ -204,7 +232,9 @@ function main() {
       lDrop_drop(tmp);
     }
   } catch (error) {
-    held.return();
+    $cleanup(() => {
+      held.return();
+    }, error);
     throw error;
   }
   console.log(`${$count(held, lDrop_drop)}`);
@@ -213,7 +243,9 @@ function main() {
   try {
     tmp$1 = $next(heldN);
   } catch (error) {
-    heldN.return();
+    $cleanup(() => {
+      heldN.return();
+    }, error);
     throw error;
   }
   try {
@@ -221,7 +253,9 @@ function main() {
       lDrop_drop(tmp$1);
     }
   } catch (error) {
-    heldN.return();
+    $cleanup(() => {
+      heldN.return();
+    }, error);
     throw error;
   }
   let heldN$live = false;
@@ -243,10 +277,12 @@ function main() {
     try {
       tmp$2 = $next(iter);
     } catch (error) {
-      iter.return();
-      if (heldN$live) {
-        heldN.return();
-      }
+      $cleanup(() => {
+        iter.return();
+        if (heldN$live) {
+          heldN.return();
+        }
+      }, error);
       throw error;
     }
     if (tmp$2 == null) {

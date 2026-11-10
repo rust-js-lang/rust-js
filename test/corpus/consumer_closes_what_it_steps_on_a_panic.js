@@ -14,9 +14,11 @@ import {
   $heapSorted,
   $isSortedBy,
   $iter,
+  $live,
   $partiallyOrdered,
   $sortedKeys,
   $splicing,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -35,8 +37,12 @@ function key(d) {
       throw new Error("at 2");
     }
     return d[0];
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    dDrop_drop(d);
+    if ($live()) {
+      dDrop_drop(d);
+    }
   }
 }
 

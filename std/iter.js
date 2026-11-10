@@ -26,6 +26,7 @@ import {
   $lastDropping,
   $lastSome,
   $lent,
+  $live,
   $neverShortCircuitTry,
   $next,
   $nextBack,
@@ -48,6 +49,7 @@ import {
   $traitImpl,
   $tryFoldInto,
   $tryOf,
+  $unwindsOn,
 } from "./runtime.js";
 
 export const Inspect = {
@@ -61,7 +63,7 @@ export const Inspect = {
           if (elt != null) {
             dropIItem?.($someValue(elt));
           }
-        });
+        }, error);
         throw error;
       }
     }
@@ -117,7 +119,7 @@ export const FlattenCompat = {
           if (flattenCompat.backiter != null) {
             dropU?.($someValue(flattenCompat.backiter));
           }
-        });
+        }, error);
         throw error;
       }
     }
@@ -133,7 +135,7 @@ export const FlattenCompat = {
           if (tmp$1) {
             dropAcc?.(acc);
           }
-        });
+        }, error);
         throw error;
       }
       return fold(acc, tmp);
@@ -149,7 +151,7 @@ export const FlattenCompat = {
             if (!$took(IIterator.fold, iter)) {
               dropI?.(iter);
             }
-          });
+          }, error);
           throw error;
         }
         if (!$took(IIterator.fold, iter)) {
@@ -161,7 +163,7 @@ export const FlattenCompat = {
           if (flattenCompat.backiter != null) {
             dropU?.($someValue(flattenCompat.backiter));
           }
-        });
+        }, error);
         throw error;
       }
       acc = result;
@@ -174,7 +176,7 @@ export const FlattenCompat = {
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
-        });
+        }, error);
         throw error;
       }
     }
@@ -188,7 +190,7 @@ export const FlattenCompat = {
             dropU?.($someValue(flattenCompat.backiter));
           }
         }
-      });
+      }, error);
       throw error;
     }
     return result;
@@ -221,7 +223,7 @@ export const FlattenCompat = {
         } catch (error) {
           $cleanup(() => {
             dropFold?.(fold);
-          });
+          }, error);
           throw error;
         }
         if (tmp$1.TAG === "Continue") {
@@ -234,7 +236,7 @@ export const FlattenCompat = {
           } catch (error) {
             $cleanup(() => {
               dropFold?.(fold);
-            });
+            }, error);
             throw error;
           }
           break bb27;
@@ -251,7 +253,7 @@ export const FlattenCompat = {
           if (tmp) {
             dropAcc?.(acc);
           }
-        });
+        }, error);
         throw error;
       }
       flattenCompat.frontiter = undefined;
@@ -271,13 +273,17 @@ export const FlattenCompat = {
                       if (flattenCompat.frontiter != null) {
                         IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.frontiter));
                       }
+                    } catch (error) {
+                      throw $unwindsOn(error);
                     } finally {
-                      flattenCompat.frontiter = $some(value);
+                      if ($live()) {
+                        flattenCompat.frontiter = $some(value);
+                      }
                     }
                   } catch (error) {
                     $cleanup(() => {
                       dropAcc?.(acc);
-                    });
+                    }, error);
                     throw error;
                   }
                   return fold(acc, $someValue(flattenCompat.frontiter));
@@ -301,13 +307,17 @@ export const FlattenCompat = {
                       if (flattenCompat.frontiter != null) {
                         IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.frontiter));
                       }
+                    } catch (error) {
+                      throw $unwindsOn(error);
                     } finally {
-                      flattenCompat.frontiter = $some(value);
+                      if ($live()) {
+                        flattenCompat.frontiter = $some(value);
+                      }
                     }
                   } catch (error) {
                     $cleanup(() => {
                       dropAcc?.(acc);
-                    });
+                    }, error);
                     throw error;
                   }
                   return fold(acc, $someValue(flattenCompat.frontiter));
@@ -324,7 +334,7 @@ export const FlattenCompat = {
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
-        });
+        }, error);
         throw error;
       }
       if (tmp$1.TAG === "Continue") {
@@ -340,7 +350,7 @@ export const FlattenCompat = {
             flattenCompat.frontiter = undefined;
             dropFold?.(fold);
             dropAcc?.(acc);
-          });
+          }, error);
           throw error;
         }
         flattenCompat.frontiter = undefined;
@@ -353,7 +363,7 @@ export const FlattenCompat = {
           } catch (error) {
             $cleanup(() => {
               dropFold?.(fold);
-            });
+            }, error);
             throw error;
           }
           if (tmp$1.TAG === "Continue") {
@@ -366,7 +376,7 @@ export const FlattenCompat = {
             } catch (error) {
               $cleanup(() => {
                 dropFold?.(fold);
-              });
+              }, error);
               throw error;
             }
             break bb27;
@@ -383,7 +393,7 @@ export const FlattenCompat = {
             if (tmp) {
               dropAcc?.(acc);
             }
-          });
+          }, error);
           throw error;
         }
         flattenCompat.backiter = undefined;
@@ -393,7 +403,7 @@ export const FlattenCompat = {
         } catch (error) {
           $cleanup(() => {
             dropFold?.(fold);
-          });
+          }, error);
           throw error;
         }
         dropFold?.(fold);
@@ -404,7 +414,7 @@ export const FlattenCompat = {
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
-        });
+        }, error);
         throw error;
       }
     }
@@ -415,7 +425,7 @@ export const FlattenCompat = {
         if (tmp) {
           dropAcc?.(acc);
         }
-      });
+      }, error);
       throw error;
     }
     return result;
@@ -446,7 +456,7 @@ export const FlattenCompat = {
           if (flattenCompat.frontiter != null) {
             dropU?.($someValue(flattenCompat.frontiter));
           }
-        });
+        }, error);
         throw error;
       }
     }
@@ -462,7 +472,7 @@ export const FlattenCompat = {
           if (tmp$1) {
             dropAcc?.(acc);
           }
-        });
+        }, error);
         throw error;
       }
       return fold(acc, tmp);
@@ -485,7 +495,7 @@ export const FlattenCompat = {
             if (!$took(IDoubleEndedIterator.rfold, iter)) {
               dropI?.(iter);
             }
-          });
+          }, error);
           throw error;
         }
         if (!$took(IDoubleEndedIterator.rfold, iter)) {
@@ -497,7 +507,7 @@ export const FlattenCompat = {
           if (flattenCompat.frontiter != null) {
             dropU?.($someValue(flattenCompat.frontiter));
           }
-        });
+        }, error);
         throw error;
       }
       acc = result;
@@ -510,7 +520,7 @@ export const FlattenCompat = {
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
-        });
+        }, error);
         throw error;
       }
     }
@@ -524,7 +534,7 @@ export const FlattenCompat = {
             dropU?.($someValue(flattenCompat.frontiter));
           }
         }
-      });
+      }, error);
       throw error;
     }
     return result;
@@ -558,7 +568,7 @@ export const FlattenCompat = {
         } catch (error) {
           $cleanup(() => {
             dropFold?.(fold);
-          });
+          }, error);
           throw error;
         }
         if (tmp$1.TAG === "Continue") {
@@ -571,7 +581,7 @@ export const FlattenCompat = {
           } catch (error) {
             $cleanup(() => {
               dropFold?.(fold);
-            });
+            }, error);
             throw error;
           }
           break bb27;
@@ -588,7 +598,7 @@ export const FlattenCompat = {
           if (tmp) {
             dropAcc?.(acc);
           }
-        });
+        }, error);
         throw error;
       }
       flattenCompat.backiter = undefined;
@@ -608,13 +618,17 @@ export const FlattenCompat = {
                       if (flattenCompat.backiter != null) {
                         IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.backiter));
                       }
+                    } catch (error) {
+                      throw $unwindsOn(error);
                     } finally {
-                      flattenCompat.backiter = $some(value);
+                      if ($live()) {
+                        flattenCompat.backiter = $some(value);
+                      }
                     }
                   } catch (error) {
                     $cleanup(() => {
                       dropAcc?.(acc);
-                    });
+                    }, error);
                     throw error;
                   }
                   return fold(acc, $someValue(flattenCompat.backiter));
@@ -639,13 +653,17 @@ export const FlattenCompat = {
                       if (flattenCompat.backiter != null) {
                         IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.backiter));
                       }
+                    } catch (error) {
+                      throw $unwindsOn(error);
                     } finally {
-                      flattenCompat.backiter = $some(value);
+                      if ($live()) {
+                        flattenCompat.backiter = $some(value);
+                      }
                     }
                   } catch (error) {
                     $cleanup(() => {
                       dropAcc?.(acc);
-                    });
+                    }, error);
                     throw error;
                   }
                   return fold(acc, $someValue(flattenCompat.backiter));
@@ -663,7 +681,7 @@ export const FlattenCompat = {
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
-        });
+        }, error);
         throw error;
       }
       if (tmp$1.TAG === "Continue") {
@@ -679,7 +697,7 @@ export const FlattenCompat = {
             flattenCompat.backiter = undefined;
             dropFold?.(fold);
             dropAcc?.(acc);
-          });
+          }, error);
           throw error;
         }
         flattenCompat.backiter = undefined;
@@ -692,7 +710,7 @@ export const FlattenCompat = {
           } catch (error) {
             $cleanup(() => {
               dropFold?.(fold);
-            });
+            }, error);
             throw error;
           }
           if (tmp$1.TAG === "Continue") {
@@ -705,7 +723,7 @@ export const FlattenCompat = {
             } catch (error) {
               $cleanup(() => {
                 dropFold?.(fold);
-              });
+              }, error);
               throw error;
             }
             break bb27;
@@ -722,7 +740,7 @@ export const FlattenCompat = {
             if (tmp) {
               dropAcc?.(acc);
             }
-          });
+          }, error);
           throw error;
         }
         flattenCompat.frontiter = undefined;
@@ -732,7 +750,7 @@ export const FlattenCompat = {
         } catch (error) {
           $cleanup(() => {
             dropFold?.(fold);
-          });
+          }, error);
           throw error;
         }
         dropFold?.(fold);
@@ -743,7 +761,7 @@ export const FlattenCompat = {
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
-        });
+        }, error);
         throw error;
       }
     }
@@ -754,7 +772,7 @@ export const FlattenCompat = {
         if (tmp) {
           dropAcc?.(acc);
         }
-      });
+      }, error);
       throw error;
     }
     return result;
@@ -811,7 +829,7 @@ export const Zip = {
       } catch (error) {
         $cleanup(() => {
           dropBItem?.(x[1]);
-        });
+        }, error);
         throw error;
       }
       dropBItem?.(x[1]);
@@ -890,7 +908,7 @@ export function peekableIterator_nth(peekable, n, IIterator = { next: $next }, d
               dropIItem?.($someValue($someValue(peeked)));
             }
           }
-        });
+        }, error);
         throw error;
       }
     }
@@ -904,7 +922,7 @@ export function peekableIterator_nth(peekable, n, IIterator = { next: $next }, d
             dropIItem?.($someValue($someValue(peeked)));
           }
         }
-      });
+      }, error);
       throw error;
     }
   }
@@ -939,7 +957,7 @@ export function peekableIterator_last(peekable, IIterator = { next: $next }, dro
               dropIItem?.($someValue($someValue(peekable.peeked)));
             }
           }
-        });
+        }, error);
         throw error;
       }
       peekable.return();
@@ -962,7 +980,7 @@ export function peekableIterator_last(peekable, IIterator = { next: $next }, dro
         if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
           dropI?.(iter);
         }
-      });
+      }, error);
       throw error;
     }
     if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
@@ -984,7 +1002,7 @@ export function peekableIterator_last(peekable, IIterator = { next: $next }, dro
           dropIItem?.($someValue($someValue(peekable.peeked)));
         }
       }
-    });
+    }, error);
     throw error;
   }
   tmp = false;
@@ -1003,7 +1021,7 @@ export function peekableIterator_last(peekable, IIterator = { next: $next }, dro
           dropIItem?.($someValue($someValue(peekable.peeked)));
         }
       }
-    });
+    }, error);
     throw error;
   }
   if (peekable.peeked != null) {
@@ -1036,7 +1054,7 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
               dropIItem?.($someValue($someValue(peekable.peeked)));
             }
           }
-        });
+        }, error);
         throw error;
       }
       try {
@@ -1048,7 +1066,7 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
               dropIItem?.($someValue($someValue(peekable.peeked)));
             }
           }
-        });
+        }, error);
         throw error;
       }
       if (peekable.peeked != null) {
@@ -1070,7 +1088,7 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
           if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
             dropI?.(iter);
           }
-        });
+        }, error);
         throw error;
       }
       if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
@@ -1089,7 +1107,7 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
             dropIItem?.($someValue($someValue(peekable.peeked)));
           }
         }
-      });
+      }, error);
       throw error;
     }
     result = (1 + count) >>> 0;
@@ -1105,7 +1123,7 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
           if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
             dropI?.(iter);
           }
-        });
+        }, error);
         throw error;
       }
       if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
@@ -1124,7 +1142,7 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
             dropIItem?.($someValue($someValue(peekable.peeked)));
           }
         }
-      });
+      }, error);
       throw error;
     }
   }
@@ -1148,7 +1166,7 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
           dropIItem?.($someValue($someValue(peekable.peeked)));
         }
       }
-    });
+    }, error);
     throw error;
   }
   if (peekable.peeked != null) {
@@ -1177,7 +1195,7 @@ export function peekableIterator_fold(
       } catch (error) {
         $cleanup(() => {
           dropI?.(peekable.iter);
-        });
+        }, error);
         throw error;
       }
       dropI?.(peekable.iter);
@@ -1190,7 +1208,7 @@ export function peekableIterator_fold(
       $cleanup(() => {
         dropFold?.(fold);
         dropI?.(peekable.iter);
-      });
+      }, error);
       throw error;
     }
   }
@@ -1212,7 +1230,7 @@ export function peekableIterator_fold(
       if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter)) {
@@ -1248,7 +1266,7 @@ export function peekableIterator_tryFold(
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
       } else {
@@ -1260,7 +1278,7 @@ export function peekableIterator_tryFold(
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
         if (tmp$1.TAG === "Continue") {
@@ -1272,7 +1290,7 @@ export function peekableIterator_tryFold(
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
       }
@@ -1283,7 +1301,7 @@ export function peekableIterator_tryFold(
           if (tmp) {
             dropB?.(init);
           }
-        });
+        }, error);
         throw error;
       }
       return result;
@@ -1309,7 +1327,7 @@ export function peekableIterator_tryFold(
       if (tmp) {
         dropB?.(init);
       }
-    });
+    }, error);
     throw error;
   }
   return result;
@@ -1362,7 +1380,7 @@ export function peekableDoubleEndedIterator_rfold(
       } catch (error) {
         $cleanup(() => {
           dropI?.(peekable.iter);
-        });
+        }, error);
         throw error;
       }
       dropI?.(peekable.iter);
@@ -1385,7 +1403,7 @@ export function peekableDoubleEndedIterator_rfold(
           if (!$took(IDoubleEndedIterator.rfold, iter)) {
             dropI?.(iter);
           }
-        });
+        }, error);
         throw error;
       }
       if (!$took(IDoubleEndedIterator.rfold, iter)) {
@@ -1396,7 +1414,7 @@ export function peekableDoubleEndedIterator_rfold(
       $cleanup(() => {
         dropIItem?.(v);
         dropFold?.(fold);
-      });
+      }, error);
       throw error;
     }
     try {
@@ -1404,7 +1422,7 @@ export function peekableDoubleEndedIterator_rfold(
     } catch (error) {
       $cleanup(() => {
         dropFold?.(fold);
-      });
+      }, error);
       throw error;
     }
     dropFold?.(fold);
@@ -1428,7 +1446,7 @@ export function peekableDoubleEndedIterator_rfold(
       if (!$took(IDoubleEndedIterator.rfold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IDoubleEndedIterator.rfold, iter)) {
@@ -1463,7 +1481,7 @@ export function peekableDoubleEndedIterator_tryRfold(
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
     } else {
@@ -1484,7 +1502,7 @@ export function peekableDoubleEndedIterator_tryRfold(
         $cleanup(() => {
           dropIItem?.(v);
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       if (branch.TAG === "Continue") {
@@ -1493,7 +1511,7 @@ export function peekableDoubleEndedIterator_tryRfold(
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
       } else {
@@ -1510,7 +1528,7 @@ export function peekableDoubleEndedIterator_tryRfold(
             peekable.peeked = value;
             RTry.$dropResidual?.(r);
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
         peekable.peeked = value;
@@ -1519,7 +1537,7 @@ export function peekableDoubleEndedIterator_tryRfold(
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
       }
@@ -1531,7 +1549,7 @@ export function peekableDoubleEndedIterator_tryRfold(
         if (tmp) {
           dropB?.(init);
         }
-      });
+      }, error);
       throw error;
     }
     return result;
@@ -1648,7 +1666,7 @@ export function fuseIterator_fold(
         if (!$took(IIterator.fold, iter)) {
           dropI?.(iter);
         }
-      });
+      }, error);
       throw error;
     }
     if (!$took(IIterator.fold, iter)) {
@@ -1674,7 +1692,7 @@ export function fuseIterator_count(fuse, IIterator = { next: $next }, dropI, dro
         if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
           dropI?.(iter);
         }
-      });
+      }, error);
       throw error;
     }
     if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
@@ -1780,7 +1798,7 @@ export function fuseFuseImplI_tryFold(
         $cleanup(() => {
           fuse.iter = undefined;
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       fuse.iter = undefined;
@@ -1794,7 +1812,7 @@ export function fuseFuseImplI_tryFold(
         if (tmp) {
           dropAcc?.(acc);
         }
-      });
+      }, error);
       throw error;
     }
     return result;
@@ -1807,7 +1825,7 @@ export function fuseFuseImplI_tryFold(
       if (tmp$1) {
         dropFold?.(fold);
       }
-    });
+    }, error);
     throw error;
   }
   dropFold?.(fold);
@@ -1855,7 +1873,7 @@ export function fuseFuseImplIFusedIterator_tryFold(
       if (tmp) {
         dropFold?.(fold);
       }
-    });
+    }, error);
     throw error;
   }
   dropFold?.(fold);
@@ -1871,8 +1889,12 @@ export function fuseFuseImplI_advanceBy(fuse, n, IIterator = { next: $next }, dr
         if (fuse.iter != null) {
           dropI?.($someValue(fuse.iter));
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        fuse.iter = undefined;
+        if ($live()) {
+          fuse.iter = undefined;
+        }
       }
     }
     return res;
@@ -1944,7 +1966,7 @@ export function fuseDoubleEndedIterator_rfold(
         if (!$took(IDoubleEndedIterator.rfold, iter)) {
           dropI?.(iter);
         }
-      });
+      }, error);
       throw error;
     }
     if (!$took(IDoubleEndedIterator.rfold, iter)) {
@@ -2028,8 +2050,12 @@ export function fuseFuseImplI_next(fuse, IIterator = { next: $next }, dropI, dro
   const opt = { value: fuse.iter };
   try {
     return andThenOrClear(opt, (x0) => IIterator.next(x0.value), dropI, dropIItem);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    fuse.iter = opt.value;
+    if ($live()) {
+      fuse.iter = opt.value;
+    }
   }
 }
 
@@ -2061,7 +2087,7 @@ export function fuseIterator_last(fuse, IIterator = { next: $next }, dropI, drop
         if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
           dropI?.(iter);
         }
-      });
+      }, error);
       throw error;
     }
     if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
@@ -2080,8 +2106,12 @@ export function fuseFuseImplI_nth(fuse, n, IIterator = { next: $next }, dropI, d
       dropI,
       dropIItem,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    fuse.iter = opt.value;
+    if ($live()) {
+      fuse.iter = opt.value;
+    }
   }
 }
 
@@ -2106,8 +2136,12 @@ export function fuseFuseImplI_nextBack(
   const opt = { value: fuse.iter };
   try {
     return andThenOrClear(opt, (x0) => IDoubleEndedIterator.next_back(x0.value), dropI, dropIItem);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    fuse.iter = opt.value;
+    if ($live()) {
+      fuse.iter = opt.value;
+    }
   }
 }
 
@@ -2139,8 +2173,12 @@ export function fuseFuseImplI_nthBack(
       dropI,
       dropIItem,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    fuse.iter = opt.value;
+    if ($live()) {
+      fuse.iter = opt.value;
+    }
   }
 }
 
@@ -2225,7 +2263,7 @@ export function revIterator_find(
   } catch (error) {
     $cleanup(() => {
       dropP?.(predicate);
-    });
+    }, error);
     throw error;
   }
   dropP?.(predicate);
@@ -2261,7 +2299,7 @@ export function revIterator_fold(
       if (!$took(IDoubleEndedIterator.rfold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IDoubleEndedIterator.rfold, iter)) {
@@ -2344,7 +2382,7 @@ export function revDoubleEndedIterator_rfold(
       if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter)) {
@@ -2398,7 +2436,7 @@ export function revDoubleEndedIterator_rfind(
   } catch (error) {
     $cleanup(() => {
       dropP?.(predicate);
-    });
+    }, error);
     throw error;
   }
   dropP?.(predicate);
@@ -2474,7 +2512,7 @@ export function enumerateIterator_count(enumerate, IIterator = { next: $next }, 
       if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
@@ -2515,7 +2553,7 @@ export function enumerateIterator_fold(
       if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter)) {
@@ -2592,7 +2630,7 @@ export function enumerateDoubleEndedIterator_nextBack(
     } catch (error) {
       $cleanup(() => {
         dropIItem?.(a);
-      });
+      }, error);
       throw error;
     }
     return [(enumerate.count$ + len) >>> 0, a];
@@ -2622,7 +2660,7 @@ export function enumerateDoubleEndedIterator_nthBack(
     } catch (error) {
       $cleanup(() => {
         dropIItem?.(a);
-      });
+      }, error);
       throw error;
     }
     return [(enumerate.count$ + len) >>> 0, a];
@@ -2649,7 +2687,7 @@ export function enumerateDoubleEndedIterator_rfold(
       dropFold?.(fold);
       dropAcc?.(init);
       dropI?.(enumerate.iter);
-    });
+    }, error);
     throw error;
   }
   const iter = enumerate.iter;
@@ -2680,7 +2718,7 @@ export function enumerateDoubleEndedIterator_rfold(
       if (!$took(IDoubleEndedIterator.rfold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IDoubleEndedIterator.rfold, iter)) {
@@ -2710,7 +2748,7 @@ export function enumerateDoubleEndedIterator_tryRfold(
     $cleanup(() => {
       dropFold?.(fold);
       dropAcc?.(init);
-    });
+    }, error);
     throw error;
   }
   let count$1 = count;
@@ -2818,7 +2856,7 @@ export function mapIterator_fold(
           if (tmp$1) {
             dropAcc?.(acc);
           }
-        });
+        }, error);
         throw error;
       }
       return g(acc, tmp);
@@ -2829,7 +2867,7 @@ export function mapIterator_fold(
       } catch (error) {
         $cleanup(() => {
           dropF?.(captured);
-        });
+        }, error);
         throw error;
       }
       dropF?.(captured);
@@ -2845,7 +2883,7 @@ export function mapIterator_fold(
       if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter)) {
@@ -2882,7 +2920,7 @@ export function mapIterator_tryFold(
           if (tmp$1) {
             dropAcc?.(acc);
           }
-        });
+        }, error);
         throw error;
       }
       return g(acc, tmp);
@@ -2945,7 +2983,7 @@ export function mapDoubleEndedIterator_rfold(
           if (tmp$1) {
             dropAcc?.(acc);
           }
-        });
+        }, error);
         throw error;
       }
       return g(acc, tmp);
@@ -2956,7 +2994,7 @@ export function mapDoubleEndedIterator_rfold(
       } catch (error) {
         $cleanup(() => {
           dropF?.(captured);
-        });
+        }, error);
         throw error;
       }
       dropF?.(captured);
@@ -2979,7 +3017,7 @@ export function mapDoubleEndedIterator_rfold(
       if (!$took(IDoubleEndedIterator.rfold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IDoubleEndedIterator.rfold, iter)) {
@@ -3017,7 +3055,7 @@ export function mapDoubleEndedIterator_tryRfold(
           if (tmp$1) {
             dropAcc?.(acc);
           }
-        });
+        }, error);
         throw error;
       }
       return g(acc, tmp);
@@ -3081,7 +3119,7 @@ export function filterIterator_count(filter, IIterator = { next: $next }, dropI,
     $cleanup(() => {
       dropI?.(filter.iter);
       dropP?.(filter.predicate);
-    });
+    }, error);
     throw error;
   }
   const before = tmp ?? 4294967295;
@@ -3096,7 +3134,7 @@ export function filterIterator_count(filter, IIterator = { next: $next }, dropI,
         } catch (error) {
           $cleanup(() => {
             dropIItem?.(x);
-          });
+          }, error);
           throw error;
         }
         dropIItem?.(x);
@@ -3131,7 +3169,7 @@ export function filterIterator_count(filter, IIterator = { next: $next }, dropI,
       if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter)) {
@@ -3164,7 +3202,7 @@ export function filterIterator_fold(
         $cleanup(() => {
           dropIItem?.(item);
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       if (tmp) {
@@ -3180,7 +3218,7 @@ export function filterIterator_fold(
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
-        });
+        }, error);
         throw error;
       }
       dropFold?.(fold);
@@ -3196,7 +3234,7 @@ export function filterIterator_fold(
       if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter)) {
@@ -3230,7 +3268,7 @@ export function filterIterator_tryFold(
         $cleanup(() => {
           dropIItem?.(item);
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       if (tmp) {
@@ -3245,7 +3283,7 @@ export function filterIterator_tryFold(
           if (tmp$1) {
             dropIItem?.(item);
           }
-        });
+        }, error);
         throw error;
       }
       dropIItem?.(item);
@@ -3307,7 +3345,7 @@ export function filterDoubleEndedIterator_rfold(
         $cleanup(() => {
           dropIItem?.(item);
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       if (tmp) {
@@ -3323,7 +3361,7 @@ export function filterDoubleEndedIterator_rfold(
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
-        });
+        }, error);
         throw error;
       }
       dropFold?.(fold);
@@ -3346,7 +3384,7 @@ export function filterDoubleEndedIterator_rfold(
       if (!$took(IDoubleEndedIterator.rfold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IDoubleEndedIterator.rfold, iter)) {
@@ -3381,7 +3419,7 @@ export function filterDoubleEndedIterator_tryRfold(
         $cleanup(() => {
           dropIItem?.(item);
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       if (tmp) {
@@ -3396,7 +3434,7 @@ export function filterDoubleEndedIterator_tryRfold(
           if (tmp$1) {
             dropIItem?.(item);
           }
-        });
+        }, error);
         throw error;
       }
       dropIItem?.(item);
@@ -3490,7 +3528,7 @@ export function copiedIterator_fold(
       if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter)) {
@@ -3552,7 +3590,7 @@ export function copiedIterator_last(copied, IIterator = { next: $next }, TCopy, 
       if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
@@ -3574,7 +3612,7 @@ export function copiedIterator_count(copied, IIterator = { next: $next }, TCopy,
       if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
@@ -3638,7 +3676,7 @@ export function copiedDoubleEndedIterator_rfold(
       if (!$took(IDoubleEndedIterator.rfold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IDoubleEndedIterator.rfold, iter)) {
@@ -3760,7 +3798,7 @@ export function clonedIterator_fold(
       if (tmp) {
         dropAcc?.(init);
       }
-    });
+    }, error);
     throw error;
   }
   const iter = map.iter;
@@ -3777,7 +3815,7 @@ export function clonedIterator_fold(
           if (tmp$1) {
             dropAcc?.(acc);
           }
-        });
+        }, error);
         throw error;
       }
       return f(acc, tmp);
@@ -3796,7 +3834,7 @@ export function clonedIterator_fold(
       if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter)) {
@@ -3830,7 +3868,7 @@ export function clonedIterator_tryFold(
           if (tmp$1) {
             dropB?.(acc);
           }
-        });
+        }, error);
         throw error;
       }
       return f(acc, tmp);
@@ -3888,7 +3926,7 @@ export function clonedDoubleEndedIterator_rfold(
       if (tmp) {
         dropAcc?.(init);
       }
-    });
+    }, error);
     throw error;
   }
   const iter = map.iter;
@@ -3905,7 +3943,7 @@ export function clonedDoubleEndedIterator_rfold(
           if (tmp$1) {
             dropAcc?.(acc);
           }
-        });
+        }, error);
         throw error;
       }
       return f(acc, tmp);
@@ -3931,7 +3969,7 @@ export function clonedDoubleEndedIterator_rfold(
       if (!$took(IDoubleEndedIterator.rfold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IDoubleEndedIterator.rfold, iter)) {
@@ -3966,7 +4004,7 @@ export function clonedDoubleEndedIterator_tryRfold(
           if (tmp$1) {
             dropB?.(acc);
           }
-        });
+        }, error);
         throw error;
       }
       return f(acc, tmp);
@@ -4050,7 +4088,7 @@ export function filterMapIterator_fold(
       } catch (error) {
         $cleanup(() => {
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       if (tmp != null) {
@@ -4065,7 +4103,7 @@ export function filterMapIterator_fold(
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
-        });
+        }, error);
         throw error;
       }
       dropFold?.(fold);
@@ -4081,7 +4119,7 @@ export function filterMapIterator_fold(
       if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter)) {
@@ -4114,7 +4152,7 @@ export function filterMapIterator_tryFold(
       } catch (error) {
         $cleanup(() => {
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       if (tmp != null) {
@@ -4200,7 +4238,7 @@ export function filterMapDoubleEndedIterator_rfold(
       } catch (error) {
         $cleanup(() => {
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       if (tmp != null) {
@@ -4215,7 +4253,7 @@ export function filterMapDoubleEndedIterator_rfold(
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
-        });
+        }, error);
         throw error;
       }
       dropFold?.(fold);
@@ -4238,7 +4276,7 @@ export function filterMapDoubleEndedIterator_rfold(
       if (!$took(IDoubleEndedIterator.rfold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IDoubleEndedIterator.rfold, iter)) {
@@ -4272,7 +4310,7 @@ export function filterMapDoubleEndedIterator_tryRfold(
       } catch (error) {
         $cleanup(() => {
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       if (tmp != null) {
@@ -4330,7 +4368,7 @@ export function takeWhileIterator_next(
     } catch (error) {
       $cleanup(() => {
         dropIItem?.(x);
-      });
+      }, error);
       throw error;
     }
     if (tmp) {
@@ -4377,7 +4415,7 @@ export function takeWhileIterator_tryFold(
     } catch (error) {
       $cleanup(() => {
         dropFold?.(fold);
-      });
+      }, error);
       throw error;
     }
     dropFold?.(fold);
@@ -4394,7 +4432,7 @@ export function takeWhileIterator_tryFold(
         $cleanup(() => {
           dropIItem?.(x);
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       if (tmp) {
@@ -4414,7 +4452,7 @@ export function takeWhileIterator_tryFold(
           if (tmp$1) {
             dropIItem?.(x);
           }
-        });
+        }, error);
         throw error;
       }
       dropIItem?.(x);
@@ -4472,7 +4510,7 @@ export function takeWhileIterator_fold(
   } catch (error) {
     $cleanup(() => {
       takeWhile.return();
-    });
+    }, error);
     throw error;
   }
   const result = value;
@@ -4575,7 +4613,7 @@ export function skipWhileIterator_fold(
         dropAcc?.(init);
         dropI?.(skipWhile.iter);
         dropP?.(skipWhile.predicate);
-      });
+      }, error);
       throw error;
     }
     if (find == null) {
@@ -4586,7 +4624,7 @@ export function skipWhileIterator_fold(
         $cleanup(() => {
           dropI?.(skipWhile.iter);
           dropP?.(skipWhile.predicate);
-        });
+        }, error);
         throw error;
       }
       skipWhile.return();
@@ -4600,7 +4638,7 @@ export function skipWhileIterator_fold(
         dropFold?.(fold);
         dropI?.(skipWhile.iter);
         dropP?.(skipWhile.predicate);
-      });
+      }, error);
       throw error;
     }
   }
@@ -4624,7 +4662,7 @@ export function skipWhileIterator_fold(
         if (!$took(IIterator.fold, iter)) {
           dropI?.(iter);
         }
-      });
+      }, error);
       throw error;
     }
     if (!$took(IIterator.fold, iter)) {
@@ -4635,7 +4673,7 @@ export function skipWhileIterator_fold(
   } catch (error) {
     $cleanup(() => {
       dropP?.(skipWhile.predicate);
-    });
+    }, error);
     throw error;
   }
   dropP?.(skipWhile.predicate);
@@ -4679,7 +4717,7 @@ export function skipWhileIterator_tryFold(
         $cleanup(() => {
           dropFold?.(fold);
           dropAcc?.(init);
-        });
+        }, error);
         throw error;
       }
       let result;
@@ -4692,7 +4730,7 @@ export function skipWhileIterator_tryFold(
         } catch (error) {
           $cleanup(() => {
             dropFold?.(fold);
-          });
+          }, error);
           throw error;
         }
         if (tmp$1.TAG === "Continue") {
@@ -4704,7 +4742,7 @@ export function skipWhileIterator_tryFold(
         } catch (error) {
           $cleanup(() => {
             dropFold?.(fold);
-          });
+          }, error);
           throw error;
         }
       } else {
@@ -4714,7 +4752,7 @@ export function skipWhileIterator_tryFold(
         } catch (error) {
           $cleanup(() => {
             dropFold?.(fold);
-          });
+          }, error);
           throw error;
         }
       }
@@ -4725,7 +4763,7 @@ export function skipWhileIterator_tryFold(
           if (tmp) {
             dropAcc?.(init);
           }
-        });
+        }, error);
         throw error;
       }
       return result;
@@ -4822,7 +4860,7 @@ export function mapWhileIterator_tryFold(
         } catch (error) {
           $cleanup(() => {
             dropAcc?.(acc);
-          });
+          }, error);
           throw error;
         }
         if (tmp != null) {
@@ -4841,7 +4879,7 @@ export function mapWhileIterator_tryFold(
   } catch (error) {
     $cleanup(() => {
       dropFold?.(fold);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -4851,7 +4889,7 @@ export function mapWhileIterator_tryFold(
     } catch (error) {
       $cleanup(() => {
         dropFold?.(fold);
-      });
+      }, error);
       throw error;
     }
     dropFold?.(fold);
@@ -4895,7 +4933,7 @@ export function mapWhileIterator_fold(
   } catch (error) {
     $cleanup(() => {
       mapWhile.return();
-    });
+    }, error);
     throw error;
   }
   const result = value;
@@ -4988,7 +5026,7 @@ export function scanIterator_tryFold(
       } catch (error) {
         $cleanup(() => {
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       if (tmp == null) {
@@ -5059,7 +5097,7 @@ export function scanIterator_fold(
       } catch (error) {
         $cleanup(() => {
           dropAAA?.(acc);
-        });
+        }, error);
         throw error;
       }
       if (tmp == null) {
@@ -5093,7 +5131,7 @@ export function scanIterator_fold(
   } catch (error) {
     $cleanup(() => {
       scan.return();
-    });
+    }, error);
     throw error;
   }
   const result = tryFold._0;
@@ -5160,7 +5198,7 @@ export function inspectIterator_fold(
         $cleanup(() => {
           dropIItem?.(item);
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       return fold(acc, item);
@@ -5171,7 +5209,7 @@ export function inspectIterator_fold(
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
-        });
+        }, error);
         throw error;
       }
       dropFold?.(fold);
@@ -5187,7 +5225,7 @@ export function inspectIterator_fold(
       if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter)) {
@@ -5219,7 +5257,7 @@ export function inspectIterator_tryFold(
         $cleanup(() => {
           dropIItem?.(item);
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       return fold(acc, item);
@@ -5274,7 +5312,7 @@ export function inspectDoubleEndedIterator_rfold(
         $cleanup(() => {
           dropIItem?.(item);
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       return fold(acc, item);
@@ -5285,7 +5323,7 @@ export function inspectDoubleEndedIterator_rfold(
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
-        });
+        }, error);
         throw error;
       }
       dropFold?.(fold);
@@ -5308,7 +5346,7 @@ export function inspectDoubleEndedIterator_rfold(
       if (!$took(IDoubleEndedIterator.rfold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IDoubleEndedIterator.rfold, iter)) {
@@ -5341,7 +5379,7 @@ export function inspectDoubleEndedIterator_tryRfold(
         $cleanup(() => {
           dropIItem?.(item);
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       return fold(acc, item);
@@ -6517,7 +6555,7 @@ export function skipIterator_count(skip, IIterator = { next: $next }, dropI, dro
     } catch (error) {
       $cleanup(() => {
         dropI?.(skip.iter);
-      });
+      }, error);
       throw error;
     }
     if (nth == null) {
@@ -6528,7 +6566,7 @@ export function skipIterator_count(skip, IIterator = { next: $next }, dropI, dro
       } catch (error) {
         $cleanup(() => {
           dropI?.(skip.iter);
-        });
+        }, error);
         throw error;
       }
       const result = 0;
@@ -6542,7 +6580,7 @@ export function skipIterator_count(skip, IIterator = { next: $next }, dropI, dro
     } catch (error) {
       $cleanup(() => {
         dropI?.(skip.iter);
-      });
+      }, error);
       throw error;
     }
   }
@@ -6555,7 +6593,7 @@ export function skipIterator_count(skip, IIterator = { next: $next }, dropI, dro
       if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
@@ -6577,7 +6615,7 @@ export function skipIterator_last(skip, IIterator = { next: $next }, dropI, drop
     } catch (error) {
       $cleanup(() => {
         dropI?.(skip.iter);
-      });
+      }, error);
       throw error;
     }
     if (nth == null) {
@@ -6591,7 +6629,7 @@ export function skipIterator_last(skip, IIterator = { next: $next }, dropI, drop
     } catch (error) {
       $cleanup(() => {
         dropI?.(skip.iter);
-      });
+      }, error);
       throw error;
     }
   }
@@ -6604,7 +6642,7 @@ export function skipIterator_last(skip, IIterator = { next: $next }, dropI, drop
       if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
@@ -6638,7 +6676,7 @@ export function skipIterator_fold(
         dropFold?.(fold);
         dropAcc?.(init);
         dropI?.(skip.iter);
-      });
+      }, error);
       throw error;
     }
     if (nth == null) {
@@ -6651,7 +6689,7 @@ export function skipIterator_fold(
           dropFold?.(fold);
           dropAcc?.(init);
           dropI?.(skip.iter);
-        });
+        }, error);
         throw error;
       }
       tmp = false;
@@ -6661,7 +6699,7 @@ export function skipIterator_fold(
       } catch (error) {
         $cleanup(() => {
           dropI?.(skip.iter);
-        });
+        }, error);
         throw error;
       }
       skip.return();
@@ -6680,7 +6718,7 @@ export function skipIterator_fold(
         } else {
           dropI?.(skip.iter);
         }
-      });
+      }, error);
       throw error;
     }
   }
@@ -6703,7 +6741,7 @@ export function skipIterator_fold(
       if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!$took(IIterator.fold, iter)) {
@@ -6736,7 +6774,7 @@ export function skipIterator_tryFold(
       $cleanup(() => {
         dropFold?.(fold);
         dropAcc?.(init);
-      });
+      }, error);
       throw error;
     }
     if (nth == null) {
@@ -6748,7 +6786,7 @@ export function skipIterator_tryFold(
         $cleanup(() => {
           dropFold?.(fold);
           dropAcc?.(init);
-        });
+        }, error);
         throw error;
       }
       tmp = false;
@@ -6758,7 +6796,7 @@ export function skipIterator_tryFold(
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
-        });
+        }, error);
         throw error;
       }
       dropFold?.(fold);
@@ -6774,7 +6812,7 @@ export function skipIterator_tryFold(
         if (tmp) {
           dropAcc?.(init);
         }
-      });
+      }, error);
       throw error;
     }
   }
@@ -6965,7 +7003,7 @@ export function skipDoubleEndedIterator_tryRfold(
     $cleanup(() => {
       dropFold?.(fold);
       dropAcc?.(init);
-    });
+    }, error);
     throw error;
   }
   const value = sizeHint[1];
@@ -6993,7 +7031,7 @@ export function skipDoubleEndedIterator_tryRfold(
         } catch (error) {
           $cleanup(() => {
             dropFold?.(fold);
-          });
+          }, error);
           throw error;
         }
         dropFold?.(fold);
@@ -7051,7 +7089,7 @@ export function skipDoubleEndedIterator_tryRfold(
       } else if (tmp$3) {
         dropAcc?.(init);
       }
-    });
+    }, error);
     throw error;
   }
 }
@@ -7093,7 +7131,7 @@ export function skipDoubleEndedIterator_rfold(
   } catch (error) {
     $cleanup(() => {
       skip.return();
-    });
+    }, error);
     throw error;
   }
   skip.return();
@@ -7179,7 +7217,7 @@ export function takeIterator_count(take, IIterator = { next: $next }, dropI, dro
   } catch (error) {
     $cleanup(() => {
       take.return();
-    });
+    }, error);
     throw error;
   }
   if (advanceBy.TAG === "Ok") {
@@ -7224,7 +7262,7 @@ export function takeIterator_tryFold(
     } catch (error) {
       $cleanup(() => {
         dropFold?.(fold);
-      });
+      }, error);
       throw error;
     }
     dropFold?.(fold);
@@ -7349,7 +7387,7 @@ export function takeIDoubleEndedIterator_tryRfold(
         $cleanup(() => {
           dropFold?.(fold);
           dropAcc?.(init);
-        });
+        }, error);
         throw error;
       }
       if (len > take.n) {
@@ -7365,7 +7403,7 @@ export function takeIDoubleEndedIterator_tryRfold(
           $cleanup(() => {
             dropFold?.(fold);
             dropAcc?.(init);
-          });
+          }, error);
           throw error;
         }
         if (nthBack == null) {
@@ -7377,7 +7415,7 @@ export function takeIDoubleEndedIterator_tryRfold(
             $cleanup(() => {
               dropFold?.(fold);
               dropAcc?.(init);
-            });
+            }, error);
             throw error;
           }
           tmp = false;
@@ -7386,7 +7424,7 @@ export function takeIDoubleEndedIterator_tryRfold(
           } catch (error) {
             $cleanup(() => {
               dropFold?.(fold);
-            });
+            }, error);
             throw error;
           }
           break bb21;
@@ -7399,7 +7437,7 @@ export function takeIDoubleEndedIterator_tryRfold(
           $cleanup(() => {
             dropFold?.(fold);
             dropAcc?.(init);
-          });
+          }, error);
           throw error;
         }
       }
@@ -7422,7 +7460,7 @@ export function takeIDoubleEndedIterator_tryRfold(
     } catch (error) {
       $cleanup(() => {
         dropFold?.(fold);
-      });
+      }, error);
       throw error;
     }
   }
@@ -7433,7 +7471,7 @@ export function takeIDoubleEndedIterator_tryRfold(
       if (tmp) {
         dropAcc?.(init);
       }
-    });
+    }, error);
     throw error;
   }
   return result;
@@ -7488,7 +7526,7 @@ export function takeIDoubleEndedIterator_rfold(
           dropFold?.(fold);
           dropAcc?.(init);
           dropI?.(take.iter);
-        });
+        }, error);
         throw error;
       }
       if (len > take.n) {
@@ -7505,7 +7543,7 @@ export function takeIDoubleEndedIterator_rfold(
             dropFold?.(fold);
             dropAcc?.(init);
             dropI?.(take.iter);
-          });
+          }, error);
           throw error;
         }
         if (nthBack == null) {
@@ -7518,7 +7556,7 @@ export function takeIDoubleEndedIterator_rfold(
               dropFold?.(fold);
               dropAcc?.(init);
               dropI?.(take.iter);
-            });
+            }, error);
             throw error;
           }
           tmp = false;
@@ -7534,7 +7572,7 @@ export function takeIDoubleEndedIterator_rfold(
             dropFold?.(fold);
             dropAcc?.(init);
             dropI?.(take.iter);
-          });
+          }, error);
           throw error;
         }
       }
@@ -7558,7 +7596,7 @@ export function takeIDoubleEndedIterator_rfold(
           if (!$took(IDoubleEndedIterator.rfold, iter)) {
             dropI?.(iter);
           }
-        });
+        }, error);
         throw error;
       }
       if (!$took(IDoubleEndedIterator.rfold, iter)) {
@@ -7582,7 +7620,7 @@ export function takeIDoubleEndedIterator_rfold(
       } else if (tmp$1) {
         dropI?.(take.iter);
       }
-    });
+    }, error);
     throw error;
   }
   dropI?.(take.iter);
@@ -7800,8 +7838,12 @@ export function chainIterator_next(
   let andThenOrClear;
   try {
     andThenOrClear = andThenOrClear$1(opt, (x0) => AIterator.next(x0.value), dropA, dropAItem);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    chain.a = opt.value;
+    if ($live()) {
+      chain.a = opt.value;
+    }
   }
   function fallback() {
     if (chain.b != null) {
@@ -7868,7 +7910,7 @@ export function chainIterator_count(
           if (!$took(AIterator.fold, iter) && !$took(AIterator.count, iter)) {
             dropA?.(iter);
           }
-        });
+        }, error);
         throw error;
       }
       if (!$took(AIterator.fold, iter) && !$took(AIterator.count, iter)) {
@@ -7880,7 +7922,7 @@ export function chainIterator_count(
         if (chain.b != null) {
           dropB?.($someValue(chain.b));
         }
-      });
+      }, error);
       throw error;
     }
   } else {
@@ -7898,7 +7940,7 @@ export function chainIterator_count(
         if (!$took(BIterator.fold, iter) && !$took(BIterator.count, iter)) {
           dropB?.(iter);
         }
-      });
+      }, error);
       throw error;
     }
     if (!$took(BIterator.fold, iter) && !$took(BIterator.count, iter)) {
@@ -7935,7 +7977,7 @@ export function chainIterator_fold(
           if (!$took(AIterator.fold, iter)) {
             dropA?.(iter);
           }
-        });
+        }, error);
         throw error;
       }
       if (!$took(AIterator.fold, iter)) {
@@ -7947,7 +7989,7 @@ export function chainIterator_fold(
         if (chain.b != null) {
           dropB?.($someValue(chain.b));
         }
-      });
+      }, error);
       throw error;
     }
     acc = result;
@@ -7972,7 +8014,7 @@ export function chainIterator_fold(
         if (!$took(BIterator.fold, iter)) {
           dropB?.(iter);
         }
-      });
+      }, error);
       throw error;
     }
     if (!$took(BIterator.fold, iter)) {
@@ -7992,7 +8034,7 @@ export function chainIterator_fold(
           dropB?.($someValue(chain.b));
         }
       }
-    });
+    }, error);
     throw error;
   }
   return result;
@@ -8024,7 +8066,7 @@ export function chainIterator_tryFold(
     } catch (error) {
       $cleanup(() => {
         dropF?.(f);
-      });
+      }, error);
       throw error;
     }
     if (tmp.TAG !== "Continue") {
@@ -8033,7 +8075,7 @@ export function chainIterator_tryFold(
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       dropF?.(f);
@@ -8049,7 +8091,7 @@ export function chainIterator_tryFold(
         chain.a = undefined;
         dropF?.(f);
         dropAcc?.(acc);
-      });
+      }, error);
       throw error;
     }
     chain.a = undefined;
@@ -8081,7 +8123,7 @@ export function chainIterator_tryFold(
       if (tmp) {
         dropF?.(f);
       }
-    });
+    }, error);
     throw error;
   }
   dropF?.(f);
@@ -8109,8 +8151,12 @@ export function chainIterator_advanceBy(
       if (chain.a != null) {
         dropA?.($someValue(chain.a));
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      chain.a = undefined;
+      if ($live()) {
+        chain.a = undefined;
+      }
     }
   }
   if (chain.b != null) {
@@ -8147,8 +8193,12 @@ export function chainIterator_nth(
       if (chain.a != null) {
         dropA?.($someValue(chain.a));
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      chain.a = undefined;
+      if ($live()) {
+        chain.a = undefined;
+      }
     }
   }
   if (chain.b != null) {
@@ -8177,7 +8227,7 @@ export function chainIterator_last(
           if (!$took(AIterator.fold, iter) && !$took(AIterator.last, iter)) {
             dropA?.(iter);
           }
-        });
+        }, error);
         throw error;
       }
       if (!$took(AIterator.fold, iter) && !$took(AIterator.last, iter)) {
@@ -8189,7 +8239,7 @@ export function chainIterator_last(
         if (chain.b != null) {
           dropB?.($someValue(chain.b));
         }
-      });
+      }, error);
       throw error;
     }
   } else {
@@ -8208,7 +8258,7 @@ export function chainIterator_last(
           if (!$took(BIterator.fold, iter) && !$took(BIterator.last, iter)) {
             dropB?.(iter);
           }
-        });
+        }, error);
         throw error;
       }
       if (!$took(BIterator.fold, iter) && !$took(BIterator.last, iter)) {
@@ -8220,7 +8270,7 @@ export function chainIterator_last(
         if (aLast != null) {
           dropAItem?.($someValue(aLast));
         }
-      });
+      }, error);
       throw error;
     }
   } else {
@@ -8252,8 +8302,12 @@ export function chainDoubleEndedIterator_nextBack(
       dropB,
       dropAItem,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    chain.b = opt.value;
+    if ($live()) {
+      chain.b = opt.value;
+    }
   }
   function fallback() {
     if (chain.a != null) {
@@ -8296,8 +8350,12 @@ export function chainDoubleEndedIterator_nthBack(
       if (chain.b != null) {
         dropB?.($someValue(chain.b));
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      chain.b = undefined;
+      if ($live()) {
+        chain.b = undefined;
+      }
     }
   }
   if (chain.a != null) {
@@ -8336,7 +8394,7 @@ export function chainDoubleEndedIterator_rfold(
           if (!$took(BDoubleEndedIterator.rfold, iter)) {
             dropB?.(iter);
           }
-        });
+        }, error);
         throw error;
       }
       if (!$took(BDoubleEndedIterator.rfold, iter)) {
@@ -8348,7 +8406,7 @@ export function chainDoubleEndedIterator_rfold(
         if (chain.a != null) {
           dropA?.($someValue(chain.a));
         }
-      });
+      }, error);
       throw error;
     }
     acc = result;
@@ -8373,7 +8431,7 @@ export function chainDoubleEndedIterator_rfold(
         if (!$took(ADoubleEndedIterator.rfold, iter)) {
           dropA?.(iter);
         }
-      });
+      }, error);
       throw error;
     }
     if (!$took(ADoubleEndedIterator.rfold, iter)) {
@@ -8393,7 +8451,7 @@ export function chainDoubleEndedIterator_rfold(
           dropA?.($someValue(chain.a));
         }
       }
-    });
+    }, error);
     throw error;
   }
   return result;
@@ -8433,7 +8491,7 @@ export function chainDoubleEndedIterator_tryRfold(
     } catch (error) {
       $cleanup(() => {
         dropF?.(f);
-      });
+      }, error);
       throw error;
     }
     if (tmp.TAG !== "Continue") {
@@ -8442,7 +8500,7 @@ export function chainDoubleEndedIterator_tryRfold(
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       dropF?.(f);
@@ -8458,7 +8516,7 @@ export function chainDoubleEndedIterator_tryRfold(
         chain.b = undefined;
         dropF?.(f);
         dropAcc?.(acc);
-      });
+      }, error);
       throw error;
     }
     chain.b = undefined;
@@ -8490,7 +8548,7 @@ export function chainDoubleEndedIterator_tryRfold(
       if (tmp) {
         dropF?.(f);
       }
-    });
+    }, error);
     throw error;
   }
   dropF?.(f);
@@ -8850,7 +8908,7 @@ export function iterator_peekable(self, SelfIterator = { next: $next }, dropSelf
                 dropSelfItem?.($someValue($someValue(iterator.peeked)));
               }
             }
-          });
+          }, error);
           throw error;
         }
         if (iterator.peeked != null) {
@@ -9119,7 +9177,7 @@ export function iterator_map(
         } catch (error) {
           $cleanup(() => {
             dropF?.(iterator.f);
-          });
+          }, error);
           throw error;
         }
         dropF?.(iterator.f);
@@ -9189,7 +9247,7 @@ export function iterator_filter(
         } catch (error) {
           $cleanup(() => {
             dropP?.(iterator.predicate);
-          });
+          }, error);
           throw error;
         }
         dropP?.(iterator.predicate);
@@ -9369,7 +9427,7 @@ export function iterator_filterMap(
         } catch (error) {
           $cleanup(() => {
             dropF?.(iterator.f);
-          });
+          }, error);
           throw error;
         }
         dropF?.(iterator.f);
@@ -9436,7 +9494,7 @@ export function iterator_takeWhile(
         } catch (error) {
           $cleanup(() => {
             dropP?.(iterator.predicate);
-          });
+          }, error);
           throw error;
         }
         dropP?.(iterator.predicate);
@@ -9503,7 +9561,7 @@ export function iterator_skipWhile(
         } catch (error) {
           $cleanup(() => {
             dropP?.(iterator.predicate);
-          });
+          }, error);
           throw error;
         }
         dropP?.(iterator.predicate);
@@ -9580,7 +9638,7 @@ export function iterator_mapWhile(
         } catch (error) {
           $cleanup(() => {
             dropP?.(iterator.predicate);
-          });
+          }, error);
           throw error;
         }
         dropP?.(iterator.predicate);
@@ -9671,7 +9729,7 @@ export function iterator_scan(
           $cleanup(() => {
             dropF?.(iterator.f);
             dropSt?.(iterator.state);
-          });
+          }, error);
           throw error;
         }
         try {
@@ -9679,7 +9737,7 @@ export function iterator_scan(
         } catch (error) {
           $cleanup(() => {
             dropSt?.(iterator.state);
-          });
+          }, error);
           throw error;
         }
         dropSt?.(iterator.state);
@@ -9746,7 +9804,7 @@ export function iterator_inspect(
         } catch (error) {
           $cleanup(() => {
             dropF?.(iterator.f);
-          });
+          }, error);
           throw error;
         }
         dropF?.(iterator.f);
@@ -9879,7 +9937,7 @@ export function iterator_flatten(
             if (iterator.inner.backiter != null) {
               dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
             }
-          });
+          }, error);
           throw error;
         }
         try {
@@ -9891,7 +9949,7 @@ export function iterator_flatten(
             if (iterator.inner.backiter != null) {
               dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
             }
-          });
+          }, error);
           throw error;
         }
         if (iterator.inner.backiter != null) {
@@ -10145,7 +10203,7 @@ export function iterator_flatMap(
             if (iterator.inner.backiter != null) {
               dropUIntoIter?.($someValue(iterator.inner.backiter));
             }
-          });
+          }, error);
           throw error;
         }
         try {
@@ -10157,7 +10215,7 @@ export function iterator_flatMap(
             if (iterator.inner.backiter != null) {
               dropUIntoIter?.($someValue(iterator.inner.backiter));
             }
-          });
+          }, error);
           throw error;
         }
         if (iterator.inner.backiter != null) {
@@ -10363,7 +10421,7 @@ export function iterator_chain(
   } catch (error) {
     $cleanup(() => {
       dropSelf?.(self);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -10474,7 +10532,7 @@ export function iterator_chain(
               if (iterator.b != null) {
                 dropUIntoIter?.($someValue(iterator.b));
               }
-            });
+            }, error);
             throw error;
           }
           if (iterator.b != null) {
@@ -10486,7 +10544,7 @@ export function iterator_chain(
   } catch (error) {
     $cleanup(() => {
       dropSelf?.(self);
-    });
+    }, error);
     throw error;
   }
   return result;
@@ -10519,7 +10577,7 @@ export function iterator_zip(
       if (tmp$1) {
         dropSelf?.(self);
       }
-    });
+    }, error);
     throw error;
   }
   return SelfRandomAccess && UIntoIterRandomAccess
@@ -10636,7 +10694,7 @@ export function fuseFuseImplI_tryRfold(
         $cleanup(() => {
           fuse.iter = undefined;
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       fuse.iter = undefined;
@@ -10650,7 +10708,7 @@ export function fuseFuseImplI_tryRfold(
         if (tmp) {
           dropAcc?.(acc);
         }
-      });
+      }, error);
       throw error;
     }
     return result;
@@ -10663,7 +10721,7 @@ export function fuseFuseImplI_tryRfold(
       if (tmp$1) {
         dropFold?.(fold);
       }
-    });
+    }, error);
     throw error;
   }
   dropFold?.(fold);
@@ -10712,7 +10770,7 @@ export function fuseFuseImplIFusedIterator_tryRfold(
       if (tmp) {
         dropFold?.(fold);
       }
-    });
+    }, error);
     throw error;
   }
   dropFold?.(fold);
@@ -10733,7 +10791,7 @@ export function andThenOrClear(opt, f, dropT, dropU, dropFnOnce) {
           if (x != null) {
             dropU?.($someValue(x));
           }
-        });
+        }, error);
         throw error;
       }
       opt.value = undefined;
@@ -10764,8 +10822,12 @@ export function flattenCompatIUIterator_next(
     let andThenOrClear;
     try {
       andThenOrClear = andThenOrClear$2(opt, (x0) => UIterator.next(x0.value), dropU, dropUItem);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      flattenCompat.frontiter = opt.value;
+      if ($live()) {
+        flattenCompat.frontiter = opt.value;
+      }
     }
     if (andThenOrClear != null) {
       return andThenOrClear;
@@ -10780,8 +10842,12 @@ export function flattenCompatIUIterator_next(
       const opt = { value: flattenCompat.backiter };
       try {
         elt = andThenOrClear$2(opt, (x0) => UIterator.next(x0.value), dropU, dropUItem);
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        flattenCompat.backiter = opt.value;
+        if ($live()) {
+          flattenCompat.backiter = opt.value;
+        }
       }
       return elt;
     }
@@ -10791,8 +10857,12 @@ export function flattenCompatIUIterator_next(
       if (flattenCompat.frontiter != null) {
         dropU?.($someValue(flattenCompat.frontiter));
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      flattenCompat.frontiter = value$1;
+      if ($live()) {
+        flattenCompat.frontiter = value$1;
+      }
     }
   }
 }
@@ -10823,7 +10893,7 @@ export function flattenCompatIUIterator2_next(
     } catch (error) {
       $cleanup(() => {
         dropU?.(value$1);
-      });
+      }, error);
       throw error;
     }
     if (item != null) {
@@ -10837,7 +10907,7 @@ export function flattenCompatIUIterator2_next(
     } catch (error) {
       $cleanup(() => {
         dropU?.(value$1);
-      });
+      }, error);
       throw error;
     }
     dropU?.(value$1);
@@ -10989,7 +11059,7 @@ export function flattenCompatIUIterator_fold(
             if (!$took(UIterator.fold, iter)) {
               dropU?.(iter);
             }
-          });
+          }, error);
           throw error;
         }
         if (!$took(UIterator.fold, iter)) {
@@ -11035,7 +11105,7 @@ export function flattenCompatIUIterator2_fold(
       } catch (error) {
         $cleanup(() => {
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       let next;
@@ -11045,7 +11115,7 @@ export function flattenCompatIUIterator2_fold(
         $cleanup(() => {
           dropU?.(tmp);
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       let result$1;
@@ -11057,7 +11127,7 @@ export function flattenCompatIUIterator2_fold(
         } catch (error) {
           $cleanup(() => {
             dropU?.(tmp);
-          });
+          }, error);
           throw error;
         }
       } else {
@@ -11071,7 +11141,7 @@ export function flattenCompatIUIterator2_fold(
           if (tmp$1) {
             dropAcc?.(acc);
           }
-        });
+        }, error);
         throw error;
       }
       return result$1;
@@ -11095,7 +11165,7 @@ export function flattenCompatIUIterator2_fold(
           if (!$took(IIterator.fold, iter)) {
             dropI?.(iter);
           }
-        });
+        }, error);
         throw error;
       }
       if (!$took(IIterator.fold, iter)) {
@@ -11110,7 +11180,7 @@ export function flattenCompatIUIterator2_fold(
         if (flattenCompat.backiter != null) {
           dropU?.($someValue(flattenCompat.backiter));
         }
-      });
+      }, error);
       throw error;
     }
     init = value;
@@ -11127,7 +11197,7 @@ export function flattenCompatIUIterator2_fold(
         if (flattenCompat.backiter != null) {
           dropU?.($someValue(flattenCompat.backiter));
         }
-      });
+      }, error);
       throw error;
     }
   }
@@ -11140,7 +11210,7 @@ export function flattenCompatIUIterator2_fold(
       if (flattenCompat.backiter != null) {
         dropU?.($someValue(flattenCompat.backiter));
       }
-    });
+    }, error);
     throw error;
   }
   if (flattenCompat.backiter != null) {
@@ -11219,7 +11289,7 @@ export function flattenCompatIUIterator2_tryFold(
             } catch (error) {
               $cleanup(() => {
                 dropAcc?.(acc);
-              });
+              }, error);
               throw error;
             }
             let next;
@@ -11229,7 +11299,7 @@ export function flattenCompatIUIterator2_tryFold(
               $cleanup(() => {
                 dropU?.(tmp);
                 dropAcc?.(acc);
-              });
+              }, error);
               throw error;
             }
             let result;
@@ -11241,7 +11311,7 @@ export function flattenCompatIUIterator2_tryFold(
               } catch (error) {
                 $cleanup(() => {
                   dropU?.(tmp);
-                });
+                }, error);
                 throw error;
               }
             } else {
@@ -11251,7 +11321,7 @@ export function flattenCompatIUIterator2_tryFold(
               } catch (error) {
                 $cleanup(() => {
                   dropU?.(tmp);
-                });
+                }, error);
                 throw error;
               }
             }
@@ -11262,7 +11332,7 @@ export function flattenCompatIUIterator2_tryFold(
                 if (tmp$1) {
                   dropAcc?.(acc);
                 }
-              });
+              }, error);
               throw error;
             }
             return result;
@@ -11291,7 +11361,7 @@ export function flattenCompatIUIterator2_tryFold(
             } catch (error) {
               $cleanup(() => {
                 dropAcc?.(acc);
-              });
+              }, error);
               throw error;
             }
             let next;
@@ -11301,7 +11371,7 @@ export function flattenCompatIUIterator2_tryFold(
               $cleanup(() => {
                 dropU?.(tmp);
                 dropAcc?.(acc);
-              });
+              }, error);
               throw error;
             }
             let result;
@@ -11313,7 +11383,7 @@ export function flattenCompatIUIterator2_tryFold(
               } catch (error) {
                 $cleanup(() => {
                   dropU?.(tmp);
-                });
+                }, error);
                 throw error;
               }
             } else {
@@ -11323,7 +11393,7 @@ export function flattenCompatIUIterator2_tryFold(
               } catch (error) {
                 $cleanup(() => {
                   dropU?.(tmp);
-                });
+                }, error);
                 throw error;
               }
             }
@@ -11334,7 +11404,7 @@ export function flattenCompatIUIterator2_tryFold(
                 if (tmp$1) {
                   dropAcc?.(acc);
                 }
-              });
+              }, error);
               throw error;
             }
             return result;
@@ -11425,7 +11495,7 @@ export function flattenCompatIUIterator2_last(
                 if (acc != null) {
                   dropUItem?.($someValue(acc));
                 }
-              });
+              }, error);
               throw error;
             }
             if (tmp != null) {
@@ -11446,7 +11516,7 @@ export function flattenCompatIUIterator2_last(
           if (!$took(IIterator.fold, iter)) {
             dropI?.(iter);
           }
-        });
+        }, error);
         throw error;
       }
       if (!$took(IIterator.fold, iter)) {
@@ -11460,7 +11530,7 @@ export function flattenCompatIUIterator2_last(
         if (flattenCompat.backiter != null) {
           dropU?.($someValue(flattenCompat.backiter));
         }
-      });
+      }, error);
       throw error;
     }
     result = result$1;
@@ -11474,7 +11544,7 @@ export function flattenCompatIUIterator2_last(
       if (flattenCompat.backiter != null) {
         dropU?.($someValue(flattenCompat.backiter));
       }
-    });
+    }, error);
     throw error;
   }
   if (flattenCompat.backiter != null) {
@@ -11562,7 +11632,7 @@ export function flattenCompatIUIterator2_count(
           if (!$took(IIterator.fold, iter)) {
             dropI?.(iter);
           }
-        });
+        }, error);
         throw error;
       }
       if (!$took(IIterator.fold, iter)) {
@@ -11576,7 +11646,7 @@ export function flattenCompatIUIterator2_count(
         if (flattenCompat.backiter != null) {
           dropU?.($someValue(flattenCompat.backiter));
         }
-      });
+      }, error);
       throw error;
     }
     result = result$1;
@@ -11590,7 +11660,7 @@ export function flattenCompatIUIterator2_count(
       if (flattenCompat.backiter != null) {
         dropU?.($someValue(flattenCompat.backiter));
       }
-    });
+    }, error);
     throw error;
   }
   if (flattenCompat.backiter != null) {
@@ -11621,8 +11691,12 @@ export function flattenCompatIUDoubleEndedIterator_nextBack(
         dropU,
         dropUItem,
       );
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      flattenCompat.backiter = opt.value;
+      if ($live()) {
+        flattenCompat.backiter = opt.value;
+      }
     }
     if (andThenOrClear != null) {
       return andThenOrClear;
@@ -11647,8 +11721,12 @@ export function flattenCompatIUDoubleEndedIterator_nextBack(
           dropU,
           dropUItem,
         );
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        flattenCompat.frontiter = opt.value;
+        if ($live()) {
+          flattenCompat.frontiter = opt.value;
+        }
       }
       return elt;
     }
@@ -11658,8 +11736,12 @@ export function flattenCompatIUDoubleEndedIterator_nextBack(
       if (flattenCompat.backiter != null) {
         dropU?.($someValue(flattenCompat.backiter));
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      flattenCompat.backiter = value$1;
+      if ($live()) {
+        flattenCompat.backiter = value$1;
+      }
     }
   }
 }
@@ -11695,7 +11777,7 @@ export function flattenCompatIUDoubleEndedIterator2_nextBack(
     } catch (error) {
       $cleanup(() => {
         dropU?.(value$1);
-      });
+      }, error);
       throw error;
     }
     if (item != null) {
@@ -11709,7 +11791,7 @@ export function flattenCompatIUDoubleEndedIterator2_nextBack(
     } catch (error) {
       $cleanup(() => {
         dropU?.(value$1);
-      });
+      }, error);
       throw error;
     }
     dropU?.(value$1);
@@ -11750,7 +11832,7 @@ export function flattenCompatIUDoubleEndedIterator_rfold(
             if (!$took(UDoubleEndedIterator.rfold, iter)) {
               dropU?.(iter);
             }
-          });
+          }, error);
           throw error;
         }
         if (!$took(UDoubleEndedIterator.rfold, iter)) {
@@ -11798,7 +11880,7 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
       } catch (error) {
         $cleanup(() => {
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       let next;
@@ -11808,7 +11890,7 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
         $cleanup(() => {
           dropU?.(tmp);
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       let result$1;
@@ -11820,7 +11902,7 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
         } catch (error) {
           $cleanup(() => {
             dropU?.(tmp);
-          });
+          }, error);
           throw error;
         }
       } else {
@@ -11834,7 +11916,7 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
           if (tmp$1) {
             dropAcc?.(acc);
           }
-        });
+        }, error);
         throw error;
       }
       return result$1;
@@ -11865,7 +11947,7 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
           if (!$took(IDoubleEndedIterator.rfold, iter)) {
             dropI?.(iter);
           }
-        });
+        }, error);
         throw error;
       }
       if (!$took(IDoubleEndedIterator.rfold, iter)) {
@@ -11880,7 +11962,7 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
         if (flattenCompat.backiter != null) {
           dropU?.($someValue(flattenCompat.backiter));
         }
-      });
+      }, error);
       throw error;
     }
     init = value;
@@ -11897,7 +11979,7 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
         if (flattenCompat.backiter != null) {
           dropU?.($someValue(flattenCompat.backiter));
         }
-      });
+      }, error);
       throw error;
     }
   }
@@ -11910,7 +11992,7 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
       if (flattenCompat.backiter != null) {
         dropU?.($someValue(flattenCompat.backiter));
       }
-    });
+    }, error);
     throw error;
   }
   if (flattenCompat.backiter != null) {
@@ -11999,7 +12081,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
             } catch (error) {
               $cleanup(() => {
                 dropAcc?.(acc);
-              });
+              }, error);
               throw error;
             }
             let next;
@@ -12009,7 +12091,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
               $cleanup(() => {
                 dropU?.(tmp);
                 dropAcc?.(acc);
-              });
+              }, error);
               throw error;
             }
             let result;
@@ -12021,7 +12103,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
               } catch (error) {
                 $cleanup(() => {
                   dropU?.(tmp);
-                });
+                }, error);
                 throw error;
               }
             } else {
@@ -12031,7 +12113,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
               } catch (error) {
                 $cleanup(() => {
                   dropU?.(tmp);
-                });
+                }, error);
                 throw error;
               }
             }
@@ -12042,7 +12124,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
                 if (tmp$1) {
                   dropAcc?.(acc);
                 }
-              });
+              }, error);
               throw error;
             }
             return result;
@@ -12072,7 +12154,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
             } catch (error) {
               $cleanup(() => {
                 dropAcc?.(acc);
-              });
+              }, error);
               throw error;
             }
             let next;
@@ -12082,7 +12164,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
               $cleanup(() => {
                 dropU?.(tmp);
                 dropAcc?.(acc);
-              });
+              }, error);
               throw error;
             }
             let result;
@@ -12094,7 +12176,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
               } catch (error) {
                 $cleanup(() => {
                   dropU?.(tmp);
-                });
+                }, error);
                 throw error;
               }
             } else {
@@ -12104,7 +12186,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
               } catch (error) {
                 $cleanup(() => {
                   dropU?.(tmp);
-                });
+                }, error);
                 throw error;
               }
             }
@@ -12115,7 +12197,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
                 if (tmp$1) {
                   dropAcc?.(acc);
                 }
-              });
+              }, error);
               throw error;
             }
             return result;
@@ -12166,7 +12248,7 @@ export function takeSpecTake_specFold(
   } catch (error) {
     $cleanup(() => {
       take.return();
-    });
+    }, error);
     throw error;
   }
   const result = value;
@@ -12300,7 +12382,7 @@ export function stepByStepByImplI_specFold(
         dropF?.(f);
         dropAcc?.(acc);
         stepBy.return();
-      });
+      }, error);
       throw error;
     }
     if (next == null) {
@@ -12310,7 +12392,7 @@ export function stepByStepByImplI_specFold(
       } catch (error) {
         $cleanup(() => {
           stepBy.return();
-        });
+        }, error);
         throw error;
       }
       stepBy.return();
@@ -12323,7 +12405,7 @@ export function stepByStepByImplI_specFold(
       $cleanup(() => {
         dropF?.(f);
         stepBy.return();
-      });
+      }, error);
       throw error;
     }
   }
@@ -12349,7 +12431,7 @@ export function stepByStepByImplI_specFold(
   } catch (error) {
     $cleanup(() => {
       stepBy.return();
-    });
+    }, error);
     throw error;
   }
   stepBy.return();
@@ -12379,7 +12461,7 @@ export function stepByStepByImplI_specTryFold(
         $cleanup(() => {
           dropF?.(f);
           dropAcc?.(acc);
-        });
+        }, error);
         throw error;
       }
       let result;
@@ -12390,7 +12472,7 @@ export function stepByStepByImplI_specTryFold(
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
       } else {
@@ -12402,7 +12484,7 @@ export function stepByStepByImplI_specTryFold(
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
         if (tmp$1.TAG === "Continue") {
@@ -12414,7 +12496,7 @@ export function stepByStepByImplI_specTryFold(
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
       }
@@ -12425,7 +12507,7 @@ export function stepByStepByImplI_specTryFold(
           if (tmp) {
             dropAcc?.(acc);
           }
-        });
+        }, error);
         throw error;
       }
       return result;
@@ -12522,7 +12604,7 @@ export function stepByStepByBackImplI_specRfold(
       dropF?.(f);
       dropAcc?.(init);
       stepBy.return();
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -12533,7 +12615,7 @@ export function stepByStepByBackImplI_specRfold(
     } catch (error) {
       $cleanup(() => {
         stepBy.return();
-      });
+      }, error);
       throw error;
     }
     stepBy.return();
@@ -12547,7 +12629,7 @@ export function stepByStepByBackImplI_specRfold(
     $cleanup(() => {
       dropF?.(f);
       stepBy.return();
-    });
+    }, error);
     throw error;
   }
   const captured = stepBy.iter;
@@ -12578,7 +12660,7 @@ export function stepByStepByBackImplI_specRfold(
   } catch (error) {
     $cleanup(() => {
       stepBy.return();
-    });
+    }, error);
     throw error;
   }
   stepBy.return();
@@ -12614,7 +12696,7 @@ export function stepByStepByBackImplI_specTryRfold(
     $cleanup(() => {
       dropF?.(f);
       dropAcc?.(init);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -12624,7 +12706,7 @@ export function stepByStepByBackImplI_specTryRfold(
     } catch (error) {
       $cleanup(() => {
         dropF?.(f);
-      });
+      }, error);
       throw error;
     }
     dropF?.(f);
@@ -12637,7 +12719,7 @@ export function stepByStepByBackImplI_specTryRfold(
   } catch (error) {
     $cleanup(() => {
       dropF?.(f);
-    });
+    }, error);
     throw error;
   }
   if (tmp.TAG === "Continue") {
@@ -12674,7 +12756,7 @@ export function stepByStepByBackImplI_specTryRfold(
       if (tmp$1) {
         dropF?.(f);
       }
-    });
+    }, error);
     throw error;
   }
   dropF?.(f);
@@ -12695,7 +12777,7 @@ export function andThenOrClear$1(opt, f, dropT, dropU, dropFnOnce) {
           if (x != null) {
             dropU?.($someValue(x));
           }
-        });
+        }, error);
         throw error;
       }
       opt.value = undefined;
@@ -12725,7 +12807,7 @@ export function zipZipImplAB_next(
     } catch (error) {
       $cleanup(() => {
         dropAItem?.(value$1);
-      });
+      }, error);
       throw error;
     }
     if (tmp != null) {
@@ -12756,7 +12838,7 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_next(
     } catch (error) {
       $cleanup(() => {
         dropAItem?.(value);
-      });
+      }, error);
       throw error;
     }
     return result;
@@ -12781,7 +12863,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
     } catch (error) {
       $cleanup(() => {
         dropAItem?.(value$1);
-      });
+      }, error);
       throw error;
     }
     if (tmp != null) {
@@ -13046,7 +13128,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
       dropAcc?.(accum);
       dropF?.(f);
       zip.return();
-    });
+    }, error);
     throw error;
   }
   let iter = 0;
@@ -13058,7 +13140,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
       } catch (error) {
         $cleanup(() => {
           zip.return();
-        });
+        }, error);
         throw error;
       }
       zip.return();
@@ -13091,7 +13173,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
           dropF?.(f);
         }
         zip.return();
-      });
+      }, error);
       throw error;
     }
     try {
@@ -13100,7 +13182,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
       $cleanup(() => {
         dropF?.(f);
         zip.return();
-      });
+      }, error);
       throw error;
     }
   }
@@ -13157,7 +13239,7 @@ export function zipZipImplAB_nextBack(
       if (value$2 != null) {
         dropAItem?.($someValue(value$2));
       }
-    });
+    }, error);
     throw error;
   }
   if (tmp[0] == null) {
@@ -13174,7 +13256,7 @@ export function zipZipImplAB_nextBack(
           } else if (tmp[1] != null) {
             dropBItem?.($someValue(tmp[1]));
           }
-        });
+        }, error);
         throw error;
       }
     }
@@ -13193,7 +13275,7 @@ export function zipZipImplAB_nextBack(
         } else if (tmp[1] != null) {
           dropBItem?.($someValue(tmp[1]));
         }
-      });
+      }, error);
       throw error;
     }
   }
@@ -13256,7 +13338,7 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_nextBack(
     } catch (error) {
       $cleanup(() => {
         dropAItem?.(value);
-      });
+      }, error);
       throw error;
     }
     return result;
@@ -13314,7 +13396,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
       if (value$2 != null) {
         dropAItem?.($someValue(value$2));
       }
-    });
+    }, error);
     throw error;
   }
   if (tmp[0] == null) {
@@ -13331,7 +13413,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
           } else if (tmp[1] != null) {
             dropBItem?.($someValue(tmp[1]));
           }
-        });
+        }, error);
         throw error;
       }
     }
@@ -13350,7 +13432,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
         } else if (tmp[1] != null) {
           dropBItem?.($someValue(tmp[1]));
         }
-      });
+      }, error);
       throw error;
     }
   }
@@ -13375,7 +13457,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
   } catch (error) {
     $cleanup(() => {
       dropAItem?.(value);
-    });
+    }, error);
     throw error;
   }
   return result;
@@ -13474,7 +13556,7 @@ export function zipZipImplAB_new(
         } catch (error) {
           $cleanup(() => {
             dropB?.(iterator.b);
-          });
+          }, error);
           throw error;
         }
         dropB?.(iterator.b);
@@ -13517,7 +13599,7 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_new(
     $cleanup(() => {
       dropB?.(b);
       dropA?.(a);
-    });
+    }, error);
     throw error;
   }
   return $stdIterator(
@@ -13597,7 +13679,7 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_new(
         } catch (error) {
           $cleanup(() => {
             dropB?.(iterator.b);
-          });
+          }, error);
           throw error;
         }
         dropB?.(iterator.b);
@@ -13705,7 +13787,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
         } catch (error) {
           $cleanup(() => {
             dropB?.(iterator.b);
-          });
+          }, error);
           throw error;
         }
         dropB?.(iterator.b);
@@ -13734,7 +13816,7 @@ export function andThenOrClear$2(opt, f, dropT, dropU, dropFnOnce) {
           if (x != null) {
             dropU?.($someValue(x));
           }
-        });
+        }, error);
         throw error;
       }
       opt.value = undefined;
@@ -13756,7 +13838,7 @@ export function flattenCompatIUIterator_last_last(last, iter, dropU, dropUItem) 
         if (!iter.ownFold && !iter.ownLast) {
           dropU?.(iter);
         }
-      });
+      }, error);
       throw error;
     }
     if (!iter.ownFold && !iter.ownLast) {
@@ -13767,7 +13849,7 @@ export function flattenCompatIUIterator_last_last(last, iter, dropU, dropUItem) 
       if (last != null) {
         dropUItem?.($someValue(last));
       }
-    });
+    }, error);
     throw error;
   }
   const result = result$1 ?? last;
@@ -13787,7 +13869,7 @@ export function intoItem(inner, dropI, dropIItem, dropIIntoIter) {
   } catch (error) {
     $cleanup(() => {
       dropIIntoIter?.(value);
-    });
+    }, error);
     throw error;
   }
   dropIIntoIter?.(value);
@@ -13811,7 +13893,7 @@ export function flattenCompatIUIterator_count_count(acc, iter, dropU, dropUItem)
       if (!iter.ownFold && !iter.ownCount) {
         dropU?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownFold && !iter.ownCount) {
@@ -13873,7 +13955,7 @@ export function zipSpecFold_specFold(
           dropF?.(f);
         }
         zip.return();
-      });
+      }, error);
       throw error;
     }
     if (x == null) {
@@ -13883,7 +13965,7 @@ export function zipSpecFold_specFold(
       } catch (error) {
         $cleanup(() => {
           zip.return();
-        });
+        }, error);
         throw error;
       }
       zip.return();
@@ -13903,7 +13985,7 @@ export function zipSpecFold_specFold(
           dropF?.(f);
         }
         zip.return();
-      });
+      }, error);
       throw error;
     }
     accum = tmp$1;
@@ -13961,7 +14043,7 @@ export function zipSpecFoldTrustedLenTrustedLen_specFold(
           dropF?.(f);
         }
         zip.return();
-      });
+      }, error);
       throw error;
     }
     let more;
@@ -13983,7 +14065,7 @@ export function zipSpecFoldTrustedLenTrustedLen_specFold(
           } catch (error) {
             $cleanup(() => {
               zip.return();
-            });
+            }, error);
             throw error;
           }
           zip.return();
@@ -14004,7 +14086,7 @@ export function zipSpecFoldTrustedLenTrustedLen_specFold(
             dropF?.(f);
           }
           zip.return();
-        });
+        }, error);
         throw error;
       }
       const value = $someValue(next);
@@ -14021,7 +14103,7 @@ export function zipSpecFoldTrustedLenTrustedLen_specFold(
             dropF?.(f);
           }
           zip.return();
-        });
+        }, error);
         throw error;
       }
       const pair = [value, $someValue(tmp)];
@@ -14039,7 +14121,7 @@ export function zipSpecFoldTrustedLenTrustedLen_specFold(
             dropF?.(f);
           }
           zip.return();
-        });
+        }, error);
         throw error;
       }
       accum = tmp$2;

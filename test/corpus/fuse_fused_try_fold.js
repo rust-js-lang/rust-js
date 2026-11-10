@@ -2,16 +2,19 @@
 
 import {
   $advanceSlice,
+  $cleanup,
   $dropEach,
   $findDropping,
   $foldOf,
   $held,
   $iter,
   $lent,
+  $live,
   $next,
   $nextBack,
   $position,
   $range,
+  $unwindsOn,
   iterator_fuse,
   iterator_rev,
   iterator_take,
@@ -39,9 +42,11 @@ function main() {
   try {
     tmp = id(1);
   } catch (error) {
-    for (const item of value) {
-      loudDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of value) {
+        loudDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   const fuse = $held(
@@ -68,17 +73,23 @@ function main() {
         return false;
       })}`,
     );
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    fuse.return();
+    if ($live()) {
+      fuse.return();
+    }
   }
   const value$1 = $iter(louds(20, 3));
   let tmp$1;
   try {
     tmp$1 = id(1);
   } catch (error) {
-    for (const item of value$1) {
-      loudDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of value$1) {
+        loudDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   const value$2 = $held(
@@ -104,8 +115,12 @@ function main() {
       return false;
     });
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$2.return();
+    if ($live()) {
+      value$2.return();
+    }
   }
   const value$3 = iterator_rev(
     $iter(louds(30, 1)),
@@ -118,7 +133,9 @@ function main() {
   try {
     tmp$2 = id(0);
   } catch (error) {
-    value$3.return();
+    $cleanup(() => {
+      value$3.return();
+    }, error);
     throw error;
   }
   const value$4 = $held(
@@ -149,8 +166,12 @@ function main() {
       return result;
     }
     first = find != null ? map(find) : undefined;
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$4.return();
+    if ($live()) {
+      value$4.return();
+    }
   }
   console.log(`${first == null ? "None" : `Some(${first})`}`);
   const value$5 = iterator_rev(
@@ -164,7 +185,9 @@ function main() {
   try {
     tmp$3 = id(0);
   } catch (error) {
-    value$5.return();
+    $cleanup(() => {
+      value$5.return();
+    }, error);
     throw error;
   }
   const value$6 = $held(
@@ -195,8 +218,12 @@ function main() {
     }
     const value = find != null ? map(find) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$6.return();
+    if ($live()) {
+      value$6.return();
+    }
   }
 }
 //# sourceMappingURL=case.js.map

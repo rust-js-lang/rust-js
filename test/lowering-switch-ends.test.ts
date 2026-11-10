@@ -68,7 +68,7 @@ pub fn counted(kind: u32, on: bool, log: &mut Vec<u32>) {
   // The last case that goes on ends with `break;`, as upstream's do (ADR
   // 0629, amended 2026-11-03, the user's decision).
   expect(js).toContain('    case VIEW:\n      if (ENABLE_VIEW) {\n        return "ViewTransition";\n      }\n      break;\n  }\n');
-  expect(js).toContain('        } catch {\n          return "";\n        }\n      case MEMO:\n');
+  expect(js).toContain('        } catch (error) {\n          $catchable(error);\n          return "";\n        }\n      case MEMO:\n');
   // A case before another ends in a `break`, and the last too.
   expect(js).toContain("      log.push(2);\n      }\n      break;\n    case LAZY:\n      log.push(3);\n      break;\n  }\n");
   const lib = await import(join(dir, "lib.js"));

@@ -61,7 +61,7 @@ function total(items, DStableDeref, dropD) {
   } catch (error) {
     $cleanup(() => {
       dropD?.(items);
-    });
+    }, error);
     throw error;
   }
   dropD?.(items);

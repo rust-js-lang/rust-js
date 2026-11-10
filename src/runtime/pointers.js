@@ -89,7 +89,7 @@ const $objects = new WeakMap();
 
 function $ptrTo(object) {
   if (object === null || (typeof object !== "object" && typeof object !== "function")) {
-    throw new Error("rust-js does not support a pointer to a value JS holds as itself, a copy, which reads memory by where it is");
+    throw $unsupported("rust-js does not support a pointer to a value JS holds as itself, a copy, which reads memory by where it is");
   }
   let handle = $objects.get(object);
   if (handle === undefined) {
@@ -118,7 +118,7 @@ function $ptrAdd(pointer, count) {
     return $byteView({ ...pointer, at: pointer.at + count * pointer.width });
   }
   if (pointer === null || !Array.isArray(pointer.of) || pointer.addr !== undefined || pointer.offset !== undefined) {
-    throw new Error("rust-js does not support stepping a pointer that isn't into an array, which reads memory by where it is");
+    throw $unsupported("rust-js does not support stepping a pointer that isn't into an array, which reads memory by where it is");
   }
   return $ptr(pointer.of, pointer.at + count);
 }
@@ -131,7 +131,7 @@ function $ptrOffsetFrom(p, q) {
     return (p.at - q.at) / p.width;
   }
   if (p.of !== q.of || !Array.isArray(p.of) || p.offset !== undefined || q.offset !== undefined) {
-    throw new Error("rust-js does not support the distance between pointers to two places, which reads memory by where it is");
+    throw $unsupported("rust-js does not support the distance between pointers to two places, which reads memory by where it is");
   }
   return p.at - q.at;
 }
@@ -266,7 +266,7 @@ const $outers = new WeakMap();
 
 function $ptrOuter(object, within) {
   if (object === null || typeof object !== "object") {
-    throw new Error("rust-js does not support a pointer to an `Option` that holds nothing, reached by a reference or a box, which JS holds as `undefined`, no place (#1132): point at it where it's stored, `&raw const o` of the variable or field");
+    throw $unsupported("rust-js does not support a pointer to an `Option` that holds nothing, reached by a reference or a box, which JS holds as `undefined`, no place (#1132): point at it where it's stored, `&raw const o` of the variable or field");
   }
   if (within === 0) return $ptrTo(object);
   let handles = $outers.get(object);
@@ -353,7 +353,7 @@ function $addresses(allocation, bytes) {
   if (range === undefined) {
     const length = Math.max(4096, Math.ceil((bytes + $outerRoom) / 4096) * 4096);
     if ($nextBase + length > 0x1_0000_0000) {
-      throw new Error("rust-js does not support more addresses than wasm32 has: the address space is used up");
+      throw $unsupported("rust-js does not support more addresses than wasm32 has: the address space is used up");
     }
     range = { base: $nextBase, end: $nextBase + length, of: allocation, stride: undefined };
     $nextBase += length;
@@ -388,7 +388,7 @@ function $offsetIn(pointer, range) {
   if (offset === undefined && Array.isArray(pointer.of) && typeof pointer.at === "number") {
     return (pointer.at === 0 ? 0 : pointer.at * range.stride) + (pointer.within ?? 0);
   }
-  throw new Error("rust-js does not support the address of a field of a type its caller lays out, which reads memory by where it is");
+  throw $unsupported("rust-js does not support the address of a field of a type its caller lays out, which reads memory by where it is");
 }
 
 // `inner`: asked on the way to another place's, a container's or a root's,
@@ -397,7 +397,7 @@ function $offsetIn(pointer, range) {
 function $addr(pointer, size, inner) {
   if (pointer === null) return 0;
   if (typeof pointer !== "object" && typeof pointer !== "function") {
-    throw new Error("rust-js does not support the address of a value JS holds as itself, a copy, which reads memory by where it is");
+    throw $unsupported("rust-js does not support the address of a value JS holds as itself, a copy, which reads memory by where it is");
   }
   if (pointer.addr !== undefined) return pointer.addr;
   if (pointer.bytes !== undefined && pointer.opaque) return $addr(pointer.typed, size, inner);
@@ -407,7 +407,7 @@ function $addr(pointer, size, inner) {
   // allocation's base that `$addresses` keeps (#1114).
   if (pointer.outer !== undefined) {
     if (pointer.outer > $outerRoom) {
-      throw new Error("rust-js does not support the address of what holds an object this far before it, which reads memory by where it is");
+      throw $unsupported("rust-js does not support the address of what holds an object this far before it, which reads memory by where it is");
     }
     const addr = $addr($ptrTo(pointer.of), 0, true) - pointer.outer;
     if (!inner) $exposedPlaces.set(addr, pointer);
@@ -481,11 +481,11 @@ function $ptrNone(addr, provenance, size, zero) {
     provenance,
     get value() {
       if (size === 0) return zero;
-      throw new Error(`rust-js does not support reading through a pointer to no place, at 0x${addr.toString(16)}, which reads memory by where it is`);
+      throw $unsupported(`rust-js does not support reading through a pointer to no place, at 0x${addr.toString(16)}, which reads memory by where it is`);
     },
     set value(value) {
       if (size === 0) return;
-      throw new Error(`rust-js does not support writing through a pointer to no place, at 0x${addr.toString(16)}, which reads memory by where it is`);
+      throw $unsupported(`rust-js does not support writing through a pointer to no place, at 0x${addr.toString(16)}, which reads memory by where it is`);
     },
   };
 }
@@ -623,7 +623,7 @@ function $ptrCopy(src, dst, count, copy) {
     return;
   }
   if (!Array.isArray(src.of) || !Array.isArray(dst.of)) {
-    throw new Error("rust-js does not support copying items but between arrays, which reads memory by where it is");
+    throw $unsupported("rust-js does not support copying items but between arrays, which reads memory by where it is");
   }
   if (src.of === dst.of && copy === undefined && Math.max(src.at, dst.at) + count <= src.of.length) {
     src.of.copyWithin(dst.at, src.at, src.at + count);
@@ -663,11 +663,11 @@ function $ptrSliceMut(pointer, count) {
       $allocUsed(pointer, "bytes");
       return $view(pointer.of, pointer.at, pointer.at + count);
     }
-    throw new Error("rust-js does not support a mutable slice of another type's bytes, which reads memory by where it is");
+    throw $unsupported("rust-js does not support a mutable slice of another type's bytes, which reads memory by where it is");
   }
   const [items, start] = $ptrItems(pointer, count);
   if (start + count > items.length && $spares.has(items)) {
-    throw new Error("rust-js does not support a mutable slice past a vector's length, over what's left there, which reads memory by where it is");
+    throw $unsupported("rust-js does not support a mutable slice past a vector's length, over what's left there, which reads memory by where it is");
   }
   return start === 0 && count === items.length ? items : $view(items, start, start + count);
 }
@@ -678,7 +678,7 @@ function $ptrItems(pointer, count) {
   if (Array.isArray(pointer.of)) return [pointer.of, pointer.at];
   if (count === 0 && pointer.addr !== undefined) return [$emptyAt(pointer.addr), 0];
   if (count <= 1) return [count === 0 ? [] : [pointer.value], 0];
-  throw new Error("rust-js does not support a slice of items that aren't an array's, which reads memory by where it is");
+  throw $unsupported("rust-js does not support a slice of items that aren't an array's, which reads memory by where it is");
 }
 
 // A pointer to an array's first item, as one to the whole of it, of
@@ -686,13 +686,13 @@ function $ptrItems(pointer, count) {
 // item, or of fewer, it would be memory by where it is.
 function $ptrWhole(pointer, length) {
   if (Array.isArray(pointer.of) && pointer.at === 0 && pointer.of.length === length) return $ptrTo(pointer.of);
-  throw new Error("rust-js does not support a pointer to part of an array as one to an array, which reads memory by where it is");
+  throw $unsupported("rust-js does not support a pointer to part of an array as one to an array, which reads memory by where it is");
 }
 
 // A pointer as one to another type, in generic code where whether JS has it
 // at the same place depends on the type, which reads memory by where it is.
 function $ptrRecast(pointer) {
-  throw new Error("rust-js does not support a pointer read as another type's, which reads memory by where it is");
+  throw $unsupported("rust-js does not support a pointer read as another type's, which reads memory by where it is");
 }
 
 // A whole array's pointer as one to its first item, of a type parameter's
@@ -729,14 +729,14 @@ function $byteView(view) {
   return Object.defineProperty(view, "value", {
     get() {
       if (this.opaque) {
-        throw new Error("rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type");
+        throw $unsupported("rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type");
       }
       if (this.signed === "bytes") return Array.from({ length: this.width }, (_, i) => $byteAt(this, i));
       return $readInt(this, this.width, this.signed);
     },
     set(value) {
       if (this.opaque) {
-        throw new Error("rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type");
+        throw $unsupported("rust-js does not support reading or writing bytes, which JS has none of, through a pointer to another type");
       }
       if (this.signed === "bytes") {
         for (let i = 0; i < this.width; i++) $byteSet(this, i, value[i]);
@@ -778,7 +778,7 @@ function $allocUsed(view, use) {
   const used = $allocUses.get(view.of);
   if (used === undefined) $allocUses.set(view.of, use);
   else if (used !== use) {
-    throw new Error("rust-js does not support an allocation's bytes and its items of another type both, which reads memory by where it is");
+    throw $unsupported("rust-js does not support an allocation's bytes and its items of another type both, which reads memory by where it is");
   }
 }
 
@@ -838,7 +838,7 @@ function $ptrTyped(view) {
   // item that is its type's size says, which JS hasn't here.
   if (view.allocated !== undefined) {
     if (view.at !== 0) {
-      throw new Error("rust-js does not support a pointer into an allocation's bytes as one to another type, which reads memory by where it is");
+      throw $unsupported("rust-js does not support a pointer into an allocation's bytes as one to another type, which reads memory by where it is");
     }
     $allocUsed(view, "items");
     return view.typed;
@@ -846,5 +846,5 @@ function $ptrTyped(view) {
   if (view.typed !== undefined && view.at === view.typed.at * view.stride) return view.typed;
   if (view.plain !== undefined && view.at === 0) return view.plain;
   if (view.of !== undefined && view.at % view.stride === 0) return $ptr(view.of, view.at / view.stride);
-  throw new Error("rust-js does not support bytes read as another type's, which reads memory by where it is");
+  throw $unsupported("rust-js does not support bytes read as another type's, which reads memory by where it is");
 }

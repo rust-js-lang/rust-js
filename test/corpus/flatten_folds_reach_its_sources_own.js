@@ -10,8 +10,10 @@ import {
   $foldBack,
   $iter,
   $iterator,
+  $live,
   $mapEnds,
   $rev,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -49,7 +51,7 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       if (next != null) {
@@ -61,7 +63,7 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
         acc$live = true;
@@ -78,7 +80,7 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       break;
@@ -86,8 +88,12 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
     acc$live = false;
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    foldsDrop_drop(folds);
+    if ($live()) {
+      foldsDrop_drop(folds);
+    }
   }
   return result;
 }
@@ -115,7 +121,7 @@ function foldsDoubleEndedIterator_rfold(folds, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       if (nextBack != null) {
@@ -127,7 +133,7 @@ function foldsDoubleEndedIterator_rfold(folds, init, f, dropB, dropF) {
         } catch (error) {
           $cleanup(() => {
             dropF?.(f);
-          });
+          }, error);
           throw error;
         }
         acc$live = true;
@@ -144,7 +150,7 @@ function foldsDoubleEndedIterator_rfold(folds, init, f, dropB, dropF) {
             dropB?.(acc);
           }
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       break;
@@ -152,8 +158,12 @@ function foldsDoubleEndedIterator_rfold(folds, init, f, dropB, dropF) {
     acc$live = false;
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    foldsDrop_drop(folds);
+    if ($live()) {
+      foldsDrop_drop(folds);
+    }
   }
   return result;
 }
@@ -429,8 +439,12 @@ function main() {
             throw new Error("rfold");
           }
           return (a + d[0]) >>> 0;
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(d);
+          if ($live()) {
+            dDrop_drop(d);
+          }
         }
       },
     );
@@ -463,8 +477,12 @@ function main() {
           throw new Error("fold");
         }
         return (a + d[0]) >>> 0;
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(d);
+        if ($live()) {
+          dDrop_drop(d);
+        }
       }
     }, 0);
     console.log(`never ${n}`);

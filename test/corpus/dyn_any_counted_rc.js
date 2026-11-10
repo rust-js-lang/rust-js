@@ -38,7 +38,7 @@ function main() {
       $rcDrop(loud, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   let tmp;
@@ -49,7 +49,7 @@ function main() {
       $rcDrop(other, (value) => {
         value.impl.$drop?.(value.value);
       });
-    });
+    }, error);
     throw error;
   }
   if (tmp.TAG !== "Ok") {
@@ -74,7 +74,7 @@ function main() {
         $rcDrop(other, (value) => {
           value.impl.$drop?.(value.value);
         });
-      });
+      }, error);
       throw error;
     }
     let result;
@@ -95,7 +95,7 @@ function main() {
         $rcDrop(other, (value) => {
           value.impl.$drop?.(value.value);
         });
-      });
+      }, error);
       throw error;
     }
     if (found == null) {

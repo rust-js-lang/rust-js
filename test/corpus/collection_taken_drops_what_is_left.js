@@ -74,7 +74,7 @@ function mapped(l) {
   } catch (error) {
     $cleanup(() => {
       loudDrop_drop(l);
-    });
+    }, error);
     throw error;
   }
   loudDrop_drop(l);

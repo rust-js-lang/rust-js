@@ -17,10 +17,12 @@ import {
   $iterator,
   $lazyRange,
   $lent,
+  $live,
   $mapEnds,
   $next,
   $nthDropping,
   $peek,
+  $unwindsOn,
   iterator_map,
   iterator_peekable,
 } from "@rust-js/std";
@@ -45,8 +47,12 @@ function mapped() {
     if (first != null) {
       dDrop_drop(first);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
   console.log("mapped end");
 }
@@ -67,8 +73,12 @@ function flatMapped() {
     if (first != null) {
       dDrop_drop(first);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
   console.log("flat mapped end");
 }
@@ -83,8 +93,12 @@ function brokenOff() {
       console.log(`got ${d[0]}`);
       dDrop_drop(d);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter.return();
+    if ($live()) {
+      iter.return();
+    }
   }
   console.log("broken off end");
 }
@@ -101,8 +115,12 @@ function ofARange() {
     if (first != null) {
       dDrop_drop(first);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
   console.log("of a range end");
 }
@@ -124,7 +142,7 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
           dropB?.(acc);
         }
         dropF?.(f);
-      });
+      }, error);
       throw error;
     }
     if (next != null) {
@@ -136,7 +154,7 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       acc$live = true;
@@ -153,7 +171,7 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
           dropB?.(acc);
         }
         dropF?.(f);
-      });
+      }, error);
       throw error;
     }
     break;
@@ -210,7 +228,9 @@ function sourceEnded() {
   try {
     console.log(`peeked ${$peek(peeked)?.length ?? 0}`);
   } catch (error) {
-    peeked.return();
+    $cleanup(() => {
+      peeked.return();
+    }, error);
     throw error;
   }
   const v = $collectDropping(
@@ -246,7 +266,7 @@ function sourceDropPanics() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     console.log(`first ${first?.[0] ?? 0}`);
@@ -257,7 +277,7 @@ function sourceDropPanics() {
     } catch (error) {
       $cleanup(() => {
         it.return();
-      });
+      }, error);
       throw error;
     }
     it.return();
@@ -278,8 +298,12 @@ function foldedIntoAString() {
             throw new Error("consumer");
           }
           return String.fromCharCode((97 + (x[0] % 26)) & 255);
+        } catch (error) {
+          throw $unwindsOn(error);
         } finally {
-          dDrop_drop(x);
+          if ($live()) {
+            dDrop_drop(x);
+          }
         }
       }),
     ).join("");

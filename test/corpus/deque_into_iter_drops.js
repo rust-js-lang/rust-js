@@ -12,9 +12,11 @@ import {
   $iter,
   $lazySkipWhile,
   $lazyTakeWhile,
+  $live,
   $next,
   $partialEq,
   $partialOrd,
+  $unwindsOn,
   iterator_fuse,
   iterator_peekable,
 } from "@rust-js/std";
@@ -71,8 +73,12 @@ function main() {
   let first;
   try {
     first = $next(peeked);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    peeked.return();
+    if ($live()) {
+      peeked.return();
+    }
   }
   function map(l) {
     const result = l[0];

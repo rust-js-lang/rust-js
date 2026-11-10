@@ -20,11 +20,13 @@ import {
   $iter,
   $iterator,
   $lazyRange,
+  $live,
   $next,
   $nextSome,
   $rangeInclusiveNext,
   $roomForHint,
   $traitImpl,
+  $unwindsOn,
   iterator_map,
 } from "@rust-js/std";
 
@@ -65,7 +67,7 @@ function held(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, dr
   } catch (error) {
     $cleanup(() => {
       iter.return();
-    });
+    }, error);
     throw error;
   }
   iter.return();
@@ -209,7 +211,7 @@ function enumerated(items, IInPlace, UsizeIItemSize, UsizeIItemAlign, dropI, dro
   } catch (error) {
     $cleanup(() => {
       iter.return();
-    });
+    }, error);
     throw error;
   }
   iter.return();
@@ -257,7 +259,7 @@ function tHolding(
         } catch (error) {
           $cleanup(() => {
             iter.return();
-          });
+          }, error);
           throw error;
         }
         iter.return();
@@ -307,9 +309,11 @@ function wide(w) {
     try {
       throw new Error("wide");
     } catch (error) {
-      if (w != null) {
-        dDrop_drop(w);
-      }
+      $cleanup(() => {
+        if (w != null) {
+          dDrop_drop(w);
+        }
+      }, error);
       throw error;
     }
   }
@@ -321,18 +325,22 @@ function narrow(v) {
   try {
     tmp = $index(v, 0)[0] === 3n;
   } catch (error) {
-    for (const item of v) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of v) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   if (tmp) {
     try {
       throw new Error("narrow");
     } catch (error) {
-      for (const item of v) {
-        dDrop_drop(item);
-      }
+      $cleanup(() => {
+        for (const item of v) {
+          dDrop_drop(item);
+        }
+      }, error);
       throw error;
     }
   }
@@ -457,9 +465,13 @@ function main() {
       return pairs
         .map(([at, d]) => (at + Number(BigInt.asUintN(32, d[0]))) >>> 0)
         .reduce((a, b) => (a + b) >>> 0, 0);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of pairs) {
-        dDrop_drop(item[1]);
+      if ($live()) {
+        for (const item of pairs) {
+          dDrop_drop(item[1]);
+        }
       }
     }
   });
@@ -637,7 +649,7 @@ function main() {
             }
           }
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems(held, (item) => {

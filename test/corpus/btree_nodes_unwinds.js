@@ -114,12 +114,12 @@ function mapOf(n) {
           } catch (error) {
             $cleanup(() => {
               valDrop_drop(value);
-            });
+            }, error);
             throw error;
           }
           valDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -134,12 +134,12 @@ function mapOf(n) {
           } catch (error) {
             $cleanup(() => {
               valDrop_drop(value);
-            });
+            }, error);
             throw error;
           }
           valDrop_drop(value);
         });
-      });
+      }, error);
       throw error;
     }
   }
@@ -181,12 +181,12 @@ function run(name, n, k, op) {
         } catch (error) {
           $cleanup(() => {
             valDrop_drop(value);
-          });
+          }, error);
           throw error;
         }
         valDrop_drop(value);
       });
-    });
+    }, error);
     throw error;
   }
   calls = 0;
@@ -201,7 +201,7 @@ function run(name, n, k, op) {
         } catch (error) {
           $cleanup(() => {
             keyDrop_drop(value);
-          });
+          }, error);
           throw error;
         }
         keyDrop_drop(value);
@@ -216,12 +216,12 @@ function run(name, n, k, op) {
         } catch (error) {
           $cleanup(() => {
             valDrop_drop(value);
-          });
+          }, error);
           throw error;
         }
         valDrop_drop(value);
       });
-    });
+    }, error);
     throw error;
   }
   console.log(
@@ -233,7 +233,7 @@ function run(name, n, k, op) {
     } catch (error) {
       $cleanup(() => {
         valDrop_drop(value);
-      });
+      }, error);
       throw error;
     }
     valDrop_drop(value);
@@ -299,7 +299,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           keyDrop_drop(value);
-        });
+        }, error);
         throw error;
       }
       let tmp;
@@ -309,7 +309,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           keyDrop_drop(value);
-        });
+        }, error);
         throw error;
       }
       keyDrop_drop(value);
@@ -324,7 +324,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           keyDrop_drop(value);
-        });
+        }, error);
         throw error;
       }
       const lo = tmp[0];
@@ -350,7 +350,7 @@ function main() {
         $cleanup(() => {
           keyDrop_drop(hi);
           keyDrop_drop(lo);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -358,7 +358,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           keyDrop_drop(lo);
-        });
+        }, error);
         throw error;
       }
       keyDrop_drop(lo);
@@ -372,7 +372,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           keyDrop_drop(value);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -385,12 +385,12 @@ function main() {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
           });
-        });
+        }, error);
         throw error;
       }
       let result;
@@ -404,12 +404,12 @@ function main() {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
           });
-        });
+        }, error);
         throw error;
       }
       $dropItems($sortedEntries(tail, keyOrd_cmp), ([key, value]) => {
@@ -418,7 +418,7 @@ function main() {
         } catch (error) {
           $cleanup(() => {
             valDrop_drop(value);
-          });
+          }, error);
           throw error;
         }
         valDrop_drop(value);
@@ -441,12 +441,12 @@ function main() {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
             });
-          });
+          }, error);
           throw error;
         }
         try {
@@ -461,12 +461,12 @@ function main() {
               } catch (error) {
                 $cleanup(() => {
                   valDrop_drop(value);
-                });
+                }, error);
                 throw error;
               }
               valDrop_drop(value);
             });
-          });
+          }, error);
           throw error;
         }
       }
@@ -480,12 +480,12 @@ function main() {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
           });
-        });
+        }, error);
         throw error;
       }
       const result = String(other.size);
@@ -495,7 +495,7 @@ function main() {
         } catch (error) {
           $cleanup(() => {
             valDrop_drop(value);
-          });
+          }, error);
           throw error;
         }
         valDrop_drop(value);
@@ -523,7 +523,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           keyDrop_drop(value);
-        });
+        }, error);
         throw error;
       }
       const lo = tmp[0];
@@ -554,7 +554,7 @@ function main() {
             } catch (error) {
               $cleanup(() => {
                 keyDrop_drop(k);
-              });
+              }, error);
               throw error;
             }
             keyDrop_drop(k);
@@ -565,7 +565,7 @@ function main() {
         $cleanup(() => {
           keyDrop_drop(hi);
           keyDrop_drop(lo);
-        });
+        }, error);
         throw error;
       }
       let result;
@@ -575,7 +575,7 @@ function main() {
         $cleanup(() => {
           keyDrop_drop(hi);
           keyDrop_drop(lo);
-        });
+        }, error);
         throw error;
       }
       try {
@@ -583,7 +583,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           keyDrop_drop(lo);
-        });
+        }, error);
         throw error;
       }
       keyDrop_drop(lo);
@@ -600,7 +600,7 @@ function main() {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value[1]);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value[1]);
@@ -624,12 +624,12 @@ function main() {
             } catch (error) {
               $cleanup(() => {
                 valDrop_drop(value);
-              });
+              }, error);
               throw error;
             }
             valDrop_drop(value);
           });
-        });
+        }, error);
         throw error;
       }
       $dropItems($sortedEntries(made, keyOrd_cmp), ([key, value]) => {
@@ -638,7 +638,7 @@ function main() {
         } catch (error) {
           $cleanup(() => {
             valDrop_drop(value);
-          });
+          }, error);
           throw error;
         }
         valDrop_drop(value);
@@ -654,7 +654,7 @@ function main() {
         } catch (error) {
           $cleanup(() => {
             $dropItems($sortedKeys(s, keyOrd_cmp), keyDrop_drop);
-          });
+          }, error);
           throw error;
         }
       }
@@ -671,7 +671,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems($sortedKeys(s, keyOrd_cmp), keyDrop_drop);
-        });
+        }, error);
         throw error;
       }
       let collected;
@@ -692,7 +692,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems($sortedKeys(s, keyOrd_cmp), keyDrop_drop);
-        });
+        }, error);
         throw error;
       }
       const result = `${old == null ? "None" : `Some(${old})`} ${s.size} ${(collected.size + m.size) >>> 0}`;
@@ -701,7 +701,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropItems($sortedKeys(s, keyOrd_cmp), keyDrop_drop);
-        });
+        }, error);
         throw error;
       }
       $dropItems($sortedKeys(s, keyOrd_cmp), keyDrop_drop);

@@ -68,7 +68,7 @@ function main() {
       $cleanup(() => {
         $dropItems(w, dDrop_drop);
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     console.log(`${w.length}`);
@@ -77,7 +77,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, dDrop_drop);
@@ -91,7 +91,7 @@ function main() {
       $cleanup(() => {
         $dropItems(w, dDrop_drop);
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     console.log(`${w.length}`);
@@ -100,7 +100,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, dDrop_drop);
@@ -114,7 +114,7 @@ function main() {
       $cleanup(() => {
         $dropItems(w, dDrop_drop);
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     console.log(`${w.length}`);
@@ -123,7 +123,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, dDrop_drop);
@@ -137,7 +137,7 @@ function main() {
       $cleanup(() => {
         $dropItems(w, dDrop_drop);
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     console.log(`${w.length}`);
@@ -146,7 +146,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, dDrop_drop);
@@ -172,7 +172,7 @@ function main() {
         $dropItems(v, (item) => {
           $dropItems(item, dDrop_drop);
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`${w.length}`);
@@ -185,7 +185,7 @@ function main() {
         $dropItems(v, (item) => {
           $dropItems(item, dDrop_drop);
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, (item) => {
@@ -209,7 +209,7 @@ function main() {
         $dropItems(w, (item) => {
           $dropItems(item, dDrop_drop);
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`${w.length}`);
@@ -238,7 +238,7 @@ function main() {
         $dropItems(v, (item) => {
           $dropItems(item, dDrop_drop);
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`${w.length}`);
@@ -251,7 +251,7 @@ function main() {
         $dropItems(v, (item) => {
           $dropItems(item, dDrop_drop);
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, (item) => {
@@ -286,7 +286,7 @@ function main() {
         $dropItems(v, (item) => {
           $rcDrop(item, dDrop_drop);
         });
-      });
+      }, error);
       throw error;
     }
     console.log(`${w.length}`);
@@ -299,7 +299,7 @@ function main() {
         $dropItems(v, (item) => {
           $rcDrop(item, dDrop_drop);
         });
-      });
+      }, error);
       throw error;
     }
     $dropItems(v, (item) => {

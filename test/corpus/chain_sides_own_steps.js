@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $collectDropping,
   $count,
@@ -12,6 +13,7 @@ import {
   $lastDropping,
   $lazyChain,
   $lent,
+  $live,
   $next,
   $nextBack,
   $nthDropping,
@@ -19,6 +21,7 @@ import {
   $rev,
   $skipping,
   $stepBy,
+  $unwindsOn,
   iterator_fuse,
   iterator_peekable,
   iterator_rev,
@@ -43,9 +46,11 @@ function main() {
   try {
     tmp = louds(3, 2);
   } catch (error) {
-    for (const item of value) {
-      loudDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of value) {
+        loudDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   const l = $lastDropping(
@@ -81,9 +86,11 @@ function main() {
   try {
     tmp$1 = louds(9, 1);
   } catch (error) {
-    for (const item of value$3) {
-      loudDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of value$3) {
+        loudDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   const chain = $lazyChain(
@@ -94,7 +101,9 @@ function main() {
   try {
     tmp$2 = louds(10, 2);
   } catch (error) {
-    chain.return();
+    $cleanup(() => {
+      chain.return();
+    }, error);
     throw error;
   }
   const l$2 = $lastDropping(
@@ -113,9 +122,11 @@ function main() {
   try {
     tmp$3 = louds(15, 3);
   } catch (error) {
-    for (const item of value$5) {
-      loudDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of value$5) {
+        loudDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   const l$3 = $lastDropping(
@@ -141,7 +152,9 @@ function main() {
   try {
     tmp$4 = louds(20, 3);
   } catch (error) {
-    value$7.return();
+    $cleanup(() => {
+      value$7.return();
+    }, error);
     throw error;
   }
   const value$8 = $held($lazyChain(value$7, $closing($iter(tmp$4), $dropEach(loudDrop_drop))));
@@ -154,15 +167,21 @@ function main() {
     }
     const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$8.return();
+    if ($live()) {
+      value$8.return();
+    }
   }
   const value$9 = $rev($closing($iter(louds(23, 2)), $dropEach(loudDrop_drop)));
   let tmp$5;
   try {
     tmp$5 = louds(25, 3);
   } catch (error) {
-    value$9.return();
+    $cleanup(() => {
+      value$9.return();
+    }, error);
     throw error;
   }
   const iter = $skipping(
@@ -176,15 +195,21 @@ function main() {
       console.log(`got ${loud[0]}`);
       loudDrop_drop(loud);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    iter.return();
+    if ($live()) {
+      iter.return();
+    }
   }
   const value$10 = $rev($closing($iter(louds(28, 2)), $dropEach(loudDrop_drop)));
   let tmp$6;
   try {
     tmp$6 = louds(30, 2);
   } catch (error) {
-    value$10.return();
+    $cleanup(() => {
+      value$10.return();
+    }, error);
     throw error;
   }
   const value$11 = $lazyChain(value$10, $closing($iter(tmp$6), $dropEach(loudDrop_drop)));
@@ -192,7 +217,9 @@ function main() {
   try {
     tmp$7 = louds(32, 2);
   } catch (error) {
-    value$11.return();
+    $cleanup(() => {
+      value$11.return();
+    }, error);
     throw error;
   }
   const nested = $lazyChain(value$11, $closing($iter(tmp$7), $dropEach(loudDrop_drop)));
@@ -210,7 +237,9 @@ function main() {
   try {
     tmp$8 = louds(38, 1);
   } catch (error) {
-    value$12.return();
+    $cleanup(() => {
+      value$12.return();
+    }, error);
     throw error;
   }
   const stepBy = $held(
@@ -223,8 +252,12 @@ function main() {
   let stepped;
   try {
     stepped = $nthDropping($lent(stepBy), 1, loudDrop_drop, false);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    stepBy.return();
+    if ($live()) {
+      stepBy.return();
+    }
   }
   function map$4(l) {
     const result = l[0];
@@ -238,15 +271,21 @@ function main() {
   try {
     tmp$9 = louds(43, 2);
   } catch (error) {
-    skip.return();
+    $cleanup(() => {
+      skip.return();
+    }, error);
     throw error;
   }
   const value$14 = $held($lazyChain(skip, $closing($iter(tmp$9), $dropEach(loudDrop_drop))));
   let skipped;
   try {
     skipped = $nthDropping($lent(value$14), 2, loudDrop_drop, false);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$14.return();
+    if ($live()) {
+      value$14.return();
+    }
   }
   function map$5(l) {
     const result = l[0];
@@ -262,7 +301,9 @@ function main() {
   try {
     tmp$10 = louds(47, 2);
   } catch (error) {
-    value$16.return();
+    $cleanup(() => {
+      value$16.return();
+    }, error);
     throw error;
   }
   const counted = $count(
@@ -282,15 +323,21 @@ function main() {
   try {
     tmp$11 = louds(53, 1);
   } catch (error) {
-    fuse.return();
+    $cleanup(() => {
+      fuse.return();
+    }, error);
     throw error;
   }
   const value$17 = $held($lazyChain(fuse, $closing($iter(tmp$11), $dropEach(loudDrop_drop))));
   let fused;
   try {
     fused = $nthDropping($lent(value$17), 2, loudDrop_drop, false);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$17.return();
+    if ($live()) {
+      value$17.return();
+    }
   }
   function map$6(l) {
     const result = l[0];
@@ -320,15 +367,21 @@ function main() {
   try {
     tmp$12 = louds(58, 1);
   } catch (error) {
-    value$19.return();
+    $cleanup(() => {
+      value$19.return();
+    }, error);
     throw error;
   }
   const value$20 = $held($lazyChain(value$19, $closing($iter(tmp$12), $dropEach(loudDrop_drop))));
   let advanced;
   try {
     advanced = $nthDropping($lent(value$20), 2, loudDrop_drop, false);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$20.return();
+    if ($live()) {
+      value$20.return();
+    }
   }
   function map$7(l) {
     const result = l[0];
@@ -356,15 +409,21 @@ function main() {
       loudDrop_drop,
     );
   } catch (error) {
-    value$22.return();
+    $cleanup(() => {
+      value$22.return();
+    }, error);
     throw error;
   }
   const value$23 = $held($lazyChain(value$22, tmp$13));
   let both;
   try {
     both = $nthDropping($lent(value$23), 2, loudDrop_drop, false);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$23.return();
+    if ($live()) {
+      value$23.return();
+    }
   }
   function map$8(l) {
     const result = l[0];
@@ -385,7 +444,9 @@ function main() {
   try {
     tmp$14 = louds(62, 1);
   } catch (error) {
-    value$25.return();
+    $cleanup(() => {
+      value$25.return();
+    }, error);
     throw error;
   }
   const last = $lastDropping(
@@ -414,14 +475,20 @@ function main() {
   try {
     tmp$15 = louds(66, 2);
   } catch (error) {
-    value$27.return();
+    $cleanup(() => {
+      value$27.return();
+    }, error);
     throw error;
   }
   const value$28 = $held($lazyChain(value$27, $closing($iter(tmp$15), $dropEach(loudDrop_drop))));
   try {
     skipped = $nthDropping($lent(value$28), 2, loudDrop_drop, false);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$28.return();
+    if ($live()) {
+      value$28.return();
+    }
   }
   function map$10(l) {
     const result = l[0];

@@ -31,7 +31,7 @@ function main() {
             throw new Error(`loud ${shape._2[0]} panics`);
           }
         }
-      });
+      }, error);
       throw error;
     }
     if (shape.TAG === "Three") {
@@ -50,7 +50,7 @@ function main() {
           if (shape._2[0] === 2) {
             throw new Error(`loud ${shape._2[0]} panics`);
           }
-        });
+        }, error);
         throw error;
       }
       try {
@@ -64,7 +64,7 @@ function main() {
           if (shape._2[0] === 2) {
             throw new Error(`loud ${shape._2[0]} panics`);
           }
-        });
+        }, error);
         throw error;
       }
       console.log(`drop ${shape._2[0]}`);

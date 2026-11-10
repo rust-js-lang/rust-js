@@ -36,7 +36,7 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
     } catch (error) {
       $cleanup(() => {
         dropF?.(f);
-      });
+      }, error);
       throw error;
     }
     acc = tmp;

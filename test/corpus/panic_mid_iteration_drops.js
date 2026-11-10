@@ -2,12 +2,15 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
   $extend,
   $foldToArray,
   $iter,
+  $live,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -32,7 +35,9 @@ function main() {
           try {
             throw new Error("three");
           } catch (error) {
-            dDrop_drop(d);
+            $cleanup(() => {
+              dDrop_drop(d);
+            }, error);
             throw error;
           }
         }
@@ -55,8 +60,12 @@ function main() {
               throw new Error("six");
             }
             return d[0];
+          } catch (error) {
+            throw $unwindsOn(error);
           } finally {
-            dDrop_drop(d);
+            if ($live()) {
+              dDrop_drop(d);
+            }
           }
         })
         .filter((item) => item != null),
@@ -70,8 +79,12 @@ function main() {
         if (d[0] === 9) {
           throw new Error("nine");
         }
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(d);
+        if ($live()) {
+          dDrop_drop(d);
+        }
       }
     });
   });
@@ -83,8 +96,12 @@ function main() {
           throw new Error("12");
         }
         return (acc + d[0]) >>> 0;
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        dDrop_drop(d);
+        if ($live()) {
+          dDrop_drop(d);
+        }
       }
     }, 0);
     console.log(`${n}`);
@@ -99,16 +116,22 @@ function main() {
             try {
               throw new Error("16");
             } catch (error) {
-              dDrop_drop(d);
+              $cleanup(() => {
+                dDrop_drop(d);
+              }, error);
               throw error;
             }
           }
           return d;
         }),
       );
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of a) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of a) {
+          dDrop_drop(item);
+        }
       }
     }
   });

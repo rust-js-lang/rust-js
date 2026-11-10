@@ -33,7 +33,7 @@ function tCounting(TIterator, dropT, dropTItem) {
       } catch (error) {
         $cleanup(() => {
           dropT?.(self);
-        });
+        }, error);
         throw error;
       }
       const iter = self;
@@ -49,7 +49,7 @@ function tCounting(TIterator, dropT, dropTItem) {
             if (!$took(TIterator.fold, iter)) {
               dropT?.(iter);
             }
-          });
+          }, error);
           throw error;
         }
         if (!$took(TIterator.fold, iter)) {
@@ -60,7 +60,7 @@ function tCounting(TIterator, dropT, dropTItem) {
           for (const item of counts.keys()) {
             dropTItem?.(item);
           }
-        });
+        }, error);
         throw error;
       }
       return counts;
@@ -139,7 +139,7 @@ function main() {
       for (const item of louds.keys()) {
         loudDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   loudDrop_drop(loud);

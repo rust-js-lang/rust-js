@@ -72,7 +72,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(read);
-    });
+    }, error);
     throw error;
   }
   const cloned = $dropping(
@@ -93,7 +93,7 @@ function main() {
     $cleanup(() => {
       $dispose(moved);
       $dispose(cloned);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -101,7 +101,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dispose(moved);
-    });
+    }, error);
     throw error;
   }
   console.log("one gone");

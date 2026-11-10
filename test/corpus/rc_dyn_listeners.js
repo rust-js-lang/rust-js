@@ -7,8 +7,10 @@ import {
   $dynCell,
   $fieldCell,
   $index,
+  $live,
   $rcDrop,
   $unborrow,
+  $unwindsOn,
   $upgrade,
   $weakDrop,
   $weakNone,
@@ -70,15 +72,23 @@ function main() {
         $unborrow(borrow);
       }
       console.log(`${loggerListener_count($borrow(logger).value)} ${leaf.value.name} ${parent}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      $rcDrop(leaf, (value) => {
+      if ($live()) {
+        $rcDrop(leaf, (value) => {
+          $weakDrop(value.parent);
+        });
+      }
+    }
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      $rcDrop(root, (value) => {
         $weakDrop(value.parent);
       });
     }
-  } finally {
-    $rcDrop(root, (value) => {
-      $weakDrop(value.parent);
-    });
   }
 }
 //# sourceMappingURL=case.js.map

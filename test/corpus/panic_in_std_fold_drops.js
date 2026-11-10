@@ -3,13 +3,16 @@
 import {
   $advanceSlice,
   $catchUnwind,
+  $cleanup,
   $dropEach,
   $foldDropping,
   $foldOf,
   $iter,
   $iterator,
+  $live,
   $next,
   $rangeNext,
+  $unwindsOn,
   iterator_fuse,
   iterator_inspect,
   iterator_peekable,
@@ -66,17 +69,23 @@ function main() {
           try {
             kept.push(d);
           } catch (error) {
-            for (const item of kept) {
-              dDrop_drop(item);
-            }
+            $cleanup(() => {
+              for (const item of kept) {
+                dDrop_drop(item);
+              }
+            }, error);
             throw error;
           }
           return kept;
         },
         $dropEach(dDrop_drop),
       );
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      iter.return();
+      if ($live()) {
+        iter.return();
+      }
     }
     const kept = result;
     console.log(`${kept.length}`);
@@ -110,17 +119,23 @@ function main() {
           try {
             kept.push(d);
           } catch (error) {
-            for (const item of kept) {
-              dDrop_drop(item);
-            }
+            $cleanup(() => {
+              for (const item of kept) {
+                dDrop_drop(item);
+              }
+            }, error);
             throw error;
           }
           return kept;
         },
         $dropEach(dDrop_drop),
       );
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      iter.return();
+      if ($live()) {
+        iter.return();
+      }
     }
     const kept = result;
     console.log(`${kept.length}`);

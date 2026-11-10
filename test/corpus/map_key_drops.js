@@ -10,6 +10,7 @@ import {
   $cmp,
   $extendMap,
   $insert,
+  $live,
   $mutGet,
   $orInsert,
   $orInsertWith,
@@ -21,6 +22,7 @@ import {
   $setReplace,
   $sortedEntries,
   $sortedKeys,
+  $unwindsOn,
   $unwrap,
 } from "@rust-js/std";
 
@@ -41,7 +43,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -52,7 +54,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   const key$1 = [1];
@@ -65,7 +67,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   orInsert.value = (orInsert.value + 1) | 0;
@@ -79,7 +81,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   tmp.value = (tmp.value + 1) | 0;
@@ -93,7 +95,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   orInsertWith.value = (orInsertWith.value + 1) | 0;
@@ -107,7 +109,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   keyDrop_drop(value);
@@ -121,7 +123,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   keyDrop_drop(value$1);
@@ -140,7 +142,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -152,7 +154,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   keyDrop_drop(value$2);
@@ -172,7 +174,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -182,7 +184,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -192,7 +194,7 @@ function main() {
       for (const item of m.keys()) {
         keyDrop_drop(item);
       }
-    });
+    }, error);
     throw error;
   }
   console.log("--");
@@ -206,8 +208,12 @@ function main() {
     const value = [3];
     try {
       console.log(`del ${$removeItem(s, value, keyDrop_drop)}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      keyDrop_drop(value);
+      if ($live()) {
+        keyDrop_drop(value);
+      }
     }
     $add(s, [4], keyDrop_drop);
     const replace = $setReplace(s, [4]);
@@ -228,15 +234,23 @@ function main() {
       }
       const value = take != null ? map(take) : undefined;
       console.log(`take ${value == null ? "None" : `Some(${value})`}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      keyDrop_drop(value$2);
+      if ($live()) {
+        keyDrop_drop(value$2);
+      }
     }
     $add(s, [7], keyDrop_drop);
     $retainSet(s, (k) => k[0] !== 7, s, keyDrop_drop);
     $add(s, [8], keyDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of s) {
-      keyDrop_drop(item);
+    if ($live()) {
+      for (const item of s) {
+        keyDrop_drop(item);
+      }
     }
   }
   const t = new ($btreeMap((a, b) => $cmp(a[0], b[0]), $KeyMap))();
@@ -248,7 +262,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
         keyDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -258,7 +272,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
         keyDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -268,7 +282,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
         keyDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -281,7 +295,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
         keyDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   let sorted;
@@ -292,7 +306,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
         keyDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -305,7 +319,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
         keyDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -318,7 +332,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
         keyDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -331,7 +345,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
         keyDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -343,7 +357,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
         keyDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   const asked = [1];
@@ -355,7 +369,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
         keyDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -365,7 +379,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
         keyDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   let tmp$1;
@@ -376,7 +390,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {
         keyDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   const key = tmp$1[0];

@@ -27,7 +27,7 @@ function main() {
     $cleanup(() => {
       $dropReceiver(rx, loudDrop_drop);
       $dropSender(tx);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -36,7 +36,7 @@ function main() {
     $cleanup(() => {
       $dropReceiver(rx, loudDrop_drop);
       $dropSender(tx);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -45,7 +45,7 @@ function main() {
     $cleanup(() => {
       $dropReceiver(rx, loudDrop_drop);
       $dropSender(tx);
-    });
+    }, error);
     throw error;
   }
   let first;
@@ -55,7 +55,7 @@ function main() {
     $cleanup(() => {
       $dropReceiver(rx, loudDrop_drop);
       $dropSender(tx);
-    });
+    }, error);
     throw error;
   }
   console.log(`got ${first[0]}`);
@@ -65,7 +65,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropSender(tx);
-    });
+    }, error);
     throw error;
   }
   console.log("receiver gone");
@@ -75,7 +75,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropSender(tx);
-    });
+    }, error);
     throw error;
   }
   if (send.TAG === "Ok") {
@@ -91,7 +91,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropSender(tx);
-    });
+    }, error);
     throw error;
   }
   const outerTx = channel[0];
@@ -104,7 +104,7 @@ function main() {
       $dropReceiver(outerRx, $dropSender);
       $dropSender(outerTx);
       $dropSender(tx);
-    });
+    }, error);
     throw error;
   }
   const innerTx = tmp[0];
@@ -117,7 +117,7 @@ function main() {
       $dropReceiver(outerRx, $dropSender);
       $dropSender(outerTx);
       $dropSender(tx);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -129,7 +129,7 @@ function main() {
       $dropReceiver(outerRx, $dropSender);
       $dropSender(outerTx);
       $dropSender(tx);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -139,7 +139,7 @@ function main() {
       $dropReceiver(innerRx);
       $dropSender(outerTx);
       $dropSender(tx);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -150,7 +150,7 @@ function main() {
       $dropReceiver(innerRx);
       $dropSender(outerTx);
       $dropSender(tx);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -159,7 +159,7 @@ function main() {
     $cleanup(() => {
       $dropSender(outerTx);
       $dropSender(tx);
-    });
+    }, error);
     throw error;
   }
   try {
@@ -167,7 +167,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       $dropSender(tx);
-    });
+    }, error);
     throw error;
   }
   $dropSender(tx);

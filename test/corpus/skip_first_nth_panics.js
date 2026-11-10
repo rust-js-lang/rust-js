@@ -8,7 +8,9 @@ import {
   $held,
   $iterator,
   $last,
+  $live,
   $tryFoldSome,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -56,8 +58,12 @@ function main() {
         return result;
       }
       return tryFold != null ? map(tryFold) : undefined;
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      skip.return();
+      if ($live()) {
+        skip.return();
+      }
     }
   });
   console.log(`try_fold ok ${r.TAG === "Ok"}`);

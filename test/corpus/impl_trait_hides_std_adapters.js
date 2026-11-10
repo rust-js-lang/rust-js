@@ -2,6 +2,7 @@
 
 import {
   $advanceSlice,
+  $cleanup,
   $closing,
   $dropEach,
   $foldOf,
@@ -58,7 +59,9 @@ export function peeked() {
   try {
     peek = $peek(it);
   } catch (error) {
-    it.return();
+    $cleanup(() => {
+      it.return();
+    }, error);
     throw error;
   }
   const value = peek?.[0];
@@ -146,7 +149,9 @@ export function chained() {
   try {
     tmp = louds(10);
   } catch (error) {
-    value.return();
+    $cleanup(() => {
+      value.return();
+    }, error);
     throw error;
   }
   return iterator_chain(
@@ -176,11 +181,13 @@ export function flattened() {
     item$live = false;
     tmp$1 = [value, tmp];
   } catch (error) {
-    if (item$live) {
-      for (const item of value) {
-        loudDrop_drop(item);
+    $cleanup(() => {
+      if (item$live) {
+        for (const item of value) {
+          loudDrop_drop(item);
+        }
       }
-    }
+    }, error);
     throw error;
   }
   return iterator_flatten(

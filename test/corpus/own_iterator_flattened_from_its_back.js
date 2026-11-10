@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cleanup,
   $closing,
   $debugStr,
   $dropEach,
@@ -12,6 +13,7 @@ import {
   $iter,
   $iterator,
   $knowing,
+  $live,
   $mapEnds,
   $nextBack,
   $nthBack,
@@ -19,6 +21,7 @@ import {
   $rangeNextBack,
   $rev,
   $tryOf,
+  $unwindsOn,
   iterator_rev,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
@@ -70,8 +73,12 @@ function mk() {
 function shown(acc, d) {
   try {
     return acc + dDisplay_fmt(d);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    dDrop_drop(d);
+    if ($live()) {
+      dDrop_drop(d);
+    }
   }
 }
 
@@ -274,8 +281,12 @@ function main() {
     let d;
     try {
       d = $nthBack(rev, 1, undefined, dDrop_drop);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      rev.return();
+      if ($live()) {
+        rev.return();
+      }
     }
     function map(d) {
       const result = d[0];
@@ -300,8 +311,12 @@ function main() {
     let d;
     try {
       d = $findBack(rev, (d) => d[0] === 1, undefined, dDrop_drop);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      rev.return();
+      if ($live()) {
+        rev.return();
+      }
     }
     function map(d) {
       const result = d[0];
@@ -359,8 +374,12 @@ function main() {
     let found;
     try {
       found = $findBack(rev, (d) => d[0] > 0, undefined, dDrop_drop);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      rev.return();
+      if ($live()) {
+        rev.return();
+      }
     }
     let flatten;
     try {
@@ -374,19 +393,23 @@ function main() {
         ),
       );
     } catch (error) {
-      if (found != null) {
-        dDrop_drop(found);
-      }
+      $cleanup(() => {
+        if (found != null) {
+          dDrop_drop(found);
+        }
+      }, error);
       throw error;
     }
     let last;
     try {
       last = $nextBack(flatten);
     } catch (error) {
-      flatten.return();
-      if (found != null) {
-        dDrop_drop(found);
-      }
+      $cleanup(() => {
+        flatten.return();
+        if (found != null) {
+          dDrop_drop(found);
+        }
+      }, error);
       throw error;
     }
     let last$live = true;
@@ -403,24 +426,28 @@ function main() {
         ),
       );
     } catch (error) {
-      if (last != null) {
-        dDrop_drop(last);
-      }
-      if (found != null) {
-        dDrop_drop(found);
-      }
+      $cleanup(() => {
+        if (last != null) {
+          dDrop_drop(last);
+        }
+        if (found != null) {
+          dDrop_drop(found);
+        }
+      }, error);
       throw error;
     }
     let s;
     try {
       s = $foldBack(tmp, "", shown);
     } catch (error) {
-      if (last != null) {
-        dDrop_drop(last);
-      }
-      if (found != null) {
-        dDrop_drop(found);
-      }
+      $cleanup(() => {
+        if (last != null) {
+          dDrop_drop(last);
+        }
+        if (found != null) {
+          dDrop_drop(found);
+        }
+      }, error);
       throw error;
     }
     const value = [
@@ -435,12 +462,14 @@ function main() {
         ),
       ).reduce(shown, s);
     } catch (error) {
-      if (last != null) {
-        dDrop_drop(last);
-      }
-      if (found != null) {
-        dDrop_drop(found);
-      }
+      $cleanup(() => {
+        if (last != null) {
+          dDrop_drop(last);
+        }
+        if (found != null) {
+          dDrop_drop(found);
+        }
+      }, error);
       throw error;
     }
     function map$1(d) {
@@ -453,11 +482,13 @@ function main() {
       map = found != null ? map$1(found) : undefined;
       last$live = false;
     } catch (error) {
-      if (last$live) {
-        if (last != null) {
-          dDrop_drop(last);
+      $cleanup(() => {
+        if (last$live) {
+          if (last != null) {
+            dDrop_drop(last);
+          }
         }
-      }
+      }, error);
       throw error;
     }
     function map$2(d) {

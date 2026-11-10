@@ -3,6 +3,7 @@
 import {
   $advanceSlice,
   $catchUnwind,
+  $catchable,
   $cleanup,
   $closing,
   $collectDropping,
@@ -13,8 +14,10 @@ import {
   $givenDrop,
   $iter,
   $iterator,
+  $live,
   $next,
   $partition,
+  $unwindsOn,
   $unzip,
 } from "@rust-js/std";
 
@@ -62,7 +65,8 @@ function caught(f) {
   try {
     f();
     console.log("ended");
-  } catch {
+  } catch (error) {
+    $catchable(error);
     console.log("panicked");
   }
 }
@@ -74,14 +78,22 @@ function unzipped(it, dropI) {
       console.log(
         `[${a.map((item) => dDebug_fmt(item)).join(", ")}] [${b.map((item) => dDebug_fmt(item)).join(", ")}]`,
       );
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of b) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of b) {
+          dDrop_drop(item);
+        }
       }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of a) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of a) {
+        dDrop_drop(item);
+      }
     }
   }
 }
@@ -97,14 +109,22 @@ function parted(make, IIterator, dropI) {
       console.log(
         `[${odd.map((item) => dDebug_fmt(item)).join(", ")}] [${even.map((item) => dDebug_fmt(item)).join(", ")}]`,
       );
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of even) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of even) {
+          dDrop_drop(item);
+        }
       }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of odd) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of odd) {
+        dDrop_drop(item);
+      }
     }
   }
 }
@@ -113,9 +133,13 @@ function listed(it, IInPlace, dropI) {
   const l = $collectDropping($folded($closing(Iterator.from(it), dropI, false)), dDrop_drop, true);
   try {
     console.log(`[${l.map((item) => dDebug_fmt(item)).join(", ")}]`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of l) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of l) {
+        dDrop_drop(item);
+      }
     }
   }
 }
@@ -130,15 +154,17 @@ function extended(make, IIterator, dropI) {
       } catch (error) {
         $cleanup(() => {
           dropI?.(iter);
-        });
+        }, error);
         throw error;
       }
       dropI?.(iter);
     });
     console.log(`${r.TAG === "Err"} [${l.map((item) => dDebug_fmt(item)).join(", ")}]`);
   } finally {
-    for (const item of l) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of l) {
+        dDrop_drop(item);
+      }
     }
   }
 }
@@ -196,14 +222,22 @@ function main() {
         console.log(
           `[${a.map((item) => dDebug_fmt(item)).join(", ")}] [${b.map((item) => dDebug_fmt(item)).join(", ")}]`,
         );
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of b) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of b) {
+            dDrop_drop(item);
+          }
         }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of a) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of a) {
+          dDrop_drop(item);
+        }
       }
     }
   });
@@ -225,8 +259,10 @@ function main() {
           try {
             throw new Error("at 2");
           } catch (error) {
-            dDrop_drop(p[0]);
-            dDrop_drop(p[1]);
+            $cleanup(() => {
+              dDrop_drop(p[0]);
+              dDrop_drop(p[1]);
+            }, error);
             throw error;
           }
         }
@@ -240,14 +276,22 @@ function main() {
         console.log(
           `[${a.map((item) => dDebug_fmt(item)).join(", ")}] [${b.map((item) => dDebug_fmt(item)).join(", ")}]`,
         );
+      } catch (error) {
+        throw $unwindsOn(error);
       } finally {
-        for (const item of b) {
-          dDrop_drop(item);
+        if ($live()) {
+          for (const item of b) {
+            dDrop_drop(item);
+          }
         }
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of a) {
-        dDrop_drop(item);
+      if ($live()) {
+        for (const item of a) {
+          dDrop_drop(item);
+        }
       }
     }
   });

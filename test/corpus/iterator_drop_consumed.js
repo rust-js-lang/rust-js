@@ -22,7 +22,7 @@ function main() {
     $cleanup(() => {
       console.log(`dropped after ${iter.at}`);
       iter.items.length = 0;
-    });
+    }, error);
     throw error;
   }
   console.log(`dropped after ${iter.at}`);
@@ -38,7 +38,7 @@ function main() {
     $cleanup(() => {
       console.log(`dropped after ${iter$1.at}`);
       iter$1.items.length = 0;
-    });
+    }, error);
     throw error;
   }
   console.log(`dropped after ${iter$1.at}`);

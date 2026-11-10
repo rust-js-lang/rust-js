@@ -11,6 +11,7 @@ import {
   $insert,
   $iter,
   $lazyRange,
+  $live,
   $next,
   $pad,
   $plus,
@@ -19,6 +20,7 @@ import {
   $sortedEntries,
   $sortedKeys,
   $treeSplitOff,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -36,8 +38,12 @@ function manuallyDropped() {
   try {
     console.log("holder");
     console.log(`drop ${inner}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log(`drop ${other}`);
+    if ($live()) {
+      console.log(`drop ${other}`);
+    }
   }
   const v = [[5], [6]];
   for (const item of v) {
@@ -54,9 +60,11 @@ function extended() {
       $lazyRange(2, 4).map((value) => [value]),
     );
   } catch (error) {
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
+    $cleanup(() => {
+      for (const item of v) {
+        console.log(`drop ${item[0]}`);
+      }
+    }, error);
     throw error;
   }
   console.log(`${v.length}`);
@@ -68,29 +76,35 @@ function extended() {
         .map((x) => [(x * 10) >>> 0]),
     );
   } catch (error) {
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
+    $cleanup(() => {
+      for (const item of v) {
+        console.log(`drop ${item[0]}`);
+      }
+    }, error);
     throw error;
   }
   try {
     console.log(`[${v.map((d) => d[0]).join(", ")}]`);
   } catch (error) {
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
+    $cleanup(() => {
+      for (const item of v) {
+        console.log(`drop ${item[0]}`);
+      }
+    }, error);
     throw error;
   }
   const w = [];
   try {
     $extend(w, $repeatingWith(() => [0]).take(2));
   } catch (error) {
-    for (const item of w) {
-      console.log(`drop ${item[0]}`);
-    }
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
+    $cleanup(() => {
+      for (const item of w) {
+        console.log(`drop ${item[0]}`);
+      }
+      for (const item of v) {
+        console.log(`drop ${item[0]}`);
+      }
+    }, error);
     throw error;
   }
   console.log(`${w.length}`);
@@ -99,9 +113,13 @@ function extended() {
       console.log(`drop ${item[0]}`);
     }
     console.log("end");
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of w) {
-      console.log(`drop ${item[0]}`);
+    if ($live()) {
+      for (const item of w) {
+        console.log(`drop ${item[0]}`);
+      }
     }
   }
 }
@@ -174,9 +192,13 @@ function matched() {
       ddDrop_drop(value._0);
     }
     console.log(`${label} ${w[1]}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (w[0] != null) {
-      ddDrop_drop(w[0]);
+    if ($live()) {
+      if (w[0] != null) {
+        ddDrop_drop(w[0]);
+      }
     }
   }
 }
@@ -241,7 +263,7 @@ function splitOff() {
       for (const [, value] of $sortedEntries(m, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   while (true) {
@@ -255,7 +277,7 @@ function splitOff() {
             console.log(`drop ${value[0]}`);
           }
         }
-      });
+      }, error);
       throw error;
     }
     if (i == null) {
@@ -271,7 +293,7 @@ function splitOff() {
             console.log(`drop ${value[0]}`);
           }
         }
-      });
+      }, error);
       throw error;
     }
     try {
@@ -285,7 +307,7 @@ function splitOff() {
             console.log(`drop ${value[0]}`);
           }
         }
-      });
+      }, error);
       throw error;
     }
   }
@@ -299,7 +321,7 @@ function splitOff() {
           console.log(`drop ${value[0]}`);
         }
       }
-    });
+    }, error);
     throw error;
   }
   let collect;
@@ -315,7 +337,7 @@ function splitOff() {
           console.log(`drop ${value[0]}`);
         }
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -334,7 +356,7 @@ function splitOff() {
           console.log(`drop ${value[0]}`);
         }
       }
-    });
+    }, error);
     throw error;
   }
   m$live = false;
@@ -347,7 +369,7 @@ function splitOff() {
       for (const [, value] of $sortedEntries(hi, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   console.log("mid");
@@ -359,7 +381,7 @@ function splitOff() {
       for (const [, value] of $sortedEntries(hi, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   let t;
@@ -370,7 +392,7 @@ function splitOff() {
       for (const [, value] of $sortedEntries(hi, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -382,7 +404,7 @@ function splitOff() {
       for (const [, value] of $sortedEntries(hi, $cmp)) {
         console.log(`drop ${value[0]}`);
       }
-    });
+    }, error);
     throw error;
   }
   for (const [, value] of $sortedEntries(hi, $cmp)) {

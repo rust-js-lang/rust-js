@@ -553,10 +553,11 @@ aborts: `_a` is never dropped and `never` never printed.
 - **No `catch_unwind` catches an abort**: `$catchUnwind` throws a `$Abort`
   on, and once aborted, `$cleanup` runs nothing more.
 - **The browser's limit**: it has no process to end, so `$abort` throws a
-  `$Abort` past `$catchUnwind` and the runtime's catches; a `catch_unwind`
-  lowered to JS's own `try { .. } catch { .. }` (ADR 0637) catches it, as
-  any JS `catch` would. Rust's own abort there is wasm's `unreachable`, a
-  `RuntimeError` a JS `catch` catches too.
+  `$Abort` past `$catchUnwind` and the runtime's catches. (Amended, #1193:
+  a `catch_unwind` lowered to JS's own `try` catches it no more, its
+  `catch (error)` begins `$catchable(error);`, which throws on an abort,
+  the runtime's own bug, what rust-js doesn't support and a stack
+  overflow; a scope's drops a program sees run only `$live()`.)
 - **What it costs**: where a drop may panic, a dyn's or a generic's, an
   iterator's close, a `$dropItems` of items whose drop may, its `finally`
   becomes the `catch` and the drop after, and the cleanup `$cleanup`'s:

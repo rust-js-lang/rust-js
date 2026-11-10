@@ -1225,7 +1225,8 @@ pub fn flush(ids: &[u32]) -> usize {
 // A `Vec`'s capacity std's growth of it wasn't kept of, in a crate that
 // reads one: one std may collect in place, whose capacity is its source's,
 // and a string's bytes, whose capacity is the string's. `capacity()` of it
-// throws an error naming #1180, `$InternalError`, never another number; `shrink_to_fit()` knows it again, and a `push`
+// throws a refusal naming #1180, `$unsupported`'s, never another number,
+// which no `catch_unwind` takes for a panic (#1193); `shrink_to_fit()` knows it again, and a `push`
 // past it leaves it unknown (the user's decision, #1180).
 test("capacity() of a Vec whose growth wasn't kept throws, naming #1180", async () => {
   const dir = fixture("capacity-unknown");
@@ -1248,6 +1249,14 @@ pub fn bytes() -> usize {
     String::from("abc").into_bytes().capacity()
 }
 
+pub fn caught() -> bool {
+    std::panic::catch_unwind(|| {
+        let w: Vec<u32> = grown().into_iter().map(|x| x + 1).collect();
+        w.capacity()
+    })
+    .is_err()
+}
+
 pub fn fitted() -> usize {
     let mut w: Vec<u32> = grown().into_iter().map(|x| x + 1).collect();
     w.shrink_to_fit();
@@ -1267,8 +1276,8 @@ pub fn known() -> usize {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const lib = await import(join(dir, "lib.js"));
-  for (const f of [lib.inPlace, lib.bytes, lib.pushed]) {
-    expect(() => f()).toThrow("this `Vec`'s capacity isn't known to rust-js: std's growth of it wasn't kept (#1180)");
+  for (const f of [lib.inPlace, lib.bytes, lib.pushed, lib.caught]) {
+    expect(() => f()).toThrow("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep");
   }
   expect([lib.fitted(), lib.known()]).toEqual([5, 8]);
 });

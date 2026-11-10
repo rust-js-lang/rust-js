@@ -36,7 +36,7 @@ function main() {
         if (h$live) {
           dDrop_drop(h);
         }
-      });
+      }, error);
       throw error;
     }
     function f(d) {
@@ -57,7 +57,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         iter.return();
-      });
+      }, error);
       throw error;
     }
     iter.return();

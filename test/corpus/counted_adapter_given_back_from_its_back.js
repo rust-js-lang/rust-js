@@ -9,6 +9,7 @@ import {
   $held,
   $iter,
   $knowing,
+  $live,
   $next,
   $nextBack,
   $range,
@@ -17,6 +18,7 @@ import {
   $skipping,
   $taking,
   $tryOf,
+  $unwindsOn,
   iterator_skip,
   iterator_stepBy,
   iterator_take,
@@ -139,8 +141,12 @@ function main() {
     }
     const value$1 = nthBack != null ? map(nthBack) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value.return();
+    if ($live()) {
+      value.return();
+    }
   }
   console.log(
     `[${Array.from(
@@ -308,15 +314,23 @@ function main() {
     const rev = $held($rev(held));
     try {
       console.log(`${rev.len()}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      rev.return();
+      if ($live()) {
+        rev.return();
+      }
     }
     held = $taking($closing($iter(ds(5)), $dropEach(dDrop_drop)), 3, dDrop_drop);
     const value$2 = $held($rev(held));
     try {
       console.log(`${value$2.len()}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      value$2.return();
+      if ($live()) {
+        value$2.return();
+      }
     }
     const value$3 = $held(
       $rev(
@@ -371,12 +385,20 @@ function main() {
     );
     try {
       console.log(`${value$3.len()}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      value$3.return();
+      if ($live()) {
+        value$3.return();
+      }
     }
     console.log("end");
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
 }
 //# sourceMappingURL=case.js.map

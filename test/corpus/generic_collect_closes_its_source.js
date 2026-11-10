@@ -60,7 +60,7 @@ function tried(src, IInPlace, dropI) {
   } catch (error) {
     $cleanup(() => {
       iter.return();
-    });
+    }, error);
     throw error;
   }
   iter.return();

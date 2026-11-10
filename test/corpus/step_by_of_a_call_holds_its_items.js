@@ -6,9 +6,11 @@ import {
   $held,
   $iter,
   $lazyTakeWhile,
+  $live,
   $next,
   $rev,
   $step,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -49,8 +51,12 @@ function main() {
     }
     const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    stepBy.return();
+    if ($live()) {
+      stepBy.return();
+    }
   }
   const value = $lazyTakeWhile(
     $closing($iter([[1], [2], [3]]), $dropEach(noisyDrop_drop)),
@@ -76,8 +82,12 @@ function main() {
   try {
     const value = $next(value$1);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$1.return();
+    if ($live()) {
+      value$1.return();
+    }
   }
   console.log("done");
 }

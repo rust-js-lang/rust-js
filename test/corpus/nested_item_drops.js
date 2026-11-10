@@ -11,11 +11,13 @@ import {
   $held,
   $intoIter,
   $iter,
+  $live,
   $next,
   $nextSome,
   $reduce,
   $someValue,
   $traitImpl,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -43,7 +45,7 @@ function firsts(
       $dropItems(out, (item) => {
         dropIItemItem?.(item);
       });
-    });
+    }, error);
     throw error;
   }
   let tmp;
@@ -58,7 +60,7 @@ function firsts(
         $dropItems(out, (item) => {
           dropIItemItem?.(item);
         });
-      });
+      }, error);
       throw error;
     }
     if (tmp == null) {
@@ -69,7 +71,7 @@ function firsts(
           $dropItems(out, (item) => {
             dropIItemItem?.(item);
           });
-        });
+        }, error);
         throw error;
       }
       break;
@@ -83,7 +85,7 @@ function firsts(
         $dropItems(out, (item) => {
           dropIItemItem?.(item);
         });
-      });
+      }, error);
       throw error;
     }
     try {
@@ -95,7 +97,7 @@ function firsts(
         $dropItems(out, (item) => {
           dropIItemItem?.(item);
         });
-      });
+      }, error);
       throw error;
     }
     if (next != null) {
@@ -109,7 +111,7 @@ function firsts(
           $dropItems(out, (item) => {
             dropIItemItem?.(item);
           });
-        });
+        }, error);
         throw error;
       }
     } else {
@@ -124,7 +126,7 @@ function firsts(
           $dropItems(out, (item) => {
             dropIItemItem?.(item);
           });
-        });
+        }, error);
         throw error;
       }
     }
@@ -136,7 +138,7 @@ function firsts(
         $dropItems(out, (item) => {
           dropIItemItem?.(item);
         });
-      });
+      }, error);
       throw error;
     }
   }
@@ -169,7 +171,7 @@ function concat(
         } catch (error) {
           $cleanup(() => {
             dropIItem?.(a);
-          });
+          }, error);
           throw error;
         }
         return a;
@@ -180,7 +182,7 @@ function concat(
   } catch (error) {
     $cleanup(() => {
       dropIIntoIter?.(iter$1);
-    });
+    }, error);
     throw error;
   }
   dropIIntoIter?.(iter$1);
@@ -247,7 +249,7 @@ function groupsFirstOfNext_firstOfNext(
     } catch (error) {
       $cleanup(() => {
         dropIItemIntoIter?.(value$2);
-      });
+      }, error);
       throw error;
     }
     dropIItemIntoIter?.(value$2);
@@ -316,11 +318,13 @@ function main() {
   try {
     groups = [$iter(value)];
   } catch (error) {
-    if (all != null) {
-      for (const item of all) {
-        loudDrop_drop(item);
+    $cleanup(() => {
+      if (all != null) {
+        for (const item of all) {
+          loudDrop_drop(item);
+        }
       }
-    }
+    }, error);
     throw error;
   }
   const next = {
@@ -344,17 +348,25 @@ function main() {
     try {
       console.log(`firsts ${next.impl.firstOfNext(next)}`);
       console.log("end");
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      for (const item of groups[0]) {
-        for (const item$1 of item) {
-          loudDrop_drop(item$1);
+      if ($live()) {
+        for (const item of groups[0]) {
+          for (const item$1 of item) {
+            loudDrop_drop(item$1);
+          }
         }
       }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (all != null) {
-      for (const item of all) {
-        loudDrop_drop(item);
+    if ($live()) {
+      if (all != null) {
+        for (const item of all) {
+          loudDrop_drop(item);
+        }
       }
     }
   }

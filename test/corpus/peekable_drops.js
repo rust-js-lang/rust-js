@@ -7,12 +7,14 @@ import {
   $foldOf,
   $held,
   $iter,
+  $live,
   $next,
   $nextBack,
   $nextIf,
   $peek,
   $rangeNext,
   $sizeHint,
+  $unwindsOn,
   iterator_map,
   iterator_peekable,
   mapIterator___iteratorGetUnchecked,
@@ -39,8 +41,12 @@ function more() {
     console.log(`len ${$exactLen($sizeHint(it))}`);
     $peek(it);
     console.log(`len ${$exactLen($sizeHint(it))}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
 }
 function main() {
@@ -55,8 +61,12 @@ function main() {
   try {
     $peek(it);
     console.log("peeked");
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
   it = $held(
     iterator_peekable(
@@ -70,8 +80,12 @@ function main() {
   try {
     none = $nextIf(it, (l) => l[0] === 9);
     console.log(`next_if ${none == null}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
   try {
     const lazy = $held(
@@ -95,8 +109,12 @@ function main() {
     );
     try {
       $peek(lazy);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      lazy.return();
+      if ($live()) {
+        lazy.return();
+      }
     }
     const back = $held(
       iterator_peekable(
@@ -149,12 +167,20 @@ function main() {
       console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
       more();
       console.log("end");
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      back.return();
+      if ($live()) {
+        back.return();
+      }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (none != null) {
-      loudDrop_drop(none);
+    if ($live()) {
+      if (none != null) {
+        loudDrop_drop(none);
+      }
     }
   }
 }

@@ -26,7 +26,7 @@ function run(owner, n) {
         throw new Error("restore panics");
       }
       console.log(`restored ${restore}`);
-    });
+    }, error);
     throw error;
   }
   let result;
@@ -40,7 +40,7 @@ function run(owner, n) {
           throw new Error("restore panics");
         }
         console.log(`restored ${restore}`);
-      });
+      }, error);
       throw error;
     }
     if (task != null) {
@@ -63,7 +63,7 @@ function run(owner, n) {
           throw new Error("restore panics");
         }
         console.log(`restored ${restore}`);
-      });
+      }, error);
       throw error;
     }
     if (tmp) {

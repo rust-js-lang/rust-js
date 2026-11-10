@@ -353,6 +353,8 @@ pub fn work(fail: bool) -> u32 {
 ```
 
 ```js
+import { $live, $unwindsOn } from "@rust-js/std";
+
 export function work(fail) {
   const _outer = { name: "outer" };
   const name = "inner";
@@ -361,11 +363,19 @@ export function work(fail) {
       if (fail) {
         throw new Error("failed");
       }
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      console.log(`closing ${name}`);
+      if ($live()) {
+        console.log(`closing ${name}`);
+      }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log(`closing ${_outer.name}`);
+    if ($live()) {
+      console.log(`closing ${_outer.name}`);
+    }
   }
   return 1;
 }
@@ -640,13 +650,14 @@ pub fn text(value: &Unknown) -> String {
 ```
 
 ```js
-import { $index, $panicMessage, $unwound } from "@rust-js/std";
+import { $catchable, $index, $panicMessage, $unwound } from "@rust-js/std";
 
 export function url(value) {
   try {
     const url = value.url;
     return typeof url === "string" ? url : "";
-  } catch {
+  } catch (error) {
+    $catchable(error);
     return "";
   }
 }
@@ -656,6 +667,7 @@ export function item(items, at) {
     const item = $index(items, at);
     return String(item);
   } catch (thrown) {
+    $catchable(thrown);
     const payload = $unwound(thrown);
     const message =
       payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
@@ -673,7 +685,9 @@ export function firstText(values) {
     const value = values[i];
     try {
       return "" + value;
-    } catch {}
+    } catch (error) {
+      $catchable(error);
+    }
   }
   return "";
 }
@@ -682,6 +696,7 @@ export function text(value) {
   try {
     return "" + value;
   } catch (payload) {
+    $catchable(payload);
     if (payload.name === "TypeError") {
       return "";
     }
@@ -803,16 +818,20 @@ pub fn described(value: &Unknown) -> String {
 ```
 
 ```js
+import { $catchable } from "@rust-js/std";
+
 export function stacks(render) {
   let control;
   try {
     try {
       throw new Error();
     } catch (x) {
+      $catchable(x);
       control = x;
     }
     render();
   } catch (sample) {
+    $catchable(sample);
     if (control != null) {
       const sampleStack = sample.stack;
       if (sampleStack != null) {
@@ -827,7 +846,8 @@ export function passive(canUseDom, probe) {
   if (canUseDom) {
     try {
       probe();
-    } catch {
+    } catch (error) {
+      $catchable(error);
       supported = false;
     }
   }
@@ -838,6 +858,7 @@ export function controlStack() {
   try {
     throw new Error();
   } catch (x) {
+    $catchable(x);
     const control = x;
     return control?.stack;
   }
@@ -847,6 +868,7 @@ export function described(value) {
   try {
     return "" + value;
   } catch (x) {
+    $catchable(x);
     return `\nError describing: ${x.message}\n${x.stack ?? ""}`;
   }
 }
@@ -928,6 +950,8 @@ pub fn dispatch(reducer: &dyn Fn(u32) -> u32, state: u32) -> bool {
 ```
 
 ```js
+import { $catchable } from "@rust-js/std";
+
 function bailout() {}
 
 export function dispatch(reducer, state) {
@@ -936,7 +960,9 @@ export function dispatch(reducer, state) {
       bailout();
       return false;
     }
-  } catch {}
+  } catch (error) {
+    $catchable(error);
+  }
   return true;
 }
 ```

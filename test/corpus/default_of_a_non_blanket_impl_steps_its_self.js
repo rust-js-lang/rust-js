@@ -50,7 +50,7 @@ function wrapperKeeping(IIterator, dropI, dropIItem, dropIItemItem, dropIItemInt
           } catch (error) {
             $cleanup(() => {
               dropI?.(iter[0]);
-            });
+            }, error);
             throw error;
           }
           if (tmp == null) {
@@ -61,7 +61,7 @@ function wrapperKeeping(IIterator, dropI, dropIItem, dropIItemItem, dropIItemInt
             } catch (error) {
               $cleanup(() => {
                 dropI?.(iter[0]);
-              });
+              }, error);
               throw error;
             }
             dropI?.(iter[0]);
@@ -75,7 +75,7 @@ function wrapperKeeping(IIterator, dropI, dropIItem, dropIItemItem, dropIItemInt
           } catch (error) {
             $cleanup(() => {
               dropI?.(iter[0]);
-            });
+            }, error);
             throw error;
           }
         }
@@ -187,11 +187,11 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
               } catch (error) {
                 $cleanup(() => {
                   dropU?.(iter[1]);
-                });
+                }, error);
                 throw error;
               }
               dropU?.(iter[1]);
-            });
+            }, error);
             throw error;
           }
           if (tmp == null) {
@@ -206,11 +206,11 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
                 } catch (error) {
                   $cleanup(() => {
                     dropU?.(iter[1]);
-                  });
+                  }, error);
                   throw error;
                 }
                 dropU?.(iter[1]);
-              });
+              }, error);
               throw error;
             }
             try {
@@ -218,7 +218,7 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
             } catch (error) {
               $cleanup(() => {
                 dropU?.(iter[1]);
-              });
+              }, error);
               throw error;
             }
             dropU?.(iter[1]);
@@ -236,11 +236,11 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
               } catch (error) {
                 $cleanup(() => {
                   dropU?.(iter[1]);
-                });
+                }, error);
                 throw error;
               }
               dropU?.(iter[1]);
-            });
+            }, error);
             throw error;
           }
         }
@@ -260,7 +260,7 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
               } catch (error) {
                 $cleanup(() => {
                   dropU?.(it.of[1]);
-                });
+                }, error);
                 throw error;
               }
               dropU?.(it.of[1]);
@@ -294,7 +294,7 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
             } catch (error) {
               $cleanup(() => {
                 dropU?.(it.of[1]);
-              });
+              }, error);
               throw error;
             }
             dropU?.(it.of[1]);
@@ -325,7 +325,7 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
               } catch (error) {
                 $cleanup(() => {
                   dropU?.(it.of[1]);
-                });
+                }, error);
                 throw error;
               }
               dropU?.(it.of[1]);
@@ -350,7 +350,7 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem, dropIItemItem, dropII
         } catch (error) {
           $cleanup(() => {
             dropU?.(paired[1]);
-          });
+          }, error);
           throw error;
         }
         dropU?.(paired[1]);

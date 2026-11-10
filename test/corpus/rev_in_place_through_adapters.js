@@ -9,6 +9,7 @@ import {
   $held,
   $iterator,
   $lent,
+  $live,
   $mapEnds,
   $nextBack,
   $nth,
@@ -17,6 +18,7 @@ import {
   $skipping,
   $stepByEnds,
   $taking,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -60,15 +62,19 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
-        });
+        }, error);
         throw error;
       }
       acc = tmp;
     }
     result = acc;
     dropF?.(f);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log(`drop ${count.at} ${count.end}`);
+    if ($live()) {
+      console.log(`drop ${count.at} ${count.end}`);
+    }
   }
   return result;
 }
@@ -151,8 +157,12 @@ function main() {
   try {
     const value = $nth($lent(rev), 1);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    rev.return();
+    if ($live()) {
+      rev.return();
+    }
   }
   console.log(
     `${$foldBack(
@@ -209,8 +219,12 @@ function main() {
   try {
     const value$1 = $nth($lent(value), 2);
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value.return();
+    if ($live()) {
+      value.return();
+    }
   }
   console.log(
     `${$foldBack(
@@ -279,8 +293,12 @@ function main() {
   try {
     const value = $nextBack(filter);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    filter.return();
+    if ($live()) {
+      filter.return();
+    }
   }
 }
 //# sourceMappingURL=case.js.map

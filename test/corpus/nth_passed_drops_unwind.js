@@ -59,7 +59,7 @@ function totalSumD_sum(iter, dropI) {
       if (!iter.ownFold) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownFold) {
@@ -85,7 +85,7 @@ function kept(v, d) {
   } catch (error) {
     $cleanup(() => {
       $dropItems(v, dDrop_drop);
-    });
+    }, error);
     throw error;
   }
   return v;
@@ -209,15 +209,17 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         stepBy.return();
-      });
+      }, error);
       throw error;
     }
     try {
       stepBy.return();
     } catch (error) {
-      if (r.TAG === "Ok") {
-        accDrop_drop(r._0);
-      }
+      $cleanup(() => {
+        if (r.TAG === "Ok") {
+          accDrop_drop(r._0);
+        }
+      }, error);
       throw error;
     }
     function map(a) {

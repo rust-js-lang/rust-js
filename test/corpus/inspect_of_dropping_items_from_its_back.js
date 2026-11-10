@@ -8,11 +8,13 @@ import {
   $findBack,
   $held,
   $iter,
+  $live,
   $mapEnds,
   $next,
   $nextBack,
   $print,
   $rev,
+  $unwindsOn,
   inspectDoubleEndedIterator_nextBack,
   iterator_inspect,
 } from "@rust-js/std";
@@ -42,15 +44,23 @@ function main() {
   let found;
   try {
     found = $findBack(value, (d) => d[0] % 2 === 1, undefined, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value.return();
+    if ($live()) {
+      value.return();
+    }
   }
   try {
     const value = found?.[0];
     console.log(`| rfind ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (found != null) {
-      dDrop_drop(found);
+    if ($live()) {
+      if (found != null) {
+        dDrop_drop(found);
+      }
     }
   }
   let it = $held(
@@ -76,22 +86,34 @@ function main() {
     try {
       const value = back?.[0];
       console.log(`| next_back ${value == null ? "None" : `Some(${value})`}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      if (back != null) {
-        dDrop_drop(back);
+      if ($live()) {
+        if (back != null) {
+          dDrop_drop(back);
+        }
       }
     }
     const front = $next(it);
     try {
       const value = front?.[0];
       console.log(`| next ${value == null ? "None" : `Some(${value})`}`);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      if (front != null) {
-        dDrop_drop(front);
+      if ($live()) {
+        if (front != null) {
+          dDrop_drop(front);
+        }
       }
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
   console.log("| dropped");
   function inspect$1(d) {
@@ -121,15 +143,23 @@ function main() {
   );
   try {
     found = $findBack(value$1, (d) => d[0] > 2, undefined, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    value$1.return();
+    if ($live()) {
+      value$1.return();
+    }
   }
   try {
     const value = found?.[0];
     console.log(`| rev rfind ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (found != null) {
-      dDrop_drop(found);
+    if ($live()) {
+      if (found != null) {
+        dDrop_drop(found);
+      }
     }
   }
   function inspect$3(d) {
@@ -152,8 +182,12 @@ function main() {
     }
     const first = next != null ? map(next) : undefined;
     console.log(`| rev next ${first == null ? "None" : `Some(${first})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    it.return();
+    if ($live()) {
+      it.return();
+    }
   }
   console.log("| end");
 }

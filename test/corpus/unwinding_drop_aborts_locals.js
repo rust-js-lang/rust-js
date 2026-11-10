@@ -21,7 +21,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         carefulDrop_drop(_a);
-      });
+      }, error);
       throw error;
     }
   });
@@ -46,7 +46,7 @@ function main() {
         if (a.startsWith("bomb")) {
           throw new Error(`${a} went off`);
         }
-      });
+      }, error);
       throw error;
     }
   });

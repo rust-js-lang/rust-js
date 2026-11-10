@@ -1150,7 +1150,9 @@ import {
   $cmp,
   $dropEach,
   $dropItems,
+  $live,
   $sortedEntries,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export const loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
@@ -1169,8 +1171,12 @@ export function empty(map) {
     $dropItems($sortedEntries(map, $cmp), ([, value]) => {
       loudDrop_drop(value);
     });
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    map.clear();
+    if ($live()) {
+      map.clear();
+    }
   }
 }
 
@@ -1179,8 +1185,12 @@ export function replace(slot, value) {
     if (slot.value != null) {
       loudDrop_drop(slot.value);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    slot.value = value;
+    if ($live()) {
+      slot.value = value;
+    }
   }
   return slot.value[0];
 }
@@ -1324,10 +1334,21 @@ Differences:
   payload is the `&JsError`. `expect(msg)` keeps its message ([0643](../decisions/0643-unwrap-of-a-throwing-call-is-the-call.md)). So is each call of the branches of an `if` unwrapped where it's made ([0747](../decisions/0747-unwrap-of-a-throwing-call-each-branch-makes.md)).
 - **Recursion is as deep as the JS engine's stack allows,** about 10,000
   calls in Node and in browsers, where Rust's main thread has 8 MB:
-  deeper, JS throws `RangeError: Maximum call stack size exceeded`, which
-  isn't a panic Rust would have. A recursion as deep as its input, a DFS
-  or a flood fill of a large grid, is written with an explicit stack, a
-  `Vec` of what's left to visit ([0262](../decisions/0262-when-rust-and-js-disagree.md)).
+  deeper, the stack overflows where Rust's wouldn't. A recursion as deep
+  as its input, a DFS or a flood fill of a large grid, is written with an
+  explicit stack, a `Vec` of what's left to visit ([0262](../decisions/0262-when-rust-and-js-disagree.md)).
+- **A stack overflow is Rust's abort,** where both overflow: std's
+  `thread 'main' has overflowed its stack` and `fatal runtime error: stack
+  overflow, aborting` on stderr, exit 134, no destructor run, and no
+  `catch_unwind` catches it. The engine's own error is told apart from
+  any other (`$isStackOverflow`); a scope whose drops a program sees is
+  `try { .. } catch (error) { throw $unwindsOn(error); } finally { if
+  ($live()) { .. } }`, and a cleanup `$cleanup(() => { .. }, error)`, each
+  aborting before its drops. A library's export a JS host calls gives the
+  host the engine's error, thrown ([0692](../decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md), amended, #1193).
+- **What rust-js doesn't support as a program runs is refused then,**
+  `rust-js does not support ..`, which no `catch_unwind` takes for a panic
+  and past which no drop runs (`$unsupported`, #1132, #1180).
 
 What's refused of panics and processes is in
 [the limitations](limitations.md#panics-processes-and-io).
@@ -1599,8 +1620,8 @@ React and JSX are [their own pages](README.md#react).
     zip's of its sides', as std's `Zip` combines them
     ([0899](../decisions/0899-a-flatten-held-is-stds.md), amended), or
     `(0, None)`. An endless `n..`'s is Rust's, `(usize::MAX, None)`.
-15. Recursion deeper than about 10,000 calls throws a `RangeError`, the JS
-    engine's stack's limit.
+15. Recursion deeper than about 10,000 calls overflows the JS engine's
+    stack, where Rust's 8 MB wouldn't: Rust's abort, exit 134 (#1193).
 16. Where the crate's iterator's impl writes its own `fold`, std's
     consumers call it (ADRs 0687, 0690); in a library, it's given no drops:
     an accumulator with a destructor that it drops, or that a panic in it

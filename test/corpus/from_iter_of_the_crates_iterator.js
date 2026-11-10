@@ -15,11 +15,13 @@ import {
   $iter,
   $iterator,
   $lent,
+  $live,
   $next,
   $rangeInclusiveNext,
   $roomForHint,
   $sortedKeys,
   $traitImpl,
+  $unwindsOn,
   iterator_map,
 } from "@rust-js/std";
 
@@ -98,7 +100,7 @@ function given(j, dropJIntoIter) {
   } catch (error) {
     $cleanup(() => {
       dropJIntoIter?.(iter);
-    });
+    }, error);
     throw error;
   }
   dropJIntoIter?.(iter);
@@ -164,9 +166,13 @@ function main() {
   );
   try {
     console.log(`${louds.map((l) => l[0]).reduce((a, b) => (a + b) >>> 0, 0)}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of louds) {
-      loudDrop_drop(item);
+    if ($live()) {
+      for (const item of louds) {
+        loudDrop_drop(item);
+      }
     }
   }
   console.log(
@@ -188,8 +194,12 @@ function main() {
     console.log(`[${Array.from($lent($iterator(held, counterIterator_next)).take(1)).join(", ")}]`);
     console.log(`[${Array.from($lent($iterator(held, counterIterator_next))).join(", ")}]`);
     console.log("end");
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    console.log(`drop ${held[1]}`);
+    if ($live()) {
+      console.log(`drop ${held[1]}`);
+    }
   }
 }
 //# sourceMappingURL=case.js.map

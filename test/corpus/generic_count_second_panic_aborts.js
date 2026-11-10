@@ -31,7 +31,7 @@ function howMany(items, dropI, dropIItem) {
       if (!iter.ownFold && !iter.ownCount) {
         dropI?.(iter);
       }
-    });
+    }, error);
     throw error;
   }
   if (!iter.ownFold && !iter.ownCount) {

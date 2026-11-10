@@ -12,10 +12,12 @@ import {
   $held,
   $iter,
   $lent,
+  $live,
   $next,
   $nthDropping,
   $roomForHint,
   $traitImpl,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function entry() {
@@ -99,7 +101,7 @@ function tExt(TIterator, TItemItemSize, dropT, dropTItem, dropTItemItem, dropTIt
         } catch (error) {
           $cleanup(() => {
             flatMap.return();
-          });
+          }, error);
           throw error;
         }
         flatMap.return();
@@ -132,11 +134,13 @@ function main() {
     item$live = false;
     tmp$1 = [value, tmp];
   } catch (error) {
-    if (item$live) {
-      for (const item of value) {
-        dDrop_drop(item);
+    $cleanup(() => {
+      if (item$live) {
+        for (const item of value) {
+          dDrop_drop(item);
+        }
       }
-    }
+    }, error);
     throw error;
   }
   const flat = tExt(
@@ -155,9 +159,13 @@ function main() {
   ).flat($iter(tmp$1), intoIterator);
   try {
     console.log(`flat [${numbers(flat).join(", ")}]`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of flat) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of flat) {
+        dDrop_drop(item);
+      }
     }
   }
   let tmp$4;
@@ -167,9 +175,11 @@ function main() {
   try {
     tmp$2 = ds([]);
   } catch (error) {
-    for (const item of value$1) {
-      dDrop_drop(item);
-    }
+    $cleanup(() => {
+      for (const item of value$1) {
+        dDrop_drop(item);
+      }
+    }, error);
     throw error;
   }
   let item$live$2 = true;
@@ -180,16 +190,18 @@ function main() {
     item$live$2 = false;
     tmp$4 = [value$1, tmp$2, tmp$3];
   } catch (error) {
-    if (item$live$2) {
-      for (const item of tmp$2) {
-        dDrop_drop(item);
+    $cleanup(() => {
+      if (item$live$2) {
+        for (const item of tmp$2) {
+          dDrop_drop(item);
+        }
       }
-    }
-    if (item$live$1) {
-      for (const item of value$1) {
-        dDrop_drop(item);
+      if (item$live$1) {
+        for (const item of value$1) {
+          dDrop_drop(item);
+        }
       }
-    }
+    }, error);
     throw error;
   }
   const flattened = tExt(
@@ -208,9 +220,13 @@ function main() {
   ).flattened($iter(tmp$4), intoIterator);
   try {
     console.log(`flattened [${numbers(flattened).join(", ")}]`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    for (const item of flattened) {
-      dDrop_drop(item);
+    if ($live()) {
+      for (const item of flattened) {
+        dDrop_drop(item);
+      }
     }
   }
   let tmp$6;
@@ -222,11 +238,13 @@ function main() {
     item$live$3 = false;
     tmp$6 = [value$2, tmp$5];
   } catch (error) {
-    if (item$live$3) {
-      for (const item of value$2) {
-        dDrop_drop(item);
+    $cleanup(() => {
+      if (item$live$3) {
+        for (const item of value$2) {
+          dDrop_drop(item);
+        }
       }
-    }
+    }, error);
     throw error;
   }
   const second = tExt(
@@ -246,9 +264,13 @@ function main() {
   try {
     const value = second?.[0];
     console.log(`second ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    if (second != null) {
-      dDrop_drop(second);
+    if ($live()) {
+      if (second != null) {
+        dDrop_drop(second);
+      }
     }
   }
   const sums = tExt({ next: $next }, 4).flat($iter([[1, 2], [3]]), {

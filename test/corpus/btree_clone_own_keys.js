@@ -96,7 +96,7 @@ function main() {
             dDrop_drop(key);
             dDrop_drop(value);
           }
-        });
+        }, error);
         throw error;
       }
       try {
@@ -109,7 +109,7 @@ function main() {
             dDrop_drop(key);
             dDrop_drop(value$1);
           }
-        });
+        }, error);
         throw error;
       }
       let d;
@@ -121,7 +121,7 @@ function main() {
             dDrop_drop(key);
             dDrop_drop(value);
           }
-        });
+        }, error);
         throw error;
       }
       try {
@@ -134,7 +134,7 @@ function main() {
             dDrop_drop(key);
             dDrop_drop(value);
           }
-        });
+        }, error);
         throw error;
       }
       let tmp;
@@ -146,7 +146,7 @@ function main() {
             dDrop_drop(key);
             dDrop_drop(value);
           }
-        });
+        }, error);
         throw error;
       }
       try {
@@ -159,7 +159,7 @@ function main() {
             dDrop_drop(key);
             dDrop_drop(value);
           }
-        });
+        }, error);
         throw error;
       }
       let w;
@@ -184,7 +184,7 @@ function main() {
             dDrop_drop(key);
             dDrop_drop(value);
           }
-        });
+        }, error);
         throw error;
       }
       try {
@@ -203,7 +203,7 @@ function main() {
             dDrop_drop(key);
             dDrop_drop(value);
           }
-        });
+        }, error);
         throw error;
       }
       const value = [2];
@@ -221,7 +221,7 @@ function main() {
             dDrop_drop(key);
             dDrop_drop(value);
           }
-        });
+        }, error);
         throw error;
       }
       dDrop_drop(value);
@@ -236,7 +236,7 @@ function main() {
             dDrop_drop(key);
             dDrop_drop(value);
           }
-        });
+        }, error);
         throw error;
       }
       for (const [key, value] of $sortedEntries(m, dOrd_cmp)) {
@@ -253,7 +253,7 @@ function main() {
           for (const key of $sortedKeys(s, dOrd_cmp)) {
             dDrop_drop(key);
           }
-        });
+        }, error);
         throw error;
       }
       try {
@@ -263,7 +263,7 @@ function main() {
           for (const key of $sortedKeys(s, dOrd_cmp)) {
             dDrop_drop(key);
           }
-        });
+        }, error);
         throw error;
       }
       try {
@@ -273,7 +273,7 @@ function main() {
           for (const key of $sortedKeys(s, dOrd_cmp)) {
             dDrop_drop(key);
           }
-        });
+        }, error);
         throw error;
       }
       let t;
@@ -287,7 +287,7 @@ function main() {
           for (const key of $sortedKeys(s, dOrd_cmp)) {
             dDrop_drop(key);
           }
-        });
+        }, error);
         throw error;
       }
       try {
@@ -304,7 +304,7 @@ function main() {
           for (const key of $sortedKeys(s, dOrd_cmp)) {
             dDrop_drop(key);
           }
-        });
+        }, error);
         throw error;
       }
       const d = [1];
@@ -319,7 +319,7 @@ function main() {
           for (const key of $sortedKeys(s, dOrd_cmp)) {
             dDrop_drop(key);
           }
-        });
+        }, error);
         throw error;
       }
       dDrop_drop(d);
@@ -332,7 +332,7 @@ function main() {
           for (const key of $sortedKeys(s, dOrd_cmp)) {
             dDrop_drop(key);
           }
-        });
+        }, error);
         throw error;
       }
       for (const key of $sortedKeys(s, dOrd_cmp)) {
@@ -349,7 +349,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -359,7 +359,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   let w;
@@ -381,7 +381,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -399,7 +399,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   let w$1;
@@ -413,7 +413,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -433,7 +433,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   let s;
@@ -450,7 +450,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -469,7 +469,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -488,7 +488,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   let tmp;
@@ -508,7 +508,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -534,7 +534,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -555,7 +555,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   // Of keys a hashed map finds, in generic code.
@@ -579,7 +579,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -602,7 +602,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -627,7 +627,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -645,7 +645,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -660,7 +660,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   try {
@@ -672,7 +672,7 @@ function main() {
       for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {
         dDrop_drop(key);
       }
-    });
+    }, error);
     throw error;
   }
   for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {

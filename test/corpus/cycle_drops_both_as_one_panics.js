@@ -37,7 +37,7 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         cycled.return();
-      });
+      }, error);
       throw error;
     }
     cycled.return();
@@ -58,7 +58,7 @@ function main() {
   } catch (error) {
     $cleanup(() => {
       cycled.return();
-    });
+    }, error);
     throw error;
   }
   cycled.return();

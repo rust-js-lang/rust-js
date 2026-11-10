@@ -2,5 +2,5 @@
 // error where it's shown, as only an assertion that fails may show one
 // (ADR 0331).
 function $typeIdShown() {
-  throw new Error("rust-js does not support showing a `TypeId`'s hash, which it doesn't keep");
+  throw $unsupported("rust-js does not support showing a `TypeId`'s hash, which it doesn't keep");
 }
