@@ -6,11 +6,11 @@
 // what's unused for a week, then the least recently used past each one's
 // cap, and below the disk's floor until it's back (test/bounded.ts).
 
-import { readdirSync, readFileSync, rmSync, statSync, utimesSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
-import { floorBytes, machineStore } from "./bounded";
+import { floorBytes, machineStore, retiredMachineStore } from "./bounded";
 import { checkoutTarget, target } from "./packages-of";
 
 const day = 24 * 60 * 60;
@@ -100,10 +100,35 @@ export function pruneKept(
  * programs' builds and verified runs, which nothing reads now. */
 export const retiredStores = [join(checkoutTarget, "native-cache"), join(checkoutTarget, "corpus-cache")];
 
+/** Each of the machine's stores where it was, `retired`, moved to where it
+ * is, `current`, once (#1213): a store the main checkout has already
+ * removed, as it's the one kept; then `retired` itself, left empty. The
+ * same disk, so a move is a rename, and a store a test is reading goes on
+ * being read from where it's moved to. */
+export function adoptRetiredStores(retired = retiredMachineStore, current = machineStore) {
+  if (!existsSync(retired)) return;
+  mkdirSync(current, { recursive: true });
+  for (const name of readdirSync(retired)) {
+    const from = join(retired, name);
+    const to = join(current, name);
+    if (existsSync(to)) rmSync(from, { recursive: true, force: true });
+    else {
+      try {
+        renameSync(from, to);
+      } catch {
+        rmSync(from, { recursive: true, force: true });
+      }
+    }
+  }
+  rmSync(retired, { recursive: true, force: true });
+}
+
 /** Each store of `keptStores` pruned, each to its cap and, where `free`
- * says the disk is below its floor, to above it, and each retired store
- * removed whole. */
+ * says the disk is below its floor, to above it, each retired store
+ * removed whole, and the machine's stores where they were moved where they
+ * are. */
 export function pruneKeptStores(free?: () => number) {
+  adoptRetiredStores();
   for (const dir of retiredStores) if (dir !== verifiedRuns) rmSync(dir, { recursive: true, force: true });
   for (const { dir, cap } of keptStores) pruneKept(dir, free ? { cap, free } : { cap });
   pruneKeptApps(free ? { free } : {});

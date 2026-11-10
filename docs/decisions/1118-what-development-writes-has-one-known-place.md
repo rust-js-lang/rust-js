@@ -29,7 +29,12 @@ and reported by `bun run disk`:
 1. **The main checkout's `.cache/`**, gitignored: the machine's stores,
    which every worktree shares, found through the git common dir
    (`test/bounded.ts`' `mainCheckoutOf`, without a process). It was
-   `~/.cache/rust-js`: inside the project now, where it's seen.
+   `~/.cache/rust-js`: inside the project now, where it's seen. Each
+   machine's old one is moved there once, by the first prune of the
+   stores, every `check:fast`'s and `bun run test`'s (`test/kept.ts`'
+   `adoptRetiredStores`): a store the main checkout already has wins, the
+   old one's removed, and so is `~/.cache/rust-js`, so no machine keeps an
+   orphan.
 2. **Each worktree's `target/`**: its build, and its stores, each with a
    cap. The crate corpus's projects get one, 2 GiB, the least recently
    measured crate first (a crate rebuilt about every third build of the

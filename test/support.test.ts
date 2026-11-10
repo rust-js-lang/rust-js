@@ -10,7 +10,7 @@ import { basename, dirname, join, relative } from "node:path";
 import { bytesOf } from "../tooling/bounded.js";
 import { floorBytes, mainCheckoutOf } from "./bounded";
 import { boundEntries, pinnedToolchains, unpinnedToolchains } from "../scripts/disk";
-import { keptAppsCap, keptStores, mayKeep, nativeCache, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores } from "./kept";
+import { adoptRetiredStores, keptAppsCap, keptStores, mayKeep, nativeCache, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
 import { boundCrateProjects } from "../scripts/crate-corpus";
@@ -490,4 +490,25 @@ test("a store's entries are held to its cap and the floor", () => {
   expect(readdirSync(dir)).toEqual(["new"]);
   boundEntries(dir, Number.POSITIVE_INFINITY, () => floorBytes - 1);
   expect(readdirSync(dir)).toEqual([]);
+});
+
+// The machine's stores were `~/.cache/rust-js`'s: each moved to the main
+// checkout's `.cache/` once, one it has already kept there, and the old
+// place removed, so no machine keeps an orphan (#1213).
+test("the machine's stores where they were are moved where they are, once", () => {
+  const dir = fixture("retired-stores");
+  const retired = join(dir, "home-cache");
+  const current = join(dir, "checkout-cache");
+  mkdirSync(join(retired, "native-cache", "p"), { recursive: true });
+  writeFileSync(join(retired, "native-cache", "p", "build"), "old");
+  mkdirSync(join(retired, "test-maps"), { recursive: true });
+  writeFileSync(join(retired, "test-maps", "m.json"), "{}");
+  mkdirSync(join(current, "test-maps"), { recursive: true });
+  writeFileSync(join(current, "test-maps", "kept.json"), "{}");
+  adoptRetiredStores(retired, current);
+  expect(existsSync(retired)).toBe(false);
+  expect(readFileSync(join(current, "native-cache", "p", "build"), "utf8")).toBe("old");
+  expect(readdirSync(join(current, "test-maps"))).toEqual(["kept.json"]);
+  adoptRetiredStores(retired, current);
+  expect(readdirSync(current).sort()).toEqual(["native-cache", "test-maps"]);
 });

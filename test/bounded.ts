@@ -7,7 +7,7 @@
 // by too, and `bun run disk` reports each.
 
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
 /** The disk's floor of the loop's stores, DEVELOPMENT.md's: below it
@@ -36,6 +36,11 @@ export function mainCheckoutOf(dir: string): string {
  * project, where what development writes is seen (#1213): a task's times,
  * the test maps (#932), native programs' builds and verified runs (#1047). */
 export const machineStore = join(mainCheckoutOf(checkout), ".cache");
+
+/** Where the machine's stores were before they were the main checkout's
+ * (#1213): `adoptRetiredStores` moves each one there, once, so no machine
+ * keeps an orphan. */
+export const retiredMachineStore = join(homedir(), ".cache", "rust-js");
 
 /** The temp root of what the tests and their tools make and leave, the
  * system's temp directory's `rust-js-dev/`: every test process's `TMPDIR`
