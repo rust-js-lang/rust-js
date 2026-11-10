@@ -30,6 +30,7 @@ function $collectOptions(items, boxed = false, into, drop, restFirst = false, si
       values.push(value);
     }
   }, it, values, drop, restFirst);
+  grown?.keep(values);
   if (!failed) return into ? into(values) : values;
   it.return?.();
   if (drop) $dropItems(values, drop);

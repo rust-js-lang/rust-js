@@ -476,14 +476,16 @@ fn borrowed_from_self<'tcx>(body: &mir::Body<'tcx>, place: mir::Place<'tcx>) -> 
 /// A call of `callee` with `args` that collects an iterator into a `Vec`,
 /// or a `Result` or an `Option` of one, `collect()` or `from_iter`: the
 /// iterator's type, the collection's, the `Ok`'s or the `Some`'s, and the
-/// type of the items it collects, each `Ok`'s or `Some`'s (#672, #796).
-/// Another collection's too, which the caller tells apart.
+/// type of the items it collects, each `Ok`'s or `Some`'s (#672, #796),
+/// and whether it's a `Result`'s or an `Option`'s, which std's
+/// `GenericShunt` collects (#1180). Another collection's too, which the
+/// caller tells apart.
 pub(crate) fn collected_items<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     callee: DefId,
     args: ty::GenericArgsRef<'tcx>,
-) -> Option<(Ty<'tcx>, Ty<'tcx>, Ty<'tcx>)> {
+) -> Option<(Ty<'tcx>, Ty<'tcx>, Ty<'tcx>, bool)> {
     let iterator = std_item(tcx, StdItem::Iterator);
     let projected = |trait_id: DefId, name: &str, of: Ty<'tcx>| {
         let ty = Ty::new_projection(tcx, ty::IsRigid::No, trait_method(tcx, trait_id, name), [of]);
@@ -502,10 +504,10 @@ pub(crate) fn collected_items<'tcx>(
         if [sym::Result, sym::Option].into_iter().any(|name| tcx.is_diagnostic_item(name, adt.did())));
     match (fallible, item.kind(), output.kind()) {
         (true, ty::Adt(_, item_args), ty::Adt(_, output_args)) => {
-            Some((iter, output_args.types().next()?, item_args.types().next()?))
+            Some((iter, output_args.types().next()?, item_args.types().next()?, true))
         }
         (true, ..) => None,
-        (false, ..) => Some((iter, output, item)),
+        (false, ..) => Some((iter, output, item, false)),
     }
 }
 

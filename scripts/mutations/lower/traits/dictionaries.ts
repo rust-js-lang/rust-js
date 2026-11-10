@@ -696,4 +696,12 @@ export const mutations: Mutation[] = [
     replace: "            let bytes = Expr::var(\"value\");\n",
     tests: ["test/corpus.test.ts", "-t", "^as_ref_bytes.rs$"],
   },
+  {
+    name: "dictionary-grown-dropped",
+    breaks: "generic code's `extend` through its dictionary, in a crate that keeps capacities, isn't grown as std's (#1180)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "        let items = self.dictionary_grown(collection.clone(), items, (ty, item), span, &mut body)?;\n",
+    replace: "        let _ = self.dictionary_grown(collection.clone(), items.clone(), (ty, item), span, &mut body)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
+  },
 ];

@@ -17,8 +17,14 @@ function $heapRebuildTail(heap, start, ord) {
 }
 
 // `heap.append(&mut other)`: the smaller's items after the larger's, `other`
-// left empty.
+// left empty. Std swaps the two first where `other` is longer, so each has
+// the other's capacity, where they're kept (ADR 0419, amended, #1180).
 function $heapAppend(heap, other, ord) {
+  if (heap.length < other.length && ($capacities.has(heap) || $capacities.has(other))) {
+    const [mine, theirs] = [$capacity(heap), $capacity(other)];
+    $capacities.set(heap, theirs);
+    $capacities.set(other, mine);
+  }
   const [first, rest] = heap.length < other.length ? [other.slice(), heap.slice()] : [heap.slice(), other.slice()];
   heap.length = 0;
   $extend(heap, first);

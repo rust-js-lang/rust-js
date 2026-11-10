@@ -53,7 +53,7 @@ function main() {
       4,
     ),
   );
-  console.log(`new ${v.length} ${$capacity(v)}`);
+  console.log(`new ${v.length} ${$capacity(v, 4)}`);
   v = $withCapacity(2);
   $extend(
     v,
@@ -71,7 +71,7 @@ function main() {
       4,
     ),
   );
-  console.log(`with capacity ${v.length} ${$capacity(v)}`);
+  console.log(`with capacity ${v.length} ${$capacity(v, 4)}`);
   v = [1, 2];
   $extend(
     v,
@@ -81,7 +81,7 @@ function main() {
       4,
     ),
   );
-  console.log(`literal ${v.length} ${$capacity(v)}`);
+  console.log(`literal ${v.length} ${$capacity(v, 4)}`);
   v = new Array(3).fill(0);
   $roomFor(v.length + 2, 1);
   $reserve(v, 2, 1);
@@ -95,7 +95,7 @@ function main() {
       1,
     ),
   );
-  console.log(`bytes ${v.length} ${$capacity(v)}`);
+  console.log(`bytes ${v.length} ${$capacity(v, 1)}`);
   v = $range(0, 3);
   $roomFor(v.length + 1, 4);
   $reserveExact(v, 1);
@@ -107,7 +107,7 @@ function main() {
       4,
     ),
   );
-  console.log(`collected ${v.length} ${$capacity(v)}`);
+  console.log(`collected ${v.length} ${$capacity(v, 4)}`);
   const h = [];
   $heapExtend(
     h,
@@ -138,7 +138,7 @@ function main() {
       true,
     ),
   );
-  console.log(`deque ${d.length} ${$capacity(d)}`);
+  console.log(`deque ${d.length} ${$capacity(d, 4)}`);
   const units = [];
   $extend(
     units,

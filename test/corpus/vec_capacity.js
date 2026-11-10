@@ -2,6 +2,7 @@
 
 import {
   $capacity,
+  $grew,
   $keepCapacity,
   $reserve,
   $roomFor,
@@ -16,24 +17,24 @@ export function entry() {
 
 function main() {
   const v = $withCapacity(10);
-  console.log(`${v.length} ${$capacity(v) >= 10}`);
-  v.push(1, 2, 3);
-  const before = $capacity(v);
+  console.log(`${v.length} ${$capacity(v, 4) >= 10}`);
+  $grew(v, 4, v.length, v.push(1, 2, 3));
+  const before = $capacity(v, 4);
   $keepCapacity(v);
   v.length = 0;
-  console.log(`${$capacity(v) === before}`);
+  console.log(`${$capacity(v, 4) === before}`);
   $roomFor(v.length + 20, 4);
   $reserve(v, 20, 4);
-  console.log(`${$capacity(v) >= 20}`);
-  v.push(7);
+  console.log(`${$capacity(v, 4) >= 20}`);
+  $grew(v, 4, v.length, v.push(7));
   $shrinkTo(v, 0);
-  console.log(`${$capacity(v) >= v.length} ${$capacity(v) < 20}`);
+  console.log(`${$capacity(v, 4) >= v.length} ${$capacity(v, 4) < 20}`);
   const w = [1, 2, 3, 4];
-  const c = $capacity(w);
+  const c = $capacity(w, 4);
   $keepCapacity(w);
   $truncate(w, 1);
   $keepCapacity(w);
   w.pop();
-  console.log(`${$capacity(w) === c} ${w.length}`);
+  console.log(`${$capacity(w, 4) === c} ${w.length}`);
 }
 //# sourceMappingURL=case.js.map

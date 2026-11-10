@@ -39,7 +39,7 @@ pub(super) fn type_fact_params<'tcx>(
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     given: Given<'_>,
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
-    drops: ItemDrops<'_, 'tcx>,
+    (drops, keeps_capacity): (ItemDrops<'_, 'tcx>, bool),
 ) -> FactParams<'tcx> {
     let iterator = std_item(tcx, StdItem::Iterator);
     // What `std_iterator_steps` steps a compiled std iterator's struct by.
@@ -98,7 +98,7 @@ pub(super) fn type_fact_params<'tcx>(
                 for (id, each) in collect_asks(
                     recognition,
                     typing_env,
-                    drops,
+                    (drops, keeps_capacity),
                     caller,
                     (callee, args),
                     &mut asking.carried_super,
@@ -266,7 +266,7 @@ pub(super) fn type_fact_params<'tcx>(
             for (id, each) in collect_asks(
                 recognition,
                 typing_env,
-                drops,
+                (drops, keeps_capacity),
                 caller,
                 (callee, args),
                 &mut asking.carried_super,
@@ -599,7 +599,7 @@ impl<'tcx> ItemDrops<'_, 'tcx> {
 fn collect_asks<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
-    drops: ItemDrops<'_, 'tcx>,
+    (drops, keeps_capacity): (ItemDrops<'_, 'tcx>, bool),
     caller: DefId,
     (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
     carried_super: &mut IndexSet<(DefId, DefId, TypeFact)>,
@@ -607,7 +607,13 @@ fn collect_asks<'tcx>(
     let (tcx, foreign) = (recognition.tcx, recognition.foreign);
     let asked_by = |typing_env: ty::TypingEnv<'tcx>, owner: DefId, args: ty::GenericArgsRef<'tcx>| {
         let mut asked = in_place_asked(tcx, foreign, typing_env, drops, owner, (callee, args));
-        asked.extend(grown_asked(recognition, typing_env, owner, (callee, args)));
+        asked.extend(grown_asked(
+            recognition,
+            typing_env,
+            owner,
+            (callee, args),
+            keeps_capacity,
+        ));
         asked
     };
     let default_of = tcx
@@ -750,7 +756,7 @@ fn in_place_asked<'tcx>(
     (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
 ) -> Vec<Asked<'tcx>> {
     use crate::lower::recognition::{InPlaceSource, collected_items, fits_in_place, held_facts, in_place_source};
-    let Some((iter, _, dest)) = collected_items(tcx, typing_env, callee, args) else {
+    let Some((iter, _, dest, _)) = collected_items(tcx, typing_env, callee, args) else {
         return Vec::new();
     };
     if !drops.drop(typing_env, caller, dest) {
@@ -782,29 +788,43 @@ fn in_place_asked<'tcx>(
 
 /// What a collect std grows as a `Vec`, `collect()` or `from_iter`, of
 /// `caller`'s asks of items whose size is a caller's, of an iterator whose
-/// hint may run the crate's own (`hint_reaches_own`): their size, a slot's
+/// hint may run the crate's own (`hint_reaches_own`), or, of a crate that
+/// keeps capacities, of one that isn't `TrustedLen`: their size, a slot's
 /// `TSize` or a built type's, `(T, u8)`'s, by which std's `Vec` is full
-/// and asks the hint again (#796). As the lowering's collect reads it,
-/// `grown_item_size`, wherever it's called.
+/// and asks the hint again (#796, #1180). As the lowering's collect reads
+/// it, `grown_item_size`, wherever it's called. And of a crate that keeps
+/// capacities, of a call that adds to a `Vec`, a `VecDeque` or a
+/// `BinaryHeap` (`grown_vec_item`), its items' size, by which std grows it
+/// (`capacity_item_size`, #1180).
 fn grown_asked<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     caller: DefId,
     (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+    keeps_capacity: bool,
 ) -> Vec<Asked<'tcx>> {
-    let tcx = recognition.tcx;
-    let Some((iter, output, dest)) = crate::lower::recognition::collected_items(tcx, typing_env, callee, args) else {
-        return Vec::new();
-    };
+    let (tcx, foreign) = (recognition.tcx, recognition.foreign);
     // Its types as the lowering asks them, its opaque ones revealed.
     let revealed = crate::lower::recognition::Recognition {
         typing_env: typing_env.with_post_analysis_normalized(tcx),
         ..*recognition
     };
-    if !revealed.grows_by_callers_size(output, iter, dest) {
+    let grown = (keeps_capacity)
+        .then(|| revealed.grown_vec_item(callee, args))
+        .flatten()
+        .filter(|item| matches!(item.kind(), ty::Param(_)));
+    if let Some(item) = grown {
+        return asked_of(tcx, foreign, typing_env, caller, (item, TypeFact::Size), &None)
+            .into_iter()
+            .collect();
+    }
+    let Some((iter, output, dest, shunted)) = crate::lower::recognition::collected_items(tcx, typing_env, callee, args)
+    else {
+        return Vec::new();
+    };
+    if !revealed.grows_by_callers_size(output, iter, dest, (shunted, keeps_capacity)) {
         return Vec::new();
     }
-    let foreign = recognition.foreign;
     let size = asked_of(tcx, foreign, typing_env, caller, (dest, TypeFact::Size), &None);
     size.into_iter().collect()
 }

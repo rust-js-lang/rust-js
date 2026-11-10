@@ -5,6 +5,7 @@ import {
   $extend,
   $extendMap,
   $extendText,
+  $grownBy,
   $iterator,
   $lazyRange,
   $print,
@@ -49,7 +50,7 @@ function outer(items, CExtendU32, CDefault, IIntoIterInPlace) {
 
 const Buf = {
   fill(buf, items) {
-    $extend(buf.v, items);
+    $extend(buf.v, $grownBy(buf.v, items, 4));
   },
 };
 
@@ -65,7 +66,7 @@ function letters(c, n, CExtendChar) {
 function main() {
   const vecExtend = {
     extend(collection, items) {
-      $extend(collection.value, items);
+      $extend(collection.value, $grownBy(collection.value, items, 4));
     },
   };
   const hashSetExtend = {

@@ -82,13 +82,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let values = &mut given.into_iter();
                 let mut arg = || values.next().expect("rustc checked the arguments");
                 let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
+                // Its items' size, by which std grows it, and of none answers
+                // `usize::MAX`: its caller's where it's a type parameter's
+                // (#1180).
+                // Of one whose size no caller gives, kept as it was (#1180).
+                let grown_size = self.capacity_item_size(generic_args.type_at(0));
+                let reserved_size = grown_size
+                    .clone()
+                    .unwrap_or_else(|| self.room_item_size(generic_args.type_at(0)));
                 match (op, self.krate.keeps_capacity) {
-                    (CapacityOp::Of, _) => helper("$capacity", vec![arg()]),
+                    (CapacityOp::Of, _) => helper("$capacity", [arg()].into_iter().chain(grown_size).collect()),
                     (CapacityOp::WithCapacity, true) => helper("$withCapacity", vec![arg()]),
-                    (CapacityOp::Reserve { exact: false }, true) => helper(
-                        "$reserve",
-                        vec![arg(), arg(), self.room_item_size(generic_args.type_at(0))],
-                    ),
+                    (CapacityOp::Reserve { exact: false }, true) => {
+                        helper("$reserve", vec![arg(), arg(), reserved_size])
+                    }
                     (CapacityOp::Reserve { exact: true }, true) => helper("$reserveExact", vec![arg(), arg()]),
                     (CapacityOp::ShrinkTo { fit: true }, true) => helper("$shrinkTo", vec![arg(), Expr::int(0)]),
                     (CapacityOp::ShrinkTo { fit: false }, true) => helper("$shrinkTo", vec![arg(), arg()]),

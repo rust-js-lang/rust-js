@@ -3,6 +3,7 @@
 import {
   $capacity,
   $debugStr,
+  $grew,
   $keepCapacity,
   $ptr,
   $ptrAdd,
@@ -43,7 +44,7 @@ function main() {
 
   // Written past its length, then lengthened to it.
   v = $withCapacity(4);
-  v.push(1);
+  $grew(v, 4, v.length, v.push(1));
   let p = $ptr(v, 0);
   $ptrAdd(p, 1).value = 2;
   $ptrAdd(p, 2).value = 3;
@@ -57,7 +58,7 @@ function main() {
   $setLen(v, 1);
   const third = $ptrAdd($ptr(v, 0), 2).value;
   const past = $ptrSlice($ptrAdd($ptr(v, 0), 1), 2);
-  const arg = $capacity(v) >= 5;
+  const arg = $capacity(v, 4) >= 5;
   console.log(`[${v.join(", ")}] ${third} [${past.join(", ")}] ${arg}`);
   // Its last two moved down over what's left behind, as a drain does.
   p = $ptr(v, 0);
@@ -69,7 +70,7 @@ function main() {
   $setLen(v, 1);
   $keepCapacity(v);
   $setLen(v, 3);
-  v.push(60);
+  $grew(v, 4, v.length, v.push(60));
   console.log(`[${v.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

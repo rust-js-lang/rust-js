@@ -469,7 +469,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut made = Vec::new();
         let call = |cx: &mut Self, call: &mut Vec<Stmt>| {
             let std = (known, def_id);
-            let value = cx.mir_std_call(state, std, generic_args, (arg_tys, given), values, output, span, call)?;
+            let value = cx.grown_std_call(state, std, generic_args, (arg_tys, given), values, output, span, call)?;
             cx.value_expr(value, span).map(Some)
         };
         let value = self.consumed_call(held, (def_id, consumed, arg_tys), output, span, &mut made, call)?;

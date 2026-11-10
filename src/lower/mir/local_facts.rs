@@ -146,10 +146,6 @@ pub(super) struct QuietCells {
     /// Each `swap` of a `RefCell` that's a class's flattened state, its
     /// object's keys (ADR 1044): which of its two cells is one (#687).
     pub(super) flattened: IndexMap<BasicBlock, [bool; 2]>,
-    /// Each `extend` of a `Vec`, a `VecDeque` or a `BinaryHeap` whose
-    /// capacity is known where it's extended (`known_capacity_extends`,
-    /// #849).
-    pub(super) known_capacity: IndexSet<BasicBlock>,
 }
 
 impl QuietCells {
@@ -684,10 +680,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         promoted: &IndexVec<mir::Promoted, mir::Body<'tcx>>,
     ) -> QuietCells {
         let tcx = self.tcx;
-        let mut quiet = QuietCells {
-            known_capacity: self.recognition().known_capacity_extends(body),
-            ..QuietCells::default()
-        };
+        let mut quiet = QuietCells::default();
         // How a thread-local's place holds a `None`, of one that stores it
         // `null` (#819).
         let nulled =

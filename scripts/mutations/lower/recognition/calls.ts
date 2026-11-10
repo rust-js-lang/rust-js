@@ -760,4 +760,12 @@ export const mutations: Mutation[] = [
     replace: "            return Some(Std::Text(TextOp::Bytes));",
     tests: ["test/corpus.test.ts", "-t", "^text_bytes_lent_and_owned.rs$"],
   },
+  {
+    name: "push-untracked",
+    breaks: "in a crate that keeps capacities, `push` keeps its length as its capacity, where std's doubles (#1180)",
+    file: "src/lower/recognition/calls.rs",
+    find: "        \"push\" | \"push_back\" | \"push_front\" | \"insert\" | \"append\" | \"extend_from_slice\" | \"extend_from_within\"\n",
+    replace: "        \"push_back\" | \"push_front\" | \"insert\" | \"append\" | \"extend_from_slice\" | \"extend_from_within\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
+  },
 ];

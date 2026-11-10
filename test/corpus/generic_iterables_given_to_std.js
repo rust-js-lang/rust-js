@@ -12,9 +12,11 @@ import {
   $folded,
   $given,
   $grownBy,
+  $grownVec,
   $iter,
   $next,
   $reserveHint,
+  $roomForHint,
   $sortedEntries,
   $sortedKeys,
   $traitImpl,
@@ -33,14 +35,14 @@ function extended(make, IIterator) {
   const v = [0];
   $extend(v, $grownBy(v, $given(make(), IIterator), 4));
   const d = [0];
-  $extend(d, $given(make(), IIterator));
+  $extend(d, $grownBy(d, $given(make(), IIterator), 4, true));
   const l = [0];
   $extend(l, $folded($given(make(), IIterator)));
   const s = new $BTreeSet([0]);
   $extendMap(s, $given(make(), IIterator), true);
   let h = new Set([0]);
   $extendMap(h, $reserveHint($given(make(), IIterator), 4, 4, h), true);
-  h = Array.from(h);
+  h = $grownVec($roomForHint($iter(Array.from(h)), 4, false), (grown) => Array.from(grown));
   h.sort((a, b) => a - b);
   console.log(
     `[${v.join(", ")}] [${d.join(", ")}] [${l.join(", ")}] {${Array.from($sortedKeys(s, $cmp)).join(", ")}} [${h.join(", ")}]`,

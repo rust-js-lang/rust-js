@@ -11064,12 +11064,15 @@ export const $sliceIndexes = {
 };
 
 // A `Vec`'s capacity (ADR 0419), which JS's array hasn't: kept where a
-// crate asks it, as std promises it, at least its length and what it was
-// given, and never less where it's shortened. Its own number, not native
-// Rust's growth's.
+// crate asks it, as std's growth gives it, by `with_capacity`, `reserve`,
+// and each call that adds to it (`$grew`, `$grownBy`, `$grownVec`), and
+// never less where it's shortened (#1180).
 export const $capacities = new WeakMap();
 
-export function $capacity(v) {
+// `v.capacity()` of items of `size` bytes: of items of no size, std's
+// `usize::MAX`, as many as fit, whatever it was given (#1180).
+export function $capacity(v, size) {
+  if (size === 0) return 2 ** 32 - 1;
   return Math.max(v.length, $capacities.get(v) ?? 0);
 }
 
@@ -11083,9 +11086,8 @@ export function $withCapacity(n) {
 // `v.reserve(n)` of items of `size` bytes: where it hasn't room for `n`
 // more, std's `grow_amortized`, at least twice what it had, as many as it
 // needs and `MIN_NON_ZERO_CAP` (raw_vec/mod.rs), so a `Vec` it's asked of
-// has the capacity native Rust's has (#849).
-// Of items of no size, room for as many as asked, its own number (ADR
-// 0419), as native Rust's is `usize::MAX`.
+// has the capacity native Rust's has (#849). Of items of no size, whose
+// capacity is `usize::MAX` (`$capacity`), room for as many as asked.
 export function $reserve(v, additional, size) {
   const capacity = $capacity(v);
   if (capacity - v.length >= additional) return;
@@ -11103,6 +11105,17 @@ export function $reserveExact(v, additional) {
 // length.
 export function $shrinkTo(v, min) {
   $capacities.set(v, Math.max(v.length, Math.min($capacity(v), min)));
+}
+
+// What a call that adds to `v`, an array of items of `size` bytes, `len`
+// long before it, leaves of its capacity: where it added more than it had
+// room for, std's `reserve` of as many, `grow_amortized`'s; of items of no
+// size, its length (#1180). The call's value, `made`.
+export function $grew(v, size, len, made) {
+  const had = Math.max(len, $capacities.get(v) ?? 0);
+  const added = v.length - len;
+  if (added > had - len) $capacities.set(v, size === 0 ? v.length : Math.max(had * 2, len + added, $leastCapacity(size)));
+  return made;
 }
 
 // Before it's shortened, `clear()`, `pop()` and the rest: what it has, kept.
@@ -11203,7 +11216,20 @@ export function $roomForHint(it, size, trusted, endless = false, drop) {
     () => it.return?.(),
   );
   steps.from = [it];
+  // The capacity std's `Vec` has reached, none of no item, which
+  // `$grownVec` keeps (#1180).
+  Object.defineProperty(steps, "capacity", { get: () => (first.done ? 0 : capacity) });
   return steps;
+}
+
+// `collect(grown)`, of `grown`, what `$roomForHint` grows as std's
+// `SpecFromIterNested` does, a `Vec` whose capacity is the one it reached,
+// kept, as std's is, in a crate that keeps capacities (#1180).
+export function $grownVec(grown, collect) {
+  const v = collect(grown);
+  const capacity = grown.capacity;
+  if (capacity !== undefined && capacity !== Infinity) $capacities.set(v, capacity);
+  return v;
 }
 
 // `it`, asked its hint before it's stepped, as std's `extend` of a new
@@ -11272,11 +11298,12 @@ export function $tableRoomFor(count, size, align) {
 // source's hint, `it`'s, whose lower bound the shunt makes none, `(0,
 // upper)`, after its first value (`SpecFromIterNested`), then each time
 // it's full (`extend_desugared`), room for one more, at least twice what
-// it had (#848). Asked with how many it holds before each value's pushed.
+// it had (#848). Asked with how many it holds before each value's pushed;
+// its `keep(values)` keeps the capacity it reached (#1180).
 export function $shuntGrowth(it, size) {
   const least = $leastCapacity(size);
   let capacity = 0;
-  return (length) => {
+  const grow = (length) => {
     if (length !== capacity) return;
     $sizeHint(it);
     if (length === 0) {
@@ -11287,6 +11314,10 @@ export function $shuntGrowth(it, size) {
     capacity = Math.max(capacity * 2, length + 1, least);
     $roomFor(capacity, size);
   };
+  grow.keep = (values) => {
+    if (capacity > 0 && capacity !== Infinity) $capacities.set(values, capacity);
+  };
+  return grow;
 }
 
 // `it`, what `extend` of `v`, a `Vec` of items of `size` bytes, or a
@@ -11298,7 +11329,9 @@ export function $shuntGrowth(it, size) {
 // grows. Where asking it throws, a panic, the item taken is dropped, then
 // `it` closed, as `extend` unwinds.
 export function $grownBy(v, items, size, deque = false, drop) {
-  const it = items[Symbol.iterator]();
+  // An array given whole, generic code's, as its `IntoIter`, whose hint is
+  // exact (#1180).
+  const it = Array.isArray(items) ? $iter(items) : items[Symbol.iterator]();
   const max = 2 ** 32 - 1;
   let first = true;
   const steps = new $Steps(
@@ -14300,8 +14333,14 @@ export function $heapRebuildTail(heap, start, ord) {
 }
 
 // `heap.append(&mut other)`: the smaller's items after the larger's, `other`
-// left empty.
+// left empty. Std swaps the two first where `other` is longer, so each has
+// the other's capacity, where they're kept (ADR 0419, amended, #1180).
 export function $heapAppend(heap, other, ord) {
+  if (heap.length < other.length && ($capacities.has(heap) || $capacities.has(other))) {
+    const [mine, theirs] = [$capacity(heap), $capacity(other)];
+    $capacities.set(heap, theirs);
+    $capacities.set(other, mine);
+  }
   const [first, rest] = heap.length < other.length ? [other.slice(), heap.slice()] : [heap.slice(), other.slice()];
   heap.length = 0;
   $extend(heap, first);
@@ -17391,7 +17430,8 @@ export function $replaceBy(s, test, to, n = Infinity) {
 // `restFirst`, where it doesn't collect in place (#423). Of a `Vec` of
 // values of `size` bytes, where its hint may run the crate's own, that
 // hint asked as std's `Vec` grows of the `GenericShunt` (`$shuntGrowth`):
-// where asking it panics, the value just taken dropped first (#848).
+// where asking it panics, the value just taken dropped first (#848); the
+// capacity it reaches kept (#1180).
 export function $collectResults(items, into, drop, restFirst = false, size) {
   const values = [];
   let failed;
@@ -17412,6 +17452,7 @@ export function $collectResults(items, into, drop, restFirst = false, size) {
       values.push(item._0);
     }
   }, it, values, drop, restFirst);
+  grown?.keep(values);
   if (failed === undefined) return { TAG: "Ok", _0: into ? into(values) : values };
   it.return?.();
   if (drop) $dropItems(values, drop);
@@ -17450,6 +17491,7 @@ export function $collectOptions(items, boxed = false, into, drop, restFirst = fa
       values.push(value);
     }
   }, it, values, drop, restFirst);
+  grown?.keep(values);
   if (!failed) return into ? into(values) : values;
   it.return?.();
   if (drop) $dropItems(values, drop);

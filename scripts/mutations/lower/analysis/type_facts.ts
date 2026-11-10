@@ -462,7 +462,7 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's collect into a `Vec` of a type parameter's iterator asks its caller no `TSize`, so it's refused, \"`size_of` of a type parameter\" (#796)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "        asked.extend(grown_asked(recognition, typing_env, owner, (callee, args)));\n",
+    find: "        asked.extend(grown_asked(\n            recognition,\n            typing_env,\n            owner,\n            (callee, args),\n            keeps_capacity,\n        ));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
   },
@@ -554,5 +554,13 @@ export const mutations: Mutation[] = [
     find: "            for (callee, args) in named {\n                for index in eq_asks(recognition, typing_env, caller, (callee, args), &compares) {\n",
     replace: "            for (callee, args) in named {\n                for index in eq_asks(recognition, typing_env, caller, (callee, args), &compares).into_iter().filter(|_| false) {\n",
     tests: ["test/crates.test.ts", "-t", "length_first_eq"],
+  },
+  {
+    name: "vec-growth-size-unasked",
+    breaks: "in a crate that keeps capacities, generic code that pushes to a `Vec<T>` asks its caller no `TSize`, so it's refused, \"`size_of` of a type parameter\" (#1180)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "    if let Some(item) = grown {\n",
+    replace: "    if let Some(item) = grown.filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
   },
 ];

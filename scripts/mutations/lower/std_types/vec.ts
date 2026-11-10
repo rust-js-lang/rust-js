@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
     name: "reserve-untracked",
     breaks: "`v.reserve(n)` keeps no room",
     file: "src/lower/std_types/vec.rs",
-    find: "                    (CapacityOp::Reserve { exact: false }, true) => helper(\n                        \"$reserve\",\n                        vec![arg(), arg(), self.room_item_size(generic_args.type_at(0))],\n                    ),\n",
+    find: "                    (CapacityOp::Reserve { exact: false }, true) => {\n                        helper(\"$reserve\", vec![arg(), arg(), reserved_size])\n                    }\n",
     replace: "                    (CapacityOp::Reserve { exact: false }, true) => {\n                        let _ = (arg(), arg());\n                        Expr::undefined()\n                    }\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
   },
@@ -216,5 +216,13 @@ export const mutations: Mutation[] = [
     find: "            Std::Retain if self.is_std_type(tys[0].peel_refs(), crate::lower::recognition::StdItem::VecDeque) => {\n",
     replace: "            Std::Retain if false && self.is_std_type(tys[0].peel_refs(), crate::lower::recognition::StdItem::VecDeque) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_deque_retain_swaps.rs$"],
+  },
+  {
+    name: "capacity-of-no-size-its-length",
+    breaks: "`capacity()` of a `Vec` of items of no size is its length, where std's is `usize::MAX` (#1180)",
+    file: "src/lower/std_types/vec.rs",
+    find: "                    (CapacityOp::Of, _) => helper(\"$capacity\", [arg()].into_iter().chain(grown_size).collect()),\n",
+    replace: "                    (CapacityOp::Of, _) => helper(\"$capacity\", vec![arg()]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
   },
 ];

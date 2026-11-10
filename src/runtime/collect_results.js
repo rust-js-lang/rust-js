@@ -7,7 +7,8 @@
 // `restFirst`, where it doesn't collect in place (#423). Of a `Vec` of
 // values of `size` bytes, where its hint may run the crate's own, that
 // hint asked as std's `Vec` grows of the `GenericShunt` (`$shuntGrowth`):
-// where asking it panics, the value just taken dropped first (#848).
+// where asking it panics, the value just taken dropped first (#848); the
+// capacity it reaches kept (#1180).
 function $collectResults(items, into, drop, restFirst = false, size) {
   const values = [];
   let failed;
@@ -28,6 +29,7 @@ function $collectResults(items, into, drop, restFirst = false, size) {
       values.push(item._0);
     }
   }, it, values, drop, restFirst);
+  grown?.keep(values);
   if (failed === undefined) return { TAG: "Ok", _0: into ? into(values) : values };
   it.return?.();
   if (drop) $dropItems(values, drop);

@@ -2,6 +2,7 @@
 
 import {
   $capacity,
+  $grew,
   $heapPop,
   $heapPush,
   $keepCapacity,
@@ -26,43 +27,43 @@ export function entry() {
 
 function main() {
   const heap = $withCapacity(10);
-  console.log(`${$capacity(heap) >= 10} ${heap.length}`);
-  $heapPush(heap, 3, $partiallyOrdered);
-  $heapPush(heap, 7, $partiallyOrdered);
+  console.log(`${$capacity(heap, 4) >= 10} ${heap.length}`);
+  $grew(heap, 4, heap.length, $heapPush(heap, 3, $partiallyOrdered));
+  $grew(heap, 4, heap.length, $heapPush(heap, 7, $partiallyOrdered));
   $roomFor(heap.length + 20, 4);
   $reserve(heap, 20, 4);
-  const value = $capacity(heap) >= 22;
+  const value = $capacity(heap, 4) >= 22;
   $keepCapacity(heap);
   const value$1 = $heapPop(heap, $partiallyOrdered);
   console.log(`${value} ${value$1 == null ? "None" : `Some(${value$1})`}`);
   $keepCapacity(heap);
   heap.length = 0;
-  console.log(`${$capacity(heap) >= 22} ${heap.length === 0}`);
+  console.log(`${$capacity(heap, 4) >= 22} ${heap.length === 0}`);
   $shrinkTo(heap, 0);
-  console.log(`${$capacity(heap) >= heap.length}`);
+  console.log(`${$capacity(heap, 4) >= heap.length}`);
 
   const grown = [];
   for (let n = 0; n < 30; n++) {
-    $heapPush(grown, n, $partiallyOrdered);
+    $grew(grown, 4, grown.length, $heapPush(grown, n, $partiallyOrdered));
   }
   $keepCapacity(grown);
   grown.length = 0;
-  console.log(`${$capacity(grown) >= 30}`);
+  console.log(`${$capacity(grown, 4) >= 30}`);
 
   const queue = $withCapacity(8);
-  console.log(`${$capacity(queue) >= 8}`);
+  console.log(`${$capacity(queue, 1) >= 8}`);
   for (let n = 0; n < 20; n++) {
-    queue.push(n);
+    $grew(queue, 1, queue.length, queue.push(n));
   }
   $keepCapacity(queue);
   queue.shift();
   $keepCapacity(queue);
   queue.length = 0;
-  console.log(`${$capacity(queue) >= 20}`);
+  console.log(`${$capacity(queue, 1) >= 20}`);
 
   const units = [];
   for (let i = 0; i < 4; i++) {
-    $heapPush(units, undefined, unitPartialOrd);
+    $grew(units, 0, units.length, $heapPush(units, undefined, unitPartialOrd));
   }
   console.log(
     `${units.length} ${Iterator.from(units).reduce((n) => n + 1, 0)} ${((value) => (value == null ? "None" : "Some(())"))($someAt(units, 0))}`,

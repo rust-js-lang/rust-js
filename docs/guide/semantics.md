@@ -822,9 +822,22 @@ What's refused is in [the limitations](limitations.md).
   `char`s or of a hash table once, first, reserving by it,
   `$reserveHint(it, size, align, of)`; and an `extend` of a `Vec`, a
   `VecDeque` or a `BinaryHeap` as it fills, `$grownBy(v, it, size)`, as
-  its capacity says, which is native Rust's where it's made in the same
-  function and only extended or reserved since: `reserve(n)` grows it as
-  std's `grow_amortized` does, `reserve_exact(n)` as many as it needs.
+  its capacity says, which the crate keeps as std grows it (below).
+- **A `Vec`'s `capacity()` is std's, in a crate that reads one, or uses
+  a library that does:** each `Vec`, `VecDeque` and `BinaryHeap` keeps
+  the capacity std's growth gives it
+  ([0419](../decisions/0419-a-vecs-capacity-kept-where-asked.md), amended,
+  #1180). `push`, `insert` and the rest that add to it are
+  `$grew(v, size, v.length, v.push(x))`, std's `grow_amortized`: at least
+  twice what it had, as many as it needs, and `MIN_NON_ZERO_CAP`, 8 of
+  1-byte items, 4 up to 1 KiB, 1 above; `extend` of a `TrustedLen`
+  iterator, `append`, `resize` and `extend_from_slice` reserve as many as
+  they add; a `collect()` or an `extend` of another grows by its hint's
+  lower bound as it fills, `$grownVec` and `$grownBy`, a `GenericShunt`'s
+  none; `reserve(n)` as std's does, `reserve_exact(n)` as many as it
+  needs; items of no size `usize::MAX`. Of a type parameter's items, by
+  its caller's `TSize`. A crate that reads no capacity prints none of
+  this.
 - **A function passed where a closure goes is the arrow that calls it,**
   `.map(str::len)` being `.map((s) => $byteLen(s))` and `fold(0, i32::max)`
   being `reduce((a, b) => Math.max(a, b), 0)`; a constructor's makes what

@@ -4,9 +4,11 @@ import {
   $capacity,
   $cycle,
   $cycleOf,
+  $grownVec,
   $next,
   $rangeInclusiveNext,
   $rangeNext,
+  $roomForHint,
   $sizeHint,
 } from "@rust-js/std";
 
@@ -59,14 +61,19 @@ function main() {
     ).take(5),
   );
   console.log(`(${value$7[0]}, ${value$7[1] == null ? "None" : `Some(${value$7[1]})`})`);
-  const all = Array.from(
-    $cycleOf(
-      { start: 1, end: 3 },
-      (iterator) => ({ start: iterator.start, end: iterator.end }),
-      $rangeNext,
-    ).take(5),
+  const all = $grownVec(
+    $roomForHint(
+      $cycleOf(
+        { start: 1, end: 3 },
+        (iterator) => ({ start: iterator.start, end: iterator.end }),
+        $rangeNext,
+      ).take(5),
+      4,
+      false,
+    ),
+    (grown) => Array.from(grown),
   );
-  const arg = $capacity(all) >= 5;
+  const arg = $capacity(all, 4) >= 5;
   console.log(`[${all.join(", ")}] ${arg}`);
 }
 //# sourceMappingURL=case.js.map

@@ -158,6 +158,27 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// Whether JS's hint of an iterator of type `ty` has std's lower bound,
+    /// by which std grows a `Vec` it collects or extends where it isn't
+    /// `TrustedLen` (#1180): always where std's is always 0
+    /// (`lower_bound_kept`'s `Some(false)`), which JS's adapters' is too;
+    /// else not where it steps, through std's adapters, an array JS counts
+    /// of an iterator std doesn't, no `ExactSizeIterator`, a string's
+    /// `chars()` or `split(..)` among them (`is_array_iter`).
+    pub(in crate::lower) fn lower_bound_is_stds(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        if self.lower_bound_kept(ty) == Some(false) {
+            return true;
+        }
+        if let Some(held) = crate::lower::recognition::adapted_iterators(self.tcx, self.typing_env, ty) {
+            return held.into_iter().all(|held| self.lower_bound_is_stds(held));
+        }
+        !self.is_array_iter(ty)
+            || self
+                .exact_size_iterator()
+                .is_some_and(|exact| self.implements_trait(ty, exact))
+    }
+
     /// Whether the hint of an iterator of type `ty` has a lower bound above
     /// 0 wherever it has items, `Some(true)`: an `ExactSizeIterator`'s, a
     /// `TrustedLen`'s, one with no end once stepped, or a chain of such. Or

@@ -4,6 +4,7 @@ import {
   $capacity,
   $exactLen,
   $foldOf,
+  $grownVec,
   $iterator,
   $next,
   $peek,
@@ -58,7 +59,7 @@ function main() {
   console.log(
     `(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}) ${$exactLen($sizeHint(p))}`,
   );
-  const v = Array.from(
+  const v = $grownVec(
     $roomForHint(
       $iterator([6], countIterator_next, false, undefined, undefined, countIterator_sizeHint).map(
         (x) => (x * 10) >>> 0,
@@ -66,8 +67,9 @@ function main() {
       4,
       false,
     ),
+    (grown) => Array.from(grown),
   );
-  const arg = $capacity(v) >= 6;
+  const arg = $capacity(v, 4) >= 6;
   console.log(`${v.length} ${arg}`);
 }
 //# sourceMappingURL=case.js.map

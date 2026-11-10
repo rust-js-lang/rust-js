@@ -382,7 +382,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `item`s in place, where it's known here (`recognition::in_place_source`,
     /// `fits_in_place`), of a copied default in its impl's terms (ADR 0049):
     /// `None` where it's a caller's, or the adapters don't tell (#423, #672).
-    fn collects_in_place(&self, iter_ty: Option<Ty<'tcx>>, item: Option<Ty<'tcx>>) -> Option<bool> {
+    pub(in crate::lower) fn collects_in_place(
+        &self,
+        iter_ty: Option<Ty<'tcx>>,
+        item: Option<Ty<'tcx>>,
+    ) -> Option<bool> {
         use crate::lower::recognition::{InPlaceSource, fits_in_place, in_place_source};
         let (iter_ty, item) = iter_ty.zip(item)?;
         let typing_env = self.typing_env;
@@ -811,10 +815,68 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .then(|| self.type_fact_value(iter_ty, crate::lower::recognition::TypeFact::TrustedLen, span))
             .transpose()?;
         let unroomed = it.clone();
-        let it = match grown {
-            Some(grown) => self.grown_by_hint(it, grown, iter_ty, callers_trusted.clone(), span)?,
-            None => it,
+        // Of a crate that keeps capacities, what isn't `TrustedLen` grown as
+        // std's `SpecFromIterNested` grows it, `$roomForHint`'s, which keeps
+        // the capacity it reaches on what it's collected into, `$grownVec`'s
+        // (#1180): its collect is given it. Not of one std may collect in
+        // place, whose capacity is its source's, which steps its source
+        // as it is where it does.
+        let keeps = self.krate.keeps_capacity
+            && !trusted
+            && grown.is_some()
+            && self.collects_in_place(Some(iter_ty), item) == Some(false);
+        let (it, grown_call) = match grown {
+            Some(grown) => {
+                let call = self.grown_by_hint(it, grown, iter_ty, callers_trusted.clone(), span)?;
+                match keeps {
+                    true => {
+                        let name = self.fresh("grown");
+                        (Expr::var(&name), Some((name, call)))
+                    }
+                    false => (call, None),
+                }
+            }
+            None => (it, None),
         };
+        let collected = self.collected_grown(
+            (it, unroomed, given),
+            (output, item, iter_ty),
+            callers_trusted,
+            iterable,
+            span,
+        )?;
+        // Kept where its collect steps it, not where it's collected in place.
+        Ok(match grown_call {
+            Some((name, call)) if collected.mentions_var(&name) => Expr::call_helper(
+                "$grownVec",
+                vec![
+                    call,
+                    Expr::arrow(
+                        vec![name.into()],
+                        vec![StmtKind::Return(Some(collected)).at(js::Span::NONE)],
+                    ),
+                ],
+            ),
+            _ => collected,
+        })
+    }
+
+    /// `it`, what `collected_as_vec` collects, grown as std grows it, and
+    /// what it was before, `unroomed`, collected: by its fold, its `next`,
+    /// or the array it is.
+    fn collected_grown(
+        &mut self,
+        (it, unroomed, given): (Expr, Expr, &Expr),
+        (output, item, iter_ty): (Ty<'tcx>, Option<Ty<'tcx>>, Ty<'tcx>),
+        callers_trusted: Option<Expr>,
+        iterable: bool,
+        span: Span,
+    ) -> R<Expr> {
+        let folds_by_dropping_nth_back =
+            (self.recognition().nth_back_folded_sources(iter_ty).into_iter()).any(|source| {
+                self.iterator_item(source)
+                    .is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing)
+            });
         // Of std's struct that's `TrustedLen`, by its `fold`, as std's
         // `extend_trusted` collects it, a zip's `SpecFold` (#380), and
         // of one stepping a lent inclusive range, which that leaves

@@ -16,19 +16,28 @@ use rustc_middle::mir::{Operand, TerminatorKind};
 use rustc_middle::ty::TypeVisitableExt;
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
-    /// Whether a collect into `output` of an iterator of `iter_ty` grows a
-    /// `Vec` of `item`s whose size is its caller's, a type parameter's or
-    /// one built of them, `(T, u8)`, where the hint it asks as that `Vec`
-    /// fills may run the crate's own (`hint_reaches_own`): so when it's
-    /// asked is seen, the size its caller gives, `TSize` (#796). The one
-    /// answer of the lowering's `grown_item_size` and the analysis's
-    /// `grown_asked`.
     /// Whether std's `extend` of `ty` asks its iterator's hint as it fills:
     /// a `Vec`'s, `extend_desugared`, a `BinaryHeap`'s, its `Vec`'s, and a
     /// `VecDeque`'s, `spec_extend` (#849). Not a `LinkedList`'s, which asks
     /// none.
     pub(in crate::lower) fn grows_as_it_extends(&self, ty: Ty<'tcx>) -> bool {
         self.is_vec_like(ty) && !self.is_std_type(ty, crate::lower::recognition::StdItem::LinkedList)
+    }
+
+    /// Whether `def_id` is an `extend` std's collection asks its hint of as
+    /// it fills: a `Vec`'s, a `VecDeque`'s or a `BinaryHeap`'s.
+    pub(in crate::lower) fn extend_grows(
+        &self,
+        def_id: rustc_span::def_id::DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+    ) -> bool {
+        self.tcx
+            .trait_of_assoc(def_id)
+            .is_some_and(|t| crate::lower::recognition::is_extend(self.tcx, t))
+            && generic_args
+                .types()
+                .next()
+                .is_some_and(|ty| self.grows_as_it_extends(ty.peel_refs()))
     }
 
     /// Whether any of `bodies` extends a `Vec`, a `VecDeque` or a
@@ -66,12 +75,53 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             })
     }
 
-    /// Of a collect into a `Result` or an `Option`, the collection std's
-    /// `GenericShunt` collects and its values', `T` of `Result<T, E>`
-    /// (#848).
-    pub(in crate::lower) fn grows_by_callers_size(&self, output: Ty<'tcx>, iter_ty: Ty<'tcx>, item: Ty<'tcx>) -> bool {
-        let (output, item) = self.shunted(output, item).unwrap_or((output, item));
-        self.grows_as_vec(output) && item.has_param() && self.hint_reaches_own(iter_ty)
+    /// Whether a collect into `output` of an iterator of `iter_ty` grows a
+    /// `Vec` of `item`s whose size is its caller's, a type parameter's or
+    /// one built of them, `(T, u8)`, where the hint it asks as that `Vec`
+    /// fills may run the crate's own (`hint_reaches_own`), or, of a crate
+    /// that keeps capacities, `keeps_capacity`, where it isn't `TrustedLen`,
+    /// as its capacity says (#1180): so the size its caller gives, `TSize`
+    /// (#796). Of a collect into a `Result` or an `Option`, `shunted`, the
+    /// collection std's `GenericShunt` collects and its values', `T` of
+    /// `Result<T, E>` (#848), which isn't `TrustedLen`. The one answer of
+    /// the lowering's `grown_item_size` and `shunted_ask` and the
+    /// analysis's `grown_asked`.
+    pub(in crate::lower) fn grows_by_callers_size(
+        &self,
+        output: Ty<'tcx>,
+        iter_ty: Ty<'tcx>,
+        item: Ty<'tcx>,
+        (shunted, keeps_capacity): (bool, bool),
+    ) -> bool {
+        let trusted = !shunted && is_trusted_len(self.tcx, self.typing_env, iter_ty);
+        self.grows_as_vec(output) && item.has_param() && (self.hint_reaches_own(iter_ty) || keeps_capacity && !trusted)
+    }
+
+    /// The items of a `Vec`, a `VecDeque` or a `BinaryHeap` that a call of
+    /// `callee` given `args` adds to, `grows_vec`'s or an `extend`'s
+    /// (`extend_grows`), or reserves room in, whose size std grows it by,
+    /// or asks the capacity of, `usize::MAX` of items of no size (#1180):
+    /// of a type parameter's, its caller's (`capacity_item_size`).
+    pub(in crate::lower) fn grown_vec_item(
+        &self,
+        callee: rustc_span::def_id::DefId,
+        args: ty::GenericArgsRef<'tcx>,
+    ) -> Option<Ty<'tcx>> {
+        use crate::lower::recognition::CapacityOp;
+        let sized = matches!(
+            crate::lower::recognition::capacity_op(self.tcx, callee),
+            Some(CapacityOp::Of | CapacityOp::Reserve { exact: false })
+        );
+        if sized || crate::lower::recognition::grows_vec(self.tcx, callee).is_some() {
+            return args.types().next();
+        }
+        if !self.extend_grows(callee, args) {
+            return None;
+        }
+        match args.types().next()?.peel_refs().kind() {
+            ty::Adt(_, held) => held.types().next(),
+            _ => None,
+        }
     }
 
     /// Of a collect into `output`, a `Result` or an `Option` of a
@@ -131,6 +181,23 @@ pub(in crate::lower) struct Grown<'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Of a crate that keeps capacities, a `Vec` grown by an iterator of
+    /// type `iter_ty` that isn't `TrustedLen`, by its hint's lower bound,
+    /// refused where JS's isn't std's (`lower_bound_is_stds`), as its
+    /// `size_hint()` is: so its capacity would be another (#1180). Not of
+    /// one whose hint runs the crate's own, its own.
+    fn refuse_unkept_lower_bound(&self, iter_ty: Ty<'tcx>, span: Span) -> R<()> {
+        if self.hint_reaches_own(iter_ty) || self.recognition().lower_bound_is_stds(iter_ty) {
+            return Ok(());
+        }
+        Err(self.unsupported(
+            span,
+            &format!(
+                "a `Vec` grown by a `{iter_ty}` in a crate that reads a `Vec`'s capacity, which std grows by that iterator's `size_hint()`, whose lower bound JS's doesn't have"
+            ),
+        ))
+    }
+
     /// What `collect()` of an iterator of type `iter_ty` into `output`, a
     /// `Vec` std grows (`grows_as_vec`), of `item`s, asks of its hint: of
     /// std's struct made here, `std_struct`, not bounded by an array's
@@ -166,13 +233,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })?,
             false => false,
         };
+        // Of a crate that keeps capacities, of what isn't `TrustedLen`,
+        // whose capacity std's growth gives (#1180); not of what std may
+        // collect in place, whose capacity is its source's.
+        let kept = asks_room
+            && self.krate.keeps_capacity
+            && !trusted
+            && item.is_some_and(|item| item.has_param() || sized(item))
+            && self.collects_in_place(Some(iter_ty), item) == Some(false);
+        if kept {
+            self.refuse_unkept_lower_bound(iter_ty, span)?;
+        }
         Ok(item
             .filter(|_| {
                 asks_room
                     && (endless
                         || endless_once
                         || std_struct && !self.recognition().bounded_by_items(iter_ty)
-                        || self.hint_reaches_own(iter_ty))
+                        || self.hint_reaches_own(iter_ty)
+                        || kept)
             })
             .map(|item| Grown {
                 output,
@@ -221,7 +300,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// size is its caller's where that hint may run the crate's own
     /// (`grows_by_callers_size`), the caller's, `TSize` (#796).
     fn grown_item_size(&mut self, output: Ty<'tcx>, iter_ty: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Expr> {
-        match self.recognition().grows_by_callers_size(output, iter_ty, item) {
+        match (self.recognition()).grows_by_callers_size(output, iter_ty, item, (false, self.krate.keeps_capacity)) {
             true => self.type_fact_value(item, TypeFact::Size, span),
             false => Ok(self.room_item_size(item)),
         }
@@ -234,7 +313,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// where it's its caller's (`grows_by_callers_size`); of a `String` of
     /// `char`s or a hash table, which reserve first, once; of another, a
     /// `LinkedList` or a `String` of strings, none. Only where asking it
-    /// may run the crate's own (`hint_reaches_own`).
+    /// may run the crate's own (`hint_reaches_own`), or, of a `Vec` of a
+    /// crate that keeps capacities, always, which std grows by the shunt's
+    /// lower bound, none, whatever its source's (#1180).
     pub(in crate::lower) fn shunted_ask(
         &mut self,
         target: Ty<'tcx>,
@@ -248,12 +329,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some((collection, value)) = self.recognition().shunted(target, item) else {
             return Ok(Shunted::Never);
         };
-        if !self.hint_reaches_own(iter_ty) {
+        let keeps = self.krate.keeps_capacity;
+        let grows = self.recognition().grows_as_vec(collection);
+        if !self.hint_reaches_own(iter_ty) && !(keeps && grows) {
             return Ok(Shunted::Never);
         }
-        if self.recognition().grows_as_vec(collection) {
+        if grows {
             return Ok(Shunted::Grown(
-                match self.recognition().grows_by_callers_size(target, iter_ty, item) {
+                match self
+                    .recognition()
+                    .grows_by_callers_size(collection, iter_ty, value, (true, keeps))
+                {
                     true => self.type_fact_value(value, TypeFact::Size, span)?,
                     false => self.room_item_size(value),
                 },
@@ -269,44 +355,109 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         )
     }
 
+    /// Whether `extend` of `into` by `iterable` grows it as std's does as
+    /// it fills, `$grownBy` (`extended_grown`): a `Vec`'s, a `VecDeque`'s
+    /// or a `BinaryHeap`'s (`grows_as_it_extends`), by an iterator whose
+    /// hint may run the crate's own (#849), or, of a crate that keeps
+    /// capacities, by one that isn't `TrustedLen`, which std's grows item by
+    /// item, `extend_desugared` (#1180). Else by as many as it's given,
+    /// which a `TrustedLen` one reserves first, `$grew` where capacities are
+    /// kept (`mir_std_call`).
+    pub(in crate::lower) fn extend_fills(&self, into: Ty<'tcx>, iterable: Ty<'tcx>) -> bool {
+        let iter_ty = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, iterable);
+        self.recognition().grows_as_it_extends(into)
+            && (self.hint_reaches_own(iter_ty)
+                || self.krate.keeps_capacity && !is_trusted_len(self.tcx, self.typing_env, iter_ty))
+    }
+
     /// `extend` of `collection`, of type `into`, by `items`, of type
     /// `iterable`, asking its hint as std's does as the collection fills
-    /// (#849): of a `Vec`'s, a `BinaryHeap`'s, its `Vec`'s, and a
-    /// `VecDeque`'s, `$grownBy(collection, items, size, deque, drop)`, where
-    /// the hint may run the crate's own and the collection's capacity is
-    /// known where it's extended (`known_capacity`, the user's (B)); refused
-    /// where it isn't, or where its items' size is a caller's. What it's
-    /// extended by, and the collection, held first where it's read again.
+    /// (`extend_fills`): of a `Vec`'s, a `BinaryHeap`'s, its `Vec`'s, and a
+    /// `VecDeque`'s, `$grownBy(collection, items, size, deque, drop)`, its
+    /// capacity std's, kept where its crate keeps capacities (ADR 0419,
+    /// amended, #1180); which a crate whose `extend` asks the crate's own
+    /// hint so does (`extends_as_it_fills`). Of items whose size is a
+    /// caller's, refused where the hint may run the crate's own; of an
+    /// iterator its caller gives, its caller's to refuse
+    /// (`refuse_unknown_capacity_extends`). What it's extended by, and the
+    /// collection, held first where it's read again.
     pub(in crate::lower) fn extended_grown(
         &mut self,
         collection: Expr,
         items: Expr,
         (iterable, into): (Ty<'tcx>, Ty<'tcx>),
-        capacity_known: bool,
         span: Span,
         out: &mut Vec<crate::js::Stmt>,
     ) -> R<(Expr, Expr)> {
-        let iter_ty = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, iterable);
-        if !self.recognition().grows_as_it_extends(into) || !self.hint_reaches_own(iter_ty) {
+        if !self.extend_fills(into, iterable) {
             return Ok((collection, items));
         }
+        let iter_ty = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, iterable);
         let Some(item) = self.iterator_item(iter_ty) else {
             return Ok((collection, items));
         };
-        // Of an iterator its caller gives, a type parameter's or one made of
-        // it, whose hint is the crate's own only where a caller's is: asked
-        // where the capacity's known, else its caller's to refuse, where it
-        // knows the iterator (`refuse_unknown_capacity_extends`).
-        let callers = iterable.has_param() || iterable.has_aliases();
-        if callers && !(capacity_known && !item.has_param()) {
+        // A crate whose `extend` asks the crate's own hint keeps capacities
+        // (`extends_as_it_fills`): of one that doesn't, an iterator its
+        // caller gives, its caller's to refuse.
+        if !self.krate.keeps_capacity {
             return Ok((collection, items));
         }
-        if !capacity_known || item.has_param() {
+        self.refuse_unkept_lower_bound(iter_ty, span)?;
+        self.grown_by(collection, items, (into, item), span, out)
+    }
+
+    /// Generic code's `extend` of `into`, a std collection, through its
+    /// dictionary, by `items`, whatever iterable it's given, of `item`s
+    /// (`extend_dictionary`): of a crate that keeps capacities, of one that
+    /// grows as it's extended, as std's grows by any (#1180), `$grownBy`,
+    /// which of a `TrustedLen` iterator, whose hint is exact, reserves as
+    /// many as it has left where it's first full, as std's reserve of them
+    /// all leaves it. Refused of items whose size is a caller's, which its
+    /// dictionary isn't given.
+    pub(in crate::lower) fn dictionary_grown(
+        &mut self,
+        collection: Expr,
+        items: Expr,
+        (into, item): (Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<crate::js::Stmt>,
+    ) -> R<Expr> {
+        if !self.krate.keeps_capacity || !self.recognition().grows_as_it_extends(into) {
+            return Ok(items);
+        }
+        if item.has_param() {
             return Err(self.unsupported(
                 span,
-                "an `extend` of a `Vec`, a `VecDeque` or a `BinaryHeap` by an iterator whose `size_hint` is the crate's own, which std asks as it fills, as its capacity, unknown here, says: extend one this function made by `new`, `with_capacity(n)`, `vec![..]` or a `collect()` of a `TrustedLen` iterator, of items of a known type, and lent `&mut` since only to `extend` or `reserve`",
+                &format!("a bound's `extend` of a `{into}`, whose items' size std grows it by, a type parameter's, in a crate that reads a `Vec`'s capacity: call `extend` of the `Vec` itself"),
             ));
         }
+        Ok(self.grown_by(collection, items, (into, item), span, out)?.1)
+    }
+
+    /// The size of a `Vec`'s `item`s, by which std grows it, of a crate
+    /// that keeps capacities: its caller's `TSize` where it's a type
+    /// parameter's, as the analysis asks it (`grown_vec_item`, #1180).
+    /// `None` of another made of type parameters, an associated type's or
+    /// `vec::IntoIter<I::Item>`, whose size no caller gives: its growth
+    /// isn't kept, as before #1180.
+    pub(in crate::lower) fn capacity_item_size(&self, item: Ty<'tcx>) -> Option<Expr> {
+        match item.kind() {
+            _ if !item.has_param() => Some(self.room_item_size(item)),
+            ty::Param(param) => self.given_type_fact(param.index, TypeFact::Size),
+            _ => None,
+        }
+    }
+
+    /// `$grownBy(collection, items, size, deque, drop)`: of `into`'s items'
+    /// size, of `item`s' drop, as the iterator gives them.
+    fn grown_by(
+        &mut self,
+        collection: Expr,
+        items: Expr,
+        (into, item): (Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<crate::js::Stmt>,
+    ) -> R<(Expr, Expr)> {
         let collection = match collection.reads_same() {
             true => collection,
             false => self.spill("items", collection, out),
@@ -316,7 +467,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => self.drop_function(item, span)?,
             false => None,
         };
-        let mut args = vec![collection.clone(), items, self.room_item_size(item)];
+        let Some(size) = self.capacity_item_size(self.slice_item(into).unwrap_or(item)) else {
+            return Ok((collection, items));
+        };
+        let mut args = vec![collection.clone(), items, size];
         if deque || drop.is_some() {
             args.push(Expr::bool(deque));
         }
@@ -436,13 +590,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 // of a `C: Extend<T>`, through its dictionary: where its caller gives a
 // `Vec`, a `VecDeque` or a `BinaryHeap` and an iterator whose `size_hint`
 // the crate's own may run, std asks that hint as the collection fills, as
-// its capacity says, which isn't known there (#849, the user's (b)). Refused
+// its capacity says, which a crate that reads no capacity doesn't keep
+// (#849, the user's (b); #1180). Refused
 // where those types are known, at the call that gives them; relayed
 // where they're a caller's own type parameters, as #796 relays `TSize`, so
 // the outermost caller that knows them decides. One of std's iterators, or
 // the crate's that keeps std's default `size_hint`, compiles.
 /// The message of a call refused: what it gives, and what to write.
-const REFUSED: &str = "rust-js: this call gives generic code a `Vec`, a `VecDeque` or a `BinaryHeap` to `extend` by an iterator whose `size_hint` is the crate's own, which std asks as the collection fills, as its capacity says, unknown where generic code extends it (#849): collect the iterator first and give that, or extend a collection this function made, by `new`, `with_capacity(n)` or `vec![..]`, here";
+const REFUSED: &str = "rust-js: this call gives generic code a `Vec`, a `VecDeque` or a `BinaryHeap` to `extend` by an iterator whose `size_hint` is the crate's own, which std asks as the collection fills, as its capacity says, which a crate that reads no capacity doesn't keep (#849, #1180): collect the iterator first and give that, or extend the collection here";
 
 /// How many times what each function extends is relayed to its callers,
 /// and how much of it each holds, past which what's left isn't: a
@@ -452,11 +607,18 @@ const HELD: usize = 64;
 
 /// Refuses each call of `bodies` that gives generic code's `extend` a
 /// collection that grows as it's extended and an iterator whose hint may
-/// run the crate's own, both known there.
+/// run the crate's own, both known there, of a crate that doesn't keep
+/// capacities, `keeps_capacity`.
 pub(in crate::lower) fn refuse_unknown_capacity_extends<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     bodies: &[&crate::lower::Body<'tcx>],
+    keeps_capacity: bool,
 ) {
+    // Of a crate that keeps capacities, each `extend` grows as std's does
+    // where it's made, a dictionary's too (`dictionary_grown`, #1180).
+    if keeps_capacity {
+        return;
+    }
     let tcx = recognition.tcx;
     let mirs: Vec<(DefId, &rustc_middle::mir::Body<'tcx>)> = (bodies.iter())
         .filter_map(|body| Some((body.def_id, &body.mir.as_ref()?.body)))
@@ -464,17 +626,8 @@ pub(in crate::lower) fn refuse_unknown_capacity_extends<'tcx>(
     // What each function extends of what it doesn't know: the collection
     // and what it's extended by, in its own type parameters' terms.
     let mut extends: IndexMap<DefId, IndexSet<(Ty<'tcx>, Ty<'tcx>)>> = IndexMap::default();
-    // Which of a body's `extend`s know their collection's capacity, in its
-    // own typing environment (`known_capacity_extends`).
-    let known = |def_id: DefId, body: &rustc_middle::mir::Body<'tcx>| {
-        let recognition = Recognition {
-            typing_env: ty::TypingEnv::post_analysis(tcx, def_id),
-            ..*recognition
-        };
-        recognition.known_capacity_extends(body)
-    };
     for &(def_id, body) in &mirs {
-        for (block, data) in body.basic_blocks.iter_enumerated() {
+        for data in body.basic_blocks.iter() {
             let TerminatorKind::Call { func, args, .. } = &data.terminator().kind else {
                 continue;
             };
@@ -490,16 +643,11 @@ pub(in crate::lower) fn refuse_unknown_capacity_extends<'tcx>(
             let Some(iterable) = args.get(1).map(|arg| arg.node.ty(body, tcx)) else {
                 continue;
             };
-            // Of a collection it doesn't know; and of one that grows as it's
-            // extended by an iterator its caller gives, whose capacity, or
-            // whose items' size, isn't known there (`extended_grown`).
-            let callers = |ty: Ty<'tcx>| ty.has_param() || ty.has_aliases();
-            let given = extend
-                && (recognition.is_unknown(collection)
-                    || recognition.grows_as_it_extends(collection)
-                        && callers(iterable)
-                        && !(known(def_id, body).contains(&block)
-                            && generic_args.types().nth(1).is_some_and(|item| !callers(item))));
+            // Of a collection it doesn't know, whose dictionary's `extend`
+            // can't ask its hint as std's does where capacities aren't
+            // kept. One that grows as it's extended by an iterator its
+            // caller gives keeps capacities (`extends_as_it_fills`).
+            let given = extend && recognition.is_unknown(collection);
             if given {
                 extends.entry(def_id).or_default().insert((collection, iterable));
             }

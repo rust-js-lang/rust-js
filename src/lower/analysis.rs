@@ -1352,7 +1352,10 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         drops: &items_drop,
         taken: &drop_params,
     };
-    let facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given, &recognition, item_drops);
+    // A `Vec`'s capacity kept as std grows it where the crate, or a library it uses, asks it (ADR 0419).
+    let asks_capacity = asks_capacity(tcx, all_bodies) || recognition.extends_as_it_fills(all_bodies);
+    let kept = (item_drops, asks_capacity || foreign.keeps_capacity());
+    let facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given, &recognition, kept);
     let (failing, writes_may_fail) = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
     let throwing = throwing::throwing_fns(tcx, &recognition, all_bodies);
     let (never_unwinding, quiet_fns) = unwinding::found(tcx, &recognition, all_bodies, &runs);
@@ -1368,9 +1371,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
                 && !caller_locations.contains(&m)
         })
     });
-    // And where an `extend` asks the crate's own hint as a `Vec` fills; generic code's refused at its caller (#849).
-    let asks_capacity = asks_capacity(tcx, all_bodies) || recognition.extends_as_it_fills(all_bodies);
-    crate::lower::iterators::refuse_unknown_capacity_extends(&recognition, all_bodies);
+    // Generic code's `extend` asking the crate's own hint, refused at its caller where none's kept (#849).
+    crate::lower::iterators::refuse_unknown_capacity_extends(&recognition, all_bodies, kept.1);
     let generic_consts = generic_consts(tcx, all_bodies);
     // A program its tests use whose dictionaries lack a constant (#597).
     programs::refuse_lacked_consts(tcx, &foreign, &generic_consts);

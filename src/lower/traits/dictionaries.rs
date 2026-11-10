@@ -15,6 +15,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `String`'s by `char`s and a hash table's (#849).
         let items = self.dictionary_reserved(Expr::var("items"), ty, item, collection.clone());
         let mut body = Vec::new();
+        // Grown as std's grows it, where capacities are kept (#1180).
+        let items = self.dictionary_grown(collection.clone(), items, (ty, item), span, &mut body)?;
         // The items' type said as the collection's, which no range is, so
         // what's given is iterated as it is.
         let given = [ty, ty];
@@ -34,9 +36,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(Std::Comb(comb)) => Some(self.comb_values(
                 comb,
                 (vec![collection.clone(), items.clone()], &given),
-                // A dictionary's, of any iterator generic code gives it, its
-                // collection's capacity its caller's: asked as before (#849).
-                (false, None),
+                false,
                 none,
                 span,
                 &mut body,

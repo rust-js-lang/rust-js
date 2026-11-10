@@ -60,6 +60,17 @@ pub(crate) fn shortens_vec(tcx: TyCtxt<'_>, def_id: DefId) -> Option<usize> {
     }
 }
 
+/// Whether `def_id`, of one of `ARRAY_COLLECTIONS`, may add to it, which
+/// std does by reserving as many as it adds, `grow_amortized` (#1180): the
+/// array it's given first.
+pub(crate) fn grows_vec(tcx: TyCtxt<'_>, def_id: DefId) -> Option<usize> {
+    match array_collection_method(std_path(tcx, def_id))? {
+        "push" | "push_back" | "push_front" | "insert" | "append" | "extend_from_slice" | "extend_from_within"
+        | "resize" | "resize_with" => Some(0),
+        _ => None,
+    }
+}
+
 /// The method of one of `ARRAY_COLLECTIONS` that `path` names.
 fn array_collection_method(path: &str) -> Option<&str> {
     ARRAY_COLLECTIONS.iter().find_map(|prefix| path.strip_prefix(prefix))

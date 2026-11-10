@@ -132,4 +132,12 @@ export const mutations: Mutation[] = [
     replace: "            \"std::slice::IterMut\"\n",
     tests: ["test/crates.test.ts", "-t", "length_first_eq"],
   },
+  {
+    name: "lower-bound-of-counted-arrays-stds",
+    breaks: "a `chars()` JS counts is taken to have std's lower bound, so a `Vec` collected of it in a crate that reads a capacity compiles, its capacity another (#1180)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "        !self.is_array_iter(ty)\n            || self\n",
+    replace: "        true || !self.is_array_iter(ty)\n            || self\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of chars"],
+  },
 ];

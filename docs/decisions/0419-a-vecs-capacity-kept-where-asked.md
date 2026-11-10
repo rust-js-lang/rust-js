@@ -3,11 +3,11 @@
 Status: Accepted. Amends [0315](0315-vec-capacity-and-edits.md), which
 refused `capacity()`. Amended by
 [0774](0774-room-past-isize-max-bytes-panics.md): the room asked is checked
-first.
+first; and below (#849, #1180), its number std's growth's.
 
-Case: C ([0262](0262-when-rust-and-js-disagree.md)) for what std promises
-of a capacity; B for its number, which native Rust's growth decides and
-std doesn't promise, listed below.
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): `capacity()` is
+printed, so results change; its number is std's growth's (#1180, the
+user's decision; it was case B, its own number, which goes).
 
 ## Context
 
@@ -52,11 +52,9 @@ library it uses does: at least its length, what `with_capacity` and
 
 ## Consequences
 
-- **Its number isn't native Rust's**: a `Vec` grown by `push` has its
-  length as its capacity, where native Rust's has doubled. std promises a
-  capacity is at least what's needed, not which it is: a program that
-  prints one sees a different number (case B).
-- `VecDeque`'s, `String`'s and a map's capacity stay refused.
+- ~~Its number isn't native Rust's~~: superseded by the 2026-11-10
+  amendment below, its number std's.
+- `String`'s and a map's capacity stay refused.
 
 ## Amendment: a `VecDeque`'s and a `BinaryHeap`'s
 
@@ -84,4 +82,70 @@ asks them does. A `Vec` grown by `push` still has its length as its
 capacity, so such an `extend` is exact only of one made in the same
 function and only extended or reserved since, and refused elsewhere
 (ADR 1097, the user's (B)).
+
+## Amended (2026-11-10, #1180): its number std's growth's
+
+**User decision: match std's growth.** `capacity()` is printed, so a
+number other than std's changes results, which case B wasn't listed as
+in ADR 0262 or the guide: case C. Where capacities are kept, each
+`Vec`, `VecDeque` and `BinaryHeap` keeps the one std's growth gives it;
+a crate that keeps none prints nothing more.
+
+| Rust | std's growth | JS, where kept |
+|---|---|---|
+| `push`, `insert`, `push_front`, `push_back` | `grow_one`: `grow_amortized(len, 1)` | `$grew(v, size, v.length, v.push(x))` |
+| `append`, `extend_from_slice`, `extend_from_within`, `resize`, `resize_with`, `extend` of a `TrustedLen` iterator | `reserve(added)` | `$grew(..)` of the call |
+| `extend` of another | `extend_desugared`: where full, `reserve(lower + 1)` | `$grownBy(v, it, size)` |
+| `collect()` of another | `SpecFromIterNested`: `max(MIN_NON_ZERO_CAP, lower + 1)`, then as `extend` | `$grownVec($roomForHint(..), collect)` |
+| `collect()` into a `Result` or an `Option` of a `Vec` | the `GenericShunt`'s lower bound, none | `$shuntGrowth`'s, kept |
+| `BinaryHeap::append` of a longer heap | the two swapped first | their capacities swapped |
+| `capacity()` of items of no size | `usize::MAX` | `$capacity(v, 0)` |
+
+`grow_amortized` is at least twice the capacity, as many as needed, and
+`MIN_NON_ZERO_CAP`: 8 of 1-byte items, 4 up to 1 KiB, 1 above.
+
+- **Which calls add to a `Vec` is `recognition::grows_vec`'s**, beside
+  `shortens_vec`, and `extend_grows`'s of `Extend::extend`; the items whose
+  size each grows by, `grown_vec_item`, the one answer of the lowering
+  (`mir_std_call`, `capacity_item_size`) and the analysis
+  (`grown_asked`), which asks a caller's `TSize` where they're a type
+  parameter's.
+- **Whether an `extend` grows item by item is `extend_fills`'s**: by an
+  iterator whose hint runs the crate's own, or, where capacities are
+  kept, that isn't `TrustedLen`. A dictionary's `extend`, of an iterator
+  generic code gives, `$grownBy` alike where capacities are kept, which
+  of a `TrustedLen` one, whose hint is exact, reserves what's left where
+  it's first full, as std's reserve of them all leaves it.
+- **Case B goes: `mir/known_capacity.rs` and its refusals are gone.** An
+  `extend` asking the crate's own hint knew the capacity only of a `Vec`
+  made in the same function and only extended or reserved since (ADR
+  1097, the user's (B)); every `Vec` of a crate that keeps capacities is
+  std's now, so each such `extend` compiles. Generic code's in a crate
+  that keeps none stays refused at the call that gives it its types.
+- **Refused where JS's hint hasn't std's lower bound**, by which std
+  grows a `Vec` that isn't `TrustedLen`: an array JS counts of an iterator
+  std doesn't, no `ExactSizeIterator`, a string's `chars()` or
+  `split(..)` (`lengths.rs`'s `lower_bound_is_stds`), as `size_hint()` of
+  them is; and a bound's `extend` of a `Vec<T>` of a type parameter's
+  items, whose dictionary isn't given their size.
+
+`test/corpus/vec_capacity_grown.rs` asks each, of items of 1, 2, 8 and
+2000 bytes and none, against native Rust on wasm32;
+`extend_asks_hint_capacity_grown.rs` the `extend`s case B refused.
+
+The readability baseline is blessed: a renamed `x$1`'s share moved from
+511 to 511.1 in 10,000 lines, of `length$1` and its kind, the length an
+`extend` written as an index loop held before it (`$grew(v, size,
+length, ..)`, ADR 1042), in a crate that reads a capacity, and the new
+case's own names; no construct of them new.
+
+Not yet, filed with #1180: a `collect()` std makes in place of a
+`vec::IntoIter`'s buffer, whose capacity is its source's; a `Vec` a
+`String` gives, `into_bytes()`, whose capacity is the string's, which a
+JS string has none of; and a `Vec` a library that keeps no capacities
+grew, given to a crate that reads one; and a `Vec` of items whose size no
+caller gives, an associated type's, `I::Item`, or one built of a type
+parameter, `vec::IntoIter<I::Item>` (`capacity_item_size`'s `None`), which
+itertools pushes to: its growth isn't kept, as before, never refused, as
+#934's facts of associated types will give it.
 

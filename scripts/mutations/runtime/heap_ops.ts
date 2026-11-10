@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "  } finally {\n  }\n  $heapRebuildTail(heap, start, ord);\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic.rs$"],
   },
+  {
+    name: "heap-append-capacities-unswapped",
+    breaks: "a heap's `append` of a longer one keeps each one's capacity, where std swaps them first (#1180)",
+    file: "src/runtime/heap_ops.js",
+    find: "    $capacities.set(heap, theirs);\n    $capacities.set(other, mine);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
+  },
 ];

@@ -1157,7 +1157,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(self.std_value_as(value, output, arg_tys));
         }
         let given = self.call_given(state, nulled);
-        let value = self.mir_std_call(
+        let value = self.grown_std_call(
             state,
             (known, def_id),
             generic_args,

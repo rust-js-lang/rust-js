@@ -16,8 +16,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option`'s combinator is given its argument where its subject goes",
     file: "src/lower/std_types/values.rs",
-    find: "                    comb,\n                    (values, tys),\n                    (made, Some(call.capacity_known)),\n",
-    replace: "                    comb,\n                    (values[1..].to_vec(), &tys[1..]),\n                    (made, Some(call.capacity_known)),\n",
+    find: "                return self.comb_values(comb, (values, tys), made, generic_args, call.span, out);\n",
+    replace: "                return self.comb_values(comb, (values[1..].to_vec(), &tys[1..]), made, generic_args, call.span, out);\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
