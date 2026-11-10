@@ -320,6 +320,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 "`eq` of two iterators std asks the lengths of first, whose lengths rust-js can't count before stepping them",
             ));
         }
+        // Of a library's generic code its consumers may give two `TrustedLen`
+        // iterators, whose lengths std compares first, where stepping them
+        // may run code: its JS compares item by item, and no caller of it
+        // is seen to refuse, so it's refused here (#1182, an interim refusal
+        // till generic code is given each side's length).
+        // Of what holds a type parameter, which rustc can't prove of it here:
+        // a parameter's or an associated type's may be, and a type whose
+        // `TrustedLen` some impl gives, as its parameters may meet it, a
+        // `Map`'s; a `Filter`, which no impl gives, never is.
+        let may_be_trusted = |ty: Ty<'tcx>| {
+            trusted_len.is_some_and(|trusted| match *ty.kind() {
+                _ if !ty.has_param() => self.recognition().implements_trait(ty, trusted),
+                ty::Param(_) | ty::Alias(..) => true,
+                ty::Adt(adt, _) => self.tcx.all_impls(trusted).any(|imp| {
+                    matches!(*self.tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
+                        ty::Adt(of, _) if of.did() == adt.did())
+                }),
+                _ => true,
+            })
+        };
+        let consumers_give = self.krate.library
+            && (iter_ty.has_param() || other_iter.has_param())
+            && may_be_trusted(iter_ty)
+            && may_be_trusted(other_iter)
+            && (self.frame.owner.as_local()).is_some_and(|own| {
+                self.tcx
+                    .reachable_set(())
+                    .contains(&self.tcx.typeck_root_def_id_local(own))
+            });
+        if lengths.is_none()
+            && consumers_give
+            && ([iter_ty, other_iter].iter().any(|ty| ty.has_param() || runs_code(ty))
+                || [item, other_item]
+                    .iter()
+                    .any(|&t| self.drops(t) != crate::lower::drops::Drops::Nothing))
+        {
+            return Err(self.unsupported(
+                span,
+                "a library's `eq` of two iterators its consumers may give `TrustedLen`, which std asks the lengths of first, whose lengths its generic code can't know before stepping them (#1182)",
+            ));
+        }
         let other = self.compared_closing(other, other_ty, span)?;
         // `it`, closed already where it closes it (`dropping_source`'s
         // `consumer_closing`), as the one answer of who drops it: not again,

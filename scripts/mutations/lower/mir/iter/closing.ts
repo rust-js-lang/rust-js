@@ -392,4 +392,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
   },
+  {
+    name: "library-eq-of-trusted-allowed",
+    breaks: "a library's generic `eq` of two iterators its consumers may give `TrustedLen` compiles, comparing item by item where std compares their lengths first, a wrong answer no caller is seen to refuse (#1182)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        let consumers_give = self.krate.library\n",
+    replace: "        let consumers_give = false && self.krate.library\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a library's eq of two iterators its consumers may give TrustedLen"],
+  },
+  {
+    name: "library-eq-of-a-filter-refused",
+    breaks: "a library's generic `eq` of a filter, which is never `TrustedLen`, is refused as one its consumers may give `TrustedLen` (#1182)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "                ty::Adt(adt, _) => self.tcx.all_impls(trusted).any(|imp| {\n",
+    replace: "                ty::Adt(adt, _) => true || self.tcx.all_impls(trusted).any(|imp| {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a library's eq of two iterators its consumers may give TrustedLen"],
+  },
 ];

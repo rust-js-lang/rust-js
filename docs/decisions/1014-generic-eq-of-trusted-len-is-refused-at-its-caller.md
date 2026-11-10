@@ -103,3 +103,19 @@ The readability baseline is blessed: the JS these cases no longer have,
 and the filters and the `map` they have now, moved `$iter`'s share from
 92.4 to 92.5 and a renamed `x$1`'s from 510.8 to 511 in 10,000 lines, no
 construct of them new.
+
+## Amended: a library's generic `eq` its consumers may give `TrustedLen` iterators (#1182)
+
+A library doesn't see its consumers' calls, so `callers_decide` can't
+refuse one: `pub fn equal<I: IntoIterator, J: IntoIterator>(a: I, b: J)`'s
+`a.into_iter().eq(b)` compiled, and a consumer that gave it two `Vec`s of
+unequal lengths got their items compared one by one, where std compares
+the lengths first. **A library's `eq` in code its consumers may
+instantiate (rustc's `reachable_set`), of two sides each of which may be
+`TrustedLen`, one holding a type parameter, is refused**, an interim
+refusal till generic code is given each side's length (#1170). A side may
+be `TrustedLen` where it's a type parameter or an associated type, or a
+type some impl of `TrustedLen` is of, a `Map`; a `Filter`, which none
+is, never is, so `a.into_iter().filter(f).eq(b)` compiles.
+`test/diagnostics.test.ts` holds both. Mutations
+`library-eq-of-trusted-allowed` and `library-eq-of-a-filter-refused`.

@@ -427,6 +427,28 @@ test("another crate's function in an extern block is refused where it's called",
 });
 
 // A copied default's THIR is in its trait's terms, and what its patterns
+// A library's generic `eq` of two `IntoIterator`s its consumers may give `TrustedLen` iterators,
+// whose lengths std compares first, which no caller of it is seen to refuse: refused, an interim
+// refusal, till generic code is given each side's length (#1182). Of a filter, which isn't
+// `TrustedLen`, it compiles.
+test("a library's eq of two iterators its consumers may give TrustedLen is refused, of a filter it compiles", () => {
+  const dir = fixture("library-generic-eq");
+  const input = join(dir, "lib.rs");
+  const build = (source: string) => {
+    writeFileSync(input, source);
+    const out = runSync([compiler, input, "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "lib.manifest.json")], dir, 60_000);
+    return out.stderr.split("\n").filter((line) => line.startsWith("error: rust-js"));
+  };
+  const refused = build(
+    "pub fn equal<I: IntoIterator, J: IntoIterator>(a: I, b: J) -> bool\nwhere\n    I::Item: PartialEq<J::Item>,\n{\n    a.into_iter().eq(b)\n}\n",
+  );
+  expect(refused.some((line) => line.includes("which std asks the lengths of first") && line.includes("#1182"))).toBe(true);
+  const filtered = build(
+    "pub fn equal<I: IntoIterator, J: IntoIterator>(a: I, b: J) -> bool\nwhere\n    I::Item: PartialEq<J::Item>,\n{\n    a.into_iter().filter(|_| true).eq(b)\n}\n",
+  );
+  expect(filtered).toEqual([]);
+});
+
 // move is asked what it drops in its impl's (#828): a library's `[_, b]` of
 // its `Self::Item`s, whose consumers' items may drop, moves a part a way
 // MIR's lowering doesn't follow, and is refused, as a generic function's is.
