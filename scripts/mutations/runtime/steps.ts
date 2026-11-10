@@ -507,4 +507,12 @@ export const mutations: Mutation[] = [
     replace: "  return collect();\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic\\.rs$"],
   },
+  {
+    name: "own-next-unkept",
+    breaks: "a `$Steps` stepped by JS's protocol keeps no steps of its own before, so `$closing` steps it by those that close it at its end, though what holds it drops it later (#1239)",
+    file: "src/runtime/steps.js",
+    find: "      this.ownNext = next;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^from_iter_holds_what_generic_code_gives\\.rs$"],
+  },
 ];

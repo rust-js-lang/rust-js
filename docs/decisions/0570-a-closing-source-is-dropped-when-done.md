@@ -293,3 +293,19 @@ if the body drops it, or steps it by reference (#392). The two mutations
 of the rule, `moved-into-owner-unheld` and `owner-closing-held-again`, are
 gone with it. `iterator_moved_into_a_holder` still runs both holders
 against native Rust, `kept` and `twice`, without the `$held`.
+
+## Amendment: what closes a source steps it by its own steps (2026-11-10, #1239)
+
+Generic code's `collect()` into a `B` the crate implements gives its
+`from_iter` `$closing(Iterator.from(it), drop)`; the `from_iter` holds it,
+`$held`, and drops it after its loop, as Rust drops its local. But JS's
+protocol, `Iterator.from`, had already made `it`, a `$Steps`, close itself
+when stepped to its end, whatever held it: so the zip a generic `collect()`
+was given dropped what it held before the `from_iter` printed what it
+summed, where native Rust drops it after. A `$Steps` JS's protocol steps
+keeps its steps from before, `ownNext`, and `$closing` steps what it wraps
+by them: what closes it is the `$closing`, held where its owner holds it.
+One a variable holds and moves into a consumer stepped to its end, `let
+mut c = ..; c.collect()`, still closes there, as Rust drops it. Held by
+`from_iter_holds_what_generic_code_gives.rs` and the mutations
+`closing-steps-by-closing-next` and `own-next-unkept`.

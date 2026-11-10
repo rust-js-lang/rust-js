@@ -357,4 +357,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_count_second_panic_aborts.rs$"],
   },
+  {
+    name: "closing-steps-by-closing-next",
+    breaks: "what generic code gives the crate's own `from_iter`, `$closing(Iterator.from(it), drop)`, is closed as it's stepped to its end, by the `next` JS's protocol gave it, though the `from_iter` holds it and drops it after its loop (#1239)",
+    file: "src/runtime/closing.js",
+    find: "  const closing = new $Steps(() => done(it.ownNext !== undefined ? it.ownNext() : it.next()), close);\n",
+    replace: "  const closing = new $Steps(() => done(it.next()), close);\n",
+    tests: ["test/corpus.test.ts", "-t", "^from_iter_holds_what_generic_code_gives\\.rs$"],
+  },
 ];

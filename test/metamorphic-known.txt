@@ -21,9 +21,18 @@ plain std boxed address_of_an_option_payload.rs
 plain std dyn-fn consumed_iterator_dropped_as_its_function_panics.rs
 
 #1239 P0 (iterators): generic code's collect() into a B: FromIterator isn't std's Vec collect: no hint asked, another capacity, in-place and unwind drops
-plain std generic-instances capacity_of_text_patterns.rs
-plain std generic-instances capacity_of_what_std_hints_less.rs
 plain std generic-instances collect_endless_once_stepped.rs
 plain std generic-instances fold_drops_moved_function_first.rs
-plain std generic-instances held_adapters_stepped_to_their_end.rs
 plain std generic-instances zip_of_a_boxed_map.rs
+
+#1263 P2 (capacity): capacity() after generic code's collect into a B: FromIterator of an iterator std can't collect in place throws #1180's error
+plain std generic-instances capacity_of_text_patterns.rs
+plain std generic-instances capacity_of_what_std_hints_less.rs
+
+#1270 P0 (drops): an iterator stored in an Rc<RefCell<..>> (or another place) isn't held: closed when stepped to its end, before its owner drops it
+plain std array from_iter_holds_what_generic_code_gives.rs
+plain std boxed from_iter_holds_what_generic_code_gives.rs
+plain std field from_iter_holds_what_generic_code_gives.rs
+plain std option from_iter_holds_what_generic_code_gives.rs
+plain std rc-refcell from_iter_holds_what_generic_code_gives.rs
+plain std tuple from_iter_holds_what_generic_code_gives.rs

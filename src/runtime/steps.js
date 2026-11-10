@@ -58,6 +58,9 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     if (!this.closesAtEnd) {
       this.closesAtEnd = true;
       const next = this.next;
+      // Its steps before, which what closes it itself steps it by,
+      // `$closing`'s (#1239).
+      this.ownNext = next;
       this.next = () => {
         const step = next();
         if (step.done) this.return();

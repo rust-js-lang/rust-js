@@ -17,7 +17,10 @@ function $closing(it, drop, slices = true) {
     if (step.done && !closing.held) close();
     return step;
   };
-  const closing = new $Steps(() => done(it.next()), close);
+  // By its own steps, not those that close it at its end, which JS's
+  // protocol gave it, generic code's `Iterator.from(it)`: what closes it is
+  // this, held where its owner holds this, a `from_iter`'s loop (#1239).
+  const closing = new $Steps(() => done(it.ownNext !== undefined ? it.ownNext() : it.next()), close);
   closing.from = [it];
   // Of an array's items it owns, a `Vec`'s `IntoIter`'s, std's `nth_back`:
   // what it passes over dropped as one slice, front to back, as its
