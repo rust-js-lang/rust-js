@@ -116,4 +116,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
   },
+  {
+    name: "eq-side-into-iter-built",
+    breaks: "`<I as IntoIterator>::IntoIter` isn't the side a type parameter's caller gives, so itertools' `equal` is refused as a side made of type parameters (#1182)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "                Some(EqSide::Given(alias.self_ty()))\n",
+    replace: "                Some(EqSide::Built)\n",
+    tests: ["test/crates.test.ts", "-t", "length_first_eq"],
+  },
+  {
+    name: "counted-where-given-none",
+    breaks: "an array's iterator given to generic code's `eq` isn't counted, so a range given it is refused (#1182)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "            \"std::slice::Iter\" | \"std::slice::IterMut\" | \"std::vec::IntoIter\" | \"std::array::IntoIter\" | \"std::ops::Range\"\n",
+    replace: "            \"std::slice::IterMut\"\n",
+    tests: ["test/crates.test.ts", "-t", "length_first_eq"],
+  },
 ];

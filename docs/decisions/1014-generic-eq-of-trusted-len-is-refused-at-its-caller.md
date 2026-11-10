@@ -119,3 +119,38 @@ type some impl of `TrustedLen` is of, a `Map`; a `Filter`, which none
 is, never is, so `a.into_iter().filter(f).eq(b)` compiles.
 `test/diagnostics.test.ts` holds both. Mutations
 `library-eq-of-trusted-allowed` and `library-eq-of-a-filter-refused`.
+
+## Amended (2026-11-10, #1182 (a)): a caller says whether a side's length is compared first
+
+The two refusals above refused what std answers and JS can: itertools'
+`pub fn equal<I, J>(a: I, b: J)`, whose `a.into_iter().eq(b)` is exactly
+the library's shape, was refused, and with it itertools. **Each side of
+generic code's `eq` given as a type parameter's, `I` or `<I as
+IntoIterator>::IntoIter` (`recognition::eq_sides`), asks its caller a new
+type fact, `LengthFirst`**, which a library's consumers give through its
+manifest as they give `TSize`:
+
+| Of the type a caller gives | `LengthFirst` | generic code's `$iterEqGiven` |
+|---|---|---|
+| not `TrustedLen` | `false` | item by item, as std's `iter_compare` |
+| `TrustedLen`, its JS counted: an array given whole, an array's or a `Vec`'s iterator (`$iter`), a range of numbers (`counts_where_given`) | `true` | its `len()` or its exact hint, then std's `SpecIterEq`: lengths first |
+| `TrustedLen`, its steps running nothing and its items dropping nothing | `"pure"` | collected first, then its length, unseen |
+| another `TrustedLen`, a `map` whose closure runs | refused at the caller | |
+
+`TrustedLen` is the type's, never the value's: an exact hint isn't one, a
+`Skip<Chain<..>>`'s, and JS's iterators a caller makes, `v.values().map(f)`,
+know no count (ADR 0170), so the caller, which knows both, decides, and the
+value is read only where its caller says it counts. A side made of type
+parameters, `a.into_iter().map(f).eq(b)`, stays `callers_decide`'s and the
+library refusal's, as above. `test/crates/pairs/length_first_eq` holds a
+library's `equal` given unequal `Vec`s, an array, a filter, a slice's
+copies reversed and a range, each against native Rust;
+`test/diagnostics.test.ts` the refusals that remain. The fact enters #1170's
+catalogue through `TypeFact::ALL` (ADR 1115). `callers-eq-unnormalized` is
+retired: the projection it held, `<I as IntoIterator>::IntoIter`, is a side
+its caller's `LengthFirst` answers now, and a side made of one, a `map` of
+it, is seen `TrustedLen` normalized or not; the normalizing stays, as a
+zip's needs it (#1162). `adapter_drops.rs` and
+`into_iterator_named_by_another_bound.rs` give their generic `eq`
+`ILengthFirst` and `JLengthFirst`.
+

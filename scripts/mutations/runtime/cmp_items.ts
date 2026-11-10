@@ -51,4 +51,12 @@ export const mutations: Mutation[] = [
     replace: "        const q = y.next();\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_comparisons_drop_as_std.rs$"],
   },
+  {
+    name: "eq-given-item-by-item",
+    breaks: "generic code's `eq` of two `TrustedLen` sides compares them item by item, where std compares their lengths first (#1182)",
+    file: "src/runtime/cmp_items.js",
+    find: "  if (!firstA || !firstB) return $iterEq(a, b, eq, dropA, dropB);\n",
+    replace: "  return $iterEq(a, b, eq, dropA, dropB);\n",
+    tests: ["test/crates.test.ts", "-t", "length_first_eq"],
+  },
 ];

@@ -11,6 +11,7 @@ import {
   $intoIter,
   $iter,
   $iterEq,
+  $iterEqGiven,
   $iterator,
   $lazyChain,
   $lazySkipWhile,
@@ -133,7 +134,17 @@ function firsts(i, n, IIntoIterator, dropIItem, dropIIntoIter) {
   );
 }
 
-function equal(a, b, IItemPartialEqJItem, dropJ, dropIItem, dropIIntoIter, dropJItem) {
+function equal(
+  a,
+  b,
+  IItemPartialEqJItem,
+  ILengthFirst,
+  JLengthFirst,
+  dropJ,
+  dropIItem,
+  dropIIntoIter,
+  dropJItem,
+) {
   let b$live = true;
   let iter;
   try {
@@ -149,12 +160,14 @@ function equal(a, b, IItemPartialEqJItem, dropJ, dropIItem, dropIIntoIter, dropJ
   }
   let result;
   try {
-    result = $iterEq(
+    result = $iterEqGiven(
       iter,
-      $closing(Iterator.from(b), dropJ, false),
+      $closing($intoIter(b), dropJ, false),
       (a, b) => IItemPartialEqJItem.eq(a, b),
       dropIItem,
       dropJItem,
+      ILengthFirst,
+      JLengthFirst,
     );
   } catch (error) {
     $cleanup(() => {
@@ -1656,6 +1669,8 @@ function main() {
       tmp$14,
       tmp$15,
       loudPartialEq,
+      true,
+      false,
       (filter) => {
         filter.return();
       },

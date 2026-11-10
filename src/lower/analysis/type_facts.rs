@@ -45,6 +45,7 @@ pub(super) fn type_fact_params<'tcx>(
     // What `std_iterator_steps` steps a compiled std iterator's struct by.
     let steps = crate::lower::recognition::STRUCT_STEPS.map(|name| trait_method(tcx, iterator, name));
     let collect = trait_method(tcx, iterator, "collect");
+    let compares = [trait_method(tcx, iterator, "eq"), trait_method(tcx, iterator, "ne")];
     let mut asking = Asking::default();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
@@ -73,6 +74,9 @@ pub(super) fn type_fact_params<'tcx>(
                 }
             }
             for (callee, args) in named {
+                for index in eq_asks(recognition, typing_env, caller, (callee, args), &compares) {
+                    asking.asked.insert((caller, index, TypeFact::LengthFirst));
+                }
                 // A map or a set of a type parameter's keys a std function
                 // makes, as a body read from its THIR asks it, so a library's
                 // default compiled here from its MIR takes the class its
@@ -210,6 +214,9 @@ pub(super) fn type_fact_params<'tcx>(
                         asking.asked.insert((caller, index, TypeFact::TrustedLen));
                     }
                 }
+            }
+            for index in eq_asks(recognition, typing_env, caller, (callee, args), &compares) {
+                asking.asked.insert((caller, index, TypeFact::LengthFirst));
             }
             // An unstable sort of a type parameter's items, whose order std
             // picks by their layout: its caller's, `TSort` (ADR 0471).
@@ -800,6 +807,44 @@ fn grown_asked<'tcx>(
     let foreign = recognition.foreign;
     let size = asked_of(tcx, foreign, typing_env, caller, (dest, TypeFact::Size), &None);
     size.into_iter().collect()
+}
+
+/// Of generic code's `a.eq(b)`, a call of `callee`, one of `compares`,
+/// with `args`, of what std may compare the lengths of first: the slot of
+/// each side given as a type parameter's, whose caller says whether it's
+/// `TrustedLen` and how JS counts it, `ILengthFirst` (`eq_sides`, #1182).
+/// Of a body read from its THIR or its MIR alone, a library's a consumer
+/// compiles.
+fn eq_asks<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    caller: DefId,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+    compares: &[DefId; 2],
+) -> Vec<u32> {
+    use crate::lower::recognition::EqSide;
+    let [this, other, ..] = args.types().collect::<Vec<_>>()[..] else {
+        return Vec::new();
+    };
+    if !compares.contains(&callee) {
+        return Vec::new();
+    }
+    let recognition = crate::lower::recognition::Recognition {
+        typing_env,
+        ..*recognition
+    };
+    let Some(sides) = recognition
+        .eq_sides(this, other)
+        .filter(|sides| !sides.contains(&EqSide::Built))
+    else {
+        return Vec::new();
+    };
+    (sides.into_iter())
+        .filter_map(|side| match side {
+            EqSide::Given(param) => slot_of(recognition.tcx, recognition.foreign, caller, param),
+            _ => None,
+        })
+        .collect()
 }
 
 /// What the bodies ask, as they're read.

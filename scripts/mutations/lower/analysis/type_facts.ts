@@ -547,4 +547,12 @@ export const mutations: Mutation[] = [
     replace: "                if let Some((index, fact)) = map_made(tcx, foreign, caller, (callee, args)).filter(|_| false) {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_default_map_keys"],
   },
+  {
+    name: "eq-asks-of-mir-unread",
+    breaks: "a library's generic `eq`, compiled by its consumer from its MIR, asks no `LengthFirst`, so the consumer's call is refused (#1182)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            for (callee, args) in named {\n                for index in eq_asks(recognition, typing_env, caller, (callee, args), &compares) {\n",
+    replace: "            for (callee, args) in named {\n                for index in eq_asks(recognition, typing_env, caller, (callee, args), &compares).into_iter().filter(|_| false) {\n",
+    tests: ["test/crates.test.ts", "-t", "length_first_eq"],
+  },
 ];

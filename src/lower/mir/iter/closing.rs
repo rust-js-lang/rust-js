@@ -2,6 +2,7 @@
 //! drops, and the last value.
 
 use super::*;
+use crate::lower::recognition::{EqSide, TypeFact};
 use crate::lower::recognition::{OwnStep, Reach};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -271,8 +272,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ne: bool,
         span: Span,
     ) -> R<Expr> {
-        // A range's, or the crate's, stepped as one, as `chain`'s and `zip`'s are.
-        let other = self.as_js_iterator(other, other_ty, span)?;
+        // Of generic code's, each side's `LengthFirst`, its caller's where it's
+        // a type parameter's (`eq_sides`, #1182).
+        let given = (self.recognition().eq_sides(iter_ty, other_ty)).filter(|sides| {
+            !sides.contains(&EqSide::Built) && sides.iter().any(|side| matches!(side, EqSide::Given(_)))
+        });
+        // A range's, or the crate's, stepped as one, as `chain`'s and `zip`'s
+        // are; of a type parameter's given it, its `$intoIter`, an array's
+        // `$iter`, which knows how many it has, as `LengthFirst` reads it.
+        let other = match given {
+            Some(_) => self.iterable_js_iterator(other, other_ty, span)?,
+            None => self.as_js_iterator(other, other_ty, span)?,
+        };
         // Of two `TrustedLen` iterators, std's `SpecIterEq` asks their
         // lengths first, and gives `false` of unequal ones with no item
         // stepped or compared (ADR 0992): each counted where it's made,
@@ -341,7 +352,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
         };
         let consumers_give = self.krate.library
-            && (iter_ty.has_param() || other_iter.has_param())
+            && (self.recognition().eq_sides(iter_ty, other_ty)).is_some_and(|sides| sides.contains(&EqSide::Built))
             && may_be_trusted(iter_ty)
             && may_be_trusted(other_iter)
             && (self.frame.owner.as_local()).is_some_and(|own| {
@@ -358,7 +369,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Err(self.unsupported(
                 span,
-                "a library's `eq` of two iterators its consumers may give `TrustedLen`, which std asks the lengths of first, whose lengths its generic code can't know before stepping them (#1182)",
+                "a library's `eq` of an iterator made of a type parameter's, `a.map(f).eq(b)`, which its consumers may make `TrustedLen`, whose length std asks first, and its generic code can't know before stepping it (#1182)",
             ));
         }
         let other = self.compared_closing(other, other_ty, span)?;
@@ -369,6 +380,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let drop_a = self.std_drop_function(item, span)?;
         let drop_b = self.std_drop_function(other_item, span)?;
         let mut list = vec![it, other];
+        // Of generic code's, both its sides' `LengthFirst`, `$iterEqGiven`
+        // (#1182).
+        if let Some(sides) = given {
+            list.extend([compare, drop_a, drop_b].map(|each| each.unwrap_or_else(Expr::undefined)));
+            for (side, ty) in sides.into_iter().zip([iter_ty, other_ty]) {
+                list.push(match side {
+                    EqSide::Given(param) => self.type_fact_value(param, TypeFact::LengthFirst, span)?,
+                    _ => self.length_first(ty, span)?,
+                });
+            }
+            let same = Expr::call_helper("$iterEqGiven", list);
+            return Ok(match ne {
+                true => Expr::unary(js::UnaryOp::Not, same),
+                false => same,
+            });
+        }
         if compare.is_some() || drop_a.is_some() || drop_b.is_some() || lengths.is_some() {
             list.push(compare.unwrap_or_else(Expr::undefined));
         }
@@ -384,6 +411,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => Expr::unary(js::UnaryOp::Not, same),
             false => same,
         })
+    }
+
+    /// Whether generic code's `eq` compares a `ty` it's given, an `Iterator`
+    /// or an `IntoIterator`, by its length first, as std's `SpecIterEq` does
+    /// of a `TrustedLen`, `LengthFirst` (#1182): `true` where its JS knows
+    /// how many it has, an array given whole, an array's or a `Vec`'s
+    /// iterator, `$iter`, or a range; `"pure"` where stepping it runs
+    /// nothing and drops nothing, so it's collected first; `false` of one
+    /// that isn't `TrustedLen`. Refused of another, which std's wouldn't
+    /// step or drop as JS's would.
+    pub(in crate::lower) fn length_first(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let iter = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, ty);
+        let Some(trusted) = crate::lower::recognition::fact_trait(self.tcx, TypeFact::TrustedLen) else {
+            return Ok(Expr::bool(false));
+        };
+        match self.recognition().trait_holds(iter, trusted) {
+            Some(true) => {}
+            Some(false) => return Ok(Expr::bool(false)),
+            None => {
+                return Err(self.unsupported(
+                    span,
+                    &format!("giving generic code that compares it by `eq` a `{ty}`, which its own callers make `TrustedLen` or not"),
+                ));
+            }
+        }
+        let whole = self.slice_item(ty.peel_refs()).is_some() && !self.implements_iterator(ty);
+        if whole || self.recognition().counts_where_given(iter) {
+            return Ok(Expr::bool(true));
+        }
+        let runs_code = (iter.walk()).any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn()));
+        let drops = self
+            .iterator_item(iter)
+            .is_none_or(|item| self.drops(item) != crate::lower::drops::Drops::Nothing);
+        if !runs_code && !drops {
+            return Ok(Expr::str("pure"));
+        }
+        Err(self.unsupported(
+            span,
+            &format!("giving generic code that compares it by `eq` a `{ty}`, a `TrustedLen` whose length std compares first, which JS can't count before stepping it, and stepping it runs code or drops items std's wouldn't (#1182)"),
+        ))
     }
 
     /// `a.cmp(b)` of two iterators, `partial_cmp`, and `lt`, `le`, `gt` and

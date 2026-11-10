@@ -204,18 +204,21 @@ for (const [name, source, message, crate] of [
   // temporaries, which rust-js can't count before stepping them, refused, as their closures
   // would run where Rust's don't (ADR 0998, #386).
   ["eq of two maps of unequal lengths", 'pub fn f(v: &[u32], w: &[u32]) -> bool { v.iter().map(|x| { println!("a"); *x }).eq(w.iter().map(|x| { println!("b"); *x })) }', "`eq` of two iterators std asks the lengths of first, whose lengths rust-js can't count before stepping them"],
-  // Generic code compares item by item what it's given; std of two `TrustedLen` iterators asks
-  // their lengths first, so a caller's maps are refused, as the map that runs code there (#386).
-  ["eq in generic code of two maps", 'fn same<I: Iterator<Item = u32>>(a: I, b: I) -> bool { a.eq(b) }\nfn passed<I: Iterator<Item = u32>>(a: I, b: I) -> bool { same(a, b) }\npub fn f(v: &[u32], w: &[u32]) -> bool { let g = |x: &u32| { println!("a"); *x }; passed(v.iter().map(g), w.iter().map(g)) }', "giving generic code two iterators it compares by `eq`, which std asks the lengths of first"],
+  // Generic code's `eq` asks its caller whether it compares lengths first, `LengthFirst`; std of two
+  // `TrustedLen` iterators does, so a caller's maps, which JS can't count, are refused, through a
+  // generic caller too, as the map that runs code there (#386, #1182).
+  ["eq in generic code of two maps", 'fn same<I: Iterator<Item = u32>>(a: I, b: I) -> bool { a.eq(b) }\nfn passed<I: Iterator<Item = u32>>(a: I, b: I) -> bool { same(a, b) }\npub fn f(v: &[u32], w: &[u32]) -> bool { let g = |x: &u32| { println!("a"); *x }; passed(v.iter().map(g), w.iter().map(g)) }', "a `TrustedLen` whose length std compares first, which JS can't count before stepping it"],
   // So is a zip it folds, which std stops at the shorter side of without stepping its first again.
   ["a zip of a map collected in generic code", 'fn pairs<A: Iterator<Item = u32>, B: Iterator<Item = u32>>(a: A, b: B) -> Vec<(u32, u32)> { a.zip(b).collect() }\npub fn f(v: &[u32], w: &[u32]) -> Vec<(u32, u32)> { pairs(v.iter().map(|x| { println!("a"); *x }), w.iter().copied()) }', "giving generic code a zip it folds or steps, which std stops at its shorter side"],
   // And one it steps by `next()`, of sides std reads by index, whose `next()` stops there too.
   // A `repeat()` of the crate's clones zipped and collected in generic code, its `IntoIter` side a
   // projection where the caller's types are made (#1162).
   ["a zip of a repeat of the crate's clones collected in generic code", 'pub struct C(u32);\nimpl Clone for C { fn clone(&self) -> C { C(self.0 + 1) } }\nfn pairs<I: Iterator<Item = C>, J: IntoIterator<Item = C>>(it: I, arg: J) -> usize { it.zip(arg).count() }\npub fn f() -> usize { pairs(std::iter::repeat(C(7)), vec![C(1), C(2)]) }', "a zip it folds or steps, which std stops at its shorter side"],
-  // Of an `IntoIterator`'s iterator, `<I as IntoIterator>::IntoIter`, normalized where the
-  // caller's types are made: two `Vec`s of lengths std compares first (#1182).
-  ["eq of two IntoIterators of items with a destructor in generic code", 'pub struct L(u32);\nimpl Drop for L { fn drop(&mut self) { println!("drop {}", self.0); } }\nimpl PartialEq for L { fn eq(&self, o: &L) -> bool { self.0 == o.0 } }\nfn equal<I: IntoIterator, J: IntoIterator>(a: I, b: J) -> bool where I::Item: PartialEq<J::Item> { a.into_iter().eq(b) }\npub fn f() -> bool { equal(vec![L(1), L(2)], vec![L(3), L(4), L(5)]) }', "two iterators it compares by `eq`, which std asks the lengths of first"],
+  // Generic code's `eq` of a side its caller gives, `LengthFirst`: refused where the caller gives a
+  // `TrustedLen` JS can't count before stepping it, whose steps run code (#1182).
+  ["eq in generic code of a TrustedLen map whose closure runs", 'fn equal<I: IntoIterator, J: IntoIterator>(a: I, b: J) -> bool where I::Item: PartialEq<J::Item> { a.into_iter().eq(b) }\npub fn f(v: &[u32]) -> bool { equal(v.iter().map(|x| { println!("{x}"); *x }), vec![1u32]) }', "a `TrustedLen` whose length std compares first, which JS can't count before stepping it"],
+  // Of a side made of a type parameter's, `a.map(f)`, its callers' call refused (ADR 1014).
+  ["eq of a map of a type parameter's iterator in generic code", 'pub struct L(u32);\nimpl Drop for L { fn drop(&mut self) { println!("drop {}", self.0); } }\nimpl PartialEq for L { fn eq(&self, o: &L) -> bool { self.0 == o.0 } }\nfn equal<I: IntoIterator<Item = L>>(a: I, b: Vec<L>) -> bool { a.into_iter().map(|l| l).eq(b) }\npub fn f() -> bool { equal(vec![L(1), L(2)], vec![L(3), L(4), L(5)]) }', "two iterators it compares by `eq`, which std asks the lengths of first"],
   ["a zip of a map stepped in generic code", 'fn first<A: Iterator<Item = u32>, B: Iterator<Item = u32>>(a: A, b: B) -> u32 { let mut n = 0; for (x, y) in a.zip(b) { n += x * y; } n }\npub fn f(v: &[u32], w: &[u32]) -> u32 { first(v.iter().map(|x| { println!("a"); *x }), w.iter().copied()) }', "giving generic code a zip it folds or steps, which std stops at its shorter side"],
   // A function with a destructor an iterator keeps, `from_fn`'s, that nothing closes to drop it (ADR 0991).
   ["a function with a destructor from_fn keeps", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(d: D) -> usize { std::iter::from_fn(move || { let _g = &d; None::<u32> }).count() }', "a function that holds a value with a destructor, kept by what it's given to"],
@@ -436,11 +439,11 @@ test("another crate's function in an extern block is refused where it's called",
 });
 
 // A copied default's THIR is in its trait's terms, and what its patterns
-// A library's generic `eq` of two `IntoIterator`s its consumers may give `TrustedLen` iterators,
-// whose lengths std compares first, which no caller of it is seen to refuse: refused, an interim
-// refusal, till generic code is given each side's length (#1182). Of a filter, which isn't
-// `TrustedLen`, it compiles.
-test("a library's eq of two iterators its consumers may give TrustedLen is refused, of a filter it compiles", () => {
+// A library's generic `eq` of two `IntoIterator`s its consumers give: each side's `LengthFirst` its
+// consumer's, so it compiles, as itertools' `equal` does (#1182). Of a map of one, which its
+// consumers may make `TrustedLen` and no caller of it is seen to refuse, refused; of a filter,
+// which isn't `TrustedLen`, it compiles.
+test("a library's eq of what its consumers give compiles, of a map of it is refused, of a filter compiles", () => {
   const dir = fixture("library-generic-eq");
   const input = join(dir, "lib.rs");
   const build = (source: string) => {
@@ -448,10 +451,14 @@ test("a library's eq of two iterators its consumers may give TrustedLen is refus
     const out = runSync([compiler, input, "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "lib.manifest.json")], dir, 60_000);
     return out.stderr.split("\n").filter((line) => line.startsWith("error: rust-js"));
   };
-  const refused = build(
+  const given = build(
     "pub fn equal<I: IntoIterator, J: IntoIterator>(a: I, b: J) -> bool\nwhere\n    I::Item: PartialEq<J::Item>,\n{\n    a.into_iter().eq(b)\n}\n",
   );
-  expect(refused.some((line) => line.includes("which std asks the lengths of first") && line.includes("#1182"))).toBe(true);
+  expect(given).toEqual([]);
+  const refused = build(
+    "pub fn equal<I: IntoIterator, J: IntoIterator>(a: I, b: J) -> bool\nwhere\n    I::Item: PartialEq<J::Item>,\n{\n    a.into_iter().map(|x| x).eq(b)\n}\n",
+  );
+  expect(refused.some((line) => line.includes("whose length std asks first") && line.includes("#1182"))).toBe(true);
   const filtered = build(
     "pub fn equal<I: IntoIterator, J: IntoIterator>(a: I, b: J) -> bool\nwhere\n    I::Item: PartialEq<J::Item>,\n{\n    a.into_iter().filter(|_| true).eq(b)\n}\n",
   );

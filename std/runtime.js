@@ -17490,6 +17490,31 @@ export function $iterEq(a, b, eq, dropA, dropB, lengths) {
   });
 }
 
+// `a.eq(b)` of generic code, each side's `LengthFirst` its caller's (#1182):
+// where both are `TrustedLen`, std's `SpecIterEq` compares their lengths
+// first, each read where JS knows it, `true`, or of one collected first,
+// `"pure"`, whose steps run nothing and drop nothing; else item by item.
+export function $iterEqGiven(a, b, eq, dropA, dropB, firstA, firstB) {
+  if (!firstA || !firstB) return $iterEq(a, b, eq, dropA, dropB);
+  const [x, n] = $lengthFirst(a, firstA);
+  const [y, m] = $lengthFirst(b, firstB);
+  return $iterEq(x, y, eq, dropA, dropB, [n, m]);
+}
+
+// `it`, of a `TrustedLen` iterator, and how many it has left
+// (`$iterEqGiven`): its `len()` or its exact hint, or, of one `"pure"`, what
+// it gives, collected.
+export function $lengthFirst(it, first) {
+  if (first === "pure") {
+    const items = $foldToArray(it);
+    return [$iter(items), items.length];
+  }
+  if (typeof it.len === "function") return [it, it.len()];
+  const [lower, upper] = $sizeHint(it);
+  if (lower !== upper) throw new Error("rust-js: a `TrustedLen` iterator's length isn't known (#1182)");
+  return [it, lower];
+}
+
 export function $thenCmp(...orders) {
   for (const order of orders) {
     if (order !== 0) {

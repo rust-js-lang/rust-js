@@ -15,7 +15,7 @@ import {
   $givenDrop,
   $held,
   $iter,
-  $iterEq,
+  $iterEqGiven,
   $lent,
   $mutItems,
   $next,
@@ -170,6 +170,8 @@ function equal(
   IItemPartialEqJItem,
   IsI,
   IsJ,
+  ILengthFirst,
+  JLengthFirst,
   dropI,
   dropJ,
   dropIs,
@@ -210,7 +212,7 @@ function equal(
   }
   let result;
   try {
-    result = $iterEq(
+    result = $iterEqGiven(
       $given(iter, IIntoIterator.IntoIterIterator(), true),
       $closing(
         $given(JIntoIterator.intoIter(b$1), JIntoIterator.IntoIterIterator(), true),
@@ -220,6 +222,8 @@ function equal(
       (a, b) => IItemPartialEqJItem.eq(a, b),
       dropIItem,
       dropJItem,
+      ILengthFirst,
+      JLengthFirst,
     );
   } catch (error) {
     $cleanup(() => {
@@ -326,6 +330,8 @@ function main() {
       tIsT((filter) => {
         filter.return();
       }),
+      true,
+      false,
       $dropEach(loudDrop_drop),
       (filter) => {
         filter.return();

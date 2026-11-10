@@ -283,6 +283,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if fact == TypeFact::NeedsDrop {
             return Ok(Expr::bool(of.needs_drop(self.tcx, self.typing_env)));
         }
+        // Whether generic code's `eq` compares it by its length first (#1182).
+        if fact == TypeFact::LengthFirst {
+            return self.length_first(of, span);
+        }
         // What std may collect an iterator in, in place: its source's items'
         // `[size, align]`, or `undefined`; of what its adapters keep of a
         // type parameter's, its caller's, `IInPlace` (#672).

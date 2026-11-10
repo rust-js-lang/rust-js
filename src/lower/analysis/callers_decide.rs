@@ -4,10 +4,11 @@
 //! for every caller, so where std's answer would differ from it, and
 //! that's seen, the caller's call is refused:
 //! - `eq` or `ne` of two `TrustedLen` iterators, which std's `SpecIterEq`
-//!   compares the lengths of first, stepping nothing of unequal ones; JS
-//!   given values that can't report their lengths compares them item by
+//!   compares the lengths of first, stepping nothing of unequal ones, of a
+//!   side made of type parameters, `a.map(f)`; JS compares them item by
 //!   item (ADR 1014), as `iterators_eq` refuses one it can't count (ADR
-//!   0998).
+//!   0998). A side given as a type parameter's is its caller's
+//!   `LengthFirst` (#1182).
 //! - A zip folded, or adapted to be, whose fold std takes to the shorter
 //!   side, `zip_folds_to_the_shorter`'s, where JS steps it as `next()`
 //!   does, its first side once more (ADRs 0973, 0997); and one stepped by
@@ -59,9 +60,17 @@ pub(super) fn refuse_what_callers_decide<'tcx>(
             };
             let mut types = args.types();
             let Some(this) = types.next() else { continue };
+            // Of a side made of type parameters, `Map<I, F>`'s: one given as
+            // a type parameter is its caller's `LengthFirst` (#1182).
             if compares.contains(&callee)
                 && let Some(other) = types.next()
                 && (this.has_param() || other.has_param())
+                && (Recognition {
+                    typing_env: ty::TypingEnv::post_analysis(tcx, body.def_id),
+                    ..recognition
+                })
+                .eq_sides(this, other)
+                .is_some_and(|sides| sides.contains(&crate::lower::recognition::EqSide::Built))
             {
                 of_body.entry(body.def_id).or_default().insert(Asked::Eq(this, other));
             }

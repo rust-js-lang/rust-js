@@ -751,11 +751,17 @@ pub(crate) enum TypeFact {
     /// Whether it's `Eq`, by which std's `==` of two `Rc`s or `Arc`s of it
     /// asks whether they're one allocation first, `RcEqIdent` (#931).
     Eq,
+    /// Of what generic code's `eq` compares, an `Iterator` or an
+    /// `IntoIterator` its caller gives: whether std's `SpecIterEq` compares
+    /// its length first, a `TrustedLen`'s, and how JS counts it, `true`
+    /// where its value reports it, `"pure"` where it's collected first,
+    /// which runs nothing and drops nothing, or `false` of another (#1182).
+    LengthFirst,
 }
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 19] = [
+    pub(crate) const ALL: [TypeFact; 20] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
@@ -775,6 +781,7 @@ impl TypeFact {
         TypeFact::TrustedLen,
         TypeFact::InPlace,
         TypeFact::Eq,
+        TypeFact::LengthFirst,
     ];
 
     /// What it is, as an error or a note says it: `size_of`, `the
@@ -797,6 +804,7 @@ impl TypeFact {
             TypeFact::TrustedLen => "whether it's a `TrustedLen`",
             TypeFact::InPlace => "the buffer std collects an iterator in place in",
             TypeFact::Eq => "whether it's `Eq`, which std's `==` of two `Rc`s of it asks",
+            TypeFact::LengthFirst => "whether `eq` compares its length first",
         }
     }
 
@@ -827,6 +835,7 @@ impl TypeFact {
             TypeFact::TrustedLen => "TrustedLen",
             TypeFact::InPlace => "InPlace",
             TypeFact::Eq => "Eq",
+            TypeFact::LengthFirst => "LengthFirst",
         }
     }
 

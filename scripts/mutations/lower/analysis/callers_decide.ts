@@ -45,12 +45,4 @@ export const mutations: Mutation[] = [
     replace: "                        Asked::ZipFold(zip) => Asked::ZipFold(made(zip)),\n",
     tests: ["test/diagnostics.test.ts", "-t", "a zip of a repeat of the crate's clones collected in generic code"],
   },
-  {
-    name: "callers-eq-unnormalized",
-    breaks: "what generic code compares by `eq`, made of its caller's types, keeps `<Vec<T> as IntoIterator>::IntoIter` unnormalized, whose `TrustedLen` isn't seen, so the call isn't refused and two `Vec`s of unequal lengths are compared item by item where std compares their lengths first (#1182)",
-    file: "src/lower/analysis/callers_decide.rs",
-    find: "                        Asked::Eq(a, b) => Asked::Eq(normalized(a), normalized(b)),\n",
-    replace: "                        Asked::Eq(a, b) => Asked::Eq(made(a), made(b)),\n",
-    tests: ["test/diagnostics.test.ts", "-t", "eq of two IntoIterators of items with a destructor in generic code"],
-  },
 ];

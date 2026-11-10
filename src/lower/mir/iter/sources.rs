@@ -7,6 +7,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`, an iterator of type `ty`, as a JS iterator: a range stepped
     /// by its `next`, the crate's by its impl's, a JS one as it is.
     pub(in crate::lower) fn as_js_iterator(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        self.js_iterator_of(value, ty, false, span)
+    }
+
+    /// `as_js_iterator`'s, of an `IntoIterator` a type parameter's, which
+    /// may be given an array, `$intoIter(value)`: an array's `$iter`, which
+    /// knows how many it has left, as `eq` asks of what it's given (#1182).
+    pub(in crate::lower) fn iterable_js_iterator(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        self.js_iterator_of(value, ty, true, span)
+    }
+
+    fn js_iterator_of(&mut self, value: Expr, ty: Ty<'tcx>, into: bool, span: Span) -> R<Expr> {
         // A `&mut` to a range, `take2(&mut it)`'s: the range, stepped where
         // it is, as its lender goes on from where it's left.
         let ranged = match ty.kind() {
@@ -40,7 +51,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A type parameter's, which may be given an array (ADR 0061): JS's
             // iterator of it. An associated type's is what a dictionary
             // gives, a JS iterator already.
-            None if matches!(ty.kind(), ty::Param(_)) && !is_js_iterator(&value) => Ok(self.js_iterator(value)),
+            None if matches!(ty.kind(), ty::Param(_)) && !is_js_iterator(&value) => Ok(match into {
+                true => Expr::call_helper("$intoIter", vec![value]),
+                false => self.js_iterator(value),
+            }),
             // A std iterator's, which its call made one (`std_value_as`): one
             // already, said so, so what's made of it isn't made one again. Not
             // a collection's, an array still, which `eq(other)` is given.

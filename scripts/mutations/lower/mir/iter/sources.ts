@@ -291,8 +291,8 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's generic iterator is stepped as given, an array's `drop` missing",
     file: "src/lower/mir/iter/sources.rs",
-    find: "            None if matches!(ty.kind(), ty::Param(_)) && !is_js_iterator(&value) => Ok(self.js_iterator(value)),\n",
-    replace: "",
+    find: "                false => self.js_iterator(value),\n",
+    replace: "                false => value,\n",
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",

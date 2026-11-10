@@ -1,6 +1,8 @@
 //! What an iterator's type says of how many items it gives, which what
 //! collects it asks room for (ADR 0940).
 
+use rustc_middle::ty::TypeVisitableExt;
+
 use super::*;
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
@@ -210,5 +212,57 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             },
             _ => None,
         }
+    }
+}
+
+/// A side of generic code's `a.eq(b)` (`eq_sides`): how its length, which
+/// std's `SpecIterEq` compares first of two `TrustedLen` ones, is known.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(in crate::lower) enum EqSide<'tcx> {
+    /// Its type's, known here.
+    Known,
+    /// A type parameter's it's given as, `I` itself or `<I as
+    /// IntoIterator>::IntoIter`, whose `LengthFirst` its caller gives
+    /// (#1182).
+    Given(Ty<'tcx>),
+    /// Another made of type parameters, `Map<I, F>`, which its callers decide
+    /// (`callers_decide`, ADR 1014).
+    Built,
+}
+
+impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// Whether an iterator of type `iter`, given to generic code, is one
+    /// whose JS knows how many it has left, its `len()` or its hint: an
+    /// array's or a `Vec`'s, `$iter`, or a range of numbers, `$lazyRange`
+    /// (#1182).
+    pub(in crate::lower) fn counts_where_given(&self, iter: Ty<'tcx>) -> bool {
+        matches!(iter.peel_refs().kind(), ty::Adt(adt, _) if matches!(
+            std_path(self.tcx, adt.did()),
+            "std::slice::Iter" | "std::slice::IterMut" | "std::vec::IntoIter" | "std::array::IntoIter" | "std::ops::Range"
+        ))
+    }
+
+    /// The sides of `a.eq(b)`, of an iterator of type `this` and an
+    /// `IntoIterator` of type `other`, each as its length is known
+    /// (`EqSide`); `None` where std never compares their lengths first, of
+    /// a side whose type is known not to be `TrustedLen`. The one answer of
+    /// what generic code's `eq` asks its callers and of how it's lowered.
+    pub(in crate::lower) fn eq_sides(&self, this: Ty<'tcx>, other: Ty<'tcx>) -> Option<[EqSide<'tcx>; 2]> {
+        let trusted = super::fact_trait(self.tcx, TypeFact::TrustedLen)?;
+        let into_iterator = super::std_item(self.tcx, StdItem::IntoIterator);
+        let side = |ty: Ty<'tcx>| match *ty.kind() {
+            ty::Param(_) => Some(EqSide::Given(ty)),
+            ty::Alias(_, alias)
+                if alias.trait_def_id(self.tcx) == into_iterator && matches!(alias.self_ty().kind(), ty::Param(_)) =>
+            {
+                Some(EqSide::Given(alias.self_ty()))
+            }
+            _ if ty.has_param() => Some(EqSide::Built),
+            _ => {
+                let iter = super::iterator_type_of(self.tcx, self.typing_env, ty);
+                self.implements_trait(iter, trusted).then_some(EqSide::Known)
+            }
+        };
+        Some([side(this)?, side(other)?])
     }
 }
