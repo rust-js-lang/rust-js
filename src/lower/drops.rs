@@ -219,7 +219,7 @@ struct SwappedDrops<'tcx> {
     given: IndexSet<Ty<'tcx>>,
     slots: IndexSet<ty::AliasTy<'tcx>>,
     used: IndexSet<Ty<'tcx>>,
-    cache: IndexMap<Ty<'tcx>, Drops<'tcx>>,
+    cache: IndexMap<types::CacheKey<'tcx>, Drops<'tcx>>,
     sizes: IndexMap<Ty<'tcx>, usize>,
 }
 

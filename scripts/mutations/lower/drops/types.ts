@@ -36,9 +36,27 @@ export const mutations: Mutation[] = [
     breaks:
       "what a type drops is found again for each path to it, which takes exponential time",
     file: "src/lower/drops/types.rs",
-    find: "            self.state.cache.borrow_mut().insert(ty, found);\n",
+    find: "            self.state.cache.borrow_mut().insert(key, found);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "nested_generic_types"],
+  },
+  {
+    name: "drops-but-params-walk-uncached",
+    breaks:
+      "what a type argument of a `Drop::drop` call drops, but its type parameters, is found again for each path to each type it holds, and `nested_generic_types_dropped.rs` takes two minutes to compile (#1214)",
+    file: "src/lower/drops/types.rs",
+    find: "        self.visited.is_none().then_some(key)\n",
+    replace: "        (self.visited.is_none() && !self.params_none && !self.guards_none).then_some(key)\n",
+    tests: ["test/compile-bounds.test.ts"],
+  },
+  {
+    name: "drops-walks-share-answers",
+    breaks:
+      "a walk that takes type parameters or guards as dropping nothing is given another walk's answer of a type, and the other's its (#1214)",
+    file: "src/lower/drops/types.rs",
+    find: "        let key = (ty, self.params_none, self.guards_none);\n",
+    replace: "        let key = (ty, false, false);\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
   },
   {
     name: "drops-itself-revisits",

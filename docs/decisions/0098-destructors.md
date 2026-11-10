@@ -844,3 +844,32 @@ on each side of `next`, `HashSet<String>` before and `BTreeSet<Vec<u32>>`
 after, so a fresh set's walk follows it in either order; without the
 rule, `drop(held)` drops nothing and `drop inner` is missing, as #304's
 was. The rule stays: it's not dead, only no longer reached by its case.
+
+## Amendment: every kind of walk of what a type drops is kept once for each type (2026-11-10, #1214)
+
+A `Drop` on the innermost of `nested_generic_types.rs`' doubling types,
+`impl<T> Drop for S0<T>`, took 116 s to compile 16 lines, found by the
+metamorphic net's `loud` rewrite (#1203), which gives each of a case's
+types a `Drop`. Each call of `S0`'s `drop` is checked for what it's given
+(`check_drops_given`), which asks what each type argument drops but its
+type parameters, `drops_but_params`. That walk, and `drops_but_guards`',
+weren't cached, as only the plain walk's answers were, so they walked
+each path to each type `S3<S3<u8>>` holds again.
+
+**Each walk's answers are kept, keyed by the type and what the walk takes
+as dropping nothing** (`Walk::key`, `(ty, params_none, guards_none)`): a
+walk of type parameters as dropping nothing answers of a type alike
+wherever it's asked, of this function's drops, as the plain walk does,
+and the two never answer for each other. What guards the cache stays as
+it was for each: an answer found while a type further out was taken as
+dropping nothing, being inside itself (`reached < depth`), is that walk's
+alone and not kept; and a walk asking whether a type is inside itself
+(`visited`) keeps nothing, as an answer found where another type was
+outermost says nothing of what it reaches. The cache is swapped with a
+copied default's drops as before (`swap_drops`).
+
+16 lines compile in 0.5 s. Held by `nested_generic_types_dropped.rs`, a
+corpus case against native Rust, and `test/compile-bounds.test.ts`, which
+holds its compile under 20 s, where the corpus's two minutes didn't see
+it; and the mutations `drops-but-params-walk-uncached` and
+`drops-walks-share-answers`.

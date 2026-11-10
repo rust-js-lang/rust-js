@@ -45,7 +45,7 @@ struct Walk<'tcx> {
     visited: Option<IndexSet<Ty<'tcx>>>,
 }
 
-impl Walk<'_> {
+impl<'tcx> Walk<'tcx> {
     fn new() -> Self {
         Walk {
             seen: Vec::new(),
@@ -56,18 +56,27 @@ impl Walk<'_> {
         }
     }
 
-    /// Whether what it finds of a type is that type's answer anywhere.
-    fn caches(&self) -> bool {
-        !self.params_none && !self.guards_none && self.visited.is_none()
+    /// What its answer of `ty` is kept under: the type, and what this walk
+    /// takes as dropping nothing, type parameters or guards, as each of
+    /// those walks answers of a type alike wherever it's asked (#1214). Not
+    /// a walk that asks whether a type is inside itself, whose answer of a
+    /// type walked before is no answer.
+    fn key(&self, ty: Ty<'tcx>) -> Option<CacheKey<'tcx>> {
+        let key = (ty, self.params_none, self.guards_none);
+        self.visited.is_none().then_some(key)
     }
 }
+
+/// A type's answer, of a walk that takes type parameters, and guards, as
+/// dropping nothing or not (`Walk::key`).
+pub(super) type CacheKey<'tcx> = (Ty<'tcx>, bool, bool);
 
 /// What a type drops depends on, of the function being lowered, beside
 /// its types: the type parameters a caller gives a drop for, and those whose
 /// drops rust-js can't make, and why; and what's been found of each type.
 #[derive(Default)]
 pub(in crate::lower) struct TypeDrops<'tcx> {
-    pub(super) cache: RefCell<IndexMap<Ty<'tcx>, Drops<'tcx>>>,
+    pub(super) cache: RefCell<IndexMap<CacheKey<'tcx>, Drops<'tcx>>>,
     /// The types a caller gives a drop for: a type parameter, a std trait's
     /// associated type of one, `<I as IntoIterator>::IntoIter` (ADR 0421),
     /// each its slot's type (`traits::drop_slot`, #887).
@@ -414,9 +423,11 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
 
     /// Each type is walked once and cached, so a type whose parts double at
     /// each level, `S2<S2<T>>` in `S3<T>`, isn't walked once for each path to
-    /// it. What's found while taking a type further out as running nothing,
-    /// being inside itself, is only as sure as that type's walk, so it's
-    /// cached only once that one's done.
+    /// it: of each kind of walk, one that takes type parameters or guards as
+    /// dropping nothing too, which a call's check of what it's given asks of
+    /// each type argument (#1214). What's found while taking a type further
+    /// out as running nothing, being inside itself, is only as sure as that
+    /// type's walk, so it's cached only once that one's done.
     fn drops_in(&self, ty: Ty<'tcx>, walk: &mut Walk<'tcx>) -> Drops<'tcx> {
         let tcx = self.recognition.tcx;
         let ty = self.recognition.reveal(ty);
@@ -434,8 +445,8 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         {
             return Drops::Nothing;
         }
-        if walk.caches()
-            && let Some(&known) = self.state.cache.borrow().get(&ty)
+        if let Some(key) = walk.key(ty)
+            && let Some(&known) = self.state.cache.borrow().get(&key)
         {
             return known;
         }
@@ -444,8 +455,10 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         walk.seen.push(ty);
         let found = self.parts_drop(ty, walk);
         walk.seen.pop();
-        if walk.reached >= depth && walk.caches() {
-            self.state.cache.borrow_mut().insert(ty, found);
+        if walk.reached >= depth
+            && let Some(key) = walk.key(ty)
+        {
+            self.state.cache.borrow_mut().insert(key, found);
         }
         walk.reached = walk.reached.min(outer);
         found
