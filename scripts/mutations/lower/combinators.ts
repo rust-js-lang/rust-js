@@ -382,16 +382,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "find-map-leaves-drops",
-    breaks:
-      "`find_map` of items with a destructor is refused, though it gives each to its function",
-    file: "src/lower/combinators.rs",
-    find: "            IterComb::Partition | IterComb::Unzip | IterComb::FindMap | IterComb::MaxByKey(_) | IterComb::Nth\n",
-    replace:
-      "            IterComb::Partition | IterComb::Unzip | IterComb::MaxByKey(_) | IterComb::Nth\n",
-    tests: ["test/corpus.test.ts", "-t", "^back_steps_drop.rs$"],
-  },
-  {
     name: "zip-holds-none",
     breaks: "`zip` of items with a destructor is refused",
     file: "src/lower/combinators.rs",
@@ -684,15 +674,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
   {
-    name: "nth-leaves-some",
-    breaks:
-      "`nth` of a generic iterator given one with a destructor is refused, as if it might leave it undropped",
-    file: "src/lower/combinators.rs",
-    find: " | IterComb::MaxByKey(_) | IterComb::Nth\n",
-    replace: " | IterComb::MaxByKey(_)\n",
-    tests: ["test/corpus.test.ts", "-t", "^nth_through_generics.rs$"],
-  },
-  {
     name: "extend-written-helper",
     breaks:
       "a `Vec`'s `extend` of an array written in place is the runtime's `$extend(v, [a, b])`, not `v.push(a, b)`",
@@ -869,13 +850,5 @@ export const mutations: Mutation[] = [
     find: "                    .is_none_or(|item| !self.is_object(item) && !self.mut_ref_form(item).is_cell()) =>\n",
     replace: "                    .is_none_or(|item| !self.is_object(item) && (!self.mut_ref_form(item).is_cell() || self.is_unknown(item))) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
-  },
-  {
-    name: "unzip-leaves-some",
-    breaks: "`unzip()` of items with a destructor is taken to leave some undropped, and refused, where it moves each into its half (#1120)",
-    file: "src/lower/combinators.rs",
-    find: "            IterComb::Partition | IterComb::Unzip | IterComb::FindMap",
-    replace: "            IterComb::Partition | IterComb::FindMap",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
   },
 ];

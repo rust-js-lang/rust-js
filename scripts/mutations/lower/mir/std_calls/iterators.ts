@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`partition` and `filter_map` of items with a destructor are refused, though they move each on",
     file: "src/lower/mir/std_calls/iterators.rs",
-    find: "if dropping.is_some() && !comb.leaves_none() && !comb.holds_its_sources() {",
+    find: "if dropping.is_some() && !keeps_each && !comb.holds_its_sources() {",
     replace: "if dropping.is_some() && !comb.holds_its_sources() {",
     tests: ["test/corpus.test.ts", "-t", "^picked_items_drop.rs$"],
   },
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an owning iterator given whole to `partition`, `max_by` or `max_by_key` isn't closed, so what's left when its callback panics is never dropped (#423)",
     file: "src/lower/mir/std_calls/iterators.rs",
-    find: "                        false if comb.leaves_none() => {\n",
+    find: "                        false if keeps_each => {\n",
     replace: "                        false if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },

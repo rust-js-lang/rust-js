@@ -873,3 +873,20 @@ corpus case against native Rust, and `test/compile-bounds.test.ts`, which
 holds its compile under 20 s, where the corpus's two minutes didn't see
 it; and the mutations `drops-but-params-walk-uncached` and
 `drops-walks-share-answers`.
+
+## Amendment: which consumers keep each item is one catalog (#1167)
+
+Whether one of std's iterator methods leaves none of its items with a
+destructor undropped (it drops or keeps each, or moves each on) was
+answered by two lists. `IterComb::leaves_none` in `combinators.rs` served
+the combinators, and `check_leaves_none`'s list of `IterMethod`s in
+`mir/iter/closing.rs` served MIR's consumers. #1150 had to extend the second
+for `unzip`, and the first had no `count`, `map` or `filter`. One catalog,
+`recognition::keeps_each`, beside std's other method facts, now answers
+both, by std's method name. The combinators' refusal, their closing on a
+panic and `moves_all` in `std_types/values.rs` ask it, as MIR's consumers
+do. `test/architecture-iterators.test.ts` holds that it's defined once and
+that `leaves_none` is gone. No output changed: the corpus and the five
+iterator tables give the same JS and agree with native Rust. ADR
+[0262](0262-when-rust-and-js-disagree.md)'s first case applies: nothing
+observable differs.

@@ -82,7 +82,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if dropping.is_none() {
             return Ok(it);
         }
-        self.check_leaves_none(method, name, span)?;
+        self.check_leaves_none(name, span)?;
         self.consumer_closing(it, (method, iter_ty, lent), true, span)
     }
 
@@ -599,52 +599,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// An item with a destructor a method may leave undropped, `take`'s or
-    /// `count`'s: what std drops, refused till it's dropped here. Not of one
-    /// that drops or keeps each, or moves each on, `filter_map`'s and
-    /// `find_map`'s to its function, nor `filter`'s and `skip_while`'s, which drop
-    /// each they discard; an adapter, which holds its source closed to drop
-    /// it, is `dropping_source`'s (ADRs 0422, 0465).
-    fn check_leaves_none(&self, method: Option<IterMethod>, name: &str, span: Span) -> R<()> {
-        let keeps_each = matches!(
-            method,
-            Some(
-                IterMethod::Map
-                    | IterMethod::ForEach
-                    | IterMethod::Fold
-                    | IterMethod::Reduce
-                    | IterMethod::TryFold
-                    | IterMethod::TryForEach
-                    | IterMethod::Collect
-                    | IterMethod::Any
-                    | IterMethod::All
-                    | IterMethod::Position
-                    | IterMethod::RPosition
-                    | IterMethod::Enumerate
-                    | IterMethod::ByRef
-                    | IterMethod::Sum
-                    | IterMethod::Product
-                    | IterMethod::Count
-                    | IterMethod::Max
-                    | IterMethod::Min
-                    | IterMethod::MaxBy(_)
-                    | IterMethod::MaxByKey(_)
-                    | IterMethod::Eq
-                    | IterMethod::Ne
-                    | IterMethod::Last
-                    | IterMethod::Nth
-                    | IterMethod::AdvanceBy
-                    | IterMethod::Find
-                    | IterMethod::Partition
-                    | IterMethod::Unzip
-                    | IterMethod::Filter
-                    | IterMethod::SkipWhile
-                    // Std's `self.map(f).is_sorted()`, which moves each into
-                    // `f` as a map does (#776).
-                    | IterMethod::IsSortedByKey
-            )
-        );
-        if keeps_each {
+    /// An item with a destructor a method, `name`, may leave undropped,
+    /// `take`'s: what std drops, refused till it's dropped here. Not of one
+    /// that keeps each (`recognition::keeps_each`, #1167); an adapter, which
+    /// holds its source closed to drop it, is `dropping_source`'s (ADRs
+    /// 0422, 0465).
+    fn check_leaves_none(&self, name: &str, span: Span) -> R<()> {
+        if crate::lower::recognition::keeps_each(name) {
             return Ok(());
         }
         Err(self.unsupported(span, &format!("`{name}` of items with a destructor, from its MIR")))

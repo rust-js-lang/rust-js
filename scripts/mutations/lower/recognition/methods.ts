@@ -126,4 +126,65 @@ export const mutations: Mutation[] = [
     replace: "        \"into_boxed_bytes\" if str => TextOp::Bytes,\n",
     tests: ["test/corpus.test.ts", "-t", "^text_bytes_lent_and_owned.rs$"],
   },
+  {
+    name: "unzip-leaves-some",
+    breaks: "`unzip()` of items with a destructor is taken to leave some undropped, and refused, where it moves each into its half, of a combinator and of MIR's consumer alike (#1120, #1150, #1167)",
+    file: "src/lower/recognition/methods.rs",
+    find: "            | \"unzip\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(iterator_consumed_by_extend_unzip_partition_eq|consumers_keep_what_they_built_on_a_panic).rs$"],
+  },
+  {
+    name: "find-map-leaves-drops",
+    breaks:
+      "`find_map` of items with a destructor is refused, though it gives each to its function",
+    file: "src/lower/recognition/methods.rs",
+    find: "            | \"find_map\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^back_steps_drop.rs$"],
+  },
+  {
+    name: "nth-leaves-some",
+    breaks:
+      "`nth` of a generic iterator given one with a destructor is refused, as if it might leave it undropped",
+    file: "src/lower/recognition/methods.rs",
+    find: "            | \"nth\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(nth_through_generics|picked_items_drop).rs$"],
+  },
+  {
+    name: "try-fold-leaves-items-refused",
+    breaks:
+      "`try_fold` of items with a destructor is refused, though it hands each to its closure and leaves the rest to the iterator",
+    file: "src/lower/recognition/methods.rs",
+    find: "            | \"try_fold\"\n            | \"try_for_each\"\n            | \"collect\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
+  },
+  {
+    name: "max-min-leave-drops",
+    breaks:
+      "`max()` and `min()` of items with a destructor are refused, though they drop each they pass over",
+    file: "src/lower/recognition/methods.rs",
+    find: "            | \"max\"\n            | \"min\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
+  },
+  {
+    name: "reduce-of-drops-refused",
+    breaks:
+      "`reduce` of items with a destructor is refused, though it moves each into its function",
+    file: "src/lower/recognition/methods.rs",
+    find: "            | \"reduce\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_reduce.rs$"],
+  },
+  {
+    name: "is-sorted-by-key-leaves-none",
+    breaks: "`is_sorted_by_key` of a `Vec`'s items with a destructor is refused, as if it left some undropped, where it moves each into its function (#776)",
+    file: "src/lower/recognition/methods.rs",
+    find: "            | \"is_sorted_by_key\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
+  },
 ];

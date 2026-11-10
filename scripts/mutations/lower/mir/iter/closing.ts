@@ -113,33 +113,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "nth-dropping-refused",
-    breaks: "`nth` of items with a destructor is refused",
-    file: "src/lower/mir/iter/closing.rs",
-    find: "                    | IterMethod::Nth\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^picked_items_drop.rs$"],
-  },
-  {
-    name: "try-fold-leaves-items-refused",
-    breaks:
-      "`try_fold` of items with a destructor is refused, though it hands each to its closure and leaves the rest to the iterator",
-    file: "src/lower/mir/iter/closing.rs",
-    find: "                    | IterMethod::TryFold\n                    | IterMethod::TryForEach\n                    | IterMethod::Collect\n",
-    replace:
-      "                    | IterMethod::TryForEach\n                    | IterMethod::Collect\n",
-    tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
-  },
-  {
-    name: "max-min-leave-drops",
-    breaks:
-      "`max()` and `min()` of items with a destructor are refused, though they drop each they pass over",
-    file: "src/lower/mir/iter/closing.rs",
-    find: "                    | IterMethod::Max\n                    | IterMethod::Min\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
-  },
-  {
     name: "crate-iterator-unclosed",
     breaks:
       "a crate's iterator with a destructor an adapter holds isn't closed by its own drop",
@@ -166,15 +139,6 @@ export const mutations: Mutation[] = [
     replace:
       "        if dropping.is_some() && method.is_some_and(IterMethod::holds_its_source) {\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_source_drops.rs$"],
-  },
-  {
-    name: "reduce-of-drops-refused",
-    breaks:
-      "`reduce` of items with a destructor is refused, though it moves each into its function",
-    file: "src/lower/mir/iter/closing.rs",
-    find: "                    | IterMethod::Reduce\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_reduce.rs$"],
   },
   {
     name: "given-next-back-refused",
@@ -343,14 +307,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
   {
-    name: "is-sorted-by-key-leaves-none",
-    breaks: "`is_sorted_by_key` of a `Vec`'s items with a destructor is refused, as if it left some undropped, where it moves each into its function (#776)",
-    file: "src/lower/mir/iter/closing.rs",
-    find: "                    | IterMethod::IsSortedByKey\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
-  },
-  {
     name: "eq-closes-unasked",
     breaks: "`it.eq(other)` of the crate's iterator with a `Drop`, of items without one, is closed by `dropping_source` where `consumer_closes` says it's dropped after, so it's dropped twice (#1123)",
     file: "src/lower/mir/iter/closing.rs",
@@ -381,14 +337,6 @@ export const mutations: Mutation[] = [
     breaks: "`partition` and `unzip` of a type parameter's iterator drop it after the call, so as a panic unwinds what they collected is dropped before what's left of their source, where std's fold drops that first (#1150, #1161)",
     file: "src/lower/mir/iter/closing.rs",
     find: "                Some(IterMethod::Partition | IterMethod::Unzip) => true,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
-  },
-  {
-    name: "unzip-method-leaves-some",
-    breaks: "`unzip` of items with a destructor is refused as one that may leave some undropped, where it keeps each (#1150)",
-    file: "src/lower/mir/iter/closing.rs",
-    find: "                    | IterMethod::Unzip\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
   },

@@ -63,7 +63,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let dropping = this
                         .iterator_item(iter_ty)
                         .filter(|&item| this.drops(item) != crate::lower::drops::Drops::Nothing);
-                    if dropping.is_some() && !comb.leaves_none() && !comb.holds_its_sources() {
+                    let keeps_each = crate::lower::recognition::keeps_each(this.tcx.item_name(def_id).as_str());
+                    if dropping.is_some() && !keeps_each && !comb.holds_its_sources() {
                         return Err(this.unsupported(
                             span,
                             "an iterator's combinator of items with a destructor, from its MIR",
@@ -89,7 +90,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let it = match lent {
                         true => this.lent_iterator(it),
                         false if comb.holds_its_sources() => this.closing(it, iter_ty, span)?,
-                        false if comb.leaves_none() => {
+                        false if keeps_each => {
                             this.consumer_closing(it, (method, iter_ty, false), dropping.is_some(), span)?
                         }
                         false => it,

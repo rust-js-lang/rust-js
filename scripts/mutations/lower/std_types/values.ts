@@ -414,8 +414,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`partition` of items with a destructor is refused, as if it dropped some",
     file: "src/lower/std_types/values.rs",
-    find: "            || (matches!(known, Std::IterComb(comb) if comb.leaves_none())\n",
-    replace: "            || (false\n",
+    find: "                && crate::lower::recognition::keeps_each(self.tcx.item_name(def_id).as_str())\n",
+    replace: "                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^(picked_items_drop|iterator_consumed_by_extend_unzip_partition_eq).rs$"],
   },
   {

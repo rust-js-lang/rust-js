@@ -389,3 +389,56 @@ pub(super) fn char_pattern(name: &str) -> Option<TextOp> {
         _ => return None,
     })
 }
+
+/// Whether an `Iterator` method named `name`, std's, keeps each item it's
+/// given: it drops or keeps each, or moves each on, so it leaves none with
+/// a destructor undropped (ADR 0098), the one answer of the combinators'
+/// (`std_calls/iterators.rs`, `check_takes_drops`) and of what MIR's
+/// consumers take (`check_leaves_none`, #1167). It moves each on, `map`'s
+/// into its function, `partition`'s into one of its two (ADR 0445),
+/// `unzip`'s each half into its own (#1120, #1150), `find_map`'s and
+/// `is_sorted_by_key`'s, std's `self.map(f).is_sorted()`, to its function
+/// (#776); or it drops each it passes over or discards, `filter`'s,
+/// `skip_while`'s, `count`'s, `max_by`'s and `max_by_key`'s, and `nth`'s,
+/// which gives back the one it stops at (#180). Not `take`'s, of what it
+/// leaves; an adapter that holds its source, `filter_map`'s, is
+/// `holds_its_sources`' (ADR 0518).
+pub(in crate::lower) fn keeps_each(name: &str) -> bool {
+    matches!(
+        name,
+        "map"
+            | "for_each"
+            | "fold"
+            | "reduce"
+            | "try_fold"
+            | "try_for_each"
+            | "collect"
+            | "any"
+            | "all"
+            | "position"
+            | "rposition"
+            | "enumerate"
+            | "by_ref"
+            | "sum"
+            | "product"
+            | "count"
+            | "max"
+            | "min"
+            | "max_by"
+            | "min_by"
+            | "max_by_key"
+            | "min_by_key"
+            | "eq"
+            | "ne"
+            | "last"
+            | "nth"
+            | "advance_by"
+            | "find"
+            | "find_map"
+            | "partition"
+            | "unzip"
+            | "filter"
+            | "skip_while"
+            | "is_sorted_by_key"
+    )
+}

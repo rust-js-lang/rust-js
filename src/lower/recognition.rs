@@ -9,6 +9,7 @@ mod iterators;
 mod json;
 mod lengths;
 mod methods;
+pub(in crate::lower) use methods::keeps_each;
 mod own_steps;
 pub(in crate::lower) use chars::reaches_str_chars;
 pub(in crate::lower) use lengths::EqSide;

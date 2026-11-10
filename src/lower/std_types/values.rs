@@ -69,7 +69,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // are made as they're stepped (#171).
         let moves_all = (known == Std::Comb(Comb::Extend)
             && (self.ends_holding_nothing(tys[1]) || self.drops(tys[1]) == Drops::Nothing))
-            || (matches!(known, Std::IterComb(comb) if comb.leaves_none())
+            || (matches!(known, Std::IterComb(_))
+                && crate::lower::recognition::keeps_each(self.tcx.item_name(def_id).as_str())
                 && (tys[0].is_ref() || self.ends_holding_nothing(tys[0])))
             || matches!(known, Std::IterComb(comb) if comb.holds_its_sources())
             || matches!(known, Std::Slice(op) if op.lends());

@@ -642,3 +642,15 @@ test("whether an adapter is cloned apart is one function", () => {
   const defining = files("src").filter((file) => file.endsWith(".rs") && /\bfn cloned_apart\b/.test(read(file)));
   expect(defining).toEqual(["src/lower/iterators/stepping.rs"]);
 });
+
+// Whether one of std's iterator methods keeps each item it's given, so
+// leaves none with a destructor undropped, is one catalog,
+// `recognition::keeps_each` (#1167): the combinators' and MIR's consumers'
+// two lists answered it apart, and #1150 had to extend one of them.
+test("whether a consumer keeps each item is one catalog", () => {
+  const lowering = files("src/lower").filter((file) => file.endsWith(".rs"));
+  const defining = (name: string) => lowering.filter((file) => new RegExp(`fn ${name}\\b`).test(read(file)));
+  expect(defining("keeps_each")).toEqual(["src/lower/recognition/methods.rs"]);
+  expect(defining("leaves_none")).toEqual([]);
+  expect(read("src/lower/mir/iter/closing.rs")).toContain("crate::lower::recognition::keeps_each(name)");
+});
