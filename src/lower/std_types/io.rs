@@ -2,11 +2,13 @@
 //! runtime's dictionary of each, `$sliceReader` and `$cursorReader(TAsRef)`,
 //! whether the source's type is known or generic code's, one form of
 //! both; and `Cursor<T>`, std's struct, `{ inner, pos }`, its `pos` a `u64`.
+//! A `VecDeque<u8>`, read by `$dequeReader` where its type is known, but
+//! its `read` and `fill_buf` (#1302).
 
 use crate::js::{Expr, Prop};
 use crate::lower::bindings;
 use crate::lower::calls::Call;
-use crate::lower::recognition::{IoOp, Std};
+use crate::lower::recognition::{ByteSource, IoOp, Std};
 use crate::lower::{FnCx, R};
 use rustc_middle::ty;
 
@@ -38,7 +40,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let tr =
                     ty::TraitRef::new_from_args(tcx, trait_id, tcx.mk_args(&args[..tcx.generics_of(trait_id).count()]));
-                let dictionary = self.dictionary(tr, call.span)?;
+                // A `VecDeque<u8>`'s own, but its `read` and `fill_buf`,
+                // which read its front slice alone, which a JS array has
+                // none of (#1302).
+                let deque = self.recognition().byte_source(tr.self_ty()) == Some(ByteSource::Deque);
+                let name = tcx.item_name(call.def_id);
+                if deque && matches!(name.as_str(), "read" | "fill_buf") {
+                    return Err(self.unsupported(
+                        call.span,
+                        &format!("a `VecDeque<u8>`'s `{name}`, which reads its front slice alone (#1302)"),
+                    ));
+                }
+                let dictionary = match deque {
+                    true => Expr::helper("$dequeReader"),
+                    false => self.dictionary(tr, call.span)?,
+                };
                 // The source as generic code gives it: in a box.
                 let receiver = next();
                 let receiver = match self.mut_ref_form(tr.self_ty()).is_cell() {

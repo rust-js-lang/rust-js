@@ -5,8 +5,33 @@ const slice = ["test/corpus.test.ts", "-t", "^io_read_slice.rs$"];
 const cursor = ["test/corpus.test.ts", "-t", "^io_cursor.rs$"];
 const bufRead = ["test/corpus.test.ts", "-t", "^io_buf_read.rs$"];
 const generic = ["test/corpus.test.ts", "-t", "^io_read_generic.rs$"];
+const deque = ["test/corpus.test.ts", "-t", "^io_read_deque.rs$"];
 
 export const mutations: Mutation[] = [
+  {
+    name: "deque-read-exact-keeps-deque",
+    breaks: "a `VecDeque<u8>`'s `read_exact` that can't fill its buffer leaves the deque as it was, where std's empties it (#1156)",
+    file: "src/runtime/readers.js",
+    find: "      d.length = 0;\n      throw $readExactEof();\n",
+    replace: "      throw $readExactEof();\n",
+    tests: deque,
+  },
+  {
+    name: "deque-read-to-string-keeps-bad-text",
+    breaks: "a `VecDeque<u8>`'s `read_to_string` of what isn't UTF-8 leaves it in the deque, where std's `read_to_end` took it first (#1156)",
+    file: "src/runtime/readers.js",
+    find: "    const all = d.slice();\n    d.length = 0;\n    if ($utf8Check(all) !== undefined) return { TAG: \"Err\", _0: $invalidUtf8() };\n",
+    replace: "    const all = d.slice();\n    if ($utf8Check(all) !== undefined) return { TAG: \"Err\", _0: $invalidUtf8() };\n    d.length = 0;\n",
+    tests: deque,
+  },
+  {
+    name: "deque-consume-unchecked",
+    breaks: "a `VecDeque<u8>`'s `consume` past its end takes what there is, where std's `drain(..amt)` panics (#1156)",
+    file: "src/runtime/readers.js",
+    find: "    $checkRange(0, amt, r.value.length);\n",
+    replace: "",
+    tests: deque,
+  },
   {
     name: "slice-read-exact-keeps-slice",
     breaks: "a `&[u8]`'s `read_exact` that can't fill its buffer leaves the slice as it was, where std's empties it",
@@ -19,8 +44,8 @@ export const mutations: Mutation[] = [
     name: "slice-read-to-string-takes-bad-text",
     breaks: "a `&[u8]`'s `read_to_string` of what isn't UTF-8 takes it anyway",
     file: "src/runtime/readers.js",
-    find: "    if ($utf8Check(all) !== undefined) return { TAG: \"Err\", _0: $invalidUtf8() };\n",
-    replace: "    if ($utf8Check(all) !== undefined) {\n      r.value = $part(all, all.length);\n      return { TAG: \"Err\", _0: $invalidUtf8() };\n    }\n",
+    find: "    const all = r.value;\n    if ($utf8Check(all) !== undefined) return { TAG: \"Err\", _0: $invalidUtf8() };\n",
+    replace: "    const all = r.value;\n    if ($utf8Check(all) !== undefined) {\n      r.value = $part(all, all.length);\n      return { TAG: \"Err\", _0: $invalidUtf8() };\n    }\n",
     tests: slice,
   },
   {

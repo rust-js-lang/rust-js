@@ -172,6 +172,12 @@ for (const [name, source, message, crate] of [
   // Nor its `io::Read`: what would call it is refused (ADR 0425).
   ["a read of a crate's reader", "use std::io::{self, Read};\npub struct S;\nimpl Read for S { fn read(&mut self, _: &mut [u8]) -> io::Result<usize> { Ok(0) } }\npub fn f() -> usize { let mut b = [0u8; 2]; S.read(&mut b).unwrap() }", "rust-js does not support calling `std::io::Read::read` (#1297) yet"],
   ["a crate's reader given to generic code", "use std::io::{self, Read};\npub struct S;\nimpl Read for S { fn read(&mut self, _: &mut [u8]) -> io::Result<usize> { Ok(0) } }\nfn first<R: Read>(mut r: R) -> u8 { let mut b = [0u8; 1]; r.read_exact(&mut b).unwrap(); b[0] }\npub fn f() -> u8 { first(S) }", "rust-js does not support `S` as an `io::Read`, a reader of the crate's own (#1297) yet"],
+  // A `VecDeque<u8>`'s `read` and `fill_buf` read its front slice alone,
+  // which a JS array has none of; nor is it generic code's reader, whose
+  // dictionary would hold them (#1302).
+  ["a VecDeque's read", "use std::io::Read;\npub fn f(d: &mut std::collections::VecDeque<u8>) -> usize { let mut b = [0u8; 2]; d.read(&mut b).unwrap() }", "a `VecDeque<u8>`'s `read`, which reads its front slice alone (#1302)"],
+  ["a VecDeque's fill_buf", "use std::io::BufRead;\npub fn f(d: &mut std::collections::VecDeque<u8>) -> usize { d.fill_buf().unwrap().len() }", "a `VecDeque<u8>`'s `fill_buf`, which reads its front slice alone (#1302)"],
+  ["a VecDeque given to generic code as a reader", "use std::io::BufRead;\nfn line<R: BufRead>(mut r: R) -> String { let mut s = String::new(); r.read_line(&mut s).unwrap(); s }\npub fn f(d: std::collections::VecDeque<u8>) -> String { line(d) }", "a `VecDeque<u8>` as generic code's `io::BufRead`, whose `read` and `fill_buf` read its front slice alone (#1302)"],
   ["ptr::eq of a number", "pub fn f(a: &u32, b: &u32) -> bool { std::ptr::eq(a, b) }", "does not support addressable memory yet: a raw pointer to this place"],
   ["ptr::eq of a number's pointer, copied", "pub fn f(a: &u32, b: *const u32) -> bool { let p = a as *const u32; let q = p; std::ptr::eq(q, b) }", "does not support addressable memory yet: a raw pointer to this place"],
   // A JS error is the string JS shows of it, `String(error)` (ADR 0271).

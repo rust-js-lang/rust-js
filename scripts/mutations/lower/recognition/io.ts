@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "deque-no-byte-source",
+    breaks: "a `VecDeque<u8>` is none of std's byte sources, so its `read_exact` and the rest are refused, and as generic code's reader it's refused as one of the crate's own (#1156, #1302)",
+    file: "src/lower/recognition/io.rs",
+    find: "            ty::Adt(_, args) if self.is_std_type(ty, StdItem::VecDeque) && args.type_at(0) == self.tcx.types.u8 => {",
+    replace: "            ty::Adt(_, args) if false && self.is_std_type(ty, StdItem::VecDeque) && args.type_at(0) == self.tcx.types.u8 => {",
+    tests: ["test/corpus.test.ts", "-t", "^io_read_deque.rs$"],
+  },
+  {
     name: "append-to-string-compiled",
     breaks: "alloc's `append_to_string` is compiled, not answered, and its `String::as_mut_vec` refused",
     file: "src/lower/recognition/io.rs",

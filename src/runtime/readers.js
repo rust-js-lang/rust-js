@@ -59,6 +59,44 @@ const $sliceReader = {
   },
 };
 
+// `impl Read for VecDeque<u8>` and `impl BufRead`: what's read taken from
+// its front, an array changed in place. Its `read` and `fill_buf`, which
+// read its front slice alone, are refused where they're called (#1302).
+const $dequeReader = {
+  // One that can't fill `buf` empties the deque, and fills nothing.
+  readExact(r, buf) {
+    const d = r.value;
+    if (buf.length > d.length) {
+      d.length = 0;
+      throw $readExactEof();
+    }
+    $readInto(buf, d, buf.length);
+    d.splice(0, buf.length);
+  },
+  readToEnd(r, v) {
+    const d = r.value;
+    const n = d.length;
+    for (let i = 0; i < n; i++) v.push(d[i]);
+    d.length = 0;
+    return { TAG: "Ok", _0: n };
+  },
+  // All of it is taken, as `read_to_end` takes it, then kept where it's
+  // UTF-8: text that isn't adds nothing, the deque emptied all the same.
+  readToString(r, s) {
+    const d = r.value;
+    const all = d.slice();
+    d.length = 0;
+    if ($utf8Check(all) !== undefined) return { TAG: "Err", _0: $invalidUtf8() };
+    s.value += $utf8Decode(all);
+    return { TAG: "Ok", _0: all.length };
+  },
+  // `self.drain(..amt)`, which panics past its end.
+  consume(r, amt) {
+    $checkRange(0, amt, r.value.length);
+    r.value.splice(0, amt);
+  },
+};
+
 // `impl Read for Cursor<T>`, `impl BufRead` and `impl Seek`, of `T`'s
 // `AsRef<[u8]>`: read at its position, `pos`, a `u64`, of its inner value's
 // bytes, `TAsRef.asRef(inner)`; what's past its end is nothing. Its

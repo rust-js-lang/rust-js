@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "deque-front-slice-read",
+    breaks: "a `VecDeque<u8>`'s `read` and `fill_buf`, which read its front slice alone, a JS array has none of, are called of `$dequeReader`, which has neither, where they're refused (#1302)",
+    file: "src/lower/std_types/io.rs",
+    find: '                if deque && matches!(name.as_str(), "read" | "fill_buf") {',
+    replace: "                if false {",
+    tests: ["test/diagnostics.test.ts", "-t", "VecDeque's (read|fill_buf)"],
+  },
+  {
     name: "known-source-unboxed",
     breaks: "a `Cursor` whose type is known is given to its dictionary as the object, not in the box generic code gives it in",
     file: "src/lower/std_types/io.rs",

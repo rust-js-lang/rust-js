@@ -34,6 +34,12 @@ pub(crate) enum ByteSource<'tcx> {
     /// `Cursor<T>`, of its `T`: `$cursorReader(TAsRef)`, of `T`'s
     /// `AsRef<[u8]>`.
     Cursor(Ty<'tcx>),
+    /// `VecDeque<u8>`: `$dequeReader`, what's read taken from its front.
+    /// Its `read` and `fill_buf` read its front slice alone, which JS's
+    /// array has none of, so they're refused, and so is the deque given as
+    /// generic code's `Read` or `BufRead`, whose dictionary would hold them
+    /// (#1302).
+    Deque,
 }
 
 /// The methods of `Read`, `BufRead` and `Seek` each source's impl writes
@@ -88,6 +94,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 Some(ByteSource::Slice)
             }
             ty::Adt(adt, args) if is_cursor(self.tcx, adt.did()) => Some(ByteSource::Cursor(args.type_at(0))),
+            ty::Adt(_, args) if self.is_std_type(ty, StdItem::VecDeque) && args.type_at(0) == self.tcx.types.u8 => {
+                Some(ByteSource::Deque)
+            }
             _ => None,
         }
     }

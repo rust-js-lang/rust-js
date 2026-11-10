@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "deque-a-generic-reader",
+    breaks: "a `VecDeque<u8>` given to generic code as its reader is given `$dequeReader`, which has no `read` or `fill_buf`, where it's refused (#1302)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            Some(ByteSource::Deque) => Err(self.unsupported(\n                span,\n                &format!(\n                    \"a `VecDeque<u8>` as generic code's `io::{}`, whose `read` and `fill_buf` read its front slice alone (#1302)\",\n                    self.tcx.item_name(tr.def_id)\n                ),\n            )),\n",
+    replace: '            Some(ByteSource::Deque) => Ok(Expr::helper("$dequeReader")),\n',
+    tests: ["test/diagnostics.test.ts", "-t", "VecDeque given to generic code"],
+  },
+  {
     name: "derived-order-dictionary-inline",
     breaks: "a derived type's `PartialOrd` and `Ord` dictionaries are made in place at each call, `$partialOrd({ .. })` again and again, not its module's `const` (#944)",
     file: "src/lower/traits/dictionaries.rs",

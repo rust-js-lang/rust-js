@@ -985,6 +985,13 @@ Differences:
 - **What the traits provide is std's own body,** compiled into
   `@rust-js/std`: `read_line`, `read_until`, `skip_until`, `lines`,
   `split`, `rewind` and `seek_relative`.
+- **A `VecDeque<u8>` is read from its front, in place:** its
+  `read_exact`, `read_to_end`, `read_to_string` and `consume` are
+  `$dequeReader`'s, where its type is known. Its `read` and `fill_buf`
+  read its front slice alone, which a JS array has none of, so they're
+  refused, and so is the deque given as generic code's reader, whose
+  dictionary would hold them, and what the traits provide of it, which
+  asks that dictionary (#1302).
 - **A `Cursor<T>` is std's struct, `{ inner, pos }`,** its `pos` a `u64`;
   `Cursor::new`, `position`, `set_position`, `get_ref` and `into_inner` are
   read in place, and its `Clone`, `Debug`, `PartialEq` and `Default` are

@@ -168,3 +168,26 @@ Held by the corpus cases `io_read_slice.rs`, `io_cursor.rs`,
 builds, their metamorphic rewrites, and `diagnostics.test.ts`'s two
 refusals of a crate's reader. `VecDeque<u8>`, `io::empty`, `io::repeat`,
 `chain`, `take`, `bytes` and `BufReader` are phase 2; `File` comes last.
+
+## Amendment: a `VecDeque<u8>` is read, but its front slice (#1156, #1302)
+
+alloc's `impl Read for VecDeque<u8>` and `impl BufRead` take what they
+read from the deque's front. A deque is a JS array (ADR 0052), so its
+`read_exact`, `read_to_end`, `read_to_string` and `consume` are
+`$dequeReader`'s, std's bodies over the array, changed in place where
+the deque's type is known: a `read_exact` that can't fill its buffer
+empties the deque and fills nothing; `read_to_string` takes all of it,
+as its `read_to_end` does, and adds nothing of text that isn't UTF-8;
+`consume` past its end panics as `drain(..amt)` does. Its `read` and
+`fill_buf` read its front slice alone, `as_slices().0`, which depends on
+where the ring buffer wraps and an array has none of: they're refused,
+naming #1302, and so is the deque given as generic code's `Read` or
+`BufRead`, or asked what the traits provide, `read_line`, whose
+dictionary would hold them (the coordinator's decision for the user,
+2026-11-11). Case ([0262](0262-when-rust-and-js-disagree.md)): of what's
+supported, none; of the front slice, Rust's behavior can't be kept
+without the ring's layout, so a compile error. Held by the corpus case
+`io_read_deque.rs`, against native Rust in both builds and its
+metamorphic rewrites; `diagnostics.test.ts`'s three refusals; mutations
+`deque-*` (`runtime/readers.ts`, `lower/std_types/io.ts`,
+`lower/traits/dictionaries.ts`, `lower/recognition/io.ts`).
