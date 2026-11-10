@@ -2,9 +2,11 @@
 // hashbrown, smallvec, bytes and memchr write it, each seed's a program of
 // a few integer arrays, `Vec`s and boxed slices changed and read through
 // raw pointers: their arithmetic, `offset_from`, `transmute` between plain
-// types, a `union`'s other field read, `MaybeUninit` slots, a slice made of
-// a cast pointer, a typed array's bytes, `ptr::copy` and `write_bytes`, and
-// reads and writes at any byte. Each family of them is in a seed's program
+// types, a `union`'s other field read, `MaybeUninit` slots, a `MaybeUninit`
+// of a number of each width written through a view of its bytes, as
+// getrandom fills one (#1279), a slice made of a cast pointer, a typed
+// array's bytes, `ptr::copy` and `write_bytes`, and reads and writes at any
+// byte. Each family of them is in a seed's program
 // by a coin, swarm testing's (Groce et al., ISSTA 2012), so a program of
 // few families has more of each. Each operation is in a block of its own,
 // its pointers made there of the place they point into, so none outlives a
@@ -17,7 +19,7 @@
 import { random, type Random } from "./generate";
 
 /** The families of operations, each in a seed's program by a coin. */
-export const families = ["arith", "offsets", "transmute", "unions", "uninit", "views", "copies", "unaligned", "helpers"] as const;
+export const families = ["arith", "offsets", "transmute", "unions", "uninit", "uninit-bytes", "views", "copies", "unaligned", "helpers"] as const;
 export type Family = (typeof families)[number];
 
 const ints = ["u8", "i8", "u16", "i16", "u32", "i32", "u64", "i64"] as const;
@@ -25,6 +27,10 @@ type Int = (typeof ints)[number];
 const sizeOf: Record<Int, number> = { u8: 1, i8: 1, u16: 2, i16: 2, u32: 4, i32: 4, u64: 8, i64: 8 };
 const signed = (t: Int) => t.startsWith("i");
 const bits = (t: Int) => sizeOf[t] * 8;
+
+/** The numbers of each width a `MaybeUninit` written byte by byte holds:
+ * the integers, the 128-bit ones and the floats. */
+const byteWidths: Record<string, number> = { ...sizeOf, u128: 16, i128: 16, f32: 4, f64: 8 };
 
 /** A place of items: an array, a `Vec` or a boxed slice, of `n` `ty`s. */
 type Buffer = { name: string; ty: Int; n: number; kind: "array" | "vec" | "boxed" };
@@ -409,6 +415,131 @@ function operation(
           };
         },
         "zeroed": () => ({ body: [`let x${op} = unsafe { MaybeUninit::<[${b.ty}; ${n}]>::zeroed().assume_init() };`], shown: [`x${op}`] }),
+      });
+    }
+    case "uninit-bytes": {
+      // A `MaybeUninit` of a number of any width, or an array of them,
+      // written whole through a view of its bytes, as getrandom's
+      // `inner_u64` fills one (#1279), then `assume_init`. A float's top
+      // byte is masked so its exponent isn't all ones: never a NaN.
+      uses.uninit = true;
+      const ty = r.pick(Object.keys(byteWidths));
+      const size = byteWidths[ty];
+      const float = holdsFloat(ty);
+      const byte = (k: number) => {
+        const made = r.chance(0.5) ? literal(r, "u8") : `(${read()} as u8)`;
+        return float && k % size === size - 1 ? `${made} & 0xBF` : made;
+      };
+      const bytes = (n: number) => Array.from({ length: n }, (_, k) => byte(k));
+      // Each byte's index, in the order written: in order, from the end,
+      // the last one first, or any.
+      const order = (n: number) => {
+        const ks = Array.from({ length: n }, (_, k) => k);
+        const way = r.int(4);
+        if (way === 1) ks.reverse();
+        if (way === 2 && n > 0) ks.unshift(ks.pop()!);
+        if (way === 3) for (let k = n - 1; k > 0; k--) { const at = r.int(k + 1); [ks[k], ks[at]] = [ks[at], ks[k]]; }
+        return ks;
+      };
+      const made = `let mut m${op} = MaybeUninit::<${ty}>::uninit();`;
+      const init = `let x${op} = unsafe { m${op}.assume_init() };`;
+      return oneOf(r, family, {
+        "one-by-one": () => {
+          const bs = bytes(size);
+          return {
+            body: [made, `let p${op} = m${op}.as_mut_ptr().cast::<u8>();`, ...order(size).map((k) => `unsafe { p${op}.add(${k}).write(${bs[k]}) };`), init],
+            shown: [`x${op}`],
+          };
+        },
+        "through-uninit-bytes": () => {
+          uses.slice = true;
+          return {
+            body: [
+              made,
+              `let dst${op} = unsafe { slice::from_raw_parts_mut(m${op}.as_mut_ptr().cast::<MaybeUninit<u8>>(), ${size}) };`,
+              `for (k, byte) in dst${op}.iter_mut().enumerate() {`,
+              `    byte.write([${bytes(size).join(", ")}][k]);`,
+              `}`,
+              init,
+            ],
+            shown: [`x${op}`],
+          };
+        },
+        "through-a-byte-slice": () => {
+          uses.slice = true;
+          const bs = bytes(size);
+          return {
+            body: [
+              made,
+              `let dst${op} = unsafe { slice::from_raw_parts_mut(m${op}.as_mut_ptr().cast::<u8>(), ${size}) };`,
+              ...order(size).map((k) => `dst${op}[${k}] = ${bs[k]};`),
+              init,
+            ],
+            shown: [`x${op}`],
+          };
+        },
+        "copied-in": () => {
+          uses.ptr = true;
+          return {
+            body: [
+              `let src${op}: [u8; ${size}] = [${bytes(size).join(", ")}];`,
+              made,
+              `unsafe { ptr::copy_nonoverlapping(src${op}.as_ptr(), m${op}.as_mut_ptr().cast::<u8>(), ${size}) };`,
+              init,
+            ],
+            shown: [`x${op}`],
+          };
+        },
+        "copied-in-then-written": () => {
+          uses.ptr = true;
+          const at = r.int(size + 1);
+          const bs = bytes(size);
+          return {
+            body: [
+              `let src${op}: [u8; ${size}] = [${bs.join(", ")}];`,
+              made,
+              `let p${op} = m${op}.as_mut_ptr().cast::<u8>();`,
+              `unsafe { ptr::copy_nonoverlapping(src${op}.as_ptr(), p${op}, ${at}) };`,
+              ...order(size - at).map((k) => `unsafe { p${op}.add(${at + k}).write(${bs[at + k]}) };`),
+              init,
+            ],
+            shown: [`x${op}`],
+          };
+        },
+        "copied-from-a-buffer": () => {
+          uses.ptr = true;
+          // Of a buffer's bytes, where one holds as many and the number
+          // isn't a float, whose bits they might make a NaN.
+          const from = buffers.filter((x) => x.n * sizeOf[x.ty] >= size);
+          if (from.length === 0 || float) {
+            return {
+              body: [`let src${op}: [u8; ${size}] = [${bytes(size).join(", ")}];`, made, `unsafe { ptr::copy_nonoverlapping(src${op}.as_ptr(), m${op}.as_mut_ptr().cast::<u8>(), ${size}) };`, init],
+              shown: [`x${op}`],
+              form: "uninit-bytes/copied-in",
+            };
+          }
+          const o = r.pick(from);
+          const at = r.int(o.n * sizeOf[o.ty] - size + 1);
+          return {
+            body: [made, `unsafe { ptr::copy_nonoverlapping(${o.name}.as_ptr().cast::<u8>().add(${at}), m${op}.as_mut_ptr().cast::<u8>(), ${size}) };`, init],
+            shown: [`x${op}`],
+          };
+        },
+        "slots-through-their-bytes": () => {
+          uses.slice = true;
+          const n = 1 + r.int(3);
+          return {
+            body: [
+              `let mut m${op} = [MaybeUninit::<${ty}>::uninit(); ${n}];`,
+              `let dst${op} = unsafe { slice::from_raw_parts_mut(m${op}.as_mut_ptr().cast::<u8>(), ${n * size}) };`,
+              `for (k, byte) in dst${op}.iter_mut().enumerate() {`,
+              `    *byte = [${bytes(n * size).join(", ")}][k];`,
+              `}`,
+              `let x${op} = m${op}.map(|slot| unsafe { slot.assume_init() });`,
+            ],
+            shown: [`x${op}`],
+          };
+        },
       });
     }
     case "views": {
