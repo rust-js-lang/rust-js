@@ -21,7 +21,7 @@ import {
   type Table,
 } from "./iterator-matrix";
 import { numberCases, numberProgram, numberStrata, type NumberCase } from "./number-grid";
-import { stdNetCases, stdNetProgram, stdNetStrata, type NetCase } from "./std-net";
+import { refused, stdNetCases, stdNetProgram, stdNetStrata, type NetCase } from "./std-net";
 import { buildReact, target } from "./support";
 import { unwindCases, unwindProgram, unwindStrata, type UnwindCase } from "./unwind-points";
 import { join } from "node:path";
@@ -35,6 +35,9 @@ import { join } from "node:path";
  * which gives what rustc is told of it as JS's are compiled (#942). */
 export type TableOf<C extends Row> = {
   cases(): C[];
+  /** Of a table that pins its refusals, each case refused, by its id: what
+   * the refusal says, and its issue. */
+  refused?: Record<string, [said: string, issue: number]>;
   program(cases: C[]): string;
   batches(cases: C[]): C[][];
   slice(all: C[][]): number[];
@@ -105,6 +108,7 @@ const consumersTable: TableOf<ConsumerCase> = {
  * what it calls panicking. Its slice is all of it. */
 const stdTable: TableOf<NetCase> = {
   cases: stdNetCases,
+  refused,
   program: stdNetProgram,
   batches: (all) => batches(all),
   slice: (all) => slice(all, stdNetStrata),

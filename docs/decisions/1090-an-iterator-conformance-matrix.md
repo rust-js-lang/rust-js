@@ -638,3 +638,12 @@ a hand-written `Hash` among them (#1271), held by the template `hash of a
 counted key` till rust-js compiles one. The net runs per push of what std's
 collections, slices, strings and cells lower to (`stdNetPaths`, check.yml's
 `std-net`, check:fast) and each night (nightly.yml's `std`).
+
+Its refusals are pinned (#1171, amended). `test/std-net.ts`' `refused`
+lists each case rust-js refuses, by its id, with what the refusal says and
+its issue: #1271, #1274 to #1277. The harness fails on a refusal not listed,
+on one that says otherwise, and on a listed case that runs. A new refusal,
+one that turns into a wrong answer, and one that's fixed are each seen,
+where a count would let them pass. Its templates are one method each where
+a method is refused, so a refusal takes no other method down with it: 176
+cases of 132 templates, 28 of them refused in both builds.

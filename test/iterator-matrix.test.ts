@@ -237,6 +237,16 @@ for (const index of mine) {
         const name = `${listed}: ${c.id}`;
         const issue = known.get(`${listed} ${c.n}`);
         if (verdict.kind === "refused" && !verdict.own) refused++;
+        // Of a table that pins its refusals: each as it's listed, and none
+        // listed that isn't one now (#1171).
+        const pinned = of.refused?.[c.id];
+        if (of.refused !== undefined && verdict.kind === "refused" && (pinned === undefined || !verdict.why.includes(pinned[0]))) {
+          problems.push(`${name} is refused, ${pinned === undefined ? "unlisted" : `not as listed under #${pinned[1]}`}: ${verdict.why.split("\n")[0]}; list it in its table's \`refused\` under its issue`);
+          continue;
+        }
+        if (pinned !== undefined && verdict.kind !== "refused") {
+          problems.push(`${name} is listed as refused under #${pinned[1]}, but it ${verdict.kind === "same" ? "runs as Rust does" : "runs"} now: take it off its table's \`refused\``);
+        }
         // Each refusal, and why, of a run that reports them.
         if (verdict.kind === "refused" && process.env.ITERATOR_MATRIX_REPORT) console.log(`refused ${name}: ${verdict.why.split("\n")[0]}`);
         if (verdict.kind === "same" || verdict.kind === "refused") {

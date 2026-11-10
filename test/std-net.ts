@@ -158,11 +158,13 @@ export const templates: Template[] = [
   t("vec extract_if left part-way", ["Vec::extract_if"], "vec", `let mut r = c.extract_if(.., ${f("x", "x.0 % 2 == 0")});\nprintln!("{:?}", r.next());`, true),
   // VecDeque.
   t("deque push_front and back", ["VecDeque::push_front", "VecDeque::push_back"], "deque", "c.push_front(L(8));\nc.push_back(L(9));"),
-  t("deque push_mut", ["VecDeque::push_front_mut", "VecDeque::push_back_mut"], "deque", "c.push_front_mut(L(8)).0 += 1;\nc.push_back_mut(L(9)).0 += 1;"),
+  t("deque push_front_mut", ["VecDeque::push_front_mut"], "deque", "c.push_front_mut(L(8)).0 += 1;"),
+  t("deque push_back_mut", ["VecDeque::push_back_mut"], "deque", "c.push_back_mut(L(9)).0 += 1;"),
   t("deque pop", ["VecDeque::pop_front", "VecDeque::pop_back"], "deque", 'println!("{:?} {:?}", c.pop_front(), c.pop_back());'),
   t("deque pop_if", ["VecDeque::pop_front_if", "VecDeque::pop_back_if"], "deque", `println!("{:?}", c.pop_front_if(${f("x", "x.0 < 2")}));\nprintln!("{:?}", c.pop_back_if(${f("x", "x.0 < 2")}));`, true),
   t("deque insert and remove", ["VecDeque::insert", "VecDeque::remove", "VecDeque::insert_mut"], "deque", 'c.insert(1, L(9));\nc.insert_mut(0, L(8)).0 += 1;\nprintln!("{:?} {:?}", c.remove(2), c.remove(9));'),
-  t("deque swap_remove", ["VecDeque::swap_remove_front", "VecDeque::swap_remove_back"], "deque", 'println!("{:?} {:?}", c.swap_remove_front(2), c.swap_remove_back(0));'),
+  t("deque swap_remove_front", ["VecDeque::swap_remove_front"], "deque", 'println!("{:?}", c.swap_remove_front(2));'),
+  t("deque swap_remove_back", ["VecDeque::swap_remove_back"], "deque", 'println!("{:?}", c.swap_remove_back(0));'),
   t("deque truncate and clear", ["VecDeque::truncate", "VecDeque::clear"], "deque", 'c.truncate(2);\nprintln!("{c:?}");\nc.clear();'),
   t("deque retain", ["VecDeque::retain", "VecDeque::retain_mut"], "deque", `c.retain(${f("x", "x.0 != 2")});\nc.retain_mut(${f("x", "x.0 += 10; x.0 != 13")});`, true),
   t("deque retain_back", ["VecDeque::retain_back"], "deque", "c.retain_back(2);\nc.retain_back(9);"),
@@ -171,7 +173,10 @@ export const templates: Template[] = [
   t("deque resize", ["VecDeque::resize", "VecDeque::resize_with"], "deque", `c.resize(5, L(9));\nc.resize_with(7, ${f("", "L(8)")});\nc.resize(2, L(7));`, true),
   t("deque rotate", ["VecDeque::rotate_left", "VecDeque::rotate_right", "VecDeque::make_contiguous"], "deque", 'c.rotate_left(1);\nc.push_front(L(0));\nc.rotate_right(2);\nprintln!("{:?}", c.make_contiguous());'),
   t("deque swap", ["VecDeque::swap"], "deque", "c.swap(0, 3);"),
-  t("deque access", ["VecDeque::get_mut", "VecDeque::front_mut", "VecDeque::back_mut", "VecDeque::iter_mut", "VecDeque::range_mut", "VecDeque::as_mut_slices"], "deque", "c.get_mut(1).unwrap().0 += 10;\nc.front_mut().unwrap().0 += 20;\nc.back_mut().unwrap().0 += 30;\nfor x in c.iter_mut() {\n    x.0 += 1;\n}\nfor x in c.range_mut(1..3) {\n    x.0 += 1;\n}\nc.as_mut_slices().0[0].0 += 1;"),
+  t("deque get_mut", ["VecDeque::get_mut", "VecDeque::front_mut", "VecDeque::back_mut"], "deque", "c.get_mut(1).unwrap().0 += 10;\nc.front_mut().unwrap().0 += 20;\nc.back_mut().unwrap().0 += 30;"),
+  t("deque iter_mut", ["VecDeque::iter_mut"], "deque", "for x in c.iter_mut() {\n    x.0 += 1;\n}"),
+  t("deque range_mut", ["VecDeque::range_mut"], "deque", "for x in c.range_mut(1..3) {\n    x.0 += 1;\n}"),
+  t("deque as_mut_slices", ["VecDeque::as_mut_slices"], "deque", "c.as_mut_slices().0[0].0 += 1;"),
   t("deque binary_search", ["VecDeque::binary_search_by", "VecDeque::binary_search_by_key", "VecDeque::partition_point"], "deque", `println!("{:?}", c.binary_search_by(${f("x", "x.0.cmp(&3)")}));\nprintln!("{:?}", c.binary_search_by_key(&2, ${f("x", "x.0")}));\nprintln!("{:?}", c.partition_point(${f("x", "x.0 < 3")}));`),
   // String, of text with characters past ASCII.
   t("string push", ["String::push", "String::push_str"], "string", "c.push('é');\nc.push_str(\"ü!\");"),
@@ -195,15 +200,19 @@ export const templates: Template[] = [
   t("heap drain and clear", ["BinaryHeap::drain", "BinaryHeap::clear"], "heap", 'let mut d = c.drain();\nprintln!("{:?}", d.next().map(|l| l.0));\ndrop(d);\nc.push(L(5));\nc.clear();'),
   // BTreeMap and BTreeSet.
   t("btree insert and remove", ["BTreeMap::insert", "BTreeMap::remove", "BTreeMap::remove_entry"], "btree", 'println!("{:?}", c.insert(2, L(20)));\nprintln!("{:?}", c.insert(9, L(9)));\nprintln!("{:?} {:?}", c.remove(&1), c.remove_entry(&3));'),
-  t("btree get_mut", ["BTreeMap::get_mut", "BTreeMap::iter_mut", "BTreeMap::values_mut", "BTreeMap::range_mut"], "btree", "c.get_mut(&2).unwrap().0 += 10;\nfor (_, v) in c.iter_mut() {\n    v.0 += 1;\n}\nfor v in c.values_mut() {\n    v.0 += 1;\n}\nfor (_, v) in c.range_mut(2..) {\n    v.0 += 1;\n}"),
-  t("btree first and last", ["BTreeMap::first_entry", "BTreeMap::last_entry", "BTreeMap::pop_first", "BTreeMap::pop_last"], "btree", 'c.first_entry().unwrap().get_mut().0 += 10;\nprintln!("{:?}", c.last_entry().unwrap().remove());\nprintln!("{:?} {:?}", c.pop_first(), c.pop_last());'),
+  t("btree get_mut", ["BTreeMap::get_mut", "BTreeMap::iter_mut", "BTreeMap::values_mut"], "btree", "c.get_mut(&2).unwrap().0 += 10;\nfor (_, v) in c.iter_mut() {\n    v.0 += 1;\n}\nfor v in c.values_mut() {\n    v.0 += 1;\n}"),
+  t("btree range_mut", ["BTreeMap::range_mut"], "btree", "for (_, v) in c.range_mut(2..) {\n    v.0 += 1;\n}"),
+  t("btree first_entry", ["BTreeMap::first_entry", "BTreeMap::last_entry"], "btree", 'c.first_entry().unwrap().get_mut().0 += 10;\nprintln!("{:?}", c.last_entry().unwrap().remove());'),
+  t("btree pop_first and pop_last", ["BTreeMap::pop_first", "BTreeMap::pop_last"], "btree", 'println!("{:?} {:?}", c.pop_first(), c.pop_last());'),
   t("btree retain", ["BTreeMap::retain"], "btree", `c.retain(${f("k, v", "v.0 += 10; k % 2 == 0")});`, true),
   t("btree append and split_off", ["BTreeMap::append", "BTreeMap::split_off"], "btree", 'let mut o = BTreeMap::from([(2, L(22)), (7, L(7))]);\nc.append(&mut o);\nlet r = c.split_off(&3);\nprintln!("{r:?} {o:?}");'),
   t("btree extract_if", ["BTreeMap::extract_if"], "btree", `let mut r = c.extract_if(.., ${f("k, _v", "k % 2 == 0")});\nprintln!("{:?}", r.next());`, true),
-  t("btree entry", ["BTreeMap::entry", "Entry::and_modify", "Entry::or_insert_with", "Entry::or_insert_with_key", "OccupiedEntry::get_mut", "OccupiedEntry::insert"], "btree", `c.entry(2).and_modify(${f("v", "v.0 += 10;")}).or_insert_with(${f("", "L(0)")});\nc.entry(8).and_modify(${f("v", "v.0 += 10;")}).or_insert_with(${f("", "L(8)")});\nc.entry(6).or_insert_with_key(${f("k", "L(*k)")});\nif let std::collections::btree_map::Entry::Occupied(mut o) = c.entry(3) {\n    o.get_mut().0 += 1;\n    println!("{:?}", o.insert(L(30)));\n}`, true),
+  t("btree entry", ["BTreeMap::entry", "Entry::and_modify", "Entry::or_insert_with", "Entry::or_insert_with_key", "OccupiedEntry::get_mut"], "btree", `c.entry(2).and_modify(${f("v", "v.0 += 10;")}).or_insert_with(${f("", "L(0)")});\nc.entry(8).and_modify(${f("v", "v.0 += 10;")}).or_insert_with(${f("", "L(8)")});\nc.entry(6).or_insert_with_key(${f("k", "L(*k)")});\nif let std::collections::btree_map::Entry::Occupied(mut o) = c.entry(3) {\n    o.get_mut().0 += 1;\n}`, true),
+  t("btree OccupiedEntry insert", ["OccupiedEntry::insert"], "btree", 'if let std::collections::btree_map::Entry::Occupied(mut o) = c.entry(3) {\n    println!("{:?}", o.insert(L(30)));\n}'),
   t("btree clear", ["BTreeMap::clear"], "btree", "c.clear();"),
   t("bset insert and remove", ["BTreeSet::insert", "BTreeSet::replace", "BTreeSet::remove", "BTreeSet::take"], "bset", 'println!("{} {}", c.insert(L(9)), c.insert(L(2)));\nprintln!("{:?}", c.replace(L(3)));\nprintln!("{} {:?}", c.remove(&L(1)), c.take(&L(4)));', true, 1),
-  t("bset first and last", ["BTreeSet::pop_first", "BTreeSet::pop_last"], "bset", 'println!("{:?} {:?}", c.pop_first(), c.pop_last());'),
+  t("bset pop_first", ["BTreeSet::pop_first"], "bset", 'println!("{:?}", c.pop_first());'),
+  t("bset pop_last", ["BTreeSet::pop_last"], "bset", 'println!("{:?}", c.pop_last());'),
   t("bset retain", ["BTreeSet::retain"], "bset", `c.retain(${f("x", "x.0 != 2")});`, true),
   t("bset append and split_off", ["BTreeSet::append", "BTreeSet::split_off"], "bset", 'let mut o = BTreeSet::from([L(2), L(7)]);\nc.append(&mut o);\nlet r = c.split_off(&L(3));\nprintln!("{r:?} {o:?}");', true, 1),
   t("bset extract_if", ["BTreeSet::extract_if"], "bset", `let mut r = c.extract_if(.., ${f("x", "x.0 % 2 == 0")});\nprintln!("{:?}", r.next());`, true),
@@ -241,8 +250,18 @@ export const templates: Template[] = [
   t("clone_from_slice", ["[T]::clone_from_slice", "[T]::swap_with_slice"], "vec", 'let mut o = vec![L(7), L(8)];\nc[1..3].clone_from_slice(&o);\nc[..2].swap_with_slice(&mut o);\nprintln!("{o:?}");'),
   t("copy_within", ["[T]::copy_within", "[T]::copy_from_slice"], "nums", "c.copy_within(0..2, 3);\nc[..2].copy_from_slice(&[9, 8]);"),
   t("split_at_mut", ["[T]::split_at_mut", "[T]::split_at_mut_checked"], "vec", 'let (a, b) = c.split_at_mut(1);\na[0].0 += 10;\nb[0].0 += 20;\nprintln!("{}", c.split_at_mut_checked(9).is_none());'),
-  t("first and last mut", ["[T]::first_mut", "[T]::last_mut", "[T]::split_first_mut", "[T]::split_last_mut", "[T]::get_mut", "[T]::first_chunk_mut", "[T]::last_chunk_mut", "[T]::iter_mut", "[T]::split_first_chunk_mut", "[T]::split_last_chunk_mut", "[T]::as_chunks_mut", "[T]::as_rchunks_mut", "[T]::get_disjoint_mut"], "vec", "c.split_first_chunk_mut::<1>().unwrap().0[0].0 += 1;\nc.split_last_chunk_mut::<1>().unwrap().1[0].0 += 1;\nc.as_chunks_mut::<2>().0[0][1].0 += 1;\nc.as_rchunks_mut::<2>().1[0][0].0 += 1;\nif let Ok([a, b]) = c.get_disjoint_mut([0, 2]) {\n    std::mem::swap(a, b);\n}\nc.first_mut().unwrap().0 += 10;\nc.last_mut().unwrap().0 += 10;\nc.split_first_mut().unwrap().1[0].0 += 1;\nc.split_last_mut().unwrap().1[0].0 += 1;\nc.get_mut(1..3).unwrap()[0].0 += 1;\nc.first_chunk_mut::<2>().unwrap()[1].0 += 1;\nc.last_chunk_mut::<2>().unwrap()[0].0 += 1;\nfor x in c.iter_mut() {\n    x.0 += 100;\n}"),
-  t("chunks_mut", ["[T]::chunks_mut", "[T]::chunks_exact_mut", "[T]::rchunks_mut", "[T]::rchunks_exact_mut"], "vec", "for (i, ch) in c.chunks_mut(3).enumerate() {\n    ch[0].0 += 10 * i as u32;\n}\nfor ch in c.chunks_exact_mut(3) {\n    ch.reverse();\n}\nfor ch in c.rchunks_mut(3) {\n    ch[0].0 += 1;\n}\nfor ch in c.rchunks_exact_mut(3) {\n    ch.reverse();\n}"),
+  t("first and last mut", ["[T]::first_mut", "[T]::last_mut", "[T]::split_first_mut", "[T]::split_last_mut", "[T]::get_mut", "[T]::iter_mut"], "vec", "c.first_mut().unwrap().0 += 10;\nc.last_mut().unwrap().0 += 10;\nc.split_first_mut().unwrap().1[0].0 += 1;\nc.split_last_mut().unwrap().1[0].0 += 1;\nc.get_mut(1..3).unwrap()[0].0 += 1;\nfor x in c.iter_mut() {\n    x.0 += 100;\n}"),
+  t("first_chunk_mut", ["[T]::first_chunk_mut"], "vec", "c.first_chunk_mut::<2>().unwrap()[1].0 += 1;"),
+  t("last_chunk_mut", ["[T]::last_chunk_mut"], "vec", "c.last_chunk_mut::<2>().unwrap()[0].0 += 1;"),
+  t("split_first_chunk_mut", ["[T]::split_first_chunk_mut"], "vec", "c.split_first_chunk_mut::<1>().unwrap().0[0].0 += 1;"),
+  t("split_last_chunk_mut", ["[T]::split_last_chunk_mut"], "vec", "c.split_last_chunk_mut::<1>().unwrap().1[0].0 += 1;"),
+  t("as_chunks_mut", ["[T]::as_chunks_mut"], "vec", "c.as_chunks_mut::<2>().0[0][1].0 += 1;"),
+  t("as_rchunks_mut", ["[T]::as_rchunks_mut"], "vec", "c.as_rchunks_mut::<2>().1[0][0].0 += 1;"),
+  t("get_disjoint_mut", ["[T]::get_disjoint_mut"], "vec", "if let Ok([a, b]) = c.get_disjoint_mut([0, 2]) {\n    std::mem::swap(a, b);\n}"),
+  t("chunks_mut", ["[T]::chunks_mut"], "vec", "for (i, ch) in c.chunks_mut(3).enumerate() {\n    ch[0].0 += 10 * i as u32;\n}"),
+  t("chunks_exact_mut", ["[T]::chunks_exact_mut"], "vec", "for ch in c.chunks_exact_mut(3) {\n    ch.reverse();\n}"),
+  t("rchunks_mut", ["[T]::rchunks_mut"], "vec", "for ch in c.rchunks_mut(3) {\n    ch[0].0 += 1;\n}"),
+  t("rchunks_exact_mut", ["[T]::rchunks_exact_mut"], "vec", "for ch in c.rchunks_exact_mut(3) {\n    ch.reverse();\n}"),
   t("split by", ["[T]::split", "[T]::split_mut", "[T]::rsplit", "[T]::rsplit_mut", "[T]::splitn", "[T]::splitn_mut", "[T]::rsplitn", "[T]::rsplitn_mut", "[T]::split_inclusive", "[T]::split_inclusive_mut"], "vec", `println!("{:?}", c.split(${f("x", "x.0 == 2")}).collect::<Vec<_>>());\nprintln!("{:?}", c.rsplit(${f("x", "x.0 == 3")}).collect::<Vec<_>>());\nprintln!("{:?}", c.splitn(2, ${f("x", "x.0 % 2 == 0")}).collect::<Vec<_>>());\nprintln!("{:?}", c.rsplitn(2, ${f("x", "x.0 % 2 == 0")}).collect::<Vec<_>>());\nprintln!("{:?}", c.split_inclusive(${f("x", "x.0 == 2")}).collect::<Vec<_>>());\nfor s in c.split_mut(${f("x", "x.0 == 2")}) {\n    s.reverse();\n}\nfor s in c.rsplit_mut(${f("x", "x.0 == 4")}) {\n    s.reverse();\n}\nfor s in c.splitn_mut(2, ${f("x", "x.0 == 1")}) {\n    s.reverse();\n}\nfor s in c.rsplitn_mut(2, ${f("x", "x.0 == 3")}) {\n    s.reverse();\n}\nfor s in c.split_inclusive_mut(${f("x", "x.0 == 2")}) {\n    s.reverse();\n}`, true),
   t("chunk_by", ["[T]::chunk_by", "[T]::chunk_by_mut"], "dups", `println!("{:?}", c.chunk_by(${f("a, b", "a.0 == b.0")}).collect::<Vec<_>>());\nfor ch in c.chunk_by_mut(${f("a, b", "a.0 == b.0")}) {\n    ch[0].0 += 10;\n}`, true),
   // Cells.
@@ -269,6 +288,46 @@ export const excluded: Record<string, string> = Object.fromEntries([
     "[T]::as_mut_ptr", "[T]::as_mut_ptr_range", "[T]::as_mut_array", "[T]::as_flattened_mut", "UnsafeCell::get_mut",
   ].map((id) => [id, untouched]),
 ]);
+
+/** Each case rust-js refuses, by its id, in both builds: what the refusal
+ * says, and its issue. The net fails on a refusal not listed here, on one
+ * that says other than its line, and on a listed case that runs, so a new
+ * refusal, a refusal that turns into a wrong answer and one fixed are each
+ * seen (#1171). */
+export const refused: Record<string, [said: string, issue: number]> = {
+  // A key whose own `Hash` and `Eq` are written by hand.
+  "hash of a counted key | ok": ["values of type `C`", 1271],
+  "hash of a counted key | panics": ["values of type `C`", 1271],
+  // `&mut`-giving accessors and in-place adapters of items with a
+  // destructor, one checkbox each on #1274.
+  "heap peek_mut | ok": ["`std::collections::BinaryHeap::<T, A>::peek_mut` of a value with a destructor", 1274],
+  "heap peek_mut | panics": ["`std::collections::BinaryHeap::<T, A>::peek_mut` of a value with a destructor", 1274],
+  "btree OccupiedEntry insert | ok": ["`std::collections::btree_map::OccupiedEntry::<'a, K, V, A>::insert` of a value with a destructor", 1274],
+  "btree range_mut | ok": ["`std::collections::BTreeMap::<K, V, A>::range_mut` of a value with a destructor", 1274],
+  "btree first_entry | ok": ["`std::collections::BTreeMap::<K, V, A>::first_entry` of a value with a destructor", 1274],
+  "btree pop_first and pop_last | ok": ["`std::collections::BTreeMap::<K, V, A>::pop_first` of a value with a destructor", 1274],
+  "bset pop_first | ok": ["`std::collections::BTreeSet::<T, A>::pop_first` of a value with a destructor", 1274],
+  "bset pop_last | ok": ["`std::collections::BTreeSet::<T, A>::pop_last` of a value with a destructor", 1274],
+  "deque push_front_mut | ok": ["`std::collections::VecDeque::<T, A>::push_front_mut` of a value with a destructor", 1274],
+  "deque push_back_mut | ok": ["`std::collections::VecDeque::<T, A>::push_back_mut` of a value with a destructor", 1274],
+  "deque swap_remove_front | ok": ["`std::collections::VecDeque::<T, A>::swap_remove_front` of a value with a destructor", 1274],
+  "deque swap_remove_back | ok": ["`std::collections::VecDeque::<T, A>::swap_remove_back` of a value with a destructor", 1274],
+  "deque as_mut_slices | ok": ["`std::collections::VecDeque::<T, A>::as_mut_slices` of a value with a destructor", 1274],
+  "vec push_mut | ok": ["`std::vec::Vec::<T, A>::push_mut` of a value with a destructor", 1274],
+  "vec insert_mut | ok": ["`std::vec::Vec::<T, A>::insert_mut` of a value with a destructor", 1274],
+  "first_chunk_mut | ok": ["`core::slice::<impl [T]>::first_chunk_mut` of a value with a destructor", 1274],
+  "last_chunk_mut | ok": ["`core::slice::<impl [T]>::last_chunk_mut` of a value with a destructor", 1274],
+  "chunks_exact_mut | ok": ["`core::slice::<impl [T]>::chunks_exact_mut` of a value with a destructor", 1274],
+  "rchunks_mut | ok": ["`core::slice::<impl [T]>::rchunks_mut` of a value with a destructor", 1274],
+  "rchunks_exact_mut | ok": ["`core::slice::<impl [T]>::rchunks_exact_mut` of a value with a destructor", 1274],
+  // A cell's borrow mapped.
+  "ref map | ok": ["calling `std::cell::Ref::<'b, T>::map`", 1275],
+  "ref map | panics": ["calling `std::cell::Ref::<'b, T>::map`", 1275],
+  "refmut map | ok": ["calling `std::cell::RefMut::<'b, T>::map`", 1275],
+  "refmut map | panics": ["calling `std::cell::RefMut::<'b, T>::map`", 1275],
+  "hash get_disjoint_mut | ok": ["calling `std::collections::HashMap::<K, V, S, A>::get_disjoint_mut`", 1276],
+  "deque retain_back | ok": ["calling `std::collections::VecDeque::<T, A>::retain_back`", 1277],
+};
 
 /** Why `m` is left out, or nothing where a template covers it. */
 export function whyNot(m: NetMethod): string | undefined {

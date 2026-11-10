@@ -8,7 +8,7 @@
 
 import { expect, test } from "bun:test";
 
-import { excluded, stdNetCases, stdNetMethods, templates, whyNot } from "./std-net";
+import { excluded, refused, stdNetCases, stdNetMethods, templates, whyNot } from "./std-net";
 
 const found = stdNetMethods();
 const ids = new Set(found.map((m) => m.id));
@@ -35,4 +35,10 @@ test("each template has cases, each of its own id", () => {
   expect(new Set(templates.map((t) => t.name)).size).toBe(templates.length);
   expect(new Set(cases.map((c) => c.id)).size).toBe(cases.length);
   expect(new Set(cases.map((c) => c.variant))).toEqual(new Set(["ok", "panics"]));
+});
+
+test("each refusal it pins is a case's, under its issue", () => {
+  const ids = new Set(stdNetCases().map((c) => c.id));
+  expect(Object.keys(refused).filter((id) => !ids.has(id))).toEqual([]);
+  expect(Object.values(refused).filter(([said, issue]) => said === "" || !(issue > 0))).toEqual([]);
 });
