@@ -7,6 +7,7 @@ import { buildCompiler, buildSerde, buildReact, compiler, fixture, root, run, ta
 beforeAll(buildCompiler, 600_000);
 
 for (const [name, source, message, crate] of [
+  ["size_hint of a filter_map of a type parameter's", "pub fn f<I: Iterator<Item = u32>>(it: I) -> (usize, Option<usize>) { it.filter_map(|x| x.checked_sub(1)).size_hint() }", "`size_hint()` of a `std::iter::FilterMap<I, "],
   ["type error", 'pub fn f() -> i32 { "wrong" }', "mismatched types"],
   ["borrow error", 'pub fn f() -> i32 { let mut x = 1; let r = &x; x = 2; *r }', "borrowed"],
   ["unsupported type", 'pub fn f(x: *const str) -> *const str { x }', "does not support addressable memory yet: values of type `*const str`"],
@@ -250,7 +251,6 @@ for (const [name, source, message, crate] of [
   ["size_hint of a map of a string's chars", "pub fn f(s: &str) -> (usize, Option<usize>) { s.chars().map(|c| c as u32).size_hint() }", "of a string's `char`s"],
   // An adapter of what generic code is given, whose JS may be JS's own adapter of an array's
   // iterator, which knows no hint: `(0, None)` where Rust gives `(0, Some(3))` (#733).
-  ["size_hint of a filter of a type parameter's", "pub fn f<I: Iterator<Item = u32>>(it: I) -> (usize, Option<usize>) { it.filter(|x| *x > 1).size_hint() }", "`size_hint()` of a `std::iter::Filter<I, "],
   // A path's components are an array of them (ADR 0716), which keeps no path of what's left.
   ["what's left of a path's components", "use std::path::Path;\npub fn f(a: &Path) -> &Path { let mut c = a.components(); c.next(); c.as_path() }", "calling `std::path::Components::<'a>::as_path`"],
   ["a user impl of a std trait", 'pub struct C;\nimpl std::net::ToSocketAddrs for C { type Iter = std::vec::IntoIter<std::net::SocketAddr>; fn to_socket_addrs(&self) -> std::io::Result<Self::Iter> { Ok(Vec::new().into_iter()) } }', "user implementations of `std::net::ToSocketAddrs`"],

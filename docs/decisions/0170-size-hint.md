@@ -90,3 +90,23 @@ refused while `chars()` was an array whose count was exact. A crate that
 asks it makes each `Chars` the runtime's `$chars(s)`, which knows it
 ([1117](1117-a-strings-chars-are-lazy.md)). Corpus case
 `chars_size_hint.rs`.
+
+## Amendment: a `take` or a `filter` of a type parameter's hints as std's (#1236)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, now
+Rust's. Generic code's `i.take(2).size_hint()` of an `I: Iterator` made
+`Iterator.from(i).take(2)`, JS's own adapter, which knows no hint, so
+`$sizeHint` gave `(0, None)` where std's `Take` gives `(2, Some(2))` of a
+`Vec`'s `into_iter()`; `size_hint()` was taken for known, `Take` a compiled
+std struct of what it holds, which this `take` made here isn't. A `take(n)`
+or a `filter(f)` made where its hint is asked, of an iterator `$sizeHint`
+asks, a type parameter's given as a JS iterator, is std's of its source's,
+`$takeHint(i, 2)` and `$upperOnly(i)`, so a generic `filter`'s, refused
+before, is std's too. Found by the audit of #1170's migration 5. Held by
+`take_and_filter_of_a_type_parameter_hint_as_std.rs` and the mutation
+`in-place-adapter-hint-unasked`.
+
+Still `(0, None)`: a std adapter a caller makes as JS's own helper and
+gives generic code that asks its hint, `hint(v.into_iter().filter(..))`,
+as the caller doesn't know its callee asks it; the guide's difference 14,
+#1236's part (a).

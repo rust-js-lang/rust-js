@@ -24,7 +24,9 @@ import {
   $reserveHint,
   $rev,
   $sizeHint,
+  $takeHint,
   $unwindsOn,
+  $upperOnly,
   iterator_chain,
   iterator_flatMap,
   iterator_zip,
@@ -89,10 +91,8 @@ function inGeneric(tag, TDebug) {
   console.log(`${TDebug.fmt(tag)}`);
   show(
     "filter in generic",
-    $sizeHint(
-      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint).filter(
-        (x) => x % 2 === 1,
-      ),
+    $upperOnly(
+      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint),
     ),
   );
 }
@@ -104,10 +104,8 @@ function main() {
   };
   show(
     "filter",
-    $sizeHint(
-      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint).filter(
-        (x) => x % 2 === 1,
-      ),
+    $upperOnly(
+      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint),
     ),
   );
   show(
@@ -167,20 +165,23 @@ function main() {
   );
   show(
     "take 0",
-    $sizeHint(
-      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint).take(0),
+    $takeHint(
+      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint),
+      0,
     ),
   );
   show(
     "take 3",
-    $sizeHint(
-      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint).take(3),
+    $takeHint(
+      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint),
+      3,
     ),
   );
   show(
     "take 9",
-    $sizeHint(
-      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint).take(9),
+    $takeHint(
+      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint),
+      9,
     ),
   );
   show(
@@ -251,7 +252,7 @@ function main() {
   );
   $next(flat);
   show("flat_map in one", $sizeHint(flat));
-  show("range filter", $sizeHint($lazyRange(1, 6).filter((x) => x % 2 === 1)));
+  show("range filter", $upperOnly($lazyRange(1, 6)));
   // Of what drops its items, closed where it's dropped: its source's.
   const ds = [[1], [2], [3]];
   const filter = $held(

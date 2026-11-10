@@ -750,11 +750,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "adapted-hint-of-params",
-    breaks: "`size_hint()` of a `filter()` of what generic code is given is `(0, None)` where its caller gives an array's iterator, not refused (#733)",
+    breaks: "`size_hint()` of a `filter_map()` of what generic code is given is `(0, None)` where its caller gives an array's iterator, not refused (#733)",
     file: "src/lower/iterators/knowing.rs",
     find: "                !self.is_unknown(held.peel_refs())\n                    && (self.adapted_hint_known(held)",
     replace: "                true\n                    && (self.adapted_hint_known(held)",
-    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a filter of a type parameter's"],
+    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a filter_map of a type parameter's"],
   },
   {
     name: "adapted-hint-of-arrays",

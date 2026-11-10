@@ -201,6 +201,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             mapped = true;
             source_ty = source_ty.and_then(|ty| crate::lower::recognition::mapped_source(self.tcx, ty));
         }
+        // A `take(n)` or a `filter(f)` made here, JS's own adapter, which
+        // knows no hint, of an iterator `$sizeHint` asks, a type parameter's
+        // given as a JS iterator say, `Iterator.from(i).take(2)`: std's of
+        // its source's, `Take`'s and `Filter`'s, `$takeHint(i, 2)` and
+        // `$upperOnly(i)`, not `(0, None)` (#1236).
+        if let Some(hint) = self.in_place_adapter_hint(&it, source_ty) {
+            return Ok(hint);
+        }
         // Of the crate's own, its `$iterator`'s, which has its impl's
         // `size_hint` where it writes one, else std's `(0, None)`.
         let known = match mapped {
@@ -229,6 +237,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             args.extend(self.iterator_evidence(iter_ty.peel_refs(), iterator));
         }
         Ok(Expr::call_helper("$sizeHint", args))
+    }
+
+    /// Of `it`, a JS `take(n)` or `filter(f)` made here of type `ty`, std's
+    /// hint, of its source's, where `$sizeHint` asks its source: one whose
+    /// hint `held_hint_known` finds and isn't given as it is, read by its
+    /// dictionary (#1236). `None` of another.
+    fn in_place_adapter_hint(&self, it: &Expr, ty: Option<Ty<'tcx>>) -> Option<Expr> {
+        let ty = ty?;
+        let js::ExprKind::Call(callee, args) = &it.kind else {
+            return None;
+        };
+        let js::ExprKind::Member(of, method) = &callee.kind else {
+            return None;
+        };
+        // What `Iterator.from` was given, whose own hint it is.
+        let source = crate::lower::iterators::iterator_from(of).unwrap_or(of).clone();
+        let asked = |source_ty: Ty<'tcx>| {
+            self.held_hint_known(source_ty) && !self.iterator_given_as_it_is(source_ty.peel_refs())
+        };
+        match method.as_str() {
+            "take" if args.len() == 1 => match crate::lower::recognition::counted_source(self.tcx, ty) {
+                Some((source_ty, false)) if asked(source_ty) => {
+                    Some(Expr::call_helper("$takeHint", vec![source, args[0].clone()]))
+                }
+                _ => None,
+            },
+            "filter" if args.len() == 1 => match crate::lower::recognition::filtered_source(self.tcx, ty) {
+                Some(source_ty) if asked(source_ty) => Some(Expr::call_helper("$upperOnly", vec![source])),
+                _ => None,
+            },
+            _ => None,
+        }
     }
 
     /// `next` and `size_hint` of a `&mut` to the crate's iterator,
