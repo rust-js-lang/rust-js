@@ -23,7 +23,7 @@ import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, sta
 import { availableParallelism, cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
-import { changedCases, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers } from "./iteratorSlice";
+import { changedCases, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet } from "./iteratorSlice";
 import { mappedFiles, pickChange, readersOf } from "./testMap";
 import { browsers, caseParts, compilerBuilds, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
 import { said, strays } from "./strays";
@@ -171,6 +171,8 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
   const awaits = touchesAsync([...changed, ...branch]);
   // And to the iterators' code or the drops', the consumer net.
   const consumers = touchesConsumers([...changed, ...branch]);
+  // And to std's collections', slices', strings' or cells' code, the std net (#1171).
+  const stdNet = touchesStdNet([...changed, ...branch]);
   // And each corpus case it adds or edits, each of its metamorphic
   // rewrites, plain or `--all` (#1165).
   const cases = changedCases([...changed, ...branch]);
@@ -352,6 +354,15 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms 
               timeout: 300,
               weight: parts,
               ci: "bun scripts/iteratorSlice.ts run consumers",
+            }),
+          ]
+        : []),
+      ...(stdNet
+        ? [
+            job(runs.std[0].name, ["bun", "scripts/iteratorSlice.ts", "run", "std", String(parts)], {
+              timeout: 300,
+              weight: parts,
+              ci: "bun scripts/iteratorSlice.ts run std",
             }),
           ]
         : []),

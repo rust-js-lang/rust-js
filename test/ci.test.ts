@@ -263,17 +263,17 @@ test("each part of a test file a setting selects runs where `parts` says", () =>
 // picks the mutations a branch's check runs, `seeds`, the day's number, and
 // `issue`, which files a red night as an issue; and `iterators`,
 // `iterator-conformance`, `iterator-forms`, `format-grid`, `number-grid`
-// `declarations`, `async-points` and `consumer-net`, the tables' slices,
-// the corpus with std's iterator structs and the declarations' callers,
-// which the nightly skips, as its `matrix`, `conformance`, `forms`,
-// `format`, `numbers`, `async` and `consumers` run all of each, and its
-// suite the callers.
+// `declarations`, `async-points`, `consumer-net` and `std-net`, the tables'
+// slices, the corpus with std's iterator structs and the declarations'
+// callers, which the nightly skips, as its `matrix`, `conformance`, `forms`,
+// `format`, `numbers`, `async`, `consumers` and `std` run all of each, and
+// its suite the callers.
 test("the nightly, here, has each job the nightly has", () => {
   const ids = (file: string) => {
     const text = readFileSync(join(root, ".github/workflows", file), "utf8");
     return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
   };
-  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators", "iterator-conformance", "iterator-forms", "format-grid", "number-grid", "memory-net", "declarations", "async-points", "consumer-net", "metamorphic-cases", "crate-corpus", "react-in-rust-port"].includes(id));
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators", "iterator-conformance", "iterator-forms", "format-grid", "number-grid", "memory-net", "declarations", "async-points", "consumer-net", "std-net", "metamorphic-cases", "crate-corpus", "react-in-rust-port"].includes(id));
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 

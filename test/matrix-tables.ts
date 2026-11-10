@@ -21,6 +21,7 @@ import {
   type Table,
 } from "./iterator-matrix";
 import { numberCases, numberProgram, numberStrata, type NumberCase } from "./number-grid";
+import { stdNetCases, stdNetProgram, stdNetStrata, type NetCase } from "./std-net";
 import { buildReact, target } from "./support";
 import { unwindCases, unwindProgram, unwindStrata, type UnwindCase } from "./unwind-points";
 import { join } from "node:path";
@@ -99,8 +100,19 @@ const consumersTable: TableOf<ConsumerCase> = {
   slice: (all) => slice(all, consumerStrata),
 };
 
+/** The std net (#1171), test/std-net.ts's cases: each std method that
+ * changes a collection in place or calls what it's given, as it is and with
+ * what it calls panicking. Its slice is all of it. */
+const stdTable: TableOf<NetCase> = {
+  cases: stdNetCases,
+  program: stdNetProgram,
+  batches: (all) => batches(all),
+  slice: (all) => slice(all, stdNetStrata),
+};
+
 /** The table `of`, as test/iterator-matrix.test.ts runs it. */
 export function tableOf(of: Table): TableOf<Row> {
+  if (of === "std") return stdTable;
   if (of === "consumers") return consumersTable;
   if (of === "unwind") return unwindTable;
   if (of === "format") return formatTable;

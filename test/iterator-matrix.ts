@@ -45,10 +45,11 @@ export const builds: [name: string, flags: string[]][] = [
  * table (#854), every format spec of each value, the formatting grid
  * (#941), every number operation of each type's boundary values, the
  * numbers grid (#940), the panic points across `.await`, the async
- * table (#942), or every std method that takes an iterator by value, the
- * consumer net, `ITERATOR_TABLE`'s. */
-export type Table = "matrix" | "conformance" | "points" | "unwind" | "format" | "numbers" | "async" | "consumers";
-export const tables: Table[] = ["matrix", "conformance", "points", "unwind", "format", "numbers", "async", "consumers"];
+ * table (#942), every std method that takes an iterator by value, the
+ * consumer net, or each std method that changes a collection in place or
+ * calls what it's given, the std net (#1171), `ITERATOR_TABLE`'s. */
+export type Table = "matrix" | "conformance" | "points" | "unwind" | "format" | "numbers" | "async" | "consumers" | "std";
+export const tables: Table[] = ["matrix", "conformance", "points", "unwind", "format", "numbers", "async", "consumers", "std"];
 export const table: Table = (() => {
   const which = partSetting("ITERATOR_TABLE") ?? "matrix";
   if (!(tables as string[]).includes(which)) throw new Error(`ITERATOR_TABLE=${which}: ${tables.map((t) => `\`${t}\``).join(", ")}`);

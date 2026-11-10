@@ -599,3 +599,42 @@ cause in a trait's method, fixed with it (ADR 0411, amended); what a
 their source's step panicked lost, leaked or dropped out of order, in
 both generic callers; and in the std build, a `zip` of a `repeat` given a
 `Vec` cloned once more than native Rust. Each is listed under its issue.
+
+## Amendment: the std net (#1171)
+
+The consumer net covers what std does with the iterators it's given. The
+std net, `ITERATOR_TABLE=std` (`test/std-net.ts`), covers the rest of std's
+observable behaviour. Its catalog is each stable method of std's `Vec`,
+`VecDeque`, `String`, `BinaryHeap`, `BTreeMap`, `BTreeSet`, `HashMap`,
+`HashSet`, slices, cells and `Rc` that changes what it's called on in place,
+`&mut self` or `this: &mut Self`, or calls a closure it's given, read from
+std's own source as the consumer net reads its own.
+
+Each case runs on items that print each clone and drop, and whose `Ord` and
+`Eq` count their calls. It runs as it is, and with its closure's,
+comparison's or hash's 2nd call panicking, under `catch_unwind`. Then it
+prints what the method gave back, what's left of the collection and the
+panic's message, and its items' drops print as the case ends.
+
+The net doesn't compare what std leaves unspecified:
+- A hash table's order is printed sorted.
+- What a sort leaves after its comparison panics is printed sorted ("any
+  permutation").
+- So is a binary heap's layout ("arbitrary order").
+- Of a hash table's or a B-tree's search, how many calls std makes is its
+  own, so their panicking variant panics at the 1st call, before anything
+  changes.
+- A binary search's probe sequence is std's own, so it runs only as it is.
+- Native output was the same over nine runs.
+
+`test/std-net.test.ts` fails on a method std has that no template covers
+and `excluded` doesn't name. Its first run, 157 cases in both builds, found
+two wrong answers:
+- `insert` past the end never dropped what it took (#1267).
+- `String::retain` under a panic left the text it had (#1268).
+
+Both are fixed. Of 314 case-builds, 44 are refused, a hash table's key with
+a hand-written `Hash` among them (#1271), held by the template `hash of a
+counted key` till rust-js compiles one. The net runs per push of what std's
+collections, slices, strings and cells lower to (`stdNetPaths`, check.yml's
+`std-net`, check:fast) and each night (nightly.yml's `std`).

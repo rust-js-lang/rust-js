@@ -15,6 +15,7 @@
 //   bun scripts/iteratorSlice.ts run numbers [parts]       the numbers grid's slice (#940), of a change to the numbers' code
 //   bun scripts/iteratorSlice.ts run declarations 1        the declarations' TypeScript callers (#822), of a change to what a `None` is at the JS boundary
 //   bun scripts/iteratorSlice.ts run async [parts]         the async table (#942), of a change to how a future awaits and drops
+//   bun scripts/iteratorSlice.ts run std [parts]           the std net (#1171), of a change to std's collections', slices', strings' or cells' code
 //   bun scripts/iteratorSlice.ts run consumers [parts]     the consumer net, of a change to the iterators' code or the drops'
 //   bun scripts/iteratorSlice.ts run metamorphic [parts [since]]  each metamorphic rewrite of each corpus case the change adds or edits (#1165)
 //   bun scripts/iteratorSlice.ts run memory [parts]        the memory net's slice (#1172), of a change to the pointers' code
@@ -30,7 +31,9 @@
 // async table, all of it (test/async-points.ts, #942), `async-points`; and
 // to the iterators' code or what drops as a panic unwinds,
 // `consumerPaths`, the consumer net, all of it (test/consumer-net.ts),
-// `consumer-net`.
+// `consumer-net`; and to what std's collections, slices, strings and cells
+// lower to, `stdNetPaths`, the std net, all of it (test/std-net.ts,
+// #1171), `std-net`.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { dirname, join } from "node:path";
@@ -195,6 +198,33 @@ export const consumerPaths = [...iteratorPaths, ...dropPaths, "test/consumer-net
 
 const consumerGlobs = consumerPaths.map((path) => new Bun.Glob(path));
 
+/** What std's collections, slices, strings and cells lower to, as globs of
+ * the repository's paths: their lowering, the runtime, the drops', and the
+ * net that tests them, test/std-net.ts, and its coverage of std (#1171). */
+export const stdNetPaths = [
+  "src/lower/std_types/**",
+  "src/lower/std_impls.rs",
+  "src/lower/std_impls/**",
+  "src/lower/combinators.rs",
+  "src/lower/combinators/**",
+  "src/lower/mir/std_calls.rs",
+  "src/lower/mir/std_calls/**",
+  "src/runtime.rs",
+  "src/runtime/**",
+  "std/runtime.js",
+  ...dropPaths,
+  "test/std-net.ts",
+  "test/std-net.test.ts",
+];
+
+const stdNetGlobs = stdNetPaths.map((path) => new Bun.Glob(path));
+
+/** Whether a change of `files` touches what std's collections, slices,
+ * strings and cells lower to. */
+export function touchesStdNet(files: string[]): boolean {
+  return files.some((file) => stdNetGlobs.some((glob) => glob.match(file)));
+}
+
 /** Whether a change of `files` touches what std's consumers do with the
  * iterators they're given. */
 export function touchesConsumers(files: string[]): boolean {
@@ -266,6 +296,8 @@ export const runs = {
   async: [{ name: "the async table", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "async" } }],
   // All of it, its slice: some 20 s in 8 parts.
   consumers: [{ name: "the consumer net", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "consumers" } }],
+  // All of it, its slice: some 160 cases in 3 programs.
+  std: [{ name: "the std net", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "std" } }],
   // Each rewrite of each case the change adds or edits, the list `run`
   // writes (#1165).
   metamorphic: [{ name: "the metamorphic rewrites of the change's cases", file: "test/metamorphic.test.ts", env: {} }],

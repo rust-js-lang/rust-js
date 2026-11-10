@@ -230,6 +230,8 @@ export const parts: Part[] = [
   { setting: "ITERATOR_TABLE", value: "async", runs: "push", by: "scripts/iteratorSlice.ts" },
   // Of a change to the iterators' code or the drops', the consumer net.
   { setting: "ITERATOR_TABLE", value: "consumers", runs: "push", by: "scripts/iteratorSlice.ts" },
+  // Of a change to std's collections', slices', strings' or cells' code, the std net (#1171).
+  { setting: "ITERATOR_TABLE", value: "std", runs: "push", by: "scripts/iteratorSlice.ts" },
   {
     setting: "ITERATOR_TABLE",
     value: "points",
