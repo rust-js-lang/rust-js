@@ -35,7 +35,6 @@ consts/zst_no_llvm_alloc.rs	node: ended {"panic":"assertion `left == right` fail
 derives/debug/derive-debug.rs	error: rust-js does not support `{:?}` of a `*const dyn std::marker::Send` yet
 drop/drop-noncopyable-raw-pointer.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::boxed::Box<isize>` as `*const u8`, which aren't numbers alone
 drop/drop-uninhabited-enum.rs	error: rust-js does not support dropping `Foo` yet
-drop/dropck_legal_cycles.rs	error: rust-js does not support values of type `H<'_>` yet
 dst/dst-field-align.rs	node: ended {"panic":"assertion `left == right` failed\n  left: 0x10000\n right: 0x11000"}
 dst/dst-raw.rs	error: rust-js does not support addressable memory yet: values of type `*const dyn Trait`
 enum-discriminant/niche-prefer-zero.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::option::Option<Size>` as `u8`, which aren't numbers alone
@@ -55,8 +54,6 @@ packed/issue-118537-field-offset.rs	error: rust-js does not support calling `std
 privacy/pub-extern-privacy.rs	error: rust-js does not support addressable memory yet: a `transmute` of `usize` as `*mut std::ffi::c_void`, which aren't numbers alone
 rfcs/rfc-2091-track-caller/file-is-nul-terminated.rs	error: rust-js does not support calling `std::panic::Location::<'a>::file_as_c_str` yet
 rfcs/rfc-2091-track-caller/track-caller-ffi.rs	error: rust-js: a JS function is bound as an ordinary function, `#[cfg_attr(rust_js, rust_js::link_name = "rust_track_caller_ffi_test_tracked")] fn rust_track_caller_ffi_test_tracked(..) { unreachable
-rfcs/rfc-3348-c-string-literals/basic.rs	error: rust-js does not support this constant, from its MIR yet
-rfcs/rfc-3348-c-string-literals/non-ascii.rs	error: rust-js does not support this constant, from its MIR yet
 statics/issue-17718-static-unsafe-interior.rs	error: rust-js does not support statics of type `MyUnsafePack<isize>` yet
 statics/static-lazy-init-with-arena-set.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::boxed::Box<ArenaSet<std::vec::Vec<u8>, [u8]>>` as `*const ArenaSet<std::vec::Vec<u8>, [u8]>`, which aren't numbers alone
 statics/static-recursive.rs	error: rust-js does not support addressable memory yet: statics of type `*const u8`
