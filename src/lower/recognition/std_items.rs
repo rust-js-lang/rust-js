@@ -50,6 +50,49 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (def_id, generic_args)
     }
 
+    /// Of a call of a std trait's method `def_id` of `&mut self` whose
+    /// `Self`, in `generic_args`, is a `&mut W`, which resolves to a method
+    /// std's impl writes: `W`'s own method's arguments. std's impls of its
+    /// traits for a `&mut W` pass each method of `&mut self` they write on
+    /// to `(**self)`'s, its other arguments as they are, `impl<W: Write +
+    /// ?Sized> Write for &mut W`'s, `Read`'s, `BufRead`'s, `Seek`'s,
+    /// `fmt::Write`'s, `Hasher`'s and `Iterator`'s `next` and `nth`
+    /// (#1309), so the call is `W`'s, given the `&mut W` its receiver, a
+    /// `&mut &mut W`, is of: a `&mut &mut String`'s `write_str` writes the
+    /// `String`. Not a method the impl leaves its trait's default, which
+    /// runs of the `&mut W` itself, `by_ref()`'s; nor one of `self`, an
+    /// iterator's `fold`, which std's impl makes of `I`'s `try_fold`; nor
+    /// one of `&self`, `len()`'s or `cmp`'s, whose receiver, a `&&mut I`,
+    /// the lowering reads as it is. (`impl Write for &mut [u8]`, of a type
+    /// of std's own, writes the slice, which has no `Write` to call, so its
+    /// call stays refused.)
+    pub(in crate::lower) fn passed_through_mut_ref(
+        &self,
+        def_id: DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+    ) -> Option<ty::GenericArgsRef<'tcx>> {
+        let tcx = self.tcx;
+        if !self.is_std(tcx.trait_of_assoc(def_id)?) {
+            return None;
+        }
+        let &ty::Ref(_, inner, Mutability::Mut) = generic_args.types().next()?.kind() else {
+            return None;
+        };
+        let sig = tcx
+            .fn_sig(def_id)
+            .instantiate_identity()
+            .skip_normalization()
+            .skip_binder();
+        if !matches!(*sig.inputs().first()?.kind(), ty::Ref(_, of, Mutability::Mut) if of == tcx.types.self_param) {
+            return None;
+        }
+        let method = crate::lower::items::resolve_instance_in(tcx, self.typing_env, def_id, generic_args)
+            .ok()??
+            .def_id();
+        (tcx.impl_of_assoc(method).is_some() && self.is_std(method))
+            .then(|| tcx.mk_args_from_iter(std::iter::once(inner.into()).chain(generic_args.iter().skip(1))))
+    }
+
     /// A type made of std's types alone, and no cell: no impl of the crate's
     /// can be for it, nor one that borrows (ADR 0328).
     pub(in crate::lower) fn std_alone(&self, ty: Ty<'tcx>) -> bool {

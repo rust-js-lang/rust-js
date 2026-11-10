@@ -62,6 +62,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.called_unbound(state, (call, Called::Pointer(fn_ptr)))
     }
 
+    /// A method std's impl for a `&mut W` passes on to `W`'s
+    /// (`passed_through_mut_ref`): `W`'s, given the `&mut W` its receiver
+    /// is of, `*self` (#1309). Another call as it is.
+    fn passed_through<'b>(
+        &self,
+        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        args: &'b [rustc_span::Spanned<Operand<'tcx>>],
+    ) -> (
+        ty::GenericArgsRef<'tcx>,
+        std::borrow::Cow<'b, [rustc_span::Spanned<Operand<'tcx>>]>,
+    ) {
+        let passed = (self.recognition())
+            .passed_through_mut_ref(def_id, generic_args)
+            .zip(args.first().and_then(|receiver| receiver.node.place()));
+        let Some((inner, receiver)) = passed else {
+            return (generic_args, std::borrow::Cow::Borrowed(args));
+        };
+        let deref = rustc_span::Spanned {
+            node: Operand::Copy(self.tcx.mk_place_deref(receiver)),
+            span: args[0].span,
+        };
+        (inner, std::iter::once(deref).chain(args[1..].iter().cloned()).collect())
+    }
+
     pub(super) fn mir_call(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -80,6 +104,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.mir_fn_pointer_call(state, func, args, span, out);
         };
         let (def_id, generic_args) = self.recognition().call_it_is(def_id, generic_args);
+        let (generic_args, args) = self.passed_through((def_id, generic_args), args);
+        let args = &args[..];
         if let Some(defined) = self.mir_defined(state, def_id, args, span, out)? {
             return Ok(Value::Expr(defined));
         }

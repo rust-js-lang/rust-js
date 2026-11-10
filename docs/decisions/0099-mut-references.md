@@ -642,3 +642,37 @@ The mutation `given-box-boxed-again`, of the conversion, and
 arrow makes now (its arguments are its parameters' values, never a
 place), are retired; one that made a place to copy back would be an
 internal error, asserted, not a copy back nothing reaches.
+
+## Amended (2026-11-11, #1309): a method std's impl for a `&mut W` passes on is `W`'s
+
+A std trait's method called on a `&mut` to a local that holds a `&mut`,
+`let r = &mut by; r.write_str("a")` of `by: &mut String`, is MIR's
+`<&mut String as fmt::Write>::write_str(copy r, ..)`: its `Self` is the
+`&mut String`, its receiver the `&mut &mut String`. The recognition
+peeled `Self` to `String` and wrote to the receiver's place, `by`, one
+dereference short: `by += "a"` replaced the cell `by` holds with text,
+and `s` was never written (a wrong answer), and a `&mut &mut Vec<u8>`'s
+`write_all` threw `result.push is not a function`. std's impls of
+its traits for a `&mut W`, `impl<W: Write + ?Sized> Write for &mut W`
+and `Read`'s, `BufRead`'s, `Seek`'s, `fmt::Write`'s, `Hasher`'s and
+`Iterator`'s, pass each method of `&mut self` they write on to
+`(**self)`'s, its other arguments as they are. So a call of one, a std
+trait's method of `&mut self` whose `Self` is a `&mut W` and that
+resolves to a method std's impl writes (`passed_through_mut_ref`), is
+`W`'s, given `*self`, the `&mut W` its receiver is of: `by.value +=
+"a"`, `held.push(122)`. A method the impl leaves its trait's default,
+`find`, which runs of the `&mut W` itself, stays the impl's; so does one
+of `self`, an iterator's `fold`, which std's impl makes of `I`'s
+`try_fold`, and one of `&self`, `len()`'s, `cmp`'s and `eq`'s, whose
+receiver, a `&&mut I`, the lowering reads as it is, and whose `other`
+std passes on as `*other`, as the corpus's `by_ref_lends`,
+`ordered_searches` and `mut_ref_compare` showed where they weren't.
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior. Corpus case `std_method_of_a_mut_to_a_held_mut` (a
+`String`, a `Vec<u8>`, a struct's field, an `Option`'s payload, a reader
+of bytes, an iterator, and a crate's iterator's `fold` through a `&mut`
+and its `find` through a `&mut` to a `&mut`, each of which writes its
+own); mutations `passed-on-receiver-not-read-through`
+(`lower/mir/dispatch.ts`), `passed-on-of-shared-self`,
+`passed-on-of-any-self` and `passed-on-a-default`
+(`lower/recognition/std_items.ts`).

@@ -3,6 +3,33 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "passed-on-of-any-self",
+    breaks:
+      "a method of `self` std's impl for a `&mut I` makes of another is taken as `I`'s, so a `&mut` to an iterator of the crate's own folds by its own `fold`, where std's impl folds by `I`'s `try_fold`, its `next` (#1309)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "        if !matches!(*sig.inputs().first()?.kind(), ty::Ref(_, of, Mutability::Mut) if of == tcx.types.self_param) {",
+    replace: "        if false {",
+    tests: ["test/corpus.test.ts", "-t", "^std_method_of_a_mut_to_a_held_mut.rs$"],
+  },
+  {
+    name: "passed-on-a-default",
+    breaks:
+      "a method std's impl for a `&mut I` leaves its trait's default, `by_ref()`, which runs of the `&mut I` itself, is taken as `I`'s (#1309)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "        (tcx.impl_of_assoc(method).is_some() && self.is_std(method))",
+    replace: "        self.is_std(method)",
+    tests: ["test/corpus.test.ts", "-t", "^(std_method_of_a_mut_to_a_held_mut|by_ref_lends).rs$"],
+  },
+  {
+    name: "passed-on-of-shared-self",
+    breaks:
+      "a method of `&self` std's impl for a `&mut I` passes on is `I`'s, given `*self` of a `&&mut I`, so `by_ref().len()` of a `Vec`'s iterator reads `NaN` (#1309)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "        if !matches!(*sig.inputs().first()?.kind(), ty::Ref(_, of, Mutability::Mut) if of == tcx.types.self_param) {",
+    replace: "        if !matches!(*sig.inputs().first()?.kind(), ty::Ref(_, of, _) if of == tcx.types.self_param) {",
+    tests: ["test/corpus.test.ts", "-t", "^by_ref_lends.rs$"],
+  },
+  {
     name: "zip-by-index-pure",
     breaks:
       "a zip by index ignores whether its first side runs code, so a slice's plain zip, which no one can tell apart, is `$trustedZip` too, noisier (ADR 0973)",
