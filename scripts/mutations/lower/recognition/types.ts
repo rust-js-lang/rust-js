@@ -13,15 +13,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "class-key-unpeeled",
-    breaks:
-      "a map or a set keyed by a `&T` of a type parameter is refused, its class taken for the reference's, not `T`'s (#313)",
-    file: "src/lower/recognition/types.rs",
-    find: "        ty::Ref(_, inner, rustc_ast::Mutability::Not) => class_key(inner),\n",
-    replace: "        ty::Ref(_, _, rustc_ast::Mutability::Not) => key,\n",
-    tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_a_params_ref.rs$"],
-  },
-  {
     name: "drain-not-asked",
     breaks:
       "a `Vec`'s `drain(0..i)` isn't judged by its range, and is `$drain(queue, 0, i)` where it's in bounds",
@@ -168,31 +159,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
   },
   {
-    name: "needs-drop-unknown",
-    breaks: "`mem::needs_drop::<T>()` is refused, not rustc's answer",
-    file: "src/lower/recognition/types.rs",
-    find: '        "std::mem::needs_drop" => return &[TypeFact::NeedsDrop],\n',
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^needs_drop.rs$"],
-  },
-  {
-    name: "align-of-val-unknown",
-    breaks: "`align_of_val(&x)`, which has no diagnostic name, is refused",
-    file: "src/lower/recognition/types.rs",
-    find: '        _ if std_path(tcx, def_id) == "std::mem::align_of_val" => (TypeFact::Align, true),\n',
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^size_of.rs$"],
-  },
-  {
-    name: "size-of-val-as-align",
-    breaks: "`size_of_val(&x)` is its alignment",
-    file: "src/lower/recognition/types.rs",
-    find: '        _ if diagnostic("mem_size_of_val") => (TypeFact::Size, true),\n',
-    replace:
-      '        _ if diagnostic("mem_size_of_val") => (TypeFact::Align, true),\n',
-    tests: ["test/corpus.test.ts", "-t", "^size_of.rs$"],
-  },
-  {
     name: "range-inclusive-end-excluded",
     breaks:
       "`2..=5`'s end is `Excluded`, one short: a B-tree's `range(2..=3)` of constants misses `3`, and `&b[2..=3]` through a generic `SliceIndex` is `$sliceIndexes.range`'s",
@@ -214,15 +180,6 @@ export const mutations: Mutation[] = [
     replace:
       "        _ if matches!(ty.kind(), ty::Tuple(items) if items.len() == 2) => (Item(1), Item(0)),\n",
     tests: ["test/corpus.test.ts", "-t", "^range_bounds_generic.rs$"],
-  },
-  {
-    name: "layout-new-asks-nothing",
-    breaks:
-      "`Layout::new::<T>()` of a type parameter asks no size or alignment of its caller, and is refused",
-    file: "src/lower/recognition/types.rs",
-    find: '        "std::alloc::Layout::new" => return &[TypeFact::Size, TypeFact::Align],\n',
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^layout_new.rs$"],
   },
   {
     name: "clock-number-arithmetic",
@@ -282,25 +239,6 @@ export const mutations: Mutation[] = [
       "-t",
       "nullable result is written",
     ],
-  },
-  {
-    name: "btree-of-param-classless",
-    breaks:
-      "a `BTreeSet` of a type parameter's keys is refused, its class not asked of its caller",
-    file: "src/lower/recognition/types.rs",
-    find: "        _ if is(StdItem::BTreeSet) => TypeFact::TreeSet,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^generic_btree_keys.rs$"],
-  },
-  {
-    name: "tree-fact-hashed",
-    breaks:
-      "a generic `BTreeMap` is given its caller's `HashMap` class, a `Map` of keys whose `Ord` is the crate's own",
-    file: "src/lower/recognition/types.rs",
-    find: "        [[TypeFact::Map, TypeFact::Set], [TypeFact::TreeMap, TypeFact::TreeSet]][usize::from(sorted)][usize::from(set)]\n",
-    replace:
-      "        [[TypeFact::Map, TypeFact::Set], [TypeFact::Map, TypeFact::Set]][usize::from(sorted)][usize::from(set)]\n",
-    tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$"],
   },
   {
     name: "held-types-no-async-block",
@@ -394,19 +332,6 @@ export const mutations: Mutation[] = [
     replace: "        let of_cell = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_listeners_momentary.rs$"],
     snapshots: true,
-  },
-  {
-    name: "untyped-class-never",
-    breaks:
-      "no `js::Class` is taken to be untyped, a class held, so its construction as any value names `js::new(class, ..)`, which rustc refuses of one",
-    file: "src/lower/recognition/types.rs",
-    find: "    is_js_class(tcx, class.did())\n        && args.types().next().is_some_and(|of| {\n",
-    replace: "    false\n        && args.types().next().is_some_and(|of| {\n",
-    tests: [
-      "test/js-constructors.test.ts",
-      "-t",
-      "a constructor held as a value of any shape is refused",
-    ],
   },
   {
     name: "holds-dyn-any-never",

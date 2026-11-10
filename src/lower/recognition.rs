@@ -7,6 +7,7 @@ mod chars;
 mod fmt;
 mod inherent;
 mod iterators;
+mod js_items;
 mod json;
 mod lengths;
 mod methods;
@@ -24,13 +25,14 @@ mod specialization;
 mod std_crates;
 mod std_items;
 mod traits;
+mod type_facts;
 mod types;
 mod wrappers;
 mod zip_folds;
 
 pub(super) use self::{
-    adapter_types::*, c_strs::*, calls::*, fmt::*, iterators::*, json::*, serde::*, sorts::*, specialization::*,
-    std_crates::*, std_items::*, traits::*, types::*, wrappers::*, zip_folds::*,
+    adapter_types::*, c_strs::*, calls::*, fmt::*, iterators::*, js_items::*, json::*, serde::*, sorts::*,
+    specialization::*, std_crates::*, std_items::*, traits::*, type_facts::*, types::*, wrappers::*, zip_folds::*,
 };
 
 use super::combinators::{Comb, IterComb, IterSource, StepOp};
