@@ -985,4 +985,12 @@ export const mutations: Mutation[] = [
     replace: "        out.push(StmtKind::Assign(target, value).at(js_span));\n",
     tests: ["test/corpus.test.ts", "-t", "^whole_values_moved_through_pointers.rs$"],
   },
+  {
+    name: "write-through-a-boxed-iterator-lost",
+    breaks: "`**b = v` of a `&mut Box<I>` of an iterator gives the parameter another value, `b = v`, the caller's iterator left as it was (#1314)",
+    file: "src/lower/mir/assign.rs",
+    find: "            ) || through_box(base))\n",
+    replace: "            ))\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_boxed_iterator_is_the_iterators.rs$"],
+  },
 ];

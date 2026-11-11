@@ -119,4 +119,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^keys_found_by_their_own_hash.rs$"],
   },
+  {
+    name: "mut-ref-of-a-boxed-iterator-unsupported",
+    breaks: "a `&mut Box<I>` of an iterator, which isn't a cell, is checked as one, and refused, \"values of type `&mut Box<Range<i32>>`\" (#1314)",
+    file: "src/lower/support.rs",
+    find: "                    && !self.mut_ref_form(*inner).is_cell() =>\n",
+    replace: "                    && false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^(mut_ref_of_a_boxed_iterator_is_the_iterators|boxed_iterator_stepped_as_what_it_boxes).rs$"],
+  },
 ];

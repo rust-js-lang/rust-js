@@ -711,7 +711,8 @@ Left as it was: `by_ref()` of a `Box<I>` lends the box's `&mut`, the cell,
 as an iterator, so `boxed.by_ref().take(2)` throws. A `&mut Box<I>` is a
 cell where a `&mut I` is the iterator itself (ADR 1086's #1222: a box's
 `&mut` is written whole as a cell), and that form is a decision of its
-own, not this one's.
+own, not this one's. Since decided: ADR 1086's amendment of #1314, a
+`&mut Box<I>` of an iterator is what a `&mut I` is.
 
 Corpus case `boxed_iterator_stepped_as_what_it_boxes`: a `Box<Map<..>>`'s
 `next`, the crate's own iterator's `next`, `size_hint` and `nth`, a

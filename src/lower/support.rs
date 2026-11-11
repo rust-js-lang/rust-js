@@ -197,6 +197,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return self.unsupported_in(*inner, seen);
             }
+            // A `&mut` to a box its form says is what it holds, an iterator's
+            // (`mut_ref_form`, #1314): a `&mut` to that.
+            ty::Ref(region, inner, Mutability::Mut)
+                if let Some(boxed) = inner.boxed_ty()
+                    && !self.mut_ref_form(*inner).is_cell() =>
+            {
+                return self.unsupported_in(Ty::new_mut_ref(self.tcx, *region, boxed), seen);
+            }
             // A `&mut` to anything else is a cell (ADR 0099).
             ty::Ref(_, inner, Mutability::Mut) if self.mut_ref_form(*inner).is_cell() => return None,
             ty::Array(elem, _) | ty::Slice(elem) => return self.unsupported_in(*elem, seen),

@@ -958,11 +958,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && state.facts.place_reference(base.local)
                 && matches!(target.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))
         };
+        // Or through a box a `&mut` has the form of what it holds, `**b = v`
+        // of a `&mut Box<I>` of an iterator (`mut_ref_form`, #1314): the
+        // `&mut`'s, its box no place of its own.
+        let through_box = |base: mir::PlaceRef<'tcx>| {
+            let boxed = Place::ty_from(base.local, base.projection, decls, self.tcx).ty;
+            boxed.boxed_ty().is_some()
+                && !self.mut_ref_form(boxed).is_cell()
+                && base.last_projection().is_some_and(|(outer, elem)| {
+                    elem == PlaceElem::Deref
+                        && matches!(
+                            Place::ty_from(outer.local, outer.projection, decls, self.tcx).ty.kind(),
+                            ty::Ref(_, _, ty::Mutability::Mut)
+                        )
+                })
+        };
         if let Some((base, PlaceElem::Deref)) = place.as_ref().last_projection()
-            && matches!(
+            && (matches!(
                 Place::ty_from(base.local, base.projection, decls, self.tcx).ty.kind(),
                 ty::Ref(_, _, ty::Mutability::Mut)
-            )
+            ) || through_box(base))
             && self.mut_ref_form(place.ty(decls, self.tcx).ty).written_in_place()
             && !names_place(base)
         {

@@ -240,4 +240,12 @@ export const mutations: Mutation[] = [
     replace: "            MutRefForm::Box | MutRefForm::GenericBox => true,\n        }\n    }\n\n    /// Generic code's box",
     tests: ["test/corpus.test.ts", "-t", "^option_of_a_mut_ref_read_by_value.rs$"],
   },
+  {
+    name: "mut-ref-of-a-boxed-iterator-a-cell",
+    breaks: "a `&mut Box<I>` of an iterator is a cell, `{ value }`, as #1222 had it, so `by_ref()` of a boxed iterator lends the cell to what steps it, which throws (#1314)",
+    file: "src/lower/representation/mut_ref.rs",
+    find: "            ) == Some(true)\n        {\n            return self.mut_ref_form_in(inner, param_env);\n",
+    replace: "            ) == Some(false)\n        {\n            return self.mut_ref_form_in(inner, param_env);\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_boxed_iterator_is_the_iterators.rs$"],
+  },
 ];

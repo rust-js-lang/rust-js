@@ -34,7 +34,7 @@ function firstTwo(it) {
 
 // A `&mut` to a box a function's given, a variable's: what it holds.
 function stepped(boxed) {
-  return [$rangeNext(boxed.value), $rangeNextBack(boxed.value)];
+  return [$rangeNext(boxed), $rangeNextBack(boxed)];
 }
 
 function main() {
@@ -51,7 +51,7 @@ function main() {
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const value$3 = countdownIterator_next(own);
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
-  let ranged = { start: 0, end: 5 };
+  const ranged = { start: 0, end: 5 };
   const next = $rangeNext(ranged);
   const value$4 = $rangeNextBack(ranged);
   console.log(
@@ -60,9 +60,7 @@ function main() {
   const taken = Array.from($lent($iterator(ranged, $rangeNext)).take(2));
   const arg = $rangeNext(ranged);
   console.log(`[${taken.join(", ")}] ${arg == null ? "None" : `Some(${arg})`}`);
-  const boxed$1 = { value: ranged };
-  const value$5 = stepped(boxed$1);
-  ranged = boxed$1.value;
+  const value$5 = stepped(ranged);
   console.log(
     `(${value$5[0] == null ? "None" : `Some(${value$5[0]})`}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`}) ${ranged.start}..${ranged.end}`,
   );

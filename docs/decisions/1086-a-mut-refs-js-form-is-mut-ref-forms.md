@@ -381,3 +381,44 @@ builds. Mutations: `mut-ref-cell-read-is-itself`,
 `option-copied-of-mut-ref-gives-handle`,
 `result-copied-of-mut-ref-gives-handle` and
 `as-deref-of-mut-ref-is-itself`.
+
+## Amendment: a `&mut Box<I>` of an iterator is what a `&mut I` is (2026-11-11, #1314)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's are kept.
+
+A `&mut` to a box was a cell, `{ value }`, as a write of the whole through
+it, `*b = Box::new(..)`, gives the box another value (#1222). Of a box of
+an iterator, that cell was lent where the iterator was asked:
+`boxed.by_ref().take(2)` gave generic iterator code the cell, which it
+stepped as an iterator, and threw. The user decided: when `I` is an
+iterator, a `&mut Box<I>` takes a `&mut I`'s form, the iterator itself,
+as a `Box` is what it holds in JS. That covers `by_ref()`, a `&mut boxed`
+given to generic code, a `Box<dyn Iterator>`'s and every other route,
+asked of the one owner, `mut_ref_form`, which gives the box's `&mut` its
+contents' form, of an iterator the type's bounds say where it's asked.
+
+What reads a `&mut`'s form follows it: a write of the whole through one,
+`*b = Box::new(v)`, is `$assign(b, v)`, and `mem::replace`'s `$take`, as
+of a `&mut I`. Two more needed the box seen through:
+
+- **What's supported.** `support.rs` checked a `&mut Box<I>` by the
+  type's own predicates, which no box matches, and refused it, "values of
+  type `&mut Box<Range<i32>>`"; it checks it as a `&mut I` now, where its
+  form isn't a cell.
+- **A write of what the box holds,** `**b = v`, was written as the
+  parameter given another value, `b = v`, the caller's iterator left as
+  it was: wrong in both builds. It's the `&mut`'s whole write now,
+  `$assign(b, v)` (`mir/assign.rs`' `through_box`).
+
+One snapshot changes: `boxed_iterator_stepped_as_what_it_boxes`'
+`stepped(ranged)` takes the range itself, `$rangeNext(boxed)`, where it
+made a cell and wrote it back. `test/corpus/mut_ref_of_a_boxed_iterator_is_the_iterators.rs`
+(`by_ref()` of a `Vec`'s boxed iterator and of a `Box<dyn Iterator>`, a
+`&mut boxed` given to generic code, `*b = Box::new(..)` of a `dyn`, `**b =
+..` of a `Vec`'s iterator and of a range, `mem::replace(&mut **b, ..)` and
+`mem::replace(b, ..)`, a reborrow of it by its deref and a step through
+`(**b)`) runs against native Rust in both builds. Mutations:
+`mut-ref-of-a-boxed-iterator-a-cell` (`lower/representation/mut_ref.ts`),
+`mut-ref-of-a-boxed-iterator-unsupported` (`lower/support.ts`) and
+`write-through-a-boxed-iterator-lost` (`lower/mir/assign.ts`).

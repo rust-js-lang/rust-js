@@ -165,6 +165,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .unwrap_or(ty)
             }
         };
+        // A box of an iterator, `&mut Box<I>`, is what a `&mut I` is: a
+        // `Box` is what it holds in JS, and a `&mut` to it is lent to what
+        // steps it, `by_ref()` and generic code, as the iterator's is (the
+        // user's decision, #1314, amending #1222).
+        if let Some(inner) = ty.boxed_ty()
+            && crate::lower::recognition::trait_holds_in(
+                self.tcx,
+                ty::TypingEnv::new(param_env, ty::TypingMode::non_body_analysis()),
+                inner,
+                crate::lower::recognition::std_item(self.tcx, crate::lower::recognition::StdItem::Iterator),
+            ) == Some(true)
+        {
+            return self.mut_ref_form_in(inner, param_env);
+        }
         if self.is_generic_boxed(ty, param_env) {
             MutRefForm::GenericBox
         } else if self.is_boxable(ty, param_env) {
