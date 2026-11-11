@@ -99,11 +99,11 @@ export const mutations: Mutation[] = [
   {
     name: "thir-args-of-no-copied-default",
     breaks:
-      "a copied default's THIR, in its trait's terms, is asked what it drops as it's written, `<Self as Iterator>::Item` where its impl's drops are given, and `Vec::from_iter(self)` of itertools' `sorted_unstable` is refused (#828)",
+      "a copied default's THIR, in its trait's terms, is asked what it drops as it's written, `<Self as Iterator>::Item` where its impl's drops are given: a trait's default's `Self`, which drops nothing there, held while a guard of a cell its impl's destructor asks of is, isn't counted, and the destructor's `try_borrow()` is `Ok` (a wrong answer, #828, #1321)",
     file: "src/lower/drops.rs",
     find: "            thir_args: (self.copied_default_args())\n",
     replace: "            thir_args: (None::<ty::GenericArgsRef<'tcx>>)\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_default_asks_its_drops_in_the_impls_terms.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(copied_default_asks_its_drops_in_the_impls_terms|guard_held_while_a_type_parameters_value_drops)\\.rs$"],
   },
   {
     name: "closure-captures-dropped-in-a-row",

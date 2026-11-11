@@ -5,11 +5,11 @@ export const mutations: Mutation[] = [
   {
     name: "thir-types-in-trait-terms",
     breaks:
-      "a type a copied default's THIR names is asked what it drops in its trait's terms, `<Self as Iterator>::Item`, where its impl's drops are given, and `Vec::from_iter(self)` of itertools' `sorted_unstable` is refused (#828)",
+      "a type a copied default's THIR names is asked what it drops in its trait's terms, `<Self as Iterator>::Item`, where its impl's drops are given: a trait's default's `Self`, which drops nothing there, held while a guard of a cell its impl's destructor asks of is, isn't counted, and the destructor's `try_borrow()` is `Ok` (a wrong answer, #828, #1321)",
     file: "src/lower/drops/types.rs",
     find: "        match self.thir_args {\n",
     replace: "        match None::<ty::GenericArgsRef<'tcx>> {\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_default_asks_its_drops_in_the_impls_terms.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(copied_default_asks_its_drops_in_the_impls_terms|guard_held_while_a_type_parameters_value_drops)\\.rs$"],
   },
   {
     name: "array-pattern-parts-unfollowed",
