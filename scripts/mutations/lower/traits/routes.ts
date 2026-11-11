@@ -72,8 +72,8 @@ export const mutations: Mutation[] = [
     breaks:
       "the crate's `From` impl's dictionary is written where nothing generic reads it",
     file: "src/lower/traits/routes.rs",
-    find: "        || is_std_def(tcx, trait_id, StdItem::From)\n}\n",
-    replace: "}\n",
+    find: "        || is_std_def(tcx, trait_id, StdItem::From)\n        || is_std_def(tcx, trait_id, StdItem::TryFrom)\n",
+    replace: "        || is_std_def(tcx, trait_id, StdItem::TryFrom)\n",
     tests: ["test/corpus.test.ts", "-t", "^app_errors.rs$"],
     snapshots: true,
   },
@@ -164,5 +164,13 @@ export const mutations: Mutation[] = [
     find: "            of = alias.self_ty();\n",
     replace: "            return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_into_iterator_flattened_from_its_back.rs$"],
+  },
+  {
+    name: "try-from-dictionary-exported",
+    breaks: "a crate's `TryFrom` impl's dictionary is written and exported where no generic code reads it, `export const evenTryFromU32` (#1284)",
+    file: "src/lower/traits/routes.rs",
+    find: "        || is_std_def(tcx, trait_id, StdItem::TryFrom)\n",
+    replace: "",
+    tests: ["test/snapshots.test.ts", "-t", "api"],
   },
 ];

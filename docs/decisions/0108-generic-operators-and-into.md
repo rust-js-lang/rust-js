@@ -72,3 +72,38 @@ Of a type parameter, it's its caller's impl, the dictionary's
 `(a, b) => $cmp(a[0], b[0])`, wherever its impl was the crate's own of
 another type: it's the impl's, never synthesized, so `Cents(300) == 3`
 asks the crate's `eq`. Held by `test/corpus/generic_other_type_compare.rs`.
+
+## Amendment: a conversion's dictionary is std's call of it, and `TryFrom` has one (#1284)
+
+The Crater's crates refused std's conversions through generic code:
+regex-syntax's `B: Into<Vec<u8>>` given a slice or text, httparse's `U:
+TryFrom<&[u8]>` given an array, reqwest's `E: Into<Box<dyn Error + Send +
+Sync>>` given a message, and, where the types are known, miniz_oxide's
+`Box<[u16]>` into a `Box<[u16; N]>` and regex-syntax's `char::try_from(b)`
+of a byte. Each was refused, about 520 tests.
+
+- **`TryFrom` and `TryInto` are operational**, as `From` and `Into` are.
+  A bound by one is given its dictionary, `{ tryFrom }`, and
+  `x.try_into()` of a `U: TryFrom<T>` is its `try_from`. Where the types
+  are known, the conversion is written in place, as `From`'s is. A
+  crate's impl's dictionary is written only where generic code reads it
+  (`read_only_generically`).
+- **A conversion's dictionary entry is std's own call of it**, of the
+  value the entry is given, written as it's written where its types are
+  known:
+  - a `Vec` of a slice's items, or of text's bytes (`std_fn_value`'s, the
+    same lowering a call's is);
+  - a try conversion, `$tryFromInt` or an array of a slice's length
+    (`numeric_call`'s);
+  - a `Box<dyn Error>` of an error or a message, `{ value, impl }` (ADR
+    0141's).
+- **A `Box<[T]>` into a `Box<[T; N]>`** is ADR 0557's `Vec`: the array a
+  box is, moved, `Ok` where it's `N` long, else given back.
+- **`char::try_from` of a `u8`** is std's blanket `TryFrom` of its `From`,
+  which never fails, as a `u32`'s is checked.
+- **A path from another**, `PathBuf::from` of an `OsString`, autocfg's, is
+  the same text, as every path is (ADR 0173).
+
+Case C of ADR 0262: what's refused now compiles, as Rust's. Corpus case
+conversions_through_generic_code covers each against native Rust in both
+builds.

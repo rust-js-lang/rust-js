@@ -7,9 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`to_vec()` of structs shares each with the original, which a change to the copy changes",
     file: "src/lower/std_types/vec.rs",
-    find: "                    Some(item) if tys[0].is_ref() => self.clone_items(items, item, span)?,",
-    replace:
-      "                    Some(item) if false && tys[0].is_ref() => self.clone_items(items, item, span)?,",
+    find: "            Some(item) if ty.is_ref() => self.clone_items(items, item, span)?,",
+    replace: "            Some(item) if false && ty.is_ref() => self.clone_items(items, item, span)?,",
     tests: ["test/corpus.test.ts", "-t", "collection_methods"],
   },
   {
@@ -71,7 +70,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an array made here and moved, `[..].map(f).into()`, is copied again",
     file: "src/lower/std_types/vec.rs",
-    find: "                    _ => crate::lower::iterators::owned_items(items),\n",
+    find: "            _ => crate::lower::iterators::owned_items(items),\n",
     replace: "                    _ => Expr::call(Expr::member(items, \"slice\"), vec![]),\n",
     tests: ["test/corpus.test.ts", "-t", "^deque_range_mut.rs$"],
     snapshots: true,

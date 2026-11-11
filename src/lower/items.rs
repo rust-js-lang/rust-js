@@ -606,6 +606,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let [input] = sig.inputs() else {
             return Ok(None);
         };
+        let given = *input;
         let input = input.peel_refs();
         let name = self.parameter_name(input);
         let x = Expr::var(name);
@@ -621,6 +622,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::IsSome => Expr::bin(Op::LooseNe, x, Expr::null()),
             Std::IsNone => Expr::bin(Op::LooseEq, x, Expr::null()),
             Std::ToBig => Expr::call(Expr::var("BigInt"), vec![x]),
+            // A `Vec` of a slice's or an array's items, and of text's
+            // bytes, as their calls make them, `Into<Vec<u8>>`'s (#1284).
+            Std::ToVec => self.vec_of_items(x, given, span)?,
+            Std::Text(TextOp::IntoBytes) => crate::lower::std_types::text::utf8_bytes(x),
             Std::Cast { .. } => self.number_from(x, input, sig.output(), span)?,
             Std::ToString => self.display_string(x, input, span)?,
             Std::Text(TextOp::Is(regex)) => Expr::call(Expr::member(Expr::regex(regex), "test"), vec![x]),

@@ -154,9 +154,9 @@ pub(super) fn std_written_in_place(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: Ty
 /// 0394), an `Extend`'s and a `FromIterator`'s (ADR 0445), an `AsMut`'s
 /// (ADR 0162), an `IntoIterator`'s (ADR 0457), a `Hash`'s and a
 /// `Hasher`'s (ADR 0463), a `Sum`'s and a `Product`'s (ADR 0476), a
-/// `From`'s (ADR 0477), and a `BorrowMut`'s (ADR 0483). Where the
-/// type is known, the impl's method is called as it is, so a crate's impl's
-/// dictionary is written only where it's reached.
+/// `From`'s (ADR 0477), a `TryFrom`'s (#1284), and a `BorrowMut`'s (ADR
+/// 0483). Where the type is known, the impl's method is called as it is, so
+/// a crate's impl's dictionary is written only where it's reached.
 pub(in crate::lower) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
     crate::lower::recognition::value_operator(tcx, trait_id).is_some()
         || crate::lower::recognition::assign_operator(tcx, trait_id).is_some()
@@ -170,6 +170,7 @@ pub(in crate::lower) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) 
         || crate::lower::recognition::is_hashing(tcx, trait_id)
         || crate::lower::recognition::is_sum_or_product(tcx, trait_id)
         || is_std_def(tcx, trait_id, StdItem::From)
+        || is_std_def(tcx, trait_id, StdItem::TryFrom)
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {

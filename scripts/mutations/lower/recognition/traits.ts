@@ -514,8 +514,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic function's `W: From<U>` is given no dictionary, and `W::from(u)` refused",
     file: "src/lower/recognition/traits.rs",
-    find: "        || tcx.is_diagnostic_item(sym::From, id)\n        // A writer of the crate's own",
-    replace: "        // A writer of the crate's own",
+    find: "        || tcx.is_diagnostic_item(sym::From, id)\n        // And `x.try_into()`",
+    replace: "        // And `x.try_into()`",
     tests: ["test/corpus.test.ts", "-t", "^generic_from.rs$"],
   },
   {
@@ -644,5 +644,21 @@ export const mutations: Mutation[] = [
     find: "    tcx.is_lang_item(tr.def_id, LangItem::Index) && super::known_by_bounds(tr.self_ty().peel_refs())\n",
     replace: "    tcx.is_lang_item(tr.def_id, LangItem::Index)\n",
     tests: ["test/corpus.test.ts", "-t", "^index_through_a_generic_bound.rs$"],
+  },
+  {
+    name: "try-from-bound-ungiven",
+    breaks: "a generic function's `U: TryFrom<T>` is given no dictionary, and `x.try_into()` refused (#1284)",
+    file: "src/lower/recognition/traits.rs",
+    find: "        // And `x.try_into()` of a `U: TryFrom<T>`, its `try_from` (#1284).\n        || tcx.is_diagnostic_item(sym::TryFrom, id)\n",
+    replace: "        // And `x.try_into()` of a `U: TryFrom<T>`, its `try_from` (#1284).\n",
+    tests: ["test/corpus.test.ts", "-t", "^conversions_through_generic_code.rs$"],
+  },
+  {
+    name: "try-into-bound-ungiven",
+    breaks: "a generic function's `T: TryInto<U>` is given no dictionary, and `x.try_into()` refused (#1284)",
+    file: "src/lower/recognition/traits.rs",
+    find: "        || tcx.is_diagnostic_item(sym::TryInto, id)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^conversions_through_generic_code.rs$"],
   },
 ];

@@ -370,6 +370,9 @@ pub(in crate::lower) fn operational(
         || tcx.is_diagnostic_item(sym::Into, id)
         // `W::from(u)` of a `W: From<U>`: its dictionary's `from` (ADR 0477).
         || tcx.is_diagnostic_item(sym::From, id)
+        // And `x.try_into()` of a `U: TryFrom<T>`, its `try_from` (#1284).
+        || tcx.is_diagnostic_item(sym::TryFrom, id)
+        || tcx.is_diagnostic_item(sym::TryInto, id)
         // A writer of the crate's own, given its text a `write!` at a time
         // (ADR 0166), and generic code that writes to any writer, a `W:
         // fmt::Write`: its dictionary's `write_str`, `write_char` and

@@ -1090,7 +1090,7 @@ pub(in crate::lower) fn range_read(op: TextOp) -> TextOp {
 
 /// Text's UTF-8 bytes, owned, `Array.from(new TextEncoder().encode(s))`: an
 /// array of `u8`s of its own, `into_bytes()`'s.
-fn utf8_bytes(text: Expr) -> Expr {
+pub(in crate::lower) fn utf8_bytes(text: Expr) -> Expr {
     let encoder = Expr::new_(Expr::var("TextEncoder"), Vec::new());
     let encoded = Expr::call(Expr::member(encoder, "encode"), vec![text]);
     Expr::call(Expr::member(Expr::var("Array"), "from"), vec![encoded])

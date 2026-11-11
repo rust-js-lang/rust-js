@@ -16,8 +16,8 @@ export const mutations: Mutation[] = [
     name: "from-dictionary-named-into",
     breaks: "a `From` dictionary's conversion is named `into`",
     file: "src/lower/traits/dictionaries/conversions.rs",
-    find: '            let name = if into { "into" } else { "from" };\n',
-    replace: '            let name = "into";\n',
+    find: "            let name = bindings::fn_name(self.tcx, method);\n",
+    replace: "            let name = String::from(\"into\");\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_from.rs$"],
   },
   {
@@ -27,5 +27,21 @@ export const mutations: Mutation[] = [
     find: "                false => (ty, tr.args.type_at(1)),\n",
     replace: "                false => (tr.args.type_at(1), ty),\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_from.rs$"],
+  },
+  {
+    name: "std-try-conversion-unanswered",
+    breaks: "a `TryFrom<&[u8]>` bound given an array of std's, `[u8; 2]`, is refused, its conversion no dictionary's (#1284)",
+    file: "src/lower/traits/dictionaries/conversions.rs",
+    find: "                && tried\n",
+    replace: "                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^conversions_through_generic_code.rs$"],
+  },
+  {
+    name: "dyn-error-into-unanswered",
+    breaks: "an `Into<Box<dyn Error + Send + Sync>>` bound given a message is refused (#1284)",
+    file: "src/lower/traits/dictionaries/conversions.rs",
+    find: "            let value = if !tried && let Some(dyn_error)",
+    replace: "            let value = if false && let Some(dyn_error)",
+    tests: ["test/corpus.test.ts", "-t", "^conversions_through_generic_code.rs$"],
   },
 ];

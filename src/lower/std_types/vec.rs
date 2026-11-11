@@ -35,6 +35,21 @@ pub(in crate::lower) fn flattened_read_values(known: Std, values: Vec<Expr>) -> 
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `Vec`'s or a slice's method (ADRs 0025, 0036): `None` if `known` is another.
+    /// A `Vec` of `items`, of type `ty`: a slice's items cloned,
+    /// `clone_items`, or moved, an array's `into()`, one made here
+    /// itself (`Std::ToVec`).
+    pub(in crate::lower) fn vec_of_items(
+        &mut self,
+        items: Expr,
+        ty: rustc_middle::ty::Ty<'tcx>,
+        span: rustc_span::Span,
+    ) -> R<Expr> {
+        Ok(match self.slice_item(ty) {
+            Some(item) if ty.is_ref() => self.clone_items(items, item, span)?,
+            _ => crate::lower::iterators::owned_items(items),
+        })
+    }
+
     pub(in crate::lower) fn vec_call(
         &mut self,
         known: Std,
@@ -162,11 +177,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // need no clone, `$slice(v)`'s.
             Std::ToVec => match arg() {
                 items if matches!(items.kind, js::ExprKind::Array(_)) => items,
-                items => match self.slice_item(tys[0]) {
-                    Some(item) if tys[0].is_ref() => self.clone_items(items, item, span)?,
-                    // Moved, an array's `into()`: one made here is itself.
-                    _ => crate::lower::iterators::owned_items(items),
-                },
+                items => self.vec_of_items(items, tys[0], span)?,
             },
             // Where its comparator's calls can be seen, std's own (#925).
             Std::SortBy if self.stable_sort_is_std(SortWith::By, generic_args) => {

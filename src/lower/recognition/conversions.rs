@@ -92,6 +92,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             {
                 return Some(Std::Same);
             }
+            // A path from another, an `OsString`'s `PathBuf`, each its text
+            // (ADR 0173), autocfg's (#1284).
+            if self.is_path_like(to_ty) && self.is_path_like(from_ty) {
+                return Some(Std::Same);
+            }
             // A `char` from a `u8`: the code point it is (ADR 0157).
             if to_ty.is_char() && matches!(from_ty.kind(), ty::Uint(ty::UintTy::U8)) {
                 return Some(Std::Text(TextOp::CharFromByte));
@@ -121,7 +126,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
 /// A `TryFrom` or a `TryInto` of `from` into `to` std makes, `into` of
 /// `try_into()`: between integers, which may not fit; a `u32` into a
-/// `char`, or a `char` into a `u8`.
+/// `char`, or a `char` into a `u8`; a `u8` into a `char`, std's blanket
+/// `TryFrom` of its `From`, which never fails, regex-syntax's (#1284).
 pub(super) fn try_conversion<'tcx>(from: Ty<'tcx>, to: Ty<'tcx>, into: bool) -> Option<Std> {
     if let (Some(a), Some(b)) = (Num::of(from), Num::of(to))
         && !a.float()
@@ -130,7 +136,7 @@ pub(super) fn try_conversion<'tcx>(from: Ty<'tcx>, to: Ty<'tcx>, into: bool) -> 
         return Some(Std::TryFromInt { into });
     }
     match (from.kind(), to.kind()) {
-        (ty::Uint(ty::UintTy::U32), ty::Char) => Some(Std::TryFromChar { to_char: true }),
+        (ty::Uint(ty::UintTy::U32 | ty::UintTy::U8), ty::Char) => Some(Std::TryFromChar { to_char: true }),
         (ty::Char, ty::Uint(ty::UintTy::U8)) => Some(Std::TryFromChar { to_char: false }),
         _ => None,
     }

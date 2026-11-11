@@ -445,4 +445,20 @@ export const mutations: Mutation[] = [
     replace: "                Some(constant) if false && super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Const) => {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
   },
+  {
+    name: "to-vec-value-unanswered",
+    breaks: "an `Into<Vec<u8>>` bound given a slice is refused, its `Vec` of the slice no function (#1284)",
+    file: "src/lower/items.rs",
+    find: "            Std::ToVec => self.vec_of_items(x, given, span)?,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^conversions_through_generic_code.rs$"],
+  },
+  {
+    name: "into-bytes-value-unanswered",
+    breaks: "an `Into<Vec<u8>>` bound given text is refused, its bytes no function (#1284)",
+    file: "src/lower/items.rs",
+    find: "            Std::Text(TextOp::IntoBytes) => crate::lower::std_types::text::utf8_bytes(x),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^conversions_through_generic_code.rs$"],
+  },
 ];

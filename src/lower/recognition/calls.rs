@@ -893,10 +893,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `Some(false)`, into an array or a reference to one (ADR 0189); a
     /// `Vec`, `Some(true)`, moved into an array (ADR 0557).
     fn sequence_to_array(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> Option<bool> {
-        let owned = matches!(from.kind(), ty::Adt(adt, _) if self.tcx.is_diagnostic_item(sym::Vec, adt.did()));
+        // A `Box<[T]>` into a `Box<[T; N]>`, the array a box is in JS,
+        // moved as a `Vec` is (#1284).
+        let boxed = from.boxed_ty().is_some_and(|slice| slice.is_slice());
+        let owned = boxed || matches!(from.kind(), ty::Adt(adt, _) if self.tcx.is_diagnostic_item(sym::Vec, adt.did()));
         let slice = matches!(from.kind(), ty::Ref(_, slice, Mutability::Not) if slice.is_slice());
         let array = match to.kind() {
             ty::Ref(_, array, Mutability::Not) => slice && array.is_array(),
+            _ if boxed => to.boxed_ty().is_some_and(|array| array.is_array()),
             _ => to.is_array(),
         };
         ((slice || owned) && array).then_some(owned)

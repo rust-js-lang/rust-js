@@ -69,6 +69,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     generic_args.type_at(0)
                 };
+                // A `Box`'s, the array it holds (#1284).
+                let target = target.boxed_ty().unwrap_or(target);
                 let ty::Array(item, len) = *target.peel_refs().kind() else {
                     unreachable!("recognized as an array")
                 };

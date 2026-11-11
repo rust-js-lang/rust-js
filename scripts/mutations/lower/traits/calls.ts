@@ -589,4 +589,13 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^index_through_a_generic_bound.rs$"],
   },
+  {
+    name: "known-try-conversion-through-dictionary",
+    breaks: "a try conversion whose types are known, `char::try_from(65u8)`, goes through a dictionary none gives, refused (#1284)",
+    file: "src/lower/traits/calls.rs",
+    find: "        let conversion = [StdItem::Into, StdItem::From, StdItem::TryInto, StdItem::TryFrom]",
+    replace: "        let conversion = [StdItem::Into, StdItem::From]",
+    tests: ["test/corpus.test.ts", "-t", "^conversions_through_generic_code.rs$"],
+    snapshots: true,
+  },
 ];

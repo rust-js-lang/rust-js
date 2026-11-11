@@ -660,4 +660,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_mut_slice.rs$"],
   },
+  {
+    name: "boxed-slice-to-array-unrecognized",
+    breaks: "a `Box<[T]>` into a `Box<[T; N]>`, miniz_oxide's buffers, is refused (#1284)",
+    file: "src/lower/recognition/calls.rs",
+    find: "        let boxed = from.boxed_ty().is_some_and(|slice| slice.is_slice());\n",
+    replace: "        let boxed = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^conversions_through_generic_code.rs$"],
+  },
 ];

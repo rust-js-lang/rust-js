@@ -14,23 +14,61 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty: Ty<'tcx>,
         span: Span,
     ) -> R<Option<Expr>> {
-        let into = is_std_def(self.tcx, tr.def_id, StdItem::Into);
-        if into || is_std_def(self.tcx, tr.def_id, StdItem::From) {
-            let method = self.tcx.associated_item_def_ids(tr.def_id)[0];
+        // `x.try_into()` of a `U: TryFrom<T>` and `W::try_from(u)` too,
+        // std's `Result` of one (#1284).
+        let tried =
+            is_std_def(self.tcx, tr.def_id, StdItem::TryInto) || is_std_def(self.tcx, tr.def_id, StdItem::TryFrom);
+        let into = is_std_def(self.tcx, tr.def_id, StdItem::Into) || is_std_def(self.tcx, tr.def_id, StdItem::TryInto);
+        if tried || into || is_std_def(self.tcx, tr.def_id, StdItem::From) {
+            let method = (self.tcx.associated_items(tr.def_id).in_definition_order())
+                .find(|item| item.is_fn())
+                .expect("a conversion's method")
+                .def_id;
             let (target, source) = match into {
                 true => (tr.args.type_at(1), ty),
                 false => (ty, tr.args.type_at(1)),
             };
-            let from = std_item(self.tcx, StdItem::From);
-            let from = self.tcx.associated_item_def_ids(from)[0];
+            let from = std_item(self.tcx, if tried { StdItem::TryFrom } else { StdItem::From });
+            let from = (self.tcx.associated_items(from).in_definition_order())
+                .find(|item| item.is_fn())
+                .expect("a conversion's method")
+                .def_id;
             let from_args = self.tcx.mk_args(&[target.into(), source.into()]);
-            let value = if let Some(known) = self.recognition().classify(method, tr.args)
+            // A `Box<dyn Error>` of an error or a message, std's `From`, as
+            // its call makes it, `{ value, impl }` (ADR 0141, #1284).
+            let value = if !tried && let Some(dyn_error) = self.dyn_error_from(target, source, span)? {
+                Expr::arrow(
+                    vec!["value".into()],
+                    vec![
+                        StmtKind::Return(Some(Expr::object(vec![
+                            Prop::Field(js::HELD.into(), Expr::var("value")),
+                            Prop::Field(js::DICTIONARY.into(), dyn_error),
+                        ])))
+                        .at(js::Span::NONE),
+                    ],
+                )
+            } else if let Some(known) = self.recognition().classify(method, tr.args)
                 && let Some(f) = self.std_fn_value(
                     known,
                     Ty::new_fn_def(self.tcx, method, ty::Binder::dummy(tr.args)),
                     span,
-                )? {
+                )?
+            {
                 f
+            } else if let Some(known) = self.recognition().classify(method, tr.args)
+                && tried
+            {
+                // std's try conversion as its call is written where its
+                // types are known, of the value the entry's given (#1284).
+                let tys = [source];
+                let call = crate::lower::calls::Call::given((method, tr.args), &tys, Default::default(), span);
+                let mut body = Vec::new();
+                let mut given = vec![Expr::var("value")].into_iter();
+                let Some(made) = self.numeric_call(known, call, &mut given, &mut body)? else {
+                    return Err(self.no_evidence(span, tr));
+                };
+                body.push(StmtKind::Return(Some(made)).at(js::Span::NONE));
+                Expr::arrow(vec!["value".into()], body)
             } else if let Some(instance) = self.resolve_instance(from, from_args)?
                 && self.is_rust_fn(instance.def_id())
                 && self.tcx.trait_of_assoc(instance.def_id()).is_none()
@@ -48,8 +86,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 return Err(self.no_evidence(span, tr));
             };
-            let name = if into { "into" } else { "from" };
-            return Ok(Some(Expr::object(vec![Prop::Field(name.into(), value)])));
+            let name = bindings::fn_name(self.tcx, method);
+            return Ok(Some(Expr::object(vec![Prop::Field(name, value)])));
         }
         Ok(None)
     }

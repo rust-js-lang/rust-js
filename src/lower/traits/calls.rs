@@ -652,7 +652,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // written in place, as ever: a dictionary is for generic code (ADR 0108).
         // A conversion no bound gives, `VecDeque::from(v)` of a `Vec<T>`, is
         // std's impl wherever it's called, written in place too (ADR 0477).
-        let conversion = is_std_def(self.tcx, trait_id, StdItem::Into) || is_std_def(self.tcx, trait_id, StdItem::From);
+        let conversion = [StdItem::Into, StdItem::From, StdItem::TryInto, StdItem::TryFrom]
+            .into_iter()
+            .any(|item| is_std_def(self.tcx, trait_id, item));
         if (crate::lower::recognition::value_operator(self.tcx, trait_id).is_some()
             || crate::lower::recognition::assign_operator(self.tcx, trait_id).is_some()
             || conversion)
