@@ -621,9 +621,13 @@ The net doesn't compare what std leaves unspecified:
 - What a sort leaves after its comparison panics is printed sorted ("any
   permutation").
 - So is a binary heap's layout ("arbitrary order").
-- Of a hash table's or a B-tree's search, how many calls std makes is its
-  own, so their panicking variant panics at the 1st call, before anything
-  changes.
+- Of a B-tree's search, how many calls std makes is its own, so its
+  panicking variant panics at the 1st call, before anything changes. A
+  hash table's counted key counts its `hash` alone, each search's one, in
+  a table made with room for all a case puts in, which never grows and
+  hashes again: printed, `hashed n`, and panicking at its 2nd (#1362,
+  amended below). Its `eq` counts nothing: how often hashbrown asks it is
+  its random tags'.
 - A binary search's probe sequence is std's own, so it runs only as it is.
 - Native output was the same over nine runs.
 
@@ -660,3 +664,22 @@ builds, under #1274 to #1277.
 #1277's is off too (ADR 0507, amended): 5 refused, under #1275 and #1276.
 #1276's is off too (ADR 0152, amended): 4 refused, under #1275.
 #1275's four are off too (ADR 0328, amended): none refused.
+
+## Amendment: a hash table's counted key counts its `hash` alone (2026-11-11, #1362)
+
+The counted key `C` ticked one counter in its `hash` and its `eq`, and
+hashbrown asks `eq` of keys whose random 7-bit tags meet, so the net
+panicked at a hash table's 1st call and never counted: a search that
+hashed three times where std's hashes once, a `HashMap<C, _>` entry's
+`$orInsert` then `m.set`, ran as std's. Now `C`'s `eq` ticks nothing, its
+`hash` ticks and counts `HASHES`, and the `counted` and `cset` kinds are
+made `with_capacity(16)` then extended, so std's table never grows and
+hashes its keys again: each case of them prints `hashed n` after it, and
+panics at its 2nd call. `hash of a counted key` runs `get_mut` and
+`get_disjoint_mut` too, and two templates are new, `hash entry of a
+counted key` (`or_insert`, `or_insert_with`, `and_modify`, `or_default`)
+and `hash walks of a counted key` (`values_mut`, `iter_mut`, `retain`,
+`extract_if`); `hset of a counted item` runs `extract_if`. With #1362's
+fix taken back, both builds fail: the walks print `hashed 12` where std's
+print `hashed 0`, `get_disjoint_mut` 7 where std's 5, and the entries and
+the set's `extract_if` likewise. 183 cases of 136 templates.

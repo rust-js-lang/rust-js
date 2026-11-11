@@ -92,7 +92,10 @@ export function stdNetMethods(library = stdLibrary()): NetMethod[] {
 
 /** What a template runs on: its collection's type, how it's made, and how
  * what's left of it is shown, sorted where std leaves its order unsaid. */
-type Kind = { ty: string; make: string; show: string };
+/** A collection's kind: its type, how it's made and shown, and whether
+ * its keys count their `hash` calls (`hashes`), each case's count printed
+ * after it, `hashed n`. */
+type Kind = { ty: string; make: string; show: string; hashes?: boolean };
 
 const kinds = {
   vec: { ty: "Vec<L>", make: "vec![L(1), L(2), L(3), L(4)]", show: '"{c:?}"' },
@@ -107,8 +110,11 @@ const kinds = {
   btree: { ty: "BTreeMap<u32, L>", make: "BTreeMap::from([(1, L(1)), (2, L(2)), (3, L(3)), (4, L(4))])", show: '"{c:?}"' },
   bset: { ty: "BTreeSet<L>", make: "BTreeSet::from([L(1), L(2), L(3), L(4)])", show: '"{c:?}"' },
   hash: { ty: "HashMap<K, u32>", make: "HashMap::from([(K(1), 1), (K(2), 2), (K(3), 3), (K(4), 4)])", show: '"{:?}", quiet(|| sorted(c.iter().map(|(k, v)| (k.0, *v)).collect()))' },
-  counted: { ty: "HashMap<C, u32>", make: "HashMap::from([(C(1), 1), (C(2), 2)])", show: '"{:?}", quiet(|| sorted(c.iter().map(|(k, v)| (k.0, *v)).collect()))' },
-  cset: { ty: "HashSet<C>", make: "HashSet::from([C(1), C(2)])", show: '"{:?}", quiet(|| sorted(c.iter().map(|k| k.0).collect()))' },
+  // Of keys counting their `hash` calls, made with room for all a case
+  // puts in, so std's table never grows and hashes its keys again, which
+  // its docs promise and how often is its own: each search's are std's.
+  counted: { ty: "HashMap<C, u32>", make: "HashMap::with_capacity(16);\nc.extend([(C(1), 1), (C(2), 2)])", show: '"{:?}", quiet(|| sorted(c.iter().map(|(k, v)| (k.0, *v)).collect()))', hashes: true },
+  cset: { ty: "HashSet<C>", make: "HashSet::with_capacity(16);\nc.extend([C(1), C(2)])", show: '"{:?}", quiet(|| sorted(c.iter().map(|k| k.0).collect()))', hashes: true },
   hset: { ty: "HashSet<K>", make: "HashSet::from([K(1), K(2), K(3), K(4)])", show: '"{:?}", quiet(|| sorted(c.iter().map(|k| k.0).collect()))' },
   cell: { ty: "Cell<u32>", make: "Cell::new(5)", show: '"{c:?}"' },
   refcell: { ty: "RefCell<Vec<L>>", make: "RefCell::new(vec![L(1), L(2), L(3)])", show: '"{c:?}"' },
@@ -117,9 +123,10 @@ const kinds = {
 /** A template: what it covers, of `stdNetMethods`'s ids; the collection it
  * runs on; its statements, of `c`, the collection; and whether it calls
  * what may panic, a closure, a comparison or a hash, so it runs with that
- * panicking too, at its `at`th call: its 2nd, but of a hash table's or a
- * B-tree's search, whose calls std counts as it likes, its 1st, before it
- * changes anything. */
+ * panicking too, at its `at`th call: its 2nd, but of a B-tree's search,
+ * whose calls std counts as it likes, its 1st, before it changes anything.
+ * A hash table's counted key's are each search's one `hash`, its table
+ * never grown (`hashes`). */
 export type Template = { name: string; covers: string[]; kind: keyof typeof kinds; text: string; calls?: boolean; at?: number };
 
 const t = (name: string, covers: string[], kind: keyof typeof kinds, text: string, calls = false, at = 2): Template => ({ name, covers, kind, text, calls, at });
@@ -225,10 +232,14 @@ export const templates: Template[] = [
   t("hash retain", ["HashMap::retain", "HashMap::iter_mut", "HashMap::values_mut"], "hash", `for (_, v) in c.iter_mut() {\n    *v += 1;\n}\nfor v in c.values_mut() {\n    *v += 1;\n}\nc.retain(|k, _| k.0 % 2 == 0);`),
   t("hash drain and extract_if", ["HashMap::drain", "HashMap::extract_if", "HashMap::clear"], "hash", 'let mut r: Vec<u32> = c.extract_if(|k, _| k.0 % 2 == 0).map(|(k, _)| k.0).collect();\nr.sort();\nprintln!("{r:?}");\nlet mut d: Vec<u32> = c.drain().map(|(k, _)| k.0).collect();\nd.sort();\nprintln!("{d:?}");\nc.insert(K(5), 5);\nc.clear();'),
   t("hash get_disjoint_mut", ["HashMap::get_disjoint_mut"], "hash", "if let [Some(a), Some(b)] = c.get_disjoint_mut([&K(1), &K(2)]) {\n    *a += 10;\n    *b += 20;\n}"),
-  // Of a key whose own `Hash` and `Eq` count their calls, panicking at its
-  // 1st, before the table changes (ADR 1120).
-  t("hash of a counted key", ["HashMap::insert", "HashMap::remove"], "counted", 'println!("{:?}", c.insert(C(9), 9));\nprintln!("{:?}", c.remove(&C(1)));', true, 1),
-  t("hset of a counted item", ["HashSet::insert", "HashSet::remove"], "cset", 'println!("{}", c.insert(C(9)));\nprintln!("{}", c.remove(&C(1)));', true, 1),
+  // Of a key whose own `Hash` counts its calls, each search's one, printed
+  // and panicking at its 2nd, before its search changes the table (ADR
+  // 1120); a walk's none (#1362), its closures uncounted, as which key it
+  // visits first is the table's random order.
+  t("hash of a counted key", ["HashMap::insert", "HashMap::remove", "HashMap::get_mut", "HashMap::get_disjoint_mut"], "counted", 'println!("{:?}", c.insert(C(9), 9));\nprintln!("{:?}", c.remove(&C(1)));\n*c.get_mut(&C(2)).unwrap() += 1;\nif let [Some(a), Some(b)] = c.get_disjoint_mut([&C(2), &C(9)]) {\n    *a += 10;\n    *b += 20;\n}', true),
+  t("hash entry of a counted key", ["HashMap::entry", "Entry::or_insert_with", "Entry::and_modify"], "counted", `*c.entry(C(1)).or_insert(0) += 10;\n*c.entry(C(9)).or_insert(0) += 1;\nc.entry(C(2)).and_modify(${f("v", "*v += 5;")}).or_insert(7);\n*c.entry(C(8)).or_insert_with(${f("", "8")}) += 1;\n*c.entry(C(1)).or_default() += 100;`, true),
+  t("hash walks of a counted key", ["HashMap::values_mut", "HashMap::iter_mut", "HashMap::retain", "HashMap::extract_if"], "counted", `for v in c.values_mut() {\n    *v += 1;\n}\nfor (k, v) in c.iter_mut() {\n    *v += k.0;\n}\nc.retain(|k, _| k.0 != 1);\nprintln!("{}", c.extract_if(|_, v| *v > 4).count());`, true),
+  t("hset of a counted item", ["HashSet::insert", "HashSet::remove", "HashSet::extract_if"], "cset", `println!("{}", c.insert(C(9)));\nprintln!("{}", c.remove(&C(1)));\nprintln!("{}", c.extract_if(|k| k.0 == 9).count());`, true),
   t("hset insert and remove", ["HashSet::insert", "HashSet::replace", "HashSet::remove", "HashSet::take"], "hset", 'println!("{} {}", c.insert(K(9)), c.insert(K(2)));\nprintln!("{:?}", c.replace(K(3)).map(|k| k.0));\nprintln!("{} {:?}", c.remove(&K(1)), c.take(&K(4)).map(|k| k.0));'),
   t("hset retain, drain and extract_if", ["HashSet::retain", "HashSet::drain", "HashSet::extract_if", "HashSet::clear"], "hset", 'c.retain(|k| k.0 != 1);\nlet mut r: Vec<u32> = c.extract_if(|k| k.0 % 2 == 0).map(|k| k.0).collect();\nr.sort();\nprintln!("{r:?}");\nlet mut d: Vec<u32> = c.drain().map(|k| k.0).collect();\nd.sort();\nprintln!("{d:?}");\nc.insert(K(5));\nc.clear();'),
   // A slice's sorts, its comparison panicking at its 2nd call too, what's
@@ -347,6 +358,8 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 static ARMED: AtomicU32 = AtomicU32::new(0);
 static CALLS: AtomicU32 = AtomicU32::new(0);
 static QUIET: AtomicBool = AtomicBool::new(false);
+/** A counted key's \`hash\` calls in a case, printed after it. */
+static HASHES: AtomicU32 = AtomicU32::new(0);
 
 /** A call of a case's closure, comparison or hash, which panics where it's
  * the armed one. */
@@ -414,13 +427,13 @@ impl Ord for L {
 #[derive(Debug, PartialEq, Eq, Hash)]
 struct K(u32);
 
-/** A key whose \`Hash\` and \`Eq\` count their calls, so they panic too. */
+/** A key whose \`Hash\` counts its calls, so it panics too. Its \`Eq\`
+ * doesn't: how often std's table asks it is hashbrown's random tags'. */
 #[derive(Debug)]
 struct C(u32);
 
 impl PartialEq for C {
     fn eq(&self, other: &C) -> bool {
-        tick();
         self.0 == other.0
     }
 }
@@ -429,6 +442,9 @@ impl Eq for C {}
 
 impl Hash for C {
     fn hash<H: Hasher>(&self, state: &mut H) {
+        if !QUIET.load(Ordering::Relaxed) {
+            HASHES.fetch_add(1, Ordering::Relaxed);
+        }
         tick();
         self.0.hash(state);
     }
@@ -474,12 +490,15 @@ const indent = (text: string) =>
  * and dropped. */
 function caseFn(c: NetCase, i: number): string {
   const kind = kinds[c.template.kind];
+  const hashes = "hashes" in kind && kind.hashes;
   const lines = [
     `let mut c: ${kind.ty} = ${kind.make};`,
+    ...(hashes ? ["HASHES.store(0, Ordering::Relaxed);"] : []),
     ...(c.variant === "panics" ? [`ARMED.store(CALLS.load(Ordering::Relaxed) + ${c.template.at ?? 2}, Ordering::Relaxed);`] : []),
     `let r = catch_unwind(AssertUnwindSafe(|| {\n${indent(c.template.text)}\n}));`,
     "ARMED.store(0, Ordering::Relaxed);",
     'match r {\n    Ok(()) => println!("ok"),\n    Err(payload) => println!("panicked: {}", said(&*payload)),\n}',
+    ...(hashes ? ['println!("hashed {}", HASHES.load(Ordering::Relaxed));'] : []),
     `println!(${kind.show});`,
   ];
   return `#[allow(unused_mut)]\nfn case_${i}() {\n${indent(lines.join("\n"))}\n}`;

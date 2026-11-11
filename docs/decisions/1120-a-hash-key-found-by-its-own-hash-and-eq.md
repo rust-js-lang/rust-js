@@ -98,8 +98,9 @@ corpus prints what a map holds and gives back, and counts calls only of a
 table made `with_capacity` for all it holds, which std's docs say never
 grows: there each call's searches are std's, one an entry and none a
 walk (`test/corpus/map_entry_hashes_its_key_once.rs`, #1362). The std
-net's counted key panics at its first call, `insert`'s `hash`, whose
-place std's table fixes.
+net's counted key counts its `hash` alone, each search's one in a table
+that never grows, printed and panicking at its 2nd (ADR 1090, amended,
+#1362).
 
 ## Why
 
