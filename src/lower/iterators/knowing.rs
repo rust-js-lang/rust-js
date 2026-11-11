@@ -634,31 +634,58 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(inner) = made.or_else(|| self.iterator_item(source.peel_refs()))
         {
             let inner = inner.peel_refs();
-            let each = match inner.is_array() || inner.is_slice() || self.is_vec_like(inner) {
-                true => Some(each.clone()),
-                // What `each` gives of its item, `(item) => $iterator(item,
-                // next)`, made knowing its back where it's given (#716); of
-                // a function given by its name, `flat_map(pairs)`, what its
-                // call gives, `(item) => pairs(item)`, std's struct of an
-                // adapter it gives among them (#1235).
-                // Of an `IntoIterator`'s items, by what it gives, its
-                // `IntoIter`, an iterator's itself, `<S::Pairs as
-                // IntoIterator>::IntoIter`, its back its dictionary's where
-                // generic code has it (#1355); refused where none says it
-                // has one, never stepped as if.
-                false
-                    if let Some(into_iter) = self.recognition().flattened_inner(ty)
-                        && let Some((item, mut body, taken)) = self.each_returned(each) =>
-                {
-                    let knowing = self.as_double_ended(taken, into_iter, span)?;
-                    body.push(StmtKind::Return(Some(knowing)).at(js::Span::NONE));
-                    Some(Expr::arrow(vec![item.as_str().into()], body))
+            // Of items that aren't arrays, of an `IntoIterator`'s, by what
+            // it gives, its `IntoIter`, an iterator's itself, `<S::Pairs as
+            // IntoIterator>::IntoIter`, its back its dictionary's where
+            // generic code has it (#1355); refused where none says it has
+            // one, never stepped as if.
+            let arrays = inner.is_array() || inner.is_slice() || self.is_vec_like(inner);
+            let each = match (arrays, self.recognition().flattened_inner(ty)) {
+                (true, _) => Some(vec![each.clone()]),
+                (false, None) => None,
+                // What an arrow written here gives of its item, `(item) =>
+                // $iterator(item, next)`, made knowing its back where it's
+                // given, by each `return` of its own, a branch's too (#716,
+                // #1235).
+                (false, Some(into_iter)) if let js::ExprKind::Arrow(params, body) = &each.kind => {
+                    let mut body = body.clone();
+                    let mut refused = None;
+                    js::statement_lists(&mut body, &mut |list| {
+                        for stmt in list.iter_mut() {
+                            if let StmtKind::Return(Some(value)) = &mut stmt.kind
+                                && refused.is_none()
+                            {
+                                match self.as_double_ended(value.clone(), into_iter, span) {
+                                    Ok(knowing) => *value = knowing,
+                                    Err(why) => refused = Some(why),
+                                }
+                            }
+                        }
+                    });
+                    if let Some(why) = refused {
+                        return Err(why);
+                    }
+                    Some(vec![Expr::arrow(params.clone(), body)])
                 }
-                false => None,
+                // Of a function value, given by its name, `flat_map(pairs)`,
+                // or computed where it's given, `flat_map(pick())`, which
+                // runs once, as Rust calls it: itself, and what makes each
+                // item it gives knowing its back by its type, std's struct
+                // of an adapter a function gives (#1226), `$flattenEnds(src,
+                // pick(), (items) => ..)` (#1235).
+                (false, Some(into_iter)) => {
+                    let items = self.fresh("items");
+                    let knowing = self.as_double_ended(Expr::var(&items), into_iter, span)?;
+                    let knowing = Expr::arrow(
+                        vec![items.as_str().into()],
+                        vec![StmtKind::Return(Some(knowing)).at(js::Span::NONE)],
+                    );
+                    Some(vec![each.clone(), knowing])
+                }
             };
             if let Some(each) = each {
                 let source_value = self.as_double_ended(source_value.clone(), source.peel_refs(), span)?;
-                return Ok(Expr::call_helper("$flattenEnds", vec![source_value, each]));
+                return Ok(Expr::call_helper("$flattenEnds", [vec![source_value], each].concat()));
             }
         }
         // A chain made here, `$lazyChain(a, b)`: each made knowing its back,
@@ -837,10 +864,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().never_double_ended(ty) {
             return Ok(value);
         }
-        let why = self.back_refused_because(ty);
         Err(self.unsupported(
             span,
-            &format!("a `{ty}` as a `DoubleEndedIterator`, which rust-js can't step from its back{why}"),
+            &format!("a `{ty}` as a `DoubleEndedIterator`, which rust-js can't step from its back"),
         ))
     }
 
@@ -966,58 +992,6 @@ fn counted_parts(value: &Expr, skip: bool) -> Option<(Expr, Expr, Option<Expr>)>
         (_, [source, n, drop]) if skip && callee.helper_name() == Some("$skipping") => {
             Some((source.clone(), n.clone(), Some(drop.clone())))
         }
-        _ => None,
-    }
-}
-
-/// Of `f`, a function of one item that gives one value, `(item) =>
-/// value`: its item's name and what it gives.
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// What a flatten's `each` gives of its item: its item's name, what its
-    /// body does first and what it returns, of an arrow that ends in its
-    /// one `return`; or of a function given by its name, `pairs` or
-    /// `Doubled.of`, which reads nothing that changes, its call of a fresh
-    /// item (#1235).
-    fn each_returned(&mut self, each: &Expr) -> Option<(String, Vec<Stmt>, Expr)> {
-        if let Some((item, body, taken)) = returned_of(each) {
-            return Some((item.clone(), body.to_vec(), taken.clone()));
-        }
-        let named = match &each.kind {
-            js::ExprKind::Var(_) => true,
-            js::ExprKind::Member(object, _) => matches!(object.kind, js::ExprKind::Var(_)),
-            _ => false,
-        };
-        if !named {
-            return None;
-        }
-        let item = self.fresh("item");
-        let taken = Expr::call(each.clone(), vec![Expr::var(&item)]);
-        Some((item, Vec::new(), taken))
-    }
-}
-
-fn returned_of(f: &Expr) -> Option<(&String, &[Stmt], &Expr)> {
-    let js::ExprKind::Arrow(params, body) = &f.kind else {
-        return None;
-    };
-    let ([js::Pattern::Name(param)], [before @ .., last]) = (params.as_slice(), body.as_slice()) else {
-        return None;
-    };
-    // What it does first returns from nowhere: no statement that holds
-    // others, which might.
-    let plain = before.iter().all(|stmt| {
-        matches!(
-            stmt.kind,
-            StmtKind::Const(..)
-                | StmtKind::Let(..)
-                | StmtKind::Destructure { .. }
-                | StmtKind::Assign(..)
-                | StmtKind::Compound(..)
-                | StmtKind::Expr(_)
-        )
-    });
-    match &last.kind {
-        StmtKind::Return(Some(value)) if plain => Some((param, before, value)),
         _ => None,
     }
 }

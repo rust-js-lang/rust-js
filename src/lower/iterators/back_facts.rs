@@ -215,17 +215,4 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.asking_made.set(outer);
         knows
     }
-
-    /// Why what steps a `ty` from its back is refused, said after it: of
-    /// what holds std's struct, an adapter a function gives, which its
-    /// value is (#1226, the user's decision (A)), its follow-up; else
-    /// nothing.
-    pub(in crate::lower) fn back_refused_because(&self, ty: ty::Ty<'tcx>) -> &'static str {
-        let compiled = (ty.walk().filter_map(|part| part.as_type()))
-            .any(|part| part != ty && crate::lower::recognition::is_held_compiled(self.tcx, part));
-        match compiled {
-            true => ", which holds std's struct of an adapter a function gives (#1235)",
-            false => "",
-        }
-    }
 }

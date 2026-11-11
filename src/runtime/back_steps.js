@@ -444,8 +444,10 @@ function $enumerate(iter) {
 // `FlattenCompat`'s field order, its source, then the inner it steps from
 // the front, then the one from the back, each though an earlier one's
 // drop throws, a panic, as Rust's drop glue drops each field as it unwinds
-// (#705).
-function $flattenEnds(it, each) {
+// (#705). Of a function value given, `flat_map(pick())`, each item what
+// `knowing` makes of what `each` gives, knowing its back (#1235).
+function $flattenEnds(it, each, knowing) {
+  const made = knowing === undefined ? each : (x) => knowing(each(x));
   const done = { done: true, value: undefined };
   const inner = { next: undefined, back: undefined };
   // Its source, once done from either end, stays done, as std's `Fuse` of
@@ -466,7 +468,7 @@ function $flattenEnds(it, each) {
         if (at.done) inner[other] = undefined;
         return at;
       }
-      inner[own] = $iter(each(outer.value));
+      inner[own] = $iter(made(outer.value));
     }
   };
   const taken = (own) => {
@@ -499,7 +501,7 @@ function $flattenEnds(it, each) {
   // (#744).
   const folding = (fold, own, other) => (init, f, unwind, ends) => {
     const inners = (stepped, a) => fold(stepped, a, f, unwind);
-    const made = unwind === undefined ? (x) => each(x) : (x, a) => $staged(each, x, undefined, a, unwind);
+    const staged = unwind === undefined ? (x) => made(x) : (x, a) => $staged(made, x, undefined, a, unwind);
     return $endsAfter(ends, () => {
       let folded = init;
       const first = inner[own];
@@ -507,7 +509,7 @@ function $flattenEnds(it, each) {
       if (first !== undefined) folded = inners(first, folded);
       if (!ended) {
         ended = true;
-        folded = fold(it, folded, (a, x) => inners($iter(made(x, a)), a), unwind);
+        folded = fold(it, folded, (a, x) => inners($iter(staged(x, a)), a), unwind);
       }
       const last = inner[other];
       inner[other] = undefined;
@@ -525,7 +527,7 @@ function $flattenEnds(it, each) {
     if (first !== undefined) counted = $count(first, drop);
     if (!ended) {
       ended = true;
-      counted = front(it, counted, (n, x) => n + $count($iter(each(x)), drop));
+      counted = front(it, counted, (n, x) => n + $count($iter(made(x)), drop));
     }
     const last = inner.back;
     inner.back = undefined;

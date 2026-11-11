@@ -553,8 +553,8 @@ export const mutations: Mutation[] = [
     name: "flatten-ends-made-unstaged",
     breaks: "a flatten folded from its back calls the function that makes each inner unstaged, so where it panics the accumulator its fold holds is leaked (#744)",
     file: "src/runtime/back_steps.js",
-    find: "    const made = unwind === undefined ? (x) => each(x) : (x, a) => $staged(each, x, undefined, a, unwind);\n",
-    replace: "    const made = (x) => each(x);\n",
+    find: "    const staged = unwind === undefined ? (x) => made(x) : (x, a) => $staged(made, x, undefined, a, unwind);\n",
+    replace: "    const staged = (x) => made(x);\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_fold_closure_panics.rs$"],
   },
   {
@@ -718,5 +718,21 @@ export const mutations: Mutation[] = [
     replace:
       "    () => {\n      for (let at = it.next(); !at.done; at = it.next()) {\n        if ($kept(p, drop, at.value)) return at;\n      }\n      return { done: true, value: undefined };\n    },\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_of_a_take_reversed_trims_by_its_try_rfold.rs$"],
+  },
+  {
+    name: "flatten-ends-knowing-unapplied",
+    breaks: "`$flattenEnds` given a function value and what makes each item it gives knowing its back steps each as the function gave it, std's struct of a `Map` stepped as an array's, and throws (#1235)",
+    file: "src/runtime/back_steps.js",
+    find: "  const made = knowing === undefined ? each : (x) => knowing(each(x));\n",
+    replace: "  const made = each;\n",
+    tests: ["test/corpus.test.ts", "-t", "^flat_map_of_given_adapters_from_its_back.rs$"],
+  },
+  {
+    name: "flatten-ends-fold-knowing-unapplied",
+    breaks: "`$flattenEnds`' fold and rfold of a function value's items step each as the function gave it, not made knowing its back, so `rfold` throws (#1235)",
+    file: "src/runtime/back_steps.js",
+    find: "    const staged = unwind === undefined ? (x) => made(x) : (x, a) => $staged(made, x, undefined, a, unwind);\n",
+    replace: "    const staged = unwind === undefined ? (x) => each(x) : (x, a) => $staged(each, x, undefined, a, unwind);\n",
+    tests: ["test/corpus.test.ts", "-t", "^flat_map_of_given_adapters_from_its_back.rs$"],
   },
 ];

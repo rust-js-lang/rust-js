@@ -1756,3 +1756,48 @@ before its `next_back`, and two things were lost there:
 Held by corpus case `map_as_it_is_stepped_from_its_back.rs` (generic and
 not, items with a destructor, `Option`s, a clone, a real closure), against
 native Rust in both builds.
+
+## Amendment (2026-11-12, #1235): a flatten's function value, given as it is, its items made knowing their backs apart
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results; a
+refusal lifted. The last shape #1235 refused was a `flat_map` stepped
+from its back whose function is computed where it's given,
+`flat_map(pick())`, a `fn` pointer, an `impl Fn` or a `Box<dyn Fn>`.
+Each item was made knowing its back by rewriting `each`,
+`(item) => pairs(item)`, which would call `pick()` again for each item
+where Rust calls it once.
+
+Now a flatten's `each` is one of two kinds, each with one form:
+
+- **An arrow written here** is rewritten. Each `return` of its own, a
+  branch's too, not a closure's in it, is made knowing its back where
+  it's made: its form decides that, `$mapEnds` of a map made in place.
+  Before, only an arrow ending in its one `return`, after statements
+  that hold no others, was rewritten. So a closure that returned from a
+  `match` arm's block was refused.
+- **Any other function value**, given by its name, `flat_map(pairs)` or
+  `Doubled.of`, or computed, `flat_map(pick())`, is given as it is. Its
+  items are made knowing their backs by their type, std's struct of an
+  adapter a function gives (#1226), in `$flattenEnds`' third argument:
+  `$flattenEnds(src, pick(), (items) => $knowing(items, ..))`. JS
+  evaluates the arguments in order, so `pick()` runs once, after the
+  source, as Rust's does. The runtime composes `knowing` into `each` once,
+  for its steps, its `fold` and `rfold`, and its `count`.
+
+The refusal's follow-up, "which holds std's struct of an adapter a function
+gives (#1235)", is gone with `back_refused_because`, and so are its
+diagnostics row and mutation. No shape tried reaches it now: a returned
+map's `peekable()`, `filter`, `chain`, `zip`, `skip`, `step_by`,
+`enumerate`, a `fuse()` of a returned filter, a flatten of returned maps,
+each `rev()`'d or `next_back()`'d, all run as native Rust does in both
+builds. A refusal of what can't be stepped from its back is the plain one.
+
+Held by `test/corpus/flat_map_of_given_adapters_from_its_back.rs`, now
+with a `fn` pointer, an `impl Fn` and a `Box<dyn Fn>` computed after a
+source that prints, closures returning from an `if` and from a `match`
+arm's block, `rev()`, `next_back`, `nth_back` and `rfold`, against native
+Rust in both builds. Mutations `flatten-ends-knowing-unapplied`,
+`flatten-ends-fold-knowing-unapplied` and
+`flatten-each-branch-returns-unknowing` are new;
+`flatten-each-by-name-unknowing`, `flatten-of-iterators-unknowing` and
+`flatten-ends-made-unstaged` are refitted.

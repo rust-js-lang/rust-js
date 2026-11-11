@@ -3,6 +3,9 @@
 // `flat_map(pairs)`, and of a closure that does more than return one,
 // each made knowing its back as it's taken, as std's `FlatMap` steps them
 // (#1235); `rev()`, `next_back`, `nth_back` and `rfold`, and what drops.
+// And of a function computed where it's given, `flat_map(pick())`, which
+// runs once, after its source, as Rust calls it: a `fn` pointer, an `impl
+// Fn` and a `Box<dyn Fn>`; and of a closure that returns from its branches.
 
 struct D(u32);
 impl Drop for D {
@@ -59,6 +62,31 @@ fn others() {
     println!("{:?}", sized(3).rev().skip(1).rev().collect::<Vec<_>>());
 }
 
+type Twice = std::iter::Map<std::array::IntoIter<u32, 2>, fn(u32) -> u32>;
+
+fn source(n: u32) -> std::ops::Range<u32> {
+    println!("source {n}");
+    1..n
+}
+
+fn pick() -> fn(u32) -> Twice {
+    println!("pick");
+    fn each(n: u32) -> Twice {
+        [n, n + 100].into_iter().map(|x| x * 2)
+    }
+    each
+}
+
+fn scaled(by: u32) -> impl Fn(u32) -> std::iter::Map<std::ops::Range<u32>, Box<dyn Fn(u32) -> u32>> {
+    println!("scaled {by}");
+    move |n| (0..n).map(Box::new(move |x| x * by) as Box<dyn Fn(u32) -> u32>)
+}
+
+fn boxed() -> Box<dyn Fn(u32) -> Twice> {
+    println!("boxed");
+    Box::new(|n| [n, n * 3].into_iter().map(|x| x + 1))
+}
+
 fn main() {
     let back: Vec<u32> = nested().rev().collect();
     println!("{back:?}");
@@ -84,4 +112,28 @@ fn local() {
     println!("{ds:?}");
     let mut f = (1..4u32).flat_map(pairs);
     println!("{:?} {:?} {:?}", f.next(), f.next_back(), f.nth_back(1));
+    let picked: Vec<u32> = source(4).flat_map(pick()).rev().collect();
+    println!("{picked:?}");
+    let mut p = source(3).flat_map(pick());
+    println!("{:?} {:?} {:?}", p.next_back(), p.next(), p.nth_back(1));
+    let last = source(4).flat_map(scaled(3)).next_back();
+    println!("{last:?}");
+    let folded = source(3).flat_map(boxed()).rfold(String::new(), |s, x| format!("{s}{x},"));
+    println!("{folded}");
+    let branched: Vec<u32> = (1..4u32)
+        .flat_map(|n| if n > 1 { pairs(n) } else { pairs(5) })
+        .rev()
+        .collect();
+    println!("{branched:?}");
+    let matched: Vec<u32> = (1..4u32)
+        .flat_map(|n| match n {
+            1 => pairs(2),
+            _ => {
+                let m = n + 1;
+                pairs(m)
+            }
+        })
+        .rev()
+        .collect();
+    println!("{matched:?}");
 }

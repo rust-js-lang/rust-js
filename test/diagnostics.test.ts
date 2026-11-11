@@ -224,9 +224,6 @@ for (const [name, source, message, crate] of [
   ["a LazyCell given as a DerefMut", 'fn f<P: std::ops::DerefMut<Target = u32>>(mut p: P) { *p = 1; }\npub fn g() { f(std::cell::LazyCell::new(|| 1u32)) }', "implementation evidence for `<std::cell::LazyCell"],
   ["an Rc made a raw pointer", 'pub fn f(r: std::rc::Rc<u32>) -> *const u32 { std::rc::Rc::into_raw(r) }', "does not support"],
   ["a pointer of the crate's own to a dyn", "#![feature(derive_coerce_pointee)]\nuse std::ops::Deref;\n#[derive(std::marker::CoercePointee)] #[repr(transparent)] pub struct Ptr<'a, #[pointee] T: ?Sized> { ptr: &'a T }\nimpl<T: ?Sized> Deref for Ptr<'_, T> { type Target = T; fn deref(&self) -> &T { self.ptr } }\npub trait Get { fn get(&self) -> u32; }\npub struct V(u32);\nimpl Get for V { fn get(&self) -> u32 { self.0 } }\npub fn f() -> u32 { let v = V(10); let p: Ptr<dyn Get> = Ptr { ptr: &v }; p.get() }", "does not support unsizing a `Ptr<'_, dyn Get>`"],
-  // A flatten stepped from its back of std's structs a function gives, the
-  // function computed where it's given, which runs once: refused (#1235).
-  ["a flatten of a function's impl stepped from its back", "fn doubled(n: u32) -> std::iter::Map<std::ops::Range<u32>, fn(u32) -> u32> {\n    (0..n).map(|x| x * 2)\n}\nfn pick() -> fn(u32) -> std::iter::Map<std::ops::Range<u32>, fn(u32) -> u32> {\n    doubled\n}\npub fn f() -> Vec<u32> {\n    (1..4u32).flat_map(pick()).rev().collect()\n}", "which holds std's struct of an adapter a function gives (#1235)"],
   // An enum key made of a type parameter, `Option<T>`: refused, where a
   // tuple's class is its parts' composed and a struct's its fields' or its
   // own impls' (#1346, #1360).

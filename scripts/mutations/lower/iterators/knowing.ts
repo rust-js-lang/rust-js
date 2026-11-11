@@ -421,8 +421,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a flatten of an `Option`'s slice iterator, or of an associated `IntoIterator`'s items, stepped from its back, is a JS `flatMap` that has no back: it throws (#260, #1355)",
     file: "src/lower/iterators/knowing.rs",
-    find: "                    if let Some(into_iter) = self.recognition().flattened_inner(ty)\n",
-    replace: "                    if let Some(into_iter) = None::<ty::Ty<'tcx>>\n",
+    find: "            let each = match (arrays, self.recognition().flattened_inner(ty)) {\n",
+    replace: "            let each = match (arrays, None::<ty::Ty<'tcx>>) {\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -434,9 +434,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a flatten of ranges made knowing its back takes what `each` gives as a range, and steps its JS iterator by its bounds",
     file: "src/lower/iterators/knowing.rs",
-    find: "                    let knowing = self.as_double_ended(taken, into_iter, span)?;\n",
+    find: "                                match self.as_double_ended(value.clone(), into_iter, span) {\n",
     replace:
-      "                    let knowing = self.as_double_ended(Expr::call(each.clone(), vec![Expr::var(&item)]), into_iter, span)?;\n",
+      "                                match self.as_double_ended(Expr::call(each.clone(), vec![value.clone()]), into_iter, span) {\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -728,18 +728,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flatten-each-by-name-unknowing",
-    breaks: "a flatten stepped from its back whose `each` is a function given by its name, `flat_map(pairs)`, is refused: its items aren't made knowing their backs (#1235)",
+    breaks: "a flatten stepped from its back whose `each` is a function value, given by its name, `flat_map(pairs)`, or computed, `flat_map(pick())`, is refused: its items aren't made knowing their backs (#1235)",
     file: "src/lower/iterators/knowing.rs",
-    find: "        if !named {\n",
-    replace: "        if true {\n",
+    find: "                    Some(vec![each.clone(), knowing])\n",
+    replace: "                    let _ = knowing;\n                    None\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_of_given_adapters_from_its_back.rs$"],
   },
   {
-    name: "flatten-each-with-a-body-unknowing",
-    breaks: "a flatten stepped from its back whose closure does more than return its iterator, `|n| owned(v(n))`, is refused (#1235)",
+    name: "flatten-each-branch-returns-unknowing",
+    breaks: "a flatten stepped from its back whose closure returns from its branches, a `match`'s with a block, makes only its body's own `return`s knowing their backs, and is refused (#1235)",
     file: "src/lower/iterators/knowing.rs",
-    find: "        StmtKind::Return(Some(value)) if plain => Some((param, before, value)),\n",
-    replace: "        StmtKind::Return(Some(value)) if plain && before.is_empty() => Some((param, before, value)),\n",
+    find: "                    js::statement_lists(&mut body, &mut |list| {\n",
+    replace: "                    std::iter::once(&mut body).for_each(&mut |list: &mut Vec<js::Stmt>| {\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_of_given_adapters_from_its_back.rs$"],
   },
   {

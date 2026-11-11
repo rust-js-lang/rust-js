@@ -7,6 +7,7 @@ import {
   $enumerate,
   $filterEnds,
   $flattenEnds,
+  $foldBack,
   $foldOf,
   $held,
   $iter,
@@ -110,32 +111,35 @@ function byPath() {
   console.log(
     `[${Array.from(
       $rev(
-        $flattenEnds($iterator({ start: 1, end: 4 }, $rangeNext, false, $rangeNextBack), (item) =>
-          $knowing(
-            Doubled.of(item),
-            (iterator) =>
-              mapDoubleEndedIterator_nextBack(iterator, {
-                next_back: $rangeNextBack,
-                nthBack: $rangeNthBack,
-              }),
-            (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
-            undefined,
-            undefined,
-            (iterator, init, f, broke, unwind, ends) =>
-              mapDoubleEndedIterator_tryRfold(
-                iterator,
-                init,
-                f,
-                { next: $rangeNext },
-                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-                $tryOf(broke),
-                undefined,
-                undefined,
-                undefined,
-                unwind,
-                ends,
-              ),
-          ),
+        $flattenEnds(
+          $iterator({ start: 1, end: 4 }, $rangeNext, false, $rangeNextBack),
+          Doubled.of,
+          (items) =>
+            $knowing(
+              items,
+              (iterator) =>
+                mapDoubleEndedIterator_nextBack(iterator, {
+                  next_back: $rangeNextBack,
+                  nthBack: $rangeNthBack,
+                }),
+              (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
+              undefined,
+              undefined,
+              (iterator, init, f, broke, unwind, ends) =>
+                mapDoubleEndedIterator_tryRfold(
+                  iterator,
+                  init,
+                  f,
+                  { next: $rangeNext },
+                  { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                  $tryOf(broke),
+                  undefined,
+                  undefined,
+                  undefined,
+                  unwind,
+                  ends,
+                ),
+            ),
         ),
       ),
     ).join(", ")}]`,
@@ -625,6 +629,29 @@ function others() {
   );
 }
 
+function source(n) {
+  console.log(`source ${n}`);
+  return { start: 1, end: n };
+}
+
+function pick() {
+  console.log("pick");
+  return function each(n) {
+    return iterator_map($iter([n, (n + 100) >>> 0]), (x) => (x * 2) >>> 0);
+  };
+}
+
+function scaled(by) {
+  console.log(`scaled ${by}`);
+  return (n) =>
+    iterator_map({ start: 0, end: n }, (x) => Math.imul(x, by) >>> 0, { next: $rangeNext });
+}
+
+function boxed() {
+  console.log("boxed");
+  return (n) => iterator_map($iter([n, (n * 3) >>> 0]), (x) => (x + 1) >>> 0);
+}
+
 function main() {
   const mapIntoIterator = {
     intoIter: (items) => items,
@@ -827,6 +854,15 @@ function main() {
 }
 
 function local() {
+  const intoIterExactSizeIterator = { len: (iterator) => iterator.len() };
+  const mapIntoIterator$1 = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({
+      next: $next,
+      fold: $foldOf,
+      getUnchecked: mapIterator___iteratorGetUnchecked,
+    }),
+  };
   const mapIntoIterator = {
     intoIter: (items) => items,
     IntoIterIterator: () => ({
@@ -835,6 +871,36 @@ function local() {
       getUnchecked: (iterator, i) =>
         mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }),
     }),
+  };
+  const doubleEndedIterator$1 = {
+    next_back: mapDoubleEndedIterator_nextBack,
+    rfold: (iterator, init, f, unwind, ends) =>
+      mapDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: $next },
+        { next_back: $nextBack },
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
+      mapDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: $next },
+        { next_back: $nextBack },
+        $tryOf(broke),
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
   };
   const doubleEndedIterator = {
     next_back: (iterator) =>
@@ -872,32 +938,35 @@ function local() {
   };
   const v = Array.from(
     $rev(
-      $flattenEnds($iterator({ start: 1, end: 4 }, $rangeNext, false, $rangeNextBack), (item) =>
-        $knowing(
-          pairs(item),
-          (iterator) =>
-            mapDoubleEndedIterator_nextBack(iterator, {
-              next_back: $rangeNextBack,
-              nthBack: $rangeNthBack,
-            }),
-          (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
-          undefined,
-          undefined,
-          (iterator, init, f, broke, unwind, ends) =>
-            mapDoubleEndedIterator_tryRfold(
-              iterator,
-              init,
-              f,
-              { next: $rangeNext },
-              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              $tryOf(broke),
-              undefined,
-              undefined,
-              undefined,
-              unwind,
-              ends,
-            ),
-        ),
+      $flattenEnds(
+        $iterator({ start: 1, end: 4 }, $rangeNext, false, $rangeNextBack),
+        pairs,
+        (items) =>
+          $knowing(
+            items,
+            (iterator) =>
+              mapDoubleEndedIterator_nextBack(iterator, {
+                next_back: $rangeNextBack,
+                nthBack: $rangeNthBack,
+              }),
+            (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
+            undefined,
+            undefined,
+            (iterator, init, f, broke, unwind, ends) =>
+              mapDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: $rangeNext },
+                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                $tryOf(broke),
+                undefined,
+                undefined,
+                undefined,
+                unwind,
+                ends,
+              ),
+          ),
       ),
     ),
   );
@@ -954,7 +1023,7 @@ function local() {
           (iterator) =>
             mapExactSizeIterator_len(
               iterator,
-              { len: (iterator) => iterator.len() },
+              intoIterExactSizeIterator,
               undefined,
               $dropEach(dDrop_drop),
               undefined,
@@ -1055,5 +1124,243 @@ function local() {
   console.log(
     `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
   );
+  const picked = Array.from(
+    $rev(
+      $flattenEnds($iterator(source(4), $rangeNext, false, $rangeNextBack), pick(), (items) =>
+        $knowing(
+          items,
+          mapDoubleEndedIterator_nextBack,
+          (iterator) => mapExactSizeIterator_len(iterator, intoIterExactSizeIterator),
+          undefined,
+          undefined,
+          (iterator, init, f, broke, unwind, ends) =>
+            mapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $next },
+              { next_back: $nextBack },
+              $tryOf(broke),
+              undefined,
+              undefined,
+              undefined,
+              unwind,
+              ends,
+            ),
+        ),
+      ),
+    ),
+  );
+  console.log(`[${picked.join(", ")}]`);
+  const p = iterator_flatMap(
+    source(3),
+    pick(),
+    { next: $rangeNext },
+    mapIntoIterator$1,
+    true,
+    undefined,
+    false,
+  );
+  const value$1 = flatMapDoubleEndedIterator_nextBack(
+    p,
+    { next: $rangeNext },
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+    mapIntoIterator$1,
+    doubleEndedIterator$1,
+    true,
+    false,
+  );
+  const value$2 = $next(p);
+  const value$3 = $nthBack(
+    $knowing(
+      p,
+      (iterator) =>
+        flatMapDoubleEndedIterator_nextBack(
+          iterator,
+          { next: $rangeNext },
+          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+          mapIntoIterator$1,
+          doubleEndedIterator$1,
+          true,
+          false,
+        ),
+      undefined,
+      undefined,
+      undefined,
+      (iterator, init, f, broke, unwind, ends) =>
+        flatMapDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $rangeNext },
+          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+          mapIntoIterator$1,
+          doubleEndedIterator$1,
+          $tryOf(broke),
+          true,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          unwind,
+          ends,
+        ),
+    ),
+    1,
+  );
+  console.log(
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+  );
+  const last = $nextBack(
+    $flattenEnds($iterator(source(4), $rangeNext, false, $rangeNextBack), scaled(3), (items) =>
+      $knowing(
+        items,
+        (iterator) =>
+          mapDoubleEndedIterator_nextBack(iterator, {
+            next_back: $rangeNextBack,
+            nthBack: $rangeNthBack,
+          }),
+        (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
+        undefined,
+        undefined,
+        (iterator, init, f, broke, unwind, ends) =>
+          mapDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $rangeNext },
+            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+            $tryOf(broke),
+            undefined,
+            undefined,
+            undefined,
+            unwind,
+            ends,
+          ),
+      ),
+    ),
+  );
+  console.log(`${last == null ? "None" : `Some(${last})`}`);
+  const folded = $foldBack(
+    $flattenEnds($iterator(source(3), $rangeNext, false, $rangeNextBack), boxed(), (items) =>
+      $knowing(
+        items,
+        mapDoubleEndedIterator_nextBack,
+        (iterator) => mapExactSizeIterator_len(iterator, intoIterExactSizeIterator),
+        undefined,
+        undefined,
+        (iterator, init, f, broke, unwind, ends) =>
+          mapDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next },
+            { next_back: $nextBack },
+            $tryOf(broke),
+            undefined,
+            undefined,
+            undefined,
+            unwind,
+            ends,
+          ),
+      ),
+    ),
+    "",
+    (s, x) => `${s}${x},`,
+  );
+  console.log(`${folded}`);
+  const branched = Array.from(
+    $rev(
+      $flattenEnds($iterator({ start: 1, end: 4 }, $rangeNext, false, $rangeNextBack), (n) =>
+        $knowing(
+          n > 1 ? pairs(n) : pairs(5),
+          (iterator) =>
+            mapDoubleEndedIterator_nextBack(iterator, {
+              next_back: $rangeNextBack,
+              nthBack: $rangeNthBack,
+            }),
+          (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
+          undefined,
+          undefined,
+          (iterator, init, f, broke, unwind, ends) =>
+            mapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              $tryOf(broke),
+              undefined,
+              undefined,
+              undefined,
+              unwind,
+              ends,
+            ),
+        ),
+      ),
+    ),
+  );
+  console.log(`[${branched.join(", ")}]`);
+  const matched = Array.from(
+    $rev(
+      $flattenEnds($iterator({ start: 1, end: 4 }, $rangeNext, false, $rangeNextBack), (n) => {
+        if (n === 1) {
+          return $knowing(
+            pairs(2),
+            (iterator) =>
+              mapDoubleEndedIterator_nextBack(iterator, {
+                next_back: $rangeNextBack,
+                nthBack: $rangeNthBack,
+              }),
+            (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
+            undefined,
+            undefined,
+            (iterator, init, f, broke, unwind, ends) =>
+              mapDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: $rangeNext },
+                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                $tryOf(broke),
+                undefined,
+                undefined,
+                undefined,
+                unwind,
+                ends,
+              ),
+          );
+        } else {
+          const m = (n + 1) >>> 0;
+          return $knowing(
+            pairs(m),
+            (iterator) =>
+              mapDoubleEndedIterator_nextBack(iterator, {
+                next_back: $rangeNextBack,
+                nthBack: $rangeNthBack,
+              }),
+            (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
+            undefined,
+            undefined,
+            (iterator, init, f, broke, unwind, ends) =>
+              mapDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: $rangeNext },
+                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                $tryOf(broke),
+                undefined,
+                undefined,
+                undefined,
+                unwind,
+                ends,
+              ),
+          );
+        }
+      }),
+    ),
+  );
+  console.log(`[${matched.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map
