@@ -12,15 +12,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "closure_drops"],
   },
   {
-    name: "temp-taken-apart-refused",
-    breaks:
-      "`let (x, _) = (make(3), make(4));` in a trait's default method is refused",
-    file: "src/lower/drops/facts.rs",
-    find: "                if !self.follows(once(pat)) {",
-    replace: "                if true {",
-    tests: ["test/corpus.test.ts", "-t", "default_method_drops"],
-  },
-  {
     name: "closure-made-anywhere",
     breaks:
       "a closure that holds a value with a destructor is made where its drop can't see what it took",
@@ -405,13 +396,5 @@ export const mutations: Mutation[] = [
     find: "                || self.cx.recognition.foreign.is_instance(def_id))\n",
     replace: "                || false && self.cx.recognition.foreign.is_instance(def_id))\n",
     tests: ["test/crates.test.ts", "-t", "two crates: closure_made_by_an_inlined_function"],
-  },
-  {
-    name: "match-whole-arm-beside-a-part-refused",
-    breaks: "a `match` whose one arm moves a part of a value with a destructor and another all of it, `(front, _) if .. =>` beside `both =>`, in a copied default, is refused, \"moving part of a value with a destructor\", where MIR's lowering follows each arm's moves (#1337)",
-    file: "src/lower/drops/facts.rs",
-    find: "                        .all(|&arm| self.cx.pattern_paths(&self.thir[arm].pattern).is_some())\n",
-    replace: "                        .all(|&arm| self.taken(&self.thir[arm].pattern) != Taken::Whole && self.cx.pattern_paths(&self.thir[arm].pattern).is_some())\n",
-    tests: ["test/corpus.test.ts", "-t", "^match_moves_a_part_or_the_whole.rs$"],
   },
 ];

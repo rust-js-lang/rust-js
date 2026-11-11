@@ -349,3 +349,37 @@ compile-fail case: a `Wrapper<I>` impl's copied default making a closure
 that holds its `Vec<Self::Item>` in a tuple. Un-normalized, the items are
 taken to drop nothing, and it compiles by luck, where a generic function's
 and a blanket impl's are refused.
+
+## Amendment: THIR's part-move refusals are taken off (2026-11-11)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results; no
+program compiles or runs otherwise. Since #1109 and #1337, `pattern_paths`
+followed every pattern: it never said "none". So none of THIR's part-move
+refusals could fire:
+
+- `owner_used`'s `let`, `if let` and `match` rules, "moving part of a value
+  with a destructor";
+- the three temporary rules, "taking apart a temporary" and "moving part of
+  a temporary";
+- `follows`.
+
+The one rule left in `owner_used`, a field moved out of what isn't a struct
+or a tuple, could only fire for a union, whose fields have no destructor.
+
+Every body these facts guard is lowered from its MIR (ADR 0364): a function,
+a closure, a copied default and a generic impl's constant. MIR's lowering
+moves each part out and drops what's left where its owner goes. So the
+rules are taken off, with `Taken`, the facts' set of owners,
+`pattern_paths`, `paths_in` and `Path`, which nothing else read. What the
+facts refuse now is a closure that holds a value with a destructor, and a
+value whose drop rust-js can't run.
+
+Taken off, the corpus in both builds and as libraries still runs as native
+Rust does, and rustc's `drop/`, `closures/`, `moves/` and `borrowck/` tests
+give the results they gave before, test by test (180 pass, 5 fail). The
+four mutations that made these rules refuse go with them: `temp-taken-apart-refused`,
+`match-whole-arm-beside-a-part-refused`, `array-pattern-parts-unfollowed`
+and `binding-at-whole-unfollowed`. The corpus cases that held them stay,
+as run cases against native Rust: `default_method_drops`,
+`match_moves_a_part_or_the_whole`, `array_parts_moved_in_a_copied_default`
+and `default_matches_its_tuple_whole`.

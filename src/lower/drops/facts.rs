@@ -5,7 +5,6 @@
 //! and sees nothing else of the function.
 
 use crate::collections::{IndexMap, IndexSet};
-use std::iter::once;
 
 use rustc_hir::{BindingMode, ByRef};
 use rustc_middle::thir::visit::{self, Visitor};
@@ -49,17 +48,6 @@ pub(in crate::lower) struct Facts {
     pub(in crate::lower) held_while_seen: IndexSet<ExprId>,
 }
 
-/// What a pattern takes of a value it's matched against.
-#[derive(PartialEq)]
-enum Taken {
-    /// Nothing that has a destructor: it borrows, copies or ignores it.
-    Nothing,
-    /// All of it, into one variable.
-    Whole,
-    /// A part, which a partial move leaves the rest of.
-    Part,
-}
-
 /// Find what's refused of a body, and its momentary borrows, before it's lowered.
 pub(super) fn find_facts<'tcx>(
     cx: &DropQuery<'_, 'tcx>,
@@ -80,7 +68,6 @@ pub(super) fn find_facts<'tcx>(
         stack: Vec::new(),
         statements: Vec::new(),
         lets: IndexMap::default(),
-        owners: IndexSet::default(),
         facts: Facts::default(),
     };
     for param in &thir.params {
@@ -112,8 +99,6 @@ struct Finder<'c, 'q, 'a, 'tcx> {
     statements: Vec<(region::Scope, Option<ExprId>)>,
     /// Each `let` statement's value, and its pattern.
     lets: IndexMap<ExprId, &'a Pat<'tcx>>,
-    /// The variables that own one, bound by value.
-    owners: IndexSet<LocalVarId>,
     facts: Facts,
 }
 
@@ -278,127 +263,13 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             && self.has_drops(ty)
     }
 
-    fn taken(&self, pat: &Pat<'tcx>) -> Taken {
-        match &pat.kind {
-            PatKind::Wild => Taken::Nothing,
-            PatKind::Binding {
-                mode: BindingMode(ByRef::No, _),
-                subpattern: None,
-                ty,
-                ..
-            } if self.has_drops(*ty) => Taken::Whole,
-            _ => {
-                let mut part = false;
-                pat.walk_always(|p| {
-                    if let PatKind::Binding {
-                        mode: BindingMode(ByRef::No, _),
-                        ty,
-                        ..
-                    } = p.kind
-                    {
-                        part |= self.has_drops(ty);
-                    }
-                });
-                if part { Taken::Part } else { Taken::Nothing }
-            }
-        }
-    }
-
-    /// A use of an owner at the top of the walk: refused where it moves a
-    /// part of it a way MIR's lowering doesn't follow.
-    fn owner_used(&mut self, e: ExprId) {
-        let (parent, child) = self.context();
-        let follows =
-            |finder: &Self, pat: &Pat<'tcx>| finder.taken(pat) != Taken::Part || finder.cx.pattern_paths(pat).is_some();
-        let followed = match parent.map(|p| &self.thir[p].kind) {
-            // `let (c, d) = b;` moves the parts it binds.
-            None => self.lets.get(&child).is_none_or(|pat| follows(self, pat)),
-            // `if let (Some(c), _) = b` moves the parts it binds, if it matches.
-            Some(ExprKind::Let { expr, pat }) if *expr == child => follows(self, pat),
-            // A field moved out, `consume(pair.a)`: a struct's or a tuple's.
-            Some(ExprKind::Field { lhs, .. }) if *lhs == child => self.projection_follows(),
-            // Each arm moves the parts its pattern binds, or all of it, as
-            // MIR's lowering moves each, what's left of it dropped where its
-            // owner is, `(front, _) if .. =>` beside `both =>` (#1337).
-            Some(ExprKind::Match { scrutinee, arms, .. }) if *scrutinee == child => {
-                !arms.iter().any(|&a| self.taken(&self.thir[a].pattern) == Taken::Part)
-                    || arms
-                        .iter()
-                        .all(|&arm| self.cx.pattern_paths(&self.thir[arm].pattern).is_some())
-            }
-            _ => true,
-        };
-        if !followed {
-            self.problem(self.thir[e].span, "moving part of a value with a destructor");
-        }
-    }
-
-    /// Whether a projection chain from the variable at the top of the walk,
-    /// where it moves a field, moves it out of structs and tuples alone, not
-    /// through what isn't one, as a `Box`.
-    fn projection_follows(&self) -> bool {
-        if !self.projection_moved() {
-            return true;
-        }
-        let mut child = *self.stack.last().expect("the variable");
-        for &parent in self.stack.iter().rev().skip(1) {
-            match &self.thir[parent].kind {
-                ExprKind::Scope { .. } | ExprKind::PlaceTypeAscription { .. } => {}
-                ExprKind::Field { lhs, .. } if *lhs == child => {
-                    let ty = self.thir[*lhs].ty;
-                    if !matches!(ty.kind(), ty::Tuple(_)) && !matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct()) {
-                        return false;
-                    }
-                }
-                _ => break,
-            }
-            child = parent;
-        }
-        true
-    }
-
-    /// Whether the field at the top of the walk, of a projection chain, is
-    /// used as a value, which moves it, rather than borrowed or written.
-    fn projection_moved(&self) -> bool {
-        let mut child = *self.stack.last().expect("the variable");
-        for &parent in self.stack.iter().rev().skip(1) {
-            match &self.thir[parent].kind {
-                ExprKind::Scope { .. } | ExprKind::PlaceTypeAscription { .. } => {}
-                ExprKind::Field { lhs, .. } if *lhs == child => {}
-                ExprKind::Borrow { arg, .. } | ExprKind::RawBorrow { arg, .. } if *arg == child => return false,
-                ExprKind::Assign { lhs, .. } | ExprKind::AssignOp { lhs, .. } | ExprKind::Index { lhs, .. }
-                    if *lhs == child =>
-                {
-                    return false;
-                }
-                _ => return self.has_drops(self.thir[child].ty),
-            }
-            child = parent;
-        }
-        self.has_drops(self.thir[child].ty)
-    }
-
-    /// Whether `pats`, the patterns a temporary is matched against, move
-    /// each part they bind a way `pattern_paths` follows.
-    fn follows<'p>(&self, mut pats: impl Iterator<Item = &'p Pat<'tcx>>) -> bool
-    where
-        'tcx: 'p,
-    {
-        pats.all(|pat| self.cx.pattern_paths(pat).is_some())
-    }
-
     /// A value with a destructor, made here, at the top of the walk: one
-    /// taken apart is refused where its parts move a way MIR's lowering
-    /// doesn't follow; one borrowed, a guard, may be momentary.
+    /// borrowed, a guard, may be momentary. One taken apart, `let (a, _) =
+    /// (x, y);`, is moved out of part by part as MIR's lowering moves it, the
+    /// rest dropped as the statement ends, or its pattern's arm (#1109, #1337).
     fn value_made(&mut self, e: ExprId) {
         let (parent, child) = self.context();
-        let span = self.thir[e].span;
-        let taken = |finder: &Self, pats: &mut dyn Iterator<Item = &Pat<'tcx>>| {
-            pats.map(|p| finder.taken(p)).any(|t| t != Taken::Nothing)
-        };
         let used_in_place = match parent.map(|p| &self.thir[p].kind) {
-            // `let (a, _) = (x, y);` moves what it binds out of a temporary,
-            // which drops the rest as the statement ends.
             None => {
                 let Some(&pat) = self.lets.get(&child) else {
                     return;
@@ -406,27 +277,10 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                 if matches!(pat.kind, PatKind::Wild | PatKind::Binding { subpattern: None, .. }) {
                     return;
                 }
-                if !self.follows(once(pat)) {
-                    self.problem(span, "taking apart a temporary with a destructor");
-                    return;
-                }
                 true
             }
-            Some(ExprKind::Let { expr, pat }) if *expr == child => {
-                if taken(self, &mut once(&**pat)) && !self.follows(once(&**pat)) {
-                    self.problem(span, "moving part of a temporary with a destructor");
-                    return;
-                }
-                true
-            }
-            Some(ExprKind::Match { scrutinee, arms, .. }) if *scrutinee == child => {
-                let patterns = arms.iter().map(|&a| &*self.thir[a].pattern);
-                if taken(self, &mut patterns.clone()) && !self.follows(patterns) {
-                    self.problem(span, "moving part of a temporary with a destructor");
-                    return;
-                }
-                true
-            }
+            Some(ExprKind::Let { expr, .. }) if *expr == child => true,
+            Some(ExprKind::Match { scrutinee, .. }) if *scrutinee == child => true,
             Some(
                 ExprKind::Borrow { arg, .. }
                 | ExprKind::RawBorrow { arg, .. }
@@ -1029,19 +883,13 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'q, 'a, 'tcx> {
 
     fn visit_pat(&mut self, pat: &'a Pat<'tcx>) {
         if let PatKind::Binding {
-            var,
             mode: BindingMode(ByRef::No, _),
             ty,
             ..
         } = pat.kind
+            && let Drops::Unsupported(t, what) = self.drops_of(ty)
         {
-            match self.drops_of(ty) {
-                Drops::Nothing => {}
-                Drops::Runs => {
-                    self.owners.insert(var);
-                }
-                Drops::Unsupported(t, what) => self.problem(pat.span, &describe(t, what)),
-            }
+            self.problem(pat.span, &describe(t, what));
         }
         visit::walk_pat(self, pat);
     }
@@ -1050,9 +898,6 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'q, 'a, 'tcx> {
         let id = self.id(expr);
         self.stack.push(id);
         match expr.kind {
-            ExprKind::VarRef { id: var } | ExprKind::UpvarRef { var_hir_id: var, .. } if self.owners.contains(&var) => {
-                self.owner_used(id);
-            }
             _ if !is_place(&expr.kind) && self.holds_drops(expr) => self.value_made(id),
             ExprKind::PointerCoercion {
                 cast: PointerCoercion::Unsize,

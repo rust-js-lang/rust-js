@@ -163,10 +163,6 @@ struct Made<'tcx> {
     defs: Vec<Stmt>,
 }
 
-/// A part of a value, field by field: each step the variant it's in, by
-/// index, for an enum's, and the field.
-pub(super) type Path = Vec<(Option<u32>, usize)>;
-
 /// A copied default's drops: those it's given, by the type each drops in
 /// its impl's terms, and each associated type a caller could give one for
 /// (ADRs 0098, 0489).

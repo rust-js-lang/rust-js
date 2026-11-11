@@ -12,15 +12,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(copied_default_asks_its_drops_in_the_impls_terms|guard_held_while_a_type_parameters_value_drops)\\.rs$"],
   },
   {
-    name: "array-pattern-parts-unfollowed",
-    breaks:
-      "a copied default's `let [_, b] = pair;` of `[Self::Item; 2]` with a destructor, which MIR's lowering moves part by part, is refused as moving part of a value with a destructor (#1109)",
-    file: "src/lower/drops/types.rs",
-    find: "            PatKind::Array { prefix, slice, suffix } => prefix\n",
-    replace: "            PatKind::Array { .. } => false,\n            PatKind::Array { prefix, slice, suffix } => prefix\n",
-    tests: ["test/corpus.test.ts", "-t", "^array_parts_moved_in_a_copied_default.rs$"],
-  },
-  {
     name: "uncounted-weak-drops",
     breaks:
       "an uncounted `Weak`'s drop is `$weakDrop` of the object itself, or of `null`, which throws (ADR 0843)",
@@ -404,15 +395,6 @@ export const mutations: Mutation[] = [
     find: "    tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n        .is_err()\n",
     replace: "    tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n        .is_err()\n        && false\n",
     tests: ["test/corpus.test.ts", "-t", "^blanket_default_beside_an_unmet_clause.rs$"],
-  },
-  {
-    name: "binding-at-whole-unfollowed",
-    breaks:
-      "`elt @ Some(_)` of a temporary with a destructor, whose subpattern moves nothing, is refused as moving part of it, as itertools' `collect_tuple` was (#828)",
-    file: "src/lower/drops/types.rs",
-    find: "            // (itertools' `collect_tuple`, #828).\n            PatKind::Binding {\n",
-    replace: "            // (itertools' `collect_tuple`, #828).\n            PatKind::Binding { subpattern: Some(_), .. } => false,\n            PatKind::Binding {\n",
-    tests: ["test/corpus.test.ts", "-t", "^default_matches_its_tuple_whole.rs$"],
   },
   {
     name: "glue-parts-drop-nothing",

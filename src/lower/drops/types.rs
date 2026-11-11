@@ -10,12 +10,8 @@ use crate::lower::analysis::{ClosureFacts, Counted};
 use crate::lower::recognition::{Recognition, StdItem, any_trait, rc_pointee, weak_pointee};
 use crate::lower::traits::{EvidenceQuery, may_have_destructors};
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_hir::{BindingMode, ByRef};
-use rustc_middle::thir::{Pat, PatKind};
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::def_id::DefId;
-
-use super::Path;
 
 /// What dropping a type runs.
 #[derive(Clone, Copy, PartialEq)]
@@ -377,76 +373,6 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 _ => true,
             })
         }) && made.next().is_none()
-    }
-
-    /// The parts a pattern moves out of what it's matched against, by value:
-    /// those it binds that have a destructor, a struct's, a tuple's, an
-    /// enum's variant's and an array's, `[_, b]`, its subslice, `rest @ ..`,
-    /// too, as MIR's lowering moves each (#1109). None of an alternative's
-    /// that moves one.
-    pub(in crate::lower) fn pattern_paths(&self, pat: &Pat<'tcx>) -> Option<Vec<Path>> {
-        let mut found = Vec::new();
-        self.paths_in(pat, &mut Path::new(), &mut found).then_some(found)
-    }
-
-    fn paths_in(&self, pat: &Pat<'tcx>, at: &mut Path, found: &mut Vec<Path>) -> bool {
-        match &pat.kind {
-            PatKind::Wild => true,
-            // A binding by value moves what it binds; its subpattern, `elt @
-            // Some(_)`'s, only tests it, as rustc lets none of it move too
-            // (itertools' `collect_tuple`, #828).
-            PatKind::Binding {
-                mode: BindingMode(ByRef::No, _),
-                ty,
-                ..
-            } => {
-                if self.has_drops(self.thir_ty(*ty)) {
-                    found.push(at.clone());
-                }
-                true
-            }
-            PatKind::Binding {
-                mode: BindingMode(ByRef::Yes(..), _),
-                subpattern: None,
-                ..
-            } => true,
-            PatKind::Leaf { subpatterns } => subpatterns.iter().all(|f| {
-                at.push((None, f.field.as_usize()));
-                let ok = self.paths_in(&f.pattern, at, found);
-                at.pop();
-                ok
-            }),
-            PatKind::Variant {
-                variant_index,
-                subpatterns,
-                ..
-            } => subpatterns.iter().all(|f| {
-                at.push((Some(variant_index.as_u32()), f.field.as_usize()));
-                let ok = self.paths_in(&f.pattern, at, found);
-                at.pop();
-                ok
-            }),
-            // An array's, `[_, b]` and `[_, rest @ ..]`: each element by its
-            // place, the subslice after the prefix's, as MIR's lowering moves
-            // each out (#1109).
-            PatKind::Array { prefix, slice, suffix } => prefix
-                .iter()
-                .chain(slice.as_deref())
-                .chain(suffix.iter())
-                .enumerate()
-                .all(|(i, p)| {
-                    at.push((None, i));
-                    let ok = self.paths_in(p, at, found);
-                    at.pop();
-                    ok
-                }),
-            // `Single(t) | Ambiguous(t, _)` (ADR 0191): each alternative followed.
-            PatKind::Or { pats } => pats.iter().all(|p| self.paths_in(p, at, &mut Vec::new())),
-            // What binds nothing by value that rustc lets move: a constant's,
-            // a range's, a slice's or a reference's, which binds by reference
-            // or what's `Copy`.
-            _ => true,
-        }
     }
 
     /// Each type is walked once and cached, so a type whose parts double at
