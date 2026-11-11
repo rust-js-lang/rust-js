@@ -660,14 +660,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer_replaced.rs$"],
   },
   {
-    name: "library-default-taken-apart",
-    breaks: "a library's trait's default, compiled once over a generic `Self` that writes its box's `value` (ADR 0100), is taken for one copied into the consumer's impl, so `*self = next` through it leaves the consumer's object as it was (a wrong answer, #831)",
-    file: "src/lower/traits/impls.rs",
-    find: "                && !self.krate.foreign.in_library(item)\n",
-    replace: "",
-    tests: ["test/crates.test.ts", "-t", "a library's trait's defaults are what a consumer's impl doesn't write"],
-  },
-  {
     name: "entry-of-own-type-as-method",
     breaks:
       "a library's impl's method whose trait's signature names `Self`'s associated type is called through its dictionary's entry, which gives generic code's form of it, a JS iterator of `Upto(2).numbers()`'s `Range` (#1032)",

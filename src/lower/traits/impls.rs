@@ -842,7 +842,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.entry_forms(item, (method, method_args), own_args, count, None)
             }
             // A default the dictionary copies in (`lower_dictionary`): the
-            // crate's trait's, not a library's, whose body is its own.
+            // crate's trait's, not a library's, whose body is its own. No
+            // program tells the two apart: only a blanket impl's bare `Self`
+            // is given its box, which no consumer's impl of a library's trait
+            // is (the orphan rule), and a default that writes `Self` whole
+            // needs `Self: Sized`, which no `dyn` calls (#1109).
             None if self.tcx.defaultness(item).has_value()
                 && self.krate.foreign.compiled_by_rust_js(tr.def_id)
                 && !self.krate.foreign.in_library(item)
