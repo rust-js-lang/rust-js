@@ -2,7 +2,7 @@
 import type { Mutation } from "../../mutations";
 
 const examples = ["test/snapshots.test.ts", "-t", "wire|inbox|api"];
-const renaming = ["test/serde.test.ts", "-t", "renaming rules of variants"];
+const renaming = ["test/serde-values.test.ts", "-t", "renaming rules of variants"];
 
 export const mutations: Mutation[] = [
   {
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     find: "                    let test = self.variant_test(value.clone(), Ty::new_adt(self.tcx, adt, args), adt, index, false);\n",
     replace:
       '                    let _ = index;\n                    let test = Expr::bin(Op::Eq, Expr::member(value.clone(), "TAG"), Expr::str(variant.name.to_string()));\n',
-    tests: ["test/serde.test.ts", "-t", "discriminated union"],
+    tests: ["test/serde-values.test.ts", "-t", "discriminated union"],
   },
   {
     name: "hand-written-codec-unadapted",

@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/serde/de.rs",
     find: "                return self.unit_variant(adt.did(), variant);\n",
     replace: "                return Expr::str(name);\n",
-    tests: ["test/serde.test.ts", "-t", "a repr enum serializes"],
+    tests: ["test/serde-values.test.ts", "-t", "a repr enum serializes"],
   },
   {
     name: "json-value-set",

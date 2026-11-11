@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/dyns.rs",
     find: "            _ if self.is_json_error(ty) => \"$jsonErrorDyn\",\n",
     replace: "",
-    tests: ["test/serde.test.ts", "-t", "Box<dyn Error> shows as serde_json"],
+    tests: ["test/serde-values.test.ts", "-t", "Box<dyn Error> shows as serde_json"],
   },
   {
     name: "dyn-cell-refused",

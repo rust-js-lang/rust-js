@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
     replace:
       "                let eq = if !value_first {\n                    self.json_value_eq(a, b, other, span)?\n                } else {\n                    self.json_value_eq(b, a, other, span)?\n                };",
     tests: [
-      "test/serde.test.ts",
+      "test/serde-values.test.ts",
       "-t",
       "Value comparisons preserve operand order",
     ],
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     find: '                Expr::call(Expr::helper("$jsonOption"), vec![value, arrow])',
     replace:
       '                Expr::call(Expr::member(value, "map"), vec![arrow])',
-    tests: ["test/serde.test.ts", "-t", "nested Value conversions"],
+    tests: ["test/serde-values.test.ts", "-t", "nested Value conversions"],
   },
   {
     name: "json-get-mut-unhandled",

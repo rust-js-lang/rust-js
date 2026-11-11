@@ -416,7 +416,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls.rs",
     find: "                this.json_text(value, ty, pretty, span)?\n",
     replace: "                this.json_text(value, ty, false, span)?\n",
-    tests: ["test/serde.test.ts", "-t", "ordinary renamed structs"],
+    tests: ["test/serde-values.test.ts", "-t", "ordinary renamed structs"],
   },
   {
     name: "mir-deque-remove-refused",
