@@ -39,6 +39,38 @@ const INSTANCES: &[&str] = &[
     "metamorph_generic::Own({it})",
 ];
 
+/// Which of `INSTANCES` answer `method` at the cost the case's own
+/// iterator may, without stepping each item it passes, by Rust's own
+/// semantics: std's `Range::nth`, `count`, `last`, `min` and `max`, and a
+/// `skip`'s and a `step_by`'s, which ask its `nth`, don't step each number,
+/// where a `map` calls its function on each item it passes, a `filter`
+/// tests each, and the net's own iterator has none of its own; a `chain`
+/// and a `fuse` pass `nth`, `count` and `last` on, not `min` or `max`.
+fn keeps_its_cost(instance: usize, method: &str) -> bool {
+    match INSTANCES[instance] {
+        "{it}" => true,
+        "{it}.chain(::std::iter::empty())" | "{it}.fuse()" => !matches!(method, "min" | "max"),
+        _ => !matches!(method, "count" | "last" | "nth" | "min" | "max" | "skip" | "step_by"),
+    }
+}
+
+/// The instance of the `n`th place that calls an iterator's `method`, of a
+/// case whose instances start turning at `shift`: each in turn. Of a case
+/// whose `//@ instances-keep-cost` says its point is what its iterators
+/// answer without stepping each item, `METAMORPH_KEEP_COST` (corpus-cases.ts),
+/// the case's own where the turn's would answer `method` stepping each
+/// (`keeps_its_cost`): skipping four billion numbers at once through a
+/// `map` steps each, by Rust's own semantics, which native Rust finishes
+/// only as its optimizer folds the loop away (#1109).
+fn instance_of(method: usize, n: usize, shift: usize) -> usize {
+    let turned = (n + shift) % INSTANCES.len();
+    let kept = std::env::var_os("METAMORPH_KEEP_COST").is_none() || keeps_its_cost(turned, METHODS[method].name);
+    match kept {
+        true => turned,
+        false => 0,
+    }
+}
+
 /// What an adapter made in generic code may promise besides `Iterator`.
 const PROMISES: &[(&str, &str)] = &[
     ("DoubleEndedIterator", "::std::iter::DoubleEndedIterator"),
@@ -289,9 +321,9 @@ impl Wrap<'_> {
         let k = self.met.len();
         self.met.push(op);
         let turned = match op {
-            Op::Method(_) => {
+            Op::Method(method) => {
                 self.iterators += 1;
-                (self.iterators - 1 + self.shift) % INSTANCES.len()
+                instance_of(method, self.iterators - 1, self.shift)
             }
             Op::Value(_) => 0,
         };
@@ -576,9 +608,9 @@ pub fn generic_instances(ast: &mut syn::File, source: &str, budget: &mut usize) 
     let mut places: Vec<Option<Place>> = (met.iter())
         .map(|&op| {
             let instance = match op {
-                Op::Method(_) => {
+                Op::Method(method) => {
                     iterators += 1;
-                    (iterators - 1 + shift) % INSTANCES.len()
+                    instance_of(method, iterators - 1, shift)
                 }
                 Op::Value(_) => 0,
             };

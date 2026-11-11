@@ -86,6 +86,10 @@ export function buildRewriter(): void {
 export function rewritten(rewrite: Rewrite, file: string, edition: string, limit?: number): { program: string; library?: string } | undefined {
   // `emi-prune` is given the blocks the case's run reaches, its probe's.
   const env: Record<string, string> = { METAMORPH_EDITION: edition };
+  // A case whose point is what its iterators skip at once, given instances
+  // that keep each place's cost (`//@ instances-keep-cost`, #1109).
+  const want = existsSync(file) ? directives(readFileSync(file, "utf8")) : undefined;
+  if (typeof want === "object" && want.instancesKeepCost !== undefined) env.METAMORPH_KEEP_COST = "1";
   if (rewrite === "emi-prune") {
     const hits = reached(file, edition);
     if (hits === undefined) return undefined;

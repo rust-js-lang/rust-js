@@ -434,3 +434,26 @@ harness is no program's whole answer: `execute` marks it `stopped`
 one rustc rejects or one that aborts on wasm32 is; the net tries its first
 place alone, then none. Its two rows are off the known list. ADR 0262's
 case: none, the compiler's JS is unchanged.
+
+## Amended (2026-11-12, #1109): a case may keep each place's cost
+
+`generic-instances` gives each place an instance in turn, starting at the
+case's source length modulo the instances. A `map`, a `filter` or the net's
+own iterator answers `nth`, `skip`, `step_by`, `count`, `last`, `min` and
+`max` by stepping each item it passes. That's Rust's own semantics:
+`Map::nth` calls its function on each item. Where the case's own iterator
+answers at once, a range's `skip(4_000_000_000)` does, native Rust finishes
+only because its optimizer folds the loop away, and the JS runs past its
+10 s. So `range_reversed_skipped_beside_its_back_stepped` failed or passed
+by its length.
+
+**A case whose point is what its iterators skip at once says so,
+`//@ instances-keep-cost: <why>`** (`test/corpus-cases.ts`, the one reading
+of the directives). Its places get the case's own instance wherever the
+turn's would step each item (`keeps_its_cost`, `scripts/metamorph`).
+`METAMORPH_KEEP_COST` carries the directive to the rewriter. Every other
+case turns through every instance as before, so `count()` of a `filter`
+still runs. Held by the harness test "generic-instances keeps each place's
+cost of a case that says its point is what it skips at once", and by the
+range case, which no longer pads its comment to pick its instances. ADR
+0262's case: none, the compiler's JS is unchanged.

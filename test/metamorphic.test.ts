@@ -413,3 +413,28 @@ fn main() {
   expect(program).toContain("pub fn at_2 < T > (x : T) -> :: std :: option :: Option < T > { :: std :: option :: Option :: Some (x) }");
   expect(program).toContain("pub fn at_3 < T > (x : T) { :: std :: mem :: drop (x) }");
 });
+
+// A case whose point is what its iterators skip at once, `//@
+// instances-keep-cost`, is given at each place an instance that answers it
+// without stepping each item where its own may: never a `map`, a `filter` or
+// the net's own iterator at a `skip`, an `nth`, a `count`, a `last`, a `min`
+// or a `max`, which step each by Rust's own semantics (#1109). Without it,
+// the same places turn through every instance.
+test("generic-instances keeps each place's cost of a case that says its point is what it skips at once", () => {
+  const dir = fixture("metamorphic-instances-keep-cost-harness");
+  mkdirSync(dir, { recursive: true });
+  const places = ["skip(3).next()", "nth(2)", "count()", "last()", "min()", "max()", "skip(1).next()"]
+    .map((call) => `    println!("{:?}", (0..9u32).rev().${call});`)
+    .join("\n");
+  const stepping = /\. (map|filter) \(\| [_a-z]+ \| [a-z]+\)|metamorph_generic :: Own \(/;
+  const programOf = (directive: string) => {
+    const file = join(dir, `${directive.startsWith("//@") ? "kept" : "turned"}.rs`);
+    writeFileSync(file, `${directive}\nfn main() {\n${places}\n}\n`);
+    return rewritten("generic-instances", file, "2024")?.program.replaceAll(/\s+/g, " ") ?? "";
+  };
+  const kept = programOf("//@ instances-keep-cost: it skips at once");
+  const turned = programOf("//  instances-keep-cost: it skips at once");
+  expect(kept).toContain("metamorph_generic :: at_6");
+  expect(kept).not.toMatch(stepping);
+  expect(turned).toMatch(stepping);
+});

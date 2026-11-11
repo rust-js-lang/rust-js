@@ -1,3 +1,4 @@
+//@ instances-keep-cost: it skips four billion numbers at once, which a `map` or a `filter` steps one by one
 // A reversed range skipped, `(0..u64::MAX).rev().skip(4_000_000_000)`, beside a
 // function that steps a reversed range of the same type from its back,
 // which makes that type's `rev()` one made knowing its back, `$rev` of the
@@ -9,7 +10,7 @@
 // `nth_back` (#1109). And far from either end: a range made knowing its
 // back given to generic code's `nth_back`, the range's own `nth_back`, and
 // the `nth_back` of its `rev()`, the range's `nth`, each moving a bound,
-// and not stepping each number (#1109).
+// not stepping each number (#1109).
 fn second_from_its_front(range: std::ops::Range<u64>) -> Option<u64> {
     range.rev().nth_back(1)
 }
