@@ -64,7 +64,7 @@ impl<'tcx> StoredPlaces<'tcx> {
         ty: Ty<'tcx>,
         owner: DefId,
     ) -> Option<IndexSet<Ty<'tcx>>> {
-        instances_of(tcx, &self.callers, ty, owner)
+        instances_of(tcx, (&self.callers, crate::lower::instances::Fact::Shared), ty, owner)
     }
 
     /// Whether an object of `ty` says where it's stored: one of the

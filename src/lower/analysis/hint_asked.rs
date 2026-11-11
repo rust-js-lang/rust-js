@@ -124,7 +124,12 @@ pub(super) fn of_crate<'tcx>(
     // crate's own hint would throw.
     if let Some(callers) = &callers {
         for (owner, iter_ty) in grown {
-            match crate::lower::instances::instances_of(tcx, callers, iter_ty, owner) {
+            match crate::lower::instances::instances_of(
+                tcx,
+                (callers, crate::lower::instances::Fact::Shared),
+                iter_ty,
+                owner,
+            ) {
                 Some(instances) => {
                     if (instances.into_iter()).any(|instance| !recognition.given_growth_kept(instance)) {
                         asked.hinted.lost.insert((owner, iter_ty));
@@ -146,7 +151,13 @@ pub(super) fn of_crate<'tcx>(
             // Of every caller where the crate sees them all, or any it may
             // be given, a library's `pub` function's, whose callers are its
             // consumers'.
-            let mut of_items = crate::lower::instances::instances_of(tcx, &callers, of, owner).is_none();
+            let mut of_items = crate::lower::instances::instances_of(
+                tcx,
+                (&callers, crate::lower::instances::Fact::Shared),
+                of,
+                owner,
+            )
+            .is_none();
             for instance in instances {
                 of_items |= mark_given(tcx, recognition, instance, keeps_capacity, &mut asked);
             }

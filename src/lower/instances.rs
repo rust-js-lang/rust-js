@@ -530,10 +530,18 @@ pub(in crate::lower) enum Fact<'f, 'a, 'tcx> {
     /// compiles its own copy (`gives_more`), and JS's is a copy apart
     /// (`js_given`), so the crate's own calls are every caller of its.
     CopiedApart(&'f crate::lower::library::Foreign<'a, 'tcx>),
-    /// An `Rc` counted, a place an object's stored, a clone apart (#1009,
-    /// #1114, #1119): no caller compiles its own for these, so a `pub`
-    /// function's are any a consumer or JS may give (#1234).
+    /// A place an object's stored, a clone apart (#1114, #1119): no caller
+    /// compiles its own for these, so a `pub` function's are any a
+    /// consumer or JS may give (#1234).
     Shared,
+    /// An `Rc` counted (#1009): no caller compiles its own either, but what
+    /// JS gives drops nothing and reads no count (ADRs 0289, 0914), so only
+    /// a consumer's call, of a library's, gives what's counted. A program's
+    /// callers are its own calls: a `pub` function's, and a trait's method
+    /// std or a library calls by its dictionary, `Debug::fmt` of `{:?}`,
+    /// `Hash::hash` of a `HashSet`'s, given a type the program names where
+    /// it makes that dictionary (#1112).
+    Counted { library: bool },
     /// What a caller makes knowing, its hint (#1236): each caller the crate
     /// sees marks what it gives, whatever others do, which nothing marks.
     Marked,
@@ -557,6 +565,7 @@ pub(in crate::lower) fn seen_whole(tcx: TyCtxt<'_>, owner: DefId, fact: Fact<'_,
                 && tcx.trait_impl_of_assoc(id).is_none()
         }
         Fact::Shared => !tcx.visibility(owner).is_public(),
+        Fact::Counted { library } => !library || !tcx.visibility(owner).is_public(),
         Fact::Marked => true,
     }
 }
@@ -742,13 +751,13 @@ const MOST_INSTANCES: usize = 64;
 /// `MOST_INSTANCES` (#1009).
 pub(super) fn instances_of<'tcx>(
     tcx: TyCtxt<'tcx>,
-    callers: &Callers<'tcx>,
+    (callers, fact): (&Callers<'tcx>, Fact<'_, '_, 'tcx>),
     pointee: Ty<'tcx>,
     owner: DefId,
 ) -> Option<IndexSet<Ty<'tcx>>> {
     instances_in(
         tcx,
-        (callers, Fact::Shared),
+        (callers, fact),
         (pointee, owner),
         (&mut IndexSet::default(), &mut IndexSet::default()),
     )

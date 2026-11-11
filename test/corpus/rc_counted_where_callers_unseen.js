@@ -12,7 +12,7 @@ function peekerPeek_peek(peeker, slot, TCopy) {
 }
 
 function peekerPeek_show(peeker, rc, TDebug, dropT) {
-  return TDebug.fmt(rc.value);
+  return TDebug.fmt(rc);
 }
 
 export const otherDebug = { fmt: otherDebug_fmt };
@@ -27,12 +27,8 @@ function main() {
     const again = $rcClone(slot);
     try {
       console.log(`${slot.strong} ${peekerPeek_peek(undefined, again)}`);
-      const other = { value: { name: "x" }, strong: 1, weak: 0 };
-      try {
-        console.log(`${peekerPeek_show(undefined, other, otherDebug)} ${other.value.name}`);
-      } finally {
-        $rcDrop(other);
-      }
+      const other = { name: "x" };
+      console.log(`${peekerPeek_show(undefined, other, otherDebug)} ${other.name}`);
     } finally {
       $rcDrop(again);
     }

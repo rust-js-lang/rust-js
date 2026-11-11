@@ -591,7 +591,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         loop {
             let counted = counted_rcs(
                 tcx,
-                (all_bodies, &self_handles, &cloned),
+                (all_bodies, &self_handles, &cloned, library),
                 (params_may_drop, &reached.counted_rcs, &|owner, index, pointee| {
                     library && !foreign.counts_no_rc_of_its_type(pointee) || given.contains(&(owner, index))
                 }),

@@ -276,4 +276,20 @@ export const mutations: Mutation[] = [
     replace: "                    return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint\\.rs$"],
   },
+  {
+    name: "program-pub-rc-callers-unseen",
+    breaks: "a program's `pub` trait's generic method counts every `Rc` beside it, as a library's does, though JS's values drop nothing and read no count: a neighbour's class constructor's `Rc<Self>` is then an `Rc::new` of a type parameter it may be, refused (#1112)",
+    file: "src/lower/instances.rs",
+    find: "        Fact::Counted { library } => !library || !tcx.visibility(owner).is_public(),\n",
+    replace: "        Fact::Counted { library } => !tcx.visibility(owner).is_public(),\n",
+    tests: ["test/neighbours.test.ts", "-t", "#1112"],
+  },
+  {
+    name: "library-pub-rc-callers-seen",
+    breaks: "a library's `pub` generic takes its `Rc<T>` to be of what its own crate's calls give alone, though a consumer may give it a value that drops: left uncounted, the consumer's value is never dropped by the last clone (#1009, #1112)",
+    file: "src/lower/instances.rs",
+    find: "        Fact::Counted { library } => !library || !tcx.visibility(owner).is_public(),\n",
+    replace: "        Fact::Counted { library } => library || !library || !tcx.visibility(owner).is_public(),\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_rc_(of_what_its_consumer_drops|counted_through_a_traits_generic_method)$"],
+  },
 ];

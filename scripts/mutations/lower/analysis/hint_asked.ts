@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "unseen-callers-made-unmarked",
     breaks: "a library's generic function's `map` of what a consumer gives it, given on where its hint is asked, is JS's own, `(0, None)`, as the library sees none of its callers (#1240)",
     file: "src/lower/analysis/hint_asked.rs",
-    find: "crate::lower::instances::instances_of(tcx, &callers, of, owner).is_none()",
-    replace: "false",
+    find: "            let mut of_items = crate::lower::instances::instances_of(\n                tcx,\n                (&callers, crate::lower::instances::Fact::Shared),\n                of,\n                owner,\n            )\n            .is_none();\n",
+    replace: "            let mut of_items = false;\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_adapter_made_in_generic_code_asked_its_hint$"],
   },
   {

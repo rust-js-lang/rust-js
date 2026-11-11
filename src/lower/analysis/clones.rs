@@ -63,7 +63,12 @@ impl<'tcx> Cloned<'tcx> {
         if !ty.has_non_region_param() {
             return None;
         }
-        crate::lower::instances::instances_of(tcx, &self.callers, ty, tcx.typeck_root_def_id(owner))
+        crate::lower::instances::instances_of(
+            tcx,
+            (&self.callers, crate::lower::instances::Fact::Shared),
+            ty,
+            tcx.typeck_root_def_id(owner),
+        )
     }
 
     /// Whether `is` holds of `ty`, made in `owner`, as one of its

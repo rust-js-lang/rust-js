@@ -5,7 +5,7 @@
 //! (ADR 0852).
 
 use crate::collections::{IndexMap, IndexSet};
-use crate::lower::instances::{callers_of, instances_of};
+use crate::lower::instances::{Fact, callers_of, instances_of};
 use crate::lower::pointers::raw_pointee;
 use crate::lower::recognition::{
     StdItem, compares_fn_identity, is_fn_dyn, is_rc_new, is_std_crate, is_std_def, known_by_bounds, rc_pointee,
@@ -281,7 +281,12 @@ pub(super) type DropGiven<'a, 'tcx> = dyn Fn(DefId, u32, Ty<'tcx>) -> bool + 'a;
 /// `dyn Fn`s may drop, and its consumer counts what it hands (ADR 0959).
 pub(super) fn counted_rcs<'tcx>(
     tcx: TyCtxt<'tcx>,
-    (all_bodies, self_handles, cloned): (&[&Body<'tcx>], &super::SelfHandles<'tcx>, &super::clones::Cloned<'tcx>),
+    (all_bodies, self_handles, cloned, library): (
+        &[&Body<'tcx>],
+        &super::SelfHandles<'tcx>,
+        &super::clones::Cloned<'tcx>,
+        bool,
+    ),
     (params_may_drop, handed, drop_given): (bool, &[Ty<'tcx>], &DropGiven<'_, 'tcx>),
     runs: impl Fn(&Counted<'tcx>, Ty<'tcx>) -> bool,
 ) -> Counted<'tcx> {
@@ -636,7 +641,12 @@ pub(super) fn counted_rcs<'tcx>(
             let made = || {
                 let mut all = IndexSet::default();
                 for &owner in of {
-                    all.extend(instances_of(tcx, callers, pointee, owner?)?);
+                    all.extend(instances_of(
+                        tcx,
+                        (callers, Fact::Counted { library }),
+                        pointee,
+                        owner?,
+                    )?);
                 }
                 Some(all)
             };

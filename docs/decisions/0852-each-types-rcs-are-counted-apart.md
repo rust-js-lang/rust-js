@@ -416,3 +416,36 @@ not, and `counts` asks one of them for itself alone. Found by #1204's
 context rewrite `fact-rc-counts` of `dyn_fn_addresses_of_rcs.rs`. Held by
 `rc_of_functions_uncounted_beside_a_counted_one.rs` and the mutation
 `seen-uncounted-may-be-any`.
+
+## Amendment: a program's `pub` generics are called by what it sees (2026-11-12, #1112)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, Rust's behavior
+kept; a refusal beside a neighbour lifted. A `pub` function's callers, and
+a `pub` trait's method's, were taken as unseen (`Fact::Shared`'s
+`seen_whole`), so its `Rc<T>` could be any `Rc` and counted every one in
+the crate: `rc_dropped_where_callers_unseen.rs`'s `Keep::keep` made a
+neighbour's class constructor's `Rc<Self>` (#1228) an `Rc::new` of a type
+parameter a counted class may be, refused, and `untagged_ref_cells.rs` and
+`dyn_fn_addresses_of_rcs.rs` went wrong beside their neighbours the same
+way (#1060's and #1343's rows).
+
+Whether an `Rc` is counted is now its own fact, `Fact::Counted { library
+}`. Nothing compiles its own copy for it either, but what JS gives a
+program's generic drops nothing and reads no count (ADRs 0289, 0914), so
+only a consumer's call, of a library's, can give what's counted. A
+program's callers are its own calls: a `pub` function's, and a trait's
+method std or a library calls by its dictionary, `Debug::fmt` of `{:?}` or
+`Hash::hash` of a `HashSet`'s, given a type the program names where it
+makes that dictionary. A library keeps the wildcard. A stored place and a
+clone apart keep `Fact::Shared`: what JS gives them may be an object that
+counts.
+
+Tests: the neighbours net's three rows run as Rust does, off
+test/neighbours-known.txt, and are its regressions (seed 47's group 1,
+12459000's, 12460800's group 99), #1112's block gone;
+`rc_counted_where_callers_unseen.rs`'s program build counts its `Other`'s
+`Rc` no more, its snapshot blessed and its comment saying which build
+counts what; `rc_in_an_impl_std_calls.rs`, generic impls of `Debug` and
+`Hash` std calls through an `Option`, a `Vec` and a `HashSet`, whose
+`Rc<T>`s stay counted, against native Rust. Mutations
+`program-pub-rc-callers-unseen` and `library-pub-rc-callers-seen`, caught.

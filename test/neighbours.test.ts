@@ -204,6 +204,9 @@ const regressions: { seed: number; group: number; issue: string; cases: string[]
   { seed: 102, group: 1, issue: "1111", cases: ["fmt_error_as_a_value.rs", "std_inspect.rs"] },
   { seed: 145, group: 1, issue: "1111", cases: ["failing_io_writer.rs", "std_inspect.rs"] },
   { seed: 57, group: 1, issue: "1009", cases: ["eq_of_identities_inside.rs", "rc_of_param_unnamed.rs"] },
+  { seed: 47, group: 1, issue: "1112", cases: ["class_constructor_rc.rs", "rc_dropped_where_callers_unseen.rs"] },
+  { seed: 12459000, group: 74, issue: "1060", cases: ["rc_dropped_where_callers_unseen.rs", "untagged_ref_cells.rs"] },
+  { seed: 12460800, group: 99, issue: "1343", cases: ["dyn_fn_addresses_of_rcs.rs", "rc_fn_made_of_a_counted_rc.rs"] },
 ];
 
 for (const { seed, group, issue, cases } of regressions) {
