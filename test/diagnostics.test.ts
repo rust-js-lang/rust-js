@@ -248,6 +248,11 @@ for (const [name, source, message, crate] of [
   // std's `eq` of two `TrustedLen` iterators asks their lengths first; of maps held in MIR's
   // temporaries, which rust-js can't count before stepping them, refused, as their closures
   // would run where Rust's don't (ADR 0998, #386).
+  // A held filter of a `skip(1)` made in place, JS's own `drop`, which
+  // knows no hint, nor a `cycle()` of a `map()` of an array's items: each
+  // gave a wrong hint, now refused where it's asked (#1427).
+  ["size_hint of a held filter of a skip", 'pub fn f() -> (usize, Option<usize>) { let it = vec![1u8, 2, 3].into_iter().skip(1).filter(|x| *x > 1); it.size_hint() }', "which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)"],
+  ["size_hint of a held take of a cycle of a map", 'pub fn f() -> (usize, Option<usize>) { let it = vec![1u8, 2, 3].into_iter().map(|x| x + 1).cycle().take(2); it.size_hint() }', "which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)"],
   ["eq of two maps of unequal lengths", 'pub fn f(v: &[u32], w: &[u32]) -> bool { v.iter().map(|x| { println!("a"); *x }).eq(w.iter().map(|x| { println!("b"); *x })) }', "`eq` of two iterators std asks the lengths of first, whose lengths rust-js can't count before stepping them"],
   // Generic code's `eq` asks its caller whether it compares lengths first, `LengthFirst`; std of two
   // `TrustedLen` iterators does, so a caller's maps, which JS can't count, are refused, through a

@@ -245,7 +245,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => own || self.array_source(iter_ty).is_some() || self.adapted_hint_known(iter_ty),
         };
         if !known {
-            return Err(self.unsupported(span, &format!("`size_hint()` of a `{iter_ty}`, from its MIR")));
+            let why = self.hint_refused_because(iter_ty);
+            return Err(self.unsupported(span, &format!("`size_hint()` of a `{iter_ty}`, from its MIR{why}")));
         }
         // Of one given as it is, by its dictionary, which has its impl's
         // own where there's one (ADR 0411).

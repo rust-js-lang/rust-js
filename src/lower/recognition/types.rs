@@ -660,10 +660,16 @@ pub(crate) fn is_decode_utf16(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// Whether `ty` is one of std's iterators whose JS is always a `$Steps`
 /// that asks its source's hint, whatever that is, an array's `$iter`
 /// among them: `decode_utf16`'s (#1151) and `cycle()`'s, `$cycleOf`'s
-/// (#1179).
+/// (#1179); and `skip_while`'s, `take_while`'s, `map_while`'s and
+/// `scan`'s, `$lazySkipWhile`'s and the others, `(0, upper)` of its
+/// source's, as std's are, `take_while`'s `(0, Some(0))` once it's
+/// stopped (#1169).
 pub(crate) fn asks_its_sources_hint(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     is_decode_utf16(tcx, ty)
-        || matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::iter::Cycle")
+        || matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if matches!(
+            std_path(tcx, adt.did()),
+            "std::iter::Cycle" | "std::iter::SkipWhile" | "std::iter::TakeWhile" | "std::iter::MapWhile" | "std::iter::Scan"
+        ))
 }
 
 /// `char::decode_utf16`'s error, its unpaired surrogate's code (ADR 0327).

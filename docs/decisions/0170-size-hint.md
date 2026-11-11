@@ -239,3 +239,34 @@ one peeked, and a chain's and a zip's collect with its capacity.
 Mutations `once-no-array-of-items`, `once-with-hint-unkept` and
 `once-with-hint-after-stepped` are new; `once-with-calls-f-where-made` and
 `once-with-calls-f-each-step` are refitted to the new form.
+
+## Amendment: a held `skip_while`, `take_while`, `map_while`, `scan` and a dropping `filter`; adapters made in place inside another (2026-11-12, #1169, #1427)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for results. One
+refusal lifted, and two wrong answers made refusals.
+
+**Lifted (#1169).** In the build that makes adapters in place, a held
+`skip_while`, `take_while`, `map_while` or `scan` is always the runtime's
+`$Steps` (`$lazySkipWhile` and the others), and a `filter` of items with a
+destructor is `$filterDropping`'s `$Steps` filter. Each has std's hint,
+`(0, upper)` of its source's, and `take_while`'s is `(0, Some(0))` once it
+has stopped. Their `size_hint()` was refused. `asks_its_sources_hint` now
+names the four, beside `decode_utf16`'s and `cycle()`'s, and
+`adapted_hint_known` names the dropping filter, each asking its source's.
+
+**Wrong answers, now refused (#1427).** `adapted_hint_known` judged an
+adapter's sources by `held_hint_known`. That answers a `skip`, a `take`, a
+`map` or an `enumerate` as std's struct, which knows its hint. But a source
+given to an adapter the recognizers make is made in place too (ADR 0871),
+JS's own over an array's items, `xs.values().drop(1).filter(f)`, which
+keeps no hint. So a held `skip(1).filter(..)` hinted `(0, None)` where Rust
+gives `(0, Some(2))`, and a held `map(..).cycle().take(2)` hinted
+`(0, Some(2))` where Rust gives `(2, Some(2))`. Such a source is now judged
+by its own sources (`made_in_place_of`), but not a `rev()`, whose in-place
+`$rev(..)` or `$iter(xs.toReversed())` keeps its source's hint. The
+refusal says so and names #1427, which tracks making those shapes know
+their hint.
+
+Held by corpus case `held_lazy_adapters_hint.rs` against native Rust in both
+builds, `size_hint_of_adapters.rs`'s held `rev().filter(..)`, and two
+diagnostics rows; guide limitations.md.

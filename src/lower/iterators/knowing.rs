@@ -124,11 +124,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// adapters may be JS's own (#733). A flatten asked its hint is std's
     /// struct, compiled, whose hint of `[T; N]` is `N` times its source's.
     pub(in crate::lower) fn adapted_hint_known(&self, ty: ty::Ty<'tcx>) -> bool {
+        self.adapted_hint_known_of(ty, true)
+    }
+
+    /// Whether a source of type `ty` that an adapter the recognizers make
+    /// holds is made in place there, its hint its sources' by its JS form:
+    /// one of a kind std's struct is where it's held, but a `rev()`, whose
+    /// form in place, `$rev(..)` or `$iter(xs.toReversed())`, has its
+    /// source's hint whatever that source is (#1427).
+    fn made_in_place_of(&self, ty: ty::Ty<'tcx>) -> bool {
+        crate::lower::recognition::is_held_compiled(self.tcx, ty)
+            && crate::lower::recognition::reversed_source(self.tcx, ty).is_none()
+    }
+
+    /// Why `size_hint()` of a `ty` is refused, said after it: where an
+    /// adapter in it is made in place inside another, JS's own, which keeps
+    /// no hint, though held it would be std's struct, which knows it
+    /// (#1427); else nothing.
+    pub(in crate::lower) fn hint_refused_because(&self, ty: ty::Ty<'tcx>) -> &'static str {
+        let lost = (ty.peel_refs().walk().filter_map(|part| part.as_type()))
+            .any(|part| part != ty.peel_refs() && self.made_in_place_of(part) && self.held_hint_known(part));
+        match lost {
+            true => ", which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)",
+            false => "",
+        }
+    }
+
+    /// `adapted_hint_known`'s, of `ty`, the outermost of what's asked, or
+    /// what an adapter the recognizers make holds. That is made in place
+    /// too, given to a std method not compiled (ADR 0871): of a kind std's
+    /// struct is where it's held, a `skip(1)` of a `filter`'s, JS's own,
+    /// `xs.values().drop(1)`, which knows no hint, never std's struct, whose
+    /// hint `struct_hint_known` knows (`made_in_place_of`). It gave `(0,
+    /// None)` where Rust gives `(0, Some(2))` (#1427).
+    fn adapted_hint_known_of(&self, ty: ty::Ty<'tcx>, outermost: bool) -> bool {
         let ty = ty.peel_refs();
         if self.array_source(ty).is_some() {
             return false;
         }
-        if self.held_hint_known(ty) {
+        let in_place = !outermost && self.made_in_place_of(ty);
+        if !in_place && self.held_hint_known(ty) {
             return true;
         }
         // Not of a type parameter's, which its caller may give as JS's own
@@ -136,11 +171,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `char::decode_utf16`'s and `cycle()`'s, always a `$Steps` that
         // asks its source's hint, an array's `$iter`'s among them (#1151,
         // #1179).
-        let decodes = crate::lower::recognition::asks_its_sources_hint(self.tcx, ty);
+        // And a `filter` of items with a destructor, `$filterDropping`'s, a
+        // `$Steps` filter, whose hint is `(0, upper)` of its source's, as
+        // std's `Filter`'s is (#1169).
+        let dropping_filter = || {
+            crate::lower::recognition::filtered_source(self.tcx, ty).is_some()
+                && (self.iterator_item(ty)).is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing)
+        };
+        let decodes = crate::lower::recognition::asks_its_sources_hint(self.tcx, ty) || dropping_filter();
         crate::lower::recognition::adapted_iterators(self.tcx, self.typing_env, ty).is_some_and(|held| {
             (held.into_iter()).all(|held| {
+                // Of one that asks its source's hint, a source of a kind
+                // std's struct is where it's held is made in place too,
+                // judged as one is.
+                let in_place = self.made_in_place_of(held.peel_refs());
                 !self.is_unknown(held.peel_refs())
-                    && (self.adapted_hint_known(held) || decodes && self.held_hint_known(held))
+                    && (self.adapted_hint_known_of(held, false) || decodes && !in_place && self.held_hint_known(held))
             })
         })
     }

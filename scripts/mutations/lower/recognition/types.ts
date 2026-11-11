@@ -373,8 +373,8 @@ export const mutations: Mutation[] = [
     name: "cycle-hint-unasked",
     breaks: "a `cycle()` of an array's items isn't seen to ask its source's hint, so its `size_hint()` is refused (#1179)",
     file: "src/lower/recognition/types.rs",
-    find: "        || matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == \"std::iter::Cycle\")\n",
-    replace: "",
+    find: "            \"std::iter::Cycle\" | \"std::iter::SkipWhile\"",
+    replace: "            \"std::iter::SkipWhile\"",
     tests: ["test/corpus.test.ts", "-t", "^cycle_size_hint.rs$"],
   },
   {
@@ -427,5 +427,13 @@ export const mutations: Mutation[] = [
     find: ".iter().chain(incoherent))",
     replace: ".iter().chain(incoherent.iter().take(0)))",
     tests: ["test/corpus.test.ts", "-t", "^io_error_drops_what_it_holds.rs$"],
+  },
+  {
+    name: "lazy-adapters-hintless",
+    breaks: "`size_hint()` of a held `skip_while`, `take_while`, `map_while` or `scan`, the runtime's `$Steps`, is refused (#1169)",
+    file: "src/lower/recognition/types.rs",
+    find: "            \"std::iter::Cycle\" | \"std::iter::SkipWhile\" | \"std::iter::TakeWhile\" | \"std::iter::MapWhile\" | \"std::iter::Scan\"\n",
+    replace: "            \"std::iter::Cycle\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_lazy_adapters_hint.rs$"],
   },
 ];
