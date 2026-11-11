@@ -369,3 +369,24 @@ alone makes seed 19 fail in both builds, and the widened net fails 8 of
 the slice's 24 seeds in both (1, 7, 11, 12, 14, 15, 16 and 20), first by
 `overlaps/swap`, `replace`, `swap-nonoverlapping`, `copy-whole` and
 `arith/swap-overlapping-array`; restored, it passes.
+
+**Custom MIR's local used before it's written whole is refused**
+(2026-11-11, #1382). Rustlantis's programs, run through rust-js against
+native wasm32 (m3-max's experiment), write a part of a local nothing
+wrote whole, `_5.1 = ..` before any `_5 = ..`, take a pointer to one,
+`&raw mut _1`, and read one past its storage's end, none of which Rust
+writes (rustc refuses each, E0381): a local is declared where it's
+written whole, so its JS read a name it never declared, a
+`ReferenceError`, about 240 of the 299 small programs' throws. Each body
+written in custom MIR, rustc's `injection_phase`, is checked before it's
+lowered (`mir/partly_written.rs`); Rust's own aren't, which E0381 holds,
+and whose MIR rust-js rewrites, where a local may be written by its
+parts (asked of every body, the corpus and the crate pairs were refused): a
+forward walk of the locals every path wrote whole, a parameter from the
+start, a `()` or another type of one value never asked, a `drop`, which
+drop elaboration flags, no use; a use before is refused, "a use of a
+local before any write of it whole", naming E0381 and #1382. Of 300 small
+seeds, 112 such programs are refused and the 133 that ran as native
+Rust still do; the throws left are #1381's and the wrong answers #1380's.
+Case D ([0262](0262-when-rust-and-js-disagree.md)): what JS can't hold
+as Rust's, refused.

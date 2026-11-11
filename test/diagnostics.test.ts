@@ -517,3 +517,58 @@ test("a library's copied default moving part of its items compiles, as a generic
   const errors = out.stderr.split("\n").filter((line) => line.startsWith("error: rust-js"));
   expect([out.code === 0, errors], out.stderr).toEqual([true, []]);
 });
+
+// Custom MIR (`#![feature(custom_mir)]`, Rustlantis's programs) may use a
+// local before any write of it whole, which Rust refuses (E0381): a write
+// of a part of it, `_2.1 = ..`, or a pointer to it, `&raw mut _1`. Its JS
+// read a name it never declared; it's refused (#1382), and so is a read
+// past its storage's end. One written whole first, then a part, compiles
+// and runs, a parameter written as the body starts, and a `()` read before
+// any write, which no write changes.
+const customMir = (body: string, ret = "i32") => `#![feature(custom_mir, core_intrinsics)]
+#![allow(internal_features)]
+use core::intrinsics::mir::*;
+#[custom_mir(dialect = "runtime", phase = "initial")]
+pub fn f(x: i32) -> ${ret} {
+    mir! {
+        let _2: (i32, i32);
+        let _3: i32;
+        let _4: *mut i32;
+        let _5: ();
+        let _6: ();
+        {
+${body}
+            Return()
+        }
+    }
+}
+pub fn main() {
+    println!("{:?}", f(5));
+}
+`;
+for (const [name, body] of [
+  ["a part written first", "            _2.1 = x;\n            RET = x;"],
+  ["a pointer to what nothing wrote", "            _4 = &raw mut _3;\n            (*_4) = x;\n            RET = _3;"],
+  ["a read past its storage's end", "            _3 = x;\n            StorageDead(_3);\n            RET = _3;"],
+]) {
+  test(`custom MIR's use of a local before any write of it whole is refused: ${name}`, () => {
+    const dir = fixture("custom-mir-unwritten");
+    const input = join(dir, "lib.rs");
+    writeFileSync(input, customMir(body));
+    const compiled = Bun.spawnSync([compiler, input, "-o", join(dir, "lib.js")], { env: { ...process.env, RUSTC_BOOTSTRAP: "1" } });
+    expect(compiled.exitCode).not.toBe(0);
+    expect(compiled.stderr.toString()).toContain(
+      "rust-js does not support a use of a local before any write of it whole yet: only custom MIR writes it, as Rust refuses it (E0381), and its JS would read a name it never declared (#1382)",
+    );
+    expect(compiled.stderr.toString()).toContain("lib.rs:");
+  });
+}
+
+test("custom MIR that writes a local whole before a part of it compiles and runs", () => {
+  const dir = fixture("custom-mir-written");
+  const input = join(dir, "lib.rs");
+  writeFileSync(input, customMir("            _6 = _5;\n            _2 = (1_i32, 2_i32);\n            _2.1 = x;\n            RET = _2;", "(i32, i32)"));
+  run([compiler, input, "-o", join(dir, "lib.js")], 120_000, { RUSTC_BOOTSTRAP: "1" });
+  const ran = Bun.spawnSync(["node", "--input-type=module", "-e", `const m = await import(${JSON.stringify(join(dir, "lib.js"))}); m.main();`]);
+  expect(ran.stdout.toString()).toBe("(1, 5)\n");
+});

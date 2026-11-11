@@ -37,6 +37,7 @@ mod nested_options;
 mod nulled;
 mod offsets;
 mod operands;
+mod partly_written;
 mod patterns;
 mod places;
 mod positions;
@@ -819,6 +820,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         captures: Option<Vec<(Expr, bool)>>,
         seed: local_facts::Seeds,
     ) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
+        // Custom MIR's use of a local no path wrote whole, which Rust
+        // refuses (#1382).
+        if let Some(span) = partly_written::partly_written(&mir.body, |ty| self.has_one_value(ty)) {
+            let why = "only custom MIR writes it, as Rust refuses it (E0381), and its JS would read a name it never declared (#1382)";
+            return Err(super::refusal::refuse(
+                self.tcx,
+                span,
+                super::refusal::Refused::Because("a use of a local before any write of it whole", why),
+            ));
+        }
         // Its dictionaries of types known whole, each written twice
         // declared once at its top (ADR 0979); the enclosing body's back
         // after.
