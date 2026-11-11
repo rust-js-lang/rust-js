@@ -412,4 +412,14 @@ export const mutations: Mutation[] = [
     replace: "    imp.is_local() || (foreign.is_instance(imp) && false)\n",
     tests: ["test/crates.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
   },
+  {
+    name: "index-bound-of-a-known-type-given",
+    breaks:
+      "a bound `Vec<T>: Index<usize, Output = T>`, whose `items[1]` is std's in place, takes a dictionary nothing reads, `second(items, VecIndexUsize)`, its callers making one (#1420)",
+    file: "src/lower/traits.rs",
+    find: "    if tcx.is_lang_item(tr.def_id, LangItem::Index) && !super::recognition::indexes_by_dictionary(tcx, tr) {\n",
+    replace: "    if false && tcx.is_lang_item(tr.def_id, LangItem::Index) && !super::recognition::indexes_by_dictionary(tcx, tr) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^index_bound_generic.rs$"],
+    snapshots: true,
+  },
 ];

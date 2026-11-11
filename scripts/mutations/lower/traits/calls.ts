@@ -580,4 +580,13 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(Some(called));\n        }\n        Ok(None)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_write_tested_where_writes_fail.rs$"],
   },
+  {
+    name: "index-of-a-known-type-not-in-place",
+    breaks:
+      "`v[i]` of a type known here goes through a dictionary of std's `Index`, so `&words[..]`, an array's `Index<RangeFull>`, is refused where it's std's slice, in place (#1420)",
+    file: "src/lower/traits/calls.rs",
+    find: "            && !crate::lower::recognition::indexes_by_dictionary(self.tcx, tr)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^index_through_a_generic_bound.rs$"],
+  },
 ];

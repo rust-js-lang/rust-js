@@ -660,6 +660,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(None);
         }
+        // `v[i]` of a type known here, generic code's `Vec<T>` too, is std's,
+        // written in place; a dictionary's is of a type only bounds know,
+        // `&self.slice[i]` of rand's `S: Index<usize>` (#1420).
+        if self.tcx.is_lang_item(trait_id, LangItem::Index)
+            && !crate::lower::recognition::indexes_by_dictionary(self.tcx, tr)
+        {
+            return Ok(None);
+        }
         // Not an `IntoIterator` whose `IntoIter` is held as it is, its
         // dictionary's (ADR 0552).
         if std_written_in_place(self.tcx, trait_id, tr.self_ty(), known_here) && !self.holds_into_iter(tr.self_ty()) {

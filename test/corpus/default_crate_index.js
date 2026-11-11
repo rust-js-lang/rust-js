@@ -6,6 +6,8 @@ export function entry() {
   main();
 }
 
+export const tSliceIndexId = { index: tSliceIndexId_index };
+
 function tSliceIndexId_index(self, index) {
   return $index(self, index[0]);
 }

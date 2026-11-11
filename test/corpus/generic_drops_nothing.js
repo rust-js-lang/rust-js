@@ -2,6 +2,7 @@
 
 import {
   $cleanup,
+  $dropItems,
   $live,
   $mutAt,
   $ptr,
@@ -9,6 +10,7 @@ import {
   $setLen,
   $sliceIndexes,
   $swap,
+  $traitImpl,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -40,6 +42,21 @@ function takeLast(v) {
   return $ptrAdd($ptr(v, 0), len - 1).value;
 }
 
+const $wrapIndexI = new WeakMap();
+
+export function wrapIndexI(ISliceIndexTSlice, dropT, dropI) {
+  return $traitImpl($wrapIndexI, [ISliceIndexTSlice, dropT, dropI], () => ({
+    index(arg0, arg1) {
+      return wrapIndexI_index(arg0, arg1, ISliceIndexTSlice, dropT, dropI);
+    },
+    $drop(wrap) {
+      $dropItems(wrap[0], (item) => {
+        dropT?.(item);
+      });
+    },
+    $dropOutput: ISliceIndexTSlice.$dropOutput,
+  }));
+}
 function wrapIndexI_index(wrap, index, ISliceIndexTSlice, dropT, dropI) {
   return ISliceIndexTSlice.index(index, wrap[0]);
 }

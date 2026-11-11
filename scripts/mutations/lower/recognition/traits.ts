@@ -627,4 +627,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^debug_of_adapters_compiled_as_their_meaning.rs$"],
     snapshots: true,
   },
+  {
+    name: "index-not-operational",
+    breaks:
+      "`&self.slice[i]` of an `S: Index<usize>`, rand's `SliceChooseIter`, is refused, \"calling `std::ops::Index::index`\", where its dictionary's `index` gives the item (#1420)",
+    file: "src/lower/recognition/traits.rs",
+    find: "        || tcx.is_lang_item(id, LangItem::Index)\n",
+    replace: "        || false\n",
+    tests: ["test/corpus.test.ts", "-t", "^index_through_a_generic_bound.rs$"],
+  },
+  {
+    name: "index-of-a-known-type-by-dictionary",
+    breaks:
+      "`v[i]` of a type known where it's written is taken for a dictionary's, so `&words[..]` asks evidence of an array's `Index<RangeFull>` and is refused, and a bound `Vec<T>: Index<usize>` takes a dictionary nothing reads (#1420)",
+    file: "src/lower/recognition/traits.rs",
+    find: "    tcx.is_lang_item(tr.def_id, LangItem::Index) && super::known_by_bounds(tr.self_ty().peel_refs())\n",
+    replace: "    tcx.is_lang_item(tr.def_id, LangItem::Index)\n",
+    tests: ["test/corpus.test.ts", "-t", "^index_through_a_generic_bound.rs$"],
+  },
 ];

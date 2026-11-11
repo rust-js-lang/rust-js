@@ -6,6 +6,7 @@ export function entry() {
   main();
 }
 
+export const gridIndexUsize = { index: gridIndexUsize_index };
 function gridIndexUsize_index(grid, i) {
   return $index(grid[0], i);
 }

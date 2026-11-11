@@ -639,6 +639,11 @@ export function demo() {
 
 - A type parameter with no bound costs nothing: `push` is `push`.
 - A bound is a dictionary argument, `TDisplay`, as for a trait above.
+  An operator's too: `&s[i]` of an `S: Index<usize>` is
+  `SIndexUsize.index(s, i)`, std's of a slice, an array, a `Vec` or a
+  `VecDeque` checked as `v[i]` is; `v[i]` of a type known where it's
+  written, a `Vec<T>` too, is std's, in place, and its bound takes none
+  ([ADR 0418, amended](../../decisions/0418-a-generic-slice-index-is-a-dictionary.md#amendment-an-s-indexusize-is-its-dictionarys-1420)).
 - An `Option<&T>` of a generic `T` is `$someAt`: `T` could itself be an
   `Option`, and `Some(None)` must stay apart from `None` ([ADR 0051](../../decisions/0051-generic-options.md)).
 

@@ -57,3 +57,39 @@ smallIndexI_index(s, { start: 1, end: 3 }, $sliceIndexes.range);
   native Rust does.
 - **One dictionary for each kind, the runtime's**: a call names it,
   `$sliceIndexes.from`, not a function made for it.
+
+## Amendment: an `S: Index<usize>` is its dictionary's (#1420)
+
+rand 0.7.3's `SliceChooseIter` holds `slice: &'a S` of an
+`S: Index<usize> + ?Sized` and gives `&self.slice[i]`: refused, "calling
+`std::ops::Index::index`", as `Index` wasn't among the traits called
+through a dictionary (`recognition::operational`), the crate's own impl's
+either. So rand, and quickcheck and itertools' 284 quickcheck tests with it.
+
+`Index` is now one of them, as `Add` is (ADR 0108): `&s[i]` of a type
+only bounds know is `SIndexUsize.index(s, i)`, and a bound on one takes
+its dictionary. The crate's impl's dictionary is its impl's, exported as
+any operator impl's is (the coordinator's decision for the user,
+2026-11-12: no rule of `Index`'s own), and std's of a slice, an array, a
+`Vec` or a `VecDeque` is `{ index: (items, i) => $index(items, i) }`,
+each checked as `v[i]` is, std's panic its message. Of a type known where
+it's written, generic code's `Vec<T>` too, `v[i]` stays std's, in place,
+and a bound on one, `where Vec<T>: Index<usize, Output = T>`, takes none:
+`recognition::indexes_by_dictionary` is the one answer of both. A type
+parameter's index stays `SliceIndex`'s, above.
+
+Each crate's `impl Index` now exports its dictionary, one line, `export
+const gridIndexUsize = { index: gridIndexUsize_index };`, or a generic
+one's `$traitImpl` factory: six corpus snapshots and the queues example gain it, read before
+they were blessed; nothing else changed.
+
+Held by the corpus case `index_through_a_generic_bound` against native
+Rust in both builds (a slice, an array, a `Vec` of numbers, of strings and
+of structs, a `VecDeque`, the crate's own impl, and each kind of panic),
+and the mutations `index-not-operational`,
+`index-of-a-known-type-by-dictionary` (`lower/recognition/traits.ts`),
+`index-of-a-known-type-not-in-place` (`lower/traits/calls.ts`),
+`index-bound-of-a-known-type-given` (`lower/traits.ts`),
+`std-index-dictionary-missing` and `std-index-dictionary-unchecked`
+(`lower/traits/dictionaries.ts`).
+

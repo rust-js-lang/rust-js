@@ -30,6 +30,7 @@ function both(location) {
   return [location.line, inner()];
 }
 
+export const gridIndexUsize = { index: gridIndexUsize_index };
 function gridIndexUsize_index(grid, i) {
   return $index(grid[0], i);
 }

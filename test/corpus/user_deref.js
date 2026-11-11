@@ -34,6 +34,8 @@ function outerDeref_deref(outer) {
   return outer[0];
 }
 
+export const gridIndex_usize__usize_ = { index: gridIndex_usize__usize__index };
+
 function gridIndex_usize__usize__index(grid, [row, col]) {
   return $index(grid.cells, ((Math.imul(row, grid.width) >>> 0) + col) >>> 0);
 }

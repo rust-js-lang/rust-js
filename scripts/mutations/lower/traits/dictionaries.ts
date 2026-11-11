@@ -777,4 +777,22 @@ export const mutations: Mutation[] = [
     replace: "                        if false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^(mut_ref_given_for_a_bound|io_cursor).rs$"],
   },
+  {
+    name: "std-index-dictionary-missing",
+    breaks:
+      "std's `Index<usize>` of a slice, an array, a `Vec` or a `VecDeque` given to an `S: Index<usize>` has no dictionary, \"implementation evidence\", refused (#1420)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            && (ty.is_slice() || ty.is_array() || self.is_vec_like(ty))\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^index_through_a_generic_bound.rs$"],
+  },
+  {
+    name: "std-index-dictionary-unchecked",
+    breaks:
+      "std's `Index<usize>` dictionary reads `items[i]` unchecked, so an index past the end gives `undefined` where Rust panics, \"index out of bounds: the len is 3 but the index is 5\" (#1420)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            let item = self.index_checked(Expr::var(\"items\"), Expr::var(\"i\"), ty);\n",
+    replace: "            let item = Expr::index(Expr::var(\"items\"), Expr::var(\"i\"));\n",
+    tests: ["test/corpus.test.ts", "-t", "^index_through_a_generic_bound.rs$"],
+  },
 ];

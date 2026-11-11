@@ -357,6 +357,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(dictionary);
         }
+        // std's `Index<usize>` of a slice, an array or a `Vec`, `{ index(items,
+        // i) }`: its item, checked as `v[i]` is, rand's `SliceChooseIter` of an
+        // `S: Index<usize>` (#1420).
+        if self.tcx.is_lang_item(tr.def_id, LangItem::Index)
+            && !self.has_user_impl(tr.def_id, ty)
+            && tr.args.type_at(1).is_usize()
+            && (ty.is_slice() || ty.is_array() || self.is_vec_like(ty))
+        {
+            let item = self.index_checked(Expr::var("items"), Expr::var("i"), ty);
+            let index = Expr::arrow(
+                vec!["items".into(), "i".into()],
+                vec![StmtKind::Return(Some(item)).at(js::Span::NONE)],
+            );
+            return Ok(Expr::object(vec![Prop::Field("index".into(), index)]));
+        }
         // `usize`'s or a range's `SliceIndex` of a slice (ADR 0418): the
         // runtime's, of each kind, `$sliceIndexes.range`.
         if is_std_def(self.tcx, tr.def_id, StdItem::SliceIndex) {

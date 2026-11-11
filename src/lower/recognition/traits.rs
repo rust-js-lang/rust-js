@@ -388,6 +388,9 @@ pub(in crate::lower) fn operational(
         || is_std_def(tcx, id, StdItem::RangeBounds)
         // `v[i]` of an `I: SliceIndex<[T]>`: its dictionary's (ADR 0418).
         || is_std_def(tcx, id, StdItem::SliceIndex)
+        // `&s[i]` of an `S: Index<usize>`, rand's `SliceChooseIter`: its
+        // dictionary's `index` (#1420).
+        || tcx.is_lang_item(id, LangItem::Index)
         // `&*p` of a `P: Deref`: its dictionary's `deref` (ADR 0394), and
         // `&mut *p` of a `P: DerefMut` its `deref_mut`.
         || tcx.is_lang_item(id, LangItem::Deref)
@@ -562,6 +565,15 @@ pub(in crate::lower) fn assign_operator(tcx: TyCtxt<'_>, id: DefId) -> Option<Bi
     ]
     .into_iter()
     .find_map(|(item, op)| tcx.is_lang_item(id, item).then_some(op))
+}
+
+/// Whether `tr`, an `Index` of a type only bounds know, rand's `S:
+/// Index<usize>`, is its dictionary's, `SIndexUsize.index(s, i)`: as a bound
+/// it takes one, and its call is through it (#1420). Of a type known where
+/// it's written, generic code's `Vec<T>` too, `v[i]` is std's, in place,
+/// and a bound on it takes none.
+pub(in crate::lower) fn indexes_by_dictionary(tcx: TyCtxt<'_>, tr: ty::TraitRef<'_>) -> bool {
+    tcx.is_lang_item(tr.def_id, LangItem::Index) && super::known_by_bounds(tr.self_ty().peel_refs())
 }
 
 /// An operator's trait, which the crate may implement: a value's, `a + b`,

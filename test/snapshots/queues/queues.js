@@ -46,6 +46,7 @@ export const Stack = {
   },
 };
 
+export const gridIndex_usize__usize_ = { index: gridIndex_usize__usize__index };
 function gridIndex_usize__usize__index(grid, [r, c]) {
   return $index(grid.cells, ((Math.imul(r, grid.w) >>> 0) + c) >>> 0);
 }

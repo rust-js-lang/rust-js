@@ -288,6 +288,11 @@ fn bound_of<'tcx>(
     if let Some(slice_index) = super::recognition::index_by_slice_index(tcx, tr) {
         tr = slice_index;
     }
+    // `Vec<T>: Index<usize>`, of a type known here, takes none: its `v[i]`
+    // is std's, in place; `S: Index<usize>` its dictionary (#1420).
+    if tcx.is_lang_item(tr.def_id, LangItem::Index) && !super::recognition::indexes_by_dictionary(tcx, tr) {
+        return None;
+    }
     // `Eq` promises more than `PartialEq`, but it's `PartialEq`'s `eq`
     // that's called.
     if is_std_def(tcx, tr.def_id, StdItem::Eq) {
