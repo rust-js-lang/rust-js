@@ -161,8 +161,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     let value = match values.next().expect("an argument") {
                         // A `&dyn Debug`, shown as what it's made of is.
-                        Value::Fmt(Std::FmtDebug, made, value) if known == Std::FmtDebug => {
-                            return Ok(Value::Fmt(known, made, value));
+                        Value::DynDebug(from, _, value) if known == Std::FmtDebug => {
+                            return Ok(Value::Fmt(known, this.pointee(from), value));
                         }
                         value => this.value_expr(value, span)?,
                     };

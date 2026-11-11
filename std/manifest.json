@@ -13544,6 +13544,8 @@
     "writes_may_fail": false,
     "writers_take_options": true,
     "debug_hex": false,
+    "dyn_debug_pretty": false,
+    "dyn_debug_hex": false,
     "makes_dropping_anys": false,
     "makes_dropping_fn_dyns": false
   },

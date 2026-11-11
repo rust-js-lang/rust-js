@@ -383,8 +383,8 @@ export const mutations: Mutation[] = [
     name: "dyn-display-refused",
     breaks: "a `dyn Display` isn't a pair, and is refused",
     file: "src/lower/recognition/traits.rs",
-    find: "            StdItem::Display,\n            StdItem::ToString,\n",
-    replace: "            StdItem::ToString,\n",
+    find: "            StdItem::Display,\n            // A `dyn Debug` stored",
+    replace: "            // A `dyn Debug` stored",
     tests: ["test/corpus.test.ts", "-t", "dyn_display"],
   },
   {

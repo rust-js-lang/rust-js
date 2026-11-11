@@ -42,14 +42,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "mir-pretty-dyn-debug-plain",
-    breaks: "MIR's `{:#?}` of a `&dyn Debug` made elsewhere shows it plain",
-    file: "src/lower/mir/std_calls/fmt_parts.rs",
-    find: "                    if spec.alternate && kind == Std::FmtDebug && self.is_dyn_debug(ty) {\n",
-    replace: "                    if false {\n",
-    tests: ["test/lowering.test.ts", "-t", "MIR refuses .....? of a kept"],
-  },
-  {
     name: "formatting-runs-nothing",
     breaks:
       "a `Debug` of the crate's isn't taken to run code, so an argument after it is made after it runs",

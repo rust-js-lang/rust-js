@@ -1602,6 +1602,12 @@ What JS sees of a crate:
 - **A generic function takes its trait dictionaries after its arguments,**
   `show(t, pointDisplay)`; a `dyn Trait` is `{ value, impl }`
   ([0049](../decisions/0049-traits-and-generics.md)).
+- **A `dyn Debug` stored or passed is `{ value, impl }` too,** shown as
+  `d.impl.fmt(d.value)`, or `d.impl.fmt(d.value, { alternate: true })` for
+  `{:#?}`, so its `fmt` runs each time it's shown, as Rust's does. One
+  shown right where it's made, a placeholder's `&x as &dyn Debug`, a
+  builder's `.field(..)` or a derived `Debug`'s fields, is the string it
+  shows ([0060, amended](../decisions/0060-debug.md#amendment-a-dyn-debug-stored-or-passed-is-a-pair-1335)).
 - **Values are the shapes above:** a struct an object literal, a `u64` a
   BigInt, `None` `undefined` or `null`, a `&mut` to a number `{ value }`, a
   closure a function, an `async fn`'s result a `Promise`.

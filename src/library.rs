@@ -368,6 +368,13 @@ pub struct Library {
     /// that don't (ADR 0914, amended; #1026).
     #[serde(default)]
     pub debug_hex: bool,
+    /// Whether it, or a library it uses, shows a `dyn Debug` it's given
+    /// pretty, `{:#?}`, and in hex, `{:x?}`: a consumer's writer of a type
+    /// it makes a `dyn Debug` then takes those options (#1335).
+    #[serde(default)]
+    pub dyn_debug_pretty: bool,
+    #[serde(default)]
+    pub dyn_debug_hex: bool,
     /// The keys of its functions that read a `Formatter`'s options, which
     /// a consumer whose writers take more than its own compiles its own of
     /// (ADR 0914, amended; #1026).
@@ -682,6 +689,10 @@ pub struct Exports {
     pub writes_may_fail: bool,
     pub writers_take_options: bool,
     pub debug_hex: bool,
+    /// Whether it, or a library it uses, shows a `dyn Debug` it's given
+    /// pretty and in hex (#1335).
+    pub dyn_debug_pretty: bool,
+    pub dyn_debug_hex: bool,
     /// Its functions that read a `Formatter`'s options, by key (#1026).
     pub reads_formatter_options: IndexSet<String>,
     /// Its functions whose JS may merge what Rust keeps apart, by key (#1052).
@@ -787,6 +798,8 @@ impl Exports {
             writes_may_fail,
             writers_take_options,
             debug_hex,
+            dyn_debug_pretty,
+            dyn_debug_hex,
             reads_formatter_options,
             merges_identities,
             makes_dropping_anys,
@@ -820,6 +833,8 @@ impl Exports {
             writes_may_fail,
             writers_take_options,
             debug_hex,
+            dyn_debug_pretty,
+            dyn_debug_hex,
             reads_formatter_options: reads_formatter_options.into_iter().collect(),
             merges_identities: merges_identities.into_iter().collect(),
             makes_dropping_anys,

@@ -20,6 +20,7 @@ pub(in crate::lower) fn exports<'tcx>(
         // What each type parameter is asked, `type_params`'s.
         drop_params: _,
         shown_params: _,
+        dyn_debug_shown,
         no_drops: _,
         type_facts: _,
         // `associated`'s.
@@ -180,6 +181,8 @@ pub(in crate::lower) fn exports<'tcx>(
         writes_may_fail: *writes_may_fail,
         writers_take_options: *writers_take_options,
         debug_hex: *debug_hex,
+        dyn_debug_pretty: dyn_debug_shown.pretty,
+        dyn_debug_hex: dyn_debug_shown.hex,
         reads_formatter_options: sorted_keys(tcx, reads_formatter_options.iter()),
         // Its own: what it compiles of another library's is that one's.
         merges_identities: sorted_keys(tcx, merges_identities.iter().filter(|id| id.is_local())),

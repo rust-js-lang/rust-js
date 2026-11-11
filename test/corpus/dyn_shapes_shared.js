@@ -69,7 +69,7 @@ function biggest(xs, TShape) {
   return xs.map((s) => TShape.area(s)).reduce($f64Max, 0);
 }
 function show(s) {
-  return `<${s}>`;
+  return `<${s.impl.fmt(s.value)}>`;
 }
 function main() {
   const value = [2];
@@ -78,432 +78,226 @@ function main() {
     { value: [1], impl: ciShape, strong: 1, weak: 0 },
     { value: [1.5], impl: sqShape, strong: 1, weak: 0 },
   ];
-  let sorted;
   try {
-    sorted = shapes.map((item) => $rcClone(item));
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    $sortStable(
-      sorted,
-      (a, b) => $unwrap($partialCmp(a.impl.area(a.value), b.impl.area(b.value))) < 0,
-      "general8",
-      8,
-    );
-  } catch (error) {
-    $cleanup(() => {
-      for (const item$1 of sorted) {
-        $rcDrop(item$1);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    console.log(
-      `[${sorted
-        .map((s) => [s.impl.kind(s.value), s.impl.area(s.value)])
-        .map((item) => `(${$debugStr(item[0])}, ${$debugF64(item[1])})`)
-        .join(", ")}]`,
-    );
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  let scaled;
-  try {
-    scaled = shapes.map((s) => s.impl.scale(s.value, 2));
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    console.log(`[${scaled.map((item) => item.impl.Debug().fmt(item.value)).join(", ")}]`);
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  let refs;
-  try {
-    refs = scaled.slice();
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    console.log(
-      `${$displayF64(
-        biggest(refs, {
-          Debug: () => ({ fmt: (value) => value.impl.Debug().fmt(value.value) }),
-          area: (object) => object.impl.area(object.value),
-          scale: (object, arg1) => object.impl.scale(object.value, arg1),
-          kind: (object) => object.impl.kind(object.value),
-        }),
-      )}`,
-    );
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  let twice;
-  try {
-    twice = sqShape.twice([3]);
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  let shown;
-  try {
-    shown = $index(shapes, 1);
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    console.log(`${$displayF64(twice)} ${show(shown.impl.Debug().fmt(shown.value))}`);
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  let byKind;
-  try {
-    byKind = new Map();
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  let iter;
-  try {
-    iter = $iter(shapes);
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of byKind.values()) {
-        for (const item$1 of item) {
-          $rcDrop(item$1);
-        }
-      }
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  while (true) {
-    let s;
+    const sorted = shapes.map((item) => $rcClone(item));
     try {
-      s = $next(iter);
-    } catch (error) {
-      $cleanup(() => {
-        for (const item of byKind.values()) {
-          for (const item$1 of item) {
-            $rcDrop(item$1);
+      $sortStable(
+        sorted,
+        (a, b) => $unwrap($partialCmp(a.impl.area(a.value), b.impl.area(b.value))) < 0,
+        "general8",
+        8,
+      );
+      console.log(
+        `[${sorted
+          .map((s) => [s.impl.kind(s.value), s.impl.area(s.value)])
+          .map((item) => `(${$debugStr(item[0])}, ${$debugF64(item[1])})`)
+          .join(", ")}]`,
+      );
+      const scaled = shapes.map((s) => s.impl.scale(s.value, 2));
+      console.log(`[${scaled.map((item) => item.impl.Debug().fmt(item.value)).join(", ")}]`);
+      const refs = scaled.slice();
+      console.log(
+        `${$displayF64(
+          biggest(refs, {
+            Debug: () => ({ fmt: (value) => value.impl.Debug().fmt(value.value) }),
+            area: (object) => object.impl.area(object.value),
+            scale: (object, arg1) => object.impl.scale(object.value, arg1),
+            kind: (object) => object.impl.kind(object.value),
+          }),
+        )}`,
+      );
+      const twice = sqShape.twice([3]);
+      const shown = $index(shapes, 1);
+      console.log(
+        `${$displayF64(twice)} ${show({ value: shown.value, impl: shown.impl.Debug() })}`,
+      );
+      const byKind = new Map();
+      let iter;
+      try {
+        iter = $iter(shapes);
+      } catch (error) {
+        $cleanup(() => {
+          for (const item of byKind.values()) {
+            for (const item$1 of item) {
+              $rcDrop(item$1);
+            }
           }
+        }, error);
+        throw error;
+      }
+      while (true) {
+        let s;
+        try {
+          s = $next(iter);
+        } catch (error) {
+          $cleanup(() => {
+            for (const item of byKind.values()) {
+              for (const item$1 of item) {
+                $rcDrop(item$1);
+              }
+            }
+          }, error);
+          throw error;
         }
-        for (const item of sorted) {
-          $rcDrop(item);
+        if (s == null) {
+          break;
         }
-        for (const item of shapes) {
-          $rcDrop(item);
+        let key;
+        try {
+          key = s.impl.kind(s.value);
+        } catch (error) {
+          $cleanup(() => {
+            for (const item of byKind.values()) {
+              for (const item$1 of item) {
+                $rcDrop(item$1);
+              }
+            }
+          }, error);
+          throw error;
         }
-      }, error);
-      throw error;
-    }
-    if (s == null) {
-      break;
-    }
-    let key;
-    try {
-      key = s.impl.kind(s.value);
-    } catch (error) {
-      $cleanup(() => {
-        for (const item of byKind.values()) {
-          for (const item$1 of item) {
-            $rcDrop(item$1);
+        let tmp;
+        try {
+          tmp = $orInsertWith(byKind, key, () => []);
+        } catch (error) {
+          $cleanup(() => {
+            for (const item of byKind.values()) {
+              for (const item$1 of item) {
+                $rcDrop(item$1);
+              }
+            }
+          }, error);
+          throw error;
+        }
+        let tmp$1;
+        try {
+          tmp$1 = $rcClone(s);
+        } catch (error) {
+          $cleanup(() => {
+            for (const item of byKind.values()) {
+              for (const item$1 of item) {
+                $rcDrop(item$1);
+              }
+            }
+          }, error);
+          throw error;
+        }
+        try {
+          tmp.push(tmp$1);
+        } catch (error) {
+          $cleanup(() => {
+            for (const item of byKind.values()) {
+              for (const item$1 of item) {
+                $rcDrop(item$1);
+              }
+            }
+          }, error);
+          throw error;
+        }
+      }
+      let keys;
+      try {
+        keys = Array.from(byKind).map(([k, v]) => [k, v.length, $index(v, 0).strong]);
+      } catch (error) {
+        $cleanup(() => {
+          for (const item of byKind.values()) {
+            for (const item$1 of item) {
+              $rcDrop(item$1);
+            }
           }
-        }
-        for (const item of sorted) {
-          $rcDrop(item);
-        }
-        for (const item of shapes) {
-          $rcDrop(item);
-        }
-      }, error);
-      throw error;
-    }
-    let tmp;
-    try {
-      tmp = $orInsertWith(byKind, key, () => []);
-    } catch (error) {
-      $cleanup(() => {
-        for (const item of byKind.values()) {
-          for (const item$1 of item) {
-            $rcDrop(item$1);
+        }, error);
+        throw error;
+      }
+      try {
+        keys.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) || $cmp(a[2], b[2]));
+      } catch (error) {
+        $cleanup(() => {
+          for (const item of byKind.values()) {
+            for (const item$1 of item) {
+              $rcDrop(item$1);
+            }
           }
-        }
-        for (const item of sorted) {
-          $rcDrop(item);
-        }
-        for (const item of shapes) {
-          $rcDrop(item);
-        }
-      }, error);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $rcClone(s);
-    } catch (error) {
-      $cleanup(() => {
-        for (const item of byKind.values()) {
-          for (const item$1 of item) {
-            $rcDrop(item$1);
+        }, error);
+        throw error;
+      }
+      try {
+        console.log(
+          `[${keys.map((item) => `(${$debugStr(item[0])}, ${item[1]}, ${item[2]})`).join(", ")}]`,
+        );
+      } catch (error) {
+        $cleanup(() => {
+          for (const item of byKind.values()) {
+            for (const item$1 of item) {
+              $rcDrop(item$1);
+            }
           }
-        }
-        for (const item of sorted) {
-          $rcDrop(item);
-        }
-        for (const item of shapes) {
-          $rcDrop(item);
-        }
-      }, error);
-      throw error;
-    }
-    try {
-      tmp.push(tmp$1);
-    } catch (error) {
-      $cleanup(() => {
-        for (const item of byKind.values()) {
-          for (const item$1 of item) {
-            $rcDrop(item$1);
+        }, error);
+        throw error;
+      }
+      const value = [
+        ["add", (a, b) => a + b],
+        ["pow", (a, b) => $powf(a, b)],
+      ];
+      let ops;
+      try {
+        ops = new Map(value);
+      } catch (error) {
+        $cleanup(() => {
+          for (const item of byKind.values()) {
+            for (const item$1 of item) {
+              $rcDrop(item$1);
+            }
           }
-        }
-        for (const item of sorted) {
-          $rcDrop(item);
-        }
-        for (const item of shapes) {
-          $rcDrop(item);
-        }
-      }, error);
-      throw error;
-    }
-  }
-  let keys;
-  try {
-    keys = Array.from(byKind).map(([k, v]) => [k, v.length, $index(v, 0).strong]);
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of byKind.values()) {
-        for (const item$1 of item) {
-          $rcDrop(item$1);
-        }
+        }, error);
+        throw error;
       }
-      for (const item of sorted) {
-        $rcDrop(item);
+      let names;
+      try {
+        names = Array.from(ops.keys());
+      } catch (error) {
+        $cleanup(() => {
+          for (const item of byKind.values()) {
+            for (const item$1 of item) {
+              $rcDrop(item$1);
+            }
+          }
+        }, error);
+        throw error;
       }
-      for (const item of shapes) {
-        $rcDrop(item);
+      try {
+        names.sort($cmp);
+      } catch (error) {
+        $cleanup(() => {
+          for (const item of byKind.values()) {
+            for (const item$1 of item) {
+              $rcDrop(item$1);
+            }
+          }
+        }, error);
+        throw error;
       }
-    }, error);
-    throw error;
-  }
-  try {
-    keys.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) || $cmp(a[2], b[2]));
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of byKind.values()) {
-        for (const item$1 of item) {
-          $rcDrop(item$1);
-        }
+      try {
+        console.log(
+          `[${names
+            .map((n) => $unwrap(ops.get(n), "no entry found for key")(2, 3))
+            .map((item) => $debugF64(item))
+            .join(", ")}]`,
+        );
+      } catch (error) {
+        $cleanup(() => {
+          for (const item of byKind.values()) {
+            for (const item$1 of item) {
+              $rcDrop(item$1);
+            }
+          }
+        }, error);
+        throw error;
       }
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    console.log(
-      `[${keys.map((item) => `(${$debugStr(item[0])}, ${item[1]}, ${item[2]})`).join(", ")}]`,
-    );
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of byKind.values()) {
-        for (const item$1 of item) {
-          $rcDrop(item$1);
-        }
-      }
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  const value$1 = [
-    ["add", (a, b) => a + b],
-    ["pow", (a, b) => $powf(a, b)],
-  ];
-  let ops;
-  try {
-    ops = new Map(value$1);
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of byKind.values()) {
-        for (const item$1 of item) {
-          $rcDrop(item$1);
-        }
-      }
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  let names;
-  try {
-    names = Array.from(ops.keys());
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of byKind.values()) {
-        for (const item$1 of item) {
-          $rcDrop(item$1);
-        }
-      }
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    names.sort($cmp);
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of byKind.values()) {
-        for (const item$1 of item) {
-          $rcDrop(item$1);
-        }
-      }
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    console.log(
-      `[${names
-        .map((n) => $unwrap(ops.get(n), "no entry found for key")(2, 3))
-        .map((item) => $debugF64(item))
-        .join(", ")}]`,
-    );
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of byKind.values()) {
-        for (const item$1 of item) {
-          $rcDrop(item$1);
-        }
-      }
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-    }, error);
-    throw error;
-  }
-  const d = `[${shapes.map((item) => item.impl.Debug().fmt(item.value)).join(", ")}]`;
-  try {
-    try {
+      const d = {
+        value: shapes,
+        impl: {
+          fmt: (value) => `[${value.map((item) => item.impl.Debug().fmt(item.value)).join(", ")}]`,
+        },
+      };
       let tmp;
       try {
         tmp = show(d);

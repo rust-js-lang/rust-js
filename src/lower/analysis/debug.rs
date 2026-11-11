@@ -226,6 +226,17 @@ pub(super) fn reads_formatter_options(tcx: TyCtxt<'_>, body: &Body<'_>) -> bool 
     })
 }
 
+/// What the libraries the crate uses show of a `dyn Debug` they're given,
+/// as their manifests say (#1335).
+fn dyn_debug_shown(dependencies: &crate::library::Dependencies) -> super::Shown {
+    (dependencies.libraries.values()).fold(super::Shown::default(), |all, library| {
+        all.with(super::Shown {
+            pretty: library.dyn_debug_pretty,
+            hex: library.dyn_debug_hex,
+        })
+    })
+}
+
 /// What `all_bodies`' writers take, and which type parameters each of
 /// their functions shows pretty or in hex, with the types it gives them,
 /// whose writers take those options (#1331). Of a library, each of its
@@ -242,7 +253,7 @@ pub(super) fn writer_facts<'tcx>(
     let ids = all_bodies.iter().map(|body| body.def_id);
     let instances = crate::lower::library::instances_take_options(tcx, dependencies, ids);
     let marks = |id| crate::lower::library::shown_marks(tcx, dependencies, id);
-    let shown = super::shown_params::shown_params(tcx, all_bodies, &marks);
+    let shown = super::shown_params::shown_params(tcx, all_bodies, &marks, dyn_debug_shown(dependencies));
     let given = if library {
         shown.reached()
     } else {

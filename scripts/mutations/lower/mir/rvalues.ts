@@ -119,16 +119,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "dyn_any_generic"],
   },
   {
-    name: "mir-dyn-debug-made-early",
-    breaks:
-      "`{:#?}` of a `&dyn Debug` shows it as `{:?}` does, made before its spec is known",
-    file: "src/lower/mir/rvalues.rs",
-    find: "                        if self.is_dyn_debug(*to) && !self.is_dyn_debug(from) {\n",
-    replace:
-      "                        if false && self.is_dyn_debug(*to) && !self.is_dyn_debug(from) {\n",
-    tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
-  },
-  {
     name: "mir-mut-subslice-copied",
     breaks: "a `&mut` to a slice pattern's rest writes a copy, not the slice",
     file: "src/lower/mir/rvalues.rs",
@@ -206,12 +196,12 @@ export const mutations: Mutation[] = [
   {
     name: "mir-dyn-drops-lost",
     breaks:
-      "MIR's `Box<dyn Debug>` of a value with a destructor, the string it shows, never drops it",
+      "MIR's `Box<dyn Iterator>` of a value with a destructor, a JS iterator, never drops it",
     file: "src/lower/mir/rvalues.rs",
     find: "                        if self\n                            .drop_query()\n                            .dyn_drop_lost(",
     replace:
       "                        if false\n                            && self\n                            .drop_query()\n                            .dyn_drop_lost(",
-    tests: ["test/lowering.test.ts", "-t", "MIR refuses a Box<dyn Debug>"],
+    tests: ["test/lowering.test.ts", "-t", "MIR refuses a Box<dyn Iterator>"],
   },
   {
     name: "mir-named-divisor-unknown",
@@ -243,18 +233,6 @@ export const mutations: Mutation[] = [
     find: "                    && (self.is_std_type(pointee, StdItem::Cell)\n                        || self\n                            .place_field(state, *place)\n                            .is_some_and(|field| self.property_cell(Some(field), pointee).is_some()))\n",
     replace: "                    && false\n",
     tests: ["test/lowering-cells.test.ts", "-t", "a Cell a let takes apart"],
-  },
-  {
-    name: "mir-writer-fields-plain",
-    breaks: "MIR's derived `Debug` gives its fields none of its options",
-    file: "src/lower/mir/rvalues.rs",
-    find: "                            if state.writer.is_some() {\n",
-    replace: "                            if false {\n",
-    tests: [
-      "test/lowering-strings.test.ts",
-      "-t",
-      "a writer from its MIR takes its Formatter's options",
-    ],
   },
   {
     name: "raw-pointer-through-mut-unrefused",
@@ -746,5 +724,13 @@ export const mutations: Mutation[] = [
     find: "            written.local == local && !written.projection.is_empty() && within(holder, written.projection)\n",
     replace: "            written.local == local && !written.projection.is_empty() && holder == written.projection.as_slice()\n",
     tests: ["test/corpus.test.ts", "-t", "^reference_a_field_holds_set_again.rs$"],
+  },
+  {
+    name: "dyn-debug-made-a-pair-where-made",
+    breaks: "a `&dyn Debug` is made the pair where it's made, so a derived `Debug`'s fields, which show it there, interpolate the pair (#1335)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                            return Ok(Value::DynDebug(from, *to, value));\n",
+    replace: "                            return Ok(Value::Expr(self.dyn_debug_pair((from, *to), value, span)?));\n",
+    tests: ["test/corpus.test.ts", "-t", "^(dyn_debug_shown_where_rust_calls_fmt|pretty_debug|nullable_field_of_undefined)\\.rs$"],
   },
 ];

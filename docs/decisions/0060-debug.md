@@ -139,3 +139,55 @@ Held by the corpus case `text_of_a_value_made_by_a_call` and the mutations
 `shown-value-unevaluated`, `debug-value-unevaluated`,
 `display-value-unevaluated`, `formatted-unit-value-dropped` and
 `unit-union-field-read-whole`.
+
+## Amendment: a `dyn Debug` stored or passed is a pair (#1335)
+
+A `dyn Debug` was the string it shows, made where the `&dyn Debug` was
+made. That ran its `fmt` at the wrong time, which is a wrong answer whenever
+`fmt` does something (#1378, P0, found by audit):
+`let d: &dyn Debug = &loud; println!("made"); println!("{d:?}");` ran
+`fmt` before "made". `format!("{d:?} {d:?}")` of one passed in ran it once
+and showed the same text twice. A function given one that never shows it
+ran `fmt` anyway, and so did a `Box<dyn Debug>` where it was boxed.
+
+The user decided (2026-11-11) that **a `dyn Debug` that's stored or passed
+is the pair `{ value, impl }`**, as a `dyn Read` is (ADR 0425): `impl` is its
+type's `Debug` dictionary, shown as `d.impl.fmt(d.value)`, or as
+`d.impl.fmt(d.value, { alternate: true })` for `{:#?}`. `Debug` is one of
+std's pair traits (`is_std_pair_trait`), as `Display` is. **One shown right
+where it's made stays the string**: a placeholder's `&x as &dyn Debug`, a
+builder's step, and a derived `Debug`'s fields, each made a `&dyn Debug`
+and given straight to the `Formatter`. A coercion to `dyn Debug` is a
+`Value::DynDebug`, kept until it's read. Where it's shown in place
+(`shown_in_place`, a placeholder's `Argument`, a builder's step), it's the
+string it shows, as pretty as its writer. Anywhere else it's made the pair
+(`dyn_debug_pair`). A temporary of one, which a derived `Debug` holds while
+its next field is made, is kept too (`flush`), and what it's made of is held
+there only where making it does something; borrowck keeps what it borrows
+unchanged till it's shown. A `Box<dyn Debug>` made a `&dyn Debug` is the same
+pair.
+
+So `{:#?}`, `{:x?}` and a width of a `dyn Debug` made elsewhere apply, as
+its `impl` is given the options; ADR 0137's refusal of them is gone, and so
+is `can_apply`'s. So is "a `dyn` of a value with a destructor": the pair
+drops its value through its `impl`, as any pair's does. A struct whose last
+field is a `dyn Debug`, and a counted `Rc<dyn Debug>`, stay refused.
+
+Case C of [0262](0262-when-rust-and-js-disagree.md): `fmt` runs where Rust
+calls it. Snapshots that change: `boxed_dyn_debug`,
+`impl_named_like_a_function`, `dyn_shapes_shared`, `default_method_drops`
+and `dyn_drops` show their pairs through `impl`, and in the last two the
+unwind blocks regroup around the call, which now runs where it's shown;
+`weak_debug` and `refcell_variant_derives` rename a derived field's
+temporary. Held by the corpus case `dyn_debug_shown_where_rust_calls_fmt`, in
+both builds and through `METAMORPHIC=all` with the cases above. Mutations
+`dyn-debug-made-a-pair-where-made` (`lower/mir/rvalues.ts`),
+`held-dyn-debug-made-a-pair` and `held-dyn-debug-always-spilled`
+(`lower/mir/temporaries.ts`), `writer-dyn-debug-made-a-pair`,
+`builder-dyn-debug-made-a-pair` and `boxed-dyn-debug-paired-again`
+(`lower/mir/writer.ts`), `placeholder-dyn-debug-made-a-pair`
+(`lower/mir/std_calls.ts`), `dyn-debug-pair-shown-whole` and
+`dyn-debug-options-dropped` (`lower/display/debug.ts`), and
+`builder-step-shown-plain` (`lower/display/written.ts`).
+`mir-dyn-debug-made-early`, `mir-writer-fields-plain`, `debug-dyn-twice` and
+`mir-pretty-dyn-debug-plain` went with their code.

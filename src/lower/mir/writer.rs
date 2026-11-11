@@ -5,6 +5,44 @@
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A value a writer shows where it's made, a derived `Debug`'s field or
+    /// a builder's step: a `&dyn Debug` made here, the string it shows, as
+    /// pretty as this writer is (ADR 0137), and of a list, each; any other,
+    /// as JS (ADR 0060, amended, #1335).
+    pub(super) fn shown_in_place(&mut self, value: Value<'tcx>, span: Span) -> R<Expr> {
+        match value {
+            Value::DynDebug(from, _, value) => {
+                let pretty = self.writer_pretty();
+                self.debug_string_with(value, self.pointee(from), span, &pretty)
+            }
+            Value::List(items, at) => Ok(Expr::array(
+                items
+                    .into_iter()
+                    .map(|item| self.shown_in_place(item, span))
+                    .collect::<R<Vec<_>>>()?,
+            )
+            .or_at(at)),
+            value => self.value_expr(value, span),
+        }
+    }
+
+    /// A value made a `&dyn Debug` and stored or passed: the pair `{ value,
+    /// impl }`, its type's `Debug` its `impl`, as any pair trait's `dyn` is
+    /// (ADR 0425); of one that's a `dyn Debug` already, behind a reference,
+    /// a `Box` or an uncounted `Rc`, each its value, the same pair (ADR
+    /// 0060, amended, #1335).
+    pub(super) fn dyn_debug_pair(&mut self, (from, to): (Ty<'tcx>, Ty<'tcx>), value: Expr, span: Span) -> R<Expr> {
+        if self.is_dyn_debug(from) {
+            return Ok(value);
+        }
+        let mut before = Vec::new();
+        let pair = self.unsize_trait(from, to, value, span, &mut before)?;
+        if !before.is_empty() {
+            return Err(self.unsupported(span, &format!("a `{from}` made a `{to}` where it's held")));
+        }
+        Ok(pair)
+    }
+
     /// A body's end: a writer's, `writer_epilogue`; and of a function that
     /// gives a value's `Result`, what `?` of a write's result threw on,
     /// caught and given as its `Err` (ADR 0462).
@@ -114,7 +152,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // which nothing runs between.
             let mut typed = Vec::new();
             for (value, ty) in values.into_iter().zip(tys) {
-                let value = self.value_expr(value, span)?;
+                // A `&dyn Debug` made here is shown as what it's made of,
+                // where its step is written (ADR 0060, amended, #1335).
+                let (value, ty) = match value {
+                    Value::DynDebug(from, _, value) => (value, self.pointee(from)),
+                    value => (self.value_expr(value, span)?, ty),
+                };
                 // `entries(v.iter())`'s fresh `$iter(v)`: all of `v`.
                 let value = match step == BuilderStep::Entries {
                     true => crate::lower::iterators::iterated(value),
@@ -275,7 +318,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // written (ADR 0187).
             let pieces = values.iter().any(|v| matches!(v, Value::Fmt(Std::FmtNew, ..)));
             let values = (values.into_iter())
-                .map(|v| self.value_expr(v, span))
+                .map(|v| self.shown_in_place(v, span))
                 .collect::<R<Vec<_>>>()?;
             let pretty = self.writer_pretty();
             let written = self.written_of(operation, def_id, generic_args, values, &pretty, span, out)?;

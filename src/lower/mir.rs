@@ -103,6 +103,12 @@ enum Value<'tcx> {
     Expr(Expr),
     /// An argument of a `format_args!`: how it's shown, its type, and it.
     Fmt(Std, Ty<'tcx>, Expr),
+    /// A value made a `&dyn Debug` here, of its type and the `dyn`'s:
+    /// shown where it's made, by a placeholder, a `Debug` builder's step or
+    /// a derived `Debug`'s fields, the string it shows (`shown_in_place`);
+    /// stored or passed, the pair `{ value, impl }` (ADR 0060, amended,
+    /// #1335).
+    DynDebug(Ty<'tcx>, Ty<'tcx>, Expr),
     /// An array of values, `format_args!`'s arguments among them, and
     /// where it's made, which its JS is at, as a value's is (`mir_store`).
     List(Vec<Value<'tcx>>, js::Span),

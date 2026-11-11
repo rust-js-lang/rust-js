@@ -19,6 +19,8 @@ export function total(shapes) {
   return shapes.map((s) => s.impl.area(s.value)).reduce((a, b) => a + b, -0) + circleShape();
 }
 
+export const exprDebug$1 = { fmt: exprDebug_fmt };
+
 function exprDebug_fmt(expr) {
   if (expr.TAG === "Num") {
     return `Num(${expr._0})`;
@@ -39,7 +41,7 @@ function exprClone(e) {
 }
 
 export function shown(d) {
-  return d;
+  return d.impl.fmt(d.value);
 }
 
 function main() {
@@ -55,6 +57,6 @@ function main() {
   const e = { TAG: "Add", _0: { TAG: "Num", _0: 1 }, _1: { TAG: "Num", _0: 2 } };
   console.log(`${exprDebug(e)}`);
   console.log(`${$eq(exprClone(e), e)}`);
-  console.log(`${shown(exprDebug_fmt(e))}`);
+  console.log(`${shown({ value: e, impl: exprDebug$1 })}`);
 }
 //# sourceMappingURL=case.js.map

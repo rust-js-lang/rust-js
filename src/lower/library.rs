@@ -122,6 +122,9 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) drop_params: &'a IndexMap<DefId, Vec<u32>>,
     /// The type parameters each function shows pretty or in hex (#1331).
     pub(super) shown_params: &'a IndexMap<DefId, IndexMap<u32, super::analysis::Shown>>,
+    /// What it, and the libraries it uses, show of a `dyn Debug` they're
+    /// given (#1335).
+    pub(super) dyn_debug_shown: super::analysis::Shown,
     /// The type parameters whose `Copy` bound takes a copy function (ADRs
     /// 0289, 0914), whose `Clone` bound takes its dictionary (ADR 0914,
     /// amended), and which are stepped by a trait (ADR 0548).

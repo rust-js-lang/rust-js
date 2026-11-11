@@ -74,11 +74,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         _ => None,
                     };
                     let (kind, ty, value) = item(i).ok_or_else(bad)?;
-                    // `{:#?}` of a `&dyn Debug` made elsewhere, the string it
-                    // showed there, not pretty (ADR 0137).
-                    if spec.alternate && kind == Std::FmtDebug && self.is_dyn_debug(ty) {
-                        return Err(self.unsupported(span, "`{:#?}` of a `&dyn Debug` made elsewhere"));
-                    }
                     // `{:1$}`'s width, or `{:.*}`'s precision, another argument.
                     let width = match spec.width_from {
                         Some(from) => Some(item(from).ok_or_else(bad)?.2),

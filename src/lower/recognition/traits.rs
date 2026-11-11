@@ -109,6 +109,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn is_std_pair_trait(&self, id: DefId) -> bool {
         [
             StdItem::Display,
+            // A `dyn Debug` stored or passed, not one shown where it's made
+            // (ADR 0060, amended, #1335).
+            StdItem::Debug,
             StdItem::ToString,
             StdItem::Error,
             StdItem::IoWrite,

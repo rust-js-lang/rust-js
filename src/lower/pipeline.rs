@@ -1251,6 +1251,7 @@ pub fn lower_crate<'tcx>(
                     &super::library::Contracts {
                         drop_params: &kept_drop_params,
                         shown_params: &shown_params.params,
+                        dyn_debug_shown: shown_params.dyn_debug(tcx),
                         given,
                         failing: &failing,
                         writes_may_fail,

@@ -6,24 +6,31 @@ export function entry() {
   main();
 }
 
+export const pDebug = { fmt: pDebug_fmt };
+
 function pDebug_fmt(p) {
   return `P { x: ${p.x} }`;
 }
 
 function shown(x) {
-  return x;
+  return x.impl.fmt(x.value);
 }
 
 function main() {
-  const a = $debugF32(Math.fround(0.3));
-  const b = "Some(6)";
-  const c = $debugStr("s");
-  const d = "None";
-  const e = pDebug_fmt({ x: 1 });
-  console.log(`${a} ${b} ${c} ${d} ${e}`);
-  const value = [1, "a"];
-  const all = ["1", `(${value[0]}, ${$debugStr(value[1])})`];
-  const arg = shown(`[${[1, 2].join(", ")}]`);
-  console.log(`[${all.join(", ")}] ${arg}`);
+  const optionDebug = { fmt: (value) => (value == null ? "None" : `Some(${value})`) };
+  const a = { value: Math.fround(0.3), impl: { fmt: (value) => $debugF32(value) } };
+  const b = { value: 6, impl: optionDebug };
+  const c = { value: "s", impl: { fmt: (value) => $debugStr(value) } };
+  const d = { impl: optionDebug };
+  const e = { value: { x: 1 }, impl: pDebug };
+  console.log(
+    `${a.impl.fmt(a.value)} ${b.impl.fmt(b.value)} ${c.impl.fmt(c.value)} ${d.impl.fmt(d.value)} ${e.impl.fmt(e.value)}`,
+  );
+  const all = [
+    { value: 1, impl: { fmt: (value) => String(value) } },
+    { value: [1, "a"], impl: { fmt: (value) => `(${value[0]}, ${$debugStr(value[1])})` } },
+  ];
+  const arg = shown({ value: [1, 2], impl: { fmt: (value) => `[${value.join(", ")}]` } });
+  console.log(`[${all.map((item) => item.impl.fmt(item.value)).join(", ")}] ${arg}`);
 }
 //# sourceMappingURL=case.js.map

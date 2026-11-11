@@ -193,8 +193,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let std = |item: StdItem| self.is_std_type(ty, item);
         let num = Num::of(ty);
-        if self.is_dyn_debug(ty) {
-            return Ok(value);
+        // A `dyn Debug`'s pair, its `impl`'s `fmt` of its value, given the
+        // options (ADR 0060, amended, #1335).
+        if let Some(dynamic) = self.dyn_debug_of(ty) {
+            let options = self.options_arg(pretty);
+            let debug = self.debug_trait();
+            return self
+                .dyn_written(value, (dynamic, debug), options, span)?
+                .ok_or_else(|| self.unsupported(span, &format!("`{{:?}}` of a `{ty}`")));
         }
         // One of which no value exists, `Infallible` (`never_shown`).
         if self.never_shown(ty) {

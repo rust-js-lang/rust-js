@@ -350,4 +350,12 @@ export const mutations: Mutation[] = [
     replace: "                    key: key(tcx, id),\n                    apart: !apart,\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
   },
+  {
+    name: "manifest-dyn-debug-hex-dropped",
+    breaks: "a library's manifest says it shows no `dyn Debug` in hex, so its consumer's `{:x?}` of one is decimal (#1335)",
+    file: "src/lower/library/exports.rs",
+    find: "        dyn_debug_hex: dyn_debug_shown.hex,\n",
+    replace: "        dyn_debug_hex: false,\n",
+    tests: ["test/crates.test.ts", "-t", "library_shows_a_consumers_dyn_debug_with_options"],
+  },
 ];

@@ -131,19 +131,12 @@ function main() {
   const borrowed = { value: lent, impl: noisyShape };
   try {
     console.log(`${borrowed.impl.name(borrowed.value)}`);
-  } catch (error) {
-    $cleanup(() => {
-      noisyDrop_drop(lent);
-    }, error);
-    throw error;
-  }
-  const loud = [3];
-  const shown = loudDebug_fmt(loud);
-  console.log(`${shown}`);
-
-  const holder = { shape: { value: ["held"], impl: noisyShape } };
-  try {
+    const loud = [3];
+    const shown = { value: loud, impl: loudDebug };
     try {
+      console.log(`${shown.impl.fmt(shown.value)}`);
+
+      const holder = { shape: { value: ["held"], impl: noisyShape } };
       try {
         console.log(`${holder.shape.impl.name(holder.shape.value)}`);
       } catch (error) {

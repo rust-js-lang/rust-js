@@ -532,23 +532,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             };
                             return Ok(Value::Expr(crate::lower::iterators::behind_a_dyn(it)));
                         }
-                        // A `&dyn Debug` is the string it shows (ADR 0060), made
-                        // where it's read: by `{:#?}`, as that shows it.
-                        if self.is_dyn_debug(*to) && !self.is_dyn_debug(from) {
+                        // A `&dyn Debug`, made where it's read: shown there,
+                        // by a placeholder, a builder's step or a derived
+                        // `Debug`'s fields, the string it shows, as pretty as
+                        // they ask (ADR 0137); stored or passed, the pair
+                        // `{ value, impl }` (ADR 0060, amended, #1335).
+                        if self.is_dyn_debug(*to) {
                             // A pair, read for its dictionary and its value: held
                             // once where it's made, a call's, `&*shapes[1]`.
                             let value = match self.is_pair_dyn(from) && !value.parts_read_same() {
                                 true => self.spill("shown", value, out),
                                 false => value,
                             };
-                            // In a writer, as pretty as it's asked to be: a
-                            // derived `Debug`'s fields (ADR 0137).
-                            if state.writer.is_some() {
-                                let pretty = self.writer_pretty();
-                                let shown = self.debug_string_with(value, self.pointee(from), span, &pretty)?;
-                                return Ok(Value::Expr(shown));
-                            }
-                            return Ok(Value::Fmt(Std::FmtDebug, self.pointee(from), value));
+                            return Ok(Value::DynDebug(from, *to, value));
                         }
                         let made = self.unsize_trait(from, *to, value, span, out)?;
                         // A closure lent as a `&dyn Fn`, as one as a `fn`:

@@ -559,4 +559,20 @@ export const mutations: Mutation[] = [
     replace: "            Some(crate::lower::recognition::ByteSource::BufReader(_))\n        ) && false {",
     tests: ["test/diagnostics.test.ts", "-t", "a BufReader's Debug"],
   },
+  {
+    name: "dyn-debug-pair-shown-whole",
+    breaks: "`{:?}` of a `dyn Debug`'s pair is the pair, not its `impl`'s `fmt` of its value (#1335)",
+    file: "src/lower/display/debug.rs",
+    find: "            let options = self.options_arg(pretty);\n            let debug = self.debug_trait();\n",
+    replace: "            return Ok(value);\n            #[allow(unreachable_code)]\n            let options = self.options_arg(pretty);\n            let debug = self.debug_trait();\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_debug_shown_where_rust_calls_fmt\\.rs$"],
+  },
+  {
+    name: "dyn-debug-options-dropped",
+    breaks: "`{:#?}` of a `dyn Debug` made elsewhere gives its `impl`'s `fmt` no options, so it's plain (#1335)",
+    file: "src/lower/display/debug.rs",
+    find: "                .dyn_written(value, (dynamic, debug), options, span)?\n",
+    replace: "                .dyn_written(value, (dynamic, debug), { let _ = options; None }, span)?\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_debug_shown_where_rust_calls_fmt\\.rs$"],
+  },
 ];

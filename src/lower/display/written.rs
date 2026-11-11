@@ -201,12 +201,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<BuilderPart> {
         let pretty = self.writer_pretty();
-        // A `&dyn Debug` is the string it shows already (ADR 0060).
+        // As pretty as this writer is (ADR 0137): a `&dyn Debug` made for
+        // the step, of what it's made of; one given, its pair's `impl`'s
+        // (ADR 0060, amended, #1335).
         let debug_of = |this: &mut Self, (value, ty): (Expr, Ty<'tcx>)| -> R<Expr> {
-            match this.is_dyn_debug(ty) {
-                true => Ok(value),
-                false => this.debug_string(value, ty, span),
-            }
+            this.debug_string_with(value, ty, span, &pretty)
         };
         let mut values = values.into_iter();
         Ok(match (kind, step) {

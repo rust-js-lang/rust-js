@@ -1,3 +1,4 @@
+//@ library-differs
 // A `Box<dyn Debug>` is the string its value shows, as a `&dyn Debug` is
 // (ADR 0060): made where it's boxed, shown by `{:?}`. So is an `Rc` that
 // isn't counted; a counted one, a library's, is refused.

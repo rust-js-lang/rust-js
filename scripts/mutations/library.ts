@@ -55,8 +55,8 @@ export const mutations: Mutation[] = [
     name: "manifest-writers-options-dropped",
     breaks: "a library's manifest doesn't say its writers take options: a consumer gives them none",
     file: "src/library.rs",
-    find: "            writes_may_fail,\n            writers_take_options,\n            debug_hex,\n            reads_formatter_options: ",
-    replace: "            writes_may_fail,\n            writers_take_options: { let _ = writers_take_options; false },\n            debug_hex,\n            reads_formatter_options: ",
+    find: "            writes_may_fail,\n            writers_take_options,\n            debug_hex,\n            dyn_debug_pretty,\n            dyn_debug_hex,\n            reads_formatter_options: ",
+    replace: "            writes_may_fail,\n            writers_take_options: { let _ = writers_take_options; false },\n            debug_hex,\n            dyn_debug_pretty,\n            dyn_debug_hex,\n            reads_formatter_options: ",
     tests: ["test/crates.test.ts", "-t", "as its own crate takes them"],
   },
   {

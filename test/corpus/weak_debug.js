@@ -7,11 +7,11 @@ export function entry() {
 }
 
 function nodeDebug_fmt(node, options) {
-  const value = String(node.val);
-  const shown = options?.alternate
+  const shown = String(node.val);
+  const shown$1 = options?.alternate
     ? $pretty("RefCell {", ["value: (Weak)"], "}")
     : "RefCell { value: (Weak) }";
-  const shown$1 = options?.alternate
+  const shown$2 = options?.alternate
     ? $pretty(
         "[",
         node.kids.map((item) => nodeDebug_fmt(item, options)),
@@ -19,8 +19,8 @@ function nodeDebug_fmt(node, options) {
       )
     : `[${node.kids.map((item) => nodeDebug_fmt(item, options)).join(", ")}]`;
   return options?.alternate
-    ? $pretty("Node {", [`val: ${value}`, `parent: ${shown}`, `kids: ${shown$1}`], "}")
-    : `Node { val: ${value}, parent: ${shown}, kids: ${shown$1} }`;
+    ? $pretty("Node {", [`val: ${shown}`, `parent: ${shown$1}`, `kids: ${shown$2}`], "}")
+    : `Node { val: ${shown}, parent: ${shown$1}, kids: ${shown$2} }`;
 }
 function main() {
   const root = {

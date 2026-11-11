@@ -27,10 +27,6 @@ pub(super) struct Writing {
     /// In such a function of a crate that gives a `Formatter` options (ADRs
     /// 0058, 0137): the parameter that has them, `{ alternate: true }`.
     given: Option<Expr>,
-    /// How a `&dyn Debug` made here shows its value: with its writer's
-    /// options, while a derived `Debug`'s or a builder's
-    /// arguments are lowered (ADR 0137), plain anywhere else.
-    dyn_debug: Pretty,
     /// The options a `{:?}` being shown gives each part of it (ADR 0058).
     options: Option<Options>,
     /// What's shown with options of the type whose writer this is, which
@@ -460,25 +456,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// An error if a placeholder's options are given to what can't apply
-    /// them (ADR 0058): serde_json's types, whose `fmt`s are rust-js's own,
-    /// and a `&dyn Debug`, the string it shows already (ADR 0060).
+    /// them (ADR 0058): serde_json's types, whose `fmt`s are rust-js's own.
+    /// A `&dyn Debug`'s are its pair's `impl`'s (ADR 0060, amended, #1335).
     fn can_apply(&self, ty: Ty<'tcx>, pretty: &Pretty, span: Span) -> R<()> {
         if matches!(pretty, Pretty::Given(..))
-            && (self.json_type(ty).is_some()
-                || self.is_json_error(ty)
-                || self.recognition().is_js_error(ty)
-                || self.is_dyn_debug(ty))
+            && (self.json_type(ty).is_some() || self.is_json_error(ty) || self.recognition().is_js_error(ty))
         {
             return Err(self.unsupported(span, &format!("options for a `{ty}`")));
         }
         Ok(())
-    }
-
-    /// `value`, of type `ty`, made a `&dyn Debug` here: the string it shows
-    /// (ADR 0060), pretty or plain as `with_dyn_debug` says.
-    pub(super) fn dyn_debug_string(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
-        let pretty = self.writing.dyn_debug.clone();
-        self.debug_string_with(value, ty, span, &pretty)
     }
 
     /// `{:x}` or `{:p}` of a generic `T`, `LowerHex::fmt(t, f)` too: its
@@ -596,6 +582,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its value (ADR 0023)? A derived `Debug` hands its fields to the
     /// formatter so.
     pub(super) fn is_dyn_debug(&self, ty: Ty<'tcx>) -> bool {
+        self.dyn_debug_of(ty).is_some()
+    }
+
+    /// The `dyn Debug` `ty` is, behind a reference, a `Box` or an uncounted
+    /// `Rc`, each its value (ADR 0023): its pair's type (#1335).
+    pub(super) fn dyn_debug_of(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let mut ty = ty.peel_refs();
         while let ty::Adt(_, args) = ty.kind()
             && (ty.is_box() || self.is_rc(ty) && self.counted_rc(ty).is_none())
@@ -603,6 +595,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty = args.type_at(0).peel_refs();
         }
         matches!(ty.kind(), ty::Dynamic(traits, ..) if traits.principal_def_id() == Some(self.debug_trait()))
+            .then_some(ty)
     }
 
     /// How pretty what this writer shows is (ADR 0137): as its `alternate`

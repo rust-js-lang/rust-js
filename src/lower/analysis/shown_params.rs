@@ -8,9 +8,11 @@
 use super::debug::format_calls;
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::format_args::Piece;
-use crate::lower::recognition::is_debug_argument;
+use crate::lower::recognition::{StdItem, is_debug_argument, pointer_target, points_at_dyn_debug, std_item};
 use crate::lower::{Body, fn_def, strip};
+use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
+use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 
@@ -27,7 +29,7 @@ impl Shown {
         self.pretty || self.hex
     }
 
-    fn with(self, other: Shown) -> Shown {
+    pub(in crate::lower) fn with(self, other: Shown) -> Shown {
         Shown {
             pretty: self.pretty || other.pretty,
             hex: self.hex || other.hex,
@@ -42,6 +44,9 @@ pub(in crate::lower) struct ShownParams<'tcx> {
     pub(in crate::lower) params: IndexMap<DefId, IndexMap<u32, Shown>>,
     types: IndexMap<Ty<'tcx>, Shown>,
     adts: IndexMap<DefId, Shown>,
+    /// What the libraries the crate uses show of a `dyn Debug` they're
+    /// given, as their manifests say (#1335).
+    dyn_debug_given: Shown,
 }
 
 impl<'tcx> ShownParams<'tcx> {
@@ -50,6 +55,15 @@ impl<'tcx> ShownParams<'tcx> {
         self.types
             .values()
             .fold(Shown::default(), |all, &shown| all.with(shown))
+    }
+
+    /// What the crate shows of a `dyn Debug` it's given, and the libraries
+    /// it uses do, which its manifest says (#1335).
+    pub(in crate::lower) fn dyn_debug(&self, tcx: TyCtxt<'tcx>) -> Shown {
+        let debug = std_item(tcx, StdItem::Debug);
+        (self.types.iter())
+            .filter(|(ty, _)| matches!(ty.kind(), ty::Dynamic(traits, ..) if traits.principal_def_id() == Some(debug)))
+            .fold(self.dyn_debug_given, |all, (_, &shown)| all.with(shown))
     }
 
     /// What's shown of what `writer`, an impl's method, writes: its type's,
@@ -110,6 +124,20 @@ impl<'tcx> ShownParams<'tcx> {
     }
 }
 
+/// Whether `id` is a writer, a function given a `&mut Formatter` (ADR
+/// 0054), a `Debug`'s or a `Display`'s `fmt` among them.
+fn writes_to_formatter(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    if !matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn) {
+        return false;
+    }
+    let formatter = std_item(tcx, StdItem::Formatter);
+    let sig = tcx.fn_sig(id).skip_binder().skip_binder();
+    sig.inputs().iter().any(|input| {
+        matches!(input.kind(), ty::Ref(_, inner, ty::Mutability::Mut)
+            if matches!(inner.kind(), ty::Adt(adt, _) if adt.did() == formatter))
+    })
+}
+
 /// Each function's type parameters `all_bodies` show with options, and
 /// what they give each so, to a fixed point through their calls; a
 /// library's function's, `marks`', as its manifest says.
@@ -117,8 +145,12 @@ pub(super) fn shown_params<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
     marks: &dyn Fn(DefId) -> Vec<(u32, Shown)>,
+    dyn_debug_given: Shown,
 ) -> ShownParams<'tcx> {
-    let mut found = ShownParams::default();
+    let mut found = ShownParams {
+        dyn_debug_given,
+        ..ShownParams::default()
+    };
     // Of each body, what its placeholders show so, and its calls.
     let mut calls: Vec<(DefId, DefId, ty::GenericArgsRef<'tcx>)> = Vec::new();
     for body in all_bodies {
@@ -142,6 +174,30 @@ pub(super) fn shown_params<'tcx>(
                 {
                     let ty = thir[strip(thir, shown_value)].ty.peel_refs();
                     found.give(tcx, owner, ty, shown);
+                }
+            }
+        }
+        // A value made a `dyn Debug` outside a writer, stored or passed,
+        // where a library the crate uses shows one it's given pretty or in
+        // hex, as its manifest says: its type's writer takes those options,
+        // so only a type that may be shown so pays for them (the user's
+        // decision, #1335). A writer's, a derived `Debug`'s fields, it
+        // shows where it's made. One a placeholder of the body shows,
+        // `{:#?}` of `&x as &dyn Debug`, which `format_args!` binds first,
+        // is counted too.
+        if found.dyn_debug_given.any() && !writes_to_formatter(tcx, body.def_id) {
+            for expr in thir.exprs.iter() {
+                if let ExprKind::PointerCoercion {
+                    cast: PointerCoercion::Unsize,
+                    source,
+                    ..
+                } = expr.kind
+                    && points_at_dyn_debug(tcx, expr.ty)
+                {
+                    let made_of = pointer_target(tcx, thir[source].ty);
+                    if !matches!(made_of.kind(), ty::Dynamic(..)) {
+                        found.give(tcx, owner, made_of, found.dyn_debug_given);
+                    }
                 }
             }
         }

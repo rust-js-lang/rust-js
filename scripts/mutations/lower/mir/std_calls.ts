@@ -803,4 +803,13 @@ export const mutations: Mutation[] = [
     replace: "                        ty::Closure(..) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
   },
+  {
+    name: "placeholder-dyn-debug-made-a-pair",
+    breaks: "`{:#?}` of `&x as &dyn Debug`, shown where it's made, makes the pair and shows it through its `impl` (#1335)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                        Value::DynDebug(from, _, value) if known == Std::FmtDebug => {\n",
+    replace: "                        Value::DynDebug(from, _, value) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(dyn_debug_shown_where_rust_calls_fmt|pretty_debug)\\.rs$"],
+    snapshots: true,
+  },
 ];

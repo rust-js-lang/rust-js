@@ -510,11 +510,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<js::Stmt>,
     ) -> R<Expr> {
         self.check_unsize(target, span)?;
-        // A `&dyn Debug` is the string it shows (ADR 0060), and serde's `&dyn
-        // Expected` its text (ADR 0459).
-        if self.is_dyn_debug(target) && !self.is_dyn_debug(source) {
-            return self.dyn_debug_string(value, self.pointee(source), span);
-        }
+        // serde's `&dyn Expected` is its text (ADR 0459).
         if crate::lower::recognition::is_dyn_expected(self.tcx, target)
             && !crate::lower::recognition::is_dyn_expected(self.tcx, source)
         {

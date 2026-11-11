@@ -172,8 +172,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`{:>9?}` of a `js::JsError` is its text with no width, not refused",
     file: "src/lower/display.rs",
-    find: "                || self.recognition().is_js_error(ty)\n",
-    replace: "",
+    find: " || self.recognition().is_js_error(ty))\n",
+    replace: ")\n",
     tests: ["test/diagnostics.test.ts", "-t", "a width for a JsError"],
   },
   {
@@ -252,11 +252,12 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-dyn-debug-raw",
     breaks:
-      "a `Box<dyn Debug>` is its value, interpolated raw by `{:?}`, `0.30000001192092896` and `[object Object]`",
+      "a `Box<dyn Debug>` isn't seen as a `dyn Debug`, so one made a `&dyn Debug` is a pair of its pair (#1335; it was its value, interpolated raw, #174)",
     file: "src/lower/display.rs",
     find: "            && (ty.is_box() || self.is_rc(ty) && self.counted_rc(ty).is_none())\n",
     replace: "            && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^boxed_dyn_debug.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(boxed_dyn_debug|dyn_debug_shown_where_rust_calls_fmt)\\.rs$"],
+    snapshots: true,
   },
   {
     name: "shown-text-taken-apart",

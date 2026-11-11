@@ -19,15 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "std_methods"],
   },
   {
-    name: "debug-dyn-twice",
-    breaks: "a builder's `&dyn Debug` field is shown twice, quoted twice",
-    file: "src/lower/display/written.rs",
-    find: "                true => Ok(value),",
-    replace:
-      "                true => this.debug_string(value, this.tcx.types.str_, span),",
-    tests: ["test/corpus.test.ts", "-t", "std_methods"],
-  },
-  {
     name: "delegated-debug-plain",
     breaks: "`self.0.fmt(f)` in a pretty `fmt` shows its value plain",
     file: "src/lower/display/written.rs",
@@ -327,5 +318,13 @@ export const mutations: Mutation[] = [
     find: "        if let Some(error) = crate::lower::recognition::c_str_error(self.tcx, ty) {\n",
     replace: "        if let (false, Some(error)) = (true, crate::lower::recognition::c_str_error(self.tcx, ty)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
+  },
+  {
+    name: "builder-step-shown-plain",
+    breaks: "a builder's step is shown plain, not as pretty as its writer is, so `{:#?}` of a `debug_list()` of `&dyn Debug`s is flat (#1335)",
+    file: "src/lower/display/written.rs",
+    find: "            this.debug_string_with(value, ty, span, &pretty)\n",
+    replace: "            this.debug_string(value, ty, span)\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_debug_shown_where_rust_calls_fmt\\.rs$"],
   },
 ];

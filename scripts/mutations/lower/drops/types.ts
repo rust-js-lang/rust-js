@@ -243,7 +243,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/types.rs",
     find: "        !target.is_ref()\n            && match self.drops(from) {\n",
     replace: "        match self.drops(from) {\n",
-    tests: ["test/corpus.test.ts", "-t", "default_method_drops"],
+    tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_lent_of_a_dropping_value\\.rs$"],
   },
   {
     name: "dyn-implementors-unread",

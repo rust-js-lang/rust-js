@@ -644,4 +644,21 @@ export const mutations: Mutation[] = [
     replace: "        let literal = |n: crate::lower::Discr| n.expr(big && false);\n",
     tests: ["test/crates.test.ts", "-t", "two crates: wide_discriminants"],
   },
+  {
+    name: "held-dyn-debug-made-a-pair",
+    breaks: "a `&dyn Debug` a derived `Debug` holds before its next field is made the pair there, so the field interpolates it (#1335)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            if !named && let Value::DynDebug(_, _, subject) = &mut value {\n",
+    replace: "            if false && let Value::DynDebug(_, _, subject) = &mut value {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(dyn_debug_shown_where_rust_calls_fmt|pretty_debug|nullable_field_of_undefined)\\.rs$"],
+  },
+  {
+    name: "held-dyn-debug-always-spilled",
+    breaks: "what a held `&dyn Debug` is made of is held in a `const` though making it does nothing, a handle on a field `{ get value() .. }` (#1335)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "                if subject.has_effects() {\n",
+    replace: "                if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(once_cell_fields|refcell_variant_derives)\\.rs$"],
+    snapshots: true,
+  },
 ];

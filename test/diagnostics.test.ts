@@ -141,7 +141,6 @@ for (const [name, source, message, crate] of [
   ["a provided method of a dyn io::Write", "pub fn f(w: &mut dyn std::io::Write) -> usize { w.write_vectored(&[]).unwrap() }", "`write_vectored` of a"],
   // A placeholder's options are given to what shows the value (ADR 0058), but a
   // `&dyn Debug` is the string it shows already, and serde_json's `fmt`s are rust-js's.
-  ["a width for a dyn Debug", 'pub fn f(v: u8) -> String { let d: &dyn std::fmt::Debug = &v; format!("{:5?}", d) }', "options for a"],
   // `ptr::eq` of a Rust value: an unchanged copy is one JS object, and a
   // number is its value, so a place's address isn't JS's (ADR 0285).
   // Text's `as_ptr()` is a copy's: compared, it'd be another's (ADR 0407).
@@ -223,8 +222,8 @@ for (const [name, source, message, crate] of [
   ["a set keyed by a struct of a type parameter", "use std::collections::HashSet;\nuse std::hash::Hash;\n#[derive(Hash, PartialEq, Eq)]\npub struct Key<T>(u32, T);\npub fn count<T: Hash + Eq>(keys: Vec<Key<T>>) -> usize {\n    keys.into_iter().collect::<HashSet<_>>().len()\n}", "a map or a set keyed by `Key<T>`, a struct made of a type parameter, in generic code, whose `Hash` and `Eq` may be its own (#1360)"],
   // A `dyn` of std's traits has no dictionary to carry a drop (ADR 0098).
   ["flatten of an Option of an Option of a value with a destructor", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(a: Option<Option<D>>) -> bool { a.flatten().is_some() }', "`std::option::Option::<std::option::Option<T>>::flatten` of a value with a destructor"],
-  ["a Box<dyn Debug> of a value with a destructor", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\nimpl std::fmt::Debug for D { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { f.write_str("D") } }\npub fn f() { let _: Box<dyn std::fmt::Debug> = Box::new(D); }', "a `dyn` of a value with a destructor"],
-  ["an Rc<dyn> of a value with a destructor", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\nimpl std::fmt::Debug for D { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { f.write_str("D") } }\npub fn f() { let _: std::rc::Rc<dyn std::fmt::Debug> = std::rc::Rc::new(D); }', "a `dyn` of a value with a destructor"],
+  ["a Box<dyn Iterator> of a value with a destructor", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\nimpl Iterator for D { type Item = u32; fn next(&mut self) -> Option<u32> { None } }\npub fn f() { let _: Box<dyn Iterator<Item = u32>> = Box::new(D); }', "a `dyn` of a value with a destructor"],
+  ["an Rc<dyn> of a value with a destructor", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\nimpl Iterator for D { type Item = u32; fn next(&mut self) -> Option<u32> { None } }\npub fn f() { let _: std::rc::Rc<dyn Iterator<Item = u32>> = std::rc::Rc::new(D); }', "a `dyn` of a value with a destructor"],
   // A std call given an iterator whose destructors rust-js can't follow would drop what it skips silently.
   // A generic iterator folded or looped over is one its callers give no destructor of (ADR 0190).
       // A `Cell` drops the value it's set over, which JS wouldn't (ADR 0320).

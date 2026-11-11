@@ -19,7 +19,7 @@ function scorePartialEq_eq(score, other) {
 
 function kindDebug_fmt(kind, options) {
   if (kind.TAG === "Effect") {
-    const value = options?.alternate
+    const shown = options?.alternate
       ? $pretty(
           "RefCell {",
           [
@@ -28,21 +28,21 @@ function kindDebug_fmt(kind, options) {
           "}",
         )
       : `RefCell { value: ${kind.cleanup == null ? "None" : options?.alternate ? $pretty("Some(", [String(kind.cleanup)], ")") : `Some(${kind.cleanup})`} }`;
-    const shown = options?.alternate
+    const shown$1 = options?.alternate
       ? $pretty("RefCell {", [`value: ${kind.runs}`], "}")
       : `RefCell { value: ${kind.runs} }`;
     return options?.alternate
-      ? $pretty("Effect {", [`cleanup: ${value}`, `runs: ${shown}`], "}")
-      : `Effect { cleanup: ${value}, runs: ${shown} }`;
+      ? $pretty("Effect {", [`cleanup: ${shown}`, `runs: ${shown$1}`], "}")
+      : `Effect { cleanup: ${shown}, runs: ${shown$1} }`;
   }
   if (kind.TAG === "Pair") {
-    const shown = options?.alternate
+    const shown$1 = options?.alternate
       ? $pretty("RefCell {", [`value: ${kind._0}`], "}")
       : `RefCell { value: ${kind._0} }`;
-    const shown$1 = String(kind._1);
+    const shown = String(kind._1);
     return options?.alternate
-      ? $pretty("Pair(", [shown, shown$1], ")")
-      : `Pair(${shown}, ${shown$1})`;
+      ? $pretty("Pair(", [shown$1, shown], ")")
+      : `Pair(${shown$1}, ${shown})`;
   }
   if (kind.TAG === "Ranked") {
     const shown = options?.alternate

@@ -142,3 +142,34 @@ std dictionary, and an untouched type whose writer stays plain. Mutations
 (`lower/analysis/shown_params.ts`), `shown-params-unexported`
 (`lower/library.ts`), and `compiled-writer-shown-ignored` and
 `shown-hex-unformatted` (`lower/display.ts`).
+
+## Amendment: a `dyn Debug` made elsewhere is shown with its options (#1335)
+
+`{:#?}` of a `&dyn Debug` made anywhere but its format's arguments was
+refused: it was the string it showed where it was made. A `dyn Debug` stored
+or passed is now the pair `{ value, impl }` (ADR 0060, amended), so `{:#?}`,
+`{:x?}` and a width of one are given to its `impl`'s `fmt`, as a `T: Debug`'s
+are. Within a crate, a `{:#?}` anywhere makes every writer take options, as
+before.
+
+A library's function that shows a `dyn Debug` it's given with options is the
+case "Not covered" above. The user decided (2026-11-11) that a type made a
+`dyn Debug` gets an option-taking writer through #1331's writer facts, so
+only types used so pay. The coordinator, for the user, chose the precise
+form of it, with the same precision as #1331: a library's manifest says
+whether it, or a library it uses, shows a `dyn Debug` it's given pretty or in
+hex (`dyn_debug_pretty`, `dyn_debug_hex`, from `ShownParams::dyn_debug`). A
+consumer marks a type it makes a `dyn Debug` outside a writer with what its
+libraries show of one, and only where one does. That type's writer, and its
+std dictionary, then take those options. A crate whose libraries show no
+`dyn Debug` with options gets the JS it got; a type made a `dyn Debug` for a
+`{:#?}` placeholder of the crate's own, which `format_args!` binds first, is
+counted too. Held by
+`test/crates/pairs/library_shows_a_consumers_dyn_debug_with_options` against
+native Rust: `{:#?}`, `{:x?}` and `{:#x?}` of a consumer's struct, a field's
+type reached only through it, a `Vec<u32>`'s and an `Option`'s std
+dictionaries, a `Vec<Box<dyn Debug>>` the library holds, and an untouched
+type whose writer stays plain. Mutations `dyn-debug-made-unshown`
+and `library-dyn-debug-unrecorded`
+(`lower/analysis/shown_params.ts`), and `manifest-dyn-debug-hex-dropped`
+(`lower/library/exports.ts`).

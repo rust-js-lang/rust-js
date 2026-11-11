@@ -158,6 +158,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             let named = state.named.contains(&local);
+            // A `&dyn Debug` made here, a derived `Debug`'s field held before
+            // the next is made: kept for where it's shown, which shows the
+            // string, or else made the pair (ADR 0060, amended, #1335). What
+            // it's made of is held here where making it does something; what
+            // it borrows, nothing changes till it's shown (borrowck says so).
+            if !named && let Value::DynDebug(_, _, subject) = &mut value {
+                if subject.has_effects() {
+                    let made_once = std::mem::replace(subject, Expr::undefined());
+                    *subject = self.spill("value", made_once, &mut made);
+                }
+                state.places.insert(local, value);
+                continue;
+            }
             // A `&mut` to a place, a call's argument held before another that
             // changes what it reads, `&mut lanes[index]` before `{ index += 1;
             // 10 }`: the place, fixed here, `$index(ps, i).x`'s object named
@@ -781,6 +794,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Fmt(Std::FmtDisplay, ty, e) => self.display_string(e, ty, span)?,
             Value::Fmt(Std::FmtDebug, ty, e) => self.debug_string(e, ty, span)?,
             Value::Fmt(_, _, e) => e,
+            Value::DynDebug(from, to, e) => self.dyn_debug_pair((from, to), e, span)?,
             Value::List(items, at) => Expr::array(
                 items
                     .into_iter()

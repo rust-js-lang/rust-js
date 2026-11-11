@@ -277,7 +277,6 @@ for (const [name, source, diagnostic] of [
   ["closure assigned", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub fn f() { let r = R; let c; c = move || drop(r); c(); }`, "assigning a closure that holds a value with a destructor"],
   // `Clone`, `Default` and `From` are supported (ADR 0052), but not all of them.
   // A `&dyn Debug` is the string it shows (ADR 0060): one made plain is shown plain (ADR 0137).
-  ["{:#?} of a kept &dyn Debug", `pub fn f(x: &[u8]) -> String { let d: &dyn std::fmt::Debug = &x; format!("{:#?}", d) }`, "\`{:#?}\` of a \`&dyn Debug\` made elsewhere"],
   ["fmt::Result methods", `use std::fmt; pub struct P; impl fmt::Display for P { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { f.write_str("a").and_then(|()| Ok(())) } }`, "methods of a \`fmt::Result\`"],
   // A counted `Rc` its other owners share as what it is can't become a pair in place (ADR 0320).
   ["a counted Rc made elsewhere as an Rc<dyn>", `use std::rc::Rc; pub trait Shape { fn area(&self) -> u32; } pub struct Sq(pub u32); impl Shape for Sq { fn area(&self) -> u32 { self.0 } } impl Drop for Sq { fn drop(&mut self) {} } pub fn f() -> u32 { let r = Rc::new(Sq(1)); let d: Rc<dyn Shape> = r; d.area() }`, "made elsewhere as a"],

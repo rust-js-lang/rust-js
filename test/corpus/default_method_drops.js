@@ -6,6 +6,8 @@ export function entry() {
   main();
 }
 
+export const noisyDebug = { fmt: noisyDebug_fmt, $drop: noisyDrop_drop };
+
 function noisyDebug_fmt(noisy) {
   return `Noisy(${noisy[0]})`;
 }
@@ -26,13 +28,21 @@ const personGreet = {
   parts(person) {
     const first = [2];
     noisyDrop_drop([3]);
-    const shown = noisyDebug_fmt(first);
+    const shown = { value: first, impl: noisyDebug };
     const all = [[4], [5]];
     const slice = all;
-    const result = ($byteLen(shown) + slice.length) >>> 0;
+    let result;
     try {
-      for (const item of all) {
-        noisyDrop_drop(item);
+      try {
+        result = ($byteLen(shown.impl.fmt(shown.value)) + slice.length) >>> 0;
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          for (const item of all) {
+            noisyDrop_drop(item);
+          }
+        }
       }
     } catch (error) {
       throw $unwindsOn(error);
