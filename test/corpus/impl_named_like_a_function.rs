@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait impl's name, `exprDebug` of `#[derive(Debug)]` on `Expr` and
 // `circleShape` of `impl Shape for Circle`, and a function the program
 // names so, `fn expr_debug` and `fn circle_shape`, are two names Rust

@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait object of a value with a destructor (ADR 0098): its dictionary
 // carries its drop, as Rust's vtable does, and dropping the `dyn` runs it.
 // A box's value, `*b`, is borrowed through, moved out of it, or put back.

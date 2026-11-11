@@ -5,7 +5,11 @@
 //! a crate's own writer through std's `write_all`. Only one that returns a
 //! write's result passes one on; a crate none of whose functions may, nor
 //! its `io::Write` impls' methods (#1072), is lowered as one whose writes
-//! never fail (ADRs 0054, 0132).
+//! never fail (ADRs 0054, 0132). In a library, a write or a format through
+//! what no consumer compiles for its own, a `dyn`'s or a trait method's own
+//! type parameter's, may fail whatever the library writes (#1392); one
+//! through another type parameter is its consumer's to compile, where what
+//! it gives may fail (`call_may_fail`, ADR 0914).
 
 use crate::collections::IndexSet;
 use crate::lower::Body;
@@ -19,24 +23,48 @@ use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
 
 /// What a body calls, as its typing environment resolves it.
+#[derive(Clone, Copy)]
 enum Callee {
     /// The crate's own function, or a library's.
     Known(DefId),
     /// Through a dictionary: a generic `T`'s, which may be any.
     Unknown,
+    /// Through what no consumer compiles for its own: a `dyn`'s, or a
+    /// trait method's own type parameter's, `render<W: Write>`'s `W`, which
+    /// a dictionary's callers give (ADR 0914). A library's may fail
+    /// whatever it writes itself, as its consumer's may (#1392); a
+    /// program's, as a dictionary's.
+    Unseen,
 }
 
-/// The functions that return a write's result and may give its `Err`; and
+/// What `failing_fns` found of a crate: its functions that may give back a
+/// write's error, whether any write of the crate's or its libraries' may
+/// (ADR 0187), and whether one through a dictionary may, a generic `T`'s:
+/// any's, but in a library, not where only what no consumer compiles may,
+/// a `dyn`'s or a trait method's own type parameter's (#1392).
+#[derive(Clone, Copy)]
+pub(in crate::lower) struct Failing<'a> {
+    pub(in crate::lower) fns: &'a IndexSet<DefId>,
+    pub(in crate::lower) any: bool,
+    pub(in crate::lower) dictionaries: bool,
+}
+
+/// The functions that return a write's result and may give its `Err`;
 /// whether any write of the crate's or its libraries' may fail: one of
 /// those may, or a writer's own `write` may, whose `io::Result<usize>`'s
 /// `Err` std's `write_all` gives on, where nothing of the crate's that
-/// returns a write's result does (#1072).
+/// returns a write's result does (#1072); and whether a dictionary's may,
+/// `Failing::dictionaries`.
 pub(super) fn failing_fns<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
     foreign: &Foreign<'_, 'tcx>,
-) -> (IndexSet<DefId>, bool) {
+    library: bool,
+) -> (IndexSet<DefId>, bool, bool) {
     let mut failing: IndexSet<DefId> = IndexSet::default();
+    // A library's that write or format through what no consumer compiles,
+    // which may fail whatever the library writes itself (#1392).
+    let mut unseen: Vec<DefId> = Vec::new();
     let mut calls: Vec<(DefId, Callee)> = Vec::new();
     // What makes an `Err` of a value's `Result` of a write's error, an
     // `io::Result<usize>`'s, and what calls what gives one, each as its
@@ -75,8 +103,10 @@ pub(super) fn failing_fns<'tcx>(
             if let Some(fmt_trait) = fmt_trait_called(tcx, callee) {
                 let fmt = tcx.associated_item_def_ids(fmt_trait)[0];
                 for part in args.types().next().into_iter().flat_map(formatted_parts) {
-                    if let Some(callee) = resolve(tcx, typing_env, fmt, tcx.mk_args(&[part.into()])) {
-                        calls.push((caller, callee));
+                    match resolve_in(tcx, typing_env, caller, fmt, tcx.mk_args(&[part.into()])) {
+                        Some(Callee::Unseen) if library => unseen.push(caller),
+                        Some(callee) => calls.push((caller, callee)),
+                        None => {}
                     }
                 }
                 continue;
@@ -146,16 +176,15 @@ pub(super) fn failing_fns<'tcx>(
                 continue;
             }
             if is_write_result_type(tcx, output)
-                && let Some(callee) = resolve(tcx, typing_env, callee, args)
+                && let Some(callee) = resolve_in(tcx, typing_env, caller, callee, args)
             {
-                // std's own, `write_all`, of a writer rust-js compiled, the
-                // crate's or a library's, whose `write` may fail as any of
-                // theirs may.
-                let own_writer = matches!(callee, Callee::Known(id) if !id.is_local())
-                    && args.types().next().is_some_and(|this| {
-                        matches!(this.peel_refs().kind(), ty::Adt(adt, _) if foreign.compiled_by_rust_js(adt.did()))
-                    });
-                calls.push((caller, if own_writer { Callee::Unknown } else { callee }));
+                match callee {
+                    Callee::Unseen if library => unseen.push(caller),
+                    // std's own, `write_all`, of a writer rust-js compiled,
+                    // whose `write` may fail as any of theirs may.
+                    Callee::Known(id) if of_own_writer(foreign, id, args) => calls.push((caller, Callee::Unknown)),
+                    callee => calls.push((caller, callee)),
+                }
             }
         }
     }
@@ -181,13 +210,18 @@ pub(super) fn failing_fns<'tcx>(
     // counted itself.
     let writes_fail = |failing: &IndexSet<DefId>| failing.iter().any(|&id| !of_io_reading(tcx, id));
     let any = writes_fail(&failing) || writer_fails || foreign.writes_may_fail();
+    // A dictionary's may fail as the library's own writes may, not as only
+    // what its consumers give it through a `dyn` may: those are its
+    // consumers' to compile, where what they give may fail.
+    let dictionaries = any;
+    failing.extend(unseen);
     let mut changed = true;
     while changed {
         changed = false;
         for (caller, callee) in &calls {
             let fails = match *callee {
                 Callee::Known(id) => failing.contains(&id) || foreign.fails(id),
-                Callee::Unknown => any,
+                Callee::Unknown | Callee::Unseen => any,
             };
             if fails && failing.insert(*caller) {
                 changed = true;
@@ -195,12 +229,13 @@ pub(super) fn failing_fns<'tcx>(
         }
     }
     let any = any || writes_fail(&failing);
+    let dictionaries = if library { dictionaries } else { any };
     // Only one that returns a write's result passes its error on; another
     // that formats one panics, as std's `format!` does.
     failing.retain(|&id| {
         tcx.def_kind(id).is_fn_like() && output_of(tcx, id).is_some_and(|output| is_write_result_type(tcx, output))
     });
-    (failing, any)
+    (failing, any, dictionaries)
 }
 
 /// What the function or closure `id` gives back, as it's declared; `None`
@@ -233,6 +268,46 @@ fn makes_err<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, of: impl Fn(ty::Ty<'tcx
     })
 }
 
+/// May a call in `caller` of `def_id` of `args`, as `typing_env` resolves
+/// it, give back a write's error (ADR 0187), where `failing` is what the
+/// crate's analysis found: a byte source's `read_exact` and a call of std's
+/// files (#1156); a function of the crate's or a library's that may; std's
+/// own, of a writer rust-js compiled; a dictionary's where one may; and a
+/// `dyn`'s or a trait method's own type parameter's, which may be any. The
+/// lowering's answer of each call, and the one a consumer asks of what a
+/// library's function it calls would call, given what it gives it
+/// (`instances::needed`, #1392).
+pub(in crate::lower) fn call_may_fail<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (typing_env, caller): (ty::TypingEnv<'tcx>, DefId),
+    foreign: &Foreign<'_, 'tcx>,
+    failing: Failing<'_>,
+    (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> bool {
+    if !failing.any {
+        return false;
+    }
+    if of_io_reading(tcx, def_id) || of_files(tcx, def_id, args) {
+        return true;
+    }
+    match resolve_in(tcx, typing_env, caller, def_id, args) {
+        Some(Callee::Known(id)) => failing.fns.contains(&id) || foreign.fails(id) || of_own_writer(foreign, id, args),
+        Some(Callee::Unknown) => failing.dictionaries,
+        Some(Callee::Unseen) => true,
+        None => false,
+    }
+}
+
+/// Whether `id`, called with `args`, is std's own of a writer rust-js
+/// compiled, the crate's or a library's: `write_all`, which calls its
+/// `write`, which may fail as any of theirs may (#1072).
+fn of_own_writer(foreign: &Foreign<'_, '_>, id: DefId, args: ty::GenericArgsRef<'_>) -> bool {
+    !id.is_local()
+        && args.types().next().is_some_and(
+            |this| matches!(this.peel_refs().kind(), ty::Adt(adt, _) if foreign.compiled_by_rust_js(adt.did())),
+        )
+}
+
 /// `def_id` of `args`, as the caller's typing environment resolves it: a
 /// function or an impl's method, or `Unknown` where a dictionary decides, a
 /// type parameter's or a `dyn`'s. `None` where it's of nothing: a type that
@@ -244,10 +319,35 @@ fn resolve<'tcx>(
     args: ty::GenericArgsRef<'tcx>,
 ) -> Option<Callee> {
     match crate::lower::items::resolve_instance_in(tcx, typing_env, def_id, args) {
-        Ok(Some(instance)) if matches!(instance.def, ty::InstanceKind::Virtual(..)) => Some(Callee::Unknown),
+        Ok(Some(instance)) if matches!(instance.def, ty::InstanceKind::Virtual(..)) => Some(Callee::Unseen),
         Ok(Some(instance)) => Some(Callee::Known(instance.def_id())),
         Ok(None) if args.has_param() => Some(Callee::Unknown),
         _ => None,
+    }
+}
+
+/// `resolve`'s, of a call in `caller`: `Unseen` too where a dictionary
+/// decides by a type parameter of a trait method's own, `render<W:
+/// Write>`'s `W`, of the trait's or an impl's method, whose callers no
+/// consumer compiles for its own (ADR 0914); an impl's or a trait's own
+/// type parameter is `Unknown`, as a function's is.
+fn resolve_in<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    caller: DefId,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<Callee> {
+    let root = tcx.typeck_root_def_id(caller);
+    let of_trait_method = tcx.trait_of_assoc(root).is_some() || tcx.trait_impl_of_assoc(root).is_some();
+    let parents = tcx.generics_of(root).parent_count as u32;
+    let own_param = |args: ty::GenericArgsRef<'tcx>| {
+        (args.types().flat_map(|ty| ty.walk()))
+            .any(|part| matches!(part.as_type().map(|ty| *ty.kind()), Some(ty::Param(param)) if param.index >= parents))
+    };
+    match resolve(tcx, typing_env, def_id, args) {
+        Some(Callee::Unknown) if of_trait_method && own_param(args) => Some(Callee::Unseen),
+        callee => callee,
     }
 }
 

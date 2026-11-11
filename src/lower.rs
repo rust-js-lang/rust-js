@@ -391,10 +391,9 @@ struct CrateFacts<'a, 'tcx> {
     built_slots: &'a traits::BuiltSlots<'tcx>,
     /// The functions that take their caller's location (ADR 0427).
     caller_locations: &'a IndexSet<DefId>,
-    /// The functions that may return `Err(fmt::Error)`, and whether any of
-    /// the crate's or its libraries' may, as a generic `T`'s then may (ADR 0187).
-    failing: &'a IndexSet<DefId>,
-    any_failing: bool,
+    /// The functions that may return `Err(fmt::Error)`, whether any of the
+    /// crate's or its libraries' may, and a dictionary's (ADR 0187, #1392).
+    failing: analysis::Failing<'a>,
     /// The throwing functions, whose result is a throwing JS call's, each
     /// return its call's value (ADR 0644).
     throwing: &'a IndexSet<DefId>,

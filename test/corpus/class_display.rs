@@ -1,3 +1,4 @@
+//@ library-differs
 // A class's `impl Display` is its prototype's `toString` (#358): `{p}` and
 // `p.to_string()` are JS's text of it, a `T: Display` given it shows it by
 // `String`, a `dyn Display` too, and another `Display`'s `self.at.fmt(f)`

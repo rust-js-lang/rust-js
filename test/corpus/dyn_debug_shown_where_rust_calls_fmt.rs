@@ -1,3 +1,4 @@
+//@ library-differs
 // A `dyn Debug` stored or passed is its value with its type's `Debug`, `{
 // value, impl }` (ADR 0060, amended, #1335), so its `fmt` runs where Rust
 // calls it: each time it's shown, never where it's made, and never where it

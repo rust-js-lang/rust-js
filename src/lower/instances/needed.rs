@@ -1,7 +1,9 @@
 //! Which of its libraries' functions a crate compiles itself (ADR 0914):
 //! one its call gives a value to copy or drop that its export takes nothing
-//! for, and the library's private functions an instance calls; and the
-//! refusal of an instance's read of its library's private state.
+//! for, or what may fail that it writes or formats through where its export
+//! never fails (`failing.rs`, #1392), and the library's private functions an
+//! instance calls; and the refusal of an instance's read of its library's
+//! private state.
 
 use super::*;
 
@@ -20,6 +22,9 @@ pub(in crate::lower) struct Analyzed<'a, 'tcx> {
     /// The type parameters of its own functions given a copy, and a
     /// `Clone` dictionary (ADR 0914, amended).
     pub(in crate::lower) given: crate::lower::traits::Given<'a>,
+    /// Its functions that may give back a write's error, and whether any
+    /// of its writes may (ADR 0187).
+    pub(in crate::lower) failing: crate::lower::analysis::Failing<'a>,
     pub(in crate::lower) bodies: Vec<&'a Body<'tcx>>,
 }
 
@@ -42,6 +47,8 @@ struct Calls<'a, 'tcx> {
     /// Whether a value of a type is its own clone, as the crate counts its
     /// `Rc`s.
     clones_itself: &'a dyn Fn(Ty<'tcx>) -> bool,
+    /// What may fail of the crate's writes (ADR 0187).
+    failing: crate::lower::analysis::Failing<'a>,
 }
 
 /// The library functions the crate's bodies, its own and the instances it
@@ -60,6 +67,7 @@ pub(in crate::lower) fn needed<'tcx>(
         drops: (library, closure_facts, counted),
         drop_params,
         given,
+        failing,
         bodies,
     } = analyzed;
     let recognition = crate::lower::recognition::Recognition {
@@ -80,6 +88,7 @@ pub(in crate::lower) fn needed<'tcx>(
         clones: given.clones,
         unboxed: given.unboxed,
         clones_itself: &clones_itself,
+        failing,
     };
     let mut more: Vec<(DefId, LocalModId)> = Vec::new();
     let mut may_drop: IndexMap<(DefId, u32), bool> = IndexMap::default();
@@ -184,7 +193,11 @@ fn called_through<'tcx>(
 /// Whether `id` is a function of a rust-js library a consumer can compile:
 /// one with MIR, not a trait's or an impl's, which a dictionary calls, nor
 /// a binding, nor `@rust-js/std`'s.
-fn compiled_here(foreign: &crate::lower::library::Foreign<'_, '_>, tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub(in crate::lower::instances) fn compiled_here(
+    foreign: &crate::lower::library::Foreign<'_, '_>,
+    tcx: TyCtxt<'_>,
+    id: DefId,
+) -> bool {
     !id.is_local()
         && foreign.is_library(id.krate)
         && matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn)
@@ -253,6 +266,7 @@ fn gives_more<'tcx>(
             || (copies && copied.contains(&index) && !takes(index, ParamFact::Copy))
             || (clones && cloned.contains(&index) && !takes(index, ParamFact::Clone))
     }) || items_given_drops(calls, (caller, callee, args), &takes)
+        || super::failing::fails_given(calls.tcx, calls.foreign, calls.failing, (caller, callee, args))
 }
 
 /// Whether a call gives `callee`, a library's function, a std associated
@@ -517,7 +531,7 @@ fn compiled_because(foreign: &crate::lower::library::Foreign<'_, '_>, root: DefI
     match foreign.writes_more(root) {
         Some(more) => format!("a writer given {more}, which its library's JS doesn't take"),
         None if foreign.merges_identities(root) => "one whose JS may give one function where Rust makes two, which this crate compares".to_string(),
-        None => "one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place".to_string(),
+        None => "one given a value to copy or drop that it takes nothing for, a writer or a value whose writes may fail where its library's never do, an impl its library's code never asks for, or one that copies what this crate changes in place".to_string(),
     }
 }
 

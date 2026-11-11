@@ -266,9 +266,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `fmt_failures` found may, a function's as `call_may_fail` says, and
     /// any other, a `dyn Fn`'s or a type parameter's, where any may.
     fn closure_may_fail(&self, callee: Ty<'tcx>) -> bool {
-        self.krate.any_failing
+        self.krate.failing.any
             && match *callee.peel_refs().kind() {
-                ty::Closure(id, _) => self.krate.failing.contains(&id),
+                ty::Closure(id, _) => self.krate.failing.fns.contains(&id),
                 ty::FnDef(id, args) => self.call_may_fail(id, args.skip_binder()),
                 _ => true,
             }

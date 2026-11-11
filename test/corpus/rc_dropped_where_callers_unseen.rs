@@ -1,3 +1,4 @@
+//@ library-differs
 // Generic code whose callers can't all be seen, a `pub` trait's method,
 // which JS or a consumer may call with any type (#1009): its `Rc<T>` of a
 // value that drops is counted, so its value is dropped by its last clone,

@@ -1,3 +1,4 @@
+//@ library-differs
 // A struct whose last field becomes a `dyn` is the struct with its `impl`
 // (ADR 0409), a `Box` of one too, which drops that field through its
 // `impl` where Rust drops it: of a trait, of std's, of none, `dyn Send`,

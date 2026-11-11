@@ -234,7 +234,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Value::Fmt(Std::FmtDisplay, ty, _) => this.fmt_may_fail(this.display_trait(), ty),
                         Value::Fmt(Std::FmtDebug, ty, _) => this.fmt_may_fail(this.debug_trait(), ty),
                         // A number's or a pointer's, unless a type of the crate's.
-                        Value::Fmt(_, ty, _) => this.krate.any_failing && ty.peel_refs().is_adt(),
+                        Value::Fmt(_, ty, _) => this.krate.failing.any && ty.peel_refs().is_adt(),
                         _ => false,
                     });
                     // What may fail is written piece by piece, so that what
@@ -293,7 +293,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let call = Expr::call(Expr::member(dictionary, bindings::fn_name(tcx, def_id)), exprs);
                     // std's `write_all` of the crate's own `write`, which may fail
                     // where any of the crate's may: its result a value (ADR 0462).
-                    match this.krate.any_failing {
+                    match this.krate.failing.any {
                         true => this.fmt_try(vec![StmtKind::Return(Some(call)).at(js::Span::NONE)]),
                         false => call,
                     }

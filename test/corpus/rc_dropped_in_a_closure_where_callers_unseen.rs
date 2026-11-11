@@ -1,3 +1,4 @@
+//@ library-differs
 // Generic code whose callers can't all be seen, a `pub` trait's method
 // (#1009): its `Rc` of a closure that captures a value that drops is
 // counted, so the value is dropped by the `Rc`'s last clone, though no

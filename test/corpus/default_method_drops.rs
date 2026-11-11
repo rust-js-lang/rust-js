@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait's default method, copied into each impl (ADR 0049), is checked
 // for what it drops as any body is (ADR 0098): a temporary with a
 // destructor, not dropped, would print one line fewer than Rust.

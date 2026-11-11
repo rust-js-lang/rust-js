@@ -1509,3 +1509,77 @@ native Rust, and the mutations `instance-default-asked-through-copies`,
 `mir-body-std-call-asks-unread`.
 itertools' probe now stops at whether `vec::IntoIter<MultiProductIter<I>>`
 is a `TrustedRandomAccessNoCoerce`, which no caller gives.
+
+## Amendment: what a consumer gives that may fail, where its library's writes never do (#1392)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change, so
+Rust's behavior holds.
+
+A library none of whose own writes fail is lowered as a crate whose writes
+never fail (ADRs 0054, 0132, 0187): its generic `emit<W: Write>`'s
+`out.write_all(b"x")` passes a writer's throw on, but `is_ok()` of it is
+`true`, `let _ =` throws past it, and its manifest says `emit` never fails,
+so its consumer's call never caught the error. A consumer that gave it a
+`File` opened to read, or a writer of its own whose `write` refuses, got an
+uncaught `Bad file descriptor` where Rust's `emit` gives back its `Err`
+(the metamorphic net's `library` rewrite of `fs_write_only_fails`).
+
+**A consumer whose call gives a library's function, which its export says
+never fails, what that function's body writes or formats through and may
+fail here compiles its own of it: `instances/failing.rs`' `fails_given`
+reads the library's MIR given the call's types, its closures and its
+library's functions it calls in turn, and asks of each write or format
+there `fmt_failures::call_may_fail`, the one answer the lowering asks of
+each call. A write or a format through what no consumer compiles, a `dyn`'s
+or a trait method's own type parameter's (`render<W: Write>`'s `W`), may
+fail in the library itself, whatever it writes: its result tested is what
+`$writeTry` caught, and its function's manifest says it fails. A write
+through another type parameter, a function's or an impl's, still never
+fails in a library none of whose own writes do (`Failing::dictionaries`),
+and its manifest's `writes_may_fail` is that answer, so neither the
+library's generic code nor its consumers change where nothing fails.**
+
+```js
+// a library's, which writes through a `dyn`
+export function emitted(out) {
+  const result = $writeTry(() => out.impl.writeAll(out, [120]));
+  return result === undefined;
+}
+export function joined(items, TDisplay) {
+  return items.map((item) => TDisplay.fmt(item)).join(",");
+}
+```
+
+- **Why the consumer for generics**: it's this decision's rule, and Rust's
+  codegen's: the function compiled for what its caller gives it. The
+  library's JS is the one its JS callers call, and changes only where a
+  `dyn` or a trait method makes it.
+- **Why the library for a `dyn` and a trait method**: no consumer can
+  compile those for its own; a dictionary's caller calls the impl's code,
+  as a drop of a trait method's own type parameter is the library's
+  (ADR 0163). A consumer that calls an impl's generic method compiles that
+  impl itself, so the trait method's rule shapes the library's own JS, the
+  one JS calls.
+- **Alternatives**: every write through a dictionary may fail in a library
+  (the library's side alone) covers each shape, but gives every library
+  with generic `Display` or `Write` code, and every consumer of it, the
+  failing form where nothing fails, `$fmtOrPanic` around each
+  `to_string()` of a `T`; the consumer's side alone leaves a `dyn` written
+  by library code wrong. The user chose the split (2026-11-11).
+- **Held by** the crate pairs `library_generic_writer_given_a_failing_one`
+  (a file opened to read and a writer of the consumer's, given to `emit`,
+  `?`, `is_ok()`, `let _ =`, `match` and a helper of the library's),
+  `library_generic_formatter_given_a_failing_one` (a `fmt::Write` and a
+  failing `Display`), `library_method_of_a_generic_writer_given_a_failing_one`
+  (an inherent method of a generic struct, and one that writes in a
+  closure), `library_dyn_writer_given_a_failing_one`,
+  `library_dyn_formatter_given_a_failing_one` and
+  `library_trait_method_writer_given_a_failing_one`, each against native
+  Rust; test/crates-compiled-here.test.ts holds the library's JS; the
+  metamorphic `library` rewrite of `fs_write_only_fails` runs as native
+  Rust. Sixteen corpus cases that format or write through a `dyn` now say
+  `library-differs`, their library builds run against native Rust on each
+  push. Ten mutations in `fmt_failures.ts`, `instances/failing.ts` and
+  `recognition/io.ts`, all caught; the last, a closure's name asked by
+  `buf_reader_seek_relative`, which crashed rustc once a library's closure
+  that formats a `dyn` could fail.

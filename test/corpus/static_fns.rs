@@ -1,3 +1,4 @@
+//@ library-differs
 // A static or a constant whose value is a function, a closure or a `dyn`,
 // which rustc's value of it can't say, is its initializer (ADR 0096): it
 // can't change in place, so the one JS value is every use's.

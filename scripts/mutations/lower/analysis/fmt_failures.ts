@@ -50,8 +50,8 @@ export const mutations: Mutation[] = [
     name: "fmt-error-formatted-unseen",
     breaks: "`{}` of a value whose `Display` fails isn't one that may fail",
     file: "src/lower/analysis/fmt_failures.rs",
-    find: "                    if let Some(callee) = resolve(tcx, typing_env, fmt, tcx.mk_args(&[part.into()])) {",
-    replace: "                    if let Some(callee) = None::<Callee> {",
+    find: "                    match resolve_in(tcx, typing_env, caller, fmt, tcx.mk_args(&[part.into()])) {",
+    replace: "                    match None::<Callee> {",
     tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
@@ -77,9 +77,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a function that only gives std's `write_all` of the crate's writer isn't known to fail",
     file: "src/lower/analysis/fmt_failures.rs",
-    find: "                calls.push((caller, if own_writer { Callee::Unknown } else { callee }));\n",
-    replace:
-      "                let _ = own_writer;\n                calls.push((caller, callee));\n",
+    find: "                    Callee::Known(id) if of_own_writer(foreign, id, args) => calls.push((caller, Callee::Unknown)),\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
   {
@@ -162,5 +161,58 @@ export const mutations: Mutation[] = [
     find: "            if of_files(tcx, callee, args) {",
     replace: "            if of_files(tcx, callee, args) && false {",
     tests: ["test/corpus.test.ts", "-t", "^(fs_file|fs_write_only_fails).rs$"],
+  },
+  {
+    name: "file-write-error-uncaught",
+    breaks: "a `File`'s `write_all` the OS refuses throws past `unwrap_err()`, where its value is the error (#1156)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "    if of_io_reading(tcx, def_id) || of_files(tcx, def_id, args) {\n",
+    replace: "    if of_io_reading(tcx, def_id) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^fs_file.rs$"],
+  },
+  {
+    name: "library-dyn-write-never-fails",
+    breaks:
+      "a library's write through a `dyn`, which no consumer compiles, is taken to succeed as its own writes do: `out.write_all(b\"x\").is_ok()` is `true` of its consumer's writer that refuses it (#1392)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "                    Callee::Unseen if library => unseen.push(caller),\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_dyn_writer_given_a_failing_one$"],
+  },
+  {
+    name: "library-dyn-format-never-fails",
+    breaks:
+      "a library's format of a `dyn Display`, which no consumer compiles, is taken to succeed: `write!(out, \"[{t}]\")` of its consumer's value that fails throws past `shown` (#1392)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "                        Some(Callee::Unseen) if library => unseen.push(caller),\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_dyn_formatter_given_a_failing_one$"],
+  },
+  {
+    name: "library-dictionaries-fail-with-its-dyns",
+    breaks:
+      "a library whose write through a `dyn` may fail takes each write through a type parameter to fail too: `joined`'s `to_string()` is `$fmtOrPanic(..)`, where its consumer compiles its own where what it gives may (#1392)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "    let dictionaries = if library { dictionaries } else { any };\n",
+    replace: "    let dictionaries = any;\n",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "a library's write through a dyn may fail"],
+  },
+  {
+    name: "trait-method-own-param-a-dictionarys",
+    breaks:
+      "a write through a trait method's own type parameter, `render<W: Write>`'s, is a dictionary's, its consumer's to compile: a library's `dashRender_render` takes `WWrite.writeAll(..)` to succeed, `written` never its error (#1392)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "        Some(Callee::Unknown) if of_trait_method && own_param(args) => Some(Callee::Unseen),\n",
+    replace: "",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "a library's write through a dyn may fail"],
+  },
+  {
+    name: "own-writer-write-all-never-fails",
+    breaks:
+      "std's `write_all` of a writer the crate compiled isn't one that may fail where a library's generic writer is given it: its consumer calls the library's own, which takes it to succeed (#1392)",
+    file: "src/lower/analysis/fmt_failures.rs",
+    find: "        Some(Callee::Known(id)) => failing.fns.contains(&id) || foreign.fails(id) || of_own_writer(foreign, id, args),\n",
+    replace: "        Some(Callee::Known(id)) => failing.fns.contains(&id) || foreign.fails(id),\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_generic_writer_given_a_failing_one$"],
   },
 ];

@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait's generic method, in a crate where a type has a destructor: what
 // it's given is dropped where Rust drops it, called on the impl itself or
 // through a dictionary, as a generic function's is (ADR 0098). Its drops

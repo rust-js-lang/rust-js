@@ -1,3 +1,4 @@
+//@ library-differs
 // An impl's own type parameter, `U` of `impl<U> Pair for Keeper<U>`, is a
 // dictionary's to decide, never what a naming of the trait's method gives
 // its own `T` (#1009): so its counted `Rc<U>` may be any `Rc`, the

@@ -15,6 +15,7 @@ use rustc_span::def_id::{DefId, LocalModId};
 
 use super::Body;
 
+mod failing;
 mod needed;
 pub(super) use needed::{Analyzed, copy_reaches, needed};
 

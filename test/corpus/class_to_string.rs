@@ -1,3 +1,4 @@
+//@ library-differs
 // A class's `impl Display` is its prototype's `toString` (#358), in a
 // crate that gives no `Formatter` options: `{p}` and `p.to_string()` are
 // JS's text of it, `${p}`, and a `T: Display` shows it by `String`. What

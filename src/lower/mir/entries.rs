@@ -299,7 +299,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => Expr::call_helper("$ioThrow", vec![result]),
                 }
             }
-            _ if crate::lower::display::may_be_write_error(&result) && self.krate.any_failing => {
+            _ if crate::lower::display::may_be_write_error(&result) && self.krate.failing.any => {
                 Expr::call_helper("$writeCheck", vec![result])
             }
             _ => result,
@@ -359,7 +359,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let message = values.next().map(|v| self.value_expr(v, span)).transpose()?;
         // Only in a crate where a `fmt::Result` may be an `Err` is one tested:
         // what `$writeTry` caught (ADR 0187).
-        let may_fail = self.krate.any_failing && self.is_write_result(arg_tys[0].peel_refs());
+        let may_fail = self.krate.failing.any && self.is_write_result(arg_tys[0].peel_refs());
         if may_fail || result.has_effects() || message.as_ref().is_some_and(Expr::has_effects) {
             self.flush(state, out)?;
         }

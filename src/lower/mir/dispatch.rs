@@ -1074,7 +1074,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let ty = arg_tys[0];
             // Of one that may be an `Err`: its error thrown on, `fmt_check`
             // (ADR 0187), and what's left never breaks.
-            if self.is_write_result(ty) && self.krate.any_failing {
+            if self.is_write_result(ty) && self.krate.failing.any {
                 return self.tried_write(state, values, ty, span, out);
             }
             let tried = self.value_expr(values.into_iter().next().expect("the value tried"), span)?;

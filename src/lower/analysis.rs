@@ -29,6 +29,7 @@ pub(in crate::lower) use collected::{exported_value_const, impl_const, is_type_s
 mod debug;
 mod drops;
 mod fmt_failures;
+pub(in crate::lower) use fmt_failures::{Failing, call_may_fail};
 pub(super) mod fn_pointers;
 mod generic_consts;
 pub(super) use fn_pointers::{Called, FnPointers, Holder};
@@ -220,6 +221,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Whether any write of the crate's or its libraries' may fail, of a
     /// function whatever it returns, a writer's `write` too (#1072).
     pub writes_may_fail: bool,
+    /// Whether a write through a dictionary may, a generic `T`'s: in a
+    /// library, not where only what no consumer compiles may (#1392).
+    pub dictionaries_fail: bool,
     /// The throwing functions, whose result is a throwing JS call's (ADR 0644).
     pub throwing: IndexSet<DefId>,
     /// The functions that never unwind, whose call throws only where what
@@ -1012,7 +1016,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     };
     let kept = (item_drops, asks_capacity || foreign.keeps_capacity());
     let facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given, &recognition, kept);
-    let (failing, writes_may_fail) = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
+    let (failing, writes_may_fail, dictionaries_fail) = fmt_failures::failing_fns(tcx, all_bodies, &foreign, library);
     let throwing = throwing::throwing_fns(tcx, &recognition, all_bodies);
     let (never_unwinding, quiet_fns) = unwinding::found(tcx, &recognition, all_bodies, &runs);
     let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
@@ -1079,6 +1083,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         built_slots: facts.built_slots,
         failing,
         writes_may_fail,
+        dictionaries_fail,
         throwing,
         never_unwinding,
         quiet_fns,

@@ -246,7 +246,7 @@ test("a library's function its consumer compiles is refused where it reads its l
     return printed(join(dir, "app.js"));
   };
   expect(() => app("println!(\"{}\", dep::discard(Loud(1)));")).toThrow(
-    "this crate compiles `dep::discard` itself, as its library's JS has none it can call: one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place; but it reads `dep::COUNT`, private to its library",
+    "this crate compiles `dep::discard` itself, as its library's JS has none it can call: one given a value to copy or drop that it takes nothing for, a writer or a value whose writes may fail where its library's never do, an impl its library's code never asks for, or one that copies what this crate changes in place; but it reads `dep::COUNT`, private to its library",
   );
   expect(app("println!(\"{}\", dep::named(Loud(2)));")).toBe("dropped 2\ndep\n");
   // A binding's static, a global's, which any crate's JS reads as it is,
@@ -276,6 +276,25 @@ test("a library's function its consumer compiles is refused where it reads its l
   // (#1026), names what it's given.
   expect(() => app("println!(\"[{:>7}]\", dep::Shown);")).toThrow(
     "this crate compiles `<dep::Shown as std::fmt::Display>::fmt` itself, as its library's JS has none it can call: a writer given a placeholder's options, `{:>4}` or `{:#?}`, which its library's JS doesn't take; but it reads `dep::COUNT`, private to its library",
+  );
+}, 300_000);
+
+// #1392: a library's write or format through a `dyn`, or a trait method's
+// own type parameter, which no consumer compiles for its own, may fail
+// whatever the library writes itself: its result tested is what `$writeTry`
+// caught. One through another type parameter is still written as one that
+// never fails, its consumer's to compile where what it gives may: `joined`'s
+// `to_string()` is the value's `fmt`, no `$fmtOrPanic`. A consumer that
+// calls an impl's generic method compiles that impl itself, so the trait
+// method's is the library's own JS, the one a JS caller calls.
+test("a library's write through a dyn may fail, and one through a type parameter is its consumer's", () => {
+  const out = chain(pairs, "library_dyn_writer_given_a_failing_one", ["dep", "app"]);
+  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  expect(dep).toContain("  const result = $writeTry(() => out.impl.writeAll(out, [120]));\n");
+  expect(dep).toContain("export function joined(items, TDisplay) {\n  return items.map((item) => TDisplay.fmt(item)).join(\",\");\n}\n");
+  const traits = chain(pairs, "library_trait_method_writer_given_a_failing_one", ["dep", "app"]);
+  expect(readFileSync(join(traits, "dep", "lib.js"), "utf8")).toContain(
+    "function dashRender_render(dash, out, WWrite, dropW) {\n  const written = $writeTry(() => WWrite.writeAll(out, [45]));\n",
   );
 }, 300_000);
 

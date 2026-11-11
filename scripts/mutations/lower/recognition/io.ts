@@ -178,4 +178,13 @@ export const mutations: Mutation[] = [
     replace: "            return None;",
     tests: ["test/corpus.test.ts", "-t", "^fs_file.rs$"],
   },
+  {
+    name: "seek-relative-asked-of-a-closures-name",
+    breaks:
+      "whether a closure that may fail is `BufReader::seek_relative` asks its name, which it has none of: rustc panics, `item_name: no name`, building a library whose closure formats a `dyn` (#1392)",
+    file: "src/lower/recognition/io.rs",
+    find: "    tcx.opt_item_name(id)\n        .is_some_and(|name| name.as_str() == \"seek_relative\")\n",
+    replace: "    tcx.item_name(id).as_str() == \"seek_relative\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^(closure_writes_captured_formatter|rc_dropped_in_a_closure_where_callers_unseen).rs$"],
+  },
 ];

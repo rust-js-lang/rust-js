@@ -1,3 +1,4 @@
+//@ library-differs
 // Many items added at once, more than a JS call takes as its arguments:
 // a `Vec<u8>`'s writes, a splice, a repeat and a heap's append each
 // push them, not spread them (ADR 0919).

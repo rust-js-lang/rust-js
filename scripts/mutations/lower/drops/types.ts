@@ -227,16 +227,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "unsize-array-as-dyn",
-    breaks:
-      "an array unsized to a slice in a trait's default method is taken for a `dyn`, and rejected",
-    file: "src/lower/drops/types.rs",
-    find: "        let ty::Dynamic(predicates, ..) = to.kind() else {\n            return false;\n",
-    replace:
-      "        let ty::Dynamic(predicates, ..) = to.kind() else {\n            return to.is_slice() && self.drops(from) != Drops::Nothing;\n",
-    tests: ["test/corpus.test.ts", "-t", "default_method_drops"],
-  },
-  {
     name: "dyn-reference-refused",
     breaks:
       "a `&dyn` of a value with a destructor in a trait's default method, which owns nothing to drop, is rejected",

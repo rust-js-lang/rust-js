@@ -301,6 +301,25 @@ models/src/lib.js     export function first(points) { return $index(points, 0); 
 frontend/src/lib.js   function first(points) { return { ...$index(points, 0) }; }
 ```
 
+A library none of whose own writes fail takes each write through a type
+parameter to succeed, as its program does. A crate that gives one of its
+generic functions a writer or a value whose write or format may fail, a
+file opened to read, a writer of its own whose `write` returns `Err`, a
+`Display` that fails, compiles its own of that function, where its errors
+are the function's `Err`. A write or a format through a `dyn`, or through a
+trait method's own type parameter, which no crate compiles for its own,
+may fail in the library itself: its result tested there is what
+`$writeTry` caught
+([ADR 0914, amended](../../decisions/0914-a-librarys-generic-function-is-its-programs.md)):
+
+```
+models/src/lib.rs     pub fn emitted(out: &mut dyn Write) -> bool { out.write_all(b"x").is_ok() }
+models/src/lib.js     export function emitted(out) {
+                        const result = $writeTry(() => out.impl.writeAll(out, [120]));
+                        return result === undefined;
+                      }
+```
+
 The same `models` crate builds natively for a Rust server. See
 [Testing](testing.md#test-shared-logic-natively).
 

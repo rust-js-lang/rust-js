@@ -1,3 +1,4 @@
+//@ library-differs
 // Generic code whose callers can't all be seen, a `pub` trait's methods,
 // which JS or a consumer may call with any type (#1009): its `Rc<Slot<T>>`
 // is counted where a `Slot<u32>`'s is, one representation for both, as

@@ -109,28 +109,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the crate's or a library's function that may, or a dictionary's,
     /// which may be any, where any of the crate's or its libraries' may.
     pub(super) fn call_may_fail(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
-        if !self.krate.any_failing {
-            return false;
-        }
-        // A byte source's `read_exact` past its end, and a call of std's
-        // files the OS refuses (#1156).
-        if super::recognition::of_io_reading(self.tcx, def_id) || super::recognition::of_files(self.tcx, def_id, args) {
-            return true;
-        }
-        match self.resolve_instance(def_id, args) {
-            Ok(Some(instance)) if matches!(instance.def, ty::InstanceKind::Virtual(..)) => true,
-            Ok(Some(instance)) => {
-                self.krate.failing.contains(&instance.def_id()) || self.krate.foreign.fails(instance.def_id())
-            }
-            Ok(None) => args.has_param(),
-            Err(_) => false,
-        }
+        let at = (self.typing_env, self.item);
+        super::analysis::call_may_fail(self.tcx, at, self.krate.foreign, self.krate.failing, (def_id, args))
     }
 
     /// May formatting a `ty` by `fmt_trait` fail: its impl's `fmt`, or that of
     /// a type it holds, as std's `Vec<T>` calls `T`'s (ADR 0187)?
     pub(super) fn fmt_may_fail(&self, fmt_trait: DefId, ty: Ty<'tcx>) -> bool {
-        if !self.krate.any_failing {
+        if !self.krate.failing.any {
             return false;
         }
         let fmt = self.tcx.associated_item_def_ids(fmt_trait)[0];
@@ -275,7 +261,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Is the function being lowered one that may return `Err(fmt::Error)`
     /// (ADR 0187)?
     pub(super) fn writer_fails(&self) -> bool {
-        self.krate.failing.contains(&self.item)
+        self.krate.failing.fns.contains(&self.item)
     }
 
     /// In a writer given options (ADRs 0137, 0143): what `f.alternate()`,

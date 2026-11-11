@@ -1,3 +1,4 @@
+//@ library-differs
 // A struct whose last field is a `dyn`, shown through a reference to it
 // (ADR 0409): of a plain `T`, `Display` and `ToString`, and of a `ManuallyDrop<T>`, which is the
 // value it holds (ADR 0571). The field reads as its value and the `impl`

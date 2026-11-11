@@ -1,3 +1,4 @@
+//@ library-differs
 // A value with a destructor made a `dyn` of std's that's a pair, `dyn Any`,
 // `dyn Display`, `dyn Error`, is dropped through its dictionary's `$drop`,
 // as a `dyn` of the crate's trait is: where Rust drops it, once.

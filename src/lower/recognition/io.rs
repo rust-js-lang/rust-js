@@ -133,9 +133,11 @@ pub(crate) fn of_io_reading(tcx: TyCtxt<'_>, id: DefId) -> bool {
 }
 
 /// Whether `id` is `BufReader::seek_relative`, which its `Seek` impl's
-/// calls: an `io::Result<()>` that may fail, as `Seek`'s is.
+/// calls: an `io::Result<()>` that may fail, as `Seek`'s is. Not a
+/// closure, which has no name.
 fn buf_reader_seek_relative(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    tcx.item_name(id).as_str() == "seek_relative"
+    tcx.opt_item_name(id)
+        .is_some_and(|name| name.as_str() == "seek_relative")
         && tcx.inherent_impl_of_assoc(id).is_some_and(
             |imp| matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(adt, _) if is_buf_reader(tcx, adt.did())),
         )
