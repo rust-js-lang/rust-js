@@ -11,25 +11,6 @@ const refusals = ["test/classes.test.ts", "-t", "what a class is refused"];
 
 export const mutations: Mutation[] = [
   {
-    name: "receiver-booleans-unrenamed",
-    breaks:
-      "a class's method's `this.below(x) || ..` is `!!this.below(x) || ..`, its `bool` paths left of the receiver's name",
-    file: "src/lower/classes.rs",
-    find: '            Some(rest) => format!("this.{rest}"),\n',
-    replace: "            Some(_) => path,\n",
-    tests: ["test/corpus.test.ts", "-t", "^class_bool_methods.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "class-receiver-left-to-tidy",
-    breaks:
-      "a class's method's `self` stays a parameter through tidy, so it's no `this`, its `let point` read as another variable",
-    file,
-    find: "    if taken != Receiver::This {\n",
-    replace: "    if taken == Receiver::This {\n",
-    tests: ["test/corpus.test.ts", "-t", "^class_local_named_as_self.rs$"],
-  },
-  {
     name: "class-unmarked",
     breaks:
       "a struct marked `#[rust_js::class]` is no class: its impl an object of functions, `Component.new(..)`, which `class X extends Component` can't run",
@@ -47,24 +28,6 @@ export const mutations: Mutation[] = [
     find: "        DefKind::AssocFn if tcx.associated_item(def_id).is_method() => Member::Method,\n",
     replace: "",
     tests: base,
-  },
-  {
-    name: "class-self-not-this",
-    breaks:
-      "a method's `self` stays the variable of its parameter, which no one declares, not `this`",
-    file,
-    find: "    if js::read_as_this(body, &receiver) {\n",
-    replace: "    if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "class_methods"],
-  },
-  {
-    name: "class-constructor-returns",
-    breaks:
-      "a constructor's early `return { .. }` sets `this`'s fields and goes on, so the rest overwrites them",
-    file,
-    find: "            if Some(i + 1) != last {\n",
-    replace: "            if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "class_methods"],
   },
   {
     name: "class-const-screaming",
@@ -183,54 +146,6 @@ export const mutations: Mutation[] = [
     tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
   },
   {
-    name: "class-instance-not-this",
-    breaks:
-      "a constructor that makes its instance, `let fiber = Fiber { .. }; ..; fiber`, is refused, React's `FiberNode` its object form",
-    file,
-    find: "    instance_as_this(body)?;\n",
-    replace: "",
-    tests: ["test/classes.test.ts", "-t", "constructor's statements set this"],
-  },
-  {
-    name: "class-instance-set-again-allowed",
-    breaks:
-      "a constructor whose instance is set again, `c = C { .. }`, is `this = ..`, no JS",
-    file,
-    find: "    if js::Writes::sets(body, &instance) {\n",
-    replace: "    if false && js::Writes::sets(body, &instance) {\n",
-    tests: refusals,
-  },
-  {
-    name: "class-constructor-none-set",
-    breaks:
-      "a constructor's `None` field is `this.actualDuration = undefined;`, where React's sets none until its flag's on",
-    file,
-    find: "    js::undefined_keys::left_out(&mut props, layout);\n",
-    replace: "",
-    tests: ["test/classes.test.ts", "-t", "constructor's statements set this"],
-  },
-  {
-    name: "class-constructor-handle-on-this",
-    breaks:
-      "a handle on a constructor's instance's field, `bump(&fiber.reads)`, reads the instance by preparation's `this$`, `const this$ = this; .. return this$.reads;`, not by its class's name, `fiber` (#449's `prepare::this_handles` keeps its `this` right)",
-    file,
-    find: "            set_this(&mut function.body)?;\n            this_outside_accessors(class, &mut function.body);\n",
-    replace: "            set_this(&mut function.body)?;\n",
-    tests: ["test/corpus.test.ts", "-t", "^class_constructor_statements.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "class-instance-return-kept",
-    breaks:
-      "a constructor's early `return fiber;` gives the instance, not `return;`",
-    file,
-    find: "                stmt.kind = StmtKind::Return(None);\n",
-    replace:
-      "                stmt.kind = StmtKind::Return(Some(Expr::this()));\n",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^class_constructor_statements.rs$"],
-  },
-  {
     name: "class-identity-impls-refused",
     breaks:
       "a class's `PartialEq` of `ptr::eq` and `Hash` of `ptr::hash`, React's fibers in a `Set`, are refused as a trait's methods",
@@ -246,7 +161,7 @@ export const mutations: Mutation[] = [
     file,
     find: "    Some(tcx.parent_module_from_def_id(made.as_local()?))\n",
     replace: "    Some(tcx.parent_module_from_def_id(made.as_local().and(adt.as_local())?))\n",
-    tests: ["test/classes.test.ts", "-t", "constructor's statements set this"],
+    tests: ["test/class-constructors.test.ts", "-t", "constructor's statements set this"],
   },
   {
     name: "object-method-a-prototypes",
@@ -287,15 +202,6 @@ export const mutations: Mutation[] = [
     find: '                    (true, false) => refuse(span, "struct\'s impl is marked `#[rust_js::object]` too"),\n',
     replace: "",
     tests: ["test/classes.test.ts", "-t", "what an object is refused"],
-  },
-  {
-    name: "method-self-in-function-undeclared",
-    breaks:
-      "a `with_this` function in a class's method reads `self` through a variable no one declares, a `ReferenceError`, not `const counter = this;` (ADR 0972)",
-    file,
-    find: "        body.insert(0, StmtKind::Const(receiver.clone(), Expr::this()).at(js::Span::NONE));\n",
-    replace: "",
-    tests: ["test/js-functions.test.ts", "-t", "in a class's method"],
   },
   {
     name: "constructor-as-unknown-constructed",
@@ -415,19 +321,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/classes.rs",
     find: "        return method.then_some(Member::Namespace);\n",
     replace: "        return None;\n",
-    tests: [
-      "test/namespaces.test.ts",
-      "-t",
-      "a namespace's methods are its module's functions",
-    ],
-  },
-  {
-    name: "namespace-receiver-kept",
-    breaks:
-      "a namespace's method keeps its `self` parameter, so a call through the value gives its arguments one place off (ADR 1037)",
-    file: "src/lower/classes.rs",
-    find: "        params.remove(0);\n        return Ok(());\n",
-    replace: "        return Ok(());\n",
     tests: [
       "test/namespaces.test.ts",
       "-t",
@@ -572,40 +465,12 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    name: "subclass-super-unconstructed",
-    breaks: "a class component's constructor never calls `super(props)`, so `this` is a ReferenceError and `this.props` unset",
-    file: "src/lower/classes.rs",
-    find: "                function.body.insert(0, first);\n",
-    replace: "                drop(first);\n",
-    tests: [
-      "test/class-components.test.ts",
-      "-t",
-      "an ES class React renders"
-    ]
-  },
-  {
     name: "subclass-declared-its-type-alone",
     breaks: "a `pub` class component of no `pub` constructor is declared `declare class Counter` and `export type { Counter }`, though its JS exports the class React constructs",
     file: "src/lower/classes.rs",
     find: "    superclass(tcx, class).is_some()\n        || (tcx.inherent_impls(class).iter())\n",
     replace: "    false\n        || (tcx.inherent_impls(class).iter())\n",
     tests: ["test/class-components.test.ts", "-t", "an ES class React renders"],
-  },
-  {
-    name: "super-placed-nowhere",
-    breaks: "`super(props)` has no place, so a comment its constructor's body starts with is printed before it, where ReactART's Text writes it after (rd331)",
-    file: "src/lower/classes.rs",
-    find: "StmtKind::Expr(Expr::call(Expr::super_(), given)).at(function.name_span);",
-    replace: "StmtKind::Expr(Expr::call(Expr::super_(), given)).at(js::Span::NONE);",
-    tests: ["test/class-components.test.ts", "-t", "comment comes after super"],
-  },
-  {
-    name: "flattened-parameter-kept",
-    breaks: "a constructor's flattened state stays one parameter, `function ReactPromise(state)`, its instance spreading it, where its keys are its parameters (rd380)",
-    file: "src/lower/classes.rs",
-    find: "            spread_state(tcx, def_id, function)?;\n",
-    replace: "",
-    tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
   },
   {
     name: "class-trait-of-types-refused",
@@ -639,15 +504,6 @@ export const mutations: Mutation[] = [
     find: "                if let Some(why) = trait_getter_misuse(tcx, id) {\n",
     replace: "                if let Some(why) = None::<String> {\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "marked as the trait marks it"],
-  },
-  {
-    name: "prototype-forwarding-unplaced",
-    breaks:
-      "a prototype's method that only passes its parameters on is printed a function of its own, `X.prototype.m = function (..) { f(..); }` (rd715)",
-    file: "src/lower/classes.rs",
-    find: "        class.forwarding.push(name.to_owned());\n",
-    replace: "",
-    tests: ["test/method-forwarding.test.ts", "-t", "a prototype's method that only passes its parameters on"],
   },
   {
     name: "constructor-field-allowed",

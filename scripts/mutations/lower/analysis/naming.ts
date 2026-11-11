@@ -476,7 +476,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/naming.rs",
     find: "                let named = crate::lower::classes::name(tcx, ty).unwrap_or_else(|| tcx.item_name(ty).to_string());\n",
     replace: "                let named = tcx.item_name(ty).to_string();\n",
-    tests: ["test/classes.test.ts", "-t", "constructor's statements set this"],
+    tests: ["test/class-constructors.test.ts", "-t", "constructor's statements set this"],
   },
   {
     name: "object-method-its-types",

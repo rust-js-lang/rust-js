@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/classes/constructors.rs",
     find: "    output == own || rc_pointee(tcx, output) == Some(own)\n",
     replace: "    output == own\n",
-    tests: ["test/classes.test.ts", "-t", "a class's constructor that gives an Rc of it makes this"],
+    tests: ["test/class-constructors.test.ts", "-t", "a class's constructor that gives an Rc of it makes this"],
   },
   {
     name: "class-constructor-of-any-pointer-allowed",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/classes/constructors.rs",
     find: "            && counts(pointee)\n",
     replace: "            && counts(pointee) && false\n",
-    tests: ["test/classes.test.ts", "-t", "a class's constructor that gives an Rc of it the crate counts is refused"],
+    tests: ["test/class-constructors.test.ts", "-t", "a class's constructor that gives an Rc of it the crate counts is refused"],
   },
   {
     name: "set-first-of-one-constructor",

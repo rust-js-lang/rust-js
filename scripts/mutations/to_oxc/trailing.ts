@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/trailing.rs",
     find: "            crate::js::Item::Namespace(namespace) => &namespace.methods[..],\n",
     replace: "            crate::js::Item::Namespace(_) => &[],\n",
-    tests: ["test/classes.test.ts", "-t", "a class's constructor that gives an Rc of it makes this"],
+    tests: ["test/class-constructors.test.ts", "-t", "a class's constructor that gives an Rc of it makes this"],
   },
   {
     name: "trailing-comment-dropped",
