@@ -80,6 +80,7 @@ export const iteratorPaths = [
   "std/runtime.js",
   "std/iter.js",
   "test/iterator-matrix.ts",
+  "test/iterator-matrix-prelude.ts",
   "test/iterator-matrix.test.ts",
   "test/iterator-matrix-known.txt",
   "test/iterator-forms.test.ts",
