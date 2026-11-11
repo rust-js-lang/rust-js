@@ -269,3 +269,24 @@ function of the crate's, a field, a concrete `F`, generic code's `F`, and
 `reified-trait-method-refused` (`mut_refs.ts`), `held-box-form-unasked`
 (`generic_facts.ts`) and `unread-values-dropped-once`
 (`recursive_fns.ts`).
+
+## Amendment: a `&mut` a function reborrows for its result is given its place's pointer (#1283)
+
+A raw pointer to what a `&mut` parameter refers to, where JS holds that as
+a box, was refused unless the signature had a raw pointer: the box would
+be a copy, copied back once the call returns. A parameter whose borrow
+outlives the call is given no copy. Its callers give a handle on the
+place (`borrow_outlives_call`), which is the place's pointer, so the
+pointer is that handle. httparse's `unsafe fn deinit_slice_mut<'a, 'b,
+T>(s: &'a mut &'b mut [T]) -> &'a mut &'b mut [MaybeUninit<T>]` casts
+it and reborrows it back.
+
+And a pointer to a `&mut [T]`, or to a `[T]`, as one to a `MaybeUninit<T>`
+version, the same view, is the same pointer, as one to a `MaybeUninit<T>`
+or an array of them was (ADR 0332): `same_place` looks through slices and
+references too. Case C of ADR 0262: what was refused now runs as Rust's.
+Corpus case pointer_to_a_kept_mut covers it against native Rust in both
+builds.
+
+A pointer to an item a slice's `iter_mut()` lends, byteorder's `n as *const
+f32`, is still refused (#1283): the item's handle doesn't know its slot.

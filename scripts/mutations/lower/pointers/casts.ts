@@ -239,4 +239,12 @@ export const mutations: Mutation[] = [
     replace: "                ) && !self.same_place(a, b) && value.reads_same() =>\n",
     tests: ["test/corpus.test.ts", "-t", "^block_results_read_as_another_width.rs$"],
   },
+  {
+    name: "uninit-slice-recast",
+    breaks: "a `*mut &mut [T]` read as a `*mut &mut [MaybeUninit<T>]`, the same view, throws at run time as another type's memory (#1283)",
+    file: "src/lower/pointers/casts.rs",
+    find: "            (ty::Ref(_, x, p), ty::Ref(_, y, q)) => p == q && self.same_place(*x, *y),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_kept_mut.rs$"],
+  },
 ];

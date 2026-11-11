@@ -841,7 +841,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (first..first + inputs.len()).contains(&index)
             && match closure {
                 true => self.sig_given_its_pointer((&inputs, output), index - first),
-                false => self.given_its_pointer(fn_id, index - first),
+                // Or one whose borrow outlives the call, which its callers
+                // give a handle on its place, the place's pointer, httparse's
+                // `deinit_slice_mut` (#1283).
+                false => {
+                    self.given_its_pointer(fn_id, index - first)
+                        || (self.param_is_box(fn_id, index - first) && self.borrow_outlives_call(fn_id, index - first))
+                }
             }
     }
 

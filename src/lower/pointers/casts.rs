@@ -136,7 +136,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A pointer to an `a` as one to a `b`, where JS has it at the same
     /// place: the same handle, of the same type, `()`, or a `MaybeUninit`
-    /// of it, which is its value (ADR 0332), an array of them too; an
+    /// of it, which is its value (ADR 0332), an array or a slice of them
+    /// too, or a reference to one (#1283); an
     /// array's, its first item's, arrayvec's `self.xs.as_ptr() as *const
     /// T`; and its first item's, the whole array's, checked as it's made,
     /// `$ptrWhole`. In generic code, where whether it is depends on the
@@ -283,6 +284,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match (a.kind(), b.kind()) {
             _ if a == b => true,
             (ty::Array(x, n), ty::Array(y, m)) => n == m && self.same_place(*x, *y),
+            // Of a slice of them, or a reference to one, the same view, httparse's
+            // `&mut [T]` as a `&mut [MaybeUninit<T>]` (#1283).
+            (ty::Slice(x), ty::Slice(y)) => self.same_place(*x, *y),
+            (ty::Ref(_, x, p), ty::Ref(_, y, q)) => p == q && self.same_place(*x, *y),
             _ => false,
         }
     }

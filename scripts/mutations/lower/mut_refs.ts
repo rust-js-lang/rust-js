@@ -443,4 +443,12 @@ export const mutations: Mutation[] = [
     replace: "                {\n                    let here = self.instantiated(part, generic_args);\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
   },
+  {
+    name: "kept-mut-not-its-pointer",
+    breaks: "a raw pointer to what a `&mut` a function reborrows for its result refers to, httparse's `deinit_slice_mut`, is refused, though its callers give a handle on its place (#1283)",
+    file: "src/lower/mut_refs.rs",
+    find: "                        || (self.param_is_box(fn_id, index - first) && self.borrow_outlives_call(fn_id, index - first))\n",
+    replace: "                        || false\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_kept_mut.rs$"],
+  },
 ];
