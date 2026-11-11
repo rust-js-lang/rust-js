@@ -1095,6 +1095,13 @@ export function $readInto(buf, from, n) {
   for (let i = 0; i < n; i++) buf[i] = from[i];
 }
 
+// `Seek`'s provided `seek_relative(offset)`: `seek(SeekFrom::Current(offset))`
+// of `reader`, its `Err` thrown, an `io::Result<()>`'s (ADR 0462).
+export function $defaultSeekRelative(reader, r, offset) {
+  const seek = reader.seek(r, { TAG: "Current", _0: offset });
+  if (seek.TAG === "Err") throw seek._0;
+}
+
 // `impl Read for &[u8]` and `impl BufRead for &[u8]`: what's read is taken
 // from the slice's front, `*self = rest`.
 export const $sliceReader = {
@@ -1195,6 +1202,7 @@ export const $emptyReader = {
   readLine: () => ({ TAG: "Ok", _0: 0 }),
   seek: () => ({ TAG: "Ok", _0: 0n }),
   streamPosition: () => ({ TAG: "Ok", _0: 0n }),
+  seekRelative: (r, offset) => $defaultSeekRelative($emptyReader, r, offset),
 };
 
 // `impl Read for Repeat`: every byte read is its `byte`, without end, so
@@ -1282,6 +1290,150 @@ export function $cursorReader(TAsRef) {
       return { TAG: "Ok", _0: n };
     },
     streamPosition: (r) => ({ TAG: "Ok", _0: r.value.pos }),
+    seekRelative: (r, offset) => $defaultSeekRelative(reader, r, offset),
+  };
+  return reader;
+}
+
+// `impl Read for BufReader<R>`, `impl BufRead` and `impl Seek` (#1156): each
+// method std's body word for word, over `{ inner, buf, pos, filled }`, std's
+// fields flattened: `buf` is its buffer, `capacity()` long, of what its
+// inner `read` wrote, `buf[pos..filled]` what's buffered. `R` is its
+// inner's `Read`, or `Seek`, dictionary, given the inner in a box as a
+// `&mut` is, which writes it back. `fill_buf`'s read is `read_buf`'s
+// default, `read` of the whole buffer, as each reader std gives it does.
+export function $bufReader(R) {
+  const inner = (b) => ({
+    get value() {
+      return b.inner;
+    },
+    set value(value) {
+      b.inner = value;
+    },
+  });
+  // `self.buffer()`: what's buffered.
+  const buffered = (b) => $part(b.buf, b.pos, b.filled);
+  const discard = (b) => {
+    b.pos = 0;
+    b.filled = 0;
+  };
+  const reader = {
+    Read: () => reader,
+    // Past its buffer, a read as large goes to its inner at once.
+    read(r, buf) {
+      const b = r.value;
+      if (b.pos === b.filled && buf.length >= b.buf.length) {
+        discard(b);
+        return R.read(inner(b), buf);
+      }
+      const rem = reader.fillBuf(r);
+      if (rem.TAG === "Err") return rem;
+      const n = Math.min(buf.length, rem._0.length);
+      $readInto(buf, rem._0, n);
+      reader.consume(r, n);
+      return { TAG: "Ok", _0: n };
+    },
+    // What's buffered fills `buf` or `default_read_exact` reads it.
+    readExact(r, buf) {
+      const b = r.value;
+      if (buf.length <= b.filled - b.pos) {
+        for (let i = 0; i < buf.length; i++) buf[i] = b.buf[b.pos + i];
+        b.pos += buf.length;
+        return;
+      }
+      $defaultReadExact(reader, r, buf);
+    },
+    // What's buffered, then its inner's.
+    readToEnd(r, v) {
+      const b = r.value;
+      const held = buffered(b);
+      $reserve(v, held.length, 1);
+      for (let i = 0; i < held.length; i++) v.push(held[i]);
+      discard(b);
+      const read = R.readToEnd(inner(b), v);
+      return read.TAG === "Err" ? read : { TAG: "Ok", _0: (held.length + read._0) >>> 0 };
+    },
+    // Into an empty `String` it's `read_to_end`'s, kept where it's UTF-8; into
+    // another, all of it is read first, and checked.
+    readToString(r, s) {
+      if (s.value === "") return $appendToString(s, (v) => reader.readToEnd(r, v));
+      const bytes = [];
+      const read = reader.readToEnd(r, bytes);
+      if (read.TAG === "Err") return read;
+      if ($utf8Check(bytes) !== undefined) return { TAG: "Err", _0: $invalidUtf8() };
+      s.value += $utf8Decode(bytes);
+      return { TAG: "Ok", _0: bytes.length };
+    },
+    // Its buffer's what's read, again where it's all consumed.
+    fillBuf(r) {
+      const b = r.value;
+      if (b.pos >= b.filled) {
+        const read = R.read(inner(b), b.buf);
+        b.pos = 0;
+        b.filled = read.TAG === "Ok" ? read._0 : 0;
+        if (read.TAG === "Err") return read;
+      }
+      return { TAG: "Ok", _0: buffered(b) };
+    },
+    consume(r, amt) {
+      const b = r.value;
+      b.pos = Math.min((b.pos + amt) >>> 0, b.filled);
+    },
+    // Its inner is moved from where it's read to: what's buffered is read, so
+    // `Current(n)` is `n` less what's left of it.
+    seek(r, style) {
+      const b = r.value;
+      let result;
+      if (style.TAG === "Current") {
+        const remainder = BigInt(b.filled - b.pos);
+        const offset = style._0 - remainder;
+        if (offset >= -(2n ** 63n)) {
+          const seek = R.seek(inner(b), { TAG: "Current", _0: offset });
+          if (seek.TAG === "Err") return seek;
+          result = seek._0;
+        } else {
+          const back = R.seek(inner(b), { TAG: "Current", _0: -remainder });
+          if (back.TAG === "Err") return back;
+          discard(b);
+          const seek = R.seek(inner(b), style);
+          if (seek.TAG === "Err") return seek;
+          result = seek._0;
+        }
+      } else {
+        const seek = R.seek(inner(b), style);
+        if (seek.TAG === "Err") return seek;
+        result = seek._0;
+      }
+      discard(b);
+      return { TAG: "Ok", _0: result };
+    },
+    // Its inner's less what's buffered of it.
+    streamPosition(r) {
+      const b = r.value;
+      const remainder = BigInt(b.filled - b.pos);
+      const position = R.streamPosition(inner(b));
+      if (position.TAG === "Err") return position;
+      if (position._0 < remainder) {
+        throw new Error("overflow when subtracting remaining buffer size from inner stream position");
+      }
+      return { TAG: "Ok", _0: position._0 - remainder };
+    },
+    // Within what's buffered, nothing is asked of its inner.
+    seekRelative(r, offset) {
+      const b = r.value;
+      const pos = BigInt(b.pos);
+      if (offset < 0n) {
+        const back = BigInt.asUintN(64, -offset);
+        if (pos >= back) {
+          b.pos -= Number(back);
+          return;
+        }
+      } else if (pos + offset <= BigInt(b.filled)) {
+        b.pos += Number(offset);
+        return;
+      }
+      $defaultSeekRelative(reader, r, offset);
+    },
   };
   return reader;
 }
@@ -1300,6 +1452,7 @@ export function $mutReader(reader) {
     consume: (r, amt) => reader.consume(r.value, amt),
     seek: (r, style) => reader.seek(r.value, style),
     streamPosition: (r) => reader.streamPosition(r.value),
+    seekRelative: (r, offset) => reader.seekRelative(r.value, offset),
   };
   return through;
 }
@@ -1318,6 +1471,7 @@ export const $dynReader = {
   consume: (r, amt) => r.value.impl.consume(r.value, amt),
   seek: (r, style) => r.value.impl.seek(r.value, style),
   streamPosition: (r) => r.value.impl.streamPosition(r.value),
+  seekRelative: (r, offset) => r.value.impl.seekRelative(r.value, offset),
 };
 
 // alloc's `append_to_string(buf, f)`, what `read_line` adds to a `String`
@@ -1363,6 +1517,24 @@ export function $readByte(r, RRead) {
 // #1340, the coordinator's decision for the user (A). One dictionary of
 // each reader's.
 export const $readerDefaulted = new WeakMap();
+
+// std's `default_read_exact(reader, buf)`: `reader`'s `read` called until
+// `buf` is full, an interrupted read tried again. One that can't fill `buf`
+// leaves what it read in it, and `UnexpectedEof` is thrown.
+export function $defaultReadExact(reader, r, buf) {
+  let at = 0;
+  while (at < buf.length) {
+    const read = reader.read(r, $view(buf, at));
+    if (read.TAG === "Err") {
+      if (read._0.kind === "Interrupted") continue;
+      throw read._0;
+    }
+    if (read._0 === 0) break;
+    at += read._0;
+  }
+  if (at < buf.length) throw $readExactEof();
+}
+
 export function $readerDefaults(reader) {
   let made = $readerDefaulted.get(reader);
   if (made !== undefined) return made;
@@ -1382,20 +1554,7 @@ export function $readerDefaults(reader) {
     }
   };
   made = {
-    // One that can't fill `buf` leaves what it read in it.
-    readExact(r, buf) {
-      let at = 0;
-      while (at < buf.length) {
-        const read = reader.read(r, $view(buf, at));
-        if (read.TAG === "Err") {
-          if (read._0.kind === "Interrupted") continue;
-          throw read._0;
-        }
-        if (read._0 === 0) break;
-        at += read._0;
-      }
-      if (at < buf.length) throw $readExactEof();
-    },
+    readExact: (r, buf) => $defaultReadExact(reader, r, buf),
     readToEnd,
     // All of it read by `default_read_to_end`, not the reader's own, then
     // kept where it's UTF-8.
@@ -11791,6 +11950,19 @@ export function $proxy(length, read, write, target = []) {
   });
 }
 
+// `slice::from_mut(&mut x)`, of a handle `h` on a number or text, a `&mut`
+// JS holds as `{ value }`: a view of one item, whose every read and write is
+// of `h.value`, so `s[0] += 1` writes `x` (#1336).
+export function $oneItemOf(h) {
+  return $proxy(
+    1,
+    () => h.value,
+    (_, item) => {
+      h.value = item;
+    },
+  );
+}
+
 // `v.get_mut(start..end)`: a view, or `undefined`, `None`, where
 // `&mut v[start..end]` would panic.
 export function $viewGet(v, start, end = v.length) {
@@ -18003,6 +18175,11 @@ export function $repeatingWith(f) {
   })();
   it.sizeHint = () => [2 ** 32 - 1, undefined];
   return it;
+}
+
+// `iter::once_with(f)`: `f` called when it is first stepped, its value the one item.
+export function* $onceWith(f) {
+  yield f();
 }
 
 // `it.cycle()` of std's iterator over an array: what it has left, `items`,

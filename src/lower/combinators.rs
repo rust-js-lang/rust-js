@@ -234,6 +234,7 @@ pub(super) enum IterSource {
     Repeat,
     RepeatN,
     RepeatWith,
+    OnceWith,
     Successors,
     FromFn,
     /// `std::iter::zip(a, b)`, `a.into_iter().zip(b)`.

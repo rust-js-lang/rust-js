@@ -731,4 +731,20 @@ export const mutations: Mutation[] = [
     replace: "                    true => made,\n",
     tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
   },
+  {
+    name: "buf-reader-dictionary-unmade",
+    breaks: "a `BufReader`'s dictionary is its inner's, given as it is, not std's bodies over its buffer (#1156)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "Ok(Expr::call_helper(\"$bufReader\", vec![reader]))",
+    replace: "Ok(reader)",
+    tests: ["test/corpus.test.ts", "-t", "^io_buf_reader.rs$"],
+  },
+  {
+    name: "buf-reader-seek-asks-read",
+    breaks: "a `BufReader`'s `Seek` asks its inner's `Read`, not its `Seek`, which a type parameter bound by `Seek` alone has none of (#1156)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                    true => StdItem::IoSeek,\n",
+    replace: "                    true => StdItem::IoRead,\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_buf_reader.rs$"],
+  },
 ];

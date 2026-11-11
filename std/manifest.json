@@ -12098,23 +12098,6 @@
         ]
       },
       {
-        "key": "core::io::seek::Seek::seek_relative",
-        "rust_path": "rust_js_std::core::io::Seek::seek_relative",
-        "module": [
-          "io"
-        ],
-        "export": "seek_seekRelative",
-        "member": null,
-        "params": [
-          {
-            "index": 0,
-            "marks": [
-              "drop"
-            ]
-          }
-        ]
-      },
-      {
         "key": "core::io::util::{impl#11}::get_mut",
         "rust_path": "rust_js_std::core::io::Take::<T>::get_mut",
         "module": [
@@ -13991,7 +13974,6 @@
         "read_take",
         "read_bytes",
         "seek_rewind",
-        "seek_seekRelative",
         "chain",
         "take",
         "rSpecReadByte_specReadByte",
@@ -14030,7 +14012,7 @@
     },
     {
       "file": "io.js",
-      "hash": "3317685ae9b2fb4d"
+      "hash": "3270a0e6c7c6172a"
     },
     {
       "file": "io.js.map",

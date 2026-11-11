@@ -179,6 +179,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "std::mem::zeroed" => return Some(Some(Std::Uninit(UninitOp::Zeroed))),
             "std::array::from_fn" => return Some(Some(Std::Slice(SliceOp::FromFn))),
             "std::slice::from_ref" | "std::array::from_ref" => return Some(Some(Std::Slice(SliceOp::FromRef))),
+            "std::slice::from_mut" | "std::array::from_mut" => return Some(Some(Std::Slice(SliceOp::FromMut))),
             _ => {}
         }
         // A `NonNull` of a reference, `NonNull::from(&mut x)`: a pointer to
@@ -389,6 +390,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 "std::iter::repeat" => Some(IterSource::Repeat),
                 "std::iter::repeat_n" => Some(IterSource::RepeatN),
                 "std::iter::repeat_with" => Some(IterSource::RepeatWith),
+                "std::iter::once_with" => Some(IterSource::OnceWith),
                 "std::iter::successors" => Some(IterSource::Successors),
                 "std::iter::from_fn" => Some(IterSource::FromFn),
                 "std::iter::zip" => Some(IterSource::Zip),

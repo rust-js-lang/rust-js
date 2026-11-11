@@ -67,6 +67,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let shown = self.debug_string_with(top, item, span, pretty)?;
             return Ok(join(vec![Expr::str("PeekMut("), shown, Expr::str(")")]));
         }
+        // A `BufReader` shows its inner and what's buffered, `1/8192`, which
+        // is refused for now (#1156).
+        if matches!(
+            self.recognition().byte_source(ty),
+            Some(crate::lower::recognition::ByteSource::BufReader(_))
+        ) {
+            return Err(self.unsupported(
+                span,
+                &format!("`{{:?}}` of a `{ty}`, which shows its inner and how much of its buffer is filled (#1156)"),
+            ));
+        }
         // A `MaybeUninit` shows its type's name, `MaybeUninit<u32>` (ADR 0332).
         if self.recognition().uninit_of(ty).is_some() {
             if ty.has_param() {

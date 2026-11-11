@@ -289,6 +289,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             Std::IterSource(IterSource::RepeatWith) => Expr::call(Expr::helper("$repeatingWith"), vec![arg()]),
+            Std::IterSource(IterSource::OnceWith) => Expr::call(Expr::helper("$onceWith"), vec![arg()]),
             // Their closures' `Option`s: a `Some` that looks like `None` is boxed (ADR 0051).
             Std::IterSource(source @ (IterSource::Successors | IterSource::FromFn)) => {
                 let item = generic_args.type_at(0);

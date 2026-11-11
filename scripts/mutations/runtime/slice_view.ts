@@ -178,4 +178,20 @@ export const mutations: Mutation[] = [
     replace: "  const target = [];\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
   },
+  {
+    name: "one-item-view-writes-nothing",
+    breaks: "`slice::from_mut(&mut x)`'s view writes its item nowhere: `s[0] += 1` doesn't change `x` (#1336)",
+    file: "src/runtime/slice_view.js",
+    find: "      h.value = item;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^slice_from_mut.rs$"],
+  },
+  {
+    name: "one-item-view-reads-a-copy",
+    breaks: "`slice::from_mut(&mut x)`'s view reads what `x` was, not what it is (#1336)",
+    file: "src/runtime/slice_view.js",
+    find: "    () => h.value,\n",
+    replace: "    ((kept) => () => kept)(h.value),\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_from_mut.rs$"],
+  },
 ];

@@ -612,4 +612,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
   },
+  {
+    name: "once-with-unanswered",
+    breaks: "`iter::once_with` is std's function, called, which rust-js refuses (#1373)",
+    file: "src/lower/recognition/calls.rs",
+    find: "                \"std::iter::once_with\" => Some(IterSource::OnceWith),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^iter_once_with.rs$"],
+  },
 ];

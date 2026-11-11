@@ -474,17 +474,6 @@ export function seek_rewind(self, SelfSeek, dropSelf) {
   return $ioThrow(tmp._0._0);
 }
 
-export function seek_seekRelative(self, offset, SelfSeek, dropSelf) {
-  const seek = SelfSeek.seek(self, { TAG: "Current", _0: offset });
-  let tmp;
-  if (seek.TAG === "Ok") {
-    tmp = { TAG: "Continue", _0: seek._0 };
-    return;
-  }
-  tmp = { TAG: "Break", _0: { TAG: "Err", _0: seek._0 } };
-  return $ioThrow(tmp._0._0);
-}
-
 export function chain(first, second, dropT, dropU) {
   return { first, second, doneFirst: false };
 }

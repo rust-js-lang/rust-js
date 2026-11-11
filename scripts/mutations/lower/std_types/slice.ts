@@ -575,4 +575,12 @@ export const mutations: Mutation[] = [
     replace: "                let drop = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_accessors_of_items_with_a_destructor.rs$"],
   },
+  {
+    name: "from-mut-of-an-object-allowed",
+    breaks: "`slice::from_mut(&mut v)` of an object is a view of its handle, which an object's `&mut` isn't: refused naming #1336 no more",
+    file: "src/lower/std_types/slice.rs",
+    find: "                if !self.handles_mut(item()) {",
+    replace: "                if false && !self.handles_mut(item()) {",
+    tests: ["test/diagnostics.test.ts", "-t", "slice::from_mut of an object"],
+  },
 ];

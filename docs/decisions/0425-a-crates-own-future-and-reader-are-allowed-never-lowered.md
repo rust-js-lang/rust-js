@@ -318,7 +318,7 @@ std's readers alone. Mutations: `read-byte-reads-two`,
 `question-mark-try-compiled` (`lower/recognition/compiled_std.ts`);
 `question-mark-written-of-from-residual-misread`
 (`lower/recognition/types.ts`); and `read-byte-of-the-source-read`
-(`lower/std_types/io.ts`). `BufReader` is next; `File` comes last.
+(`lower/std_types/io.ts`). `BufReader` follows, below; `File` comes last.
 
 ## Amendment: a helper only a type's own `io::Read` calls is held by its snapshot (2026-11-11)
 
@@ -328,3 +328,89 @@ A private function only a type's own `io::Read` calls, `unlowered_helpers`'
 a dictionary now (`RRead.read(self, buf)`), so the helper lowers and runs:
 the mutation's only effect is JS nothing calls, and it survived on main.
 It's checked against the case's snapshot (`snapshots: true`, #864).
+
+## Amendment: `BufReader` is read (#1156)
+
+`BufReader::new`, `with_capacity` and its reads were refused. The user
+decided its form on 2026-11-11 (#1156): std's fields flattened,
+`{ inner, buf: new Array(cap).fill(0), pos: 0, filled: 0 }`, `initialized`
+left out because no reader rust-js compiles can see it, 8192 for
+`BufReader::new`; one dictionary factory, `$bufReader(R)`, declared once
+per function as `chainRead` is; inherent methods in place as `Cursor`'s are;
+`{:?}` refused for now, naming #1156. Case C of
+[0262](0262-when-rust-and-js-disagree.md): what's read is the program's data.
+
+- **`$bufReader(R)` is std's `impl Read`, `BufRead` and `Seek for
+  BufReader<R>`, each method std's body word for word** over `{ inner, buf,
+  pos, filled }` (std's `io/buffered/bufreader.rs` and `bufreader/buffer.rs`), `R` the
+  dictionary of its inner's `Read`, or of its `Seek`
+  (`byte_source_dictionary` asks the one the trait is). `read` goes past the
+  buffer to its inner where nothing's buffered and the read is as large as
+  the buffer. `fill_buf` is one `read` of the whole buffer, what `read_buf`'s
+  default is, where `pos >= filled`; the buffer isn't refilled otherwise.
+  `read_exact` takes what's buffered, else std's `default_read_exact`, now
+  `$defaultReadExact`, shared with `$readerDefaults`. `read_to_end` reserves
+  room for what's buffered, adds it, discards it and asks its inner's
+  `read_to_end`; `read_to_string` into an empty `String` is
+  `$appendToString` over that, into another it reads all, checks it as UTF-8
+  and adds it. `consume` stops at `filled`. `seek` and `stream_position`
+  count what's buffered, and `stream_position`'s `expect` panics with std's
+  words. The inner is given to `R` in the box generic code is given a `&mut`
+  in, whose `value` is the BufReader's `inner`, written back.
+- **`seek_relative` is a method of every source's dictionary.** `BufReader`'s
+  stays within what's buffered where it can and is the only one that isn't
+  `Seek`'s default over its `seek`, which each other dictionary has
+  (`$defaultSeekRelative`). It was a compiled provided method, called by a
+  generic `S: Seek` whatever `S` was, so `BufReader`'s own, which asks its
+  inner nothing, was lost: `("Seek", "seek_relative")` is no longer in
+  `COMPILED_STD_IO_PROVIDED`, and `io_cursor.rs`'s snapshot calls
+  `read.seekRelative(..)`. `BufReader::seek_relative`, its inherent method,
+  is the dictionary's, and an `io::Result<()>` that may fail
+  (`of_io_reading`).
+- **`BufReader::new`, `with_capacity`, `get_ref`, `get_mut`, `into_inner`,
+  `buffer` and `capacity` are read in place** (`IoOp::BufReaderNew` and the
+  rest; `Cursor`'s and `BufReader`'s `get_ref`, `get_mut` and `into_inner`
+  are one op, `IoOp::Inner`). `with_capacity` checks std's room
+  (`$roomFor(n, 1)`, ADR 0774): `usize::MAX` is std's `capacity overflow`,
+  not a JS `Array` that size. Its room is asked once both its arguments are
+  evaluated: where the room is asked, each is spilled to a `const` where
+  it isn't read the same, so `BufReader::with_capacity(usize::MAX, make())`
+  calls `make()` before it panics, as std does (found in review: the inner
+  was evaluated after the check, a wrong answer). Where the room surely
+  fits, `with_capacity(4, cursor(..))`, nothing is spilled.
+- **A `BufReader` of a `&mut` to an object is refused** (#1374),
+  `BufReader::new(&mut cursor)`: its inner is held as the object, where
+  `$mutReader`, `&mut R`'s `Read`, takes generic code's box of it
+  (`Form::Box`), as `Read::take(&mut c, n)` is refused. `buf_reader_holds_a_value`
+  asks `form_differs`.
+- **`{:?}` of a `BufReader` is refused**, naming #1156: std shows its
+  inner's and `filled - pos` of its capacity.
+- **A body that writes a `BufReader`'s dictionary twice declares it once**,
+  `const BufReaderRead = $bufReader(..)`, named as a generic impl's is
+  (`is_impl_call`, ADR 0979), as a `Chain`'s is.
+
+Held by the corpus case `io_buf_reader.rs`, against native Rust in both
+builds and through `METAMORPHIC=all`, and by `diagnostics.test.ts`'s two
+refusals. Mutations (`runtime/readers.ts`): `buf-read-never-bypasses`,
+`buf-read-bypasses-a-short-read`, `buf-fill-buf-always-refills`,
+`buf-fill-buf-reads-half`,
+`buf-consume-unbounded`,
+`buf-read-exact-leaves-pos`, `buf-read-to-end-drops-buffered`,
+`buf-read-to-end-keeps-buffered`, `buf-read-to-end-reserves-nothing`,
+`buf-read-to-string-into-text-unchecked`,
+`buf-seek-current-ignores-buffer`,
+`buf-seek-keeps-buffer`, `buf-seek-overflow-moves-inner-once`,
+`buf-stream-position-ignores-buffer`, `buf-stream-position-underflow-quiet`,
+`buf-seek-relative-always-seeks`, `buf-seek-relative-forward-past-filled` and
+`buf-seek-relative-back-past-start`; (`lower/recognition/io.ts`)
+`buf-reader-no-byte-source`, `buf-reader-new-unanswered`,
+`buf-reader-with-capacity-as-new`, `buf-reader-capacity-is-buffer`,
+`buf-reader-get-ref-unanswered`, `buf-reader-seek-relative-unanswered`,
+`seek-relative-not-in-dictionary` and `buf-reader-seek-relative-never-fails`;
+(`lower/std_types/io.ts`) `buf-reader-default-capacity`,
+`buf-reader-capacity-is-filled`, `buf-reader-buffer-from-start`,
+`buf-reader-inner-made-after-room` and `buf-reader-held-mut-allowed`; (`lower/traits/dictionaries.ts`)
+`buf-reader-dictionary-unmade` and `buf-reader-seek-asks-read`;
+(`lower/traits/dictionaries/declared.ts`)
+`buf-reader-dictionary-not-an-impl-call`; (`lower/display/debug.ts`)
+`buf-reader-debug-shown`. `File` comes last.

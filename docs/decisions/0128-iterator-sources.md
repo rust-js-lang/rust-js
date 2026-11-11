@@ -88,3 +88,18 @@ which is rare, is held whole.
 or a set is made empty and extended by its items, `$extendMap(new
 Set(), unzipped[1], true)`, as std's `unzip` extends each side's
 `Default`. Held by `test/corpus/unzip_into_maps.rs`.
+
+## Amendment: `once_with` (#1373)
+
+`std::iter::once_with(f)` was refused. It's a JS iterator, `$onceWith(f)`, a
+generator that yields `f()`, as `repeat_with`'s is: `f` runs when it's first
+stepped, never where it's made, and an iterator never stepped never calls it.
+Its type is `TrustedLen`, so a `Vec` collected from it has room for exactly its
+one item, as native Rust's; its `size_hint()`, and a `Vec` grown by a chain or
+zip of it with what isn't `TrustedLen` in a crate that reads capacities, refuse
+as `repeat_with`'s do, whose hint JS's generators have none of (`Once`'s is
+refused too). Its `next_back` is refused as any generator's is. Case none of
+[0262](0262-when-rust-and-js-disagree.md). Held by
+`test/corpus/iter_once_with.rs`; mutations `once-with-calls-f-where-made`,
+`once-with-calls-f-each-step` (`runtime/once_with.ts`) and `once-with-unanswered`
+(`lower/recognition/calls.ts`).

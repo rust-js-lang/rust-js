@@ -5,12 +5,15 @@
 //! A `VecDeque<u8>`, read by `$dequeReader` where its type is known, but
 //! its `read` and `fill_buf` (#1302). `io::empty()`, std's unit struct,
 //! `undefined`, read by `$emptyReader`, and `io::repeat(byte)`, std's
-//! struct, `{ byte }`, by `$repeatReader`.
+//! struct, `{ byte }`, by `$repeatReader`. `BufReader<R>`, std's fields
+//! flattened, `{ inner, buf, pos, filled }`, by `$bufReader(RRead)`.
 
-use crate::js::{Expr, Prop};
+use crate::js::{Expr, Prop, Stmt};
 use crate::lower::bindings;
 use crate::lower::calls::Call;
-use crate::lower::recognition::{ByteSource, IoOp, Std};
+use crate::lower::generic_facts::Form;
+use crate::lower::plain;
+use crate::lower::recognition::{ByteSource, IoOp, Std, StdItem};
 use crate::lower::{FnCx, R};
 use rustc_middle::ty;
 
@@ -22,6 +25,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         known: Std,
         call: Call<'_, 'tcx>,
         values: &mut std::vec::IntoIter<Expr>,
+        out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         let Std::Io(op) = known else {
             return Ok(None);
@@ -32,13 +36,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let tcx = self.tcx;
                 let (trait_id, args) = match tcx.trait_of_assoc(call.def_id) {
                     Some(trait_id) => (trait_id, call.generic_args),
-                    None => {
-                        let imp = tcx.trait_impl_of_assoc(call.def_id).expect("a source's impl's method");
-                        let tr = (tcx.impl_trait_ref(imp))
-                            .instantiate(tcx, call.generic_args)
-                            .skip_normalization();
-                        (tr.def_id, tr.args)
-                    }
+                    None => match tcx.trait_impl_of_assoc(call.def_id) {
+                        Some(imp) => {
+                            let tr = (tcx.impl_trait_ref(imp))
+                                .instantiate(tcx, call.generic_args)
+                                .skip_normalization();
+                            (tr.def_id, tr.args)
+                        }
+                        // `BufReader::seek_relative`, which its `Seek` impl
+                        // calls: `Seek`'s of the `BufReader<R>`.
+                        None => {
+                            let imp = tcx.inherent_impl_of_assoc(call.def_id).expect("a source's method");
+                            let reader = tcx
+                                .type_of(imp)
+                                .instantiate(tcx, call.generic_args)
+                                .skip_normalization();
+                            let seek = crate::lower::recognition::std_item(tcx, StdItem::IoSeek);
+                            (seek, tcx.mk_args(&[reader.into()]))
+                        }
+                    },
                 };
                 let tr =
                     ty::TraitRef::new_from_args(tcx, trait_id, tcx.mk_args(&args[..tcx.generics_of(trait_id).count()]));
@@ -92,9 +108,77 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let cursor = next();
                 Expr::assigned(Expr::member(cursor, "pos"), next())
             }
-            IoOp::CursorInner => Expr::member(next(), "inner"),
+            IoOp::Inner => Expr::member(next(), "inner"),
+            // std's fields flattened, its `buf` a zeroed array of its
+            // capacity: std's room for it checked first (ADR 0774).
+            IoOp::BufReaderNew => {
+                self.buf_reader_holds_a_value(&call)?;
+                Expr::object(vec![
+                    Prop::Field("inner".into(), next()),
+                    Prop::Field("buf".into(), plain::filled(Expr::int(8192), Some(Expr::int(0)))),
+                    Prop::Field("pos".into(), Expr::int(0)),
+                    Prop::Field("filled".into(), Expr::int(0)),
+                ])
+            }
+            IoOp::BufReaderWithCapacity => {
+                self.buf_reader_holds_a_value(&call)?;
+                // Each argument is evaluated, in order, before std asks the
+                // room: where the room is asked, an inner made by a call is
+                // made first, though the room fails.
+                let mut capacity = next();
+                if !capacity.reads_same() {
+                    capacity = self.spill("capacity", capacity, out);
+                }
+                let mut check = Vec::new();
+                self.room_for((None, capacity.clone()), Expr::int(1), call.span, &mut check);
+                let mut inner = next();
+                if !check.is_empty() && !inner.reads_same() {
+                    inner = self.spill("inner", inner, out);
+                }
+                out.extend(check);
+                Expr::object(vec![
+                    Prop::Field("inner".into(), inner),
+                    Prop::Field("buf".into(), plain::filled(capacity, Some(Expr::int(0)))),
+                    Prop::Field("pos".into(), Expr::int(0)),
+                    Prop::Field("filled".into(), Expr::int(0)),
+                ])
+            }
+            IoOp::BufReaderBuffer => {
+                let mut reader = next();
+                if !reader.reads_same() {
+                    reader = self.spill("reader", reader, out);
+                }
+                Expr::call_helper(
+                    "$part",
+                    vec![
+                        Expr::member(reader.clone(), "buf"),
+                        Expr::member(reader.clone(), "pos"),
+                        Expr::member(reader, "filled"),
+                    ],
+                )
+            }
+            IoOp::BufReaderCapacity => Expr::member(Expr::member(next(), "buf"), "length"),
             IoOp::Empty => Expr::undefined(),
             IoOp::Repeat => Expr::object(vec![Prop::Field("byte".into(), next())]),
         }))
+    }
+
+    /// A `BufReader` of a `&mut` to an object is refused: its inner is held
+    /// as the object, where `$mutReader`, its `Read`, takes generic code's
+    /// box of it (ADR 0454, as `nested_mut_object` refuses a generic
+    /// function's), `Form::Box`'s (#1374).
+    fn buf_reader_holds_a_value(&self, call: &Call<'_, 'tcx>) -> R<()> {
+        let inputs = self.signature_of(call.def_id).0;
+        let declared = *inputs.last().expect("a constructor of its reader");
+        let held = self.instantiated(declared, call.generic_args);
+        match self.form_differs(Form::Box, (call.def_id, declared, held)) {
+            true => Err(self.unsupported(
+                call.span,
+                &format!(
+                    "a `BufReader` of a `{held}`, a `&mut` to an object, which generic code reads as its box (#1374)"
+                ),
+            )),
+            false => Ok(()),
+        }
     }
 }

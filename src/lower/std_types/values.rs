@@ -515,7 +515,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.io_error_call(known, call, &mut values)? {
             return Ok(js);
         }
-        if let Some(js) = self.io_call(known, call, &mut values)? {
+        if let Some(js) = self.io_call(known, call, &mut values, out)? {
             return Ok(js);
         }
         if let Some(js) = self.hash_call(known, call, &mut values, out)? {

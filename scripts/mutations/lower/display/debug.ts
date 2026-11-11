@@ -551,4 +551,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
   },
+  {
+    name: "buf-reader-debug-shown",
+    breaks: "a `BufReader`'s `{:?}` isn't refused as its own, naming #1156",
+    file: "src/lower/display/debug.rs",
+    find: "            Some(crate::lower::recognition::ByteSource::BufReader(_))\n        ) {",
+    replace: "            Some(crate::lower::recognition::ByteSource::BufReader(_))\n        ) && false {",
+    tests: ["test/diagnostics.test.ts", "-t", "a BufReader's Debug"],
+  },
 ];

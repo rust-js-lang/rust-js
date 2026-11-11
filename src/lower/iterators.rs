@@ -667,7 +667,7 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 /// its back or asks its rest, and every `char_indices()`, `$chars` and
 /// `$charIndices` (#1186), and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 42] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 43] = [
     "$stdIterator",
     "$chars",
     "$charIndices",
@@ -703,6 +703,7 @@ pub(crate) const ITERATOR_HELPERS: [&str; 42] = [
     "$trustedZipEnds",
     "$flatMap",
     "$repeatingWith",
+    "$onceWith",
     "$successors",
     "$keysIn",
     "$treeSetAlgebra",

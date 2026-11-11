@@ -126,6 +126,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let of = self.dictionary(ty::TraitRef::new(self.tcx, as_ref, [inner, bytes]), span)?;
                 Ok(Expr::call_helper("$cursorReader", vec![of]))
             }
+            // std's bodies over its buffer, given its inner's `Read`, or
+            // `Seek`: what its impls ask of `R`.
+            Some(ByteSource::BufReader(inner)) => {
+                let asked = match is_std_def(self.tcx, tr.def_id, StdItem::IoSeek) {
+                    true => StdItem::IoSeek,
+                    false => StdItem::IoRead,
+                };
+                let of = crate::lower::recognition::std_item(self.tcx, asked);
+                let reader = self.dictionary(ty::TraitRef::new(self.tcx, of, [inner]), span)?;
+                Ok(Expr::call_helper("$bufReader", vec![reader]))
+            }
             // Its `read` and `fill_buf` read its front slice alone, which
             // a JS array has none of: a dictionary would hold them (#1302).
             Some(ByteSource::Deque) => Err(self.unsupported(

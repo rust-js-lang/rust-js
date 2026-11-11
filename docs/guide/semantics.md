@@ -997,7 +997,23 @@ Differences:
   through to it ([0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md#amendment-stds-byte-sources-are-read-1156)).
 - **What the traits provide is std's own body,** compiled into
   `@rust-js/std`: `read_line`, `read_until`, `skip_until`, `lines`,
-  `split`, `rewind` and `seek_relative`.
+  `split` and `rewind`. `seek_relative` is a method of each source's
+  dictionary, std's default over its `seek`, and `BufReader`'s own, which
+  stays within what's buffered.
+- **A `BufReader<R>` is std's fields flattened,** `{ inner, buf, pos,
+  filled }`: `buf` is an array of its capacity, 8192 for `BufReader::new`,
+  and `buffer()` is its `buf[pos..filled]`. Its `Read`, `BufRead` and
+  `Seek` are one dictionary made of `R`'s, `$bufReader(RRead)`, declared
+  once where a body reads it twice, each method std's body over its buffer:
+  a read as large as the buffer goes past it where nothing's buffered,
+  `fill_buf` is one read of the whole buffer, `read_exact`, `read_to_end`
+  and `read_to_string` take what's buffered first, and `seek` and
+  `seek_relative` stay within it where they can. What its inner is asked
+  shows where it is. `BufReader::new`, `with_capacity`, `get_ref`,
+  `get_mut`, `into_inner`, `buffer`, `capacity` and `seek_relative` are
+  read in place. `{:?}` of one is refused (#1156), and so is one of a
+  `&mut` to an object, `BufReader::new(&mut cursor)` (#1374)
+  ([0425](../decisions/0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md#amendment-bufreader-is-read-1156)).
 - **A `VecDeque<u8>` is read from its front, in place:** its
   `read_exact`, `read_to_end`, `read_to_string` and `consume` are
   `$dequeReader`'s, where its type is known. Its `read` and `fill_buf`

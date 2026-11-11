@@ -78,3 +78,19 @@ threw (#164). It's an array made here, stepped as a `$iter`, and so is
 cell too, is the same object in it. `slice::from_mut(&mut x)` is refused
 still: a slice that writes `x` as it's written isn't an array of it.
 Held by `test/corpus/slice_from_ref.rs`.
+
+## Amendment: `slice::from_mut` of a number or text is a one-item view (#1336)
+
+The user decided on 2026-11-11 that `slice::from_mut(&mut x)` and
+`array::from_mut` are supported where `x` is a number, text or any other value
+JS holds a `&mut` to as a handle, `{ value }`: `$oneItemOf(h)`, a `$proxy(1, ..)`
+whose every read and write is of `h.value`, so `bump(slice::from_mut(&mut y))`
+writes `y` as `s[0] += 1` does (`$itemOf` is #1113's). A type parameter's is
+the box generic code has. Of an object, whose `&mut` is the object itself,
+it stays refused, naming #1336, as `s[0] = other` would have to replace the
+object's place. `slice::from_ref(&x)` is `[x]`, as above. Case C of
+[0262](0262-when-rust-and-js-disagree.md). Held by
+`test/corpus/slice_from_mut.rs`, against native Rust in both builds and through
+`METAMORPHIC=all`, and `diagnostics.test.ts`'s refusal; mutations
+`from-mut-of-an-object-allowed` (`lower/std_types/slice.ts`) and
+`one-item-view-writes-nothing` (`runtime/slice_view.ts`).

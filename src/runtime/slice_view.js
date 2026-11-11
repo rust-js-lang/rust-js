@@ -65,6 +65,19 @@ function $proxy(length, read, write, target = []) {
   });
 }
 
+// `slice::from_mut(&mut x)`, of a handle `h` on a number or text, a `&mut`
+// JS holds as `{ value }`: a view of one item, whose every read and write is
+// of `h.value`, so `s[0] += 1` writes `x` (#1336).
+function $oneItemOf(h) {
+  return $proxy(
+    1,
+    () => h.value,
+    (_, item) => {
+      h.value = item;
+    },
+  );
+}
+
 // `v.get_mut(start..end)`: a view, or `undefined`, `None`, where
 // `&mut v[start..end]` would panic.
 function $viewGet(v, start, end = v.length) {

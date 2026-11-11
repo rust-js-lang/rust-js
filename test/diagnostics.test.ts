@@ -177,6 +177,14 @@ for (const [name, source, message, crate] of [
   ["a VecDeque's read", "use std::io::Read;\npub fn f(d: &mut std::collections::VecDeque<u8>) -> usize { let mut b = [0u8; 2]; d.read(&mut b).unwrap() }", "a `VecDeque<u8>`'s `read`, which reads its front slice alone (#1302)"],
   ["a VecDeque's fill_buf", "use std::io::BufRead;\npub fn f(d: &mut std::collections::VecDeque<u8>) -> usize { d.fill_buf().unwrap().len() }", "a `VecDeque<u8>`'s `fill_buf`, which reads its front slice alone (#1302)"],
   ["a VecDeque given to generic code as a reader", "use std::io::BufRead;\nfn line<R: BufRead>(mut r: R) -> String { let mut s = String::new(); r.read_line(&mut s).unwrap(); s }\npub fn f(d: std::collections::VecDeque<u8>) -> String { line(d) }", "a `VecDeque<u8>` as generic code's `io::BufRead`, whose `read` and `fill_buf` read its front slice alone (#1302)"],
+  // A `&mut` to an object is the object, whose place a one-item slice's
+  // `s[0] = other` would replace (#1336).
+  ["slice::from_mut of an object", "pub fn f() -> usize { let mut v = vec![1u8]; std::slice::from_mut(&mut v).len() }", "`slice::from_mut` of a `std::vec::Vec<u8>`, an object, whose place `s[0] = other` would replace (#1336)"],
+  // A `BufReader`'s `{:?}` shows its buffer's fill, which is refused for now;
+  // one of a `&mut` to an object is held as the object, where generic code
+  // reads its box (#1156, #1374).
+  ["a BufReader's Debug", "use std::io::{BufReader, Cursor};\npub fn f() -> String { format!(\"{:?}\", BufReader::new(Cursor::new(vec![1u8]))) }", "which shows its inner and how much of its buffer is filled (#1156)"],
+  ["a BufReader of a &mut to an object", "use std::io::{BufReader, Cursor};\npub fn f() -> usize { let mut c = Cursor::new(vec![1u8]); let r = BufReader::new(&mut c); r.capacity() }", "a `&mut` to an object, which generic code reads as its box (#1374)"],
   ["ptr::eq of a number", "pub fn f(a: &u32, b: &u32) -> bool { std::ptr::eq(a, b) }", "does not support addressable memory yet: a raw pointer to this place"],
   ["ptr::eq of a number's pointer, copied", "pub fn f(a: &u32, b: *const u32) -> bool { let p = a as *const u32; let q = p; std::ptr::eq(q, b) }", "does not support addressable memory yet: a raw pointer to this place"],
   // A JS error is the string JS shows of it, `String(error)` (ADR 0271).

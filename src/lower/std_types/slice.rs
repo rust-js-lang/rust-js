@@ -178,6 +178,10 @@ pub(in crate::lower) enum SliceOp {
     /// `slice::from_ref(&x)` and `array::from_ref(&x)`: `[x]`, of one item
     /// it shares.
     FromRef,
+    /// `slice::from_mut(&mut x)` and `array::from_mut(&mut x)` of a number
+    /// or text: `$oneItemOf(h)`, a view of one item over the handle `h` on
+    /// `x`. Of an object, refused (#1336).
+    FromMut,
     /// A `VecDeque`'s `swap_remove_back(i)` or `swap_remove_front(i)`.
     DequeSwapRemove {
         front: bool,
@@ -1036,6 +1040,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 helper("$repeatItems", Expr::optional_args(vec![items, n, size], vec![copy]))
             }
             SliceOp::FromRef => Expr::array(vec![arg()]),
+            // A view over the handle JS holds a `&mut` to a number or text as:
+            // an object's `&mut` is the object, whose place `s[0] = other`
+            // would have to replace (#1336).
+            SliceOp::FromMut => {
+                if !self.handles_mut(item()) {
+                    return Err(self.unsupported(
+                        span,
+                        &format!(
+                            "`slice::from_mut` of a `{}`, an object, whose place `s[0] = other` would replace (#1336)",
+                            item()
+                        ),
+                    ));
+                }
+                helper("$oneItemOf", vec![arg()])
+            }
             SliceOp::FromFn => {
                 // `from_fn::<T, N, F>`: its length, the second.
                 let n = generic_args.const_at(1);

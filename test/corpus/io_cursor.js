@@ -21,7 +21,6 @@ import {
   cursorDefault_default,
   cursorPartialEq_eq,
   seek_rewind,
-  seek_seekRelative,
 } from "@rust-js/std";
 
 export function entry() {
@@ -96,7 +95,7 @@ function main() {
   );
   const result$1 = $writeTry(() => seek_rewind($cellOf(c), read));
   $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
-  const result$2 = $writeTry(() => seek_seekRelative($cellOf(c), 3n, read));
+  const result$2 = $writeTry(() => read.seekRelative({ value: c }, 3n));
   $writeExpect(result$2, "called `Result::unwrap()` on an `Err` value");
   console.log(
     `${$unwrapOk(read.streamPosition({ value: c }), undefined, $ioErrorDebug)} [${$unwrapOk(read.fillBuf({ value: c }), undefined, $ioErrorDebug).join(", ")}]`,

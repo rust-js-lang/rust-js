@@ -26,8 +26,18 @@ pub(crate) enum IoOp {
     CursorPosition,
     /// `c.set_position(n)`: `c.pos = n`.
     CursorSetPosition,
-    /// `c.get_ref()`, `c.get_mut()` and `c.into_inner()`: `c.inner`.
-    CursorInner,
+    /// `c.get_ref()`, `c.get_mut()` and `c.into_inner()` of a `Cursor` or a
+    /// `BufReader`: its `inner`.
+    Inner,
+    /// `BufReader::new(inner)`: std's fields flattened, `{ inner, buf:
+    /// new Array(8192).fill(0), pos: 0, filled: 0 }` (#1156).
+    BufReaderNew,
+    /// `BufReader::with_capacity(n, inner)`: `new`'s of `n`.
+    BufReaderWithCapacity,
+    /// `r.buffer()`: `$part(r.buf, r.pos, r.filled)`.
+    BufReaderBuffer,
+    /// `r.capacity()`: `r.buf.length`.
+    BufReaderCapacity,
     /// `io::empty()`: std's unit struct, `undefined`.
     Empty,
     /// `io::repeat(byte)`: std's struct, `{ byte }`.
@@ -48,6 +58,9 @@ pub(crate) enum ByteSource<'tcx> {
     /// generic code's `Read` or `BufRead`, whose dictionary would hold them
     /// (#1302).
     Deque,
+    /// `BufReader<R>`, of its `R`: `$bufReader(RRead)`, std's bodies over its
+    /// buffer, whose reads and seeks are `R`'s, `Read`'s or `Seek`'s (#1156).
+    BufReader(Ty<'tcx>),
     /// `io::Empty`: `$emptyReader`, which reads nothing.
     Empty,
     /// `io::Repeat`: `$repeatReader`, which reads its byte without end.
@@ -77,6 +90,9 @@ const DICTIONARY_METHODS: &[&str] = &[
     "consume",
     "seek",
     "stream_position",
+    // `BufReader`'s keeps what's buffered, which `seek` doesn't: each
+    // source's dictionary has std's own, or `Seek`'s default over its `seek`.
+    "seek_relative",
 ];
 
 /// Whether `id` is a std function of io's a recognizer answers in place of
@@ -111,7 +127,16 @@ pub(crate) fn of_io_reading(tcx: TyCtxt<'_>, id: DefId) -> bool {
     let trait_id = tcx
         .trait_of_assoc(id)
         .or_else(|| tcx.trait_impl_of_assoc(id).map(|imp| tcx.impl_trait_id(imp)));
-    trait_id.is_some_and(|trait_id| is_io_reading(tcx, trait_id))
+    trait_id.is_some_and(|trait_id| is_io_reading(tcx, trait_id)) || buf_reader_seek_relative(tcx, id)
+}
+
+/// Whether `id` is `BufReader::seek_relative`, which its `Seek` impl's
+/// calls: an `io::Result<()>` that may fail, as `Seek`'s is.
+fn buf_reader_seek_relative(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.item_name(id).as_str() == "seek_relative"
+        && tcx.inherent_impl_of_assoc(id).is_some_and(
+            |imp| matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(adt, _) if is_buf_reader(tcx, adt.did())),
+        )
 }
 
 /// Whether `ty` is one of std's readers of others whose bodies
@@ -140,6 +165,11 @@ fn is_cursor(tcx: TyCtxt<'_>, id: DefId) -> bool {
     std_path(tcx, id) == "std::io::Cursor"
 }
 
+/// Whether `id` is std's `io::BufReader`.
+fn is_buf_reader(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    std_path(tcx, id) == "std::io::BufReader"
+}
+
 /// Which of std's io functions that make a byte source `id` is,
 /// `io::empty` or `io::repeat`.
 fn source_made(tcx: TyCtxt<'_>, id: DefId) -> Option<IoOp> {
@@ -158,6 +188,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 Some(ByteSource::Slice)
             }
             ty::Adt(adt, args) if is_cursor(self.tcx, adt.did()) => Some(ByteSource::Cursor(args.type_at(0))),
+            ty::Adt(adt, args) if is_buf_reader(self.tcx, adt.did()) => Some(ByteSource::BufReader(args.type_at(0))),
             ty::Adt(_, args) if self.is_std_type(ty, StdItem::VecDeque) && args.type_at(0) == self.tcx.types.u8 => {
                 Some(ByteSource::Deque)
             }
@@ -181,15 +212,28 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(made);
         }
         if let Some(imp) = tcx.inherent_impl_of_assoc(def_id)
-            && matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(adt, _) if is_cursor(tcx, adt.did()))
+            && let ty::Adt(adt, _) = tcx.type_of(imp).skip_binder().kind()
         {
-            return match tcx.item_name(def_id).as_str() {
-                "new" => Some(IoOp::CursorNew),
-                "position" => Some(IoOp::CursorPosition),
-                "set_position" => Some(IoOp::CursorSetPosition),
-                "get_ref" | "get_mut" | "into_inner" => Some(IoOp::CursorInner),
-                _ => None,
-            };
+            if is_cursor(tcx, adt.did()) {
+                return match tcx.item_name(def_id).as_str() {
+                    "new" => Some(IoOp::CursorNew),
+                    "position" => Some(IoOp::CursorPosition),
+                    "set_position" => Some(IoOp::CursorSetPosition),
+                    "get_ref" | "get_mut" | "into_inner" => Some(IoOp::Inner),
+                    _ => None,
+                };
+            }
+            if is_buf_reader(tcx, adt.did()) {
+                return match tcx.item_name(def_id).as_str() {
+                    "new" => Some(IoOp::BufReaderNew),
+                    "with_capacity" => Some(IoOp::BufReaderWithCapacity),
+                    "get_ref" | "get_mut" | "into_inner" => Some(IoOp::Inner),
+                    "buffer" => Some(IoOp::BufReaderBuffer),
+                    "capacity" => Some(IoOp::BufReaderCapacity),
+                    "seek_relative" => Some(IoOp::Dictionary),
+                    _ => None,
+                };
+            }
         }
         // The trait's method of a source, or its impl's, resolved.
         let (trait_id, self_ty) = match tcx.trait_of_assoc(def_id) {

@@ -51,4 +51,13 @@ export const mutations: Mutation[] = [
     replace: "            && root_name(e).is_some()\n",
     unitTests: "lower::traits::dictionaries::declared::tests::a_dictionary_that_may_be_undefined_keeps_its_entry_inline",
   },
+  {
+    name: "buf-reader-dictionary-not-an-impl-call",
+    breaks: "a `BufReader`'s dictionary a body writes twice is written each time, not declared once, as a `Chain`'s is (#1156)",
+    file: "src/lower/traits/dictionaries/declared.rs",
+    find: "&& callee.helper_name() == Some(\"$bufReader\")",
+    replace: "&& callee.helper_name() == Some(\"$bufReaders\")",
+    tests: ["test/corpus.test.ts", "-t", "^io_buf_reader.rs$"],
+    snapshots: true,
+  },
 ];

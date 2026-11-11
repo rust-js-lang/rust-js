@@ -317,7 +317,6 @@ const COMPILED_STD_IO_PROVIDED: &[(&str, &str)] = &[
     ("Read", "take"),
     ("Read", "bytes"),
     ("Seek", "rewind"),
-    ("Seek", "seek_relative"),
 ];
 
 /// `core::io`'s functions that make a reader of others, which `Read`'s

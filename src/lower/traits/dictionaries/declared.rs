@@ -95,8 +95,15 @@ fn size(e: &Expr) -> usize {
 }
 
 /// Whether `e`, a dictionary made, is a generic impl's, a call of its
-/// function, `holderTouch(TTouch)`: the program's item, given dictionaries.
+/// function, `holderTouch(TTouch)`: the program's item, given dictionaries;
+/// or `BufReader`'s, a call of the runtime's factory of it, `$bufReader(RRead)`,
+/// made of its inner's, as `chainRead(..)` is of its sources' (#1156).
 pub(super) fn is_impl_call(e: &Expr) -> bool {
+    if let js::ExprKind::Call(callee, _) = &e.kind
+        && callee.helper_name() == Some("$bufReader")
+    {
+        return true;
+    }
     // A runtime maker's of one, std's reader's defaults over a `Chain`'s
     // `Read`, `$readerDefaults(chainRead(..))`: that one's (#1156).
     if let js::ExprKind::Call(callee, given) = &e.kind
