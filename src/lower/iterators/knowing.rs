@@ -100,7 +100,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// was made one where it was made, a slice's chunks' say (#1100), a
     /// range's, the crate's own iterator's or a generic one's, by its
     /// dictionary, an explicit adapter's, or another such struct's (ADRs
-    /// 0170, 0542, 0561). Not a
+    /// 0170, 0542, 0561), or a std source's whose form gives std's
+    /// (`source_hint_kept`, #1357). Not a
     /// std adapter's made here, `map`'s or `filter`'s, a JS iterator's,
     /// which knows nothing of its length. The one answer, of `size_hint()`
     /// and `len()`.
@@ -113,6 +114,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.range_kind(ty).is_some()
             || self.is_user_iterator(ty)
             || self.struct_hint_known(ty)
+            || crate::lower::recognition::source_hint_kept(self.tcx, ty)
     }
 
     /// Whether `size_hint()` of an iterator of type `ty` is std's where the

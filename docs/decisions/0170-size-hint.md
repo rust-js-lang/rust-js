@@ -175,3 +175,42 @@ still dropping the rest), the crate pair
 `library_adapter_made_in_generic_code_asked_its_hint`, and seven
 mutations.
 
+
+## Amended (2026-11-11, #1357): a std source an adapter holds hints as std's
+
+`repeat_n(2u32, 4).peekable().size_hint()` was refused, "`size_hint()` of
+a `Peekable<RepeatN<u32>>`, from its MIR", and so were a `fuse`, `zip`,
+`chain`, `skip`, `map` or `enumerate` of it under a `peekable()`, and
+`repeat(x).take(n)`'s, clippy's `manual_repeat_n`'s own form. A
+`repeat_n(x, n)` alone was std's `(n, Some(n))`, but `held_hint_known`,
+the one answer of what a held iterator's hint is, knew no std source.
+`source_hint_kept` (`recognition/adapter_types.rs`) says which std
+sources' runtime forms give std's own hint: `repeat`'s `$repeating` and
+`repeat_with`'s `$repeatingWith`, `(usize::MAX, None)`; `repeat_n`'s
+`$repeatingN`, what it has left both ways; `successors`' `$successors`,
+`(1, None)` while it holds one, else `(0, Some(0))`; `from_fn`'s
+`$fromFn`, a `$Steps`, std's `(0, None)`. `once`'s, an array made in
+place, stays refused under a `peekable()`.
+
+A wrong answer found on the way (P0): an explicit adapter, a `Take` a
+struct's field holds, is known by `explicit_adapter` whatever it holds, and
+`$successors` and `$repeatingWith` knew no hint, so `$takeHint` of them
+was `(0, Some(n))` where std's is `(1, Some(n))` and `(n, Some(n))`, in
+both builds. Each form now carries std's hint, as `$repeating`'s does.
+
+Held by `repeat_n_hint_held.rs` (each adapter under a `peekable()`, a
+peek, a `Vec`'s collect's capacity, `from_fn`'s, `successors`' and
+`repeat_with(f).take(n)`'s) and `source_hint_where_an_adapter_holds_it.rs`
+(explicit `Take`s of `successors`, of one made of `None` and of
+`repeat_with`, stepped, chained and collected, and a held `Peekable` of
+`successors`), against native Rust in both builds, and the mutations
+`source-hint-unkept`, `source-hint-of-successors-unkept`,
+`successors-hint-unknown` and `repeating-with-hint-unknown`.
+`held-size-hint-refused` survived the whole corpus once a `Take` of a
+`repeat` was a source's: `held_explicit_adapters_hint.rs` holds it again
+with a `Take` of a `once`, which only the explicit adapter's rule knows,
+and with a held `Take` of a type parameter's. Neither case prints
+`repeat(x)`'s hint alone: its `usize::MAX` is wasm32's, rust-js's target,
+where the host's native run's is wider. `repeat_n_hint_held.rs`'s
+`generic-instances` rewrite, a `capacity()` after generic code's collect,
+is #1263's.

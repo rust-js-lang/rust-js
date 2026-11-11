@@ -24,3 +24,4 @@ plain std generic-instances capacity_of_what_std_hints_less.rs
 plain std generic-instances extend_asks_hint_capacity_grown.rs
 plain std generic-instances flatten_collected_where_its_hint_is_seen.rs
 plain std generic-instances map_of_own_size_hint.rs
+plain std generic-instances repeat_n_hint_held.rs

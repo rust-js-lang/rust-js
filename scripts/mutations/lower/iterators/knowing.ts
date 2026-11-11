@@ -798,4 +798,12 @@ export const mutations: Mutation[] = [
     replace: "                        || false)\n",
     tests: ["test/corpus.test.ts", "-t", "^map_held_then_enumerated_from_its_back.rs$"],
   },
+  {
+    name: "source-hint-unkept",
+    breaks: "a std source an adapter holds, `repeat_n`'s, `repeat`'s or `from_fn`'s, is taken for one whose hint is unknown, so `repeat_n(x, n).peekable().size_hint()` and the rest are refused (#1357)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            || crate::lower::recognition::source_hint_kept(self.tcx, ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_n_hint_held.rs$"],
+  },
 ];

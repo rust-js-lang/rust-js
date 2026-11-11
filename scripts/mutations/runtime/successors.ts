@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^successors_drops.rs$"],
   },
+  {
+    name: "successors-hint-unknown",
+    breaks: "a `successors`' hint is none known, so an explicit `Take` of it hints `(0, Some(n))` where std's is `(1, Some(n))` (#1357's P0)",
+    file: "src/runtime/successors.js",
+    find: "  it.sizeHint = () => (next == null ? [0, 0] : [1, undefined]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^source_hint_where_an_adapter_holds_it.rs$"],
+  },
 ];

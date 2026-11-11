@@ -146,4 +146,12 @@ export const mutations: Mutation[] = [
     replace: "    if !std_path(tcx, adt.did()).starts_with(\"std::iter::\") {\n",
     tests: ["test/corpus.test.ts", "-t", "^decode_utf16_steps_as_asked.rs$"],
   },
+  {
+    name: "source-hint-of-successors-unkept",
+    breaks: "a `successors` or a `repeat_with` an adapter holds is taken for one whose hint is unknown, so `successors(..).peekable().size_hint()` is refused (#1357)",
+    file: "src/lower/recognition/adapter_types.rs",
+    find: "        \"std::iter::Repeat\" | \"std::iter::RepeatN\" | \"std::iter::RepeatWith\" | \"std::iter::Successors\"\n",
+    replace: "        \"std::iter::Repeat\" | \"std::iter::RepeatN\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_n_hint_held.rs$"],
+  },
 ];

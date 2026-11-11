@@ -207,6 +207,19 @@ pub(crate) fn is_from_fn(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::iter::FromFn")
 }
 
+/// Whether `ty` is a std source whose runtime form gives std's own hint,
+/// which `held_hint_known` asks of what an adapter holds (#1357):
+/// `repeat`'s `$repeating` and `repeat_with`'s `$repeatingWith`,
+/// `(usize::MAX, None)`; `repeat_n`'s `$repeatingN`, what it has left both
+/// ways; `successors`' `$successors`, `(1, None)` while it holds one;
+/// `from_fn`'s `$fromFn`, a `$Steps`, std's `(0, None)`. Not `once`'s, an
+/// array made in place, which no adapter of it holds as its source.
+pub(crate) fn source_hint_kept(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if matches!(std_path(tcx, adt.did()),
+        "std::iter::Repeat" | "std::iter::RepeatN" | "std::iter::RepeatWith" | "std::iter::Successors"
+        | "std::iter::FromFn"))
+}
+
 /// Whether std's struct of type `ty` is an iterator in `typing_env`, so
 /// the JS iterator it is can be made there, given its steps: not in
 /// `StepBy::new`, whose `I` no bound makes one (ADR 0917).

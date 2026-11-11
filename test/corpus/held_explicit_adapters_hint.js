@@ -4,9 +4,14 @@ import {
   $count,
   $cycleOf,
   $foldOf,
+  $iter,
   $last,
+  $lastSome,
+  $lazyRange,
   $next,
+  $nextSome,
   $nth,
+  $nthSome,
   $rangeNext,
   $repeating,
   $sizeHint,
@@ -16,6 +21,21 @@ import {
 
 export function entry() {
   main();
+}
+
+function firstTwo(items, IFused) {
+  const window = {
+    rest: iterator_take(items, 2, {
+      next: $nextSome,
+      fold: $foldOf,
+      nth: $nthSome,
+      last: $lastSome,
+      count: $count,
+    }),
+  };
+  return $sizeHint(
+    iterator_fuse(window.rest, { next: $nextSome, fold: $foldOf, nth: $nthSome }, false),
+  );
 }
 
 function main() {
@@ -37,5 +57,14 @@ function main() {
   const taken = iterator_fuse(iterator_take(cycled.it, 5), { next: $next, fold: $foldOf }, true);
   const value$1 = $sizeHint(taken);
   console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
+  const single = { it: iterator_take($iter([9]), 1) };
+  const value$2 = $sizeHint(single.it);
+  console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
+  const value$3 = firstTwo($iter([1, 2, 3]), true);
+  console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
+  const value$4 = firstTwo($iter([1]), true);
+  console.log(`(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`);
+  const value$5 = firstTwo($lazyRange(0, 10), true);
+  console.log(`(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`);
 }
 //# sourceMappingURL=case.js.map
