@@ -84,4 +84,28 @@ export const mutations: Mutation[] = [
     replace: "  try {\n    fs.unlinkSync(path);\n  } catch {}",
     tests: file,
   },
+  {
+    name: "os-error-of-unknown-number-words",
+    breaks: "`from_raw_os_error` of a number the platform doesn't name reads glibc's words on macOS, `Unknown error 9999` where Rust's are `Unknown error: 9999`",
+    file: "src/runtime/fs.js",
+    find: "darwin ? `Unknown error: ${code}` : `Unknown error ${code}`",
+    replace: "`Unknown error ${code}`",
+    tests: ["test/corpus.test.ts", "-t", "^io_error_from_raw_os_error.rs$"],
+  },
+  {
+    name: "os-error-of-zero-words",
+    breaks: "`from_raw_os_error(0)` reads an unknown number's words, not `strerror(0)`'s, `Undefined error: 0` on macOS and `Success` on Linux",
+    file: "src/runtime/fs.js",
+    find: "code === 0 ? (darwin ? \"Undefined error: 0\" : \"Success\") : darwin",
+    replace: "darwin",
+    tests: ["test/corpus.test.ts", "-t", "^io_error_from_raw_os_error.rs$"],
+  },
+  {
+    name: "os-error-of-named-number-unnamed",
+    breaks: "`from_raw_os_error(2)` is taken for a number the platform doesn't name, `Uncategorized` and `Unknown error: 2`, not `NotFound` and `No such file or directory`",
+    file: "src/runtime/fs.js",
+    find: "  if (name === undefined) {\n    const darwin",
+    replace: "  if (true) {\n    const darwin",
+    tests: ["test/corpus.test.ts", "-t", "^io_error_from_raw_os_error.rs$"],
+  },
 ];

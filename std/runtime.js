@@ -12433,6 +12433,27 @@ export function $osError(e) {
   const platform = $process("`std::io::Error`").platform;
   return new $IoError(kind, undefined, platform === "darwin" && darwin !== undefined ? darwin : message, -e.errno);
 }
+// `io::Error::from_raw_os_error(code)`: the OS's error of its number, named
+// as the platform names it, Node's `os.constants.errno`, the name the table
+// knows first where two share it, `EAGAIN`'s and not `EWOULDBLOCK`'s; its
+// kind and message std's, as `$osError` gives them. One the platform names
+// that the table hasn't, `Uncategorized` and Node's words, the decided
+// difference (ADR 0262); one it doesn't name, `strerror`'s own words of a
+// number it doesn't know, glibc's or macOS's, and `Uncategorized`.
+export function $osErrorOf(code) {
+  const process = $process("`std::io::Error::from_raw_os_error`");
+  const names = Object.entries(process.getBuiltinModule("node:os").constants.errno)
+    .filter(([, number]) => number === code)
+    .map(([name]) => name);
+  const name = names.find((name) => $osErrors[name] !== undefined) ?? names[0];
+  if (name === undefined) {
+    const darwin = process.platform === "darwin";
+    const words = code === 0 ? (darwin ? "Undefined error: 0" : "Success") : darwin ? `Unknown error: ${code}` : `Unknown error ${code}`;
+    return new $IoError("Uncategorized", undefined, words, code);
+  }
+  const words = process.getBuiltinModule("node:util").getSystemErrorMessage(-code);
+  return $osError({ code: name, errno: -code, message: `${name}: ${words}`, syscall: "from_raw_os_error" });
+}
 // Node's form of an error of the OS's the runtime finds itself, `lseek`'s
 // `EINVAL` or `ESPIPE`: its number, both platforms'.
 export function $osFailure(code, errno) {

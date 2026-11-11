@@ -24,6 +24,10 @@ pub(in crate::lower) enum IoErrorOp {
     /// `e.raw_os_error()`: `e.code`, the OS's number of one of its errors,
     /// `undefined`, `None`, of another (#1156).
     RawOsError,
+    /// `io::Error::from_raw_os_error(code)`: `$osErrorOf(code)`, the OS's
+    /// error of that number, as std's `decode_error_kind` and `strerror`
+    /// say it (#1400, getrandom 0.1's).
+    FromRawOsError,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -55,6 +59,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             IoErrorOp::FromKind => made(values.next().expect("a kind"), None),
             IoErrorOp::Kind => Expr::member(values.next().expect("an error"), "kind"),
             IoErrorOp::RawOsError => Expr::member(values.next().expect("an error"), "code"),
+            IoErrorOp::FromRawOsError => Expr::call_helper("$osErrorOf", vec![values.next().expect("a code")]),
             IoErrorOp::IsInterrupted => Expr::bin(
                 crate::js::Op::Eq,
                 Expr::member(values.next().expect("an error"), "kind"),

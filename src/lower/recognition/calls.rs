@@ -963,6 +963,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 "kind" => Some(IoErrorOp::Kind),
                 "is_interrupted" => Some(IoErrorOp::IsInterrupted),
                 "raw_os_error" => Some(IoErrorOp::RawOsError),
+                "from_raw_os_error" => Some(IoErrorOp::FromRawOsError),
                 _ => None,
             };
         }

@@ -151,3 +151,25 @@ is std's `decode_error_kind` of its code and its message the platform's
 `fs.js`, `$osErrors`; a code the table hasn't is `Uncategorized` with Node's
 words for it (the user's decision, 2026-11-11, a known difference listed in
 ADR 0262).
+
+## Amendment: `from_raw_os_error` (2026-11-11, #1400)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none where the platform
+names the number, std's kind and message of it, as an error the OS gave;
+the decided difference of a code the table hasn't, Node's words, otherwise.
+
+`io::Error::from_raw_os_error(code)` was refused, and getrandom 0.1's
+`From<Error> for io::Error` with it, which quickcheck's graph needs. It's
+the OS's error of that number, `$osErrorOf(code)`: named as the platform
+it runs on names it, Node's `os.constants.errno`, the name the table knows
+first where two share a number (`EAGAIN`, not `EWOULDBLOCK`), then
+`$osError`'s kind and message of that name, the one table. A number the
+platform doesn't name is `Uncategorized`, with `strerror`'s words of a
+number it doesn't know: glibc's `Unknown error 9999` and `Success` of 0,
+macOS's `Unknown error: 9999` and `Undefined error: 0`.
+
+Held by `io_error_from_raw_os_error.rs` against native Rust in both builds
+(numbers the same on Linux and macOS: 0, 1, 2, 13, 17, 22, 9999 and -1),
+and by the mutations `os-error-of-unknown-number-words`,
+`os-error-of-zero-words`, `os-error-of-named-number-unnamed` and
+`from-raw-os-error-unknown`.

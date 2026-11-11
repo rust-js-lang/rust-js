@@ -1131,7 +1131,10 @@ export function lineCount(text) {
 - **An error of the OS's is std's `Os` error:** `No such file or directory
   (os error 2)`, `{:?}` `Os { code: 2, kind: NotFound, message: "No such
   file or directory" }`, `raw_os_error()` its number; its kind and message
-  are std's of its code (difference 52).
+  are std's of its code (difference 52). `io::Error::from_raw_os_error(2)`
+  is the same error, `$osErrorOf(2)`, its code named as the platform names
+  it; a number it doesn't name is `Uncategorized`, with `strerror`'s words
+  for it, `Unknown error: 9999` on macOS and `Unknown error 9999` on Linux.
 - `{:?}` of a `File` or an `OpenOptions` is refused (#1156), and so is
   what asks it, `unwrap_err()` of an `io::Result<File>`.
 

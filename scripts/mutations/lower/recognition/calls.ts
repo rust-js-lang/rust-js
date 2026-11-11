@@ -644,4 +644,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "intrinsics called as themselves run as their methods"],
   },
+  {
+    name: "from-raw-os-error-unknown",
+    breaks: "`io::Error::from_raw_os_error` isn't known, so a program calling it, getrandom 0.1's `From<Error> for io::Error`, is refused",
+    file: "src/lower/recognition/calls.rs",
+    find: "                \"from_raw_os_error\" => Some(IoErrorOp::FromRawOsError),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^io_error_from_raw_os_error.rs$"],
+  },
 ];
