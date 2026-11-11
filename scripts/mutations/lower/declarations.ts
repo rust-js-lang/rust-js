@@ -116,9 +116,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an uncounted `Rc` is declared `any`, React's `createContext` returning one (ADR 0845)",
     file: "src/lower/declarations.rs",
-    find: "                    && !self.counted.counts(tcx, pointee)\n                {\n                    return self.ts(pointee);\n",
-    replace:
-      "                    && false\n                {\n                    return self.ts(pointee);\n",
+    find: "                    && (!self.counted.counts(tcx, pointee) || super::std_types::rc::counted_as_instance(tcx, pointee))\n",
+    replace: "                    && (false || super::std_types::rc::counted_as_instance(tcx, pointee))\n",
     tests: ["test/declarations.test.ts", "-t", "an Rc is declared"],
   },
   {
@@ -1189,5 +1188,13 @@ export const mutations: Mutation[] = [
     find: "            .filter(|param| !callables.iter().any(|callable| callable.index == param.index))\n",
     replace: "            .filter(|param| callables.is_empty() || param.index != u32::MAX)\n",
     tests: ["test/declarations-impl-fn.test.ts", "-t", "bound by Fn"],
+  },
+  {
+    name: "counted-class-rc-declared-opaque",
+    breaks: "a counted `Rc` of a class, the instance itself, is declared as an opaque box, not the class, `shared(): Counter` (#1228)",
+    file: "src/lower/declarations.rs",
+    find: "                    && (!self.counted.counts(tcx, pointee) || super::std_types::rc::counted_as_instance(tcx, pointee))\n",
+    replace: "                    && !self.counted.counts(tcx, pointee)\n",
+    tests: ["test/class-constructors.test.ts", "-t", "a class's constructor that gives an Rc of it the crate counts gives the instance"],
   },
 ];

@@ -1106,12 +1106,13 @@ export function createFiber(tag: number, dev: boolean): FiberNode;
 - **A constructor may give its instance shared, `Rc<Self>`**, as React's
   Flight server's `RequestInstance` hands `this` to the task it makes:
   the `Rc::new(Request { .. })` it makes is `this`, and `Request::new(..)`
-  is `new RequestInstance(..)`, the `Rc` its callers hold. An `Rc` the
-  crate counts, whose counts it reads or whose last owner runs a
-  destructor, is `{ value, strong, weak }`, which `new` can't give: refused,
-  saying to give `Self`
+  is `new RequestInstance(..)`, the `Rc` its callers hold. One the crate
+  counts, whose counts it reads or whose last owner runs a destructor, is
+  the instance too, its counts in a box hidden beside it, `$countedInstance(this)`,
+  which JS never sees, in its keys, its JSON or a spread of it; so a
+  method JS calls on it may take `self: &Rc<Self>`
   ([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md),
-  amended, rd554):
+  amended, rd554, #1228):
 
 ```rust
 use std::cell::RefCell;

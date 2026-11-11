@@ -923,3 +923,55 @@ class's impl. A counted `Rc` of a class that is the instance itself, which
 would lift both, is a design issue of its own. Held by
 `class_method_of_a_counted_rc_self_refused.rs`, the guide's limitations and
 the mutation `counted-rc-self-method-allowed`.
+
+## Amendment: a counted `Rc` of a class is the instance, its counts hidden beside it (2026-11-12, #1228)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; two refusals
+lifted, Rust's behavior kept. The user's decision: a counted `Rc` of a
+`#[rust_js::class]` is the instance itself, with its counts hidden, so JS
+sees a normal instance. The constructor that gives a counted `Rc<Self>`
+(rd554) and the method whose `self` is `&Rc<Self>` (#1227) were refused,
+as the `Rc` was `{ value, strong, weak }`, a box `new` can't give and JS
+can't call a method on. Now it's the instance, `this`. Its counts are in an
+ordinary box hidden beside it, `instance[$countedKey] = { value: instance,
+strong, weak }`, under a runtime symbol, defined non-enumerable, so
+neither its keys, its JSON, a `for..in` nor a spread of it shows them.
+`refuse_counted_instances` is gone.
+
+Its `Weak`s are that box, not the instance: an instance given back by
+`Rc::try_unwrap` and counted again by `Rc::new` is a new allocation, a
+new box, which an old `Weak`, holding the old box at no strong count,
+never upgrades to, as Rust's never does. `upgrade` gives the box's
+instance. `Rc::new_cyclic` makes the box first, gives `f` it as the
+`Weak`, then hides it beside the instance `f` makes.
+
+How each counted `Rc` is held is `std_types/rc.rs`'s `RcForm`: a box, a
+`dyn`'s pair (ADR 0520), a class's instance, or, of a type parameter a
+counted class of the crate's may be (`Counted::may_be_counted_class`),
+either, told apart as it runs (`$countedValue`, `$countedBox`). Its
+readers ask `counted_pointee` and `rc_count`, its makers
+`new_counted_rc`; the constructor sets its literal's fields on `this` and
+then counts it, `$countedInstance(this)` (`counted_instance_made`). A crate
+with no counted class `Rc` emits what it did: the corpus's JS is
+byte-identical but for the new cases. Not yet, refused: an `Rc::new` or
+`Rc::new_cyclic` in generic code of a type parameter a counted class may
+be, as what it's given doesn't say whether it's a class's instance. A
+class implements no trait but a marker's, so it's never a `dyn`'s pair.
+Its declarations name the class: a counted `Rc<Counter>` is `Counter`.
+
+Tests: corpus cases `class_rc_counted_is_the_instance` (a constructor
+giving `Rc<Self>`, `self: &Rc<Self>`, counts, `ptr_eq`, a `Weak` upgraded
+and failing after the drop, what it holds dropped at its last owner,
+generic code reading its counts, `Rc::new` of an instance) and
+`class_rc_counted_given_back` (`try_unwrap` then `Rc::new`, which an old
+`Weak` never reaches, `get_mut`, `into_inner`, `new_cyclic`, `Weak::new`,
+a generic deref), against native Rust in each build;
+`class_method_of_a_counted_rc_self_refused` is gone, its shape the first
+case's. classes.test.ts's "a class's constructor that gives an Rc of it
+the crate counts gives the instance" holds what JS sees: `new` gives an
+instance of the class whose keys, JSON and spread show its fields alone.
+test/architecture-mut-refs.test.ts holds that only rc.rs reads an `Rc`'s
+counts or names the hidden box's helpers. Eleven mutations, caught, and
+fourteen refitted, caught; two removed with the code they mutated
+(`class-constructor-of-a-counted-rc-allowed`,
+`counted-rc-self-method-allowed`).

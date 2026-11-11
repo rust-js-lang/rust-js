@@ -543,7 +543,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => value,
                     false => self.spill("rc", value, out),
                 };
-                let cell = Expr::member(rc.clone(), js::HELD);
+                let cell = self.counted_pointee(rc.clone(), self.pointee(source));
                 let given = self.given_impl(cell, (from.type_at(0), Some(tr.def_id)), dictionary, target, span)?;
                 out.push(StmtKind::Expr(given).at(js::Span::NONE));
                 return Ok(rc);
@@ -577,7 +577,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             // A counted `Rc`'s struct, in its cell.
             let root = match counted {
-                true => Expr::member(value.clone(), js::HELD),
+                true => self.counted_pointee(value.clone(), self.pointee(source)),
                 false => value.clone(),
             };
             let parent = (path.into_iter()).fold(root, |parent, (ty, i)| self.project(parent, ty, i));

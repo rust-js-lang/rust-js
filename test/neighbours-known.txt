@@ -24,7 +24,6 @@ plain std untagged_ref_cells.rs beside rc_dropped_where_callers_unseen.rs
 
 #1112 P2 (neighbours): a generic whose callers can't be seen, a pub trait's method, counts every Rc beside it
 plain std class_constructor_rc.rs beside rc_dropped_where_callers_unseen.rs
-plain std rc_counted_by_a_generic_beside_a_class.rs beside rc_counted_where_callers_unseen.rs
 
 #1293 P2 (neighbours): std calls that lend from inside their storage are refused in any crate that asks an address
 plain std once_cells.rs beside module_text_truth.rs tagged_pointers.rs

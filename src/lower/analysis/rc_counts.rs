@@ -140,6 +140,20 @@ impl<'tcx> Counted<'tcx> {
         counts
     }
 
+    /// May `pointee`, not itself a struct, a type parameter or a type a
+    /// call gives, be one of the crate's `#[rust_js::class]`es whose `Rc`
+    /// it counts, which is the instance itself, its counts hidden beside
+    /// it (#1228)? Then an `Rc` of it is told apart as it runs.
+    pub fn may_be_counted_class(&self, tcx: TyCtxt<'tcx>, pointee: Ty<'tcx>) -> bool {
+        (tcx.hir_crate_items(()).definitions())
+            .map(|id| id.to_def_id())
+            .filter(|&id| {
+                tcx.def_kind(id) == rustc_hir::def::DefKind::Struct && crate::lower::classes::is_class(tcx, id)
+            })
+            .map(|id| tcx.type_of(id).instantiate_identity().skip_normalization())
+            .any(|class| may_be(tcx, pointee, class) && self.counts(tcx, class))
+    }
+
     /// Is `owner`, a `Box`, an `Rc` or an `Arc` unsized to a `dyn Fn`, a
     /// function of its own, apart from every other's (`apart`, #1053)?
     pub fn own_function(&self, tcx: TyCtxt<'tcx>, owner: Ty<'tcx>) -> bool {

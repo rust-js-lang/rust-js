@@ -154,7 +154,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::new_(class, Vec::new())
             }
             ty::Adt(_, args) if self.counted_rc(ty).is_some() => {
-                Self::new_rc(self.default_value(args.type_at(0), span)?)
+                let value = self.default_value(args.type_at(0), span)?;
+                self.new_counted_rc(value, args.type_at(0), span)?
             }
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => self.default_value(args.type_at(0), span)?,
             ty::Adt(..) if recognition::weak_pointee(self.tcx, ty).is_some() => self.weak_to_nothing(ty),

@@ -148,4 +148,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/js-functions.test.ts", "-t", "in a class's method"],
   },
+  {
+    name: "constructor-counted-instance-uncounted",
+    breaks: "a class's constructor that gives a counted `Rc<Self>` sets its fields on `this` but hides no box of counts beside it, so its first count read throws (#1228)",
+    file: "src/lower/classes/member_functions.rs",
+    find: "        fields.push(StmtKind::Expr(crate::lower::std_types::rc::counted_instance(Expr::this())).at(span));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^class_rc_counted_is_the_instance.rs$"],
+  },
 ];

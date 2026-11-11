@@ -479,14 +479,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let value = values.next().expect("rustc checked the arguments");
             let own = self.given_own_function(pointee, value, call.span, out)?;
-            return Ok(self.counted_same(def_id, generic_args, own.clone()).unwrap_or(own));
+            return Ok(self
+                .counted_same(def_id, generic_args, own.clone(), call.span)?
+                .unwrap_or(own));
         }
         // A counted `Rc` (ADR 0320): `Rc::new` makes its `{ value, .. }`, and
         // what it points at is its `value`.
         if known == Std::Same && self.counted_same_by(def_id, generic_args).is_some() {
             let value = values.next().expect("rustc checked the arguments");
             return Ok(self
-                .counted_same(def_id, generic_args, value)
+                .counted_same(def_id, generic_args, value, call.span)?
                 .expect("a counted `Rc`'s"));
         }
         // Where a container std lends from keeps what it lends (#1114).

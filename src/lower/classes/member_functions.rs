@@ -171,6 +171,37 @@ fn fields_set(props: Vec<Prop>, layout: &js::ObjectLayout, span: js::Span) -> Re
 /// value is `this`, its literal's fields set on it where it's declared,
 /// each read of it `this`, `Object.preventExtensions(this)`, and each
 /// `return fiber` `return;`, the body's last none (ADR 0761, amended).
+/// A struct literal a constructor gives, or the one its counted `Rc` is
+/// made of, `$countedInstance({ .. })` (#1228): the literal, and whether it's
+/// counted.
+fn literal_given(value: &Expr) -> Option<(&Expr, bool)> {
+    match crate::lower::std_types::rc::counted_instance_made(value) {
+        Some(made) if matches!(made.kind, ExprKind::Object(..)) => Some((made, true)),
+        Some(_) => None,
+        None => matches!(value.kind, ExprKind::Object(..)).then_some((value, false)),
+    }
+}
+
+/// The fields of what `literal_given` found set on `this`, then, of a
+/// counted one, `this` counted, `$countedInstance(this)` (#1228).
+fn given_set(value: Expr, span: js::Span) -> Result<Vec<Stmt>, &'static str> {
+    let counted = literal_given(&value).is_some_and(|(_, counted)| counted);
+    let literal = match counted {
+        true => crate::lower::std_types::rc::counted_instance_made(&value)
+            .expect("a counted instance")
+            .clone(),
+        false => value,
+    };
+    let ExprKind::Object(props, layout) = literal.kind else {
+        unreachable!("a struct literal")
+    };
+    let mut fields = fields_set(props, &layout, span)?;
+    if counted {
+        fields.push(StmtKind::Expr(crate::lower::std_types::rc::counted_instance(Expr::this())).at(span));
+    }
+    Ok(fields)
+}
+
 fn instance_as_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
     let Some(Stmt {
         kind: StmtKind::Return(Some(Expr {
@@ -186,7 +217,7 @@ fn instance_as_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
     let Some(at) = body.iter().position(|stmt| {
         matches!(&stmt.kind,
             StmtKind::Const(name, value) | StmtKind::Let(name, Some(value))
-                if *name == instance && matches!(value.kind, ExprKind::Object(..)))
+                if *name == instance && literal_given(value).is_some())
     }) else {
         return Ok(());
     };
@@ -197,10 +228,7 @@ fn instance_as_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
     let (StmtKind::Const(_, value) | StmtKind::Let(_, Some(value))) = made.kind else {
         unreachable!("the instance's declaration")
     };
-    let ExprKind::Object(props, layout) = value.kind else {
-        unreachable!("a struct literal")
-    };
-    let fields = fields_set(props, &layout, made.span)?;
+    let fields = given_set(value, made.span)?;
     body.splice(at..at, fields);
     body.pop();
     js::statement_lists(body, &mut |list| {
@@ -228,7 +256,7 @@ fn set_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
         let last = std::mem::take(&mut outermost).then_some(list.len());
         let mut out = Vec::with_capacity(list.len());
         for (i, stmt) in std::mem::take(list).into_iter().enumerate() {
-            if !matches!(&stmt.kind, StmtKind::Return(Some(value)) if matches!(value.kind, ExprKind::Object(..))) {
+            if !matches!(&stmt.kind, StmtKind::Return(Some(value)) if literal_given(value).is_some()) {
                 if matches!(stmt.kind, StmtKind::Return(Some(_))) {
                     fine = Err("a constructor that gives what's no struct literal, `Self { .. }`");
                 }
@@ -236,14 +264,10 @@ fn set_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
                 continue;
             }
             let span = stmt.span;
-            let StmtKind::Return(Some(Expr {
-                kind: ExprKind::Object(props, layout),
-                ..
-            })) = stmt.kind
-            else {
+            let StmtKind::Return(Some(value)) = stmt.kind else {
                 unreachable!("a struct literal returned")
             };
-            match fields_set(props, &layout, span) {
+            match given_set(value, span) {
                 Ok(fields) => out.extend(fields),
                 Err(why) => fine = Err(why),
             }

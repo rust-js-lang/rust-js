@@ -1,6 +1,7 @@
 // What a `&mut` is in JS, split from architecture.test.ts at its cap (a test
 // file is at most 1500 lines): `mut_ref_form`'s one answer, which each
-// operation asks by a method of its own (ADR 1086).
+// operation asks by a method of its own (ADR 1086). And what a counted `Rc`
+// is, `rc_form`'s (#1228).
 import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -54,4 +55,19 @@ test("a `&mut`'s form is asked by MutRefForm's methods alone, each matching ever
   const methods = source.slice(source.indexOf("impl MutRefForm {"), source.indexOf("\n}\n", source.indexOf("impl MutRefForm {")));
   expect(methods.length).toBeGreaterThan(0);
   expect(methods.split("\n").filter((line) => /\b_\s*=>|matches!\(|==\s*MutRefForm::/.test(line))).toEqual([]);
+});
+
+// What a counted `Rc` is in JS, a box, a `dyn`'s pair or a class's
+// instance, its counts hidden beside it, is `rc_form`'s one answer (#1228):
+// only std_types/rc.rs reads or writes its counts, `strong` and `weak`, or
+// names the runtime's helpers that hold a class's hidden box, `$counted..`;
+// every other reads what it points at by `counted_pointee` and counts it by
+// `rc_count`, so a new form needs no other file to change. In the runtime,
+// the hidden box's key is rc.js's alone.
+test("what a counted Rc is in JS is rc.rs's alone", () => {
+  const fields = /"(strong|weak)"|\$counted[A-Z]/;
+  const readers = files("src/lower").filter((file) => file.endsWith(".rs") && code(file).some((line) => fields.test(line)));
+  expect(readers).toEqual(["src/lower/std_types/rc.rs"]);
+  const key = files("src/runtime").filter((file) => /\$countedKey\b/.test(read(file)));
+  expect(key).toEqual(["src/runtime/rc.js"]);
 });

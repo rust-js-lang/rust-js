@@ -1190,9 +1190,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     return self.ts(args.type_at(0));
                 }
                 // An uncounted `Rc` is what it points at, and its `Weak` that
-                // or `null`, `Weak::new()`'s (ADRs 0023, 0843).
+                // or `null`, `Weak::new()`'s (ADRs 0023, 0843); so is a counted
+                // one of a class, the instance itself (#1228).
                 if let Some(pointee) = super::recognition::rc_pointee(tcx, ty)
-                    && !self.counted.counts(tcx, pointee)
+                    && (!self.counted.counts(tcx, pointee) || super::std_types::rc::counted_as_instance(tcx, pointee))
                 {
                     return self.ts(pointee);
                 }

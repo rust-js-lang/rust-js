@@ -764,7 +764,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a counted `Rc::new` of a closure made a function of its own is that function, not `{ value, strong, weak }`, so `$rcClone` and `$ptrTo(rc.value)` read nothing (#1053)",
     file: "src/lower/std_types/values.rs",
-    find: "            return Ok(self.counted_same(def_id, generic_args, own.clone()).unwrap_or(own));\n",
+    find: "            return Ok(self\n                .counted_same(def_id, generic_args, own.clone(), call.span)?\n                .unwrap_or(own));\n",
     replace: "            return Ok(own);\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_by_rc_as_ptr.rs$"],
   },

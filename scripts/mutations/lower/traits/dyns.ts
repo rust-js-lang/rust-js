@@ -361,7 +361,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a counted `Rc` of a struct whose last field is a `dyn` is given the `impl` itself, not its struct",
     file: "src/lower/traits/dyns.rs",
-    find: "                true => Expr::member(value.clone(), js::HELD),\n",
+    find: "                true => self.counted_pointee(value.clone(), self.pointee(source)),\n",
     replace: "                true => value.clone(),\n",
     tests: ["test/corpus.test.ts", "-t", "rc_dyn_struct_tail"],
   },

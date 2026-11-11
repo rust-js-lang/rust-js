@@ -29,7 +29,7 @@ mod states;
 mod subclasses;
 pub(crate) use accessors::{field_accessor, fields_given, gives_its_field};
 use constructors::gives_instance;
-pub(crate) use constructors::{refuse_counted_instances, set_where_constructed};
+pub(crate) use constructors::set_where_constructed;
 pub(in crate::lower) use defaults::{prototype_defaults, take_default};
 pub(crate) use forms::{declares_fields, es_classes, es_prototype_refused, is_es_class};
 use forms::{form_misuse, impl_form_misuse};

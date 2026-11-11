@@ -162,3 +162,13 @@ the function given as a value, left `Rc<String>` uncounted and the
 compiler panicked lowering it (#139). Every expression of the function's
 type is asked, the callee of a call or a value given, held by
 `test/corpus/rc_count_fn_value.rs`.
+
+## Amendment: of a class, the instance itself (2026-11-12, #1228)
+
+A counted `Rc` of a `#[rust_js::class]` is the instance, its
+`{ value, strong, weak }` box hidden beside it under a non-enumerable
+symbol, `$countedKey`, which its `Weak`s are; the runtime's helpers reach
+either form's counts by `$countedBox(rc)`. Which form an `Rc` is held in
+is `std_types/rc.rs`'s `RcForm`, its one owner: see
+[ADR 0761](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md)'s
+amendment of the same day.

@@ -613,7 +613,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Trim { start, end } => self.trimmed(x, start, end),
             Std::Method(method) => Expr::call(Expr::member(x, method), vec![]),
             // A counted `Rc`'s `new` or deref (ADR 0320).
-            Std::Same if let Some(counted) = self.counted_same(def_id, args, x.clone()) => counted,
+            Std::Same if let Some(counted) = self.counted_same(def_id, args, x.clone(), span)? => counted,
             Std::Same | Std::Format => x,
             // A guard's `deref`, std's `Deref` of a `Ref<T>` (ADR 0451).
             Std::GuardValue { mutable } => self.guard_value(x, input, mutable),

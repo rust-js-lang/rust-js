@@ -3,16 +3,13 @@
 //! server's `RequestInstance` gives the `Rc` its constructor hands its root
 //! task, `createTask(this, ..)`. An `Rc` the crate counts no count of is
 //! the value it points at (ADR 0844), so `new RequestInstance(..)` is the
-//! `Rc`; one it counts is `{ value, strong, weak }`, which `new` can't
-//! give, so it's refused, and so is a method JS calls on the instance whose
-//! `self` is such an `Rc` (#1227).
+//! `Rc`; one it counts is the instance too, its counts hidden beside it
+//! (#1228), so a method JS calls on it may take `self: &Rc<Self>`.
 
-use super::{constructor_of, is_class};
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::body_queries::strip;
 use crate::lower::recognition::{is_cell_set, is_class_of, is_with_this, js_root_fn, rc_pointee};
-use rustc_hir::def::DefKind;
 use rustc_middle::thir::visit::{Visitor, walk_expr};
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, PatKind, StmtKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt};
@@ -22,69 +19,6 @@ use rustc_span::def_id::DefId;
 /// instance, `own`: `Self`, or an `Rc` or an `Arc` of it.
 pub(super) fn gives_instance<'tcx>(tcx: TyCtxt<'tcx>, output: Ty<'tcx>, own: Ty<'tcx>) -> bool {
     output == own || rc_pointee(tcx, output) == Some(own)
-}
-
-/// Report each of the crate's classes whose constructor gives an `Rc` of
-/// it that `counts` says the crate counts: JS's `new` gives the instance,
-/// not the box that counts it. False if there was one.
-pub(crate) fn refuse_counted_instances<'tcx>(tcx: TyCtxt<'tcx>, counts: impl Fn(Ty<'tcx>) -> bool) -> bool {
-    let mut valid = true;
-    for def_id in tcx.hir_crate_items(()).definitions() {
-        let id = def_id.to_def_id();
-        if tcx.def_kind(id) != DefKind::Struct || !is_class(tcx, id) {
-            continue;
-        }
-        let Some(new) = constructor_of(tcx, id) else { continue };
-        let output = tcx
-            .fn_sig(new)
-            .instantiate_identity()
-            .skip_normalization()
-            .skip_binder()
-            .output();
-        if let Some(pointee) = rc_pointee(tcx, output)
-            && counts(pointee)
-        {
-            tcx.dcx().span_err(
-                tcx.def_span(new),
-                format!(
-                    "rust-js: a `#[rust_js::class]` constructor that gives `{output}` gives the instance `new` makes, an `Rc` the crate counts nothing of; this crate counts it, `{{ value, strong, weak }}`, as it reads its counts or its last owner runs a destructor: give `Self`, `fn new(..) -> Self`, and `Rc::new(..)` it where it's made (rd554, ADR 0761)"
-                ),
-            );
-            valid = false;
-        }
-        // And each of its methods JS calls on its instance, `this`, whose
-        // `self` is an `Rc` of it the crate counts: Rust's callers have the
-        // box that counts it, JS's the instance, and no one method takes
-        // both (#1227).
-        let own = tcx.type_of(id).instantiate_identity().skip_normalization();
-        for &imp in tcx.inherent_impls(id) {
-            for &method in tcx.associated_item_def_ids(imp) {
-                if !tcx.def_kind(method).is_fn_like()
-                    || !tcx.associated_item(method).is_method()
-                    || super::receivers::body_receiver(tcx, method) != super::receivers::Receiver::This
-                {
-                    continue;
-                }
-                let receiver = tcx
-                    .fn_sig(method)
-                    .instantiate_identity()
-                    .skip_normalization()
-                    .skip_binder()
-                    .inputs()[0];
-                if rc_pointee(tcx, receiver.peel_refs()) == Some(own) && counts(own) {
-                    tcx.dcx().span_err(
-                        tcx.def_span(method),
-                        format!(
-                            "rust-js: a `#[rust_js::class]` method whose `self` is `{receiver}` is called on the class's instance, as JS calls it, an `Rc` the crate counts nothing of; this crate counts it, `{{ value, strong, weak }}`, as it reads its counts or its last owner runs a destructor: take `&self`, or write it as a function of an `&Rc` of it, `fn {}(this: {receiver})`, outside the class's impl (#1227, ADR 0761)",
-                            tcx.item_name(method)
-                        ),
-                    );
-                    valid = false;
-                }
-            }
-        }
-    }
-    valid
 }
 
 /// The nullable fields the crate's constructors of its structs each set as

@@ -19,14 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/classes.test.ts", "-t", "what a class is refused says what to write"],
   },
   {
-    name: "class-constructor-of-a-counted-rc-allowed",
-    breaks: "a class's constructor that gives an `Rc` of it the crate counts, `{ value, strong, weak }`, sets the box's keys on `this`, `this.value = { count: 0 }`, whose `Rc::strong_count` reads `undefined` (rd554)",
-    file: "src/lower/classes/constructors.rs",
-    find: "            && counts(pointee)\n",
-    replace: "            && counts(pointee) && false\n",
-    tests: ["test/class-constructors.test.ts", "-t", "a class's constructor that gives an Rc of it the crate counts is refused"],
-  },
-  {
     name: "set-first-of-one-constructor",
     breaks: "a field one of a struct's two constructors sets first, and the other never, is present, `prepare(twice.one)` given `undefined` (rd628)",
     file: "src/lower/classes/constructors.rs",
@@ -81,13 +73,5 @@ export const mutations: Mutation[] = [
     find: "            field_def(tcx, field).is_some_and(|def| {\n                crate::lower::representation::none_form(tcx, crate::lower::representation::NonePlace::Field(def, None))\n                    .stores_null()\n            })\n",
     replace: "            field_def(tcx, field).is_some()\n",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
-  },
-  {
-    name: "counted-rc-self-method-allowed",
-    breaks: "a class's method whose `self` is an `Rc` of it the crate counts compiles, called on the box as a prototype method: `chunk.watch is not a function` (#1227)",
-    file: "src/lower/classes/constructors.rs",
-    find: "                if rc_pointee(tcx, receiver.peel_refs()) == Some(own) && counts(own) {",
-    replace: "                if false && rc_pointee(tcx, receiver.peel_refs()) == Some(own) && counts(own) {",
-    tests: ["test/corpus.test.ts", "-t", "^class_method_of_a_counted_rc_self_refused\\.rs$"],
   },
 ];

@@ -8598,32 +8598,73 @@ export function $ptrTyped(view) {
 }
 
 // A counted `Rc` or `Arc` (ADR 0320): `{ value, strong, weak }`, which each
-// clone, and each `Weak`, shares, counted as Rust counts them.
+// clone, and each `Weak`, shares, counted as Rust counts them. Of a
+// `#[rust_js::class]`, the instance itself, which JS calls its methods on,
+// its box hidden beside it, `inst[$countedKey]`, whose `value` is the instance;
+// its `Weak`s are that box, tied to its allocation, so one of an instance
+// given back and counted anew never upgrades (#1228).
+export const $countedKey = Symbol("rust-js.rc");
+
+// The box that counts an `Rc`: itself, or a class instance's hidden one.
+export function $countedBox(rc) {
+  return rc[$countedKey] ?? rc;
+}
+
+// What an `Rc` of a type parameter points at, which a counted class may be:
+// the instance itself, or a box's `value` (#1228).
+export function $countedValue(rc) {
+  return $countedKey in rc ? rc : rc.value;
+}
+
+// `Rc::new(instance)` of a class: the instance, its box hidden beside it,
+// one `Rc` and no `Weak`; a box of its own where it was counted before and
+// given back, which the old one's `Weak`s don't reach.
+export function $countedInstance(instance) {
+  Object.defineProperty(instance, $countedKey, {
+    value: { value: instance, strong: 1, weak: 0 },
+    writable: true,
+    configurable: true,
+  });
+  return instance;
+}
+
+// The `Rc` a box counts: the class instance it's hidden beside, or itself.
+export function $countedRc(box) {
+  return box.value?.[$countedKey] === box ? box.value : box;
+}
+
+// A new `Rc` of `value` held as `rc` is: a class's instance or a box.
+export function $countedLike(rc, value) {
+  return $countedKey in rc ? $countedInstance(value) : { value, strong: 1, weak: 0 };
+}
+
 export function $rcClone(rc) {
-  rc.strong++;
+  $countedBox(rc).strong++;
   return rc;
 }
 
 // One `Rc` fewer: the last drops what it points at, with `drop` if that has
 // a destructor, and its `Weak`s can't upgrade.
 export function $rcDrop(rc, drop) {
-  if (--rc.strong === 0) {
+  const box = $countedBox(rc);
+  if (--box.strong === 0) {
     // Of an `Rc<dyn T>`, which is its pair, `{ value, impl }` (ADR 0520).
-    const value = "impl" in rc ? { value: rc.value, impl: rc.impl } : rc.value;
-    rc.value = undefined;
+    const value = "impl" in box ? { value: box.value, impl: box.impl } : box.value;
+    box.value = undefined;
     drop?.(value);
   }
 }
 
 export function $downgrade(rc) {
-  rc.weak++;
-  return rc;
+  const box = $countedBox(rc);
+  box.weak++;
+  return box;
 }
 
 export function $upgrade(weak) {
   if (weak.strong === 0) return undefined;
   weak.strong++;
-  return weak;
+  return $countedRc(weak);
 }
 
 export function $weakClone(weak) {
@@ -8646,24 +8687,26 @@ export function $weakCount(weak) {
 
 // What the last `Rc` points at, taken: its `Weak`s can't upgrade.
 export function $rcTake(rc) {
-  const value = rc.value;
-  rc.strong = 0;
-  rc.value = undefined;
+  const box = $countedBox(rc);
+  const value = box.value;
+  box.strong = 0;
+  box.value = undefined;
   return value;
 }
 
 // `Rc::try_unwrap(rc)`: `Ok` of what it points at if it's the last, else
 // `Err` of itself.
 export function $tryUnwrap(rc) {
-  if (rc.strong !== 1) return { TAG: "Err", _0: rc };
+  if ($countedBox(rc).strong !== 1) return { TAG: "Err", _0: rc };
   return { TAG: "Ok", _0: $rcTake(rc) };
 }
 
 // `Rc::into_inner(rc)`: `Some` of what it points at if it's the last, else
 // `None`, and one `Rc` fewer.
 export function $intoInner(rc) {
-  if (rc.strong !== 1) {
-    rc.strong--;
+  const box = $countedBox(rc);
+  if (box.strong !== 1) {
+    box.strong--;
     return undefined;
   }
   return $some($rcTake(rc));
@@ -8674,9 +8717,10 @@ export function $intoInner(rc) {
 // while it's still shared, and then the `Rc` dropped, `drop` what the last
 // drops, as a panic unwinds too.
 export function $unwrapOrClone(rc, clone, drop) {
-  if (rc.strong === 1) return $rcTake(rc);
+  const box = $countedBox(rc);
+  if (box.strong === 1) return $rcTake(rc);
   try {
-    return clone ? clone(rc.value) : rc.value;
+    return clone ? clone(box.value) : box.value;
   } finally {
     $rcDrop(rc, drop);
   }
@@ -8688,23 +8732,27 @@ export function $unwrapOrClone(rc, clone, drop) {
 // the old one dropped, `drop` what the last drops. A clone that panics
 // leaves it as it was.
 export function $makeMut(rc, clone, drop) {
-  if (rc.strong === 1) {
-    if (rc.weak === 0) return rc;
-    return { value: $rcTake(rc), strong: 1, weak: 0 };
+  const box = $countedBox(rc);
+  if (box.strong === 1) {
+    if (box.weak === 0) return rc;
+    return $countedLike(rc, $rcTake(rc));
   }
-  const made = { value: clone ? clone(rc.value) : rc.value, strong: 1, weak: 0 };
+  const made = $countedLike(rc, clone ? clone(box.value) : box.value);
   $rcDrop(rc, drop);
   return made;
 }
 
 // `Rc::new_cyclic(f)`: `f` given a `Weak` to what it makes, which can't
-// upgrade until it's made.
-export function $newCyclic(f) {
+// upgrade until it's made; of a class, `instance`, the instance it makes,
+// its box hidden beside it (#1228).
+export function $newCyclic(f, instance) {
   const rc = { value: undefined, strong: 0, weak: 1 };
   rc.value = f(rc);
   rc.strong = 1;
   rc.weak--;
-  return rc;
+  if (!instance) return rc;
+  Object.defineProperty(rc.value, $countedKey, { value: rc, writable: true, configurable: true });
+  return rc.value;
 }
 
 // A counted `Rc<dyn Sub>` as an `Rc<dyn Super>` (#186): its pair of the

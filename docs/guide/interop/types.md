@@ -1936,7 +1936,9 @@ export function createContext(value) {
 
 An `Rc` whose counts the crate reads, `strong_count`, `weak_count` or a
 `Weak`'s `upgrade`, is counted as Rust counts it: `{ value, strong, weak }`
-([ADR 0320](../../decisions/0320-counted-rcs.md)).
+([ADR 0320](../../decisions/0320-counted-rcs.md)); of a `#[rust_js::class]`,
+the instance itself, its counts in a box hidden beside it, which its
+`Weak`s are (#1228).
 
 ```rust
 use std::rc::Rc;

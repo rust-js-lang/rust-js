@@ -256,10 +256,13 @@ pub fn hinted() -> u32 {
   expect(new Hints()).toBeInstanceOf(Hints);
 });
 
-// An `Rc` the crate counts, whose counts it reads, is `{ value, strong,
-// weak }`, which `new` can't give: its constructor is refused (rd554).
-test("a class's constructor that gives an Rc of it the crate counts is refused", () => {
-  const stderr = refused("class-constructor-rc-counted", `use std::cell::Cell;
+// An `Rc` the crate counts of a class, whose counts it reads, is the
+// instance itself, its counts hidden beside it, `$countedInstance(this)` (#1228,
+// the user's decision): `new` gives it, JS calls its methods on it, a
+// method may take `self: &Rc<Self>`, and JS sees none of its counts, not in
+// its keys, its JSON or a spread of it.
+test("a class's constructor that gives an Rc of it the crate counts gives the instance", async () => {
+  const { js, ts, dir } = compiled("class-constructor-rc-counted", `use std::cell::Cell;
 use std::rc::Rc;
 
 #[cfg_attr(rust_js, rust_js::class)]
@@ -272,6 +275,11 @@ impl Counter {
     pub fn new() -> Rc<Self> {
         Rc::new(Counter { count: Cell::new(0) })
     }
+
+    pub fn owned(self: &Rc<Self>) -> u32 {
+        self.count.set(self.count.get() + 1);
+        Rc::strong_count(self) as u32
+    }
 }
 
 pub fn owners() -> usize {
@@ -279,7 +287,21 @@ pub fn owners() -> usize {
     let again = Rc::clone(&counter);
     Rc::strong_count(&again)
 }
+
+pub fn shared() -> Rc<Counter> {
+    let counter = Counter::new();
+    counter.owned();
+    counter
+}
 `);
-  expect(stderr).toContain("a `#[rust_js::class]` constructor that gives `std::rc::Rc<Counter>` gives the instance `new` makes, an `Rc` the crate counts nothing of; this crate counts it");
-  expect(stderr).toContain("give `Self`, `fn new(..) -> Self`, and `Rc::new(..)` it where it's made (rd554, ADR 0761)");
+  expect(js).toContain("export function Counter() {\n  this.count = 0;\n  $countedInstance(this);\n}\n");
+  expect(js).toContain("  return $countedBox(this).strong;\n");
+  expect(ts).toContain("export function shared(): Counter;\n");
+  const { Counter, owners, shared } = await import(join(dir, "lib.js"));
+  const counter = new Counter();
+  expect([counter instanceof Counter, Object.keys(counter), JSON.stringify(counter), Object.keys({ ...counter })])
+    .toEqual([true, ["count"], '{"count":0}', ["count"]]);
+  expect([counter.owned(), counter.count, owners()]).toEqual([1, 1, 2]);
+  const made = shared();
+  expect([made instanceof Counter, made.count, made.owned()]).toEqual([true, 1, 1]);
 });
