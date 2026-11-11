@@ -23,6 +23,7 @@ export function entry() {
 
 const tensSource = {
   IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
+  HiddenDoubleEndedIterator: () => ({ next_back: $nextBack }),
   items: (arg0) =>
     $knowing(
       tensSource_items(arg0),

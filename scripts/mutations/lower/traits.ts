@@ -386,4 +386,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^associated_into_iterator_flattened_from_its_back.rs$"],
     snapshots: true,
   },
+  {
+    name: "rpitit-bounds-entryless",
+    breaks: "a trait method's `impl IntoIterator` alone has no entry of its bound, so generic code's `flat_map` of what it gives is refused for want of its `IntoIterator` (#1345)",
+    file: "src/lower/traits.rs",
+    find: "            || item.is_impl_trait_in_trait() && !words::one_impl_trait_of(tcx, item.def_id)\n",
+    replace: "            || item.is_impl_trait_in_trait()\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_into_iterator_of_a_trait_method_flattened.rs$"],
+  },
 ];

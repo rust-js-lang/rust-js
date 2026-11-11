@@ -44,6 +44,7 @@ const pairsSource = {
     IntoIterIterator: () => ({ next: $next }),
   }),
   IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
+  HiddenDoubleEndedIterator: () => ({ next_back: $nextBack }),
   items: pairsSource_items,
   iter: (arg0) => $iterator(pairsSource_iter(arg0), $rangeNext, false, $rangeNextBack),
   hidden: (arg0) =>
@@ -159,6 +160,7 @@ function back(SSource) {
 }
 
 function hiddenBack(SSource) {
+  const HiddenDoubleEndedIterator = SSource.HiddenDoubleEndedIterator();
   return Array.from(
     $roomForHint(
       $rev(
@@ -178,7 +180,7 @@ function hiddenBack(SSource) {
               { next: $rangeNext },
               { next_back: $rangeNextBack, nthBack: $rangeNthBack },
               { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
-              { next_back: $nextBack },
+              HiddenDoubleEndedIterator,
               true,
               SSource.HiddenOneShot,
             ),
@@ -193,7 +195,7 @@ function hiddenBack(SSource) {
               { next: $rangeNext },
               { next_back: $rangeNextBack, nthBack: $rangeNthBack },
               { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
-              { next_back: $nextBack },
+              HiddenDoubleEndedIterator,
               $tryOf(broke),
               true,
               SSource.HiddenOneShot,

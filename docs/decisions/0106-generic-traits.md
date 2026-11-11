@@ -346,3 +346,28 @@ Rust in both builds. Mutations: `nested-bound-named-as-its-type`
 (`lower/traits.ts`), `projected-bound-unrouted` (`lower/traits/routes.ts`),
 and `flatten-of-iterators-unknowing` and `flatten-of-iterators-each-called`
 refitted to the `IntoIter` (`lower/iterators/knowing.ts`).
+
+## Amendment: a trait method's `impl Trait`'s bounds, as an associated type's (2026-11-11, #1345)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): Rust's behavior was
+refused, so it's kept now.
+
+A trait method's `impl Trait`, `fn pairs(n: u32) -> impl IntoIterator<Item
+= u32>`, is an associated type rustc makes, but `item_bounds` left it out,
+so its bounds had no entry in any impl's dictionary. One bounded by an
+`Iterator` got by, its `IntoIterator` std's blanket impl; one bounded by
+`IntoIterator` alone was refused where generic code flattened what it
+gives, "implementation evidence for `<impl IntoIterator<Item = u32> as
+IntoIterator>`", in both builds. Its bounds have entries now as an
+associated type's do, named by its method as its other entries are,
+`PairsIntoIterator` and `PairsIntoIterDoubleEndedIterator` (`item_word`,
+#1296, #1312), of a method with one alone. Generic code reads each, a
+flatten of `S::hidden` from its back the impl's own
+`HiddenDoubleEndedIterator` where it gave `{ next_back: $nextBack }`; an
+impl whose generic code reads none carries it as every associated type's
+bounds are carried. Four snapshots change.
+
+`test/corpus/impl_into_iterator_of_a_trait_method_flattened.rs` (an array
+and a `Vec`, collected and folded from the back) runs against native Rust
+in both builds. The mutation is `rpitit-bounds-entryless`
+(`lower/traits.ts`).

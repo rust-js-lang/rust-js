@@ -26,6 +26,7 @@ const $tensSource = new WeakMap();
 function tensSource(TCopy) {
   return $traitImpl($tensSource, [TCopy], () => ({
     IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
+    HiddenDoubleEndedIterator: () => ({ next_back: $nextBack }),
     items: (arg0) =>
       $knowing(
         tensSource_items(arg0, TCopy),
@@ -92,6 +93,7 @@ const $scaledSource = new Map();
 function scaledSource(K) {
   return $traitImpl($scaledSource, [K], () => ({
     IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
+    HiddenDoubleEndedIterator: () => ({ next_back: $nextBack }),
     items: (arg0) =>
       $knowing(
         scaledSource_items(arg0, K),

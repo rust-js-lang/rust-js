@@ -29,6 +29,9 @@ function loudDrop_drop(loud) {
 }
 
 const tensSource = {
+  HiddenDoubleEndedIterator() {
+    return { next_back: $nextBack };
+  },
   hidden(arg0) {
     return $knowing(
       tensSource_hidden(arg0),
@@ -99,6 +102,7 @@ function tensSource_loud(name) {
 }
 
 const quietSource = {
+  HiddenDoubleEndedIterator: () => ({ next_back: $nextBack }),
   hidden: (arg0) => $iterator(quietSource_hidden(arg0), $rangeNext, false, $rangeNextBack),
   loud: quietSource_loud,
 };
