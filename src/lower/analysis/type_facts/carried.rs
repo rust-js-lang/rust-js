@@ -95,8 +95,17 @@ pub(super) fn carries(foreign: &crate::lower::library::Foreign<'_, '_>, assoc: D
 /// which a flatten of what it gives asks, held, std's struct (ADR 0899),
 /// wherever generic code flattens it, a consumer's included, which can't
 /// add to a library's dictionaries: none but an array's, which is left
-/// out (the user's decision through m6, #1341). Its manifest says so.
-pub(super) fn carried_by_every_impl(tcx: TyCtxt<'_>) -> Vec<(DefId, TypeFact)> {
+/// out (the user's decision through m6, #1341). And of a library, each of
+/// its reachable traits' sized associated types' `Size` and `Align`, which
+/// a consumer's generic code may ask, `size_of::<Self::Item>()` of rand_core's
+/// `BlockRngCore` in rand's `ReseedingCore` (#1420), as its own may of its
+/// own trait's: where each of the library's impls can give it
+/// (`layouts_given`), else none, as before. Its manifest says so.
+pub(super) fn carried_by_every_impl<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    library: bool,
+) -> Vec<(DefId, TypeFact)> {
     let into_iterator = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::IntoIterator);
     let traits =
         (tcx.hir_crate_items(()).definitions()).filter(|&id| tcx.def_kind(id) == rustc_hir::def::DefKind::Trait);
@@ -114,7 +123,52 @@ pub(super) fn carried_by_every_impl(tcx: TyCtxt<'_>) -> Vec<(DefId, TypeFact)> {
             {
                 carried.push((item.def_id, TypeFact::ConstSize));
             }
+            if library
+                && tcx.effective_visibilities(()).is_reachable(trait_id)
+                && tcx.generics_of(item.def_id).own_params.is_empty()
+                && projection.is_sized(tcx, typing_env)
+                && layouts_given(tcx, foreign, trait_id.to_def_id(), item.def_id)
+            {
+                carried.extend([(item.def_id, TypeFact::Size), (item.def_id, TypeFact::Align)]);
+            }
         }
     }
     carried
+}
+
+/// Whether each of the crate's impls of `trait_id` can give the layout of
+/// its type for `assoc`: of a type known here, or of one of its slots its
+/// makers give, or of a type built of them a library's contract can say,
+/// which its consumers make (`Foreign::templates`). Not of
+/// `x2<<W as AndNot>::Output, G>`, ppv-lite86's, of a projection of its own
+/// trait, nor of another trait's associated type: carried, its impl would
+/// be refused where it compiles now (#1420).
+fn layouts_given<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    trait_id: DefId,
+    assoc: DefId,
+) -> bool {
+    let impls = tcx
+        .all_impls(trait_id)
+        .filter(|&imp| crate::lower::traits::is_lowered_impl(foreign, imp));
+    impls.into_iter().all(|imp| {
+        let Some(&item) = tcx.impl_item_implementor_ids(imp).get(&assoc) else {
+            return false;
+        };
+        let ty = tcx.type_of(item).instantiate_identity().skip_normalization();
+        let typing_env = ty::TypingEnv::non_body_analysis(tcx, imp);
+        [TypeFact::Size, TypeFact::Align].into_iter().all(|fact| {
+            match super::asked_of(tcx, foreign, typing_env, imp, (ty, fact), &None) {
+                // Of a type rustc knows the layout of here, of no parameter
+                // or whatever they are (`layout_bytes`): not of a std
+                // associated type of one no caller gives, typenum's `<<U as
+                // Len>::Output as Add<B1>>::Output`.
+                None => tcx.layout_of(typing_env.as_query_input(ty)).is_ok(),
+                Some(super::Asked::Slot(..)) => true,
+                Some(super::Asked::Carried(..)) => false,
+                Some(super::Asked::Built(built, ..)) => foreign.templates(imp, built),
+            }
+        })
+    })
 }

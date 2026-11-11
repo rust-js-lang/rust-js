@@ -435,3 +435,41 @@ where itertools is refused now, past #1313's site).
 Held by `test/corpus/default_gives_its_callee_what_self_collects_in_place.rs`
 against native Rust, a panic part-way among it; mutation
 `default-call-facts-unasked-of-copies`.
+
+## Amendment (2026-11-12): a library's traits carry what its impls can give of their associated types' layouts (#1420)
+
+A library's trait's dictionaries carried only the facts its own code asked
+of an associated type (#476). So a consumer's generic `size_of::<Self::Item>()`
+was refused, "`size_of` of a type parameter": rand 0.7's `ReseedingCore` over
+rand_core's `BlockRngCore`. The user's #1341 choice was that every trait's
+dictionaries carry what a consumer may ask, so a library's reachable trait
+now carries the `Size` and `Align` of each sized, non-generic associated
+type (`carried_by_every_impl`); a method's `impl Trait` is one whose
+layout no impl gives, its manifest lists none. Its manifest
+lists them, library ABI 29. A consumer's own impls of the trait carry them
+too, as they carry any listed fact.
+
+Not every trait can carry them. The library computes each impl's type's
+layout, and an impl can't give one where its type is a type built of its
+parameters that a contract template can't say, or another trait's associated
+type: ppv-lite86's `x2<<W as AndNot>::Output, G>`, a `dyn` beside a
+parameter, typenum's `<<U as Len>::Output as Add<B1>>::Output`. Carrying the
+facts would refuse a library that compiles now. A trait carries them only
+where each of the library's impls can give them (`layouts_given`), and
+otherwise carries none, as before (the coordinator's choice C). A
+`Projection` template node, which would carry ppv-lite86's, waits until a
+crate needs it.
+
+On the way, a type built of type parameters whose layout rustc knows
+whatever they are, `Box<dyn Fn(&T) -> usize>`, a sized `T`'s `&T`,
+`PhantomData<T>`, has rustc's size in generic code (`layout_bytes`). It was
+refused as a type parameter's.
+
+Held by the crate pair `size_of_a_library_traits_item`, against native Rust:
+dep's `Words` and the consumer's own impls asked through a generic wrapper,
+and dep's traits that carry none, `?Sized`, generic, `impl Trait`, an
+untemplated impl type, another trait's type and a std projection. Also held
+by `test/corpus/size_of_what_rustc_knows_of_any_parameter.rs` in both builds.
+Mutations `*-assoc-layouts-*`, `unknown-layout-assoc-carried` and
+`rustc-known-generic-layouts-refused`; the test "a library's traits carry
+the layouts of the associated types their impls can give" reads its manifest.

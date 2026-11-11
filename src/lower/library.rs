@@ -1079,6 +1079,14 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         (self.dependencies.libraries.values()).any(|library| library.built.contains(&key))
     }
 
+    /// Can a library's contract say `ty`, a type built of `id`'s slots,
+    /// which its consumers make the layout of (#737)? Not of a projection
+    /// of a trait not std's, a `dyn`, a function or a const argument
+    /// (`built_types::template`).
+    pub(in crate::lower) fn templates(&self, id: DefId, ty: rustc_middle::ty::Ty<'tcx>) -> bool {
+        built_types::template(self.tcx, self, id, ty).is_some()
+    }
+
     /// Is `krate` a library's, one rust-js built for this crate to use, not
     /// `@rust-js/std` (ADR 0100)?
     pub(super) fn is_library(&self, krate: rustc_span::def_id::CrateNum) -> bool {

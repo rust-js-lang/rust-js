@@ -37,12 +37,13 @@ use collects::{collect_asks, copies_of_default};
 /// FromIterator` (ADR 0445). A
 /// trait's method, an impl's of its own type parameters, and a library's
 /// function its consumers can reach, which never see this, ask none: theirs
-/// are errors.
+/// are errors. `library`: the crate is one, whose traits' dictionaries carry
+/// what a consumer may ask (`carried_by_every_impl`).
 pub(super) fn type_fact_params<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
     fns: &IndexMap<DefId, FnInfo>,
-    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    (foreign, library): (&crate::lower::library::Foreign<'_, 'tcx>, bool),
     given: Given<'_>,
     (recognition, counted): (&crate::lower::recognition::Recognition<'_, 'tcx>, &super::Counted<'tcx>),
     (drops, keeps_capacity): (ItemDrops<'_, 'tcx>, bool),
@@ -274,7 +275,7 @@ pub(super) fn type_fact_params<'tcx>(
     // (#476).
     carried.retain(|&(assoc, fact)| carries(foreign, assoc, fact));
     // What every impl's dictionary carries, whatever asks it (#1341).
-    carried.extend(carried_by_every_impl(tcx));
+    carried.extend(carried_by_every_impl(tcx, foreign, library));
     let lowered = crate::lower::traits::lowered_impls(tcx, foreign);
     let traits: IndexSet<DefId> = lowered.iter().map(|&(trait_id, _)| trait_id).collect();
     for trait_id in traits {

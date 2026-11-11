@@ -540,15 +540,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ),
             ));
         }
-        if of.has_param() {
+        // Of a type built of type parameters whose layout rustc knows
+        // whatever they are, `Box<dyn Fn(&T)>`'s, a sized `T`'s `&T`'s,
+        // `PhantomData<T>`'s: rustc's, as of any type (#1420).
+        let of_params = of.has_param();
+        let generic = of_params
+            .then(|| self.tcx.layout_of(self.typing_env.as_query_input(of)).ok())
+            .flatten();
+        if of_params && generic.is_none() {
             return Err(self.unsupported(span, &format!("`{name}` of a type parameter")));
         }
         if !of.is_sized(self.tcx, self.typing_env) {
             return Err(self.unsupported(span, &format!("`{name}` of a value without one size")));
         }
-        let layout = self
-            .layout(of)
-            .ok_or_else(|| self.unsupported(span, &format!("`{name}` of this type")))?;
+        let layout = match generic {
+            Some(layout) => layout,
+            None => (self.layout(of)).ok_or_else(|| self.unsupported(span, &format!("`{name}` of this type")))?,
+        };
         let bytes = if fact == TypeFact::Align {
             layout.align.abi.bytes()
         } else {

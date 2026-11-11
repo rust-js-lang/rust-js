@@ -72,8 +72,12 @@ use std::path::Path;
 /// makes take those options (#1331). 28: each of its traits' associated
 /// types that's an `IntoIterator` has its constant size carried by every
 /// impl's dictionary, an `associated` entry's `ConstSize`, which a
-/// consumer's generic flatten of what it gives reads (#1341).
-pub const VERSION: u32 = 28;
+/// consumer's generic flatten of what it gives reads (#1341). 29: each of
+/// its reachable traits' sized associated types whose every impl of its own
+/// can give its layout has its `Size` and `Align` carried by every impl's
+/// dictionary, an `associated` entry's, which a consumer's generic
+/// `size_of::<Self::Item>()` reads (#1420).
+pub const VERSION: u32 = 29;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]

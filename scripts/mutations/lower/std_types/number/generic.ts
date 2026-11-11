@@ -318,4 +318,12 @@ export const mutations: Mutation[] = [
     replace: "                return Ok(Expr::str(way));\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collected_in_place_capacity.rs$"],
   },
+  {
+    name: "rustc-known-generic-layouts-refused",
+    breaks: "generic code's `size_of::<Box<dyn Fn(&T) -> usize>>()`, of a type whose layout rustc knows whatever `T` is, is refused, \"`size_of` of a type parameter\" (#1420)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "            .then(|| self.tcx.layout_of(self.typing_env.as_query_input(of)).ok())\n",
+    replace: "            .then(|| None::<rustc_middle::ty::layout::TyAndLayout<'tcx>>)\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_of_what_rustc_knows_of_any_parameter.rs$"],
+  },
 ];

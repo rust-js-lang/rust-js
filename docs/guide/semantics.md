@@ -91,7 +91,11 @@ table](../../ROADMAP.md) lists the larger missing pieces.
   is the engine's
   ([0064](../decisions/0064-numbers.md)).
 - **`size_of`, `align_of`** are wasm32's: a pointer is 4 bytes
-  ([0145](../decisions/0145-type-facts.md)).
+  ([0145](../decisions/0145-type-facts.md)). Generic code asks them of an
+  associated type through its trait's dictionary, a library's trait's too,
+  `size_of::<Self::Item>()` of rand_core's `BlockRngCore`: a library's
+  trait carries them where each of its own impls can say its type's, and
+  otherwise a consumer's `size_of` of it is refused at compile time.
 
 - **Methods are std's, by its steps and with its panics:** `clamp`,
   `from_str_radix`, `div_ceil`, `ilog10`, `isqrt`, `midpoint`, a float's

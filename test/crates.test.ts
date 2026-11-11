@@ -171,6 +171,16 @@ test("a crate of no JS named test or std is neither libtest nor std", () => {
     .toThrow("rust-js does not support calling `std::process::exit` yet");
 }, 300_000);
 
+// ADR 0145, amended (#1420): a library's trait carries the size and alignment
+// of each associated type every impl of its own can give, `BlockCore`'s
+// `Item` and `Results`; none of a `?Sized` one, a generic one, a method's
+// `impl Trait`, nor of a trait one of whose impls' types it can't give.
+test("a library's traits carry the layouts of the associated types their impls can give", () => {
+  const out = chain(pairs, "size_of_a_library_traits_item", ["dep", "app"]);
+  const carried = contract(out).associated.filter((each: { facts: string[] }) => each.facts.includes("Size"));
+  expect(carried.map((each: { facts: string[] }) => each.facts)).toEqual([["Size", "Align"], ["Size", "Align"]]);
+}, 300_000);
+
 // ADR 0693, amended: a library's function, which nothing assigns, returned
 // past a guard's drop is returned after its `finally`, as the crate's own is.
 test("a library's function returned past a guard's drop is returned after its finally", () => {
@@ -299,7 +309,7 @@ test("a consumer's fact of a library's associated type its dictionaries don't ca
     "rust-js does not support `size_of` of a type parameter yet",
     "app.rs:8:",
   ]);
-  expect(native).toBe("8\n");
+  expect(native).toBe("24\n");
 }, 300_000);
 
 // #374, ADR 0960: a library checks its hooks' `RefCell<Vec<Rc<dyn Fn()>>>`,
