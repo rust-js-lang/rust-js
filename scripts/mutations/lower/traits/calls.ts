@@ -571,4 +571,13 @@ export const mutations: Mutation[] = [
     replace: "                    drops.push(match closed == Some(ty) && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_collected_by_generic_code_into_own_from_iterator.rs$"],
   },
+  {
+    name: "dictionary-write-never-fails",
+    breaks:
+      "a type parameter's write whose result is tested, in a crate whose writes may fail, is taken to succeed: `out.write_all(b\"x\").is_ok()` is `true` of a writer that refuses it, and `match` of it throws (#1398)",
+    file: "src/lower/traits/calls.rs",
+    find: "            return Ok(Some(self.fmt_result_value(id, generic_args, called)));\n        }\n        Ok(None)\n",
+    replace: "            return Ok(Some(called));\n        }\n        Ok(None)\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_write_tested_where_writes_fail.rs$"],
+  },
 ];

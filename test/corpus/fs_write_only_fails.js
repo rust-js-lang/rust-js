@@ -17,7 +17,7 @@ export function entry() {
 }
 
 function emit(out, WWrite) {
-  return WWrite.writeAll(out, [120]);
+  WWrite.writeAll(out, [120]);
 }
 
 function main() {

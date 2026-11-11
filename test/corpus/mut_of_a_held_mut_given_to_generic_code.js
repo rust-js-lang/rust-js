@@ -11,6 +11,7 @@ import {
   $unwrap,
   $vecWriter,
   $writeExpect,
+  $writeTry,
 } from "@rust-js/std";
 
 export function entry() {
@@ -18,19 +19,21 @@ export function entry() {
 }
 
 function put(w, WWrite) {
-  WWrite.writeAll(w, [120]);
+  const result = $writeTry(() => WWrite.writeAll(w, [120]));
+  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
 }
 
 function putByValue(w, WWrite) {
   const self = { value: w };
-  const writeAll = WWrite.writeAll(self, [121]);
+  const writeAll = $writeTry(() => WWrite.writeAll(self, [121]));
   w = self.value;
   $writeExpect(writeAll, "called `Result::unwrap()` on an `Err` value");
 }
 
 function first(r, RRead) {
   const b = [0];
-  RRead.readExact(r, b);
+  const result = $writeTry(() => RRead.readExact(r, b));
+  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
   return b[0];
 }
 

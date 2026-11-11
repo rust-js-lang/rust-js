@@ -16,7 +16,6 @@ import {
   $unwrapOk,
   $utf8Bytes,
   $writeCaught,
-  $writeCheck,
   $writeTry,
 } from "@rust-js/std";
 
@@ -27,7 +26,7 @@ export function entry() {
 function first(r, RRead) {
   try {
     const b = [0];
-    $writeCheck(RRead.readExact(r, b));
+    RRead.readExact(r, b);
     return { TAG: "Ok", _0: b[0] };
   } catch (error) {
     return { TAG: "Err", _0: $writeCaught(error) };
@@ -37,7 +36,7 @@ function first(r, RRead) {
 function pair(r, Read) {
   try {
     const b = [0, 0];
-    $writeCheck(Read.readExact(r, b));
+    Read.readExact(r, b);
     return { TAG: "Ok", _0: b.slice() };
   } catch (error) {
     return { TAG: "Err", _0: { value: $writeCaught(error), impl: $ioErrorDyn() } };
@@ -56,7 +55,7 @@ function total(r) {
 function skip(r, n, RRead) {
   $roomFor(n, 1);
   const b = new Array(n).fill(0);
-  return RRead.readExact(r, b);
+  RRead.readExact(r, b);
 }
 
 function skipFour(r) {

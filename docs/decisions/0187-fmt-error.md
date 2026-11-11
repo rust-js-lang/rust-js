@@ -221,3 +221,24 @@ In a crate where no write may fail its result is `Ok`, so it's the panic,
 against native Rust and five mutations, `fmt-result-unwrap-err-refused`,
 `write-expect-err-of-ok-silent`, `write-expect-err-message-unsuffixed`,
 `unwrap-err-of-a-failed-write-unread` and `unwrap-err-message-of-unwrap`.
+
+## Amendment: a type parameter's write is caught where it's tested (#1398)
+
+Of every route a call of a write takes, a type parameter's dictionary's,
+`W::write_all(out, ..)` called as `WWrite.writeAll(out, ..)`, was the one
+that never asked `fmt_result_value`. So in a crate whose writes may fail,
+its result tested as a value was taken to succeed:
+`out.write_all(b"x").is_ok()` was `true` of a writer that refused it,
+`let _ = ..` threw past the function, and `match` of it read the call's
+`undefined` while the error went up. **A dictionary's call of a write is
+`fmt_result_value`'s too: where it may fail, as any dictionary's may in
+such a crate, its value is what `$writeTry` caught, and where it's only
+given on, `?` or the function's own result, it stays the plain call,
+`fmt_check` unwrapping it.** So a write given on reads `WWrite.writeAll(out,
+[120]);`, not `return WWrite.writeAll(out, [120])` or
+`$writeCheck(RRead.readExact(r, b))`, and `unwrap()` of one is std's panic
+of the error, `$writeExpect`, not the error itself thrown. Found by an
+audit of #1392's probes; `test/corpus/generic_write_tested_where_writes_fail.rs`
+(an `io::Write`'s and a `fmt::Write`'s, `is_ok()`, `let _ =` and `match`)
+runs as native Rust in both builds, and the mutation
+`dictionary-write-never-fails` puts the uncaught call back.

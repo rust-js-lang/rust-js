@@ -44,7 +44,7 @@ function firstTwo(r, RRead) {
   try {
     const b = [0, 0];
     const self = { value: r };
-    const readExact = RRead.readExact(self, b);
+    const readExact = $writeTry(() => RRead.readExact(self, b));
     r = self.value;
     $writeCheck(readExact);
     return { TAG: "Ok", _0: b.slice() };

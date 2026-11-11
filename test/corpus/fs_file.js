@@ -24,7 +24,6 @@ import {
   $unwrap,
   $unwrapErr,
   $utf8Bytes,
-  $writeCheck,
   $writeExpectErr,
   $writeTry,
   bufRead_lines,
@@ -39,9 +38,9 @@ export function entry() {
 function save(out, lines, WWrite) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    $writeCheck(WWrite.writeFmt(out, `${line}\n`));
+    WWrite.writeFmt(out, `${line}\n`);
   }
-  return WWrite.flush(out);
+  WWrite.flush(out);
 }
 
 function firstWord(from, RRead) {

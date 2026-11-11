@@ -682,10 +682,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of the impl's terms, in a copied default (ADR 0495).
             let dictionary = self.dictionary(tr, span)?;
             let values = self.through_dictionary(id, generic_args, values, span, out)?;
-            return Ok(Some(Expr::call(
-                Expr::member(dictionary, bindings::fn_name(self.tcx, id)),
-                values,
-            )));
+            let called = Expr::call(Expr::member(dictionary, bindings::fn_name(self.tcx, id)), values);
+            // A write's, `W::write_all`, which may fail as any dictionary's
+            // may: its value is what `$writeTry` caught, where it's tested
+            // (ADR 0187, amended; #1398).
+            return Ok(Some(self.fmt_result_value(id, generic_args, called)));
         }
         Ok(None)
     }
