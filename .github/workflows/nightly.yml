@@ -183,12 +183,17 @@ jobs:
   # The metamorphic net (#939, ADR 1104): every corpus case rewritten each
   # way scripts/metamorph keeps its meaning, in both builds against native
   # Rust, but the rewrites test/metamorphic-known.txt lists; each push runs
-  # one case in 128. Its 11 rewrites (#1008) are 110 core-minutes on the
-  # Mac, some 55 minutes of these 4 parts.
+  # one case in 128. Its 39 rewrites' 4 parts on one machine took 141-149
+  # minutes and were stopped at its 150 (nightly 42927113223, #1306), so
+  # it's 12 parts on 3 machines, 4 a machine, one a core.
   metamorphic:
-    name: metamorphic net
+    name: metamorphic net (${{ matrix.machine }}/3)
     runs-on: ubuntu-latest
     timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        machine: [1, 2, 3]
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
@@ -206,11 +211,12 @@ jobs:
         run: |
           rustup toolchain install nightly --profile minimal --component miri,rust-src
           cargo +nightly miri setup
-      - name: Run its 4 parts
+      - name: Run parts of machine ${{ matrix.machine }} of 3
         env:
           METAMORPHIC: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: bun scripts/parts.ts 4 test/metamorphic.test.ts --timeout=1800000
+          MACHINE: ${{ matrix.machine }}
+        run: bun scripts/parts.ts $(( (MACHINE - 1) * 4 + 1 ))-$(( MACHINE * 4 ))/12 test/metamorphic.test.ts --timeout=1800000
 
   # The object model's net (#891, ADR 1105): every corpus case's items moved
   # into a library, the program run with each value the library gives it

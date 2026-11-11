@@ -126,3 +126,13 @@ reducing at once can hold 16 GB.
 The parts stay four at once: with a reduction held to its quarter, what a
 part holds is its own runs, a native one at most 4 GiB on Linux. The
 measured peaks of the next nightly are in TESTS.md.
+
+Measured, nightly 42927113223 (2026-11-11): no part came near the
+memory. The object model's four parts peaked at 0.5, 0.3, 0.3 and 0.3
+GB in 8–9 min each; the memory net's at 0.3 GB each in 2–3 min; the
+neighbour shuffle's at 0.4, 2.8, 0.3 and 0.6 GB in 10–34 min; and the
+metamorphic net's at 0.4, 0.5, 2.3 and 0.5 GB, the 2.3 a reduction's.
+The metamorphic net's parts, though, ran 141–149 min, and the job's
+150-minute limit stopped them, so it runs on three machines of four
+parts each, `1-4/12`, `5-8/12` and `9-12/12`, as the iterator matrix
+runs on six (#1306).
